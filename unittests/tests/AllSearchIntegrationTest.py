@@ -2,7 +2,7 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Exercise AllSearch through EC against an isolated daemon and a loopback eD2k server."""
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 import errno
 import hashlib
 import os
@@ -17,7 +17,7 @@ import tempfile
 import threading
 import time
 
-from DaemonConfig import write_amule_conf
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 # Resolve wire constants from the protocol source, so renumbering stays visible.
@@ -178,28 +178,87 @@ def check_daemon_ports(root, ec_port, peer_port, udp_port=None, server_udp=False
         raise PortCollision(f'Daemon did not bind fixture ports: {missing}\n{log[-4000:]}')
 
 
-def connect_daemon(proc, port, root=None, peer_port=None, udp_port=None,
-                   server_udp=False, snapshot=None):
+def wait_daemon_started(proc, port, root, peer_port=None, udp_port=None,
+                        server_udp=False, snapshot=None):
+    """Wait until amuled on root has started and bound the fixture ports, without EC."""
     # The caller/ctest may impose its own deadline. Slow architectures can spend
     # minutes hashing passwords before opening EC; wait while the daemon lives.
     while True:
         if proc.poll() is not None:
             raise RuntimeError('daemon exited')
-        if root is not None:
-            startup = new_log_text(Path(root) / 'logfile', snapshot)
-            if 'Could not listen for external connections at ' in startup:
-                raise PortCollision(f'Daemon could not bind EC port {port}')
-            if 'amuled: OnInit - starting timer' not in startup:
-                time.sleep(0.1)
-                continue
+        startup = new_log_text(Path(root) / 'logfile', snapshot)
+        if 'Could not listen for external connections at ' in startup:
+            raise PortCollision(f'Daemon could not bind EC port {port}')
+        if 'amuled: OnInit - starting timer' in startup:
             check_daemon_ports(root, port, peer_port, udp_port, server_udp,
                                log_text=startup)
+            return
+        time.sleep(0.1)
+
+
+def connect_daemon(proc, port, root=None, peer_port=None, udp_port=None,
+                   server_udp=False, snapshot=None, ec_class=None, **ec_kwargs):
+    if root is not None:
+        wait_daemon_started(proc, port, root, peer_port, udp_port, server_udp, snapshot)
+    while True:
+        if proc.poll() is not None:
+            raise RuntimeError('daemon exited')
         try:
-            ec = EC(port)
+            ec = (ec_class or EC)(port, **ec_kwargs)
         except ConnectionRefusedError:
             time.sleep(0.1)
         else:
             return ec
+
+
+def start_daemon(binary, root, ports, *, args=('--disable-fatal',), env=None,
+                 console='console.log', server_udp=False, **connect_kwargs):
+    """Start amuled on root and return (proc, ec) once it serves EC on the fixture ports.
+
+    ports is (ec, peer) or (ec, peer, udp). The console log is appended to, so a restart
+    keeps the earlier run's output. env defaults to daemon_env(root).
+    """
+    root = Path(root)
+    snapshot = log_snapshot(root / 'logfile')
+    with (root / console).open('a') as log:
+        proc = subprocess.Popen([binary, '-c', str(root), *args],
+                                env=env if env is not None else daemon_env(root),
+                                stdout=log, stderr=subprocess.STDOUT)
+    ec_port, peer_port, udp_port = (*ports, None)[:3]
+    try:
+        return proc, connect_daemon(proc, ec_port, root, peer_port, udp_port, server_udp,
+                                    snapshot, **connect_kwargs)
+    except BaseException:
+        stop_daemon(proc, check=False)
+        raise
+
+
+@contextmanager
+def running_daemon(binary, root, ports, *, stop_timeout=10, **start_kwargs):
+    """start_daemon as a context that yields (proc, ec) and stops amuled on exit.
+
+    On failure it prints the console and the new log text, and the stop skips its
+    exit-code check so the original error is the one reported.
+    """
+    root = Path(root)
+    snapshot = log_snapshot(root / 'logfile')
+    proc = ec = None
+    failed = True
+    try:
+        proc, ec = start_daemon(binary, root, ports, **start_kwargs)
+        yield proc, ec
+        failed = False
+    except BaseException:
+        console = root / start_kwargs.get('console', 'console.log')
+        if console.exists():
+            print(console.read_text(errors='replace'), file=sys.stderr)
+        print(new_log_text(root / 'logfile', snapshot), file=sys.stderr)
+        raise
+    finally:
+        if ec is not None:
+            ec.sock.close()
+        if proc is not None:
+            stop_daemon(proc, timeout=stop_timeout, check=not failed)
 
 
 def search_record(name, sources=10):
@@ -263,16 +322,24 @@ def stored_search(results, kind=C['EC_SEARCH_ALL'], params=b''):
     return data
 
 
-def stop_daemon(proc):
-    if os.name == 'nt':
-        # TerminateProcess does not reap spawned helpers; their log handles
-        # otherwise prevent TemporaryDirectory cleanup on Windows.
-        subprocess.run(['taskkill', '/PID', str(proc.pid), '/T', '/F'],
-                       capture_output=True, timeout=10, check=False)
-    else:
-        proc.terminate()
-    code = proc.wait(timeout=10)
-    assert os.name == "nt" or code == 0, f"daemon shutdown failed: {code}"
+def stop_daemon(proc, timeout=10, check=True):
+    """Stop proc and reap it. check asserts a clean exit; pass False on failure paths."""
+    if proc.poll() is None:
+        if os.name == 'nt':
+            # TerminateProcess does not reap spawned helpers; their log handles
+            # otherwise prevent TemporaryDirectory cleanup on Windows.
+            subprocess.run(['taskkill', '/PID', str(proc.pid), '/T', '/F'],
+                           capture_output=True, timeout=10, check=False)
+        else:
+            proc.terminate()
+    try:
+        code = proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+        assert not check, f'daemon did not exit within {timeout} s'
+        return
+    assert not check or os.name == 'nt' or code == 0, f'daemon shutdown failed: {code}'
 
 
 def free_ports(n, udp_indices=(), peer_index=None):
@@ -308,316 +375,300 @@ def free_ports(n, udp_indices=(), peer_index=None):
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-all-search-') as root:
         root = Path(root)
-        ec_port, peer_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
+        ports = ec_port, peer_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
         write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
                          ConnectToED2K=1, FilterLanIPs=0)
         (root / 'nodes.dat').write_bytes(struct.pack('<III', 0, 1, 0))
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'),
-                   LC_ALL='C.UTF-8')
-        with (root / 'stdout.log').open('w') as log:
-            snapshot = log_snapshot(root / 'logfile')
-            proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)
-            try:
-                ec = connect_daemon(proc, ec_port, root, peer_port, udp_port,
-                                    server_udp=True, snapshot=snapshot)
-                # No available network: fail without creating a search.
-                assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-                op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([C['EC_SEARCH_ALL']]), 2, [string(C['EC_TAG_SEARCH_NAME'], 'ubuntu')])])
-                assert op == C['EC_OP_FAILED'], op
-                # Kad-only fallback must not wait for a nonexistent server response.
-                assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-                # A short query cannot use Kad when it is the only network.
-                for kind in (C['EC_SEARCH_KAD'], C['EC_SEARCH_ALL']):
-                    op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([kind]), 2,
-                        [string(C['EC_TAG_SEARCH_NAME'], 'go'), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
-                    assert op == C['EC_OP_FAILED'], (kind, op)
-                sid = ec.start('ubuntu linux')
-                state = ec.progress(sid)
-                assert state[C['EC_TAG_SEARCH_LIFECYCLE_KIND']][0] == C['EC_SEARCH_ALL'] and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1, state
-                assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1, state
-                assert state[C['EC_TAG_SEARCH_ED2K_ACTIVE']][0] == 0, state
-                # Standalone Kad retains its duplicate-target rejection policy.
-                op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([C['EC_SEARCH_KAD']]), 2,
-                    [string(C['EC_TAG_SEARCH_NAME'], 'ubuntu linux'), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
-                assert op == C['EC_OP_FAILED'] and ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1
-                # A busy Kad target with no eD2k fallback must reject the new
-                # All search without terminating the existing owner's search.
-                op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([C['EC_SEARCH_ALL']]), 2,
-                    [string(C['EC_TAG_SEARCH_NAME'], 'ubuntu linux'), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
-                assert op == C['EC_OP_FAILED'] and ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1
-                assert ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])[0] == C['EC_OP_MISC_DATA']
-                state = ec.progress(sid)
-                assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2 and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0, state
-                # Closing must remove its Kad target so the same keyword can restart.
-                sid = ec.start('debian testing')
-                assert ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid), tag(C['EC_TAG_SEARCH_CLOSE'])])[0] == C['EC_OP_MISC_DATA']
-                sid = ec.start('debian testing')
-                assert ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1
-                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
-                assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-                # Loopback server checks that All keeps the full eD2k query.
-                with socket.socket() as listener:
-                    listener.bind(('127.0.0.1', 0))
-                    listener.listen(1)
-                    listener.settimeout(10)
-                    port = listener.getsockname()[1]
-                    queries = queue.Queue()
-                    answer = threading.Event()
-                    answer.set()
-                    def serve():
-                        try:
-                            with listener.accept()[0] as peer:
-                                peer.settimeout(10)
-                                while True:
-                                    proto, length = struct.unpack('<BI', exact(peer, 5))
-                                    packet = exact(peer, length)
-                                    if packet[0] == 1:  # OP_LOGINREQUEST
-                                        body = b'\x40' + struct.pack('<II', 0x12345678, 0)
-                                        peer.sendall(struct.pack('<BI', 0xe3, len(body)) + body)
-                                    elif packet[0] == 0x16:  # OP_SEARCHREQUEST
-                                        queries.put(packet[1:])
-                                        if not answer.wait(10):
-                                            return
-                                        name = next((raw for query, raw, _ in FILENAME_REPAIR_CASES
-                                                     if query.encode() in packet), None)
-                                        if name is not None:
-                                            body = b'\x33' + struct.pack('<I', 1) + search_record(name)
-                                        else:
-                                            sources = 0xffffffff if b'overflow' in packet else 10
-                                            body = (b'\x33' + struct.pack('<I', 3)
-                                                    + search_record('regression.bin', sources)
-                                                    + search_record('variant.bin')
-                                                    + search_record('variant.bin'))
-                                        peer.sendall(struct.pack('<BI', 0xe3, len(body)) + body)
-                        except (EOFError, OSError):
-                            pass
-                    worker = threading.Thread(target=serve, daemon=True)
-                    worker.start()
-                    assert ec.call(C['EC_OP_SERVER_ADD'], [string(C['EC_TAG_SERVER_ADDRESS'], f'localhost:{port}')])[0] == C['EC_OP_NOOP']
-                    assert ec.call(C['EC_OP_SERVER_CONNECT'])[0] == C['EC_OP_NOOP']
-                    sid = ec.start('ubuntu linux', wait=True)
-                    query = queries.get(timeout=5)
-                    assert b'ubuntu' in query and b'linux' in query, query
-                    assert ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
-                    # One incomplete UTF-8 tail must not garble the entire result.
-                    # Check the name returned over EC after the production reader,
-                    # search-result constructor and serialization have all run.
-                    for query, raw, expected in FILENAME_REPAIR_CASES:
-                        if query.startswith('truncatedutf8'):
-                            assert len(raw) == 160
-                        sid = ec.start(query, kind=C['EC_SEARCH_LOCAL'])
-                        queries.get(timeout=5)
-                        for _ in range(50):
-                            if ec.progress(sid)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2:
-                                break
-                            time.sleep(0.1)
-                        results = ec.call(C['EC_OP_SEARCH_RESULTS'],
-                                          [integer(C['EC_TAG_SEARCH_ID'], sid)])[1]
-                        name = results[C['EC_TAG_SEARCHFILE']][1][C['EC_TAG_PARTFILE_NAME']][0]
-                        assert name.rstrip(b'\0').decode() == expected, name
-                        ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid),
-                                                       tag(C['EC_TAG_SEARCH_CLOSE'])])
-                    # Both components: eD2k completion cannot finish the Kad component.
-                    assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-                    # Failed replacements and independent Kad searches must leave
-                    # the current eD2k request waiting for its server response.
-                    answer.clear()
-                    pending = ec.start('pending validation', kind=C['EC_SEARCH_LOCAL'])
-                    queries.get(timeout=5)
-                    for kind in (C['EC_SEARCH_GLOBAL'], C['EC_SEARCH_ALL']):
-                        op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([kind]), 2,
-                            [string(C['EC_TAG_SEARCH_NAME'], '('), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
-                        assert op == C['EC_OP_FAILED'], (kind, op)
-                        assert ec.progress(pending)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
-                    independent = ec.start('independent regression', kind=C['EC_SEARCH_KAD'])
-                    assert ec.progress(pending)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], independent), tag(C['EC_TAG_SEARCH_CLOSE'])])
-                    assert ec.progress(pending)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
-                    answer.set()
-                    for _ in range(50):
-                        state = ec.progress(pending)
-                        if state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2:
-                            break
-                        time.sleep(0.1)
-                    assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2 and state[C['EC_TAG_SEARCH_RESULT_COUNT']][0] == 1, state
-                    local_counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], pending)])[1][C['EC_TAG_SEARCHFILE']][1]
-                    assert C['EC_TAG_SEARCHFILE_ED2K_SOURCES'] not in local_counts and C['EC_TAG_SEARCHFILE_KAD_SOURCES'] not in local_counts, local_counts
-                    # Kad's minimum keyword length must not block eD2k fallback.
-                    short = ec.start('go')
-                    assert b'go' in queries.get(timeout=5)
-                    state = ec.progress(short)
-                    assert state[C['EC_TAG_SEARCH_LIFECYCLE_KIND']][0] == C['EC_SEARCH_ALL'] and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0, state
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], short)])
-                    # ALL falls back to eD2k without preempting another client's Kad search.
-                    previous = ec.start('fedora workstation', kind=C['EC_SEARCH_KAD'])
-                    unrelated = ec.start('debian regression', kind=C['EC_SEARCH_KAD'])
-                    op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([C['EC_SEARCH_ALL']]), 2,
-                        [string(C['EC_TAG_SEARCH_NAME'], 'fedora ('), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
-                    assert op == C['EC_OP_FAILED'], op
-                    assert ec.progress(previous)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
-                    other_client = EC(ec_port)
+        start = dict(args=(), console='stdout.log', server_udp=True)
+        proc = None
+        try:
+            proc, ec = start_daemon(binary, root, ports, **start)
+            # No available network: fail without creating a search.
+            assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
+            op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([C['EC_SEARCH_ALL']]), 2, [string(C['EC_TAG_SEARCH_NAME'], 'ubuntu')])])
+            assert op == C['EC_OP_FAILED'], op
+            # Kad-only fallback must not wait for a nonexistent server response.
+            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
+            # A short query cannot use Kad when it is the only network.
+            for kind in (C['EC_SEARCH_KAD'], C['EC_SEARCH_ALL']):
+                op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([kind]), 2,
+                    [string(C['EC_TAG_SEARCH_NAME'], 'go'), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
+                assert op == C['EC_OP_FAILED'], (kind, op)
+            sid = ec.start('ubuntu linux')
+            state = ec.progress(sid)
+            assert state[C['EC_TAG_SEARCH_LIFECYCLE_KIND']][0] == C['EC_SEARCH_ALL'] and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1, state
+            assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1, state
+            assert state[C['EC_TAG_SEARCH_ED2K_ACTIVE']][0] == 0, state
+            # Standalone Kad retains its duplicate-target rejection policy.
+            op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([C['EC_SEARCH_KAD']]), 2,
+                [string(C['EC_TAG_SEARCH_NAME'], 'ubuntu linux'), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
+            assert op == C['EC_OP_FAILED'] and ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1
+            # A busy Kad target with no eD2k fallback must reject the new
+            # All search without terminating the existing owner's search.
+            op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([C['EC_SEARCH_ALL']]), 2,
+                [string(C['EC_TAG_SEARCH_NAME'], 'ubuntu linux'), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
+            assert op == C['EC_OP_FAILED'] and ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1
+            assert ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])[0] == C['EC_OP_MISC_DATA']
+            state = ec.progress(sid)
+            assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2 and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0, state
+            # Closing must remove its Kad target so the same keyword can restart.
+            sid = ec.start('debian testing')
+            assert ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid), tag(C['EC_TAG_SEARCH_CLOSE'])])[0] == C['EC_OP_MISC_DATA']
+            sid = ec.start('debian testing')
+            assert ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1
+            ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
+            assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
+            # Loopback server checks that All keeps the full eD2k query.
+            with socket.socket() as listener:
+                listener.bind(('127.0.0.1', 0))
+                listener.listen(1)
+                listener.settimeout(10)
+                port = listener.getsockname()[1]
+                queries = queue.Queue()
+                answer = threading.Event()
+                answer.set()
+                def serve():
                     try:
-                        sid = other_client.start('fedora workstation')
-                    finally:
-                        other_client.sock.close()
-                    assert ec.progress(previous)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
-                    assert ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0
-                    assert ec.progress(unrelated)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], unrelated)])
-                    query = queries.get(timeout=5)
-                    assert b'fedora' in query and b'workstation' in query, query
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], previous)])
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
-                    sid = ec.start('combined progress')
-                    queries.get(timeout=5)
-                    time.sleep(2)
-                    state = ec.progress(sid)
-                    assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1 and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1, state
-                    assert 0 < state[C['EC_TAG_SEARCH_LIFECYCLE_PERCENT']][0] < 100, state
-                    # eD2k has finished while Kad keeps the combined lifecycle running.
-                    assert state[C['EC_TAG_SEARCH_ED2K_ACTIVE']][0] == 0, state
-                    # Finishing another Kad search must not complete this combined one.
-                    other = ec.start('opensuse tumbleweed', kind=C['EC_SEARCH_KAD'])
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], other)])
-                    assert ec.progress(sid)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
-                    assert ec.progress(sid)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2
-                    # Reverse completion order: hold the server answer while Kad stops.
-                    answer.clear()
-                    sid = ec.start('alpine linux')
-                    queries.get(timeout=5)
-                    time.sleep(1.1)
-                    waiting = ec.progress(sid)
-                    assert waiting[C['EC_TAG_SEARCH_LIFECYCLE_PERCENT']][0] == 0, waiting
-                    assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-                    state = ec.progress(sid)
-                    assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1 and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0, state
-                    assert state[C['EC_TAG_SEARCH_ED2K_ACTIVE']][0] == 1, state
-                    answer.set()
-                    for _ in range(50):
-                        state = ec.progress(sid)
-                        if state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2:
-                            break
-                        time.sleep(0.1)
-                    assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2, state
-                    assert state[C['EC_TAG_SEARCH_RESULT_COUNT']][0] == 1, state
-                    counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], sid)])[1][C['EC_TAG_SEARCHFILE']][1]
-                    assert counts[C['EC_TAG_PARTFILE_SOURCE_COUNT']][0] == 30 and counts[C['EC_TAG_PARTFILE_SOURCE_COUNT_XFER']][0] == 9, counts
-                    assert counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0] == 30 and counts[C['EC_TAG_SEARCHFILE_KAD_SOURCES']][0] == 0, counts
-                    # Full snapshots include both counts even after earlier polls.
-                    counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], sid)])[1][C['EC_TAG_SEARCHFILE']][1]
-                    assert counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0] == 30 and counts[C['EC_TAG_SEARCHFILE_KAD_SOURCES']][0] == 0, counts
-                    # Oversized server reports must not wrap when filename
-                    # variants are grouped, including through EC serialization.
-                    overflow = ec.start('overflow regression')
+                        with listener.accept()[0] as peer:
+                            peer.settimeout(10)
+                            while True:
+                                proto, length = struct.unpack('<BI', exact(peer, 5))
+                                packet = exact(peer, length)
+                                if packet[0] == 1:  # OP_LOGINREQUEST
+                                    body = b'\x40' + struct.pack('<II', 0x12345678, 0)
+                                    peer.sendall(struct.pack('<BI', 0xe3, len(body)) + body)
+                                elif packet[0] == 0x16:  # OP_SEARCHREQUEST
+                                    queries.put(packet[1:])
+                                    if not answer.wait(10):
+                                        return
+                                    name = next((raw for query, raw, _ in FILENAME_REPAIR_CASES
+                                                 if query.encode() in packet), None)
+                                    if name is not None:
+                                        body = b'\x33' + struct.pack('<I', 1) + search_record(name)
+                                    else:
+                                        sources = 0xffffffff if b'overflow' in packet else 10
+                                        body = (b'\x33' + struct.pack('<I', 3)
+                                                + search_record('regression.bin', sources)
+                                                + search_record('variant.bin')
+                                                + search_record('variant.bin'))
+                                    peer.sendall(struct.pack('<BI', 0xe3, len(body)) + body)
+                    except (EOFError, OSError):
+                        pass
+                worker = threading.Thread(target=serve, daemon=True)
+                worker.start()
+                assert ec.call(C['EC_OP_SERVER_ADD'], [string(C['EC_TAG_SERVER_ADDRESS'], f'localhost:{port}')])[0] == C['EC_OP_NOOP']
+                assert ec.call(C['EC_OP_SERVER_CONNECT'])[0] == C['EC_OP_NOOP']
+                sid = ec.start('ubuntu linux', wait=True)
+                query = queries.get(timeout=5)
+                assert b'ubuntu' in query and b'linux' in query, query
+                assert ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
+                # One incomplete UTF-8 tail must not garble the entire result.
+                # Check the name returned over EC after the production reader,
+                # search-result constructor and serialization have all run.
+                for query, raw, expected in FILENAME_REPAIR_CASES:
+                    if query.startswith('truncatedutf8'):
+                        assert len(raw) == 160
+                    sid = ec.start(query, kind=C['EC_SEARCH_LOCAL'])
                     queries.get(timeout=5)
                     for _ in range(50):
-                        if ec.progress(overflow)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2:
+                        if ec.progress(sid)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2:
                             break
                         time.sleep(0.1)
-                    counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], overflow)])[1][C['EC_TAG_SEARCHFILE']][1]
-                    assert counts[C['EC_TAG_PARTFILE_SOURCE_COUNT']][0] == 0xffffffff, counts
-                    assert counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0] == 0xffffffff, counts
-                    # Close while a server response is in flight. Its late results
-                    # must not recreate the removed bucket.
-                    answer.clear()
-                    closed = ec.start('lateclose regression', kind=C['EC_SEARCH_LOCAL'])
-                    queries.get(timeout=5)
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], closed), tag(C['EC_TAG_SEARCH_CLOSE'])])
-                    answer.set()
-                    time.sleep(0.2)
-                    state = ec.progress(closed)
-                    assert C['EC_TAG_SEARCH_EXPIRED'] in state, state
-                    ec.sock.close()
-                # Persist and reload an All search: its finished Kad marker must not
-                # make it appear to be a standalone Kad search after restart.
-                stop_daemon(proc)
-                worker.join(timeout=2)
-                snapshot = log_snapshot(root / 'logfile')
-                proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)
-                ec = connect_daemon(proc, ec_port, root, peer_port, udp_port,
-                                    server_udp=True, snapshot=snapshot)
+                    results = ec.call(C['EC_OP_SEARCH_RESULTS'],
+                                      [integer(C['EC_TAG_SEARCH_ID'], sid)])[1]
+                    name = results[C['EC_TAG_SEARCHFILE']][1][C['EC_TAG_PARTFILE_NAME']][0]
+                    assert name.rstrip(b'\0').decode() == expected, name
+                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid),
+                                                   tag(C['EC_TAG_SEARCH_CLOSE'])])
+                # Both components: eD2k completion cannot finish the Kad component.
+                assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
+                # Failed replacements and independent Kad searches must leave
+                # the current eD2k request waiting for its server response.
+                answer.clear()
+                pending = ec.start('pending validation', kind=C['EC_SEARCH_LOCAL'])
+                queries.get(timeout=5)
+                for kind in (C['EC_SEARCH_GLOBAL'], C['EC_SEARCH_ALL']):
+                    op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([kind]), 2,
+                        [string(C['EC_TAG_SEARCH_NAME'], '('), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
+                    assert op == C['EC_OP_FAILED'], (kind, op)
+                    assert ec.progress(pending)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
+                independent = ec.start('independent regression', kind=C['EC_SEARCH_KAD'])
+                assert ec.progress(pending)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], independent), tag(C['EC_TAG_SEARCH_CLOSE'])])
+                assert ec.progress(pending)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
+                answer.set()
+                for _ in range(50):
+                    state = ec.progress(pending)
+                    if state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2:
+                        break
+                    time.sleep(0.1)
+                assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2 and state[C['EC_TAG_SEARCH_RESULT_COUNT']][0] == 1, state
+                local_counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], pending)])[1][C['EC_TAG_SEARCHFILE']][1]
+                assert C['EC_TAG_SEARCHFILE_ED2K_SOURCES'] not in local_counts and C['EC_TAG_SEARCHFILE_KAD_SOURCES'] not in local_counts, local_counts
+                # Kad's minimum keyword length must not block eD2k fallback.
+                short = ec.start('go')
+                assert b'go' in queries.get(timeout=5)
+                state = ec.progress(short)
+                assert state[C['EC_TAG_SEARCH_LIFECYCLE_KIND']][0] == C['EC_SEARCH_ALL'] and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0, state
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], short)])
+                # ALL falls back to eD2k without preempting another client's Kad search.
+                previous = ec.start('fedora workstation', kind=C['EC_SEARCH_KAD'])
+                unrelated = ec.start('debian regression', kind=C['EC_SEARCH_KAD'])
+                op, _ = ec.call(C['EC_OP_SEARCH_START'], [tag(C['EC_TAG_SEARCH_TYPE'], bytes([C['EC_SEARCH_ALL']]), 2,
+                    [string(C['EC_TAG_SEARCH_NAME'], 'fedora ('), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])])
+                assert op == C['EC_OP_FAILED'], op
+                assert ec.progress(previous)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
+                other_client = EC(ec_port)
+                try:
+                    sid = other_client.start('fedora workstation')
+                finally:
+                    other_client.sock.close()
+                assert ec.progress(previous)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
+                assert ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0
+                assert ec.progress(unrelated)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], unrelated)])
+                query = queries.get(timeout=5)
+                assert b'fedora' in query and b'workstation' in query, query
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], previous)])
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
+                sid = ec.start('combined progress')
+                queries.get(timeout=5)
+                time.sleep(2)
                 state = ec.progress(sid)
-                assert state[C['EC_TAG_SEARCH_LIFECYCLE_KIND']][0] == C['EC_SEARCH_ALL'], state
-                assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2 and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0, state
+                assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1 and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1, state
+                assert 0 < state[C['EC_TAG_SEARCH_LIFECYCLE_PERCENT']][0] < 100, state
+                # eD2k has finished while Kad keeps the combined lifecycle running.
+                assert state[C['EC_TAG_SEARCH_ED2K_ACTIVE']][0] == 0, state
+                # Finishing another Kad search must not complete this combined one.
+                other = ec.start('opensuse tumbleweed', kind=C['EC_SEARCH_KAD'])
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], other)])
+                assert ec.progress(sid)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
+                assert ec.progress(sid)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2
+                # Reverse completion order: hold the server answer while Kad stops.
+                answer.clear()
+                sid = ec.start('alpine linux')
+                queries.get(timeout=5)
+                time.sleep(1.1)
+                waiting = ec.progress(sid)
+                assert waiting[C['EC_TAG_SEARCH_LIFECYCLE_PERCENT']][0] == 0, waiting
+                assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
+                state = ec.progress(sid)
+                assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 1 and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0, state
+                assert state[C['EC_TAG_SEARCH_ED2K_ACTIVE']][0] == 1, state
+                answer.set()
+                for _ in range(50):
+                    state = ec.progress(sid)
+                    if state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2:
+                        break
+                    time.sleep(0.1)
+                assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2, state
+                assert state[C['EC_TAG_SEARCH_RESULT_COUNT']][0] == 1, state
                 counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], sid)])[1][C['EC_TAG_SEARCHFILE']][1]
                 assert counts[C['EC_TAG_PARTFILE_SOURCE_COUNT']][0] == 30 and counts[C['EC_TAG_PARTFILE_SOURCE_COUNT_XFER']][0] == 9, counts
                 assert counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0] == 30 and counts[C['EC_TAG_SEARCHFILE_KAD_SOURCES']][0] == 0, counts
-                # Repeated close/restart and bulk shutdown exercise registry ownership.
-                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid), tag(C['EC_TAG_SEARCH_CLOSE'])])
-                assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-                for i in range(30):
-                    current = ec.start(f'ownership{i} regression', kind=C['EC_SEARCH_KAD'])
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], current), tag(C['EC_TAG_SEARCH_CLOSE'])])
-                    current = ec.start(f'ownership{i} regression', kind=C['EC_SEARCH_KAD'])
-                    ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], current), tag(C['EC_TAG_SEARCH_CLOSE'])])
-                active = [ec.start(f'bulkownership{i} regression', kind=C['EC_SEARCH_KAD']) for i in range(20)]
-                assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-                for current in active:
-                    assert ec.progress(current)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2
-                assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-                for i in range(20):
-                    ec.start(f'shutdownownership{i} regression', kind=C['EC_SEARCH_KAD'])
+                # Full snapshots include both counts even after earlier polls.
+                counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], sid)])[1][C['EC_TAG_SEARCHFILE']][1]
+                assert counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0] == 30 and counts[C['EC_TAG_SEARCHFILE_KAD_SOURCES']][0] == 0, counts
+                # Oversized server reports must not wrap when filename
+                # variants are grouped, including through EC serialization.
+                overflow = ec.start('overflow regression')
+                queries.get(timeout=5)
+                for _ in range(50):
+                    if ec.progress(overflow)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2:
+                        break
+                    time.sleep(0.1)
+                counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], overflow)])[1][C['EC_TAG_SEARCHFILE']][1]
+                assert counts[C['EC_TAG_PARTFILE_SOURCE_COUNT']][0] == 0xffffffff, counts
+                assert counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0] == 0xffffffff, counts
+                # Close while a server response is in flight. Its late results
+                # must not recreate the removed bucket.
+                answer.clear()
+                closed = ec.start('lateclose regression', kind=C['EC_SEARCH_LOCAL'])
+                queries.get(timeout=5)
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], closed), tag(C['EC_TAG_SEARCH_CLOSE'])])
+                answer.set()
+                time.sleep(0.2)
+                state = ec.progress(closed)
+                assert C['EC_TAG_SEARCH_EXPIRED'] in state, state
+                ec.sock.close()
+            # Persist and reload an All search: its finished Kad marker must not
+            # make it appear to be a standalone Kad search after restart.
+            stop_daemon(proc)
+            worker.join(timeout=2)
+            proc, ec = start_daemon(binary, root, ports, **start)
+            state = ec.progress(sid)
+            assert state[C['EC_TAG_SEARCH_LIFECYCLE_KIND']][0] == C['EC_SEARCH_ALL'], state
+            assert state[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2 and state[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0, state
+            counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], sid)])[1][C['EC_TAG_SEARCHFILE']][1]
+            assert counts[C['EC_TAG_PARTFILE_SOURCE_COUNT']][0] == 30 and counts[C['EC_TAG_PARTFILE_SOURCE_COUNT_XFER']][0] == 9, counts
+            assert counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0] == 30 and counts[C['EC_TAG_SEARCHFILE_KAD_SOURCES']][0] == 0, counts
+            # Repeated close/restart and bulk shutdown exercise registry ownership.
+            ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid), tag(C['EC_TAG_SEARCH_CLOSE'])])
+            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
+            for i in range(30):
+                current = ec.start(f'ownership{i} regression', kind=C['EC_SEARCH_KAD'])
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], current), tag(C['EC_TAG_SEARCH_CLOSE'])])
+                current = ec.start(f'ownership{i} regression', kind=C['EC_SEARCH_KAD'])
+                ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], current), tag(C['EC_TAG_SEARCH_CLOSE'])])
+            active = [ec.start(f'bulkownership{i} regression', kind=C['EC_SEARCH_KAD']) for i in range(20)]
+            assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
+            for current in active:
+                assert ec.progress(current)[C['EC_TAG_SEARCH_LIFECYCLE_STATE']][0] == 2
+            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
+            for i in range(20):
+                ec.start(f'shutdownownership{i} regression', kind=C['EC_SEARCH_KAD'])
+            ec.sock.close()
+            stop_daemon(proc)
+            # Validate the fixture first, then truncate after a completed root
+            # and after a completed child. ASan/LSan checks cleanup on both paths.
+            first = stored_result('first.bin')
+            second = stored_result('second.bin')
+            valid = stored_search([first, second])
+            nested = stored_search([stored_result('parent.bin', [first, second])])
+            mixed = stored_search([stored_result('mixed.bin', networks=(10, 50))])
+            for fixture, expected, networks in ((valid, 2, None), (mixed, 1, (10, 50)),
+                    (valid[:-1], 0, None), (nested[:-1], 0, None),
+                    *((stored_search([stored_result('single.bin', networks=(10, 0))], kind), 1, None)
+                      for kind in (C['EC_SEARCH_LOCAL'], C['EC_SEARCH_GLOBAL'], C['EC_SEARCH_KAD']))):
+                (root / 'StoredSearches.met').write_bytes(fixture)
+                proc, ec = start_daemon(binary, root, ports, **start)
+                if expected:
+                    assert ec.progress(123)[C['EC_TAG_SEARCH_RESULT_COUNT']][0] == expected
+                    # Legacy saved ALL results contain only an aggregate, not
+                    # a reliable network split. Do not invent E/K counts.
+                    counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], 123)])[1][C['EC_TAG_SEARCHFILE']][1]
+                    if networks is None:
+                        assert C['EC_TAG_SEARCHFILE_ED2K_SOURCES'] not in counts and C['EC_TAG_SEARCHFILE_KAD_SOURCES'] not in counts, counts
+                    else:
+                        assert (counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0], counts[C['EC_TAG_SEARCHFILE_KAD_SOURCES']][0]) == networks, counts
+                        assert counts[C['EC_TAG_PARTFILE_SOURCE_COUNT']][0] == max(networks), counts
+                        # The union seeds the pair once; idle partial polls
+                        # must then contain no result tags at all.
+                        counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [tag(C['EC_TAG_DETAIL_LEVEL'], bytes([C['EC_DETAIL_INC_UPDATE']]), 2)])[1][C['EC_TAG_SEARCHFILE']][1]
+                        assert (counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0], counts[C['EC_TAG_SEARCHFILE_KAD_SOURCES']][0]) == networks, counts
+                        idle = ec.call(C['EC_OP_SEARCH_RESULTS'], [tag(C['EC_TAG_DETAIL_LEVEL'], bytes([C['EC_DETAIL_INC_UPDATE']]), 2)])[1]
+                        assert C['EC_TAG_SEARCHFILE'] not in idle, idle
+                else:
+                    listing = ec.call(C['EC_OP_SEARCH_LIST'])
+                    assert not listing[1], listing
                 ec.sock.close()
                 stop_daemon(proc)
-                # Validate the fixture first, then truncate after a completed root
-                # and after a completed child. ASan/LSan checks cleanup on both paths.
-                first = stored_result('first.bin')
-                second = stored_result('second.bin')
-                valid = stored_search([first, second])
-                nested = stored_search([stored_result('parent.bin', [first, second])])
-                mixed = stored_search([stored_result('mixed.bin', networks=(10, 50))])
-                for fixture, expected, networks in ((valid, 2, None), (mixed, 1, (10, 50)),
-                        (valid[:-1], 0, None), (nested[:-1], 0, None),
-                        *((stored_search([stored_result('single.bin', networks=(10, 0))], kind), 1, None)
-                          for kind in (C['EC_SEARCH_LOCAL'], C['EC_SEARCH_GLOBAL'], C['EC_SEARCH_KAD']))):
-                    (root / 'StoredSearches.met').write_bytes(fixture)
-                    snapshot = log_snapshot(root / 'logfile')
-                    proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)
-                    ec = connect_daemon(proc, ec_port, root, peer_port, udp_port,
-                                        server_udp=True, snapshot=snapshot)
-                    if expected:
-                        assert ec.progress(123)[C['EC_TAG_SEARCH_RESULT_COUNT']][0] == expected
-                        # Legacy saved ALL results contain only an aggregate, not
-                        # a reliable network split. Do not invent E/K counts.
-                        counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], 123)])[1][C['EC_TAG_SEARCHFILE']][1]
-                        if networks is None:
-                            assert C['EC_TAG_SEARCHFILE_ED2K_SOURCES'] not in counts and C['EC_TAG_SEARCHFILE_KAD_SOURCES'] not in counts, counts
-                        else:
-                            assert (counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0], counts[C['EC_TAG_SEARCHFILE_KAD_SOURCES']][0]) == networks, counts
-                            assert counts[C['EC_TAG_PARTFILE_SOURCE_COUNT']][0] == max(networks), counts
-                            # The union seeds the pair once; idle partial polls
-                            # must then contain no result tags at all.
-                            counts = ec.call(C['EC_OP_SEARCH_RESULTS'], [tag(C['EC_TAG_DETAIL_LEVEL'], bytes([C['EC_DETAIL_INC_UPDATE']]), 2)])[1][C['EC_TAG_SEARCHFILE']][1]
-                            assert (counts[C['EC_TAG_SEARCHFILE_ED2K_SOURCES']][0], counts[C['EC_TAG_SEARCHFILE_KAD_SOURCES']][0]) == networks, counts
-                            idle = ec.call(C['EC_OP_SEARCH_RESULTS'], [tag(C['EC_TAG_DETAIL_LEVEL'], bytes([C['EC_DETAIL_INC_UPDATE']]), 2)])[1]
-                            assert C['EC_TAG_SEARCHFILE'] not in idle, idle
-                    else:
-                        listing = ec.call(C['EC_OP_SEARCH_LIST'])
-                        assert not listing[1], listing
-                    ec.sock.close()
-                    stop_daemon(proc)
-                    saved = (root / 'StoredSearches.met').read_bytes()
-                    for name in (b'AllSearchEd2kSources', b'AllSearchKadSources'):
-                        assert (name in saved) == (networks is not None), name
-                print('PASS: network fallback, query encoding, truncated UTF-8 filenames, both completion orders, '
-                      'duplicate targets, stop/close, persistence, truncated restore, '
-                      'ownership stress, clean shutdown')
-            except BaseException:
-                log.flush()
-                print((root / 'stdout.log').read_text(), file=sys.stderr)
-                if (root / 'logfile').exists():
-                    print((root / 'logfile').read_text()[-8000:], file=sys.stderr)
-                raise
-            finally:
-                if proc.poll() is None:
-                    proc.terminate()
-                try:
-                    proc.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    proc.wait()
+                saved = (root / 'StoredSearches.met').read_bytes()
+                for name in (b'AllSearchEd2kSources', b'AllSearchKadSources'):
+                    assert (name in saved) == (networks is not None), name
+            print('PASS: network fallback, query encoding, truncated UTF-8 filenames, both completion orders, '
+                  'duplicate targets, stop/close, persistence, truncated restore, '
+                  'ownership stress, clean shutdown')
+        except BaseException:
+            print((root / 'stdout.log').read_text(), file=sys.stderr)
+            if (root / 'logfile').exists():
+                print((root / 'logfile').read_text()[-8000:], file=sys.stderr)
+            raise
+        finally:
+            if proc is not None:
+                stop_daemon(proc, check=False)
 
 
 if __name__ == '__main__':

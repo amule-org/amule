@@ -9,13 +9,11 @@ import os
 from pathlib import Path
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import (C, connect_daemon, exact, free_ports, log_snapshot,
-                                      retry_port_collisions, stop_daemon, tag)
+from AllSearchIntegrationTest import C, exact, free_ports, retry_port_collisions, running_daemon, tag
 from DaemonConfig import write_amule_conf
 from ShareWatcherMoveIntegrationTest import tag_list
 from UploadRefillIntegrationTest import packet, send
@@ -76,28 +74,9 @@ def daemon(binary, root, interval):
     write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0, FilterLanIPs=0,
                      MaxUpload=1024, SlotAllocation=10, SharedFileReverifyDays=interval,
                      AutoRescanSharedDirs=0)
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-    env.pop('LD_PRELOAD', None)
-    snapshot = log_snapshot(root / 'logfile')
-    with (root / 'console.log').open('a') as console:
-        proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'],
-                                env=env, stdout=console, stderr=console)
-        ec = None
-        failed = True
-        try:
-            ec = connect_daemon(proc, ec_port, root, peer_port, snapshot=snapshot)
-            wait(proc, 'initial hashing', lambda: len(records(ec)) == 4)
-            yield proc, ec, peer_port
-            failed = False
-        finally:
-            if ec:
-                ec.sock.close()
-            if failed:
-                # Preserve startup/port-collision errors even before signal handlers exist.
-                proc.terminate()
-                proc.wait(timeout=10)
-            else:
-                stop_daemon(proc)
+    with running_daemon(binary, root, (ec_port, peer_port)) as (proc, ec):
+        wait(proc, 'initial hashing', lambda: len(records(ec)) == 4)
+        yield proc, ec, peer_port
 
 
 @contextmanager

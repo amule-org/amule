@@ -6,19 +6,17 @@
 The 30-day TTL prune drops known.met records of files no longer on disk. Their hashes go to
 knownhistory.met, so a file downloaded and then deleted does not look new again a month later.
 """
-import os
 from pathlib import Path
 import re
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import threading
 import time
 
-from AllSearchIntegrationTest import (C, connect_daemon, exact, free_ports, integer, log_snapshot,
-                                      retry_port_collisions, stop_daemon, string)
+from AllSearchIntegrationTest import (C, exact, free_ports, integer, retry_port_collisions,
+                                      running_daemon, start_daemon, string)
 from DaemonConfig import write_amule_conf
 from ShareWatcherMoveIntegrationTest import tag_list
 
@@ -74,18 +72,7 @@ def fake_server():
 
 
 def start(binary, root, ports):
-    ec_port, peer_port, udp_port = ports
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-    env.pop('LD_PRELOAD', None)
-    snapshot = log_snapshot(root / 'logfile')
-    proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                            stdout=(root / 'console.log').open('a'), stderr=subprocess.STDOUT)
-    try:
-        return proc, connect_daemon(proc, ec_port, root, peer_port, udp_port, server_udp=True,
-                                    snapshot=snapshot)
-    except BaseException:
-        stop_daemon(proc)
-        raise
+    return start_daemon(binary, root, ports, server_udp=True)
 
 
 def wait_for(proc, what, check):
@@ -119,20 +106,15 @@ def run(binary, root):
     (root / 'known.met').write_bytes(known_met(FORGOTTEN, 'forgotten.bin', 4096))
 
     # The prune only runs after the first share scan, and the shutdown save runs it.
-    proc, ec = start(binary, root, ports)
-    try:
+    with running_daemon(binary, root, ports, server_udp=True) as (proc, ec):
         wait_for(proc, 'the first share scan',
                  lambda: re.search(r'Found \d+ known shared file', (root / 'logfile').read_text(errors='replace')))
-    finally:
-        ec.sock.close()
-        stop_daemon(proc)
     assert FORGOTTEN not in (root / 'known.met').read_bytes(), 'the TTL prune kept the record'
     history = root / 'knownhistory.met'
     assert history.exists(), 'knownhistory.met was not written'
     assert history.read_bytes() == b'\x21' + struct.pack('<I', 1) + FORGOTTEN, history.read_bytes()
 
-    proc, ec = start(binary, root, ports)
-    try:
+    with running_daemon(binary, root, ports, server_udp=True) as (proc, ec):
         server_port = fake_server()
         assert ec.call(C['EC_OP_SERVER_ADD'], [string(C['EC_TAG_SERVER_ADDRESS'], f'localhost:{server_port}')])[0] == C['EC_OP_NOOP']
         assert ec.call(C['EC_OP_SERVER_CONNECT'])[0] == C['EC_OP_NOOP']
@@ -141,9 +123,6 @@ def run(binary, root):
         statuses = search_statuses(ec, sid)
         assert statuses[FORGOTTEN] == DOWNLOADED, statuses
         assert statuses[UNKNOWN] == NEW, statuses
-    finally:
-        ec.sock.close()
-        stop_daemon(proc)
 
 
 def main():

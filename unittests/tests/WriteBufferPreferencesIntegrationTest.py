@@ -2,7 +2,6 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """A new API must not claim to change a write budget on an older daemon."""
-import os
 from pathlib import Path
 import socketserver
 import struct
@@ -16,6 +15,7 @@ from ECWire import accept
 from AllSearchIntegrationTest import C, exact, free_ports, integer, tag
 from AmuleApiEcPasswordIntegrationTest import stop
 from CompletedFileDeleteIntegrationTest import eventually, http
+from DaemonConfig import daemon_env
 
 LIMIT_TAG = C['EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB']
 
@@ -52,8 +52,7 @@ class Core(socketserver.ThreadingTCPServer):
 def run(api_binary, supported):
     with tempfile.TemporaryDirectory(prefix='amule-write-budget-prefs-') as temporary:
         root = Path(temporary)
-        env = dict(os.environ, HOME=temporary, XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-        env.pop('LD_PRELOAD', None)
+        env = daemon_env(root)
         with Core(('127.0.0.1', 0), CoreHandler) as core, (root / 'api.log').open('w') as log:
             core.supported, core.limit, core.connections, core.writes = supported, 128, 50, []
             threading.Thread(target=core.serve_forever, daemon=True).start()

@@ -4,7 +4,6 @@
 """Check plaintext migration and digest authentication against an isolated offline core."""
 import hashlib
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
@@ -12,18 +11,13 @@ import tempfile
 import time
 import urllib.request
 
-from AllSearchIntegrationTest import EC, PortCollision, free_ports, retry_port_collisions
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import (PortCollision, free_ports, retry_port_collisions,
+                                      start_daemon, stop_daemon)
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 def stop(process):
-    if process.poll() is None:
-        process.terminate()
-    try:
-        process.wait(timeout=15)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        process.wait()
+    stop_daemon(process, timeout=15, check=False)
 
 
 def run(daemon_binary, api_binary):
@@ -38,19 +32,13 @@ def run(daemon_binary, api_binary):
             ec_port, http_port, peer_port, udp_port = free_ports(4, udp_indices=(3,), peer_index=2)
             write_amule_conf(core, ec_port, ec_password=secret, Port=peer_port,
                              UDPEnable=1, UDPPort=udp_port, sections={'WebServer': {'Enabled': 0}})
-            env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
+            env = daemon_env(root)
             with (root / 'fixture.log').open('w') as log:
-                daemon = subprocess.Popen([daemon_binary, '-c', str(core)], env=env, stdout=log, stderr=log)
+                daemon = None
                 try:
-                    deadline = time.monotonic() + 30
-                    while True:
-                        assert daemon.poll() is None, 'offline daemon exited'
-                        assert time.monotonic() < deadline, 'daemon did not start'
-                        try:
-                            EC(ec_port, password=secret).sock.close()
-                            break
-                        except ConnectionRefusedError:
-                            time.sleep(0.1)
+                    daemon, ec = start_daemon(daemon_binary, core, (ec_port, peer_port, udp_port),
+                                              args=(), env=env, password=secret)
+                    ec.sock.close()
                     command = [api_binary, '--config-dir=' + str(api)]
                     # Verify the input path stays compatible with the existing REST password derivation.
                     admin, guest = '密碼 with spaces', 'guest secret'
@@ -98,10 +86,13 @@ def run(daemon_binary, api_binary):
                             stop(server)
                 except BaseException:
                     log.flush()
-                    print((root / 'fixture.log').read_text(errors='replace')[-12000:], file=sys.stderr)
+                    for path in (core / 'console.log', root / 'fixture.log'):
+                        if path.exists():
+                            print(path.read_text(errors='replace')[-12000:], file=sys.stderr)
                     raise
                 finally:
-                    stop(daemon)
+                    if daemon is not None:
+                        stop(daemon)
 
 
 if __name__ == '__main__':

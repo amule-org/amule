@@ -6,15 +6,12 @@ import configparser
 from contextlib import contextmanager
 import os
 from pathlib import Path
-import subprocess
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import (C, connect_daemon, free_ports, integer,
-                                      log_snapshot, new_log_text,
-                                      retry_port_collisions, stop_daemon,
-                                      string, tag)
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import (C, free_ports, integer, log_snapshot, new_log_text,
+                                      retry_port_collisions, running_daemon, string, tag)
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 def to_univ(path):
@@ -41,34 +38,15 @@ def write_config(root, paths):
 
 @contextmanager
 def daemon(binary, root, ports, locale='C.UTF-8'):
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'),
-               LC_ALL=locale, LANG=locale)
-    env.pop('LD_PRELOAD', None)
+    """running_daemon that yields the EC client and then checks no path failed."""
     snapshot = log_snapshot(root / 'logfile')
-    with (root / 'console.log').open('w') as console:
-        proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'],
-                                stdout=console, stderr=console, env=env)
-        ec = None
-        try:
-            ec = connect_daemon(proc, ports[0], root, ports[1], snapshot=snapshot)
-            yield ec
-        except BaseException:
-            console.flush()
-            print((root / 'console.log').read_text(errors='replace'), file=sys.stderr)
-            print(new_log_text(root / 'logfile', snapshot), file=sys.stderr)
-            raise
-        finally:
-            if ec is not None:
-                ec.sock.close()
-            try:
-                if proc.poll() is None:
-                    stop_daemon(proc)
-            finally:
-                if proc.poll() is None:
-                    proc.kill()
-                    proc.wait()
+    console = root / 'console.log'
+    console_size = console.stat().st_size if console.exists() else 0
+    env = daemon_env(root, LC_ALL=locale, LANG=locale)
+    with running_daemon(binary, root, ports, env=env) as (_, ec):
+        yield ec
     log = (new_log_text(root / 'logfile', snapshot)
-           + (root / 'console.log').read_text(errors='replace'))
+           + console.read_bytes()[console_size:].decode(errors='replace'))
     assert "couldn't be created" not in log, log
     assert 'Error accessing directory' not in log, log
     assert 'Could not create the ' not in log, log

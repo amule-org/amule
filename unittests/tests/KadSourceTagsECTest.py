@@ -2,16 +2,14 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Publish Kad sources with other clients' tags to an isolated daemon and read them back."""
-import os
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import time
 import zlib
 from pathlib import Path
-from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions
+from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
 
 KADEMLIA2_SEARCH_SOURCE_REQ = 0x34
@@ -124,82 +122,64 @@ def run(binary):
         port, udp_port, peer_port = free_ports(3, udp_indices=(1,), peer_index=2)
         write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
                          Autoconnect=0)
-        with (root / 'stdout.log').open('w') as log:
-            env = dict(os.environ, XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-            proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)
-            try:
-                ec = connect_daemon(proc, port, root, peer_port, udp_port)
-                # Stopping Kad saves the index, whose header names our Kad ID: a publish
-                # aimed at it is within tolerance.
-                assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-                wait_ready(ec, proc)
+        with running_daemon(binary, root, (port, peer_port, udp_port), args=(),
+                            console='stdout.log') as (proc, ec):
+            # Stopping Kad saves the index, whose header names our Kad ID: a publish
+            # aimed at it is within tolerance.
+            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
+            wait_ready(ec, proc)
+            assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
+            file_id = (root / 'key_index.dat').read_bytes()[8:24]
+            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
+            wait_ready(ec, proc)
+
+            cache_source, big_source = b'\x11' * 16, b'\x22' * 16
+            publish(udp_port, file_id, cache_source, core_tags(4001) + http_cache_tags()
+                    + [tag(TAG_FILENAME, 0x02, UNICODE_NAME)])
+            oversized = [tag(b'xa', 0x02, b'a' * 1500), tag(b'xb', 0x02, b'b' * 1500),
+                         tag(b'xc', 0x09, 1), tag(TAG_ENCRYPTION, 0x09, 1)]
+            # Same core tags, but an over-long buddy hash and the encryption tag last.
+            big_core = [tag(TAG_BUDDYHASH, 0x02, b'c' * 100) if t.startswith(b'\x02\x01\x00\xf8')
+                        else t for t in core_tags(4002) if not t.startswith(b'\x09\x01\x00\xf3')]
+            publish(udp_port, file_id, big_source, big_core + oversized)
+
+            results = search(udp_port, file_id)
+            cached = results[cache_source]
+            assert cached[TAG_FILENAME] == UNICODE_NAME, 'source filename changed on publication'
+            for name in (b'ip6', b'bi6', TAG_BUDDYHASH, TAG_SERVERIP, TAG_ENCRYPTION):
+                assert name in cached, ('known tag dropped', name)
+            for i in range(3):
+                for prefix in (b'hcp', b'hcu', b'hck', b'hcs', b'hce'):
+                    assert prefix + str(i).encode() in cached, ('cache tag dropped', prefix, i)
+            assert cached[b'hcu2'] == b'u' * 256
+
+            big = results[big_source]
+            assert big[TAG_SOURCEPORT] == 4002, big
+            assert b'ip6' in big and b'bi6' in big, big
+            assert TAG_BUDDYHASH not in big, 'over-long buddy hash kept'
+            assert big[b'xa'] == b'a' * 1500, 'first extra tag within budget dropped'
+            assert b'xb' not in big and b'xc' not in big, 'extra tags past the budget kept'
+            assert TAG_ENCRYPTION in big, 'known tag after the budget dropped'
+
+            # Notes use a separate publish handler; both the name and comment are UTF-8.
+            note_source = b'\x33' * 16
+            publish(udp_port, file_id, note_source,
+                    [tag(TAG_FILENAME, 0x02, UNICODE_NAME), tag(TAG_FILESIZE, 0x03, FILE_SIZE),
+                     tag(TAG_DESCRIPTION, 0x02, UNICODE_COMMENT)], opcode=KADEMLIA2_PUBLISH_NOTES_REQ)
+            note = search(udp_port, file_id, notes=True)[note_source]
+            assert note[TAG_FILENAME] == UNICODE_NAME, 'note filename changed on publication'
+            assert note[TAG_DESCRIPTION] == UNICODE_COMMENT, 'note comment changed on publication'
+
+            # Source tags must survive disk loading without adding an encoding layer.
+            for _ in range(3):
                 assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-                file_id = (root / 'key_index.dat').read_bytes()[8:24]
                 assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
                 wait_ready(ec, proc)
-
-                cache_source, big_source = b'\x11' * 16, b'\x22' * 16
-                publish(udp_port, file_id, cache_source, core_tags(4001) + http_cache_tags()
-                        + [tag(TAG_FILENAME, 0x02, UNICODE_NAME)])
-                oversized = [tag(b'xa', 0x02, b'a' * 1500), tag(b'xb', 0x02, b'b' * 1500),
-                             tag(b'xc', 0x09, 1), tag(TAG_ENCRYPTION, 0x09, 1)]
-                # Same core tags, but an over-long buddy hash and the encryption tag last.
-                big_core = [tag(TAG_BUDDYHASH, 0x02, b'c' * 100) if t.startswith(b'\x02\x01\x00\xf8')
-                            else t for t in core_tags(4002) if not t.startswith(b'\x09\x01\x00\xf3')]
-                publish(udp_port, file_id, big_source, big_core + oversized)
-
-                results = search(udp_port, file_id)
-                cached = results[cache_source]
-                assert cached[TAG_FILENAME] == UNICODE_NAME, 'source filename changed on publication'
-                for name in (b'ip6', b'bi6', TAG_BUDDYHASH, TAG_SERVERIP, TAG_ENCRYPTION):
-                    assert name in cached, ('known tag dropped', name)
-                for i in range(3):
-                    for prefix in (b'hcp', b'hcu', b'hck', b'hcs', b'hce'):
-                        assert prefix + str(i).encode() in cached, ('cache tag dropped', prefix, i)
-                assert cached[b'hcu2'] == b'u' * 256
-
-                big = results[big_source]
-                assert big[TAG_SOURCEPORT] == 4002, big
-                assert b'ip6' in big and b'bi6' in big, big
-                assert TAG_BUDDYHASH not in big, 'over-long buddy hash kept'
-                assert big[b'xa'] == b'a' * 1500, 'first extra tag within budget dropped'
-                assert b'xb' not in big and b'xc' not in big, 'extra tags past the budget kept'
-                assert TAG_ENCRYPTION in big, 'known tag after the budget dropped'
-
-                # Notes use a separate publish handler; both the name and comment are UTF-8.
-                note_source = b'\x33' * 16
-                publish(udp_port, file_id, note_source,
-                        [tag(TAG_FILENAME, 0x02, UNICODE_NAME), tag(TAG_FILESIZE, 0x03, FILE_SIZE),
-                         tag(TAG_DESCRIPTION, 0x02, UNICODE_COMMENT)], opcode=KADEMLIA2_PUBLISH_NOTES_REQ)
-                note = search(udp_port, file_id, notes=True)[note_source]
-                assert note[TAG_FILENAME] == UNICODE_NAME, 'note filename changed on publication'
-                assert note[TAG_DESCRIPTION] == UNICODE_COMMENT, 'note comment changed on publication'
-
-                # Source tags must survive disk loading without adding an encoding layer.
-                for _ in range(3):
-                    assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-                    assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-                    wait_ready(ec, proc)
-                    cached = search(udp_port, file_id)[cache_source]
-                    assert cached[TAG_FILENAME] == UNICODE_NAME, 'source filename changed on reload'
-                ec.sock.close()
-                print('PASS: emule-qt cache tags, eMuleAI buddy and IPv6 tags kept; '
-                      'extra tags past the per-source budget dropped, the source kept; '
-                      'UTF-8 source names and notes preserved, including three source index reloads')
-            except BaseException:
-                log.flush()
-                print((root / 'stdout.log').read_text(), file=sys.stderr)
-                if (root / 'logfile').exists():
-                    print((root / 'logfile').read_text()[-8000:], file=sys.stderr)
-                raise
-            finally:
-                if proc.poll() is None:
-                    proc.terminate()
-                try:
-                    proc.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    proc.wait()
+                cached = search(udp_port, file_id)[cache_source]
+                assert cached[TAG_FILENAME] == UNICODE_NAME, 'source filename changed on reload'
+            print('PASS: emule-qt cache tags, eMuleAI buddy and IPv6 tags kept; '
+                  'extra tags past the per-source budget dropped, the source kept; '
+                  'UTF-8 source names and notes preserved, including three source index reloads')
 
 
 if __name__ == '__main__':

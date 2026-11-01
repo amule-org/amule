@@ -9,10 +9,10 @@ import subprocess
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import (C, PortCollision, check_daemon_ports, free_ports,
-                                      integer, retry_port_collisions, stop_daemon, string, tag)
+from AllSearchIntegrationTest import (C, connect_daemon, free_ports, integer,
+                                      retry_port_collisions, start_daemon, stop_daemon, string)
 from CompletedFileDeleteIntegrationTest import EC, FIXTURES, eventually, field, http, seed_part
-from DaemonConfig import write_amule_conf
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 class UpdateClient(EC):
@@ -57,32 +57,17 @@ def run(daemon, api, root):
     seed_part(root, 1, content, old_hash)
     ec_port, peer_port, udp_port, http_port = free_ports(4, udp_indices=(2,), peer_index=1)
     write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port)
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-    env.pop('LD_PRELOAD', None)
-    processes, clients = [], []
-    with (root / 'console.log').open('w') as log:
+    env = daemon_env(root)
+    core = server = None
+    clients = []
+    # Append: the daemon writes the same console through its own handle.
+    with (root / 'console.log').open('a') as log:
         try:
-            core = subprocess.Popen([daemon, '-c', str(root), '--disable-fatal'],
-                                    env=env, stdout=log, stderr=log)
-            processes.append(core)
-
-            def connect(partial):
-                assert core.poll() is None, 'daemon exited'
-
-                logfile = root / 'logfile'
-                startup = logfile.read_text(errors='replace') if logfile.exists() else ''
-                if 'Could not listen for external connections at ' in startup:
-                    raise PortCollision('daemon could not bind the fixture EC port')
-                if 'amuled: OnInit - starting timer' not in startup:
-                    return None
-                check_daemon_ports(root, ec_port, peer_port, udp_port, log_text=startup)
-                try:
-                    return UpdateClient(ec_port, partial)
-                except ConnectionRefusedError:
-                    return None
-
+            core, client = start_daemon(daemon, root, (ec_port, peer_port, udp_port), env=env,
+                                        ec_class=UpdateClient, partial=False)
             for partial in (False, True):
-                client = eventually(lambda: connect(partial))
+                if partial:
+                    client = connect_daemon(core, ec_port, ec_class=UpdateClient, partial=True)
                 clients.append(client)
                 def complete():
                     rows = client.poll()
@@ -100,7 +85,6 @@ def run(daemon, api, root):
             server = subprocess.Popen([api, '--config-dir='+str(api_dir), '--host=127.0.0.1',
                 '--port='+str(ec_port), '--http-port='+str(http_port)],
                 env=env, stdout=log, stderr=log)
-            processes.append(server)
             base = f'http://127.0.0.1:{http_port}/api/v1'
 
             def healthy():
@@ -177,12 +161,10 @@ def run(daemon, api, root):
         finally:
             for client in clients:
                 client.sock.close()
-            for proc in reversed(processes):
-                if proc is processes[0]:
-                    stop_daemon(proc)
-                else:
-                    proc.terminate()
-                    proc.wait(timeout=15)
+            if server is not None:
+                stop_daemon(server, timeout=15, check=sys.exc_info()[0] is None)
+            if core is not None:
+                stop_daemon(core, check=sys.exc_info()[0] is None)
 
 
 def main():

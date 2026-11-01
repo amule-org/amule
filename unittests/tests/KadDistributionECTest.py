@@ -2,14 +2,12 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Check Kad diagnostics through authenticated EC on an isolated loopback daemon."""
-import os
 from pathlib import Path
 import struct
 import socket
-import subprocess
 import sys
 import tempfile
-from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions, tag
+from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions, running_daemon, tag
 from DaemonConfig import write_amule_conf
 
 
@@ -48,12 +46,9 @@ def run(binary, populated=False):
             (root / 'nodes.dat').write_bytes(struct.pack('<III', 0, 2, 1) + contact)
         write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
                          Autoconnect=0, FilterLanIPs=0)
-        env = dict(os.environ, XDG_CONFIG_HOME=str(root / 'xdg'))
-        with (root / 'stdout.log').open('w') as log:
-            proc = subprocess.Popen([binary, '-c', str(root)], stdout=log, stderr=log, env=env)
-            try:
-                ec = connect_daemon(proc, port, root, peer_port, udp_port)
-
+        try:
+            with running_daemon(binary, root, (port, peer_port, udp_port), args=(),
+                                console='stdout.log') as (proc, ec):
                 assert C['EC_TAG_STATS_KAD_DISTRIBUTION'] not in ec.call(C['EC_OP_STAT_REQ'])[1]
 
                 def distribution(running=False):
@@ -87,22 +82,9 @@ def run(binary, populated=False):
                 assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
                 assert sum(distribution()[0]) == 0
                 ec.sock.close()
-            except BaseException:
-                log.flush()
-                print((root / 'stdout.log').read_text(), file=sys.stderr)
-                if (root / 'logfile').exists():
-                    print((root / 'logfile').read_text(), file=sys.stderr)
-                raise
-            finally:
-                if proc.poll() is None:
-                    proc.terminate()
-                try:
-                    proc.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    proc.wait()
-                if peer:
-                    peer.close()
+        finally:
+            if peer:
+                peer.close()
 
 
 if __name__ == '__main__':

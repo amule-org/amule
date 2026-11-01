@@ -16,8 +16,8 @@ import time
 import urllib.error
 import urllib.request
 
-from AllSearchIntegrationTest import connect_daemon, free_ports, retry_port_collisions
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import free_ports, retry_port_collisions, start_daemon, stop_daemon
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 class DownloadHandler(BaseHTTPRequestHandler):
@@ -72,18 +72,15 @@ def run(daemon_binary, api_binary):
                          Nick='url-privacy-regression', VerboseDebug=1,
                          Autoconnect=0, GeoIPAutoUpdate=0, GeoIPSource='custom',
                          sections={'WebServer': {'Enabled': 0}, 'Debug': {'Cat_HTTP': 1}})
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'),
-                   LC_ALL='C.UTF-8', HTTP_PROXY='', HTTPS_PROXY='', ALL_PROXY='',
-                   http_proxy='', https_proxy='', all_proxy='', NO_PROXY='127.0.0.1,localhost,::1')
+        env = daemon_env(root, HTTP_PROXY='', HTTPS_PROXY='', ALL_PROXY='', http_proxy='',
+                         https_proxy='', all_proxy='', NO_PROXY='127.0.0.1,localhost,::1')
         processes = []
         with ThreadingHTTPServer(('127.0.0.1', 0), DownloadHandler) as downloads, \
                 (root / 'fixture.log').open('w') as log:
             threading.Thread(target=downloads.serve_forever, daemon=True).start()
             try:
-                daemon = subprocess.Popen([daemon_binary, '-c', str(core)], env=env,
-                                          stdout=log, stderr=log)
+                daemon, ec = start_daemon(daemon_binary, core, (port, peer_port), args=(), env=env)
                 processes.append(daemon)
-                ec = connect_daemon(daemon, port, core, peer_port)
                 ec.sock.close()
                 subprocess.run([api_binary, f'--config-dir={api}',
                                 '--set-admin-pass=adminpass'], check=True,
@@ -240,19 +237,14 @@ def run(daemon_binary, api_binary):
             except BaseException:
                 log.flush()
                 print((root / 'fixture.log').read_text(), file=sys.stderr)
+                if (core / 'console.log').exists():
+                    print((core / 'console.log').read_text(errors='replace'), file=sys.stderr)
                 if (core / 'logfile').exists():
                     print((core / 'logfile').read_text()[-12000:], file=sys.stderr)
                 raise
             finally:
                 for proc in reversed(processes):
-                    if proc.poll() is None:
-                        proc.terminate()
-                for proc in reversed(processes):
-                    try:
-                        proc.wait(timeout=10)
-                    except subprocess.TimeoutExpired:
-                        proc.kill()
-                        proc.wait()
+                    stop_daemon(proc, check=False)
                 downloads.shutdown()
 
 

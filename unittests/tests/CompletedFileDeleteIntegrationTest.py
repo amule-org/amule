@@ -19,8 +19,9 @@ import time
 import urllib.error
 import urllib.request
 
-from AllSearchIntegrationTest import C, exact, free_ports, integer, string, tag
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import (C, exact, free_ports, integer, retry_port_collisions,
+                                      start_daemon, stop_daemon, string, tag)
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 def decode(data, offset, count):
@@ -104,6 +105,9 @@ def eventually(fn, timeout=30):
     raise AssertionError('timed out waiting for fixture state')
 
 
+opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
 def http(base, path, token=None, method='GET', body=None):
     headers = {'Content-Type': 'application/json'}
     if token:
@@ -111,7 +115,7 @@ def http(base, path, token=None, method='GET', body=None):
     request = urllib.request.Request(base + path,
         None if body is None else json.dumps(body).encode(), headers, method=method)
     try:
-        response = urllib.request.urlopen(request, timeout=10)
+        response = opener.open(request, timeout=10)
     except urllib.error.HTTPError as error:
         response = error
     with response:
@@ -165,20 +169,14 @@ def run(daemon, api):
         ec_port, peer_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
         write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port,
                          ExcludeSharePatterns='*.docx')
-        env = dict(os.environ, HOME=tmp, XDG_CONFIG_HOME=tmp+'/xdg', LC_ALL='C.UTF-8')
+        env = daemon_env(root)
         processes = []
         ec = None
-        with (root / 'daemon.log').open('w') as daemon_log, (root / 'api.log').open('w') as api_log:
+        with (root / 'api.log').open('w') as api_log:
             try:
-                proc = subprocess.Popen([daemon, '-c', tmp], env=env, stdout=daemon_log, stderr=daemon_log)
+                proc, ec = start_daemon(daemon, root, (ec_port, peer_port, udp_port), args=(), env=env,
+                                        console='daemon.log', ec_class=EC)
                 processes.append(proc)
-                def connect():
-                    assert proc.poll() is None, (root / 'daemon.log').read_text()
-                    try:
-                        return EC(ec_port)
-                    except ConnectionRefusedError:
-                        return None
-                ec = eventually(connect)
                 eventually(lambda: len(rows := ec.files()) == len(FIXTURES) and
                            all(field(row[1], 'EC_TAG_PARTFILE_STATUS') == 9 for row in rows.values()))
                 eventually(lambda: shared_hash in ec.files(True))
@@ -454,10 +452,8 @@ def run(daemon, api):
                 assert ec.call('EC_OP_ADD_LINK', [string(C['EC_TAG_STRING'], link)])[0] == C['EC_OP_NOOP']
                 assert first in ec.files()
                 print('PASS: REST single/bulk deletion, guest denial, failure preservation, immediate refresh, clear, and re-download')
-                api_proc.terminate()
-                assert api_proc.wait(timeout=15) == 0
-                proc.terminate()
-                assert proc.wait(timeout=15) == 0
+                stop_daemon(api_proc, timeout=15)
+                stop_daemon(proc, timeout=15)
                 # Core shutdown persists the known record without adding cancelled hashes.
                 known = (root / 'known.met').read_bytes()
                 cancelled = (root / 'canceled.met').read_bytes() if (root / 'canceled.met').exists() else b''
@@ -477,16 +473,9 @@ def run(daemon, api):
                 if ec:
                     ec.sock.close()
                 for child in reversed(processes):
-                    if child.poll() is not None:
-                        continue
-                    child.terminate()
-                    try:
-                        child.wait(timeout=15)
-                    except subprocess.TimeoutExpired:
-                        child.kill()
-                        child.wait()
+                    stop_daemon(child, timeout=15, check=False)
     return 0
 
 
 if __name__ == '__main__':
-    sys.exit(run(*sys.argv[1:]))
+    sys.exit(retry_port_collisions(run, *sys.argv[1:]))

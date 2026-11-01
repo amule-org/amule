@@ -9,14 +9,13 @@ from pathlib import Path
 import select
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import threading
 import time
 import zlib
 
-from AllSearchIntegrationTest import (C, connect_daemon, free_ports, retry_port_collisions,
+from AllSearchIntegrationTest import (C, free_ports, retry_port_collisions, start_daemon,
                                       stop_daemon, tag)
 from DaemonConfig import write_amule_conf
 from DisplayRatesIntegrationTest import DisplayRateMirror, PartialUpdateEC
@@ -160,13 +159,9 @@ def run(binary, compress=False):
         write_amule_conf(root, ec_port, Address=sources.address, Port=peer_port, UDPEnable=0, FilterLanIPs=0,
                          MaxDownload=0, MaxUpload=0)
 
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
         ec = partial = proc = None
         try:
-            with (root / 'console.log').open('w') as log:
-                proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                                        stdout=log, stderr=log)
-            ec = connect_daemon(proc, ec_port, root, peer_port)
+            proc, ec = start_daemon(binary, root, (ec_port, peer_port))
             assert add_link(ec, sources.link(8388608)) == C['EC_OP_NOOP']
             sources.start(peer_port)
 
@@ -209,7 +204,7 @@ def run(binary, compress=False):
             if ec:
                 ec.sock.close()
             if proc:
-                stop_daemon(proc)
+                stop_daemon(proc, check=sys.exc_info()[0] is None)
 
 
 if __name__ == '__main__':

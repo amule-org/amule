@@ -16,9 +16,9 @@ import time
 from urllib.error import URLError, HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
 
-from AllSearchIntegrationTest import C, connect_daemon, exact, free_ports, log_snapshot, stop_daemon, string, tag, integer, retry_port_collisions
-from DaemonConfig import EC_PASSWORD, write_amule_conf
-from KnownHistoryIntegrationTest import start as start_ed2k
+from AllSearchIntegrationTest import (C, exact, free_ports, integer, retry_port_collisions,
+                                      running_daemon, start_daemon, stop_daemon, string, tag)
+from DaemonConfig import EC_PASSWORD, daemon_env, write_amule_conf
 
 SERVER_MET = b'\xe0' + struct.pack('<I', 1) + bytes([203, 0, 113, 7]) + struct.pack('<HI', 4661, 0)
 EXISTING = SERVER_MET.replace(bytes([203, 0, 113, 7]), bytes([203, 0, 113, 9]))
@@ -30,19 +30,7 @@ FAIL = (503, b'unavailable')
 
 
 def start(binary, root, ports, *, ed2k=True):
-    if ed2k:
-        return start_ed2k(binary, root, ports)
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-    env.pop('LD_PRELOAD', None)
-    snapshot = log_snapshot(root / 'logfile')
-    with (root / 'console.log').open('a') as console:
-        proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                                stdout=console, stderr=subprocess.STDOUT)
-    try:
-        return proc, connect_daemon(proc, ports[0], root, ports[1], ports[2], snapshot=snapshot)
-    except BaseException:
-        stop_daemon(proc)
-        raise
+    return start_daemon(binary, root, ports, server_udp=ed2k)
 
 
 def wait_for(proc, predicate, root):
@@ -69,7 +57,7 @@ def start_api(binary, root, ec_port):
     config.write_text(f'[Server]\nBindAddress=127.0.0.1\nPort={port}\n'
                       f'[EC]\nHost=127.0.0.1\nPort={ec_port}\nPassword={EC_PASSWORD}\n')
     config.chmod(0o600)
-    env = dict(os.environ, HOME=str(root), LC_ALL='C.UTF-8', LANG='C.UTF-8')
+    env = daemon_env(root, LANG='C.UTF-8')
     with (root / 'console.log').open('w') as output:
         subprocess.run([binary, '--config-dir=' + str(root), '--set-admin-pass=fallback-test'],
                        env=env, stdout=output, stderr=subprocess.STDOUT, timeout=15, check=True)
@@ -93,8 +81,7 @@ def start_api(binary, root, ec_port):
                     raise AssertionError((root / 'console.log').read_text(errors='replace'))
                 time.sleep(0.05)
     except BaseException:
-        proc.terminate()
-        proc.wait(timeout=10)
+        stop_daemon(proc, check=False)
         raise
 
 
@@ -222,8 +209,7 @@ def run(binary, root, responses, sources, expected, *, url=None, startup=False,
     finally:
         release.set()
         if api_proc:
-            api_proc.terminate()
-            api_proc.wait(timeout=10)
+            stop_daemon(api_proc, check=sys.exc_info()[0] is None)
         if ec:
             ec.sock.close()
         if proc and proc.poll() is None:
@@ -444,8 +430,7 @@ def editor_case(binary, api_binary, root):
         assert source_file.read_text() == ''
     finally:
         if api_proc:
-            api_proc.terminate()
-            api_proc.wait(timeout=10)
+            stop_daemon(api_proc, check=sys.exc_info()[0] is None)
         if ec:
             ec.sock.close()
         if proc.poll() is None:
@@ -483,13 +468,9 @@ def migration_cases(binary, root):
         ports = free_ports(3, udp_indices=(2,), peer_index=1)
         # ED2K is disabled, so checking the shipped default never contacts the Internet.
         write_amule_conf(folder, ports[0], Port=ports[1], UDPPort=ports[2], Ed2kServersUrl=legacy)
-        proc, ec = start(binary, folder, ports, ed2k=False)
-        try:
+        with running_daemon(binary, folder, ports):
             assert source_file.read_text() == expected, (name, source_file.read_text())
             assert 'Ed2kServersUrl=' not in (folder / 'amule.conf').read_text()
-        finally:
-            ec.sock.close()
-            stop_daemon(proc)
 
 
 def unreadable_migration_case(binary, root):
@@ -503,24 +484,15 @@ def unreadable_migration_case(binary, root):
     legacy = 'https://custom.example/list'
     write_amule_conf(root, ports[0], Port=ports[1], UDPPort=ports[2], Ed2kServersUrl=legacy)
     source_file.chmod(0)
-    proc = ec = None
     try:
-        proc, ec = start(binary, root, ports, ed2k=False)
-        assert 'Ed2kServersUrl=' + legacy in (root / 'amule.conf').read_text()
+        with running_daemon(binary, root, ports):
+            assert 'Ed2kServersUrl=' + legacy in (root / 'amule.conf').read_text()
     finally:
-        if ec:
-            ec.sock.close()
-        if proc and proc.poll() is None:
-            stop_daemon(proc)
         source_file.chmod(0o600)
     assert source_file.read_text() == original
-    proc, ec = start(binary, root, ports, ed2k=False)
-    try:
+    with running_daemon(binary, root, ports):
         assert source_file.read_text().splitlines() == [legacy, 'https://existing.example/list']
         assert 'Ed2kServersUrl=' not in (root / 'amule.conf').read_text()
-    finally:
-        ec.sock.close()
-        stop_daemon(proc)
 
 
 def main():

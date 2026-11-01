@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Verify deletion capability gates and acknowledgments with deterministic EC fixtures."""
 import hashlib
-import os
 from pathlib import Path
 import socketserver
 import struct
@@ -14,8 +13,9 @@ import threading
 import zlib
 
 from ECWire import accept  # Preflight in the parent before starting fixtures.
-from AllSearchIntegrationTest import C, exact, free_ports, integer, string, tag
+from AllSearchIntegrationTest import C, exact, free_ports, integer, stop_daemon, string, tag
 from CompletedFileDeleteIntegrationTest import eventually, http
+from DaemonConfig import daemon_env
 
 FILE_HASH = 'a448017aaf21d8525fc10ae87aa6729d'
 
@@ -60,7 +60,7 @@ class Server(socketserver.ThreadingTCPServer):
 def run(api, mode):
     with tempfile.TemporaryDirectory(prefix='amule-delete-legacy-') as tmp:
         root = Path(tmp)
-        env = dict(os.environ, HOME=tmp, XDG_CONFIG_HOME=tmp+'/xdg', LC_ALL='C.UTF-8')
+        env = daemon_env(root)
         subprocess.run([api, '--config-dir='+tmp, '--set-admin-pass=adminpass'], env=env,
                        check=True, stdout=subprocess.DEVNULL)
         config = root / 'amuleapi.conf'
@@ -113,8 +113,7 @@ def run(api, mode):
                 print((root / 'api.log').read_text(), file=sys.stderr)
                 raise
             finally:
-                proc.terminate()
-                proc.wait(timeout=15)
+                stop_daemon(proc, timeout=15, check=sys.exc_info()[0] is None)
                 core.shutdown()
 
 

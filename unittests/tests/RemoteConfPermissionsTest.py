@@ -13,14 +13,15 @@ import subprocess
 import sys
 import tempfile
 
+from DaemonConfig import daemon_env
+
 
 def mode(path):
     return stat.S_IMODE(path.stat().st_mode)
 
 
 def run(binary, root, *args):
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-    subprocess.run([binary, *args], env=env, cwd=root, check=True, timeout=60,
+    subprocess.run([binary, *args], env=daemon_env(root), cwd=root, check=True, timeout=60,
                    stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     found = list(root.rglob('remote.conf'))
     assert len(found) == 1, found

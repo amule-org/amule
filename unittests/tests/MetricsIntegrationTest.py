@@ -5,7 +5,6 @@
 from contextlib import contextmanager
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
 import shutil
@@ -20,14 +19,15 @@ import urllib.error
 import urllib.request
 import zlib
 
-from AllSearchIntegrationTest import (C, connect_daemon, exact, free_ports,
-                                      integer, string, tag)
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import (C, exact, free_ports, integer, running_daemon,
+                                      stop_daemon, tag)
+from DaemonConfig import daemon_env, write_amule_conf
 from ECWire import accept  # Preflight in the parent before starting fixtures.
 
 TOKEN = '0123456789abcdef' * 4
 # A shared-format warning record in the Metrics category.
 WARN_METRICS = r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2} WARN  \[Metrics\] '
+opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
 def request(base, path='/metrics', token=None, method='GET', body=None, headers=None):
@@ -39,7 +39,7 @@ def request(base, path='/metrics', token=None, method='GET', body=None, headers=
     req = urllib.request.Request(base + path, headers=fields, method=method,
         data=None if body is None else json.dumps(body).encode())
     try:
-        reply = urllib.request.urlopen(req, timeout=5)
+        reply = opener.open(req, timeout=5)
     except urllib.error.HTTPError as error:
         reply = error
     with reply:
@@ -60,19 +60,13 @@ def eventually(fn, seconds=30):
 
 
 def stop(proc):
-    if proc.poll() is None:
-        proc.terminate()
-        try:
-            proc.wait(timeout=15)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait()
+    stop_daemon(proc, timeout=15, check=False)
 
 
 @contextmanager
 def api_fixture(binary, root, ec_port, enabled=True, configured=True, token=TOKEN, threshold=30):
     root.mkdir()
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
+    env = daemon_env(root)
     with (root / 'api.log').open('w') as log:
         subprocess.run([binary, f'--config-dir={root}', '--set-admin-pass=adminpass'],
                        env=env, stdout=log, stderr=log, check=True)
@@ -306,45 +300,37 @@ def real_daemon_checks(daemon, binary, root):
     ec, peer, udp = free_ports(3, udp_indices=(2,), peer_index=1)
     write_amule_conf(core_dir, ec, Port=peer, UDPPort=udp, UDPEnable=0,
                      sections={'WebServer': {'Enabled': 0}})
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-    with (root / 'core.log').open('w') as log:
-        proc = subprocess.Popen([daemon, '-c', str(core_dir)], env=env, stdout=log, stderr=log)
-        try:
-            connect_daemon(proc, ec, core_dir, peer).sock.close()
-            with api_fixture(binary, root / 'real-api', ec) as (base, _):
-                eventually(lambda: 'amule_ec_connected 1\n' in request(base, token=TOKEN)[2])
-                code, _, text = request(base, token=TOKEN)
-                for expected in ('amule_lifetime_transferred_bytes_total{direction="upload"}',
-                                 'amule_lifetime_transferred_bytes_total{direction="download"}',
-                                 'amule_transferred_bytes_total{direction="upload"} 0\n',
-                                 'amule_transferred_bytes_total{direction="download"} 0\n',
-                                 'amule_active_connections 0\n', 'amule_uptime_seconds ',
-                                 'amule_active_uploads 0\n', 'amule_servers 0\n',
-                                 'daemon_version="',
-                                 'amule_speed_limit_bytes_per_second{direction="upload"}',
-                                 'amule_shared_files 0\n', 'amule_banned_clients 0\n',
-                                 'amule_network_connected{network="ed2k"} 0\n',
-                                 'amule_network_connected{network="kad"} 0\n'):
-                    assert expected in text, (expected, text)
-                assert 'amule_kad_network_users' not in text
-                assert 'amule_ed2k_network_users' not in text
-                promtool = shutil.which('promtool')
-                if promtool:
-                    subprocess.run([promtool, 'check', 'metrics', '--lint=none', '--extended'], input=text,
-                                   text=True, check=True, capture_output=True)
-                    lint = subprocess.run([promtool, 'check', 'metrics'], input=text,
-                                          text=True, capture_output=True)
-                    assert lint.returncode == 0, (lint.returncode, lint.stdout, lint.stderr)
-                    print('PASS: promtool parses and lints real-daemon output cleanly')
-                else:
-                    print('LIMITATION: promtool unavailable; exposition validator not run')
-                print('PASS: existing real-daemon EC statistics without joining public networks')
-        except BaseException:
-            log.flush()
-            print((root / 'core.log').read_text(), file=sys.stderr)
-            raise
-        finally:
-            stop(proc)
+    with running_daemon(daemon, core_dir, (ec, peer), args=(), env=daemon_env(root),
+                        console='core.log', stop_timeout=15) as (_, client):
+        client.sock.close()
+        with api_fixture(binary, root / 'real-api', ec) as (base, _):
+            eventually(lambda: 'amule_ec_connected 1\n' in request(base, token=TOKEN)[2])
+            code, _, text = request(base, token=TOKEN)
+            for expected in ('amule_lifetime_transferred_bytes_total{direction="upload"}',
+                             'amule_lifetime_transferred_bytes_total{direction="download"}',
+                             'amule_transferred_bytes_total{direction="upload"} 0\n',
+                             'amule_transferred_bytes_total{direction="download"} 0\n',
+                             'amule_active_connections 0\n', 'amule_uptime_seconds ',
+                             'amule_active_uploads 0\n', 'amule_servers 0\n',
+                             'daemon_version="',
+                             'amule_speed_limit_bytes_per_second{direction="upload"}',
+                             'amule_shared_files 0\n', 'amule_banned_clients 0\n',
+                             'amule_network_connected{network="ed2k"} 0\n',
+                             'amule_network_connected{network="kad"} 0\n'):
+                assert expected in text, (expected, text)
+            assert 'amule_kad_network_users' not in text
+            assert 'amule_ed2k_network_users' not in text
+            promtool = shutil.which('promtool')
+            if promtool:
+                subprocess.run([promtool, 'check', 'metrics', '--lint=none', '--extended'], input=text,
+                               text=True, check=True, capture_output=True)
+                lint = subprocess.run([promtool, 'check', 'metrics'], input=text,
+                                      text=True, capture_output=True)
+                assert lint.returncode == 0, (lint.returncode, lint.stdout, lint.stderr)
+                print('PASS: promtool parses and lints real-daemon output cleanly')
+            else:
+                print('LIMITATION: promtool unavailable; exposition validator not run')
+            print('PASS: existing real-daemon EC statistics without joining public networks')
 
 
 if __name__ == '__main__':

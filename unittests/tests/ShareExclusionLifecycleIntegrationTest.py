@@ -6,15 +6,12 @@
 Reusing old paths through the watcher observes stale index entries without exposing
 private state. No full reload is allowed between removal and path reuse.
 """
-import os
 from pathlib import Path
 import struct
-import subprocess
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import (C, connect_daemon, free_ports, retry_port_collisions,
-                                      stop_daemon, string, tag)
+from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon, string, tag
 from CancelCompletedIntegrationTest import md4, wait_for
 from CompletedFileDeleteIntegrationTest import EC
 from DaemonConfig import write_amule_conf
@@ -64,61 +61,43 @@ def run(binary):
         write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0,
                          ExcludeSharePatterns='*.part*|*.excl|done(0).txt',
                          AutoRescanSharedDirs=1)
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-        env.pop('LD_PRELOAD', None)
-        ec = None
-        with (root / 'console.log').open('w') as log:
-            proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                                    stdout=log, stderr=log)
-            try:
-                ec = connect_daemon(proc, ec_port, root, peer_port)
-                ec.sock.close()
-                ec = EC(ec_port)
-                wait_for(proc, 'excluded download shared',
-                         lambda: shared(ec).get('active.excl') == active_hash)
-                rename(ec, active_hash, 'renamed.excl')
-                assert shared(ec).get('renamed.excl') == active_hash
-                wait_for(proc, 'completion', lambda: (incoming / 'done(0).txt').exists())
-                wait_for(proc, 'excluded completion detached',
-                         lambda: complete_hash.hex() not in ec.files(True))
-                assert shared(ec).get('done.txt') == md4(b'abc')
-                # A stale Temp/done.txt key makes NotifyPathAdded skip this new file.
-                (temp / 'done.txt').write_bytes(b'message digest')
-                wait_for(proc, 'old completion path reusable',
-                         lambda: md4(b'message digest').hex() in ec.files(True))
+        with running_daemon(binary, root, (ec_port, peer_port), ec_class=EC) as (proc, ec):
+            wait_for(proc, 'excluded download shared',
+                     lambda: shared(ec).get('active.excl') == active_hash)
+            rename(ec, active_hash, 'renamed.excl')
+            assert shared(ec).get('renamed.excl') == active_hash
+            wait_for(proc, 'completion', lambda: (incoming / 'done(0).txt').exists())
+            wait_for(proc, 'excluded completion detached',
+                     lambda: complete_hash.hex() not in ec.files(True))
+            assert shared(ec).get('done.txt') == md4(b'abc')
+            # A stale Temp/done.txt key makes NotifyPathAdded skip this new file.
+            (temp / 'done.txt').write_bytes(b'message digest')
+            wait_for(proc, 'old completion path reusable',
+                     lambda: md4(b'message digest').hex() in ec.files(True))
 
-                # A completed rename must re-key even when the new name is allowed.
-                control_hash = md4(b'abc')
-                rename(ec, control_hash, 'allowed.txt')
-                assert shared(ec).get('allowed.txt') == control_hash
-                # Let the rename event drain before reusing its source path, so this
-                # checks the index rather than move/create event coalescing.
-                (incoming / 'rename-barrier.bin').write_bytes(b'rename barrier')
-                wait_for(proc, 'rename events drained',
-                         lambda: 'rename-barrier.bin' in shared(ec))
-                (incoming / 'done.txt').write_bytes(b'ab')
-                wait_for(proc, 'old rename path reusable',
-                         lambda: md4(b'ab').hex() in ec.files(True))
-                rename(ec, control_hash, 'hidden.excl')
-                # The EC operation itself must detach it, without waiting for a rescan.
-                assert control_hash.hex() not in ec.files(True), 'excluded completed rename stayed shared'
-                assert (incoming / 'hidden.excl').read_bytes() == b'abc'
-                (incoming / 'exclude-barrier.bin').write_bytes(b'exclude barrier')
-                wait_for(proc, 'excluded rename events drained',
-                         lambda: 'exclude-barrier.bin' in shared(ec))
-                (incoming / 'allowed.txt').write_bytes(b'a')
-                wait_for(proc, 'excluded rename path reusable',
-                         lambda: md4(b'a').hex() in ec.files(True))
-                assert shared(ec).get('renamed.excl') == active_hash
-            except BaseException:
-                log.flush()
-                print((root / 'console.log').read_text(errors='replace'), file=sys.stderr)
-                print((root / 'logfile').read_text(errors='replace'), file=sys.stderr)
-                raise
-            finally:
-                if ec:
-                    ec.sock.close()
-                stop_daemon(proc)
+            # A completed rename must re-key even when the new name is allowed.
+            control_hash = md4(b'abc')
+            rename(ec, control_hash, 'allowed.txt')
+            assert shared(ec).get('allowed.txt') == control_hash
+            # Let the rename event drain before reusing its source path, so this
+            # checks the index rather than move/create event coalescing.
+            (incoming / 'rename-barrier.bin').write_bytes(b'rename barrier')
+            wait_for(proc, 'rename events drained',
+                     lambda: 'rename-barrier.bin' in shared(ec))
+            (incoming / 'done.txt').write_bytes(b'ab')
+            wait_for(proc, 'old rename path reusable',
+                     lambda: md4(b'ab').hex() in ec.files(True))
+            rename(ec, control_hash, 'hidden.excl')
+            # The EC operation itself must detach it, without waiting for a rescan.
+            assert control_hash.hex() not in ec.files(True), 'excluded completed rename stayed shared'
+            assert (incoming / 'hidden.excl').read_bytes() == b'abc'
+            (incoming / 'exclude-barrier.bin').write_bytes(b'exclude barrier')
+            wait_for(proc, 'excluded rename events drained',
+                     lambda: 'exclude-barrier.bin' in shared(ec))
+            (incoming / 'allowed.txt').write_bytes(b'a')
+            wait_for(proc, 'excluded rename path reusable',
+                     lambda: md4(b'a').hex() in ec.files(True))
+            assert shared(ec).get('renamed.excl') == active_hash
     print('Partial sharing, completion detachment, completed renames and old path reuse passed')
 
 

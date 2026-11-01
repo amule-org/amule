@@ -9,18 +9,16 @@ answer, without teaching this fixture to recognize the generated image.
 from contextlib import contextmanager
 import hashlib
 import itertools
-import os
 from pathlib import Path
 import re
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import (C, connect_daemon, exact, free_ports, integer,
-                                      retry_port_collisions, stop_daemon, string, tag)
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import (C, exact, free_ports, integer, retry_port_collisions,
+                                      start_daemon, stop_daemon, string, tag)
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 def frame(peer, protocol, opcode, data=b''):
@@ -121,15 +119,10 @@ def run(binary, debug):
         write_amule_conf(root, ports[0], Port=ports[1], UDPPort=ports[2], UDPEnable=0,
                          FilterLanIPs=0, FilterMessages=0, VerboseDebug=1,
                          VerboseDebugLogfile=0, sections={'Debug': {'Cat_ED2k Client': 1}})
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-        env.pop('LD_PRELOAD', None)
-        env.pop('DISPLAY', None)
-        with (root / 'console.log').open('w') as log:
-            proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'],
-                                    stdout=log, stderr=log, env=env)
-        ec = None
+        env = daemon_env(root, DISPLAY=None)
+        proc = ec = None
         try:
-            ec = connect_daemon(proc, ports[0], root, ports[1], None)
+            proc, ec = start_daemon(binary, root, ports[:2], env=env)
             prefs = preferences(ec)
             assert prefs[C['EC_TAG_MSGFILTER_ADVANCED']][0] == 1
             assert prefs[C['EC_TAG_MSGFILTER_CAPTCHA']][0] == 1
@@ -263,10 +256,7 @@ def run(binary, debug):
             ec.sock.close()
             ec = None
             stop_daemon(proc)
-            with (root / 'console.log').open('a') as log:
-                proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'],
-                                        stdout=log, stderr=log, env=env)
-            ec = connect_daemon(proc, ports[0])
+            proc, ec = start_daemon(binary, root, ports[:2], env=env)
             prefs = preferences(ec)
             assert prefs[C['EC_TAG_MSGFILTER_ADVANCED']][0] == 0
             assert prefs[C['EC_TAG_MSGFILTER_CAPTCHA']][0] == 0
@@ -279,8 +269,8 @@ def run(binary, debug):
         finally:
             if ec is not None:
                 ec.sock.close()
-            if proc.poll() is None:
-                stop_daemon(proc)
+            if proc is not None:
+                stop_daemon(proc, check=sys.exc_info()[0] is None)
 
 
 if __name__ == '__main__':
