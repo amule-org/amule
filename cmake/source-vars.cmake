@@ -133,6 +133,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		OScopeCtrl.cpp
 		PrefsUnifiedDlg.cpp
 		SearchDlg.cpp
+		SearchMetadataPanel.cpp
 			SearchHistory.cpp
 		SearchListCtrl.cpp
 		SearchColumnFit.cpp

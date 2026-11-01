@@ -4014,6 +4014,13 @@ wxString CSearchListRem::StartNewSearch(
 	if (search_type == AllSearch && !m_conn->ServerSupportsSearchAll()) {
 		return _("The connected daemon does not support All searches.");
 	}
+	CSearchMetadata metadata;
+	metadata.minBitrateKbps = params.minBitrateKbps;
+	metadata.minLength = params.minLength;
+	metadata.codec = params.codec;
+	metadata.title = params.title;
+	metadata.album = params.album;
+	metadata.artist = params.artist;
 	CECPacket search_req(EC_OP_SEARCH_START);
 	EC_SEARCH_TYPE ec_search_type = EC_SEARCH_LOCAL;
 	switch (search_type) {
@@ -4041,7 +4048,8 @@ wxString CSearchListRem::StartNewSearch(
 		params.extension,
 		params.availability,
 		params.minSize,
-		params.maxSize));
+		params.maxSize,
+		metadata));
 
 	if (m_conn->ServerSupportsMultiSearch()) {
 		// Multi-search: the daemon allocates the real search ID. Send the optimistic local

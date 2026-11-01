@@ -84,6 +84,7 @@ src/Preferences.cpp
 src/BandwidthLimitSlider.h
 src/PrefsUnifiedDlg.cpp
 src/SearchDlg.cpp
+src/SearchMetadataPanel.cpp
 src/SearchList.cpp
 src/SearchListCtrl.cpp
 src/SearchModeIcons.h

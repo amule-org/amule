@@ -264,7 +264,9 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     // onwards -- 14 cells. They were split across two rows of eight while Category lived here,
     // which left Min Size stranded at the end of the first row, away from Max Size.
     wxFlexGridSizer *item13 = new wxFlexGridSizer( 14, 0, 0 );
-    s_extended_sizer = item13;
+    auto *advancedSizer = new wxBoxSizer( wxVERTICAL );
+    s_extended_sizer = advancedSizer;
+    advancedSizer->Add( item13, wxSizerFlags().Center() );
 
     wxStaticText *item14 = new wxStaticText( item2, -1, _("File Type"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item14, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
@@ -334,7 +336,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item13->Add( item32, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxSpinCtrl *item33 = new wxSpinCtrl( item2, IDC_SPINSEARCHAVAILABILITY, "0", wxDefaultPosition, wxDefaultSize, 0, 0, 1000, 0 );
     item13->Add( item33, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
-    item1->Add( item13, wxSizerFlags().Center() );
+    item1->Add( advancedSizer, wxSizerFlags().Expand() );
 
     wxFlexGridSizer *item34 = new wxFlexGridSizer( 1, 0, 0, 0 );
     s_filter_sizer = item34;

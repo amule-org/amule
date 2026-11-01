@@ -3344,6 +3344,22 @@ endif ()
 # Exercise native scrolling/sizer behavior without starting the aMule application.
 # MuleUnit defines wxUSE_GUI=0, so this test owns a minimal wxApp instead.
 if (TARGET wxWidgets::CORE)
+	add_executable (SearchMetadataPanelTest
+		SearchMetadataPanelTest.cpp
+		${CMAKE_SOURCE_DIR}/src/SearchMetadataPanel.cpp
+	)
+	add_dependencies (SearchMetadataPanelTest generate_ECCodes.h generate_ECTagTypes.h)
+	if (WIN32)
+		target_sources (SearchMetadataPanelTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (SearchMetadataPanelTest PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+		${CMAKE_BINARY_DIR}/src/libs/ec/cpp)
+	target_link_libraries (SearchMetadataPanelTest PRIVATE wxWidgets::CORE mulecommon)
+	add_test (NAME SearchMetadataPanelTest COMMAND SearchMetadataPanelTest)
+	set_tests_properties (SearchMetadataPanelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
+
 	add_executable (DialogLayoutTest DialogLayoutTest.cpp)
 	if (WIN32)
 		target_sources (DialogLayoutTest PRIVATE DialogLayoutTest.rc)
