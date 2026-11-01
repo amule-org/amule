@@ -1490,7 +1490,8 @@ msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: %s μπορεί να είναι φθαρμέ
 msgid "IO error while reading %s file: %s"
 msgstr "Σφάλμα εισόδου/εξόδου κατά την ανάγνωση του αρχείου %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Σφάλμα κατά την αποθήκευση του αρχείου %s: %s"
@@ -5742,6 +5743,14 @@ msgstr "Διάστημα επανάληψης αναζήτησης πηγών Ka
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Διάστημα επανερώτησης πηγών (λεπτά)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

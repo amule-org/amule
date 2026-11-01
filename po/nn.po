@@ -1490,7 +1490,8 @@ msgstr "ÅTVARING: %s kan vere korrupt (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "IO-feil ved lesing av %s-fila: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Feil ved lagring av %s-fila: %s"
@@ -5745,6 +5746,14 @@ msgstr "Intervall for nytt Kad-kjeldesøk (minutt)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Intervall for ny kjeldeførespurnad (minutt)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

@@ -1487,7 +1487,8 @@ msgstr "FIGYELEM: %s lehet, hogy sérült (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "IO hiba a %s fájl olvasása közben: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Hiba a %s fájl mentése közben: %s"
@@ -5719,6 +5720,14 @@ msgstr "Kad forrás újrakeresési időköz (perc)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Forrás újrakérdezési időköz (perc)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
