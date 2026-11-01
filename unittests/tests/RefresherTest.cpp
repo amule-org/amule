@@ -2475,7 +2475,7 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	ASSERT_EQUALS(std::string("junk,scam"), p.message_filter.comment_keywords);
 
 	ASSERT_EQUALS(static_cast<std::uint32_t>(200), p.advanced.max_new_connections_per_5_seconds);
-	ASSERT_EQUALS(static_cast<std::uint32_t>(256), p.advanced.write_buffer_limit_mib);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(256), p.advanced.write_buffer_limit_mebibytes);
 	// EC carries milliseconds; the API speaks the minutes the core actually
 	// stores, so the decode divides by 60000 (#1159 section 5).
 	ASSERT_EQUALS(static_cast<std::uint32_t>(30), p.advanced.kad_source_reask_minutes);
@@ -4106,17 +4106,17 @@ TEST(Refresher, WriteBufferCapabilityDoesNotSurviveAnOlderCore)
 	std::vector<CategorySnapshot> cats;
 	ParsePreferencesFromPacket(&modern, prefs, cats);
 	ASSERT_TRUE(prefs.advanced.write_buffer_limit_supported);
-	ASSERT_EQUALS(uint32_t{ 128 }, prefs.advanced.write_buffer_limit_mib);
+	ASSERT_EQUALS(uint32_t{ 128 }, prefs.advanced.write_buffer_limit_mebibytes);
 
 	CECPacket legacy(EC_OP_SET_PREFERENCES);
 	legacy.AddTag(CECEmptyTag(EC_TAG_PREFS_CORETWEAKS));
 	ParsePreferencesFromPacket(&legacy, prefs, cats);
 	ASSERT_FALSE(prefs.advanced.write_buffer_limit_supported);
-	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.write_buffer_limit_mib);
+	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.write_buffer_limit_mebibytes);
 
 	ParsePreferencesFromPacket(&modern, prefs, cats);
 	CECPacket empty(EC_OP_SET_PREFERENCES);
 	ParsePreferencesFromPacket(&empty, prefs, cats);
 	ASSERT_FALSE(prefs.advanced.write_buffer_limit_supported);
-	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.write_buffer_limit_mib);
+	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.write_buffer_limit_mebibytes);
 }

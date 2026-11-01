@@ -750,7 +750,7 @@ _assert_status 200 "PATCH online_signature.update_frequency_seconds=65535 -> 200
 # Saved before the boundary sweep below, which leaves every field it touches on
 # an endpoint. Restored with the rest at the end of the file.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
-SAVED_WRITEBUDGET=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.write_buffer_limit_mib')
+SAVED_WRITEBUDGET=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.write_buffer_limit_mebibytes')
 SAVED_FILEBUF=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.file_buffer_bytes')
 SAVED_ULQUEUE=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_upload_queue_client_count')
 SAVED_CONN5=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_new_connections_per_5_seconds')
@@ -772,8 +772,8 @@ for CASE in \
 	"files shared_file_reverify_days 3651 exceeds_supported_interval" \
 	"files shared_file_reverify_days 4294967296 uint32_overflow" \
 	"files shared_file_reverify_days 1.5 fractional_days" \
-	"advanced write_buffer_limit_mib 0 below_minimum" \
-	"advanced write_buffer_limit_mib 1025 above_maximum" \
+	"advanced write_buffer_limit_mebibytes 0 below_minimum" \
+	"advanced write_buffer_limit_mebibytes 1025 above_maximum" \
 	"advanced file_buffer_bytes 4000000 150000_uint8_wrap" \
 	"advanced file_buffer_bytes 14999 0_divided_away" \
 	"advanced file_buffer_bytes 20000 15000_truncated_to_the_step" \
@@ -831,10 +831,10 @@ for CASE in \
 	"files shared_file_reverify_days 7" \
 	"files shared_file_reverify_days 3650" \
 	"files shared_file_reverify_days 0" \
-	"advanced write_buffer_limit_mib 1" \
-	"advanced write_buffer_limit_mib 16" \
-	"advanced write_buffer_limit_mib 128" \
-	"advanced write_buffer_limit_mib 1024" \
+	"advanced write_buffer_limit_mebibytes 1" \
+	"advanced write_buffer_limit_mebibytes 16" \
+	"advanced write_buffer_limit_mebibytes 128" \
+	"advanced write_buffer_limit_mebibytes 1024" \
 	"advanced file_buffer_bytes 3825000" \
 	"advanced file_buffer_bytes 15000" \
 	"advanced file_buffer_bytes 0" \
@@ -876,7 +876,7 @@ _assert_json_eq '.connection.max_download_kibibytes_per_second' 9 \
 # This has to stay the last mutation in the file.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"advanced\":{\"kad_source_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK,\"write_buffer_limit_mib\":$SAVED_WRITEBUDGET,\"file_buffer_bytes\":$SAVED_FILEBUF,\"max_upload_queue_client_count\":$SAVED_ULQUEUE,\"max_new_connections_per_5_seconds\":$SAVED_CONN5,\"kad_max_concurrent_source_search_count\":$SAVED_KADSEARCH},\"connection\":{\"tcp_port\":$SAVED_TCPPORT,\"max_upload_kibibytes_per_second\":$SAVED_MAXUL,\"max_download_kibibytes_per_second\":$SAVED_MAXDL},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
+	-d "{\"advanced\":{\"kad_source_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK,\"write_buffer_limit_mebibytes\":$SAVED_WRITEBUDGET,\"file_buffer_bytes\":$SAVED_FILEBUF,\"max_upload_queue_client_count\":$SAVED_ULQUEUE,\"max_new_connections_per_5_seconds\":$SAVED_CONN5,\"kad_max_concurrent_source_search_count\":$SAVED_KADSEARCH},\"connection\":{\"tcp_port\":$SAVED_TCPPORT,\"max_upload_kibibytes_per_second\":$SAVED_MAXUL,\"max_download_kibibytes_per_second\":$SAVED_MAXDL},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
 	"$API/preferences"
 _assert_status 200 "PATCH (restore advanced + connection + onlinesig) -> 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"

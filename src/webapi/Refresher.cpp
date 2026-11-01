@@ -3012,7 +3012,7 @@ void ParsePreferencesFromPacket(
 
 	// A previous connection's value must not imply support on an older daemon.
 	out_prefs.advanced.write_buffer_limit_supported = false;
-	out_prefs.advanced.write_buffer_limit_mib = 0;
+	out_prefs.advanced.write_buffer_limit_mebibytes = 0;
 
 	// Each prefs sub-section is one top-level CECEmptyTag with named child
 	// fields; the table says which section every field lives in.

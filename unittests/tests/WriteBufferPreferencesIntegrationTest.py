@@ -80,17 +80,17 @@ def run(api_binary, supported):
                 # A client must never report success for an ignored write, even if the
                 # caller tries to set the read-only capability flag itself.
                 status, result = http(base, '/preferences', token, 'PATCH', {'advanced': {
-                    'write_buffer_limit_supported': True, 'write_buffer_limit_mib': 128}})
+                    'write_buffer_limit_supported': True, 'write_buffer_limit_mebibytes': 128}})
                 assert status == (200 if supported else 409), (status, result)
                 if supported:
-                    assert result['advanced']['write_buffer_limit_mib'] == 128
+                    assert result['advanced']['write_buffer_limit_mebibytes'] == 128
                     assert len(core.writes) == 1, 'supported write did not reach the daemon'
                 else:
                     assert result['error']['code'] == 'option_not_supported', result
                     assert not core.writes, 'unsupported write reached the legacy daemon'
                 prefs = http(base, '/preferences', token)[1]['advanced']
                 assert prefs['write_buffer_limit_supported'] is supported, prefs
-                assert prefs['write_buffer_limit_mib'] == (128 if supported else 0), prefs
+                assert prefs['write_buffer_limit_mebibytes'] == (128 if supported else 0), prefs
                 previous_writes = len(core.writes)
                 status, result = http(base, '/preferences', token, 'PATCH', {'advanced': {
                     'max_new_connections_per_5_seconds': 51}})

@@ -2438,7 +2438,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
   "online_signature": { "enabled": false, "directory": "/home/me/.aMule", "update_frequency_seconds": 5 },
   "advanced": {
     "max_new_connections_per_5_seconds": 200, "verbose_logging": false,
-    "write_buffer_limit_supported": true, "write_buffer_limit_mib": 128, "file_buffer_bytes": 240000, "max_upload_queue_client_count": 5000,
+    "write_buffer_limit_supported": true, "write_buffer_limit_mebibytes": 128,
+    "file_buffer_bytes": 240000, "max_upload_queue_client_count": 5000,
     "server_keepalive_timeout_minutes": 0, "kad_max_concurrent_source_search_count": 50,
     "kad_source_reask_minutes": 30, "source_reask_minutes": 15
   },
@@ -2475,6 +2476,8 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 `files.mmap_supported` is **read-only** — the daemon advertises whether it was built with memory-mapped file I/O (`false` on a core without mmap support, e.g. Windows or a build with `-DENABLE_MMAP=OFF`); it is ignored if sent on PATCH. `files.mmap_enabled` is the runtime toggle for memory-mapped block I/O — download writes to part files, upload reads of both shared (completed) and partial files, and hashing (lower per-process memory use, at some write-path cost; best for upload-heavy or memory-constrained hosts). It is **capability-gated**: a PATCH that sets `files.mmap_enabled` is rejected with **409 `option_not_supported`** when `files.mmap_supported` is `false`, so the option is only writable against a daemon that can actually use it. Safe to toggle with active transfers.
 
 `kad.protocol10_supported` is **read-only**: `true` when the daemon reports its Kad repair-hash options, `kad.protocol10_enabled` and `kad.strict_aich_publishers`. A daemon older than 3.2 neither reports nor applies them, so there it is `false`, the two options read `false`, and a `PATCH` that sets either answers `409 option_not_supported` rather than being silently dropped.
+
+`advanced.write_buffer_limit_supported` is **read-only**: `true` when the daemon reports `advanced.write_buffer_limit_mebibytes`. A daemon older than 3.3 neither reports nor applies the limit, so there it is `false`, the limit reads `0`, and a `PATCH` that sets it answers `409 option_not_supported`.
 
 `connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server UPnP is not exposed, since amuleweb is deprecated. EC-port UPnP is reported read-only, as `remote_controls.external_connections.upnp_enabled`.)
 
@@ -2529,14 +2532,11 @@ Downloading a database **now** is [`POST /geoip/update`](#post-apiv1geoipupdate)
 
 **Numeric fields are bounded to what the daemon can actually hold**, not to the width of their JSON type. A value outside the range is a `400` naming the range; it is never accepted and quietly changed. Several of these bounds are much narrower than they look, because the core stores the setting differently from how the API spells it:
 
-`advanced.write_buffer_limit_supported` is read-only. Older daemons report false;
-setting the write buffer limit then returns HTTP 409 (`option_not_supported`).
-
 | Field | Range | Step | Why |
 |---|---|---|---|
 | `connection.tcp_port` | `1`–`65532` | | the server UDP socket is TCP+3, and the core substitutes the default port for anything higher |
 | `connection.upload_slot_min_kibibytes_per_second` | `1`–`65535` | | the core clamps anything lower up to `1`, so a `0` would answer `200` and read back as `1` |
-| `advanced.write_buffer_limit_mib` | `1`–`1024` | | received download payload awaiting writes, in MiB; default 128 |
+| `advanced.write_buffer_limit_mebibytes` | `1`–`1024` | | received download payload awaiting writes, in MiB; default 128 |
 | `advanced.file_buffer_bytes` | `0`–`3825000` | `15000` | stored as a `uint8` count of 15000-byte blocks |
 | `advanced.max_upload_queue_client_count` | `0`–`25500` | `100` | stored as a `uint8` count of hundreds |
 | `advanced.max_new_connections_per_5_seconds` | `0`–`65535` | | stored as a `uint16` |

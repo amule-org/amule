@@ -1,18 +1,18 @@
 # Download write-buffer backpressure
 
 Only received, unwritten payload counts toward the write budget (128 MiB by
-default). Every part file lives in the one temp directory, so a single budget covers them all.
-Selecting or sending block requests consumes no credit. This leaves the normal
-source pipeline available regardless of source count or round-trip time when
-storage keeps up.
+default). Every part file lives in the one temp directory, so a single budget
+covers them all. Selecting or sending block requests consumes no credit. This
+leaves the normal source pipeline available regardless of source count or
+round-trip time when storage keeps up.
 
 `/eMule/WriteBufferLimitMiB` sets the budget from 1 to 1024 MiB. It is also
 available as **Download write buffer limit (MiB)** in the advanced preferences
-of amule and amulegui, and as `advanced.write_buffer_limit_mib` in amuleapi and
-its web UI. Changes take effect immediately, including for buffered data;
-lowering the limit does not discard that data. The default applies to existing
-profiles without this new setting. Configuration and EC values are clamped to
-the supported range; the HTTP API rejects out-of-range values.
+of amule and amulegui, and as `advanced.write_buffer_limit_mebibytes` in
+amuleapi and its web UI. Changes take effect immediately, including for buffered
+data; lowering the limit does not discard that data. The default applies to
+existing profiles without this new setting. Configuration and EC values are
+clamped to the supported range; the HTTP API rejects out-of-range values.
 
 An older daemon without the setting disables the control in remote clients.
 The API reports `advanced.write_buffer_limit_supported: false` and rejects an

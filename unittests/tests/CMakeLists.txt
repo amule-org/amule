@@ -3714,10 +3714,10 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND BUILD_AMULEAPI AND Python3_Int
 			$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>
 	)
 	set_tests_properties (AmuleApiEcPasswordIntegrationTest PROPERTIES LABELS "integration")
-	add_test (NAME WriteBufferPreferencesTest
-		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/WriteBufferPreferencesTest.py
+	add_test (NAME WriteBufferPreferencesIntegrationTest
+		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/WriteBufferPreferencesIntegrationTest.py
 			$<TARGET_FILE:amuleapi>)
-	set_tests_properties (WriteBufferPreferencesTest PROPERTIES LABELS "integration" TIMEOUT 60)
+	set_tests_properties (WriteBufferPreferencesIntegrationTest PROPERTIES LABELS "integration" TIMEOUT 60)
 endif ()
 
 # Download diagnostics must never expose URL credentials to log/status readers.
@@ -3908,7 +3908,7 @@ foreach (ec_wire_test IN ITEMS
 	UploadRefillIntegrationTest
 	UploadSlotScopeIntegrationTest
 	WriteBackpressureIntegrationTest
-	WriteBufferPreferencesTest
+	WriteBufferPreferencesIntegrationTest
 )
 	if (TEST ${ec_wire_test})
 		set_tests_properties (${ec_wire_test} PROPERTIES SKIP_RETURN_CODE 77)
