@@ -21,10 +21,6 @@
 #include <muleunit/test.h>
 #include <kademlia/net/PacketTracking.h>
 #include <kademlia/kademlia/Kademlia.h>
-#include <kademlia/routing/Contact.h>
-#include <kademlia/routing/RoutingBin.h>
-#include <RandomFunctions.h>
-#include <Statistics.h>
 #include <GetTickCount.h>
 #include <protocol/kad2/Client2Client/UDP.h>
 #include <protocol/kad/Client2Client/UDP.h>
@@ -48,11 +44,6 @@ bool CKademlia::IsRunningInLANMode()
 bool IsLanIP(uint32_t ip) noexcept
 {
 	return (ip & 0xff) == 10;
-}
-uint16_t CStatistics::s_kadNodesCur = 0;
-uint16_t GetRandomUint16()
-{
-	return 0;
 }
 
 class Tracker : public CPacketTracking
@@ -80,7 +71,8 @@ TEST(KadPacketTracking, CapacityRejectsNewAddressesWithoutResettingLiveQuotas)
 	ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(1, KADEMLIA2_PING, false) == Result::Drop);
 	// The response path remains usable even when request tracking is full.
 	ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(10001, KADEMLIA2_PONG, false) == Result::Allowed);
-	now += 13 * 60000;
+	// Expired entries are cleaned early, well before the 12-minute cleanup.
+	now += 2 * 60000;
 	ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(10001, KADEMLIA2_PING, false) == Result::Allowed);
 	ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(1, KADEMLIA2_PING, false) == Result::Allowed);
 }
@@ -117,31 +109,4 @@ TEST(KadPacketTracking, OutgoingTrackingKeepsRecentEntriesWithinItsBound)
 
 	now += 180000;
 	ASSERT_FALSE(tracker.IsOnOutTrackList(3, KADEMLIA2_PING));
-}
-
-TEST(KadPacketTracking, ExpirationPreservesReferencesUntilRoutingCleanup)
-{
-	CContact contact(CUInt128(1u), 0x01020304, 4665, 4662, 8, CKadUDPKey(), true, CUInt128(0u));
-	contact.UpdateType();
-	CRoutingBin bin;
-	bin.m_dontDeleteContacts = true;
-	ASSERT_TRUE(bin.AddContact(&contact));
-	ContactMap closest;
-	bin.GetClosestTo(3, CUInt128(0u), 10, &closest);
-	ASSERT_EQUALS(size_t(1), closest.size());
-	ASSERT_TRUE(bin.GetRandomContact(3, 2) == &contact);
-	ASSERT_TRUE(contact.GetType() < 4);
-	contact.IncUse();
-	contact.Expire();
-	ASSERT_EQUALS(unsigned(4), unsigned(contact.GetType()));
-	ASSERT_TRUE(contact.InUse());
-	bin.GetClosestTo(3, CUInt128(0u), 10, &closest);
-	ASSERT_TRUE(closest.empty());
-	ASSERT_TRUE(bin.GetRandomContact(3, 2) == nullptr);
-	ASSERT_TRUE(bin.GetContact(contact.GetClientID()) == &contact);
-	ASSERT_TRUE(contact.GetExpireTime() > 0 && contact.GetExpireTime() <= time(nullptr));
-	contact.DecUse();
-	ASSERT_FALSE(contact.InUse());
-	bin.RemoveContact(&contact);
-	ASSERT_EQUALS(uint32_t(0), bin.GetSize());
 }

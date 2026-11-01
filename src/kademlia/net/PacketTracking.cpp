@@ -184,6 +184,12 @@ CPacketTracking::IncomingPacket CPacketTracking::InTrackListIsAllowedPacket(
 	TrackedPacketInMap::iterator it2 = m_mapTrackPacketsIn.find(ip);
 	TrackPacketsIn_Struct *trackEntry;
 	if (it2 == m_mapTrackPacketsIn.end()) {
+		// Most entries expire within a minute; clean early rather than refuse peers until
+		// the 12-minute cleanup.
+		if (m_mapTrackPacketsIn.size() >= MAX_TRACKED_IPS &&
+			currentTick - lastTrackInCleanup > MIN2MS(1)) {
+			InTrackListCleanup();
+		}
 		// Do not evict live quotas: address churn must not reset an abuser's budget.
 		if (m_mapTrackPacketsIn.size() >= MAX_TRACKED_IPS) {
 			return IncomingPacket::Drop;

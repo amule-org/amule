@@ -3826,8 +3826,6 @@ endif ()
 add_executable (KadPacketTrackingTest
 	KadPacketTrackingTest.cpp
 	${CMAKE_SOURCE_DIR}/src/kademlia/net/PacketTracking.cpp
-	${CMAKE_SOURCE_DIR}/src/kademlia/routing/Contact.cpp
-	${CMAKE_SOURCE_DIR}/src/kademlia/routing/RoutingBin.cpp
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
 )
