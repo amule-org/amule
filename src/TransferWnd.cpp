@@ -26,6 +26,7 @@
 #include "TransferWnd.h" // Interface declarations
 
 #include "MenuIcons.h"
+#include "FileLaunch.h" // Needed for opening category folders
 
 #include <common/MenuIDs.h>
 
@@ -76,6 +77,7 @@ wxBEGIN_EVENT_TABLE(CTransferWnd, wxPanel)
 	EVT_MENU(MP_CAT_ADD, CTransferWnd::OnAddCategory)
 	EVT_MENU(MP_CAT_EDIT, CTransferWnd::OnEditCategory)
 	EVT_MENU(MP_CAT_REMOVE, CTransferWnd::OnDelCategory)
+	EVT_MENU(MP_CAT_OPEN_FOLDER, CTransferWnd::OnOpenCategoryFolder)
 	EVT_MENU(MP_PRIOLOW, CTransferWnd::OnSetCatPriority)
 	EVT_MENU(MP_PRIONORMAL, CTransferWnd::OnSetCatPriority)
 	EVT_MENU(MP_PRIOHIGH, CTransferWnd::OnSetCatPriority)
@@ -362,13 +364,26 @@ void CTransferWnd::OnCategoryChanged(wxNotebookEvent &evt)
 	downloadlistctrl->SortList();
 }
 
+void CTransferWnd::OnOpenCategoryFolder(wxCommandEvent &WXUNUSED(event))
+{
+	const int category = m_dlTab->GetSelection();
+	if (category == wxNOT_FOUND || static_cast<uint32>(category) >= theApp->glob_prefs->GetCatCount()) {
+		return;
+	}
+	// Category zero's stored path is initialized only at startup. Preferences may have changed.
+	const CPath &directory =
+		category == 0 ? thePrefs::GetIncomingDir() : theApp->glob_prefs->GetCategory(category)->path;
+	FileLaunch::OpenDirectory(directory);
+}
+
 void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
 {
 	// Only handle events from the category-notebook
 	if (evt.GetEventObject() != (wxObject *)m_dlTab)
 		return;
 
-	if (m_dlTab->GetSelection() == -1) {
+	const int category = m_dlTab->GetSelection();
+	if (category == wxNOT_FOUND || static_cast<uint32>(category) >= theApp->glob_prefs->GetCatCount()) {
 		return;
 	}
 
@@ -404,6 +419,12 @@ void CTransferWnd::OnNMRclickDLtab(wxMouseEvent &evt)
 
 			m_menu->Append(0, _("Select view filter"), catmenu);
 		}
+
+		const CPath &directory = category == 0 ? thePrefs::GetIncomingDir()
+						       : theApp->glob_prefs->GetCategory(category)->path;
+		m_menu->Append(MP_CAT_OPEN_FOLDER, _("Open Folder"));
+		m_menu->Enable(MP_CAT_OPEN_FOLDER, FileLaunch::CanOpenDirectory(directory));
+		m_menu->AppendSeparator();
 
 		m_menu->Append(MP_CAT_ADD, _("Add category"));
 

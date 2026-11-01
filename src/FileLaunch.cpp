@@ -157,6 +157,16 @@ bool OpenWithDesktop(const CPath &path)
 #endif
 }
 
+// Category paths, like file paths, belong to the daemon in amulegui.
+CPath LocalDirectory(const CPath &directory)
+{
+#ifdef CLIENT_GUI
+	return CPath(theApp->glob_prefs->ApplyPathMapping(directory.GetRaw()));
+#else
+	return directory;
+#endif
+}
+
 } // namespace
 
 namespace FileLaunch
@@ -202,6 +212,24 @@ bool ResolvePath(const CKnownFile *file, CPath &out)
 
 	out = directory.JoinPaths(name);
 	return true;
+}
+
+bool CanOpenDirectory(const CPath &directory)
+{
+	return directory.IsOk() && LocalDirectory(directory).DirExists();
+}
+
+void OpenDirectory(const CPath &directory)
+{
+	if (!directory.IsOk()) {
+		return;
+	}
+	const CPath local = LocalDirectory(directory);
+	// Recheck in case the folder disappeared after the menu was opened.
+	if (!local.DirExists() || !OpenWithDesktop(local)) {
+		AddLogLineC(CFormat(_("ERROR: Failed to open folder '%s' in the file manager.")) %
+			    local.GetPrintable());
+	}
 }
 
 bool CanOpen(const CKnownFile *file)
