@@ -1062,3 +1062,79 @@ TEST(NatServerHolePunch, ACrossServerAnswerCanBeCheckedWithoutTakingIt)
 	ASSERT_TRUE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(7), 30).has_value());
 	ASSERT_FALSE(requests.AnswersPending(kForeignServer, 201, ForeignHash(7), 40));
 }
+
+TEST(NatServerHolePunch, AListedFlaggedServerWithoutAKeyNeedsOnlyItsKey)
+{
+	ForeignServerFacts facts;
+	facts.inServerList = true;
+	facts.udpFlags = 0x100000;
+	facts.serverKeyUdp = 0;
+	facts.supportsObfuscationUdp = true;
+	facts.cryptLayerUdpEnabled = true;
+	ASSERT_TRUE(ForeignCallbackServerAwaitsKey(facts));
+
+	ForeignServerFacts keyed = facts;
+	keyed.serverKeyUdp = 42;
+	ASSERT_FALSE(ForeignCallbackServerAwaitsKey(keyed));
+
+	ForeignServerFacts noFlag = facts;
+	noFlag.udpFlags = 0;
+	ASSERT_FALSE(ForeignCallbackServerAwaitsKey(noFlag));
+
+	ForeignServerFacts notListed = facts;
+	notListed.inServerList = false;
+	ASSERT_FALSE(ForeignCallbackServerAwaitsKey(notListed));
+
+	ForeignServerFacts noObfuscation = facts;
+	noObfuscation.supportsObfuscationUdp = false;
+	ASSERT_FALSE(ForeignCallbackServerAwaitsKey(noObfuscation));
+
+	ForeignServerFacts cryptOff = facts;
+	cryptOff.cryptLayerUdpEnabled = false;
+	ASSERT_FALSE(ForeignCallbackServerAwaitsKey(cryptOff));
+}
+
+TEST(NatServerHolePunch, AnExtensionKeepaliveWithoutTheKeyAwaitsIt)
+{
+	KeepaliveCryptFacts facts;
+	facts.extensionActive = true;
+	facts.cryptLayerUdpEnabled = true;
+	facts.serverKeyUdp = 0;
+	facts.serverSupportsObfuscationUdp = true;
+	ASSERT_TRUE(KeepaliveAwaitsServerKey(facts));
+
+	KeepaliveCryptFacts keyed = facts;
+	keyed.serverKeyUdp = 42;
+	ASSERT_FALSE(KeepaliveAwaitsServerKey(keyed));
+
+	KeepaliveCryptFacts noExtension = facts;
+	noExtension.extensionActive = false;
+	ASSERT_FALSE(KeepaliveAwaitsServerKey(noExtension));
+
+	KeepaliveCryptFacts cryptOff = facts;
+	cryptOff.cryptLayerUdpEnabled = false;
+	ASSERT_FALSE(KeepaliveAwaitsServerKey(cryptOff));
+
+	KeepaliveCryptFacts noObfuscation = facts;
+	noObfuscation.serverSupportsObfuscationUdp = false;
+	ASSERT_FALSE(KeepaliveAwaitsServerKey(noObfuscation));
+}
+
+TEST(NatServerHolePunch, ServerRequestPacerAllowsABurstThenOnePerRefill)
+{
+	ServerRequestPacer pacer;
+	for (std::uint32_t sent = 0; sent < kForeignRequestBurst; ++sent) {
+		ASSERT_TRUE(pacer.TryTake(1'000));
+	}
+	ASSERT_FALSE(pacer.TryTake(1'000));
+	ASSERT_FALSE(pacer.TryTake(1'000 + kForeignRequestRefillMs - 1));
+	ASSERT_TRUE(pacer.TryTake(1'000 + kForeignRequestRefillMs));
+	ASSERT_FALSE(pacer.TryTake(1'000 + kForeignRequestRefillMs));
+
+	// A long idle refills only up to the burst.
+	const std::uint64_t later = 1'000 + 100 * kForeignRequestRefillMs;
+	for (std::uint32_t sent = 0; sent < kForeignRequestBurst; ++sent) {
+		ASSERT_TRUE(pacer.TryTake(later));
+	}
+	ASSERT_FALSE(pacer.TryTake(later));
+}
