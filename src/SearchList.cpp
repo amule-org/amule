@@ -809,10 +809,11 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 
 void CSearchList::LocalSearchEnd()
 {
-	if (!m_searchInProgress) {
+	if (!m_searchInProgress || !m_awaitingServerAnswer) {
 		// Nothing left for this reply to end: the wait for it ran out, or the search was stopped.
 		// Without this, a late answer to a terminalized global search reaches the wxCHECK_RET below
-		// with the packet already released -- silent under NDEBUG, an assertion in a Debug build.
+		// with the packet already released -- silent under NDEBUG, an assertion in a Debug build --
+		// and one arriving during a sweep the timeout started would restart that sweep.
 		return;
 	}
 
@@ -962,14 +963,16 @@ uint8 CSearchList::GetSearchLifecyclePercent() const
 void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 {
 	if (m_awaitingServerAnswer && m_searchInProgress) {
-		// The one-shot armed at StartNewSearch: the connected server never sent OP_SEARCHRESULT,
-		// so neither kind of ed2k search has anything left that would end it. Terminalize through
-		// the finalizer the kind already has, rather than leave it reporting RUNNING for good.
-		// Tested before the packet check below, which a local search would otherwise fall into.
-		AddLogLineN(_("Search timed out: the server did not answer."));
+		// The one-shot armed at StartNewSearch: the connected server never sent OP_SEARCHRESULT.
+		// Lugdunum servers send nothing when they have no match, so a global search still asks
+		// the other servers, as if the answer had been empty. Tested before the packet check
+		// below, which a local search would otherwise fall into.
 		if (m_searchType == GlobalSearch || m_searchType == AllSearch) {
-			FinalizeGlobalSearch();
+			AddDebugLogLineN(
+				logServer, "The server did not answer the search, asking the other servers");
+			LocalSearchEnd();
 		} else {
+			AddLogLineN(_("Search timed out: the server did not answer."));
 			FinalizeLocalSearch();
 		}
 		return;
