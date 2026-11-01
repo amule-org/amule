@@ -938,7 +938,8 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 
 	NatServerHolePunch::Hash ownHash{};
 	std::copy_n(thePrefs::GetUserHash().GetHash(), ownHash.size(), ownHash.begin());
-	const NatServerHolePunch::Hash payload = NatServerHolePunch::BuildKeepalive(ownHash);
+	const std::optional<NatServerHolePunch::Hash> &sessionToken = connectedsocket->GetNattSessionToken();
+	const std::vector<std::uint8_t> payload = NatServerHolePunch::BuildKeepalive(ownHash, sessionToken);
 	CMemFile data(payload.data(), payload.size());
 	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, NatServerUdp::OP_NATT_KEEPALIVE);
 
@@ -952,7 +953,8 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 	if (NatServerHolePunch::ShouldObfuscateKeepalive(cryptFacts)) {
 		const uint16 obfuscationPort = serverListEntry->GetObfuscationPortUDP();
 		AddDebugLogLineN(logServer,
-			CFormat("Client UDP socket: obfuscated OP_SERVER_NATT_KEEPALIVE to %s") %
+			CFormat("Client UDP socket: obfuscated OP_SERVER_NATT_KEEPALIVE%s to %s") %
+				(sessionToken ? " with session token" : "") %
 				Uint32_16toStringIP_Port(server->GetIP(), obfuscationPort));
 		theStats::AddUpOverheadServer(theApp->clientudp->SendServerWayObfuscated(
 			packet, server->GetIP(), obfuscationPort, cryptFacts.serverKeyUdp));
@@ -961,7 +963,8 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 
 	const uint16 serverUdpPort = static_cast<uint16>(server->GetPort() + 4);
 	AddDebugLogLineN(logServer,
-		CFormat("Client UDP socket: OP_SERVER_NATT_KEEPALIVE to %s") %
+		CFormat("Client UDP socket: OP_SERVER_NATT_KEEPALIVE%s to %s") %
+			(sessionToken ? " with session token" : "") %
 			Uint32_16toStringIP_Port(server->GetIP(), serverUdpPort));
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	theApp->clientudp->SendPacket(packet, server->GetIP(), serverUdpPort, false, nullptr, false, 0);

@@ -627,7 +627,21 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 						update->SetListName(tag.GetStr());
 					} else if (update && tag.GetNameID() == ST_DESCRIPTION) {
 						update->SetDescription(tag.GetStr());
-					} // No more known tags from server
+					}
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+					else if (tag.GetNameID() == ST_NATT_TOKEN && tag.IsHash()) {
+						NatServerHolePunch::Hash token{};
+						std::copy_n(
+							tag.GetHash().GetHash(), token.size(), token.begin());
+						if (m_nattSessionToken != token) {
+							AddDebugLogLineN(logServer,
+								"Server: NAT-T session token received");
+							m_nattSessionToken = token;
+							// The login keepalive went out before this ident.
+							serverconnect->TrySendLowIdHolePunchKeepalive();
+						}
+					}
+#endif
 				}
 
 				if (firstIdent) {

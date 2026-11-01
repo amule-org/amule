@@ -85,6 +85,13 @@ public:
 	// The port ConnectToServer() dialed: the obfuscation port, or GetConnPort(), which can be an
 	// aux port rather than the advertised one.
 	uint16 GetConnectPort() const { return m_connectPort; }
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	// This login's ST_NATT_TOKEN, appended to every OP_SERVER_NATT_KEEPALIVE.
+	const std::optional<NatServerHolePunch::Hash> &GetNattSessionToken() const
+	{
+		return m_nattSessionToken;
+	}
+#endif
 
 #ifdef ENABLE_IPV6
 	// The IPv6 this connection last sent, by login or a later OP_IPV6_UPDATE; Absent after a
@@ -123,6 +130,9 @@ private:
 	COfferFilesConnectionPolicy m_offerFilesPolicy;
 	COfferFilesPublication m_offerFilesPublication;
 	uint16 m_connectPort = 0;
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	std::optional<NatServerHolePunch::Hash> m_nattSessionToken;
+#endif
 #ifdef ENABLE_IPV6
 	CNetworkAddress m_loginIPv6;
 	bool m_ipv6SentinelParsingOn = false;
