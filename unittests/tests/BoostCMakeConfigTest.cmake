@@ -64,19 +64,23 @@ function(check_configure version api succeeds)
 	# Reuse the build directory to exercise changes to Boost_DIR and API options.
 	set (_prefix "${_work}/boost-${version}")
 	set (_selection "-DBoost_DIR=${_prefix}")
-	set (_environment "Boost_DIR=" "BOOST_DIR=")
+	# Windows environment names are case-insensitive: clearing BOOST_DIR after
+	# assigning Boost_DIR would erase the selection we are trying to test.
+	set (_environment "Boost_DIR=")
 	if ("${ARGV3}" STREQUAL "environment")
 		set (_selection -UBoost_DIR)
-		set (_environment "Boost_DIR=${_prefix}" "BOOST_DIR=")
+		set (_environment "Boost_DIR=${_prefix}")
 	elseif ("${ARGV3}" STREQUAL "cache-over-environment")
-		set (_environment "Boost_DIR=${_work}/boost-1.74.0" "BOOST_DIR=")
+		set (_environment "Boost_DIR=${_work}/boost-1.74.0")
 	elseif ("${ARGV3}" STREQUAL "cached")
 		set (_selection)
-		set (_environment "Boost_DIR=${_work}/boost-1.74.0" "BOOST_DIR=")
+		set (_environment "Boost_DIR=${_work}/boost-1.74.0")
 	elseif ("${ARGV3}" STREQUAL "default")
 		set (_selection -UBoost_DIR "-DCMAKE_PREFIX_PATH=${_prefix}")
-		# An uppercase BOOST_DIR must not override CMake's normal search.
-		set (_environment "Boost_DIR=" "BOOST_DIR=${_work}/boost-1.71.0")
+		# Only case-sensitive hosts can hold these as distinct environment names.
+		if (NOT CMAKE_HOST_WIN32)
+			list(APPEND _environment "BOOST_DIR=${_work}/boost-1.71.0")
+		endif()
 	endif()
 	file(MAKE_DIRECTORY "${_work}/build")
 	# A positional source path works with the project's CMake 3.12 minimum.
