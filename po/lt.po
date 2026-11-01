@@ -1494,7 +1494,8 @@ msgstr "DĖMESIO: %s gali būti sugadintas (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "IO klaida skaitant failą %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Klaida įrašant failą %s: %s"
@@ -5766,6 +5767,14 @@ msgstr "Kad šaltinių pakartotinės paieškos intervalas (minutėmis)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Šaltinių pakartotinio užklausimo intervalas (minutėmis)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

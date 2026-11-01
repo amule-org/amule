@@ -1492,7 +1492,8 @@ msgstr "ABISUA: %s agian hondaturik dago (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "SI errorea %s fitxategia irakurtzean: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Errorea %s fitxategia gordetzerakoan: %s"
@@ -5744,6 +5745,14 @@ msgstr "Kad jatorrien berbilaketa-tartea (minutuak)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Jatorriari berriz eskatzeko tartea (minutuak)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

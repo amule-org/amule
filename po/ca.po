@@ -1497,7 +1497,8 @@ msgstr "AVÍS: %s pot ser corrupte (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "Error d'E/S mentre es llegia el fitxer %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Error mentre es desava el fitxer %s: %s"
@@ -5705,6 +5706,14 @@ msgstr "Interval de nova cerca de fonts a Kad (minuts)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Interval per tornar a demanar fonts (minuts)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

@@ -1491,7 +1491,8 @@ msgstr "경고: %s 파일이 손상되었을 수 있습니다 (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "%s 파일을 읽는 중 입출력 오류 발생: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "%s 파일을 저장하는 중 오류 발생: %s"
@@ -5742,6 +5743,14 @@ msgstr "Kad 자료 재검색 간격 (분)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "자료 재요청 간격 (분)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

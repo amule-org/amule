@@ -1491,7 +1491,8 @@ msgstr "AVISU: %s pue tar toyíu (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "Fallu d'E/S al lleer el ficheru %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Fallu al guardar el ficheru %s: %s"
@@ -5745,6 +5746,14 @@ msgstr "Intervalu de rebusca de fontes Kad (minutos)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Intervalu de reconsulta de fontes (minutos)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
