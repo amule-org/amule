@@ -23,6 +23,8 @@ TEST_PATH="/tmp/18-categories-crud-cat-dir"
 _preflight
 
 mkdir -p "$TEST_PATH"
+# amuled stores the symlink-resolved path, so on macOS /tmp reads back as /private/tmp.
+TEST_PATH_STORED=$(cd "$TEST_PATH" && pwd -P)
 
 echo "amuleapi 18-categories-crud smoke @ $HOST"
 
@@ -177,7 +179,7 @@ LOOKUP=$(printf '%s' "$CURL_BODY" \
 	| jq --argjson i "$NEW_IDX" '[.categories[] | select(.index == $i)] | first')
 # save_path only round-trips when the daemon accepted it (gate open and covering $TEST_PATH).
 CAT_FIELDS="name:$TEST_NAME priority:high"
-[ "$CREATED_WITH_PATH" = "1" ] && CAT_FIELDS="$CAT_FIELDS save_path:$TEST_PATH"
+[ "$CREATED_WITH_PATH" = "1" ] && CAT_FIELDS="$CAT_FIELDS save_path:$TEST_PATH_STORED"
 for f in $CAT_FIELDS; do
 	key=${f%%:*}; want=${f#*:}
 	got=$(printf '%s' "$LOOKUP" | jq -r ".$key")
