@@ -315,6 +315,8 @@ const TABS = [
       { key: "kad_max_concurrent_source_search_count", type: "int", min: 5, max: 50 },
       { key: "kad_source_reask_minutes", type: "int", min: 30, max: 60 },
       { key: "source_reask_minutes", type: "int", min: 15, max: 60 },
+      { key: "write_buffer_limit_supported", type: "bool", hidden: true },
+      { key: "write_buffer_limit_mebibytes", type: "int", min: 1, max: 1024, titleKey: "prefs_field_advanced_write_buffer_limit_mebibytes_help", gatedBy: "write_buffer_limit_supported" },
       { key: "file_buffer_bytes", type: "int", min: 0, max: 3825000, step: 15000 },
       { key: "mmap_enabled", type: "bool", cat: "files", gatedBy: "mmap_supported" },
       { key: "mmap_supported", type: "bool", cat: "files", hidden: true },

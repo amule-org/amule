@@ -67,7 +67,7 @@
 #include "ECClientPassword.h"
 #include "Friend.h"
 #include "GetTickCount.h" // Needed for GetTickCount64
-#include "GuiEvents.h"
+#include "MuleGUIEvent.h"
 #include "UserEvents.h"
 #include "OtherFunctions.h" // Needed for IP_FROM_GUI_ID / PORT_FROM_GUI_ID
 #ifdef GEOIP_GUI
@@ -1629,6 +1629,7 @@ bool CPreferencesRem::LoadRemote()
 {
 	// Capabilities belong to this connection, not the previously connected core.
 	m_liveNetworkPreferences = false;
+	thePrefs::SetWriteBufferLimitSupported(false);
 #ifdef GEOIP_GUI
 	// Assume the core has NO GeoIP support until it says otherwise. A 3.1+ core built
 	// with ENABLE_IP2COUNTRY answers with EC_TAG_IP2COUNTRY_SUPPORTED; a pre-3.1 core

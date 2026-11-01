@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-30 18:23+0000\n"
+"PO-Revision-Date: 2026-11-01 10:29+0000\n"
 "Last-Translator: minterior <minterior@gmail.com>\n"
 "Language-Team: Català\n"
 "Language: ca\n"
@@ -452,7 +452,7 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
+msgstr "No s'ha pogut desar AcceptExternalConnections a l'amule.conf."
 
 #: src/amule.cpp
 msgid "Password set and external connections enabled."
@@ -531,9 +531,8 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "No s'inicia %s: no es troba ni a la mateixa carpeta que aMule ni al PATH."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "An exception occurred while launching amuleweb."
-msgstr "S'ha produït una excepció en executar amuleapi."
+msgstr "S'ha produït una excepció en executar l'amuleweb."
 
 #: src/amule.cpp
 #, c-format
@@ -542,7 +541,7 @@ msgstr "servidor web executant-se al pid %d"
 
 #: src/amule.cpp
 msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
+msgstr "No s'ha pogut preparar el testimoni d'autenticació de l'amuleweb. No s'ha iniciat el servidor web."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -576,14 +575,13 @@ msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot 
 msgstr "Heu demanat que s'executi amuleapi a l'inici, però el fitxer binari d'amuleapi no es pot executar. Instal·leu el paquet que conté el servidor de l'API REST de l'aMule, o compileu l'aMule des del codi font amb -DBUILD_AMULEAPI=YES i instal·leu-lo."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Could not prepare the amuleweb EC token."
-msgstr "No s'ha pogut eliminar el fitxer del testimoni EC d'amuleapi: %s"
+msgstr "No s'ha pogut preparar el testimoni EC de l'amuleweb."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "No s'ha pogut eliminar el fitxer del testimoni EC d'amuleapi: %s"
+msgstr "No s'ha pogut eliminar el fitxer del testimoni EC de l'amuleweb: %s"
 
 #: src/amule.cpp
 #, c-format
@@ -782,9 +780,9 @@ msgid "ServerMessage: %s"
 msgstr "Missatge del servidor: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace nodes.dat: %s"
-msgstr "No s'ha pogut substituir la base de dades MaxMindDB «%s»: %s"
+msgstr "No s'ha pogut substituir el nodes.dat: %s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -903,12 +901,11 @@ msgstr "ERROR: no es pot usar el dimoni aMule quan les connexions externes estan
 
 #: src/amuled.cpp
 msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
-msgstr ""
+msgstr "ERROR: cal una contrasenya d'EC. Executeu amuled --ec-config per definir-la."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
-msgstr "L'ECPassword conté un resum no vàlid o de contrasenya buida. Executeu amuled --ec-config per definir una contrasenya d'EC nova."
+msgstr "ERROR: l'ECPasswordVerifier de l'amule.conf no és vàlid. Executeu amuled --ec-config per definir una contrasenya d'EC nova."
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -1327,7 +1324,7 @@ msgstr "Tots"
 
 #: src/amule-remote-gui.cpp
 msgid "The EC password changed on the daemon, but the saved client password could not be updated."
-msgstr ""
+msgstr "La contrasenya d'EC ha canviat al dimoni, però no s'ha pogut actualitzar la contrasenya desada del client."
 
 #: src/amule-remote-gui.cpp src/muuli_wdr.cpp
 msgid "To allow a folder, add it to allowed-remote-dirs.dat in the daemon's configuration folder, one absolute path per line, then restart the daemon."
@@ -1339,14 +1336,12 @@ msgid "The daemon refused these folders because they are outside the folders it 
 msgstr "El dimoni ha rebutjat aquestes carpetes perquè són fora de les carpetes que permet (configurades al dimoni):%s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
-#, fuzzy
 msgid "The EC password was not changed."
-msgstr "- El port TCP ha canviat.\n"
+msgstr "No s'ha canviat la contrasenya d'EC."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "The daemon could not apply the preference changes."
-msgstr "El dimoni no ha pogut aplicar els canvis als ports de connexió."
+msgstr "El dimoni no ha pogut aplicar els canvis de les preferències."
 
 #: src/amule-remote-gui.cpp
 msgid "not readable"
@@ -1502,7 +1497,8 @@ msgstr "AVÍS: %s pot ser corrupte (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "Error d'E/S mentre es llegia el fitxer %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Error mentre es desava el fitxer %s: %s"
@@ -2243,7 +2239,7 @@ msgstr "Opcions avançades"
 msgid "Preview"
 msgstr "Previsualitza"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "Mostra al gestor de fitxers"
 
@@ -2451,14 +2447,12 @@ msgid "External connections disabled due to empty password!"
 msgstr "Les connexions externes han estat inhabilitades per manca d'una contrasenya!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled due to invalid ECPasswordVerifier!"
-msgstr "Les connexions externes han estat inhabilitades per manca d'una contrasenya!"
+msgstr "S'han desactivat les connexions externes perquè l'ECPasswordVerifier no és vàlid!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled: could not prepare the EC token verifier."
-msgstr "Les connexions externes estan inhabilitades al fitxer de configuració"
+msgstr "Connexions externes desactivades: no s'ha pogut preparar el verificador del testimoni EC."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2497,7 +2491,7 @@ msgstr "Versió desconeguda"
 
 #: src/ExternalConn.cpp
 msgid "An EC client of version 3.3.0 or later is required."
-msgstr ""
+msgstr "Cal un client d'EC de la versió 3.3.0 o posterior."
 
 #: src/ExternalConn.cpp
 msgid "Incorrect EC version ID, there might be binary incompatibility. Use core and remote from same snapshot."
@@ -2509,7 +2503,7 @@ msgstr "No us podeu connectar a una versió final des d'una versió de desenvolu
 
 #: src/ExternalConn.cpp
 msgid "Invalid SRP handshake or EC verifier."
-msgstr ""
+msgstr "Negociació SRP no vàlida o verificador d'EC no vàlid."
 
 #: src/ExternalConn.cpp
 msgid "Invalid protocol version."
@@ -2619,6 +2613,10 @@ msgid "WebSearch from remote interface makes no sense."
 msgstr "La recerca web des de la interfície remota no té sentit."
 
 #: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
+
+#: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
 msgstr "Una exploració no és una cerca que es pugui iniciar."
 
@@ -2682,21 +2680,19 @@ msgstr "No s'ha pogut canviar el client a aquest fitxer."
 
 #: src/ExternalConn.cpp
 msgid "Duplicate remote-control preference groups are not allowed."
-msgstr ""
+msgstr "No es permeten grups de preferències de control remot duplicats."
 
 #: src/ExternalConn.cpp
 msgid "Only password-authenticated sessions may change the EC password."
-msgstr ""
+msgstr "Només les sessions autenticades amb contrasenya poden canviar la contrasenya d'EC."
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not update EC password verifier."
-msgstr "No s'ha pogut desar la contrasenya d'amuleapi: %s"
+msgstr "No s'ha pogut actualitzar el verificador de la contrasenya d'EC."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not apply preferences."
-msgstr "Kad està inhabilitada a les preferències."
+msgstr "No s'han pogut aplicar les preferències."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2704,14 +2700,13 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "No s'ha pogut desar la contrasenya d'amuleapi: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not update EC password verifier. The other preferences were saved."
-msgstr "No s'ha pogut generar l'ECPasswordVerifier; les connexions externes estan desactivades."
+msgstr "No s'ha pogut actualitzar el verificador de la contrasenya d'EC. La resta de preferències s'han desat."
 
 #: src/ExternalConn.cpp
 #, c-format
 msgid "EC password changed by %s"
-msgstr ""
+msgstr "Contrasenya d'EC canviada per %s"
 
 #: src/ExternalConn.cpp
 msgid "One or more folders were outside the allowed remote directories and were left unchanged."
@@ -3024,7 +3019,7 @@ msgstr "No escriguis cap fitxer de registre; mostra-ho només per consola."
 
 #: src/ExternalConnector.cpp
 msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr ""
+msgstr "El verificador del dimoni no pot proporcionar la contrasenya del client. Feu servir -P o introduïu-la quan se us demani.\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -3103,6 +3098,11 @@ msgstr "ERROR: No s'ha pogut executar un reproductor multimèdia extern! Ordre: 
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "ERROR: no s'ha pogut mostrar «%s» al gestor de fitxers."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "No es pot obrir «%s»: el fitxer no és en aquest ordinador."
 
@@ -3114,11 +3114,6 @@ msgstr "Per previsualitzar una baixada inacabada cal un reproductor de vídeo: e
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "ERROR: no s'ha pogut obrir «%s» amb l'aplicació predeterminada."
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ERROR: no s'ha pogut mostrar «%s» al gestor de fitxers."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
@@ -3627,9 +3622,9 @@ msgstr[0] "S'ha descartat %u línia malformada."
 msgstr[1] "S'han descartat %u línies malformades."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace %s file, aborting update: %s"
-msgstr "Fallada al canviar de nom el fitxer %s, actualització interrompuda."
+msgstr "No s'ha pogut substituir el fitxer %s; s'interromp l'actualització: %s"
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
@@ -4152,9 +4147,8 @@ msgid "Invalid password, not a MD5 hash!"
 msgstr "Contrasenya invàlida, no és un resum MD5!"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Could not generate SRP credentials."
-msgstr "No s'ha pogut esborrar «%s» del disc."
+msgstr "No s'han pogut generar les credencials SRP."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
@@ -4174,13 +4168,12 @@ msgid "EC connection failed. Empty reply."
 msgstr "La connexió externa ha fallat. Resposta buida."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Invalid SRP handshake or unsupported profile. Connection closed."
-msgstr "Connexió externa: Resposta incorrecta, confirmació de connexió fallida. S'ha tancat la connexió."
+msgstr "Negociació SRP no vàlida o perfil no compatible. S'ha tancat la connexió."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "An EC daemon of version 3.3.0 or later is required."
-msgstr ""
+msgstr "Cal un dimoni d'EC de la versió 3.3.0 o posterior."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
@@ -5713,6 +5706,14 @@ msgstr "Interval de nova cerca de fonts a Kad (minuts)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Interval per tornar a demanar fonts (minuts)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -8683,14 +8684,14 @@ msgid "Crypt overhead (UDP): %s"
 msgstr "Excedent per xifrat (UDP): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "LowID to LowID Data (Session): %s"
-msgstr "Dades baixades (sessió (total)): %s"
+msgstr "Dades d'ID Baixa a ID Baixa (Sessió): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IPv6 Data (Session): %s"
-msgstr "Dades pujades (sessió (total)): %s"
+msgstr "Dades IPv6 (Sessió): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8793,29 +8794,28 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Pic de connexions (aprox.): %i"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "NAT Traversal (Session)"
-msgstr "Travessia de NAT (uTP)"
+msgstr "Travessia de NAT (Sessió)"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Server Hole Punches: %s"
-msgstr "Sobrecàrrega del servidor (paquets): %s"
+msgstr "Perforacions de NAT amb servidor: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Successful Server Hole Punches: %s"
-msgstr ""
+msgstr "Perforacions de NAT amb servidor reeixides: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Lugdunum Callbacks: %s"
-msgstr ""
+msgstr "Retrotrucades de Lugdunum: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Successful Lugdunum Callbacks: %s"
-msgstr "Actualització de %s correcta"
+msgstr "Retrotrucades de Lugdunum reeixides: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -10466,9 +10466,9 @@ msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be 
 msgstr "Kad no ha pogut llegir %s. S'ha canviat el nom a %s.bad i es desarà un índex nou en tancar."
 
 #: src/kademlia/kademlia/Indexed.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad: %s. Its original file will not be overwritten."
-msgstr "Kad no ha pogut conservar l'índex il·legible %s com a %s.bad. El fitxer original no se sobreescriurà."
+msgstr "Kad no ha pogut conservar l'índex il·legible %s com a %s.bad: %s. El fitxer original no se sobreescriurà."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."
@@ -10499,9 +10499,8 @@ msgid "EC password change rejected: could not persist ECPasswordVerifier. The ac
 msgstr "S'ha rebutjat el canvi de contrasenya d'EC: no s'ha pogut desar l'ECPasswordVerifier. La credencial activa no ha canviat."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "EC password change rejected: could not store ECPasswordVerifier. The active credential is unchanged."
-msgstr "S'ha rebutjat el canvi de contrasenya d'EC: no s'ha pogut desar l'ECPasswordVerifier. La credencial activa no ha canviat."
+msgstr "S'ha rebutjat el canvi de contrasenya d'EC: no s'ha pogut emmagatzemar l'ECPasswordVerifier. La credencial activa no ha canviat."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."

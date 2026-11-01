@@ -923,6 +923,7 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	FindWindow(IDC_STARTNEXTFILE_SAME)->Enable(thePrefs::StartNextFile());
 	FindWindow(IDC_STARTNEXTFILE_ALPHA)->Enable(thePrefs::StartNextFile());
 	FindWindow(IDC_AMULEAPI_GUEST_PASSWD)->Enable(thePrefs::GetAmuleApiGuestIsEnabled());
+	FindWindow(IDC_WRITEBUFFERLIMIT)->Enable(thePrefs::IsWriteBufferLimitSupported());
 	FindWindow(IDC_KADPROTOCOL10)->Enable(thePrefs::IsKadProtocol10Supported());
 	FindWindow(IDC_KADSTRICTAICHPUBLISHERS)
 		->Enable(thePrefs::IsKadProtocol10Supported() && thePrefs::GetKadProtocol10());

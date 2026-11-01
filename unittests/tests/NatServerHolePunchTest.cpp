@@ -492,6 +492,65 @@ TEST(NatServerHolePunch, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)
 	ASSERT_FALSE(ShouldKeepLowIdServerSource(notCapable));
 }
 
+TEST(NatServerHolePunch, KeepsALowIdSourceOfAnotherServerThatTakesCrossServerRequests)
+{
+	LowIdServerSourceFacts facts;
+	facts.weAreLowId = true;
+	facts.extensionAnnounced = true;
+	facts.sourceServerTakesForeignCallback = true;
+	// From source exchange or another server's answer: neither origin nor server is ours.
+	ASSERT_TRUE(ShouldKeepLowIdServerSource(facts));
+
+	LowIdServerSourceFacts settingOff = facts;
+	settingOff.extensionAnnounced = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(settingOff));
+
+	LowIdServerSourceFacts serverDoesNotTakeThem = facts;
+	serverDoesNotTakeThem.sourceServerTakesForeignCallback = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(serverDoesNotTakeThem));
+
+	LowIdServerSourceFacts weAreHighId = facts;
+	weAreHighId.weAreLowId = false;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(weAreHighId));
+
+	// A source on our own server is the same-server rule's alone.
+	LowIdServerSourceFacts ourServer = facts;
+	ourServer.sourceServerIsOurCurrentServer = true;
+	ASSERT_FALSE(ShouldKeepLowIdServerSource(ourServer));
+}
+
+TEST(NatServerHolePunch, AServerTakesCrossServerRequestsOnlyWithItsFlagAndAKey)
+{
+	ForeignServerFacts facts;
+	facts.inServerList = true;
+	facts.udpFlags = 0x100000 | 0x200;
+	facts.serverKeyUdp = 42;
+	facts.supportsObfuscationUdp = true;
+	facts.cryptLayerUdpEnabled = true;
+	ASSERT_TRUE(ServerTakesForeignCallback(facts));
+
+	// A source's server address is learnt from a peer: only one we list ourselves is asked.
+	ForeignServerFacts notListed = facts;
+	notListed.inServerList = false;
+	ASSERT_FALSE(ServerTakesForeignCallback(notListed));
+
+	ForeignServerFacts noFlag = facts;
+	noFlag.udpFlags = 0x200;
+	ASSERT_FALSE(ServerTakesForeignCallback(noFlag));
+
+	ForeignServerFacts noKey = facts;
+	noKey.serverKeyUdp = 0;
+	ASSERT_FALSE(ServerTakesForeignCallback(noKey));
+
+	ForeignServerFacts noObfuscation = facts;
+	noObfuscation.supportsObfuscationUdp = false;
+	ASSERT_FALSE(ServerTakesForeignCallback(noObfuscation));
+
+	ForeignServerFacts cryptOff = facts;
+	cryptOff.cryptLayerUdpEnabled = false;
+	ASSERT_FALSE(ServerTakesForeignCallback(cryptOff));
+}
+
 TEST(NatServerHolePunch, OnlyAServerWithTheExtensionFlagOffersTheExtension)
 {
 	ASSERT_TRUE(ServerOffersHolePunchExtension(0x100000));
@@ -558,6 +617,16 @@ TEST(NatServerHolePunch, KeepaliveBurstsStayBounded)
 		burst.Start(0);
 	}
 	ASSERT_TRUE(burst.TakeDue(10000) <= kMaxPendingBurstKeepalives);
+}
+
+TEST(NatServerHolePunch, AForeignWakeWaitsToBeDialledAndIsNeverHandedBack)
+{
+	// Requester ID 0 on an extension server is a cross-server request: no 0x61 follows, and the
+	// target waits for the requester's dial instead of falling back to its own.
+	PendingWakeSet<int> wakes;
+	wakes.Add(0, 1, 0);
+	ASSERT_TRUE(wakes.TakeExpired(kWakeInfoTimeoutMs).empty());
+	ASSERT_FALSE(wakes.Resolve(0));
 }
 
 TEST(NatServerHolePunch, AWakeIsResolvedByTheInfoThatNamesItsRequester)
@@ -722,4 +791,249 @@ TEST(NatServerHolePunch, RequestedTargetsStayBounded)
 	}
 	ASSERT_TRUE(targets.Size() <= kMaxPendingRendezvous);
 	ASSERT_TRUE(targets.Take(1000, 1));
+}
+
+namespace
+{
+constexpr std::uint32_t kForeignServer = 0x0A000001;
+constexpr std::uint32_t kOtherServer = 0x0A000002;
+
+Hash ForeignHash(std::uint8_t value)
+{
+	Hash hash;
+	hash.fill(value);
+	return hash;
+}
+} // namespace
+
+TEST(NatServerHolePunch, BuildsTheCrossServerRequestWithRequesterIdZero)
+{
+	const auto bytes = BuildForeignCallbackRequest(0x01020305, 0x03);
+	ASSERT_EQUALS(9, static_cast<int>(bytes.size()));
+	ASSERT_EQUALS(0x05, static_cast<int>(bytes[0]));
+	ASSERT_EQUALS(0x01, static_cast<int>(bytes[3]));
+	for (int i = 4; i < 8; ++i) {
+		ASSERT_EQUALS(0, static_cast<int>(bytes[i]));
+	}
+	ASSERT_EQUALS(0x03, static_cast<int>(bytes[8]));
+}
+
+TEST(NatServerHolePunch, ParsesOnlyAnAnswerOfExactly27Bytes)
+{
+	std::array<std::uint8_t, 28> bytes{};
+	PokeUInt32(bytes.data(), 0x0B000001);
+	PokeUInt16(bytes.data() + 4, 4672);
+	PokeUInt32(bytes.data() + 6, 0x01020305);
+	bytes[10] = 0x81;
+	std::fill(bytes.begin() + 11, bytes.begin() + 27, 0x44);
+
+	const auto answer = ParseForeignCallbackAnswer(bytes.data(), 27);
+	ASSERT_TRUE(answer.has_value());
+	ASSERT_EQUALS((std::uint32_t)0x0B000001, answer->targetIp);
+	ASSERT_EQUALS((std::uint16_t)4672, answer->targetUdpPort);
+	ASSERT_EQUALS((std::uint32_t)0x01020305, answer->targetId);
+	ASSERT_EQUALS(0x81, static_cast<int>(answer->crypt));
+	ASSERT_TRUE(answer->targetHash == ForeignHash(0x44));
+
+	ASSERT_FALSE(ParseForeignCallbackAnswer(bytes.data(), 26).has_value());
+	ASSERT_FALSE(ParseForeignCallbackAnswer(bytes.data(), 28).has_value());
+	ASSERT_FALSE(ParseForeignCallbackAnswer(nullptr, 27).has_value());
+}
+
+TEST(NatServerHolePunch, RequestsACrossServerCallbackOnlyForAnOddLowIdOnAServerThatTakesIt)
+{
+	ForeignRequestFacts facts;
+	facts.ourId = 101;
+	facts.sourceId = 201;
+	facts.sourceServerIsOurs = false;
+	facts.serverTakesForeignCallback = true;
+	facts.extensionAnnounced = true;
+	facts.ourUdpPort = 4672;
+	ASSERT_TRUE(ShouldRequestForeignCallback(facts));
+
+	ForeignRequestFacts settingOff = facts;
+	settingOff.extensionAnnounced = false;
+	ASSERT_FALSE(ShouldRequestForeignCallback(settingOff));
+
+	ForeignRequestFacts sameServer = facts;
+	sameServer.sourceServerIsOurs = true;
+	ASSERT_FALSE(ShouldRequestForeignCallback(sameServer));
+
+	ForeignRequestFacts serverDoesNotTakeIt = facts;
+	serverDoesNotTakeIt.serverTakesForeignCallback = false;
+	ASSERT_FALSE(ShouldRequestForeignCallback(serverDoesNotTakeIt));
+
+	ForeignRequestFacts evenTarget = facts;
+	evenTarget.sourceId = 200;
+	ASSERT_FALSE(ShouldRequestForeignCallback(evenTarget));
+
+	ForeignRequestFacts weAreHighId = facts;
+	weAreHighId.ourId = 20000000;
+	ASSERT_FALSE(ShouldRequestForeignCallback(weAreHighId));
+
+	ForeignRequestFacts highIdSource = facts;
+	highIdSource.sourceId = 20000001;
+	ASSERT_FALSE(ShouldRequestForeignCallback(highIdSource));
+
+	ForeignRequestFacts noUdpPort = facts;
+	noUdpPort.ourUdpPort = 0;
+	ASSERT_FALSE(ShouldRequestForeignCallback(noUdpPort));
+}
+
+TEST(NatServerHolePunch, ACrossServerAnswerIsTakenOnceForItsPendingTarget)
+{
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 0));
+	// The same target is not asked twice while its answer is pending.
+	ASSERT_FALSE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 10));
+
+	ASSERT_FALSE(requests.TakeAnswer(kOtherServer, 201, ForeignHash(1), 100).has_value());
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 203, ForeignHash(1), 100).has_value());
+	const auto taken = requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 100);
+	ASSERT_TRUE(taken.has_value());
+	ASSERT_EQUALS((std::uint16_t)4662, taken->sourceTcpPort);
+	// The server resends its answer; only the first copy is used.
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 1300).has_value());
+}
+
+TEST(NatServerHolePunch, ACrossServerAnswerMustCarryTheSourceHashWhenWeKnowIt)
+{
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, ForeignHash(7), 0));
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(8), 100).has_value());
+	ASSERT_TRUE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(7), 200).has_value());
+}
+
+TEST(NatServerHolePunch, AnUnansweredCrossServerTargetCoolsDown)
+{
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 0));
+	const std::uint64_t timedOut = kForeignRequestTimeoutMs;
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), timedOut).has_value());
+	ASSERT_FALSE(
+		requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, kForeignRequestTimeoutMs + 1));
+	ASSERT_FALSE(requests.TryStart(kForeignServer,
+		42,
+		201,
+		4662,
+		std::nullopt,
+		kForeignRequestTimeoutMs + kForeignTargetCooldownMs - 1));
+	ASSERT_TRUE(requests.TryStart(kForeignServer,
+		42,
+		201,
+		4662,
+		std::nullopt,
+		kForeignRequestTimeoutMs + kForeignTargetCooldownMs));
+}
+
+TEST(NatServerHolePunch, CrossServerRequestsStayBelowTheServerRateLimit)
+{
+	ForeignCallbackRequests requests;
+	for (std::uint32_t target = 1; target <= kForeignRequestBurst; ++target) {
+		ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 2 * target + 1, 4662, std::nullopt, 0));
+	}
+	ASSERT_FALSE(requests.TryStart(kForeignServer, 42, 1001, 4662, std::nullopt, 0));
+	// The limit is per server.
+	ASSERT_TRUE(requests.TryStart(kOtherServer, 42, 1001, 4662, std::nullopt, 0));
+	ASSERT_FALSE(
+		requests.TryStart(kForeignServer, 42, 1001, 4662, std::nullopt, kForeignRequestRefillMs - 1));
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 1001, 4662, std::nullopt, kForeignRequestRefillMs));
+}
+
+TEST(NatServerHolePunch, CrossServerTargetsPerServerStayBelowTheServerWindow)
+{
+	ForeignCallbackRequests requests;
+	std::uint64_t now = 0;
+	for (std::uint32_t target = 0; target < kForeignTargetsPerWindow; ++target) {
+		ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 2 * target + 1, 4662, std::nullopt, now));
+		requests.TakeAnswer(kForeignServer, 2 * target + 1, ForeignHash(1), now);
+		now += kForeignRequestRefillMs;
+	}
+	ASSERT_FALSE(requests.TryStart(kForeignServer, 42, 9001, 4662, std::nullopt, now));
+	ASSERT_TRUE(requests.TryStart(kForeignServer,
+		42,
+		9001,
+		4662,
+		std::nullopt,
+		kForeignTargetWindowMs + kForeignRequestRefillMs));
+}
+
+TEST(NatServerHolePunch, ACrossServerAnswerIsDecryptedWithTheKeyItsRequestWasSentWith)
+{
+	// Two listed servers can share an IP with different ports, and so different UDP keys.
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 0));
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 43, 203, 4662, std::nullopt, 0));
+	const std::vector<std::uint32_t> keys = requests.PendingKeysFrom(kForeignServer, 10);
+	ASSERT_EQUALS(2, static_cast<int>(keys.size()));
+	ASSERT_TRUE(std::find(keys.begin(), keys.end(), 42u) != keys.end());
+	ASSERT_TRUE(std::find(keys.begin(), keys.end(), 43u) != keys.end());
+	ASSERT_TRUE(requests.PendingKeysFrom(kOtherServer, 10).empty());
+
+	requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 20);
+	ASSERT_EQUALS(2, static_cast<int>(requests.PendingKeysFrom(kForeignServer, 20).size()));
+	ASSERT_EQUALS(1,
+		static_cast<int>(
+			requests.PendingKeysFrom(kForeignServer, 20 + kForeignAnswerResendMs).size()));
+}
+
+TEST(NatServerHolePunch, AnAnsweredRequestKeepsItsKeyForTheServerResends)
+{
+	// The server resends its answer at +1.2 s and +3 s: the copies must still decrypt, then find
+	// nothing to take, rather than reach the client path as an unknown packet.
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 0));
+	ASSERT_TRUE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 100).has_value());
+	const std::vector<std::uint32_t> keys = requests.PendingKeysFrom(kForeignServer, 3100);
+	ASSERT_EQUALS(1, static_cast<int>(keys.size()));
+	ASSERT_EQUALS(42u, keys.front());
+	ASSERT_FALSE(requests.AnswersPending(kForeignServer, 201, ForeignHash(1), 3100));
+	ASSERT_FALSE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 3100).has_value());
+	ASSERT_TRUE(requests.PendingKeysFrom(kForeignServer, 100 + kForeignAnswerResendMs).empty());
+}
+
+TEST(NatServerHolePunch, NoCrossServerRequestWhenEitherSideRequiresTheCryptLayer)
+{
+	// The server sends nothing when one side requires it, so the request would only spend its budget.
+	ForeignRequestFacts facts;
+	facts.ourId = 101;
+	facts.sourceId = 201;
+	facts.serverTakesForeignCallback = true;
+	facts.extensionAnnounced = true;
+	facts.ourUdpPort = 4672;
+	ASSERT_TRUE(ShouldRequestForeignCallback(facts));
+
+	ForeignRequestFacts weRequire = facts;
+	weRequire.weRequireCryptLayer = true;
+	ASSERT_FALSE(ShouldRequestForeignCallback(weRequire));
+
+	ForeignRequestFacts sourceRequires = facts;
+	sourceRequires.sourceRequiresCryptLayer = true;
+	ASSERT_FALSE(ShouldRequestForeignCallback(sourceRequires));
+}
+
+TEST(NatServerHolePunch, AnAnsweredCrossServerTargetCoolsDownToo)
+{
+	// A dial that fails after the answer must not ask again on the next retry.
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 0));
+	ASSERT_TRUE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(1), 100).has_value());
+	ASSERT_FALSE(requests.TryStart(kForeignServer, 42, 201, 4662, std::nullopt, 101));
+	ASSERT_FALSE(requests.TryStart(
+		kForeignServer, 42, 201, 4662, std::nullopt, 100 + kForeignTargetCooldownMs - 1));
+	ASSERT_TRUE(requests.TryStart(
+		kForeignServer, 42, 201, 4662, std::nullopt, 100 + kForeignTargetCooldownMs));
+}
+
+TEST(NatServerHolePunch, ACrossServerAnswerCanBeCheckedWithoutTakingIt)
+{
+	// Checked before the action limit, so a refusal there leaves the request for the server's resend.
+	ForeignCallbackRequests requests;
+	ASSERT_TRUE(requests.TryStart(kForeignServer, 42, 201, 4662, ForeignHash(7), 0));
+	ASSERT_FALSE(requests.AnswersPending(kForeignServer, 201, ForeignHash(8), 10));
+	ASSERT_FALSE(requests.AnswersPending(kForeignServer, 203, ForeignHash(7), 10));
+	ASSERT_TRUE(requests.AnswersPending(kForeignServer, 201, ForeignHash(7), 10));
+	ASSERT_TRUE(requests.AnswersPending(kForeignServer, 201, ForeignHash(7), 20));
+	ASSERT_TRUE(requests.TakeAnswer(kForeignServer, 201, ForeignHash(7), 30).has_value());
+	ASSERT_FALSE(requests.AnswersPending(kForeignServer, 201, ForeignHash(7), 40));
 }

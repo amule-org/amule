@@ -1429,7 +1429,8 @@ msgstr ""
 msgid "IO error while reading %s file: %s"
 msgstr ""
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr ""
@@ -2168,7 +2169,7 @@ msgstr ""
 msgid "Preview"
 msgstr ""
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2535,6 +2536,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -2994,6 +2999,11 @@ msgstr ""
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr ""
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
 
@@ -3004,11 +3014,6 @@ msgstr ""
 #: src/FileLaunch.cpp
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
-msgstr ""
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
 msgstr ""
 
 #: src/FilterSelectionSummary.h
@@ -5568,6 +5573,14 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
 msgstr ""
 
 #: src/muuli_wdr.cpp

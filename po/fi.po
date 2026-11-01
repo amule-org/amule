@@ -1501,7 +1501,8 @@ msgstr "VAROITUS: %s voi olla turmeltunut (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "IO-virhe luettaessa tiedostoa %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Virhe tallennettaessa tiedostoa %s: %s"
@@ -2252,7 +2253,7 @@ msgstr "Laajat asetukset"
 msgid "Preview"
 msgstr "Esikatsele"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2626,6 +2627,10 @@ msgstr "EC_TAG_FRIEND_SHARED vaatii EC_TAG_FRIEND- tai EC_TAG_CLIENT-tunnisteen.
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Verkkohaku etäliittymästä ei ole mielekästä."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3116,6 +3121,11 @@ msgstr "VIRHE: Ulkoista mediatoistinta ei voitu käynnistää! Komento: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "VIRHE: Kohteen '%s' näyttäminen tiedostonhallinnassa epäonnistui."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
 
@@ -3127,11 +3137,6 @@ msgstr ""
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr ""
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "VIRHE: Kohteen '%s' näyttäminen tiedostonhallinnassa epäonnistui."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
@@ -5743,6 +5748,14 @@ msgstr "Kad-lähteiden uudelleenhaun väli (minuuttia)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Lähteiden uudelleenkysymisen väli (minuuttia)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

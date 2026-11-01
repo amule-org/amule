@@ -1,10 +1,30 @@
 # Download write-buffer backpressure
 
-Only received, unwritten payload counts toward the 16 MiB budget. Every part
-file lives in the one temp directory, so a single budget covers them all.
-Selecting or sending block requests consumes no credit.
-This leaves the normal source pipeline available regardless of source count
-or round-trip time when storage keeps up.
+Only received, unwritten payload counts toward the write budget (128 MiB by
+default). Every part file lives in the one temp directory, so a single budget
+covers them all. Selecting or sending block requests consumes no credit. This
+leaves the normal source pipeline available regardless of source count or
+round-trip time when storage keeps up.
+
+`/eMule/WriteBufferLimitMiB` sets the budget from 1 to 1024 MiB. It is also
+available as **Download write buffer limit (MiB)** in the advanced preferences
+of amule and amulegui, and as `advanced.write_buffer_limit_mebibytes` in
+amuleapi and its web UI. Changes take effect immediately, including for buffered
+data; lowering the limit does not discard that data. The default applies to
+existing profiles without this new setting. Configuration and EC values are
+clamped to the supported range; the HTTP API rejects out-of-range values.
+
+An older daemon without the setting disables the control in remote clients.
+The API reports `advanced.write_buffer_limit_supported: false` and rejects an
+attempt to set the limit with HTTP 409 (`option_not_supported`). The web UI omits
+the unsupported setting when saving other preferences.
+
+The larger default leaves room for short write stalls, including bursts of part
+hashing on fast LAN downloads. It is a tradeoff against memory use, not a promise
+of higher throughput on every disk. Larger values cannot fix a disk that is
+persistently slower than incoming data. On memory-constrained systems, select a
+smaller value (16 MiB restores the previous threshold). No memory is reserved
+up front.
 
 Stop selecting new blocks at the budget and resume selection at 50%. Flush
 small buffers early at 12.5%, leaving headroom for arrivals between main-thread

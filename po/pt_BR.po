@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-31 11:58+0000\n"
+"PO-Revision-Date: 2026-11-01 10:29+0000\n"
 "Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
 "Language-Team: Português (Brasileiro) <pt@li.org>\n"
 "Language: pt_BR\n"
@@ -783,9 +783,9 @@ msgid "ServerMessage: %s"
 msgstr "MensagemDoServidor: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace nodes.dat: %s"
-msgstr "Falha ao substituir o banco de dados MaxMindDB '%s': %s"
+msgstr "Falha ao substituir o nodes.dat: %s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -1500,7 +1500,8 @@ msgstr "AVISO: %s pode estar corrompido (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "Erro de I/O ao ler arquivo %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Erro ao salvar arquivo %s: %s"
@@ -2241,7 +2242,7 @@ msgstr "Opções Extras"
 msgid "Preview"
 msgstr "Pré-visualizar"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "Mostrar no gerenciador de arquivos"
 
@@ -2613,6 +2614,10 @@ msgstr "EC_TAG_FRIEND_SHARED requer EC_TAG_FRIEND ou EC_TAG_CLIENT."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Busca web pela interface remota não faz sentido."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3096,6 +3101,11 @@ msgstr "ERRO: Falha ao executar o tocador de mídia externo! Comando: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "ERRO: Falha ao mostrar '%s' no gerenciador de arquivos."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "Não foi possível abrir '%s': o arquivo não está presente neste computador."
 
@@ -3107,11 +3117,6 @@ msgstr "Visualizar antecipadamente um download incompleto necessita de um tocado
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "ERRO: Falha ao abrir '%s' com o aplicativo padrão."
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ERRO: Falha ao mostrar '%s' no gerenciador de arquivos."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
@@ -3620,9 +3625,9 @@ msgstr[0] "%u linha malformada foi ignorada."
 msgstr[1] "%u linhas malformadas foram ignoradas."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace %s file, aborting update: %s"
-msgstr "Falha ao renomear arquivo %s, a atualização foi interrompida."
+msgstr "Falha ao substituir o arquivo %s; a atualização foi interrompida: %s"
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
@@ -5704,6 +5709,14 @@ msgstr "Intervalo entre novas buscas de fontes no Kad (minutos)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Intervalo entre novos pedidos às fontes (minutos)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -10456,9 +10469,9 @@ msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be 
 msgstr "O Kad não conseguiu ler %s. Ele foi renomeado para %s.bad, e um novo índice será salvo ao encerrar."
 
 #: src/kademlia/kademlia/Indexed.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad: %s. Its original file will not be overwritten."
-msgstr "O Kad não conseguiu preservar o índice ilegível %s como %s.bad. O arquivo original não será sobrescrito."
+msgstr "O Kad não conseguiu preservar o índice ilegível %s como %s.bad: %s. O arquivo original não será sobrescrito."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."

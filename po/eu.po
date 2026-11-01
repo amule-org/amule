@@ -1492,7 +1492,8 @@ msgstr "ABISUA: %s agian hondaturik dago (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "SI errorea %s fitxategia irakurtzean: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Errorea %s fitxategia gordetzerakoan: %s"
@@ -2243,7 +2244,7 @@ msgstr "Hedatutako aukerak"
 msgid "Preview"
 msgstr "Aurrebista"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2617,6 +2618,10 @@ msgstr "EC_TAG_FRIEND_SHARED-ek EC_TAG_FRIEND edo EC_TAG_CLIENT behar du."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Urruneko interfazeko Web bilaketak ez du zentzurik."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3108,6 +3113,11 @@ msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "ERROREA: Huts kanpo bideo erreproduzigailua abiaraztean! Komandoa: '%s'"
 
 #: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "ERROREA: Huts '%s' zati fitxategia irekitzean"
+
+#: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
@@ -3120,11 +3130,6 @@ msgstr ""
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr ""
-
-#: src/FileLaunch.cpp
-#, fuzzy, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ERROREA: Huts '%s' zati fitxategia irekitzean"
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
@@ -5740,6 +5745,14 @@ msgstr "Kad jatorrien berbilaketa-tartea (minutuak)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Jatorriari berriz eskatzeko tartea (minutuak)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

@@ -538,6 +538,11 @@ void CClientUDPSocket::OnPacketReceived(
 	if (TryProcessServerWayNatCallback(ip, buffer, length)) {
 		return;
 	}
+#ifdef AMULE_UTP_TRANSPORT
+	if (TryProcessForeignNatCallback(ip, buffer, length)) {
+		return;
+	}
+#endif
 #endif
 
 	uint8_t *decryptedBuffer;
@@ -703,9 +708,15 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 			LugdunumNatTraversal::LogForwardedCallback(
 				logClientUDP, "OP_NAT_CALLBACKREQUESTED_UDP", forwarded);
 #ifdef AMULE_UTP_TRANSPORT
-			// The extension wakes a target only with TCP 0x37: a 0xA7 is always Lugdunum's
-			// callback, answering our own 0xA6, so it is dialled at once.
-			DialLugdunumNatCallbackPeer(forwarded);
+			// Requester ID 0 means a cross-server wake on an extension server, sent by UDP when
+			// we asked for a callback ourselves just before; anywhere else it is a reverse
+			// callback. Every other 0xA7 answers our own 0xA6 and is dialled at once.
+			if (forwarded.requesterId == 0 && theApp->serverconnect != nullptr &&
+				theApp->serverconnect->IsHolePunchExtensionActive()) {
+				AnswerHolePunchExtensionWake(forwarded);
+			} else {
+				DialLugdunumNatCallbackPeer(forwarded);
+			}
 #endif
 		});
 	return true;
@@ -1054,6 +1065,88 @@ void CClientUDPSocket::NoteLugdunumCallbackRequested(uint32 targetId)
 	m_requestedCallbackTargets.Note(targetId, ::GetTickCount64());
 }
 
+bool CClientUDPSocket::SendForeignNatCallbackRequest(CServer *server,
+	uint32 targetId,
+	uint8_t ourCrypt,
+	uint16 sourceTcpPort,
+	const std::optional<NatServerHolePunch::Hash> &knownHash)
+{
+	if (server == nullptr || !Ok() ||
+		!m_foreignCallbacks.TryStart(server->GetIP(),
+			server->GetServerKeyUDP(),
+			targetId,
+			sourceTcpPort,
+			knownHash,
+			::GetTickCount64())) {
+		return false;
+	}
+	const auto payload = NatServerHolePunch::BuildForeignCallbackRequest(targetId, ourCrypt);
+	CMemFile data(payload.data(), payload.size());
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_NAT_CALLBACKREQUEST);
+	AddDebugLogLineN(logClientUDP,
+		CFormat("Client UDP socket: cross-server OP_NAT_CALLBACKREQUEST for source %u to %s") %
+			targetId %
+			Uint32_16toStringIP_Port(server->GetIP(), server->GetObfuscationPortUDP()));
+	theStats::AddUpOverheadOther(SendServerWayObfuscated(
+		packet, server->GetIP(), server->GetObfuscationPortUDP(), server->GetServerKeyUDP()));
+	return true;
+}
+
+bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, size_t length)
+{
+	const std::uint64_t now = ::GetTickCount64();
+	// Decrypted with the key the request was sent with: a failed attempt leaves the buffer as it was.
+	uint8_t *decrypted = buffer;
+	int decryptedLen = static_cast<int>(length);
+	for (const std::uint32_t key : m_foreignCallbacks.PendingKeysFrom(ip, now)) {
+		decryptedLen = CEncryptedDatagramSocket::DecryptReceivedServer(
+			buffer, static_cast<int>(length), &decrypted, key, ip);
+		// Every non-decrypting path returns the input length unchanged; a decrypt strips the header.
+		if (decryptedLen < static_cast<int>(length)) {
+			break;
+		}
+	}
+	if (decryptedLen >= static_cast<int>(length) || decrypted == nullptr || decryptedLen < 2) {
+		return false;
+	}
+	if (decrypted[0] != OP_EDONKEYPROT || decrypted[1] != OP_NAT_CALLBACKREQUESTED_UDP) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Unexpected server UDP packet 0x%02x/0x%02x from %s on the client socket") %
+				decrypted[0] % decrypted[1] % Uint32toStringIP(ip));
+		return true;
+	}
+	const std::optional<NatServerHolePunch::ForeignCallbackAnswer> answer =
+		NatServerHolePunch::ParseForeignCallbackAnswer(decrypted + 2, decryptedLen - 2);
+	if (!answer || !m_foreignCallbacks.AnswersPending(ip, answer->targetId, answer->targetHash, now)) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Dropped a cross-server 0xA7 from %s: no pending request") %
+				Uint32toStringIP(ip));
+		return true;
+	}
+	// Checked before the answer is taken: a refusal here leaves the request for the server's resend.
+	CServerConnect *connect = theApp->serverconnect;
+	if (connect == nullptr || !connect->LowIdHolePunchActionLimiter().Admit(now)) {
+		return true;
+	}
+	const std::optional<NatServerHolePunch::ForeignCallbackRequests::Pending> pending =
+		m_foreignCallbacks.TakeAnswer(ip, answer->targetId, answer->targetHash, now);
+	if (!pending) {
+		return true;
+	}
+	AddDebugLogLineN(logClientUDP,
+		CFormat("Cross-server answer from %s: source %u at %s; dialling") % Uint32toStringIP(ip) %
+			answer->targetId % Uint32_16toStringIP_Port(answer->targetIp, answer->targetUdpPort));
+	// Both sides punch; the requester holds the target's hash, so it dials, obfuscated from the start.
+	ExpectNatTPeer(answer->targetIp, answer->targetUdpPort, &answer->targetHash);
+	CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
+	theStats::AddUpOverheadOther(punch->GetPacketSize());
+	SendPacket(punch, answer->targetIp, answer->targetUdpPort, false, nullptr, false, 0);
+	const NatServerHolePunch::VouchedPeer peer{ answer->targetHash,
+		static_cast<std::uint8_t>(answer->crypt & 0x07) };
+	DialLowIdHolePunchPeer(answer->targetIp, pending->sourceTcpPort, answer->targetUdpPort, peer);
+	return true;
+}
+
 bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash)
 {
 	const std::optional<NatServerHolePunch::RendezvousPath> path =
@@ -1153,6 +1246,12 @@ bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::
 	// Punch now and refresh our port; the dial waits for the 0x61's role, as on any extension
 	// server, and no reverse callback is needed when the 0x61 gives both sides the endpoints.
 	connect->HolePunchExtensionWakes().Add(callback.requesterId, callback, now);
+	if (callback.requesterId == 0) {
+		// A cross-server requester dials us and no 0x61 follows: its hello is this rendezvous's
+		// success.
+		NoteRendezvousAttempt(
+			NatServerHolePunch::RendezvousPath::LugdunumCallback, target.ip, nullptr);
+	}
 	connect->StartHolePunchExtensionKeepalives();
 	CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
 	theStats::AddUpOverheadOther(punch->GetPacketSize());

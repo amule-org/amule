@@ -1487,7 +1487,8 @@ msgstr "FIGYELEM: %s lehet, hogy sérült (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "IO hiba a %s fájl olvasása közben: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Hiba a %s fájl mentése közben: %s"
@@ -2230,7 +2231,7 @@ msgstr "Kibővített beállítások"
 msgid "Preview"
 msgstr "Előnézet"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2602,6 +2603,10 @@ msgstr "EC_TAG_FRIEND_SHARED igényel EC_TAG_FRIEND vagy EC_TAG_CLIENT értéket
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Webes keresésnek a távoli felületről nincs értelme."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3093,6 +3098,11 @@ msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "HIBA: Külső média-lejátszó indítása sikertelen! Parancs: '%s'"
 
 #: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "HIBA: A(z) '%s' részfájl megnyitása sikertelen."
+
+#: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
@@ -3105,11 +3115,6 @@ msgstr ""
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr ""
-
-#: src/FileLaunch.cpp
-#, fuzzy, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "HIBA: A(z) '%s' részfájl megnyitása sikertelen."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
@@ -5715,6 +5720,14 @@ msgstr "Kad forrás újrakeresési időköz (perc)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Forrás újrakérdezési időköz (perc)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

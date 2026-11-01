@@ -122,8 +122,7 @@ bool CHashListFile::Contains(const CMD4Hash &) const
 	return false;
 }
 
-// Declared here, not through GuiEvents.h: its inline CMuleGUIEvent needs MULE_EVT_NOTIFY, which
-// this test does not link, and LTO keeps that reference alive.
+// Declared here, not through GuiEvents.h, to keep its dependencies out of this test.
 namespace MuleNotify
 {
 class CMuleNotiferBase;

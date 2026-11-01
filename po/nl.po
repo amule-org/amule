@@ -1499,7 +1499,8 @@ msgstr "WAARSCHUWING: %s is mogelijk beschadigd (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "IO-fout bij het lezen van bestand %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Fout bij het bewaren van bestand %s: %s"
@@ -2240,7 +2241,7 @@ msgstr "Uitgebreide opties"
 msgid "Preview"
 msgstr "Voorbeeld"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "Toon in bestandsbeheer"
 
@@ -2615,6 +2616,10 @@ msgstr "EC_TAG_FRIEND_SHARED vereist EC_TAG_FRIEND of EC_TAG_CLIENT."
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "WebSearch vanaf afstand is zinloos."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3101,6 +3106,11 @@ msgstr "FOUT: Opstarten externe mediaspeler mislukt! Commando: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "FOUT: Tonen van '%s' in bestandsbeheer mislukt."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "Kan '%s' niet openen: het bestand is niet aanwezig op deze computer."
 
@@ -3112,11 +3122,6 @@ msgstr "Voorbeeldweergave van een onvoltooide download heeft een videospeler nod
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "FOUT: Openen van '%s' met de standaardapp mislukt."
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "FOUT: Tonen van '%s' in bestandsbeheer mislukt."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
@@ -5716,6 +5721,14 @@ msgstr "Interval voor Kad-bron-herzoekopdracht (minuten)"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Interval voor opnieuw bevragen van bronnen (minuten)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

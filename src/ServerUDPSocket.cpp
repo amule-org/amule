@@ -168,16 +168,20 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 			break;
 		}
 		case OP_GLOBFOUNDSOURCES: {
-			if (!theApp->serverlist->GetServerByIP(ip)) {
+			// An obfuscated answer comes from the server's obfuscation port, not its TCP port
+			// + 4.
+			const CServer *sender = theApp->serverlist->GetServerByIPUDP(ip, port, true);
+			if (sender == nullptr && !theApp->serverlist->GetServerByIP(ip)) {
 				throw wxString(
 					CFormat("OP_GLOBFOUNDSOURCES packet from unknown server %s:%d") %
 					Uint32toStringIP(ip) % port);
 			}
+			const uint16 serverTcpPort = sender != nullptr ? sender->GetPort() : port - 4;
 			// process all source packets
 			do {
 				CMD4Hash fileid = packet.ReadHash();
 				if (CPartFile *file = theApp->downloadqueue->GetFileByID(fileid)) {
-					file->AddSources(packet, ip, port - 4, SF_REMOTE_SERVER, false);
+					file->AddSources(packet, ip, serverTcpPort, SF_REMOTE_SERVER, false);
 				} else {
 					AddDebugLogLineC(logServerUDP, "Sources received for unknown file");
 					// skip sources for that file

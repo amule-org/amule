@@ -157,6 +157,22 @@ bool OpenWithDesktop(const CPath &path)
 #endif
 }
 
+// Rewrite a remote daemon's path into this machine's, per the user's configured mappings
+// (issue #843) -- the daemon's /downloads/incoming reachable here as
+// D:\Downloads\aMule\incoming over a Samba mount, say. String substitution on the raw
+// daemon path, before it becomes part of a CPath, since the remote side need not use this
+// host's separator convention. Returns the input unchanged when no mapping's prefix
+// matches, the empty mapping list included.
+CPath LocalDirectory(const CPath &directory)
+{
+#ifdef CLIENT_GUI
+	return CPath(theApp->glob_prefs->ApplyPathMapping(directory.GetRaw()));
+#else
+	// The monolithic app is its own core: never remapped.
+	return directory;
+#endif
+}
+
 } // namespace
 
 namespace FileLaunch
@@ -174,19 +190,6 @@ bool ResolvePath(const CKnownFile *file, CPath &out)
 		return false;
 	}
 
-#ifdef CLIENT_GUI
-	// Rewrite a remote daemon's path into this machine's, per the user's configured mappings
-	// (issue #843) -- the daemon's /downloads/incoming reachable here as
-	// D:\Downloads\aMule\incoming over a Samba mount, say. String substitution on the raw
-	// daemon path, before it becomes part of a CPath, since the remote side need not use this
-	// host's separator convention. Returns the input unchanged when no mapping's prefix
-	// matches, the empty mapping list included.
-	const CPath directory = CPath(theApp->glob_prefs->ApplyPathMapping(rawDirectory.GetRaw()));
-#else
-	// The monolithic app is its own core: never remapped, so no copy.
-	const CPath &directory = rawDirectory;
-#endif
-
 	// IsPartFile() is `status != PS_COMPLETE` on CPartFile and a constant false on CKnownFile,
 	// so a true answer also establishes the dynamic type -- the downcast below is guarded by
 	// the same test that selects this branch.
@@ -200,8 +203,23 @@ bool ResolvePath(const CKnownFile *file, CPath &out)
 		return false;
 	}
 
-	out = directory.JoinPaths(name);
+	out = LocalDirectory(rawDirectory).JoinPaths(name);
 	return true;
+}
+
+bool CanOpenDirectory(const CPath &directory)
+{
+	return directory.IsOk() && LocalDirectory(directory).DirExists();
+}
+
+void OpenDirectory(const CPath &directory)
+{
+	const CPath local = LocalDirectory(directory);
+	// Rechecked: the folder may have gone since the menu was built.
+	if (!CanOpenDirectory(directory) || !OpenWithDesktop(local)) {
+		AddLogLineC(
+			CFormat(_("ERROR: Failed to show '%s' in the file manager.")) % local.GetPrintable());
+	}
 }
 
 bool CanOpen(const CKnownFile *file)
@@ -324,11 +342,7 @@ void Reveal(const CKnownFile *file, wxWindow *WXUNUSED(parent))
 	// No portable way to select the file; opening the containing folder is the part every
 	// desktop agrees on. Selecting it would mean the FileManager1 D-Bus interface, which not
 	// every file manager implements.
-	const wxString directory = path.GetPath().GetRaw();
-	wxArrayString args;
-	args.Add("xdg-open");
-	args.Add(directory);
-	ok = ExternalCommand::RunDetached(CFormat("xdg-open %s") % directory, args);
+	ok = OpenWithDesktop(path.GetPath());
 #endif
 
 	if (!ok) {

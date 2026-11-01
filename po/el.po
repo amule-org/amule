@@ -1490,7 +1490,8 @@ msgstr "ΠΡΟΕΙΔΟΠΟΙΗΣΗ: %s μπορεί να είναι φθαρμέ
 msgid "IO error while reading %s file: %s"
 msgstr "Σφάλμα εισόδου/εξόδου κατά την ανάγνωση του αρχείου %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Σφάλμα κατά την αποθήκευση του αρχείου %s: %s"
@@ -2243,7 +2244,7 @@ msgstr "Εκτεταμένες Προτιμήσεις"
 msgid "Preview"
 msgstr "Προεπισκόπιση"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2617,6 +2618,10 @@ msgstr "Το EC_TAG_FRIEND_SHARED απαιτεί EC_TAG_FRIEND ή EC_TAG_CLIENT.
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Η αναζήτηση από τον ιστό από απομακρυσμένο περιβάλλον δεν έχει κανένα νόημα."
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3107,6 +3112,11 @@ msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "ΣΦΑΛΜΑ: Αποτυχία εκτέλεσης του εξωτερικού προγράμματος εμφάνισης πολυμέσων! Εντολή: '%s'"
 
 #: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "ΣΦΑΛΜΑ: Αποτυχία ανοίγματος του ημιτελούς αρχείου '%s'"
+
+#: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
@@ -3119,11 +3129,6 @@ msgstr ""
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr ""
-
-#: src/FileLaunch.cpp
-#, fuzzy, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ΣΦΑΛΜΑ: Αποτυχία ανοίγματος του ημιτελούς αρχείου '%s'"
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
@@ -5738,6 +5743,14 @@ msgstr "Διάστημα επανάληψης αναζήτησης πηγών Ka
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "Διάστημα επανερώτησης πηγών (λεπτά)"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

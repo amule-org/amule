@@ -155,7 +155,8 @@ def run(binary, shim, compressed, held_sources=False):
         ports = free_ports(2, peer_index=1)
         write_amule_conf(root, ports[0], Address=sources[0].address, Port=ports[1], UDPEnable=0,
                          FilterLanIPs=0, MaxDownload=0, MaxUpload=0,
-                         MaxConnections=1000, MaxConnectionsPerFiveSeconds=1000)
+                         MaxConnections=1000, MaxConnectionsPerFiveSeconds=1000,
+                         WriteBufferLimitMiB=LIMIT // (1024 * 1024))
         preload = ':'.join(filter(None, [os.environ.get('AMULE_TEST_PRELOAD_RUNTIME'), shim]))
         env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8',
                    LD_PRELOAD=preload, AMULE_TEST_WRITE_GATE=str(gate), AMULE_TEST_WRITE_ERROR=str(failure))

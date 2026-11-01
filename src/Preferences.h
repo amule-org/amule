@@ -36,6 +36,7 @@
 #include "ShareExclude.h"
 #include "OtherStructs.h"
 #include "SourceSearchLimits.h"
+#include "WriteBufferLimits.h"
 
 #include <common/ClientVersion.h> // Needed for __GIT__
 
@@ -395,6 +396,19 @@ public:
 
 	static const wxString &GetVideoPlayer() { return s_VideoPlayer; }
 
+	// Runtime capability, learned from the daemon by amulegui and never persisted.
+	static bool IsWriteBufferLimitSupported() { return s_writeBufferLimitSupported; }
+	static void SetWriteBufferLimitSupported(bool val) { s_writeBufferLimitSupported = val; }
+	static uint32 GetWriteBufferLimitMiB() { return s_writeBufferLimitMiB; }
+	static uint64 GetWriteBufferLimitBytes()
+	{
+		return s_writeBufferLimitMiB * WriteBufferLimits::bytesPerMiB;
+	}
+	static void SetWriteBufferLimitMiB(uint64 val)
+	{
+		s_writeBufferLimitMiB = static_cast<uint32>(std::min<uint64>(
+			std::max<uint64>(val, WriteBufferLimits::minMiB), WriteBufferLimits::maxMiB));
+	}
 	static uint32 GetFileBufferSize() { return s_iFileBufferSize * 15000; }
 	static void SetFileBufferSize(uint32 val) { s_iFileBufferSize = val / 15000; }
 	static uint32 GetQueueSize() { return s_iQueueSize * 100; }
@@ -1126,6 +1140,8 @@ protected:
 	static bool s_msgsecure;
 
 	static uint8 s_iFileBufferSize;
+	static uint32 s_writeBufferLimitMiB;
+	static bool s_writeBufferLimitSupported;
 	static uint8 s_iQueueSize;
 
 	static bool s_ToolbarOrientation;

@@ -192,6 +192,8 @@ bool CPreferences::s_msgonlyfriends;
 bool CPreferences::s_msgsecure;
 uint8 CPreferences::s_filterlevel;
 uint8 CPreferences::s_iFileBufferSize;
+uint32 CPreferences::s_writeBufferLimitMiB = WriteBufferLimits::defaultMiB;
+bool CPreferences::s_writeBufferLimitSupported = true;
 uint8 CPreferences::s_iQueueSize;
 wxString CPreferences::s_sWebPath;
 wxString CPreferences::s_sWebPassword;
@@ -1316,6 +1318,9 @@ void CPreferences::BuildItemList(const wxString &appdir)
 		(new Cfg_Bool("/eMule/StartNextFileAlpha", s_bstartnextfilealpha, false)));
 	NewCfgItem(IDC_SRCSEEDS, (new Cfg_Bool("/ExternalConnect/UseSrcSeeds", s_UseSrcSeeds, false)));
 	NewCfgItem(IDC_FILEBUFFERSIZE, (MkCfg_Int("/eMule/FileBufferSizePref", s_iFileBufferSize, 16)));
+	NewCfgItem(IDC_WRITEBUFFERLIMIT,
+		MkCfg_Int(
+			"/eMule/WriteBufferLimitMiB", s_writeBufferLimitMiB, WriteBufferLimits::defaultMiB));
 	NewCfgItem(IDC_DAP, (new Cfg_Bool("/eMule/DAPPref", s_bDAP, true)));
 	NewCfgItem(IDC_UAP, (new Cfg_Bool("/eMule/UAPPref", s_bUAP, true)));
 	NewCfgItem(IDC_ALLOCFULLFILE, (new Cfg_Bool("/eMule/AllocateFullFile", s_allocFullFile, false)));
@@ -1740,6 +1745,11 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 	for (; it_b != s_MiscList.end(); ++it_b) {
 		(*it_b)->LoadFromFile(cfg);
 	}
+
+	// Validate the signed configuration value before narrowing to unsigned MiB.
+	long writeBufferMiB = WriteBufferLimits::defaultMiB;
+	cfg->Read("/eMule/WriteBufferLimitMiB", &writeBufferMiB, WriteBufferLimits::defaultMiB);
+	SetWriteBufferLimitMiB(writeBufferMiB < 0 ? WriteBufferLimits::minMiB : writeBufferMiB);
 
 	// Validate before unsigned narrowing: a negative or oversized hand-edited interval
 	// must not wrap into a valid enabled value. Invalid configuration defaults to off.

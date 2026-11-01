@@ -14,7 +14,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-31 11:59+0000\n"
+"PO-Revision-Date: 2026-11-01 10:29+0000\n"
 "Last-Translator: Mike Akiba <mike2718@gmail.com>\n"
 "Language-Team: Chinese Simplified <kde-i18n-doc@kde.org>\n"
 "Language: zh_CN\n"
@@ -779,9 +779,9 @@ msgid "ServerMessage: %s"
 msgstr "服务器消息：%s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace nodes.dat: %s"
-msgstr "替换 MaxMindDB 数据库 '%s' 失败： %s"
+msgstr "替换 nodes.dat 失败：%s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -1496,7 +1496,8 @@ msgstr "警告：%s可能已损坏（%i）"
 msgid "IO error while reading %s file: %s"
 msgstr "读取 %s 文件时发生 IO 错误：%s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "保存 %s 文件时发生错误：%s"
@@ -2237,7 +2238,7 @@ msgstr "扩展选项"
 msgid "Preview"
 msgstr "预览"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "在文件管理器显示"
 
@@ -2609,6 +2610,10 @@ msgstr "EC_TAG_FRIEND_SHARED 需要 EC_TAG_FRIEND 或 EC_TAG_CLIENT。"
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "远程界面使用网络搜索没有意义。"
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3092,6 +3097,11 @@ msgstr "错误: 无法运行外部媒体播放器！ 命令: '%s'"
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "错误：未能在文件管理器中显示 “%s”。"
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "无法打开'%s'： 该文件不存在于此计算机上。"
 
@@ -3103,11 +3113,6 @@ msgstr "预览未完成的下载需要视频播放器：部分下载的文件没
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "错误：未能使用默认应用打开'%s'。"
-
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "错误：未能在文件管理器中显示 “%s”。"
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
@@ -3616,9 +3621,9 @@ msgstr[0] "丢弃了 %u 行错误数据。"
 msgstr[1] "丢弃了 %u 行错误数据。"
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace %s file, aborting update: %s"
-msgstr "重名命%s文件失败，放弃更新。"
+msgstr "替换 %s 文件失败，正在中断更新 %s："
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
@@ -5700,6 +5705,14 @@ msgstr "Kad 源重新搜索间隔（分钟）"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "源重新请求间隔（分钟）"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -10449,9 +10462,9 @@ msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be 
 msgstr "Kad 无法读取 %s。它被重命名为 %s.bad。将在关机时保存新的索引。"
 
 #: src/kademlia/kademlia/Indexed.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad: %s. Its original file will not be overwritten."
-msgstr "Kad 无法将不可读的 %s 索引保留为 %s.bad。其原始文件不会被覆盖。"
+msgstr "Kad 无法将不可读的 %s 索引保留为 %s.bad：%s。其原始文件不会被覆盖。"
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."

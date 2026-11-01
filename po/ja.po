@@ -1486,7 +1486,8 @@ msgstr "警告：%s は破損している可能性があります (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "%s ファイルの読み取り中にIOエラーが発生しました：%s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "%s ファイルの保存中にエラーが発生しました：%s"
@@ -2230,7 +2231,7 @@ msgstr "拡張オプション"
 msgid "Preview"
 msgstr "プレビュー"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr ""
 
@@ -2602,6 +2603,10 @@ msgstr "EC_TAG_FRIEND_SHARED には EC_TAG_FRIEND または EC_TAG_CLIENT が必
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "リモートインタフェイスからWebSearchする意味がありません。"
+
+#: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -3093,6 +3098,11 @@ msgid "ERROR: Failed to execute external media-player! Command: '%s'"
 msgstr "エラー：外部メディア・プレイヤーを実行できませんでした！コマンド：'%s'"
 
 #: src/FileLaunch.cpp
+#, fuzzy, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "エラー: 部分ファイル '%s' が開けませんでした"
+
+#: src/FileLaunch.cpp
 #, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr ""
@@ -3105,11 +3115,6 @@ msgstr ""
 #, c-format
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr ""
-
-#: src/FileLaunch.cpp
-#, fuzzy, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "エラー: 部分ファイル '%s' が開けませんでした"
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
@@ -5713,6 +5718,14 @@ msgstr "Kad ソースの再検索間隔（分）"
 #: src/muuli_wdr.cpp
 msgid "Source re-ask interval (minutes)"
 msgstr "ソースの再問い合わせ間隔（分）"
+
+#: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"

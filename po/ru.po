@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-29 21:57+0000\n"
+"PO-Revision-Date: 2026-11-01 10:29+0000\n"
 "Last-Translator: Radist Morse <radist.morse@gmail.com>\n"
 "Language-Team: Russian <kde-russian@lists.kde.ru>\n"
 "Language: ru\n"
@@ -455,7 +455,7 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
+msgstr "Не удалось сохранить AcceptExternalConnections в amule.conf."
 
 #: src/amule.cpp
 msgid "Password set and external connections enabled."
@@ -534,9 +534,8 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "Запуск %s не выполняется: его нет ни рядом с aMule, ни в PATH."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "An exception occurred while launching amuleweb."
-msgstr "При запуске amuleapi возникло исключение."
+msgstr "При запуске amuleweb возникло исключение."
 
 #: src/amule.cpp
 #, c-format
@@ -545,7 +544,7 @@ msgstr "веб-сервер работает с pid %d"
 
 #: src/amule.cpp
 msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
+msgstr "Не удалось подготовить токен аутентификации amuleweb. Веб-сервер не был запущен."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -579,14 +578,13 @@ msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot 
 msgstr "Вы запросили запуск amuleapi при старте, но исполняемый файл amuleapi не может быть запущен. Установите пакет, содержащий REST API-сервер aMule, либо соберите aMule из исходного кода с параметром -DBUILD_AMULEAPI=YES и установите его."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Could not prepare the amuleweb EC token."
-msgstr "Не удалось удалить файл токена внешнего соединения amuleapi: %s"
+msgstr "Не удалось подготовить EC-токен amuleweb."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Не удалось удалить файл токена внешнего соединения amuleapi: %s"
+msgstr "Не удалось удалить файл EC-токена amuleweb: %s"
 
 #: src/amule.cpp
 #, c-format
@@ -785,9 +783,9 @@ msgid "ServerMessage: %s"
 msgstr "Сообщение сервера: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace nodes.dat: %s"
-msgstr "Не удалось заменить базу данных MaxMindDB «%s»: %s"
+msgstr "Не удалось заменить nodes.dat: %s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -910,11 +908,11 @@ msgstr "ОШИБКА: демон aMule нельзя использовать п�
 
 #: src/amuled.cpp
 msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
-msgstr ""
+msgstr "ОШИБКА: требуется EC-пароль. Запустите amuled --ec-config, чтобы задать его."
 
 #: src/amuled.cpp
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
-msgstr ""
+msgstr "ОШИБКА: недопустимый ECPasswordVerifier в amule.conf. Запустите amuled --ec-config, чтобы задать новый EC-пароль."
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -1333,7 +1331,7 @@ msgstr "Все"
 
 #: src/amule-remote-gui.cpp
 msgid "The EC password changed on the daemon, but the saved client password could not be updated."
-msgstr ""
+msgstr "EC-пароль на демоне изменён, но сохранённый пароль клиента обновить не удалось."
 
 #: src/amule-remote-gui.cpp src/muuli_wdr.cpp
 msgid "To allow a folder, add it to allowed-remote-dirs.dat in the daemon's configuration folder, one absolute path per line, then restart the daemon."
@@ -1345,14 +1343,12 @@ msgid "The daemon refused these folders because they are outside the folders it 
 msgstr "Демон отклонил эти папки, так как они находятся вне разрешённых им папок (настраивается на стороне демона):%s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
-#, fuzzy
 msgid "The EC password was not changed."
-msgstr "— изменён порт TCP.\n"
+msgstr "EC-пароль не был изменён."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "The daemon could not apply the preference changes."
-msgstr "Демон не смог применить изменения портов соединения."
+msgstr "Демон не смог применить изменения настроек."
 
 #: src/amule-remote-gui.cpp
 msgid "not readable"
@@ -1510,7 +1506,8 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: %s возможно поврежден (%i
 msgid "IO error while reading %s file: %s"
 msgstr "Ошибка ввода/вывода при чтении файла %s: %s"
 
-#: src/HashListFile.cpp src/KnownFileList.cpp
+#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
+#: src/KnownFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Ошибка при сохранении файла %s: %s"
@@ -2263,7 +2260,7 @@ msgstr "Дополнительные настройки"
 msgid "Preview"
 msgstr "Предпросмотр"
 
-#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/DownloadListCtrl.cpp src/SharedFilesCtrl.cpp src/TransferWnd.cpp
 msgid "Show in file manager"
 msgstr "Показать в файловом менеджере"
 
@@ -2473,14 +2470,12 @@ msgid "External connections disabled due to empty password!"
 msgstr "Внешние подключения отключены из-за отсутствия пароля!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled due to invalid ECPasswordVerifier!"
-msgstr "Внешние подключения отключены из-за отсутствия пароля!"
+msgstr "Внешние подключения отключены из-за недопустимого ECPasswordVerifier!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled: could not prepare the EC token verifier."
-msgstr "Внешние соединения отключены в файле конфигурации"
+msgstr "Внешние подключения отключены: не удалось подготовить верификатор EC-токена."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2519,7 +2514,7 @@ msgstr "Неизвестная версия"
 
 #: src/ExternalConn.cpp
 msgid "An EC client of version 3.3.0 or later is required."
-msgstr ""
+msgstr "Требуется EC-клиент версии 3.3.0 или новее."
 
 #: src/ExternalConn.cpp
 msgid "Incorrect EC version ID, there might be binary incompatibility. Use core and remote from same snapshot."
@@ -2531,7 +2526,7 @@ msgstr "Вы не можете подключиться к стабильной 
 
 #: src/ExternalConn.cpp
 msgid "Invalid SRP handshake or EC verifier."
-msgstr ""
+msgstr "Неверное SRP-рукопожатие или верификатор EC."
 
 #: src/ExternalConn.cpp
 msgid "Invalid protocol version."
@@ -2642,6 +2637,10 @@ msgid "WebSearch from remote interface makes no sense."
 msgstr "При удалённом использовании aMule веб-поиск бесполезен."
 
 #: src/ExternalConn.cpp
+msgid "Invalid media search filter."
+msgstr ""
+
+#: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
 msgstr "Просмотр не является поиском, который можно запустить."
 
@@ -2705,21 +2704,19 @@ msgstr "Не удалось переключить клиента на этот 
 
 #: src/ExternalConn.cpp
 msgid "Duplicate remote-control preference groups are not allowed."
-msgstr ""
+msgstr "Повторяющиеся группы настроек удалённого управления не допускаются."
 
 #: src/ExternalConn.cpp
 msgid "Only password-authenticated sessions may change the EC password."
-msgstr ""
+msgstr "Менять EC-пароль могут только сеансы, прошедшие аутентификацию по паролю."
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not update EC password verifier."
-msgstr "Не удалось сохранить пароль amuleapi: %s"
+msgstr "Не удалось обновить верификатор EC-пароля."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not apply preferences."
-msgstr "Kad отключён в настройках."
+msgstr "Не удалось применить настройки."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2727,14 +2724,13 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "Не удалось сохранить пароль amuleapi: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not update EC password verifier. The other preferences were saved."
-msgstr "Пароль задан и внешние соединения разрешены."
+msgstr "Не удалось обновить верификатор EC-пароля. Остальные настройки сохранены."
 
 #: src/ExternalConn.cpp
 #, c-format
 msgid "EC password changed by %s"
-msgstr ""
+msgstr "EC-пароль изменён пользователем %s"
 
 #: src/ExternalConn.cpp
 msgid "One or more folders were outside the allowed remote directories and were left unchanged."
@@ -3047,7 +3043,7 @@ msgstr "Не записывать файл журнала; выводить то
 
 #: src/ExternalConnector.cpp
 msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr ""
+msgstr "Верификатор демона не может предоставить пароль клиента. Используйте -P или запрос пароля.\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -3126,6 +3122,11 @@ msgstr "ОШИБКА: невозможно запустить проигрыва
 
 #: src/FileLaunch.cpp
 #, c-format
+msgid "ERROR: Failed to show '%s' in the file manager."
+msgstr "ОШИБКА: не удалось показать «%s» в файловом менеджере."
+
+#: src/FileLaunch.cpp
+#, c-format
 msgid "Cannot open '%s': the file is not present on this computer."
 msgstr "Невозможно открыть «%s»: файл отсутствует на этом компьютере."
 
@@ -3138,72 +3139,63 @@ msgstr "Для предпросмотра незавершённой загру�
 msgid "ERROR: Failed to open '%s' with the default application."
 msgstr "ОШИБКА: не удалось открыть «%s» стандартным приложением."
 
-#: src/FileLaunch.cpp
-#, c-format
-msgid "ERROR: Failed to show '%s' in the file manager."
-msgstr "ОШИБКА: не удалось показать «%s» в файловом менеджере."
-
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
-msgstr ""
+msgstr "Фильтр сообщений выключен; выбранные правила сохранены."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "All incoming messages outside current chats will be discarded."
-msgstr "Фильтровать входящие сообщения (кроме текущего чата):"
+msgstr "Все входящие сообщения вне текущих чатов будут отброшены."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Messages from people not on your friend list will be discarded."
-msgstr "Фильтровать сообщения пользователей не из вашего списка друзей"
+msgstr "Сообщения от пользователей не из вашего списка друзей будут отброшены."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Messages from unknown clients will be discarded."
-msgstr "Фильтровать сообщения от неизвестных клиентов"
+msgstr "Сообщения от неизвестных клиентов будут отброшены."
 
 #: src/FilterSelectionSummary.h
 #, c-format
 msgid "Messages containing any of these terms will be discarded (ignoring case): %s."
-msgstr ""
+msgstr "Сообщения, содержащие любое из этих слов, будут отброшены (без учёта регистра): %s."
 
 #: src/FilterSelectionSummary.h
 msgid "No messages will be discarded by the message filter: the word list is empty."
-msgstr ""
+msgstr "Фильтр сообщений ничего не отбросит: список слов пуст."
 
 #: src/FilterSelectionSummary.h
 msgid "No messages will be discarded by the message filter: select at least one option."
-msgstr ""
+msgstr "Фильтр сообщений ничего не отбросит: выберите хотя бы один параметр."
 
 #: src/FilterSelectionSummary.h
 msgid "Current chats are exempt from these rules."
-msgstr ""
+msgstr "Текущие чаты не подпадают под эти правила."
 
 #: src/FilterSelectionSummary.h
 msgid "Advanced spam filtering for non-friends is also enabled."
-msgstr ""
+msgstr "Также включён расширенный фильтр спама для пользователей не из списка друзей."
 
 #: src/FilterSelectionSummary.h
 msgid "First messages from non-friends require a CAPTCHA."
-msgstr ""
+msgstr "Первые сообщения от пользователей не из списка друзей требуют CAPTCHA."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Received message text will also be written to the log."
-msgstr "Показывать полученные сообщения в логе"
+msgstr "Текст полученных сообщений также будет записываться в журнал."
 
 #: src/FilterSelectionSummary.h
 msgid "File comment filtering is off."
-msgstr ""
+msgstr "Фильтрация комментариев к файлам выключена."
 
 #: src/FilterSelectionSummary.h
 msgid "No file comments will be hidden: the word list is empty."
-msgstr ""
+msgstr "Ни один комментарий к файлу не будет скрыт: список слов пуст."
 
 #: src/FilterSelectionSummary.h
 #, c-format
 msgid "File comments containing any of these literal terms will be hidden (ignoring case): %s."
-msgstr ""
+msgstr "Комментарии к файлам, содержащие любое из этих слов, будут скрыты (без учёта регистра): %s."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -3656,9 +3648,9 @@ msgstr[1] "%u испорченных строки пропущено."
 msgstr[2] "%u испорченных строк пропущено."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace %s file, aborting update: %s"
-msgstr "Не удалось переименовать файл %s, обновление прервано."
+msgstr "Не удалось заменить файл %s, обновление прервано: %s"
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
@@ -4185,9 +4177,8 @@ msgid "Invalid password, not a MD5 hash!"
 msgstr "Неверный пароль. Не MD5-хеш!"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Could not generate SRP credentials."
-msgstr "Не удалось удалить «%s» с диска."
+msgstr "Не удалось сгенерировать учётные данные SRP."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
@@ -4207,13 +4198,12 @@ msgid "EC connection failed. Empty reply."
 msgstr "EC соединение не удалось. Пустой ответ."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Invalid SRP handshake or unsupported profile. Connection closed."
-msgstr "Внешнее соединение: Некорректный ответ, авторизация неудачна. Соединение закрыто."
+msgstr "Неверное SRP-рукопожатие или неподдерживаемый профиль. Соединение закрыто."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "An EC daemon of version 3.3.0 or later is required."
-msgstr ""
+msgstr "Требуется EC-демон версии 3.3.0 или новее."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
@@ -5759,6 +5749,14 @@ msgid "Source re-ask interval (minutes)"
 msgstr "Период повторного запроса источников (мин.)"
 
 #: src/muuli_wdr.cpp
+msgid "Download write buffer limit (MiB)"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
 msgstr "Размер буфера файла: 240000 байт"
 
@@ -6334,9 +6332,8 @@ msgid "Check for a newer GeoIP database at startup and every week while aMule is
 msgstr "Проверять наличие новой базы данных GeoIP при запуске и раз в неделю во время работы aMule."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable incoming message filtering (except current chat):"
-msgstr "Фильтровать входящие сообщения (кроме текущего чата):"
+msgstr "Включить фильтрацию входящих сообщений (кроме текущего чата):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6344,6 +6341,9 @@ msgid ""
 "Turning this off keeps your selected options and word list.\n"
 "Filtered messages are discarded without opening a chat or replying to the sender."
 msgstr ""
+"Включите параметры фильтрации ниже. Выберите хотя бы один параметр для фильтрации сообщений.\n"
+"При отключении выбранные параметры и список слов сохраняются.\n"
+"Отфильтрованные сообщения отбрасываются без открытия чата и ответа отправителю."
 
 #: src/muuli_wdr.cpp
 msgid "Filter all messages"
@@ -6367,6 +6367,9 @@ msgid ""
 "Terms match anywhere in a message: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported. A * is literal, except that a word list of exactly * blocks every message."
 msgstr ""
+"Отбрасывать сообщения чата, содержащие любое из слов через запятую. При совпадении регистр и пробелы вокруг каждого слова не учитываются.\n"
+"Слова совпадают в любом месте сообщения: «dog» совпадёт с «hotdog» и «black dog spotted».\n"
+"Подстановочные знаки не поддерживаются. Символ * воспринимается буквально, за исключением случая, когда список слов состоит ровно из * — тогда блокируются все сообщения."
 
 #: src/muuli_wdr.cpp
 msgid "Enable advanced spam filter"
@@ -6389,14 +6392,12 @@ msgid "Show received messages in the log"
 msgstr "Показывать полученные сообщения в логе"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "File comments"
-msgstr "Комментарии файла"
+msgstr "Комментарии к файлам"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Filter file comments containing (use ',' as separator):"
-msgstr "Фильтровать комментарии содержащие (разделять «,»):"
+msgstr "Фильтровать комментарии к файлам, содержащие (разделять «,»):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6404,11 +6405,13 @@ msgid ""
 "Matching ignores case and spaces around each term. Terms match anywhere in a comment: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported; * is matched literally."
 msgstr ""
+"Скрывать комментарии к файлам от других пользователей, содержащие любое из слов через запятую. Сообщения чата при этом не фильтруются.\n"
+"При совпадении регистр и пробелы вокруг каждого слова не учитываются. Слова совпадают в любом месте комментария: «dog» совпадёт с «hotdog» и «black dog spotted».\n"
+"Подстановочные знаки не поддерживаются; * воспринимается буквально."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "With these settings"
-msgstr "Запомнить эти настройки"
+msgstr "С этими настройками"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Proxy"
@@ -8766,14 +8769,14 @@ msgid "Crypt overhead (UDP): %s"
 msgstr "Потери шифрования (UDP): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "LowID to LowID Data (Session): %s"
-msgstr "Загружено данных (за сеанс (всего)): %s"
+msgstr "Данные LowID–LowID (за сеанс): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IPv6 Data (Session): %s"
-msgstr "Отдано данных (за сеанс (всего)): %s"
+msgstr "Данные IPv6 (за сеанс): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8877,29 +8880,28 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Максимальное число соединений (примерно): %i"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "NAT Traversal (Session)"
-msgstr "Обход NAT (uTP)"
+msgstr "Обход NAT (за сеанс)"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Server Hole Punches: %s"
-msgstr "Трафик с сервером (пакеты): %s"
+msgstr "Проколы через сервер: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Successful Server Hole Punches: %s"
-msgstr ""
+msgstr "Успешные проколы через сервер: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Lugdunum Callbacks: %s"
-msgstr ""
+msgstr "Обратные вызовы Lugdunum: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Successful Lugdunum Callbacks: %s"
-msgstr "%s успешно обновлён"
+msgstr "Успешные обратные вызовы Lugdunum: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -10553,9 +10555,9 @@ msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be 
 msgstr "Kad не смогла прочитать %s. Файл переименован в %s.bad, новый индекс будет сохранён при завершении работы."
 
 #: src/kademlia/kademlia/Indexed.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad: %s. Its original file will not be overwritten."
-msgstr "Kad не смогла сохранить нечитаемый индекс %s как %s.bad. Исходный файл не будет перезаписан."
+msgstr "Kad не смогла сохранить нечитаемый индекс %s как %s.bad: %s. Исходный файл не будет перезаписан."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."
@@ -10567,44 +10569,43 @@ msgstr "Kad не смогла сохранить индекс. Предыдущ�
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not remove legacy ECPassword; cleanup will be retried on restart."
-msgstr ""
+msgstr "Не удалось удалить устаревший ECPassword; очистка будет повторена при перезапуске."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not persist ECPasswordVerifier; using the legacy ECPassword in memory for this run. Migration will be retried on restart."
-msgstr ""
+msgstr "Не удалось сохранить ECPasswordVerifier; в этом запуске используется устаревший ECPassword из памяти. Миграция будет повторена при перезапуске."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "Could not generate ECPasswordVerifier; external connections are disabled."
-msgstr "Пароль задан и внешние соединения разрешены."
+msgstr "Не удалось сгенерировать ECPasswordVerifier; внешние подключения отключены."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not generate ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Изменение EC-пароля отклонено: не удалось сгенерировать ECPasswordVerifier. Действующие учётные данные не изменены."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not persist ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Изменение EC-пароля отклонено: не удалось сохранить ECPasswordVerifier. Действующие учётные данные не изменены."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not store ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Изменение EC-пароля отклонено: не удалось записать ECPasswordVerifier. Действующие учётные данные не изменены."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
-msgstr ""
+msgstr "ECPassword содержит недопустимый дайджест или дайджест пустого пароля. Запустите amuled --ec-config, чтобы задать новый EC-пароль."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "Недопустимый или неподдерживаемый ECPasswordVerifier; внешние подключения отклоняются."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not compare legacy ECPassword with ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "Не удалось сравнить устаревший ECPassword с ECPasswordVerifier; внешние подключения отклоняются."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
-msgstr ""
+msgstr "Выполняется миграция изменённого устаревшего ECPassword после отката версии; предыдущий верификатор больше не действует в этом запуске."
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."
