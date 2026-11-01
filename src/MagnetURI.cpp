@@ -72,6 +72,36 @@ bool StartsWithNoCase(const STRING &s, const char *lowerPrefix)
 	return true;
 }
 
+// Decode identity/length fields only. The name stays escaped when embedded in
+// an ed2k link so an escaped pipe cannot become a structural field separator.
+STRING DecodeAsciiEscapes(const STRING &value)
+{
+	STRING decoded;
+	const auto hex = [](unsigned c) -> int {
+		c = AsciiLower(c);
+		if (c >= '0' && c <= '9') {
+			return static_cast<int>(c - '0');
+		}
+		if (c >= 'a' && c <= 'f') {
+			return static_cast<int>(c - 'a' + 10);
+		}
+		return -1;
+	};
+	for (size_t i = 0; i < value.length(); ++i) {
+		if (value[i] == _C('%') && value.length() - i > 2) {
+			const int high = hex(CharCode(value[i + 1]));
+			const int low = hex(CharCode(value[i + 2]));
+			if (high >= 0 && low >= 0 && high < 8) {
+				decoded.append(1, static_cast<char>(high * 16 + low));
+				i += 2;
+				continue;
+			}
+		}
+		decoded.append(1, value[i]);
+	}
+	return decoded;
+}
+
 } // namespace
 
 bool CMagnetURI::IsMagnet(const STRING &uri)
@@ -141,8 +171,8 @@ bool CMagnetED2KConverter::CanConvertToED2K() const
 			continue;
 		}
 		if (it->first.compare(_T("xt")) == 0) {
-			if (StartsWithNoCase(it->second, "urn:ed2k:") ||
-				StartsWithNoCase(it->second, "urn:ed2khash:")) {
+			const STRING urn = DecodeAsciiEscapes(it->second);
+			if (StartsWithNoCase(urn, "urn:ed2k:") || StartsWithNoCase(urn, "urn:ed2khash:")) {
 				has_urn = true;
 				continue;
 			}
@@ -182,7 +212,7 @@ STRING CMagnetED2KConverter::GetED2KLink() const
 	if (CanConvertToED2K()) {
 		STRING dn;
 		STRING hash;
-		STRING len(GetField(_T("xl")).front());
+		STRING len(DecodeAsciiEscapes(GetField(_T("xl")).front()));
 
 		Value_List dn_val = GetField(_T("dn"));
 		if (!dn_val.empty()) {
@@ -192,12 +222,16 @@ STRING CMagnetED2KConverter::GetED2KLink() const
 			// Just in case, assign a reasonable(?) name to that unnamed file.
 			dn = _T("FileName.ext");
 		}
+		if (dn.find(_C('|')) != STRING::npos) {
+			return STRING();
+		}
 		Value_List urn_list = GetField(_T("xt"));
 		STRING aich;
 		// Use the first ed2k hash found, and separately the first AICH urn if the magnet
 		// carries one (amule-org/amule#331). Both loop over the same xt list, since either
 		// can come in any order relative to the other.
 		for (Value_List::iterator it = urn_list.begin(); it != urn_list.end(); ++it) {
+			*it = DecodeAsciiEscapes(*it);
 			if (hash.empty() && StartsWithNoCase(*it, "urn:ed2k:")) {
 				hash = it->substr(9);
 			} else if (hash.empty() && StartsWithNoCase(*it, "urn:ed2khash:")) {

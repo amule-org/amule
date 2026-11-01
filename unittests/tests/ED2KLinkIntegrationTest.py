@@ -64,6 +64,21 @@ def check_helper(helper):
         assert plain.returncode == 0, plain
         assert links.read_text().splitlines() == [link], links.read_text()
 
+        # Magnets must reach the same validated converter without a whole-query
+        # decode making %26 a new magnet field or %7C a native eD2k separator.
+        name = 'name%26xl%3D999%7Cfile.bin'
+        magnet = (f'magnet:?dn={name}&xt=urn%3Aed2k%3A{"0123456789ABCDEF" * 2}'
+                  '&xl=%34%32')
+        converted = subprocess.run([helper, '-c', str(root), magnet],
+                                   capture_output=True, timeout=30)
+        assert converted.returncode == 0, converted
+        expected = f'ed2k://|file|{name}|42|{"0123456789ABCDEF" * 2}|/'
+        assert links.read_text().splitlines() == [link, expected], links.read_text()
+        bad = f'magnet:?dn=bad|field&xt=urn:ed2k:{"0123456789ABCDEF" * 2}&xl=42'
+        rejected = subprocess.run([helper, '-c', str(root), bad], capture_output=True, timeout=30)
+        assert rejected.returncode != 0, rejected
+        assert links.read_text().splitlines() == [link, expected], links.read_text()
+
 
 def main():
     binary = str(Path(sys.argv[1]).resolve())

@@ -145,3 +145,26 @@ TEST(MagnetURI, IsMagnetNeedsTheWholeScheme)
 	ASSERT_TRUE(!CMagnetURI::IsMagnet("ed2k://|file|a|1|0|/"));
 	ASSERT_TRUE(!CMagnetURI::IsMagnet(""));
 }
+
+TEST(MagnetURI, EscapedNameDelimitersStayInName)
+{
+	// The ed2k parser decodes the name after splitting on '|'.
+	wxString magnet =
+		wxString("magnet:?dn=name%26xl%3D999%7Cfile.bin&xt=urn:ed2k:") + ED2K_HASH + "&xl=42";
+	ASSERT_EQUALS(wxString("ed2k://|file|name%26xl%3D999%7Cfile.bin|42|") + ED2K_HASH + "|/",
+		CMagnetED2KConverter(magnet).GetED2KLink());
+}
+
+TEST(MagnetURI, EncodedIdentityAndLengthAreDecoded)
+{
+	CMagnetED2KConverter converter(
+		wxString("magnet:?dn=file.bin&xt=urn%3Aed2k%3A") + ED2K_HASH + "&xl=%34%32");
+	ASSERT_TRUE(converter.CanConvertToED2K());
+	ASSERT_EQUALS(wxString("ed2k://|file|file.bin|42|") + ED2K_HASH + "|/", converter.GetED2KLink());
+}
+
+TEST(MagnetURI, RawPipeInNameIsRejected)
+{
+	wxString magnet = wxString("magnet:?dn=bad|field&xt=urn:ed2k:") + ED2K_HASH + "&xl=42";
+	ASSERT_TRUE(CMagnetED2KConverter(magnet).GetED2KLink().IsEmpty());
+}

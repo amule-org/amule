@@ -393,7 +393,11 @@ int main(int argc, char *argv[])
 	string config_path;
 	string category = "";
 	for (int i = 1; i < argc; i++) {
-		string arg = strip(Unescape(string(argv[i])));
+		string arg = strip(string(argv[i]));
+		// A magnet is split before decoding, so an escaped & or | stays in its field.
+		if (!CMagnetURI::IsMagnet(arg)) {
+			arg = strip(Unescape(arg));
+		}
 
 		if (CMagnetURI::IsMagnet(arg)) {
 			string ed2k = CMagnetED2KConverter(arg);
