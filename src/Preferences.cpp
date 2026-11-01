@@ -1098,11 +1098,31 @@ int CPreferences::PreviewExcludeCount(const wxString &patterns, bool useRegex, c
 	return count;
 }
 
+#ifndef CLIENT_GUI
+static void WriteUserHashFile(const wxString &fullpath, const CMD4Hash &userhash)
+{
+	CFile preffile;
+	if (!wxFileExists(fullpath)) {
+		preffile.Create(fullpath);
+	}
+	if (preffile.Open(fullpath, CFile::read_write)) {
+		try {
+			preffile.WriteUInt8(PREFFILE_VERSION);
+			preffile.WriteHash(userhash);
+			preffile.Close();
+		} catch (const CIOFailureException &e) {
+			AddDebugLogLineC(logGeneral, "IO failure while saving user-hash: " + e.what());
+		}
+	}
+}
+#endif
+
 /// new implementation
 CPreferences::CPreferences()
 {
 	srand(wxGetLocalTimeMillis().GetLo()); // we need random numbers sometimes
 
+#ifndef CLIENT_GUI
 	// load preferences.dat or set standard values
 	wxString fullpath(s_configDir + "preferences.dat");
 
@@ -1110,7 +1130,6 @@ CPreferences::CPreferences()
 	// absence of that file marks a fresh install, which the GUI uses to decide whether to
 	// show the first-run setup wizard. Done in the monolithic/daemon core only; the remote
 	// GUI compiles CLIENT_GUI and keeps the default false.
-#ifndef CLIENT_GUI
 	s_firstRun = !wxFileExists(fullpath);
 
 	// Migration for installs that predate the explicit first-run flag: they have a
@@ -1124,7 +1143,6 @@ CPreferences::CPreferences()
 			s_firstRunWizardDone = true;
 		}
 	}
-#endif
 
 	CFile preffile;
 	if (wxFileExists(fullpath)) {
@@ -1138,34 +1156,22 @@ CPreferences::CPreferences()
 		}
 	}
 
-#ifndef CLIENT_GUI
-	const bool newHash = IsBadUserHash(s_userhash);
-	CreateUserHash(s_userhash);
-#else
-	// The remote GUI uses the core's hash, which arrives over EC. It still writes the file
-	// once: that first save also creates remote.conf, owner-only.
-	const bool newHash = !wxFileExists(fullpath);
-#endif
-	if (newHash) {
+	if (IsBadUserHash(s_userhash)) {
+		CreateUserHash(s_userhash);
 		// Persist only preferences.dat and amule.conf here. A full Save() would also call
 		// SaveSharedFolders() against still-empty in-memory lists, truncating any
 		// shareddir-*.dat files a pre-launch script may have populated.
-		CFile preffile;
-		if (!wxFileExists(fullpath)) {
-			preffile.Create(fullpath);
-		}
-		if (preffile.Open(fullpath, CFile::read_write)) {
-			try {
-				preffile.WriteUInt8(PREFFILE_VERSION);
-				preffile.WriteHash(s_userhash);
-				preffile.Close();
-			} catch (const CIOFailureException &e) {
-				AddDebugLogLineC(
-					logGeneral, "IO failure while saving user-hash: " + e.what());
-			}
-		}
+		WriteUserHashFile(fullpath, s_userhash);
 		SavePreferences();
 	}
+#else
+	// The remote GUI takes the core's hash over EC. preferences.dat belongs to a local core
+	// that may share this config dir, so never touch it. The first save creates remote.conf,
+	// owner-only.
+	if (!wxFileExists(GetConfigDir() + theApp->m_configFile)) {
+		SavePreferences();
+	}
+#endif
 
 	// Mark hash as an eMule-type hash
 	// See also CUpDownClient::GetHashType
@@ -1928,22 +1934,9 @@ void CPreferences::CheckUlDlRatio()
 
 void CPreferences::Save()
 {
-	wxString fullpath(s_configDir + "preferences.dat");
-
-	CFile preffile;
-	if (!wxFileExists(fullpath)) {
-		preffile.Create(fullpath);
-	}
-
-	if (preffile.Open(fullpath, CFile::read_write)) {
-		try {
-			preffile.WriteUInt8(PREFFILE_VERSION);
-			preffile.WriteHash(s_userhash);
-			preffile.Close();
-		} catch (const CIOFailureException &e) {
-			AddDebugLogLineC(logGeneral, "IO failure while saving user-hash: " + e.what());
-		}
-	}
+#ifndef CLIENT_GUI
+	WriteUserHashFile(s_configDir + "preferences.dat", s_userhash);
+#endif
 
 	SavePreferences();
 
