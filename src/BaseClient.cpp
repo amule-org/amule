@@ -1969,7 +1969,9 @@ bool CUpDownClient::TrySendForeignNatCallbackRequest()
 	facts.extensionAnnounced = NatServerHolePunch::ShouldAnnounceHolePunchExtension(
 		thePrefs::IsLowIdHolePunchEnabled(), thePrefs::IsLugdunumNatCallbackEnabled(), true);
 	facts.ourUdpPort = thePrefs::GetEffectiveUDPPort();
+	facts.weSupportCryptLayer = thePrefs::IsClientCryptLayerSupported();
 	facts.weRequireCryptLayer = thePrefs::IsClientCryptLayerRequired();
+	facts.sourceSupportsCryptLayer = SupportsCryptLayer();
 	facts.sourceRequiresCryptLayer = RequiresCryptLayer();
 	if (!NatServerHolePunch::ShouldRequestForeignCallback(facts)) {
 		return false;

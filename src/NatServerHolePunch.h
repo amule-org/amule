@@ -165,10 +165,16 @@ inline std::optional<Failure> ParseFailure(const std::uint8_t *data, std::size_t
 	return Failure{ Detail::ReadLE(data, 4), data[4] };
 }
 // Keepalive framing: protocol byte 0xE3, NAT-T payload opcode 0x9F, sent via
-// the client's UDP socket to the server TCP port plus 4.
-inline Hash BuildKeepalive(const Hash &ownUserHash)
+// the client's UDP socket to the server TCP port plus 4. With the session token from
+// OP_SERVERIDENT appended, the server takes the keepalive from any source address.
+inline std::vector<std::uint8_t> BuildKeepalive(
+	const Hash &ownUserHash, const std::optional<Hash> &sessionToken)
 {
-	return ownUserHash;
+	std::vector<std::uint8_t> payload(ownUserHash.begin(), ownUserHash.end());
+	if (sessionToken) {
+		payload.insert(payload.end(), sessionToken->begin(), sessionToken->end());
+	}
+	return payload;
 }
 inline std::optional<Hash> ParseKeepalive(const std::uint8_t *data, std::size_t size)
 {
@@ -869,7 +875,9 @@ struct ForeignRequestFacts
 	// We announce the hole-punch extension (ShouldAnnounceHolePunchExtension()).
 	bool extensionAnnounced = false;
 	std::uint16_t ourUdpPort = 0;
+	bool weSupportCryptLayer = false;
 	bool weRequireCryptLayer = false;
+	bool sourceSupportsCryptLayer = false;
 	bool sourceRequiresCryptLayer = false;
 };
 
@@ -877,10 +885,12 @@ struct ForeignRequestFacts
 // both server families only a client that set 0x1000, which a cross-server wake needs, is odd.
 inline bool ShouldRequestForeignCallback(const ForeignRequestFacts &facts)
 {
-	// The server answers nothing when one side requires the crypt layer (ed2k-server#40).
+	// The server answers nothing when one side requires the crypt layer and the other lacks it.
+	const bool cryptMismatch = (facts.weRequireCryptLayer && !facts.sourceSupportsCryptLayer) ||
+				   (facts.sourceRequiresCryptLayer && !facts.weSupportCryptLayer);
 	return facts.extensionAnnounced && !facts.sourceServerIsOurs && facts.serverTakesForeignCallback &&
-	       facts.ourUdpPort != 0 && !facts.weRequireCryptLayer && !facts.sourceRequiresCryptLayer &&
-	       IsLowID(facts.ourId) && IsLowID(facts.sourceId) && (facts.sourceId & 1) != 0;
+	       facts.ourUdpPort != 0 && !cryptMismatch && IsLowID(facts.ourId) && IsLowID(facts.sourceId) &&
+	       (facts.sourceId & 1) != 0;
 }
 
 // Each server allows a burst of 10, then 1/s per source IP, and 60 targets per IP in 10 min; we stay

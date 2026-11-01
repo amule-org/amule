@@ -84,8 +84,22 @@ TEST(NatServerHolePunch, BuildsExactPayloadsAndParsesFields)
 	ASSERT_TRUE(parsedFailure.has_value());
 	ASSERT_EQUALS(failure.targetId, parsedFailure->targetId);
 	ASSERT_EQUALS(failure.reason, parsedFailure->reason);
-	ASSERT_TRUE(BuildKeepalive(hash) == hash);
-	ASSERT_TRUE(ParseKeepalive(hash.data(), hash.size()).value() == hash);
+	const std::vector<std::uint8_t> keepalive = BuildKeepalive(hash, std::nullopt);
+	ASSERT_TRUE(keepalive == std::vector<std::uint8_t>(hash.begin(), hash.end()));
+	ASSERT_TRUE(ParseKeepalive(keepalive.data(), keepalive.size()).value() == hash);
+}
+
+TEST(NatServerHolePunch, KeepaliveCarriesTheSessionTokenAfterTheUserHash)
+{
+	const Hash hash{ { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 } };
+	const Hash token{ { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 } };
+	const std::vector<std::uint8_t> keepalive = BuildKeepalive(hash, token);
+	ASSERT_EQUALS(32u, keepalive.size());
+	for (std::size_t i = 0; i < keepalive.size(); ++i) {
+		ASSERT_EQUALS(i, static_cast<std::size_t>(keepalive[i]));
+	}
+	// A server without the token reads the user hash and ignores the rest.
+	ASSERT_TRUE(ParseKeepalive(keepalive.data(), keepalive.size()).value() == hash);
 }
 
 TEST(NatServerHolePunch, AcceptsMinimumPayloadAndIgnoresTrailingBytes)
@@ -992,9 +1006,9 @@ TEST(NatServerHolePunch, AnAnsweredRequestKeepsItsKeyForTheServerResends)
 	ASSERT_TRUE(requests.PendingKeysFrom(kForeignServer, 100 + kForeignAnswerResendMs).empty());
 }
 
-TEST(NatServerHolePunch, NoCrossServerRequestWhenEitherSideRequiresTheCryptLayer)
+TEST(NatServerHolePunch, NoCrossServerRequestWhenOneSideRequiresTheCryptLayerTheOtherLacks)
 {
-	// The server sends nothing when one side requires it, so the request would only spend its budget.
+	// The server sends nothing then, so the request would only spend its budget.
 	ForeignRequestFacts facts;
 	facts.ourId = 101;
 	facts.sourceId = 201;
@@ -1004,12 +1018,23 @@ TEST(NatServerHolePunch, NoCrossServerRequestWhenEitherSideRequiresTheCryptLayer
 	ASSERT_TRUE(ShouldRequestForeignCallback(facts));
 
 	ForeignRequestFacts weRequire = facts;
+	weRequire.weSupportCryptLayer = true;
 	weRequire.weRequireCryptLayer = true;
 	ASSERT_FALSE(ShouldRequestForeignCallback(weRequire));
+	weRequire.sourceSupportsCryptLayer = true;
+	ASSERT_TRUE(ShouldRequestForeignCallback(weRequire));
 
 	ForeignRequestFacts sourceRequires = facts;
+	sourceRequires.sourceSupportsCryptLayer = true;
 	sourceRequires.sourceRequiresCryptLayer = true;
 	ASSERT_FALSE(ShouldRequestForeignCallback(sourceRequires));
+	sourceRequires.weSupportCryptLayer = true;
+	ASSERT_TRUE(ShouldRequestForeignCallback(sourceRequires));
+
+	ForeignRequestFacts bothRequire = facts;
+	bothRequire.weSupportCryptLayer = bothRequire.weRequireCryptLayer = true;
+	bothRequire.sourceSupportsCryptLayer = bothRequire.sourceRequiresCryptLayer = true;
+	ASSERT_TRUE(ShouldRequestForeignCallback(bothRequire));
 }
 
 TEST(NatServerHolePunch, AnAnsweredCrossServerTargetCoolsDownToo)
