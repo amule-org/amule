@@ -3256,6 +3256,19 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			endif ()
 			set_tests_properties (ServerListGuiIntegrationTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
 		endif ()
+		if (BUILD_REMOTEGUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+			find_program (AMULE_XVFB_RUN xvfb-run)
+			set (REMOTE_GUI_HASH_TEST_COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/RemoteGuiUserHashIntegrationTest.py
+				$<TARGET_FILE:amulegui> $<TARGET_FILE:amuled>)
+			if (AMULE_XVFB_RUN)
+				add_test (NAME RemoteGuiUserHashIntegrationTest
+					COMMAND ${AMULE_XVFB_RUN} -a ${REMOTE_GUI_HASH_TEST_COMMAND})
+			else ()
+				add_test (NAME RemoteGuiUserHashIntegrationTest COMMAND ${REMOTE_GUI_HASH_TEST_COMMAND})
+			endif ()
+			set_tests_properties (RemoteGuiUserHashIntegrationTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
+		endif ()
 		add_test (NAME ServerListSourcesIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ServerListSourcesIntegrationTest.py $<TARGET_FILE:amuled>

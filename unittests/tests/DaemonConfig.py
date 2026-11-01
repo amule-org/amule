@@ -49,7 +49,23 @@ def write_amule_conf(root, ec_port, *, ec_password=EC_PASSWORD, sections=None, *
         },
     }
     all_sections.update(sections or {})
+    _write_sections(root / 'amule.conf', all_sections)
+
+
+def write_remote_conf(root, ec_port, *, ec_password=EC_PASSWORD, **emule):
+    """Write root/remote.conf for amulegui: the EC target, then OFFLINE's language and emule."""
+    _write_sections(Path(root) / 'remote.conf', {
+        'EC': {
+            'Host': '127.0.0.1',
+            'Port': ec_port,
+            'Password': hashlib.md5(ec_password.encode()).hexdigest(),
+        },
+        'eMule': dict(Language=OFFLINE['Language'], **emule),
+    })
+
+
+def _write_sections(path, sections):
     text = ''.join(f'[{name}]\n' + ''.join(f'{key}={value}\n' for key, value in keys.items()
                                          if value is not None)
-                   for name, keys in all_sections.items())
-    (root / 'amule.conf').write_text(text, encoding='utf-8')
+                   for name, keys in sections.items())
+    path.write_text(text, encoding='utf-8')
