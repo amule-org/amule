@@ -4833,19 +4833,23 @@ msgstr "দৈর্ঘ্য"
 msgid "Bitrate"
 msgstr "বিটরেট"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Codec"
 msgstr "কোডেক"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Artist"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Album"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Title"
 msgstr ""
 
@@ -7601,6 +7605,22 @@ msgstr "সর্বনিম্ন আকার সর্বোচ্চ আক
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "প্রধান"
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration (minutes)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum bitrate (kbps)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Kad applies these filters; eD2k servers may ignore them"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
+msgstr ""
 
 #: src/SearchList.cpp
 #, c-format

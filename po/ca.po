@@ -4831,19 +4831,23 @@ msgstr "Durada"
 msgid "Bitrate"
 msgstr "Taxa de bits"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Codec"
 msgstr "Còdec"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Artist"
 msgstr "Artista"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Album"
 msgstr "Àlbum"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Title"
 msgstr "Títol"
 
@@ -7609,6 +7613,23 @@ msgstr "La mida mínima ha de ser menor que la màxima. S'ignorarà la mida màx
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Principal"
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration (minutes)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum bitrate (kbps)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Kad applies these filters; eD2k servers may ignore them"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+#, fuzzy
+msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
+msgstr "El dimoni connectat no admet la cerca a totes les xarxes."
 
 #: src/SearchList.cpp
 #, c-format

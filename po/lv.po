@@ -4876,19 +4876,23 @@ msgstr "Ilgums"
 msgid "Bitrate"
 msgstr "Bitu pārraides ātrums"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Codec"
 msgstr "Kodeks"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Artist"
 msgstr "Izpildītājs"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Album"
 msgstr "Albums"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Title"
 msgstr "Nosaukums"
 
@@ -7657,6 +7661,22 @@ msgstr "Minimālajam izmēram jābūt mazākam par maksimālo izmēru. Maksimāl
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "Galvenā"
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration (minutes)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum bitrate (kbps)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Kad applies these filters; eD2k servers may ignore them"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
+msgstr ""
 
 #: src/SearchList.cpp
 #, c-format

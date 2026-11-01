@@ -4870,19 +4870,23 @@ msgstr "길이"
 msgid "Bitrate"
 msgstr "비트레이트"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Codec"
 msgstr "코덱"
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Artist"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Album"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/SearchListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp src/SearchListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Title"
 msgstr "제목"
 
@@ -7653,6 +7657,22 @@ msgstr "최소 크기가 최대 크기보다 작아야 합니다. 최대 크기�
 #: src/SearchDlg.cpp src/SearchListCtrl.cpp
 msgid "Main"
 msgstr "주"
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration (minutes)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum bitrate (kbps)"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Kad applies these filters; eD2k servers may ignore them"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
+msgstr ""
 
 #: src/SearchList.cpp
 #, c-format
