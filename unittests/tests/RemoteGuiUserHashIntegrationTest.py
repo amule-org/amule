@@ -15,58 +15,51 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import connect_daemon, free_ports, retry_port_collisions, stop_daemon
-from DaemonConfig import EC_PASSWORD, write_amule_conf
+from AllSearchIntegrationTest import free_ports, retry_port_collisions
+from DaemonConfig import EC_PASSWORD, OFFLINE, write_amule_conf
+from LogfilePathIntegrationTest import daemon_env
+from PathDefaultsIntegrationTest import daemon
 
 # Version byte, then a user hash the core will not generate.
 LOCAL_PREFS = bytes([0x14]) + bytes(range(0x10, 0x20))
 
 
-def run(gui, daemon, root):
+def run(gui, amuled, root):
     core = root / 'core'
     local = root / 'local'
-    for path in (core / 'Incoming', core / 'Temp', local):
-        path.mkdir(parents=True)
+    core.mkdir()
+    local.mkdir()
     ports = free_ports(2, peer_index=1)
     write_amule_conf(core, ports[0], Port=ports[1], UDPEnable=0)
     (local / 'preferences.dat').write_bytes(LOCAL_PREFS)
+    # The wait below matches an English log line.
     (local / 'remote.conf').write_text(f'''[EC]
 Host=127.0.0.1
 Port={ports[0]}
 Password={hashlib.md5(EC_PASSWORD.encode()).hexdigest()}
 [eMule]
-Language=en_US
+Language={OFFLINE['Language']}
 ''')
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'),
-               LC_ALL='C.UTF-8', LANG='C.UTF-8')
-    env.pop('LD_PRELOAD', None)
 
-    with (root / 'core-console.log').open('w') as core_console:
-        core_proc = subprocess.Popen([daemon, '-c', str(core), '--disable-fatal'],
-                                     env=env, stdout=core_console, stderr=subprocess.STDOUT)
-        try:
-            ec = connect_daemon(core_proc, ports[0], core, ports[1])
-            ec.sock.close()
-            console_file = root / 'gui-console.log'
-            with console_file.open('w') as console:
-                gui_proc = subprocess.Popen([gui, '-c', str(local), '-s', '-o'], env=env,
-                                            stdout=console, stderr=subprocess.STDOUT)
-                try:
-                    # The core's preferences are applied before the window is up.
-                    deadline = time.monotonic() + 30
-                    while True:
-                        text = console_file.read_text(errors='replace')
-                        if 'Ready' in text:
-                            break
-                        assert gui_proc.poll() is None, text
-                        assert time.monotonic() < deadline, text
-                        time.sleep(0.05)
-                finally:
-                    if gui_proc.poll() is None:
-                        gui_proc.terminate()
-                        gui_proc.wait(timeout=10)
-        finally:
-            stop_daemon(core_proc)
+    with daemon(amuled, core, ports):
+        console_file = root / 'gui-console.log'
+        with console_file.open('w') as console:
+            gui_proc = subprocess.Popen([gui, '-c', str(local), '-s', '-o'], env=daemon_env(root),
+                                        stdout=console, stderr=subprocess.STDOUT)
+            try:
+                # The core's preferences are applied before the window is up.
+                deadline = time.monotonic() + 30
+                while True:
+                    text = console_file.read_text(errors='replace')
+                    if 'Ready' in text:
+                        break
+                    assert gui_proc.poll() is None, text
+                    assert time.monotonic() < deadline, text
+                    time.sleep(0.05)
+            finally:
+                if gui_proc.poll() is None:
+                    gui_proc.terminate()
+                    gui_proc.wait(timeout=10)
 
     core_hash = (core / 'preferences.dat').read_bytes()[1:]
     assert core_hash != LOCAL_PREFS[1:], 'fixture hash collided with the core'
@@ -79,11 +72,11 @@ def main():
             os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')):
         print('SKIP: amulegui needs a display (use xvfb-run).')
         return 77
-    gui, daemon = (str(Path(arg).resolve()) for arg in sys.argv[1:3])
+    gui, amuled = (str(Path(arg).resolve()) for arg in sys.argv[1:3])
 
     def attempt():
         with tempfile.TemporaryDirectory(prefix='amule-remote-gui-hash-') as temporary:
-            run(gui, daemon, Path(temporary).resolve())
+            run(gui, amuled, Path(temporary).resolve())
 
     retry_port_collisions(attempt)
     print('amulegui left the local preferences.dat untouched')
