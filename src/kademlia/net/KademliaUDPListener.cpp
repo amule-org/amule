@@ -115,6 +115,14 @@ void CheckTagRecords(CMemFile &bio, uint16_t count)
 	}
 	bio.Seek(static_cast<sint64>(start), wxFromStart);
 }
+
+// A valid key proves the sender receives at this IP. Measured only: nothing rejects a request without one.
+void LogReceiverKey(const char *request, uint32_t ip, uint16_t port, bool validReceiverKey)
+{
+	AddDebugLogLineN(logClientKadUDP,
+		wxString(request) + " from " + KadIPPortToString(ip, port) + ": receiver key " +
+			(validReceiverKey ? "valid" : "not valid"));
+}
 } // namespace
 
 CKademliaUDPListener::~CKademliaUDPListener()
@@ -357,15 +365,18 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 		break;
 	case KADEMLIA2_PUBLISH_NOTES_REQ:
 		DebugRecv(Kad2PublishNotesReq, ip, port);
+		LogReceiverKey("Kad2 notes publish", ip, port, validReceiverKey);
 		Process2PublishNotesRequest(packetData, lenPacket, ip, port, senderKey);
 		break;
 	case KADEMLIA2_PUBLISH_KEY_REQ:
 		DebugRecv(Kad2PublishKeyReq, ip, port);
+		LogReceiverKey("Kad2 keyword publish", ip, port, validReceiverKey);
 		Process2PublishKeyRequest(packetData, lenPacket, ip, port, senderKey);
 		break;
 	case KADEMLIA2_PUBLISH_SOURCE_REQ:
 		DebugRecv(Kad2PublishSourceReq, ip, port);
-		Process2PublishSourceRequest(packetData, lenPacket, ip, port, senderKey, validReceiverKey);
+		LogReceiverKey("Kad2 source publish", ip, port, validReceiverKey);
+		Process2PublishSourceRequest(packetData, lenPacket, ip, port, senderKey);
 		break;
 	case KADEMLIA_PUBLISH_RES:
 		DebugRecv(KadPublishRes, ip, port);
@@ -377,10 +388,12 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 		break;
 	case KADEMLIA_FIREWALLED_REQ:
 		DebugRecv(KadFirewalledReq, ip, port);
+		LogReceiverKey("Kad firewall check", ip, port, validReceiverKey);
 		ProcessFirewalledRequest(packetData, lenPacket, ip, port, senderKey);
 		break;
 	case KADEMLIA_FIREWALLED2_REQ:
 		DebugRecv(KadFirewalled2Req, ip, port);
+		LogReceiverKey("Kad firewall2 check", ip, port, validReceiverKey);
 		ProcessFirewalled2Request(packetData, lenPacket, ip, port, senderKey);
 		break;
 	case KADEMLIA_FIREWALLED_RES:
@@ -393,6 +406,7 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 		break;
 	case KADEMLIA_FINDBUDDY_REQ:
 		DebugRecv(KadFindBuddyReq, ip, port);
+		LogReceiverKey("Kad find buddy request", ip, port, validReceiverKey);
 		ProcessFindBuddyRequest(packetData, lenPacket, ip, port, senderKey);
 		break;
 	case KADEMLIA_FINDBUDDY_RES:
@@ -401,6 +415,7 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 		break;
 	case KADEMLIA_CALLBACK_REQ:
 		DebugRecv(KadCallbackReq, ip, port);
+		LogReceiverKey("Kad callback request", ip, port, validReceiverKey);
 		ProcessCallbackRequest(packetData, lenPacket, ip, port, senderKey);
 		break;
 	case KADEMLIA2_PING:
@@ -1210,8 +1225,7 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &senderKey,
-	bool validReceiverKey)
+	const CKadUDPKey &senderKey)
 {
 	if (!CKademlia::GetIndexed()->IsReady()) {
 		return;
@@ -1233,11 +1247,6 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	if (distance.Get32BitChunk(0) > SEARCHTOLERANCE && !::IsLanIP(wxUINT32_SWAP_ALWAYS(ip))) {
 		return;
 	}
-
-	// A valid key proves the sender receives at this IP. Measured only: most publishers send none.
-	AddDebugLogLineN(logClientKadUDP,
-		"Kad2 source publish from " + KadIPPortToString(ip, port) + ": receiver key " +
-			(validReceiverKey ? "valid" : "not valid"));
 
 	DEBUG_ONLY(wxString strInfo;)
 	uint8_t load = 0;
