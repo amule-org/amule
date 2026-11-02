@@ -7,21 +7,21 @@
 # Oliver Heesakkers <dev2@Heesakkers.info>, 2007.
 # Frank van der Loo <f.vanderloo@gmail.com>, 2008 - 2021.
 # Marcel Pol <marcel@timelord.nl>, 2022
-#
+# Watchman89 <watchman89@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-30 09:27+0000\n"
-"Last-Translator: Marcel Pol <marcel@timelord.nl>\n"
-"Language-Team: Dutch <nl@li.org>\n"
+"PO-Revision-Date: 2026-11-02 15:46+0000\n"
+"Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 2.4.2\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -450,7 +450,7 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
+msgstr "Kon AcceptExternalConnections niet opslaan in amule.conf."
 
 #: src/amule.cpp
 msgid "Password set and external connections enabled."
@@ -529,9 +529,8 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "Kan %s niet starten: het staat niet in de map naast aMule en ook niet op PATH."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "An exception occurred while launching amuleweb."
-msgstr "En uitzondering vond plaats tijdens het opstarten van amuleapi."
+msgstr "En uitzondering vond plaats tijdens het opstarten van amuleweb."
 
 #: src/amule.cpp
 #, c-format
@@ -540,7 +539,7 @@ msgstr "webserver draait met pid %d"
 
 #: src/amule.cpp
 msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
+msgstr "Kon de amuleweb authenticatietoken niet voorbereiden. De webserver is niet opgestart."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -554,7 +553,7 @@ msgstr "U hebt gevraagd om de webserver bij het opstarten uit te voeren, maar he
 #: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
-msgstr "De amuleapi EC token kon niet naar %s geschreven worden; amuleapi zal terugvallen op het ingestelde wachtwoord."
+msgstr "De amuleapi EV-token kon niet naar %s geschreven worden; amuleapi zal terugvallen op het ingestelde wachtwoord."
 
 #: src/amule.cpp
 msgid "An exception occurred while launching amuleapi."
@@ -574,19 +573,18 @@ msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot 
 msgstr "U hebt gevraagd om amuleapi bij het opstarten uit te voeren, maar het programma amuleapi kan niet worden uitgevoerd. Installeer het pakket met de REST API-server van aMule, of bouw aMule vanuit de broncode met -DBUILD_AMULEAPI=YES en installeer het."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Could not prepare the amuleweb EC token."
-msgstr "Kon het amuleapi EC-tokenbestand niet verwijderen: %s"
+msgstr "Kon de amuleweb EV-token niet voorbereiden."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Kon het amuleapi EC-tokenbestand niet verwijderen: %s"
+msgstr "Kon het amuleweb EV-tokenbestand niet verwijderen: %s"
 
 #: src/amule.cpp
 #, c-format
 msgid "Could not remove the amuleapi EC token file: %s"
-msgstr "Kon het amuleapi EC-tokenbestand niet verwijderen: %s"
+msgstr "Kon het amuleapi EV-tokenbestand niet verwijderen: %s"
 
 #: src/amule.cpp
 #, c-format
@@ -780,9 +778,9 @@ msgid "ServerMessage: %s"
 msgstr "Server-bericht: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace nodes.dat: %s"
-msgstr "Vervangen van MaxMindDB database '%s' mislukt: %s"
+msgstr "Vervangen van nodes.dat mislukt: %s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -901,11 +899,11 @@ msgstr "FOUT: aMule daemon kan niet gebruikt worden wanneer externe verbindingen
 
 #: src/amuled.cpp
 msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
-msgstr ""
+msgstr "FOUT: Een EV-wachtwoord is vereist. Voer amuled --ec-config uit om dat in te stellen."
 
 #: src/amuled.cpp
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
-msgstr ""
+msgstr "FOUT: Ongeldig ECPasswordVerifier in amule.conf. Voer amuled --ec-config uit om een nieuw EV-wachtwoord in te stellen."
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -1324,7 +1322,7 @@ msgstr "Alle"
 
 #: src/amule-remote-gui.cpp
 msgid "The EC password changed on the daemon, but the saved client password could not be updated."
-msgstr ""
+msgstr "Het EV-wachtwoord is veranderd op de daemon maar het opgeslagen clientwachtwoord kon niet bijgewerkt worden."
 
 #: src/amule-remote-gui.cpp src/muuli_wdr.cpp
 msgid "To allow a folder, add it to allowed-remote-dirs.dat in the daemon's configuration folder, one absolute path per line, then restart the daemon."
@@ -1336,14 +1334,12 @@ msgid "The daemon refused these folders because they are outside the folders it 
 msgstr "De daemon weigerde deze mappen omdat ze buiden de mappen liggen die het toestaat (ingesteld op de daemon):%s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
-#, fuzzy
 msgid "The EC password was not changed."
-msgstr "- TCP-poort veranderd.\n"
+msgstr "Het EV-wachtwoord is niet veranderd."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "The daemon could not apply the preference changes."
-msgstr "De daemon kon de veranderingen van de verbindingspoorten niet toepassen."
+msgstr "De daemon kon de veranderingen van de voorkeuren niet toepassen."
 
 #: src/amule-remote-gui.cpp
 msgid "not readable"
@@ -1896,7 +1892,7 @@ msgstr "Gebruiker %s (%u) weigerde toegang tot gedeelde mappen/bestanden-lijst"
 
 #: src/CommentDialog.cpp src/CommentDialogLst.cpp
 msgid "File Comments"
-msgstr "Bestand commentaren"
+msgstr "Bestandsopmerkingen"
 
 #: src/CommentDialog.cpp
 msgid "Add Comment/Rating"
@@ -1937,14 +1933,14 @@ msgstr "Kad wordt doorzocht op opmerkingen..."
 
 #: src/CommentDialogLst.cpp src/muuli_wdr.cpp
 msgid "No comments"
-msgstr "Geen commentaren"
+msgstr "Geen opmerkingen"
 
 #: src/CommentDialogLst.cpp
 #, c-format
 msgid "%u comment"
 msgid_plural "%u comments"
-msgstr[0] "%u commentaar"
-msgstr[1] "%u commentaren"
+msgstr[0] "%u opmerking"
+msgstr[1] "%u opmerkingen"
 
 #: src/CorruptionBlackBox.cpp
 #, c-format
@@ -2251,7 +2247,7 @@ msgstr "Bekijk bestand &details"
 
 #: src/DownloadListCtrl.cpp src/muuli_wdr.cpp src/SearchListCtrl.cpp
 msgid "Show all comments"
-msgstr "Bekijk alle commentaren"
+msgstr "Bekijk alle opmerkingen"
 
 #: src/DownloadListCtrl.cpp
 msgid "Copy magnet URI to clipboard"
@@ -2450,14 +2446,12 @@ msgid "External connections disabled due to empty password!"
 msgstr "Externe verbindingen uitgeschakeld vanwege leeg wachtwoord!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled due to invalid ECPasswordVerifier!"
-msgstr "Externe verbindingen uitgeschakeld vanwege leeg wachtwoord!"
+msgstr "Externe verbindingen uitgeschakeld vanwege ongeldig ECPasswordVerifier!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled: could not prepare the EC token verifier."
-msgstr "Externe verbindingen uitgeschakeld in configuratiebestand"
+msgstr "Externe verbindingen uitgeschakeld: kon de EV tokenverificatie niet voorbereiden."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2496,7 +2490,7 @@ msgstr "Onbekende versie"
 
 #: src/ExternalConn.cpp
 msgid "An EC client of version 3.3.0 or later is required."
-msgstr ""
+msgstr "Een EV-client van versie 3.3.0 of hoger is vereist."
 
 #: src/ExternalConn.cpp
 msgid "Incorrect EC version ID, there might be binary incompatibility. Use core and remote from same snapshot."
@@ -2508,7 +2502,7 @@ msgstr "U kunt niet verbinden met een release-versie vanaf een willekeurig ontwi
 
 #: src/ExternalConn.cpp
 msgid "Invalid SRP handshake or EC verifier."
-msgstr ""
+msgstr "Ongeldige SRP-handshake of EV-verificatie."
 
 #: src/ExternalConn.cpp
 msgid "Invalid protocol version."
@@ -2614,12 +2608,16 @@ msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
 msgstr "EC_TAG_FRIEND_SHARED vereist EC_TAG_FRIEND of EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
+msgid "No open search holds this result."
+msgstr "Geen open zoekopdracht bevat dit resultaat."
+
+#: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "WebSearch vanaf afstand is zinloos."
 
 #: src/ExternalConn.cpp
 msgid "Invalid media search filter."
-msgstr ""
+msgstr "Ongeldig medizoekfilter."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -2685,21 +2683,19 @@ msgstr "Kan de client niet naar dat bestand overschakelen."
 
 #: src/ExternalConn.cpp
 msgid "Duplicate remote-control preference groups are not allowed."
-msgstr ""
+msgstr "Kopiën van voorkeursgroepen voor afstandsbesturing zijn niet toegestaan."
 
 #: src/ExternalConn.cpp
 msgid "Only password-authenticated sessions may change the EC password."
-msgstr ""
+msgstr "Alleen met wachtwoord geauthenticeerde sessies mogen het EV-wachtwoord veranderen."
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not update EC password verifier."
-msgstr "Kon het amuleapi-wachtwoord niet opslaan: %s"
+msgstr "Kon EV-wachtwoord verificatie niet bijwerken."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not apply preferences."
-msgstr "Kad is uitgeschakeld in voorkeuren."
+msgstr "Kon voorkeuren niet toepassen."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2707,14 +2703,13 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "Kon het amuleapi-wachtwoord niet opslaan: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not update EC password verifier. The other preferences were saved."
-msgstr "Wachtwoord ingesteld en externe verbindingen ingeschakeld."
+msgstr "Kon EV-wachtwoordverificatie niet bijwerken. De andere voorkeuren zijn opgeslagen."
 
 #: src/ExternalConn.cpp
 #, c-format
 msgid "EC password changed by %s"
-msgstr ""
+msgstr "EV-wachtwoord veranderd door %s"
 
 #: src/ExternalConn.cpp
 msgid "One or more folders were outside the allowed remote directories and were left unchanged."
@@ -3027,7 +3022,7 @@ msgstr "Schrijf geen logbestand; alleen weergeven op de console."
 
 #: src/ExternalConnector.cpp
 msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr ""
+msgstr "Het daemon-verificatiehulpmiddel kan niet direct een client-wachtwoord aanleveren. Gebruik -P of het passwordprompt.\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -3125,65 +3120,61 @@ msgstr "FOUT: Openen van '%s' met de standaardapp mislukt."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
-msgstr ""
+msgstr "Het berichtenfilter staat uit. De geselecteerde regels zijn opgeslagen."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "All incoming messages outside current chats will be discarded."
-msgstr "Filter binnenkomende berichten (behalve huidige chat):"
+msgstr "Alle binnenkomende berichten buiten huidige chats worden verwijderd."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Messages from people not on your friend list will be discarded."
-msgstr "Filter berichten van mensen niet op uw vriendenlijst"
+msgstr "Berichten van mensen die niet op uw vriendenlijst staan zullen worden verwijderd."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Messages from unknown clients will be discarded."
-msgstr "Filter berichten van onbekende clients"
+msgstr "Berichten van onbekende clients zullen worden verwijderd."
 
 #: src/FilterSelectionSummary.h
 #, c-format
 msgid "Messages containing any of these terms will be discarded (ignoring case): %s."
-msgstr ""
+msgstr "Berichten die een van deze termen bevatten zullen worden verwijderd (hoofdletterongevoelig): %s."
 
 #: src/FilterSelectionSummary.h
 msgid "No messages will be discarded by the message filter: the word list is empty."
-msgstr ""
+msgstr "Geen berichten zullen worden verwijderd door het berichtenfilter: de woordenlijst is leeg."
 
 #: src/FilterSelectionSummary.h
 msgid "No messages will be discarded by the message filter: select at least one option."
-msgstr ""
+msgstr "Geen berichten zullen worden verwijderd door het berichtenfilter: selecteer ten minste één optie."
 
 #: src/FilterSelectionSummary.h
 msgid "Current chats are exempt from these rules."
-msgstr ""
+msgstr "Huidige chats zijn uitgesloten van deze regels."
 
 #: src/FilterSelectionSummary.h
 msgid "Advanced spam filtering for non-friends is also enabled."
-msgstr ""
+msgstr "Geavanceerde spamfilters voor niet-vrienden is ook ingeschakeld."
 
 #: src/FilterSelectionSummary.h
 msgid "First messages from non-friends require a CAPTCHA."
-msgstr ""
+msgstr "Eerste berichten van niet-vrienden vereist een CAPTCHA."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Received message text will also be written to the log."
-msgstr "Toon ontvangen berichten in het logbestand"
+msgstr "Ontvangen berichttekst zal ook in het logbestand geschreven worden."
 
 #: src/FilterSelectionSummary.h
 msgid "File comment filtering is off."
-msgstr ""
+msgstr "Filteren van bestandsopmerkingen staat uit."
 
 #: src/FilterSelectionSummary.h
 msgid "No file comments will be hidden: the word list is empty."
-msgstr ""
+msgstr "Geen bestandsopmerkingen zullen worden verborgen: de woordenlijst is leeg."
 
 #: src/FilterSelectionSummary.h
 #, c-format
 msgid "File comments containing any of these literal terms will be hidden (ignoring case): %s."
-msgstr ""
+msgstr "Bestandsopmerkingen die een van deze letterlijke termen bevatten zullen worden verborgen (hoofdletterongevoelig): %s."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -3634,9 +3625,9 @@ msgstr[0] "%u misvormde regel is genegeerd."
 msgstr[1] "%u misvormde regels zijn genegeerd."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace %s file, aborting update: %s"
-msgstr "Kon bestand %s niet hernoemen, update wordt gestopt."
+msgstr "Vervangen van bestand %s mislukt, update wordt gestopt: %s"
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
@@ -4159,9 +4150,8 @@ msgid "Invalid password, not a MD5 hash!"
 msgstr "Ongeldig wachtwoord, geen MD5-hash!"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Could not generate SRP credentials."
-msgstr "Kon '%s' niet verwijderen van de schijf."
+msgstr "Kon SRP-inloggegevens niet aanmaken."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
@@ -4181,13 +4171,12 @@ msgid "EC connection failed. Empty reply."
 msgstr "EV-verbinding mislukt. Leeg antwoord."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Invalid SRP handshake or unsupported profile. Connection closed."
-msgstr "Externe verbinding: slecht antwoord, handshake mislukt. Verbinding verbroken."
+msgstr "Ongeldige SRP-handshake of niet ondersteund profiel. Verbinding gesloten."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "An EC daemon of version 3.3.0 or later is required."
-msgstr ""
+msgstr "Een EV-daemon van versie 3.3.0 of hoger is vereist."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
@@ -5728,11 +5717,11 @@ msgstr "Interval voor opnieuw bevragen van bronnen (minuten)"
 
 #: src/muuli_wdr.cpp
 msgid "Download write buffer limit (MiB)"
-msgstr ""
+msgstr "Download schrijfbuffer limiet (MiB)"
 
 #: src/muuli_wdr.cpp
 msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
-msgstr ""
+msgstr "Totaal ontvangen downloadgegevens die wachten om te worden geschreven. Een grotere limiet kan kortstondig vastlopen van de schijf versoepelen maar kost meer geheugen. Al gemaakte gegevensverzoeken kunnen groter zijn dan deze limiet."
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -6305,9 +6294,8 @@ msgid "Check for a newer GeoIP database at startup and every week while aMule is
 msgstr "Controleer op nieuwere GeoIP-database bij het opstarten en elke week terwijl aMule wordt uitgevoerd."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable incoming message filtering (except current chat):"
-msgstr "Filter binnenkomende berichten (behalve huidige chat):"
+msgstr "Schakel binnenkomend bericht filteren in (behalve huidige chat):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6315,6 +6303,9 @@ msgid ""
 "Turning this off keeps your selected options and word list.\n"
 "Filtered messages are discarded without opening a chat or replying to the sender."
 msgstr ""
+"Schakel de filteropties hieronder in. Selecteer ten minste één optie om berichten te filteren.\n"
+"Dit uitschakelen behoudt uw geselecteerde optie en woordenlijst.\n"
+"Gefilterde berichten worden verwijderd zonder een chat te openen of te reageren op de verstuurder."
 
 #: src/muuli_wdr.cpp
 msgid "Filter all messages"
@@ -6338,6 +6329,9 @@ msgid ""
 "Terms match anywhere in a message: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported. A * is literal, except that a word list of exactly * blocks every message."
 msgstr ""
+"Verwijder chatberichten die een door komma's gescheiden term bevatten. Matchen is niet hoofdlettergevoelig en negeren spaties om elke term.\n"
+"Termen kunnen op elke plek van een bericht gevonden worden: dog komt overeen met hotdog en met deense dog.\n"
+"Jokertekens worden niet ondersteund. Een * wordt letterlijk genomen, behalve in het geval van een woordenlijstitem van * dat elk bericht blokkeert."
 
 #: src/muuli_wdr.cpp
 msgid "Enable advanced spam filter"
@@ -6360,14 +6354,12 @@ msgid "Show received messages in the log"
 msgstr "Toon ontvangen berichten in het logbestand"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "File comments"
-msgstr "Bestand commentaren"
+msgstr "Bestandsopmerkingen"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Filter file comments containing (use ',' as separator):"
-msgstr "Filter commentaren die de volgende tekens bevatten (gebruik ',' als scheiding):"
+msgstr "Filter opmerkingen die de volgende tekens bevatten (gebruik ',' als scheiding):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6375,11 +6367,13 @@ msgid ""
 "Matching ignores case and spaces around each term. Terms match anywhere in a comment: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported; * is matched literally."
 msgstr ""
+"Verberg bestandsopmerkingen van andere gebruikers die een door komma's gescheiden term bevatten. Dit filtert geen chatberichten.\n"
+"Matchen is hoofdletterongevoelig en negeert spaties rond elke term. Termen kunnen op elke plek van een opmerking gevonden worden: dog komt met hotdog overeen en met deense dog.\n"
+"Jokertekens zijn niet ondersteund: * wordt letterlijk genomen."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "With these settings"
-msgstr "Onthoud deze instellingen"
+msgstr "Met deze instellingen"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Proxy"
@@ -7626,20 +7620,19 @@ msgstr "Hoofdcategorie"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum duration (minutes)"
-msgstr ""
+msgstr "Minimumduur (minuten)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
-msgstr ""
+msgstr "Minimum bitwaarde (kb/s)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Kad applies these filters; eD2k servers may ignore them"
-msgstr ""
+msgstr "Kad past deze filters toe. eD2k-servers kunnen ze negeren"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
-msgstr "De verbonden daemon ondersteunt \"All searches\" niet."
+msgstr "De verbonden daemon ondersteunt mediafilters niet. Update de daemon om deze velden te gebruiken."
 
 #: src/SearchList.cpp
 #, c-format
@@ -8715,14 +8708,14 @@ msgid "Crypt overhead (UDP): %s"
 msgstr "Crypt overhead (UDP): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "LowID to LowID Data (Session): %s"
-msgstr "Gedownloadde Gegevens (sessie (totaal)): %s"
+msgstr "LaagID naar LaagID Gegevens (Sessie): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IPv6 Data (Session): %s"
-msgstr "Geuploadde Gegevens (Sessie (Totaal)): %s"
+msgstr "IPv6 Gegevens (Sessie): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8825,29 +8818,28 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Aantal Piekverbindingen (schatting): %i"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "NAT Traversal (Session)"
-msgstr "NAT traversal (uTP)"
+msgstr "NAT Traversal (Sessie)"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Server Hole Punches: %s"
-msgstr "Server Overhead (Pakketten): %s"
+msgstr "Serverperforatiepogingen: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Successful Server Hole Punches: %s"
-msgstr ""
+msgstr "Succesvolle Serverperforatiepogingen: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Lugdunum Callbacks: %s"
-msgstr ""
+msgstr "Lugdunum Terugroepen: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Successful Lugdunum Callbacks: %s"
-msgstr "%s succesvol geüpdatet"
+msgstr "Succesvolle Lugdunum Terugroepen: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -10502,9 +10494,9 @@ msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be 
 msgstr "Kadd kon %s niet lezen. Het was hernoemd naar %s.bad en een nieuwe index zal worden opgeslagen bij het afluiten."
 
 #: src/kademlia/kademlia/Indexed.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad: %s. Its original file will not be overwritten."
-msgstr "Kad kon de onleesbare index %s niet bewaren als %s.bad. Het oorspronkelijke bestand zal niet overschreven worden."
+msgstr "Kad kon de onleesbare index %s niet bewaren als %s.bad: %s. Het oorspronkelijke bestand zal niet overschreven worden."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."
@@ -10516,44 +10508,43 @@ msgstr "Kad kon een index niet opslaan. De vorige kopie van dat bestand is bewaa
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not remove legacy ECPassword; cleanup will be retried on restart."
-msgstr ""
+msgstr "Kon verouderd ECPassword niet verwijderen. Opschonen wordt opnieuw geprobeerd bij opnieuw opstarten."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not persist ECPasswordVerifier; using the legacy ECPassword in memory for this run. Migration will be retried on restart."
-msgstr ""
+msgstr "Kon ECPasswordVerifier niet persistent maken. Verouderde ECPassword in geheugen wordt voor deze keer uitvoeren gebruikt. Migratie zal opnieuw worden geprobeerd bij opnieuw opstarten."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "Could not generate ECPasswordVerifier; external connections are disabled."
-msgstr "Wachtwoord ingesteld en externe verbindingen ingeschakeld."
+msgstr "Kon ECPasswordVerified niet aanmaken. Externe connecties zijn uitgeschakeld."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not generate ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Verandering van EV-wachtwoord afgewzeen: kon ECPasswordVerifier niet aanmaken. De actieve inloggegevens zijn niet veranderd."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not persist ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Verandering van EC-wachtwoord afgewezen: kon ECPasswordVerifier niet persistent maken. De actieve inloggegevens zijn niet veranderd."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not store ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Verandering van EV-wachtwoord afgewezen: kon ECPasswordVerifier niet opslaan. De actieve inloggegevens zijn niet veranderd."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
-msgstr ""
+msgstr "ECPassword bevat een digest van een ongeldig of leeg wachtwoord. Voer amuled --ec-config uit om een nieuw EV-wachtwoord in te stellen."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "Ongeldig of niet ondersteunde ECPasswordVerifier. Externe verbindingen woren geweigerd."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not compare legacy ECPassword with ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "Kon verouderde ECPassword niet vergelijken met ECPasswordVerifier. Externe verbindingen worden geweigerd."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
-msgstr ""
+msgstr "Migreren van een vernaderde ECPassword na downgrade. De vorige verificatie authenticeert deze uitvoer niet meer."
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."

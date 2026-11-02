@@ -2643,6 +2643,11 @@ msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
 msgstr "EC_TAG_FRIEND_SHARED zahteva EC_TAG_FRIEND ali EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
+#, fuzzy
+msgid "No open search holds this result."
+msgstr "Ta ukaz ne sme imeti parametrov."
+
+#: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Spletno iskanje iz oddaljenega vmesnika nima smisla."
 

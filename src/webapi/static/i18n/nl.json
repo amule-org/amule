@@ -1055,5 +1055,16 @@
   "prefs_field_directories_allowed_remote_roots": "Ingestelde wortelmappen",
   "prefs_field_servers_accelerated_publication_enabled": "Publiceer gedeelde bestanden sneller op servers die het toestaan",
   "shared_media_refresh_tip_disabled": "Media-metadata uitlezen is uitgeschakeld in Voorkeuren.",
-  "shared_media_refresh_tip_unavailable": "Deze aMule heeft geen mediahelper (amule-media-probe) waardoor het geen media-metadata kan uitlezen."
+  "shared_media_refresh_tip_unavailable": "Deze aMule heeft geen mediahelper (amule-media-probe) waardoor het geen media-metadata kan uitlezen.",
+  "stats_tree_upload_lowid_to_lowid_data": "LaagID naar LaagID Gegevens (Sessie): %s",
+  "stats_tree_download_lowid_to_lowid_data": "LaagID naar LaagID Gegevens (Sessie): %s",
+  "stats_tree_upload_ipv6_data": "IPv6 Gegevens (Sessie): %s",
+  "stats_tree_download_ipv6_data": "IPv6 Gegevens (Sessie): %s",
+  "stats_tree_nat_traversal": "NAT Traversal (Sessie)",
+  "stats_tree_natt_server_punch_attempts": "Serverperforatiepogingen: %s",
+  "stats_tree_natt_server_punch_successes": "Succesvolle Serverperforatiepogingen: %s",
+  "stats_tree_natt_lugdunum_callback_attempts": "Lugdunum Terugroepen: %s",
+  "stats_tree_natt_lugdunum_callback_successes": "Succesvolle Lugdunum Terugroepen: %s",
+  "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Een hogere limiet kan het vastlopen van de schijf versoepelen maar gebruikt meer geheugen. Al gedane gegevensverzoeken kunnen groter zijn dan deze limiet.",
+  "prefs_field_advanced_write_buffer_limit_mebibytes": "Download schrijfbuffer limiet (MiB)"
 }
