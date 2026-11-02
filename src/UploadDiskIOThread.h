@@ -135,7 +135,7 @@ private:
 	uint64 m_lastSample = 0;
 	std::map<std::string, UploadReadDiagnostics::Volume> m_volumes;
 	std::map<uint32, UploadReadDiagnostics::DispatchWait> m_waitingReads;
-	std::array<uint64, 4> m_slotSamples{};
+	std::array<uint64, 5> m_slotSamples{};
 	uint64 m_slotSamplePasses = 0;
 	bool m_started = false;
 	std::atomic<bool> m_bRun{ false }; // eMule ref: m_bRun (line 77)

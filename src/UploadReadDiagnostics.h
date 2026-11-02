@@ -63,15 +63,17 @@ enum class SlotState
 	Storage,
 	Reading,
 	Receiver,
-	Peer
+	Peer,
+	Sending
 };
-inline SlotState Classify(bool pending, bool requests, bool atTarget)
+inline SlotState Classify(bool pending, bool requests, bool atTarget, bool queued)
 {
 	if (pending) {
 		return SlotState::Reading;
 	}
 	if (!requests) {
-		return SlotState::Peer;
+		// Every requested block is read. Queued data has not left the socket yet.
+		return queued ? SlotState::Sending : SlotState::Peer;
 	}
 	return atTarget ? SlotState::Receiver : SlotState::Storage;
 }

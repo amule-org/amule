@@ -360,9 +360,11 @@ void CUploadDiskIOThread::ObserveDiagnostics(uint64 now)
 			const auto target = client->GetUploadDatarate() > BIGBUFFER_MINDATARATE
 						    ? 10 * EMBLOCKSIZE + 1
 						    : EMBLOCKSIZE + 1;
+			const auto queued = socket->QueuedUploadPayload();
 			const auto state = UploadReadDiagnostics::Classify(m_pendingClients.count(id) != 0,
 				!client->m_BlockRequests_queue.empty(),
-				socket->QueuedUploadPayload() >= target);
+				queued >= target,
+				queued != 0);
 			if (sample) {
 				++m_slotSamples[static_cast<unsigned>(state)];
 			}
@@ -437,11 +439,12 @@ void CUploadDiskIOThread::ReportDiagnostics(uint64 now)
 	};
 	AddDebugLogLineN(logFileIO,
 		CFormat("Upload slots: average=%s receiver-limited=%s%% reading=%s%% "
-			"waiting-for-storage=%s%% waiting-for-peer=%s%% samples=%u") %
+			"waiting-for-storage=%s%% sending=%s%% waiting-for-peer=%s%% samples=%u") %
 			wxString::Format("%.2f",
 				m_slotSamplePasses ? double(total) / double(m_slotSamplePasses) : 0.0) %
 			wxString::Format("%.1f", percent(2)) % wxString::Format("%.1f", percent(1)) %
-			wxString::Format("%.1f", percent(0)) % wxString::Format("%.1f", percent(3)) % total);
+			wxString::Format("%.1f", percent(0)) % wxString::Format("%.1f", percent(4)) %
+			wxString::Format("%.1f", percent(3)) % total);
 	m_volumes.clear();
 	m_slotSamples = {};
 	m_slotSamplePasses = 0;
