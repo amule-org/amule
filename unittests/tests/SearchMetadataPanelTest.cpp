@@ -39,11 +39,6 @@ wxIMPLEMENT_APP_NO_MAIN(SearchMetadataTestApp);
 
 namespace
 {
-void Check(bool condition, const char *message)
-{
-	if (!condition)
-		throw std::runtime_error(message);
-}
 wxTextCtrl *Input(CSearchMetadataPanel &panel, const wxString &name)
 {
 	auto *field = dynamic_cast<wxTextCtrl *>(wxWindow::FindWindowByName(name, &panel));
@@ -96,23 +91,8 @@ void TestFields()
 
 int main(int argc, char **argv)
 {
-	InstallGuiTestDiagnostics();
-	if (!wxEntryStart(argc, argv))
-		return 77;
-	RestoreGuiTestLog();
-	int result = 0;
-	if (!wxTheApp->CallOnInit())
-		result = 1;
-	else {
-		try {
-			TestFields();
-			std::cout << "PASS: metadata fields and reset\n";
-		} catch (const std::exception &error) {
-			std::cerr << error.what() << '\n';
-			result = 1;
-		}
-		wxTheApp->OnExit();
-	}
-	wxEntryCleanup();
-	return result;
+	return RunGuiTest(argc, argv, nullptr, [] {
+		TestFields();
+		std::cout << "PASS: metadata fields and reset\n";
+	});
 }

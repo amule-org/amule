@@ -35,6 +35,7 @@
 #include "Constants.h"
 #include <stdexcept>
 #include "MuleVirtualDataViewCtrl.h"
+#include "GuiTestDiagnostics.h"
 #include "NativeListTest.h"
 #include <common/MenuIDs.h>
 

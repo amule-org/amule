@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """The amule.conf every integration test writes for the amuled it starts."""
 import hashlib
+import os
 from pathlib import Path
 
 EC_PASSWORD = 'regression'
@@ -28,6 +29,23 @@ OFFLINE = {
     'IPFilterAutoLoad': 0,
     'UPnPEnabled': 0,
 }
+
+
+def daemon_env(home, **extra):
+    """The environment for a binary a test starts: HOME and XDG under home, C.UTF-8.
+
+    LD_PRELOAD is dropped so a sanitizer or fault-injection preload in the caller's shell
+    reaches only the tests that pass it in extra. A key set to None in extra is removed.
+    """
+    env = dict(os.environ, HOME=str(home), XDG_CONFIG_HOME=str(Path(home) / 'xdg'),
+               LC_ALL='C.UTF-8')
+    env.pop('LD_PRELOAD', None)
+    for key, value in extra.items():
+        if value is None:
+            env.pop(key, None)
+        else:
+            env[key] = str(value)
+    return env
 
 
 def write_amule_conf(root, ec_port, *, ec_password=EC_PASSWORD, sections=None, **emule):

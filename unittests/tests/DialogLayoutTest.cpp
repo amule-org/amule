@@ -43,13 +43,6 @@ wxIMPLEMENT_APP_NO_MAIN(DialogLayoutTestApp);
 
 namespace
 {
-void Check(bool condition, const char *message)
-{
-	if (!condition) {
-		throw std::runtime_error(message);
-	}
-}
-
 void TestWrappingText(const wxString &message, bool scrolled, bool largerFont)
 {
 	wxEventLoop loop;
@@ -577,34 +570,17 @@ int main(int argc, char **argv)
 {
 	// GUI tests need a display (for example xvfb-run on Linux CI). Do not report
 	// success when the platform cannot initialize its GUI backend.
-	InstallGuiTestDiagnostics();
-	if (!wxEntryStart(argc, argv)) {
-		std::cerr << "No GUI display available; skipping dialog layout tests\n";
-		return 77;
-	}
-	RestoreGuiTestLog();
-	int result = 0;
-	if (!wxTheApp->CallOnInit()) {
-		result = 1;
-	} else {
-		try {
-			TestWrappingControls();
-			TestWrappingMeasuredBeforeShown();
-			TestFileRenameDialog();
-			TestScrollableContent();
-			TestSmallContent();
-			TestHeightCappedContent();
-			TestWidthCappedContent();
-			TestPagedContent();
-			TestChangingColumnsAndRename();
-			TestHorizontalScrollEdge();
-			std::cout << "Dialog layout regression tests passed\n";
-		} catch (const std::exception &error) {
-			std::cerr << error.what() << '\n';
-			result = 1;
-		}
-		wxTheApp->OnExit();
-	}
-	wxEntryCleanup();
-	return result;
+	return RunGuiTest(argc, argv, "No GUI display available; skipping dialog layout tests", [] {
+		TestWrappingControls();
+		TestWrappingMeasuredBeforeShown();
+		TestFileRenameDialog();
+		TestScrollableContent();
+		TestSmallContent();
+		TestHeightCappedContent();
+		TestWidthCappedContent();
+		TestPagedContent();
+		TestChangingColumnsAndRename();
+		TestHorizontalScrollEdge();
+		std::cout << "Dialog layout regression tests passed\n";
+	});
 }

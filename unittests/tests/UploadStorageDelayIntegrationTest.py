@@ -19,7 +19,7 @@ import tempfile
 import time
 
 from AllSearchIntegrationTest import connect_daemon, exact, free_ports, retry_port_collisions, stop_daemon
-from DaemonConfig import write_amule_conf
+from DaemonConfig import daemon_env, write_amule_conf
 from ShareWatcherMoveIntegrationTest import shared
 from UploadRefillIntegrationTest import BLOCK, packet, send
 
@@ -125,10 +125,10 @@ def run(binary, fixture, case):
         notify_r, notify_w = os.pipe()
         release_r, release_w = os.pipe()
         arm = root / 'armed'
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8',
-                   LD_PRELOAD=os.pathsep.join(filter(None, (os.getenv('AMULE_TEST_PRELOAD_RUNTIME'), fixture))), AMULE_TEST_READ_PATH=str(delayed_path),
-                   AMULE_TEST_READ_ARM=str(arm), AMULE_TEST_READ_NOTIFY_FD=str(notify_w),
-                   AMULE_TEST_READ_RELEASE_FD=str(release_r))
+        preload = os.pathsep.join(filter(None, (os.getenv('AMULE_TEST_PRELOAD_RUNTIME'), fixture)))
+        env = daemon_env(root, LD_PRELOAD=preload,
+                         AMULE_TEST_READ_PATH=delayed_path, AMULE_TEST_READ_ARM=arm,
+                         AMULE_TEST_READ_NOTIFY_FD=notify_w, AMULE_TEST_READ_RELEASE_FD=release_r)
         peers = []
         ec = None
         proc = None

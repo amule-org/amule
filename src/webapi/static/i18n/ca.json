@@ -1074,5 +1074,7 @@
   "stats_tree_natt_server_punch_attempts": "Perforacions de NAT amb servidor: %s",
   "stats_tree_natt_server_punch_successes": "Perforacions de NAT amb servidor reeixides: %s",
   "stats_tree_natt_lugdunum_callback_attempts": "Retrotrucades de Lugdunum: %s",
-  "stats_tree_natt_lugdunum_callback_successes": "Retrotrucades de Lugdunum reeixides: %s"
+  "stats_tree_natt_lugdunum_callback_successes": "Retrotrucades de Lugdunum reeixides: %s",
+  "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Un límit més gran pot suavitzar els bloquejos breus del disc a costa de fer servir més memòria. Les dades ja sol·licitades poden superar aquest límit.",
+  "prefs_field_advanced_write_buffer_limit_mebibytes": "Límit de la memòria intermèdia d'escriptura de baixades (MiB)"
 }

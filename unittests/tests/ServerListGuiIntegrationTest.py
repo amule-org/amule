@@ -10,8 +10,8 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import connect_daemon, free_ports, retry_port_collisions, stop_daemon
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import free_ports, retry_port_collisions, start_daemon, stop_daemon
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 def run(gui, daemon, root):
@@ -22,19 +22,13 @@ def run(gui, daemon, root):
                                       bytes([203, 0, 113, 9]) + struct.pack('<HI', 4661, 0))
     write_amule_conf(root, ports[0], Port=ports[1], UDPEnable=0,
                      ConnectToED2K=1, ConfirmExit=0, StartupMinimized=1)
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'),
-               LC_ALL='C.UTF-8', LANG='C.UTF-8')
-    env.pop('LD_PRELOAD', None)
+    env = daemon_env(root, LANG='C.UTF-8')
     # Seed version notices and the user hash with the same build, so a fresh-profile
     # welcome dialog cannot hide a failure while constructing the real main window.
-    with (root / 'seed-console.log').open('w') as console:
-        seed = subprocess.Popen([daemon, '-c', str(root), '--disable-fatal'],
-                                env=env, stdout=console, stderr=subprocess.STDOUT)
-        try:
-            ec = connect_daemon(seed, ports[0], root, ports[1], server_udp=True)
-            ec.sock.close()
-        finally:
-            stop_daemon(seed)
+    seed, ec = start_daemon(daemon, root, ports, env=env, console='seed-console.log',
+                            server_udp=True)
+    ec.sock.close()
+    stop_daemon(seed)
     console_file = root / 'gui-console.log'
     with console_file.open('w') as console:
         proc = subprocess.Popen([gui, '-c', str(root), '--disable-fatal', '-o'],
@@ -54,12 +48,7 @@ def run(gui, daemon, root):
                 assert time.monotonic() < deadline, text
                 time.sleep(0.05)
         finally:
-            if proc.poll() is None:
-                if sys.exc_info()[0] is None:
-                    stop_daemon(proc)
-                else:
-                    proc.terminate()
-                    proc.wait(timeout=10)
+            stop_daemon(proc, check=sys.exc_info()[0] is None)
 
 
 def main():

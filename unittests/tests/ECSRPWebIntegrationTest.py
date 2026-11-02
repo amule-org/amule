@@ -14,8 +14,8 @@ import time
 import urllib.error
 import urllib.request
 
-from AllSearchIntegrationTest import EC, connect_daemon, free_ports, retry_port_collisions, stop_daemon, tag
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import EC, free_ports, retry_port_collisions, running_daemon, tag
+from DaemonConfig import daemon_env, write_amule_conf
 import ECWire as W
 
 
@@ -54,7 +54,7 @@ def run(daemon_binary, web_binary, api_binary=None):
         (root / 'webserver').mkdir()
         (root / 'webserver/default').symlink_to(
             Path(__file__).resolve().parents[2] / 'src/webserver/default', target_is_directory=True)
-        env = dict(os.environ, HOME=temporary, XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
+        env = daemon_env(root)
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
         def http_ready(port, path='/'):
@@ -75,82 +75,76 @@ def run(daemon_binary, web_binary, api_binary=None):
             if restart == 2:
                 wrapper.write_text(wrapper.read_text().split('os.execv(', 1)[0] + 'sys.exit(0)\n')
                 (root / 'child-pid').unlink()
-            with (root / 'console').open('w') as log:
-                daemon = subprocess.Popen([daemon_binary, '-c', temporary, '--disable-fatal'],
-                                          env=env, stdout=log, stderr=log)
-                try:
-                    ec = connect_daemon(daemon, ec_port, root, peer)
-                    ec.sock.close()
-                    if restart == 2:
-                        wait_for(lambda: (root / 'child-pid').exists(), 'helper did not start')
-                        child_pid = int((root / 'child-pid').read_text())
-                        wait_for(lambda: f"with pid '{child_pid}' has finished" in (root / 'logfile').read_text(),
-                                 'core did not observe early helper exit')
-                        assert not (root / 'amuleweb-ec-token').exists(), 'early exit left unread token'
-                        token = bytes.fromhex((root / 'captured-token').read_text().strip())
-                        with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
-                            _, op, _ = W.authenticate(sock, token, credential=2)
-                            assert op == W.C['EC_OP_AUTH_FAIL'], 'early helper exit did not revoke token'
-                        print('PASS: helper exit before consuming its token removes and revokes it')
-                        continue
-                    wait_for(lambda: http_ready(web_port), lambda: diagnostics('spawned amuleweb did not serve HTTP'))
-                    assert '\nECPassword=' not in (root / 'amule.conf').read_text()
-                    assert not (root / 'amuleweb-ec-token').exists(), 'web token was not consumed'
+            with running_daemon(daemon_binary, root, (ec_port, peer), console='console') as (_, ec):
+                ec.sock.close()
+                if restart == 2:
+                    wait_for(lambda: (root / 'child-pid').exists(), 'helper did not start')
+                    child_pid = int((root / 'child-pid').read_text())
+                    wait_for(lambda: f"with pid '{child_pid}' has finished" in (root / 'logfile').read_text(),
+                             'core did not observe early helper exit')
+                    assert not (root / 'amuleweb-ec-token').exists(), 'early exit left unread token'
                     token = bytes.fromhex((root / 'captured-token').read_text().strip())
-                    assert token != old_token, 'web child reused a token across core restarts'
-                    old_token = token
-                    if api_binary:
-                        wait_for(lambda: http_ready(api_port, '/api/v1/health'), lambda: diagnostics('spawned API failed'))
-                        assert not (root / 'amuleapi-ec-token').exists(), 'API token was not consumed'
-                    # A web token has its own selector, cannot log in as the API, and
-                    # remains usable after the API's unrelated token is issued.
-                    for credential, expected in ((2, 'EC_OP_AUTH_OK'), (1, 'EC_OP_AUTH_FAIL')):
-                        with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
-                            _, op, _ = W.authenticate(sock, token, credential=credential)
-                            assert op == W.C[expected], 'child credential selectors were mixed'
-                    with socket.create_connection(('127.0.0.1',ec_port),timeout=10) as sock:
-                        encrypted,op,_=W.authenticate(sock,token,credential=2)
-                        assert op==W.C['EC_OP_AUTH_OK']
-                        # A rejected password edit must not apply unrelated prefs either.
-                        password_tag=W.tag('EC_TAG_EXTERNALCONN_PASSWD',hashlib.md5(b'evil').digest(),9)
-                        group=tag(W.C['EC_TAG_PREFS_REMOTECTRL'],children=[password_tag])
-                        editor = EC(ec_port)
-                        full = tag(W.C['EC_TAG_DETAIL_LEVEL'], bytes([W.C['EC_DETAIL_FULL']]), 2)
-                        select = tag(W.C['EC_TAG_SELECT_PREFS'], struct.pack('!I', W.C['EC_PREFS_GENERAL']), 4)
-                        def nickname():
-                            _, prefs = editor.call(W.C['EC_OP_GET_PREFERENCES'], [full, select])
-                            return prefs[W.C['EC_TAG_PREFS_GENERAL']][1][W.C['EC_TAG_USER_NICK']][0]
-                        original_nick = nickname()
-                        general = tag(W.C['EC_TAG_PREFS_GENERAL'], children=[
-                            tag(W.C['EC_TAG_USER_NICK'], b'token-must-not-apply\0', 6)])
-                        encrypted.sendall(W.packet('EC_OP_SET_PREFERENCES',[group, general]))
-                        assert W.read(encrypted)[0]==W.C['EC_OP_FAILED']
-                        assert nickname() == original_nick, 'token password edit applied unrelated preferences'
-                        editor.sock.close()
-                    EC_salt=[]
-                    for selector in (1,2):
-                        with socket.create_connection(('127.0.0.1',ec_port),timeout=10) as sock:
-                            W.authenticate(sock,token,credential=selector,challenge=lambda tags: EC_salt.append(tags[W.C['EC_TAG_SRP_SALT']]))
-                    assert EC_salt[0]==EC_salt[1], 'salt reveals live token selector'
-                    if api_binary:
-                        assert http_ready(api_port, '/api/v1/health'), 'web login disrupted API'
-                    # Revocation must also reject a proof prepared before child exit.
-                    def terminate_child():
-                        child_pid = int((root / 'child-pid').read_text())
-                        os.kill(child_pid, signal.SIGTERM)
-                        wait_for(lambda: f"with pid '{child_pid}' has finished" in (root / 'logfile').read_text(),
-                                 'core did not observe amuleweb exit')
-                    with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
-                        _, op, _ = W.authenticate(sock, token, credential=2,
-                                                 before_proof=terminate_child)
-                        assert op == W.C['EC_OP_AUTH_FAIL'], 'revoked in-flight web token accepted'
                     with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
                         _, op, _ = W.authenticate(sock, token, credential=2)
-                        assert op == W.C['EC_OP_AUTH_FAIL'], 'exited child retained its credential'
-                    if api_binary:
-                        assert http_ready(api_port, '/api/v1/health'), 'web revocation disrupted API'
-                finally:
-                    stop_daemon(daemon)
+                        assert op == W.C['EC_OP_AUTH_FAIL'], 'early helper exit did not revoke token'
+                    print('PASS: helper exit before consuming its token removes and revokes it')
+                    continue
+                wait_for(lambda: http_ready(web_port), lambda: diagnostics('spawned amuleweb did not serve HTTP'))
+                assert '\nECPassword=' not in (root / 'amule.conf').read_text()
+                assert not (root / 'amuleweb-ec-token').exists(), 'web token was not consumed'
+                token = bytes.fromhex((root / 'captured-token').read_text().strip())
+                assert token != old_token, 'web child reused a token across core restarts'
+                old_token = token
+                if api_binary:
+                    wait_for(lambda: http_ready(api_port, '/api/v1/health'), lambda: diagnostics('spawned API failed'))
+                    assert not (root / 'amuleapi-ec-token').exists(), 'API token was not consumed'
+                # A web token has its own selector, cannot log in as the API, and
+                # remains usable after the API's unrelated token is issued.
+                for credential, expected in ((2, 'EC_OP_AUTH_OK'), (1, 'EC_OP_AUTH_FAIL')):
+                    with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
+                        _, op, _ = W.authenticate(sock, token, credential=credential)
+                        assert op == W.C[expected], 'child credential selectors were mixed'
+                with socket.create_connection(('127.0.0.1',ec_port),timeout=10) as sock:
+                    encrypted,op,_=W.authenticate(sock,token,credential=2)
+                    assert op==W.C['EC_OP_AUTH_OK']
+                    # A rejected password edit must not apply unrelated prefs either.
+                    password_tag=W.tag('EC_TAG_EXTERNALCONN_PASSWD',hashlib.md5(b'evil').digest(),9)
+                    group=tag(W.C['EC_TAG_PREFS_REMOTECTRL'],children=[password_tag])
+                    editor = EC(ec_port)
+                    full = tag(W.C['EC_TAG_DETAIL_LEVEL'], bytes([W.C['EC_DETAIL_FULL']]), 2)
+                    select = tag(W.C['EC_TAG_SELECT_PREFS'], struct.pack('!I', W.C['EC_PREFS_GENERAL']), 4)
+                    def nickname():
+                        _, prefs = editor.call(W.C['EC_OP_GET_PREFERENCES'], [full, select])
+                        return prefs[W.C['EC_TAG_PREFS_GENERAL']][1][W.C['EC_TAG_USER_NICK']][0]
+                    original_nick = nickname()
+                    general = tag(W.C['EC_TAG_PREFS_GENERAL'], children=[
+                        tag(W.C['EC_TAG_USER_NICK'], b'token-must-not-apply\0', 6)])
+                    encrypted.sendall(W.packet('EC_OP_SET_PREFERENCES',[group, general]))
+                    assert W.read(encrypted)[0]==W.C['EC_OP_FAILED']
+                    assert nickname() == original_nick, 'token password edit applied unrelated preferences'
+                    editor.sock.close()
+                EC_salt=[]
+                for selector in (1,2):
+                    with socket.create_connection(('127.0.0.1',ec_port),timeout=10) as sock:
+                        W.authenticate(sock,token,credential=selector,challenge=lambda tags: EC_salt.append(tags[W.C['EC_TAG_SRP_SALT']]))
+                assert EC_salt[0]==EC_salt[1], 'salt reveals live token selector'
+                if api_binary:
+                    assert http_ready(api_port, '/api/v1/health'), 'web login disrupted API'
+                # Revocation must also reject a proof prepared before child exit.
+                def terminate_child():
+                    child_pid = int((root / 'child-pid').read_text())
+                    os.kill(child_pid, signal.SIGTERM)
+                    wait_for(lambda: f"with pid '{child_pid}' has finished" in (root / 'logfile').read_text(),
+                             'core did not observe amuleweb exit')
+                with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
+                    _, op, _ = W.authenticate(sock, token, credential=2,
+                                             before_proof=terminate_child)
+                    assert op == W.C['EC_OP_AUTH_FAIL'], 'revoked in-flight web token accepted'
+                with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
+                    _, op, _ = W.authenticate(sock, token, credential=2)
+                    assert op == W.C['EC_OP_AUTH_FAIL'], 'exited child retained its credential'
+                if api_binary:
+                    assert http_ready(api_port, '/api/v1/health'), 'web revocation disrupted API'
             assert not (root / 'amuleweb-ec-token').exists(), 'shutdown retained web token'
             print('PASS: web startup, token isolation and revocation; restart', restart,
                   'with API' if api_binary else 'without API')

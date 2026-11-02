@@ -6,9 +6,14 @@ import configparser
 from pathlib import Path
 import errno
 import hashlib
+import os
+import signal
 import struct
+import subprocess
+import sys
 from itertools import cycle
 import tempfile
+import time
 import unittest
 from unittest.mock import patch
 
@@ -184,6 +189,81 @@ class IntegrationFixtureUnitTest(unittest.TestCase):
                                                expected=root / 'logfile')
 
 
+class AmuleApiFixtureUnitTest(unittest.TestCase):
+    def exited(self, log_text):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        log = Path(directory.name) / 'api.log'
+        log.write_text(log_text)
+        proc = subprocess.Popen([sys.executable, '-c', 'raise SystemExit(1)'])
+        proc.wait()
+        return proc, log
+
+    def test_http_port_clash_is_retried(self):
+        proc, log = self.exited('HTTP server failed to start: address in use\n')
+        with self.assertRaises(AllSearchIntegrationTest.PortCollision):
+            AllSearchIntegrationTest.wait_amuleapi(proc, 'http://127.0.0.1:9/api/v1', log)
+
+    def test_other_exit_fails_with_the_log(self):
+        proc, log = self.exited('EC login refused\n')
+        with self.assertRaisesRegex(AssertionError, 'EC login refused'):
+            AllSearchIntegrationTest.wait_amuleapi(proc, 'http://127.0.0.1:9/api/v1', log)
+
+    def test_daemon_args_abort_on_assert_outside_windows(self):
+        expected = () if os.name == 'nt' else ('--disable-fatal',)
+        self.assertEqual(AllSearchIntegrationTest.DAEMON_ARGS, expected)
+
+
+class StopDaemonUnitTest(unittest.TestCase):
+    def spawn(self, code):
+        return subprocess.Popen([sys.executable, '-c', code])
+
+    def test_unclean_exit_fails_check(self):
+        if os.name == 'nt':
+            self.skipTest('taskkill exit codes are not checked on Windows')
+        proc = self.spawn('import time; time.sleep(60)')
+        with patch.object(AllSearchIntegrationTest.subprocess.Popen, 'terminate',
+                          lambda p: p.send_signal(signal.SIGINT)):
+            with self.assertRaises(AssertionError):
+                AllSearchIntegrationTest.stop_daemon(proc)
+        self.assertIsNotNone(proc.poll())
+
+    def test_codes_accepts_an_expected_exit(self):
+        if os.name == 'nt':
+            self.skipTest('POSIX signals only')
+        code = ('import signal, sys, time\n'
+                'signal.signal(signal.SIGTERM, lambda *_: sys.exit(1))\ntime.sleep(60)')
+        proc = self.spawn(code)
+        time.sleep(0.5)
+        AllSearchIntegrationTest.stop_daemon(proc, codes=(0, 1))
+        proc = self.spawn(code)
+        time.sleep(0.5)
+        with self.assertRaises(AssertionError):
+            AllSearchIntegrationTest.stop_daemon(proc)
+
+    def test_hung_process_is_killed(self):
+        if os.name == 'nt':
+            self.skipTest('POSIX signals only')
+        proc = self.spawn('import signal, time\n'
+                          'signal.signal(signal.SIGTERM, signal.SIG_IGN)\ntime.sleep(60)')
+        time.sleep(0.5)
+        with self.assertRaises(AssertionError):
+            AllSearchIntegrationTest.stop_daemon(proc, timeout=1)
+        self.assertIsNotNone(proc.poll())
+        proc = self.spawn('import signal, time\n'
+                          'signal.signal(signal.SIGTERM, signal.SIG_IGN)\ntime.sleep(60)')
+        time.sleep(0.5)
+        AllSearchIntegrationTest.stop_daemon(proc, timeout=1, check=False)
+        self.assertIsNotNone(proc.poll())
+
+    def test_exited_process_is_not_signalled(self):
+        proc = self.spawn('pass')
+        proc.wait()
+        with patch.object(AllSearchIntegrationTest.subprocess.Popen, 'terminate') as terminate:
+            AllSearchIntegrationTest.stop_daemon(proc)
+        terminate.assert_not_called()
+
+
 class OfferFilesLoginUnitTest(unittest.TestCase):
     def test_offerfiles_login_request_with_other_extensions(self):
         standard = (b'\x02\x01\x00\x01\x04\x00test'
@@ -238,6 +318,18 @@ class DaemonConfigUnitTest(unittest.TestCase):
         self.assertEqual(config['ExternalConnect']['ECPassword'],
                          hashlib.md5(DaemonConfig.EC_PASSWORD.encode()).hexdigest())
         self.assertEqual(config['WebServer']['Enabled'], '0')
+
+    def test_daemon_env_isolates_home_and_drops_preload(self):
+        with patch.dict(DaemonConfig.os.environ, {'LD_PRELOAD': 'x.so', 'DISPLAY': ':0'}):
+            env = DaemonConfig.daemon_env('/tmp/home', AMULE_TEST_X=1, DISPLAY=None)
+            preload = DaemonConfig.daemon_env('/tmp/home', LD_PRELOAD='y.so')
+        self.assertEqual(env['HOME'], '/tmp/home')
+        self.assertEqual(env['XDG_CONFIG_HOME'], str(Path('/tmp/home') / 'xdg'))
+        self.assertEqual(env['LC_ALL'], 'C.UTF-8')
+        self.assertEqual(env['AMULE_TEST_X'], '1')
+        self.assertNotIn('LD_PRELOAD', env)
+        self.assertNotIn('DISPLAY', env)
+        self.assertEqual(preload['LD_PRELOAD'], 'y.so')
 
     def test_none_leaves_a_key_out(self):
         with tempfile.TemporaryDirectory() as directory:

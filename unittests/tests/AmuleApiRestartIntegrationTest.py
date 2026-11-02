@@ -18,7 +18,8 @@ import time
 from ECWire import authenticate  # Preflight in the parent before starting fixtures.
 from AllSearchIntegrationTest import (C, EC, check_daemon_ports, integer,
                                       retry_port_collisions, string, tag)
-from LogfilePathIntegrationTest import daemon_env, write_config
+from DaemonConfig import daemon_env
+from LogfilePathIntegrationTest import write_config
 
 
 # Matches the opt-in integration-build clock in CamuleApp::OnInit().
@@ -128,7 +129,7 @@ def run(binary, root, scenario):
         config.write(f'\n[AmuleApi]\nEnabled=1\nPath={helper_path}\nBindAddress=127.0.0.1\n')
     with (root / 'console.log').open('w') as console:
         proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'],
-                                stdout=console, stderr=console, env=dict(daemon_env(root), AMULE_TEST_FAST_API_RESTART='1'))
+                                stdout=console, stderr=console, env=daemon_env(root, AMULE_TEST_FAST_API_RESTART=1))
         try:
             wait_until(proc, root, lambda: len(launches(root)) == 1)
             check_daemon_ports(root, ec_port, peer_port)

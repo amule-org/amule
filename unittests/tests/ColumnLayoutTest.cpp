@@ -27,6 +27,7 @@
 #include <wx/mstream.h>
 #include <wx/menu.h>
 #include "MuleVirtualDataViewCtrl.h"
+#include "GuiTestDiagnostics.h"
 #include "NativeListTest.h"
 #include <common/MenuIDs.h>
 

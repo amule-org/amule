@@ -17,12 +17,11 @@
 #include <muleunit/test.h>
 
 #include <wx/filename.h>
-#include <wx/stdpaths.h>
-#include <wx/utils.h>
 
 #include <algorithm>
 
 #include "ShareExclude.h"
+#include "TestScratchDir.h"
 
 using namespace muleunit;
 using ShareExclude::PathList;
@@ -32,20 +31,6 @@ DECLARE_SIMPLE(ShareExclude)
 
 namespace
 {
-
-// A fresh, empty directory under the system temp dir. Built through CPath so the separators
-// are the platform's own.
-CPath MakeTempRoot(const char *tag)
-{
-	wxString dir;
-	dir.Printf("%s/amule-share-exclude-%s-%ld",
-		wxStandardPaths::Get().GetTempDir(),
-		tag,
-		static_cast<long>(::wxGetProcessId()));
-	wxFileName::Rmdir(dir, wxPATH_RMDIR_RECURSIVE);
-	wxFileName::Mkdir(dir, 0700, wxPATH_MKDIR_FULL);
-	return CPath(wxFileName::DirName(dir).GetPath());
-}
 
 CPath MakeDir(const CPath &parent, const char *name)
 {
@@ -134,7 +119,8 @@ TEST(ShareExclude, NestedRootCoversWhatItsParentExcludes)
 
 TEST(ShareExclude, ExpansionSkipsExcludedSubtree)
 {
-	const CPath root = MakeTempRoot("expand");
+	const TestScratchDir scratch("amule-share-exclude-expand-");
+	const CPath root(scratch.WxPath());
 	const CPath music = MakeDir(root, "Music");
 	const CPath unwanted = MakeDir(root, ".unwanted");
 	const CPath below = MakeDir(unwanted, "inner");
@@ -162,13 +148,12 @@ TEST(ShareExclude, ExpansionSkipsExcludedSubtree)
 	ASSERT_TRUE(seen.Index("Incomplete") != wxNOT_FOUND);
 	ASSERT_TRUE(seen.Index("inner") == wxNOT_FOUND);
 	ASSERT_TRUE(!truncated);
-
-	wxFileName::Rmdir(root.GetRaw(), wxPATH_RMDIR_RECURSIVE);
 }
 
 TEST(ShareExclude, ExpansionCapsSeenNames)
 {
-	const CPath root = MakeTempRoot("cap");
+	const TestScratchDir scratch("amule-share-exclude-cap-");
+	const CPath root(scratch.WxPath());
 	MakeDir(root, "a");
 	MakeDir(root, "b");
 
@@ -183,8 +168,6 @@ TEST(ShareExclude, ExpansionCapsSeenNames)
 	ASSERT_EQUALS(3u, static_cast<unsigned>(out.size()));
 	ASSERT_EQUALS(1u, static_cast<unsigned>(seen.GetCount()));
 	ASSERT_TRUE(truncated);
-
-	wxFileName::Rmdir(root.GetRaw(), wxPATH_RMDIR_RECURSIVE);
 }
 
 // Office documents are excluded as plain globs inside the default ExcludeSharePatterns, so the

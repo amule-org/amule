@@ -26,52 +26,7 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-
-FAIL_COUNT=0
-TEST_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_20_etag_conditional_get_body.XXXXXX)
-CURL_HEAD_FILE=$(mktemp -t amuleapi_20_etag_conditional_get_head.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEAD_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-# Capture both status + headers. Stores HTTP status in CURL_STATUS,
-# response body in CURL_BODY, and the raw header dump in CURL_HEAD.
-# Empties both output files before invoking curl — curl leaves the
-# -o target untruncated on 304 Not Modified (no body to write), so a
-# follow-up read would see whatever the PREVIOUS request wrote.
-_curl() {
-	: > "$CURL_BODY_FILE"
-	: > "$CURL_HEAD_FILE"
-	local resp
-	resp=$(curl -s --max-time 10 -o "$CURL_BODY_FILE" \
-		-D "$CURL_HEAD_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-	CURL_HEAD=$(cat "$CURL_HEAD_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 # Extract the ETag header value from the captured response (with
 # quotes intact). Returns empty string if absent. Uses sed instead
@@ -82,16 +37,12 @@ _get_etag() {
 		| head -1
 }
 
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable."
-fi
+_preflight
 
 echo "amuleapi 20-etag-conditional-get smoke @ $HOST"
 
-ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+ADMIN_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 
 sleep 4
 
@@ -303,10 +254,4 @@ _curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 _assert_status 304 "GET /preferences + If-None-Match (cached) → 304 (conditional GET cache works)"
 
 # --- Summary. -----------------------------------------------------
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

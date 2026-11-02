@@ -7,18 +7,17 @@ The hashing task keeps a pointer to the part file, so a cancel must wait until i
 finishes. A large sparse .part whose recorded date differs from its mtime is rehashed
 on load, which holds it in the waiting/hashing states long enough to probe every path.
 """
-import hashlib
-import os
 from pathlib import Path
 import struct
-import subprocess
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import C, free_ports, integer, tag
+from AllSearchIntegrationTest import (C, configure_amuleapi, free_ports, http, integer,
+                                      retry_port_collisions, start_amuleapi, start_daemon,
+                                      stop_daemon, tag, wait_amuleapi)
 from CancelCompletedIntegrationTest import md4
-from CompletedFileDeleteIntegrationTest import EC, eventually, field, http
-from DaemonConfig import write_amule_conf
+from CompletedFileDeleteIntegrationTest import EC, eventually, field
+from DaemonConfig import daemon_env, write_amule_conf
 
 PARTSIZE = 9728000
 SIZE = 400 * PARTSIZE - 1000  # 400 parts, below 4 GiB so the size fits a 32-bit tag
@@ -56,34 +55,21 @@ def run(daemon, api):
         part = seed_rehash(root)
         ec_port, peer_port, udp_port, hp = free_ports(4, udp_indices=(2,), peer_index=1)
         write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port)
-        env = dict(os.environ, HOME=tmp, XDG_CONFIG_HOME=tmp + '/xdg', LC_ALL='C.UTF-8')
+        env = daemon_env(root)
         processes = []
         ec = None
-        with (root / 'daemon.log').open('w') as daemon_log, (root / 'api.log').open('w') as api_log:
+        with (root / 'api.log').open('w') as api_log:
             try:
                 api_root = root / 'api'
                 api_root.mkdir()
-                subprocess.run([api, '--config-dir=' + str(api_root), '--set-admin-pass=adminpass'],
-                               env=env, check=True, stdout=api_log, stderr=api_log)
-                config = api_root / 'amuleapi.conf'
-                config.write_text(config.read_text().replace(
-                    'PasswordMD5=', 'PasswordMD5=' + hashlib.md5(b'regression').hexdigest(), 1))
+                configure_amuleapi(api, api_root, env, api_log)
                 base = f'http://127.0.0.1:{hp}/api/v1'
-                proc = subprocess.Popen([daemon, '-c', tmp], env=env, stdout=daemon_log, stderr=daemon_log)
+                proc, ec = start_daemon(daemon, root, (ec_port, peer_port, udp_port), env=env,
+                                        console='daemon.log', ec_class=EC)
                 processes.append(proc)
-
-                def connect():
-                    assert proc.poll() is None, (root / 'daemon.log').read_text()
-                    try:
-                        return EC(ec_port)
-                    except ConnectionRefusedError:
-                        return None
-                ec = eventually(connect)
                 # Start amuleapi now, not after the EC checks: the rehash takes only a few
                 # seconds, and amuleapi does not retry its first connection.
-                api_proc = subprocess.Popen([api, '--config-dir=' + str(api_root), '--host=127.0.0.1',
-                    '--port=' + str(ec_port), '--http-port=' + str(hp)],
-                    env=env, stdout=api_log, stderr=api_log)
+                api_proc = start_amuleapi(api, api_root, ec_port, hp, env, api_log)
                 processes.append(api_proc)
 
                 def status():
@@ -102,17 +88,7 @@ def run(daemon, api):
                 assert ec.call('EC_OP_PARTFILE_DELETE', [guarded])[0] == C['EC_OP_FAILED']
                 assert hashing() and part.exists()
                 print('PASS: EC refuses to cancel a hashing download, with or without an ECID')
-
-
-                def healthy():
-                    assert api_proc.poll() is None, (root / 'api.log').read_text()
-                    try:
-                        return http(base, '/health')[1].get('ec_connected')
-                    except OSError:
-                        return False
-                eventually(healthy)
-                admin = http(base, '/auth/login?include_token=true', method='POST',
-                             body={'password': 'adminpass'})[1]['token']
+                admin = wait_amuleapi(api_proc, base, api_log.name)
 
                 def api_status():
                     code, body = http(base, '/downloads/' + FILE_HASH, admin)
@@ -130,6 +106,7 @@ def run(daemon, api):
                 assert http(base, '/downloads/' + FILE_HASH, admin, 'DELETE')[0] == 204
                 assert not part.exists()
                 print('PASS: the same download cancels once hashing has finished')
+                stop_daemon(api_proc, timeout=15)
             except Exception:
                 for name in ('daemon.log', 'logfile'):
                     if (root / name).exists():
@@ -140,16 +117,9 @@ def run(daemon, api):
                 if ec:
                     ec.sock.close()
                 for child in reversed(processes):
-                    if child.poll() is not None:
-                        continue
-                    child.terminate()
-                    try:
-                        child.wait(timeout=60)
-                    except subprocess.TimeoutExpired:
-                        child.kill()
-                        child.wait()
+                    stop_daemon(child, timeout=60, check=False)
     return 0
 
 
 if __name__ == '__main__':
-    sys.exit(run(*sys.argv[1:]))
+    sys.exit(retry_port_collisions(run, *sys.argv[1:]))

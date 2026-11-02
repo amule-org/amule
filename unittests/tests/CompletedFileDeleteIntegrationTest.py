@@ -7,20 +7,18 @@ No public networks: seed verified .part fixtures, let the normal completion path
 run, and exercise unlink failures by removing directory write permission.
 """
 import hashlib
-import json
 import os
 from pathlib import Path
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import time
-import urllib.error
-import urllib.request
 
-from AllSearchIntegrationTest import C, exact, free_ports, integer, string, tag
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, http, integer,
+                                      retry_port_collisions, start_amuleapi, start_daemon,
+                                      stop_daemon, string, tag, wait_amuleapi)
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 def decode(data, offset, count):
@@ -104,21 +102,6 @@ def eventually(fn, timeout=30):
     raise AssertionError('timed out waiting for fixture state')
 
 
-def http(base, path, token=None, method='GET', body=None):
-    headers = {'Content-Type': 'application/json'}
-    if token:
-        headers['Authorization'] = 'Bearer ' + token
-    request = urllib.request.Request(base + path,
-        None if body is None else json.dumps(body).encode(), headers, method=method)
-    try:
-        response = urllib.request.urlopen(request, timeout=10)
-    except urllib.error.HTTPError as error:
-        response = error
-    with response:
-        data = response.read()
-        return response.status, json.loads(data) if data else None
-
-
 # Standard MD4 test vectors; files are < one eD2k chunk, so this is their file hash.
 FIXTURES = [
     (b'a', 'bde52cb31de33e46245e05fbdbd6fb24'),
@@ -165,20 +148,14 @@ def run(daemon, api):
         ec_port, peer_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
         write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port,
                          ExcludeSharePatterns='*.docx')
-        env = dict(os.environ, HOME=tmp, XDG_CONFIG_HOME=tmp+'/xdg', LC_ALL='C.UTF-8')
+        env = daemon_env(root)
         processes = []
         ec = None
-        with (root / 'daemon.log').open('w') as daemon_log, (root / 'api.log').open('w') as api_log:
+        with (root / 'api.log').open('w') as api_log:
             try:
-                proc = subprocess.Popen([daemon, '-c', tmp], env=env, stdout=daemon_log, stderr=daemon_log)
+                proc, ec = start_daemon(daemon, root, (ec_port, peer_port, udp_port), env=env,
+                                        console='daemon.log', ec_class=EC)
                 processes.append(proc)
-                def connect():
-                    assert proc.poll() is None, (root / 'daemon.log').read_text()
-                    try:
-                        return EC(ec_port)
-                    except ConnectionRefusedError:
-                        return None
-                ec = eventually(connect)
                 eventually(lambda: len(rows := ec.files()) == len(FIXTURES) and
                            all(field(row[1], 'EC_TAG_PARTFILE_STATUS') == 9 for row in rows.values()))
                 eventually(lambda: shared_hash in ec.files(True))
@@ -256,25 +233,12 @@ def run(daemon, api):
 
                 api_root = root / 'api'
                 api_root.mkdir()
-                for role in ('admin', 'guest'):
-                    subprocess.run([api, '--config-dir='+str(api_root), f'--set-{role}-pass={role}pass'],
-                                   env=env, check=True, stdout=api_log, stderr=api_log)
-                config = api_root / 'amuleapi.conf'
-                config.write_text(config.read_text().replace('PasswordMD5=', 'PasswordMD5=' + hashlib.md5(b'regression').hexdigest(), 1))
+                configure_amuleapi(api, api_root, env, api_log, guest='guestpass')
                 hp = free_ports(1)[0]
                 base = f'http://127.0.0.1:{hp}/api/v1'
-                api_proc = subprocess.Popen([api, '--config-dir='+str(api_root), '--host=127.0.0.1',
-                    '--port='+str(ec_port), '--http-port='+str(hp)],
-                    env=env, stdout=api_log, stderr=api_log)
+                api_proc = start_amuleapi(api, api_root, ec_port, hp, env, api_log)
                 processes.append(api_proc)
-                def healthy():
-                    assert api_proc.poll() is None, (root / 'api.log').read_text()
-                    try:
-                        return http(base, '/health')[1].get('ec_connected')
-                    except OSError:
-                        return False
-                eventually(healthy)
-                admin = http(base, '/auth/login?include_token=true', method='POST', body={'password':'adminpass'})[1]['token']
+                admin = wait_amuleapi(api_proc, base, api_log.name)
                 guest = http(base, '/auth/login?include_token=true', method='POST', body={'password':'guestpass'})[1]['token']
                 second, third, fourth = [h for _, h in FIXTURES[1:4]]
                 eventually(lambda: http(base, '/downloads/'+second, admin)[0] == 200)
@@ -454,10 +418,8 @@ def run(daemon, api):
                 assert ec.call('EC_OP_ADD_LINK', [string(C['EC_TAG_STRING'], link)])[0] == C['EC_OP_NOOP']
                 assert first in ec.files()
                 print('PASS: REST single/bulk deletion, guest denial, failure preservation, immediate refresh, clear, and re-download')
-                api_proc.terminate()
-                assert api_proc.wait(timeout=15) == 0
-                proc.terminate()
-                assert proc.wait(timeout=15) == 0
+                stop_daemon(api_proc, timeout=15)
+                stop_daemon(proc, timeout=15)
                 # Core shutdown persists the known record without adding cancelled hashes.
                 known = (root / 'known.met').read_bytes()
                 cancelled = (root / 'canceled.met').read_bytes() if (root / 'canceled.met').exists() else b''
@@ -477,16 +439,9 @@ def run(daemon, api):
                 if ec:
                     ec.sock.close()
                 for child in reversed(processes):
-                    if child.poll() is not None:
-                        continue
-                    child.terminate()
-                    try:
-                        child.wait(timeout=15)
-                    except subprocess.TimeoutExpired:
-                        child.kill()
-                        child.wait()
+                    stop_daemon(child, timeout=15, check=False)
     return 0
 
 
 if __name__ == '__main__':
-    sys.exit(run(*sys.argv[1:]))
+    sys.exit(retry_port_collisions(run, *sys.argv[1:]))

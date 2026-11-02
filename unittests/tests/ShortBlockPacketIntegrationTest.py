@@ -4,17 +4,15 @@
 """Truncated block diagnostics must preserve wrong-file rejection on real peer sockets."""
 from contextlib import contextmanager
 import hashlib
-import os
 from pathlib import Path
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import zlib
 
-from AllSearchIntegrationTest import (C, connect_daemon, exact, free_ports, retry_port_collisions,
-                                      stop_daemon)
+from AllSearchIntegrationTest import (C, exact, free_ports, retry_port_collisions, running_daemon,
+                                      start_daemon)
 from DaemonConfig import write_amule_conf
 from DownloadDisplayRatesIntegrationTest import hello, local_ipv4
 from ED2KLinkIntegrationTest import add_link
@@ -23,16 +21,7 @@ from UploadRefillIntegrationTest import packet, send
 
 
 def start(binary, root, ports):
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
-    env.pop('LD_PRELOAD', None)
-    with (root / 'console.log').open('w') as log:
-        proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                                stdout=log, stderr=log)
-    try:
-        return proc, connect_daemon(proc, ports[0], root, ports[1], ports[2])
-    except BaseException:
-        stop_daemon(proc)
-        raise
+    return start_daemon(binary, root, ports)
 
 
 def frame(peer, protocol, opcode, data):
@@ -142,16 +131,9 @@ def run_case(binary, packed, large, wrong_length):
         ports = free_ports(3, udp_indices=(2,), peer_index=1)
         write_amule_conf(root, ports[0], Address=address, Port=ports[1], UDPPort=ports[2],
                          FilterLanIPs=0, MaxDownload=0, MaxUpload=0)
-        proc, ec = start(binary, root, ports)
-        try:
+        with running_daemon(binary, root, ports) as (proc, ec):
             check_layout(ec, address, ports[1], packed, large, wrong_length)
             assert proc.poll() is None, 'block packet killed the daemon'
-        except BaseException:
-            print((root / 'logfile').read_text(errors='replace')[-6000:], file=sys.stderr)
-            raise
-        finally:
-            ec.sock.close()
-            stop_daemon(proc)
 
 
 def run(binary):

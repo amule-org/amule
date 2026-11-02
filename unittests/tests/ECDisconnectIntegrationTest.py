@@ -3,16 +3,13 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Do not authenticate buffered packets after rejecting their EC connection."""
 import hashlib
-import os
 from pathlib import Path
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import (C, connect_daemon, free_ports,
-                                      retry_port_collisions, stop_daemon)
+from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
 import ECWire as W
 from DaemonConfig import EC_PASSWORD, write_amule_conf
 
@@ -34,15 +31,7 @@ def run(binary):
             (root / directory).mkdir()
         ports = free_ports(3, udp_indices=(2,), peer_index=1)
         write_amule_conf(root, ports[0], Port=ports[1], UDPPort=ports[2])
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'),
-                   LC_ALL='C.UTF-8')
-        env.pop('LD_PRELOAD', None)
-        with (root / 'console.log').open('w') as console:
-            proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'],
-                                    env=env, stdout=console, stderr=subprocess.STDOUT)
-        control = None
-        try:
-            control = connect_daemon(proc, ports[0], root, ports[1], ports[2])
+        with running_daemon(binary, root, ports) as (proc, control):
             # Positive control: the very same notification-capable login succeeds
             # when no rejected packet precedes its proof.
             with socket.create_connection(('127.0.0.1', ports[0]), timeout=10) as peer:
@@ -89,17 +78,6 @@ def run(binary):
             print('PASS: rejected EC batch cannot authenticate or register a notifier')
             print('PASS: packet after AUTH_FAIL closes and releases the connection')
             print('PASS: ordinary notification login and independent EC client still work')
-        except BaseException:
-            for name in ('logfile', 'console.log'):
-                path = root / name
-                if path.exists():
-                    print(f'{name}:\n{path.read_text(errors="replace")[-8000:]}', file=sys.stderr)
-            raise
-        finally:
-            if control is not None:
-                control.sock.close()
-            if proc.poll() is None:
-                stop_daemon(proc)
 
 
 if __name__ == '__main__':

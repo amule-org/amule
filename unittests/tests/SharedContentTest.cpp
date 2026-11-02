@@ -11,6 +11,8 @@
 
 #include <muleunit/test.h>
 
+#include "TestScratchDir.h"
+
 #include "SharedContent.h"
 
 #include <cstdio>
@@ -36,61 +38,6 @@ using namespace webapi;
 
 namespace
 {
-
-// Per-test scratch dir, the same shape as StaticFsTest's helper: POSIX uses mkdtemp(), Windows
-// builds a unique name under %TEMP%. Created empty; the test populates it and must call RemoveAll()
-// itself, because muleunit's DECLARE_SIMPLE has no TearDown hook.
-std::string MakeScratchRoot(const char *tag)
-{
-#ifdef _WIN32
-	char tmp[MAX_PATH];
-	DWORD n = GetTempPathA(MAX_PATH, tmp);
-	std::string base(tmp, n);
-	std::string dir =
-		base + "amule-sharedcontent-" + tag + "-" + std::to_string(static_cast<long>(_getpid()));
-	_mkdir(dir.c_str());
-	return dir;
-#else
-	std::string tpl = "/tmp/amule-sharedcontent-";
-	tpl += tag;
-	tpl += "-XXXXXX";
-	std::vector<char> buf(tpl.begin(), tpl.end());
-	buf.push_back('\0');
-	if (!mkdtemp(buf.data()))
-		return std::string();
-	return std::string(buf.data());
-#endif
-}
-
-bool MkSubdir(const std::string &path)
-{
-#ifdef _WIN32
-	return _mkdir(path.c_str()) == 0;
-#else
-	return mkdir(path.c_str(), 0755) == 0;
-#endif
-}
-
-bool WriteFile(const std::string &path, const std::string &body)
-{
-	std::ofstream f(path.c_str(), std::ios::binary);
-	if (!f.is_open())
-		return false;
-	f << body;
-	return f.good();
-}
-
-void RemoveAll(const std::string &path)
-{
-	// Recursive rm via system(); test-scratch only, never on real data.
-	// Quote the path to survive spaces / odd chars in $TMPDIR.
-#ifdef _WIN32
-	std::string cmd = "rmdir /S /Q \"" + path + "\" >NUL 2>&1";
-#else
-	std::string cmd = "rm -rf \"" + path + "\" 2>/dev/null";
-#endif
-	(void)std::system(cmd.c_str());
-}
 
 bool EndsWith(const std::string &s, const std::string &suffix)
 {
@@ -189,7 +136,8 @@ TEST(SharedContent, JoinRejectsEmbeddedNul)
 
 TEST(SharedContent, ResolveAcceptsFileInsideOneOfSeveralRoots)
 {
-	const std::string parent = MakeScratchRoot("multi-root");
+	const TestScratchDir scratch("amule-sharedcontent-multi-root-");
+	const std::string parent = scratch.Path();
 	ASSERT_TRUE(!parent.empty());
 	const std::string root_a = parent + "/a";
 	const std::string root_b = parent + "/b";
@@ -209,13 +157,12 @@ TEST(SharedContent, ResolveAcceptsFileInsideOneOfSeveralRoots)
 	// is actually invariant, the same way the production code treats either separator as a
 	// boundary.
 	ASSERT_TRUE(EndsWith(out, "/movie.avi") || EndsWith(out, "\\movie.avi"));
-
-	RemoveAll(parent);
 }
 
 TEST(SharedContent, ResolveRejectsFileOutsideEveryRoot)
 {
-	const std::string parent = MakeScratchRoot("outside-roots");
+	const TestScratchDir scratch("amule-sharedcontent-outside-roots-");
+	const std::string parent = scratch.Path();
 	ASSERT_TRUE(!parent.empty());
 	const std::string root = parent + "/share";
 	const std::string elsewhere = parent + "/elsewhere";
@@ -228,23 +175,20 @@ TEST(SharedContent, ResolveRejectsFileOutsideEveryRoot)
 
 	std::string out;
 	ASSERT_TRUE(!ResolveSharedContentPath(roots, elsewhere, "secret.txt", out));
-
-	RemoveAll(parent);
 }
 
 TEST(SharedContent, ResolveRejectsWhenRootListIsEmpty)
 {
 	// No configured shares means nothing is servable -- not "anything
 	// is servable".
-	const std::string root = MakeScratchRoot("empty-roots");
+	const TestScratchDir scratch("amule-sharedcontent-empty-roots-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 	ASSERT_TRUE(WriteFile(root + "/movie.avi", "x"));
 
 	std::vector<std::string> roots;
 	std::string out;
 	ASSERT_TRUE(!ResolveSharedContentPath(roots, root, "movie.avi", out));
-
-	RemoveAll(root);
 }
 
 TEST(SharedContent, ResolveRejectsPrefixNeighbourRoot)
@@ -252,7 +196,8 @@ TEST(SharedContent, ResolveRejectsPrefixNeighbourRoot)
 	// `/srv/share-evil` shares a textual prefix with `/srv/share` but is a different directory.
 	// A plain strncmp containment check accepts it; the boundary rule -- the char at root_len
 	// must be a separator or the terminator -- is what rejects it.
-	const std::string parent = MakeScratchRoot("prefix-neighbour");
+	const TestScratchDir scratch("amule-sharedcontent-prefix-neighbour-");
+	const std::string parent = scratch.Path();
 	ASSERT_TRUE(!parent.empty());
 	const std::string root = parent + "/share";
 	const std::string neighbour = parent + "/share-evil";
@@ -265,13 +210,12 @@ TEST(SharedContent, ResolveRejectsPrefixNeighbourRoot)
 
 	std::string out;
 	ASSERT_TRUE(!ResolveSharedContentPath(roots, neighbour, "secret.txt", out));
-
-	RemoveAll(parent);
 }
 
 TEST(SharedContent, ResolveRejectsMissingFile)
 {
-	const std::string root = MakeScratchRoot("missing-file");
+	const TestScratchDir scratch("amule-sharedcontent-missing-file-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 
 	std::vector<std::string> roots;
@@ -279,14 +223,13 @@ TEST(SharedContent, ResolveRejectsMissingFile)
 
 	std::string out;
 	ASSERT_TRUE(!ResolveSharedContentPath(roots, root, "not-there.avi", out));
-
-	RemoveAll(root);
 }
 
 TEST(SharedContent, ResolveRejectsBadJoin)
 {
 	// A rejected join must not fall through to a resolve attempt.
-	const std::string root = MakeScratchRoot("bad-join");
+	const TestScratchDir scratch("amule-sharedcontent-bad-join-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 
 	std::vector<std::string> roots;
@@ -295,8 +238,6 @@ TEST(SharedContent, ResolveRejectsBadJoin)
 	std::string out;
 	ASSERT_TRUE(!ResolveSharedContentPath(roots, root, "../escape.txt", out));
 	ASSERT_TRUE(!ResolveSharedContentPath(roots, root, "", out));
-
-	RemoveAll(root);
 }
 
 #ifndef _WIN32
@@ -306,7 +247,8 @@ TEST(SharedContent, ResolveRejectsSymlinkEscapingShareRoot)
 	// it. Every lexical check passes -- the name is a clean basename and the directory really
 	// is a configured root -- so only canonicalisation catches it. Anyone who can write into a
 	// shared directory can plant this.
-	const std::string parent = MakeScratchRoot("symlink-escape");
+	const TestScratchDir scratch("amule-sharedcontent-symlink-escape-");
+	const std::string parent = scratch.Path();
 	ASSERT_TRUE(!parent.empty());
 	const std::string root = parent + "/share";
 	const std::string outside = parent + "/outside";
@@ -320,15 +262,14 @@ TEST(SharedContent, ResolveRejectsSymlinkEscapingShareRoot)
 
 	std::string out;
 	ASSERT_TRUE(!ResolveSharedContentPath(roots, root, "leak.txt", out));
-
-	RemoveAll(parent);
 }
 
 TEST(SharedContent, ResolveAcceptsSymlinkStayingInsideShareRoot)
 {
 	// Sanity counterpart: not every symlink is an attack, and rejecting
 	// all of them would break ordinary shared trees.
-	const std::string root = MakeScratchRoot("symlink-inside");
+	const TestScratchDir scratch("amule-sharedcontent-symlink-inside-");
+	const std::string root = scratch.Path();
 	ASSERT_TRUE(!root.empty());
 	ASSERT_TRUE(WriteFile(root + "/real.avi", "ok"));
 	ASSERT_TRUE(symlink((root + "/real.avi").c_str(), (root + "/alias.avi").c_str()) == 0);
@@ -339,8 +280,6 @@ TEST(SharedContent, ResolveAcceptsSymlinkStayingInsideShareRoot)
 	std::string out;
 	ASSERT_TRUE(ResolveSharedContentPath(roots, root, "alias.avi", out));
 	ASSERT_TRUE(EndsWith(out, "/real.avi"));
-
-	RemoveAll(root);
 }
 #endif // !_WIN32
 

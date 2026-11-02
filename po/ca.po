@@ -9,21 +9,21 @@
 # Diego Silva Galan <diegosilvagalan@gmail.com>.
 # sergei manolo <sergei.saz@gmail.com>.
 # minterior <minterior@gmail.com>.
-#
+# Kisnov <kisnov@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-01 10:29+0000\n"
-"Last-Translator: minterior <minterior@gmail.com>\n"
-"Language-Team: Català\n"
+"PO-Revision-Date: 2026-11-01 21:47+0000\n"
+"Last-Translator: Kisnov <kisnov@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Catalan <https://hosted.weblate.org/projects/amule/amule-application/ca/>\n"
 "Language: ca\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.7\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -2614,7 +2614,7 @@ msgstr "La recerca web des de la interfície remota no té sentit."
 
 #: src/ExternalConn.cpp
 msgid "Invalid media search filter."
-msgstr ""
+msgstr "El filtre de cerca multimèdia no és vàlid."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -5713,11 +5713,11 @@ msgstr "Interval per tornar a demanar fonts (minuts)"
 
 #: src/muuli_wdr.cpp
 msgid "Download write buffer limit (MiB)"
-msgstr ""
+msgstr "Límit de la memòria intermèdia d'escriptura de baixades (MiB)"
 
 #: src/muuli_wdr.cpp
 msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
-msgstr ""
+msgstr "Total de dades de baixada rebudes pendents d'escriure. Un límit més gran pot suavitzar els bloquejos breus del disc a costa de fer servir més memòria. Les dades ja sol·licitades poden superar aquest límit."
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -7616,20 +7616,19 @@ msgstr "Principal"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum duration (minutes)"
-msgstr ""
+msgstr "Durada mínima (minuts)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
-msgstr ""
+msgstr "Taxa de bits mínima (kbps)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Kad applies these filters; eD2k servers may ignore them"
-msgstr ""
+msgstr "Kad aplica aquests filtres; els servidors eD2k poden ignorar-los"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
-msgstr "El dimoni connectat no admet la cerca a totes les xarxes."
+msgstr "El dimoni connectat no admet els filtres multimèdia. Actualitzeu el dimoni per fer servir aquests camps."
 
 #: src/SearchList.cpp
 #, c-format

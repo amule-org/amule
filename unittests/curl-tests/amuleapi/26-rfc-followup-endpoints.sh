@@ -31,24 +31,13 @@ if [ "${1:-}" = "--offline" ]; then
 		"$AMULED_BIN" "$AMULEAPI_BIN" "$SCRIPT_DIR/26-rfc-followup-endpoints.sh"
 fi
 
-HOST=${HOST:-localhost:4713}
-API=${API:-"$HOST/api/v1"}
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-
-TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
-TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C50DD2015C184B2CA2C88|/"
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 SSE_PROBE_HASH="0031c9cba65c50dd2015c184b2ca2c90"
 SSE_PROBE_LINK="ed2k://|file|channel-filter-probe.bin|4096|0031C9CBA65C50DD2015C184B2CA2C90|/"
 SSE_HASH="0031c9cba65c50dd2015c184b2ca2c89"
 SSE_LINK="ed2k://|file|channel-filter-regression.bin|4096|0031C9CBA65C50DD2015C184B2CA2C89|/"
 
-FAIL_COUNT=0
-TEST_COUNT=0
-# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
-# check is coverage that did not happen, and adding it to the passed tally
-# would report the absence of a check as a check that succeeded.
-SKIP_COUNT=0
 SSE=$(mktemp -t amuleapi_26_rfc_followup_endpoints_sse.XXXXXX)
 PID=
 cleanup() {
@@ -69,28 +58,14 @@ cleanup() {
 		done
 	fi
 }
-trap cleanup EXIT
+_on_exit cleanup
 
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health"; then
-	_die "amuleapi at $HOST is not reachable."
-fi
+_preflight
 
 echo "amuleapi 26-rfc-followup-endpoints smoke @ $HOST"
 
-ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+ADMIN_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 H_AUTH=(-H "Authorization: Bearer $ADMIN_TOKEN")
 sleep 4
 
@@ -671,12 +646,4 @@ else
 fi
 
 # --- Summary. -----------------------------------------------------
-echo
-SKIP_NOTE=""
-[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

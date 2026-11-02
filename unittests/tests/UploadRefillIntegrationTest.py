@@ -14,13 +14,12 @@ import os
 from pathlib import Path
 import socket
 import struct
-import subprocess
 import tempfile
 import threading
 import time
 import zlib
 
-from AllSearchIntegrationTest import connect_daemon, exact, free_ports, retry_port_collisions, stop_daemon
+from AllSearchIntegrationTest import exact, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
 from ShareWatcherMoveIntegrationTest import shared
 
@@ -71,7 +70,6 @@ def run(binary, seconds, slots, rate, compress=False, pause_ms=0, check_display_
         write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0, FilterLanIPs=0,
                          MaxUpload=rate, SlotAllocation=10, MaxConnections=200,
                          IncomingDir=incoming, **logging_options)
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
         stop = threading.Event()
         draining = threading.Event()
         ready = [threading.Event() for _ in range(slots)]
@@ -82,13 +80,9 @@ def run(binary, seconds, slots, rate, compress=False, pause_ms=0, check_display_
         errors = []
         sockets = []
         threads = []
-        with (root / 'console.log').open('w') as log:
-            proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                                    stdout=log, stderr=log)
-            ec = None
+        with running_daemon(binary, root, (ec_port, peer_port)) as (proc, ec):
             observer = None
             try:
-                ec = connect_daemon(proc, ec_port, root, peer_port)
                 deadline = time.monotonic() + 30
                 files = {}
                 while filename not in files or (check_display_rates and 'switch.bin' not in files):
@@ -232,9 +226,6 @@ def run(binary, seconds, slots, rate, compress=False, pause_ms=0, check_display_
                             mib_per_second=mib / elapsed, cpu_ms_per_mib=1000 * (cpu_after - cpu) / mib,
                             context_switches_per_second=(switches_after - switches) / elapsed,
                             slot_kib_per_second=[count / 1024 / elapsed for count in delivered])
-            except BaseException:
-                print((root / 'console.log').read_text()[-5000:])
-                raise
             finally:
                 stop.set()
                 for sock in sockets:
@@ -246,9 +237,6 @@ def run(binary, seconds, slots, rate, compress=False, pause_ms=0, check_display_
                     thread.join(timeout=2)
                 if observer:
                     observer.close()
-                if ec:
-                    ec.sock.close()
-                stop_daemon(proc)
 
 
 if __name__ == '__main__':

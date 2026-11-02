@@ -7,11 +7,11 @@ GetTagData() asserts on a tag that is not raw bytes, and with --disable-fatal an
 aborts. Each case sends one mistyped login request and checks that amuled answers and keeps
 running.
 """
-import hashlib, os, socket, struct, subprocess, sys, tempfile, time
+import hashlib, socket, struct, subprocess, sys, tempfile
 from pathlib import Path
-from AllSearchIntegrationTest import (C, EC, PortCollision, free_ports, log_snapshot,
-                                      new_log_text, retry_port_collisions, stop_daemon)
-from DaemonConfig import EC_PASSWORD, write_amule_conf
+from AllSearchIntegrationTest import (C, EC, free_ports, log_snapshot, retry_port_collisions,
+                                      stop_daemon, wait_daemon_started)
+from DaemonConfig import EC_PASSWORD, daemon_env, write_amule_conf
 from ECWire import authenticate  # Preflight before starting the daemon.
 
 UINT8, STRING = 2, 6
@@ -32,23 +32,15 @@ def login(port, field_name, field_type):
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-aead-tag-type-') as root:
         root = Path(root)
-        ec_port = free_ports(1)[0]
-        write_amule_conf(root, ec_port)
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
+        ec_port, peer_port = free_ports(2, peer_index=1)
+        write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0)
         with (root / 'stdout.log').open('w') as log:
             snapshot = log_snapshot(root / 'logfile')
             proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'],
-                                    stdout=log, stderr=log, env=env)
+                                    stdout=log, stderr=log, env=daemon_env(root))
             try:
-                while True:
-                    if proc.poll() is not None:
-                        raise AssertionError(f'daemon exited before EC was up: {proc.returncode}')
-                    startup = new_log_text(root / 'logfile', snapshot)
-                    if 'Could not listen for external connections at ' in startup:
-                        raise PortCollision(f'Daemon could not bind EC port {ec_port}')
-                    if 'amuled: OnInit - starting timer' in startup:
-                        break
-                    time.sleep(0.1)
+                # Logging in first would hide what the mistyped logins do to a fresh daemon.
+                wait_daemon_started(proc, ec_port, root, peer_port, snapshot=snapshot)
 
                 cases = [
                     ('offer as UINT8', 'EC_TAG_CAN_AEAD', UINT8),
@@ -64,9 +56,10 @@ def run(binary):
 
                 EC(ec_port, password=EC_PASSWORD).sock.close()
                 print('PASS: a normal login still works')
-            finally:
-                if proc.poll() is None:
-                    stop_daemon(proc)
+            except BaseException:
+                stop_daemon(proc, check=False)
+                raise
+            stop_daemon(proc)
 
 
 if __name__ == '__main__':

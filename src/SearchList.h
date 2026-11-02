@@ -345,8 +345,11 @@ public:
 	 */
 	std::vector<uint32_t> LoadSearches();
 
-	/** Finds the search-result (by hash) and downloads it in the given category. */
-	void AddFileToDownloadByHash(const CMD4Hash &hash, uint8 category = 0);
+	/**
+	 * Finds the search-result (by hash) and downloads it in the given category.
+	 * @return false when no open search holds the hash.
+	 */
+	bool AddFileToDownloadByHash(const CMD4Hash &hash, uint8 category = 0);
 
 	/**
 	 * Returns the first search result (across every search, parents and their children)
@@ -368,8 +371,9 @@ public:
 	 * pick one same-hash/different-name grouped child so the partfile lands under that
 	 * chosen filename (issue #431). Searches parents and their children; a no-op if the
 	 * ecid is gone.
+	 * @return false when the ecid is gone.
 	 */
-	void AddFileToDownloadByEcid(uint32 ecid, uint8 category = 0);
+	bool AddFileToDownloadByEcid(uint32 ecid, uint8 category = 0);
 
 	/**
 	 * Processes a list of shared files from a client.

@@ -44,36 +44,15 @@ public:
 };
 wxIMPLEMENT_APP_NO_MAIN(LayoutTestApp);
 
-void Check(bool condition, const char *message)
-{
-	if (!condition) {
-		throw std::runtime_error(message);
-	}
-}
-
 int main(int argc, char **argv)
 {
-	InstallGuiTestDiagnostics();
-	if (!wxEntryStart(argc, argv)) {
-		std::cerr << "No GUI display available; skipping native list tests\n";
-		return 77;
-	}
-	RestoreGuiTestLog();
-	int result = 0;
-	if (!wxTheApp->CallOnInit()) {
-		result = 1;
-	} else {
-		try {
-			wxEventLoop loop;
-			wxEventLoopActivator active(&loop);
+	return RunGuiTest(
+		argc,
+		argv,
+		"No GUI display available; skipping native list tests",
+		[] {
 			RunTests();
 			std::cout << "Native list regression tests passed\n";
-		} catch (const std::exception &error) {
-			std::cerr << error.what() << '\n';
-			result = 1;
-		}
-		wxTheApp->OnExit();
-	}
-	wxEntryCleanup();
-	return result;
+		},
+		GuiTestEventLoop::Activate);
 }

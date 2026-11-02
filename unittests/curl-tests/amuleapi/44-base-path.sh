@@ -13,29 +13,15 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+
 BASE=${BASE_PATH:-/amule}
 API="$HOST$BASE/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-
-FAIL_COUNT=0
-TEST_COUNT=0
-SKIP_COUNT=0
 
 HDR=$(mktemp -t amuleapi_44_hdr.XXXXXX)
 BODY=$(mktemp -t amuleapi_44_body.XXXXXX)
 JAR=$(mktemp -t amuleapi_44_jar.XXXXXX)
-trap 'rm -f "$HDR" "$BODY" "$JAR"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
+_on_exit 'rm -f "$HDR" "$BODY" "$JAR"'
 
 _curl() {
 	: > "$HDR"; : > "$BODY"
@@ -60,10 +46,7 @@ _expect() {
 	fi
 }
 
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST$BASE is not reachable. Is BasePath=$BASE set?"
-fi
+_preflight
 
 echo "amuleapi 44-base-path smoke @ $HOST$BASE"
 
@@ -146,11 +129,4 @@ case "$COOKIE" in
 *) _fail "logout clears the cookie on Path=$BASE/api/v1" "got: $COOKIE" ;;
 esac
 
-echo
-[ "$SKIP_COUNT" -gt 0 ] && echo "($SKIP_COUNT skipped)"
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

@@ -56,13 +56,6 @@ wxIMPLEMENT_APP_NO_MAIN(EditServerListTestApp);
 
 namespace
 {
-void Check(bool condition, const char *message)
-{
-	if (!condition) {
-		throw std::runtime_error(message);
-	}
-}
-
 template <typename T> T *FindNestedControl(wxWindow &window)
 {
 	for (wxWindow *child : window.GetChildren()) {
@@ -159,27 +152,13 @@ void TestWrappingControlIntegration()
 
 int main(int argc, char **argv)
 {
-	InstallGuiTestDiagnostics();
-	if (!wxEntryStart(argc, argv)) {
-		std::cerr << "No GUI display available; skipping server sources layout tests\n";
-		return 77;
-	}
-	RestoreGuiTestLog();
-	int result = 0;
-	if (!wxTheApp->CallOnInit()) {
-		result = 1;
-	} else {
-		try {
-			wxEventLoop loop;
-			wxEventLoopActivator active(&loop);
+	return RunGuiTest(
+		argc,
+		argv,
+		"No GUI display available; skipping server sources layout tests",
+		[] {
 			TestWrappingControlIntegration();
 			std::cout << "Server sources layout regression tests passed\n";
-		} catch (const std::exception &error) {
-			std::cerr << error.what() << '\n';
-			result = 1;
-		}
-		wxTheApp->OnExit();
-	}
-	wxEntryCleanup();
-	return result;
+		},
+		GuiTestEventLoop::Activate);
 }

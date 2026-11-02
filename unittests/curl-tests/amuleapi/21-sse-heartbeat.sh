@@ -23,25 +23,7 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-
-FAIL_COUNT=0
-TEST_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_21_sse_heartbeat_body.XXXXXX)
-CURL_HEAD_FILE=$(mktemp -t amuleapi_21_sse_heartbeat_head.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE" "$CURL_HEAD_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 # Snapshot the SSE stream for `seconds` seconds, dropping the
 # connection on the deadline. Saves headers to $CURL_HEAD_FILE and
@@ -59,16 +41,12 @@ _sse_grab() {
 		"$@" 2>/dev/null || true
 }
 
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable."
-fi
+_preflight
 
 echo "amuleapi 21-sse-heartbeat smoke @ $HOST"
 
-ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+ADMIN_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 
 # --- 1. Auth gate. -------------------------------------------------
 _sse_grab 3 -i "$API/events"
@@ -227,10 +205,4 @@ case "$CODE" in
 esac
 
 # --- Summary. -----------------------------------------------------
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

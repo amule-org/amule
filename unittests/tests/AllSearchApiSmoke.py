@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """Run the curl All-search checks against an isolated, offline core/API pair."""
-import hashlib
-import os
 import re
 from pathlib import Path
 import subprocess
@@ -10,9 +8,10 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import (C, PortCollision, connect_daemon, free_ports,
-                                      integer, retry_port_collisions, stored_search)
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import (C, PortCollision, configure_amuleapi, connect_daemon,
+                                      free_ports, integer, retry_port_collisions, start_amuleapi,
+                                      start_daemon, stop_daemon, stored_search)
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 def run(daemon_binary, api_binary, checks):
@@ -28,25 +27,16 @@ def run(daemon_binary, api_binary, checks):
         # A finished All search exercises discovery and progress serialization
         # without public peers; later checks start Kad with no contacts.
         (core / 'StoredSearches.met').write_bytes(stored_search([]))
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'),
-                   LC_ALL='C.UTF-8')
+        env = daemon_env(root)
         processes = []
         with (root / 'fixture.log').open('w') as log:
             try:
-                daemon = subprocess.Popen([daemon_binary, '-c', str(core)],
-                                          env=env, stdout=log, stderr=log)
+                daemon, ec = start_daemon(daemon_binary, core, (port, peer_port, udp_port),
+                                          env=env)
                 processes.append(daemon)
-                connect_daemon(daemon, port, core, peer_port, udp_port).sock.close()
-                subprocess.run([api_binary, f'--config-dir={api}',
-                                '--set-admin-pass=adminpass'], check=True,
-                               env=env, stdout=log, stderr=log)
-                config = api / 'amuleapi.conf'
-                config.write_text(config.read_text().replace(
-                    'PasswordMD5=', 'PasswordMD5=' + hashlib.md5(b'regression').hexdigest(), 1))
-                server = subprocess.Popen([api_binary, f'--config-dir={api}',
-                                           '--host=127.0.0.1', f'--port={port}',
-                                           f'--http-port={http}'],
-                                          env=env, stdout=log, stderr=log)
+                ec.sock.close()
+                configure_amuleapi(api_binary, api, env, log)
+                server = start_amuleapi(api_binary, api, port, http, env, log)
                 processes.append(server)
                 url = f'http://127.0.0.1:{http}/api/v1'
                 # Startup can include expensive password hashing. Let the
@@ -87,19 +77,16 @@ def run(daemon_binary, api_binary, checks):
                     print('PASS: amulecmd search all starts a combined search with filters')
                 subprocess.run(['bash', checks, '--fixture-ready'], check=True,
                                env=dict(env, API=url, ALL_SID='123'))
+                stop_daemon(server, timeout=15)
             except BaseException:
                 log.flush()
-                print((root / 'fixture.log').read_text()[-12000:], file=sys.stderr)
+                for path in (core / 'console.log', root / 'fixture.log'):
+                    if path.exists():
+                        print(path.read_text(errors='replace')[-12000:], file=sys.stderr)
                 raise
             finally:
                 for proc in reversed(processes):
-                    if proc.poll() is None:
-                        proc.terminate()
-                    try:
-                        proc.wait(timeout=30)
-                    except subprocess.TimeoutExpired:
-                        proc.kill()
-                        proc.wait()
+                    stop_daemon(proc, timeout=30, check=False)
 
 
 if __name__ == '__main__':

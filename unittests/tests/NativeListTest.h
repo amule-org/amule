@@ -25,7 +25,6 @@
 #ifndef AMULE_NATIVE_LIST_TEST_H
 #define AMULE_NATIVE_LIST_TEST_H
 
-void Check(bool condition, const char *message);
 void RunTests();
 
 #endif // AMULE_NATIVE_LIST_TEST_H

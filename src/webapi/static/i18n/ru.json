@@ -1074,5 +1074,7 @@
   "stats_tree_natt_server_punch_attempts": "Проколы через сервер: %s",
   "stats_tree_natt_server_punch_successes": "Успешные проколы через сервер: %s",
   "stats_tree_natt_lugdunum_callback_attempts": "Обратные вызовы Lugdunum: %s",
-  "stats_tree_natt_lugdunum_callback_successes": "Успешные обратные вызовы Lugdunum: %s"
+  "stats_tree_natt_lugdunum_callback_successes": "Успешные обратные вызовы Lugdunum: %s",
+  "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Больший предел может сгладить короткие задержки диска ценой большего потребления памяти. Уже запрошенные данные могут превысить этот предел.",
+  "prefs_field_advanced_write_buffer_limit_mebibytes": "Предел буфера записи загрузок (МиБ)"
 }

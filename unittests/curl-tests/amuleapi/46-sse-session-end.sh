@@ -14,13 +14,7 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-GUEST_PASS=${GUEST_PASS:-guestpass}
-
-FAIL_COUNT=0
-TEST_COUNT=0
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 WORK=$(mktemp -d -t amuleapi_46_sse_session_end.XXXXXX)
 PIDS=()
@@ -29,21 +23,7 @@ cleanup() {
 	for p in "${PIDS[@]}"; do kill "$p" 2>/dev/null; done
 	rm -rf "$WORK"
 }
-trap cleanup EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_login() {
-	curl -s -X POST -H "Content-Type: application/json" \
-		-d "{\"password\":\"$1\"}" "$API/auth/login?include_token=true" | jq -r .token
-}
+_on_exit cleanup
 
 # Opens a stream in the background as `$1` (token), body to $WORK/$2.
 # Sets STREAM_PID.
@@ -74,16 +54,13 @@ _wait_exit() {
 	return 1
 }
 
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable."
-fi
+_preflight
 
 echo "amuleapi 46-sse-session-end smoke @ $HOST"
 
 # --- 1. Logout ends the stream. -------------------------------------
 ADMIN_TOKEN=$(_login "$ADMIN_PASS")
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 
 _open_stream "$ADMIN_TOKEN" logout
 LOGOUT_PID=$STREAM_PID
@@ -107,9 +84,9 @@ fi
 
 # --- 2. Guests cannot take the admin's reserved slots. --------------
 GUEST_TOKEN=$(_login "$GUEST_PASS")
-[ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] || _die "guest login failed"
+[ -n "$GUEST_TOKEN" ] || _die "guest login failed"
 ADMIN_TOKEN=$(_login "$ADMIN_PASS")
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 
 GUEST_PIDS=()
 for n in $(seq 1 28); do
@@ -170,10 +147,4 @@ else
 fi
 
 # --- Summary. -----------------------------------------------------
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

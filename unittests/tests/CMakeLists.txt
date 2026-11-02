@@ -395,8 +395,6 @@ add_executable (ClientMetaTrailerTest
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
 	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 add_test (NAME ClientMetaTrailerTest COMMAND ClientMetaTrailerTest)
 target_include_directories (ClientMetaTrailerTest PRIVATE
@@ -459,8 +457,6 @@ add_test (NAME UtpDialPolicyTest COMMAND UtpDialPolicyTest)
 # Pure admission and rate-limit policy for the future NAT rendezvous control path.
 add_executable (NatRendezvousPolicyTest
 	NatRendezvousPolicyTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 )
 add_test (NAME NatRendezvousPolicyTest COMMAND NatRendezvousPolicyTest)
@@ -506,8 +502,6 @@ add_test (NAME NatServerHolePunchTest COMMAND NatServerHolePunchTest)
 # Local control framing and pure relay decisions; no sockets or libutp.
 add_executable (NatRendezvousProtocolTest
 	NatRendezvousProtocolTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 )
 add_test (NAME NatRendezvousProtocolTest COMMAND NatRendezvousProtocolTest)
@@ -539,8 +533,6 @@ add_test (NAME ServerKeyRecoveryTest COMMAND ServerKeyRecoveryTest)
 # where ENABLE_UTP is on -- the contract is the same either way.
 add_executable (UtpStreamTest
 	UtpStreamTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME UtpStreamTest
@@ -562,8 +554,6 @@ if (ENABLE_QUIC)
 		QuicContextTest.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicContext.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	)
 	add_test (NAME QuicContextTest COMMAND QuicContextTest)
 	target_include_directories (QuicContextTest PRIVATE
@@ -582,8 +572,6 @@ if (ENABLE_QUIC)
 		${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 		${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	)
 	add_test (NAME QuicNgtcp2AdapterTest COMMAND QuicNgtcp2AdapterTest)
 	target_include_directories (QuicNgtcp2AdapterTest PRIVATE
@@ -602,8 +590,6 @@ if (ENABLE_QUIC)
 		${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 		${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	)
 	add_test (NAME QuicNgtcp2HandshakeTest COMMAND QuicNgtcp2HandshakeTest)
 	target_include_directories (QuicNgtcp2HandshakeTest PRIVATE
@@ -616,8 +602,6 @@ if (ENABLE_QUIC)
 	add_executable (QuicGnuTlsSessionTest
 		QuicGnuTlsSessionTest.cpp
 		${CMAKE_SOURCE_DIR}/src/QuicGnuTlsSession.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	)
 	add_test (NAME QuicGnuTlsSessionTest COMMAND QuicGnuTlsSessionTest)
 	target_include_directories (QuicGnuTlsSessionTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
@@ -629,8 +613,6 @@ add_executable (QuicSocketTransportTest
 	${CMAKE_SOURCE_DIR}/src/QuicSocketTransport.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 	${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 add_test (NAME QuicSocketTransportTest COMMAND QuicSocketTransportTest)
 target_include_directories (QuicSocketTransportTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
@@ -642,8 +624,6 @@ target_link_libraries (QuicSocketTransportTest muleunit mulecommon ${Boost_LIBRA
 add_executable (UtpSocketTransportTest
 	UtpSocketTransportTest.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME UtpSocketTransportTest
@@ -670,8 +650,6 @@ add_executable (LibSocketTransportTest
 	# DetectNetworkInterfaces(), and this target does not link mulesocket.
 	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME LibSocketTransportTest
@@ -702,8 +680,6 @@ add_executable (PacketTest
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 target_include_directories (PacketTest PRIVATE
 	${CMAKE_BINARY_DIR}
@@ -720,8 +696,6 @@ add_executable (UploadPacketBuilderTest
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 target_include_directories (UploadPacketBuilderTest PRIVATE
 	${CMAKE_BINARY_DIR}
@@ -738,8 +712,6 @@ if (ENABLE_UTP)
 		${CMAKE_SOURCE_DIR}/src/Tag.cpp
 		${CMAKE_SOURCE_DIR}/src/MemFile.cpp
 		${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	)
 	target_include_directories (UtpContextTest PRIVATE
 		${CMAKE_BINARY_DIR}
@@ -756,8 +728,6 @@ if (ENABLE_UTP)
 		UtpLibraryAdapterTest.cpp
 		${CMAKE_SOURCE_DIR}/src/UtpLibraryAdapter.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	)
 	target_include_directories (UtpLibraryAdapterTest PRIVATE
 		${CMAKE_BINARY_DIR}
@@ -771,8 +741,6 @@ if (ENABLE_UTP)
 	# deciding on them does not, which is why they are separated.
 	add_executable (UtpAdmissionTest
 		UtpAdmissionTest.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-		${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	)
 	target_include_directories (UtpAdmissionTest PRIVATE
 		${CMAKE_BINARY_DIR}
@@ -788,8 +756,6 @@ add_executable (CTagTest
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME CTagTest
@@ -820,8 +786,6 @@ add_executable (ServerMetTest
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME ServerMetTest
@@ -1131,10 +1095,6 @@ target_include_directories (BanRecordTest
 
 target_link_libraries (BanRecordTest
 	muleunit
-	# muleunit compiles MuleDebug.cpp and StringFunctions.cpp, which use
-	# CFormat; without mulecommon the link fails on its symbols under gcc and
-	# lld even though the header alone needs nothing from it.
-	mulecommon
 )
 
 # The internal address type: byte order in the signature, absence distinct
@@ -1149,8 +1109,6 @@ add_executable (NetworkAddressTest
 	# table is observable: without `inline` the table is internal to each unit
 	# and the two addresses differ.
 	NetworkAddressTableLinkage.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	# CNetworkAddress::FromString/ToString live in NetworkAddress.cpp: they are
 	# the only part of the type that still compiles Boost.Asio, and keeping them
 	# out of the header is what stops asio reaching most of src/. Every target
@@ -1179,8 +1137,6 @@ target_link_libraries (NetworkAddressTest
 add_executable (ProxyTest
 	ProxyTest.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 add_test (NAME ProxyTest COMMAND ProxyTest)
 target_include_directories (ProxyTest PRIVATE
@@ -1197,8 +1153,6 @@ target_link_libraries (ProxyTest muleunit ${Boost_LIBRARIES} wxWidgets::NET)
 # than inside CClientList.
 add_executable (PeerAddressingTest
 	PeerAddressingTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	# CNetworkAddress::FromString/ToString live in NetworkAddress.cpp: they are
 	# the only part of the type that still compiles Boost.Asio, and keeping them
 	# out of the header is what stops asio reaching most of src/. Every target
@@ -1225,8 +1179,6 @@ target_link_libraries (PeerAddressingTest
 # How a client is contacted, decided without the application.
 add_executable (ContactDialPolicyTest
 	ContactDialPolicyTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 )
 
@@ -1248,8 +1200,6 @@ target_link_libraries (ContactDialPolicyTest
 # Which address a Kad source result is contacted on, without the application.
 add_executable (KadSourceAddressPolicyTest
 	KadSourceAddressPolicyTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 )
 
@@ -1289,8 +1239,6 @@ target_link_libraries (RefillTest muleunit mulecommon)
 # the application.
 add_executable (ServerIPv6SourcePolicyTest
 	ServerIPv6SourcePolicyTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 )
 
@@ -1326,8 +1274,6 @@ target_link_libraries (ServerIPv6UpdateTest muleunit mulecommon)
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 )
 add_test (NAME UploadQueueAddressPolicyTest COMMAND UploadQueueAddressPolicyTest)
@@ -1344,8 +1290,6 @@ target_link_libraries (UploadQueueAddressPolicyTest muleunit ${Boost_LIBRARIES})
 # FromString/ToString exactly as the two suites above do.
 add_executable (AddressFamilyPolicyTest
 	AddressFamilyPolicyTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 )
 
@@ -1367,8 +1311,6 @@ target_link_libraries (AddressFamilyPolicyTest
 add_executable (CUInt128Test
 	CUInt128Test.cpp
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME CUInt128Test
@@ -1532,8 +1474,6 @@ add_executable (FileAutoCloseTest
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 add_test (NAME FileAutoCloseTest COMMAND FileAutoCloseTest)
 target_include_directories (FileAutoCloseTest PRIVATE
@@ -1554,8 +1494,6 @@ add_executable (FileAreaTest
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 add_test (NAME FileAreaTest COMMAND FileAreaTest)
 target_include_directories (FileAreaTest PRIVATE
@@ -1583,8 +1521,6 @@ add_executable (FileDataIOTest
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME FileDataIOTest
@@ -1605,8 +1541,6 @@ add_executable (FreeSpaceSamplesTest
 	FreeSpaceSamplesTest.cpp
 	${CMAKE_SOURCE_DIR}/src/FreeSpaceSamples.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME FreeSpaceSamplesTest
@@ -1632,8 +1566,6 @@ add_executable (PartMetWriterTest
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME PartMetWriterTest
@@ -1658,8 +1590,6 @@ add_executable (CloneFileTest
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME CloneFileTest
@@ -1679,7 +1609,6 @@ target_link_libraries (CloneFileTest
 add_executable (FormatTest
 	FormatTest.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME FormatTest
@@ -1735,8 +1664,6 @@ add_executable (NetworkFunctionsTest
 	# LibSocketAsio.cpp reports an attached transport's peer, which is a
 	# CNetworkAddress, so its out-of-line members have to be here too.
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME NetworkFunctionsTest
@@ -1769,8 +1696,6 @@ endif()
 
 add_executable (PathTest
 	PathTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
 )
 
@@ -1799,8 +1724,6 @@ target_link_libraries (FileFunctionsTest
 
 add_executable (RangeMapTest
 	RangeMapTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME RangeMapTest
@@ -1817,8 +1740,6 @@ target_link_libraries (RangeMapTest
 
 add_executable (StringFunctionsTest
 	StringFunctionsTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
 )
 
@@ -1833,8 +1754,6 @@ target_link_libraries (StringFunctionsTest
 add_executable (PhpArrayTest
 	PhpArrayTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webserver/src/php_syntree.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME PhpArrayTest
@@ -1856,11 +1775,6 @@ target_link_libraries (PhpArrayTest
 add_executable (CMuleCollectionTest
 	CMuleCollectionTest.cpp
 	${CMAKE_SOURCE_DIR}/src/MuleCollection.cpp
-	# muleunit's MuleDebug.cpp needs CFormat for its backtrace path, which
-	# is compiled in on glibc; without these the link fails on Linux while
-	# passing on macOS.
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME CMuleCollectionTest
@@ -1879,9 +1793,6 @@ target_link_libraries (CMuleCollectionTest
 add_executable (MagnetURITest
 	MagnetURITest.cpp
 	${CMAKE_SOURCE_DIR}/src/MagnetURI.cpp
-	# See the CMuleCollectionTest comment above -- same Linux-backtrace need.
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME MagnetURITest
@@ -1900,9 +1811,6 @@ target_link_libraries (MagnetURITest
 add_executable (SearchHistoryTest
 	SearchHistoryTest.cpp
 	${CMAKE_SOURCE_DIR}/src/SearchHistory.cpp
-	# See the CMuleCollectionTest comment above -- same Linux-backtrace need.
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME SearchHistoryTest
@@ -1920,8 +1828,6 @@ target_link_libraries (SearchHistoryTest
 
 add_executable (TextFileTest
 	TextFileTest.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/TextFile.cpp
 )
@@ -2043,11 +1949,6 @@ target_link_libraries (UserHashTest
 
 add_executable (CredentialsTest
 	CredentialsTest.cpp
-	# muleunit's MuleDebug.cpp needs CFormat for its backtrace path, which
-	# is compiled in on glibc; without these the link fails on Linux while
-	# passing on macOS.
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME CredentialsTest COMMAND CredentialsTest)
@@ -2545,11 +2446,8 @@ target_include_directories (JsonDepthScanTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
 )
 
-# mulecommon even though the header is inline-only: macOS links without it,
-# GNU ld and mingw do not.
 target_link_libraries (JsonDepthScanTest
 	muleunit
-	mulecommon
 )
 
 add_executable (CompleteSourcesThrottleTest
@@ -2566,11 +2464,8 @@ target_include_directories (CompleteSourcesThrottleTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
 )
 
-# mulecommon even though the header is inline-only: macOS links without it,
-# GNU ld and mingw do not.
 target_link_libraries (CompleteSourcesThrottleTest
 	muleunit
-	mulecommon
 )
 
 # known.met encoding of a Verify Local Data result (FT_VERIFY_CORRUPT*). The codec
@@ -2606,8 +2501,6 @@ add_executable (PartStatusWriterTest
 	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME PartStatusWriterTest
@@ -2793,11 +2686,8 @@ target_include_directories (PartBarSpansTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 )
 
-# mulecommon even though the header is inline-only: macOS links without it,
-# GNU ld and mingw do not (see JsonDepthScanTest).
 target_link_libraries (PartBarSpansTest
 	muleunit
-	mulecommon
 )
 
 add_executable (PartBarLegendTest
@@ -2820,11 +2710,8 @@ target_include_directories (PartBarLegendTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src
 )
 
-# mulecommon even though the header is inline-only: macOS links without it,
-# GNU ld and mingw do not (see JsonDepthScanTest).
 target_link_libraries (PartBarLegendTest
 	muleunit
-	mulecommon
 )
 
 # eMuleAI vendor capability bits (CT_MOD_MISCOPTIONS) and the "ip6"/"bi6" hex
@@ -2841,8 +2728,6 @@ add_executable (PeerCapabilitiesTest
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 
 add_test (NAME PeerCapabilitiesTest
@@ -2920,11 +2805,8 @@ target_include_directories (PartIndexTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
 )
 
-# mulecommon even though the header is inline-only: macOS links without it,
-# GNU ld and mingw do not (see JsonDepthScanTest).
 target_link_libraries (PartIndexTest
 	muleunit
-	mulecommon
 )
 
 # EC_TAG_CLIENT_MOD_CAPABILITIES: the headless view of a peer's negotiated
@@ -3225,6 +3107,16 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/DownloadPathIndexIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (DownloadPathIndexIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME SearchResultDownloadIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/SearchResultDownloadIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (SearchResultDownloadIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME SymlinkShareRootIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/SymlinkShareRootIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (SymlinkShareRootIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME ShareExclusionLifecycleIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ShareExclusionLifecycleIntegrationTest.py $<TARGET_FILE:amuled>
@@ -3485,8 +3377,6 @@ add_executable (OfferFilesPolicyTest
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Format.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/strerror_r.c
 )
 target_include_directories (OfferFilesPolicyTest PRIVATE
 	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
@@ -3964,6 +3854,7 @@ foreach (ec_wire_test IN ITEMS
 	PacketReceiveIntegrationTest
 	PathDefaultsIntegrationTest
 	SearchParamsRestoreIntegrationTest
+	SearchResultDownloadIntegrationTest
 	ServerListFallbackApiIntegrationTest
 	ServerListFallbackIntegrationTest
 	ServerListGuiIntegrationTest
@@ -3975,6 +3866,7 @@ foreach (ec_wire_test IN ITEMS
 	SharedFileReverifyIntegrationTest
 	SharedMembershipIntegrationTest
 	ShortBlockPacketIntegrationTest
+	SymlinkShareRootIntegrationTest
 	TinyBlockPacketIntegrationTest
 	UnwritableTagIntegrationTest
 	UpdateUrlPrivacyTest

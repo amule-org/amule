@@ -15,11 +15,10 @@ import os
 from pathlib import Path
 import socket
 import struct
-import subprocess
 import tempfile
 import time
 
-from AllSearchIntegrationTest import connect_daemon, exact, free_ports, retry_port_collisions, stop_daemon
+from AllSearchIntegrationTest import exact, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
 from ShareWatcherMoveIntegrationTest import shared
 
@@ -83,13 +82,9 @@ def run(binary, address_a, address_b):
         # Unlimited upload with no traffic yet offers 20 slots, more than the cap.
         write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0, FilterLanIPs=0, MaxUpload=0,
                          Address='127.0.0.1' if loopback else None)
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
         peers = []
-        with (root / 'console.log').open('w') as log:
-            proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                                    stdout=log, stderr=log)
+        with running_daemon(binary, root, (ec_port, peer_port)) as (proc, ec):
             try:
-                ec = connect_daemon(proc, ec_port, root, peer_port)
                 deadline = time.monotonic() + 30
                 while 'shared.bin' not in (files := shared(ec)):
                     assert time.monotonic() < deadline, 'shared file was not hashed'
@@ -114,15 +109,9 @@ def run(binary, address_a, address_b):
                 assert other.wait_for(OP_ACCEPTUPLOADREQ, 10), 'B got no slot while slots were free'
                 send(peers[0].sock, OP_CANCELTRANSFER)
                 assert extra.wait_for(OP_ACCEPTUPLOADREQ, 10), 'the waiting session from A was not served'
-                ec.sock.close()
-            except BaseException:
-                logfile = root / 'logfile'
-                print(logfile.read_text(errors='replace')[-5000:] if logfile.exists() else 'no logfile')
-                raise
             finally:
                 for peer in peers:
                     peer.close()
-                stop_daemon(proc)
     print(f'one address held at most {HARD_CAP} slots with free slots; the other address and the '
           'waiting session were served')
 

@@ -14,7 +14,7 @@ import time
 from AllSearchIntegrationTest import (C, EC, PortCollision, check_daemon_ports,
                                       free_ports, log_snapshot, new_log_text,
                                       retry_port_collisions, string)
-from DaemonConfig import write_amule_conf
+from DaemonConfig import daemon_env, write_amule_conf
 
 
 def stop_forked_daemon(pid):
@@ -37,13 +37,6 @@ def write_config(root, setting=None):
     extra = {} if setting is None else {'LogFilePath': setting}
     write_amule_conf(root, port, Port=peer_port, UDPEnable=0, **extra)
     return port, peer_port
-
-
-def daemon_env(root):
-    env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'))
-    env.pop('LD_PRELOAD', None)
-    env['LC_ALL'] = 'C.UTF-8'
-    return env
 
 
 def run(binary, root, setting=None, override=None, expected=None, failure=False,

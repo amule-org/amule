@@ -7,22 +7,17 @@ import json
 from pathlib import Path
 import socket
 import struct
-import subprocess
 import sys
 import tempfile
 import time
 import urllib.error
 import urllib.request
 
-from AllSearchIntegrationTest import C, EC, exact
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import (C, DAEMON_ARGS, EC, configure_amuleapi, exact, free_ports,
+                                      retry_port_collisions, start_amuleapi, start_daemon,
+                                      stop_daemon, wait_amuleapi)
+from DaemonConfig import daemon_env, write_amule_conf
 from DownloadDisplayRatesIntegrationTest import hello
-
-
-def port():
-    with socket.socket() as sock:
-        sock.bind(('127.0.0.1', 0))
-        return sock.getsockname()[1]
 
 
 def wait_for(fn):
@@ -39,7 +34,7 @@ def wait_for(fn):
 
 
 def run(daemon, api, root):
-    ec_port, tcp_port, http_port = (port() for _ in range(3))
+    ec_port, tcp_port, http_port = free_ports(3, peer_index=1)
     daemon_dir, api_dir = root / 'daemon', root / 'api'
     daemon_dir.mkdir()
     api_dir.mkdir()
@@ -52,32 +47,30 @@ def run(daemon, api, root):
     credit = peer_hash + struct.pack('<IIIIIHB', 1234, 5678, int(time.time()), 0, 0, 0, 0) + bytes(80)
     assert len(credit) == 119
     (daemon_dir / 'clients.met').write_bytes(b'\x12' + struct.pack('<I', 1) + credit)
-    config = api_dir / 'amuleapi.conf'
-    config.touch(mode=0o600)
-    config.write_text(f'[EC]\nHost=127.0.0.1\nPort={ec_port}\nPassword=regression\n'
-                      f'[Server]\nBindAddress=127.0.0.1\nPort={http_port}\n')
+    env = daemon_env(root)
     token = ''
     processes = []
     logs = []
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
-    def launch(executable, directory, *args):
-        log = (root / (executable.name + '.log')).open('a')
-        logs.append(log)
-        proc = subprocess.Popen([str(executable), '--config-dir', str(directory), *args],
-                                stdout=log, stderr=log)
+    def start_core():
+        proc, ec = start_daemon(daemon, daemon_dir, (ec_port, tcp_port),
+                                args=(*DAEMON_ARGS, '-o'), env=env, console='amuled.log')
+        ec.sock.close()
         processes.append(proc)
         return proc
 
+    def start_api():
+        log = (root / 'amuleapi.log').open('a')
+        logs.append(log)
+        proc = start_amuleapi(api, api_dir, ec_port, http_port, env, log)
+        processes.append(proc)
+        return proc, wait_amuleapi(proc, f'http://127.0.0.1:{http_port}/api/v1', log.name,
+                                   password='mod-test')
+
     def stop(proc):
-        proc.terminate()
-        try:
-            proc.wait(timeout=20)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait()
-            raise AssertionError('Fixture did not stop cleanly')
-        assert proc.returncode == 0, proc.returncode
         processes.remove(proc)
+        stop_daemon(proc, timeout=20)
 
     def request(path, body=None):
         headers = {'Content-Type': 'application/json'}
@@ -86,12 +79,8 @@ def run(daemon, api, root):
         req = urllib.request.Request(f'http://127.0.0.1:{http_port}/api/v1' + path,
                                      headers=headers,
                                      data=None if body is None else json.dumps(body).encode())
-        with urllib.request.urlopen(req, timeout=3) as reply:
+        with opener.open(req, timeout=3) as reply:
             return json.load(reply)
-
-    def ready():
-        with socket.create_connection(('127.0.0.1', ec_port), timeout=0.2):
-            return True
 
     def ec_history(mod, version='v0.70b', software=0):
         ec = EC(ec_port)
@@ -115,13 +104,10 @@ def run(daemon, api, root):
                      and row.get('software_version') == version), None)
 
     try:
-        core = launch(daemon, daemon_dir, '-o')
-        wait_for(ready)
-        subprocess.run([str(api), '--config-dir', str(api_dir), '--set-admin-pass', 'mod-test'],
-                       check=True, stdout=subprocess.DEVNULL, timeout=20)
-        web = launch(api, api_dir, '--foreground')
-        wait_for(lambda: request('/health'))
-        token = request('/auth/login?include_token=true', {'password': 'mod-test'})['token']
+        core = start_core()
+        with (root / 'amuleapi.log').open('a') as log:
+            configure_amuleapi(api, api_dir, env, log, admin='mod-test')
+        web, token = start_api()
         # Load history before the hello to exercise reconciliation of a cached old record.
         request('/known_clients')
         cases = [
@@ -173,12 +159,9 @@ def run(daemon, api, root):
             stop(core)
             saved = (daemon_dir / 'clients.met').read_bytes()
             assert saved[124:133] == b'AMULEMD1\x02'
-            core = launch(daemon, daemon_dir, '-o')
-            wait_for(ready)
+            core = start_core()
             ec_history(mod, stored_version, software)
-            web = launch(api, api_dir, '--foreground')
-            wait_for(lambda: request('/health'))
-            token = request('/auth/login?include_token=true', {'password': 'mod-test'})['token']
+            web, token = start_api()
             row = wait_for(lambda: identity(request('/known_clients')['known_clients'], mod or None, stored_version))
             assert row['uploaded_bytes_total'] == 1234 and row['downloaded_bytes_total'] == 5678
         # A chat retains the known client across disconnect. Its next outbound hello
@@ -217,7 +200,7 @@ def run(daemon, api, root):
     except Exception:
         for log in logs:
             log.flush()
-        for log in root.glob('*.log'):
+        for log in (*root.glob('*.log'), *daemon_dir.glob('*.log')):
             print(log.name + ':\n' + log.read_text()[-4000:])
         raise
     finally:
@@ -233,10 +216,14 @@ def run(daemon, api, root):
             raise cleanup_errors[0]
 
 
+def run_isolated(daemon, api):
+    with tempfile.TemporaryDirectory(prefix='amule-mod-history-') as directory:
+        run(daemon, api, Path(directory))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--amuled', type=Path, required=True)
     parser.add_argument('--amuleapi', type=Path, required=True)
     args = parser.parse_args()
-    with tempfile.TemporaryDirectory(prefix='amule-mod-history-') as directory:
-        run(args.amuled.resolve(), args.amuleapi.resolve(), Path(directory))
+    retry_port_collisions(run_isolated, args.amuled.resolve(), args.amuleapi.resolve())

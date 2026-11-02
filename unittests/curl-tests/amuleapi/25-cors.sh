@@ -30,36 +30,9 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+
 CONFIG_DIR=${AMULEAPI_CONFIG_DIR:-/tmp/amuleapi-regtest}
-# Locate the amuleapi binary the sub-instances need. Deliberately NOT falling
-# back to PATH: an installed package would silently be tested in place of the
-# working tree, which is worse than not finding anything. Set AMULEAPI_BIN to
-# point somewhere else on purpose.
-#
-# Any build*/ directory counts, not a fixed list of three: per-branch and
-# per-arch trees are normal, and a name this function has never heard of used
-# to mean a silent skip. Where several exist the NEWEST wins -- picking the
-# first match let a stale build/ supply the binary while the tree under test
-# was built somewhere else, which is the one failure mode that produces a
-# confident wrong answer rather than a missing one. Unmatched globs stay
-# literal and fail the -x test, so no nullglob is needed.
-_find_amuleapi_bin() {
-	local root=$1 c best=
-	for c in "$root"/src/webapi/amuleapi \
-		"$root"/build*/src/webapi/amuleapi \
-		"$root"/_build/src/webapi/amuleapi \
-		"$root"/cmake-build-*/src/webapi/amuleapi; do
-		[ -x "$c" ] || continue
-		if [ -z "$best" ] || [ "$c" -nt "$best" ]; then
-			best=$c
-		fi
-	done
-	[ -n "$best" ] || return 1
-	echo "$best"
-}
 
 ROOT=${AMULEAPI_ROOT:-$(cd "$(dirname "$0")/../../.." && pwd)}
 BIN=${AMULEAPI_BIN:-$(_find_amuleapi_bin "$ROOT")}
@@ -73,27 +46,12 @@ EC_PASSWORD=${EC_PASSWORD:-amule}
 # The HTTP port the rewritten config must bind is the one $HOST names.
 HTTP_PORT=${HOST##*:}
 
-FAIL_COUNT=0
-TEST_COUNT=0
-
 HDR=$(mktemp -t amuleapi_25_cors_hdr.XXXXXX)
 BODY=$(mktemp -t amuleapi_25_cors_body.XXXXXX)
 SSE=$(mktemp -t amuleapi_25_cors_sse.XXXXXX)
-trap 'rm -f "$HDR" "$BODY" "$SSE"' EXIT
+_on_exit 'rm -f "$HDR" "$BODY" "$SSE"'
 
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable."
-fi
+_preflight
 if [ ! -x "$BIN" ]; then
 	_die "no usable amuleapi binary under $ROOT. Set AMULEAPI_BIN to point at one."
 fi
@@ -385,9 +343,8 @@ fi
 # the same as any HTTP/1.1 chunked response; -I won't work because
 # HEAD doesn't trigger the streaming handler, so we do a short -m 2.
 : > "$HDR"; : > "$SSE"
-ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+ADMIN_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 curl -sS -m 2 -D "$HDR" -o "$SSE" \
 	-H "Origin: https://allowed.example.com" \
 	-H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -418,10 +375,4 @@ fi
 _rewrite_cors_and_restart 0 ""
 
 # --- Summary. -----------------------------------------------------
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

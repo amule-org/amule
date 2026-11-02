@@ -10,21 +10,21 @@
 # Israel Rodrigo Faria <israel.faria@gmail.com>, 2007.
 # Fabio Junior Beneditto <fabiobeneditto@uol.com.br>, 2008.
 # Marcelo Jimenez <mroberto@users.sourceforge.com>, 2026.
-#
+# Marcelo Roberto Jimenez <mrjimenez@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-01 10:29+0000\n"
-"Last-Translator: Marcelo Jimenez <mroberto@users.sourceforge.com>\n"
-"Language-Team: Português (Brasileiro) <pt@li.org>\n"
+"PO-Revision-Date: 2026-11-01 21:47+0000\n"
+"Last-Translator: Marcelo Roberto Jimenez <mrjimenez@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/amule/amule-application/pt_BR/>\n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Poedit 3.9\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AboutDialog.cpp
@@ -2617,7 +2617,7 @@ msgstr "Busca web pela interface remota não faz sentido."
 
 #: src/ExternalConn.cpp
 msgid "Invalid media search filter."
-msgstr ""
+msgstr "Filtro de busca de mídia inválido."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -5716,11 +5716,11 @@ msgstr "Intervalo entre novos pedidos às fontes (minutos)"
 
 #: src/muuli_wdr.cpp
 msgid "Download write buffer limit (MiB)"
-msgstr ""
+msgstr "Limite do buffer de gravação de downloads (MiB)"
 
 #: src/muuli_wdr.cpp
 msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
-msgstr ""
+msgstr "Total de dados de download recebidos aguardando gravação. Um limite maior pode suavizar travamentos curtos do disco ao custo de mais memória. Dados já solicitados podem exceder este limite."
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -7619,20 +7619,19 @@ msgstr "Principal"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum duration (minutes)"
-msgstr ""
+msgstr "Duração mínima (minutos)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
-msgstr ""
+msgstr "Taxa de bits mínima (kbps)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Kad applies these filters; eD2k servers may ignore them"
-msgstr ""
+msgstr "O Kad aplica estes filtros; servidores eD2k podem ignorá-los"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
-msgstr "O daemon conectado não suporta \"Todas as buscas\"."
+msgstr "O daemon conectado não suporta filtros de mídia. Atualize o daemon para usar estes campos."
 
 #: src/SearchList.cpp
 #, c-format

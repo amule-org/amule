@@ -2,20 +2,20 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Verify deletion capability gates and acknowledgments with deterministic EC fixtures."""
-import hashlib
-import os
 from pathlib import Path
 import socketserver
 import struct
-import subprocess
 import sys
 import tempfile
 import threading
 import zlib
 
 from ECWire import accept  # Preflight in the parent before starting fixtures.
-from AllSearchIntegrationTest import C, exact, free_ports, integer, string, tag
-from CompletedFileDeleteIntegrationTest import eventually, http
+from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, http, integer,
+                                      retry_port_collisions, start_amuleapi, stop_daemon, string,
+                                      tag, wait_amuleapi)
+from CompletedFileDeleteIntegrationTest import eventually
+from DaemonConfig import daemon_env
 
 FILE_HASH = 'a448017aaf21d8525fc10ae87aa6729d'
 
@@ -60,29 +60,17 @@ class Server(socketserver.ThreadingTCPServer):
 def run(api, mode):
     with tempfile.TemporaryDirectory(prefix='amule-delete-legacy-') as tmp:
         root = Path(tmp)
-        env = dict(os.environ, HOME=tmp, XDG_CONFIG_HOME=tmp+'/xdg', LC_ALL='C.UTF-8')
-        subprocess.run([api, '--config-dir='+tmp, '--set-admin-pass=adminpass'], env=env,
-                       check=True, stdout=subprocess.DEVNULL)
-        config = root / 'amuleapi.conf'
-        config.write_text(config.read_text().replace('PasswordMD5=', 'PasswordMD5=' + hashlib.md5(b'regression').hexdigest(), 1))
+        env = daemon_env(root)
         with Server(('127.0.0.1', 0), LegacyCore) as core, (root / 'api.log').open('w') as log:
             core.ops = []
             core.mode = mode
             threading.Thread(target=core.serve_forever, daemon=True).start()
+            configure_amuleapi(api, root, env, log)
             hp = free_ports(1)[0]
             base = f'http://127.0.0.1:{hp}/api/v1'
-            proc = subprocess.Popen([api, '--config-dir='+tmp, '--host=127.0.0.1',
-                '--port='+str(core.server_address[1]), '--http-port='+str(hp)],
-                env=env, stdout=log, stderr=log)
+            proc = start_amuleapi(api, root, core.server_address[1], hp, env, log)
             try:
-                def healthy():
-                    assert proc.poll() is None, (root / 'api.log').read_text()
-                    try:
-                        return http(base, '/health')[1].get('ec_connected')
-                    except OSError:
-                        return False
-                eventually(healthy)
-                token = http(base, '/auth/login?include_token=true', method='POST', body={'password':'adminpass'})[1]['token']
+                token = wait_amuleapi(proc, base, log.name)
                 eventually(lambda: http(base, '/downloads/'+FILE_HASH, token)[0] == 200)
                 expected_status, expected_bulk, expected_code = {
                     'legacy': (503, 503, 'ec_unsupported'),
@@ -113,11 +101,10 @@ def run(api, mode):
                 print((root / 'api.log').read_text(), file=sys.stderr)
                 raise
             finally:
-                proc.terminate()
-                proc.wait(timeout=15)
+                stop_daemon(proc, timeout=15, check=sys.exc_info()[0] is None)
                 core.shutdown()
 
 
 if __name__ == '__main__':
     for mode in ('legacy', 'completing', 'wrong_ack'):
-        run(sys.argv[1], mode)
+        retry_port_collisions(run, sys.argv[1], mode)

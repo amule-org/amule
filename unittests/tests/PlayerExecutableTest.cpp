@@ -26,6 +26,7 @@
 
 #include "Flatpak.h"
 #include "PlayerExecutable.h"
+#include "TestScratchDir.h"
 #include "XdgConfigDir.h"
 
 #include <wx/file.h>
@@ -48,9 +49,7 @@ public:
 		for (auto &env : m_env) {
 			env.present = wxGetEnv(env.name, &env.value);
 		}
-		root = wxFileName::CreateTempFileName("amule-player-test");
-		wxRemoveFile(root);
-		wxFileName::Mkdir(root, 0700);
+		root = m_scratch.WxPath();
 		wxFileName::Mkdir(root + "/first", 0700);
 		wxFileName::Mkdir(root + "/second", 0700);
 		wxSetWorkingDirectory(root);
@@ -68,7 +67,6 @@ public:
 				wxUnsetEnv(env.name);
 			}
 		}
-		wxFileName::Rmdir(root, wxPATH_RMDIR_RECURSIVE);
 	}
 
 	wxString File(const wxString &name, int mode = 0700) const
@@ -90,6 +88,7 @@ private:
 		wxString value;
 		bool present = false;
 	};
+	const TestScratchDir m_scratch{ "amule-player-test" };
 	const wxString m_cwd;
 	std::array<Env, 4> m_env{ { { "PATH", {} },
 		{ "FLATPAK_ID", {} },

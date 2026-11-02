@@ -22,88 +22,18 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-GUEST_PASS=${GUEST_PASS:-guestpass}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-TEST_LINK="ed2k://|file|ubuntu-24.04.4-desktop-amd64.iso|6655619072|0031C9CBA65C50DD2015C184B2CA2C88|/"
-TEST_HASH="0031c9cba65c50dd2015c184b2ca2c88"
-
-FAIL_COUNT=0
-TEST_COUNT=0
-# Skips are counted apart from TEST_COUNT, never folded into it: a skipped
-# check is coverage that did not happen, and adding it to the passed tally
-# would report the absence of a check as a check that succeeded.
-SKIP_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_13_downloads_delete_clear_body.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 10 -o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-_assert_json_eq() {
-	local expr=$1 expected=$2 label=$3
-	local actual
-	actual=$(printf '%s' "$CURL_BODY" | jq -r "$expr" 2>/dev/null) \
-		|| _fail "$label" "body was not valid JSON" "body: $CURL_BODY"
-	if [ "$actual" = "$expected" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
-	fi
-}
-
-_assert_body_empty() {
-	local label=$1
-	if [ -z "$CURL_BODY" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-if ! command -v jq >/dev/null 2>&1; then _die "jq is required."; fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable."
-fi
+_preflight
 
 echo "amuleapi 13-downloads-delete-clear smoke @ $HOST"
 
-ADMIN_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "null" ] || _die "admin login failed"
+ADMIN_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 
-GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" "$API/auth/login?include_token=true" | jq -r .token)
+GUEST_TOKEN=$(_login "$GUEST_PASS")
 HAVE_GUEST=0
-[ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ] && HAVE_GUEST=1
+[ -n "$GUEST_TOKEN" ] && HAVE_GUEST=1
 
 sleep 4
 
@@ -292,12 +222,4 @@ else
 fi
 
 # --- Summary. -----------------------------------------------------
-echo
-SKIP_NOTE=""
-[ "$SKIP_COUNT" -gt 0 ] && SKIP_NOTE=" ($SKIP_COUNT check(s) skipped)"
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed$SKIP_NOTE"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

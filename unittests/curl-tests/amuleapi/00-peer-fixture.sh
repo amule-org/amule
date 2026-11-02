@@ -28,9 +28,11 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
+# Unlike the assertion phases, a transport error is not fatal here.
+CURL_NONFATAL=1
+CURL_MAX_TIME=15
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+
 QUERY=${PEER_FIXTURE_QUERY:-ubuntu}
 SEARCH_WAIT=${PEER_FIXTURE_SEARCH_WAIT:-45}
 SOURCE_WAIT=${PEER_FIXTURE_SOURCE_WAIT:-90}
@@ -42,29 +44,9 @@ STATE=${PEER_FIXTURE_STATE:-/tmp/amuleapi-peer-fixture}
 # prevent. Prefer hits too big for a run to finish.
 MIN_SIZE=${PEER_FIXTURE_MIN_SIZE:-268435456}
 
-# 12/13/22/23/24/26 add and delete this hash as their own disposable fixture.
-SUITE_TEST_HASH=0031c9cba65c50dd2015c184b2ca2c88
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_00_peer_fixture_body.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE"' EXIT
-CURL_STATUS=""
-CURL_BODY=""
-
 # Governs whether giving up may delete the handoff: once set there is a real
 # transfer to tear down, and dropping the handoff would orphan it.
 QUEUED=0
-
-# Unlike the assertion phases, a transport error is not fatal here.
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 15 -o "$CURL_BODY_FILE" -w '%{http_code}' "$@") || {
-		CURL_STATUS="000"
-		CURL_BODY=""
-		return 0
-	}
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-}
 
 # Greppable on purpose: this is what to look for when the peer checks skip.
 _not_provisioned() {
@@ -82,8 +64,6 @@ _not_provisioned() {
 	exit 0
 }
 
-_die() { echo "FATAL: $*" >&2; exit 2; }
-
 echo "amuleapi 00-peer-fixture @ $HOST (query: $QUERY)"
 
 # Reaches jq as --argjson, where a non-numeric value would read as "no result
@@ -96,12 +76,8 @@ esac
 # download.
 rm -f "$STATE"
 
-_curl -X POST -H 'Content-Type: application/json' \
-	-d "{\"username\":\"admin\",\"password\":\"$ADMIN_PASS\"}" \
-	"$API/auth/login?include_token=true"
-[ "$CURL_STATUS" = "200" ] || _die "admin login failed (HTTP $CURL_STATUS)"
-TOKEN=$(printf '%s' "$CURL_BODY" | jq -r '.token // empty')
-[ -n "$TOKEN" ] || _die "admin login returned no token"
+TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$TOKEN" ] || _die "admin login failed"
 AUTH="Authorization: Bearer $TOKEN"
 
 # Cheaper than a 45 s wait that ends in an empty result set.
@@ -121,6 +97,10 @@ case "$CURL_STATUS" in
 esac
 SEARCH_ID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 [ -n "$SEARCH_ID" ] || _not_provisioned "POST /search returned no search_id"
+# amuled caps concurrent searches; do not charge the rest of the suite for ours.
+# Not before the download below: promoting a result from a deleted search is
+# accepted with 202 and queues nothing.
+_on_exit 'curl -s -o /dev/null -X DELETE -H "$AUTH" "$API/search/$SEARCH_ID"'
 echo "    search_id=$SEARCH_ID; collecting results for up to ${SEARCH_WAIT}s"
 
 # The result floor is a second exit for a server that keeps a search open long
@@ -147,7 +127,7 @@ BEST_SOURCES=""
 BEST_SIZE=""
 BEST_NAME=""
 read -r BEST_TIER BEST_HASH BEST_SOURCES BEST_SIZE BEST_NAME <<EOF
-$(printf '%s' "$CURL_BODY" | jq -r --arg skip "$SUITE_TEST_HASH" --argjson min "$MIN_SIZE" '
+$(printf '%s' "$CURL_BODY" | jq -r --arg skip "$TEST_HASH" --argjson min "$MIN_SIZE" '
 	[ .results[]?
 	  | select(.already_downloaded != true)
 	  | select((.hash // "") != $skip)
@@ -161,9 +141,6 @@ $(printf '%s' "$CURL_BODY" | jq -r --arg skip "$SUITE_TEST_HASH" --argjson min "
 	  else "\(if (.size_bytes // 0) >= $min then "large" else "small" end) \(.hash) \(.sources.total) \(.size_bytes) \(.name)"
 	  end')
 EOF
-
-# amuled caps concurrent searches; do not charge the rest of the suite for ours.
-_curl -X DELETE -H "$AUTH" "$API/search/$SEARCH_ID"
 
 [ -n "$BEST_HASH" ] \
 	|| _not_provisioned "search for '$QUERY' returned no usable result with a live source"

@@ -25,6 +25,7 @@
 #include <muleunit/test.h>
 
 #include "ExternalCommand.h"
+#include "TestScratchDir.h"
 
 #include <wx/ffile.h>
 #include <wx/filefn.h>
@@ -704,16 +705,13 @@ TEST(UserEventCommand, UnquotedProgramPathWithSpacesIsQuoted)
 #ifdef __WINDOWS__
 TEST(UserEventCommand, BuildFindsAnUnquotedProgramPathWithSpaces)
 {
-	const wxString dir = wxFileName::CreateTempFileName("amule player ");
-	wxRemoveFile(dir);
-	ASSERT_TRUE(wxMkdir(dir));
+	const TestScratchDir scratch("amule player ");
+	const wxString dir = scratch.WxPath();
 	const wxString player = wxFileName(dir, "player.exe").GetFullPath();
 	ASSERT_TRUE(wxFFile(player, "w").Close());
 	const wxString file = "C:\\Videos\\a b.part";
 	const wxArrayString args =
 		ExternalCommand::Build(player + " --fs %PARTFILE", { { "%PARTFILE", file } }, nullptr);
-	wxRemoveFile(player);
-	wxRmdir(dir);
 	ASSERT_EQUALS(3u, args.size());
 	ASSERT_EQUALS(player, args[0]);
 	ASSERT_EQUALS("--fs", args[1]);
@@ -724,9 +722,8 @@ TEST(UserEventCommand, BuildFindsAnUnquotedProgramPathWithSpaces)
 #ifdef __WINDOWS__
 TEST(UserEventCommand, BareProgramIsNotTakenFromTheCurrentDirectory)
 {
-	const wxString dir = wxFileName::CreateTempFileName("amule-cwd-");
-	wxRemoveFile(dir);
-	ASSERT_TRUE(wxMkdir(dir));
+	const TestScratchDir scratch("amule-cwd-");
+	const wxString dir = scratch.WxPath();
 	const wxString planted = wxFileName(dir, "amule-cwd-probe.exe").GetFullPath();
 	ASSERT_TRUE(wxCopyFile(wxGetOSDirectory() + "\\System32\\hostname.exe", planted));
 	const wxString previous = wxGetCwd();
@@ -735,8 +732,6 @@ TEST(UserEventCommand, BareProgramIsNotTakenFromTheCurrentDirectory)
 	const bool ran = ExternalCommand::RunDetached(command, wxArrayString{ command });
 	const bool ranTemplate = ExternalCommand::RunDetached(command, wxArrayString{ command }, &command);
 	wxSetWorkingDirectory(previous);
-	wxRemoveFile(planted);
-	wxRmdir(dir);
 	ASSERT_FALSE(ran);
 	ASSERT_FALSE(ranTemplate);
 }

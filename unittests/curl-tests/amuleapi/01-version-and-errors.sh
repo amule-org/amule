@@ -15,62 +15,9 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-FAIL_COUNT=0
-TEST_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_01_version_and_errors_body.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE"' EXIT
-
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 10 \
-		-o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-_assert_json_eq() {
-	local expr=$1 expected=$2 label=$3
-	local actual
-	actual=$(printf '%s' "$CURL_BODY" | jq -r "$expr" 2>/dev/null) \
-		|| _fail "$label" "body was not valid JSON" "body: $CURL_BODY"
-	if [ "$actual" = "$expected" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
-	fi
-}
-
-if ! command -v jq >/dev/null 2>&1; then
-	_die "jq is required for JSON assertions. brew install jq."
-fi
-if ! curl -s -o /dev/null --max-time 2 "$HOST/" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
-fi
+_preflight
 
 echo "amuleapi 01-version-and-errors smoke @ $HOST"
 
@@ -154,10 +101,7 @@ _assert_status 200 "HEAD /api/v1/health returns 200"
 _curl -X POST "$API/health"
 _assert_status 405 "POST /api/v1/health yields 405"
 _assert_json_eq '.error.code' method_not_allowed '/health 405 carries method_not_allowed'
-# _curl captures the body and status only, so read the header directly rather
-# than asserting against a variable that does not exist.
-ALLOW=$(curl -s -o /dev/null -D - --max-time 10 -X POST "$API/health" \
-	| tr -d '\r' | awk -F': ' 'tolower($1)=="allow"{print $2}')
+ALLOW=$(_header allow)
 case "$ALLOW" in
 *GET*HEAD*) _pass "/health 405 carries Allow: $ALLOW" ;;
 *) _fail "/health 405 Allow header" "got [$ALLOW]" ;;
@@ -231,10 +175,4 @@ _assert_status 200 \
 	"35 anonymous /version requests do not rate-limit an authenticated caller"
 
 # Summary.
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary

@@ -3,15 +3,13 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """A saturated download limit must not delay the hello of a client we do not download from."""
 import hashlib
-import os
 from pathlib import Path
 import socket
-import subprocess
 import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import C, connect_daemon, free_ports, retry_port_collisions, stop_daemon
+from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, start_daemon, stop_daemon
 from DaemonConfig import write_amule_conf
 from DisplayRatesIntegrationTest import DisplayRateMirror
 from DownloadDisplayRatesIntegrationTest import Sources, hello
@@ -48,13 +46,9 @@ def run(binary):
         write_amule_conf(root, ec_port, Address=sources.address, Port=peer_port, UDPEnable=0, FilterLanIPs=0,
                          MaxDownload=LIMIT, MaxUpload=0)
 
-        env = dict(os.environ, HOME=str(root), XDG_CONFIG_HOME=str(root / 'xdg'), LC_ALL='C.UTF-8')
         ec = proc = None
         try:
-            with (root / 'console.log').open('w') as log:
-                proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'], env=env,
-                                        stdout=log, stderr=log)
-            ec = connect_daemon(proc, ec_port, root, peer_port)
+            proc, ec = start_daemon(binary, root, (ec_port, peer_port))
             assert add_link(ec, sources.link(8388608)) == C['EC_OP_NOOP']
             sources.start(peer_port)
             sources.wait_ready(lambda: (root / 'logfile').read_text()[-4000:])
@@ -73,7 +67,7 @@ def run(binary):
             if ec:
                 ec.sock.close()
             if proc:
-                stop_daemon(proc)
+                stop_daemon(proc, check=sys.exc_info()[0] is None)
 
 
 if __name__ == '__main__':

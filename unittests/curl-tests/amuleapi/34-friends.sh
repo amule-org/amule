@@ -38,59 +38,19 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
-GUEST_PASS=${GUEST_PASS:-guestpass}
+# _curl sends "${AUTH[@]}"; empty until the login below.
+CURL_AUTO_AUTH=1
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-FAIL_COUNT=0
-TEST_COUNT=0
 AUTH=()
 
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 10 -D /tmp/amuleapi_34_head -o /tmp/amuleapi_34_body \
-		-w '%{http_code}' "${AUTH[@]}" "$@") || _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat /tmp/amuleapi_34_body)
-	CURL_HEAD=$(cat /tmp/amuleapi_34_head)
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" "body: ${CURL_BODY:0:200}"
-	fi
-}
-
-_jq() { echo "$CURL_BODY" | jq -r "$1" 2>/dev/null; }
-
-trap 'rm -f /tmp/amuleapi_34_head /tmp/amuleapi_34_body' EXIT
-
-command -v jq >/dev/null 2>&1 || _die "jq is required"
-
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
-fi
+_preflight
 
 echo "amuleapi 34-friends @ $HOST"
 
 # --- 0. Log in. ----------------------------------------------------
-TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$ADMIN_PASS\"}" \
-	"$API/auth/login?include_token=true" | jq -r .token)
-[ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || _die "could not log in for friends tests"
+TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$TOKEN" ] || _die "could not log in for friends tests"
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
 # --- 1. The envelope. ---------------------------------------------
@@ -249,10 +209,8 @@ _curl -X POST "$API/friends/$NEW_ECID"
 _assert_status 405 "POST /friends/{ecid} is 405"
 
 # --- 7. Guests read but cannot mutate. ------------------------------
-GUEST_TOKEN=$(curl -s -X POST -H "Content-Type: application/json" \
-	-d "{\"password\":\"$GUEST_PASS\"}" \
-	"$API/auth/login?include_token=true" | jq -r .token)
-if [ -n "$GUEST_TOKEN" ] && [ "$GUEST_TOKEN" != "null" ]; then
+GUEST_TOKEN=$(_login "$GUEST_PASS")
+if [ -n "$GUEST_TOKEN" ]; then
 	SAVED=("${AUTH[@]}")
 	AUTH=(-H "Authorization: Bearer $GUEST_TOKEN")
 	_curl "$API/friends"
@@ -302,6 +260,4 @@ else
 fi
 
 # --- Summary -------------------------------------------------------
-echo
-echo "34-friends: $((TEST_COUNT-FAIL_COUNT))/$TEST_COUNT assertions passed"
-[ "$FAIL_COUNT" -eq 0 ] || exit 1
+_summary

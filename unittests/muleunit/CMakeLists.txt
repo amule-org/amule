@@ -18,12 +18,8 @@ target_include_directories (muleunit
 	INTERFACE ${CMAKE_SOURCE_DIR}/unittests
 )
 
+# MuleDebug.cpp and StringFunctions.cpp need CFormat. mulecommon also brings
+# wxWidgets::BASE and BFD.
 target_link_libraries (muleunit
-	wxWidgets::BASE
+	PUBLIC mulecommon
 )
-
-if (HAVE_BFD)
-	target_link_libraries (muleunit
-		${BFD_LIBRARY}
-	)
-endif()

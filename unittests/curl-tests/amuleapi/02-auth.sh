@@ -24,85 +24,12 @@
 set -u
 set -o pipefail
 
-HOST=${HOST:-localhost:4713}
-API="$HOST/api/v1"
-ADMIN_PASS=${ADMIN_PASS:-adminpass}
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-FAIL_COUNT=0
-TEST_COUNT=0
-
-CURL_BODY_FILE=$(mktemp -t amuleapi_02_auth_body.XXXXXX)
-CURL_HDR_FILE=$(mktemp -t amuleapi_02_auth_hdr.XXXXXX)
 COOKIE_JAR=$(mktemp -t amuleapi_02_auth_cookies.XXXXXX)
-trap 'rm -f "$CURL_BODY_FILE" "$CURL_HDR_FILE" "$COOKIE_JAR"' EXIT
+_on_exit 'rm -f "$COOKIE_JAR"'
 
-_die()  { echo "FATAL: $*" >&2; exit 2; }
-_pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
-_fail() {
-	TEST_COUNT=$((TEST_COUNT+1)); FAIL_COUNT=$((FAIL_COUNT+1))
-	echo "  FAIL  $1"
-	shift
-	for arg in "$@"; do echo "        $arg"; done
-}
-
-_curl() {
-	local resp
-	resp=$(curl -s --max-time 10 \
-		-D "$CURL_HDR_FILE" \
-		-o "$CURL_BODY_FILE" -w '%{http_code}' "$@") \
-		|| _die "curl invocation failed for $*"
-	CURL_STATUS=$resp
-	CURL_BODY=$(cat "$CURL_BODY_FILE")
-	CURL_HDR=$(cat "$CURL_HDR_FILE")
-}
-
-_assert_status() {
-	local expected=$1 label=$2
-	if [ "$CURL_STATUS" = "$expected" ]; then
-		_pass "$label (HTTP $CURL_STATUS)"
-	else
-		_fail "$label" "expected HTTP $expected, got $CURL_STATUS" \
-			"body head: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-_assert_json_eq() {
-	local expr=$1 expected=$2 label=$3
-	local actual
-	actual=$(printf '%s' "$CURL_BODY" | jq -r "$expr" 2>/dev/null) \
-		|| _fail "$label" "body was not valid JSON" "body: $CURL_BODY"
-	if [ "$actual" = "$expected" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected $expected, got $actual" "body: $CURL_BODY"
-	fi
-}
-
-_assert_body_empty() {
-	local label=$1
-	if [ -z "$CURL_BODY" ]; then
-		_pass "$label"
-	else
-		_fail "$label" "expected an empty body, got: $(printf '%s' "$CURL_BODY" | head -c 200)"
-	fi
-}
-
-_assert_header_contains() {
-	local needle=$1 label=$2
-	if printf '%s' "$CURL_HDR" | grep -qi -- "$needle"; then
-		_pass "$label"
-	else
-		_fail "$label" "needle '$needle' not in response headers" \
-			"headers: $(printf '%s' "$CURL_HDR" | head -c 400)"
-	fi
-}
-
-if ! command -v jq >/dev/null 2>&1; then
-	_die "jq is required. brew install jq."
-fi
-if ! curl -s -o /dev/null --max-time 2 "$API/health" 2>/dev/null; then
-	_die "amuleapi at $HOST is not reachable. Start amuleapi first."
-fi
+_preflight
 
 echo "amuleapi 02-auth smoke @ $HOST"
 
@@ -376,10 +303,4 @@ _assert_header_contains 'retry-after:' \
 	'lockout carries Retry-After header'
 
 # --- Summary. -----------------------------------------------------
-echo
-if [ "$FAIL_COUNT" -eq 0 ]; then
-	echo "OK: $TEST_COUNT/$TEST_COUNT passed"
-	exit 0
-fi
-echo "FAIL: $FAIL_COUNT/$TEST_COUNT failed"
-exit 1
+_summary
