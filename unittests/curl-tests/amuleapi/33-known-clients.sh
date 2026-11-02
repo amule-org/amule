@@ -242,11 +242,13 @@ fi
 # The empty and all-zero hashes are excluded, matching what
 # ReconcileKnownClientsLocked() skips: the all-zero one is the placeholder a peer
 # reports before sending its real hash, and folding those in would collapse
-# every unidentified peer into one fabricated record.
+# every unidentified peer into one fabricated record. So is a peer with no name
+# yet: Kad and source exchange hand over a hash before the hello does.
 LIVE_CLIENTS_JSON=$(curl -s --max-time 10 "${AUTH[@]}" "$API/clients?limit=500")
 LIVE_TOTAL=$(printf '%s' "$LIVE_CLIENTS_JSON" | jq -r '.clients | length' 2>/dev/null)
 LIVE_HASHES=$(printf '%s' "$LIVE_CLIENTS_JSON" \
-	| jq -r '.clients[].user_hash // empty | select(. != "" and (test("^0+$") | not))' | sort -u)
+	| jq -r '.clients[] | select((.name // "") != "") | .user_hash // empty
+		| select(. != "" and (test("^0+$") | not))' | sort -u)
 if [ -n "$LIVE_HASHES" ]; then
 	_curl "$API/known_clients?sort=last_seen_at&order=desc&limit=500"
 	MISSING=0

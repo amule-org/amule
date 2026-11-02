@@ -487,8 +487,9 @@ if [ "$SHCOUNT" -gt 0 ]; then
 		'/shared/{hash} carries directory'
 	_assert_json_eq '.sources | type' object \
 		'/shared/{hash} carries sources'
-	_assert_json_eq '.aich_hash | type' string \
-		'/shared/{hash} carries aich_hash'
+	# null until the hashset exists, which a shared partfile may not have yet.
+	_assert_json_eq '(.aich_hash == null or (.aich_hash | type) == "string")' true \
+		'/shared/{hash} carries aich_hash (string or null)'
 	_assert_json_eq '.total_part_count | type' number \
 		'/shared/{hash} carries total_part_count'
 	_assert_json_eq '.hashed_part_count | type' number \

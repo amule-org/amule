@@ -166,17 +166,16 @@ fi
 # is exactly the failure that guarantee exists to catch, and it is invisible
 # from REST alone.
 curl -s --max-time 12 -N "${AUTH[@]}" \
-	"$API/events?filter=client_added,client_updated" \
+	"$API/events?channels=clients" \
 	> /tmp/amuleapi_43_sse 2>/dev/null &
 SSE_PID=$!
 sleep 10
 kill "$SSE_PID" 2>/dev/null
 wait "$SSE_PID" 2>/dev/null
 
-CLIENT_FRAME=$(grep '^data: ' /tmp/amuleapi_43_sse 2>/dev/null \
-	| sed 's/^data: //' \
-	| jq -c 'select(has("ecid"))' 2>/dev/null \
-	| head -1)
+# client_removed rides the same channel and carries only the ecid.
+CLIENT_FRAME=$(awk '/^event: /{ev=$2} /^data: / && (ev=="client_added" || ev=="client_updated"){sub(/^data: /,""); print; exit}' \
+	/tmp/amuleapi_43_sse 2>/dev/null)
 
 if [ -n "$CLIENT_FRAME" ]; then
 	if [ "$(echo "$CLIENT_FRAME" | jq -r 'has("protocol_extensions")')" = "true" ]; then
