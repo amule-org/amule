@@ -956,6 +956,9 @@ constexpr std::size_t kForeignTargetsPerWindow = 30;
 constexpr std::uint64_t kForeignTargetWindowMs = 600'000;
 // The server answers within 3 s and resends at +1.2 s and +3 s.
 constexpr std::uint64_t kForeignRequestTimeoutMs = 30'000;
+// How often a request waiting for a server's missing UDP key checks for it: each check looks the
+// server up in the list, as a cross-server retry does.
+constexpr std::uint64_t kAwaitedServerKeyCheckMs = kForeignRequestTimeoutMs;
 // An answered request's key outlives the +3 s resend, so the copies decrypt and are dropped here.
 constexpr std::uint64_t kForeignAnswerResendMs = 5'000;
 // A target that never answered (Lugdunum-only, gone) is not asked again for a while, so source

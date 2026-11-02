@@ -43,6 +43,9 @@ struct Facts
 	// CServer::GetServerKeyUDP(): also 0 when the key was given to an earlier public IP.
 	std::uint32_t serverKeyUdp = 0;
 	bool cryptPingReplyPending = false;
+	// Each recovery that loses its obfuscated ping ends in a plain one, which counts as a failure
+	// when unanswered, and enough failures remove the server. Any UDP answer resets the count.
+	std::uint32_t serverFailedCount = 0;
 	time_t lastPingedTime = 0;
 	time_t realLastPingedTime = 0;
 };
@@ -53,7 +56,8 @@ struct Facts
 inline std::optional<time_t> RecoveryLastPingedTime(const Facts &facts, time_t now)
 {
 	if (!facts.cryptLayerUdpEnabled || !facts.publicIpKnown || !facts.serverSupportsObfuscationUdp ||
-		facts.serverKeyUdp != 0 || facts.cryptPingReplyPending || facts.lastPingedTime == 0) {
+		facts.serverKeyUdp != 0 || facts.cryptPingReplyPending || facts.serverFailedCount != 0 ||
+		facts.lastPingedTime == 0) {
 		return std::nullopt;
 	}
 	time_t earliest = now;

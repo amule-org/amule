@@ -149,7 +149,9 @@ public:
 	void ResetLowIdHolePunchState();
 	//! The listed server at that TCP address, when it is not ours and takes a cross-server NAT
 	//! callback request from us (NatServerHolePunch::ServerTakesForeignCallback()). A server that
-	//! lacks only its UDP key is not returned, but its key is recovered for a later request.
+	//! lacks only its UDP key is not returned, but its key is recovered for a later request. The
+	//! LowID source check calls it too, so a source from such a server, dropped until the key
+	//! exists, also brings that server's status ping forward.
 	CServer *ForeignCallbackServer(uint32 serverIp, uint16 serverPort);
 	//! Paces the Lugdunum requests that waited for the server's UDP key, which all become
 	//! sendable when it arrives.
@@ -239,6 +241,7 @@ private:
 	NatServerHolePunch::KeepaliveBurst m_holePunchKeepaliveBurst;
 	NatServerHolePunch::ServerRequestPacer m_lugdunumCallbackRetryPacer;
 	bool m_holePunchKeepaliveAwaitsServerKey = false;
+	uint64 m_nextAwaitedServerKeyCheck = 0;
 	//! Sends the keepalive again, obfuscated, once the server's missing UDP key arrives.
 	void RetryKeepaliveAwaitingServerKey();
 	// Fixed at login, so a setting changed mid-session cannot claim what the server was not told.

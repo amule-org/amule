@@ -107,6 +107,16 @@ TEST(ServerKeyRecovery, LeavesTheScheduleAloneWhenNoKeyCanBeRecovered)
 	ASSERT_FALSE(RecoveryLastPingedTime(noObfuscation, kNow).has_value());
 }
 
+TEST(ServerKeyRecovery, AServerThatMissedItsLastPlainPingIsLeftAlone)
+{
+	// Each recovery ends in a plain ping that counts as a failure when unanswered, and enough of
+	// them remove the server.
+	Facts facts = MissingKey();
+	facts.serverFailedCount = 1;
+
+	ASSERT_FALSE(RecoveryLastPingedTime(facts, kNow).has_value());
+}
+
 TEST(ServerKeyRecovery, ANeverPingedServerIsAlreadyDue)
 {
 	Facts facts = MissingKey();

@@ -384,6 +384,7 @@ private:
 	// The source's own target dials us, so our request's success is that source's hello.
 	NatServerHolePunch::PendingCallbackRequest m_lugdunumCallbackRequest;
 	uint64 m_nextForeignNatCallbackRetry = 0;
+	uint64 m_nextAwaitedServerKeyCheck = 0;
 
 public:
 	//! True once for a hello within the window of the last callback request for this source.

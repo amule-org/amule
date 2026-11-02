@@ -2044,7 +2044,8 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 			return;
 		}
 	}
-	if (m_lugdunumCallbackAwaitsServerKey) {
+	if (m_lugdunumCallbackAwaitsServerKey && now >= m_nextAwaitedServerKeyCheck) {
+		m_nextAwaitedServerKeyCheck = now + NatServerHolePunch::kAwaitedServerKeyCheckMs;
 		RetryLugdunumCallbackAwaitingServerKey(now);
 	}
 	if (!m_lowIdHolePunchRequested) {

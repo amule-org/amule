@@ -378,7 +378,9 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
   `CServerConnect::ForeignCallbackServer()`). A server address learnt from a peer is never asked;
 - keeping sources: while we are LowID, a LowID source of such a server survives
   `CPartFile::CanAddSource()`, from source exchange or from another server's answer
-  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`);
+  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`). A source of a listed `0x100000` server
+  that lacks only its UDP key is dropped, and that server's key is recovered (see
+  [Missing server UDP key](#missing-server-udp-key)), so later sources of it are kept;
 - requester: where a LowID-to-LowID contact is declined in `TryToContact()`, an odd LowID source
   on such a server gets `OP_NAT_CALLBACKREQUEST` (`0xA6`) `<target_id 4><0 4><crypt 1>`, server-key
   obfuscated, from the client UDP socket to that server's obfuscation UDP port. Requester ID 0
@@ -470,7 +472,8 @@ forwarded callback by dialing additionally requires `ENABLE_UTP` (`AMULE_UTP_TRA
   not paced across sources; NeoMule does not pace them either (each waits 3 s for a ping first).
   The one exception is a request held back only by the missing server UDP key: the source is
   marked, the key recovered (see [Missing server UDP key](#missing-server-udp-key)), and the
-  download queue's `DS_LOWTOLOWIP` pass sends that request once when the key arrives, paced like
+  download queue's `DS_LOWTOLOWIP` pass, checking at most once per 30 s per source, sends that
+  request once when the key arrives, paced like
   cross-server requests (a burst of 5, then one every 2 s) since every waiting source becomes
   sendable at once;
 - receiving `0xA7` server-way on the client UDP socket: `ClientUDPSocket.cpp` tries the same key selection as `CServerUDPSocket::OnPacketReceived` (a pending crypt-ping challenge before the established server key) and dispatches only after successful decryption; `0x37` on the server TCP link uses the same callback action. With the runtime opt-in and uTP build gate, either opcode starts a temporary dial to the observed IP/UDP port (QUIC when the forward carries a user hash and [Sender behavior](#sender-behavior) allows it, otherwise uTP). The requester ID is a routing hint; a forwarded hash is the expected identity for CAPS/QUIC, while `OP_HELLO` still decides which source the stream attaches to. A zero requester ID still permits this dial but forbids another callback request after failure;
@@ -499,7 +502,9 @@ within 20 s. A lost obfuscated ping therefore leaves no key for hours, and the L
 the extension `0x9F` and the cross-server `0xA6` to that server are held back meanwhile.
 
 When one of them is held back only by the missing key (`LugdunumNatCallbackAwaitsServerKey()`,
-`KeepaliveAwaitsServerKey()`, `ForeignCallbackServerAwaitsKey()`), `CServerList::RecoverServerKeyUDP()`
+`KeepaliveAwaitsServerKey()`, `ForeignCallbackServerAwaitsKey()`, the last also from the LowID
+source check, which drops such a server's sources until the key exists),
+`CServerList::RecoverServerKeyUDP()`
 brings that server's next status ping forward to now, or to 20 minutes after its last one
 (`UDPSERVSTATMINREASKTIME`), as `CheckForExpiredUDPKeys()` does after a public IP change
 (`ServerKeyRecovery::RecoveryLastPingedTime()`). The ping goes out as an ordinary status ping,
@@ -507,8 +512,13 @@ obfuscated first, so no other packet is sent and nothing is queued: the waiting 
 queue, and their own retries send once the key exists. It never pushes a ping later, and does
 nothing while an obfuscated ping is still waiting for its answer, when the server does not support
 UDP obfuscation, when our public IP is unknown (the ping would go plain), or when the server crypt
-layer is off. A server that loses the ping again is
-asked again 20 minutes later, while something still needs its key.
+layer is off. It also does nothing while the server's failure count is not zero: a lost obfuscated
+ping ends in a plain one, which counts as a failure when unanswered, and `ServerStats()` removes a
+server after `DeadServerRetry` failures. Any UDP answer from the server, or a login, resets the
+count, so a server that answers its plain ping but loses the obfuscated one is asked again 20
+minutes later, while something still needs its key, and a server that answers no UDP at all costs
+one failure, not one every 20 minutes. A waiting Lugdunum source or keepalive checks for the key at
+most once per 30 s, since each check looks the server up in the list.
 
 ## Statistics
 

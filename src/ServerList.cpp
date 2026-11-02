@@ -991,6 +991,7 @@ void CServerList::RecoverServerKeyUDP(CServer *server)
 	facts.serverSupportsObfuscationUdp = server->SupportsObfuscationUDP();
 	facts.serverKeyUdp = server->GetServerKeyUDP();
 	facts.cryptPingReplyPending = server->GetCryptPingReplyPending();
+	facts.serverFailedCount = server->GetFailedCount();
 	facts.lastPingedTime = server->GetLastPingedTime();
 	facts.realLastPingedTime = server->GetRealLastPingedTime();
 	const time_t now = time(nullptr);

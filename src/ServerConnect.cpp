@@ -843,6 +843,7 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_holePunchKeepaliveBurst = NatServerHolePunch::KeepaliveBurst();
 	m_lugdunumCallbackRetryPacer = NatServerHolePunch::ServerRequestPacer();
 	m_holePunchKeepaliveAwaitsServerKey = false;
+	m_nextAwaitedServerKeyCheck = 0;
 }
 
 CServer *CServerConnect::ForeignCallbackServer(uint32 serverIp, uint16 serverPort)
@@ -885,7 +886,8 @@ void CServerConnect::ProcessHolePunchExtension()
 	for (std::size_t due = m_holePunchKeepaliveBurst.TakeDue(now); due > 0; --due) {
 		TrySendLowIdHolePunchKeepalive();
 	}
-	if (m_holePunchKeepaliveAwaitsServerKey) {
+	if (m_holePunchKeepaliveAwaitsServerKey && now >= m_nextAwaitedServerKeyCheck) {
+		m_nextAwaitedServerKeyCheck = now + NatServerHolePunch::kAwaitedServerKeyCheckMs;
 		RetryKeepaliveAwaitingServerKey();
 	}
 	for (const LugdunumNatTraversal::ForwardedCallback &unanswered :
