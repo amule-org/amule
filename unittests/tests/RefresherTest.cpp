@@ -4020,6 +4020,8 @@ TEST(Refresher, OptionalSessionMetricsAreByteAccurateAndDoNotLatchMissingTags)
 	response.AddTag(CECTag(EC_TAG_STATS_SESSION_RECEIVED_BYTES, static_cast<std::uint64_t>(0)));
 	response.AddTag(CECTag(EC_TAG_STATS_ACTIVE_CONNECTIONS, static_cast<std::uint32_t>(7)));
 	response.AddTag(CECTag(EC_TAG_STATS_UPTIME_SECONDS, static_cast<std::uint64_t>(42)));
+	response.AddTag(CECTag(EC_TAG_STATS_CPU_MILLISECONDS, static_cast<std::uint64_t>(1234)));
+	response.AddTag(CECTag(EC_TAG_STATS_RESIDENT_MEMORY_BYTES, bytes));
 	StatusSnapshot parsed;
 	ParseStatusFromPacket(&response, parsed);
 	ASSERT_TRUE(parsed.session_sent_bytes.present);
@@ -4030,6 +4032,10 @@ TEST(Refresher, OptionalSessionMetricsAreByteAccurateAndDoNotLatchMissingTags)
 	ASSERT_EQUALS(static_cast<std::uint64_t>(7), parsed.active_connections.value);
 	ASSERT_TRUE(parsed.uptime_seconds.present);
 	ASSERT_EQUALS(static_cast<std::uint64_t>(42), parsed.uptime_seconds.value);
+	ASSERT_TRUE(parsed.cpu_milliseconds.present);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(1234), parsed.cpu_milliseconds.value);
+	ASSERT_TRUE(parsed.resident_memory_bytes.present);
+	ASSERT_EQUALS(bytes, parsed.resident_memory_bytes.value);
 	CECPacket older(EC_OP_STATS);
 	StatusSnapshot missing;
 	ParseStatusFromPacket(&older, missing);
@@ -4037,6 +4043,8 @@ TEST(Refresher, OptionalSessionMetricsAreByteAccurateAndDoNotLatchMissingTags)
 	ASSERT_FALSE(missing.session_received_bytes.present);
 	ASSERT_FALSE(missing.active_connections.present);
 	ASSERT_FALSE(missing.uptime_seconds.present);
+	ASSERT_FALSE(missing.cpu_milliseconds.present);
+	ASSERT_FALSE(missing.resident_memory_bytes.present);
 }
 
 TEST(Refresher, AmuleLogExportsStripTransportMarkers)

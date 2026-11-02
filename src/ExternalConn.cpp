@@ -36,6 +36,7 @@
 
 #include <common/ClientVersion.h>
 #include <common/MD5Sum.h>
+#include <common/ProcessUsage.h>
 #include "libs/ec/cpp/ECCrypt.h"
 
 #include "ECIdDiff.h"            // Needed for ComputeRemovedIds
@@ -1425,6 +1426,12 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 			CECTag(EC_TAG_STATS_SESSION_RECEIVED_BYTES, theStats::GetSessionReceivedBytes()));
 		response->AddTag(CECTag(EC_TAG_STATS_ACTIVE_CONNECTIONS, theStats::GetActiveConnections()));
 		response->AddTag(CECTag(EC_TAG_STATS_UPTIME_SECONDS, theStats::GetUptimeSeconds()));
+		if (const auto cpu = GetProcessCpuMilliseconds()) {
+			response->AddTag(CECTag(EC_TAG_STATS_CPU_MILLISECONDS, *cpu));
+		}
+		if (const auto resident = GetProcessResidentBytes()) {
+			response->AddTag(CECTag(EC_TAG_STATS_RESIDENT_MEMORY_BYTES, *resident));
+		}
 		// Needed only for the remote tray icon context menu
 		response->AddTag(CECTag(EC_TAG_STATS_TOTAL_SENT_BYTES, theStats::GetTotalSentBytes()));
 		response->AddTag(

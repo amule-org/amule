@@ -3559,6 +3559,8 @@ Each scrape reads a compact snapshot that amuleapi publishes after a successful 
 | `amule_active_uploads` | gauge | Cached clients whose upload state is uploading |
 | `amule_active_connections` | gauge | Active daemon connections; omitted on older daemons |
 | `amule_uptime_seconds` | gauge | Daemon uptime; omitted on older daemons |
+| `amule_cpu_seconds_total` | counter | CPU time (user plus kernel) of the daemon process, all threads included; resets on daemon restart; omitted on older daemons |
+| `amule_resident_memory_bytes` | gauge | Physical memory of the daemon process at the last refresh; omitted on older daemons and on platforms that cannot report it |
 | `amule_servers` | gauge | Cached server-list size |
 | `amule_connected_server_users` | gauge | Users on the connected eD2k server; omitted while disconnected or absent from the server cache |
 | `amule_upload_queue_length` | gauge | Waiting upload clients |
@@ -3576,5 +3578,7 @@ Each scrape reads a compact snapshot that amuleapi publishes after a successful 
 Download status labels are `downloading`, `waiting`, `hashing`, `erroneous`, `insufficient_disk`, `paused`, `allocating`, `stopped`, `completing`, `completed` and `unknown`. Every status appears, also with a zero count; a status amuleapi does not know counts as `unknown`. An older daemon that does not send a value gets no series for it, while a real zero stays zero. Lifetime counters can go down after a statistics reset or a profile change; `rate()` handles such resets.
 
 Before the first successful refresh, the output holds only `amule_build_info` and `amule_ec_connected 0`. After a failed refresh it also keeps the last snapshot timestamp, but leaves out all daemon measurements. A statistics, file-update or preferences request answered with `EC_OP_FAILED` counts as a failed refresh, even if the EC connection stays open. These responses are still HTTP 200: Prometheus `up` shows the health of the scrape, while `amule_ec_connected` and `time() - amule_snapshot_timestamp_seconds` show the health and age of the refresh. A refresh that hangs keeps the last published state, so monitor the age as well as the connection. When the EC connection drops, amuleapi exits as before, and the scrape itself fails.
+
+`amule_cpu_seconds_total` and `amule_resident_memory_bytes` come from the process that amuleapi connects to, so they work when amuleapi runs on another host. With the monolithic `amule` they include the GUI. They exclude the `amule-media-probe` helper, which is a separate process. Use `rate(amule_cpu_seconds_total[5m])` for CPU use, where 1 means one full core. Resident memory is a sample, so it misses a spike between two refreshes. It includes file-backed pages and is measured differently per operating system (Linux and macOS resident size, Windows working set), so compare trends on one platform, not values across platforms.
 
 Per-file labels, OpenMetrics negotiation and OTLP push are not in scope. See the [quickstart](../QUICKSTART-AMULEAPI.md#prometheus-metrics) for Prometheus and OpenTelemetry Collector configuration, and for a [Grafana dashboard](grafana-dashboard.json) built on these metrics.

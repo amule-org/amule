@@ -263,6 +263,8 @@ void ParseStatusFromPacket(const CECPacket *resp, StatusSnapshot &out)
 	optional_stat(EC_TAG_STATS_SESSION_RECEIVED_BYTES, out.session_received_bytes);
 	optional_stat(EC_TAG_STATS_ACTIVE_CONNECTIONS, out.active_connections);
 	optional_stat(EC_TAG_STATS_UPTIME_SECONDS, out.uptime_seconds);
+	optional_stat(EC_TAG_STATS_CPU_MILLISECONDS, out.cpu_milliseconds);
+	optional_stat(EC_TAG_STATS_RESIDENT_MEMORY_BYTES, out.resident_memory_bytes);
 	optional_stat(EC_TAG_STATS_TOTAL_SENT_BYTES, out.total_sent_bytes);
 	optional_stat(EC_TAG_STATS_TOTAL_RECEIVED_BYTES, out.total_received_bytes);
 	optional_stat(EC_TAG_STATS_UL_SPEED_LIMIT, out.upload_limit_bytes_per_second);

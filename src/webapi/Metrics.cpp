@@ -54,6 +54,13 @@ std::string EscapeLabel(const std::string &value)
 	return out;
 }
 
+// Exact, where streaming a double would round to six significant digits.
+std::string MillisecondsAsSeconds(std::uint64_t milliseconds)
+{
+	const std::string fraction = std::to_string(milliseconds % 1000);
+	return std::to_string(milliseconds / 1000) + '.' + std::string(3 - fraction.size(), '0') + fraction;
+}
+
 class Writer
 {
 public:
@@ -163,6 +170,14 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 		w.Gauge("active_connections", "Active daemon connections.", s.active_connections.value);
 	if (s.uptime_seconds.present)
 		w.Gauge("uptime_seconds", "Daemon uptime in seconds.", s.uptime_seconds.value);
+	if (s.cpu_milliseconds.present) {
+		w.Family("cpu_seconds_total", "CPU time used by the daemon process.", "counter");
+		w.Sample("cpu_seconds_total", MillisecondsAsSeconds(s.cpu_milliseconds.value));
+	}
+	if (s.resident_memory_bytes.present)
+		w.Gauge("resident_memory_bytes",
+			"Physical memory used by the daemon process.",
+			s.resident_memory_bytes.value);
 	w.Gauge("active_uploads", "Clients currently uploading.", snapshot.active_uploads);
 	w.Gauge("servers", "Servers in the daemon server list.", snapshot.servers);
 	if (snapshot.connected_server_users.present)
