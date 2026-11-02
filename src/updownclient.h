@@ -659,6 +659,9 @@ public:
 	const wxString GetServerName() const;
 
 	uint16 GetKadPort() const { return m_nKadPort; }
+	// The UDP port a direct uTP dial to this peer uses: the Kad half is preferred because it
+	// carries the verified external port when the peer has one, and both name the same socket.
+	uint16 GetUtpDialPort() const { return m_nKadPort != 0 ? m_nKadPort : m_nUDPPort; }
 	void SetKadPort(uint16 nPort) { m_nKadPort = nPort; }
 
 	// Kry - AICH import
