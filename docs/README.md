@@ -79,6 +79,11 @@ verbose logging off keeps your category selections. Debug logging is off by defa
 Debug logs can contain peer IP addresses, user hashes and file names; review them
 before sharing.
 
+The `GUI` category helps when the window stops responding. It logs toolbar events and,
+once a minute, the window state and how often the window was painted. `paints=0` on a
+visible window means the window stopped drawing while aMule kept running. This category
+logs no peer data.
+
 For `amuled`, stop the daemon and set the same options in `amule.conf`, then restart:
 
 ```ini

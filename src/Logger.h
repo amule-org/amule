@@ -122,6 +122,8 @@ enum DebugType
 	logMediaProbe,
 	//! Warnings/Errors related to Verify Local Data subsystem
 	logVerifyLocalData,
+	//! Main window state, toolbar events and paint activity
+	logGUI,
 	logCategoryCount
 	// IMPORTANT NOTE: when you add values to this enum, update the g_debugcats
 	// array in Logger.cpp!

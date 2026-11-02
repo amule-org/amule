@@ -277,6 +277,11 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 
 	wxPanel *p_cnt = new wxPanel(this, -1, wxDefaultPosition, wxDefaultSize);
 	s_main->Add(p_cnt, wxSizerFlags().Expand().Expand());
+	m_contentPanel = p_cnt;
+	p_cnt->Bind(wxEVT_PAINT, [this](wxPaintEvent &evt) {
+		++m_contentPaints;
+		evt.Skip();
+	});
 	muleDlg(p_cnt, false, true);
 	SetSizer(s_main, true);
 
@@ -801,6 +806,10 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 {
 	static int lastbutton = ID_BUTTONDOWNLOADS;
 
+	AddDebugLogLineN(logGUI,
+		CFormat("Toolbar event: id=%d last=%d safe=%d") % ev.GetId() % lastbutton %
+			static_cast<int>(m_is_safe_state));
+
 	// Kry - just if the GUI is ready for it
 	if (m_is_safe_state) {
 
@@ -871,6 +880,11 @@ void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 		}
 		m_wndToolbar->ToggleTool(ev.GetId(), true);
 		lastbutton = ev.GetId();
+
+		AddDebugLogLineN(logGUI,
+			CFormat("Toolbar event done: page=%d onscreen=%d") %
+				static_cast<int>(m_nActiveDialog) %
+				static_cast<int>(m_activewnd && m_activewnd->IsShownOnScreen()));
 	}
 }
 
@@ -1814,17 +1828,36 @@ void CamuleDlg::OnMinimize(wxIconizeEvent &evt)
 	}
 }
 
+void CamuleDlg::LogGuiHeartbeat()
+{
+	AddDebugLogLineN(logGUI,
+		CFormat("Heartbeat: paints=%u page=%d onscreen=%d shown=%d iconized=%d active=%d frozen=%d") %
+			m_contentPaints % static_cast<int>(m_nActiveDialog) %
+			static_cast<int>(m_activewnd && m_activewnd->IsShownOnScreen()) %
+			static_cast<int>(IsShown()) % static_cast<int>(m_iconized_logical) %
+			static_cast<int>(IsActive()) % static_cast<int>(IsFrozen()));
+	m_contentPaints = 0;
+	// With a repaint always pending, paints=0 on the next line means the toolkit stopped drawing
+	// this window while its event loop kept running.
+	m_contentPanel->Refresh();
+}
+
 void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 {
 	// Former TimerProc section
 
-	static uint32 msPrev1, msPrev5;
+	static uint32 msPrev1, msPrev5, msPrevHeartbeat;
 
 	uint32 msCur = theStats::GetUptimeMillis();
 
 	// can this actually happen under wxwin ?
 	if (!SafeState()) {
 		return;
+	}
+
+	if (theLogger.IsEnabled(logGUI) && msCur - msPrevHeartbeat > 60000) {
+		msPrevHeartbeat = msCur;
+		LogGuiHeartbeat();
 	}
 
 #ifndef CLIENT_GUI
