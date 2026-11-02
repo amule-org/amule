@@ -59,6 +59,7 @@ if [ -z "$ADMIN_TOKEN" ]; then
 	# Cookie-session build: fall back to the jar so the authenticated half
 	# still runs rather than silently reporting a pass it never made.
 	JAR=$(mktemp)
+	_on_exit 'rm -f "$JAR"'
 	curl -s -c "$JAR" -X POST -H "Content-Type: application/json" \
 		-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login" >/dev/null
 	AUTH=(-b "$JAR")
