@@ -28,8 +28,8 @@ packaging/windows/build.sh
 
 `packaging/windows/build.sh` takes the target from the shell's `MSYSTEM`
 and reads `packaging/windows/versions.env` for the signing secrets, then
-drives cmake + make + zip. Each invocation is idempotent; reuses `build-windows-<arch>/` if
-present.
+drives cmake + make + zip. Each invocation is idempotent; reuses
+`build-windows-<arch>/` if present.
 
 ## Driving over SSH
 
