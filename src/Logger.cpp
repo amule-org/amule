@@ -79,7 +79,8 @@ CDebugCategory g_debugcats[] = { CDebugCategory(logGeneral, "General"),
 	CDebugCategory(logHTTP, "HTTP"),
 	CDebugCategory(logAsio, "Asio Sockets"),
 	CDebugCategory(logMediaProbe, "Media Probe"),
-	CDebugCategory(logVerifyLocalData, "Verify Local Data") };
+	CDebugCategory(logVerifyLocalData, "Verify Local Data"),
+	CDebugCategory(logGUI, "GUI") };
 
 const int categoryCount = itemsof(g_debugcats);
 static_assert(categoryCount == logCategoryCount, "Update the debug category table");

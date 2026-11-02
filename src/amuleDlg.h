@@ -283,6 +283,8 @@ public:
 	void DoNetworkRearrange();
 
 	wxWindow *m_activewnd;
+	wxWindow *m_contentPanel = nullptr;
+	uint32 m_contentPaints = 0;
 	CTransferWnd *m_transferwnd;
 	CServerWnd *m_serverwnd;
 	CSharedFilesWnd *m_sharedfileswnd;
@@ -313,6 +315,7 @@ protected:
 	void OnShow(wxShowEvent &evt);
 	void OnBnClickedFast(wxCommandEvent &evt);
 	void OnGUITimer(wxTimerEvent &evt);
+	void LogGuiHeartbeat();
 	void OnMainGUISizeChange(wxSizeEvent &evt);
 	void OnMainGUIIdle(wxIdleEvent &evt);
 	void OnMainGUIMaximize(wxMaximizeEvent &evt);
