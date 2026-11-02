@@ -30,22 +30,20 @@
 #include <ctime>
 #include <optional>
 
-// A server's UDP key comes only from the answer to its obfuscated status ping. When that ping is
-// lost the next one is due 3.5 to 4.5 h later, so a user of the key brings it forward instead.
+// A server's UDP key comes from the answer to its status ping: always the obfuscated one, the plain
+// one only on some servers (ed2k-server, not Lugdunum). When the round brings no key the next one
+// is due 3.5 to 4.5 h later, so a user of the key brings it forward instead.
 namespace ServerKeyRecovery
 {
 struct Facts
 {
 	bool cryptLayerUdpEnabled = false;
-	// Without it ServerStats() sends only a plain status ping, which brings no key.
+	// Without it ServerStats() sends no obfuscated status ping.
 	bool publicIpKnown = false;
 	bool serverSupportsObfuscationUdp = false;
 	// CServer::GetServerKeyUDP(): also 0 when the key was given to an earlier public IP.
 	std::uint32_t serverKeyUdp = 0;
 	bool cryptPingReplyPending = false;
-	// Each recovery that loses its obfuscated ping ends in a plain one, which counts as a failure
-	// when unanswered, and enough failures remove the server. Any UDP answer resets the count.
-	std::uint32_t serverFailedCount = 0;
 	time_t lastPingedTime = 0;
 	time_t realLastPingedTime = 0;
 };
@@ -56,18 +54,19 @@ struct Facts
 inline std::optional<time_t> RecoveryLastPingedTime(const Facts &facts, time_t now)
 {
 	if (!facts.cryptLayerUdpEnabled || !facts.publicIpKnown || !facts.serverSupportsObfuscationUdp ||
-		facts.serverKeyUdp != 0 || facts.cryptPingReplyPending || facts.serverFailedCount != 0 ||
-		facts.lastPingedTime == 0) {
+		facts.serverKeyUdp != 0 || facts.cryptPingReplyPending || facts.lastPingedTime == 0) {
 		return std::nullopt;
 	}
+	// HR2S(4.5) is a double.
+	constexpr time_t reaskTime = static_cast<time_t>(UDPSERVSTATREASKTIME);
 	time_t earliest = now;
 	if (facts.realLastPingedTime != 0 && facts.realLastPingedTime + UDPSERVSTATMINREASKTIME > now) {
 		earliest = facts.realLastPingedTime + UDPSERVSTATMINREASKTIME;
 	}
-	if (facts.lastPingedTime + UDPSERVSTATREASKTIME <= earliest) {
+	if (facts.lastPingedTime + reaskTime <= earliest) {
 		return std::nullopt;
 	}
-	return earliest - UDPSERVSTATREASKTIME;
+	return earliest - reaskTime;
 }
 } // namespace ServerKeyRecovery
 

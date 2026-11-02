@@ -524,7 +524,7 @@ add_test (NAME LugdunumNatTraversalTest COMMAND LugdunumNatTraversalTest)
 add_executable (ServerKeyRecoveryTest ServerKeyRecoveryTest.cpp)
 target_include_directories (ServerKeyRecoveryTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include ${CMAKE_BINARY_DIR})
 target_compile_features (ServerKeyRecoveryTest PRIVATE cxx_std_17)
-target_link_libraries (ServerKeyRecoveryTest muleunit mulecommon)
+target_link_libraries (ServerKeyRecoveryTest muleunit)
 add_test (NAME ServerKeyRecoveryTest COMMAND ServerKeyRecoveryTest)
 
 # The buffering between libutp and the eD2k stack: the would-block contract

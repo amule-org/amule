@@ -1881,28 +1881,19 @@ std::optional<LugdunumCallbackRoute> BuildLugdunumCallbackRoute(const CUpDownCli
 
 void CUpDownClient::TrySendLugdunumNatCallbackRequest()
 {
+#ifdef AMULE_UTP_TRANSPORT
 	m_lugdunumCallbackAwaitsServerKey = false;
 	if (!TrySendLugdunumNatCallbackRequest(GetUserIDHybrid())) {
 		m_lugdunumCallbackAwaitsServerKey = AwaitServerKeyForLugdunumCallback();
 		return;
 	}
-#ifdef AMULE_UTP_TRANSPORT
 	// The source's target dials us: the attempt is the request, its success that source's hello.
 	theStats::AddLugdunumCallbackAttempt();
 	m_lugdunumCallbackRequest.NoteSent(::GetTickCount64());
 	theApp->clientudp->NoteLugdunumCallbackRequested(GetUserIDHybrid());
+#else
+	TrySendLugdunumNatCallbackRequest(GetUserIDHybrid());
 #endif
-}
-
-bool CUpDownClient::AwaitServerKeyForLugdunumCallback()
-{
-	const std::optional<LugdunumCallbackRoute> route =
-		BuildLugdunumCallbackRoute(*this, GetUserIDHybrid());
-	if (!route || !LugdunumNatTraversal::LugdunumNatCallbackAwaitsServerKey(route->facts)) {
-		return false;
-	}
-	theApp->serverlist->RecoverServerKeyUDP(route->serverListEntry);
-	return true;
 }
 
 bool CUpDownClient::TrySendLugdunumNatCallbackRequest(uint32 targetId) const
@@ -2051,6 +2042,17 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 	if (!m_lowIdHolePunchRequested) {
 		TrySendLowIdHolePunchRequest();
 	}
+}
+
+bool CUpDownClient::AwaitServerKeyForLugdunumCallback()
+{
+	const std::optional<LugdunumCallbackRoute> route =
+		BuildLugdunumCallbackRoute(*this, GetUserIDHybrid());
+	if (!route || !LugdunumNatTraversal::LugdunumNatCallbackAwaitsServerKey(route->facts)) {
+		return false;
+	}
+	theApp->serverlist->RecoverServerKeyUDP(route->serverListEntry);
+	return true;
 }
 
 void CUpDownClient::RetryLugdunumCallbackAwaitingServerKey(uint64 now)

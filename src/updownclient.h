@@ -364,11 +364,6 @@ private:
 	//! Called from TryToContact's LowID->LowID decline, so at most once per source: a
 	//! DS_LOWTOLOWIP source is not asked again.
 	void TrySendLugdunumNatCallbackRequest();
-	//! Whether the Lugdunum request was held back only by the server's missing UDP key; that key
-	//! is then being recovered. Sent once from RetryLowIdHolePunchRequest() when it arrives.
-	bool AwaitServerKeyForLugdunumCallback();
-	void RetryLugdunumCallbackAwaitingServerKey(uint64 now);
-	bool m_lugdunumCallbackAwaitsServerKey = false;
 	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) for this LowID source when its
 	//! preconditions hold. Mutually exclusive with the Lugdunum callback per server.
 	//! Called from TryToContact's LowID->LowID decline. Returns whether the request went out;
@@ -384,6 +379,11 @@ private:
 	// The source's own target dials us, so our request's success is that source's hello.
 	NatServerHolePunch::PendingCallbackRequest m_lugdunumCallbackRequest;
 	uint64 m_nextForeignNatCallbackRetry = 0;
+	//! Whether the Lugdunum request was held back only by the server's missing UDP key; that key
+	//! is then being recovered. Sent once from RetryLowIdHolePunchRequest() when it arrives.
+	bool AwaitServerKeyForLugdunumCallback();
+	void RetryLugdunumCallbackAwaitingServerKey(uint64 now);
+	bool m_lugdunumCallbackAwaitsServerKey = false;
 	uint64 m_nextAwaitedServerKeyCheck = 0;
 
 public:

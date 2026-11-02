@@ -222,6 +222,7 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 
 			update->SetChallenge(0);
 			update->SetCryptPingReplyPending(false);
+			update->SetKeyRecoveryPing(false);
 			time_t currentTime = time(NULL);
 			update->SetLastPingedTime(
 				currentTime - (rand() % HR2S(1))); // if we used Obfuscated ping, we still

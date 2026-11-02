@@ -363,7 +363,12 @@ void CServerList::ServerStats()
 			packet->CopyUInt32ToDataBuffer(challenge);
 			ping_server->SetLastPinged(tNow);
 			ping_server->SetLastPingedTime(currentTime - (rand() % HR2S(1)));
-			ping_server->AddFailedCount();
+			// Only regular rounds count toward removing a dead server.
+			if (ping_server->IsKeyRecoveryPing()) {
+				ping_server->SetKeyRecoveryPing(false);
+			} else {
+				ping_server->AddFailedCount();
+			}
 			Notify_ServerRefresh(ping_server);
 			theStats::AddUpOverheadServer(packet->GetPacketSize());
 			theApp->serverconnect->SendUDPPacket(packet, ping_server, true);
@@ -991,7 +996,6 @@ void CServerList::RecoverServerKeyUDP(CServer *server)
 	facts.serverSupportsObfuscationUdp = server->SupportsObfuscationUDP();
 	facts.serverKeyUdp = server->GetServerKeyUDP();
 	facts.cryptPingReplyPending = server->GetCryptPingReplyPending();
-	facts.serverFailedCount = server->GetFailedCount();
 	facts.lastPingedTime = server->GetLastPingedTime();
 	facts.realLastPingedTime = server->GetRealLastPingedTime();
 	const time_t now = time(nullptr);
@@ -1001,6 +1005,7 @@ void CServerList::RecoverServerKeyUDP(CServer *server)
 				server->GetListName() %
 				static_cast<unsigned>(*lastPinged + UDPSERVSTATREASKTIME - now));
 		server->SetLastPingedTime(*lastPinged);
+		server->SetKeyRecoveryPing(true);
 	}
 }
 
