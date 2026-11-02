@@ -67,6 +67,7 @@ class CFriend;
 class CKnownFile;
 class CMemFile;
 class CAICHHash;
+class CServer;
 enum class EContactRoute;
 struct SContactFacts;
 
@@ -370,9 +371,12 @@ private:
 	//! a busy server slot is not a send.
 	bool TrySendLowIdHolePunchRequest();
 	bool m_lowIdHolePunchRequested = false;
-	//! Sends the cross-server OP_NAT_CALLBACKREQUEST to this LowID source's own server when it is
-	//! not ours and takes one (ed2k-server 0.9.86). Returns whether the request went out; always
-	//! false without uTP, which the dial after the answer needs.
+	//! The server of this LowID source when it is not ours and would wake the source for us
+	//! (ed2k-server 0.9.86), else null; always null without uTP, which the dial after the answer
+	//! needs.
+	CServer *ForeignNatCallbackServer() const;
+	//! Sends the cross-server OP_NAT_CALLBACKREQUEST to ForeignNatCallbackServer(). Returns whether
+	//! the request went out; the request limits can hold it back.
 	bool TrySendForeignNatCallbackRequest();
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)

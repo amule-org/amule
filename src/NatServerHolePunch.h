@@ -843,7 +843,7 @@ private:
 	std::optional<std::uint64_t> m_sentAt;
 };
 
-// Cross-server NAT callback (ed2k-server 0.9.86): a LowID asks the server of a LowID source on
+// Cross-server NAT callback (ed2k-server 0.9.86): a client asks the server of a LowID source on
 // another server to wake that source, which then punches towards us and waits to be dialled.
 
 // OP_NAT_CALLBACKREQUEST to a foreign server: <target_id 4><0 4><crypt 1>. Requester ID 0 marks it
@@ -884,7 +884,6 @@ inline std::optional<ForeignCallbackAnswer> ParseForeignCallbackAnswer(
 
 struct ForeignRequestFacts
 {
-	std::uint32_t ourId = 0;
 	std::uint32_t sourceId = 0;
 	bool sourceServerIsOurs = false;
 	bool serverTakesForeignCallback = false;
@@ -897,15 +896,16 @@ struct ForeignRequestFacts
 	bool sourceRequiresCryptLayer = false;
 };
 
-// Both LowID on different servers, the source's server takes the request, and the source is odd: on
-// both server families only a client that set 0x1000, which a cross-server wake needs, is odd.
+// A LowID source on another server that takes the request, and odd: on both server families only a
+// client that set 0x1000, which a cross-server wake needs, is odd. Our own ID does not matter: the
+// server answers the address the request came from.
 inline bool ShouldRequestForeignCallback(const ForeignRequestFacts &facts)
 {
 	// The server answers nothing when one side requires the crypt layer and the other lacks it.
 	const bool cryptMismatch = (facts.weRequireCryptLayer && !facts.sourceSupportsCryptLayer) ||
 				   (facts.sourceRequiresCryptLayer && !facts.weSupportCryptLayer);
 	return facts.extensionAnnounced && !facts.sourceServerIsOurs && facts.serverTakesForeignCallback &&
-	       facts.ourUdpPort != 0 && !cryptMismatch && IsLowID(facts.ourId) && IsLowID(facts.sourceId) &&
+	       facts.ourUdpPort != 0 && !cryptMismatch && IsLowID(facts.sourceId) &&
 	       (facts.sourceId & 1) != 0;
 }
 

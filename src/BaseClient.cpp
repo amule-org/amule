@@ -1977,18 +1977,17 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 	return true;
 }
 
-bool CUpDownClient::TrySendForeignNatCallbackRequest()
+CServer *CUpDownClient::ForeignNatCallbackServer() const
 {
 #ifndef AMULE_UTP_TRANSPORT
-	return false;
+	return nullptr;
 #else
 	CServerConnect *connect = theApp->serverconnect;
 	if (connect == nullptr || theApp->clientudp == nullptr || !connect->IsConnected()) {
-		return false;
+		return nullptr;
 	}
 	CServer *server = connect->ForeignCallbackServer(GetServerIP(), GetServerPort());
 	NatServerHolePunch::ForeignRequestFacts facts;
-	facts.ourId = connect->GetClientID();
 	facts.sourceId = GetUserIDHybrid();
 	facts.sourceServerIsOurs = connect->IsLocalServer(GetServerIP(), GetServerPort());
 	facts.serverTakesForeignCallback = server != nullptr;
@@ -1999,7 +1998,17 @@ bool CUpDownClient::TrySendForeignNatCallbackRequest()
 	facts.weRequireCryptLayer = thePrefs::IsClientCryptLayerRequired();
 	facts.sourceSupportsCryptLayer = SupportsCryptLayer();
 	facts.sourceRequiresCryptLayer = RequiresCryptLayer();
-	if (!NatServerHolePunch::ShouldRequestForeignCallback(facts)) {
+	return NatServerHolePunch::ShouldRequestForeignCallback(facts) ? server : nullptr;
+#endif
+}
+
+bool CUpDownClient::TrySendForeignNatCallbackRequest()
+{
+#ifndef AMULE_UTP_TRANSPORT
+	return false;
+#else
+	CServer *server = ForeignNatCallbackServer();
+	if (server == nullptr) {
 		return false;
 	}
 	// Our CT_SERVER_FLAGS crypt bits, shifted down as the server encodes them.
@@ -2238,6 +2247,19 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			if (GetUploadState() == US_NONE && (!GetRemoteQueueRank() || m_bReaskPending)) {
 
 				if (!HasValidBuddyID()) {
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+					// Its own server can wake it for us, whatever our ID.
+					if (GetDownloadState() == DS_WAITCALLBACK &&
+						ForeignNatCallbackServer() != nullptr) {
+						if (TrySendForeignNatCallbackRequest()) {
+							return EContactResult::Contacting;
+						}
+						// Held back by the request limits: asked again on reask.
+						m_bReaskPending = true;
+						SetDownloadState(DS_ONQUEUE);
+						return EContactResult::Declined;
+					}
+#endif
 					theApp->downloadqueue->RemoveSource(this);
 					if (Disconnected("LowID and US_NONE and QR=0")) {
 						Safe_Delete();
