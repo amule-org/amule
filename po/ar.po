@@ -2613,6 +2613,10 @@ msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
 msgstr "يتطلب EC_TAG_FRIEND_SHARED وجود EC_TAG_FRIEND أو EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
+msgid "No open search holds this result."
+msgstr ""
+
+#: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "البحث عبر الويب من الواجهة البعيدة غير منطقي."
 

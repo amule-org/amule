@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-01 21:47+0000\n"
+"PO-Revision-Date: 2026-11-02 15:46+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -2630,6 +2630,10 @@ msgstr "Клиент не найден."
 #: src/ExternalConn.cpp
 msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
 msgstr "EC_TAG_FRIEND_SHARED требует EC_TAG_FRIEND или EC_TAG_CLIENT."
+
+#: src/ExternalConn.cpp
+msgid "No open search holds this result."
+msgstr "Открытых поисков с этим результатом нет."
 
 # Explained by Jacobo221.
 #: src/ExternalConn.cpp

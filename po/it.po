@@ -14,21 +14,22 @@
 # briga <brigabrigante@yahoo.com>, 2009.
 # Giuliano Manzitti <giuliano1979@hotmail.com>, 2010.
 # Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>, 2016-2023.
-#
+# Nicolò Giuliani <nicolo.giuliani@users.noreply.hosted.weblate.org>, 2026.
+# Got3nks <got3nks@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-27 11:03+0000\n"
-"Last-Translator: got3nks <got3nks@users.noreply.github.com>\n"
-"Language-Team: SebastianoPistore.info@protonmail.ch\n"
+"PO-Revision-Date: 2026-11-02 15:46+0000\n"
+"Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.2.2\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -457,7 +458,7 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
+msgstr "Impossibile salvare AcceptExternalConnections in amule.conf."
 
 #: src/amule.cpp
 msgid "Password set and external connections enabled."
@@ -551,7 +552,7 @@ msgstr "web server in esecuzione su pid %d"
 
 #: src/amule.cpp
 msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
+msgstr "Impossibile preparare il token di autenticazione amuleweb. Il server web non è stato avviato."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -585,14 +586,13 @@ msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot 
 msgstr "Hai scelto di lanciare amuleapi all'avvio, ma il programma amuleapi non può essere eseguito. Installa il pacchetto contenente amuleapi, oppure compila aMule dai sorgenti con -DBUILD_AMULEAPI=YES e installalo."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Could not prepare the amuleweb EC token."
-msgstr "Impossibile rimuovere il file del token EC di amuleapi: %s"
+msgstr "Impossibile preparare il token EC di amuleweb."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Impossibile rimuovere il file del token EC di amuleapi: %s"
+msgstr "Impossibile rimuovere il file del token EC di amuleweb: %s"
 
 #: src/amule.cpp
 #, c-format
@@ -791,9 +791,9 @@ msgid "ServerMessage: %s"
 msgstr "Messaggio del server: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace nodes.dat: %s"
-msgstr "Impossibile sostituire il database MaxMindDB ‘%s’: %s"
+msgstr "Impossibile sostituire nodes.dat: %s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -912,11 +912,11 @@ msgstr "ERRORE: il demone di aMule non può essere usato se le connessioni ester
 
 #: src/amuled.cpp
 msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
-msgstr ""
+msgstr "ERRORE: È richiesta una password EC. Esegui amuled --ec-config per impostarla."
 
 #: src/amuled.cpp
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
-msgstr ""
+msgstr "ERRORE: ECPasswordVerifier in amule.conf invalida. Esegui amuled --config per impostare una nuova password EC."
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -1335,26 +1335,24 @@ msgstr "Tutto"
 
 #: src/amule-remote-gui.cpp
 msgid "The EC password changed on the daemon, but the saved client password could not be updated."
-msgstr ""
+msgstr "La password EC è cambiata sul demone, ma non è stato possibile aggiornare la password salvata dal client."
 
 #: src/amule-remote-gui.cpp src/muuli_wdr.cpp
 msgid "To allow a folder, add it to allowed-remote-dirs.dat in the daemon's configuration folder, one absolute path per line, then restart the daemon."
-msgstr ""
+msgstr "Per autorizzare una cartella, aggiungila ad allowed-remote-dirs.dat presente nella cartella di configurazione del demone, un percorso assoluto per riga, poi riavvia il demone."
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The daemon refused these folders because they are outside the folders it allows (configured on the daemon):%s"
-msgstr ""
+msgstr "Il demone rifiuta queste cartelle perché non fanno parte delle cartelle da lui autorizzate (configurate sul demone): %s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
-#, fuzzy
 msgid "The EC password was not changed."
-msgstr "- Modifica della porta TCP.\n"
+msgstr "La password EC non è stata modificata."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "The daemon could not apply the preference changes."
-msgstr "Il demone non è riuscito ad applicare le modifiche alle porte di connessione."
+msgstr "Il demone non è riuscito ad applicare le modifiche alle preferenze."
 
 #: src/amule-remote-gui.cpp
 msgid "not readable"
@@ -1362,7 +1360,7 @@ msgstr "non leggibile"
 
 #: src/amule-remote-gui.cpp
 msgid "outside the folders the daemon allows (configured on the daemon)"
-msgstr ""
+msgstr "al di fuori delle cartelle che il demone autorizza (configurate sul demone stesso)"
 
 #: src/amule-remote-gui.cpp
 msgid "not found"
@@ -1392,14 +1390,13 @@ msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr "Impossibile creare la directory '%s' per la categoria '%s', verrà mantenuta la directory '%s'."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "the daemon refused the request"
-msgstr "Il demone ha rifiutato la richiesta."
+msgstr "Il demone ha rifiutato la richiesta"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "The daemon refused the category: %s"
-msgstr "Il demone ha rifiutato la richiesta."
+msgstr "Il demone ha rifiutato la categoria: %s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp src/ServerList.cpp
 msgid "Invalid URL"
@@ -2417,15 +2414,15 @@ msgstr "Collegamento eD2k non valido! ERRORE: %s"
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
+msgstr "È stata rifiutata una richiesta remota di impostare il template del server web: il valore deve essere un semplice nome di template, non un percorso."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
-msgstr ""
+msgstr "Rifiutata una richiesta di modifica della cartella della firma online: questa può solo essere impostata nelle configurazioni del demone stesso."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the follow-symlinks-in-shares setting: it can only be set in the daemon's own configuration."
-msgstr ""
+msgstr "Rifiutata una richiesta remota di modifica delle impostazioni follow-symlinks-in-shares: questo può essere impostato esclusivamente nelle configurazioni del demone."
 
 #: src/EditServerListDlg.cpp
 msgid "Edit server list sources"
@@ -2461,19 +2458,17 @@ msgid "External connections disabled due to empty password!"
 msgstr "Connessioni esterne disabilitate perché la password è vuota!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled due to invalid ECPasswordVerifier!"
-msgstr "Connessioni esterne disabilitate perché la password è vuota!"
+msgstr "Connessioni esterne disabilitate a causa di ECPasswordVerifier invalido!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled: could not prepare the EC token verifier."
-msgstr "Connessioni esterne disabilitate nel file di configurazione"
+msgstr "Connessioni esterne disabilitate: impossibile preparare il token di verifica EC."
 
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Remote clients cannot change folders: no folder is listed in %s"
-msgstr ""
+msgstr "Client remoti non possono modificare le cartelle: nessuna cartella è elencata in %s"
 
 #: src/ExternalConn.cpp
 msgid "External connections disabled in config file"
@@ -2507,7 +2502,7 @@ msgstr "Versione sconosciuta"
 
 #: src/ExternalConn.cpp
 msgid "An EC client of version 3.3.0 or later is required."
-msgstr ""
+msgstr "È richiesto un client EC di versione 3.3.0 o superiore."
 
 #: src/ExternalConn.cpp
 msgid "Incorrect EC version ID, there might be binary incompatibility. Use core and remote from same snapshot."
@@ -2519,7 +2514,7 @@ msgstr "Non puoi connetterti a una versione stabile da una versione CVS qualsias
 
 #: src/ExternalConn.cpp
 msgid "Invalid SRP handshake or EC verifier."
-msgstr ""
+msgstr "Handshake SRP o verificatore EC non validi."
 
 #: src/ExternalConn.cpp
 msgid "Invalid protocol version."
@@ -2570,9 +2565,9 @@ msgid "FileHash not found: %s"
 msgstr "Hash del file non trovato: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cannot cancel a hashing or finished download: %s"
-msgstr "Impossibile annullare un download completato: %s"
+msgstr "Impossibile annullare un download completato o in fase di hashing: %s"
 
 #: src/ExternalConn.cpp
 msgid "The selected download has changed or is completing. Refresh and try again."
@@ -2625,12 +2620,16 @@ msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
 msgstr "EC_TAG_FRIEND_SHARED richiede EC_TAG_FRIEND o EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
+msgid "No open search holds this result."
+msgstr "Nessuna ricerca aperta contiene questo risultato."
+
+#: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
 msgstr "Non ha senso usare la ricerca Web da interfaccia remota."
 
 #: src/ExternalConn.cpp
 msgid "Invalid media search filter."
-msgstr ""
+msgstr "Filtro di ricerca multimediale non valido."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -2696,11 +2695,11 @@ msgstr "Non è stato possibile spostare il client su quel file."
 
 #: src/ExternalConn.cpp
 msgid "Duplicate remote-control preference groups are not allowed."
-msgstr ""
+msgstr "Non sono consentiti gruppi duplicati di preferenze per il controllo remoto."
 
 #: src/ExternalConn.cpp
 msgid "Only password-authenticated sessions may change the EC password."
-msgstr ""
+msgstr "Solo le sessioni di password autenticate possono modificare la password EC."
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp
 #, fuzzy
