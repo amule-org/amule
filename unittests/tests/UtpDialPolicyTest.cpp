@@ -311,3 +311,51 @@ TEST(UtpDialPolicy, IncomingSynFindsOnlyOneLiveOutboundHandshake)
 	ASSERT_TRUE(FindUniqueUtpSynCandidate(candidates, ip, 4800, 30'099).status ==
 		    EUtpSynCandidateStatus::Ambiguous);
 }
+
+TEST(UtpDialPolicy, ARecentFailureAtTheEndpointKeepsTheLegacyConnect)
+{
+	SUtpDialFacts facts{ true, true, true, false, true, true };
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
+
+	facts.recentDialFailure = true;
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
+}
+
+TEST(UtpDialPolicy, AFailedEndpointIsSkippedUntilItsCooldownEnds)
+{
+	UtpDialFailureMemory failures;
+	ASSERT_FALSE(failures.IsCoolingDown(0x0A000001, 4672, 1'000));
+
+	failures.RecordFailure(0x0A000001, 4672, 1'000);
+	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 1'000));
+	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 1'000 + UtpDialFailureMemory::CooldownMs - 1));
+	ASSERT_FALSE(failures.IsCoolingDown(0x0A000001, 4672, 1'000 + UtpDialFailureMemory::CooldownMs));
+
+	// The path failed, not the peer: another port or address is dialled as before.
+	failures.RecordFailure(0x0A000001, 4672, 2'000);
+	ASSERT_FALSE(failures.IsCoolingDown(0x0A000001, 4673, 2'000));
+	ASSERT_FALSE(failures.IsCoolingDown(0x0A000002, 4672, 2'000));
+}
+
+TEST(UtpDialPolicy, ARecordedFailureRestartsItsCooldown)
+{
+	UtpDialFailureMemory failures;
+	failures.RecordFailure(0x0A000001, 4672, 1'000);
+	failures.RecordFailure(0x0A000001, 4672, 5'000);
+	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 1'000 + UtpDialFailureMemory::CooldownMs));
+	ASSERT_FALSE(failures.IsCoolingDown(0x0A000001, 4672, 5'000 + UtpDialFailureMemory::CooldownMs));
+}
+
+TEST(UtpDialPolicy, FailureMemoryIsBoundedAndForgetsTheOldestFirst)
+{
+	UtpDialFailureMemory failures;
+	for (std::uint32_t index = 0; index < UtpDialFailureMemory::MaxEntries; ++index) {
+		failures.RecordFailure(0x0A000000 + index, 4672, 1'000 + index);
+	}
+	ASSERT_TRUE(failures.IsCoolingDown(0x0A000000, 4672, 2'000));
+
+	failures.RecordFailure(0x0B000000, 4672, 3'000);
+	ASSERT_FALSE(failures.IsCoolingDown(0x0A000000, 4672, 3'000));
+	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 3'000));
+	ASSERT_TRUE(failures.IsCoolingDown(0x0B000000, 4672, 3'000));
+}

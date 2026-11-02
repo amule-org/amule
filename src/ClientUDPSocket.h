@@ -49,6 +49,7 @@ class CServer;
 
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpContext.h"
+#include "UtpDialPolicy.h" // Needed for UtpDialFailureMemory
 #include "UtpStreamAcceptor.h"
 #endif
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
@@ -87,6 +88,7 @@ public:
 	void Close() override;
 	void TickUtp();
 	IUtpContext *GetUtpContext() { return &m_utp; }
+	UtpDialFailureMemory &UtpDialFailures() { return m_utpDialFailures; }
 #if defined(ENABLE_NATT_SERVER_COORDINATION)
 	bool DialLowIdHolePunchPeer(
 		uint32 ip, uint16 tcpPort, uint16 udpPort, const NatServerHolePunch::VouchedPeer &peer);
@@ -169,6 +171,7 @@ private:
 	//! How to key the reply to a uTP SYN, having sent our key frame first when the plan says so.
 	NatKeyFrame::UtpSynPlan PrepareUtpSynReply(uint32_t ip, uint16_t port, bool synObfuscated);
 	CUtpContext m_utp;
+	UtpDialFailureMemory m_utpDialFailures;
 	CUtpStreamAcceptor m_utpAcceptor;
 	NatKeyFrame::CExpectedPeers m_utpExpectedPeers{ 256, NatKeyFrame::kExpectedPeerTtlMs };
 	NatKeyFrame::CHeldKeys m_utpHeldKeys{ 256, NatKeyFrame::kHeldKeyTtlMs };

@@ -195,6 +195,20 @@ The decisions are in [`src/NatKeyFrame.h`](../src/NatKeyFrame.h), driven from
 [`src/ClientUDPSocket.cpp`](../src/ClientUDPSocket.cpp) and
 [`src/UtpLibraryAdapter.cpp`](../src/UtpLibraryAdapter.cpp).
 
+## uTP to a HighID peer
+
+A HighID peer that sets the NAT traversal bit of `CT_MOD_MISCOPTIONS` is dialled over uTP first,
+at its Kad UDP port (or its UDP port without one), when `DecideUtpDial()` allows it. A uTP
+handshake that does not complete within half the TCP connect timeout (20 s) falls back once to TCP
+on the same socket (`CClientTCPSocket::TryUtpTcpFallback()`).
+
+That endpoint is then remembered for 60 minutes (`UtpDialFailureMemory`, at most 512 endpoints,
+the oldest forgotten first), longer than the default source re-ask interval: a contact with it in
+that time connects over TCP at once instead of waiting out the uTP handshake window again. The
+memory is keyed by IP and UDP port, so a peer at another address or port is dialled over uTP as
+before. A LowID peer has no TCP route, so its server-vouched and callback dials do not use this
+memory; a failed Lugdunum callback dial has its own (see [Lugdunum NAT callback](#lugdunum-nat-callback-eserver-1715)).
+
 ## Scope and interoperability status
 
 This exchange only negotiates capability information. It does not by itself

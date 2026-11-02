@@ -2328,10 +2328,8 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 #ifdef AMULE_UTP_TRANSPORT
 		IUtpContext *utp = theApp->clientudp->GetUtpContext();
 		// Only a port learned from this peer is a remote endpoint. Our own
-		// UDP port says nothing about where an unknown peer listens. The Kad
-		// half is preferred because it carries the verified external port when
-		// the peer has one, and both halves name the same UDP socket.
-		const uint16_t utpPort = GetKadPort() != 0 ? GetKadPort() : GetUDPPort();
+		// UDP port says nothing about where an unknown peer listens.
+		const uint16_t utpPort = GetUtpDialPort();
 		// An armed context is not a sendable one: CMuleUDPSocket::SendTo()
 		// reports success on a closed socket, so the SYN would vanish and the
 		// TCP fallback below would be skipped.
@@ -2341,12 +2339,14 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		// what TCP would have obfuscated. The two predicates differ, because
 		// the frame one also demands a known public IP.
 		const bool obfuscationSatisfied = !WantsStreamObfuscation() || ShouldReceiveCryptUDPPackets();
-		const SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
+		SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
 			canSend,
 			true,
 			thePrefs::GetProxyData()->m_proxyEnable,
 			utpPort != 0 && IsGoodIP(GetConnectIP(), thePrefs::FilterLanIPs()),
 			obfuscationSatisfied };
+		facts.recentDialFailure = theApp->clientudp->UtpDialFailures().IsCoolingDown(
+			GetConnectIP(), utpPort, ::GetTickCount64());
 		// Connect() is a no-op on a live socket. Without the same guard the
 		// uTP path would attach a transport over a connection already in use.
 		if (!m_socket->IsOk() && ShouldTryIPv4Utp(GetDialAddress()) &&
