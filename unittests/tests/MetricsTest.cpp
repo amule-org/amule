@@ -216,11 +216,15 @@ TEST(Metrics, SessionStatisticsAreOptionalAndSeparateFromLifetimeTotals)
 	ASSERT_TRUE(missing.find("amule_transferred_bytes_total") == std::string::npos);
 	ASSERT_TRUE(missing.find("amule_active_connections") == std::string::npos);
 	ASSERT_TRUE(missing.find("amule_uptime_seconds") == std::string::npos);
+	ASSERT_TRUE(missing.find("amule_cpu_seconds_total") == std::string::npos);
+	ASSERT_TRUE(missing.find("amule_resident_memory_bytes") == std::string::npos);
 	s.status.session_sent_bytes = { 1234567890123ULL, true };
 	s.status.session_received_bytes = { 0, true };
 	s.status.total_sent_bytes = { 9999999999999ULL, true };
 	s.status.active_connections = { 0, true };
 	s.status.uptime_seconds = { 42, true };
+	s.status.cpu_milliseconds = { 1234567005ULL, true };
+	s.status.resident_memory_bytes = { 0, true };
 	const auto text = SerializeMetrics(s, "test");
 	ASSERT_TRUE(text.find("amule_transferred_bytes_total{direction=\"upload\"} 1234567890123\n") !=
 		    std::string::npos);
@@ -231,4 +235,7 @@ TEST(Metrics, SessionStatisticsAreOptionalAndSeparateFromLifetimeTotals)
 		std::string::npos);
 	ASSERT_TRUE(text.find("amule_active_connections 0\n") != std::string::npos);
 	ASSERT_TRUE(text.find("amule_uptime_seconds 42\n") != std::string::npos);
+	ASSERT_TRUE(text.find("# TYPE amule_cpu_seconds_total counter\n") != std::string::npos);
+	ASSERT_TRUE(text.find("amule_cpu_seconds_total 1234567.005\n") != std::string::npos);
+	ASSERT_TRUE(text.find("amule_resident_memory_bytes 0\n") != std::string::npos);
 }

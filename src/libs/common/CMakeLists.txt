@@ -7,6 +7,7 @@ add_library (mulecommon STATIC
 	MuleDebug.cpp
 	Path.cpp
 	PasswordInput.cpp
+	ProcessUsage.cpp
 	RateLimiter.cpp
 	strerror_r.c
 	StringFunctions.cpp

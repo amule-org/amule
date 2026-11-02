@@ -122,6 +122,8 @@ class CoreHandler(socketserver.BaseRequestHandler):
                                 tag(C['EC_TAG_STATS_SESSION_RECEIVED_BYTES'], struct.pack('!Q', 9876543210123), 5),
                                 integer(C['EC_TAG_STATS_ACTIVE_CONNECTIONS'], 7),
                                 integer(C['EC_TAG_STATS_UPTIME_SECONDS'], 42),
+                                integer(C['EC_TAG_STATS_CPU_MILLISECONDS'], 1234),
+                                tag(C['EC_TAG_STATS_RESIDENT_MEMORY_BYTES'], struct.pack('!Q', 5000000000), 5),
                                 tag(C['EC_TAG_CONNSTATE'], b'\x01', 2, [
                                     tag(C['EC_TAG_SERVER'], bytes([1, 2, 3, 4]) + struct.pack('!H', 4661), 8)])]
                 if op == C['EC_OP_GET_UPDATE']:
@@ -171,6 +173,8 @@ def fake_core_checks(binary, root):
                 assert 'amule_transferred_bytes_total' not in text, text
                 assert 'amule_uptime_seconds' not in text, text
                 assert 'amule_active_connections' not in text, text
+                assert 'amule_cpu_seconds_total' not in text, text
+                assert 'amule_resident_memory_bytes' not in text, text
                 assert 'daemon_version="metrics-fixture"' in text, text
                 assert 'amule_speed_limit_bytes_per_second' not in text, text
                 assert 'amule_shared_files' not in text, text
@@ -194,6 +198,7 @@ def fake_core_checks(binary, root):
                             'amule_transferred_bytes_total{direction="upload"} 1234567890123\n',
                             'amule_transferred_bytes_total{direction="download"} 9876543210123\n',
                             'amule_active_connections 7\n', 'amule_uptime_seconds 42\n',
+                            'amule_cpu_seconds_total 1.234\n', 'amule_resident_memory_bytes 5000000000\n',
                             'amule_servers 1\n', 'amule_connected_server_users 12345\n')
                 # A fixture transition may occur between STAT_REQ and GET_UPDATE.
                 # Wait for a complete tick with the new data in both replies.
@@ -206,7 +211,8 @@ def fake_core_checks(binary, root):
                     text = request(base, token=TOKEN)[2]
                     return ('amule_active_uploads 0\n' in text and 'amule_servers 0\n' in text
                             and all(name not in text for name in ('amule_connected_server_users',
-                                    'amule_transferred_bytes_total', 'amule_uptime_seconds')))
+                                    'amule_transferred_bytes_total', 'amule_uptime_seconds',
+                                    'amule_cpu_seconds_total', 'amule_resident_memory_bytes')))
                 eventually(cleared_snapshot)
                 print('PASS: nonzero cached counts and 64-bit session tags; omissions and removals clear values')
 
@@ -313,6 +319,9 @@ def real_daemon_checks(daemon, binary, root):
                              'amule_network_connected{network="ed2k"} 0\n',
                              'amule_network_connected{network="kad"} 0\n'):
                 assert expected in text, (expected, text)
+            samples = dict(line.rsplit(' ', 1) for line in text.splitlines() if not line.startswith('#'))
+            assert float(samples['amule_cpu_seconds_total']) > 0, text
+            assert int(samples['amule_resident_memory_bytes']) > 0, text
             assert 'amule_kad_network_users' not in text
             assert 'amule_ed2k_network_users' not in text
             promtool = shutil.which('promtool')

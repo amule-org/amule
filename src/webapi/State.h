@@ -1273,6 +1273,8 @@ struct StatusSnapshot
 	OptionalStat session_received_bytes;
 	OptionalStat active_connections;
 	OptionalStat uptime_seconds;
+	OptionalStat cpu_milliseconds;
+	OptionalStat resident_memory_bytes;
 	OptionalStat total_sent_bytes;
 	OptionalStat total_received_bytes;
 	OptionalStat upload_limit_bytes_per_second;

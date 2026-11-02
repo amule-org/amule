@@ -3722,6 +3722,11 @@ if (TARGET wxWidgets::CORE)
 		PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60)
 endif()
 
+# Real OS calls, so it must stay registered on every platform.
+add_executable (ProcessUsageTest ProcessUsageTest.cpp)
+add_test (NAME ProcessUsageTest COMMAND ProcessUsageTest)
+target_link_libraries (ProcessUsageTest muleunit mulecommon)
+
 # Prometheus serializer and successful-tick publication, without a daemon or EC.
 add_executable (MetricsTest
 	MetricsTest.cpp

@@ -337,6 +337,9 @@ EC_TAG_STATS_UL_SPEED                     0x0200
 	EC_TAG_STATS_SESSION_RECEIVED_BYTES       0x0220
 	EC_TAG_STATS_ACTIVE_CONNECTIONS           0x0221
 	EC_TAG_STATS_UPTIME_SECONDS               0x0222
+	EC_TAG_STATS_CPU_MILLISECONDS             0x0223
+## Missing where the platform cannot report it.
+	EC_TAG_STATS_RESIDENT_MEMORY_BYTES        0x0224
 
 EC_TAG_PARTFILE                           0x0300
 	EC_TAG_PARTFILE_NAME                      0x0301

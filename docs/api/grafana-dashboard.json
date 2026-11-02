@@ -656,6 +656,131 @@
     },
     {
       "type": "row",
+      "title": "Resources",
+      "id": 32,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU",
+      "id": 33,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Share of one CPU core used by the daemon process. 100% means one full core.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "rate(amule_cpu_seconds_total{job=\"$job\", instance=~\"$instance\"}[$__rate_interval])",
+          "refId": "A",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory",
+      "id": 34,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "description": "Physical memory used by the daemon process.",
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "amule_resident_memory_bytes{job=\"$job\", instance=~\"$instance\"}",
+          "refId": "A",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "type": "row",
       "title": "Transfers",
       "id": 11,
       "collapsed": false,
@@ -663,7 +788,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 13
       },
       "panels": []
     },
@@ -680,7 +805,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 6
+        "y": 14
       },
       "targets": [
         {
@@ -777,7 +902,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 6
+        "y": 14
       },
       "targets": [
         {
@@ -833,7 +958,7 @@
         "h": 4,
         "w": 3,
         "x": 18,
-        "y": 6
+        "y": 14
       },
       "targets": [
         {
@@ -899,7 +1024,7 @@
         "h": 4,
         "w": 3,
         "x": 21,
-        "y": 6
+        "y": 14
       },
       "targets": [
         {
@@ -965,7 +1090,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 10
+        "y": 18
       },
       "targets": [
         {
@@ -1027,7 +1152,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 22
       },
       "panels": []
     },
@@ -1044,7 +1169,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 23
       },
       "targets": [
         {
@@ -1100,7 +1225,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 23
       },
       "targets": [
         {
@@ -1174,7 +1299,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 23
+        "y": 31
       },
       "targets": [
         {
@@ -1230,7 +1355,7 @@
         "h": 7,
         "w": 4,
         "x": 8,
-        "y": 23
+        "y": 31
       },
       "targets": [
         {
@@ -1287,7 +1412,7 @@
         "h": 7,
         "w": 4,
         "x": 12,
-        "y": 23
+        "y": 31
       },
       "targets": [
         {
@@ -1344,7 +1469,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 23
+        "y": 31
       },
       "targets": [
         {
@@ -1396,7 +1521,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 38
       },
       "panels": []
     },
@@ -1413,7 +1538,7 @@
         "h": 4,
         "w": 4,
         "x": 0,
-        "y": 31
+        "y": 39
       },
       "targets": [
         {
@@ -1470,7 +1595,7 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 31
+        "y": 39
       },
       "targets": [
         {
@@ -1527,7 +1652,7 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 31
+        "y": 39
       },
       "targets": [
         {
@@ -1584,7 +1709,7 @@
         "h": 4,
         "w": 4,
         "x": 12,
-        "y": 31
+        "y": 39
       },
       "targets": [
         {
@@ -1641,7 +1766,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 31
+        "y": 39
       },
       "targets": [
         {
@@ -1698,7 +1823,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 43
       },
       "targets": [
         {
@@ -1763,7 +1888,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 35
+        "y": 43
       },
       "targets": [
         {

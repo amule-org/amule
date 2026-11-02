@@ -440,6 +440,6 @@ dashboard for these metrics. To use it:
 3. **Job** lists the scrape jobs that collect amuleapi metrics; pick yours if you
    have more than one. **Instance** defaults to all.
 
-The dashboard shows connection status, transfer rates and totals, downloads by
+The dashboard shows connection status, CPU and memory use, transfer rates and totals, downloads by
 status, clients and queues, free disk space, and eD2k and Kad network figures.
 Values the daemon does not report show as "No data", not as 0.
