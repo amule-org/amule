@@ -2316,6 +2316,11 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	lo.AddTag(CECTag(EC_TAG_CLIENT_USER_ID, static_cast<std::uint32_t>(1234)));
 	container.AddTag(lo);
 
+	// A peer with no credit record yet: the core sends a ratio of 0.
+	CECTag nocredit(EC_TAG_CLIENT, static_cast<std::uint32_t>(52));
+	nocredit.AddTag(CECTag(EC_TAG_CLIENT_SCORE_RATIO, static_cast<double>(0)));
+	container.AddTag(nocredit);
+
 	resp.AddTag(container);
 	ApplyGetUpdateToClients(&resp, cache, no_files);
 
@@ -2336,6 +2341,7 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_EQUALS(std::string("mod-x"), cs.client_mod_name);
 	ASSERT_TRUE(cs.view_shared_disabled);
 	ASSERT_TRUE(cs.is_friend);
+	ASSERT_TRUE(cs.has_credit_ratio);
 	ASSERT_TRUE(cs.credit_ratio > 2.4 && cs.credit_ratio < 2.6);
 
 	const auto it2 = cache.find(51);
@@ -2345,6 +2351,11 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	// #423 fields absent on the wire => defaults preserved.
 	ASSERT_TRUE(!it2->second.is_friend);
 	ASSERT_TRUE(it2->second.credit_ratio == 0.0);
+	ASSERT_TRUE(!it2->second.has_credit_ratio);
+
+	const auto it3 = cache.find(52);
+	ASSERT_TRUE(it3 != cache.end());
+	ASSERT_TRUE(!it3->second.has_credit_ratio);
 }
 
 // Every origin the GUI tells apart stays apart on the API, local and remote server included.
