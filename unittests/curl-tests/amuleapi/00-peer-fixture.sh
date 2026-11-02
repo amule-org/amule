@@ -97,6 +97,10 @@ case "$CURL_STATUS" in
 esac
 SEARCH_ID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 [ -n "$SEARCH_ID" ] || _not_provisioned "POST /search returned no search_id"
+# amuled caps concurrent searches; do not charge the rest of the suite for ours.
+# Not before the download below: promoting a result from a deleted search is
+# accepted with 202 and queues nothing.
+_on_exit 'curl -s -o /dev/null -X DELETE -H "$AUTH" "$API/search/$SEARCH_ID"'
 echo "    search_id=$SEARCH_ID; collecting results for up to ${SEARCH_WAIT}s"
 
 # The result floor is a second exit for a server that keeps a search open long
@@ -137,9 +141,6 @@ $(printf '%s' "$CURL_BODY" | jq -r --arg skip "$TEST_HASH" --argjson min "$MIN_S
 	  else "\(if (.size_bytes // 0) >= $min then "large" else "small" end) \(.hash) \(.sources.total) \(.size_bytes) \(.name)"
 	  end')
 EOF
-
-# amuled caps concurrent searches; do not charge the rest of the suite for ours.
-_curl -X DELETE -H "$AUTH" "$API/search/$SEARCH_ID"
 
 [ -n "$BEST_HASH" ] \
 	|| _not_provisioned "search for '$QUERY' returned no usable result with a live source"

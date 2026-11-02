@@ -26,7 +26,9 @@ set -o pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-SCRATCH_DIR=$(mktemp -d -t amuleapi_31_shared_dirs.XXXXXX)
+# amuled stores share roots symlink-resolved, so on macOS a $TMPDIR path under
+# /var reads back under /private/var. Use the resolved form throughout.
+SCRATCH_DIR=$(cd "$(mktemp -d -t amuleapi_31_shared_dirs.XXXXXX)" && pwd -P)
 ORIGINAL_DIRS=""
 
 # Put the operator's configuration back exactly as we found it, whatever
