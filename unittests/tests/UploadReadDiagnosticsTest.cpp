@@ -49,18 +49,24 @@ TEST(UploadReadDiagnostics, EverySampleHasOneState)
 		bool pending;
 		bool requests;
 		bool atTarget;
+		bool queued;
 		SlotState state;
 	};
-	const Case cases[] = { { false, false, false, SlotState::Peer },
-		{ false, false, true, SlotState::Peer },
-		{ false, true, false, SlotState::Storage },
-		{ false, true, true, SlotState::Receiver },
-		{ true, false, false, SlotState::Reading },
-		{ true, false, true, SlotState::Reading },
-		{ true, true, false, SlotState::Reading },
-		{ true, true, true, SlotState::Reading } };
+	const Case cases[] = { { false, false, false, false, SlotState::Peer },
+		{ false, false, false, true, SlotState::Sending },
+		{ false, false, true, true, SlotState::Sending },
+		{ false, true, false, false, SlotState::Storage },
+		{ false, true, false, true, SlotState::Storage },
+		{ false, true, true, true, SlotState::Receiver },
+		{ true, false, false, false, SlotState::Reading },
+		{ true, false, false, true, SlotState::Reading },
+		{ true, false, true, true, SlotState::Reading },
+		{ true, true, false, false, SlotState::Reading },
+		{ true, true, false, true, SlotState::Reading },
+		{ true, true, true, true, SlotState::Reading } };
 	for (const auto &sample : cases) {
-		ASSERT_TRUE(Classify(sample.pending, sample.requests, sample.atTarget) == sample.state);
+		ASSERT_TRUE(Classify(sample.pending, sample.requests, sample.atTarget, sample.queued) ==
+			    sample.state);
 	}
 }
 
