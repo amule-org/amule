@@ -28,7 +28,7 @@
 
 #include <set>       // Needed for std::set (m_lastSentSharedFileIds)
 #include <list>      // Needed for std::list (multi-search LRU ring)
-#include <algorithm> // Needed for std::find (multi-search LRU ring)
+#include <algorithm> // Needed for std::find (multi-search LRU ring), std::remove_if
 
 #include <ec/cpp/ECMuleSocket.h> // Needed for CECSocket
 
@@ -1741,6 +1741,17 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 	const CPreferences::PathList storedDirs = theApp->glob_prefs->shareddir_list;
 	const CPreferences::PathList recursiveStored = theApp->glob_prefs->shareddir_recursive_list;
 
+	// Two entries can name one folder: a client that matches by string sends the stored
+	// canonical form and the symlinked one it was given. The later entry wins.
+	const auto place = [&](const CPath &dir, bool recursive) {
+		const auto same = [&dir](const CPath &other) { return dir.IsSameDir(other); };
+		explicitDirs.erase(
+			std::remove_if(explicitDirs.begin(), explicitDirs.end(), same), explicitDirs.end());
+		recursiveDirs.erase(std::remove_if(recursiveDirs.begin(), recursiveDirs.end(), same),
+			recursiveDirs.end());
+		(recursive ? recursiveDirs : explicitDirs).push_back(dir);
+	};
+
 	for (const CECTag &tag : *request) {
 		if (tag.GetTagName() != EC_TAG_SHAREDDIR) {
 			continue;
@@ -1751,16 +1762,18 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 		const bool requestedRecursive = recursiveTag != nullptr && recursiveTag->GetInt() != 0;
 
 		// Work out whether this folder is already shared, and with which recursive flag, so a
-		// widening change can be told from a no-op or a narrowing one.
+		// widening change can be told from a no-op or a narrowing one. Stored roots are
+		// canonical, so a symlinked path matches by its resolved form.
+		const CPath canonical = path.CanonicalForContainment();
 		bool alreadyShared = false;
 		bool storedRecursive = false;
 		CPath storedEntry;
 		for (const CPath &stored : storedDirs) {
-			if (path.IsSameDir(stored)) {
+			if (path.IsSameDir(stored) || canonical.IsSameDir(stored)) {
 				alreadyShared = true;
 				storedEntry = stored;
 				for (const CPath &rec : recursiveStored) {
-					if (path.IsSameDir(rec)) {
+					if (stored.IsSameDir(rec)) {
 						storedRecursive = true;
 						break;
 					}
@@ -1797,11 +1810,7 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 				// and report the refusal. Only a brand-new folder is dropped on refusal, as
 				// it was never shared.
 				if (alreadyShared) {
-					if (storedRecursive) {
-						recursiveDirs.push_back(storedEntry);
-					} else {
-						explicitDirs.push_back(storedEntry);
-					}
+					place(storedEntry, storedRecursive);
 				}
 				continue;
 			}
@@ -1810,14 +1819,8 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 		// Store the canonical (symlink/junction-resolved) path we actually checked, not the raw
 		// string the client sent: otherwise a later operation re-resolves the string and a symlink
 		// repointed after the check would escape. A folder that was not re-checked (an unchanged
-		// flag, or recursion turned off) keeps its value byte-for-byte.
-		const CPath storedPath = widening ? path.CanonicalForContainment() : path;
-
-		if (requestedRecursive) {
-			recursiveDirs.push_back(storedPath);
-		} else {
-			explicitDirs.push_back(storedPath);
-		}
+		// flag, or recursion turned off) keeps its stored value byte-for-byte.
+		place(widening ? canonical : storedEntry, requestedRecursive);
 	}
 
 	theApp->glob_prefs->shareddir_explicit_list = explicitDirs;
@@ -3252,7 +3255,7 @@ static CECPacket *Get_EC_Response_Search_Progress_Union(const CECPacket *request
 
 static CECPacket *Get_EC_Response_Search_Results_Download(const CECPacket *request)
 {
-	CECPacket *response = new CECPacket(EC_OP_STRINGS);
+	bool allFound = true;
 	for (CECPacket::const_iterator it = request->begin(); it != request->end(); ++it) {
 		const CECTag &tag = *it;
 		// Read the category by name (both amulegui and amuleapi send it as
@@ -3267,11 +3270,18 @@ static CECPacket *Get_EC_Response_Search_Results_Download(const CECPacket *reque
 		// under that chosen filename. Without it, download the first result matching the
 		// hash (the parent) -- the unchanged behaviour.
 		if (const CECTag *ecidTag = tag.GetTagByName(EC_TAG_SEARCHFILE)) {
-			theApp->searchlist->AddFileToDownloadByEcid(ecidTag->GetInt(), category);
+			allFound &= theApp->searchlist->AddFileToDownloadByEcid(ecidTag->GetInt(), category);
 		} else {
-			theApp->searchlist->AddFileToDownloadByHash(tag.GetMD4Data(), category);
+			allFound &= theApp->searchlist->AddFileToDownloadByHash(tag.GetMD4Data(), category);
 		}
 	}
+	if (allFound) {
+		return new CECPacket(EC_OP_STRINGS);
+	}
+	// Answering success here let a client report a download that never happened, e.g. one
+	// promoted from a search that had already been closed.
+	CECPacket *response = new CECPacket(EC_OP_FAILED);
+	response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("No open search holds this result.")));
 	return response;
 }
 

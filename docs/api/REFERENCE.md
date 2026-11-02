@@ -3242,7 +3242,7 @@ Promote a search result into the transfer queue. Equivalent to clicking "Downloa
 
 **Body:** `{ "category_index": 0, "ecid": 621 }` — both optional. `category_index` is the download category (default `0`), spelled like the same field on [`PATCH /downloads/{hash}`](#patch-apiv1downloadshash). `ecid` selects one grouped **alternative** by its `results[].alternate_names[].ecid`, so the file downloads **under that alternative's filename**; omit it to download the parent (the aggregated/highest-source name). Since grouped alternatives share the parent's hash, `{hash}` alone can't disambiguate them — `ecid` is how you pick a specific advertised name.
 
-**Errors:** `400 bad_request` (malformed `{hash}`, or a non-integer `category_index` / `ecid`), `400 amuled_rejected` (the daemon refused the download), `503 ec_unavailable`.
+**Errors:** `400 bad_request` (malformed `{hash}`, or a non-integer `category_index` / `ecid`), `400 amuled_rejected` (no open search holds that result, for example because its search was deleted, or the daemon refused the download), `503 ec_unavailable`.
 
 **Response:** `202 Accepted`, no body. `hash` came from the URL and `category_index` is the value the request supplied; the download itself reports the category it landed in.
 
