@@ -646,6 +646,13 @@ void CDownloadQueue::OnConnectionState(bool bConnected)
 	}
 }
 
+static void LogDroppedSource(const CUpDownClient *source, const CPartFile *file, const char *reason)
+{
+	AddDebugLogLineN(logDownloadQueue,
+		CFormat("Dropped source %s:%u of '%s': %s") % source->GetFullIP() % source->GetUserPort() %
+			file->GetFileName().GetPrintable() % reason);
+}
+
 void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 {
 	// if we block loopbacks at this point it should prevent us from connecting to ourself
@@ -659,12 +666,14 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 	}
 
 	if (sender->IsStopped()) {
+		LogDroppedSource(source, sender, "the file is stopped");
 		source->Safe_Delete();
 		return;
 	}
 
 	// Filter sources which are known to be dead/useless
 	if (theApp->clientlist->IsDeadSource(source) || sender->IsDeadSource(source)) {
+		LogDroppedSource(source, sender, "on the dead source list");
 		source->Safe_Delete();
 		return;
 	}
@@ -675,6 +684,7 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 		    (!thePrefs::IsClientCryptLayerSupported() || !source->HasValidHash())) ||
 		(thePrefs::IsClientCryptLayerRequired() &&
 			(!source->SupportsCryptLayer() || !source->HasValidHash()))) {
+		LogDroppedSource(source, sender, "encryption settings do not match");
 		source->Safe_Delete();
 		return;
 	}
@@ -746,11 +756,13 @@ void CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *so
 {
 
 	if (sender->IsStopped()) {
+		LogDroppedSource(source, sender, "the file is stopped");
 		return;
 	}
 
 	// Filter sources which are known to be dead/useless
 	if (sender->IsDeadSource(source)) {
+		LogDroppedSource(source, sender, "on the dead source list");
 		return;
 	}
 
@@ -762,7 +774,7 @@ void CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *so
 		if (!IsGoodIP(nClientIP,
 			    thePrefs::FilterLanIPs())) { // check for 0-IP, localhost and LAN addresses
 			AddDebugLogLineN(logIPFilter,
-				"Ignored already known source with IP=%s" + Uint32toStringIP(nClientIP));
+				"Ignored already known source with IP=" + Uint32toStringIP(nClientIP));
 			return;
 		}
 	}
@@ -773,6 +785,7 @@ void CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *so
 		    (!thePrefs::IsClientCryptLayerSupported() || !source->HasValidHash())) ||
 		(thePrefs::IsClientCryptLayerRequired() &&
 			(!source->SupportsCryptLayer() || !source->HasValidHash()))) {
+		LogDroppedSource(source, sender, "encryption settings do not match");
 		return;
 	}
 
@@ -1479,6 +1492,10 @@ void CDownloadQueue::OnHostnameResolved(uint32 ip)
 
 			file->AddSources(sources, 0, 0, SF_LINK, true);
 		}
+	} else {
+		AddDebugLogLineN(logDownloadQueue,
+			CFormat("Dropped source %s:%u of a link: the host did not resolve") %
+				resolved.strHostname % resolved.port);
 	}
 
 	while (!m_toresolve.empty()) {

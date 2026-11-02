@@ -2024,6 +2024,14 @@ void CPartFile::AddSources(CMemFile &sources,
 		return;
 	}
 
+	const auto logIgnoredSource = [this](uint32 userid, uint16 port, const char *reason) {
+		AddDebugLogLineN(logPartFile,
+			CFormat("Ignored source %s:%u of '%s': %s") %
+				(IsLowID(userid) ? wxString(CFormat("LowID %u") % userid)
+						 : Uint32toStringIP(userid)) %
+				port % GetFileName().GetPrintable() % reason);
+	};
+
 	const auto stopAtSourceCap = [&](int recordIndex) {
 		AddDebugLogLineN(logPartFile, "Consuming a packet because of max sources reached");
 		// Since we may receive multiple search source UDP results we have to "consume" all
@@ -2074,6 +2082,12 @@ void CPartFile::AddSources(CMemFile &sources,
 						"[%s]:%u") %
 						parsed.record.ipv6Address.ToWxString() % parsed.record.port);
 				theApp->downloadqueue->CheckAndAddSource(this, newsource);
+			} else {
+				AddDebugLogLineN(logPartFile,
+					CFormat("Ignored IPv6 source [%s]:%u of '%s': not usable or IP "
+						"filtered") %
+						parsed.record.ipv6Address.ToWxString() % parsed.record.port %
+						GetFileName().GetPrintable());
 			}
 			continue;
 		}
@@ -2110,9 +2124,12 @@ void CPartFile::AddSources(CMemFile &sources,
 		if (!IsLowID(userid)) {
 			// check for 0-IP, localhost and optionally for LAN addresses
 			if (!IsGoodIP(userid, thePrefs::FilterLanIPs())) {
+				logIgnoredSource(
+					userid, port, "invalid, or a LAN address while FilterLanIPs is on");
 				continue;
 			}
 			if (theApp->ipfilter->IsFiltered(userid)) {
+				logIgnoredSource(userid, port, "IP filtered");
 				continue;
 			}
 		}
@@ -2124,6 +2141,9 @@ void CPartFile::AddSources(CMemFile &sources,
 			    &debug_lowiddropped,
 			    true,
 			    keepLowIdSources)) {
+			logIgnoredSource(userid,
+				port,
+				"our own address, a LowID of 0, or a LowID while we are firewalled");
 			continue;
 		}
 
