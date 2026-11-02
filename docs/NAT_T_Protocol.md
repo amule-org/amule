@@ -350,7 +350,9 @@ that announced it to a server that sets `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENS
   server way once its UDP key is known, and sent to its obfuscation UDP port from the client UDP
   socket. The server ignores a session's plain `0x9F` after its first obfuscated one. Without the
   key it stays plain, and an older server always gets it plain
-  (`NatServerHolePunch::ShouldObfuscateKeepalive()`). One `0x9F` goes with each `0x60`;
+  (`NatServerHolePunch::ShouldObfuscateKeepalive()`); the key is then recovered and the `0x9F`
+  sent again, obfuscated, when it arrives (see [Missing server UDP key](#missing-server-udp-key)).
+  One `0x9F` goes with each `0x60`;
 - woken by `0x37`: send `0x9F` at 0, 0.5 and 1 s and `OP_HOLEPUNCH` to the requester's
   endpoint, with no dial and no reverse callback. The `0x61` that follows (30 bytes, with
   `peer_crypt`) decides who dials, as above. A `0x37` can also come from a Lugdunum `0xA6`, which
@@ -376,7 +378,9 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
   `CServerConnect::ForeignCallbackServer()`). A server address learnt from a peer is never asked;
 - keeping sources: while we are LowID, a LowID source of such a server survives
   `CPartFile::CanAddSource()`, from source exchange or from another server's answer
-  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`);
+  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`). A source of a listed `0x100000` server
+  that lacks only its UDP key is dropped, and that server's key is recovered (see
+  [Missing server UDP key](#missing-server-udp-key)), so later sources of it are kept;
 - requester: where a LowID-to-LowID contact is declined in `TryToContact()`, an odd LowID source
   on such a server gets `OP_NAT_CALLBACKREQUEST` (`0xA6`) `<target_id 4><0 4><crypt 1>`, server-key
   obfuscated, from the client UDP socket to that server's obfuscation UDP port. Requester ID 0
@@ -397,7 +401,9 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
   requester ID 0 keeps its Lugdunum meaning, a reverse callback;
 - not sent: when we or the source (by its crypt options from source exchange) require the crypt
   layer, since the server answers nothing then, and without the server's UDP key for our current
-  IP (`CServer::GetServerKeyUDP()` is 0 once our public IP changed);
+  IP (`CServer::GetServerKeyUDP()` is 0 once our public IP changed). Such a server's key is then
+  recovered (see [Missing server UDP key](#missing-server-udp-key)), and the retry below sends
+  the request once it arrives;
 - retries: a request the rate cap or a cooldown held back is asked again from the download
   queue's `DS_LOWTOLOWIP` pass, at most once per 30 s per source. A target whose answer was taken
   also cools down for 10 minutes, so a dial that fails is not asked again at once. An answer the
@@ -463,7 +469,12 @@ forwarded callback by dialing additionally requires `ENABLE_UTP` (`AMULE_UTP_TRA
   encrypted "the server way" (`CEncryptedDatagramSocket::EncryptSendServer`), to the server's
   `GetObfuscationPortUDP()`. It is hooked at the LowID-to-LowID decline in `TryToContact()`, so
   it is sent at most once per source: a `DS_LOWTOLOWIP` source is not asked again. Requests are
-  not paced across sources; NeoMule does not pace them either (each waits 3 s for a ping first);
+  not paced across sources; NeoMule does not pace them either (each waits 3 s for a ping first).
+  The one exception is a request held back only by the missing server UDP key: the source is
+  marked, the key recovered (see [Missing server UDP key](#missing-server-udp-key)), and the
+  download queue's `DS_LOWTOLOWIP` pass, checking at most once per 30 s per source, sends that
+  request once when the key arrives, paced like cross-server requests (a burst of 5, then one
+  every 2 s) since every waiting source becomes sendable at once;
 - receiving `0xA7` server-way on the client UDP socket: `ClientUDPSocket.cpp` tries the same key selection as `CServerUDPSocket::OnPacketReceived` (a pending crypt-ping challenge before the established server key) and dispatches only after successful decryption; `0x37` on the server TCP link uses the same callback action. With the runtime opt-in and uTP build gate, either opcode starts a temporary dial to the observed IP/UDP port (QUIC when the forward carries a user hash and [Sender behavior](#sender-behavior) allows it, otherwise uTP). The requester ID is a routing hint; a forwarded hash is the expected identity for CAPS/QUIC, while `OP_HELLO` still decides which source the stream attaches to. A zero requester ID still permits this dial but forbids another callback request after failure;
 - after the stream's `OP_HELLO` identifies a known source, `ClientList.cpp` attaches the temporary socket to that verified peer. A SYN-time winner token is one-shot and authorizes the incoming socket only for the peer whose outgoing attempt it matched;
 - incoming-SYN arbitration in `UtpStreamAcceptor.cpp` compares the observed remote IPv4/port with the local public IPv4 and the best available local UDP port: verified external Kad UDP port when known, otherwise configured UDP port, otherwise TCP port. The smaller endpoint tuple keeps its outgoing connection and rejects the incoming socket; the larger tuple keeps incoming. If endpoints are unavailable or equal, compare hashes only when both are valid; otherwise keep outgoing. A local outgoing-client token identifies the candidate through the dial and adapter but is never peer identity. The accepted winner carries that token until verified `OP_HELLO`; only then is the matching outgoing attempt retired, outside the libutp callback. If HELLO cannot be matched to the candidate, retain the outgoing attempt and apply the ordinary fail-closed source-socket policy. When an incoming winner replaces a connected download socket, its lost file request is sent again once after connection establishment;
@@ -480,6 +491,35 @@ NatT-capable LowID source is only handed to a NatT-capable LowID requester, matc
 The requester's `OP_NAT_CALLBACKREQUEST` then reached the sharer: the forwarded callback arrived
 as **`OP_NAT_CALLBACKREQUESTED` (`0x37`) over the TCP link**, not `0xA7` over UDP. This historical
 observation confirms the relay delivery path; it does not validate the current uTP implementation.
+
+## Missing server UDP key
+
+Every server-way datagram above needs the server's UDP key for our current public IP. The key comes
+from the answer to the server's status ping, which `CServerList::ServerStats()` sends every 3.5 to
+4.5 hours: obfuscated first, then plain when the obfuscated one is not answered within 20 s. The
+obfuscated answer always carries the key; the plain one does on ed2k-server but not on Lugdunum. So
+a lost obfuscated ping to Lugdunum, or a round where both pings are lost, leaves no key for hours,
+and the Lugdunum request, the extension `0x9F` and the cross-server `0xA6` to that server are held
+back meanwhile.
+
+When one of them is held back only by the missing key (`LugdunumNatCallbackAwaitsServerKey()`,
+`KeepaliveAwaitsServerKey()`, `ForeignCallbackServerAwaitsKey()`, the last also from the LowID
+source check, which drops such a server's sources until the key exists),
+`CServerList::RecoverServerKeyUDP()` brings that server's next status ping forward to now, or to 20
+minutes after its last one (`UDPSERVSTATMINREASKTIME`), as `CheckForExpiredUDPKeys()` does after a
+public IP change (`ServerKeyRecovery::RecoveryLastPingedTime()`). The ping goes out as an ordinary
+status ping, obfuscated first, so no other packet is sent and nothing is queued: the waiting sources
+are the queue, and their own retries send once the key exists. It never pushes a ping later, and
+does nothing while an obfuscated ping is still waiting for its answer, when the server does not
+support UDP obfuscation, when our public IP is unknown (the ping would go plain), or when the server
+crypt layer is off.
+
+An unanswered plain ping counts as a failure, and `ServerStats()` removes a server after
+`DeadServerRetry` failures. In a round that recovery brought forward it does not
+(`CServer::IsKeyRecoveryPing()`), so only the regular rounds count, and recovery never brings a
+server that answers no UDP closer to removal. A server that still gives no key is asked again 20
+minutes later, while something still needs its key. A waiting Lugdunum source or keepalive checks
+for the key at most once per 30 s, since each check looks the server up in the list.
 
 ## Statistics
 

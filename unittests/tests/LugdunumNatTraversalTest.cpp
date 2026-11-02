@@ -704,3 +704,41 @@ TEST(LugdunumNatTraversal, ForwardedCallbackGuardDeduplicatesAndBoundsActions)
 	ASSERT_TRUE(guard.Admit(distinct, 20'000));
 	ASSERT_TRUE(guard.Admit(distinct, 100 + ForwardedCallbackActionGuard::ActionWindowMs));
 }
+
+TEST(LugdunumNatTraversal, ACallbackHeldBackOnlyByTheMissingKeyAwaitsIt)
+{
+	CallbackRequestFacts facts;
+	facts.ourId = 100;
+	facts.sourceId = 201;
+	facts.sameServer = true;
+	facts.serverCallbackCapable = true;
+	facts.serverCryptLayerUdpEnabled = true;
+	facts.serverKeyUdp = 0;
+	facts.serverSupportsObfuscationUdp = true;
+	facts.settingEnabled = true;
+	ASSERT_TRUE(LugdunumNatCallbackAwaitsServerKey(facts));
+
+	CallbackRequestFacts keyed = facts;
+	keyed.serverKeyUdp = 42;
+	ASSERT_FALSE(LugdunumNatCallbackAwaitsServerKey(keyed));
+
+	CallbackRequestFacts settingOff = facts;
+	settingOff.settingEnabled = false;
+	ASSERT_FALSE(LugdunumNatCallbackAwaitsServerKey(settingOff));
+
+	CallbackRequestFacts otherServer = facts;
+	otherServer.sameServer = false;
+	ASSERT_FALSE(LugdunumNatCallbackAwaitsServerKey(otherServer));
+
+	CallbackRequestFacts evenSource = facts;
+	evenSource.sourceId = 200;
+	ASSERT_FALSE(LugdunumNatCallbackAwaitsServerKey(evenSource));
+
+	CallbackRequestFacts cryptOff = facts;
+	cryptOff.serverCryptLayerUdpEnabled = false;
+	ASSERT_FALSE(LugdunumNatCallbackAwaitsServerKey(cryptOff));
+
+	CallbackRequestFacts noObfuscation = facts;
+	noObfuscation.serverSupportsObfuscationUdp = false;
+	ASSERT_FALSE(LugdunumNatCallbackAwaitsServerKey(noObfuscation));
+}

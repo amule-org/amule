@@ -379,6 +379,12 @@ private:
 	// The source's own target dials us, so our request's success is that source's hello.
 	NatServerHolePunch::PendingCallbackRequest m_lugdunumCallbackRequest;
 	uint64 m_nextForeignNatCallbackRetry = 0;
+	//! Whether the Lugdunum request was held back only by the server's missing UDP key; that key
+	//! is then being recovered. Sent once from RetryLowIdHolePunchRequest() when it arrives.
+	bool AwaitServerKeyForLugdunumCallback();
+	void RetryLugdunumCallbackAwaitingServerKey(uint64 now);
+	bool m_lugdunumCallbackAwaitsServerKey = false;
+	uint64 m_nextAwaitedServerKeyCheck = 0;
 
 public:
 	//! True once for a hello within the window of the last callback request for this source.
@@ -387,7 +393,7 @@ public:
 		return m_lugdunumCallbackRequest.TakeAnswered(::GetTickCount64());
 	}
 	//! Asks again for a DS_LOWTOLOWIP source whose request was never sent because the server
-	//! slot was busy.
+	//! slot was busy or its UDP key was missing.
 	void RetryLowIdHolePunchRequest();
 	//! A temporary client dialled on a server-announced endpoint. It becomes a download
 	//! source only through the client list match of its hello answer.

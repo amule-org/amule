@@ -29,6 +29,7 @@
 
 #include "ServerList.h" // Interface declarations.
 #include "ServerListSources.h"
+#include "ServerKeyRecovery.h"
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Constants.h>
@@ -362,7 +363,12 @@ void CServerList::ServerStats()
 			packet->CopyUInt32ToDataBuffer(challenge);
 			ping_server->SetLastPinged(tNow);
 			ping_server->SetLastPingedTime(currentTime - (rand() % HR2S(1)));
-			ping_server->AddFailedCount();
+			// Only regular rounds count toward removing a dead server.
+			if (ping_server->IsKeyRecoveryPing()) {
+				ping_server->SetKeyRecoveryPing(false);
+			} else {
+				ping_server->AddFailedCount();
+			}
 			Notify_ServerRefresh(ping_server);
 			theStats::AddUpOverheadServer(packet->GetPacketSize());
 			theApp->serverconnect->SendUDPPacket(packet, ping_server, true);
@@ -976,6 +982,30 @@ void CServerList::FilterServers()
 				RemoveServer(server);
 			}
 		}
+	}
+}
+
+void CServerList::RecoverServerKeyUDP(CServer *server)
+{
+	if (server == nullptr) {
+		return;
+	}
+	ServerKeyRecovery::Facts facts;
+	facts.cryptLayerUdpEnabled = thePrefs::IsServerCryptLayerUDPEnabled();
+	facts.publicIpKnown = theApp->GetPublicIP() != 0;
+	facts.serverSupportsObfuscationUdp = server->SupportsObfuscationUDP();
+	facts.serverKeyUdp = server->GetServerKeyUDP();
+	facts.cryptPingReplyPending = server->GetCryptPingReplyPending();
+	facts.lastPingedTime = server->GetLastPingedTime();
+	facts.realLastPingedTime = server->GetRealLastPingedTime();
+	const time_t now = time(nullptr);
+	if (const std::optional<time_t> lastPinged = ServerKeyRecovery::RecoveryLastPingedTime(facts, now)) {
+		AddDebugLogLineN(logServerUDP,
+			CFormat("Status ping of %s brought forward %us to recover its UDP key") %
+				server->GetListName() %
+				static_cast<unsigned>(*lastPinged + UDPSERVSTATREASKTIME - now));
+		server->SetLastPingedTime(*lastPinged);
+		server->SetKeyRecoveryPing(true);
 	}
 }
 

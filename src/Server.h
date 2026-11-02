@@ -155,6 +155,9 @@ public:
 
 	bool GetCryptPingReplyPending() const { return m_bCryptPingReplyPending; }
 	void SetCryptPingReplyPending(bool bVal) { m_bCryptPingReplyPending = bVal; }
+	// Key recovery brought this status ping forward: its unanswered plain ping is no failure.
+	bool IsKeyRecoveryPing() const { return m_bKeyRecoveryPing; }
+	void SetKeyRecoveryPing(bool bVal) { m_bKeyRecoveryPing = bVal; }
 
 	uint32 GetServerKeyUDPIP() const { return m_dwIPServerKeyUDP; }
 
@@ -248,6 +251,7 @@ private:
 	bool m_dnsfailure;
 
 	bool m_bCryptPingReplyPending;
+	bool m_bKeyRecoveryPing;
 	uint32 m_dwServerKeyUDP;
 	uint32 m_dwIPServerKeyUDP;
 	uint16 m_nObfuscationPortTCP;

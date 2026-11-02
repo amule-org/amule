@@ -841,6 +841,9 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_holePunchExtensionWakes =
 		NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback>();
 	m_holePunchKeepaliveBurst = NatServerHolePunch::KeepaliveBurst();
+	m_lugdunumCallbackRetryPacer = NatServerHolePunch::ServerRequestPacer();
+	m_holePunchKeepaliveAwaitsServerKey = false;
+	m_nextAwaitedServerKeyCheck = 0;
 }
 
 CServer *CServerConnect::ForeignCallbackServer(uint32 serverIp, uint16 serverPort)
@@ -858,6 +861,9 @@ CServer *CServerConnect::ForeignCallbackServer(uint32 serverIp, uint16 serverPor
 	facts.serverKeyUdp = server->GetServerKeyUDP();
 	facts.supportsObfuscationUdp = server->SupportsObfuscationUDP();
 	facts.cryptLayerUdpEnabled = thePrefs::IsServerCryptLayerUDPEnabled();
+	if (NatServerHolePunch::ForeignCallbackServerAwaitsKey(facts)) {
+		theApp->serverlist->RecoverServerKeyUDP(server);
+	}
 	return NatServerHolePunch::ServerTakesForeignCallback(facts) ? server : nullptr;
 }
 
@@ -879,6 +885,10 @@ void CServerConnect::ProcessHolePunchExtension()
 	const std::uint64_t now = ::GetTickCount64();
 	for (std::size_t due = m_holePunchKeepaliveBurst.TakeDue(now); due > 0; --due) {
 		TrySendLowIdHolePunchKeepalive();
+	}
+	if (m_holePunchKeepaliveAwaitsServerKey && now >= m_nextAwaitedServerKeyCheck) {
+		m_nextAwaitedServerKeyCheck = now + NatServerHolePunch::kAwaitedServerKeyCheckMs;
+		RetryKeepaliveAwaitingServerKey();
 	}
 	for (const LugdunumNatTraversal::ForwardedCallback &unanswered :
 		m_holePunchExtensionWakes.TakeExpired(now)) {
@@ -950,6 +960,10 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 		thePrefs::IsServerCryptLayerUDPEnabled(),
 		serverListEntry != nullptr ? serverListEntry->GetServerKeyUDP() : 0,
 		serverListEntry != nullptr && serverListEntry->SupportsObfuscationUDP() };
+	m_holePunchKeepaliveAwaitsServerKey = NatServerHolePunch::KeepaliveAwaitsServerKey(cryptFacts);
+	if (m_holePunchKeepaliveAwaitsServerKey) {
+		theApp->serverlist->RecoverServerKeyUDP(serverListEntry);
+	}
 	if (NatServerHolePunch::ShouldObfuscateKeepalive(cryptFacts)) {
 		const uint16 obfuscationPort = serverListEntry->GetObfuscationPortUDP();
 		AddDebugLogLineN(logServer,
@@ -968,6 +982,22 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 			Uint32_16toStringIP_Port(server->GetIP(), serverUdpPort));
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	theApp->clientudp->SendPacket(packet, server->GetIP(), serverUdpPort, false, nullptr, false, 0);
+}
+
+void CServerConnect::RetryKeepaliveAwaitingServerKey()
+{
+	CServer *server = GetCurrentServer();
+	CServer *serverListEntry = server != nullptr ? theApp->serverlist->GetServerByAddress(
+							       server->GetAddress(), server->GetPort())
+						     : nullptr;
+	if (serverListEntry != nullptr && serverListEntry->GetServerKeyUDP() == 0) {
+		theApp->serverlist->RecoverServerKeyUDP(serverListEntry);
+		return;
+	}
+	m_holePunchKeepaliveAwaitsServerKey = false;
+	if (serverListEntry != nullptr) {
+		TrySendLowIdHolePunchKeepalive();
+	}
 }
 #endif
 

@@ -96,6 +96,7 @@ CServer::CServer(CServer *pOld)
 	m_auxPorts = pOld->m_auxPorts;
 	m_dwServerKeyUDP = pOld->m_dwServerKeyUDP;
 	m_bCryptPingReplyPending = pOld->m_bCryptPingReplyPending;
+	m_bKeyRecoveryPing = pOld->m_bKeyRecoveryPing;
 	m_dwIPServerKeyUDP = pOld->m_dwIPServerKeyUDP;
 	m_nObfuscationPortTCP = pOld->m_nObfuscationPortTCP;
 	m_nObfuscationPortUDP = pOld->m_nObfuscationPortUDP;
@@ -148,6 +149,7 @@ void CServer::Init()
 
 	m_dwServerKeyUDP = 0;
 	m_bCryptPingReplyPending = false;
+	m_bKeyRecoveryPing = false;
 	m_dwIPServerKeyUDP = 0;
 	m_nObfuscationPortTCP = 0;
 	m_nObfuscationPortUDP = 0;
