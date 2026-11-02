@@ -72,12 +72,11 @@ if [ "$COUNT" -gt 0 ]; then
 	_assert_json_eq '.hash' "$FIRST_HASH" \
 		'/shared/{hash} echoes hash (bare object, not enveloped)'
 
-	HAS_PARTS=$(printf '%s' "$CURL_BODY" | jq 'has("parts")')
+	# null until the first decode lands, as documented; never an empty or
+	# all-zero array.
+	HAS_PARTS=$(printf '%s' "$CURL_BODY" | jq '.parts != null')
 	if [ "$HAS_PARTS" != "true" ]; then
-		# Legitimate transient: nothing decoded yet for this ECID. The
-		# key must then be ABSENT rather than an empty or all-zero
-		# array, which is exactly what we just asserted.
-		echo "    info: no decode has landed for this file yet; \`parts\` correctly absent"
+		echo "    info: no decode has landed for this file yet; \`parts\` correctly null"
 		echo "    info: per-part shape checks skipped — re-run once the refresher has ticked"
 	else
 		_assert_json_eq '.parts | type' array '/shared/{hash}.parts is array'
