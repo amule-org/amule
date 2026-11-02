@@ -776,6 +776,11 @@ jobs:
           # IconArtworkTest's watchdog writes a minidump here if the test hangs.
           mkdir -p build/hang-dumps
           export AMULE_ICON_TEST_DUMP_DIR="$(cygpath -w "$PWD/build/hang-dumps")"
+          # Import what the Python tests load, outside their budgets. The first import pages the
+          # toolcache Python and OpenSSL in from the runner's cold disk, which has taken
+          # IntegrationFixtureUnitTest past 60 s before any of its cases ran.
+          python="$(sed -n 's/^_Python3_EXECUTABLE:INTERNAL=//p' build/CMakeCache.txt)"
+          time "$python" -c 'import ctypes, hashlib, ssl, unittest.mock, urllib.request; ssl.create_default_context()'
           ctest ${{ env.ctest_flags }} --timeout 10 -LE '^(slow|integration|reverify)$' &&
           ctest ${{ env.ctest_flags }} --timeout 60 -L '^slow$'
       # The test binary is needed to symbolize the dump.
