@@ -1059,6 +1059,7 @@ private:
 	wxString m_strModVersion;
 
 	std::list<Requested_Block_Struct *> m_BlockRequests_queue;
+	uint64 m_lastBlockRequest = 0; // under m_blockListLock
 	std::list<Requested_Block_Struct *> m_DoneBlocks_list;
 	wxMutex m_blockListLock; // protects m_BlockRequests_queue, m_DoneBlocks_list
 	// atomic: the disk I/O thread sets them, the main thread reads and resets them

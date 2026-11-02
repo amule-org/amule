@@ -2516,6 +2516,10 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	}
 	recurse = true;
 
+	if (uploadDiskIOThread) {
+		uploadDiskIOThread->ObserveCoreTick(msCur);
+	}
+
 	if (!thePrefs::GetAmuleApiIsEnabled() || m_amuleApiStopping || g_shutdownSignal) {
 		m_amuleApiRestart.Cancel();
 	} else if (!amuleapi_pid && m_amuleApiRestart.IsDue(msCur)) {

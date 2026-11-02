@@ -64,7 +64,8 @@ enum class SlotState
 	Reading,
 	Receiver,
 	Peer,
-	Sending
+	Sending,
+	Count
 };
 inline SlotState Classify(bool pending, bool requests, bool atTarget, bool queued)
 {
@@ -102,6 +103,45 @@ struct DispatchWait
 	}
 	void Reset() { active = false; }
 	uint64_t Elapsed(uint64_t now) const { return active && now >= since ? now - since : 0; }
+};
+// One upload socket's sends since the last report. The owner serialises access.
+struct SendStats
+{
+	uint64_t sentBytes = 0;
+	uint64_t refusedWrites = 0;
+	uint64_t busyMaximum = 0;
+	uint64_t wakeMaximum = 0;
+	uint64_t lastSent = 0;
+	uint64_t busySince = 0;
+	void Refused(uint64_t now)
+	{
+		++refusedWrites;
+		if (busySince == 0) {
+			busySince = now;
+		}
+	}
+	// wakeDelay is how long the wake waited for the main thread after the blocking send finished.
+	void Resumed(uint64_t wakeDelay, uint64_t now)
+	{
+		if (busySince == 0) {
+			return;
+		}
+		busyMaximum = std::max(busyMaximum, now - busySince);
+		busySince = 0;
+		wakeMaximum = std::max(wakeMaximum, wakeDelay);
+	}
+	// A socket still busy reports its wait so far and keeps timing it.
+	SendStats Take(uint64_t now)
+	{
+		SendStats report = *this;
+		if (busySince != 0) {
+			report.busyMaximum = std::max(busyMaximum, now - busySince);
+		}
+		*this = SendStats{};
+		lastSent = report.lastSent;
+		busySince = report.busySince;
+		return report;
+	}
 };
 struct Volume
 {

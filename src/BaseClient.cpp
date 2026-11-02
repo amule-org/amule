@@ -453,7 +453,7 @@ void CUpDownClient::Safe_Delete()
 
 	// Doing what RemoveClient used to do. Just to be sure...
 	if (theApp->uploadqueue) {
-		theApp->uploadqueue->RemoveFromUploadQueue(this);
+		theApp->uploadqueue->RemoveFromUploadQueue(this, "deleted");
 		theApp->uploadqueue->RemoveFromWaitingQueue(this);
 	}
 	if (theApp->downloadqueue) {
@@ -1511,7 +1511,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 
 	if (GetUploadState() == US_UPLOADING) {
 		// sets US_NONE
-		theApp->uploadqueue->RemoveFromUploadQueue(this);
+		theApp->uploadqueue->RemoveFromUploadQueue(this, strReason);
 	}
 
 	// An advertised IPv6 supplements the address a peer is known by rather than replacing it.

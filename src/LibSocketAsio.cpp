@@ -652,6 +652,17 @@ public:
 
 	// Is writing blocked?
 	bool BlocksWrite() const { return m_blocksWrite.load(std::memory_order_acquire); }
+	uint64 TakeSendWakeDelay()
+	{
+		const auto completed = m_sendCompletedAt.exchange(0, std::memory_order_relaxed);
+		if (completed == 0) {
+			return 0;
+		}
+		const auto elapsed = std::chrono::steady_clock::now().time_since_epoch().count() - completed;
+		return std::chrono::duration_cast<std::chrono::milliseconds>(
+			std::chrono::steady_clock::duration(elapsed))
+			.count();
+	}
 
 	// wx sends an event when data becomes available, so first there is an event, then Read() is
 	// called; asio reads asynchronously with a callback, so you read first and then get an
@@ -981,6 +992,10 @@ private:
 		// buffer.
 		m_sendBuffer.compare_exchange_strong(sentBuffer, nullptr, std::memory_order_seq_cst);
 		const bool writeWasBlocked = m_blocksWrite.exchange(false, std::memory_order_seq_cst);
+		if (writeWasBlocked) {
+			m_sendCompletedAt.store(std::chrono::steady_clock::now().time_since_epoch().count(),
+				std::memory_order_relaxed);
+		}
 
 		CLibSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
 		if (!wrapper) {
@@ -1364,7 +1379,8 @@ private:
 		m_sendBuffer; // atomic: shared between throttler thread (Write) and ASIO thread (HandleSend)
 	std::atomic<bool> m_blocksWrite; // atomic: shared between throttler thread (BlocksWrite) and ASIO
 					 // thread (HandleSend)
-	io_context::strand m_strand;     // handle synchronisation in io_service thread pool
+	std::atomic<std::chrono::steady_clock::rep> m_sendCompletedAt{ 0 };
+	io_context::strand m_strand; // handle synchronisation in io_service thread pool
 	// atomic: HandleConnect sets it on the ASIO thread, IsConnected() reads it on the main thread
 	std::atomic<bool> m_connected;
 	// atomic: Close() sets it on the main thread, PostLostEvent() reads it on the ASIO thread
@@ -1551,6 +1567,11 @@ bool CLibSocket::BlocksRead() const
 bool CLibSocket::BlocksWrite() const
 {
 	return m_transport ? m_transport->BlocksWrite() : m_aSocket->BlocksWrite();
+}
+
+uint64 CLibSocket::TakeSendWakeDelay()
+{
+	return m_transport ? 0 : m_aSocket->TakeSendWakeDelay();
 }
 
 void CLibSocket::EventProcessed()

@@ -70,6 +70,43 @@ TEST(UploadReadDiagnostics, EverySampleHasOneState)
 	}
 }
 
+TEST(UploadReadDiagnostics, SendStatsTimeOnlyRefusedWrites)
+{
+	SendStats stats;
+	stats.Resumed(5, 10); // a wake with no refused write times nothing
+	ASSERT_EQUALS(uint64_t{ 0 }, stats.busyMaximum);
+	ASSERT_EQUALS(uint64_t{ 0 }, stats.wakeMaximum);
+	stats.Refused(100);
+	stats.Refused(150); // still the same wait
+	stats.Resumed(100, 400);
+	ASSERT_EQUALS(uint64_t{ 2 }, stats.refusedWrites);
+	ASSERT_EQUALS(uint64_t{ 300 }, stats.busyMaximum);
+	ASSERT_EQUALS(uint64_t{ 100 }, stats.wakeMaximum);
+	stats.Refused(500);
+	stats.Resumed(0, 510); // a shorter wait keeps the maximum
+	ASSERT_EQUALS(uint64_t{ 300 }, stats.busyMaximum);
+	ASSERT_EQUALS(uint64_t{ 100 }, stats.wakeMaximum);
+}
+
+TEST(UploadReadDiagnostics, SendStatsTakeResetsAndKeepsAnOngoingWait)
+{
+	SendStats stats;
+	stats.sentBytes = 7;
+	stats.lastSent = 90;
+	stats.Refused(100);
+	SendStats report = stats.Take(160);
+	ASSERT_EQUALS(uint64_t{ 7 }, report.sentBytes);
+	ASSERT_EQUALS(uint64_t{ 60 }, report.busyMaximum);
+	ASSERT_EQUALS(uint64_t{ 0 }, stats.sentBytes);
+	ASSERT_EQUALS(uint64_t{ 0 }, stats.refusedWrites);
+	ASSERT_EQUALS(uint64_t{ 90 }, stats.lastSent);
+	stats.Resumed(10, 200);
+	report = stats.Take(200);
+	ASSERT_EQUALS(uint64_t{ 100 }, report.busyMaximum);
+	ASSERT_EQUALS(uint64_t{ 10 }, report.wakeMaximum);
+	ASSERT_EQUALS(uint64_t{ 0 }, stats.busySince);
+}
+
 TEST(UploadReadDiagnostics, HistogramCoversEveryPowerOfTwoBoundary)
 {
 	for (unsigned bit = 0; bit < 30; ++bit) {

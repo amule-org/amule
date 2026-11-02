@@ -220,6 +220,8 @@ def run(binary, seconds, slots, rate, compress=False, pause_ms=0, check_display_
                 assert fileio or summaries == 0, 'FileIO output while disabled'
                 if fileio and seconds >= 65:
                     assert summaries > 0, 'FileIO interval summary missing'
+                    for line in ('Upload slot: id=', 'Main thread: core_ticks=', 'Upload throttler: allowed_bytes='):
+                        assert line in diagnostic_log, f'{line} missing'
                 return dict(seconds=elapsed, slots=slots, rate_kib=rate, compress=compress, pause_ms=pause_ms,
                             fileio=fileio, diagnostic_summaries=summaries,
                             compressed_packets=compressed_packets,

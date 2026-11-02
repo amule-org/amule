@@ -431,6 +431,12 @@ uint64 CEMSocket::QueuedUploadPayload() const
 	return m_uploadRefill.Queued();
 }
 
+UploadReadDiagnostics::SendStats CEMSocket::TakeUploadSendStats(uint64 now)
+{
+	std::lock_guard<std::mutex> lock(m_sendLocker);
+	return m_sendStats.Take(now);
+}
+
 void CEMSocket::SetUploadBufferTarget(uint32 payload)
 {
 	std::lock_guard<std::mutex> lock(m_sendLocker);
@@ -460,6 +466,7 @@ void CEMSocket::OnSend(int nErrorCode)
 
 	std::lock_guard<std::mutex> lock(m_sendLocker);
 	m_bBusy = false;
+	m_sendStats.Resumed(TakeSendWakeDelay(), ::GetTickCount64());
 
 	if (byConnected != ES_DISCONNECTED) {
 		byConnected = ES_CONNECTED;
@@ -665,6 +672,8 @@ SocketSentBytes CEMSocket::Send(
 					if (m_currentPacket_is_controlpacket == false) {
 						sentStandardPacketBytesThisCall += result;
 						m_sentFileBytesForDisplay += result;
+						m_sendStats.sentBytes += result;
+						m_sendStats.lastSent = lastSent;
 						if (m_currentPackageIsFromPartFile == true) {
 							m_numberOfSentBytesPartFile += result;
 						} else {
@@ -678,6 +687,7 @@ SocketSentBytes CEMSocket::Send(
 
 				if (BlocksWrite()) {
 					m_bBusy = true;
+					m_sendStats.Refused(lastSent);
 					SocketSentBytes returnVal = { true,
 						sentStandardPacketBytesThisCall,
 						sentControlPacketBytesThisCall };

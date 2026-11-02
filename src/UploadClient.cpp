@@ -374,7 +374,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 			CFormat("AddReqBlock: Requested block is in a corrupt part (%llu - %llu), ending the "
 				"upload session") %
 				reqblock->StartOffset % (reqblock->EndOffset - 1));
-		if (theApp->uploadqueue->RemoveFromUploadQueue(this)) {
+		if (theApp->uploadqueue->RemoveFromUploadQueue(this, "corrupt part")) {
 			EndUploadSessionWithStatus(srcfile);
 		}
 		return;
@@ -394,6 +394,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 		// Hold m_blockListLock for all reads and writes of the block queues. The disk I/O
 		// thread accesses m_DoneBlocks_list and m_BlockRequests_queue under this same lock.
 		wxMutexLocker lock(m_blockListLock);
+		m_lastBlockRequest = ::GetTickCount64();
 
 		{
 			std::list<Requested_Block_Struct *>::iterator it = m_DoneBlocks_list.begin();
@@ -489,7 +490,7 @@ uint32 CUpDownClient::SendBlockData()
 			theApp->CryptoAvailable());
 
 		if (theApp->uploadqueue->CheckForTimeOver(this)) {
-			theApp->uploadqueue->RemoveFromUploadQueue(this);
+			theApp->uploadqueue->RemoveFromUploadQueue(this, "rotated");
 			SendOutOfPartReqsAndAddToWaitingQueue();
 		}
 	}
