@@ -27,7 +27,7 @@ else()
 		message (FATAL_ERROR "ENABLE_IP2COUNTRY=YES but maxminddb.h was not found. "
 			"Install libmaxminddb headers (Debian/Ubuntu: libmaxminddb-dev, "
 			"Fedora: libmaxminddb-devel, macOS Homebrew: libmaxminddb, "
-			"MSYS2: mingw-w64-x86_64-libmaxminddb), or pass -DENABLE_IP2COUNTRY=NO "
+			"MSYS2: mingw-w64-clang-x86_64-libmaxminddb), or pass -DENABLE_IP2COUNTRY=NO "
 			"to disable the feature.")
 	else()
 		message (FATAL_ERROR "ENABLE_IP2COUNTRY=YES but the libmaxminddb shared "

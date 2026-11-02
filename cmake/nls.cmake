@@ -46,7 +46,7 @@ if (NOT YYENABLE_NLS)
 		message (FATAL_ERROR "ENABLE_NLS=YES but msgfmt and/or msgmerge were "
 			"not found. Install GNU gettext (Debian/Ubuntu: gettext, "
 			"Fedora: gettext, macOS Homebrew: gettext, "
-			"MSYS2: mingw-w64-x86_64-gettext), or pass -DENABLE_NLS=NO to "
+			"MSYS2: mingw-w64-clang-x86_64-gettext), or pass -DENABLE_NLS=NO to "
 			"build without translation support.")
 	endif()
 
@@ -83,7 +83,7 @@ if (ENABLE_NLS)
 		# musl) where the runtime hasn't been installed.
 		message (FATAL_ERROR "ENABLE_NLS=YES but the libintl headers/library "
 			"were not found. Install GNU gettext's runtime "
-			"(macOS Homebrew: gettext, MSYS2: mingw-w64-x86_64-gettext, "
+			"(macOS Homebrew: gettext, MSYS2: mingw-w64-clang-x86_64-gettext, "
 			"Alpine/musl: gettext-dev + musl-libintl, *BSD: gettext-runtime), "
 			"or pass -DENABLE_NLS=NO to build without translation support. "
 			"Linux glibc systems should not hit this branch — gettext is "

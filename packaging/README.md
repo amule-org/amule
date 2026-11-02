@@ -55,7 +55,7 @@ packaging/linux/build.sh static
 # macOS Universal2 .dmg (needs Homebrew with deps installed)
 packaging/macos/build.sh
 
-# Windows portable .zip (needs MSYS2 in CLANGARM64 or MINGW64 shell)
+# Windows portable .zip (needs MSYS2 in CLANG64 or CLANGARM64 shell)
 packaging/windows/build.sh
 ```
 
@@ -76,7 +76,7 @@ in parallel on its native runner — no QEMU emulation. Matrix:
 | Linux static x86_64 / aarch64 | `ubuntu-22.04` / `ubuntu-22.04-arm` | musl/Alpine Docker build; buildx gha layer cache |
 | macOS arm64 / x86_64      | both on `macos-15`                  | x86_64 builds via Rosetta-emulated Homebrew at `/usr/local`; the legacy `macos-13` Intel runner is being retired by GitHub |
 | macOS Universal2 .dmg     | `macos-15`                          | depends on the two macOS jobs; lipo-merges + ad-hoc-codesigns the result |
-| Windows x64 / arm64       | `windows-latest`                    | MSYS2 MINGW64 / CLANGARM64 |
+| Windows x64 / arm64       | `windows-2025` / `windows-11-arm`   | MSYS2 CLANG64 / CLANGARM64 |
 
 Triggers:
 

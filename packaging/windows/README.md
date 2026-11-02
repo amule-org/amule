@@ -13,8 +13,11 @@ who prefer that flow.
 
 Runs INSIDE MSYS2 on a Windows machine. Two environments:
 
-- **CLANGARM64** — Windows 11 ARM64 (default).
-- **CLANG64** — Windows 10/11 x86_64.
+- **CLANG64** - Windows 10/11 x86_64.
+- **CLANGARM64** - Windows 11 ARM64.
+
+MINGW64 is not supported: MSYS2 deprecated it and no longer packages
+wxWidgets for it.
 
 ```sh
 # from repo root, on Windows in the right MSYS2 shell
@@ -23,9 +26,9 @@ packaging/windows/build.sh
 # Result: ./dist/aMule-<version>-Windows-<arch>.zip
 ```
 
-`packaging/windows/build.sh` reads `packaging/windows/versions.env` for
-the target MSYSTEM and signing secrets, then drives cmake + ninja +
-zip. Each invocation is idempotent; reuses `build-windows-<arch>/` if
+`packaging/windows/build.sh` takes the target from the shell's `MSYSTEM`
+and reads `packaging/windows/versions.env` for the signing secrets, then
+drives cmake + make + zip. Each invocation is idempotent; reuses `build-windows-<arch>/` if
 present.
 
 ## Driving over SSH
@@ -42,16 +45,12 @@ packaging/windows/build.sh
 # the produced .zip lives at <repo>/dist/ on the host
 ```
 
-## Building for x86_64 instead of arm64
+## Overriding the target
 
-```sh
-# inside MSYS2 CLANG64 shell, OR with the override:
-WINDOWS_MSYSTEM=CLANG64 packaging/windows/build.sh
-```
-
-The script verifies that the shell's `MSYSTEM` matches `versions.env`
-to prevent accidentally building the wrong arch (the wrong toolchain
-in PATH would silently produce a working but mis-arch'd binary).
+The shell picks the arch, so `WINDOWS_MSYSTEM` is rarely needed. If you
+set it, `build.sh` checks that it matches the shell's `MSYSTEM` to prevent
+accidentally building the wrong arch (the wrong toolchain in PATH would
+silently produce a working but mis-arch'd binary).
 
 ## What the recipe does
 
@@ -193,7 +192,7 @@ the portable .zip and the installer .exe when both exist in `dist/`.
 ## Updating tool / dep pins
 
 `packaging/windows/versions.env` carries:
-- `WINDOWS_MSYSTEM` — default toolchain selection (CLANGARM64 or CLANG64)
+- `WINDOWS_MSYSTEM` - toolchain selection (CLANG64 or CLANGARM64), from the shell by default
 - Signing variable name documentation
 
 wxWidgets, cryptopp, libupnp etc. come from MSYS2's currently-installed

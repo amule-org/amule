@@ -68,7 +68,7 @@ if (NOT UPNP_CONFIG)
 		message (FATAL_ERROR "ENABLE_UPNP=YES but libupnp was not found. "
 			"Install libupnp headers + library (Debian/Ubuntu: libupnp-dev, "
 			"Fedora: libupnp-devel, macOS Homebrew: libupnp, "
-			"MSYS2: mingw-w64-x86_64-pupnp), or pass -DENABLE_UPNP=NO to "
+			"MSYS2: mingw-w64-clang-x86_64-pupnp), or pass -DENABLE_UPNP=NO to "
 			"disable the feature, or pass -DDOWNLOAD_AND_BUILD_DEPS=YES "
 			"to have CMake build libupnp from source.")
 	elseif (NOT LIBUPNP_FOUND AND DOWNLOAD_AND_BUILD_DEPS)

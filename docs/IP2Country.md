@@ -25,7 +25,7 @@ feature can opt out with `-DENABLE_IP2COUNTRY=NO`.
 | Arch Linux             | `pacman -S libmaxminddb`                                 |
 | macOS (Homebrew)       | `brew install libmaxminddb`                              |
 | MSYS2 (Windows clang)  | `pacman -S mingw-w64-clang-aarch64-libmaxminddb` (ARM64) |
-| MSYS2 (Windows MinGW)  | `pacman -S mingw-w64-x86_64-libmaxminddb` (x64)          |
+| MSYS2 (Windows clang)  | `pacman -S mingw-w64-clang-x86_64-libmaxminddb` (x64)    |
 
 This matches the pattern used by `ENABLE_NLS`, `ENABLE_BFD`, and
 `ENABLE_UPNP` — defaulted on, hard-fail on missing dep, explicit opt-out.
