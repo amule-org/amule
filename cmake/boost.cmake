@@ -52,7 +52,7 @@ if (NOT ASIO_SOCKETS)
 		"boost/asio.hpp failed to compile. Install full Boost "
 		"development headers (Debian/Ubuntu: libboost-dev, Fedora: "
 		"boost-devel, macOS Homebrew: boost, MSYS2: "
-		"mingw-w64-x86_64-boost) and re-configure. If the headers "
+		"mingw-w64-clang-x86_64-boost) and re-configure. If the headers "
 		"are clearly present, inspect build/CMakeFiles/CMakeError.log "
 		"to see why the compile probe failed (typically a missing "
 		"transitive dependency or a C++ standard mismatch).")

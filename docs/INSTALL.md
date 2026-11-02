@@ -89,10 +89,20 @@ is useful during development — no `sudo` required and easy to clean up:
 cmake --install build --prefix=$HOME/.local
 ```
 
-Platform-specific notes (Homebrew paths on macOS, MSYS2 shells on
+Platform-specific notes (Homebrew paths on macOS, MSYS2 packages on
 Windows, etc.) live in
 [`.github/workflows/ccpp.yml`](../.github/workflows/ccpp.yml), which is
 the authoritative reference used by CI.
+
+### Windows
+
+Build in an MSYS2 shell: **CLANG64** for x64 or **CLANGARM64** for ARM64.
+CI and the release packages use these two, with wxWidgets 3.3 for the
+system light and dark appearance. Their packages start with
+`mingw-w64-clang-x86_64-` and `mingw-w64-clang-aarch64-`.
+
+MINGW64 is not supported: MSYS2 deprecated it and no longer packages
+wxWidgets for it. CI does not test UCRT64.
 
 ## Uninstalling
 

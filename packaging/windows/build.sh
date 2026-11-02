@@ -1,7 +1,7 @@
 #!/bin/bash
 # Windows portable .zip recipe for aMule.
 #
-# Runs INSIDE MSYS2 on the Windows host (CLANGARM64, CLANG64 or MINGW64).
+# Runs INSIDE MSYS2 on the Windows host (CLANGARM64 or CLANG64).
 # Can also be driven remotely over SSH from another machine, e.g.:
 #   ssh <windows-host> 'cd <repo> && packaging/windows/build.sh'
 
@@ -45,8 +45,7 @@ set -a; source "${VERSIONS_ENV}"; set +a
 case "${WINDOWS_MSYSTEM}" in
     CLANGARM64) ARCH=arm64 ;;
     CLANG64)    ARCH=x64 ;;
-    MINGW64)    ARCH=x64 ;;
-    *) echo "fatal: unsupported WINDOWS_MSYSTEM=${WINDOWS_MSYSTEM}" >&2; exit 1 ;;
+    *) echo "fatal: unsupported WINDOWS_MSYSTEM=${WINDOWS_MSYSTEM}: use CLANG64 (x64) or CLANGARM64 (ARM64)" >&2; exit 1 ;;
 esac
 
 BUILD_DIR="${REPO_ROOT}/build-windows-${ARCH}"
@@ -125,19 +124,17 @@ collect_licenses() {
 }
 
 build() {
-    require_tool cmake "mingw-w64-${ARCH}-cmake"
-    require_tool mingw32-make "mingw-w64-${ARCH}-make"
-    require_tool zip   "zip"
-
-    # Verify we're in the right MSYS2 env. The MSYSTEM env var should
-    # match versions.env; if a user runs from CLANG64 with versions.env
-    # set to CLANGARM64 (or vice versa), the build will silently produce
-    # the wrong arch.
+    # An override that differs from the shell would silently produce the
+    # wrong arch.
     if [[ "${MSYSTEM:-}" != "${WINDOWS_MSYSTEM}" ]]; then
-        echo "fatal: shell MSYSTEM=${MSYSTEM:-unset} but versions.env wants ${WINDOWS_MSYSTEM}" >&2
-        echo "       launch the matching MSYS2 environment first, or override WINDOWS_MSYSTEM" >&2
+        echo "fatal: shell MSYSTEM=${MSYSTEM:-unset} but WINDOWS_MSYSTEM=${WINDOWS_MSYSTEM}" >&2
+        echo "       launch the matching MSYS2 environment first, or unset WINDOWS_MSYSTEM" >&2
         exit 1
     fi
+
+    require_tool cmake "${MINGW_PACKAGE_PREFIX}-cmake"
+    require_tool mingw32-make "${MINGW_PACKAGE_PREFIX}-make"
+    require_tool zip   "zip"
 
     local media_prefix="${BUILD_DIR}/media-prefix"
     "${REPO_ROOT}/packaging/media/build-static.sh" "${media_prefix}" "${BUILD_DIR}/media-sources" \

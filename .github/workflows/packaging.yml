@@ -1028,7 +1028,7 @@ jobs:
       matrix:
         include:
           - arch: x64
-            msystem: MINGW64
+            msystem: CLANG64
             runs-on: windows-2025
           - arch: arm64
             msystem: CLANGARM64
