@@ -314,7 +314,10 @@ void *UploadBandwidthThrottler::Entry()
 		// far above any real uplink.
 		const uint32 bytesToSpendRate =
 			(allowedDataRate == UNLIMITED_RATE) ? (1024u * 1024u * 1024u) : allowedDataRate;
-		bytesToSpend += (sint32)(bytesToSpendRate / 1000.0 * timeSinceLastLoop);
+		const auto earnedBytes = static_cast<sint32>(
+			bytesToSpendRate / 1000.0 * static_cast<double>(timeSinceLastLoop));
+		bytesToSpend += earnedBytes;
+		m_allowedBytes.fetch_add(earnedBytes, std::memory_order_relaxed);
 
 		if (bytesToSpend >= 1) {
 			sint32 spentBytes = 0;
@@ -428,6 +431,7 @@ void *UploadBandwidthThrottler::Entry()
 
 			// Do some limiting of what we keep for the next loop.
 			bytesToSpend -= spentBytes;
+			m_spentBytes.fetch_add(spentBytes, std::memory_order_relaxed);
 			sint32 minBytesToSpend = (slots + 1) * minFragSize;
 
 			if (bytesToSpend < -minBytesToSpend) {

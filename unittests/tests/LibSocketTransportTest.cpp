@@ -533,11 +533,15 @@ TEST(LibSocketTransport, RefusedAsyncWritesQueueOneRetryEvent)
 	peer.FinishSend(payload.size());
 	ASSERT_EQUALS(1, peer.socket.sendEvents);
 	ASSERT_FALSE(peer.socket.BlocksWrite());
+	std::this_thread::sleep_for(std::chrono::milliseconds(20));
+	ASSERT_TRUE(peer.socket.TakeSendWakeDelay() >= 10);
+	ASSERT_EQUALS(uint64{ 0 }, peer.socket.TakeSendWakeDelay());
 	// Consuming the refusal must not leak another event into the next completion.
 	peer.StartWorkers();
 	ASSERT_EQUALS(1u, peer.socket.Write(&retry, 1));
 	peer.FinishSend(1);
 	ASSERT_EQUALS(1, peer.socket.sendEvents);
+	ASSERT_EQUALS(uint64{ 0 }, peer.socket.TakeSendWakeDelay());
 }
 
 TEST(LibSocketTransport, ProxyNegotiationQueuesEverySendCompletion)

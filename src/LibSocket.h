@@ -119,6 +119,9 @@ public:
 	// Check if socket is currently blocking for read or write
 	bool BlocksRead() const;
 	bool BlocksWrite() const;
+	// Milliseconds since the send that refused a write finished, once; 0 if none did or for a
+	// transport.
+	uint64 TakeSendWakeDelay();
 
 	// Show we're ready for another event
 	void EventProcessed();

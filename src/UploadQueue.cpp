@@ -319,13 +319,13 @@ void CUploadQueue::Process()
 		// It seems chatting or friend slots can get stuck at times in upload.. This needs looked
 		// into..
 		if (!cur_client->GetSocket()) {
-			RemoveFromUploadQueue(cur_client);
+			RemoveFromUploadQueue(cur_client, "no socket");
 			if (cur_client->Disconnected(_T("CUploadQueue::Process"))) {
 				cur_client->Safe_Delete();
 			}
 		} else if (cur_client->m_bIOError) {
 			// Disk I/O thread signaled an error for this client
-			RemoveFromUploadQueue(cur_client);
+			RemoveFromUploadQueue(cur_client, "read error");
 		} else {
 			cur_client->SendBlockData();
 		}
@@ -633,7 +633,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 	}
 }
 
-bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client)
+bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, const wxString &reason)
 {
 	theApp->clientlist->AddTrackClient(client);
 
@@ -650,6 +650,11 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client)
 	}
 
 	if (found) {
+		AddDebugLogLineN(logFileIO,
+			CFormat("Upload slot ended: id=%u reason=\"%s\" seconds=%u session_bytes=%u "
+				"client=\"%s\"") %
+				client->ECID() % reason % (client->GetUpStartTimeDelay() / 1000) %
+				client->GetSessionUp() % client->GetClientVerString());
 		m_allUploadingKnownFile->RemoveUploadingClient(client);
 		theStats::RemoveUploadingClient();
 		if (client->GetTransferredUp()) {
@@ -668,7 +673,7 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client)
 
 void CUploadQueue::RequeueUnreachable(CUpDownClient *client)
 {
-	RemoveFromUploadQueue(client);
+	RemoveFromUploadQueue(client, "unreachable");
 	if (!IsOnUploadQueue(client)) {
 		m_waitinglist.emplace_back(client CLIENT_DEBUGSTRING("CUploadQueue::RequeueUnreachable"));
 		theStats::AddWaitingClient();
@@ -750,7 +755,7 @@ uint16 CUploadQueue::SuspendUpload(const CMD4Hash &filehash, bool terminate)
 		CUpDownClient *potential = it++->GetClient();
 		// check if the client is uploading the file we need to suspend
 		if (potential->GetUploadFileID() == filehash) {
-			RemoveFromUploadQueue(potential);
+			RemoveFromUploadQueue(potential, "suspended");
 			// if suspend isn't permanent add it to the waiting queue
 			if (terminate) {
 				potential->SetUploadState(US_NONE);

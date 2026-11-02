@@ -112,6 +112,25 @@ void CUploadDiskIOThread::EndThread()
 	}
 }
 
+void CUploadDiskIOThread::ObserveCoreTick(uint64 now)
+{
+	if (!theLogger.IsEnabled(logFileIO)) {
+		m_lastCoreTick = 0;
+		return;
+	}
+	if (m_lastCoreTick != 0) {
+		const uint64 gap = now - m_lastCoreTick;
+		m_coreTicks.fetch_add(1, std::memory_order_relaxed);
+		if (gap > m_coreTickGapMaximum.load(std::memory_order_relaxed)) {
+			m_coreTickGapMaximum.store(gap, std::memory_order_relaxed);
+		}
+		if (gap > 1000) {
+			m_coreTickGapsOverSecond.fetch_add(1, std::memory_order_relaxed);
+		}
+	}
+	m_lastCoreTick = now;
+}
+
 // Called by the main thread when new block requests are added for a client. Uses a sticky flag so
 // the signal is not lost when the thread is between iterations: wxCondition::Signal() is a pure
 // pulse and is dropped if no thread is waiting.
@@ -205,7 +224,13 @@ void CUploadDiskIOThread::DispatchReads()
 		m_volumes.clear();
 		m_waitingReads.clear();
 		m_slotSamples = {};
+		m_slotSamplesByClient.clear();
 		m_slotSamplePasses = 0;
+		// The first report covers its interval, not the time since start.
+		if (auto *throttler = theApp->uploadBandwidthThrottler) {
+			throttler->TakeAllowedBytes();
+			throttler->TakeSpentBytes();
+		}
 	}
 	DrainCompletions(true);
 	const uint64 now = GetTickCount64();
@@ -367,6 +392,7 @@ void CUploadDiskIOThread::ObserveDiagnostics(uint64 now)
 				queued != 0);
 			if (sample) {
 				++m_slotSamples[static_cast<unsigned>(state)];
+				++m_slotSamplesByClient[id][static_cast<unsigned>(state)];
 			}
 			if (state == UploadReadDiagnostics::SlotState::Storage) {
 				const auto *block = client->m_BlockRequests_queue.front();
@@ -445,8 +471,66 @@ void CUploadDiskIOThread::ReportDiagnostics(uint64 now)
 			wxString::Format("%.1f", percent(2)) % wxString::Format("%.1f", percent(1)) %
 			wxString::Format("%.1f", percent(0)) % wxString::Format("%.1f", percent(4)) %
 			wxString::Format("%.1f", percent(3)) % total);
+
+	// Built under the lists' locks, logged outside them.
+	std::vector<wxString> slots;
+	uint64 wakeMaximum = 0;
+	{
+		using UploadReadDiagnostics::SlotState;
+		const auto age = [now](uint64 since) {
+			return since != 0 ? wxString::Format(
+						    "%llu", static_cast<unsigned long long>(now - since))
+					  : wxString("none");
+		};
+		const auto count = [this](uint32 id, SlotState state) {
+			const auto samples = m_slotSamplesByClient.find(id);
+			return samples != m_slotSamplesByClient.end()
+				       ? samples->second[static_cast<unsigned>(state)]
+				       : uint64{ 0 };
+		};
+		wxMutexLocker uploadLock(theApp->uploadqueue->GetUploadingListLock());
+		for (const auto &ref : theApp->uploadqueue->GetUploadingList()) {
+			auto *client = ref.GetClient();
+			auto *socket = client->GetSocket();
+			if (!socket || !client->IsConnected() || client->m_bIOError) {
+				continue;
+			}
+			const uint32 id = client->ECID();
+			wxMutexLocker blocks(client->m_blockListLock);
+			const auto stats = socket->TakeUploadSendStats(now);
+			wakeMaximum = std::max<uint64>(wakeMaximum, stats.wakeMaximum);
+			slots.push_back(CFormat("Upload slot: id=%u transport=%s storage=%u reading=%u "
+						"receiver=%u sending=%u peer=%u rate_kib=%u sent_bytes=%u "
+						"queued_bytes=%u unread_requests=%u request_age_ms=%s "
+						"send_age_ms=%s refused_writes=%u busy_ms_max=%u "
+						"send_wake_ms_max=%u") %
+					id % (socket->HasTransport() ? "datagram" : "tcp") %
+					count(id, SlotState::Storage) % count(id, SlotState::Reading) %
+					count(id, SlotState::Receiver) % count(id, SlotState::Sending) %
+					count(id, SlotState::Peer) %
+					static_cast<uint64>(client->GetUploadDatarate() / 1024) %
+					stats.sentBytes % socket->QueuedUploadPayload() %
+					static_cast<uint64>(client->m_BlockRequests_queue.size()) %
+					age(client->m_lastBlockRequest) % age(stats.lastSent) %
+					stats.refusedWrites % stats.busyMaximum % stats.wakeMaximum);
+		}
+	}
+	for (const auto &line : slots) {
+		AddDebugLogLineN(logFileIO, line);
+	}
+	AddDebugLogLineN(logFileIO,
+		CFormat("Main thread: core_ticks=%u gap_ms_max=%u gaps_over_1s=%u send_wake_ms_max=%u") %
+			m_coreTicks.exchange(0, std::memory_order_relaxed) %
+			m_coreTickGapMaximum.exchange(0, std::memory_order_relaxed) %
+			m_coreTickGapsOverSecond.exchange(0, std::memory_order_relaxed) % wakeMaximum);
+	if (auto *throttler = theApp->uploadBandwidthThrottler) {
+		AddDebugLogLineN(logFileIO,
+			CFormat("Upload throttler: allowed_bytes=%u spent_bytes=%u") %
+				throttler->TakeAllowedBytes() % throttler->TakeSpentBytes());
+	}
 	m_volumes.clear();
 	m_slotSamples = {};
+	m_slotSamplesByClient.clear();
 	m_slotSamplePasses = 0;
 	m_reportStarted = now;
 }

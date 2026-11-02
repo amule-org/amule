@@ -469,7 +469,7 @@ void CKnownFile::EndCorruptUploadSessions()
 		}
 	}
 	for (CUpDownClient *client : affected) {
-		if (theApp->uploadqueue->RemoveFromUploadQueue(client)) {
+		if (theApp->uploadqueue->RemoveFromUploadQueue(client, "corrupt part")) {
 			client->EndUploadSessionWithStatus(this);
 		}
 	}

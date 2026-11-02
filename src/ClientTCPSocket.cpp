@@ -880,7 +880,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			logRemoteClient, "Remote Client: OP_CANCELTRANSFER from " + m_client->GetFullIP());
 
 		theStats::AddDownOverheadFileRequest(size);
-		theApp->uploadqueue->RemoveFromUploadQueue(m_client);
+		theApp->uploadqueue->RemoveFromUploadQueue(m_client, "peer canceled");
 		AddDebugLogLineN(
 			logClient, m_client->GetUserName() + ": Upload session ended due canceled transfer.");
 		break;
@@ -892,7 +892,7 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 
 		theStats::AddDownOverheadFileRequest(size);
 		if (size >= 16 && m_client->GetUploadFileID() == CMD4Hash(buffer)) {
-			theApp->uploadqueue->RemoveFromUploadQueue(m_client);
+			theApp->uploadqueue->RemoveFromUploadQueue(m_client, "peer finished");
 			AddDebugLogLineN(logClient,
 				m_client->GetUserName() + ": Upload session ended due ended transfer.");
 		}

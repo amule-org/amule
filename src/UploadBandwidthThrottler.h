@@ -60,6 +60,10 @@ public:
 	// UploadBandwidthThrottler.cpp:795
 	void NewUploadDataAvailable();
 
+	// Bytes the upload limit allowed and bytes sent, since the last call.
+	uint64 TakeAllowedBytes() { return m_allowedBytes.exchange(0, std::memory_order_relaxed); }
+	uint64 TakeSpentBytes() { return m_spentBytes.exchange(0, std::memory_order_relaxed); }
+
 private:
 	void DoRemoveFromAllQueues(ThrottledControlSocket *socket);
 	bool RemoveFromStandardListNoLock(ThrottledFileSocket *socket);
@@ -92,6 +96,8 @@ private:
 
 	uint64 m_SentBytesSinceLastCall;
 	uint64 m_SentBytesSinceLastCallOverhead;
+	std::atomic<uint64> m_allowedBytes{ 0 };
+	std::atomic<uint64> m_spentBytes{ 0 };
 };
 
 #endif

@@ -26,7 +26,7 @@ def run(binary):
         ec_port, peer_port = free_ports(2, peer_index=1)
         write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0, FilterLanIPs=0, MaxUpload=0,
                          Address='127.0.0.1', VerboseDebug=1, VerboseDebugLogfile=1,
-                         sections={'Debug': {'Cat_ED2k Client': 1}})
+                         sections={'Debug': {'Cat_ED2k Client': 1, 'Cat_FileIO': 1}})
         with running_daemon(binary, root, (ec_port, peer_port)) as (proc, ec):
             deadline = time.monotonic() + 30
             while 'shared.bin' not in (files := shared(ec)):
@@ -43,6 +43,9 @@ def run(binary):
                 assert time.monotonic() < deadline, 'the disconnect was not logged'
                 time.sleep(0.1)
             assert match[1] == '0', f'an active upload logged U:{match[1]}'
+            log = (root / 'logfile').read_text(errors='replace')
+            assert re.search(r'Upload slot ended: id=\d+ reason="Close" seconds=\d+ session_bytes=\d+', log), \
+                'the slot end was not logged'
     print('a client that closed in an upload slot logged U:0')
 
 

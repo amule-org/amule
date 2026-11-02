@@ -31,6 +31,7 @@
 
 #include "EncryptedStreamSocket.h" // Needed for CEncryptedStreamSocket
 
+#include "UploadReadDiagnostics.h"
 #include "UploadRefill.h"
 
 #include "ThrottledSocket.h" // Needed for ThrottledFileSocket
@@ -95,6 +96,7 @@ public:
 	uint64 GetSentFileBytesForDisplayAndReset();
 	void SetUploadBufferTarget(uint32 payload);
 	uint64 QueuedUploadPayload() const;
+	UploadReadDiagnostics::SendStats TakeUploadSendStats(uint64 now);
 	void TruncateQueues();
 
 	SocketSentBytes SendControlData(uint32 maxNumberOfBytesToSend, uint32 minFragSize) override
@@ -196,6 +198,7 @@ private:
 	uint64 m_numberOfSentBytesPartFile;
 	uint64 m_numberOfSentBytesControlPacket;
 	uint64 m_sentFileBytesForDisplay = 0;
+	UploadReadDiagnostics::SendStats m_sendStats;
 	bool m_currentPackageIsFromPartFile;
 
 	bool m_bAccelerateUpload;

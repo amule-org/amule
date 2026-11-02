@@ -111,7 +111,9 @@ public:
 	CUploadDiskIOThread();
 	~CUploadDiskIOThread();
 
-	void EndThread();                 // eMule ref: UploadDiskIOThread.cpp:77
+	void EndThread(); // eMule ref: UploadDiskIOThread.cpp:77
+	// Main thread. Measures how late the core timer runs, which any queued event also waits for.
+	void ObserveCoreTick(uint64 now);
 	void NewBlockRequestsAvailable(); // eMule ref: UploadDiskIOThread.h:55
 	void SocketNeedsMoreData();       // eMule ref: UploadDiskIOThread.h:56
 
@@ -135,7 +137,15 @@ private:
 	uint64 m_lastSample = 0;
 	std::map<std::string, UploadReadDiagnostics::Volume> m_volumes;
 	std::map<uint32, UploadReadDiagnostics::DispatchWait> m_waitingReads;
-	std::array<uint64, 5> m_slotSamples{};
+	using SlotSamples =
+		std::array<uint64, static_cast<unsigned>(UploadReadDiagnostics::SlotState::Count)>;
+	SlotSamples m_slotSamples{};
+	std::map<uint32, SlotSamples> m_slotSamplesByClient;
+	// Main thread writes, this thread takes.
+	std::atomic<uint64> m_coreTicks{ 0 };
+	std::atomic<uint64> m_coreTickGapMaximum{ 0 };
+	std::atomic<uint64> m_coreTickGapsOverSecond{ 0 };
+	uint64 m_lastCoreTick = 0; // main thread only
 	uint64 m_slotSamplePasses = 0;
 	bool m_started = false;
 	std::atomic<bool> m_bRun{ false }; // eMule ref: m_bRun (line 77)

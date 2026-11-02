@@ -51,7 +51,7 @@ public:
 	~CUploadQueue();
 	void Process();
 	void AddClientToQueue(CUpDownClient *client);
-	bool RemoveFromUploadQueue(CUpDownClient *client);
+	bool RemoveFromUploadQueue(CUpDownClient *client, const wxString &reason);
 	// A client whose callback dial failed goes back to the waiting list, keeping its waiting
 	// time, to get its slot through its own next connection like a LowID.
 	void RequeueUnreachable(CUpDownClient *client);
