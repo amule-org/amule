@@ -164,7 +164,8 @@ public:
 
 private:
 	void Go();
-	void ProcessResponse(uint32 fromIP, uint16 fromPort, ContactList *results);
+	void ProcessResponse(
+		uint32 fromIP, uint16 fromPort, const CKadUDPKey &senderKey, ContactList *results);
 	void ProcessResult(const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
 	void ProcessResultFile(const CUInt128 &answer, TagPtrList *info);
 	void ProcessResultKeyword(

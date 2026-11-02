@@ -25,6 +25,8 @@
 #ifndef KAD_PUBLISH_POLICY_H
 #define KAD_PUBLISH_POLICY_H
 
+#include <cstdint>
+
 //! How we publish ourselves as a Kad source, in order of preference.
 enum class EKadSourcePublish
 {
@@ -79,6 +81,20 @@ inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
 inline bool PublishesToKad(const SKadPublishFacts &facts)
 {
 	return DecideKadSourcePublish(facts) != EKadSourcePublish::None;
+}
+
+/**
+ * Whether a lookup answer's sender key is kept on the contact that answered, so that what we publish
+ * to it later proves we receive at our IP.
+ *
+ * Only for a contact the search owns. A routing table contact with a key refuses updates that lack
+ * it, so a spoofed answer must not be able to set one. Only a missing key: the first answer wins.
+ * A contact below Kad version 6 is sent no key at all.
+ */
+inline bool KeepsLookupResponderKey(
+	bool ownedBySearch, uint8_t contactVersion, uint32_t currentKey, uint32_t answerKey)
+{
+	return ownedBySearch && contactVersion >= 6 && currentKey == 0 && answerKey != 0;
 }
 
 #endif // KAD_PUBLISH_POLICY_H

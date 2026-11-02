@@ -227,7 +227,8 @@ private:
 		uint32_t lenPacket,
 		uint32_t ip,
 		uint16_t port,
-		const CKadUDPKey &senderKey);
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
 	void Process2PublishResponse(const uint8_t *packetData,
 		uint32_t lenPacket,
 		uint32_t ip,
