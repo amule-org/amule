@@ -306,14 +306,14 @@ bool CClientTCPSocket::TryUtpTcpFallback()
 		return false;
 	}
 	m_utpFallbackAttempted = true;
-	if (!GetTransport()->IsConnected()) {
+	uint32 utpIp = 0;
+	if (!m_utpStreamConnected && GetTransport()->GetPeerAddress().ToIPv4NetworkOrder(utpIp)) {
 		// The next contact with this endpoint goes straight to TCP.
-		const uint16 utpPort = m_client->GetUtpDialPort();
-		theApp->clientudp->UtpDialFailures().RecordFailure(
-			m_client->GetConnectIP(), utpPort, ::GetTickCount64());
+		const uint16 utpPort = GetTransport()->GetPeerPort();
+		theApp->clientudp->UtpDialFailures().RecordFailure(utpIp, utpPort, ::GetTickCount64());
 		AddDebugLogLineN(logClientUDP,
 			CFormat("uTP handshake with %s did not complete; TCP first for %u min") %
-				Uint32_16toStringIP_Port(m_client->GetConnectIP(), utpPort) %
+				Uint32_16toStringIP_Port(utpIp, utpPort) %
 				static_cast<unsigned>(UtpDialFailureMemory::CooldownMs / 60000));
 	}
 	// Before the transport goes: this waits out a send running on the throttler
@@ -2236,6 +2236,11 @@ bool CClientTCPSocket::ProcessED2Kv2Packet(const uint8_t *buffer, uint32 size, u
 
 void CClientTCPSocket::OnConnect(int nErrorCode)
 {
+#ifdef AMULE_UTP_TRANSPORT
+	if (nErrorCode == 0 && HasTransport()) {
+		m_utpStreamConnected = true;
+	}
+#endif
 	if (nErrorCode) {
 		OnError(nErrorCode);
 	} else if (!m_client) {
