@@ -108,4 +108,31 @@ TEST(KadPublishPolicy, AFirewalledNodeWithNoRouteBackPublishesNothing)
 	ASSERT_TRUE(DecideKadSourcePublish(facts) == EKadSourcePublish::None);
 }
 
+TEST(KadPublishPolicy, ALookupAnswerFillsTheMissingKeyOfAContactTheSearchOwns)
+{
+	ASSERT_TRUE(KeepsLookupResponderKey(true, 6, 0, 0x1234));
+}
+
+// A key on a routing table contact gates its updates, so a spoofed answer must not set one.
+TEST(KadPublishPolicy, ALookupAnswerNeverSetsTheKeyOfARoutingTableContact)
+{
+	ASSERT_FALSE(KeepsLookupResponderKey(false, 6, 0, 0x1234));
+}
+
+TEST(KadPublishPolicy, ALaterLookupAnswerDoesNotReplaceAKey)
+{
+	ASSERT_FALSE(KeepsLookupResponderKey(true, 6, 0x1111, 0x1234));
+}
+
+TEST(KadPublishPolicy, AnAnswerWithoutAKeyStoresNothing)
+{
+	ASSERT_FALSE(KeepsLookupResponderKey(true, 6, 0, 0));
+}
+
+// Packets to these contacts go out with no key, whatever the contact claims to have sent.
+TEST(KadPublishPolicy, AContactBelowKadVersionSixKeepsNoKey)
+{
+	ASSERT_FALSE(KeepsLookupResponderKey(true, 5, 0, 0x1234));
+}
+
 // File_checked_for_headers

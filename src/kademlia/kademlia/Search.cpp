@@ -41,6 +41,8 @@ there client on the eMule forum..
 #include "Search.h"
 #include "../../GetTickCount.h"
 
+#include <algorithm>
+
 #include <protocol/Protocols.h>
 #include <protocol/kad/Client2Client/UDP.h>
 #include <protocol/kad/Constants.h>
@@ -385,7 +387,8 @@ void CSearch::JumpStart()
 	}
 }
 
-void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *results)
+void CSearch::ProcessResponse(
+	uint32_t fromIP, uint16_t fromPort, const CKadUDPKey &senderKey, ContactList *results)
 {
 	AddDebugLogLineN(
 		logKadSearch, "Processing search response from " + KadIPPortToString(fromIP, fromPort));
@@ -467,6 +470,15 @@ void CSearch::ProcessResponse(uint32_t fromIP, uint16_t fromPort, ContactList *r
 			"Node " + KadIPToString(fromIP) +
 				" sent more contacts than requested on a routing query, ignoring response");
 		return;
+	}
+
+	if (fromContact != nullptr &&
+		KeepsLookupResponderKey(
+			std::find(m_delete.begin(), m_delete.end(), fromContact) != m_delete.end(),
+			fromContact->GetVersion(),
+			fromContact->GetUDPKey().GetKeyValue(theApp->GetPublicIP(false)),
+			senderKey.GetKeyValue(theApp->GetPublicIP(false)))) {
+		fromContact->SetUDPKey(senderKey);
 	}
 
 	m_lookupTrace.Reply({ fromIP, fromPort }, ::GetTickCount64());

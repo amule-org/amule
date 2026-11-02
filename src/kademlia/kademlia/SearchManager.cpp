@@ -540,8 +540,11 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &target, const uint8_t 
 	s->m_answers++;
 }
 
-void CSearchManager::ProcessResponse(
-	const CUInt128 &target, uint32_t fromIP, uint16_t fromPort, ContactList *results)
+void CSearchManager::ProcessResponse(const CUInt128 &target,
+	uint32_t fromIP,
+	uint16_t fromPort,
+	const CKadUDPKey &senderKey,
+	ContactList *results)
 {
 	// We got a response to a kad lookup.
 	CSearch *s = NULL;
@@ -557,7 +560,7 @@ void CSearchManager::ProcessResponse(
 			"(CSearchManager::ProcessResponse)");
 		DeleteContents(*results);
 	} else {
-		s->ProcessResponse(fromIP, fromPort, results);
+		s->ProcessResponse(fromIP, fromPort, senderKey, results);
 	}
 	delete results;
 }

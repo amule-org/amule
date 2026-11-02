@@ -365,7 +365,7 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 		break;
 	case KADEMLIA2_PUBLISH_SOURCE_REQ:
 		DebugRecv(Kad2PublishSourceReq, ip, port);
-		Process2PublishSourceRequest(packetData, lenPacket, ip, port, senderKey);
+		Process2PublishSourceRequest(packetData, lenPacket, ip, port, senderKey, validReceiverKey);
 		break;
 	case KADEMLIA_PUBLISH_RES:
 		DebugRecv(KadPublishRes, ip, port);
@@ -833,7 +833,7 @@ void CKademliaUDPListener::ProcessKademlia2Response(const uint8_t *packetData,
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &WXUNUSED(senderKey))
+	const CKadUDPKey &senderKey)
 {
 	CHECK_TRACKED_PACKET(KADEMLIA2_REQ);
 
@@ -943,7 +943,7 @@ void CKademliaUDPListener::ProcessKademlia2Response(const uint8_t *packetData,
 	}
 #endif
 
-	CSearchManager::ProcessResponse(target, ip, port, results.release());
+	CSearchManager::ProcessResponse(target, ip, port, senderKey, results.release());
 }
 
 // KADEMLIA2_SEARCH_KEY_REQ
@@ -1210,7 +1210,8 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &senderKey)
+	const CKadUDPKey &senderKey,
+	bool validReceiverKey)
 {
 	if (!CKademlia::GetIndexed()->IsReady()) {
 		return;
@@ -1232,6 +1233,11 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	if (distance.Get32BitChunk(0) > SEARCHTOLERANCE && !::IsLanIP(wxUINT32_SWAP_ALWAYS(ip))) {
 		return;
 	}
+
+	// A valid key proves the sender receives at this IP. Measured only: most publishers send none.
+	AddDebugLogLineN(logClientKadUDP,
+		"Kad2 source publish from " + KadIPPortToString(ip, port) + ": receiver key " +
+			(validReceiverKey ? "valid" : "not valid"));
 
 	DEBUG_ONLY(wxString strInfo;)
 	uint8_t load = 0;

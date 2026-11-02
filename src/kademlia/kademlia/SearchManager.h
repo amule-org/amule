@@ -40,6 +40,7 @@ there client on the eMule forum..
 #define SEARCHMANAGER_H
 
 #include "../utils/UInt128.h"
+#include "../utils/KadUDPKey.h"
 #include "../utils/LookupDiagnostics.h"
 #include "../routing/Maps.h"
 #include "../../Tag.h"
@@ -86,8 +87,11 @@ public:
 	// Takes ownership on success, rejection, and exception.
 	static bool StartSearch(CSearch *search);
 
-	static void ProcessResponse(
-		const CUInt128 &target, uint32_t fromIP, uint16_t fromPort, ContactList *results);
+	static void ProcessResponse(const CUInt128 &target,
+		uint32_t fromIP,
+		uint16_t fromPort,
+		const CKadUDPKey &senderKey,
+		ContactList *results);
 	static void ProcessResult(const CUInt128 &target,
 		const CUInt128 &answer,
 		TagPtrList *info,
