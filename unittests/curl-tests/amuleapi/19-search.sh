@@ -541,19 +541,13 @@ _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	"$API/search/results/baadbaadbaadbaadbaadbaadbaadbaad/download"
 _assert_status 400 "POST download (ecid wrong type) → 400"
 
-# Unknown hash that's well-formed (32 hex chars) → amuled rejection.
+# Unknown hash that's well-formed (32 hex chars) → amuled rejection. It used to
+# answer 202 and queue nothing.
 _curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{}' "$API/search/results/baadbaadbaadbaadbaadbaadbaadbaad/download"
-# amuled may either reject (400 amuled_rejected) or silently accept
-# the request and never instantiate the partfile — both wire shapes
-# have been observed; accept either.
-if [ "$CURL_STATUS" = "400" ] || [ "$CURL_STATUS" = "202" ]; then
-	_pass "POST download (well-formed unknown hash) → $CURL_STATUS"
-else
-	_fail "POST download unknown hash" \
-		"expected 400 or 202, got $CURL_STATUS"
-fi
+_assert_status 400 "POST download (well-formed unknown hash) → 400"
+_assert_json_eq '.error.code' amuled_rejected 'POST download unknown hash is amuled_rejected'
 
 # --- 8. Method gates. ---------------------------------------------
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" "$API/search"

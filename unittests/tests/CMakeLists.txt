@@ -3100,6 +3100,16 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/DownloadPathIndexIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (DownloadPathIndexIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME SearchResultDownloadIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/SearchResultDownloadIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (SearchResultDownloadIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME SymlinkShareRootIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/SymlinkShareRootIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (SymlinkShareRootIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME ShareExclusionLifecycleIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ShareExclusionLifecycleIntegrationTest.py $<TARGET_FILE:amuled>
@@ -3837,6 +3847,7 @@ foreach (ec_wire_test IN ITEMS
 	PacketReceiveIntegrationTest
 	PathDefaultsIntegrationTest
 	SearchParamsRestoreIntegrationTest
+	SearchResultDownloadIntegrationTest
 	ServerListFallbackApiIntegrationTest
 	ServerListFallbackIntegrationTest
 	ServerListGuiIntegrationTest
@@ -3848,6 +3859,7 @@ foreach (ec_wire_test IN ITEMS
 	SharedFileReverifyIntegrationTest
 	SharedMembershipIntegrationTest
 	ShortBlockPacketIntegrationTest
+	SymlinkShareRootIntegrationTest
 	TinyBlockPacketIntegrationTest
 	UnwritableTagIntegrationTest
 	UpdateUrlPrivacyTest
