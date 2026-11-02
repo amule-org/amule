@@ -1506,6 +1506,9 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	// If this is a KAD client object, just delete it!
 	SetKadState(KS_NONE);
 
+	// Logged below: the cleanup that follows changes it, and an active upload would read as US_NONE.
+	const uint8 uploadStateOnEntry = m_nUploadState;
+
 	if (GetUploadState() == US_UPLOADING) {
 		// sets US_NONE
 		theApp->uploadqueue->RemoveFromUploadQueue(this);
@@ -1642,7 +1645,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	}
 	AddDebugLogLineN(logClient,
 		CFormat("--- %s client D:%d U:%d \"%s\"; Reason was %s") %
-			(bDelete ? "Deleted" : "Disconnected") % m_nDownloadState % m_nUploadState %
+			(bDelete ? "Deleted" : "Disconnected") % m_nDownloadState % uploadStateOnEntry %
 			GetClientFullInfo() % strReason);
 
 	return bDelete;
