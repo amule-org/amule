@@ -26,6 +26,9 @@
 #                                                                # the canonical order
 #   ./run-all.sh 12-downloads-add-patch.sh 13-downloads-delete-clear.sh  # run a subset
 #   AMULEAPI_SMOKE_OFFLINE=1 ./run-all.sh 26-rfc-followup-endpoints.sh  # isolated endpoint fixture
+#
+# For a full run against a connected daemon, use run-live.sh: it checks the
+# fixtures the network-dependent phases need before it starts.
 
 set -u
 
