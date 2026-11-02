@@ -11,9 +11,9 @@
 #                     downloads, and 00-peer-fixture downloads a large file.
 #   AMULE_SHARED_DIR  a writable directory that amuled shares (its Incoming)
 #
-# The daemon must be connected to ed2k with a HighID and to Kad, list at
-# least one server, and its allowed-remote-dirs.dat must cover /tmp,
-# ${TMPDIR:-/tmp} and AMULE_SHARED_DIR without being "/".
+# The daemon must be connected to ed2k and Kad and list at least one server.
+# A LowID is reported, not refused. Its allowed-remote-dirs.dat must cover
+# /tmp, ${TMPDIR:-/tmp} and AMULE_SHARED_DIR without being "/".
 #
 # Usage:
 #   AMULE_CONFIG_DIR=... AMULE_SHARED_DIR=... ./run-live.sh [phase...]

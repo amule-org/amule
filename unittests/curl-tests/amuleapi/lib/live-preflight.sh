@@ -21,7 +21,8 @@ _canon() { (cd "$1" 2>/dev/null && pwd -P); }
 # --- Networks. 19 searches both; 00 needs sources for 04, 33 and 43. ---
 _curl "$API/status"
 _assert_json_eq '.ed2k.state' connected 'ed2k is connected'
-_assert_json_eq '.ed2k.high_id' true 'ed2k has a HighID'
+[ "$(_jq '.ed2k.high_id')" = "true" ] ||
+	echo "  note  ed2k has a LowID; LowID peers cannot reach this node"
 _assert_json_eq '.kad.state' connected 'Kad is connected'
 [ "$(_jq '.kad.firewalled_tcp')" = "true" ] &&
 	echo "  note  Kad is firewalled; searches still work, inbound Kad contacts do not"
