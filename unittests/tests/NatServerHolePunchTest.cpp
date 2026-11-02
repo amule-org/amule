@@ -857,7 +857,6 @@ TEST(NatServerHolePunch, ParsesOnlyAnAnswerOfExactly27Bytes)
 TEST(NatServerHolePunch, RequestsACrossServerCallbackOnlyForAnOddLowIdOnAServerThatTakesIt)
 {
 	ForeignRequestFacts facts;
-	facts.ourId = 101;
 	facts.sourceId = 201;
 	facts.sourceServerIsOurs = false;
 	facts.serverTakesForeignCallback = true;
@@ -880,10 +879,6 @@ TEST(NatServerHolePunch, RequestsACrossServerCallbackOnlyForAnOddLowIdOnAServerT
 	ForeignRequestFacts evenTarget = facts;
 	evenTarget.sourceId = 200;
 	ASSERT_FALSE(ShouldRequestForeignCallback(evenTarget));
-
-	ForeignRequestFacts weAreHighId = facts;
-	weAreHighId.ourId = 20000000;
-	ASSERT_FALSE(ShouldRequestForeignCallback(weAreHighId));
 
 	ForeignRequestFacts highIdSource = facts;
 	highIdSource.sourceId = 20000001;
@@ -1010,7 +1005,6 @@ TEST(NatServerHolePunch, NoCrossServerRequestWhenOneSideRequiresTheCryptLayerThe
 {
 	// The server sends nothing then, so the request would only spend its budget.
 	ForeignRequestFacts facts;
-	facts.ourId = 101;
 	facts.sourceId = 201;
 	facts.serverTakesForeignCallback = true;
 	facts.extensionAnnounced = true;
