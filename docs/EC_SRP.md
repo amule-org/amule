@@ -86,7 +86,7 @@ it as a reference peer.
 
 ## Refusals
 
-Every `EC_OP_AUTH_FAIL` from the core carries `EC_TAG_STRING`, then
+Every `EC_OP_AUTH_FAIL` from the core carries `EC_TAG_STRING` and
 `EC_TAG_AUTH_FAIL_REASON` (uint8):
 
 | Reason | Value | Meaning | Client action |
@@ -94,17 +94,21 @@ Every `EC_OP_AUTH_FAIL` from the core carries `EC_TAG_STRING`, then
 | `EC_AUTH_FAIL_CLIENT_TOO_OLD` | 1 | The request has no `EC_TAG_SRP_A` | Upgrade |
 | `EC_AUTH_FAIL_NO_PASSWORD` | 2 | The core has no EC password | Set one on the core |
 | `EC_AUTH_FAIL_RATE_LIMITED` | 3 | Too many attempts from this address | Wait |
-| `EC_AUTH_FAIL_INCOMPATIBLE` | 4 | Bad version, malformed fields or a request out of order | Upgrade or report |
+| `EC_AUTH_FAIL_INCOMPATIBLE` | 4 | Bad version, malformed fields or proof, or a request out of order | Upgrade or report |
 | `EC_AUTH_FAIL_REJECTED` | 5 | Wrong or missing proof | Ask for the password again |
 
-`EC_AUTH_FAIL_RATE_LIMITED` also carries `EC_TAG_AUTH_RETRY_AFTER` (uint32, seconds).
+`EC_AUTH_FAIL_RATE_LIMITED` also carries `EC_TAG_AUTH_RETRY_AFTER`: seconds, as an unsigned
+integer of variable width. The core sends the smallest width that fits, so read the tag's type.
 Every credential failure uses one code, so an unknown token looks like a wrong password.
 
 Read the reason, not the string: the string can change and a lockout message is in
 the core's language. Older cores send no reason, so treat a missing tag as unknown.
-Refusals before the salt are plaintext and anyone on the path can forge them, so limit
-how long a client waits for `EC_TAG_AUTH_RETRY_AFTER`, and act on
-`EC_AUTH_FAIL_REJECTED` only when it is sealed.
+
+A refusal does not prove that it came from the core. Refusals before the salt are
+plaintext. Sealing after the salt only stops blind injection: SRP does not contribute to
+the transport keys, so an active on-path attacker can seal a forged refusal. Only
+`EC_TAG_SRP_M2` proves the core. Limit how long a client waits for
+`EC_TAG_AUTH_RETRY_AFTER`, and never change stored credentials because of a refusal.
 
 ## Migration and credential changes
 

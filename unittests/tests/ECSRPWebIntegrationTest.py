@@ -85,8 +85,8 @@ def run(daemon_binary, web_binary, api_binary=None):
                     assert not (root / 'amuleweb-ec-token').exists(), 'early exit left unread token'
                     token = bytes.fromhex((root / 'captured-token').read_text().strip())
                     with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
-                        _, op, _ = W.authenticate(sock, token, credential=2)
-                        assert op == W.C['EC_OP_AUTH_FAIL'], 'early helper exit did not revoke token'
+                        _, op, tags = W.authenticate(sock, token, credential=2)
+                        W.assert_refused(op, tags, 'EC_AUTH_FAIL_REJECTED', label='early helper exit did not revoke token')
                     print('PASS: helper exit before consuming its token removes and revokes it')
                     continue
                 wait_for(lambda: http_ready(web_port), lambda: diagnostics('spawned amuleweb did not serve HTTP'))
@@ -102,8 +102,10 @@ def run(daemon_binary, web_binary, api_binary=None):
                 # remains usable after the API's unrelated token is issued.
                 for credential, expected in ((2, 'EC_OP_AUTH_OK'), (1, 'EC_OP_AUTH_FAIL')):
                     with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
-                        _, op, _ = W.authenticate(sock, token, credential=credential)
+                        _, op, tags = W.authenticate(sock, token, credential=credential)
                         assert op == W.C[expected], 'child credential selectors were mixed'
+                        if expected == 'EC_OP_AUTH_FAIL':
+                            W.assert_refused(op, tags, 'EC_AUTH_FAIL_REJECTED', label='token under the wrong selector')
                 with socket.create_connection(('127.0.0.1',ec_port),timeout=10) as sock:
                     encrypted,op,_=W.authenticate(sock,token,credential=2)
                     assert op==W.C['EC_OP_AUTH_OK']
@@ -137,12 +139,12 @@ def run(daemon_binary, web_binary, api_binary=None):
                     wait_for(lambda: f"with pid '{child_pid}' has finished" in (root / 'logfile').read_text(),
                              'core did not observe amuleweb exit')
                 with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
-                    _, op, _ = W.authenticate(sock, token, credential=2,
-                                             before_proof=terminate_child)
-                    assert op == W.C['EC_OP_AUTH_FAIL'], 'revoked in-flight web token accepted'
+                    _, op, tags = W.authenticate(sock, token, credential=2,
+                                                before_proof=terminate_child)
+                    W.assert_refused(op, tags, 'EC_AUTH_FAIL_REJECTED', label='revoked in-flight web token accepted')
                 with socket.create_connection(('127.0.0.1', ec_port), timeout=10) as sock:
-                    _, op, _ = W.authenticate(sock, token, credential=2)
-                    assert op == W.C['EC_OP_AUTH_FAIL'], 'exited child retained its credential'
+                    _, op, tags = W.authenticate(sock, token, credential=2)
+                    W.assert_refused(op, tags, 'EC_AUTH_FAIL_REJECTED', label='exited child retained its credential')
                 if api_binary:
                     assert http_ready(api_port, '/api/v1/health'), 'web revocation disrupted API'
             assert not (root / 'amuleweb-ec-token').exists(), 'shutdown retained web token'

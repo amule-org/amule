@@ -295,9 +295,9 @@ EC_TAG_SRP_SALT                           0x0030
 EC_TAG_SRP_CREDENTIAL                     0x0031
 EC_TAG_SRP_M1                             0x0032
 EC_TAG_SRP_M2                             0x0033
-## Children of EC_OP_AUTH_FAIL, after EC_TAG_STRING. The reason is an EC_AUTH_FAIL_REASON.
+## Child of EC_OP_AUTH_FAIL: an EC_AUTH_FAIL_REASON.
 EC_TAG_AUTH_FAIL_REASON                   0x0034
-## Seconds, only with EC_AUTH_FAIL_RATE_LIMITED.
+## Seconds, only with EC_AUTH_FAIL_RATE_LIMITED. An unsigned integer of variable width.
 EC_TAG_AUTH_RETRY_AFTER                   0x0036
 
 

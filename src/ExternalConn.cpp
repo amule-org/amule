@@ -1023,7 +1023,6 @@ void CExternalConnListener::OnAccept()
 	}
 }
 
-// Keep EC_TAG_STRING first: the refusal log reads the first tag. Clients look tags up by name.
 static CECPacket *AuthFailure(EC_AUTH_FAIL_REASON reason, const wxString &message)
 {
 	auto *failure = new CECPacket(EC_OP_AUTH_FAIL);
@@ -1032,15 +1031,20 @@ static CECPacket *AuthFailure(EC_AUTH_FAIL_REASON reason, const wxString &messag
 	return failure;
 }
 
+static bool IsProofWellFormed(const CECPacket &request)
+{
+	try {
+		ECSRP::Field(request, EC_TAG_SRP_M1, 32);
+		return true;
+	} catch (const std::exception &) {
+		return false;
+	}
+}
+
 // Authentication
 const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 {
 	CECPacket *response;
-
-	if (request == NULL) {
-		return AuthFailure(EC_AUTH_FAIL_INCOMPATIBLE,
-			wxTRANSLATE("Invalid request, please authenticate first."));
-	}
 
 	// Password must be specified if we are to allow remote connections
 	if (thePrefs::ECPasswordVerifier().IsEmpty()) {
@@ -1345,6 +1349,10 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 			response->AddTag(CECEmptyTag(EC_TAG_CAN_KAD_LOOKUPS));
 			response->AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_ALL));
 			response->AddTag(CECEmptyTag(EC_TAG_CAN_SEARCH_METADATA));
+		} else if (passwd && !IsProofWellFormed(*request)) {
+			// A client bug: asking for the password again would not help.
+			response = AuthFailure(EC_AUTH_FAIL_INCOMPATIBLE,
+				wxTRANSLATE("Invalid SRP handshake or EC verifier."));
 		} else {
 			wxString err;
 			if (passwd) {
@@ -1370,9 +1378,10 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 		}
 	} else if (response->GetOpCode() == EC_OP_AUTH_FAIL) {
 		// Log message sent to client
-		if (response->GetFirstTagSafe()->IsString()) {
+		const CECTag *message = response->GetTagByName(EC_TAG_STRING);
+		if (message && message->IsString()) {
 			AddLogLineN(CFormat(_("Sent error message \"%s\" to client.")) %
-				    wxGetTranslation(response->GetFirstTagSafe()->GetStringData()));
+				    wxGetTranslation(message->GetStringData()));
 		}
 		// Access denied!
 		AddLogLineN(

@@ -324,6 +324,12 @@ def main(daemon,cmd,async_probe):
                 with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
                     sock.sendall(W.packet('EC_OP_AUTH_REQ',[W.tag('EC_TAG_PROTOCOL_VERSION',struct.pack('!H',C['EC_CURRENT_PROTOCOL_VERSION']),3)]))
                     W.assert_refused(*W.read(sock),'EC_AUTH_FAIL_CLIENT_TOO_OLD',b'3.3.0')
+                srp_a=W.tag('EC_TAG_SRP_A',W.pad(5))
+                for fields,text in (([srp_a],b'Missing protocol version'),
+                                    ([srp_a,W.tag('EC_TAG_VERSION_ID',bytes(16),9)],b'release version')):
+                    with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
+                        sock.sendall(W.packet('EC_OP_AUTH_REQ',fields))
+                        W.assert_refused(*W.read(sock),'EC_AUTH_FAIL_INCOMPATIBLE',text,label=text)
                 # Importing daemon settings must preserve a remembered client credential.
                 client_config=root/'config'/'remote.conf'
                 client_config.parent.mkdir(exist_ok=True)
@@ -381,6 +387,11 @@ def main(daemon,cmd,async_probe):
                 # A proof with no M1 tag is a credential failure, like a wrong one.
                 with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
                     W.assert_refused(*W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=lambda m: W.packet('EC_OP_AUTH_PASSWD',[]))[1:],'EC_AUTH_FAIL_REJECTED',b'missing password')
+                # A malformed proof is a client bug, even with the right password.
+                for label,proof in (('short',lambda m:[W.tag('EC_TAG_SRP_M1',m[:31])]),
+                                    ('duplicate',lambda m:[W.tag('EC_TAG_SRP_M1',m)]*2)):
+                    with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
+                        W.assert_refused(*W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=lambda m: W.packet('EC_OP_AUTH_PASSWD',proof(m)))[1:],'EC_AUTH_FAIL_INCOMPATIBLE',b'Invalid SRP handshake',label=label)
                 # Reject the whole buffered batch: a valid M1 behind a dropped
                 # clear/invalid-flags packet must not register a dying notifier.
                 clear = W.packet('EC_OP_STAT_REQ', [])
@@ -411,6 +422,7 @@ def main(daemon,cmd,async_probe):
                 out=subprocess.run([cmd,'-h','127.0.0.1','-p',str(port),'-P','wrong','-c','status'],env=env,capture_output=True,text=True,timeout=20)
                 assert 'Access denied because: Authentication failed: wrong password.' in out.stdout+out.stderr,out
                 EC(port).sock.close()
+                assert 'Sent error message "Invalid request, please authenticate first."' in (root/'logfile').read_text(), 'refusal not logged'
                 print('PASS: out-of-order, repeated AUTH_REQ, invalid A, and M1 replay rejected')
 
                 password_edit_regressions(port, root, peer)

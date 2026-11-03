@@ -50,7 +50,7 @@ def run(binary):
                 for name, field_name, field_type in cases:
                     op, reply = login(ec_port, field_name, field_type)
                     assert proc.poll() is None, f'{name}: daemon exited with {proc.returncode}'
-                    assert_refused(op, reply, 'EC_AUTH_FAIL_INCOMPATIBLE', b'Invalid SRP handshake')
+                    assert_refused(op, reply, 'EC_AUTH_FAIL_INCOMPATIBLE', b'Invalid SRP handshake', label=name)
                     print(f'PASS: {name} is refused and amuled keeps running')
 
                 EC(ec_port, password=EC_PASSWORD).sock.close()

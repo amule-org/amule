@@ -2399,10 +2399,6 @@ msgid "ERROR: couldn't accept a new external connection"
 msgstr ""
 
 #: src/ExternalConn.cpp
-msgid "Invalid request, please authenticate first."
-msgstr ""
-
-#: src/ExternalConn.cpp
 msgid "External connection refused due to empty password in preferences!"
 msgstr ""
 
@@ -2450,6 +2446,10 @@ msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "Authentication failed: missing password."
+msgstr ""
+
+#: src/ExternalConn.cpp
+msgid "Invalid request, please authenticate first."
 msgstr ""
 
 #: src/ExternalConn.cpp
