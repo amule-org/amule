@@ -13,10 +13,9 @@
 
 The metainfo template (org.amule.aMule.metainfo.xml.in) carries a single
 `@RELEASES@` marker; this script replaces it with one <release> entry per
-CHANGELOG version that has a prose summary paragraph (the 3.0.0+ format).
-Older contributor-list entries (2.3.3 and earlier) have no summary and are
-skipped. Keeping the changelog as the single source of truth stops the
-store-visible version from drifting from the shipped one.
+CHANGELOG version that has a prose summary paragraph. Entries with no prose
+summary are skipped. Keeping the changelog as the single source of truth
+stops the store-visible version from drifting from the shipped one.
 
 No third-party dependencies -- runs anywhere python3 is available: dev
 machines, CI, the GNOME SDK build sandbox, and Flathub-at-tag builds.
@@ -72,8 +71,8 @@ def parse_changelog(path):
         if not para:
             continue
 
-        # Old-format entries open with a tabbed contributor name
-        # ("\talesnav:") or a list/heading -- no prose summary. Skip them.
+        # Entries opening with a tabbed contributor name ("\talesnav:") or a
+        # list/heading have no prose summary. Skip them.
         first = para[0]
         if first.startswith("\t") or first.lstrip()[:1] in ("-", "*", "#"):
             continue

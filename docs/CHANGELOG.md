@@ -1,6 +1,6 @@
 # aMule Changelog
 
-The history of every aMule release. Versions are listed newest first.
+The history of aMule 3.x releases. Versions are listed newest first.
 
 Older releases are in [CHANGELOG-2.x.md](CHANGELOG-2.x.md) (2.x) and [CHANGELOG-1.x.md](CHANGELOG-1.x.md) (1.x).
 
