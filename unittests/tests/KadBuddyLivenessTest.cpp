@@ -30,13 +30,26 @@ using Kademlia::CBuddyLiveness;
 
 DECLARE_SIMPLE(KadBuddyLiveness)
 
-TEST(KadBuddyLiveness, LegacyPeerWithoutPingsMayRemainIdle)
+TEST(KadBuddyLiveness, SilentBuddyExpiresAtTheReceiveTimeout)
 {
 	CBuddyLiveness buddy;
 	buddy.Reset(0);
-	ASSERT_FALSE(buddy.Expired(CBuddyLiveness::ReceiveTimeout, false));
-	ASSERT_FALSE(buddy.Expired(24 * 60 * 60 * uint64_t(1000), false));
-	ASSERT_TRUE(buddy.Expired(CBuddyLiveness::ReceiveTimeout, true));
+	ASSERT_FALSE(buddy.Expired(CBuddyLiveness::ReceiveTimeout - 1));
+	ASSERT_TRUE(buddy.Expired(CBuddyLiveness::ReceiveTimeout));
+}
+
+TEST(KadBuddyLiveness, RequestExpiresAndConnectingGivesTheFullReceiveTimeout)
+{
+	CBuddyLiveness buddy;
+	const uint64_t start = 1000;
+	buddy.Reset(start);
+	ASSERT_FALSE(buddy.RequestExpired(start + CBuddyLiveness::RequestTimeout - 1));
+	ASSERT_TRUE(buddy.RequestExpired(start + CBuddyLiveness::RequestTimeout));
+
+	const uint64_t connected = start + CBuddyLiveness::RequestTimeout - 1;
+	buddy.Reset(connected);
+	ASSERT_FALSE(buddy.Expired(connected + CBuddyLiveness::ReceiveTimeout - 1));
+	ASSERT_TRUE(buddy.Expired(connected + CBuddyLiveness::ReceiveTimeout));
 }
 
 TEST(KadBuddyLiveness, OutgoingPingsCannotKeepASilentBuddyAlive)

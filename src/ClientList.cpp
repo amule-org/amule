@@ -720,10 +720,10 @@ void CClientList::Process()
 			break;
 
 		case KS_INCOMING_BUDDY:
-			// A firewalled client wants us to be his buddy. If we already have a buddy,
-			// set Kad state to KS_NONE and it is removed next cycle; if not, this
-			// client changes to KS_CONNECTED_BUDDY when it connects.
-			if (m_nBuddyStatus == Connected) {
+			// A firewalled client wants us to be his buddy. If we already have a buddy
+			// or it took too long to connect, set Kad state to KS_NONE and it is removed
+			// next cycle; if not, this client changes to KS_CONNECTED_BUDDY when it connects.
+			if (m_nBuddyStatus == Connected || cur_client->HasBuddyRequestExpired()) {
 				cur_client->SetKadState(KS_NONE);
 			}
 			break;
@@ -759,6 +759,13 @@ void CClientList::Process()
 			break;
 
 		case KS_CONNECTED_BUDDY:
+			// Connected in the same cycle as our buddy. Without buddy state, an idle socket
+			// closes on the ordinary timeout and a transfer on it carries on.
+			if (m_nBuddyStatus == Connected && m_pBuddy.GetClient() != cur_client) {
+				cur_client->SetKadState(KS_NONE);
+				break;
+			}
+
 			// A potential connected buddy client wanting to me in the Kad network
 			// We set our flag to connected to make sure things are still working correctly.
 			buddy = Connected;
