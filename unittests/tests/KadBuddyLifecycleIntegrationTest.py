@@ -14,13 +14,12 @@ from pathlib import Path
 from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
 from DownloadDisplayRatesIntegrationTest import hello
-from KadLanModeIntegrationTest import LAN_MODE_TIMEOUT, write_private_contacts
+from KadLanModeIntegrationTest import KADEMLIA2_HELLO_REQ, LAN_MODE_TIMEOUT, kad_stats, write_private_contacts
 from KadReceiverKeyLogIntegrationTest import KADEMLIA_FINDBUDDY_REQ, KADEMLIA_FIREWALLED2_REQ
 from KadSourceTagsECTest import wait_ready
 from UploadRefillIntegrationTest import packet, send
 from UploadSlotScopeIntegrationTest import OP_HELLOANSWER
 
-KADEMLIA2_HELLO_REQ = 0x11
 KADEMLIA_FIREWALLED_ACK_RES = 0x59
 KADEMLIA_FINDBUDDY_RES = 0x5A
 OP_HELLO = 0x01
@@ -61,7 +60,7 @@ def pass_firewall_check(udp_port):
 
 
 def stat(ec, name):
-    return ec.call(C['EC_OP_STAT_REQ'])[1][C[name]][0]
+    return kad_stats(ec)[C[name]][0]
 
 
 def wait_stat(ec, name, expected, timeout):
