@@ -15,12 +15,11 @@ import struct
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import (C, exact, free_ports, retry_port_collisions,
+from AllSearchIntegrationTest import (C, free_ports, retry_port_collisions,
                                       stored_int_tag, stored_param_tags, stored_search,
                                       stored_string_tag, stop_daemon, string, tag)
 from DaemonConfig import write_amule_conf
 from KnownHistoryIntegrationTest import start
-from ShareWatcherMoveIntegrationTest import tag_list
 
 FULL = {'query': 'comprehensive filters alpha', 'file_type': 'Audio', 'extension': '.mp3',
         'avail': 7, 'min_size': 1 << 20, 'max_size': (1 << 33) + 5,
@@ -138,12 +137,8 @@ def read_param_tags(data, offset, params):
 
 def search_list(ec):
     """Every EC_OP_SEARCH_LIST entry as {search id: {tag name: raw value}}."""
-    payload = bytes([C['EC_OP_SEARCH_LIST']]) + struct.pack('!H', 0)
-    ec.sock.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
-    _, length = struct.unpack('!II', exact(ec.sock, 8))
-    reply = exact(ec.sock, length)
     entries = {}
-    for name, value, children in tag_list(reply, 3, struct.unpack_from('!H', reply, 1)[0])[0]:
+    for name, value, children in ec.call_list(C['EC_OP_SEARCH_LIST'])[1]:
         if name == C['EC_TAG_SEARCH_ID']:
             entries[int.from_bytes(value, 'big')] = {child: raw for child, raw, _ in children}
     return entries

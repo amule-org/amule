@@ -18,7 +18,6 @@ import time
 from AllSearchIntegrationTest import (C, exact, free_ports, integer, retry_port_collisions,
                                       running_daemon, start_daemon, string)
 from DaemonConfig import write_amule_conf
-from ShareWatcherMoveIntegrationTest import tag_list
 
 FORGOTTEN = bytes(range(16))
 UNKNOWN = bytes(range(16, 32))
@@ -83,12 +82,9 @@ def wait_for(proc, what, check):
 
 
 def search_statuses(ec, sid):
-    payload = bytes([C['EC_OP_SEARCH_RESULTS']]) + struct.pack('!H', 1) + integer(C['EC_TAG_SEARCH_ID'], sid)
-    ec.sock.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
-    _, length = struct.unpack('!II', exact(ec.sock, 8))
-    reply = exact(ec.sock, length)
     statuses = {}
-    for name, _, children in tag_list(reply, 3, struct.unpack_from('!H', reply, 1)[0])[0]:
+    for name, _, children in ec.call_list(C['EC_OP_SEARCH_RESULTS'],
+                                          [integer(C['EC_TAG_SEARCH_ID'], sid)])[1]:
         if name == C['EC_TAG_SEARCHFILE']:
             fields = {child: value for child, value, _ in children}
             statuses[fields[C['EC_TAG_PARTFILE_HASH']]] = int.from_bytes(fields[C['EC_TAG_PARTFILE_STATUS']], 'big')

@@ -8,12 +8,10 @@ requests drain, with the peer still connected, to catch missing idle-rate invali
 """
 import json
 from pathlib import Path
-import struct
 import sys
 import time
 
-from AllSearchIntegrationTest import C, EC, exact, integer, retry_port_collisions, tag
-from ShareWatcherMoveIntegrationTest import tag_list
+from AllSearchIntegrationTest import C, EC, integer, retry_port_collisions, tag
 from UploadRefillIntegrationTest import run
 
 
@@ -30,14 +28,9 @@ class DisplayRateMirror:
         self.peers = {}
 
     def poll(self):
-        payload = (bytes([C['EC_OP_GET_UPDATE']]) + struct.pack('!H', 1)
-                   + integer(C['EC_TAG_DETAIL_LEVEL'], C['EC_DETAIL_INC_UPDATE']))
-        self.ec.sock.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
-        flags, length = struct.unpack('!II', exact(self.ec.sock, 8))
-        assert flags == 0x20, flags
-        reply = exact(self.ec.sock, length)
-        assert reply[0] == C['EC_OP_SHARED_FILES'], reply[0]
-        tags, _ = tag_list(reply, 3, struct.unpack_from('!H', reply, 1)[0])
+        opcode, tags = self.ec.call_list(C['EC_OP_GET_UPDATE'], [
+            integer(C['EC_TAG_DETAIL_LEVEL'], C['EC_DETAIL_INC_UPDATE'])])
+        assert opcode == C['EC_OP_SHARED_FILES'], opcode
         for name, value, children in tags:
             if name in (C['EC_TAG_KNOWNFILE'], C['EC_TAG_PARTFILE']):
                 fields = self.files.setdefault(int.from_bytes(value, 'big'), {})

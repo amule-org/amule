@@ -3226,6 +3226,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/SharedFileReverifyIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (SharedFileReverifyIntegrationTest PROPERTIES LABELS "reverify")
+		add_test (NAME StartPausedIntegrationTest
+			COMMAND ${Python3_EXECUTABLE} -u
+				${CMAKE_CURRENT_SOURCE_DIR}/StartPausedIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (StartPausedIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME KnownHistoryIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KnownHistoryIntegrationTest.py $<TARGET_FILE:amuled>
@@ -3922,6 +3927,7 @@ foreach (ec_wire_test IN ITEMS
 	SharedFileReverifyIntegrationTest
 	SharedMembershipIntegrationTest
 	ShortBlockPacketIntegrationTest
+	StartPausedIntegrationTest
 	SymlinkShareRootIntegrationTest
 	TinyBlockPacketIntegrationTest
 	UnwritableTagIntegrationTest

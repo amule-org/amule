@@ -355,7 +355,7 @@ void CDownloadQueue::AddDownload(CPartFile *file, bool paused, uint8 category)
 
 	if (file->GetStatus(true) == PS_ALLOCATING) {
 		file->PauseFile();
-	} else if (paused && GetFileCount()) {
+	} else if (paused) {
 		file->StopFile();
 	}
 

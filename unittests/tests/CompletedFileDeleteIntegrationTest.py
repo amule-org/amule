@@ -15,8 +15,8 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, http, integer,
-                                      retry_port_collisions, start_amuleapi, start_daemon,
+from AllSearchIntegrationTest import (C, EC as FixtureEC, configure_amuleapi, free_ports, http,
+                                      integer, retry_port_collisions, start_amuleapi, start_daemon,
                                       stop_daemon, string, tag, wait_amuleapi)
 from DaemonConfig import daemon_env, write_amule_conf
 
@@ -46,7 +46,7 @@ def field(tags, name):
     return next((value for key, value, _ in tags if key == C[name]), None)
 
 
-class EC:
+class EC(FixtureEC):
     def __init__(self, port):
         self.sock = socket.create_connection(('127.0.0.1', port), timeout=10)
         from ECWire import authenticate
@@ -57,11 +57,7 @@ class EC:
         self.file_cache = {}
 
     def call(self, op, tags=()):
-        payload = bytes([C[op]]) + struct.pack('!H', len(tags)) + b''.join(tags)
-        self.sock.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
-        flags, length = struct.unpack('!II', exact(self.sock, 8))
-        assert flags == 0x20, flags
-        reply = exact(self.sock, length)
+        reply = self._reply(C[op], tags)
         return reply[0], decode(reply, 3, struct.unpack_from('!H', reply, 1)[0])[0]
 
     def files(self, shared=False):

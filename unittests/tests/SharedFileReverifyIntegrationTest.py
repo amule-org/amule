@@ -13,9 +13,8 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import C, exact, free_ports, retry_port_collisions, running_daemon, tag
+from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon, tag
 from DaemonConfig import write_amule_conf
-from ShareWatcherMoveIntegrationTest import tag_list
 from UploadRefillIntegrationTest import packet, send
 
 PART = 9728000
@@ -35,13 +34,10 @@ def set_interval(ec, value):
 
 
 def records(ec):
-    payload = bytes([C['EC_OP_GET_SHARED_FILES']]) + struct.pack('!H', 0)
-    ec.sock.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
-    _, size = struct.unpack('!II', exact(ec.sock, 8))
-    reply = exact(ec.sock, size)
-    assert reply[0] == C['EC_OP_SHARED_FILES']
+    opcode, tags = ec.call_list(C['EC_OP_GET_SHARED_FILES'])
+    assert opcode == C['EC_OP_SHARED_FILES']
     result = {}
-    for name, _, children in tag_list(reply, 3, struct.unpack_from('!H', reply, 1)[0])[0]:
+    for name, _, children in tags:
         if name == C['EC_TAG_KNOWNFILE']:
             fields = {key: value for key, value, _ in children}
             result[fields[C['EC_TAG_PARTFILE_NAME']].rstrip(b'\0').decode()] = fields

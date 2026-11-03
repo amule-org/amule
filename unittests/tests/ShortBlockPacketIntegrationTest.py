@@ -11,12 +11,11 @@ import sys
 import tempfile
 import zlib
 
-from AllSearchIntegrationTest import (C, exact, free_ports, retry_port_collisions, running_daemon,
+from AllSearchIntegrationTest import (C, free_ports, retry_port_collisions, running_daemon,
                                       start_daemon)
 from DaemonConfig import write_amule_conf
 from DownloadDisplayRatesIntegrationTest import hello, local_ipv4
 from ED2KLinkIntegrationTest import add_link
-from ShareWatcherMoveIntegrationTest import tag_list
 from UploadRefillIntegrationTest import packet, send
 
 
@@ -79,14 +78,7 @@ def hello_answer(peer, greeting):
 
 
 def completed(ec, file_hash):
-    # Keep repeated partfile tags instead of the EC fixture's dictionary view.
-    payload = bytes([C['EC_OP_GET_DLOAD_QUEUE']]) + bytes(2)
-    ec.sock.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
-    flags, length = struct.unpack('!II', exact(ec.sock, 8))
-    assert flags == 0x20
-    reply = exact(ec.sock, length)
-    tags, _ = tag_list(reply, 3, struct.unpack_from('!H', reply, 1)[0])
-    for name, _, children in tags:
+    for name, _, children in ec.call_list(C['EC_OP_GET_DLOAD_QUEUE'])[1]:
         fields = {key: value for key, value, _ in children}
         if name == C['EC_TAG_PARTFILE'] and fields.get(C['EC_TAG_PARTFILE_HASH']) == file_hash:
             return int.from_bytes(fields[C['EC_TAG_PARTFILE_SIZE_DONE']], 'big')
