@@ -380,6 +380,17 @@ def main(daemon,cmd,async_probe):
                         def mutate(fields):
                             return [f for f in fields if f[:2]!=W.tag('EC_TAG_SRP_A',b'')[:2]]+[W.tag('EC_TAG_SRP_A',value)]
                         W.assert_refused(*W.authenticate(sock,hashlib.md5(b'regression').digest(),request_mutator=mutate)[1:],'EC_AUTH_FAIL_INCOMPATIBLE')
+                # M1 in clear never reaches Authenticate: the socket drops it and sends no reason.
+                with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
+                    def clear_proof(m):
+                        sock.sendall(W.packet('EC_OP_AUTH_PASSWD',[W.tag('EC_TAG_SRP_M1',m)]))
+                        return W.packet('EC_OP_AUTH_PASSWD',[])
+                    try:
+                        W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=clear_proof)
+                    except (EOFError,ConnectionResetError,BrokenPipeError):
+                        pass
+                    else:
+                        raise AssertionError('M1 in clear got a reply')
                 # Successful logins clear the attempt bucket between phases.
                 EC(port).sock.close()
                 with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
