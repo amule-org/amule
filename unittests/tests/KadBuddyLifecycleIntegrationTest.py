@@ -12,8 +12,9 @@ import time
 from pathlib import Path
 
 from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
-from DaemonConfig import daemon_env, write_amule_conf
+from DaemonConfig import write_amule_conf
 from DownloadDisplayRatesIntegrationTest import hello
+from KadLanModeIntegrationTest import LAN_MODE_TIMEOUT, write_private_contacts
 from KadReceiverKeyLogIntegrationTest import KADEMLIA_FINDBUDDY_REQ, KADEMLIA_FIREWALLED2_REQ
 from KadSourceTagsECTest import wait_ready
 from UploadRefillIntegrationTest import packet, send
@@ -149,14 +150,16 @@ def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-kad-buddy-') as directory:
         root = Path(directory)
         ec_port, peer_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
-        write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1, Autoconnect=0)
-        # The UDP firewall check needs a peer on a public IP, and LAN mode skips it.
-        with running_daemon(binary, root, (ec_port, peer_port, udp_port),
-                            env=daemon_env(root, AMULE_TEST_KAD_LAN_MODE=1)) as (proc, ec):
+        # The UDP firewall check needs a peer on a public IP, and LAN mode skips it. Enough contacts
+        # to outlast the test keep LAN mode on.
+        write_private_contacts(root, 8)
+        write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1, Autoconnect=0,
+                         FilterLanIPs=0)
+        with running_daemon(binary, root, (ec_port, peer_port, udp_port)) as (proc, ec):
             assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
             wait_ready(ec, proc)
             pass_firewall_check(udp_port)
-            assert stat(ec, 'EC_TAG_STATS_KAD_IN_LAN_MODE') == 1, 'amuled was built without the LAN mode test hook'
+            wait_stat(ec, 'EC_TAG_STATS_KAD_IN_LAN_MODE', 1, LAN_MODE_TIMEOUT)
 
             check_extra_buddy_is_dropped(ec, udp_port, peer_port)
             check_late_request_is_not_promoted(ec, udp_port, peer_port)

@@ -504,13 +504,6 @@ uint32_t CKademlia::CalculateKadUsersNew()
 
 bool CKademlia::IsRunningInLANMode()
 {
-#ifdef AMULE_KAD_LAN_MODE_TEST_HOOK
-	// Compiled only for the daemon in integration-test builds; opt-in per process.
-	static const bool forcedLanMode = wxGetEnv("AMULE_TEST_KAD_LAN_MODE", nullptr);
-	if (forcedLanMode) {
-		return IsRunning();
-	}
-#endif
 	if (thePrefs::FilterLanIPs() || !IsRunning()) {
 		return false;
 	}
