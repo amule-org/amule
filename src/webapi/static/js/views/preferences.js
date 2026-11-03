@@ -335,7 +335,7 @@ const TABS = [
     { legendKey: "prefs_group_debug_categories",
       hideWhen: (v) => v["advanced.debug_categories_supported"] === false, fields: [
       { key: "debug_categories", hidden: true },
-      { key: "debug_categories_enabled", type: "checklist", optionsKey: "debug_categories", gatedBy: "debug_categories_supported" },
+      { key: "debug_categories_enabled", type: "checklist", optionsKey: "debug_categories", labelKey: "prefs_group_debug_categories", gatedBy: "debug_categories_supported" },
     ] },
   ] },
 ];
