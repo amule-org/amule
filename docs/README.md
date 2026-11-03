@@ -85,13 +85,15 @@ visible window means the window stopped drawing while aMule kept running. This c
 logs no peer data. `amuled` has no window, so it does not offer this category.
 
 To change `amuled` while it runs, use an EC client. In `amulegui`, the Debugging page
-has two lists: **Core Message Categories** controls the connected core, and
-**Remote GUI Message Categories** controls the remote GUI's own log. The verbose and
-**Only to Logfile** options apply to both. The WebUI has the same settings under
-**Preferences → Debugging**, and amuleapi has them in
+has two groups, each with its own verbose option, **Only to Logfile** option and
+category list: **Connected Core** controls the core, and **This Remote GUI** controls
+the remote GUI's own log. The second list shows only the categories the remote GUI can
+log to. Core messages in its log window follow the core's settings. The WebUI has the
+core's settings under **Preferences → Debugging**, and amuleapi has them in
 [`PATCH /api/v1/preferences`](api/REFERENCE.md#patch-apiv1preferences). The core saves
-these changes in its `amule.conf`. A core older than 3.3 accepts only the verbose
-option over EC, so its category list stays empty and disabled.
+these changes in its `amule.conf`, and the remote GUI saves its own in `remote.conf`. A
+core older than 3.3 accepts only the verbose option over EC, so its **Only to Logfile**
+option and category list stay disabled.
 
 To set them before `amuled` starts, stop the daemon and edit `amule.conf`:
 

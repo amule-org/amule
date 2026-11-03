@@ -264,6 +264,29 @@ wxEND_EVENT_TABLE()
  * checkbox when transferring to the UI, and also for checkboxes whose only effect
  * is enabling or disabling other widgets.
  */
+// amulegui has no core code, so most categories can never log there. Add one here when a
+// reachable GUI call starts using it.
+static bool OffersDebugCategory(const CDebugCategory &category)
+{
+#ifdef CLIENT_GUI
+	switch (category.GetType()) {
+	case logGeneral:
+	case logCFile:
+	case logSearch:
+	case logEC:
+	case logHTTP:
+	case logAsio:
+	case logGUI:
+		return true;
+	default:
+		return false;
+	}
+#else
+	wxUnusedVar(category);
+	return true;
+#endif
+}
+
 static void SendCheckBoxEvent(wxWindow *parent, int id)
 {
 	wxCheckBox *widget = CastByID(id, parent, wxCheckBox);
@@ -569,7 +592,10 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			wxCheckListBox *list = CastChild(ID_DEBUGCATS, wxCheckListBox);
 
 			for (int j = 0; j < count; j++) {
-				list->Append(theLogger.GetDebugCategory(j).GetName());
+				const CDebugCategory &category = theLogger.GetDebugCategory(j);
+				if (OffersDebugCategory(category)) {
+					list->Append(category.GetName());
+				}
 			}
 		}
 
@@ -1088,8 +1114,12 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	int count = theLogger.GetDebugCategoryCount();
 	wxCheckListBox *list = CastChild(ID_DEBUGCATS, wxCheckListBox);
 
+	unsigned int row = 0;
 	for (int i = 0; i < count; i++) {
-		list->Check(i, theLogger.GetDebugCategory(i).IsEnabled());
+		const CDebugCategory &category = theLogger.GetDebugCategory(i);
+		if (OffersDebugCategory(category)) {
+			list->Check(row++, category.IsEnabled());
+		}
 	}
 #ifdef CLIENT_GUI
 	// Rebuilt on each open: the list belongs to the connected core.
@@ -1099,6 +1129,10 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		coreList->Check(coreList->Append(category.name), category.enabled);
 	}
 	coreList->Enable(!coreList->IsEmpty());
+	CastChild(ID_VERBOSEDEBUG_CORE, wxCheckBox)->SetValue(thePrefs::GetCoreVerbose());
+	wxCheckBox *coreLogfileOnly = CastChild(ID_VERBOSEDEBUGLOGFILE_CORE, wxCheckBox);
+	coreLogfileOnly->SetValue(thePrefs::GetCoreVerboseLogfile());
+	coreLogfileOnly->Enable(!coreList->IsEmpty());
 #endif
 
 	m_verticalToolbar = thePrefs::VerticalToolbar();
@@ -1166,8 +1200,12 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 	int count = theLogger.GetDebugCategoryCount();
 	wxCheckListBox *list = CastChild(ID_DEBUGCATS, wxCheckListBox);
 
+	unsigned int row = 0;
 	for (int i = 0; i < count; i++) {
-		theLogger.SetEnabled(theLogger.GetDebugCategory(i).GetType(), list->IsChecked(i));
+		const CDebugCategory &category = theLogger.GetDebugCategory(i);
+		if (OffersDebugCategory(category)) {
+			theLogger.SetEnabled(category.GetType(), list->IsChecked(row++));
+		}
 	}
 #ifdef CLIENT_GUI
 	// SendChangesToRemote serialises from here.
@@ -1177,6 +1215,8 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 		coreCategories.push_back({ coreList->GetString(i), coreList->IsChecked(i) });
 	}
 	thePrefs::SetCoreDebugCategories(std::move(coreCategories));
+	thePrefs::SetCoreVerbose(CastChild(ID_VERBOSEDEBUG_CORE, wxCheckBox)->GetValue());
+	thePrefs::SetCoreVerboseLogfile(CastChild(ID_VERBOSEDEBUGLOGFILE_CORE, wxCheckBox)->GetValue());
 #endif
 
 	thePrefs::SetShowRatesOnTitle(

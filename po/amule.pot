@@ -6291,15 +6291,15 @@ msgid "Only to Logfile"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Core Message Categories:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Remote GUI Message Categories:"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Message Categories:"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Connected Core:"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
 msgstr ""
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp

@@ -259,6 +259,8 @@ bool CPreferences::s_IsChatCaptchaEnabled;
 #ifdef CLIENT_GUI
 bool CPreferences::s_chatSpamFilterSupported = false;
 std::vector<CPreferences::CoreDebugCategory> CPreferences::s_coreDebugCategories;
+bool CPreferences::s_coreVerbose = false;
+bool CPreferences::s_coreVerboseLogfile = false;
 #endif
 bool CPreferences::s_ShareHiddenFiles;
 bool CPreferences::s_AutoRescanSharedDirs;

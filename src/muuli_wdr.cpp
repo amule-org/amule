@@ -3420,31 +3420,39 @@ wxSizer *CoreConnect( wxWindow *parent, bool call_fit, bool set_sizer )
     return item0;
 }
 
+static void AddDebugControls( wxWindow *parent, wxSizer *sizer, int verboseId, int logfileId, int categoriesId )
+{
+    wxCheckBox *item1 = new wxCheckBox( parent, verboseId, _("Enable Verbose Debug-Logging."), wxDefaultPosition, wxDefaultSize, 0 );
+    sizer->Add( item1, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
+    wxCheckBox *item2 = new wxCheckBox( parent, logfileId, _("Only to Logfile"), wxDefaultPosition, wxDefaultSize, 0 );
+    sizer->Add( item2, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
+    wxStaticBox *item4 = new wxStaticBox( parent, -1, _("Message Categories:") );
+    wxStaticBoxSizer *item3 = new wxStaticBoxSizer( item4, wxVERTICAL );
+
+    wxWindow *item5 = new wxCheckListBox( item4, categoriesId );
+    wxASSERT( item5 );
+    item3->Add( item5, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 5) );
+    sizer->Add( item3, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 0) );
+}
+
 wxSizer *PreferencesDebug( wxWindow *parent, bool call_fit, bool set_sizer )
 {
     wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
 
-    wxCheckBox *item1 = new wxCheckBox( parent, ID_VERBOSEDEBUG, _("Enable Verbose Debug-Logging."), wxDefaultPosition, wxDefaultSize, 0 );
-    item0->Add( item1, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
-    wxCheckBox *item2 = new wxCheckBox( parent, ID_VERBOSEDEBUGLOGFILE, _("Only to Logfile"), wxDefaultPosition, wxDefaultSize, 0 );
-    item0->Add( item2, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
 #ifdef CLIENT_GUI
-    wxStaticBox *coreCatsBox = new wxStaticBox( parent, -1, _("Core Message Categories:") );
-    wxStaticBoxSizer *coreCatsSizer = new wxStaticBoxSizer( coreCatsBox, wxVERTICAL );
-    wxWindow *coreCats = new wxCheckListBox( coreCatsBox, ID_DEBUGCATS_CORE );
-    wxASSERT( coreCats );
-    coreCatsSizer->Add( coreCats, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 5) );
-    item0->Add( coreCatsSizer, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 0) );
-    wxStaticBox *item4 = new wxStaticBox( parent, -1, _("Remote GUI Message Categories:") );
+    wxBoxSizer *groups = new wxBoxSizer( wxHORIZONTAL );
+    wxStaticBox *coreBox = new wxStaticBox( parent, -1, _("Connected Core:") );
+    wxStaticBoxSizer *coreSizer = new wxStaticBoxSizer( coreBox, wxVERTICAL );
+    AddDebugControls( coreBox, coreSizer, ID_VERBOSEDEBUG_CORE, ID_VERBOSEDEBUGLOGFILE_CORE, ID_DEBUGCATS_CORE );
+    groups->Add( coreSizer, wxSizerFlags(1).Expand().Border(wxALL, 0) );
+    wxStaticBox *guiBox = new wxStaticBox( parent, -1, _("This Remote GUI:") );
+    wxStaticBoxSizer *guiSizer = new wxStaticBoxSizer( guiBox, wxVERTICAL );
+    AddDebugControls( guiBox, guiSizer, ID_VERBOSEDEBUG, ID_VERBOSEDEBUGLOGFILE, ID_DEBUGCATS );
+    groups->Add( guiSizer, wxSizerFlags(1).Expand().Border(wxALL, 0) );
+    item0->Add( groups, wxSizerFlags(1).Expand().Border(wxALL, 0) );
 #else
-    wxStaticBox *item4 = new wxStaticBox( parent, -1, _("Message Categories:") );
+    AddDebugControls( parent, item0, ID_VERBOSEDEBUG, ID_VERBOSEDEBUGLOGFILE, ID_DEBUGCATS );
 #endif
-    wxStaticBoxSizer *item3 = new wxStaticBoxSizer( item4, wxVERTICAL );
-
-    wxWindow *item5 = new wxCheckListBox( item4, ID_DEBUGCATS );
-    wxASSERT( item5 );
-    item3->Add( item5, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 5) );
-    item0->Add( item3, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 0) );
     if (set_sizer)
     {
         parent->SetSizer( item0 );

@@ -397,6 +397,11 @@ public:
 	{
 		s_coreDebugCategories = std::move(categories);
 	}
+	// GetVerbose() and GetVerboseLogfile() are this GUI's own log. These are the core's.
+	static bool GetCoreVerbose() { return s_coreVerbose; }
+	static void SetCoreVerbose(bool val) { s_coreVerbose = val; }
+	static bool GetCoreVerboseLogfile() { return s_coreVerboseLogfile; }
+	static void SetCoreVerboseLogfile(bool val) { s_coreVerboseLogfile = val; }
 #endif
 	static bool GetPreviewPrio() { return s_bpreviewprio; }
 	static void SetPreviewPrio(bool in) { s_bpreviewprio = in; }
@@ -1245,6 +1250,8 @@ protected:
 #ifdef CLIENT_GUI
 	static bool s_chatSpamFilterSupported;
 	static std::vector<CoreDebugCategory> s_coreDebugCategories;
+	static bool s_coreVerbose;
+	static bool s_coreVerboseLogfile;
 #endif
 
 	static bool s_FilterComments;
