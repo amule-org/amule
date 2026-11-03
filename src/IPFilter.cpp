@@ -597,6 +597,11 @@ void CIPFilter::StartPendingNetworks()
 	if (!m_connectToAnyServerWhenReady && !m_startKADWhenReady) {
 		return;
 	}
+	// A server checks the port at login and nothing retries a LowID, so map first. The core timer
+	// runs this again.
+	if (theApp->UPnPDiscoveryPending()) {
+		return;
+	}
 	AddLogLineC(_("Connecting"));
 	if (m_connectToAnyServerWhenReady) {
 		m_connectToAnyServerWhenReady = false;

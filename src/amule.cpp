@@ -54,7 +54,6 @@
 #include <wx/socket.h>
 #include <wx/tokenzr.h>
 #include <wx/wfstream.h>
-#include <wx/stopwatch.h> // Needed for wxStopWatch
 #ifdef __WINDOWS__
 #include <wx/stdpaths.h> // Needed for wxStandardPaths (CA bundle lookup)
 #include <wx/filename.h> // Needed for wxFileName (CA bundle lookup)
@@ -1976,8 +1975,7 @@ bool CamuleApp::RebindP2PSockets(bool tcpPortChanged, bool udpPortChanged, uint1
 
 #ifdef ENABLE_UPNP
 	// Keep the existing control point and its discovered WAN service. Recreating
-	// it would repeat StartUPnP's startup wait on the Preferences/EC request
-	// path.
+	// it would repeat discovery.
 	if (m_upnp) {
 		if (!thePrefs::GetUPnPEnabled()) {
 			// Disabling UPnP is an explicit request to remove every mapping.
@@ -2141,11 +2139,6 @@ void CamuleApp::StartUPnP()
 			thePrefs::GetUPnPEnabled(),
 			"aMule UDP Extended eMule Socket");
 		m_upnp = new CUPnPControlPoint(thePrefs::GetUPnPTCPPort());
-
-		wxStopWatch count; // Wait UPnP service responses for 3s before add port mappings
-		while (count.Time() < 3000 && !m_upnp->WanServiceDetected())
-			;
-
 		m_upnp->AddPortMappings(m_upnpMappings);
 	} catch (CUPnPException &e) {
 		wxString error_msg;
@@ -2519,6 +2512,8 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	if (uploadDiskIOThread) {
 		uploadDiskIOThread->ObserveCoreTick(msCur);
 	}
+
+	ipfilter->StartPendingNetworks();
 
 	if (!thePrefs::GetAmuleApiIsEnabled() || m_amuleApiStopping || g_shutdownSignal) {
 		m_amuleApiRestart.Cancel();
@@ -3875,6 +3870,15 @@ void CamuleApp::OnUnhandledException()
 	// Call the generic exception-handler.
 	fprintf(stderr, "\taMule Version: %s\n", (const char *)unicode2char(GetFullMuleVersion()));
 	::OnUnhandledException();
+}
+
+bool CamuleApp::UPnPDiscoveryPending() const
+{
+#ifdef ENABLE_UPNP
+	return m_upnp && m_upnp->DiscoveryPending();
+#else
+	return false;
+#endif
 }
 
 void CamuleApp::StartKad()

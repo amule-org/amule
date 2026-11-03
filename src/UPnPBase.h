@@ -27,6 +27,8 @@
 #ifndef AMULE_UPNP_H
 #define AMULE_UPNP_H
 
+#include <atomic>
+#include <chrono>
 #include <map>
 #include <string>
 #include <sstream>
@@ -353,15 +355,17 @@ private:
 	UpnpClient_Handle m_UPnPClientHandle;
 	// Guarded by m_RootDeviceListMutex, which discovery holds across its network I/O.
 	RootDeviceMap m_RootDeviceMap;
-	// m_ServiceMap and m_ActivePortMappingsMap are guarded by m_ServiceMapMutex,
-	// never held across discovery, so port mapping on the main thread does not wait for a slow
-	// device. Lock order: m_RootDeviceListMutex first.
+	// m_ServiceMap and m_ActivePortMappingsMap are guarded by m_ServiceMapMutex. It is held across
+	// port mapping actions, on any thread, but not across discovery's other network I/O, so the
+	// main thread does not wait for a slow device description. Lock order: m_RootDeviceListMutex
+	// first.
 	ServiceMap m_ServiceMap;
 	PortMappingMap m_ActivePortMappingsMap;
 	CUPnPMutex m_RootDeviceListMutex;
 	bool m_IGWDeviceDetected;
 	mutable CUPnPMutex m_ServiceMapMutex;
-	CUPnPMutex m_WaitForSearchTimeoutMutex;
+	std::atomic<bool> m_gatewayMapped;
+	std::chrono::steady_clock::time_point m_searchDeadline;
 
 public:
 	CUPnPControlPoint(unsigned short udpPort);
@@ -380,6 +384,9 @@ public:
 		CUPnPMutexLocker lock(m_ServiceMapMutex);
 		return !m_ServiceMap.empty();
 	}
+	// True until a gateway has its mappings or the search has ended. Work that needs the ports
+	// reachable, such as a server login, should wait for this.
+	bool DiscoveryPending() const;
 	// Drops a service being deleted.
 	void ForgetService(const CUPnPService *service);
 

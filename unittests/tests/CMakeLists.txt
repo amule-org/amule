@@ -2959,10 +2959,14 @@ if (ENABLE_INTEGRATION_TESTS AND ENABLE_UPNP AND Python3_Interpreter_FOUND AND U
 		${CMAKE_SOURCE_DIR}/src/libs
 	)
 	target_link_libraries (UPnPPortMappingDriver mulecommon wxWidgets::BASE UPNP::Shared)
+	set (UPNP_TEST_BINARIES $<TARGET_FILE:UPnPPortMappingDriver>)
+	if (BUILD_DAEMON)
+		list (APPEND UPNP_TEST_BINARIES $<TARGET_FILE:amuled>)
+	endif ()
 	add_test (NAME UPnPPortMappingIntegrationTest
 		COMMAND ${Python3_EXECUTABLE} -u
 			${CMAKE_CURRENT_SOURCE_DIR}/UPnPPortMappingIntegrationTest.py
-			$<TARGET_FILE:UPnPPortMappingDriver>
+			${UPNP_TEST_BINARIES}
 	)
 	set_tests_properties (UPnPPortMappingIntegrationTest PROPERTIES
 		SKIP_RETURN_CODE 77 LABELS "integration")
