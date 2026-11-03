@@ -23,16 +23,15 @@
 //
 
 // Prints what the real control point returns. UPnPPortMappingIntegrationTest.py runs it against
-// a fake gateway. Usage: UPnPPortMappingDriver <tcp port> <udp port, 0 for none> (add|delete)...
+// a fake gateway and writes to stdin once every service has registered.
+// Usage: UPnPPortMappingDriver <tcp port> <udp port> (add|delete)...
 
 #include "config.h"
 #include "UPnPBase.h"
 
-#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <thread>
 #include <vector>
 
 namespace
@@ -46,27 +45,17 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 	const int tcpPort = std::atoi(argv[1]);
-	const int udpPort = std::atoi(argv[2]);
 
 	std::vector<CUPnPPortMapping> mappings;
 	mappings.emplace_back(tcpPort, "TCP", true, "aMule test TCP");
-	if (udpPort != 0) {
-		mappings.emplace_back(udpPort, "UDP", true, "aMule test UDP");
-	}
+	mappings.emplace_back(std::atoi(argv[2]), "UDP", true, "aMule test UDP");
 	mappings.emplace_back(tcpPort + 1, "TCP", false, "aMule test disabled");
 
 	try {
 		CUPnPControlPoint controlPoint(0);
-		for (int i = 0; i < 100 && !controlPoint.WanServiceDetected(); ++i) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		if (std::getchar() == EOF) {
+			return EXIT_FAILURE;
 		}
-		if (!controlPoint.WanServiceDetected()) {
-			std::puts("no gateway discovered");
-			return EXIT_SKIP;
-		}
-		// A gateway's services register one at a time.
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-
 		for (int i = 3; i < argc; ++i) {
 			const bool add = std::strcmp(argv[i], "add") == 0;
 			const bool ok = add ? controlPoint.AddPortMappings(mappings)

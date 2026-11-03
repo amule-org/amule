@@ -353,15 +353,13 @@ private:
 	UpnpClient_Handle m_UPnPClientHandle;
 	// Guarded by m_RootDeviceListMutex, which discovery holds across its network I/O.
 	RootDeviceMap m_RootDeviceMap;
-	// m_ServiceMap, m_ActivePortMappingsMap and m_WanService are guarded by m_ServiceMapMutex,
+	// m_ServiceMap and m_ActivePortMappingsMap are guarded by m_ServiceMapMutex,
 	// never held across discovery, so port mapping on the main thread does not wait for a slow
 	// device. Lock order: m_RootDeviceListMutex first.
 	ServiceMap m_ServiceMap;
 	PortMappingMap m_ActivePortMappingsMap;
 	CUPnPMutex m_RootDeviceListMutex;
 	bool m_IGWDeviceDetected;
-	// #warning This variable is for testing purposes only and should disappear on release.
-	CUPnPService *m_WanService;
 	mutable CUPnPMutex m_ServiceMapMutex;
 	CUPnPMutex m_WaitForSearchTimeoutMutex;
 
@@ -370,8 +368,8 @@ public:
 	~CUPnPControlPoint();
 	void Subscribe(CUPnPService &service);
 	void Unsubscribe(CUPnPService &service);
-	bool AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortMapping);
-	bool DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPortMapping);
+	bool AddPortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping);
+	bool DeletePortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping);
 
 	UpnpClient_Handle GetUPnPClientHandle() const { return m_UPnPClientHandle; }
 
@@ -381,11 +379,6 @@ public:
 	{
 		CUPnPMutexLocker lock(m_ServiceMapMutex);
 		return !m_ServiceMap.empty();
-	}
-	void SetWanService(CUPnPService *service)
-	{
-		CUPnPMutexLocker lock(m_ServiceMapMutex);
-		m_WanService = service;
 	}
 	// Drops a service being deleted.
 	void ForgetService(const CUPnPService *service);

@@ -13,6 +13,10 @@ import threading
 import time
 
 SKIP = 77
+OPT_IN = 'AMULE_TEST_UPNP_NO_REAL_GATEWAY'
+ON_CI = 'GITHUB_ACTIONS' in os.environ
+DISCOVERY_TIMEOUT = 15
+ADD, DELETE = 'AddPortMapping', 'DeletePortMapping'
 SSDP_GROUP = '239.255.255.250'
 SSDP_PORT = 1900
 IGD = 'urn:schemas-upnp-org:device:InternetGatewayDevice:1'
@@ -42,9 +46,17 @@ FAULT = ('<s:Fault><faultcode>s:Client</faultcode><faultstring>UPnPError</faults
 CONFLICT_IN_MAPPING_ENTRY, NO_SUCH_ENTRY, INVALID_ACTION = 718, 714, 401
 
 
+class Skipped(Exception):
+    """This machine or LAN cannot run the test."""
+
+
+class ScenarioFailed(Exception):
+    pass
+
+
 def skip_or_fail(reason):
     """A local LAN may not suit this test, but a skip on CI would hide a broken test."""
-    if 'GITHUB_ACTIONS' in os.environ:
+    if ON_CI:
         sys.exit(f'FAIL: {reason}')
     print(f'SKIP: {reason}')
     sys.exit(SKIP)
@@ -62,10 +74,15 @@ class FakeGateway:
         self.reject = set(reject)
         self.tables = {name: set(mappings) for name in services}
         self.requests = []
+        self.subscribed = set()
+        self.registered = threading.Event()
         self.http = ThreadingHTTPServer(('127.0.0.1', 0), self.handler())
         self.ssdp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ssdp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.ssdp.bind(('', SSDP_PORT))
+        try:
+            self.ssdp.bind(('', SSDP_PORT))
+        except OSError as error:
+            raise Skipped(f'cannot bind SSDP port {SSDP_PORT}: {error}') from error
         # libupnp picks its own interface, so listen on all of them.
         for index, _ in socket.if_nameindex():
             try:
@@ -95,6 +112,12 @@ class FakeGateway:
             except OSError:
                 return
 
+    def on_subscribe(self, service):
+        # The control point lists a service before it subscribes, so this means it can use them all.
+        self.subscribed.add(service)
+        if self.subscribed == set(self.services):
+            self.registered.set()
+
     def description(self):
         services = ''.join(
             f'<service><serviceType>{SERVICE_TYPES[name]}</serviceType>'
@@ -123,7 +146,7 @@ class FakeGateway:
                             for var in ADD_ARGS.values())
         return ('<?xml version="1.0"?><scpd xmlns="urn:schemas-upnp-org:service-1-0"><specVersion>'
                 '<major>1</major><minor>0</minor></specVersion><actionList>'
-                f'{action("AddPortMapping", ADD_ARGS)}{action("DeletePortMapping", DELETE_ARGS)}'
+                f'{action(ADD, ADD_ARGS)}{action(DELETE, DELETE_ARGS)}'
                 f'{action("GetStatusInfo", {})}</actionList><serviceStateTable>{variables}'
                 '</serviceStateTable></scpd>')
 
@@ -134,12 +157,12 @@ class FakeGateway:
             return found[1] if found else ''
         mapping = (argument('NewExternalPort'), argument('NewProtocol'))
         self.requests.append((service, action, mapping))
-        if action == 'AddPortMapping':
+        if action == ADD:
             if (service, mapping) in self.reject:
                 return CONFLICT_IN_MAPPING_ENTRY
             self.tables[service].add(mapping)
             return None
-        if action == 'DeletePortMapping':
+        if action == DELETE:
             if mapping not in self.tables[service]:
                 return NO_SUCH_ENTRY
             self.tables[service].discard(mapping)
@@ -166,8 +189,10 @@ class FakeGateway:
                 self.reply(200, gateway.description() if self.path == '/desc.xml' else gateway.scpd())
 
             def do_SUBSCRIBE(self):
+                service = self.path.rsplit('/', 1)[-1]
+                gateway.on_subscribe(service)
                 self.send_response(200)
-                self.send_header('SID', f'uuid:fake-{self.path.rsplit("/", 1)[-1]}')
+                self.send_header('SID', f'uuid:fake-{service}')
                 self.send_header('TIMEOUT', 'Second-1800')
                 self.send_header('Content-Length', '0')
                 self.end_headers()
@@ -202,70 +227,94 @@ def real_gateway_answers():
         deadline = time.monotonic() + 2
         while time.monotonic() < deadline:
             try:
-                data, peer = probe.recvfrom(4096)
+                _, peer = probe.recvfrom(4096)
             except socket.timeout:
                 continue
-            if data.startswith(b'HTTP/1.1 200'):
-                return peer[0]
+            return peer[0]
     return None
 
 
-def run_driver(driver, operations):
-    done = subprocess.run([driver, str(TCP_PORT), str(UDP_PORT), *operations], capture_output=True,
-                          text=True, timeout=60, check=False)
-    if done.returncode == SKIP:
-        skip_or_fail(done.stdout.strip())
-    assert done.returncode == 0, done
-    return dict(line.split('=') for line in done.stdout.splitlines() if '=' in line)
+def run_driver(driver, gateway, operations):
+    with subprocess.Popen([driver, str(TCP_PORT), str(UDP_PORT), *operations], stdin=subprocess.PIPE,
+                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True) as process:
+        deadline = time.monotonic() + DISCOVERY_TIMEOUT
+        while (not gateway.registered.wait(0.1) and process.poll() is None
+               and time.monotonic() < deadline):
+            pass
+        # Closing stdin without a line makes the driver exit without sending anything.
+        output, _ = process.communicate('\n' if gateway.registered.is_set() else '', timeout=60)
+    if process.returncode == SKIP:
+        raise Skipped(output.strip())
+    if not gateway.registered.is_set():
+        raise ScenarioFailed('the control point did not discover the fake gateway')
+    if process.returncode != 0:
+        raise ScenarioFailed(f'driver exited with {process.returncode}: {output}')
+    return dict(line.split('=') for line in output.splitlines() if '=' in line)
 
 
-def add_requests(*services):
-    return [(service, 'AddPortMapping', mapping) for mapping in (TCP, UDP) for service in services]
-
-
-def delete_requests(*services):
-    return [(service, 'DeletePortMapping', mapping) for mapping in (TCP, UDP) for service in services]
+def requests(action, *services):
+    return [(service, action, mapping) for mapping in (TCP, UDP) for service in services]
 
 
 # name, gateway arguments, operations, expected results, expected requests.
 BOTH = ('ip', 'ppp')
 SCENARIOS = [
-    ('new mappings', {}, ['add'], {'add': 'true'}, add_requests('ip')),
+    ('new mappings', {}, ['add'], {'add': 'true'}, requests(ADD, 'ip')),
     # The router-wide entry count does not change, and the request still succeeded.
-    ('mappings already exist', {'mappings': (TCP, UDP)}, ['add'], {'add': 'true'}, add_requests('ip')),
+    ('mappings already exist', {'mappings': (TCP, UDP)}, ['add'], {'add': 'true'}, requests(ADD, 'ip')),
     ('all rejected', {'reject': (('ip', TCP), ('ip', UDP))}, ['add'], {'add': 'false'},
-     add_requests('ip')),
+     requests(ADD, 'ip')),
     ('first rejected, second still sent', {'reject': (('ip', TCP),)}, ['add'], {'add': 'false'},
-     add_requests('ip')),
+     requests(ADD, 'ip')),
     ('one service rejects', {'services': BOTH, 'reject': (('ppp', TCP), ('ppp', UDP))}, ['add'],
-     {'add': 'true'}, add_requests(*BOTH)),
+     {'add': 'true'}, requests(ADD, *BOTH)),
     ('every service rejects one mapping', {'services': BOTH, 'reject': (('ip', UDP), ('ppp', UDP))},
-     ['add'], {'add': 'false'}, add_requests(*BOTH)),
+     ['add'], {'add': 'false'}, requests(ADD, *BOTH)),
     ('delete existing', {'mappings': (TCP, UDP)}, ['delete'], {'delete': 'true'},
-     delete_requests('ip')),
-    ('delete missing', {}, ['delete'], {'delete': 'false'}, delete_requests('ip')),
+     requests(DELETE, 'ip')),
+    ('delete missing', {}, ['delete'], {'delete': 'false'}, requests(DELETE, 'ip')),
+    ('one delete fails, other still sent', {'mappings': (UDP,)}, ['delete'], {'delete': 'false'},
+     requests(DELETE, 'ip')),
     ('one service never held the mapping', {'services': BOTH, 'reject': (('ppp', TCP), ('ppp', UDP))},
      ['add', 'delete'], {'add': 'true', 'delete': 'true'},
-     add_requests(*BOTH) + delete_requests(*BOTH)),
+     requests(ADD, *BOTH) + requests(DELETE, *BOTH)),
 ]
 
 
+def run_scenarios(driver, failures):
+    for name, arguments, operations, results, expected in SCENARIOS:
+        with FakeGateway(**arguments) as gateway:
+            try:
+                got = run_driver(driver, gateway, operations)
+            except ScenarioFailed as error:
+                failures.append(f'{name}: {error}')
+                continue
+        if got != results:
+            failures.append(f'{name}: returned {got}, expected {results}')
+        # Exact list: also rules out state queries, GetStatusInfo and the disabled mapping.
+        if sorted(gateway.requests) != sorted(expected):
+            failures.append(f'{name}: gateway saw {gateway.requests}, expected {expected}')
+
+
 def main():
-    driver = sys.argv[1]
+    # Mappings use lease 0 and the add scenarios never delete them. A lost probe or a NOTIFY during
+    # the run can bring in a real gateway, so outside CI nobody runs this by accident.
+    if not ON_CI and OPT_IN not in os.environ:
+        print(f'SKIP: set {OPT_IN}=1 on a network with no real gateway to run this test')
+        sys.exit(SKIP)
     gateway_address = real_gateway_answers()
     if gateway_address:
         skip_or_fail(f'a gateway answers at {gateway_address}; this test would change its mappings')
     failures = []
-    for name, arguments, operations, results, requests in SCENARIOS:
-        with FakeGateway(**arguments) as gateway:
-            got = run_driver(driver, operations)
-        # Exact list: also rules out state queries, GetStatusInfo and the disabled mapping.
-        if got != results:
-            failures.append(f'{name}: returned {got}, expected {results}')
-        if sorted(gateway.requests) != sorted(requests):
-            failures.append(f'{name}: gateway saw {gateway.requests}, expected {requests}')
+    skipped = None
+    try:
+        run_scenarios(sys.argv[1], failures)
+    except Skipped as error:
+        skipped = str(error)
     if failures:
         sys.exit('FAIL:\n' + '\n'.join(failures))
+    if skipped:
+        skip_or_fail(skipped)
 
 
 if __name__ == '__main__':

@@ -498,7 +498,6 @@ CUPnPService::CUPnPService(
 			// This condition can be used to suspend the parse
 			// of the XML tree.
 #endif
-		const_cast<CUPnPControlPoint &>(upnpControlPoint).SetWanService(this);
 		msg.str("");
 		msg << "WAN Service Detected: '" << m_serviceType << "'.";
 		AddDebugLogLineN(logUPnP, msg);
@@ -717,7 +716,6 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 , m_ActivePortMappingsMap()
 , m_RootDeviceListMutex()
 , m_IGWDeviceDetected(false)
-, m_WanService(NULL)
 , m_ServiceMapMutex()
 {
 	s_CtrlPoint = this;
@@ -810,11 +808,11 @@ CUPnPControlPoint::~CUPnPControlPoint()
 	m_RootDeviceMap.clear();
 }
 
-bool CUPnPControlPoint::AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortMapping)
+bool CUPnPControlPoint::AddPortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping)
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	if (!m_WanService || m_ServiceMap.empty()) {
+	if (m_ServiceMap.empty()) {
 		msg << "UPnP Error: "
 		       "CUPnPControlPoint::AddPortMapping: "
 		       "WAN Service not detected.";
@@ -852,8 +850,8 @@ void CUPnPControlPoint::RefreshPortMappings()
 bool CUPnPControlPoint::ExecuteOnAnyService(
 	const std::string &actionName, const std::vector<CUPnPArgumentValue> &argval)
 {
-	// A gateway can expose both WANIPConnection and WANPPPConnection, and only one of them holds
-	// the mapping. The other refusing it is not a failure.
+	// m_ServiceMap holds every WAN service on every gateway found, and usually only one of them
+	// holds the mapping. Any service on any gateway accepting counts as success.
 	bool ok = false;
 	for (const auto &entry : m_ServiceMap) {
 		ok = entry.second->Execute(actionName, argval) || ok;
@@ -888,11 +886,11 @@ bool CUPnPControlPoint::PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMa
 	return ExecuteOnAnyService(actionName, argval);
 }
 
-bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPortMapping)
+bool CUPnPControlPoint::DeletePortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping)
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	if (!m_WanService || m_ServiceMap.empty()) {
+	if (m_ServiceMap.empty()) {
 		msg << "UPnP Error: "
 		       "CUPnPControlPoint::DeletePortMapping: "
 		       "WAN Service not detected.";
@@ -1404,9 +1402,6 @@ void CUPnPControlPoint::ForgetService(const CUPnPService *service)
 		} else {
 			++it;
 		}
-	}
-	if (m_WanService == service) {
-		m_WanService = m_ServiceMap.empty() ? nullptr : m_ServiceMap.begin()->second;
 	}
 }
 
