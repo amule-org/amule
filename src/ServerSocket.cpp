@@ -51,12 +51,11 @@
 #include "NetworkFunctions.h" // Needed for IsGoodIP
 #include "GuiEvents.h"        // Needed for Notify_*
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-#include "LugdunumNatTraversal.h"            // Needed for ParseIdChangeFields
-#include "LugdunumNatCallbackLog.h"          // Needed for LogForwardedCallback
-#include "NatServerHolePunch.h"              // Needed for ParseInfo, ParseFailure
-#include "NatServerHolePunchLog.h"           // Needed for LogInfo, LogFailure
-#include "ClientUDPSocket.h"                 // Needed for DialLowIdHolePunchPeer
-#include <protocol/ed2k/Client2Client/UDP.h> // Needed for OP_HOLEPUNCH
+#include "LugdunumNatTraversal.h"   // Needed for ParseIdChangeFields
+#include "LugdunumNatCallbackLog.h" // Needed for LogForwardedCallback
+#include "NatServerHolePunch.h"     // Needed for ParseInfo, ParseFailure
+#include "NatServerHolePunchLog.h"  // Needed for LogInfo, LogFailure
+#include "ClientUDPSocket.h"        // Needed for DialLowIdHolePunchPeer
 #endif
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
@@ -99,11 +98,10 @@ void HandleLowIdHolePunchInfo(
 	const NatServerHolePunch::VouchedPeer peer{ info.userHash, info.peerCrypt };
 	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now, peer);
 	theApp->clientudp->ExpectNatTPeer(peerIP, info.udpPort, &info.userHash);
-	CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
-	theStats::AddUpOverheadOther(punch->GetPacketSize());
-	theApp->clientudp->SendPacket(punch, peerIP, info.udpPort, false, nullptr, false, 0);
+	// The four punches, with the port sweep at 0.5 s, are driven from the core timer.
+	serverconnect->StartLowIdHolePunchSchedule(info.peerIP, info.udpPort, now);
 	AddDebugLogLineN(logServer,
-		CFormat("Client UDP socket: OP_HOLEPUNCH to %s") %
+		CFormat("Client UDP socket: OP_HOLEPUNCH at 0, 0.5, 1 and 2 s to %s") %
 			Uint32_16toStringIP_Port(peerIP, info.udpPort));
 	if (requester) {
 		if (theApp->clientudp->DialLowIdHolePunchPeer(peerIP, info.tcpPort, info.udpPort, peer)) {

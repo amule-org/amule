@@ -1132,3 +1132,146 @@ TEST(NatServerHolePunch, ServerRequestPacerAllowsABurstThenOnePerRefill)
 	}
 	ASSERT_FALSE(pacer.TryTake(later));
 }
+
+TEST(NatServerHolePunch, TheServerPunchSchedulePunchesAtZeroHalfOneAndTwoSeconds)
+{
+	PunchScheduleSet schedules;
+	const IPv4 peer{ { 192, 0, 2, 1 } };
+	schedules.Start(peer, 4'662, 1'000);
+	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(1'000).size());
+	ASSERT_TRUE(schedules.TakeDue(1'499).empty());
+	// The first repeat and the sweep share 0.5 s, the punch to the endpoint going first.
+	const std::vector<PunchDue> atHalf = schedules.TakeDue(1'500);
+	ASSERT_EQUALS((std::size_t)2, atHalf.size());
+	ASSERT_TRUE(atHalf[0].kind == PunchDue::Endpoint);
+	ASSERT_TRUE(atHalf[1].kind == PunchDue::Sweep);
+	ASSERT_TRUE(atHalf[0].peerIP == peer && atHalf[1].peerIP == peer);
+	ASSERT_EQUALS((std::uint16_t)4'662, atHalf[0].udpPort);
+	ASSERT_TRUE(schedules.TakeDue(1'999).empty());
+	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(2'000).size());
+	ASSERT_TRUE(schedules.TakeDue(2'999).empty());
+	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(3'000).size());
+	// Four punches to the endpoint and one sweep, each owed once.
+	ASSERT_TRUE(schedules.TakeDue(4'000).empty());
+	ASSERT_EQUALS((std::size_t)0, schedules.Size());
+}
+
+TEST(NatServerHolePunch, ALateTickSendsEveryPunchStillOwedWithTheSweepLast)
+{
+	PunchScheduleSet schedules;
+	const IPv4 peer{ { 198, 51, 100, 7 } };
+	schedules.Start(peer, 4'000, 0);
+	const std::vector<PunchDue> owed = schedules.TakeDue(10'000);
+	ASSERT_EQUALS((std::size_t)5, owed.size());
+	for (std::size_t i = 0; i + 1 < owed.size(); ++i) {
+		ASSERT_TRUE(owed[i].kind == PunchDue::Endpoint);
+	}
+	ASSERT_TRUE(owed.back().kind == PunchDue::Sweep);
+}
+
+TEST(NatServerHolePunch, APunchOrADialFromThePeerEndsItsSchedule)
+{
+	PunchScheduleSet schedules;
+	const IPv4 peer{ { 192, 0, 2, 1 } };
+	const IPv4 other{ { 192, 0, 2, 2 } };
+	schedules.Start(peer, 4'662, 0);
+	schedules.Start(other, 4'662, 0);
+	// A second 0x61 for the same peer restarts its schedule; it never runs two.
+	schedules.Start(peer, 4'662, 0);
+	ASSERT_EQUALS((std::size_t)2, schedules.Size());
+
+	schedules.Cancel(peer);
+	ASSERT_EQUALS((std::size_t)1, schedules.Size());
+	const std::vector<PunchDue> owed = schedules.TakeDue(10'000);
+	ASSERT_EQUALS((std::size_t)5, owed.size());
+	ASSERT_TRUE(owed[0].peerIP == other);
+
+	// Cancelling an address nobody scheduled, or twice, is not an error.
+	schedules.Cancel(other);
+	schedules.Cancel(peer);
+	ASSERT_EQUALS((std::size_t)0, schedules.Size());
+}
+
+TEST(NatServerHolePunch, AScheduleExpiresWithTheExpectedEndpoint)
+{
+	PunchScheduleSet schedules;
+	schedules.Start({ { 192, 0, 2, 1 } }, 4'662, 0);
+	// A tick that never came leaves nothing to punch 30 s later.
+	ASSERT_TRUE(schedules.TakeDue(kExpectedEndpointTtlMs).empty());
+	ASSERT_EQUALS((std::size_t)0, schedules.Size());
+}
+
+TEST(NatServerHolePunch, PunchSchedulesStayBoundedByEvictingTheOldest)
+{
+	PunchScheduleSet schedules;
+	for (std::uint8_t last = 0; last < 100; ++last) {
+		schedules.Start({ { 10, 0, 0, last } }, 4'662, 0);
+	}
+	ASSERT_EQUALS(kMaxPunchSchedules, schedules.Size());
+	// The hundredth address stands and the first one went.
+	const IPv4 newest{ { 10, 0, 0, 99 } };
+	const IPv4 oldest{ { 10, 0, 0, 0 } };
+	const std::vector<PunchDue> owed = schedules.TakeDue(2'000);
+	ASSERT_TRUE(owed.back().peerIP == newest);
+	ASSERT_FALSE(std::any_of(
+		owed.begin(), owed.end(), [&oldest](const PunchDue &due) { return due.peerIP == oldest; }));
+}
+
+TEST(NatServerHolePunch, ASweepCoversTheWindowAroundTheGivenPort)
+{
+	const std::vector<std::uint16_t> ports = SweptPorts(4'000);
+	ASSERT_EQUALS((std::size_t)(2 * kPortSweepHalfWidth), ports.size());
+	ASSERT_EQUALS((std::uint32_t)(4'000 - kPortSweepHalfWidth), (std::uint32_t)ports.front());
+	ASSERT_EQUALS((std::uint32_t)(4'000 + kPortSweepHalfWidth), (std::uint32_t)ports.back());
+	// The given port is the schedule's, so the sweep does not punch it a fifth time.
+	ASSERT_TRUE(std::find(ports.begin(), ports.end(), (std::uint16_t)4'000) == ports.end());
+}
+
+TEST(NatServerHolePunch, ASweepSkipsPortsOutside1024To65535)
+{
+	// A window that would start below 1024 is clipped to it, never wrapped around.
+	const std::vector<std::uint16_t> low = SweptPorts(1'030);
+	ASSERT_EQUALS((std::size_t)22, low.size());
+	ASSERT_EQUALS((std::uint32_t)kPortSweepMinPort, (std::uint32_t)low.front());
+	ASSERT_EQUALS((std::uint32_t)1'046, (std::uint32_t)low.back());
+	ASSERT_TRUE(SweptPorts(1'000).empty());
+
+	const std::vector<std::uint16_t> high = SweptPorts(65'530);
+	ASSERT_EQUALS((std::uint32_t)65'514, (std::uint32_t)high.front());
+	ASSERT_EQUALS((std::uint32_t)kPortSweepMaxPort, (std::uint32_t)high.back());
+}
+
+TEST(NatServerHolePunch, OneSweepPerAddressEveryFiveMinutes)
+{
+	SweepBudget budget;
+	const IPv4 peer{ { 192, 0, 2, 1 } };
+	ASSERT_TRUE(budget.Admit(peer, 1'000));
+	ASSERT_FALSE(budget.Admit(peer, 1'000 + kSweepIpIntervalMs - 1));
+	ASSERT_TRUE(budget.Admit(peer, 1'000 + kSweepIpIntervalMs));
+	// Another address has a budget of its own.
+	ASSERT_TRUE(budget.Admit({ { 192, 0, 2, 2 } }, 1'000 + kSweepIpIntervalMs));
+}
+
+TEST(NatServerHolePunch, AtMostTenSweepsInAnyMinute)
+{
+	SweepBudget budget;
+	for (std::size_t i = 0; i < kMaxSweepsPerWindow; ++i) {
+		ASSERT_TRUE(budget.Admit({ { 10, 0, 0, static_cast<std::uint8_t>(i) } }, 0));
+	}
+	ASSERT_FALSE(budget.Admit({ { 10, 0, 0, 100 } }, 0));
+	ASSERT_FALSE(budget.Admit({ { 10, 0, 0, 100 } }, kSweepWindowMs - 1));
+	ASSERT_TRUE(budget.Admit({ { 10, 0, 0, 100 } }, kSweepWindowMs));
+}
+
+TEST(NatServerHolePunch, ARefusedSweepSpendsNeitherBudget)
+{
+	SweepBudget budget;
+	const IPv4 peer{ { 192, 0, 2, 1 } };
+	ASSERT_TRUE(budget.Admit(peer, 0));
+	ASSERT_FALSE(budget.Admit(peer, 10));
+	// Had the refusal spent the minute's budget, one of these would already be over it.
+	for (std::size_t i = 0; i + 1 < kMaxSweepsPerWindow; ++i) {
+		ASSERT_TRUE(budget.Admit({ { 10, 0, 1, static_cast<std::uint8_t>(i) } }, 20));
+	}
+	ASSERT_FALSE(budget.Admit({ { 10, 0, 1, 200 } }, 20));
+}
