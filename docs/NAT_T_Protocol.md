@@ -321,7 +321,7 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
   on the same call;
 - receiving `0x61` on the server TCP link (`ServerSocket.cpp`): after validating the advertised
   IP against LAN, IP-filter and ban policies, register its peer endpoint as expected for 30 s,
-  then send an empty `OP_HOLEPUNCH` (`0xA1`, `OP_EMULEPROT`) from the client UDP socket to it.
+  then punch it, see [Punch schedule and port sweep](#punch-schedule-and-port-sweep).
   The trailing `peer_id` of a 29-byte `0x61` (ed2k-server 0.9.84 and later; read only when the
   payload is 29 bytes or more) is the server ID of the peer described. When it names a target
   of one of our pending `0x60` requests, this side is the **requester** and dials: QUIC or
@@ -347,6 +347,39 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
   on the kept stream. No TCP fallback is available between two LowID peers;
 - receiving `0x62`: log the failure and release the matching outstanding target ID.
 
+### Punch schedule and port sweep
+
+Every punch a server path sends goes out more than once: to the endpoint the server named at
+0, 0.5, 1 and 2 s: the wake's `0x9F` offsets, 0, 0.5 and 1 s, plus one more at 2 s. It applies
+to the `0x61` above, to the cross-server `0xA7` answer and to the extension wake, which each sent
+a single `OP_HOLEPUNCH` before. The wire format is unchanged: an empty `OP_HOLEPUNCH` (`0xA1`,
+`OP_EMULEPROT`) to the given UDP port. The due punches are sent from `CamuleApp::OnCoreTimer`
+(`CServerConnect::StartLowIdHolePunchSchedule()` sends the first, `SendDueLowIdHolePunches()` the
+rest), so no thread is added.
+
+- one schedule per peer address and port: a second `0x61` for the same address and port restarts
+  it rather than adding another. Lugdunum's path keeps its own resends
+  (`CCallbackRendezvous`, every 3 s for 60 s) and only runs against a Lugdunum server, so the two
+  never overlap for one peer;
+- stop early: an address's schedule is dropped when a punch arrives from it
+  (`CClientUDPSocket::HandleLowIdHolePunch()`, from any port), when our own dial to it connects
+  (`NoteRendezvousHello()`), and when the expected endpoint it was derived from expires 30 s after
+  the `0x61` (`NatServerHolePunch::kExpectedEndpointTtlMs`). Dropping it changes nothing about
+  what the peer may make us do: a punch from another port still redials there, as above;
+- sweep: at 0.5 s, with nothing yet arrived from that address, one punch to each port in
+  `given - 16` to `given + 16` without the given one, which the schedule already punches, clipped
+  to 1024-65535
+  (`NatServerHolePunch::SweptPorts()`). 16 is eMuleAI's window: it covers a NAT that maps the port
+  statically a few ports up, while a NAT that picks a random port per destination cannot be
+  reached by scanning at all. It happens once per `0x61`, the first one included;
+- sweep budget (`NatServerHolePunch::SweepBudget`): one sweep per destination address every five
+  minutes, since a scan aims at one address and that is what stops it, plus ten a minute overall. A
+  refused sweep spends neither budget. The four punches to the given endpoint stay under the
+  existing 20-per-minute `ActionRateLimiter`, so one sweep is at most 32 datagrams and the whole
+  feature stays bounded whatever the server says;
+- with `ENABLE_NATT_SERVER_COORDINATION` off, uTP not built, or `LowIdHolePunch` off, none of this
+  runs and every path behaves exactly as it did before.
+
 ### Hole-punch extension (ed2k-server 0.9.85)
 
 The extension (andrey23127/ed2k-server#39) lets the server hand out the UDP port from a fresh
@@ -367,13 +400,14 @@ that announced it to a server that sets `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENS
   (`NatServerHolePunch::ShouldObfuscateKeepalive()`); the key is then recovered and the `0x9F`
   sent again, obfuscated, when it arrives (see [Missing server UDP key](#missing-server-udp-key)).
   One `0x9F` goes with each `0x60`;
-- woken by `0x37`: send `0x9F` at 0, 0.5 and 1 s and `OP_HOLEPUNCH` to the requester's
-  endpoint, with no dial and no reverse callback. The `0x61` that follows (30 bytes, with
-  `peer_crypt`) decides who dials, as above. A `0x37` can also come from a Lugdunum `0xA6`, which
-  no `0x61` follows: if none names the requester within 5 s (the server waits 3 s, then resends at
-  +1.2 s and +3 s), aMule dials the Lugdunum way, as it would on any Lugdunum server. Any `0x61`
-  that names the requester answers the wake, even one the action limit or the duplicate window
-  keeps us from acting on. At most 16 wakes wait at once (`NatServerHolePunch::PendingWakeSet`).
+- woken by `0x37`: send `0x9F` at 0, 0.5 and 1 s and `OP_HOLEPUNCH` to the requester's endpoint
+  on the [schedule above](#punch-schedule-and-port-sweep), with no dial and no reverse callback.
+  The `0x61` that follows (30 bytes, with `peer_crypt`) decides who dials, as above. A `0x37` can
+  also come from a Lugdunum `0xA6`, which no `0x61` follows: if none names the requester within
+  5 s (the server waits 3 s, then resends at +1.2 s and +3 s), aMule dials the Lugdunum way, as
+  it would on any Lugdunum server. Any `0x61` that names the requester answers the wake, even one
+  the action limit or the duplicate window keeps us from acting on. At most 16 wakes wait at once
+  (`NatServerHolePunch::PendingWakeSet`).
   A UDP `0xA7` from our own server answers a Lugdunum `0xA6` of ours and is dialled at once,
   except a cross-server wake (requester ID 0, below), which the server sends by UDP when we asked
   for a callback ourselves less than 20 s before.
@@ -406,8 +440,8 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
   its key, exactly 27 bytes (`<target_ip 4><target_udp_port 2><target_id 4><crypt 1><hash 16>`),
   for a pending target, and with the hash source exchange gave us for the source when it did.
   Only the first copy is used; the server resends it at +1.2 s and +3 s. The requester punches
-  and dials, as on the server punch: QUIC first, uTP as the fallback, keyed with the target's
-  hash and crypt options;
+  (on the [schedule above](#punch-schedule-and-port-sweep)) and dials, as on the server punch:
+  QUIC first, uTP as the fallback, keyed with the target's hash and crypt options;
 - target: on a `0x100000` server, a `0x37` with requester ID 0, or a `0xA7` with requester ID 0
   when we sent an `0xA6` ourselves less than 20 s before, comes from a client logged in elsewhere.
   No `0x61` follows it: the target punches the requester's endpoint, sends its `0x9F` burst and

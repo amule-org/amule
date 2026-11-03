@@ -1145,9 +1145,9 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 			answer->targetId % Uint32_16toStringIP_Port(answer->targetIp, answer->targetUdpPort));
 	// Both sides punch; the requester holds the target's hash, so it dials, obfuscated from the start.
 	ExpectNatTPeer(answer->targetIp, answer->targetUdpPort, &answer->targetHash);
-	CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
-	theStats::AddUpOverheadOther(punch->GetPacketSize());
-	SendPacket(punch, answer->targetIp, answer->targetUdpPort, false, nullptr, false, 0);
+	NatServerHolePunch::IPv4 targetIP{};
+	PokeUInt32(targetIP.data(), answer->targetIp);
+	connect->StartLowIdHolePunchSchedule(targetIP, answer->targetUdpPort, now);
 	const NatServerHolePunch::VouchedPeer peer{ answer->targetHash,
 		static_cast<std::uint8_t>(answer->crypt & 0x07) };
 	DialLowIdHolePunchPeer(answer->targetIp, pending->sourceTcpPort, answer->targetUdpPort, peer);
@@ -1156,6 +1156,12 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 
 bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash)
 {
+	// Our own dial to that address connected, so its punches have nothing left to reach.
+	if (theApp->serverconnect != nullptr) {
+		NatServerHolePunch::IPv4 peer{};
+		PokeUInt32(peer.data(), ip);
+		theApp->serverconnect->LowIdHolePunchSchedules().Cancel(peer);
+	}
 	const std::optional<NatServerHolePunch::RendezvousPath> path =
 		m_rendezvousOutcomes.TakeSuccess(ip, peerHash, ::GetTickCount64());
 	if (!path) {
@@ -1260,11 +1266,12 @@ bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::
 			NatServerHolePunch::RendezvousPath::LugdunumCallback, target.ip, nullptr);
 	}
 	connect->StartHolePunchExtensionKeepalives();
-	CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
-	theStats::AddUpOverheadOther(punch->GetPacketSize());
-	SendPacket(punch, target.ip, target.udpPort, false, nullptr, false, 0);
+	NatServerHolePunch::IPv4 targetIP{};
+	PokeUInt32(targetIP.data(), target.ip);
+	connect->StartLowIdHolePunchSchedule(targetIP, target.udpPort, now);
 	AddDebugLogLineN(logClientUDP,
-		CFormat("Hole-punch extension wake from requester %u: OP_HOLEPUNCH to %s") %
+		CFormat("Hole-punch extension wake from requester %u: OP_HOLEPUNCH at 0, 0.5, 1 "
+			"and 2 s to %s") %
 			callback.requesterId % Uint32_16toStringIP_Port(target.ip, target.udpPort));
 	return true;
 }
@@ -1341,8 +1348,15 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 
 void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 {
+	NatServerHolePunch::IPv4 source{};
+	PokeUInt32(source.data(), host);
 	CServerConnect *connect = theApp->serverconnect;
-	if (connect == nullptr || !connect->IsConnected() || !thePrefs::IsLowIdHolePunchEnabled() ||
+	if (connect == nullptr) {
+		return;
+	}
+	// Whatever port it came from, a punch from that address is what its schedule was for.
+	connect->LowIdHolePunchSchedules().Cancel(source);
+	if (!connect->IsConnected() || !thePrefs::IsLowIdHolePunchEnabled() ||
 		thePrefs::GetEffectiveUDPPort() == 0) {
 		return;
 	}
@@ -1351,8 +1365,6 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 		!IsGoodIP(host, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(host)) {
 		return;
 	}
-	NatServerHolePunch::IPv4 source{};
-	PokeUInt32(source.data(), host);
 	const std::uint64_t now = ::GetTickCount64();
 	const NatServerHolePunch::PunchAction action =
 		connect->LowIdHolePunchExpectedEndpoints().Take(source, port, now);

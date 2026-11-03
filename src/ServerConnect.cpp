@@ -54,12 +54,13 @@
 #include "ServerIPv6Update.h" // Needed for DecideServerIPv6Update
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-#include "NatServerHolePunch.h" // Needed for BuildUdpPortsLoginValue, ShouldSendKeepalive
-#include "NetworkFunctions.h"   // Needed for Uint32_16toStringIP_Port
-#include "ClientUDPSocket.h"    // Needed for the complete type behind theApp->clientudp
-#include "ClientList.h"         // Needed for theApp->clientlist->FindClientByIP
-#include "updownclient.h"       // Needed for CUpDownClient::IsConnected
-#include <algorithm>            // Needed for std::copy_n
+#include "NatServerHolePunch.h"              // Needed for BuildUdpPortsLoginValue, ShouldSendKeepalive
+#include "NetworkFunctions.h"                // Needed for Uint32_16toStringIP_Port
+#include "ClientUDPSocket.h"                 // Needed for the complete type behind theApp->clientudp
+#include "ClientList.h"                      // Needed for theApp->clientlist->FindClientByIP
+#include "updownclient.h"                    // Needed for CUpDownClient::IsConnected
+#include <algorithm>                         // Needed for std::copy_n
+#include <protocol/ed2k/Client2Client/UDP.h> // Needed for OP_HOLEPUNCH
 #endif
 
 // #define DEBUG_CLIENT_PROTOCOL
@@ -838,6 +839,9 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_lowIdHolePunchPendingRequests = NatServerHolePunch::PendingRequestSet();
 	m_lowIdHolePunchDialBacks = NatServerHolePunch::DialBackSchedule();
 	m_lowIdHolePunchExpectedEndpoints = NatServerHolePunch::ExpectedEndpointRegistry();
+#ifdef AMULE_UTP_TRANSPORT
+	m_lowIdHolePunchSchedules = NatServerHolePunch::PunchScheduleSet();
+#endif
 	m_holePunchExtensionWakes =
 		NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback>();
 	m_holePunchKeepaliveBurst = NatServerHolePunch::KeepaliveBurst();
@@ -883,6 +887,7 @@ void CServerConnect::StartHolePunchExtensionKeepalives()
 void CServerConnect::ProcessHolePunchExtension()
 {
 	const std::uint64_t now = ::GetTickCount64();
+	SendDueLowIdHolePunches(now);
 	for (std::size_t due = m_holePunchKeepaliveBurst.TakeDue(now); due > 0; --due) {
 		TrySendLowIdHolePunchKeepalive();
 	}
@@ -916,6 +921,54 @@ void CServerConnect::ProcessLowIdHolePunchDialBacks()
 		}
 		if (m_lowIdHolePunchActionLimiter.Admit(now)) {
 			theApp->clientudp->DialLowIdHolePunchPeer(ip, due.tcpPort, due.udpPort, due.peer);
+		}
+	}
+}
+
+void CServerConnect::StartLowIdHolePunchSchedule(
+	const NatServerHolePunch::IPv4 &peerIP, uint16 udpPort, uint64 now)
+{
+	if (udpPort == 0) {
+		return;
+	}
+	m_lowIdHolePunchSchedules.Start(peerIP, udpPort, now);
+	// The first punch is due now, so it leaves with this tick rather than the next one.
+	SendDueLowIdHolePunches(now);
+}
+
+void CServerConnect::SendDueLowIdHolePunches(uint64 now)
+{
+	if (theApp->clientudp == nullptr || !theApp->clientudp->Ok()) {
+		return;
+	}
+	const auto punch = [](const NatServerHolePunch::IPv4 &peerIP, uint16 udpPort) {
+		CPacket *packet = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
+		theStats::AddUpOverheadOther(packet->GetPacketSize());
+		theApp->clientudp->SendPacket(
+			packet, PeekUInt32(peerIP.data()), udpPort, false, nullptr, false, 0);
+	};
+	for (const NatServerHolePunch::PunchDue &due : m_lowIdHolePunchSchedules.TakeDue(now)) {
+		if (due.kind == NatServerHolePunch::PunchDue::Endpoint) {
+			punch(due.peerIP, due.udpPort);
+			continue;
+		}
+		// One sweep per destination address every five minutes, ten a minute overall.
+		if (!m_lowIdHolePunchSweeps.Admit(due.peerIP, now)) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Punch sweep to %s refused by the sweep budget") %
+					Uint32toStringIP(PeekUInt32(due.peerIP.data())));
+			continue;
+		}
+		const std::vector<uint16> ports = NatServerHolePunch::SweptPorts(due.udpPort);
+		if (!ports.empty()) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Punch sweep to %s: %u ports %u-%u around %u") %
+					Uint32toStringIP(PeekUInt32(due.peerIP.data())) %
+					static_cast<unsigned>(ports.size()) % ports.front() % ports.back() %
+					due.udpPort);
+		}
+		for (const uint16 port : ports) {
+			punch(due.peerIP, port);
 		}
 	}
 }

@@ -173,6 +173,15 @@ public:
 	//! Sends the due wake keepalives, and dials the Lugdunum way for each wake no 0x61 answered.
 	//! Called from every CamuleApp::OnCoreTimer tick, which the 0.5 s burst needs.
 	void ProcessHolePunchExtension();
+	//! Starts the punch schedule for one peer and sends what is already due: the punch to the
+	//! endpoint a 0x61, a cross-server 0xA7 answer or an extension wake named, then its repeats at
+	//! 0.5, 1 and 2 s, with the port sweep at 0.5 s.
+	void StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP, uint16 udpPort, uint64 now);
+	//! Sends the punches and sweeps that have come due. Called from every OnCoreTimer tick.
+	void SendDueLowIdHolePunches(uint64 now);
+	//! The punches owed to each peer address, cancelled by a punch from it or by our dial
+	//! connecting.
+	NatServerHolePunch::PunchScheduleSet &LowIdHolePunchSchedules() { return m_lowIdHolePunchSchedules; }
 #endif
 #endif
 
@@ -240,6 +249,11 @@ private:
 	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> m_holePunchExtensionWakes;
 	NatServerHolePunch::KeepaliveBurst m_holePunchKeepaliveBurst;
 	NatServerHolePunch::ServerRequestPacer m_lugdunumCallbackRetryPacer;
+#ifdef AMULE_UTP_TRANSPORT
+	NatServerHolePunch::PunchScheduleSet m_lowIdHolePunchSchedules;
+	// Not reset with the session: a server must not be able to buy more sweeps by dropping us.
+	NatServerHolePunch::SweepBudget m_lowIdHolePunchSweeps;
+#endif
 	bool m_holePunchKeepaliveAwaitsServerKey = false;
 	uint64 m_nextAwaitedServerKeyCheck = 0;
 	//! Sends the keepalive again, obfuscated, once the server's missing UDP key arrives.

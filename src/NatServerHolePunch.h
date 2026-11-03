@@ -573,6 +573,193 @@ public:
 private:
 	std::vector<Entry> m_entries;
 };
+
+// Server punch schedule. Every punch a server path sends (the 0x61, the cross-server 0xA7 answer
+// and the extension wake) goes to the endpoint the server gave at 0, 0.5, 1 and 2 s, the wake's
+// 0x9F offsets plus one. Lugdunum's CCallbackRendezvous keeps its own 3 s resends on a different
+// server family, so the two never run for one peer.
+constexpr std::array<std::uint64_t, 4> kServerPunchOffsetsMs{ 0, 500, 1'000, 2'000 };
+// 16 is eMuleAI's window: it covers a NAT that maps the port statically a few ports up, while a
+// NAT that picks a random port per destination is not reachable by scanning at all.
+constexpr std::uint16_t kPortSweepHalfWidth = 16;
+// Below 1024 no client listens, and 65535 is the last port there is.
+constexpr std::uint16_t kPortSweepMinPort = 1024;
+constexpr std::uint16_t kPortSweepMaxPort = 65'535;
+// The sweep goes out with the burst's second punch, once the endpoint has had 0.5 s to answer.
+constexpr std::uint64_t kPortSweepOffsetMs = 500;
+constexpr std::size_t kMaxPunchSchedules = 32;
+
+// The ports one sweep tries: the window around the given one, that one itself excepted because the
+// schedule already punches it, clipped to the ports that exist.
+inline std::vector<std::uint16_t> SweptPorts(std::uint16_t udpPort)
+{
+	std::vector<std::uint16_t> ports;
+	const int first = std::max<int>(udpPort - kPortSweepHalfWidth, kPortSweepMinPort);
+	const int last = std::min<int>(udpPort + kPortSweepHalfWidth, kPortSweepMaxPort);
+	for (int port = first; port <= last; ++port) {
+		if (port == udpPort) {
+			continue;
+		}
+		ports.push_back(static_cast<std::uint16_t>(port));
+	}
+	return ports;
+}
+
+// One punch the schedule still owes.
+struct PunchDue
+{
+	enum Kind
+	{
+		Endpoint,
+		Sweep
+	};
+	Kind kind = Endpoint;
+	IPv4 peerIP{};
+	std::uint16_t udpPort = 0;
+};
+
+// The punches owed to each peer endpoint. One schedule per address and port, restarted by a second
+// 0x61 for it. A punch or a hello from the address drops all of its schedules, and each one
+// expires with its expected endpoint.
+class PunchScheduleSet
+{
+public:
+	// Keyed by address and port: two LowID peers can share one public address behind a carrier NAT,
+	// and restarting one must not drop the other's remaining punches.
+	void Start(const IPv4 &peerIP, std::uint16_t udpPort, std::uint64_t now)
+	{
+		Evict(now);
+		m_entries.erase(std::remove_if(m_entries.begin(),
+					m_entries.end(),
+					[&peerIP, udpPort](const Entry &entry) {
+						return entry.peerIP == peerIP && entry.udpPort == udpPort;
+					}),
+			m_entries.end());
+		if (m_entries.size() >= kMaxPunchSchedules) {
+			m_entries.erase(m_entries.begin());
+		}
+		Entry entry{ peerIP, udpPort, now, {} };
+		for (const std::uint64_t offset : kServerPunchOffsetsMs) {
+			entry.due.push_back({ now + offset, PunchDue::Endpoint });
+		}
+		entry.due.push_back({ now + kPortSweepOffsetMs, PunchDue::Sweep });
+		m_entries.push_back(std::move(entry));
+	}
+	void Cancel(const IPv4 &peerIP)
+	{
+		m_entries.erase(std::remove_if(m_entries.begin(),
+					m_entries.end(),
+					[&peerIP](const Entry &entry) { return entry.peerIP == peerIP; }),
+			m_entries.end());
+	}
+	// Everything due now, the endpoint's own punches before the sweep they share a moment with; each
+	// is returned once.
+	std::vector<PunchDue> TakeDue(std::uint64_t now)
+	{
+		Evict(now);
+		std::vector<PunchDue> due;
+		for (Entry &entry : m_entries) {
+			const auto firstPending = std::stable_partition(entry.due.begin(),
+				entry.due.end(),
+				[now](const Item &item) { return now >= item.at; });
+			for (auto item = entry.due.begin(); item != firstPending; ++item) {
+				due.push_back({ item->kind, entry.peerIP, entry.udpPort });
+			}
+			entry.due.erase(entry.due.begin(), firstPending);
+		}
+		m_entries.erase(std::remove_if(m_entries.begin(),
+					m_entries.end(),
+					[](const Entry &entry) { return entry.due.empty(); }),
+			m_entries.end());
+		return due;
+	}
+	std::size_t Size() const { return m_entries.size(); }
+
+private:
+	struct Item
+	{
+		std::uint64_t at;
+		PunchDue::Kind kind;
+	};
+	struct Entry
+	{
+		IPv4 peerIP;
+		std::uint16_t udpPort;
+		std::uint64_t startedAt;
+		std::vector<Item> due;
+	};
+	void Evict(std::uint64_t now)
+	{
+		m_entries.erase(std::remove_if(m_entries.begin(),
+					m_entries.end(),
+					[now](const Entry &entry) {
+						return now >= entry.startedAt &&
+						       now - entry.startedAt >= kExpectedEndpointTtlMs;
+					}),
+			m_entries.end());
+	}
+	std::vector<Entry> m_entries;
+};
+
+// A sweep aims at one address, so one per destination IP every five minutes is what stops a scan;
+// ten a minute overall is what bounds the cost of the feature whatever a server says.
+constexpr std::uint64_t kSweepIpIntervalMs = 300'000;
+constexpr std::uint64_t kSweepWindowMs = 60'000;
+constexpr std::size_t kMaxSweepsPerWindow = 10;
+// Ten a minute over five minutes leaves 50 addresses live; the rest is room to evict in order.
+constexpr std::size_t kMaxSweptAddresses = 64;
+
+class SweepBudget
+{
+public:
+	// True when this sweep may go out; a refused one spends neither budget.
+	bool Admit(const IPv4 &peerIP, std::uint64_t now)
+	{
+		Prune(now);
+		if (m_recent.size() >= kMaxSweepsPerWindow) {
+			return false;
+		}
+		const auto seen = std::find_if(m_addresses.begin(),
+			m_addresses.end(),
+			[&peerIP](const Address &address) { return address.ip == peerIP; });
+		if (seen != m_addresses.end() && now >= seen->at && now - seen->at < kSweepIpIntervalMs) {
+			return false;
+		}
+		if (seen != m_addresses.end()) {
+			seen->at = now;
+		} else {
+			if (m_addresses.size() >= kMaxSweptAddresses) {
+				m_addresses.erase(m_addresses.begin());
+			}
+			m_addresses.push_back({ peerIP, now });
+		}
+		m_recent.push_back(now);
+		return true;
+	}
+
+private:
+	struct Address
+	{
+		IPv4 ip;
+		std::uint64_t at;
+	};
+	void Prune(std::uint64_t now)
+	{
+		m_addresses.erase(std::remove_if(m_addresses.begin(),
+					  m_addresses.end(),
+					  [now](const Address &address) {
+						  return now >= address.at &&
+							 now - address.at >= kSweepIpIntervalMs;
+					  }),
+			m_addresses.end());
+		while (!m_recent.empty() && now >= m_recent.front() &&
+			now - m_recent.front() >= kSweepWindowMs) {
+			m_recent.pop_front();
+		}
+	}
+	std::vector<Address> m_addresses;
+	std::deque<std::uint64_t> m_recent;
+};
 // Hole-punch extension (ed2k-server 0.9.85). Between two clients that both announced it, a 0x60
 // wakes the target with Lugdunum's 0x37; the target's fresh 0x9F then releases a 30-byte 0x61.
 
