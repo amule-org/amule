@@ -31,6 +31,8 @@
 #include <wx/arrstr.h> // Needed for wxArrayString
 
 #include <map>
+#include <utility>
+#include <vector>
 
 #include "Proxy.h"
 #include "ShareExclude.h"
@@ -380,6 +382,22 @@ public:
 	static void SetVerbose(bool val);
 	static bool GetVerboseLogfile() { return s_bVerboseLogfile; }
 	static void SetVerboseLogfile(bool val);
+#ifdef CLIENT_GUI
+	struct CoreDebugCategory
+	{
+		wxString name;
+		bool enabled;
+	};
+	// The connected core's categories, never persisted. Empty when the core does not report them.
+	static const std::vector<CoreDebugCategory> &GetCoreDebugCategories()
+	{
+		return s_coreDebugCategories;
+	}
+	static void SetCoreDebugCategories(std::vector<CoreDebugCategory> categories)
+	{
+		s_coreDebugCategories = std::move(categories);
+	}
+#endif
 	static bool GetPreviewPrio() { return s_bpreviewprio; }
 	static void SetPreviewPrio(bool in) { s_bpreviewprio = in; }
 	static bool StartNextFile() { return s_bstartnextfile; }
@@ -1226,6 +1244,7 @@ protected:
 	static bool s_IsChatCaptchaEnabled;
 #ifdef CLIENT_GUI
 	static bool s_chatSpamFilterSupported;
+	static std::vector<CoreDebugCategory> s_coreDebugCategories;
 #endif
 
 	static bool s_FilterComments;

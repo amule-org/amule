@@ -2438,6 +2438,9 @@ Returns every preference category amuled carries over EC. The `general` and `con
   "online_signature": { "enabled": false, "directory": "/home/me/.aMule", "update_frequency_seconds": 5 },
   "advanced": {
     "max_new_connections_per_5_seconds": 200, "verbose_logging": false,
+    "verbose_logging_logfile_only": false, "debug_categories_supported": true,
+    "debug_categories": ["General", "Hasher", "ED2k Client"],
+    "debug_categories_enabled": ["General"],
     "write_buffer_limit_supported": true, "write_buffer_limit_mebibytes": 128,
     "file_buffer_bytes": 240000, "max_upload_queue_client_count": 5000,
     "server_keepalive_timeout_minutes": 0, "kad_max_concurrent_source_search_count": 50,
@@ -2479,6 +2482,10 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 
 `advanced.write_buffer_limit_supported` is **read-only**: `true` when the daemon reports `advanced.write_buffer_limit_mebibytes`. A daemon older than 3.3 neither reports nor applies the limit, so there it is `false`, the limit reads `0`, and a `PATCH` that sets it answers `409 option_not_supported`.
 
+`advanced.debug_categories_supported` is **read-only**: `true` when the daemon reports its debug categories. On a daemon older than 3.3 it is `false`, `advanced.debug_categories` and `advanced.debug_categories_enabled` are empty, `advanced.verbose_logging_logfile_only` reads `false`, and a `PATCH` that sets either writable field answers `409 option_not_supported`.
+
+`advanced.debug_categories` is **read-only** and lists every category name the daemon has. `advanced.debug_categories_enabled` is the enabled subset, in the same order. Categories produce output only while `advanced.verbose_logging` is `true`. `advanced.verbose_logging_logfile_only` keeps debug messages in the daemon's logfile and out of [`GET /logs/amule`](#get-apiv1logsamule). All of these apply immediately, with no daemon restart, and the daemon saves them. Debug logs can contain peer IP addresses, user hashes and file names, and guests can read `GET /logs/amule`, so turn on `verbose_logging_logfile_only` when guests should not see them.
+
 `connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server UPnP is not exposed, since amuleweb is deprecated. EC-port UPnP is reported read-only, as `remote_controls.external_connections.upnp_enabled`.)
 
 The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2P and HTTP traffic through. `proxy_type` is one of `"socks5"` / `"socks4"` / `"http"` / `"socks4a"` — any other value is a `400`. It is the empty string when the daemon has no proxy type configured at all (the core's `PROXY_NONE`), a state that cannot be set back through this API; use `proxy_enabled: false` to turn the proxy off. `proxy_auth_enabled` toggles username/password authentication. `proxy_password` is **write-only** — accepted on PATCH but never returned on GET (same as the `remote_controls` passwords); PATCH the other proxy fields without it to leave the stored password unchanged.
@@ -2496,7 +2503,7 @@ The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2
 | Kind | What `PATCH` does | Examples |
 | --- | --- | --- |
 | Settable | applied | most of the 133 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
-| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `files.media_metadata_available`, `kad.protocol10_supported`, `connection.upnp_supported`, the six `geoip.*`, the seven `remote_controls.external_connections.*` |
+| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `files.media_metadata_available`, `kad.protocol10_supported`, `advanced.debug_categories_supported`, `advanced.debug_categories`, `connection.upnp_supported`, the six `geoip.*`, the seven `remote_controls.external_connections.*` |
 | Write-only | applied, never echoed on `GET` | `remote_controls.webserver.password`, `.guest_password` |
 | Refused | `400 bad_request` | `remote_controls.amuleapi.password`, `.guest_password`, `.guest_enabled` |
 
@@ -2521,6 +2528,8 @@ Body shape mirrors the GET; every sub-object and every field is optional, and fi
 amuleapi's own `admin` and `guest` passwords are **not** settable here; `remote_controls.amuleapi.password`, `.guest_password` and `.guest_enabled` are rejected with `400 bad_request`. Use [`PATCH /auth/passwords`](#patch-apiv1authpasswords), which writes the credential file this daemon actually reads, requires the current password, and is rate-limited. A field here would instead travel over EC to whichever aMule this amuleapi is attached to and land in that host's config directory.
 
 `geoip.auto_update_enabled` controls conditional update checks at startup and weekly while the core remains running; `geoip.enabled` must also be enabled. Manual updates bypass this schedule.
+
+`advanced.debug_categories_enabled` replaces the whole set: send every category to keep enabled, or `[]` to disable them all. A name that is not in `advanced.debug_categories` is a `400`, and the request changes nothing. Names are case-sensitive.
 
 **`geoip`** accepts `enabled`, `source` (`"dbip"` / `"maxmind"` / `"custom"` — any other value is a `400`), `custom_update_url`, `maxmind_license`, and `auto_update_enabled`. `supported` and the read-only status fields (`loaded_source`, `db_path`, `db_loaded`, `download_in_progress`, `last_update_status`) are ignored if sent.
 

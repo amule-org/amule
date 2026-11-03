@@ -101,6 +101,81 @@ void CEC_Category_Tag::CanonicalizeStoredPath()
 	SetPath(CPath(Path()).CanonicalForContainment().GetRaw());
 }
 
+static CECTag MakeStringListTag(ec_tagname_t name, const wxArrayString &values)
+{
+	CECTag list(name, static_cast<uint32>(values.GetCount()));
+	for (const wxString &value : values) {
+		list.AddTag(CECTag(EC_TAG_STRING, value));
+	}
+	return list;
+}
+
+static wxArrayString ReadStringListTag(const CECTag &list)
+{
+	wxArrayString values;
+	for (const CECTag &child : list) {
+		if (child.GetTagName() == EC_TAG_STRING && child.IsString()) {
+			values.Add(child.GetStringData());
+		}
+	}
+	return values;
+}
+
+static void AddDebugSettingsTags(CECTag &coreTweaks)
+{
+	wxArrayString all;
+	wxArrayString enabled;
+#ifdef CLIENT_GUI
+	for (const auto &category : thePrefs::GetCoreDebugCategories()) {
+		all.Add(category.name);
+		if (category.enabled) {
+			enabled.Add(category.name);
+		}
+	}
+	if (all.IsEmpty()) {
+		return; // An older core reports none and cannot apply them.
+	}
+#else
+	for (unsigned int i = 0; i < theLogger.GetDebugCategoryCount(); ++i) {
+		const CDebugCategory &category = theLogger.GetDebugCategory(static_cast<int>(i));
+		all.Add(category.GetName());
+		if (category.IsEnabled()) {
+			enabled.Add(category.GetName());
+		}
+	}
+#endif
+	coreTweaks.AddTag(CECTag(EC_TAG_CORETW_VERBOSE_LOGFILE, thePrefs::GetVerboseLogfile()));
+	coreTweaks.AddTag(MakeStringListTag(EC_TAG_CORETW_DEBUG_CATEGORIES, all));
+	coreTweaks.AddTag(MakeStringListTag(EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED, enabled));
+}
+
+// Absent tags leave the setting alone: older clients never send them.
+static void ApplyDebugSettingsTags(const CECTag &coreTweaks)
+{
+	if (const CECTag *logfile = coreTweaks.GetTagByName(EC_TAG_CORETW_VERBOSE_LOGFILE)) {
+		thePrefs::SetVerboseLogfile(logfile->GetInt() != 0);
+	}
+	const CECTag *enabledTag = coreTweaks.GetTagByName(EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED);
+	const wxArrayString enabled = enabledTag ? ReadStringListTag(*enabledTag) : wxArrayString();
+#ifdef CLIENT_GUI
+	std::vector<CPreferences::CoreDebugCategory> categories;
+	if (const CECTag *all = coreTweaks.GetTagByName(EC_TAG_CORETW_DEBUG_CATEGORIES)) {
+		for (const wxString &name : ReadStringListTag(*all)) {
+			categories.push_back({ name, enabled.Index(name) != wxNOT_FOUND });
+		}
+	}
+	thePrefs::SetCoreDebugCategories(std::move(categories));
+#else
+	if (enabledTag) {
+		for (unsigned int i = 0; i < theLogger.GetDebugCategoryCount(); ++i) {
+			const CDebugCategory &category = theLogger.GetDebugCategory(static_cast<int>(i));
+			theLogger.SetEnabled(
+				category.GetType(), enabled.Index(category.GetName()) != wxNOT_FOUND);
+		}
+	}
+#endif
+}
+
 CEC_Prefs_Packet::CEC_Prefs_Packet(
 	uint32 selection, EC_DETAIL_LEVEL pref_details, EC_DETAIL_LEVEL cat_details)
 : CECPacket(EC_OP_SET_PREFERENCES, pref_details)
@@ -542,6 +617,7 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::GetVerbose()) {
 			cwPrefs.AddTag(CECEmptyTag(EC_TAG_CORETW_VERBOSE));
 		}
+		AddDebugSettingsTags(cwPrefs);
 		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_FILEBUFFER, thePrefs::GetFileBufferSize()));
 		if (thePrefs::IsWriteBufferLimitSupported()) {
 			cwPrefs.AddTag(CECTag(
@@ -1195,6 +1271,7 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 			thePrefs::SetMaxConsPerFive(oneTag->GetInt());
 		}
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetVerbose, EC_TAG_CORETW_VERBOSE);
+		ApplyDebugSettingsTags(*thisTab);
 #ifdef CLIENT_GUI
 		thePrefs::SetWriteBufferLimitSupported(
 			thisTab->GetTagByName(EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB) != nullptr);

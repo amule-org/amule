@@ -818,6 +818,12 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_CORETW_SOURCE_REASK_MS             0x1D08
 ## Download write budget in MiB, 1..1024 (default 128).
 		EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB      0x1D09
+## Debug messages go to the logfile only. Send only to a core that reports EC_TAG_CORETW_DEBUG_CATEGORIES.
+		EC_TAG_CORETW_VERBOSE_LOGFILE             0x1D0A
+## Every category name, as EC_TAG_STRING children. Read-only. Older cores omit it.
+		EC_TAG_CORETW_DEBUG_CATEGORIES            0x1D0B
+## The enabled category names, as EC_TAG_STRING children. A write replaces the whole set.
+		EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED    0x1D0C
 
 	EC_TAG_PREFS_KADEMLIA                     0x1E00
 		EC_TAG_KADEMLIA_UPDATE_URL                0x1E01

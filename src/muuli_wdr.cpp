@@ -3428,7 +3428,17 @@ wxSizer *PreferencesDebug( wxWindow *parent, bool call_fit, bool set_sizer )
     item0->Add( item1, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
     wxCheckBox *item2 = new wxCheckBox( parent, ID_VERBOSEDEBUGLOGFILE, _("Only to Logfile"), wxDefaultPosition, wxDefaultSize, 0 );
     item0->Add( item2, wxSizerFlags().CenterVertical().Border(wxALL, 0) );
+#ifdef CLIENT_GUI
+    wxStaticBox *coreCatsBox = new wxStaticBox( parent, -1, _("Core Message Categories:") );
+    wxStaticBoxSizer *coreCatsSizer = new wxStaticBoxSizer( coreCatsBox, wxVERTICAL );
+    wxWindow *coreCats = new wxCheckListBox( coreCatsBox, ID_DEBUGCATS_CORE );
+    wxASSERT( coreCats );
+    coreCatsSizer->Add( coreCats, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 5) );
+    item0->Add( coreCatsSizer, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 0) );
+    wxStaticBox *item4 = new wxStaticBox( parent, -1, _("Remote GUI Message Categories:") );
+#else
     wxStaticBox *item4 = new wxStaticBox( parent, -1, _("Message Categories:") );
+#endif
     wxStaticBoxSizer *item3 = new wxStaticBoxSizer( item4, wxVERTICAL );
 
     wxWindow *item5 = new wxCheckListBox( item4, ID_DEBUGCATS );

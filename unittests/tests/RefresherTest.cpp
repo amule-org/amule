@@ -2771,9 +2771,9 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			++emitted;
 	}
 
-	// The documented payload is 139 fields. A row added or dropped without
+	// The documented payload is 143 fields. A row added or dropped without
 	// updating docs/api/REFERENCE.md should trip this.
-	ASSERT_EQUALS(static_cast<std::size_t>(139), emitted);
+	ASSERT_EQUALS(static_cast<std::size_t>(143), emitted);
 }
 
 // The schema's irregularities are enumerated rather than merely counted: each is deliberate and
@@ -4113,6 +4113,39 @@ TEST(Refresher, LegacyClientVersionStripsOnlyTheExactModSuffix)
 	ASSERT_EQUALS(
 		wxString("v0.70b - AI v1.6"), CEC_UpDownClient_Tag::StripModSuffix("v0.70b - AI v1.6", ""));
 	ASSERT_EQUALS(wxString("v0.70b"), CEC_UpDownClient_Tag::StripModSuffix("v0.70b", "AI v1.6"));
+}
+
+TEST(Refresher, DebugSettingsDoNotSurviveAnOlderCore)
+{
+	CECPacket modern(EC_OP_SET_PREFERENCES);
+	CECEmptyTag advanced(EC_TAG_PREFS_CORETWEAKS);
+	advanced.AddTag(CECTag(EC_TAG_CORETW_VERBOSE_LOGFILE, static_cast<uint8_t>(1)));
+	CECTag all(EC_TAG_CORETW_DEBUG_CATEGORIES, uint32_t{ 2 });
+	all.AddTag(CECTag(EC_TAG_STRING, wxString("General")));
+	all.AddTag(CECTag(EC_TAG_STRING, wxString("Kademlia Main Thread")));
+	advanced.AddTag(all);
+	CECTag enabled(EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED, uint32_t{ 1 });
+	enabled.AddTag(CECTag(EC_TAG_STRING, wxString("Kademlia Main Thread")));
+	advanced.AddTag(enabled);
+	modern.AddTag(advanced);
+
+	PreferencesSnapshot prefs;
+	std::vector<CategorySnapshot> cats;
+	ParsePreferencesFromPacket(&modern, prefs, cats);
+	ASSERT_TRUE(prefs.advanced.debug_categories_supported);
+	ASSERT_TRUE(prefs.advanced.verbose_logging_logfile_only);
+	ASSERT_EQUALS(size_t{ 2 }, prefs.advanced.debug_categories.size());
+	ASSERT_EQUALS(std::string("General"), prefs.advanced.debug_categories[0]);
+	ASSERT_EQUALS(size_t{ 1 }, prefs.advanced.debug_categories_enabled.size());
+	ASSERT_EQUALS(std::string("Kademlia Main Thread"), prefs.advanced.debug_categories_enabled[0]);
+
+	CECPacket legacy(EC_OP_SET_PREFERENCES);
+	legacy.AddTag(CECEmptyTag(EC_TAG_PREFS_CORETWEAKS));
+	ParsePreferencesFromPacket(&legacy, prefs, cats);
+	ASSERT_FALSE(prefs.advanced.debug_categories_supported);
+	ASSERT_FALSE(prefs.advanced.verbose_logging_logfile_only);
+	ASSERT_TRUE(prefs.advanced.debug_categories.empty());
+	ASSERT_TRUE(prefs.advanced.debug_categories_enabled.empty());
 }
 
 TEST(Refresher, WriteBufferCapabilityDoesNotSurviveAnOlderCore)

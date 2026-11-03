@@ -1091,6 +1091,15 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	for (int i = 0; i < count; i++) {
 		list->Check(i, theLogger.GetDebugCategory(i).IsEnabled());
 	}
+#ifdef CLIENT_GUI
+	// Rebuilt on each open: the list belongs to the connected core.
+	wxCheckListBox *coreList = CastChild(ID_DEBUGCATS_CORE, wxCheckListBox);
+	coreList->Clear();
+	for (const auto &category : thePrefs::GetCoreDebugCategories()) {
+		coreList->Check(coreList->Append(category.name), category.enabled);
+	}
+	coreList->Enable(!coreList->IsEmpty());
+#endif
 
 	m_verticalToolbar = thePrefs::VerticalToolbar();
 	m_toolbarOrientationChanged = false;
@@ -1160,6 +1169,15 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 	for (int i = 0; i < count; i++) {
 		theLogger.SetEnabled(theLogger.GetDebugCategory(i).GetType(), list->IsChecked(i));
 	}
+#ifdef CLIENT_GUI
+	// SendChangesToRemote serialises from here.
+	wxCheckListBox *coreList = CastChild(ID_DEBUGCATS_CORE, wxCheckListBox);
+	std::vector<CPreferences::CoreDebugCategory> coreCategories;
+	for (unsigned int i = 0; i < coreList->GetCount(); ++i) {
+		coreCategories.push_back({ coreList->GetString(i), coreList->IsChecked(i) });
+	}
+	thePrefs::SetCoreDebugCategories(std::move(coreCategories));
+#endif
 
 	thePrefs::SetShowRatesOnTitle(
 		CastChild(IDC_SHOWRATEONTITLE, wxCheckBox)->GetValue()

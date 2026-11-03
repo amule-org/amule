@@ -84,7 +84,15 @@ once a minute, the window state and how often the window was painted. `paints=0`
 visible window means the window stopped drawing while aMule kept running. This category
 logs no peer data.
 
-For `amuled`, stop the daemon and set the same options in `amule.conf`, then restart:
+To change `amuled` while it runs, use an EC client. In `amulegui`, the Debugging page
+has two lists: **Core Message Categories** controls the connected core, and
+**Remote GUI Message Categories** controls the remote GUI's own log. The verbose and
+**Only to Logfile** options apply to both. amuleapi has the same settings in
+[`PATCH /api/v1/preferences`](api/REFERENCE.md#patch-apiv1preferences). The core saves
+these changes in its `amule.conf`. A core older than 3.3 accepts only the verbose
+option over EC, so its category list stays empty and disabled.
+
+To set them before `amuled` starts, stop the daemon and edit `amule.conf`:
 
 ```ini
 [eMule]
@@ -96,11 +104,8 @@ Cat_ThreadScheduler=1
 ```
 
 `VerboseDebugLogfile=1` keeps non-critical debug messages in the logfile and excludes
-them from incremental remote log replay. The existing EC verbose preference can toggle the
-configured daemon categories while it runs. In `amulegui`, the Debugging page
-controls the remote GUI's own logging; configure daemon categories in its
-`amule.conf`. `amulecmd` and `amuleweb` also enable their own runtime diagnostics
-with `--verbose` or `VerboseDebug=1` in the core configuration.
+them from incremental remote log replay. `amulecmd` and `amuleweb` also enable their
+own runtime diagnostics with `--verbose` or `VerboseDebug=1` in the core configuration.
 
 Some diagnostics require Debug-only bookkeeping and remain available only in Debug
 builds. Ordinary messages and critical status messages keep their existing behavior.
