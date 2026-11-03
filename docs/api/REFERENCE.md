@@ -2484,7 +2484,7 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 
 `advanced.debug_categories_supported` is **read-only**: `true` when the daemon reports its debug categories. On a daemon older than 3.3 it is `false`, `advanced.debug_categories` and `advanced.debug_categories_enabled` are empty, `advanced.verbose_logging_logfile_only` reads `false`, and a `PATCH` that sets either writable field answers `409 option_not_supported`.
 
-`advanced.debug_categories` is **read-only** and lists every category name the daemon can log to. `amuled` has no window, so it does not list `GUI`. `advanced.debug_categories_enabled` is the enabled subset, in the same order. Categories produce output only while `advanced.verbose_logging` is `true`. `advanced.verbose_logging_logfile_only` keeps debug messages in the daemon's logfile and out of [`GET /logs/amule`](#get-apiv1logsamule). All of these apply immediately, with no daemon restart, and the daemon saves them. Debug logs can contain peer IP addresses, user hashes and file names, and guests can read `GET /logs/amule`, so turn on `verbose_logging_logfile_only` when guests should not see them. It applies to new lines only: lines already in the log stay readable until [`DELETE /logs/amule`](#delete-apiv1logsamule) clears them.
+`advanced.debug_categories` is **read-only** and lists every category name the daemon can log to. `amuled` has no window, so it does not list `GUI`. `advanced.debug_categories_enabled` is the enabled subset, in the same order. Categories produce output only while `advanced.verbose_logging` is `true`. `advanced.verbose_logging_logfile_only` keeps debug messages in the daemon's logfile and out of [`GET /logs/amule`](#get-apiv1logsamule). All of these apply immediately, with no daemon restart, and the daemon saves them. Debug logs can contain peer IP addresses, user hashes and file names, and guests can read `GET /logs/amule`, so turn on `verbose_logging_logfile_only` when guests should not see them. It applies to new lines only: lines already in the log stay readable until [`DELETE /logs/amule`](#delete-apiv1logsamule) clears them. That also empties `amuled`'s logfile, logfile-only lines included, so copy the file first if you need them.
 
 `connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server UPnP is not exposed, since amuleweb is deprecated. EC-port UPnP is reported read-only, as `remote_controls.external_connections.upnp_enabled`.)
 
@@ -2813,7 +2813,7 @@ amuled's general log buffer.
 
 **Auth:** `ADMIN`
 
-Clears the buffer.
+Clears amuleapi's buffer and empties `amuled`'s logfile. The lines in both are lost, including lines kept in the logfile by `advanced.verbose_logging_logfile_only`. Copy the file first if you need them.
 
 **Response:** `204 No Content`, with no body -- a pure action with nothing to report.
 

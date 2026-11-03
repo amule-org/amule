@@ -38,7 +38,7 @@ def live_daemon(daemon_binary, api_binary, temp):
     ec_port, peer_port, http_port = free_ports(3, peer_index=1)
     ports = ec_port, peer_port
     write_amule_conf(core, ec_port, Port=peer_port, UDPEnable=0, VerboseDebug=0,
-                     VerboseDebugLogfile=0, sections={'Debug': {'Cat_General': 0, 'Cat_Hasher': 1}})
+                     VerboseDebugLogfile=0, sections={'Debug': {'Cat_General': 0, 'Cat_Hasher': 1, 'Cat_GUI': 1}})
     with running_daemon(daemon_binary, core, ports, env=env) as (_, ec), \
             (root / 'api.log').open('w') as log:
         configure_amuleapi(api_binary, api, env, log, admin='regression')
@@ -87,6 +87,8 @@ def live_daemon(daemon_binary, api_binary, temp):
     assert config['eMule'].getboolean('VerboseDebugLogfile')
     assert config['Debug'].getboolean('Cat_General')
     assert not config['Debug'].getboolean('Cat_Hasher')
+    # amuled does not offer GUI, but a monolithic aMule on this directory reads it.
+    assert config['Debug'].getboolean('Cat_GUI')
     with running_daemon(daemon_binary, core, ports, env=env) as (_, ec):
         assert '[log status=0 replay=0]' in emit(ec, core, 'debug-settings-restart')[0]
 

@@ -121,6 +121,19 @@ static wxArrayString ReadStringListTag(const CECTag &list)
 	return values;
 }
 
+#ifndef CLIENT_GUI
+// amuled has no window, so it neither reports the GUI category nor changes its saved value.
+static bool CoreHandlesDebugCategory(const CDebugCategory &category)
+{
+#ifdef AMULE_DAEMON
+	return category.GetType() != logGUI;
+#else
+	wxUnusedVar(category);
+	return true;
+#endif
+}
+#endif
+
 static void AddDebugSettingsTags(CECTag &coreTweaks)
 {
 	wxArrayString all;
@@ -138,12 +151,9 @@ static void AddDebugSettingsTags(CECTag &coreTweaks)
 #else
 	for (unsigned int i = 0; i < theLogger.GetDebugCategoryCount(); ++i) {
 		const CDebugCategory &category = theLogger.GetDebugCategory(static_cast<int>(i));
-#ifdef AMULE_DAEMON
-		// No window to report on.
-		if (category.GetType() == logGUI) {
+		if (!CoreHandlesDebugCategory(category)) {
 			continue;
 		}
-#endif
 		all.Add(category.GetName());
 		if (category.IsEnabled()) {
 			enabled.Add(category.GetName());
@@ -175,8 +185,10 @@ static void ApplyDebugSettingsTags(const CECTag &coreTweaks)
 	if (enabledTag) {
 		for (unsigned int i = 0; i < theLogger.GetDebugCategoryCount(); ++i) {
 			const CDebugCategory &category = theLogger.GetDebugCategory(static_cast<int>(i));
-			theLogger.SetEnabled(
-				category.GetType(), enabled.Index(category.GetName()) != wxNOT_FOUND);
+			if (CoreHandlesDebugCategory(category)) {
+				theLogger.SetEnabled(
+					category.GetType(), enabled.Index(category.GetName()) != wxNOT_FOUND);
+			}
 		}
 	}
 #endif

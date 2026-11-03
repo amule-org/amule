@@ -38,6 +38,8 @@ import { clearPrefs, GRAPH_RANGES, loadGraphInterval, saveGraphInterval } from "
 // `action.body` names the JSON field the typed value is sent as, and the row
 // grows a trailing icon button; a `button` field is the same action with no
 // value to send, rendered as a standalone button and never part of the PATCH.
+// changedOnly: sent only when it differs from the daemon's last known value, so
+// an Apply cannot undo another client's change.
 // A tab or group `hideWhen(values)` omits it entirely when it returns true.
 const PROXY_TYPES = [
   { value: "socks5", labelKey: "prefs_opt_proxy_socks5" },
@@ -330,13 +332,13 @@ const TABS = [
   { id: "debugging", labelKey: "prefs_debugging", cat: "advanced", noteKey: "prefs_debugging_warning", groups: [
     { legendKey: "prefs_group_debug_logging", fields: [
       { key: "debug_categories_supported", type: "bool", hidden: true },
-      { key: "verbose_logging", type: "bool" },
-      { key: "verbose_logging_logfile_only", type: "bool", gatedBy: "debug_categories_supported" },
+      { key: "verbose_logging", type: "bool", changedOnly: true },
+      { key: "verbose_logging_logfile_only", type: "bool", changedOnly: true, gatedBy: "debug_categories_supported" },
     ] },
     { legendKey: "prefs_group_debug_categories",
       hideWhen: (v) => v["advanced.debug_categories_supported"] === false, fields: [
       { key: "debug_categories", hidden: true },
-      { key: "debug_categories_enabled", type: "checklist", optionsKey: "debug_categories", labelKey: "prefs_group_debug_categories", gatedBy: "debug_categories_supported" },
+      { key: "debug_categories_enabled", type: "checklist", optionsKey: "debug_categories", labelKey: "prefs_group_debug_categories", changedOnly: true, gatedBy: "debug_categories_supported" },
     ] },
   ] },
 ];
@@ -348,9 +350,10 @@ const asArr = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
 // saves it.
 const CAPS = new Set(TABS.flatMap((tab) => tab.groups.flatMap((g) =>
   g.fields.filter((f) => f.hidden && f.type === "bool").map((f) => catOf(tab, f) + "." + f.key))));
-const CHECKLISTS = TABS.flatMap((tab) => tab.groups.flatMap((g) =>
-  g.fields.filter((f) => f.type === "checklist").map((f) => [catOf(tab, f), f.key])));
-const sameSet = (a, b) => asArr(a).length === asArr(b).length && asArr(a).every((x) => asArr(b).includes(x));
+const CHANGED_ONLY = TABS.flatMap((tab) => tab.groups.flatMap((g) =>
+  g.fields.filter((f) => f.changedOnly).map((f) => [catOf(tab, f), f.key])));
+// Scalars compare as one-element lists; list order carries no meaning.
+const sameValue = (a, b) => asArr(a).length === asArr(b).length && asArr(a).every((x) => asArr(b).includes(x));
 // A category may be a dotted path into a nested payload object (e.g.
 // "remote_controls.webserver"); walk/create it on read and write.
 const catGet = (obj, cat) => cat.split(".").reduce((o, k) => (o == null ? o : o[k]), obj);
@@ -519,7 +522,7 @@ export default function Preferences({ isGuest }) {
   const [active, setActive] = useState("webui");
   const [busy, setBusy] = useState(false);
   const [savedSources, setSavedSources] = useState("");
-  const [savedLists, setSavedLists] = useState({}); // checklist "cat.key" -> daemon value
+  const [savedChangedOnly, setSavedChangedOnly] = useState({}); // changedOnly "cat.key" -> daemon value
   const [oneOffUrl, setOneOffUrl] = useState("");
   // Staged WebUI (browser) settings; committed by applyWebui.
   const [webuiLang, setWebuiLang] = useState(getLang());
@@ -542,7 +545,7 @@ export default function Preferences({ isGuest }) {
         }
     setValues(v);
     setSavedSources(v["servers.update_urls"] || "");
-    setSavedLists(Object.fromEntries(CHECKLISTS.map(([cat, key]) => [cat + "." + key, v[cat + "." + key]])));
+    setSavedChangedOnly(Object.fromEntries(CHANGED_ONLY.map(([cat, key]) => [cat + "." + key, v[cat + "." + key]])));
   });
 
   useEffect(() => {
@@ -708,6 +711,7 @@ export default function Preferences({ isGuest }) {
           if (f.type === "button" || f.hidden || f.readonly) continue;
           if (asArr(f.gatedBy).some((k) => CAPS.has(cat + "." + k) && values[cat + "." + k] === false)) continue;
           const val = values[cat + "." + f.key];
+          if (f.changedOnly && sameValue(val, savedChangedOnly[cat + "." + f.key])) continue;
           // Not sent to this session: sending "" would wipe the stored value.
           if (f.adminOnly && val === undefined) continue;
           let out;
@@ -724,9 +728,6 @@ export default function Preferences({ isGuest }) {
           } else if (f.type === "bool") {
             out = !!val;
           } else if (f.type === "checklist") {
-            // A write replaces the whole set, so an unedited one would undo
-            // another client's change.
-            if (sameSet(val, savedLists[cat + "." + f.key])) continue;
             out = asArr(val);
           } else if (f.type === "int") {
             let n = clamp(f.scale ? (parseFloat(val) || 0) : (parseInt(val, 10) || 0), f.min, f.max);
@@ -758,12 +759,12 @@ export default function Preferences({ isGuest }) {
       setValues((vs) => ({ ...vs, ["servers.update_urls"]:
         vs["servers.update_urls"] === values["servers.update_urls"] ? sources : vs["servers.update_urls"] }));
       // Take the daemon's copy, unless the form was edited while the request ran.
-      const lists = Object.fromEntries(CHECKLISTS.map(([cat, key]) =>
-        [cat + "." + key, asArr((catGet(saved, cat) || {})[key])]));
-      setSavedLists(lists);
+      const daemon = Object.fromEntries(CHANGED_ONLY.map(([cat, key]) =>
+        [cat + "." + key, (catGet(saved, cat) || {})[key]]));
+      setSavedChangedOnly(daemon);
       setValues((vs) => {
         const next = { ...vs };
-        for (const id of Object.keys(lists)) if (sameSet(vs[id], values[id])) next[id] = lists[id];
+        for (const id of Object.keys(daemon)) if (sameValue(vs[id], values[id])) next[id] = daemon[id];
         return next;
       });
       toast(t("prefs_toast_saved"), "success");

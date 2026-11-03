@@ -892,7 +892,7 @@
   "prefs_group_geoip_status": "Status",
   "prefs_ed2k_readonly": "ed2k network",
   "prefs_advanced_warning": "Warning: these are expert settings. Wrong values can degrade performance or connectivity. Change them only if you know what you are doing.",
-  "prefs_debugging_warning": "Debug logs can contain peer IP addresses, user hashes and file names. Guests can read the log, unless debug messages go only to the logfile. That option applies to new lines only: earlier lines stay readable until the log is cleared.",
+  "prefs_debugging_warning": "Debug logs can contain peer IP addresses, user hashes and file names. Guests can read the log, unless debug messages go only to the logfile. That option applies to new lines only: earlier lines stay readable until the log is cleared, and clearing it also empties the daemon's logfile.",
   "prefs_opt_proxy_socks5": "SOCKS5",
   "prefs_opt_proxy_socks4": "SOCKS4",
   "prefs_opt_proxy_http": "HTTP",
