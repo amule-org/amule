@@ -87,7 +87,8 @@ logs no peer data.
 To change `amuled` while it runs, use an EC client. In `amulegui`, the Debugging page
 has two lists: **Core Message Categories** controls the connected core, and
 **Remote GUI Message Categories** controls the remote GUI's own log. The verbose and
-**Only to Logfile** options apply to both. amuleapi has the same settings in
+**Only to Logfile** options apply to both. The WebUI has the same settings under
+**Preferences → Debugging**, and amuleapi has them in
 [`PATCH /api/v1/preferences`](api/REFERENCE.md#patch-apiv1preferences). The core saves
 these changes in its `amule.conf`. A core older than 3.3 accepts only the verbose
 option over EC, so its category list stays empty and disabled.

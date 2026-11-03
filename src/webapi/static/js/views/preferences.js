@@ -23,7 +23,8 @@ import { t, terr, getLang, setLang, LANGS, langName } from "../i18n.js";
 import { getTheme, setTheme } from "../theme.js";
 import { clearPrefs, GRAPH_RANGES, loadGraphInterval, saveGraphInterval } from "../store.js";
 
-// Field types: text (default), int, bool, select, password, server_sources.
+// Field types: text (default), int, bool, select, password, server_sources,
+// checklist (a string array, one checkbox per name in the sibling `optionsKey`).
 // Flags: readonly (shown disabled, never sent), hidden (capability flag loaded
 // only to gate others), gatedBy (disabled when values[k] === false; skipped on
 // save only when k is a hidden capability flag),
@@ -58,7 +59,7 @@ const GEOIP_SOURCES = [
 
 // WebUI is client-only (browser localStorage, not the /preferences API); the
 // rest follow the desktop pages[] order (skipping pages the API does not expose:
-// Interface, Statistics, Events, Debugging). Empty groups keep the generic
+// Interface, Statistics, Events). Empty groups keep the generic
 // read/collect loops no-ops for WebUI; its body is rendered by WebUiSettings.
 const TABS = [
   { id: "webui", labelKey: "prefs_webui", noteKey: "prefs_webui_warning", webui: true, groups: [] },
@@ -323,7 +324,18 @@ const TABS = [
       { key: "max_upload_queue_client_count", type: "int", min: 0, max: 25500, step: 100 },
       // Stored in ms, shown in minutes like the desktop slider (0-30).
       { key: "server_keepalive_timeout_minutes", type: "int", min: 0, max: 30 },
+    ] },
+  ] },
+  { id: "debugging", labelKey: "prefs_debugging", cat: "advanced", noteKey: "prefs_debugging_warning", groups: [
+    { legendKey: "prefs_group_debug_logging", fields: [
+      { key: "debug_categories_supported", type: "bool", hidden: true },
       { key: "verbose_logging", type: "bool" },
+      { key: "verbose_logging_logfile_only", type: "bool", gatedBy: "debug_categories_supported" },
+    ] },
+    { legendKey: "prefs_group_debug_categories",
+      hideWhen: (v) => v["advanced.debug_categories_supported"] === false, fields: [
+      { key: "debug_categories", hidden: true },
+      { key: "debug_categories_enabled", type: "checklist", optionsKey: "debug_categories", gatedBy: "debug_categories_supported" },
     ] },
   ] },
 ];
@@ -597,6 +609,20 @@ export default function Preferences({ isGuest }) {
           <label for=${id} title=${f.titleKey ? t(f.titleKey) : undefined}>${label}</label>
         </div>`;
     }
+    if (f.type === "checklist") {
+      const selected = asArr(val);
+      return asArr(values[cat + "." + f.optionsKey]).map((name) => {
+        const optId = id + "." + name;
+        const onChange = (e) => setVal(id, e.target.checked
+          ? [...selected, name] : selected.filter((n) => n !== name));
+        return html`
+          <div class=${"field field-inline" + subCls}>
+            <input type="checkbox" id=${optId} checked=${selected.includes(name)} disabled=${disabled}
+                   onChange=${onChange} />
+            <label for=${optId}>${name}</label>
+          </div>`;
+      });
+    }
     if (f.type === "select") {
       return html`
         <div class=${"field" + subCls}>
@@ -690,6 +716,8 @@ export default function Preferences({ isGuest }) {
             out = val == null ? "" : val;
           } else if (f.type === "bool") {
             out = !!val;
+          } else if (f.type === "checklist") {
+            out = asArr(val);
           } else if (f.type === "int") {
             let n = clamp(f.scale ? (parseFloat(val) || 0) : (parseInt(val, 10) || 0), f.min, f.max);
             // Snap to the granularity the core stores at. These fields are
