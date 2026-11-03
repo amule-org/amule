@@ -954,9 +954,20 @@ void CServerConnect::SendDueLowIdHolePunches(uint64 now)
 		}
 		// One sweep per destination address every five minutes, ten a minute overall.
 		if (!m_lowIdHolePunchSweeps.Admit(due.peerIP, now)) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Punch sweep to %s refused by the sweep budget") %
+					Uint32toStringIP(PeekUInt32(due.peerIP.data())));
 			continue;
 		}
-		for (const uint16 port : NatServerHolePunch::SweptPorts(due.udpPort)) {
+		const std::vector<uint16> ports = NatServerHolePunch::SweptPorts(due.udpPort);
+		if (!ports.empty()) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Punch sweep to %s: %u ports %u-%u around %u") %
+					Uint32toStringIP(PeekUInt32(due.peerIP.data())) %
+					static_cast<unsigned>(ports.size()) % ports.front() % ports.back() %
+					due.udpPort);
+		}
+		for (const uint16 port : ports) {
 			punch(due.peerIP, port);
 		}
 	}

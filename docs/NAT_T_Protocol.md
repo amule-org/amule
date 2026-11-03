@@ -350,7 +350,7 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
 ### Punch schedule and port sweep
 
 Every punch a server path sends goes out more than once: to the endpoint the server named at
-0, 0.5, 1 and 2 s -- the wake's `0x9F` offsets, 0, 0.5 and 1 s, plus one more at 2 s. It applies
+0, 0.5, 1 and 2 s: the wake's `0x9F` offsets, 0, 0.5 and 1 s, plus one more at 2 s. It applies
 to the `0x61` above, to the cross-server `0xA7` answer and to the extension wake, which each sent
 a single `OP_HOLEPUNCH` before. The wire format is unchanged: an empty `OP_HOLEPUNCH` (`0xA1`,
 `OP_EMULEPROT`) to the given UDP port. The due punches are sent from `CamuleApp::OnCoreTimer`
@@ -373,7 +373,7 @@ rest), so no thread is added.
   statically a few ports up, while a NAT that picks a random port per destination cannot be
   reached by scanning at all. It happens once per `0x61`, the first one included;
 - sweep budget (`NatServerHolePunch::SweepBudget`): one sweep per destination address every five
-  minutes -- a scan aims at one address, so that is what stops it -- plus ten a minute overall. A
+  minutes, since a scan aims at one address and that is what stops it, plus ten a minute overall. A
   refused sweep spends neither budget. The four punches to the given endpoint stay under the
   existing 20-per-minute `ActionRateLimiter`, so one sweep is at most 32 datagrams and the whole
   feature stays bounded whatever the server says;

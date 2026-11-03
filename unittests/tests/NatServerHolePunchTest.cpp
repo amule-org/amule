@@ -1169,6 +1169,41 @@ TEST(NatServerHolePunch, ALateTickSendsEveryPunchStillOwedWithTheSweepLast)
 	ASSERT_TRUE(owed.back().kind == PunchDue::Sweep);
 }
 
+TEST(NatServerHolePunch, TwoPeersBehindOneAddressKeepTheirOwnSchedules)
+{
+	// A carrier NAT can put two LowID peers behind one public address, so a second 0x61 for that
+	// address must not restart the first peer's schedule.
+	PunchScheduleSet schedules;
+	const IPv4 shared{ { 192, 0, 2, 9 } };
+	schedules.Start(shared, 4'000, 1'000);
+	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(1'000).size());
+	schedules.Start(shared, 5'000, 1'200);
+	ASSERT_EQUALS((std::size_t)2, schedules.Size());
+	// The later peer's own first punch, owed from its own start.
+	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(1'200).size());
+
+	ASSERT_TRUE(schedules.TakeDue(1'499).empty());
+	const std::vector<PunchDue> atHalf = schedules.TakeDue(1'500);
+	ASSERT_EQUALS((std::size_t)2, atHalf.size());
+	ASSERT_TRUE(atHalf[0].udpPort == 4'000 && atHalf[1].udpPort == 4'000);
+
+	// The later peer still owes its first punch and its sweep.
+	const std::vector<PunchDue> later = schedules.TakeDue(1'700);
+	ASSERT_EQUALS((std::size_t)2, later.size());
+	ASSERT_TRUE(later[0].udpPort == 5'000 && later[0].kind == PunchDue::Endpoint);
+	ASSERT_TRUE(later[1].udpPort == 5'000 && later[1].kind == PunchDue::Sweep);
+
+	// Restarting one port's schedule does not touch the other's.
+	schedules.Start(shared, 4'000, 2'000);
+	const std::vector<PunchDue> restarted = schedules.TakeDue(2'000);
+	ASSERT_EQUALS((std::size_t)1, restarted.size());
+	ASSERT_TRUE(restarted[0].udpPort == 4'000);
+
+	// A punch cannot say which peer sent it, so it ends both.
+	schedules.Cancel(shared);
+	ASSERT_EQUALS((std::size_t)0, schedules.Size());
+}
+
 TEST(NatServerHolePunch, APunchOrADialFromThePeerEndsItsSchedule)
 {
 	PunchScheduleSet schedules;

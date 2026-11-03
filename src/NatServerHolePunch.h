@@ -574,8 +574,8 @@ private:
 	std::vector<Entry> m_entries;
 };
 
-// Server punch schedule. Every punch a server path sends -- the 0x61, the cross-server 0xA7 answer
-// and the extension wake -- goes to the endpoint the server gave at 0, 0.5, 1 and 2 s, the wake's
+// Server punch schedule. Every punch a server path sends (the 0x61, the cross-server 0xA7 answer
+// and the extension wake) goes to the endpoint the server gave at 0, 0.5, 1 and 2 s, the wake's
 // 0x9F offsets plus one. Lugdunum's CCallbackRendezvous keeps its own 3 s resends on a different
 // server family, so the two never run for one peer.
 constexpr std::array<std::uint64_t, 4> kServerPunchOffsetsMs{ 0, 500, 1'000, 2'000 };
@@ -620,14 +620,21 @@ struct PunchDue
 
 // The punches owed to each peer address. One schedule per address, restarted by a second 0x61 for
 // it, and dropped as soon as a punch or a stream from that address arrives, or our own dial to it
-// connects -- which is when the expected endpoint it was derived from expires too.
+// connects, which is when the expected endpoint it was derived from expires too.
 class PunchScheduleSet
 {
 public:
+	// Keyed by address and port: two LowID peers can share one public address behind a carrier NAT,
+	// and restarting one must not drop the other's remaining punches.
 	void Start(const IPv4 &peerIP, std::uint16_t udpPort, std::uint64_t now)
 	{
 		Evict(now);
-		Cancel(peerIP);
+		m_entries.erase(std::remove_if(m_entries.begin(),
+					m_entries.end(),
+					[&peerIP, udpPort](const Entry &entry) {
+						return entry.peerIP == peerIP && entry.udpPort == udpPort;
+					}),
+			m_entries.end());
 		if (m_entries.size() >= kMaxPunchSchedules) {
 			m_entries.erase(m_entries.begin());
 		}
