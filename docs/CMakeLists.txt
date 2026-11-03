@@ -2,6 +2,8 @@ add_subdirectory (man)
 
 install (FILES
 	CHANGELOG.md
+	CHANGELOG-2.x.md
+	CHANGELOG-1.x.md
 	EC_Protocol.md
 	EC_SRP.md
 	IPv6_Server_Sources.md
