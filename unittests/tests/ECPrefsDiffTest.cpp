@@ -216,6 +216,38 @@ TEST(ECPrefsDiff, NetworkPollPreservesOtherPendingEdits)
 	}
 }
 
+TEST(ECPrefsDiff, DebugCategoryChangeSendsTheWholeSet)
+{
+	const auto prefs = [](std::initializer_list<const char *> enabled) {
+		CECPacket packet(EC_OP_SET_PREFERENCES, EC_DETAIL_UPDATE);
+		CECEmptyTag tweaks(EC_TAG_PREFS_CORETWEAKS);
+		CECTag all(EC_TAG_CORETW_DEBUG_CATEGORIES, static_cast<uint32>(2));
+		all.AddTag(CECTag(EC_TAG_STRING, wxString("General")));
+		all.AddTag(CECTag(EC_TAG_STRING, wxString("Hasher")));
+		tweaks.AddTag(all);
+		CECTag list(EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED, static_cast<uint32>(enabled.size()));
+		for (const char *name : enabled) {
+			list.AddTag(CECTag(EC_TAG_STRING, wxString(name)));
+		}
+		tweaks.AddTag(list);
+		packet.AddTag(tweaks);
+		return packet;
+	};
+
+	ASSERT_EQUALS(0u, MakePrefsDiffPacket(prefs({ "General" }), prefs({ "General" }))->GetTagCount());
+
+	const auto grown = MakePrefsDiffPacket(prefs({ "General" }), prefs({ "General", "Hasher" }));
+	ASSERT_EQUALS(2u,
+		Find(*grown, EC_TAG_PREFS_CORETWEAKS, EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED)->GetTagCount());
+	ASSERT_TRUE(Find(*grown, EC_TAG_PREFS_CORETWEAKS, EC_TAG_CORETW_DEBUG_CATEGORIES) == nullptr);
+
+	// Disabling every category must still reach the core.
+	const auto emptied = MakePrefsDiffPacket(prefs({ "General" }), prefs({}));
+	const CECTag *list = Find(*emptied, EC_TAG_PREFS_CORETWEAKS, EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED);
+	ASSERT_TRUE(list != nullptr);
+	ASSERT_EQUALS(0u, list->GetTagCount());
+}
+
 TEST(ECPrefsDiff, RepeatedNetworkPollIsIdempotent)
 {
 	CECPacket base = MakePrefs(100, true, true, true);

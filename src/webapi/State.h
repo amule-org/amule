@@ -1215,6 +1215,10 @@ struct PreferencesSnapshot
 	{
 		std::uint32_t max_new_connections_per_5_seconds = 0;
 		bool verbose_logging = false;
+		bool verbose_logging_logfile_only = false;
+		bool debug_categories_supported = false;
+		std::vector<std::string> debug_categories;
+		std::vector<std::string> debug_categories_enabled;
 		std::uint32_t file_buffer_bytes = 0;
 		std::uint32_t write_buffer_limit_mebibytes = 0;
 		bool write_buffer_limit_supported = false;

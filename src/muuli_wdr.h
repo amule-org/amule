@@ -609,6 +609,7 @@ wxSizer *CoreConnect(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TR
 #define ID_VERBOSEDEBUG 10306
 #define ID_VERBOSEDEBUGLOGFILE 10307
 #define ID_DEBUGCATS 10308
+#define ID_DEBUGCATS_CORE 10541
 wxSizer *PreferencesDebug(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 extern wxSizer *IDC_CURJOB;

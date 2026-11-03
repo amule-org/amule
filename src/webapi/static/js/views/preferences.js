@@ -23,9 +23,11 @@ import { t, terr, getLang, setLang, LANGS, langName } from "../i18n.js";
 import { getTheme, setTheme } from "../theme.js";
 import { clearPrefs, GRAPH_RANGES, loadGraphInterval, saveGraphInterval } from "../store.js";
 
-// Field types: text (default), int, bool, select, password, server_sources.
-// Flags: readonly (shown disabled, never sent), hidden (capability flag loaded
-// only to gate others), gatedBy (disabled when values[k] === false; skipped on
+// Field types: text (default), int, bool, select, password, server_sources,
+// checklist (a string array, one checkbox per name in the sibling `optionsKey`).
+// Flags: readonly (shown disabled, never sent), hidden (loaded but never shown or
+// sent: a bool capability flag that gates others, or data another field reads),
+// gatedBy (disabled when values[k] === false; skipped on
 // save only when k is a hidden capability flag),
 // password (write-only, only sent when non-empty), adminOnly (a credential the
 // API does not return to guests, so a guest is not shown the row), scale (int shown/edited
@@ -36,6 +38,8 @@ import { clearPrefs, GRAPH_RANGES, loadGraphInterval, saveGraphInterval } from "
 // `action.body` names the JSON field the typed value is sent as, and the row
 // grows a trailing icon button; a `button` field is the same action with no
 // value to send, rendered as a standalone button and never part of the PATCH.
+// changedOnly: sent only when it differs from the daemon's last known value, so
+// an Apply cannot undo another client's change.
 // A tab or group `hideWhen(values)` omits it entirely when it returns true.
 const PROXY_TYPES = [
   { value: "socks5", labelKey: "prefs_opt_proxy_socks5" },
@@ -58,7 +62,7 @@ const GEOIP_SOURCES = [
 
 // WebUI is client-only (browser localStorage, not the /preferences API); the
 // rest follow the desktop pages[] order (skipping pages the API does not expose:
-// Interface, Statistics, Events, Debugging). Empty groups keep the generic
+// Interface, Statistics, Events). Empty groups keep the generic
 // read/collect loops no-ops for WebUI; its body is rendered by WebUiSettings.
 const TABS = [
   { id: "webui", labelKey: "prefs_webui", noteKey: "prefs_webui_warning", webui: true, groups: [] },
@@ -323,17 +327,33 @@ const TABS = [
       { key: "max_upload_queue_client_count", type: "int", min: 0, max: 25500, step: 100 },
       // Stored in ms, shown in minutes like the desktop slider (0-30).
       { key: "server_keepalive_timeout_minutes", type: "int", min: 0, max: 30 },
-      { key: "verbose_logging", type: "bool" },
+    ] },
+  ] },
+  { id: "debugging", labelKey: "prefs_debugging", cat: "advanced", noteKey: "prefs_debugging_warning", groups: [
+    { legendKey: "prefs_group_debug_logging", fields: [
+      { key: "debug_categories_supported", type: "bool", hidden: true },
+      { key: "verbose_logging", type: "bool", changedOnly: true },
+      { key: "verbose_logging_logfile_only", type: "bool", changedOnly: true, gatedBy: "debug_categories_supported" },
+    ] },
+    { legendKey: "prefs_group_debug_categories",
+      hideWhen: (v) => v["advanced.debug_categories_supported"] === false, fields: [
+      { key: "debug_categories", hidden: true },
+      { key: "debug_categories_enabled", type: "checklist", optionsKey: "debug_categories", labelKey: "prefs_group_debug_categories", changedOnly: true, gatedBy: "debug_categories_supported" },
     ] },
   ] },
 ];
 
 const catOf = (tab, f) => f.cat || tab.cat;
 const asArr = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
-// The hidden capability flags. A field gated on one the daemon lacks is never
-// sent; one gated on an ordinary parent still is, as the desktop dialog saves it.
+// The capability flags are the hidden bools. A field gated on one the daemon lacks
+// is never sent; one gated on an ordinary parent still is, as the desktop dialog
+// saves it.
 const CAPS = new Set(TABS.flatMap((tab) => tab.groups.flatMap((g) =>
-  g.fields.filter((f) => f.hidden).map((f) => catOf(tab, f) + "." + f.key))));
+  g.fields.filter((f) => f.hidden && f.type === "bool").map((f) => catOf(tab, f) + "." + f.key))));
+const CHANGED_ONLY = TABS.flatMap((tab) => tab.groups.flatMap((g) =>
+  g.fields.filter((f) => f.changedOnly).map((f) => [catOf(tab, f), f.key])));
+// Scalars compare as one-element lists; list order carries no meaning.
+const sameValue = (a, b) => asArr(a).length === asArr(b).length && asArr(a).every((x) => asArr(b).includes(x));
 // A category may be a dotted path into a nested payload object (e.g.
 // "remote_controls.webserver"); walk/create it on read and write.
 const catGet = (obj, cat) => cat.split(".").reduce((o, k) => (o == null ? o : o[k]), obj);
@@ -502,6 +522,7 @@ export default function Preferences({ isGuest }) {
   const [active, setActive] = useState("webui");
   const [busy, setBusy] = useState(false);
   const [savedSources, setSavedSources] = useState("");
+  const [savedChangedOnly, setSavedChangedOnly] = useState({}); // changedOnly "cat.key" -> daemon value
   const [oneOffUrl, setOneOffUrl] = useState("");
   // Staged WebUI (browser) settings; committed by applyWebui.
   const [webuiLang, setWebuiLang] = useState(getLang());
@@ -524,6 +545,7 @@ export default function Preferences({ isGuest }) {
         }
     setValues(v);
     setSavedSources(v["servers.update_urls"] || "");
+    setSavedChangedOnly(Object.fromEntries(CHANGED_ONLY.map(([cat, key]) => [cat + "." + key, v[cat + "." + key]])));
   });
 
   useEffect(() => {
@@ -596,6 +618,20 @@ export default function Preferences({ isGuest }) {
                  onChange=${(e) => setVal(id, f.invert ? !e.target.checked : e.target.checked)} />
           <label for=${id} title=${f.titleKey ? t(f.titleKey) : undefined}>${label}</label>
         </div>`;
+    }
+    if (f.type === "checklist") {
+      const selected = asArr(val);
+      return asArr(values[cat + "." + f.optionsKey]).map((name, i) => {
+        const optId = id + "." + i;
+        const onChange = (e) => setVal(id, e.target.checked
+          ? [...selected, name] : selected.filter((n) => n !== name));
+        return html`
+          <div class=${"field field-inline" + subCls}>
+            <input type="checkbox" id=${optId} checked=${selected.includes(name)} disabled=${disabled}
+                   onChange=${onChange} />
+            <label for=${optId}>${name}</label>
+          </div>`;
+      });
     }
     if (f.type === "select") {
       return html`
@@ -675,6 +711,7 @@ export default function Preferences({ isGuest }) {
           if (f.type === "button" || f.hidden || f.readonly) continue;
           if (asArr(f.gatedBy).some((k) => CAPS.has(cat + "." + k) && values[cat + "." + k] === false)) continue;
           const val = values[cat + "." + f.key];
+          if (f.changedOnly && sameValue(val, savedChangedOnly[cat + "." + f.key])) continue;
           // Not sent to this session: sending "" would wipe the stored value.
           if (f.adminOnly && val === undefined) continue;
           let out;
@@ -690,6 +727,8 @@ export default function Preferences({ isGuest }) {
             out = val == null ? "" : val;
           } else if (f.type === "bool") {
             out = !!val;
+          } else if (f.type === "checklist") {
+            out = asArr(val);
           } else if (f.type === "int") {
             let n = clamp(f.scale ? (parseFloat(val) || 0) : (parseInt(val, 10) || 0), f.min, f.max);
             // Snap to the granularity the core stores at. These fields are
@@ -719,6 +758,15 @@ export default function Preferences({ isGuest }) {
       setSavedSources(sources);
       setValues((vs) => ({ ...vs, ["servers.update_urls"]:
         vs["servers.update_urls"] === values["servers.update_urls"] ? sources : vs["servers.update_urls"] }));
+      // Take the daemon's copy, unless the form was edited while the request ran.
+      const daemon = Object.fromEntries(CHANGED_ONLY.map(([cat, key]) =>
+        [cat + "." + key, (catGet(saved, cat) || {})[key]]));
+      setSavedChangedOnly(daemon);
+      setValues((vs) => {
+        const next = { ...vs };
+        for (const id of Object.keys(daemon)) if (sameValue(vs[id], values[id])) next[id] = daemon[id];
+        return next;
+      });
       toast(t("prefs_toast_saved"), "success");
     }
     catch (err) {

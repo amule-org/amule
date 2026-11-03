@@ -8437,6 +8437,7 @@ bool PrefTakeStringArray(const picojson::object &o,
 	CECTag &group,
 	const char *key,
 	ec_tagname_t name,
+	const std::vector<std::string> *allowed,
 	bool &any,
 	std::string &err)
 {
@@ -8459,6 +8460,10 @@ bool PrefTakeStringArray(const picojson::object &o,
 			(value.find('\0') != std::string::npos ||
 				!ServerListSources::IsValid(wxString::FromUTF8(value.c_str())))) {
 			err = "update_urls must contain valid HTTP or HTTPS URLs";
+			return false;
+		}
+		if (allowed && std::find(allowed->begin(), allowed->end(), value) == allowed->end()) {
+			err = std::string(key) + " contains an unknown name";
 			return false;
 		}
 		list.AddTag(CECTag(EC_TAG_STRING, wxString::FromUTF8(value.c_str())));
@@ -8701,7 +8706,15 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			ok = PrefTakeString(*src, g, f.key, f.tag, any_change, err);
 			break;
 		case webapi::PrefType::StringArray:
-			ok = PrefTakeStringArray(*src, g, f.key, f.tag, any_change, err);
+			ok = PrefTakeStringArray(*src,
+				g,
+				f.key,
+				f.tag,
+				f.tag == EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED
+					? &current.advanced.debug_categories
+					: nullptr,
+				any_change,
+				err);
 			break;
 		case webapi::PrefType::Enum:
 			ok = PrefTakeEnum(*src, g, f.key, f.tag, f.enum_names, any_change, err);

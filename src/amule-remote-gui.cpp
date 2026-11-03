@@ -1630,6 +1630,7 @@ bool CPreferencesRem::LoadRemote()
 	// Capabilities belong to this connection, not the previously connected core.
 	m_liveNetworkPreferences = false;
 	thePrefs::SetWriteBufferLimitSupported(false);
+	thePrefs::SetCoreDebugCategories({});
 #ifdef GEOIP_GUI
 	// Assume the core has NO GeoIP support until it says otherwise. A 3.1+ core built
 	// with ENABLE_IP2COUNTRY answers with EC_TAG_IP2COUNTRY_SUPPORTED; a pre-3.1 core

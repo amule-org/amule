@@ -107,6 +107,10 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 #define PREF_STRARR(cat, key, tag, acc, memb) \
 	{cat, key, tag, PrefType::StringArray, PrefEnc::Value, false, acc, 0u, nullptr, nullptr, PREF_MEMBER(memb, std::vector<std::string>), 0}
 
+// Capability-gated: PATCH answers 409 when the named sibling bool is false.
+#define PREF_STRARR_GATED(cat, key, tag, acc, memb, gate) \
+	{cat, key, tag, PrefType::StringArray, PrefEnc::Value, false, acc, 0u, nullptr, gate, PREF_MEMBER(memb, std::vector<std::string>), 0}
+
 #define PREF_ENUM(cat, key, tag, names, acc, memb) \
 	{cat, key, tag, PrefType::Enum, PrefEnc::Value, false, acc, 0u, names, nullptr, PREF_MEMBER(memb, std::string), 0}
 
@@ -300,6 +304,11 @@ const PrefField kSchema[] = {
 	PREF_U32_SCALED("advanced", "server_keepalive_timeout_minutes", EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, 71582u, PrefAccess::ReadWrite, advanced.server_keepalive_timeout_minutes, 60000u),
 	PREF_U32_SCALED_DOMAIN("advanced", "source_reask_minutes", EC_TAG_CORETW_SOURCE_REASK_MS, SOURCE_REASK_MINUTES.min, SOURCE_REASK_MINUTES.max, PrefAccess::ReadWrite, advanced.source_reask_minutes, 60000u),
 	PREF_BOOL("advanced", "verbose_logging", EC_TAG_CORETW_VERBOSE, PrefEnc::Presence, false, PrefAccess::ReadWrite, advanced.verbose_logging),
+	// The category list is always sent by a core that can apply these, so its presence is the capability.
+	PREF_BOOL("advanced", "debug_categories_supported", EC_TAG_CORETW_DEBUG_CATEGORIES, PrefEnc::Presence, false, PrefAccess::ReadOnly, advanced.debug_categories_supported),
+	PREF_BOOL_GATED("advanced", "verbose_logging_logfile_only", EC_TAG_CORETW_VERBOSE_LOGFILE, PrefEnc::Value, false, PrefAccess::ReadWrite, advanced.verbose_logging_logfile_only, "debug_categories_supported"),
+	PREF_STRARR("advanced", "debug_categories", EC_TAG_CORETW_DEBUG_CATEGORIES, PrefAccess::ReadOnly, advanced.debug_categories),
+	PREF_STRARR_GATED("advanced", "debug_categories_enabled", EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED, PrefAccess::ReadWrite, advanced.debug_categories_enabled, "debug_categories_supported"),
 
 	// [kad] (EC group: KADEMLIA)
 	PREF_STR("kad", "update_url", EC_TAG_KADEMLIA_UPDATE_URL, PrefAccess::AdminRead, kad.update_url),

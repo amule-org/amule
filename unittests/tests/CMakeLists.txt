@@ -3683,6 +3683,10 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND BUILD_AMULEAPI AND Python3_Int
 		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/WriteBufferPreferencesIntegrationTest.py
 			$<TARGET_FILE:amuleapi>)
 	set_tests_properties (WriteBufferPreferencesIntegrationTest PROPERTIES LABELS "integration" TIMEOUT 60)
+	add_test (NAME DebugSettingsIntegrationTest
+		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/DebugSettingsIntegrationTest.py
+			$<TARGET_FILE:amuled> $<TARGET_FILE:amuleapi>)
+	set_tests_properties (DebugSettingsIntegrationTest PROPERTIES LABELS "integration")
 endif ()
 
 # Download diagnostics must never expose URL credentials to log/status readers.
@@ -3842,6 +3846,7 @@ foreach (ec_wire_test IN ITEMS
 	ChatSpamFilterIntegrationTest
 	CompletedFileDeleteCapabilityTest
 	CompletedFileDeleteIntegrationTest
+	DebugSettingsIntegrationTest
 	DisplayRatesIntegrationTest
 	DownloadDisplayRatesIntegrationTest
 	DownloadLimitHelloIntegrationTest
