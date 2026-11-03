@@ -6487,6 +6487,16 @@ msgid "Only to Logfile"
 msgstr "Namái al ficheru de rexistru"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Mensaxes de categoríes:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Mensaxes de categoríes:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Mensaxes de categoríes:"
 

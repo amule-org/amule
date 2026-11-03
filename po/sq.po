@@ -6482,6 +6482,16 @@ msgid "Only to Logfile"
 msgstr "Vetëm në skedarin e regjistrit"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Kategorite e Mesazheve:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Kategorite e Mesazheve:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Kategorite e Mesazheve:"
 

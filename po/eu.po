@@ -6484,6 +6484,16 @@ msgid "Only to Logfile"
 msgstr "Erregistro-fitxategira soilik"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Mezu kategoriak:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Mezu kategoriak:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Mezu kategoriak:"
 

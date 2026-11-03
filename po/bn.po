@@ -6437,6 +6437,16 @@ msgid "Only to Logfile"
 msgstr "শুধুমাত্র লগফাইলে"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "বার্তার বিভাগ:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "বার্তার বিভাগ:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "বার্তার বিভাগ:"
 

@@ -6290,6 +6290,14 @@ msgid "Only to Logfile"
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "Core Message Categories:"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Remote GUI Message Categories:"
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr ""
 

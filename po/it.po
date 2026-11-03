@@ -21,7 +21,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-02 15:46+0000\n"
+"PO-Revision-Date: 2026-11-03 11:54+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -29,7 +29,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.dev0\n"
+"X-Generator: Weblate 2026.11.1.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -2702,14 +2702,12 @@ msgid "Only password-authenticated sessions may change the EC password."
 msgstr "Solo le sessioni di password autenticate possono modificare la password EC."
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not update EC password verifier."
-msgstr "Impossibile salvare la password di amuleapi: %s"
+msgstr "Impossibile aggiornare il verificatore della password EC."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not apply preferences."
-msgstr "La rete Kad è disabilitata nelle Preferenze."
+msgstr "Impossibile applicare le preferenze."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2717,22 +2715,21 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "Impossibile salvare la password di amuleapi: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not update EC password verifier. The other preferences were saved."
-msgstr "Password impostata, connessioni esterne abilitate."
+msgstr "Impossibile aggiornare il verificatore della password EC. Le altre preferenze sono state salvate."
 
 #: src/ExternalConn.cpp
 #, c-format
 msgid "EC password changed by %s"
-msgstr ""
+msgstr "La password EC è stata modificata da %s"
 
 #: src/ExternalConn.cpp
 msgid "One or more folders were outside the allowed remote directories and were left unchanged."
-msgstr ""
+msgstr "Una o più cartelle si trovavano all'esterno delle directory remote consentite e sono state lasciate invariate."
 
 #: src/ExternalConn.cpp
 msgid "The category folder is outside the allowed remote directories."
-msgstr ""
+msgstr "La cartella della categoria è al di fuori delle directory remote consentite."
 
 #: src/ExternalConn.cpp
 msgid "No such category."
@@ -2760,7 +2757,7 @@ msgstr "L'estrazione dei metadati multimediali è disabilitata nelle preferenze"
 
 #: src/ExternalConn.cpp
 msgid "This aMule has no media helper (amule-media-probe)"
-msgstr ""
+msgstr "Questo aMule non dispone di un helper multimediale (amule-media-probe)."
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -3037,7 +3034,7 @@ msgstr "Non scrivere alcun file di log; stampa solo sulla console."
 
 #: src/ExternalConnector.cpp
 msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr ""
+msgstr "Il verificatore del demone non può fornire una password client. Usa -P o la richiesta di immissione password.\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -3135,39 +3132,36 @@ msgstr "ERRORE: Impossibile aprire '%s' con l'applicazione predefinita."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
-msgstr ""
+msgstr "Il filtro dei messaggi è disattivato; le regole selezionate sono state salvate."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "All incoming messages outside current chats will be discarded."
-msgstr "Filtra messaggi in arrivo (tranne per la chat in corso):"
+msgstr "Tutti i messaggi in arrivo al di fuori delle chat correnti saranno scartati."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Messages from people not on your friend list will be discarded."
-msgstr "Filtra i messaggi da utenti che non sono nella tua lista degli amici"
+msgstr "I messaggi da persone al di fuori della tua lista amici saranno scartati."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Messages from unknown clients will be discarded."
-msgstr "Filtra i messaggi da client sconosciuti"
+msgstr "I messaggi da client sconosciuti saranno scartati."
 
 #: src/FilterSelectionSummary.h
 #, c-format
 msgid "Messages containing any of these terms will be discarded (ignoring case): %s."
-msgstr ""
+msgstr "I messaggi contenenti uno qualsiasi di questi termini verranno scartati (senza distinzione tra maiuscole e minuscole): %s."
 
 #: src/FilterSelectionSummary.h
 msgid "No messages will be discarded by the message filter: the word list is empty."
-msgstr ""
+msgstr "Nessun messaggio sarà scartato dal filtro messaggi: la lista delle parole è vuota."
 
 #: src/FilterSelectionSummary.h
 msgid "No messages will be discarded by the message filter: select at least one option."
-msgstr ""
+msgstr "Nessun messaggio sarà scartato dal filtro messaggi: seleziona almeno una opzione."
 
 #: src/FilterSelectionSummary.h
 msgid "Current chats are exempt from these rules."
-msgstr ""
+msgstr "Le chat correnti sono escluse da queste regole."
 
 #: src/FilterSelectionSummary.h
 msgid "Advanced spam filtering for non-friends is also enabled."
@@ -6457,6 +6451,16 @@ msgstr "Abilita il log dettagliato dei messaggi di debug."
 #: src/muuli_wdr.cpp
 msgid "Only to Logfile"
 msgstr "Solamente sul file di log"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Categorie messaggi:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Categorie messaggi:"
 
 #: src/muuli_wdr.cpp
 msgid "Message Categories:"

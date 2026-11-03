@@ -6452,6 +6452,16 @@ msgid "Only to Logfile"
 msgstr "إلى ملف السجل فقط"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "فئات الرسائل:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "فئات الرسائل:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "فئات الرسائل:"
 

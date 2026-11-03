@@ -6509,6 +6509,16 @@ msgid "Only to Logfile"
 msgstr "Numai la fișierul jurnal"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Categorii mesaje:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Categorii mesaje:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Categorii mesaje:"
 

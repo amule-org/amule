@@ -6531,6 +6531,16 @@ msgid "Only to Logfile"
 msgstr "Samo v dnevniško datoteko"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Kategorije sporočil:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Kategorije sporočil:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Kategorije sporočil:"
 

@@ -6515,6 +6515,16 @@ msgid "Only to Logfile"
 msgstr "Лише у файл часопису"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Категорія повідомлення:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Категорія повідомлення:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Категорія повідомлення:"
 
