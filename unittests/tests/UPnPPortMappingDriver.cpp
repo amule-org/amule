@@ -23,8 +23,9 @@
 //
 
 // Prints what the real control point returns. UPnPPortMappingIntegrationTest.py runs it against
-// a fake gateway and writes to stdin once every service has registered.
-// Usage: UPnPPortMappingDriver <tcp port> <udp port> (add|delete)...
+// a fake gateway. It prints a line when the constructor returns, then waits for a line on stdin
+// before each operation.
+// Usage: UPnPPortMappingDriver <tcp port> <udp port> (add|delete|pending)...
 
 #include "config.h"
 #include "UPnPBase.h"
@@ -53,14 +54,25 @@ int main(int argc, char **argv)
 
 	try {
 		CUPnPControlPoint controlPoint(0);
-		if (std::getchar() == EOF) {
-			return EXIT_FAILURE;
-		}
+		std::puts("constructed");
+		std::fflush(stdout);
 		for (int i = 3; i < argc; ++i) {
-			const bool add = std::strcmp(argv[i], "add") == 0;
-			const bool ok = add ? controlPoint.AddPortMappings(mappings)
-					    : controlPoint.DeletePortMappings(mappings);
-			std::printf("%s=%s\n", argv[i], ok ? "true" : "false");
+			if (std::getchar() == EOF) {
+				return EXIT_SUCCESS;
+			}
+			bool result;
+			if (std::strcmp(argv[i], "add") == 0) {
+				result = controlPoint.AddPortMappings(mappings);
+			} else if (std::strcmp(argv[i], "delete") == 0) {
+				result = controlPoint.DeletePortMappings(mappings);
+			} else {
+				result = controlPoint.DiscoveryPending();
+			}
+			std::printf("%s=%s\n", argv[i], result ? "true" : "false");
+			std::fflush(stdout);
+		}
+		// A late service still registers until the test closes stdin.
+		while (std::getchar() != EOF) {
 		}
 	} catch (const CUPnPException &) {
 		std::puts("libupnp could not start");

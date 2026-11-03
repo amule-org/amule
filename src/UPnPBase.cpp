@@ -709,6 +709,10 @@ CUPnPRootDevice::CUPnPRootDevice(const CUPnPControlPoint &upnpControlPoint,
 
 CUPnPControlPoint *CUPnPControlPoint::s_CtrlPoint = NULL;
 
+static const int SEARCH_MX_SECONDS = 3;
+// libupnp's timeout for one request.
+static const int REGISTRATION_GRACE_SECONDS = 30;
+
 CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 : m_UPnPClientHandle()
 , m_RootDeviceMap()
@@ -717,6 +721,8 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 , m_RootDeviceListMutex()
 , m_IGWDeviceDetected(false)
 , m_ServiceMapMutex()
+, m_gatewayMapped(false)
+, m_registering(0)
 {
 	s_CtrlPoint = this;
 	std::ostringstream msg;
@@ -769,23 +775,15 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 	// its cap and drops jobs. Targeting the IGW type means only gateways answer, which is all
 	// port mapping needs, and a gateway that appears later is still caught by its periodic IGW-
 	// typed ADVERTISEMENT_ALIVE.
-	//
-	// We must not search more than once: each search produces its own
-	// UPNP_DISCOVERY_SEARCH_TIMEOUT event, and two would race on the mutex.
-	ret = UpnpSearchAsync(m_UPnPClientHandle, 3, UPnP::Device::IGW.c_str(), nullptr);
+	m_searchDeadline = std::chrono::steady_clock::now() + std::chrono::seconds(SEARCH_MX_SECONDS + 1);
+	ret = UpnpSearchAsync(m_UPnPClientHandle, SEARCH_MX_SECONDS, UPnP::Device::IGW.c_str(), nullptr);
 	if (ret != UPNP_E_SUCCESS) {
 		msg << "error(UpnpSearchAsync): Error sending search request: ";
 		goto error;
 	}
 
-	// Wait for the UPnP initialization to complete.
-	{
-		m_WaitForSearchTimeoutMutex.Lock();
-
-		// Lock it again, so that we block. Unlocking only happens when the
-		// UPNP_DISCOVERY_SEARCH_TIMEOUT event occurs at the callback.
-		CUPnPMutexLocker lock(m_WaitForSearchTimeoutMutex);
-	}
+	// No wait here: Subscribe() maps a service whenever it registers, and DiscoveryPending() tells
+	// callers when that has happened.
 	return;
 
 error:
@@ -808,19 +806,30 @@ CUPnPControlPoint::~CUPnPControlPoint()
 	m_RootDeviceMap.clear();
 }
 
+bool CUPnPControlPoint::DiscoveryPending() const
+{
+	if (m_gatewayMapped) {
+		return false;
+	}
+	// Not UPNP_DISCOVERY_SEARCH_TIMEOUT: it does not wait for answers still being processed, and
+	// libupnp drops it when its thread pool is full.
+	const auto now = std::chrono::steady_clock::now();
+	return now < m_searchDeadline ||
+	       (m_registering > 0 &&
+		       now < m_searchDeadline + std::chrono::seconds(REGISTRATION_GRACE_SECONDS));
+}
+
 bool CUPnPControlPoint::AddPortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping)
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
 	if (m_ServiceMap.empty()) {
-		msg << "UPnP Error: "
-		       "CUPnPControlPoint::AddPortMapping: "
-		       "WAN Service not detected.";
+		msg << "CUPnPControlPoint::AddPortMappings: "
+		       "WAN Service not detected yet. Will map when one registers.";
 		AddDebugLogLineC(logUPnP, msg);
-		return false;
 	}
 
-	bool ok = true;
+	bool ok = !m_ServiceMap.empty();
 	for (const auto &mapping : upnpPortMapping) {
 		if (mapping.getEnabled() == "1") {
 			m_ActivePortMappingsMap[mapping.getKey()] = mapping;
@@ -859,11 +868,8 @@ bool CUPnPControlPoint::ExecuteOnAnyService(
 	return ok;
 }
 
-bool CUPnPControlPoint::PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMapping)
+static std::vector<CUPnPArgumentValue> AddPortMappingArguments(const CUPnPPortMapping &upnpPortMapping)
 {
-	std::string ipAddress(UpnpGetServerIpAddress());
-
-	std::string actionName("AddPortMapping");
 	std::vector<CUPnPArgumentValue> argval(8);
 
 	argval[0].SetArgument("NewRemoteHost");
@@ -875,7 +881,7 @@ bool CUPnPControlPoint::PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMa
 	argval[3].SetArgument("NewInternalPort");
 	argval[3].SetValue(upnpPortMapping.getPort());
 	argval[4].SetArgument("NewInternalClient");
-	argval[4].SetValue(ipAddress);
+	argval[4].SetValue(UpnpGetServerIpAddress());
 	argval[5].SetArgument("NewEnabled");
 	argval[5].SetValue("1");
 	argval[6].SetArgument("NewPortMappingDescription");
@@ -883,22 +889,19 @@ bool CUPnPControlPoint::PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMa
 	argval[7].SetArgument("NewLeaseDuration");
 	argval[7].SetValue("0");
 
-	return ExecuteOnAnyService(actionName, argval);
+	return argval;
+}
+
+bool CUPnPControlPoint::PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMapping)
+{
+	return ExecuteOnAnyService("AddPortMapping", AddPortMappingArguments(upnpPortMapping));
 }
 
 bool CUPnPControlPoint::DeletePortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping)
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	if (m_ServiceMap.empty()) {
-		msg << "UPnP Error: "
-		       "CUPnPControlPoint::DeletePortMapping: "
-		       "WAN Service not detected.";
-		AddDebugLogLineC(logUPnP, msg);
-		return false;
-	}
-
-	bool ok = true;
+	bool ok = !m_ServiceMap.empty();
 	for (const auto &mapping : upnpPortMapping) {
 		if (mapping.getEnabled() == "1") {
 			PortMappingMap::iterator it = m_ActivePortMappingsMap.find(mapping.getKey());
@@ -1013,6 +1016,7 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 			upnpCP->ShouldSkipAdvertisementFetch(location ? location : "")) {
 			break;
 		}
+		++upnpCP->m_registering;
 		int ret = UpnpDownloadXmlDoc(location, &doc);
 		if (ret != UPNP_E_SUCCESS) {
 			if (EventType == UPNP_DISCOVERY_ADVERTISEMENT_ALIVE) {
@@ -1055,14 +1059,13 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 			}
 			IXML::Document::Free(doc);
 		}
+		--upnpCP->m_registering;
 		break;
 	}
 	case UPNP_DISCOVERY_SEARCH_TIMEOUT: {
 		// Search timeout
 		msg << "UPNP_DISCOVERY_SEARCH_TIMEOUT.";
 		AddDebugLogLineN(logUPnP, msg);
-
-		upnpCP->m_WaitForSearchTimeoutMutex.Unlock();
 
 		break;
 	}
@@ -1379,6 +1382,10 @@ void CUPnPControlPoint::AddRootDevice(
 			*this, rootDevice, OriginalURLBase, FixedURLBase, location, expires);
 		m_RootDeviceMap[upnpRootDevice->GetUDN()] = upnpRootDevice;
 	}
+	// Not on a device alone: some switches answer as a gateway and list no services.
+	if (WanServiceDetected()) {
+		m_gatewayMapped = true;
+	}
 }
 
 void CUPnPControlPoint::RemoveRootDevice(const char *udn)
@@ -1446,8 +1453,14 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 		service.SetSCPD(scpd);
 		IXML::Document::Free(scpdDoc);
 		{
+			// In one step, so each mapping reaches each service once, whichever thread comes
+			// first. Held across the actions so that a delete cannot run before them and leave
+			// the mapping on the gateway.
 			CUPnPMutexLocker lock(m_ServiceMapMutex);
 			m_ServiceMap[service.GetAbsEventSubURL()] = &service;
+			for (const auto &entry : m_ActivePortMappingsMap) {
+				service.Execute("AddPortMapping", AddPortMappingArguments(entry.second));
+			}
 		}
 		msg << "Successfully retrieved SCPD Document for service " << service.GetServiceType()
 		    << ", absEventSubURL: " << service.GetAbsEventSubURL() << ".";

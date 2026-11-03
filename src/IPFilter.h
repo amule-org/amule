@@ -255,7 +255,8 @@ public:
 	 * load-finished handler, and again once the flags have been set during startup: loading
 	 * runs on a worker thread, so it can finish -- and its event be dispatched -- before the
 	 * caller gets round to asking for a network. Doing nothing when no flag is set makes the
-	 * second call harmless.
+	 * second call harmless. The core timer also calls this, while UPnP discovery holds the
+	 * networks back.
 	 */
 	void StartPendingNetworks();
 

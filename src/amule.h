@@ -509,6 +509,7 @@ public:
 
 	void StartKad();
 	void StopKad();
+	bool UPnPDiscoveryPending() const;
 
 	/** Bootstraps kad from the specified IP (must be in hostorder). */
 	void BootstrapKad(uint32 ip, uint16 port);
