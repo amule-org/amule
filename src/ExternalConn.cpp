@@ -1023,22 +1023,34 @@ void CExternalConnListener::OnAccept()
 	}
 }
 
+// Keep EC_TAG_STRING first: the refusal log reads the first tag. Clients look tags up by name.
+static CECPacket *AuthFailure(EC_AUTH_FAIL_REASON reason, const wxString &message)
+{
+	auto *failure = new CECPacket(EC_OP_AUTH_FAIL);
+	failure->AddTag(CECTag(EC_TAG_STRING, message));
+	failure->AddTag(CECTag(EC_TAG_AUTH_FAIL_REASON, static_cast<uint8>(reason)));
+	return failure;
+}
+
 // Authentication
 const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 {
 	CECPacket *response;
 
 	if (request == NULL) {
-		return new CECPacket(EC_OP_AUTH_FAIL);
+		return AuthFailure(EC_AUTH_FAIL_INCOMPATIBLE,
+			wxTRANSLATE("Invalid request, please authenticate first."));
 	}
 
 	// Password must be specified if we are to allow remote connections
 	if (thePrefs::ECPasswordVerifier().IsEmpty()) {
-		AddLogLineC(_("External connection refused due to empty password in preferences!"));
+		const wxString error =
+			wxTRANSLATE("External connection refused due to empty password in preferences!");
+		AddLogLineC(wxGetTranslation(error));
 
 		m_conn_state = CONN_FAILED;
 		m_srp.Reset();
-		return new CECPacket(EC_OP_AUTH_FAIL);
+		return AuthFailure(EC_AUTH_FAIL_NO_PASSWORD, error);
 	}
 
 	if ((m_conn_state == CONN_INIT) && (request->GetOpCode() == EC_OP_AUTH_REQ)) {
@@ -1051,8 +1063,9 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 						       "in %d seconds."))) %
 					       (int)throttle.retry_after_seconds;
 			AddLogLineN(error + " " + GetPeer());
-			auto *failure = new CECPacket(EC_OP_AUTH_FAIL);
-			failure->AddTag(CECTag(EC_TAG_STRING, error));
+			auto *failure = AuthFailure(EC_AUTH_FAIL_RATE_LIMITED, error);
+			failure->AddTag(CECTag(
+				EC_TAG_AUTH_RETRY_AFTER, static_cast<uint32>(throttle.retry_after_seconds)));
 			return failure;
 		}
 		// cppcheck-suppress unreadVariable
@@ -1067,33 +1080,28 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 									: wxString(_("Unknown version"))));
 		if (!request->GetTagByName(EC_TAG_SRP_A)) {
 			m_conn_state = CONN_FAILED;
-			auto *failure = new CECPacket(EC_OP_AUTH_FAIL);
-			failure->AddTag(CECTag(EC_TAG_STRING,
-				wxTRANSLATE("An EC client of version 3.3.0 or later is required.")));
-			return failure;
+			return AuthFailure(EC_AUTH_FAIL_CLIENT_TOO_OLD,
+				wxTRANSLATE("An EC client of version 3.3.0 or later is required."));
 		}
 		const CECTag *protocol = request->GetTagByName(EC_TAG_PROTOCOL_VERSION);
 #ifdef EC_VERSION_ID
 		// For snapshot builds, both client and server must use GITDATE, and they must be the same
 		CMD4Hash vhash;
 		if (!vhash.Decode(EC_VERSION_ID)) {
-			response = new CECPacket(EC_OP_AUTH_FAIL);
-			response->AddTag(
-				CECTag(EC_TAG_STRING, "Fatal error, version hash is not a valid MD4-hash."));
+			response = AuthFailure(EC_AUTH_FAIL_INCOMPATIBLE,
+				"Fatal error, version hash is not a valid MD4-hash.");
 		} else if (!request->GetTagByName(EC_TAG_VERSION_ID) ||
 			   request->GetTagByNameSafe(EC_TAG_VERSION_ID)->GetMD4Data() != vhash) {
-			response = new CECPacket(EC_OP_AUTH_FAIL);
-			response->AddTag(CECTag(EC_TAG_STRING,
+			response = AuthFailure(EC_AUTH_FAIL_INCOMPATIBLE,
 				wxTRANSLATE("Incorrect EC version ID, there might be binary incompatibility. "
-					    "Use core and remote from same snapshot.")));
+					    "Use core and remote from same snapshot."));
 #else
 		// For release versions, we don't want to allow connections from any arbitrary snapshot
 		// client.
 		if (request->GetTagByName(EC_TAG_VERSION_ID)) {
-			response = new CECPacket(EC_OP_AUTH_FAIL);
-			response->AddTag(CECTag(EC_TAG_STRING,
+			response = AuthFailure(EC_AUTH_FAIL_INCOMPATIBLE,
 				wxTRANSLATE("You cannot connect to a release version from an arbitrary "
-					    "development snapshot! *sigh* possible crash prevented")));
+					    "development snapshot! *sigh* possible crash prevented"));
 #endif
 		} else if (protocol != nullptr && protocol->IsInt()) {
 			uint16 proto_version = protocol->GetInt();
@@ -1139,9 +1147,8 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 						throw std::runtime_error("Encryption setup failed");
 				} catch (const std::exception &) {
 					delete response;
-					response = new CECPacket(EC_OP_AUTH_FAIL);
-					response->AddTag(CECTag(EC_TAG_STRING,
-						wxTRANSLATE("Invalid SRP handshake or EC verifier.")));
+					response = AuthFailure(EC_AUTH_FAIL_INCOMPATIBLE,
+						wxTRANSLATE("Invalid SRP handshake or EC verifier."));
 					m_conn_state = CONN_FAILED;
 					m_srp.Reset();
 				}
@@ -1226,15 +1233,14 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 						((m_my_flags & EC_FLAG_LARGE_TAG_COUNT) ? "yes" : "no") %
 						(m_partialUpdateActive ? "yes" : "no"));
 			} else {
-				response = new CECPacket(EC_OP_AUTH_FAIL);
-				response->AddTag(CECTag(EC_TAG_STRING,
+				response = AuthFailure(EC_AUTH_FAIL_INCOMPATIBLE,
 					wxString(wxTRANSLATE("Invalid protocol version.")) +
 						wxString(CFormat("( %#.4x != %#.4x )") % proto_version %
-							 (uint16_t)EC_CURRENT_PROTOCOL_VERSION)));
+							 (uint16_t)EC_CURRENT_PROTOCOL_VERSION));
 			}
 		} else {
-			response = new CECPacket(EC_OP_AUTH_FAIL);
-			response->AddTag(CECTag(EC_TAG_STRING, wxTRANSLATE("Missing protocol version tag.")));
+			response = AuthFailure(
+				EC_AUTH_FAIL_INCOMPATIBLE, wxTRANSLATE("Missing protocol version tag."));
 		}
 	} else if ((m_conn_state == CONN_SALT_SENT) && (request->GetOpCode() == EC_OP_AUTH_PASSWD)) {
 		const CECTag *passwd = request->GetTagByName(EC_TAG_SRP_M1);
@@ -1347,14 +1353,12 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 				err = wxTRANSLATE("Authentication failed: missing password.");
 			}
 
-			response = new CECPacket(EC_OP_AUTH_FAIL);
-			response->AddTag(CECTag(EC_TAG_STRING, err));
+			response = AuthFailure(EC_AUTH_FAIL_REJECTED, err);
 			AddLogLineN(wxGetTranslation(err));
 		}
 	} else {
-		response = new CECPacket(EC_OP_AUTH_FAIL);
-		response->AddTag(
-			CECTag(EC_TAG_STRING, wxTRANSLATE("Invalid request, please authenticate first.")));
+		response = AuthFailure(EC_AUTH_FAIL_INCOMPATIBLE,
+			wxTRANSLATE("Invalid request, please authenticate first."));
 	}
 
 	if (response->GetOpCode() == EC_OP_AUTH_OK) {

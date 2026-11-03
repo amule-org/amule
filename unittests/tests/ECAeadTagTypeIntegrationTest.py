@@ -12,7 +12,7 @@ from pathlib import Path
 from AllSearchIntegrationTest import (C, EC, free_ports, log_snapshot, retry_port_collisions,
                                       stop_daemon, wait_daemon_started)
 from DaemonConfig import EC_PASSWORD, daemon_env, write_amule_conf
-from ECWire import authenticate  # Preflight before starting the daemon.
+from ECWire import assert_refused, authenticate  # Preflight before starting the daemon.
 
 UINT8, STRING = 2, 6
 
@@ -50,8 +50,7 @@ def run(binary):
                 for name, field_name, field_type in cases:
                     op, reply = login(ec_port, field_name, field_type)
                     assert proc.poll() is None, f'{name}: daemon exited with {proc.returncode}'
-                    message = reply.get(C['EC_TAG_STRING'], b'')
-                    assert op == C['EC_OP_AUTH_FAIL'] and b'Invalid SRP handshake' in message, (name, op, reply)
+                    assert_refused(op, reply, 'EC_AUTH_FAIL_INCOMPATIBLE', b'Invalid SRP handshake')
                     print(f'PASS: {name} is refused and amuled keeps running')
 
                 EC(ec_port, password=EC_PASSWORD).sock.close()

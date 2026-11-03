@@ -295,6 +295,10 @@ EC_TAG_SRP_SALT                           0x0030
 EC_TAG_SRP_CREDENTIAL                     0x0031
 EC_TAG_SRP_M1                             0x0032
 EC_TAG_SRP_M2                             0x0033
+## Children of EC_OP_AUTH_FAIL, after EC_TAG_STRING. The reason is an EC_AUTH_FAIL_REASON.
+EC_TAG_AUTH_FAIL_REASON                   0x0034
+## Seconds, only with EC_AUTH_FAIL_RATE_LIMITED.
+EC_TAG_AUTH_RETRY_AFTER                   0x0036
 
 
 EC_TAG_CLIENT_NAME                        0x0100
@@ -884,6 +888,17 @@ EC_DETAIL_WEB           0x01
 EC_DETAIL_FULL          0x02
 EC_DETAIL_UPDATE        0x03
 EC_DETAIL_INC_UPDATE    0x04
+[/Section]
+
+[Section Content]
+Type Enum
+Name EC_AUTH_FAIL_REASON
+DataType uint8
+EC_AUTH_FAIL_CLIENT_TOO_OLD  0x01
+EC_AUTH_FAIL_NO_PASSWORD     0x02
+EC_AUTH_FAIL_RATE_LIMITED    0x03
+EC_AUTH_FAIL_INCOMPATIBLE    0x04
+EC_AUTH_FAIL_REJECTED        0x05
 [/Section]
 
 [Section Content]

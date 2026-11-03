@@ -64,6 +64,13 @@ def read(sock):
         assert name>>1 not in out, 'duplicate handshake field'
         out[name>>1]=body[offset:offset+size];offset+=size
     return op,out
+def assert_refused(op,tags,reason,text=b''):
+    """One reason code, after the string that old clients show and the core logs."""
+    assert op==C['EC_OP_AUTH_FAIL'],(op,tags)
+    assert next(iter(tags))==C['EC_TAG_STRING'] and text in tags[C['EC_TAG_STRING']],tags
+    assert int.from_bytes(tags[C['EC_TAG_AUTH_FAIL_REASON']],'big')==C[reason],tags
+    retry=int.from_bytes(tags.get(C['EC_TAG_AUTH_RETRY_AFTER'],b''),'big')
+    assert (retry>0)==(reason=='EC_AUTH_FAIL_RATE_LIMITED'),tags
 class EncryptedSocket:
     def __init__(self,sock,shared,cn,sn,transcript,cipher,server=False):
         self.sock=sock;self.pending=b'';self.tx=0;self.rx=0
