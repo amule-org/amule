@@ -24,12 +24,15 @@
 
 #include "UtpLibraryAdapter.h"
 
+#include "Logger.h"             // Needed for AddDebugLogLineN
 #include "UtpSocketTransport.h" // per-socket crypt parameters, resolved from userdata
 #include "UtpDialPolicy.h"
+#include <common/Format.h> // Needed for CFormat
 #include <libutp/utp.h>
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstring>
 #include <map>
 #include <utility>
@@ -173,6 +176,12 @@ public:
 	{
 		return FindUniqueUtpPortRemapCandidate(m_remapCandidates, ip, port, nowMs).has_value();
 	}
+	//! Answers the ingress gate before libutp sees the frame, so it stays read-only: the attempt
+	//! itself, and its budget, belong to ProcessDatagram().
+	bool HasRepointCandidate(uint32_t ip, uint16_t port) const override
+	{
+		return FindRepointCandidate(ip, port).has_value();
+	}
 	void Destroy() override
 	{
 		if (!m_context) {
@@ -263,6 +272,26 @@ public:
 				}
 			}
 		}
+		// Nothing holds this source port and no handshake expected it: a connected stream on the same
+		// address may still own it when the NAT moved the port after the handshake. libutp keys a
+		// socket by the address it was created with, so hand it that one and let it decide, exactly
+		// as the handshake remap does. One attempt, one candidate, or none at all. A SYN is never one
+		// of these frames: it asks for a new connection, and giving it an established stream's tuple
+		// would register that stream's socket under the wrong endpoint.
+		utp_socket *repointedSocket = nullptr;
+		Endpoint repointedFrom{ 0, 0 };
+		if (translation == m_remapInputs.end() && remappedSocket == nullptr &&
+			ClassifyUtpFrame(payload, length) == EUtpFrameKind::Existing) {
+			const std::optional<SRepointCandidate> candidate = FindRepointCandidate(ip, port);
+			// Bounded before the attempt, so a peer replaying source ports cannot rewrite its
+			// endpoint; an attempt nothing claims costs nothing to undo.
+			if (candidate.has_value() &&
+				m_repointLimiter.TryAdmit(StreamKey(candidate->socket), nowMs)) {
+				repointedSocket = candidate->socket;
+				repointedFrom = candidate->libutpEndpoint;
+				expected = repointedFrom;
+			}
+		}
 		const sockaddr_in address = MakeAddress(expected.first, expected.second);
 		const bool claimed = utp_process_udp(m_context,
 					     payload,
@@ -275,6 +304,21 @@ public:
 			} else {
 				RemovePortRemap(remappedSocket);
 			}
+		}
+		if (repointedSocket != nullptr && claimed) {
+			// libutp took the datagram as part of that stream, so the peer really moved. The
+			// translation stays for the life of the socket: libutp keeps the tuple the socket
+			// was created with, so these two maps are what keep the incoming frames mapped to
+			// it and its sends aimed at the observed port. A later change replaces them.
+			RemovePortRemap(repointedSocket);
+			InstallPortRemap(repointedSocket, repointedFrom, observed);
+			UpdatePeerEndpoint(repointedSocket, ip, port);
+			// Formatted here rather than through NetworkFunctions.h, whose Types.h typedefs
+			// clash with libutp's own in this translation unit.
+			AddDebugLogLineN(logClient,
+				CFormat("uTP: moved the stream to %u.%u.%u.%u from port %u to port %u") %
+					(uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) % (uint8)(ip >> 24) %
+					repointedFrom.second % port);
 		}
 		m_datagramObfuscated = false;
 		m_ingressKey = nullptr;
@@ -314,6 +358,14 @@ private:
 	struct SPendingHandshake : SUtpRemapCandidate
 	{
 		utp_socket *socket = nullptr;
+	};
+
+	//! A connected stream, with what the repoint needs beyond the shared facts.
+	struct SRepointCandidate : SUtpConnectedStream
+	{
+		utp_socket *socket = nullptr;
+		//! The tuple libutp keys this socket by, which is the observed one only until it moves.
+		Endpoint libutpEndpoint;
 	};
 
 	static sockaddr_in MakeAddress(uint32_t ip, uint16_t port)
@@ -366,6 +418,63 @@ private:
 		return CanInstallUtpPortTranslation(
 			       input != m_remapInputs.end(), output != m_remapOutputs.end()) &&
 		       m_socketRemaps.find(socket) == m_socketRemaps.end();
+	}
+
+	//! The tuple libutp keys a socket by. libutp has no way to re-key a live socket, which is why a
+	//! moved stream keeps both translations: the outgoing one only knows this tuple.
+	Endpoint LibutpEndpointOf(utp_socket *socket) const
+	{
+		const auto remap = m_socketRemaps.find(socket);
+		if (remap != m_socketRemaps.end()) {
+			return remap->second.first;
+		}
+		const auto endpoint = m_endpoints.find(socket);
+		return endpoint == m_endpoints.end() ? Endpoint{ 0, 0 } : endpoint->second;
+	}
+
+	//! Every stream this adapter believes is connected at this address, with the tuple libutp holds
+	//! for it. The repoint window applies to the peer port we believe, not to that tuple, since the
+	//! belief is what a repoint moves.
+	std::vector<SRepointCandidate> ConnectedStreamsAt(uint32_t ip) const
+	{
+		std::vector<SRepointCandidate> streams;
+		for (const auto &entry : m_endpoints) {
+			const CUtpSocketTransport *transport = TransportOf(entry.first);
+			// Only a stream we dialled: an accepted one chose its endpoint, so moving it on a
+			// datagram would let whoever sent that datagram take the stream over. The handshake
+			// remap already applies to our own dials alone.
+			if (entry.second.first != ip || transport == nullptr || !transport->IsConnected() ||
+				transport->IsInbound()) {
+				continue;
+			}
+			SRepointCandidate candidate;
+			candidate.ip = entry.second.first;
+			candidate.port = entry.second.second;
+			candidate.connected = true;
+			candidate.socket = entry.first;
+			candidate.libutpEndpoint = LibutpEndpointOf(entry.first);
+			streams.push_back(candidate);
+		}
+		return streams;
+	}
+
+	//! Identifies a stream to the repoint limiter. A reused address inherits a spent budget, which
+	//! only ever refuses a move.
+	static std::uint64_t StreamKey(utp_socket *socket)
+	{
+		return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(socket));
+	}
+
+	//! The one connected stream a frame from this source port could belong to, or none when two
+	//! could. Pure: the ingress gate asks it, and only ProcessDatagram() acts on the answer.
+	std::optional<SRepointCandidate> FindRepointCandidate(uint32_t ip, uint16_t port) const
+	{
+		const std::vector<SRepointCandidate> streams = ConnectedStreamsAt(ip);
+		const std::optional<std::size_t> index = FindUniqueUtpRepointCandidate(streams, ip, port);
+		if (!index.has_value()) {
+			return std::nullopt;
+		}
+		return streams[*index];
 	}
 
 	void InstallPortRemap(utp_socket *socket, const Endpoint &expected, const Endpoint &observed)
@@ -704,6 +813,8 @@ private:
 	std::map<Endpoint, Endpoint> m_remapOutputs;
 	std::map<utp_socket *, std::pair<Endpoint, Endpoint>> m_socketRemaps;
 	std::uint64_t m_nowMs = 0;
+	//! Bounds how often a connected stream may follow a NAT source-port change.
+	UtpPortRepointLimiter m_repointLimiter;
 	// Sockets refused before a transport existed, closed once libutp has
 	// finished with the datagram.
 	std::vector<utp_socket *> m_refused;

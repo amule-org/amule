@@ -359,3 +359,101 @@ TEST(UtpDialPolicy, FailureMemoryIsBoundedAndForgetsTheOldestFirst)
 	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 3'000));
 	ASSERT_TRUE(failures.IsCoolingDown(0x0B000000, 4672, 3'000));
 }
+
+TEST(UtpDialPolicy, RepointIsABoundedChangeOfAnExistingPort)
+{
+	// Both edges of the window are inside it, one port past them is not.
+	ASSERT_TRUE(IsUtpPortRepointOf(4673, 4672));
+	ASSERT_TRUE(IsUtpPortRepointOf(4672 + kUtpPortRemapWindow, 4672));
+	ASSERT_TRUE(IsUtpPortRepointOf(4672 - kUtpPortRemapWindow, 4672));
+	ASSERT_FALSE(IsUtpPortRepointOf(4672 + kUtpPortRemapWindow + 1, 4672));
+	ASSERT_FALSE(IsUtpPortRepointOf(4672 - kUtpPortRemapWindow - 1, 4672));
+
+	// The same port is the tuple we already hold, and a zero port is no endpoint at all.
+	ASSERT_FALSE(IsUtpPortRepointOf(4672, 4672));
+	ASSERT_FALSE(IsUtpPortRepointOf(0, 4672));
+	ASSERT_FALSE(IsUtpPortRepointOf(4672, 0));
+	ASSERT_FALSE(IsUtpPortRepointOf(0, 0));
+}
+
+TEST(UtpDialPolicy, RepointNeedsExactlyOneConnectedStreamOnThatAddress)
+{
+	constexpr std::uint32_t ip = 0x0100007F;
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(std::vector<SUtpConnectedStream>{}, ip, 4160).has_value());
+
+	std::vector<SUtpConnectedStream> streams{ { ip, 4672, true } };
+	const auto unique = FindUniqueUtpRepointCandidate(streams, ip, 4160);
+	ASSERT_TRUE(unique.has_value());
+	ASSERT_EQUALS((std::size_t)0, *unique);
+
+	// A stream that is not connected is no candidate, and neither is another address.
+	streams[0].connected = false;
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4160).has_value());
+	streams[0].connected = true;
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip + 1, 4160).has_value());
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4672).has_value());
+
+	// Two streams within the window are a guess, so they fail closed; 4160 is within reach of
+	// 4672 only, which makes that one unique again.
+	streams.push_back({ ip, 5000, true });
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4800).has_value());
+	const auto bounded = FindUniqueUtpRepointCandidate(streams, ip, 4160);
+	ASSERT_TRUE(bounded.has_value());
+	ASSERT_EQUALS((std::size_t)0, *bounded);
+	// The same endpoint twice is ambiguous even before the window is consulted.
+	streams[1].port = 4672;
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4160).has_value());
+}
+
+TEST(UtpDialPolicy, RepointLimiterAllowsAFewMovesPerStream)
+{
+	UtpPortRepointLimiter limiter;
+	constexpr std::uint64_t stream = 7;
+	for (std::size_t move = 0; move < UtpPortRepointLimiter::MovesPerStream; ++move) {
+		ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
+	}
+	ASSERT_FALSE(limiter.TryAdmit(stream, 1'000));
+
+	// The budget is per stream: another one still has its own.
+	ASSERT_TRUE(limiter.TryAdmit(8, 1'000));
+}
+
+TEST(UtpDialPolicy, RepointLimiterCapsTheAdapterOverall)
+{
+	UtpPortRepointLimiter limiter;
+	std::size_t admitted = 0;
+	for (std::uint64_t stream = 0; stream < UtpPortRepointLimiter::MaxStreams; ++stream) {
+		for (std::size_t move = 0; move < UtpPortRepointLimiter::MovesPerStream; ++move) {
+			if (limiter.TryAdmit(stream, 1'000)) {
+				++admitted;
+			}
+		}
+	}
+	ASSERT_TRUE(UtpPortRepointLimiter::MovesOverall <
+		    UtpPortRepointLimiter::MaxStreams * UtpPortRepointLimiter::MovesPerStream);
+	ASSERT_EQUALS(UtpPortRepointLimiter::MovesOverall, admitted);
+}
+
+TEST(UtpDialPolicy, RepointLimiterRefillsOnceTheWindowPasses)
+{
+	UtpPortRepointLimiter limiter;
+	constexpr std::uint64_t stream = 3;
+	for (std::size_t move = 0; move < UtpPortRepointLimiter::MovesPerStream; ++move) {
+		ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
+	}
+	ASSERT_FALSE(limiter.TryAdmit(stream, 1'000 + UtpPortRepointLimiter::WindowMs - 1));
+	for (std::size_t move = 0; move < UtpPortRepointLimiter::MovesPerStream; ++move) {
+		ASSERT_TRUE(limiter.TryAdmit(stream, 1'000 + UtpPortRepointLimiter::WindowMs));
+	}
+}
+
+TEST(UtpDialPolicy, RepointLimiterFailsClosedWhenItsTableIsFull)
+{
+	UtpPortRepointLimiter limiter;
+	for (std::uint64_t stream = 0; stream < UtpPortRepointLimiter::MaxStreams; ++stream) {
+		ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
+	}
+	// A stream with budget left is still refused: a live record is never evicted for it.
+	ASSERT_FALSE(limiter.TryAdmit(100, 1'000));
+	ASSERT_TRUE(limiter.TryAdmit(100, 1'000 + UtpPortRepointLimiter::WindowMs));
+}

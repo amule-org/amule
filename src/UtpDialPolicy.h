@@ -416,4 +416,157 @@ std::optional<std::size_t> FindUniqueUtpPortRemapCandidate(
 	return match;
 }
 
+//! Whether a datagram's source port may be the NAT moving the port this stream already holds. The
+//! address is implied: the caller only asks about streams on the source address, and a different
+//! address is a different peer rather than a repoint.
+inline bool IsUtpPortRepointOf(std::uint16_t observedPort, std::uint16_t heldPort)
+{
+	if (observedPort == 0 || heldPort == 0 || observedPort == heldPort) {
+		return false;
+	}
+	const std::uint16_t delta =
+		observedPort > heldPort ? observedPort - heldPort : heldPort - observedPort;
+	return delta <= kUtpPortRemapWindow;
+}
+
+//! A connected stream as the repoint decision sees it: the address it holds and whether it is
+//! usable at all.
+struct SUtpConnectedStream
+{
+	std::uint32_t ip = 0;
+	std::uint16_t port = 0;
+	bool connected = false;
+};
+
+//! The one connected stream this datagram can belong to, or none when two could be it. libutp
+//! takes the address it is given at face value, so an ambiguous candidate must fail closed here,
+//! exactly as an ambiguous handshake remap does.
+template <typename Range>
+std::optional<std::size_t> FindUniqueUtpRepointCandidate(
+	const Range &streams, std::uint32_t observedIp, std::uint16_t observedPort)
+{
+	std::optional<std::size_t> match;
+	std::size_t index = 0;
+	for (const auto &stream : streams) {
+		const bool eligible = stream.connected && observedIp != 0 && stream.ip == observedIp &&
+				      IsUtpPortRepointOf(observedPort, stream.port);
+		if (eligible) {
+			if (match.has_value()) {
+				return std::nullopt;
+			}
+			match = index;
+		}
+		++index;
+	}
+	return match;
+}
+
+/**
+ * Bounds how often a stream may follow a NAT source-port change: a few moves per stream and a few
+ * more for the adapter, both over one sliding minute. The bookkeeping is fixed-capacity, so a peer
+ * replaying source ports can neither grow it nor evict another stream's record; a full table
+ * refuses, which keeps the failure closed. Time is injected, so the bounds are testable.
+ */
+class UtpPortRepointLimiter
+{
+public:
+	static constexpr std::size_t MovesPerStream = 3;
+	static constexpr std::size_t MovesOverall = 10;
+	static constexpr std::uint64_t WindowMs = 60'000;
+	//! Below MovesOverall on purpose: the per-stream table is the tighter bound on distinct streams.
+	static constexpr std::size_t MaxStreams = 8;
+
+	//! Records this stream's attempt and returns true, or returns false and records nothing.
+	bool TryAdmit(std::uint64_t streamId, std::uint64_t nowMs)
+	{
+		ExpireStreams(nowMs);
+		if (CountRecentMoves(nowMs) >= MovesOverall) {
+			return false;
+		}
+		SStreamMoves *stream = FindStream(streamId);
+		if (stream == nullptr) {
+			stream = ReserveStream(streamId, nowMs);
+			if (stream == nullptr) {
+				return false;
+			}
+		}
+		if (stream->moves >= MovesPerStream) {
+			return false;
+		}
+		++stream->moves;
+		m_moves[m_nextMove] = nowMs;
+		m_nextMove = (m_nextMove + 1) % MovesOverall;
+		if (m_storedMoves < MovesOverall) {
+			++m_storedMoves;
+		}
+		return true;
+	}
+
+private:
+	struct SStreamMoves
+	{
+		std::uint64_t id = 0;
+		std::uint64_t windowStart = 0;
+		std::size_t moves = 0;
+		bool used = false;
+	};
+
+	SStreamMoves *FindStream(std::uint64_t streamId)
+	{
+		for (auto &stream : m_streams) {
+			if (stream.used && stream.id == streamId) {
+				return &stream;
+			}
+		}
+		return nullptr;
+	}
+
+	//! A free slot for a stream that has not moved inside the window, or none at all.
+	SStreamMoves *ReserveStream(std::uint64_t streamId, std::uint64_t nowMs)
+	{
+		for (auto &stream : m_streams) {
+			if (stream.used) {
+				continue;
+			}
+			stream = SStreamMoves{};
+			stream.used = true;
+			stream.id = streamId;
+			stream.windowStart = nowMs;
+			return &stream;
+		}
+		return nullptr;
+	}
+
+	void ExpireStreams(std::uint64_t nowMs)
+	{
+		for (auto &stream : m_streams) {
+			if (stream.used && IsExpired(stream.windowStart, nowMs)) {
+				stream = SStreamMoves{};
+			}
+		}
+	}
+
+	std::size_t CountRecentMoves(std::uint64_t nowMs) const
+	{
+		std::size_t moves = 0;
+		for (std::size_t index = 0; index < m_storedMoves; ++index) {
+			if (nowMs >= m_moves[index] && nowMs - m_moves[index] < WindowMs) {
+				++moves;
+			}
+		}
+		return moves;
+	}
+
+	static bool IsExpired(std::uint64_t sinceMs, std::uint64_t nowMs)
+	{
+		return nowMs >= sinceMs && nowMs - sinceMs >= WindowMs;
+	}
+
+	std::array<SStreamMoves, MaxStreams> m_streams{};
+	// The last MovesOverall admissions: the ring can only drop one that has left the window.
+	std::array<std::uint64_t, MovesOverall> m_moves{};
+	std::size_t m_nextMove = 0;
+	std::size_t m_storedMoves = 0;
+};
+
 #endif // UTP_DIAL_POLICY_H

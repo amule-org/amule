@@ -783,8 +783,16 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		const bool fromKnownPeer = m_utp.HasRegisteredPeer(ip, port);
 		const bool fromExpectedHandshakePeer =
 			kind == EUtpFrameKind::Existing && m_utp.HasExpectedPortRemapPeer(ip, port, nowMs);
+		// A connected stream whose NAT moved the source port keeps talking from a port nothing is
+		// registered at yet, so the adapter may still own the frame: it is admitted only when exactly
+		// one connected stream on that address is within the remap window. Non-SYN only, because a
+		// SYN asks for a new connection and must never be handed a live stream's tuple. The answer is
+		// a predicate, so it grants no attempt and spends none of the adapter's move budget.
+		const bool fromRepointedPeer =
+			kind == EUtpFrameKind::Existing && m_utp.HasRepointCandidate(ip, port);
 		if (kind != EUtpFrameKind::Malformed &&
-			(kind == EUtpFrameKind::Syn || fromKnownPeer || fromExpectedHandshakePeer)) {
+			(kind == EUtpFrameKind::Syn || fromKnownPeer || fromExpectedHandshakePeer ||
+				fromRepointedPeer)) {
 			NatKeyFrame::UtpSynPlan synReply;
 			if (kind == EUtpFrameKind::Syn) {
 				synReply = PrepareUtpSynReply(ip, port, obfuscated);

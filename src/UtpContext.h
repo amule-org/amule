@@ -127,6 +127,9 @@ public:
 	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
 	//! True only for one live, remap-enabled handshake peer near the observed source port.
 	virtual bool HasExpectedPortRemapPeer(uint32_t, uint16_t, std::uint64_t) const { return false; }
+	//! True only when one connected stream on that address could own this source port, as a NAT would
+	//! have moved it. Read-only: it neither installs a translation nor spends the move budget.
+	virtual bool HasRepointCandidate(uint32_t, uint16_t) const { return false; }
 };
 
 // Counted, not a set: one endpoint can hold several sockets, and forgetting on
@@ -273,6 +276,9 @@ public:
 	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
 	//! True only for one live, remap-enabled handshake peer near the observed source port.
 	virtual bool HasExpectedPortRemapPeer(uint32_t, uint16_t, std::uint64_t) const { return false; }
+	//! True only when one connected stream on that address could own this source port, as a NAT would
+	//! have moved it. Read-only: it neither installs a translation nor spends the move budget.
+	virtual bool HasRepointCandidate(uint32_t, uint16_t) const { return false; }
 };
 
 // Main-thread only. Tick never recreates state abandoned by socket Close().
@@ -388,6 +394,10 @@ public:
 	bool HasExpectedPortRemapPeer(uint32_t ip, uint16_t port, std::uint64_t nowMs) const override
 	{
 		return m_library->HasExpectedPortRemapPeer(ip, port, nowMs);
+	}
+	bool HasRepointCandidate(uint32_t ip, uint16_t port) const override
+	{
+		return m_library->HasRepointCandidate(ip, port);
 	}
 
 	//! Held, so it survives the context being destroyed and rebuilt.
