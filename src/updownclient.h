@@ -801,14 +801,12 @@ public:
 	void RecordBuddyPingReceived() { m_buddyLiveness.PingReceived(::GetTickCount64()); }
 	void RecordBuddyPongReceived() { m_buddyLiveness.PongReceived(::GetTickCount64()); }
 	void RecordBuddyPacketReceived() { m_buddyLiveness.ReceivedPacket(::GetTickCount64()); }
-	bool HasBuddyTimedOut() const
-	{
-		return m_buddyLiveness.Expired(::GetTickCount64(), m_byKadVersion != 0);
-	}
+	bool HasBuddyTimedOut() const { return m_buddyLiveness.Expired(::GetTickCount64()); }
+	bool HasBuddyRequestExpired() const { return m_buddyLiveness.RequestExpired(::GetTickCount64()); }
 	EKadState GetKadState() const { return m_nKadState; }
 	void SetKadState(EKadState nNewS)
 	{
-		if (nNewS == KS_CONNECTED_BUDDY && m_nKadState != KS_CONNECTED_BUDDY) {
+		if ((nNewS == KS_CONNECTED_BUDDY || nNewS == KS_INCOMING_BUDDY) && m_nKadState != nNewS) {
 			m_buddyLiveness.Reset(::GetTickCount64());
 		}
 		m_nKadState = nNewS;

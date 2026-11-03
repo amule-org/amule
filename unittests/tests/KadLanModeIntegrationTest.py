@@ -20,6 +20,14 @@ PRIVATE_CONTACT = int.from_bytes(socket.inet_aton('10.255.0.1'), 'big')
 LAN_MODE_TIMEOUT = 15
 
 
+def write_private_contacts(root, count=1):
+    """A nodes.dat of unreachable private contacts. One a minute is checked, then dropped 2 minutes later."""
+    contacts = b''.join(
+        struct.pack('<4IIHHB2IB', 0xA0000000 + index, 0, 0, 1, PRIVATE_CONTACT + index, 4672, 4662, 8, 0, 0, 1)
+        for index in range(count))
+    (Path(root) / 'nodes.dat').write_bytes(struct.pack('<III', 0, 2, count) + contacts)
+
+
 def kad_stats(ec):
     return ec.call(C['EC_OP_STAT_REQ'])[1]
 
@@ -28,8 +36,7 @@ def run_daemon(binary, filter_lan):
     with tempfile.TemporaryDirectory(prefix='amule-kad-lan-mode-') as directory:
         root = Path(directory)
         ec_port, peer_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
-        contact = struct.pack('<4IIHHB2IB', 0xA0000000, 0, 0, 1, PRIVATE_CONTACT, 4672, 4662, 8, 0, 0, 1)
-        (root / 'nodes.dat').write_bytes(struct.pack('<III', 0, 2, 1) + contact)
+        write_private_contacts(root)
         write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1, Autoconnect=0,
                          FilterLanIPs=int(filter_lan))
         with running_daemon(binary, root, (ec_port, peer_port, udp_port)) as (proc, ec):

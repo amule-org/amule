@@ -235,8 +235,7 @@ bool CClientTCPSocket::CheckTimeOut()
 
 		if (m_client->GetKadState() == KS_CONNECTED_BUDDY) {
 			// Outgoing pings and relayed callbacks reset the ordinary socket timer.
-			// Only received packets prove a ping-capable buddy is still responding.
-			// Legacy peers without ping support retain their idle TCP connections.
+			// Only received packets prove a buddy is still responding.
 			if (m_client->HasBuddyTimedOut()) {
 				Disconnect("Buddy receive timeout");
 				return true;

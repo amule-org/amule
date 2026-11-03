@@ -60,12 +60,12 @@ public:
 		m_hasIncomingPing = true;
 		PongReceived(now);
 	}
-	// A peer without buddy ping support cannot distinguish healthy idleness from silence.
-	bool Expired(uint64_t now, bool supportsPing = true) const
-	{
-		return supportsPing && now - m_lastReceived >= ReceiveTimeout;
-	}
+	bool Expired(uint64_t now) const { return now - m_lastReceived >= ReceiveTimeout; }
+	// Counted from Reset(): a request that has not connected receives nothing to renew it.
+	bool RequestExpired(uint64_t now) const { return now - m_lastReceived >= RequestTimeout; }
 
+	// A requester dials its candidates in turn: two failed 40 s attempts, then its attempt to reach us.
+	static constexpr uint64_t RequestTimeout = 2 * 60 * 1000;
 	static constexpr uint64_t PingInterval = 10 * 60 * 1000;
 	static constexpr uint64_t IncomingPingInterval = 3 * 60 * 1000;
 	// Stock peers can answer only every second ten-minute ping because their incoming
