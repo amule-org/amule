@@ -329,9 +329,8 @@ PlatformSpecific::EFSType PlatformSpecific::GetFilesystemType(const CPath &path)
 #include "Logger.h"
 #include "common/Format.h"
 #include <gio/gio.h>
-#include <gio/gunixfdlist.h>
-#include <unistd.h>
-static int sleepInhibitorFd = -1;
+static GDBusConnection *sleepInhibitorBus = nullptr;
+static gchar *sleepInhibitorRequest = nullptr;
 #endif
 
 // Power event vetoing
@@ -376,35 +375,35 @@ void PlatformSpecific::PreventSleepMode()
 			// ??
 		}
 #elif defined(__linux__) && defined(HAVE_GIO)
-		// Make one attempt per state change, including when logind denies the request.
+		// Make one attempt per state change, including when the portal is unavailable.
 		m_preventingSleepMode = true;
 		GError *error = nullptr;
-		GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, nullptr, &error);
+		GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, &error);
 		if (bus != nullptr) {
-			GUnixFDList *fds = nullptr;
-			GVariant *reply = g_dbus_connection_call_with_unix_fd_list_sync(bus,
-				"org.freedesktop.login1",
-				"/org/freedesktop/login1",
-				"org.freedesktop.login1.Manager",
+			GVariantBuilder options;
+			g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
+			g_variant_builder_add(
+				&options, "{sv}", "reason", g_variant_new_string("Transferring files"));
+			// Idle only; allow user-requested suspend.
+			GVariant *reply = g_dbus_connection_call_sync(bus,
+				"org.freedesktop.portal.Desktop",
+				"/org/freedesktop/portal/desktop",
+				"org.freedesktop.portal.Inhibit",
 				"Inhibit",
-				g_variant_new("(ssss)", "idle", "aMule", "Transferring files", "block"),
-				G_VARIANT_TYPE("(h)"),
+				g_variant_new("(sua{sv})", "", 8u, &options),
+				G_VARIANT_TYPE("(o)"),
 				G_DBUS_CALL_FLAGS_NONE,
 				5000,
 				nullptr,
-				&fds,
-				nullptr,
 				&error);
 			if (reply != nullptr) {
-				gint handle = -1;
-				g_variant_get(reply, "(h)", &handle);
-				sleepInhibitorFd = g_unix_fd_list_get(fds, handle, &error);
+				g_variant_get(reply, "(o)", &sleepInhibitorRequest);
+				// The portal also releases the inhibition if this connection closes.
+				sleepInhibitorBus = bus;
 				g_variant_unref(reply);
+			} else {
+				g_object_unref(bus);
 			}
-			if (fds != nullptr) {
-				g_object_unref(fds);
-			}
-			g_object_unref(bus);
 		}
 		if (error != nullptr) {
 			AddDebugLogLineN(logGeneral,
@@ -434,9 +433,32 @@ void PlatformSpecific::AllowSleepMode()
 			// ??
 		}
 #elif defined(__linux__) && defined(HAVE_GIO)
-		if (sleepInhibitorFd >= 0) {
-			close(sleepInhibitorFd);
-			sleepInhibitorFd = -1;
+		if (sleepInhibitorRequest != nullptr) {
+			GError *error = nullptr;
+			GVariant *reply = g_dbus_connection_call_sync(sleepInhibitorBus,
+				"org.freedesktop.portal.Desktop",
+				sleepInhibitorRequest,
+				"org.freedesktop.portal.Request",
+				"Close",
+				nullptr,
+				G_VARIANT_TYPE("()"),
+				G_DBUS_CALL_FLAGS_NONE,
+				5000,
+				nullptr,
+				&error);
+			if (reply != nullptr) {
+				g_variant_unref(reply);
+			}
+			if (error != nullptr) {
+				AddDebugLogLineN(logGeneral,
+					CFormat("Cannot release idle sleep inhibition: %s") %
+						wxString::FromUTF8(error->message));
+				g_error_free(error);
+			}
+			g_free(sleepInhibitorRequest);
+			sleepInhibitorRequest = nullptr;
+			g_object_unref(sleepInhibitorBus);
+			sleepInhibitorBus = nullptr;
 		}
 		m_preventingSleepMode = false;
 #else
