@@ -286,19 +286,25 @@ SCENARIOS = [
 ]
 
 
+def record_failure(failures, message):
+    # Print now: CTest's time limit can stop the run before main() reports.
+    print(message)
+    failures.append(message)
+
+
 def run_scenarios(driver, failures):
     for name, arguments, operations, results, expected in SCENARIOS:
         with FakeGateway(**arguments) as gateway:
             try:
                 got = run_driver(driver, gateway, operations)
             except ScenarioFailed as error:
-                failures.append(f'{name}: {error}')
+                record_failure(failures, f'{name}: {error}')
                 continue
         if got != results:
-            failures.append(f'{name}: returned {got}, expected {results}')
+            record_failure(failures, f'{name}: returned {got}, expected {results}')
         # Exact list: also rules out state queries, GetStatusInfo and the disabled mapping.
         if sorted(gateway.requests) != sorted(expected):
-            failures.append(f'{name}: gateway saw {gateway.requests}, expected {expected}')
+            record_failure(failures, f'{name}: gateway saw {gateway.requests}, expected {expected}')
 
 
 def main():
@@ -317,7 +323,7 @@ def main():
     except Skipped as error:
         skipped = str(error)
     if failures:
-        sys.exit('FAIL:\n' + '\n'.join(failures))
+        sys.exit('FAIL: see the failures above')
     if skipped:
         skip_or_fail(skipped)
 
