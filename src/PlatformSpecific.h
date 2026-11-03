@@ -114,7 +114,7 @@ inline bool CanFSHandleLargeFiles(const CPath &path)
 /**
  * Disable or enable the computer's energy-saving "standby" mode.
  */
-#if defined __WINDOWS__ || defined __WXMAC__
+#if defined __WINDOWS__ || defined __WXMAC__ || (defined(__linux__) && defined(HAVE_GIO))
 #define PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE 1
 #else
 #define PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE 0

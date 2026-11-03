@@ -25,6 +25,12 @@
 #include "PlatformSpecific.h"
 #include "config.h"
 
+#if defined(__linux__) && defined(HAVE_GIO)
+#include "Logger.h"
+#include "common/Format.h"
+#include <gio/gio.h>
+#endif
+
 // NTFS Sparse Files (only for MSW)
 #ifdef __WINDOWS__
 #include "common/Format.h"
@@ -325,6 +331,12 @@ PlatformSpecific::EFSType PlatformSpecific::GetFilesystemType(const CPath &path)
 	return s_fscache[path.GetRaw()] = doGetFilesystemType(path);
 }
 
+#if defined(__linux__) && defined(HAVE_GIO)
+static guint sleepInhibitorCookie = 0;
+static GDBusConnection *sleepInhibitorBus = nullptr;
+static gchar *sleepInhibitorRequest = nullptr;
+#endif
+
 // Power event vetoing
 
 static bool m_preventingSleepMode = false;
@@ -366,6 +378,82 @@ void PlatformSpecific::PreventSleepMode()
 		} else {
 			// ??
 		}
+#elif defined(__linux__) && defined(HAVE_GIO)
+		// Make one attempt per state change, including when neither service is available.
+		m_preventingSleepMode = true;
+		GError *error = nullptr;
+		// A private connection lets us release even a failed/timed-out request by
+		// disconnecting, without closing another caller's shared session bus.
+		gchar *address = g_dbus_address_get_for_bus_sync(G_BUS_TYPE_SESSION, nullptr, &error);
+		GDBusConnection *bus = nullptr;
+		if (address != nullptr) {
+			// GIO requires this combination of bit flags, not a single enum value.
+			// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+			const auto flags = static_cast<GDBusConnectionFlags>(
+				G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
+				G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION);
+			bus = g_dbus_connection_new_for_address_sync(
+				address, flags, nullptr, nullptr, &error);
+			g_free(address);
+		}
+		if (bus != nullptr) {
+			// Cinnamon's portal may return a handle before failing because a native
+			// process has no app ID. Supply it directly to the session manager first.
+			GVariant *reply = g_dbus_connection_call_sync(bus,
+				"org.gnome.SessionManager",
+				"/org/gnome/SessionManager",
+				"org.gnome.SessionManager",
+				"Inhibit",
+				g_variant_new("(susu)", "org.amule.aMule", 0u, "Transferring files", 4u),
+				G_VARIANT_TYPE("(u)"),
+				G_DBUS_CALL_FLAGS_NONE,
+				5000,
+				nullptr,
+				&error);
+			if (reply != nullptr) {
+				g_variant_get(reply, "(u)", &sleepInhibitorCookie);
+				sleepInhibitorBus = bus;
+				g_variant_unref(reply);
+				return;
+			}
+			AddDebugLogLineN(logGeneral,
+				CFormat("Cannot inhibit idle sleep through session manager; trying portal: "
+					"%s") %
+					wxString::FromUTF8(error->message));
+			g_clear_error(&error);
+
+			GVariantBuilder options;
+			g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
+			g_variant_builder_add(
+				&options, "{sv}", "reason", g_variant_new_string("Transferring files"));
+			// Suspend only; leave screen blanking and idle detection alone.
+			reply = g_dbus_connection_call_sync(bus,
+				"org.freedesktop.portal.Desktop",
+				"/org/freedesktop/portal/desktop",
+				"org.freedesktop.portal.Inhibit",
+				"Inhibit",
+				g_variant_new("(sua{sv})", "", 4u, &options),
+				G_VARIANT_TYPE("(o)"),
+				G_DBUS_CALL_FLAGS_NONE,
+				5000,
+				nullptr,
+				&error);
+			if (reply != nullptr) {
+				g_variant_get(reply, "(o)", &sleepInhibitorRequest);
+				// The portal also releases the inhibition if this connection closes.
+				sleepInhibitorBus = bus;
+				g_variant_unref(reply);
+			} else {
+				g_dbus_connection_close_sync(bus, nullptr, nullptr);
+				g_object_unref(bus);
+			}
+		}
+		if (error != nullptr) {
+			AddDebugLogLineN(logGeneral,
+				CFormat("Cannot inhibit idle sleep: %s") %
+					wxString::FromUTF8(error->message));
+			g_error_free(error);
+		}
 #else
 		// #warning Power event vetoing not implemented.
 		//  Not implemented
@@ -387,6 +475,38 @@ void PlatformSpecific::AllowSleepMode()
 		} else {
 			// ??
 		}
+#elif defined(__linux__) && defined(HAVE_GIO)
+		if (sleepInhibitorBus != nullptr) {
+			GError *error = nullptr;
+			const bool portal = sleepInhibitorRequest != nullptr;
+			GVariant *reply = g_dbus_connection_call_sync(sleepInhibitorBus,
+				portal ? "org.freedesktop.portal.Desktop" : "org.gnome.SessionManager",
+				portal ? sleepInhibitorRequest : "/org/gnome/SessionManager",
+				portal ? "org.freedesktop.portal.Request" : "org.gnome.SessionManager",
+				portal ? "Close" : "Uninhibit",
+				portal ? nullptr : g_variant_new("(u)", sleepInhibitorCookie),
+				G_VARIANT_TYPE("()"),
+				G_DBUS_CALL_FLAGS_NONE,
+				5000,
+				nullptr,
+				&error);
+			if (reply != nullptr) {
+				g_variant_unref(reply);
+			}
+			if (error != nullptr) {
+				AddDebugLogLineN(logGeneral,
+					CFormat("Cannot release idle sleep inhibition: %s") %
+						wxString::FromUTF8(error->message));
+				g_error_free(error);
+			}
+			g_free(sleepInhibitorRequest);
+			sleepInhibitorRequest = nullptr;
+			sleepInhibitorCookie = 0;
+			g_dbus_connection_close_sync(sleepInhibitorBus, nullptr, nullptr);
+			g_object_unref(sleepInhibitorBus);
+			sleepInhibitorBus = nullptr;
+		}
+		m_preventingSleepMode = false;
 #else
 		// Not implemented
 #endif

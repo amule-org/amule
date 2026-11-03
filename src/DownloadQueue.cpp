@@ -502,22 +502,26 @@ void CDownloadQueue::Process()
 			}
 		}
 
-		if (thePrefs::GetPreventSleepWhileDownloading()) {
-			if ((mustPreventSleep == false) &&
-				(theStats::GetSessionSentBytes() < theStats::GetSessionReceivedBytes())) {
-				// I can see right through your clever plan.
-				mustPreventSleep = true;
-			}
+		{
+			// Synchronous desktop calls can wait for a service; let other queue users proceed.
+			CMutexUnlocker unlocker(m_mutex);
+			if (thePrefs::GetPreventSleepWhileDownloading()) {
+				if ((mustPreventSleep == false) &&
+					(theStats::GetSessionSentBytes() <
+						theStats::GetSessionReceivedBytes())) {
+					// I can see right through your clever plan.
+					mustPreventSleep = true;
+				}
 
-			if (mustPreventSleep) {
-				PlatformSpecific::PreventSleepMode();
+				if (mustPreventSleep) {
+					PlatformSpecific::PreventSleepMode();
+				} else {
+					PlatformSpecific::AllowSleepMode();
+				}
 			} else {
+				// Just in case the value changes while we're preventing.
 				PlatformSpecific::AllowSleepMode();
 			}
-		} else {
-			// Just in case the value changes while we're preventing.
-			// Calls to this function are totally inexpensive anyway
-			PlatformSpecific::AllowSleepMode();
 		}
 
 		int nSourceGroups = m_sourcecountlist.size();
