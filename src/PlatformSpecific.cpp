@@ -378,7 +378,20 @@ void PlatformSpecific::PreventSleepMode()
 		// Make one attempt per state change, including when the portal is unavailable.
 		m_preventingSleepMode = true;
 		GError *error = nullptr;
-		GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, &error);
+		// A private connection lets us release even a failed/timed-out request by
+		// disconnecting, without closing another caller's shared session bus.
+		gchar *address = g_dbus_address_get_for_bus_sync(G_BUS_TYPE_SESSION, nullptr, &error);
+		GDBusConnection *bus = nullptr;
+		if (address != nullptr) {
+			// GIO requires this combination of bit flags, not a single enum value.
+			// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+			const auto flags = static_cast<GDBusConnectionFlags>(
+				G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
+				G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION);
+			bus = g_dbus_connection_new_for_address_sync(
+				address, flags, nullptr, nullptr, &error);
+			g_free(address);
+		}
 		if (bus != nullptr) {
 			GVariantBuilder options;
 			g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
@@ -402,6 +415,7 @@ void PlatformSpecific::PreventSleepMode()
 				sleepInhibitorBus = bus;
 				g_variant_unref(reply);
 			} else {
+				g_dbus_connection_close_sync(bus, nullptr, nullptr);
 				g_object_unref(bus);
 			}
 		}
@@ -457,6 +471,7 @@ void PlatformSpecific::AllowSleepMode()
 			}
 			g_free(sleepInhibitorRequest);
 			sleepInhibitorRequest = nullptr;
+			g_dbus_connection_close_sync(sleepInhibitorBus, nullptr, nullptr);
 			g_object_unref(sleepInhibitorBus);
 			sleepInhibitorBus = nullptr;
 		}
