@@ -618,9 +618,9 @@ struct PunchDue
 	std::uint16_t udpPort = 0;
 };
 
-// The punches owed to each peer address. One schedule per address, restarted by a second 0x61 for
-// it, and dropped as soon as a punch or a stream from that address arrives, or our own dial to it
-// connects, which is when the expected endpoint it was derived from expires too.
+// The punches owed to each peer endpoint. One schedule per address and port, restarted by a second
+// 0x61 for it. A punch or a hello from the address drops all of its schedules, and each one
+// expires with its expected endpoint.
 class PunchScheduleSet
 {
 public:

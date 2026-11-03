@@ -357,8 +357,8 @@ a single `OP_HOLEPUNCH` before. The wire format is unchanged: an empty `OP_HOLEP
 (`CServerConnect::StartLowIdHolePunchSchedule()` sends the first, `SendDueLowIdHolePunches()` the
 rest), so no thread is added.
 
-- one schedule per peer address, and one schedule at a time: a second `0x61` for the same address
-  restarts it rather than adding another. Lugdunum's path keeps its own resends
+- one schedule per peer address and port: a second `0x61` for the same address and port restarts
+  it rather than adding another. Lugdunum's path keeps its own resends
   (`CCallbackRendezvous`, every 3 s for 60 s) and only runs against a Lugdunum server, so the two
   never overlap for one peer;
 - stop early: an address's schedule is dropped when a punch arrives from it
