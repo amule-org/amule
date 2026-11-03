@@ -14,21 +14,20 @@ from pathlib import Path
 from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import daemon_env, write_amule_conf
 from DownloadDisplayRatesIntegrationTest import hello
-from KadReceiverKeyLogIntegrationTest import KADEMLIA_FINDBUDDY_REQ
+from KadReceiverKeyLogIntegrationTest import KADEMLIA_FINDBUDDY_REQ, KADEMLIA_FIREWALLED2_REQ
 from KadSourceTagsECTest import wait_ready
 from UploadRefillIntegrationTest import packet, send
+from UploadSlotScopeIntegrationTest import OP_HELLOANSWER
 
 KADEMLIA2_HELLO_REQ = 0x11
-KADEMLIA_FIREWALLED2_REQ = 0x53
 KADEMLIA_FIREWALLED_ACK_RES = 0x59
 KADEMLIA_FINDBUDDY_RES = 0x5A
 OP_HELLO = 0x01
-OP_HELLOANSWER = 0x4C
 BUDDY_DISCONNECTED = 0
 BUDDY_CONNECTED = 2
 # A hello's little-endian client ID of 7 is a LowID: we drop a buddy with a HighID.
 LOW_ID_ADDRESS = '7.0.0.0'
-REQUEST_TIMEOUT = 60
+REQUEST_TIMEOUT = 120
 IDLE_TIMEOUT = 40
 # The client list runs about once a second.
 MARGIN = 5
@@ -114,7 +113,7 @@ class Requester:
 def check_extra_buddy_is_dropped(ec, udp_port, peer_port):
     first = Requester('127.0.0.4', udp_port, peer_port)
     second = Requester('127.0.0.5', udp_port, peer_port)
-    # Hellos in the same cycle both become connected buddies, before either can be refused.
+    # Hellos in the same cycle normally both become connected buddies, before either can be refused.
     first.send_hello()
     second.send_hello()
     first.wait_hello_answer()

@@ -64,8 +64,8 @@ public:
 	// Counted from Reset(): a request that has not connected receives nothing to renew it.
 	bool RequestExpired(uint64_t now) const { return now - m_lastReceived >= RequestTimeout; }
 
-	// One failed 40 s connection attempt by the requester, then its attempt to reach us.
-	static constexpr uint64_t RequestTimeout = 60 * 1000;
+	// A requester dials its candidates in turn: two failed 40 s attempts, then its attempt to reach us.
+	static constexpr uint64_t RequestTimeout = 2 * 60 * 1000;
 	static constexpr uint64_t PingInterval = 10 * 60 * 1000;
 	static constexpr uint64_t IncomingPingInterval = 3 * 60 * 1000;
 	// Stock peers can answer only every second ten-minute ping because their incoming

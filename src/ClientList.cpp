@@ -760,8 +760,11 @@ void CClientList::Process()
 
 		case KS_CONNECTED_BUDDY:
 			// Connected in the same cycle as our buddy. Without buddy state, an idle socket
-			// closes on the ordinary timeout and a transfer on it carries on.
-			if (m_nBuddyStatus == Connected && m_pBuddy.GetClient() != cur_client) {
+			// closes on the ordinary timeout and a transfer on it carries on. A linked buddy
+			// that is on its way out is about to be replaced by this client instead.
+			if (m_nBuddyStatus == Connected && m_pBuddy.IsLinked() &&
+				m_pBuddy.GetClient() != cur_client &&
+				m_pBuddy.GetClient()->GetKadState() == KS_CONNECTED_BUDDY) {
 				cur_client->SetKadState(KS_NONE);
 				break;
 			}
