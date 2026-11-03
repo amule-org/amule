@@ -3093,6 +3093,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadSourceTagsECTest.py $<TARGET_FILE:amuled>
 		)
+		add_test (NAME KadLanModeIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/KadLanModeIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (KadLanModeIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME KadReceiverKeyLogIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadReceiverKeyLogIntegrationTest.py $<TARGET_FILE:amuled>
@@ -3853,6 +3858,7 @@ foreach (ec_wire_test IN ITEMS
 	IntegrationFixtureUnitTest
 	KadDistributionECTest
 	KadIndexLifecycleECTest
+	KadLanModeIntegrationTest
 	KadLookupECTest
 	KadPacketValidationIntegrationTest
 	KadPopulatedDistributionECTest

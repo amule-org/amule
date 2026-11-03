@@ -892,7 +892,7 @@ void CKademliaUDPListener::ProcessKademlia2Response(const uint8_t *packetData,
 		uint8_t version = bio.ReadUInt8();
 		uint32_t hostIP = wxUINT32_SWAP_ALWAYS(contactIP);
 		if (version > 1) { // Kad1 nodes are no longer accepted and ignored
-			if (::IsGoodIPPort(hostIP, contactPort)) {
+			if (::IsGoodIPPort(hostIP, contactPort, thePrefs::FilterLanIPs())) {
 				if (!theApp->ipfilter->IsFiltered(hostIP) &&
 					!(contactPort == 53 &&
 						version <= 5) /*No DNS Port without encryption*/) {

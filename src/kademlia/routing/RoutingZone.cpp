@@ -64,6 +64,7 @@ there client on the eMule forum..
 #include "../../Logger.h"
 #include "../../NetworkFunctions.h"
 #include "../../IPFilter.h"
+#include "../../Preferences.h"
 #include "../../RandomFunctions.h"
 
 #include <cmath>
@@ -184,7 +185,9 @@ void CRoutingZone::ReadFile(const wxString &specialNodesdat)
 					}
 					// IP appears valid
 					if (contactVersion > 1) {
-						if (IsGoodIPPort(wxUINT32_SWAP_ALWAYS(ip), udpPort)) {
+						if (IsGoodIPPort(wxUINT32_SWAP_ALWAYS(ip),
+							    udpPort,
+							    thePrefs::FilterLanIPs())) {
 							if (!theApp->ipfilter->IsFiltered(
 								    wxUINT32_SWAP_ALWAYS(ip)) &&
 								!(
@@ -258,7 +261,7 @@ void CRoutingZone::ReadBootstrapNodesDat(CFileDataIO &file)
 			uint16_t tcpPort = file.ReadUInt16();
 			uint8_t contactVersion = file.ReadUInt8();
 
-			if (::IsGoodIPPort(wxUINT32_SWAP_ALWAYS(ip), udpPort)) {
+			if (::IsGoodIPPort(wxUINT32_SWAP_ALWAYS(ip), udpPort, thePrefs::FilterLanIPs())) {
 				if (!theApp->ipfilter->IsFiltered(wxUINT32_SWAP_ALWAYS(ip)) &&
 					!(udpPort == 53 && contactVersion <= 5) &&
 					(contactVersion > 1)) // only kad2 nodes
@@ -444,7 +447,7 @@ bool CRoutingZone::Add(const CUInt128 &id,
 	bool update,
 	bool fromHello)
 {
-	if (IsGoodIPPort(wxUINT32_SWAP_ALWAYS(ip), port)) {
+	if (IsGoodIPPort(wxUINT32_SWAP_ALWAYS(ip), port, thePrefs::FilterLanIPs())) {
 		if (!theApp->ipfilter->IsFiltered(wxUINT32_SWAP_ALWAYS(ip)) &&
 			!(port == 53 && version <= 5) /*No DNS Port without encryption*/) {
 			return AddUnfiltered(
