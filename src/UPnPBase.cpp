@@ -651,25 +651,6 @@ bool CUPnPService::Execute(
 	return true;
 }
 
-const std::string CUPnPService::GetStateVariable(const std::string &stateVariableName) const
-{
-	std::ostringstream msg;
-	DOMString StVarVal;
-	int ret = UpnpGetServiceVarStatus(m_UPnPControlPoint.GetUPnPClientHandle(),
-		GetAbsControlURL().c_str(),
-		stateVariableName.c_str(),
-		&StVarVal);
-	if (ret != UPNP_E_SUCCESS) {
-		msg << "GetStateVariable(\"" << stateVariableName
-		    << "\"): in a call to UpnpGetServiceVarStatus";
-		UPnP::ProcessErrorMessage(msg.str(), ret, StVarVal, NULL);
-		return stdEmptyString;
-	}
-	msg << "GetStateVariable: " << stateVariableName << "='" << StVarVal << "'.";
-	AddDebugLogLineN(logUPnP, msg);
-	return StVarVal;
-}
-
 CUPnPDevice::CUPnPDevice(
 	const CUPnPControlPoint &upnpControlPoint, IXML_Element *device, const std::string &URLBase)
 : m_DeviceList(upnpControlPoint, device, URLBase)
@@ -841,63 +822,20 @@ bool CUPnPControlPoint::AddPortMappings(std::vector<CUPnPPortMapping> &upnpPortM
 		return false;
 	}
 
-	int n = upnpPortMapping.size();
-	unsigned int expectedEntries = 0;
-	bool ok = false;
-
-	std::istringstream PortMappingNumberOfEntries(
-		m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
-	unsigned long oldNumberOfEntries;
-	PortMappingNumberOfEntries >> oldNumberOfEntries;
-
-	for (int i = 0; i < n; ++i) {
-		if (upnpPortMapping[i].getEnabled() == "1") {
-			++expectedEntries;
-			m_ActivePortMappingsMap[upnpPortMapping[i].getKey()] = upnpPortMapping[i];
-
-			PrivateAddPortMapping(upnpPortMapping[i]);
+	bool ok = true;
+	for (const auto &mapping : upnpPortMapping) {
+		if (mapping.getEnabled() == "1") {
+			m_ActivePortMappingsMap[mapping.getKey()] = mapping;
+			// Send every mapping, even after one fails.
+			ok = PrivateAddPortMapping(mapping) && ok;
 		}
 	}
-
-	// Test some variables, this is deprecated, might not work
-	// with some routers
-	m_WanService->GetStateVariable("ConnectionType");
-	m_WanService->GetStateVariable("PossibleConnectionTypes");
-	m_WanService->GetStateVariable("ConnectionStatus");
-	m_WanService->GetStateVariable("Uptime");
-	m_WanService->GetStateVariable("LastConnectionError");
-	m_WanService->GetStateVariable("RSIPAvailable");
-	m_WanService->GetStateVariable("NATEnabled");
-	m_WanService->GetStateVariable("ExternalIPAddress");
-	m_WanService->GetStateVariable("PortMappingNumberOfEntries");
-	m_WanService->GetStateVariable("PortMappingLeaseDuration");
-
-	std::vector<CUPnPArgumentValue> argval;
-	argval.resize(0);
-	m_WanService->Execute("GetStatusInfo", argval);
-
-#if 0
-	// These do not work. Their value must be requested for a
-	// specific port mapping.
-	m_WanService->GetStateVariable("PortMappingEnabled");
-	m_WanService->GetStateVariable("RemoteHost");
-	m_WanService->GetStateVariable("ExternalPort");
-	m_WanService->GetStateVariable("InternalPort");
-	m_WanService->GetStateVariable("PortMappingProtocol");
-	m_WanService->GetStateVariable("InternalClient");
-	m_WanService->GetStateVariable("PortMappingDescription");
-#endif
 
 	msg.str("");
 	msg << "CUPnPControlPoint::AddPortMappings: "
 	       "m_ActivePortMappingsMap.size() == "
 	    << m_ActivePortMappingsMap.size();
 	AddDebugLogLineN(logUPnP, msg);
-
-	PortMappingNumberOfEntries.str(m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
-	unsigned long newNumberOfEntries;
-	PortMappingNumberOfEntries >> newNumberOfEntries;
-	ok = newNumberOfEntries - oldNumberOfEntries == expectedEntries;
 
 	return ok;
 }
@@ -909,13 +847,21 @@ void CUPnPControlPoint::RefreshPortMappings()
 		++it) {
 		PrivateAddPortMapping(it->second);
 	}
-
-	if (m_WanService) {
-		m_WanService->GetStateVariable("PortMappingNumberOfEntries");
-	}
 }
 
-bool CUPnPControlPoint::PrivateAddPortMapping(CUPnPPortMapping &upnpPortMapping)
+bool CUPnPControlPoint::ExecuteOnAnyService(
+	const std::string &actionName, const std::vector<CUPnPArgumentValue> &argval)
+{
+	// A gateway can expose both WANIPConnection and WANPPPConnection, and only one of them holds
+	// the mapping. The other refusing it is not a failure.
+	bool ok = false;
+	for (const auto &entry : m_ServiceMap) {
+		ok = entry.second->Execute(actionName, argval) || ok;
+	}
+	return ok;
+}
+
+bool CUPnPControlPoint::PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMapping)
 {
 	std::string ipAddress(UpnpGetServerIpAddress());
 
@@ -939,12 +885,7 @@ bool CUPnPControlPoint::PrivateAddPortMapping(CUPnPPortMapping &upnpPortMapping)
 	argval[7].SetArgument("NewLeaseDuration");
 	argval[7].SetValue("0");
 
-	bool ret = true;
-	for (ServiceMap::iterator it = m_ServiceMap.begin(); it != m_ServiceMap.end(); ++it) {
-		ret &= it->second->Execute(actionName, argval);
-	}
-
-	return ret;
+	return ExecuteOnAnyService(actionName, argval);
 }
 
 bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPortMapping)
@@ -959,20 +900,10 @@ bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPo
 		return false;
 	}
 
-	int n = upnpPortMapping.size();
-	unsigned int expectedEntries = 0;
-	bool ok = false;
-
-	std::istringstream PortMappingNumberOfEntries(
-		m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
-	unsigned long oldNumberOfEntries;
-	PortMappingNumberOfEntries >> oldNumberOfEntries;
-
-	for (int i = 0; i < n; ++i) {
-		if (upnpPortMapping[i].getEnabled() == "1") {
-			++expectedEntries;
-			PortMappingMap::iterator it =
-				m_ActivePortMappingsMap.find(upnpPortMapping[i].getKey());
+	bool ok = true;
+	for (const auto &mapping : upnpPortMapping) {
+		if (mapping.getEnabled() == "1") {
+			PortMappingMap::iterator it = m_ActivePortMappingsMap.find(mapping.getKey());
 			if (it != m_ActivePortMappingsMap.end()) {
 				m_ActivePortMappingsMap.erase(it);
 			} else {
@@ -983,7 +914,7 @@ bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPo
 				AddDebugLogLineC(logUPnP, msg);
 			}
 
-			PrivateDeletePortMapping(upnpPortMapping[i]);
+			ok = PrivateDeletePortMapping(mapping) && ok;
 		}
 	}
 
@@ -993,15 +924,10 @@ bool CUPnPControlPoint::DeletePortMappings(std::vector<CUPnPPortMapping> &upnpPo
 	    << m_ActivePortMappingsMap.size();
 	AddDebugLogLineN(logUPnP, msg);
 
-	PortMappingNumberOfEntries.str(m_WanService->GetStateVariable("PortMappingNumberOfEntries"));
-	unsigned long newNumberOfEntries;
-	PortMappingNumberOfEntries >> newNumberOfEntries;
-	ok = oldNumberOfEntries - newNumberOfEntries == expectedEntries;
-
 	return ok;
 }
 
-bool CUPnPControlPoint::PrivateDeletePortMapping(CUPnPPortMapping &upnpPortMapping)
+bool CUPnPControlPoint::PrivateDeletePortMapping(const CUPnPPortMapping &upnpPortMapping)
 {
 	std::string actionName("DeletePortMapping");
 	std::vector<CUPnPArgumentValue> argval(3);
@@ -1013,12 +939,7 @@ bool CUPnPControlPoint::PrivateDeletePortMapping(CUPnPPortMapping &upnpPortMappi
 	argval[2].SetArgument("NewProtocol");
 	argval[2].SetValue(upnpPortMapping.getProtocol());
 
-	bool ret = true;
-	for (ServiceMap::iterator it = m_ServiceMap.begin(); it != m_ServiceMap.end(); ++it) {
-		ret &= it->second->Execute(actionName, argval);
-	}
-
-	return ret;
+	return ExecuteOnAnyService(actionName, argval);
 }
 
 #if UPNP_VERSION >= 11800

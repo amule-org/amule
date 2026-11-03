@@ -289,7 +289,6 @@ public:
 	void SetSCPD(CUPnPSCPD *SCPD) { m_SCPD.reset(SCPD); }
 
 	bool Execute(const std::string &ActionName, const std::vector<CUPnPArgumentValue> &ArgValue) const;
-	const std::string GetStateVariable(const std::string &stateVariableName) const;
 };
 
 class CUPnPDevice
@@ -411,8 +410,10 @@ private:
 		IXML_Element *rootDevice, const std::string &urlBase, const char *location, int expires);
 	void RemoveRootDevice(const char *udn);
 	void RefreshPortMappings();
-	bool PrivateAddPortMapping(CUPnPPortMapping &upnpPortMapping);
-	bool PrivateDeletePortMapping(CUPnPPortMapping &upnpPortMapping);
+	bool ExecuteOnAnyService(
+		const std::string &actionName, const std::vector<CUPnPArgumentValue> &argval);
+	bool PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMapping);
+	bool PrivateDeletePortMapping(const CUPnPPortMapping &upnpPortMapping);
 
 	// Suppress repeated UpnpDownloadXmlDoc() against URLs that just failed. SSDP ALIVE
 	// announcements arrive in dense bursts, one per service class, every few seconds per
