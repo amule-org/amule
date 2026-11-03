@@ -365,6 +365,7 @@ private:
 	bool m_IGWDeviceDetected;
 	mutable CUPnPMutex m_ServiceMapMutex;
 	std::atomic<bool> m_gatewayMapped;
+	std::atomic<int> m_registering;
 	std::chrono::steady_clock::time_point m_searchDeadline;
 
 public:
@@ -384,8 +385,9 @@ public:
 		CUPnPMutexLocker lock(m_ServiceMapMutex);
 		return !m_ServiceMap.empty();
 	}
-	// True until a gateway has its mappings or the search has ended. Work that needs the ports
-	// reachable, such as a server login, should wait for this.
+	// True until a gateway has its mappings or the search has ended, or a little longer for a
+	// gateway still registering. Work that needs the ports reachable, such as a server login, should
+	// wait for this.
 	bool DiscoveryPending() const;
 	// Drops a service being deleted.
 	void ForgetService(const CUPnPService *service);

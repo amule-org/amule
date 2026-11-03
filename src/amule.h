@@ -508,8 +508,8 @@ public:
 	const wxDateTime &GetKadConnectedSince() const { return m_kadConnectedSince; }
 
 	void StartKad();
-	bool UPnPDiscoveryPending() const;
 	void StopKad();
+	bool UPnPDiscoveryPending() const;
 
 	/** Bootstraps kad from the specified IP (must be in hostorder). */
 	void BootstrapKad(uint32 ip, uint16 port);

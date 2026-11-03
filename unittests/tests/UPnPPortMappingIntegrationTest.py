@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Port mapping results come from each action's reply, checked against a fake gateway."""
+"""Port mapping results, late services and the autoconnect hold, checked against a fake gateway."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import os
 from pathlib import Path
@@ -14,6 +14,7 @@ import tempfile
 import threading
 import time
 
+from AllSearchIntegrationTest import stop_daemon
 from DaemonConfig import daemon_env, write_amule_conf
 
 SKIP = 77
@@ -293,7 +294,9 @@ class Driver:
 
     def __exit__(self, failure, *_):
         details = self.stop()
-        if not failure and self.process.returncode != 0:
+        if failure:
+            print(f'driver: {details}', file=sys.stderr)
+        elif self.process.returncode != 0:
             raise ScenarioFailed(f'driver failed ({details})')
 
     def stop(self):
@@ -304,8 +307,11 @@ class Driver:
 
     def run(self, count):
         """Returns the results of the next operations."""
-        self.process.stdin.write('\n' * count)
-        self.process.stdin.flush()
+        try:
+            self.process.stdin.write('\n' * count)
+            self.process.stdin.flush()
+        except BrokenPipeError as error:
+            raise ScenarioFailed('driver stopped') from error
         lines = [self.process.stdout.readline().strip() for _ in range(count)]
         if not all('=' in line for line in lines):
             raise ScenarioFailed(f'driver stopped after {lines}')
@@ -433,6 +439,15 @@ def check_discovery_pending(driver, failures):
         with FakeGateway() as gateway, Driver(driver, ['pending']) as running:
             wait_registered(gateway)
             check('gateway registered', running.run(1), 'false')
+        # A registration that outlasts the search keeps the hold.
+        with FakeGateway(held='ip') as gateway, Driver(driver, ['pending'] * 2) as running:
+            time.sleep(AFTER_DISCOVERY_DEADLINE)
+            check('still registering', running.run(1), 'true')
+            gateway.release.set()
+            wait_registered(gateway)
+            # The gateway sees the subscription just before the control point finishes with it.
+            time.sleep(0.5)
+            check('registration done', running.run(1), 'false')
         # A Netgear GS308EP answers as a gateway and lists no services.
         with FakeGateway(services=()), Driver(driver, ['pending']) as running:
             time.sleep(1)
@@ -458,6 +473,7 @@ def local_address():
 def wait_login(listener):
     """Returns once the server's login packet arrives. Nothing here reads the rest."""
     with listener.accept()[0] as peer:
+        peer.settimeout(30)
         peer.recv(4096)
 
 
@@ -476,19 +492,20 @@ def tcp_mapped_at_login(amuled, gateway):
         (Path(root) / 'server.met').write_bytes(
             b'\xe0' + struct.pack('<I', 1) + socket.inet_aton(address)
             + struct.pack('<HI', server_port, 0))
-        with subprocess.Popen([amuled, '-c', root, '--disable-fatal'], env=daemon_env(root),
-                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) as process:
+        console_path = Path(root) / 'console.log'
+        # Not running_daemon(): its wait for EC would read the table after the login.
+        with console_path.open('w') as console, subprocess.Popen(
+                [amuled, '-c', root, '--disable-fatal'], env=daemon_env(root), stdout=console,
+                stderr=subprocess.STDOUT) as process:
             try:
                 wait_login(listener)
-                return any(TCP in table for table in gateway.tables.values())
-            except socket.timeout as error:
-                raise ScenarioFailed('amuled did not connect to the server') from error
-            finally:
-                process.terminate()
-                try:
-                    process.wait(20)
-                except subprocess.TimeoutExpired:
-                    process.kill()
+                mapped = any(TCP in table for table in gateway.tables.values())
+                stop_daemon(process, timeout=20)
+                return mapped
+            except (OSError, AssertionError) as error:
+                stop_daemon(process, timeout=20, check=False)
+                print(console_path.read_text(errors='replace'))
+                raise ScenarioFailed(f'amuled failed: {error}') from error
 
 
 def check_amuled_autoconnect(amuled, failures):
@@ -496,6 +513,11 @@ def check_amuled_autoconnect(amuled, failures):
         with FakeGateway(services=BOTH, answer_delay=1.5) as gateway:
             if not tcp_mapped_at_login(amuled, gateway):
                 record_failure(failures, 'amuled logged in before a slow gateway was mapped')
+        with FakeGateway(services=BOTH, held='ip') as gateway:
+            # Past the end of the search, and past the login that would follow it without a hold.
+            threading.Timer(7, gateway.release.set).start()
+            if not tcp_mapped_at_login(amuled, gateway):
+                record_failure(failures, 'amuled logged in before a registering gateway was mapped')
         # Holding back must end: with no gateway, amuled still logs in.
         with FakeGateway(silent=True) as gateway:
             tcp_mapped_at_login(amuled, gateway)

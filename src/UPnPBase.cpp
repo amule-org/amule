@@ -50,8 +50,7 @@
 
 #include "UPnPBase.h"
 
-#include <algorithm> // For transform()
-#include <chrono>
+#include <algorithm>          // For transform()
 #include "CCtypeAsciiScope.h" // Needed to pin LC_CTYPE = C around the
 			      // ASCII-only tolower() comparisons below
 			      // (Turkish-i: tolower('I') = U+0131 under
@@ -711,6 +710,8 @@ CUPnPRootDevice::CUPnPRootDevice(const CUPnPControlPoint &upnpControlPoint,
 CUPnPControlPoint *CUPnPControlPoint::s_CtrlPoint = NULL;
 
 static const int SEARCH_MX_SECONDS = 3;
+// libupnp's timeout for one request.
+static const int REGISTRATION_GRACE_SECONDS = 30;
 
 CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 : m_UPnPClientHandle()
@@ -721,6 +722,7 @@ CUPnPControlPoint::CUPnPControlPoint(unsigned short udpPort)
 , m_IGWDeviceDetected(false)
 , m_ServiceMapMutex()
 , m_gatewayMapped(false)
+, m_registering(0)
 {
 	s_CtrlPoint = this;
 	std::ostringstream msg;
@@ -806,9 +808,15 @@ CUPnPControlPoint::~CUPnPControlPoint()
 
 bool CUPnPControlPoint::DiscoveryPending() const
 {
+	if (m_gatewayMapped) {
+		return false;
+	}
 	// Not UPNP_DISCOVERY_SEARCH_TIMEOUT: it does not wait for answers still being processed, and
 	// libupnp drops it when its thread pool is full.
-	return !m_gatewayMapped && std::chrono::steady_clock::now() < m_searchDeadline;
+	const auto now = std::chrono::steady_clock::now();
+	return now < m_searchDeadline ||
+	       (m_registering > 0 &&
+		       now < m_searchDeadline + std::chrono::seconds(REGISTRATION_GRACE_SECONDS));
 }
 
 bool CUPnPControlPoint::AddPortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping)
@@ -1008,6 +1016,7 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 			upnpCP->ShouldSkipAdvertisementFetch(location ? location : "")) {
 			break;
 		}
+		++upnpCP->m_registering;
 		int ret = UpnpDownloadXmlDoc(location, &doc);
 		if (ret != UPNP_E_SUCCESS) {
 			if (EventType == UPNP_DISCOVERY_ADVERTISEMENT_ALIVE) {
@@ -1050,6 +1059,7 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 			}
 			IXML::Document::Free(doc);
 		}
+		--upnpCP->m_registering;
 		break;
 	}
 	case UPNP_DISCOVERY_SEARCH_TIMEOUT: {

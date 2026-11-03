@@ -3872,15 +3872,6 @@ void CamuleApp::OnUnhandledException()
 	::OnUnhandledException();
 }
 
-bool CamuleApp::UPnPDiscoveryPending() const
-{
-#ifdef ENABLE_UPNP
-	return m_upnp && m_upnp->DiscoveryPending();
-#else
-	return false;
-#endif
-}
-
 void CamuleApp::StartKad()
 {
 	if (!Kademlia::CKademlia::IsRunning() && thePrefs::GetNetworkKademlia()) {
@@ -3911,6 +3902,15 @@ void CamuleApp::StopKad()
 		// in the main timer.
 		ShowConnectionState();
 	}
+}
+
+bool CamuleApp::UPnPDiscoveryPending() const
+{
+#ifdef ENABLE_UPNP
+	return m_upnp && m_upnp->DiscoveryPending();
+#else
+	return false;
+#endif
 }
 
 void CamuleApp::BootstrapKad(uint32 ip, uint16 port)
