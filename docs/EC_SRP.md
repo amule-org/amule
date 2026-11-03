@@ -84,6 +84,32 @@ password-keyed AEAD confirmation tags are retired; their tag IDs are not reused.
 independently of Crypto++, with the SRP math in `ECSRPVector.py` beside it. Use
 it as a reference peer.
 
+## Refusals
+
+Every `EC_OP_AUTH_FAIL` from the core carries `EC_TAG_STRING` and
+`EC_TAG_AUTH_FAIL_REASON` (uint8):
+
+| Reason | Value | Meaning | Client action |
+|---|---|---|---|
+| `EC_AUTH_FAIL_CLIENT_TOO_OLD` | 1 | The request has no `EC_TAG_SRP_A` | Upgrade |
+| `EC_AUTH_FAIL_NO_PASSWORD` | 2 | The core has no EC password | Set one on the core |
+| `EC_AUTH_FAIL_RATE_LIMITED` | 3 | Too many attempts from this address | Wait |
+| `EC_AUTH_FAIL_INCOMPATIBLE` | 4 | Bad version, malformed fields or proof, or a request out of order | Upgrade or report |
+| `EC_AUTH_FAIL_REJECTED` | 5 | Wrong or missing proof | Ask for the password again |
+
+`EC_AUTH_FAIL_RATE_LIMITED` also carries `EC_TAG_AUTH_RETRY_AFTER`: seconds, as an unsigned
+integer of variable width. The core sends the smallest width that fits, so read the tag's type.
+Every credential failure uses one code, so an unknown token looks like a wrong password.
+
+Read the reason, not the string: the string can change and a lockout message is in
+the core's language. Older cores send no reason, so treat a missing tag as unknown.
+
+A refusal does not prove that it came from the core. Refusals before the salt are
+plaintext. Sealing after the salt only stops blind injection: SRP does not contribute to
+the transport keys, so an active on-path attacker can seal a forged refusal. Only
+`EC_TAG_SRP_M2` proves the core. Limit how long a client waits for
+`EC_TAG_AUTH_RETRY_AFTER`, and never change stored credentials because of a refusal.
+
 ## Migration and credential changes
 
 Legacy ECPassword values containing an empty-password digest, all zeros or invalid

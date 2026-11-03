@@ -15,7 +15,7 @@ import sys
 import tempfile
 import time
 
-from ECWire import authenticate  # Preflight in the parent before starting fixtures.
+from ECWire import assert_refused, authenticate  # Preflight in the parent before starting fixtures.
 from AllSearchIntegrationTest import (C, EC, check_daemon_ports, integer,
                                       retry_port_collisions, string, tag)
 from DaemonConfig import daemon_env
@@ -32,8 +32,8 @@ def authenticate_token(host, port, token):
     ec = EC.__new__(EC)
     ec.sock = socket.create_connection((host, port), timeout=10)
     try:
-        ec.sock, op, _ = authenticate(ec.sock, bytes.fromhex(token), credential=1)
-        return op
+        ec.sock, op, tags = authenticate(ec.sock, bytes.fromhex(token), credential=1)
+        return op, tags
     finally:
         ec.sock.close()
 
@@ -50,7 +50,7 @@ def helper():
     unread = scenario == 'unread' and count == 0
     if not unread:
         token_file.unlink()
-        assert authenticate_token(args['host'], int(args['port']), token) == C['EC_OP_AUTH_OK']
+        assert authenticate_token(args['host'], int(args['port']), token)[0] == C['EC_OP_AUTH_OK']
     # The private fixture keeps the retired secret to verify revocation after exit.
     with (root / 'retired-token').open('w') as output:
         output.write(token)
@@ -144,9 +144,9 @@ def run(binary, root, scenario):
                         wait_until(proc, root, lambda: 'amuleapi will restart in 0 seconds.' in
                                    (root / 'logfile').read_text(errors='replace'))
                     with socket.create_connection(('127.0.0.1', ec_port), timeout=15) as pending:
-                        _, op, _ = authenticate(pending, bytes.fromhex(token), credential=1,
-                                                before_proof=revoke_pending_token)
-                        assert op == C['EC_OP_AUTH_FAIL'], 'pending proof accepted after token revocation'
+                        _, op, tags = authenticate(pending, bytes.fromhex(token), credential=1,
+                                                   before_proof=revoke_pending_token)
+                        assert_refused(op, tags, 'EC_AUTH_FAIL_REJECTED', label='pending proof accepted after token revocation')
                 else:
                     (root / 'allow-exit').touch()
                 wait_until(proc, root, lambda: 'amuleapi will restart in 0 seconds.' in
@@ -155,7 +155,7 @@ def run(binary, root, scenario):
             if scenario == 'unread':
                 assert not (root / 'amuleapi-ec-token').exists(), 'dead child left a live token file'
                 token = (root / 'retired-token').read_text()
-                assert authenticate_token('127.0.0.1', ec_port, token) == C['EC_OP_AUTH_FAIL'], 'dead child token still accepted'
+                assert_refused(*authenticate_token('127.0.0.1', ec_port, token), 'EC_AUTH_FAIL_REJECTED', label='dead child token still accepted')
             if scenario in ('shutdown', 'active-shutdown'):
                 proc.terminate()
                 assert proc.wait(timeout=20) == 0
@@ -200,7 +200,8 @@ def run(binary, root, scenario):
                 assert not (root / 'amuleapi-ec-token').exists()
                 # Token revocation confirms the core processed the clean exit.
                 token = (root / 'retired-token').read_text()
-                wait_until(proc, root, lambda: authenticate_token('127.0.0.1', ec_port, token) == C['EC_OP_AUTH_FAIL'])
+                wait_until(proc, root, lambda: authenticate_token('127.0.0.1', ec_port, token)[0] == C['EC_OP_AUTH_FAIL'])
+                assert_refused(*authenticate_token('127.0.0.1', ec_port, token), 'EC_AUTH_FAIL_REJECTED', label='retired token')
                 # If clean exit incorrectly armed a retry it would fire by the
                 # next backoff (2 s after the missing-executable failure).
                 next_retry = 2 * SECOND_RETRY if scenario == 'missing' else SECOND_RETRY

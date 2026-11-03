@@ -54,7 +54,7 @@ class Relay(socketserver.BaseRequestHandler):
                 self.server.observed=proof[C['EC_TAG_SRP_M1']]
                 server_leg.sendall(W.packet('EC_OP_AUTH_PASSWD',wire_tags(proof)))
                 op,result=W.read(server_leg)
-                assert op==C['EC_OP_AUTH_FAIL'],(op,result)
+                W.assert_refused(op,result,'EC_AUTH_FAIL_REJECTED')
                 # AUTH_FAIL carries a string, not an SRP field.
                 payload=[W.tag('EC_TAG_STRING',result[C['EC_TAG_STRING']],6)]
                 client_leg.sendall(W.packet('EC_OP_AUTH_FAIL',payload))
@@ -138,14 +138,12 @@ def rate_limit_boundary(daemon, cmd, async_probe, root, env):
                     sock.sendall(W.packet('EC_OP_AUTH_REQ', [W.tag(
                         'EC_TAG_PROTOCOL_VERSION',
                         struct.pack('!H', C['EC_CURRENT_PROTOCOL_VERSION']), 3)]))
-                    op, tags = W.read(sock)
-                    assert op == C['EC_OP_AUTH_FAIL'] and b'3.3.0' in tags[C['EC_TAG_STRING']]
+                    W.assert_refused(*W.read(sock), 'EC_AUTH_FAIL_CLIENT_TOO_OLD', b'3.3.0')
                 with socket.create_connection(('127.0.0.1', port), timeout=10) as sock:
                     sock.sendall(W.packet('EC_OP_AUTH_REQ', [
                         W.tag('EC_TAG_SRP_A', W.pad(5)),
                         W.tag('EC_TAG_PROTOCOL_VERSION', b'\x00\x00', 3)]))
-                    op, tags = W.read(sock)
-                    assert op == C['EC_OP_AUTH_FAIL'] and b'Too many' not in tags[C['EC_TAG_STRING']]
+                    W.assert_refused(*W.read(sock), 'EC_AUTH_FAIL_INCOMPATIBLE', b'Invalid protocol version')
             EC(port).sock.close()
             print('PASS: legacy and incompatible clients do not lock out SRP logins; limit', threshold)
 
@@ -177,7 +175,9 @@ def rate_limit_boundary(daemon, cmd, async_probe, root, env):
                 abandon_once()
             with socket.create_connection(('127.0.0.1', port), timeout=10) as sock:
                 _, op, tags = W.authenticate(sock, hashlib.md5(b'regression').digest())
-                assert op == C['EC_OP_AUTH_FAIL'] and b'Too many' in tags[C['EC_TAG_STRING']]
+                W.assert_refused(op, tags, 'EC_AUTH_FAIL_RATE_LIMITED', b'Too many')
+                # The default AuthLockoutSeconds.
+                assert int.from_bytes(tags[C['EC_TAG_AUTH_RETRY_AFTER']], 'big') <= 300, tags
             print('PASS: final reserved attempt succeeds and abandoned challenges lock out; limit', threshold)
 
 def password_edit_regressions(port, root, peer):
@@ -312,7 +312,7 @@ def main(daemon,cmd,async_probe):
                                 def abandon(tags):
                                     raise StopChallenge()
                                 _,op,tags=W.authenticate(sock,hashlib.md5(b'regression').digest(),challenge=abandon)
-                                assert op==C['EC_OP_AUTH_FAIL'] and b'Too many' in tags[C['EC_TAG_STRING']]
+                                W.assert_refused(op,tags,'EC_AUTH_FAIL_RATE_LIMITED',b'Too many')
                                 break
                         except StopChallenge:
                             challenges += 1
@@ -323,8 +323,13 @@ def main(daemon,cmd,async_probe):
                 # A legacy client gets an explicit version error before any password proof.
                 with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
                     sock.sendall(W.packet('EC_OP_AUTH_REQ',[W.tag('EC_TAG_PROTOCOL_VERSION',struct.pack('!H',C['EC_CURRENT_PROTOCOL_VERSION']),3)]))
-                    op,tags=W.read(sock)
-                    assert op==C['EC_OP_AUTH_FAIL'] and b'3.3.0' in tags[C['EC_TAG_STRING']]
+                    W.assert_refused(*W.read(sock),'EC_AUTH_FAIL_CLIENT_TOO_OLD',b'3.3.0')
+                srp_a=W.tag('EC_TAG_SRP_A',W.pad(5))
+                for fields,text in (([srp_a],b'Missing protocol version'),
+                                    ([srp_a,W.tag('EC_TAG_VERSION_ID',bytes(16),9)],b'release version')):
+                    with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
+                        sock.sendall(W.packet('EC_OP_AUTH_REQ',fields))
+                        W.assert_refused(*W.read(sock),'EC_AUTH_FAIL_INCOMPATIBLE',text,label=text)
                 # Importing daemon settings must preserve a remembered client credential.
                 client_config=root/'config'/'remote.conf'
                 client_config.parent.mkdir(exist_ok=True)
@@ -350,8 +355,9 @@ def main(daemon,cmd,async_probe):
                 print('PASS: remote.conf Encryption=0 and Encryption=1 are ignored on load')
                 # Missing token follows a full SRP exchange and rejects a guess.
                 with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
-                    encrypted,op,_=W.authenticate(sock,os.urandom(16),credential=1)
-                    assert op==C['EC_OP_AUTH_FAIL'] and isinstance(encrypted, W.EncryptedSocket)
+                    encrypted,op,tags=W.authenticate(sock,os.urandom(16),credential=1)
+                    W.assert_refused(op,tags,'EC_AUTH_FAIL_REJECTED',b'wrong password')
+                    assert isinstance(encrypted, W.EncryptedSocket)
                 with FixtureServer(('127.0.0.1',0),Relay) as relay:
                     relay.target=port;relay.error=None;relay.observed=None
                     threading.Thread(target=relay.serve_forever,daemon=True).start()
@@ -368,16 +374,35 @@ def main(daemon,cmd,async_probe):
                 for opcode in ('EC_OP_AUTH_PASSWD', 'EC_OP_STAT_REQ'):
                     with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
                         sock.sendall(W.packet(opcode,[]))
-                        assert W.read(sock)[0]==C['EC_OP_AUTH_FAIL']
+                        W.assert_refused(*W.read(sock),'EC_AUTH_FAIL_INCOMPATIBLE')
                 for value in (bytes(384), W.pad(W.N), W.pad(W.N+1), b'bad'):
                     with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
                         def mutate(fields):
                             return [f for f in fields if f[:2]!=W.tag('EC_TAG_SRP_A',b'')[:2]]+[W.tag('EC_TAG_SRP_A',value)]
-                        assert W.authenticate(sock,hashlib.md5(b'regression').digest(),request_mutator=mutate)[1]==C['EC_OP_AUTH_FAIL']
+                        W.assert_refused(*W.authenticate(sock,hashlib.md5(b'regression').digest(),request_mutator=mutate)[1:],'EC_AUTH_FAIL_INCOMPATIBLE')
+                # M1 in clear never reaches Authenticate: the socket drops it and sends no reason.
+                with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
+                    def clear_proof(m):
+                        sock.sendall(W.packet('EC_OP_AUTH_PASSWD',[W.tag('EC_TAG_SRP_M1',m)]))
+                        return W.packet('EC_OP_AUTH_PASSWD',[])
+                    try:
+                        W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=clear_proof)
+                    except (EOFError,ConnectionResetError,BrokenPipeError):
+                        pass
+                    else:
+                        raise AssertionError('M1 in clear got a reply')
                 # Successful logins clear the attempt bucket between phases.
                 EC(port).sock.close()
                 with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
-                    assert W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=lambda m: W.packet('EC_OP_AUTH_REQ',[]))[1]==C['EC_OP_AUTH_FAIL']
+                    W.assert_refused(*W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=lambda m: W.packet('EC_OP_AUTH_REQ',[]))[1:],'EC_AUTH_FAIL_INCOMPATIBLE')
+                # A proof with no M1 tag is a credential failure, like a wrong one.
+                with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
+                    W.assert_refused(*W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=lambda m: W.packet('EC_OP_AUTH_PASSWD',[]))[1:],'EC_AUTH_FAIL_REJECTED',b'missing password')
+                # A malformed proof is a client bug, even with the right password.
+                for label,proof in (('short',lambda m:[W.tag('EC_TAG_SRP_M1',m[:31])]),
+                                    ('duplicate',lambda m:[W.tag('EC_TAG_SRP_M1',m)]*2)):
+                    with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
+                        W.assert_refused(*W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=lambda m: W.packet('EC_OP_AUTH_PASSWD',proof(m)))[1:],'EC_AUTH_FAIL_INCOMPATIBLE',b'Invalid SRP handshake',label=label)
                 # Reject the whole buffered batch: a valid M1 behind a dropped
                 # clear/invalid-flags packet must not register a dying notifier.
                 clear = W.packet('EC_OP_STAT_REQ', [])
@@ -402,8 +427,13 @@ def main(daemon,cmd,async_probe):
                         return W.packet('EC_OP_AUTH_PASSWD',[W.tag('EC_TAG_SRP_M1',m)])
                     assert W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=capture)[1]==C['EC_OP_AUTH_OK']
                 with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
-                    assert W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=lambda m: W.packet('EC_OP_AUTH_PASSWD',[W.tag('EC_TAG_SRP_M1',saved_m1[0])]))[1]==C['EC_OP_AUTH_FAIL']
+                    W.assert_refused(*W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=lambda m: W.packet('EC_OP_AUTH_PASSWD',[W.tag('EC_TAG_SRP_M1',saved_m1[0])]))[1:],'EC_AUTH_FAIL_REJECTED')
                 EC(port).sock.close()
+                # The tags must not change what a client prints.
+                out=subprocess.run([cmd,'-h','127.0.0.1','-p',str(port),'-P','wrong','-c','status'],env=env,capture_output=True,text=True,timeout=20)
+                assert 'Access denied because: Authentication failed: wrong password.' in out.stdout+out.stderr,out
+                EC(port).sock.close()
+                assert 'Sent error message "Invalid request, please authenticate first."' in (root/'logfile').read_text(), 'refusal not logged'
                 print('PASS: out-of-order, repeated AUTH_REQ, invalid A, and M1 replay rejected')
 
                 password_edit_regressions(port, root, peer)
@@ -416,9 +446,9 @@ def main(daemon,cmd,async_probe):
                         assert op==C['EC_OP_NOOP']
                     finally: editor.sock.close()
                 with socket.create_connection(('127.0.0.1',port),timeout=15) as sock:
-                    _,op,_=W.authenticate(sock,hashlib.md5(b'regression').digest(),
+                    _,op,tags=W.authenticate(sock,hashlib.md5(b'regression').digest(),
                         before_proof=lambda: change_password('regression','rotated'))
-                    assert op==C['EC_OP_AUTH_FAIL'],'in-flight old password accepted after rotation'
+                    W.assert_refused(op,tags,'EC_AUTH_FAIL_REJECTED')
                 for args in ([cmd, '-h', '127.0.0.1', '-p', str(port), '-P', 'rotated', '-c', 'status'],
                              [async_probe, str(port), 'rotated']):
                     out = subprocess.run(args, env=env, capture_output=True, text=True, timeout=20)

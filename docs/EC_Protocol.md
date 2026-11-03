@@ -411,6 +411,7 @@ severs every mixed-version pairing instead of degrading one feature.
 The first packet must be `EC_OP_AUTH_REQ`; other initial opcodes receive
 `EC_OP_AUTH_FAIL`. AUTH_REQ must include the SRP and AEAD tags listed in
 [EC_SRP.md](EC_SRP.md), in addition to the protocol and optional client fields.
+Every refusal carries a reason code, listed in [Refusals](EC_SRP.md#refusals).
 
 After verifying M1, the server sends a sealed `EC_OP_AUTH_OK` containing
 `EC_TAG_SRP_M2`, `EC_TAG_SERVER_VERSION`, accepted capability tags, and
