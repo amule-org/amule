@@ -96,9 +96,9 @@ bool IsGoodIP(uint32 IP, bool filterLAN) noexcept;
  */
 bool IsGoodServerIP(uint32 ip, bool filterLAN) noexcept;
 
-inline bool IsGoodIPPort(uint32 nIP, uint16 nPort) noexcept
+inline bool IsGoodIPPort(uint32 nIP, uint16 nPort, bool filterLAN) noexcept
 {
-	return IsGoodIP(nIP, true) && nPort != 0;
+	return IsGoodIP(nIP, filterLAN) && nPort != 0;
 }
 
 #define HIGHEST_LOWID_ED2K_KAD 16777216

@@ -195,6 +195,19 @@ TEST(NetworkFunctions, IsGoodIP)
 	}
 }
 
+TEST(NetworkFunctions, IsGoodIPPort)
+{
+	unsigned int lan;
+	ASSERT_TRUE(StringIPtoUint32("192.168.0.1", lan));
+	ASSERT_TRUE(IsGoodIPPort(lan, 4672, false));
+	ASSERT_FALSE(IsGoodIPPort(lan, 4672, true));
+	ASSERT_FALSE(IsGoodIPPort(lan, 0, false));
+
+	unsigned int loopback;
+	ASSERT_TRUE(StringIPtoUint32("127.0.0.1", loopback));
+	ASSERT_FALSE(IsGoodIPPort(loopback, 4672, false));
+}
+
 // A server on this machine is reachable once LAN IPs are not filtered; nothing else changes.
 TEST(NetworkFunctions, IsGoodServerIP)
 {
