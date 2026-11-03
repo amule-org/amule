@@ -780,36 +780,10 @@ public:
 		// ngtcp2's own GnuTLS crypto helpers replace the fail-closed stand-ins this engine used
 		// before a real TLS session existed: they drive the actual TLS 1.3 handshake, key
 		// installation and AEAD operations through the session configured above.
-		ngtcp2_callbacks callbacks = {};
+		ngtcp2_callbacks callbacks = MakeCallbacks();
 		callbacks.recv_client_initial = ngtcp2_crypto_recv_client_initial_cb;
-		callbacks.recv_crypto_data = ngtcp2_crypto_recv_crypto_data_cb;
-		callbacks.encrypt = ngtcp2_crypto_encrypt_cb;
-		callbacks.decrypt = ngtcp2_crypto_decrypt_cb;
-		callbacks.hp_mask = ngtcp2_crypto_hp_mask_cb;
-		callbacks.rand = Ngtcp2Random;
-		callbacks.get_new_connection_id = Ngtcp2NewConnectionId;
-		callbacks.update_key = ngtcp2_crypto_update_key_cb;
-		callbacks.delete_crypto_aead_ctx = ngtcp2_crypto_delete_crypto_aead_ctx_cb;
-		callbacks.delete_crypto_cipher_ctx = ngtcp2_crypto_delete_crypto_cipher_ctx_cb;
-		callbacks.get_path_challenge_data = ngtcp2_crypto_get_path_challenge_data_cb;
-		callbacks.stream_open = OnStreamOpen;
-		callbacks.recv_stream_data = OnRecvStreamData;
-		callbacks.acked_stream_data_offset = OnAckedStreamData;
-		callbacks.stream_close = OnStreamClose;
-		callbacks.stream_reset = OnStreamReset;
 
-		ngtcp2_settings settings = {};
-		ngtcp2_settings_default(&settings);
-		// Flush() writes into a kMaxUdpPayload-sized stack buffer; keep ngtcp2 from ever trying
-		// to hand it back a larger packet, which PMTUD could otherwise grow towards over time.
-		settings.max_tx_udp_payload_size = kMaxUdpPayload;
-		// ngtcp2_settings_default() leaves this at UINT64_MAX (no timeout): the deadline is
-		// initial_ts + handshake_timeout, so initial_ts must be this connection's own creation
-		// time, not whatever ngtcp2_settings_default() left there (0) -- relative to that, a
-		// 10s deadline would already be in the past for any connection created after this
-		// process's first few seconds of life, failing its very next Tick().
-		settings.initial_ts = NanosecondsFromMs(nowMs);
-		settings.handshake_timeout = NanosecondsFromMs(kHandshakeTimeoutMs);
+		ngtcp2_settings settings = MakeSettings(nowMs);
 
 		ngtcp2_transport_params params = {};
 		ngtcp2_transport_params_default(&params);
@@ -846,21 +820,7 @@ public:
 			conn == nullptr) {
 			return nullptr;
 		}
-		ngtcp2_conn_set_tls_native_handle(conn, tlsSession->NativeGnuTlsSession());
-
-		Handle handle = conn;
-		ConnectionInfo info;
-		info.conn = conn;
-		info.issuedCid.assign(reinterpret_cast<const char *>(scid.data), scid.datalen);
-		info.tlsSession = std::move(tlsSession);
-		info.connRef.get_conn = GetConnFromRef;
-		info.connRef.user_data = conn;
-		auto inserted = m_connections.emplace(handle, std::move(info));
-		// gnutls_session_set_ptr() needs the ref's final, stable address: the map node, not the
-		// local `info` this function already moved from.
-		gnutls_session_set_ptr(inserted.first->second.tlsSession->NativeGnuTlsSession(),
-			&inserted.first->second.connRef);
-		return handle;
+		return RegisterConnection(conn, scid, std::move(tlsSession));
 	}
 
 	// This endpoint dials out and opens its one local application stream first. It sends the
@@ -890,32 +850,13 @@ public:
 		ngtcp2_path_storage path;
 		InitZeroPath(path);
 
-		ngtcp2_callbacks callbacks = {};
+		ngtcp2_callbacks callbacks = MakeCallbacks();
 		callbacks.client_initial = ngtcp2_crypto_client_initial_cb;
 		callbacks.recv_retry = ngtcp2_crypto_recv_retry_cb;
-		callbacks.recv_crypto_data = ngtcp2_crypto_recv_crypto_data_cb;
-		callbacks.encrypt = ngtcp2_crypto_encrypt_cb;
-		callbacks.decrypt = ngtcp2_crypto_decrypt_cb;
-		callbacks.hp_mask = ngtcp2_crypto_hp_mask_cb;
-		callbacks.rand = Ngtcp2Random;
-		callbacks.get_new_connection_id = Ngtcp2NewConnectionId;
-		callbacks.update_key = ngtcp2_crypto_update_key_cb;
-		callbacks.delete_crypto_aead_ctx = ngtcp2_crypto_delete_crypto_aead_ctx_cb;
-		callbacks.delete_crypto_cipher_ctx = ngtcp2_crypto_delete_crypto_cipher_ctx_cb;
-		callbacks.get_path_challenge_data = ngtcp2_crypto_get_path_challenge_data_cb;
-		callbacks.stream_open = OnStreamOpen;
-		callbacks.recv_stream_data = OnRecvStreamData;
-		callbacks.acked_stream_data_offset = OnAckedStreamData;
-		callbacks.stream_close = OnStreamClose;
-		callbacks.stream_reset = OnStreamReset;
 		// Only the client opens a local stream; see OnExtendMaxLocalStreamsBidi's own comment.
 		callbacks.extend_max_local_streams_bidi = OnExtendMaxLocalStreamsBidi;
 
-		ngtcp2_settings settings = {};
-		ngtcp2_settings_default(&settings);
-		settings.max_tx_udp_payload_size = kMaxUdpPayload;
-		settings.initial_ts = NanosecondsFromMs(nowMs);
-		settings.handshake_timeout = NanosecondsFromMs(kHandshakeTimeoutMs);
+		ngtcp2_settings settings = MakeSettings(nowMs);
 
 		ngtcp2_transport_params params = {};
 		ngtcp2_transport_params_default(&params);
@@ -942,19 +883,7 @@ public:
 			conn == nullptr) {
 			return nullptr;
 		}
-		ngtcp2_conn_set_tls_native_handle(conn, tlsSession->NativeGnuTlsSession());
-
-		Handle handle = conn;
-		ConnectionInfo info;
-		info.conn = conn;
-		info.issuedCid.assign(reinterpret_cast<const char *>(scid.data), scid.datalen);
-		info.tlsSession = std::move(tlsSession);
-		info.connRef.get_conn = GetConnFromRef;
-		info.connRef.user_data = conn;
-		auto clientInserted = m_connections.emplace(handle, std::move(info));
-		gnutls_session_set_ptr(clientInserted.first->second.tlsSession->NativeGnuTlsSession(),
-			&clientInserted.first->second.connRef);
-		return handle;
+		return RegisterConnection(conn, scid, std::move(tlsSession));
 	}
 
 	bool Read(Handle handle, const uint8_t *data, size_t length, uint64_t nowMs) override
@@ -1270,6 +1199,64 @@ private:
 		bool burstOpen = false;
 		ngtcp2_tstamp burstTs = 0;
 	};
+
+	static ngtcp2_callbacks MakeCallbacks()
+	{
+		ngtcp2_callbacks callbacks = {};
+		callbacks.recv_crypto_data = ngtcp2_crypto_recv_crypto_data_cb;
+		callbacks.encrypt = ngtcp2_crypto_encrypt_cb;
+		callbacks.decrypt = ngtcp2_crypto_decrypt_cb;
+		callbacks.hp_mask = ngtcp2_crypto_hp_mask_cb;
+		callbacks.rand = Ngtcp2Random;
+		callbacks.get_new_connection_id = Ngtcp2NewConnectionId;
+		callbacks.update_key = ngtcp2_crypto_update_key_cb;
+		callbacks.delete_crypto_aead_ctx = ngtcp2_crypto_delete_crypto_aead_ctx_cb;
+		callbacks.delete_crypto_cipher_ctx = ngtcp2_crypto_delete_crypto_cipher_ctx_cb;
+		callbacks.get_path_challenge_data = ngtcp2_crypto_get_path_challenge_data_cb;
+		callbacks.stream_open = OnStreamOpen;
+		callbacks.recv_stream_data = OnRecvStreamData;
+		callbacks.acked_stream_data_offset = OnAckedStreamData;
+		callbacks.stream_close = OnStreamClose;
+		callbacks.stream_reset = OnStreamReset;
+		return callbacks;
+	}
+
+	static ngtcp2_settings MakeSettings(uint64_t nowMs)
+	{
+		ngtcp2_settings settings = {};
+		ngtcp2_settings_default(&settings);
+		// Flush() writes into a kMaxUdpPayload-sized stack buffer; keep ngtcp2 from ever trying
+		// to hand it back a larger packet, which PMTUD could otherwise grow towards over time.
+		settings.max_tx_udp_payload_size = kMaxUdpPayload;
+		// ngtcp2_settings_default() leaves this at UINT64_MAX (no timeout): the deadline is
+		// initial_ts + handshake_timeout, so initial_ts must be this connection's own creation
+		// time, not whatever ngtcp2_settings_default() left there (0) -- relative to that, a
+		// 10s deadline would already be in the past for any connection created after this
+		// process's first few seconds of life, failing its very next Tick().
+		settings.initial_ts = NanosecondsFromMs(nowMs);
+		settings.handshake_timeout = NanosecondsFromMs(kHandshakeTimeoutMs);
+		return settings;
+	}
+
+	Handle RegisterConnection(
+		ngtcp2_conn *conn, const ngtcp2_cid &scid, std::unique_ptr<IQuicNgtcp2TlsSession> tlsSession)
+	{
+		ngtcp2_conn_set_tls_native_handle(conn, tlsSession->NativeGnuTlsSession());
+
+		Handle handle = conn;
+		ConnectionInfo info;
+		info.conn = conn;
+		info.issuedCid.assign(reinterpret_cast<const char *>(scid.data), scid.datalen);
+		info.tlsSession = std::move(tlsSession);
+		info.connRef.get_conn = GetConnFromRef;
+		info.connRef.user_data = conn;
+		auto inserted = m_connections.emplace(handle, std::move(info));
+		// gnutls_session_set_ptr() needs the ref's final, stable address: the map node, not the
+		// local `info` this function already moved from.
+		gnutls_session_set_ptr(inserted.first->second.tlsSession->NativeGnuTlsSession(),
+			&inserted.first->second.connRef);
+		return handle;
+	}
 
 	//! Closes the open burst once time has moved on. Must run before any ngtcp2 call at @p ts:
 	//! update_pkt_tx_time() takes the burst's own timestamp, and ngtcp2 requires timestamps that
