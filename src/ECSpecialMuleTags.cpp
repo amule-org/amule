@@ -148,7 +148,9 @@ static void AddDebugSettingsTags(CECTag &coreTweaks)
 	if (all.IsEmpty()) {
 		return; // An older core reports none and cannot apply them.
 	}
+	const bool logfileOnly = thePrefs::GetCoreVerboseLogfile();
 #else
+	const bool logfileOnly = thePrefs::GetVerboseLogfile();
 	for (unsigned int i = 0; i < theLogger.GetDebugCategoryCount(); ++i) {
 		const CDebugCategory &category = theLogger.GetDebugCategory(static_cast<int>(i));
 		if (!CoreHandlesDebugCategory(category)) {
@@ -160,7 +162,7 @@ static void AddDebugSettingsTags(CECTag &coreTweaks)
 		}
 	}
 #endif
-	coreTweaks.AddTag(CECTag(EC_TAG_CORETW_VERBOSE_LOGFILE, thePrefs::GetVerboseLogfile()));
+	coreTweaks.AddTag(CECTag(EC_TAG_CORETW_VERBOSE_LOGFILE, logfileOnly));
 	coreTweaks.AddTag(MakeStringListTag(EC_TAG_CORETW_DEBUG_CATEGORIES, all));
 	coreTweaks.AddTag(MakeStringListTag(EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED, enabled));
 }
@@ -169,7 +171,11 @@ static void AddDebugSettingsTags(CECTag &coreTweaks)
 static void ApplyDebugSettingsTags(const CECTag &coreTweaks)
 {
 	if (const CECTag *logfile = coreTweaks.GetTagByName(EC_TAG_CORETW_VERBOSE_LOGFILE)) {
+#ifdef CLIENT_GUI
+		thePrefs::SetCoreVerboseLogfile(logfile->GetInt() != 0);
+#else
 		thePrefs::SetVerboseLogfile(logfile->GetInt() != 0);
+#endif
 	}
 	const CECTag *enabledTag = coreTweaks.GetTagByName(EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED);
 	const wxArrayString enabled = enabledTag ? ReadStringListTag(*enabledTag) : wxArrayString();
@@ -632,7 +638,12 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 	if (selection & EC_PREFS_CORETWEAKS) {
 		CECEmptyTag cwPrefs(EC_TAG_PREFS_CORETWEAKS);
 		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_MAX_CONN_PER_FIVE, thePrefs::GetMaxConperFive()));
-		if (thePrefs::GetVerbose()) {
+#ifdef CLIENT_GUI
+		const bool verbose = thePrefs::GetCoreVerbose();
+#else
+		const bool verbose = thePrefs::GetVerbose();
+#endif
+		if (verbose) {
 			cwPrefs.AddTag(CECEmptyTag(EC_TAG_CORETW_VERBOSE));
 		}
 		AddDebugSettingsTags(cwPrefs);
@@ -1290,10 +1301,12 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 		}
 		// Verbose last: with logfile-only in the same packet, no line may reach guests first.
 		ApplyDebugSettingsTags(*thisTab);
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetVerbose, EC_TAG_CORETW_VERBOSE);
 #ifdef CLIENT_GUI
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetCoreVerbose, EC_TAG_CORETW_VERBOSE);
 		thePrefs::SetWriteBufferLimitSupported(
 			thisTab->GetTagByName(EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB) != nullptr);
+#else
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetVerbose, EC_TAG_CORETW_VERBOSE);
 #endif
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB)) != nullptr) {
 			thePrefs::SetWriteBufferLimitMiB(oneTag->GetInt());
