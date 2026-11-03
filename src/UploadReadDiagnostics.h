@@ -78,6 +78,11 @@ inline SlotState Classify(bool pending, bool requests, bool atTarget, bool queue
 	}
 	return atTarget ? SlotState::Receiver : SlotState::Storage;
 }
+// Another thread can stamp `since` after the caller read `now`.
+inline uint64_t ElapsedSince(uint64_t now, uint64_t since)
+{
+	return now >= since ? now - since : 0;
+}
 // Retained per slot, so tracking another block needs no allocation. Identity
 // includes the file: a peer can switch files without starting a new slot.
 struct DispatchWait
@@ -102,7 +107,7 @@ struct DispatchWait
 		active = true;
 	}
 	void Reset() { active = false; }
-	uint64_t Elapsed(uint64_t now) const { return active && now >= since ? now - since : 0; }
+	uint64_t Elapsed(uint64_t now) const { return active ? ElapsedSince(now, since) : 0; }
 };
 // One upload socket's sends since the last report. The owner serialises access.
 struct SendStats
@@ -135,7 +140,7 @@ struct SendStats
 	{
 		SendStats report = *this;
 		if (busySince != 0) {
-			report.busyMaximum = std::max(busyMaximum, now - busySince);
+			report.busyMaximum = std::max(busyMaximum, ElapsedSince(now, busySince));
 		}
 		*this = SendStats{};
 		lastSent = report.lastSent;

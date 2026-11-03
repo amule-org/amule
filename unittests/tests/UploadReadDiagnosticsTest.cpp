@@ -107,6 +107,17 @@ TEST(UploadReadDiagnostics, SendStatsTakeResetsAndKeepsAnOngoingWait)
 	ASSERT_EQUALS(uint64_t{ 0 }, stats.busySince);
 }
 
+TEST(UploadReadDiagnostics, ElapsedTimeNeverUnderflows)
+{
+	ASSERT_EQUALS(uint64_t{ 40 }, ElapsedSince(100, 60));
+	ASSERT_EQUALS(uint64_t{ 0 }, ElapsedSince(100, 100));
+	ASSERT_EQUALS(uint64_t{ 0 }, ElapsedSince(100, 101));
+
+	SendStats stats;
+	stats.Refused(101);
+	ASSERT_EQUALS(uint64_t{ 0 }, stats.Take(100).busyMaximum);
+}
+
 TEST(UploadReadDiagnostics, HistogramCoversEveryPowerOfTwoBoundary)
 {
 	for (unsigned bit = 0; bit < 30; ++bit) {

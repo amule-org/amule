@@ -478,8 +478,9 @@ void CUploadDiskIOThread::ReportDiagnostics(uint64 now)
 	{
 		using UploadReadDiagnostics::SlotState;
 		const auto age = [now](uint64 since) {
-			return since != 0 ? wxString::Format(
-						    "%llu", static_cast<unsigned long long>(now - since))
+			return since != 0 ? wxString::Format("%llu",
+						    static_cast<unsigned long long>(
+							    UploadReadDiagnostics::ElapsedSince(now, since)))
 					  : wxString("none");
 		};
 		const auto count = [this](uint32 id, SlotState state) {
