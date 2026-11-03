@@ -206,6 +206,7 @@ public:
 		m_remapOutputs.clear();
 		m_socketRemaps.clear();
 		m_peerStreams.clear();
+		m_socketsAtEndpoint.clear();
 		m_sentTo.clear();
 		m_context = nullptr;
 		m_acceptor = nullptr;
@@ -254,6 +255,10 @@ public:
 		const std::optional<SUtpMoveHeader> header = ReadUtpWireHeader(payload, length);
 		Endpoint expected = observed;
 		utp_socket *remappedSocket = nullptr;
+		// A non-SYN frame that a handshake or a connected stream could own but that does not prove
+		// itself is dropped rather than handed over: libutp answers an unmatched non-SYN with an RST
+		// to that source (:2925-2940), which is the reflection the ingress gate exists to prevent.
+		bool unproven = false;
 		const auto translation = m_remapInputs.find(observed);
 		if (translation != m_remapInputs.end()) {
 			expected = translation->second;
@@ -276,6 +281,12 @@ public:
 					// destination-keyed translation so its immediate response reaches the
 					// observed NAT mapping even though UTP_SENDTO has no socket argument.
 					InstallPortRemap(remappedSocket, expected, observed);
+				} else if (ClassifyUtpFrame(payload, length) == EUtpFrameKind::Existing) {
+					// The ingress gate admitted this because a handshake expected that
+					// port, and it does not acknowledge our SYN. There is no connected
+					// stream to fall through to, so libutp would answer it with an RST:
+					// drop it here instead.
+					unproven = true;
 				}
 			}
 		}
@@ -286,11 +297,12 @@ public:
 		// candidate, or none at all; a SYN and a reset are refused by the decision itself.
 		utp_socket *repointedSocket = nullptr;
 		Endpoint repointedFrom{ 0, 0 };
-		bool unproven = false;
 		if (translation == m_remapInputs.end() && remappedSocket == nullptr) {
 			const std::optional<SRepointCandidate> candidate = FindRepointCandidate(ip, port);
 			if (candidate.has_value()) {
-				if (header.has_value() &&
+				// A move never goes back to the port this stream has just left.
+				const bool abandoned = IsUtpAbandonedPort(port, candidate->abandonedPort);
+				if (!abandoned && header.has_value() &&
 					DecideUtpMove(*header, MoveFactsFor(candidate->socket)) ==
 						EUtpMoveVerdict::Move &&
 					m_repointLimiter.TryAdmit(StreamKey(candidate->socket), nowMs)) {
@@ -336,6 +348,12 @@ public:
 		}
 		if (repointedSocket != nullptr) {
 			if (claimed) {
+				// Remember the port being left, so a later frame cannot bring the stream back
+				// to it.
+				if (const auto here = m_endpoints.find(repointedSocket);
+					here != m_endpoints.end()) {
+					m_peerStreams[repointedSocket].abandonedPort = here->second.second;
+				}
 				UpdatePeerEndpoint(repointedSocket, ip, port);
 				// Formatted here rather than through NetworkFunctions.h, whose Types.h
 				// typedefs clash with libutp's own in this translation unit.
@@ -409,6 +427,15 @@ private:
 		utp_socket *socket = nullptr;
 		//! The tuple libutp keys this socket by, which is the observed one only until it moves.
 		Endpoint libutpEndpoint;
+		//! The port this stream moved away from, so a move never returns to it.
+		std::uint16_t abandonedPort = 0;
+	};
+
+	//! What the adapter knows about one stream: the peer facts a move is decided on, plus where the
+	//! stream came from.
+	struct SPeerStreamState : SUtpPeerStreamFacts
+	{
+		std::uint16_t abandonedPort = 0;
 	};
 
 	static sockaddr_in MakeAddress(uint32_t ip, uint16_t port)
@@ -493,6 +520,10 @@ private:
 			candidate.connected = true;
 			candidate.socket = entry.first;
 			candidate.libutpEndpoint = LibutpEndpointOf(entry.first);
+			const auto state = m_peerStreams.find(entry.first);
+			if (state != m_peerStreams.end()) {
+				candidate.abandonedPort = state->second.abandonedPort;
+			}
 			streams.push_back(candidate);
 		}
 		return streams;
@@ -533,28 +564,20 @@ private:
 	//! or a recorded connection id picks one out. Ambiguity yields none, so nothing is learned.
 	utp_socket *ResolveInboundSocket(const Endpoint &source, std::uint32_t connectionId) const
 	{
-		utp_socket *only = nullptr;
-		std::size_t count = 0;
-		for (const auto &entry : m_endpoints) {
-			if (entry.second != source) {
-				continue;
-			}
-			only = entry.first;
-			++count;
-		}
-		if (count == 1) {
-			return only;
-		}
-		if (count == 0) {
+		const auto at = m_socketsAtEndpoint.find(source);
+		if (at == m_socketsAtEndpoint.end()) {
 			return nullptr;
 		}
-		for (const auto &entry : m_peerStreams) {
-			if (!entry.second.known || entry.second.connectionId != connectionId) {
-				continue;
-			}
-			const auto endpoint = m_endpoints.find(entry.first);
-			if (endpoint != m_endpoints.end() && endpoint->second == source) {
-				return entry.first;
+		const std::vector<utp_socket *> &sockets = at->second;
+		if (sockets.size() == 1) {
+			return sockets.front();
+		}
+		// Several streams can share an endpoint; only a recorded connection id tells them apart.
+		for (utp_socket *socket : sockets) {
+			const auto state = m_peerStreams.find(socket);
+			if (state != m_peerStreams.end() && state->second.known &&
+				state->second.connectionId == connectionId) {
+				return socket;
 			}
 		}
 		return nullptr;
@@ -575,7 +598,7 @@ private:
 		if (socket == nullptr) {
 			return;
 		}
-		SUtpPeerStreamFacts &state = m_peerStreams[socket];
+		SPeerStreamState &state = m_peerStreams[socket];
 		if (state.known && state.connectionId != header->connectionId) {
 			// Not this stream's peer, so it teaches us nothing about it.
 			return;
@@ -665,9 +688,11 @@ private:
 			(found->second.first == ip && found->second.second == port)) {
 			return;
 		}
+		UnindexSocket(socket, found->second);
 		m_peers.Remove(found->second.first, found->second.second);
 		m_peers.Add(ip, port);
 		found->second = { ip, port };
+		IndexSocket(socket, found->second);
 		if (CUtpSocketTransport *transport = TransportOf(socket)) {
 			transport->UpdatePeerEndpoint(CNetworkAddress::FromIPv4NetworkOrder(ip), port);
 		}
@@ -936,6 +961,27 @@ private:
 	{
 		m_peers.Add(ip, port);
 		m_endpoints[socket] = { ip, port };
+		IndexSocket(socket, { ip, port });
+	}
+
+	//! Keeps the endpoint index in step with m_endpoints.
+	void IndexSocket(utp_socket *socket, const Endpoint &endpoint)
+	{
+		m_socketsAtEndpoint[endpoint].push_back(socket);
+	}
+
+	//! An endpoint whose last socket has left is forgotten with it.
+	void UnindexSocket(utp_socket *socket, const Endpoint &endpoint)
+	{
+		const auto at = m_socketsAtEndpoint.find(endpoint);
+		if (at == m_socketsAtEndpoint.end()) {
+			return;
+		}
+		std::vector<utp_socket *> &sockets = at->second;
+		sockets.erase(std::remove(sockets.begin(), sockets.end(), socket), sockets.end());
+		if (sockets.empty()) {
+			m_socketsAtEndpoint.erase(at);
+		}
 	}
 
 	void Forget(utp_socket *socket)
@@ -952,6 +998,7 @@ private:
 			return;
 		}
 		m_sentTo.erase(found->second);
+		UnindexSocket(socket, found->second);
 		m_peers.Remove(found->second.first, found->second.second);
 		m_endpoints.erase(found);
 	}
@@ -981,7 +1028,10 @@ private:
 	//! What each stream's peer last told us: its connection id and sequence numbers, learned from
 	//! frames on that socket's own tuple. lastSentSequenceNumber is filled from m_sentTo when a move
 	//! is decided, not stored here.
-	std::map<utp_socket *, SUtpPeerStreamFacts> m_peerStreams;
+	std::map<utp_socket *, SPeerStreamState> m_peerStreams;
+	//! Which sockets hold an endpoint, so a claimed frame is attributed without scanning every
+	//! stream. Bounded by the live sockets and pruned wherever m_endpoints is.
+	std::map<Endpoint, std::vector<utp_socket *>> m_socketsAtEndpoint;
 	//! What we last sent to one destination. UTP_SENDTO has no socket (utp_internal.cpp:709), so this
 	//! is keyed by where the packet went; a move requires exactly one connected stream on that
 	//! address.

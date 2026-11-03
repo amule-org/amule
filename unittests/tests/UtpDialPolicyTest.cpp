@@ -456,54 +456,27 @@ TEST(UtpDialPolicy, MoveNeedsThePeersConnectionIdAndAWitnessedStream)
 	ASSERT_TRUE(DecideUtpMove(matching, unknown) == EUtpMoveVerdict::Refuse);
 }
 
-TEST(UtpDialPolicy, MoveNeedsAnAckBetweenThePeersAckAndOurLastSend)
+TEST(UtpDialPolicy, MoveAdmitsAckOnlyAndKeepaliveFrames)
 {
-	const SUtpPeerStreamFacts facts{ true, 0x1234, 100, 98, 104 };
-	SUtpMoveHeader header{ 2, 0x1234, 101, 100 };
-
-	// Both ends of the range are admissible, since the peer may ack anything from its own last
-	// acknowledgement up to what we last sent.
-	header.acknowledgeNumber = 98;
-	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
-	header.acknowledgeNumber = 104;
-	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
-
-	// Below what the peer already acknowledged: an ack going backwards.
-	header.acknowledgeNumber = 97;
-	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
-	// Above anything we ever sent.
-	header.acknowledgeNumber = 105;
-	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
-
-	// Facts that disagree with themselves cannot admit anything either.
-	SUtpPeerStreamFacts inverted = facts;
-	inverted.peerAcknowledgeNumber = 200;
-	header.acknowledgeNumber = 100;
-	ASSERT_TRUE(DecideUtpMove(header, inverted) == EUtpMoveVerdict::Refuse);
-}
-
-TEST(UtpDialPolicy, MoveOnlyEverFollowsNewerSequenceNumbers)
-{
-	const SUtpPeerStreamFacts facts{ true, 0x1234, 1'000, 98, 104 };
+	// The peer's last frame used sequence number 1'000, so 1'001 is the number its next data frame
+	// will carry and the one an ack-only ST_STATE carries today (utp_internal.cpp:782).
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 1'001, 98, 104 };
 	SUtpMoveHeader header{ 2, 0x1234, 1'001, 100 };
 
+	// Zero ahead is ordinary: a download-only peer only ever sends ST_STATE, so its sequence number
+	// never moves. A keepalive repeats the same one.
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
-	header.sequenceNumber = 1'000 + kUtpMoveSeqWindow;
+	header.sequenceNumber = 1'001 + kUtpMoveSeqWindow;
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
 
-	// A frame at or behind the peer's last sequence number is late: acting on it would move the
-	// stream back to a port the peer has already left.
+	// Behind the peer is a late frame: its modular distance lands far above the window.
 	header.sequenceNumber = 1'000;
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
-	header.sequenceNumber = 1'000 - 1;
+	header.sequenceNumber = 1'001 - kUtpMoveSeqWindow;
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
-	header.sequenceNumber = 1'000 - kUtpMoveSeqWindow;
+	header.sequenceNumber = 1'001 + kUtpMoveSeqWindow + 1;
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
-
-	// Past the reorder bound, in either direction.
-	header.sequenceNumber = 1'000 + kUtpMoveSeqWindow + 1;
-	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
-	header.sequenceNumber = 1'000 - kUtpMoveSeqWindow - 1;
+	header.sequenceNumber = 1'001 - kUtpMoveSeqWindow - 1;
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
 
 	// Counting is modulo 2^16, so a genuinely newer number past the wrap still counts, and a late
@@ -513,8 +486,58 @@ TEST(UtpDialPolicy, MoveOnlyEverFollowsNewerSequenceNumbers)
 	const SUtpPeerStreamFacts wrapped{ true, 0x1234, 65'535, 98, 104 };
 	const SUtpMoveHeader newer{ 2, 0x1234, 1, 100 };
 	ASSERT_TRUE(DecideUtpMove(newer, wrapped) == EUtpMoveVerdict::Move);
+	const SUtpMoveHeader sameAcrossTheWrap{ 2, 0x1234, 65'535, 100 };
+	ASSERT_TRUE(DecideUtpMove(sameAcrossTheWrap, wrapped) == EUtpMoveVerdict::Move);
 	const SUtpMoveHeader lateAcrossTheWrap{ 2, 0x1234, 65'530, 100 };
 	ASSERT_TRUE(DecideUtpMove(lateAcrossTheWrap, wrapped) == EUtpMoveVerdict::Refuse);
+}
+
+TEST(UtpDialPolicy, MoveNeedsAnAckFromOneBelowThePeersLastUpToOurLastSend)
+{
+	// The peer last acknowledged 98 and we last sent 104.
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 101, 98, 104 };
+	SUtpMoveHeader header{ 2, 0x1234, 101, 104 };
+
+	// The upper end, then the peer's own last ack, then the one below it a keepalive carries
+	// (utp_internal.cpp:833-843).
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+	header.acknowledgeNumber = 98;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+	header.acknowledgeNumber = 97;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+
+	// Further back than a keepalive ever goes, and past anything we sent.
+	header.acknowledgeNumber = 96;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.acknowledgeNumber = 105;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+
+	// Facts that would mean the peer acknowledged more than we sent fail closed.
+	SUtpPeerStreamFacts stale = facts;
+	stale.peerAcknowledgeNumber = 104 - kUtpMoveAckSpanLimit - 1;
+	header.acknowledgeNumber = 104;
+	ASSERT_TRUE(DecideUtpMove(header, stale) == EUtpMoveVerdict::Refuse);
+
+	// The range is modular, so a stream can move while its numbers sit either side of the wrap.
+	const SUtpPeerStreamFacts wrapped{ true, 0x1234, 101, 0, 3 };
+	SUtpMoveHeader aroundTheWrap{ 2, 0x1234, 101, 0 };
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Move);
+	aroundTheWrap.acknowledgeNumber = 3;
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Move);
+	// 65'535 is the peer's last ack minus one across the wrap, so it is still admissible.
+	aroundTheWrap.acknowledgeNumber = 65'535;
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Move);
+	aroundTheWrap.acknowledgeNumber = 65'534;
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Refuse);
+	aroundTheWrap.acknowledgeNumber = 4;
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Refuse);
+}
+
+TEST(UtpDialPolicy, AMoveNeverReturnsToThePortTheStreamLeft)
+{
+	ASSERT_FALSE(IsUtpAbandonedPort(4672, 0));
+	ASSERT_TRUE(IsUtpAbandonedPort(4672, 4672));
+	ASSERT_FALSE(IsUtpAbandonedPort(4673, 4672));
 }
 
 TEST(UtpDialPolicy, MoveRefusesResetAndSynWhileTheOwnTupleIsNeverAStepCompetitor)
