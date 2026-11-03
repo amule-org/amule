@@ -462,27 +462,22 @@ std::optional<std::size_t> FindUniqueUtpRepointCandidate(
 }
 
 /**
- * Bounds how often a stream may follow a NAT source-port change: a few moves per stream and a few
- * more for the adapter, both over one sliding minute. The bookkeeping is fixed-capacity, so a peer
- * replaying source ports can neither grow it nor evict another stream's record; a full table
- * refuses, which keeps the failure closed. Time is injected, so the bounds are testable.
+ * Bounds how often a stream may follow a NAT source-port change: one move per stream per ten seconds.
+ * A stream keeps its slot for that window, so the fixed table is also the bound on how many streams
+ * can move at once: a peer replaying source ports can neither grow it nor evict a live record, and a
+ * full table refuses, which keeps the failure closed. Time is injected, so the bound is testable.
  */
 class UtpPortRepointLimiter
 {
 public:
-	static constexpr std::size_t MovesPerStream = 3;
-	static constexpr std::size_t MovesOverall = 10;
-	static constexpr std::uint64_t WindowMs = 60'000;
-	//! Below MovesOverall on purpose: the per-stream table is the tighter bound on distinct streams.
-	static constexpr std::size_t MaxStreams = 8;
+	static constexpr std::size_t MovesPerStream = 1;
+	static constexpr std::uint64_t WindowMs = 10'000;
+	static constexpr std::size_t MaxStreams = 16;
 
 	//! Records this stream's attempt and returns true, or returns false and records nothing.
 	bool TryAdmit(std::uint64_t streamId, std::uint64_t nowMs)
 	{
 		ExpireStreams(nowMs);
-		if (CountRecentMoves(nowMs) >= MovesOverall) {
-			return false;
-		}
 		SStreamMoves *stream = FindStream(streamId);
 		if (stream == nullptr) {
 			stream = ReserveStream(streamId, nowMs);
@@ -494,11 +489,6 @@ public:
 			return false;
 		}
 		++stream->moves;
-		m_moves[m_nextMove] = nowMs;
-		m_nextMove = (m_nextMove + 1) % MovesOverall;
-		if (m_storedMoves < MovesOverall) {
-			++m_storedMoves;
-		}
 		return true;
 	}
 
@@ -546,27 +536,89 @@ private:
 		}
 	}
 
-	std::size_t CountRecentMoves(std::uint64_t nowMs) const
-	{
-		std::size_t moves = 0;
-		for (std::size_t index = 0; index < m_storedMoves; ++index) {
-			if (nowMs >= m_moves[index] && nowMs - m_moves[index] < WindowMs) {
-				++moves;
-			}
-		}
-		return moves;
-	}
-
 	static bool IsExpired(std::uint64_t sinceMs, std::uint64_t nowMs)
 	{
 		return nowMs >= sinceMs && nowMs - sinceMs >= WindowMs;
 	}
 
 	std::array<SStreamMoves, MaxStreams> m_streams{};
-	// The last MovesOverall admissions: the ring can only drop one that has left the window.
-	std::array<std::uint64_t, MovesOverall> m_moves{};
-	std::size_t m_nextMove = 0;
-	std::size_t m_storedMoves = 0;
 };
+
+//! libutp packet types (utp_internal.cpp:166-173). Only a reset and a SYN change what a move may do.
+constexpr std::uint8_t kUtpTypeReset = 3;
+constexpr std::uint8_t kUtpTypeSyn = 4;
+
+//! How far from the peer's last sequence number a frame may sit and still be that stream's.
+//! Mirrors libutp's own receive bound (REORDER_BUFFER_MAX_SIZE, utp_internal.cpp:55, enforced at
+//! :1894-1906): anything further apart is not a packet this connection could have in flight.
+constexpr std::uint16_t kUtpMoveSeqWindow = 1024;
+
+//! Distance between two uTP sequence numbers, which wrap at 2^16 (utp_internal.cpp:79).
+inline std::uint16_t UtpSeqDistance(std::uint16_t left, std::uint16_t right)
+{
+	const std::uint16_t forward = static_cast<std::uint16_t>(left - right);
+	const std::uint16_t backward = static_cast<std::uint16_t>(right - left);
+	return forward < backward ? forward : backward;
+}
+
+//! The base uTP header fields a move decision needs, read off the wire by ReadUtpWireHeader()
+//! (src/UtpContext.h); the layout is PacketFormatV1 (utp_internal.cpp:113-136).
+struct SUtpMoveHeader
+{
+	std::uint8_t type = 0;
+	std::uint32_t connectionId = 0;
+	std::uint16_t sequenceNumber = 0;
+	std::uint16_t acknowledgeNumber = 0;
+};
+
+//! What the adapter has observed of one stream: its peer's identity and sequence numbers, and the
+//! last sequence number we sent. All of it comes from frames, since libutp exposes none of it.
+struct SUtpPeerStreamFacts
+{
+	bool known = false;
+	std::uint32_t connectionId = 0;
+	std::uint16_t peerSequenceNumber = 0;
+	std::uint16_t peerAcknowledgeNumber = 0;
+	std::uint16_t lastSentSequenceNumber = 0;
+};
+
+enum class EUtpMoveVerdict
+{
+	Move,
+	Refuse
+};
+
+/**
+ * Whether a frame from a new source port can be the same stream. utp_process_udp() returns 1 for
+ * every non-SYN frame it is given -- processed, stale or unmatched alike (utp_internal.cpp:2909,
+ * :2925, :2933, :2940) -- so its answer is no evidence and the decision has to come from the
+ * header, before the frame is handed over.
+ *
+ * Deliberately stricter than libutp's own admission, which window-checks the ack against our last
+ * send (utp_internal.cpp:1799-1815) but never against what the peer already acknowledged, and which
+ * accepts a far wider sequence range. Any disagreement here means no move.
+ */
+inline EUtpMoveVerdict DecideUtpMove(const SUtpMoveHeader &header, const SUtpPeerStreamFacts &facts)
+{
+	// A reset is acted on from its connection id alone (utp_internal.cpp:2866-2887 through
+	// LookupAdjacent at :2809-2823) and a SYN asks for a new connection: neither may ever be
+	// mapped onto a live stream.
+	if (header.type == kUtpTypeReset || header.type == kUtpTypeSyn) {
+		return EUtpMoveVerdict::Refuse;
+	}
+	if (!facts.known || header.connectionId == 0 || header.connectionId != facts.connectionId) {
+		return EUtpMoveVerdict::Refuse;
+	}
+	// Ordered, not wrapping: a pair this far apart has wrapped, and a guess is not evidence.
+	if (facts.peerAcknowledgeNumber > facts.lastSentSequenceNumber ||
+		header.acknowledgeNumber < facts.peerAcknowledgeNumber ||
+		header.acknowledgeNumber > facts.lastSentSequenceNumber) {
+		return EUtpMoveVerdict::Refuse;
+	}
+	if (UtpSeqDistance(header.sequenceNumber, facts.peerSequenceNumber) > kUtpMoveSeqWindow) {
+		return EUtpMoveVerdict::Refuse;
+	}
+	return EUtpMoveVerdict::Move;
+}
 
 #endif // UTP_DIAL_POLICY_H

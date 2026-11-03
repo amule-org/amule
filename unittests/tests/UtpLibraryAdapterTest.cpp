@@ -34,6 +34,7 @@
 #include <libutp/utp.h>
 
 #include <algorithm>
+#include <array>
 #include <deque>
 #include <memory>
 #include <string>
@@ -198,6 +199,22 @@ sockaddr_in Address(uint32_t ip, uint16_t port)
 		bytes[i] = static_cast<uint8_t>(ip >> (8 * i));
 	}
 	return address;
+}
+
+//! A bare 20-byte uTP frame, laid out as PacketFormatV1 puts it (utp_internal.cpp:113-136), so a
+//! test can hand the adapter a header it did not receive from libutp.
+std::vector<uint8_t> UtpFrame(
+	uint8_t type, uint16_t connectionId, uint16_t sequenceNumber, uint16_t acknowledgeNumber)
+{
+	std::vector<uint8_t> frame(20, 0);
+	frame[0] = static_cast<uint8_t>((type << 4) | 1);
+	frame[2] = static_cast<uint8_t>(connectionId >> 8);
+	frame[3] = static_cast<uint8_t>(connectionId);
+	frame[16] = static_cast<uint8_t>(sequenceNumber >> 8);
+	frame[17] = static_cast<uint8_t>(sequenceNumber);
+	frame[18] = static_cast<uint8_t>(acknowledgeNumber >> 8);
+	frame[19] = static_cast<uint8_t>(acknowledgeNumber);
+	return frame;
 }
 
 //! Hands datagrams across until both directions are idle.
@@ -526,6 +543,116 @@ TEST(UtpLibraryAdapter, OutboundHandshakeRemapsOneExpectedPeerToItsObservedPort)
 		receivedBytes = transport->Read(received.data(), static_cast<uint32_t>(received.size()));
 	}
 	ASSERT_EQUALS(1, (int)receivedBytes);
+	ASSERT_EQUALS((int)payload, (int)received[0]);
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, ReadsTheBaseHeaderFieldsAMoveIsDecidedOn)
+{
+	const std::vector<uint8_t> frame = UtpFrame(2, 0x1122, 0x07D0, 0xAB09);
+	const auto header = ReadUtpWireHeader(frame.data(), frame.size());
+	ASSERT_TRUE(header.has_value());
+	ASSERT_EQUALS((uint8_t)2, header->type);
+	ASSERT_EQUALS((uint32_t)0x1122, header->connectionId);
+	ASSERT_EQUALS((uint16_t)0x07D0, header->sequenceNumber);
+	ASSERT_EQUALS((uint16_t)0xAB09, header->acknowledgeNumber);
+
+	// Anything ClassifyUtpFrame() will not parse yields nothing to decide on.
+	ASSERT_FALSE(ReadUtpWireHeader(frame.data(), 19).has_value());
+	ASSERT_FALSE(ReadUtpWireHeader(nullptr, 20).has_value());
+	std::vector<uint8_t> wrongVersion = frame;
+	wrongVersion[0] = static_cast<uint8_t>((2 << 4) | 2);
+	ASSERT_FALSE(ReadUtpWireHeader(wrongVersion.data(), wrongVersion.size()).has_value());
+}
+
+TEST(UtpLibraryAdapter, AFrameWithoutThePeersConnectionIdNeverMovesTheStream)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+
+	std::unique_ptr<IStreamTransport> transport;
+	const SUtpDialOptions options{ true, loop.nowMs };
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
+	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
+	ASSERT_TRUE(transport != nullptr);
+	ASSERT_TRUE(transport->IsConnected());
+	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
+
+	// One frame each way, so the adapter has seen this peer's connection id and a send of ours.
+	const uint8_t payload = 0x5A;
+	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
+	transport->Flush();
+	Pump(loop);
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	Pump(loop);
+
+	// A frame from a plausible new port, with plausible numbers but a connection id no stream here
+	// uses. utp_process_udp() would have answered 1 for it all the same.
+	const uint16_t movedPort = heldPort + 100;
+	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, movedPort));
+	const std::vector<uint8_t> forged = UtpFrame(0, 0, 1, 1);
+	loop.server->ProcessDatagram(forged.data(), forged.size(), kPeerIp, movedPort, loop.nowMs);
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, movedPort));
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
+	ASSERT_EQUALS((int)heldPort, (int)transport->GetPeerPort());
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AConnectedStreamFollowsANATPortChange)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+
+	std::unique_ptr<IStreamTransport> transport;
+	const SUtpDialOptions options{ true, loop.nowMs };
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
+	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
+	ASSERT_TRUE(transport != nullptr);
+	ASSERT_TRUE(transport->IsConnected());
+	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
+
+	// One frame each way, so the adapter has the peer's connection id, its sequence numbers and one
+	// of our own sends to hold a move to.
+	const uint8_t payload = 0x33;
+	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
+	transport->Flush();
+	Pump(loop);
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	Pump(loop);
+	ASSERT_TRUE(!loop.clientRead.empty());
+
+	// The NAT moves the source port once more, still inside the window of the port we hold.
+	const uint16_t movedPort = heldPort + 100;
+	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, movedPort));
+	loop.clientSourcePort = movedPort;
+	utp_iovec second{ const_cast<uint8_t *>(&payload), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &second, 1));
+	Pump(loop);
+
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, movedPort));
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
+	ASSERT_EQUALS((int)movedPort, (int)transport->GetPeerPort());
+
+	// Both directions still cross on the moved stream. The buffer covers the payload, so the
+	// inlined deque copy in UtpStream::Read is bounded by the object it writes into.
+	std::array<uint8_t, 4> received{};
+	uint32_t receivedBytes = 0;
+	for (int round = 0; round < 64 && receivedBytes == 0; ++round) {
+		Pump(loop);
+		receivedBytes = transport->Read(received.data(), static_cast<uint32_t>(received.size()));
+	}
 	ASSERT_EQUALS((int)payload, (int)received[0]);
 	Teardown(loop);
 }

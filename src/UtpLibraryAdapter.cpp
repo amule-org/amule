@@ -205,6 +205,8 @@ public:
 		m_remapInputs.clear();
 		m_remapOutputs.clear();
 		m_socketRemaps.clear();
+		m_peerStreams.clear();
+		m_sentTo.clear();
 		m_context = nullptr;
 		m_acceptor = nullptr;
 		if (s_self == this) {
@@ -249,6 +251,7 @@ public:
 		m_ingressKey = preHelloKey;
 		m_ingress = { ip, port };
 		const Endpoint observed{ ip, port };
+		const std::optional<SUtpMoveHeader> header = ReadUtpWireHeader(payload, length);
 		Endpoint expected = observed;
 		utp_socket *remappedSocket = nullptr;
 		const auto translation = m_remapInputs.find(observed);
@@ -260,9 +263,13 @@ public:
 			if (candidateIndex.has_value()) {
 				const SPendingHandshake &candidate = m_remapCandidates[*candidateIndex];
 				const Endpoint candidateExpected{ candidate.ip, candidate.port };
-				// A second socket must never overwrite a live endpoint translation:
-				// libutp has no socket in UTP_SENDTO, so ambiguity must fail closed.
-				if (CanInstallPortRemap(candidate.socket, candidateExpected, observed)) {
+				// The reply must acknowledge the SYN this candidate sent: utp_process_udp()
+				// answers 1 for every non-SYN frame it is handed, claimed or not
+				// (utp_internal.cpp:2909), so its return value is no evidence that this frame
+				// is our SYN-ACK. A second socket must also never overwrite a live
+				// translation, so ambiguity fails closed.
+				if (AcknowledgesOurSyn(candidate, header) &&
+					CanInstallPortRemap(candidate.socket, candidateExpected, observed)) {
 					expected = candidateExpected;
 					remappedSocket = candidate.socket;
 					// libutp keys the socket by its original tuple. Install a provisional
@@ -272,21 +279,23 @@ public:
 				}
 			}
 		}
-		// Nothing holds this source port and no handshake expected it: a connected stream on the same
-		// address may still own it when the NAT moved the port after the handshake. libutp keys a
-		// socket by the address it was created with, so hand it that one and let it decide, exactly
-		// as the handshake remap does. One attempt, one candidate, or none at all. A SYN is never one
-		// of these frames: it asks for a new connection, and giving it an established stream's tuple
-		// would register that stream's socket under the wrong endpoint.
+		// A frame from a port nothing holds may belong to the one connected stream on that address
+		// after its NAT moved the port. libutp cannot re-key a socket, and it answers 1 to every
+		// non-SYN frame it is given -- processed, stale or unmatched alike (:2909, :2925, :2933,
+		// :2940) -- so the header decides here, before the frame is handed over. One attempt, one
+		// candidate, or none at all; a SYN and a reset are refused by the decision itself.
 		utp_socket *repointedSocket = nullptr;
 		Endpoint repointedFrom{ 0, 0 };
-		if (translation == m_remapInputs.end() && remappedSocket == nullptr &&
-			ClassifyUtpFrame(payload, length) == EUtpFrameKind::Existing) {
+		if (translation == m_remapInputs.end() && remappedSocket == nullptr) {
 			const std::optional<SRepointCandidate> candidate = FindRepointCandidate(ip, port);
-			// Bounded before the attempt, so a peer replaying source ports cannot rewrite its
-			// endpoint; an attempt nothing claims costs nothing to undo.
-			if (candidate.has_value() &&
+			if (candidate.has_value() && header.has_value() &&
+				DecideUtpMove(*header, MoveFactsFor(candidate->socket)) ==
+					EUtpMoveVerdict::Move &&
 				m_repointLimiter.TryAdmit(StreamKey(candidate->socket), nowMs)) {
+				// Replace this socket's pair rather than add one: libutp keeps the tuple the
+				// socket was created with, so a socket holds exactly one translation.
+				RemovePortRemap(candidate->socket);
+				InstallPortRemap(candidate->socket, candidate->libutpEndpoint, observed);
 				repointedSocket = candidate->socket;
 				repointedFrom = candidate->libutpEndpoint;
 				expected = repointedFrom;
@@ -298,6 +307,9 @@ public:
 					     length,
 					     reinterpret_cast<const sockaddr *>(&address),
 					     sizeof(address)) != 0;
+		// Both translations stay for the life of the socket: libutp keeps the tuple it was created
+		// with, so these maps are what hold the stream on the observed port in both directions. Only
+		// a refused claim gives one up, and Forget() drops them with the socket.
 		if (remappedSocket != nullptr) {
 			if (claimed) {
 				UpdatePeerEndpoint(remappedSocket, ip, port);
@@ -305,20 +317,24 @@ public:
 				RemovePortRemap(remappedSocket);
 			}
 		}
-		if (repointedSocket != nullptr && claimed) {
-			// libutp took the datagram as part of that stream, so the peer really moved. The
-			// translation stays for the life of the socket: libutp keeps the tuple the socket
-			// was created with, so these two maps are what keep the incoming frames mapped to
-			// it and its sends aimed at the observed port. A later change replaces them.
-			RemovePortRemap(repointedSocket);
-			InstallPortRemap(repointedSocket, repointedFrom, observed);
-			UpdatePeerEndpoint(repointedSocket, ip, port);
-			// Formatted here rather than through NetworkFunctions.h, whose Types.h typedefs
-			// clash with libutp's own in this translation unit.
-			AddDebugLogLineN(logClient,
-				CFormat("uTP: moved the stream to %u.%u.%u.%u from port %u to port %u") %
-					(uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) % (uint8)(ip >> 24) %
-					repointedFrom.second % port);
+		if (repointedSocket != nullptr) {
+			if (claimed) {
+				UpdatePeerEndpoint(repointedSocket, ip, port);
+				// Formatted here rather than through NetworkFunctions.h, whose Types.h
+				// typedefs clash with libutp's own in this translation unit.
+				AddDebugLogLineN(logClient,
+					CFormat("uTP: moved the stream to %u.%u.%u.%u from port %u to port "
+						"%u") %
+						(uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) %
+						(uint8)(ip >> 24) % repointedFrom.second % port);
+			} else {
+				RemovePortRemap(repointedSocket);
+			}
+		}
+		if (claimed) {
+			NoteInboundHeader(remappedSocket != nullptr ? remappedSocket : repointedSocket,
+				observed,
+				header);
 		}
 		m_datagramObfuscated = false;
 		m_ingressKey = nullptr;
@@ -358,6 +374,16 @@ private:
 	struct SPendingHandshake : SUtpRemapCandidate
 	{
 		utp_socket *socket = nullptr;
+	};
+
+	//! What we last put on the wire to one destination. hasSyn/synSequenceNumber hold the SYN we sent
+	//! there, which the reply has to acknowledge.
+	struct SSentToEndpoint
+	{
+		bool hasSent = false;
+		std::uint16_t lastSequenceNumber = 0;
+		bool hasSyn = false;
+		std::uint16_t synSequenceNumber = 0;
 	};
 
 	//! A connected stream, with what the repoint needs beyond the shared facts.
@@ -465,6 +491,123 @@ private:
 		return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(socket));
 	}
 
+	//! Remembers what we last put on the wire to one destination. UTP_SENDTO carries no socket
+	//! (utp_call_sendto(ctx, NULL, ...), utp_internal.cpp:709), so the destination is the only key
+	//! available; a move requires exactly one connected stream on that address, which makes it
+	//! unambiguous. Always the last write, since that is the sequence number the peer must ack.
+	void NoteSentHeader(uint32_t ip, uint16_t port, const uint8_t *payload, size_t length)
+	{
+		const std::optional<SUtpMoveHeader> header = ReadUtpWireHeader(payload, length);
+		if (!header.has_value() || header->type == kUtpTypeReset) {
+			return;
+		}
+		const Endpoint destination{ ip, port };
+		if (m_sentTo.find(destination) == m_sentTo.end() && m_sentTo.size() >= kMaxSentEndpoints) {
+			// Forgetting a destination only ever refuses a move, so the oldest-by-address goes.
+			m_sentTo.erase(m_sentTo.begin());
+		}
+		SSentToEndpoint &sent = m_sentTo[destination];
+		sent.hasSent = true;
+		sent.lastSequenceNumber = header->sequenceNumber;
+		if (header->type == kUtpTypeSyn) {
+			sent.hasSyn = true;
+			sent.synSequenceNumber = header->sequenceNumber;
+		}
+	}
+
+	//! The socket a frame from this endpoint belongs to, when only one registered stream could own it
+	//! or a recorded connection id picks one out. Ambiguity yields none, so nothing is learned.
+	utp_socket *ResolveInboundSocket(const Endpoint &source, std::uint32_t connectionId) const
+	{
+		utp_socket *only = nullptr;
+		std::size_t count = 0;
+		for (const auto &entry : m_endpoints) {
+			if (entry.second != source) {
+				continue;
+			}
+			only = entry.first;
+			++count;
+		}
+		if (count == 1) {
+			return only;
+		}
+		if (count == 0) {
+			return nullptr;
+		}
+		for (const auto &entry : m_peerStreams) {
+			if (!entry.second.known || entry.second.connectionId != connectionId) {
+				continue;
+			}
+			const auto endpoint = m_endpoints.find(entry.first);
+			if (endpoint != m_endpoints.end() && endpoint->second == source) {
+				return entry.first;
+			}
+		}
+		return nullptr;
+	}
+
+	//! Records what a peer's own frames say about it: its connection id, and the sequence numbers it
+	//! last used and acknowledged. libutp exposes none of this, and a move has to be decided on it.
+	void NoteInboundHeader(
+		utp_socket *socket, const Endpoint &source, const std::optional<SUtpMoveHeader> &header)
+	{
+		// A SYN belongs to a new connection and a reset to none: neither describes this stream.
+		if (!header.has_value() || header->type == kUtpTypeSyn || header->type == kUtpTypeReset) {
+			return;
+		}
+		if (socket == nullptr) {
+			socket = ResolveInboundSocket(source, header->connectionId);
+		}
+		if (socket == nullptr) {
+			return;
+		}
+		SUtpPeerStreamFacts &state = m_peerStreams[socket];
+		if (state.known && state.connectionId != header->connectionId) {
+			// Not this stream's peer, so it teaches us nothing about it.
+			return;
+		}
+		state.known = true;
+		state.connectionId = header->connectionId;
+		state.peerSequenceNumber = header->sequenceNumber;
+		state.peerAcknowledgeNumber = header->acknowledgeNumber;
+	}
+
+	//! What the move decision may rely on for this socket, complete or not at all: a missing send
+	//! record or a stream we never saw a frame on both refuse the move.
+	SUtpPeerStreamFacts MoveFactsFor(utp_socket *socket) const
+	{
+		SUtpPeerStreamFacts facts;
+		const auto state = m_peerStreams.find(socket);
+		const auto endpoint = m_endpoints.find(socket);
+		if (state == m_peerStreams.end() || endpoint == m_endpoints.end() || !state->second.known) {
+			return facts;
+		}
+		const auto sent = m_sentTo.find(endpoint->second);
+		if (sent == m_sentTo.end() || !sent->second.hasSent) {
+			return facts;
+		}
+		facts.known = true;
+		facts.connectionId = state->second.connectionId;
+		facts.peerSequenceNumber = state->second.peerSequenceNumber;
+		facts.peerAcknowledgeNumber = state->second.peerAcknowledgeNumber;
+		facts.lastSentSequenceNumber = sent->second.lastSequenceNumber;
+		return facts;
+	}
+
+	//! Whether this frame acknowledges the SYN this candidate sent. The acceptor copies the SYN's
+	//! seq_nr into its ack_nr (utp_internal.cpp:2982) and sends that back (send_ack, :777), so an
+	//! exact match is the evidence, not libutp's return value.
+	bool AcknowledgesOurSyn(
+		const SPendingHandshake &candidate, const std::optional<SUtpMoveHeader> &header) const
+	{
+		if (!header.has_value() || header->type == kUtpTypeSyn || header->type == kUtpTypeReset) {
+			return false;
+		}
+		const auto sent = m_sentTo.find(Endpoint{ candidate.ip, candidate.port });
+		return sent != m_sentTo.end() && sent->second.hasSyn &&
+		       header->acknowledgeNumber == sent->second.synSequenceNumber;
+	}
+
 	//! The one connected stream a frame from this source port could belong to, or none when two
 	//! could. Pure: the ingress gate asks it, and only ProcessDatagram() acts on the answer.
 	std::optional<SRepointCandidate> FindRepointCandidate(uint32_t ip, uint16_t port) const
@@ -566,6 +709,10 @@ private:
 			s_self->m_ingress == Endpoint{ ip, port }) {
 			encrypt = true;
 			userHash = s_self->m_ingressKey;
+		}
+		if (s_self != nullptr) {
+			// After the translation, so the record follows where the packet actually went.
+			s_self->NoteSentHeader(ip, port, args->buf, args->len);
 		}
 		sink->SendUtpDatagram(args->buf, args->len, ip, port, encrypt, userHash);
 		return 0;
@@ -783,12 +930,14 @@ private:
 			m_sending = nullptr;
 		}
 		m_closingCrypt.erase(socket);
+		m_peerStreams.erase(socket);
 		RemoveRemapCandidate(socket);
 		RemovePortRemap(socket);
 		const auto found = m_endpoints.find(socket);
 		if (found == m_endpoints.end()) {
 			return;
 		}
+		m_sentTo.erase(found->second);
 		m_peers.Remove(found->second.first, found->second.second);
 		m_endpoints.erase(found);
 	}
@@ -815,6 +964,15 @@ private:
 	std::uint64_t m_nowMs = 0;
 	//! Bounds how often a connected stream may follow a NAT source-port change.
 	UtpPortRepointLimiter m_repointLimiter;
+	//! What each stream's peer last told us: its connection id and sequence numbers, learned from
+	//! frames on that socket's own tuple. lastSentSequenceNumber is filled from m_sentTo when a move
+	//! is decided, not stored here.
+	std::map<utp_socket *, SUtpPeerStreamFacts> m_peerStreams;
+	//! What we last sent to one destination. UTP_SENDTO has no socket (utp_internal.cpp:709), so this
+	//! is keyed by where the packet went; a move requires exactly one connected stream on that
+	//! address.
+	std::map<Endpoint, SSentToEndpoint> m_sentTo;
+	static constexpr std::size_t kMaxSentEndpoints = 512;
 	// Sockets refused before a transport existed, closed once libutp has
 	// finished with the datagram.
 	std::vector<utp_socket *> m_refused;

@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <utility>
 
 // IPv4 uses aMule's low-byte-first integer representation; ports are host order.
@@ -416,8 +417,8 @@ private:
 	bool m_active = false;
 };
 
-// libutp answers an unmatched non-SYN with an unsolicited RST to the claimed
-// source, which makes this host a reflector for a forged address.
+//! libutp answers an unmatched non-SYN with an unsolicited RST to the claimed
+//! source, which makes this host a reflector for a forged address.
 enum class EUtpFrameKind
 {
 	//! Shorter than a header, or a version libutp does not implement.
@@ -428,16 +429,18 @@ enum class EUtpFrameKind
 	Existing
 };
 
+//! Header is 20 bytes in version 1 (PacketFormatV1, utp_internal.cpp:113-136); anything shorter
+//! cannot be parsed.
+constexpr size_t kUtpWireHeaderBytes = 20;
+//! libutp's validity test constants, shared with ClassifyUtpFrame().
+constexpr uint8_t kUtpVersion = 1;
+constexpr uint8_t kStNumStates = 5;
+
 //! Mirrors libutp's validity test (UTP_Version): type < ST_NUM_STATES,
 //! extension < 3, version 1.
 inline EUtpFrameKind ClassifyUtpFrame(const uint8_t *payload, size_t length)
 {
-	// Header is 20 bytes in version 1; anything shorter cannot be parsed.
-	constexpr size_t kUtpHeaderBytes = 20;
-	constexpr uint8_t kUtpVersion = 1;
-	constexpr uint8_t kStNumStates = 5;
-	constexpr uint8_t kStSyn = 4;
-	if (payload == nullptr || length < kUtpHeaderBytes) {
+	if (payload == nullptr || length < kUtpWireHeaderBytes) {
 		return EUtpFrameKind::Malformed;
 	}
 	const uint8_t type = static_cast<uint8_t>(payload[0] >> 4);
@@ -446,7 +449,29 @@ inline EUtpFrameKind ClassifyUtpFrame(const uint8_t *payload, size_t length)
 	if (type >= kStNumStates || extension >= 3 || version != kUtpVersion) {
 		return EUtpFrameKind::Malformed;
 	}
-	return type == kStSyn ? EUtpFrameKind::Syn : EUtpFrameKind::Existing;
+	return type == kUtpTypeSyn ? EUtpFrameKind::Syn : EUtpFrameKind::Existing;
+}
+
+//! Reads the base header of a frame ClassifyUtpFrame() accepts. Returns nothing for anything it does
+//! not: no decision may rest on a frame libutp itself would refuse to parse. Field offsets are
+//! PacketFormatV1's, all big endian (utp_internal.cpp:113-136): ver_type, ext, connid at 2, tv_usec,
+//! reply_micro, windowsize, seq_nr at 16, ack_nr at 18. Extensions follow the base header.
+inline std::optional<SUtpMoveHeader> ReadUtpWireHeader(const uint8_t *payload, size_t length)
+{
+	const EUtpFrameKind kind = ClassifyUtpFrame(payload, length);
+	if (kind == EUtpFrameKind::Malformed) {
+		return std::nullopt;
+	}
+	const auto bigEndian16 = [payload](size_t offset) {
+		return static_cast<std::uint16_t>(
+			(static_cast<std::uint16_t>(payload[offset]) << 8) | payload[offset + 1]);
+	};
+	SUtpMoveHeader header;
+	header.type = static_cast<std::uint8_t>(payload[0] >> 4);
+	header.connectionId = bigEndian16(2);
+	header.sequenceNumber = bigEndian16(16);
+	header.acknowledgeNumber = bigEndian16(18);
+	return header;
 }
 
 inline bool ProcessUtpFrame(

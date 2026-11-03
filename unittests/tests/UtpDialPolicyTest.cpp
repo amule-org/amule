@@ -405,46 +405,25 @@ TEST(UtpDialPolicy, RepointNeedsExactlyOneConnectedStreamOnThatAddress)
 	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4160).has_value());
 }
 
-TEST(UtpDialPolicy, RepointLimiterAllowsAFewMovesPerStream)
+TEST(UtpDialPolicy, RepointLimiterAllowsOneMovePerStreamPerWindow)
 {
 	UtpPortRepointLimiter limiter;
 	constexpr std::uint64_t stream = 7;
-	for (std::size_t move = 0; move < UtpPortRepointLimiter::MovesPerStream; ++move) {
-		ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
-	}
+	ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
 	ASSERT_FALSE(limiter.TryAdmit(stream, 1'000));
+	ASSERT_FALSE(limiter.TryAdmit(stream, 1'000 + UtpPortRepointLimiter::WindowMs - 1));
 
 	// The budget is per stream: another one still has its own.
 	ASSERT_TRUE(limiter.TryAdmit(8, 1'000));
-}
-
-TEST(UtpDialPolicy, RepointLimiterCapsTheAdapterOverall)
-{
-	UtpPortRepointLimiter limiter;
-	std::size_t admitted = 0;
-	for (std::uint64_t stream = 0; stream < UtpPortRepointLimiter::MaxStreams; ++stream) {
-		for (std::size_t move = 0; move < UtpPortRepointLimiter::MovesPerStream; ++move) {
-			if (limiter.TryAdmit(stream, 1'000)) {
-				++admitted;
-			}
-		}
-	}
-	ASSERT_TRUE(UtpPortRepointLimiter::MovesOverall <
-		    UtpPortRepointLimiter::MaxStreams * UtpPortRepointLimiter::MovesPerStream);
-	ASSERT_EQUALS(UtpPortRepointLimiter::MovesOverall, admitted);
 }
 
 TEST(UtpDialPolicy, RepointLimiterRefillsOnceTheWindowPasses)
 {
 	UtpPortRepointLimiter limiter;
 	constexpr std::uint64_t stream = 3;
-	for (std::size_t move = 0; move < UtpPortRepointLimiter::MovesPerStream; ++move) {
-		ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
-	}
+	ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
 	ASSERT_FALSE(limiter.TryAdmit(stream, 1'000 + UtpPortRepointLimiter::WindowMs - 1));
-	for (std::size_t move = 0; move < UtpPortRepointLimiter::MovesPerStream; ++move) {
-		ASSERT_TRUE(limiter.TryAdmit(stream, 1'000 + UtpPortRepointLimiter::WindowMs));
-	}
+	ASSERT_TRUE(limiter.TryAdmit(stream, 1'000 + UtpPortRepointLimiter::WindowMs));
 }
 
 TEST(UtpDialPolicy, RepointLimiterFailsClosedWhenItsTableIsFull)
@@ -456,4 +435,92 @@ TEST(UtpDialPolicy, RepointLimiterFailsClosedWhenItsTableIsFull)
 	// A stream with budget left is still refused: a live record is never evicted for it.
 	ASSERT_FALSE(limiter.TryAdmit(100, 1'000));
 	ASSERT_TRUE(limiter.TryAdmit(100, 1'000 + UtpPortRepointLimiter::WindowMs));
+}
+
+TEST(UtpDialPolicy, MoveNeedsThePeersConnectionIdAndAWitnessedStream)
+{
+	// A stream whose peer said connId 0x1234, seq 100, ack 98, and to which we last sent seq 104.
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 100, 98, 104 };
+	const SUtpMoveHeader matching{ 2, 0x1234, 101, 100 };
+	ASSERT_TRUE(DecideUtpMove(matching, facts) == EUtpMoveVerdict::Move);
+
+	SUtpMoveHeader wrongConnection = matching;
+	wrongConnection.connectionId = 0x1235;
+	ASSERT_TRUE(DecideUtpMove(wrongConnection, facts) == EUtpMoveVerdict::Refuse);
+	wrongConnection.connectionId = 0;
+	ASSERT_TRUE(DecideUtpMove(wrongConnection, facts) == EUtpMoveVerdict::Refuse);
+
+	// Nothing witnessed on the stream means nothing to hold the frame to.
+	SUtpPeerStreamFacts unknown = facts;
+	unknown.known = false;
+	ASSERT_TRUE(DecideUtpMove(matching, unknown) == EUtpMoveVerdict::Refuse);
+}
+
+TEST(UtpDialPolicy, MoveNeedsAnAckBetweenThePeersAckAndOurLastSend)
+{
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 100, 98, 104 };
+	SUtpMoveHeader header{ 2, 0x1234, 101, 100 };
+
+	// Both ends of the range are admissible, since the peer may ack anything from its own last
+	// acknowledgement up to what we last sent.
+	header.acknowledgeNumber = 98;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+	header.acknowledgeNumber = 104;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+
+	// Below what the peer already acknowledged: an ack going backwards.
+	header.acknowledgeNumber = 97;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	// Above anything we ever sent.
+	header.acknowledgeNumber = 105;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+
+	// Facts that disagree with themselves cannot admit anything either.
+	SUtpPeerStreamFacts inverted = facts;
+	inverted.peerAcknowledgeNumber = 200;
+	header.acknowledgeNumber = 100;
+	ASSERT_TRUE(DecideUtpMove(header, inverted) == EUtpMoveVerdict::Refuse);
+}
+
+TEST(UtpDialPolicy, MoveNeedsASequenceNumberInsideTheReorderWindow)
+{
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 1'000, 98, 104 };
+	SUtpMoveHeader header{ 2, 0x1234, 1'000, 100 };
+
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+	header.sequenceNumber = 1'000 + kUtpMoveSeqWindow;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+	header.sequenceNumber = 1'000 - kUtpMoveSeqWindow;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+
+	header.sequenceNumber = 1'000 + kUtpMoveSeqWindow + 1;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.sequenceNumber = 1'000 - kUtpMoveSeqWindow - 1;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+
+	// The window also closes across the wrap, where a plain ordered compare would not.
+	ASSERT_EQUALS((std::uint16_t)2, UtpSeqDistance(1, 65'535));
+	ASSERT_EQUALS((std::uint16_t)0, UtpSeqDistance(7, 7));
+}
+
+TEST(UtpDialPolicy, MoveRefusesResetAndSynWhileTheOwnTupleIsNeverAStepCompetitor)
+{
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 100, 98, 104 };
+	SUtpMoveHeader header{ 2, 0x1234, 101, 100 };
+
+	// libutp acts on a reset from its connection id alone (utp_internal.cpp:2866-2887) and a SYN
+	// asks for a new connection: neither may be mapped onto a live stream.
+	header.type = kUtpTypeReset;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.type = kUtpTypeSyn;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.type = 0;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+
+	// A frame on the socket's own tuple is never a move: the port does not change, so the adapter
+	// hands it to libutp untouched and libutp's own handling of a reset still applies there.
+	constexpr std::uint32_t ip = 0x0100007F;
+	std::vector<SUtpConnectedStream> streams{ { ip, 4672, true } };
+	ASSERT_FALSE(IsUtpPortRepointOf(4672, 4672));
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4672).has_value());
 }
