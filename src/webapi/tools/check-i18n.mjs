@@ -130,7 +130,7 @@ for (const tab of TABS) {
   for (const grp of tab.groups) {
     if (!(grp.legendKey in en)) missingLabels.push(grp.legendKey);
     for (const f of grp.fields) {
-      // hidden fields are capability flags loaded only to gate others; the
+      // hidden fields are capability flags or data other fields read; the
       // view never renders a label for them.
       if (f.hidden) continue;
       const cat = f.cat || tab.cat;

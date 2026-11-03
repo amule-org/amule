@@ -48,6 +48,7 @@ def live_daemon(daemon_binary, api_binary, temp):
             assert advanced['debug_categories_supported'] is True, advanced
             assert advanced['verbose_logging_logfile_only'] is False, advanced
             assert {'General', 'Hasher'} <= set(advanced['debug_categories']), advanced
+            assert 'GUI' not in advanced['debug_categories'], advanced
             assert advanced['debug_categories_enabled'] == ['Hasher'], advanced
             assert not emit(ec, core, 'debug-settings-off')
 

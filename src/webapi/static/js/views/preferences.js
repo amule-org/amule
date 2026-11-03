@@ -25,8 +25,9 @@ import { clearPrefs, GRAPH_RANGES, loadGraphInterval, saveGraphInterval } from "
 
 // Field types: text (default), int, bool, select, password, server_sources,
 // checklist (a string array, one checkbox per name in the sibling `optionsKey`).
-// Flags: readonly (shown disabled, never sent), hidden (capability flag loaded
-// only to gate others), gatedBy (disabled when values[k] === false; skipped on
+// Flags: readonly (shown disabled, never sent), hidden (loaded but never shown or
+// sent: a bool capability flag that gates others, or data another field reads),
+// gatedBy (disabled when values[k] === false; skipped on
 // save only when k is a hidden capability flag),
 // password (write-only, only sent when non-empty), adminOnly (a credential the
 // API does not return to guests, so a guest is not shown the row), scale (int shown/edited
@@ -342,10 +343,14 @@ const TABS = [
 
 const catOf = (tab, f) => f.cat || tab.cat;
 const asArr = (x) => (x == null ? [] : Array.isArray(x) ? x : [x]);
-// The hidden capability flags. A field gated on one the daemon lacks is never
-// sent; one gated on an ordinary parent still is, as the desktop dialog saves it.
+// The capability flags are the hidden bools. A field gated on one the daemon lacks
+// is never sent; one gated on an ordinary parent still is, as the desktop dialog
+// saves it.
 const CAPS = new Set(TABS.flatMap((tab) => tab.groups.flatMap((g) =>
-  g.fields.filter((f) => f.hidden).map((f) => catOf(tab, f) + "." + f.key))));
+  g.fields.filter((f) => f.hidden && f.type === "bool").map((f) => catOf(tab, f) + "." + f.key))));
+const CHECKLISTS = TABS.flatMap((tab) => tab.groups.flatMap((g) =>
+  g.fields.filter((f) => f.type === "checklist").map((f) => [catOf(tab, f), f.key])));
+const sameSet = (a, b) => asArr(a).length === asArr(b).length && asArr(a).every((x) => asArr(b).includes(x));
 // A category may be a dotted path into a nested payload object (e.g.
 // "remote_controls.webserver"); walk/create it on read and write.
 const catGet = (obj, cat) => cat.split(".").reduce((o, k) => (o == null ? o : o[k]), obj);
@@ -514,6 +519,7 @@ export default function Preferences({ isGuest }) {
   const [active, setActive] = useState("webui");
   const [busy, setBusy] = useState(false);
   const [savedSources, setSavedSources] = useState("");
+  const [savedLists, setSavedLists] = useState({}); // checklist "cat.key" -> daemon value
   const [oneOffUrl, setOneOffUrl] = useState("");
   // Staged WebUI (browser) settings; committed by applyWebui.
   const [webuiLang, setWebuiLang] = useState(getLang());
@@ -536,6 +542,7 @@ export default function Preferences({ isGuest }) {
         }
     setValues(v);
     setSavedSources(v["servers.update_urls"] || "");
+    setSavedLists(Object.fromEntries(CHECKLISTS.map(([cat, key]) => [cat + "." + key, v[cat + "." + key]])));
   });
 
   useEffect(() => {
@@ -611,8 +618,8 @@ export default function Preferences({ isGuest }) {
     }
     if (f.type === "checklist") {
       const selected = asArr(val);
-      return asArr(values[cat + "." + f.optionsKey]).map((name) => {
-        const optId = id + "." + name;
+      return asArr(values[cat + "." + f.optionsKey]).map((name, i) => {
+        const optId = id + "." + i;
         const onChange = (e) => setVal(id, e.target.checked
           ? [...selected, name] : selected.filter((n) => n !== name));
         return html`
@@ -717,6 +724,9 @@ export default function Preferences({ isGuest }) {
           } else if (f.type === "bool") {
             out = !!val;
           } else if (f.type === "checklist") {
+            // A write replaces the whole set, so an unedited one would undo
+            // another client's change.
+            if (sameSet(val, savedLists[cat + "." + f.key])) continue;
             out = asArr(val);
           } else if (f.type === "int") {
             let n = clamp(f.scale ? (parseFloat(val) || 0) : (parseInt(val, 10) || 0), f.min, f.max);
@@ -747,6 +757,15 @@ export default function Preferences({ isGuest }) {
       setSavedSources(sources);
       setValues((vs) => ({ ...vs, ["servers.update_urls"]:
         vs["servers.update_urls"] === values["servers.update_urls"] ? sources : vs["servers.update_urls"] }));
+      // Take the daemon's copy, unless the form was edited while the request ran.
+      const lists = Object.fromEntries(CHECKLISTS.map(([cat, key]) =>
+        [cat + "." + key, asArr((catGet(saved, cat) || {})[key])]));
+      setSavedLists(lists);
+      setValues((vs) => {
+        const next = { ...vs };
+        for (const id of Object.keys(lists)) if (sameSet(vs[id], values[id])) next[id] = lists[id];
+        return next;
+      });
       toast(t("prefs_toast_saved"), "success");
     }
     catch (err) {

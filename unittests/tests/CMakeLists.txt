@@ -3841,8 +3841,8 @@ foreach (ec_wire_test IN ITEMS
 	ChatSpamFilterIntegrationTest
 	CompletedFileDeleteCapabilityTest
 	CompletedFileDeleteIntegrationTest
-	DisplayRatesIntegrationTest
 	DebugSettingsIntegrationTest
+	DisplayRatesIntegrationTest
 	DownloadDisplayRatesIntegrationTest
 	DownloadLimitHelloIntegrationTest
 	DownloadPathIndexIntegrationTest

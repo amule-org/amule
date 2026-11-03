@@ -4146,6 +4146,12 @@ TEST(Refresher, DebugSettingsDoNotSurviveAnOlderCore)
 	ASSERT_FALSE(prefs.advanced.verbose_logging_logfile_only);
 	ASSERT_TRUE(prefs.advanced.debug_categories.empty());
 	ASSERT_TRUE(prefs.advanced.debug_categories_enabled.empty());
+
+	// A reply with no core tweaks group at all must not leave the old capability behind.
+	ParsePreferencesFromPacket(&modern, prefs, cats);
+	CECPacket empty(EC_OP_SET_PREFERENCES);
+	ParsePreferencesFromPacket(&empty, prefs, cats);
+	ASSERT_FALSE(prefs.advanced.debug_categories_supported);
 }
 
 TEST(Refresher, WriteBufferCapabilityDoesNotSurviveAnOlderCore)

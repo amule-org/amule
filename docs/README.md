@@ -82,7 +82,7 @@ before sharing.
 The `GUI` category helps when the window stops responding. It logs toolbar events and,
 once a minute, the window state and how often the window was painted. `paints=0` on a
 visible window means the window stopped drawing while aMule kept running. This category
-logs no peer data.
+logs no peer data. `amuled` has no window, so it does not offer this category.
 
 To change `amuled` while it runs, use an EC client. In `amulegui`, the Debugging page
 has two lists: **Core Message Categories** controls the connected core, and

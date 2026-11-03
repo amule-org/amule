@@ -138,6 +138,12 @@ static void AddDebugSettingsTags(CECTag &coreTweaks)
 #else
 	for (unsigned int i = 0; i < theLogger.GetDebugCategoryCount(); ++i) {
 		const CDebugCategory &category = theLogger.GetDebugCategory(static_cast<int>(i));
+#ifdef AMULE_DAEMON
+		// No window to report on.
+		if (category.GetType() == logGUI) {
+			continue;
+		}
+#endif
 		all.Add(category.GetName());
 		if (category.IsEnabled()) {
 			enabled.Add(category.GetName());
@@ -1270,8 +1276,9 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_MAX_CONN_PER_FIVE)) != NULL) {
 			thePrefs::SetMaxConsPerFive(oneTag->GetInt());
 		}
-		ApplyBoolean(use_tag, thisTab, thePrefs::SetVerbose, EC_TAG_CORETW_VERBOSE);
+		// Verbose last: with logfile-only in the same packet, no line may reach guests first.
 		ApplyDebugSettingsTags(*thisTab);
+		ApplyBoolean(use_tag, thisTab, thePrefs::SetVerbose, EC_TAG_CORETW_VERBOSE);
 #ifdef CLIENT_GUI
 		thePrefs::SetWriteBufferLimitSupported(
 			thisTab->GetTagByName(EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB) != nullptr);
