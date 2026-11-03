@@ -6462,6 +6462,16 @@ msgid "Only to Logfile"
 msgstr "Sadece Kütük Dosyasına"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "İleti Sınıfları:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "İleti Sınıfları:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "İleti Sınıfları:"
 

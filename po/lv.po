@@ -6485,6 +6485,16 @@ msgid "Only to Logfile"
 msgstr "Tikai žurnāldatnē"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Ziņojumu kategorijas:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Ziņojumu kategorijas:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Ziņojumu kategorijas:"
 

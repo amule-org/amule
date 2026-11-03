@@ -6475,6 +6475,16 @@ msgid "Only to Logfile"
 msgstr "Seulement vers le fichier journal"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Catégories des messages :"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Catégories des messages :"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Catégories des messages :"
 

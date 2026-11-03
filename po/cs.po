@@ -6466,6 +6466,16 @@ msgid "Only to Logfile"
 msgstr "Pouze do souboru protokolu"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Kategorie zpráv:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Kategorie zpráv:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Kategorie zpráv:"
 

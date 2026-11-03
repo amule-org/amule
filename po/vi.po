@@ -6415,6 +6415,16 @@ msgid "Only to Logfile"
 msgstr "Chỉ vào tệp nhật ký"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Danh mục tin nhắn:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Danh mục tin nhắn:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Danh mục tin nhắn:"
 

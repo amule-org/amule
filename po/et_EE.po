@@ -6479,6 +6479,16 @@ msgid "Only to Logfile"
 msgstr "Ainult logifaili"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Saadetav teade:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Saadetav teade:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Saadetav teade:"
 

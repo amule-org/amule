@@ -6459,6 +6459,16 @@ msgid "Only to Logfile"
 msgstr "Csak napló fájlba"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Üzenet kategóriák:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Üzenet kategóriák:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Üzenet kategóriák:"
 

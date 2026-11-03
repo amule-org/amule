@@ -6485,6 +6485,16 @@ msgid "Only to Logfile"
 msgstr "רק לקובץ יומן"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "קטיגוריות הודעות:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "קטיגוריות הודעות:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "קטיגוריות הודעות:"
 

@@ -6509,6 +6509,16 @@ msgid "Only to Logfile"
 msgstr "Tik į žurnalo failą"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Žinučių kategorijos:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Žinučių kategorijos:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Žinučių kategorijos:"
 

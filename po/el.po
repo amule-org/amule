@@ -6484,6 +6484,16 @@ msgid "Only to Logfile"
 msgstr "Μόνο στο αρχείο καταγραφής"
 
 #: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Core Message Categories:"
+msgstr "Κατηγορίες μηνυμάτων:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Remote GUI Message Categories:"
+msgstr "Κατηγορίες μηνυμάτων:"
+
+#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Κατηγορίες μηνυμάτων:"
 
