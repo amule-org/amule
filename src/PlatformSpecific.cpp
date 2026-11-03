@@ -25,6 +25,12 @@
 #include "PlatformSpecific.h"
 #include "config.h"
 
+#if defined(__linux__) && defined(HAVE_GIO)
+#include "Logger.h"
+#include "common/Format.h"
+#include <gio/gio.h>
+#endif
+
 // NTFS Sparse Files (only for MSW)
 #ifdef __WINDOWS__
 #include "common/Format.h"
@@ -326,9 +332,7 @@ PlatformSpecific::EFSType PlatformSpecific::GetFilesystemType(const CPath &path)
 }
 
 #if defined(__linux__) && defined(HAVE_GIO)
-#include "Logger.h"
-#include "common/Format.h"
-#include <gio/gio.h>
+static guint sleepInhibitorCookie = 0;
 static GDBusConnection *sleepInhibitorBus = nullptr;
 static gchar *sleepInhibitorRequest = nullptr;
 #endif
@@ -375,7 +379,7 @@ void PlatformSpecific::PreventSleepMode()
 			// ??
 		}
 #elif defined(__linux__) && defined(HAVE_GIO)
-		// Make one attempt per state change, including when the portal is unavailable.
+		// Make one attempt per state change, including when neither service is available.
 		m_preventingSleepMode = true;
 		GError *error = nullptr;
 		// A private connection lets us release even a failed/timed-out request by
@@ -393,17 +397,42 @@ void PlatformSpecific::PreventSleepMode()
 			g_free(address);
 		}
 		if (bus != nullptr) {
+			// Cinnamon's portal may return a handle before failing because a native
+			// process has no app ID. Supply it directly to the session manager first.
+			GVariant *reply = g_dbus_connection_call_sync(bus,
+				"org.gnome.SessionManager",
+				"/org/gnome/SessionManager",
+				"org.gnome.SessionManager",
+				"Inhibit",
+				g_variant_new("(susu)", "org.amule.aMule", 0u, "Transferring files", 4u),
+				G_VARIANT_TYPE("(u)"),
+				G_DBUS_CALL_FLAGS_NONE,
+				5000,
+				nullptr,
+				&error);
+			if (reply != nullptr) {
+				g_variant_get(reply, "(u)", &sleepInhibitorCookie);
+				sleepInhibitorBus = bus;
+				g_variant_unref(reply);
+				return;
+			}
+			AddDebugLogLineN(logGeneral,
+				CFormat("Cannot inhibit idle sleep through session manager; trying portal: "
+					"%s") %
+					wxString::FromUTF8(error->message));
+			g_clear_error(&error);
+
 			GVariantBuilder options;
 			g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
 			g_variant_builder_add(
 				&options, "{sv}", "reason", g_variant_new_string("Transferring files"));
-			// Idle only; allow user-requested suspend.
-			GVariant *reply = g_dbus_connection_call_sync(bus,
+			// Suspend only; leave screen blanking and idle detection alone.
+			reply = g_dbus_connection_call_sync(bus,
 				"org.freedesktop.portal.Desktop",
 				"/org/freedesktop/portal/desktop",
 				"org.freedesktop.portal.Inhibit",
 				"Inhibit",
-				g_variant_new("(sua{sv})", "", 8u, &options),
+				g_variant_new("(sua{sv})", "", 4u, &options),
 				G_VARIANT_TYPE("(o)"),
 				G_DBUS_CALL_FLAGS_NONE,
 				5000,
@@ -447,14 +476,15 @@ void PlatformSpecific::AllowSleepMode()
 			// ??
 		}
 #elif defined(__linux__) && defined(HAVE_GIO)
-		if (sleepInhibitorRequest != nullptr) {
+		if (sleepInhibitorBus != nullptr) {
 			GError *error = nullptr;
+			const bool portal = sleepInhibitorRequest != nullptr;
 			GVariant *reply = g_dbus_connection_call_sync(sleepInhibitorBus,
-				"org.freedesktop.portal.Desktop",
-				sleepInhibitorRequest,
-				"org.freedesktop.portal.Request",
-				"Close",
-				nullptr,
+				portal ? "org.freedesktop.portal.Desktop" : "org.gnome.SessionManager",
+				portal ? sleepInhibitorRequest : "/org/gnome/SessionManager",
+				portal ? "org.freedesktop.portal.Request" : "org.gnome.SessionManager",
+				portal ? "Close" : "Uninhibit",
+				portal ? nullptr : g_variant_new("(u)", sleepInhibitorCookie),
 				G_VARIANT_TYPE("()"),
 				G_DBUS_CALL_FLAGS_NONE,
 				5000,
@@ -471,6 +501,7 @@ void PlatformSpecific::AllowSleepMode()
 			}
 			g_free(sleepInhibitorRequest);
 			sleepInhibitorRequest = nullptr;
+			sleepInhibitorCookie = 0;
 			g_dbus_connection_close_sync(sleepInhibitorBus, nullptr, nullptr);
 			g_object_unref(sleepInhibitorBus);
 			sleepInhibitorBus = nullptr;

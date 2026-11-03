@@ -55,6 +55,30 @@ foreach (logger_test IN ITEMS LoggerRuntimeTest LoggerConsoleRuntimeTest)
 	add_test (NAME ${logger_test} COMMAND ${logger_test})
 endforeach ()
 
+# Exercise the production sleep entry points against an isolated session bus.
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
+	add_executable (SleepInhibitionTest
+		SleepInhibitionTest.cpp
+		${CMAKE_SOURCE_DIR}/src/CFile.cpp
+		${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+		${CMAKE_SOURCE_DIR}/src/Tag.cpp
+		${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+		${CMAKE_SOURCE_DIR}/src/PlatformSpecific.cpp
+		${CMAKE_SOURCE_DIR}/src/Logger.cpp
+	)
+	target_compile_definitions (SleepInhibitionTest PRIVATE HAVE_GIO AMULE_DAEMON wxUSE_GUI=0)
+	target_include_directories (SleepInhibitionTest PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+		${CMAKE_BINARY_DIR}/src/libs/ec/cpp ${GLIB_INCLUDE_DIRS}
+	)
+	target_link_libraries (SleepInhibitionTest PRIVATE mulecommon wxWidgets::BASE ${GLIB_LIBRARIES})
+	add_test (NAME SleepInhibitionTest COMMAND SleepInhibitionTest)
+	add_test (NAME SleepInhibitionNoBusTest COMMAND SleepInhibitionTest --no-bus)
+	set_tests_properties (SleepInhibitionTest SleepInhibitionNoBusTest PROPERTIES
+		SKIP_RETURN_CODE 77 LABELS "integration")
+endif ()
+
 # Shared application anchors for headless tests that link production core code.
 function (add_application_test_stubs target)
 	target_sources (${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ApplicationTestStubs.cpp)
