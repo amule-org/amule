@@ -236,19 +236,24 @@ def real_gateway_answers():
 
 def run_driver(driver, gateway, operations):
     with subprocess.Popen([driver, str(TCP_PORT), str(UDP_PORT), *operations], stdin=subprocess.PIPE,
-                          stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True) as process:
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True) as process:
         deadline = time.monotonic() + DISCOVERY_TIMEOUT
         while (not gateway.registered.wait(0.1) and process.poll() is None
                and time.monotonic() < deadline):
             pass
         # Closing stdin without a line makes the driver exit without sending anything.
-        output, _ = process.communicate('\n' if gateway.registered.is_set() else '', timeout=60)
+        try:
+            output, errors = process.communicate('\n' if gateway.registered.is_set() else '', timeout=60)
+        except subprocess.TimeoutExpired as error:
+            process.kill()
+            raise ScenarioFailed('driver hung') from error
     if process.returncode == SKIP:
         raise Skipped(output.strip())
+    details = f'exit code {process.returncode}, stderr: {errors.strip()}'
     if not gateway.registered.is_set():
-        raise ScenarioFailed('the control point did not discover the fake gateway')
+        raise ScenarioFailed(f'the control point did not discover the fake gateway ({details})')
     if process.returncode != 0:
-        raise ScenarioFailed(f'driver exited with {process.returncode}: {output}')
+        raise ScenarioFailed(f'driver failed ({details})')
     return dict(line.split('=') for line in output.splitlines() if '=' in line)
 
 
@@ -299,7 +304,7 @@ def run_scenarios(driver, failures):
 def main():
     # Mappings use lease 0 and the add scenarios never delete them. A lost probe or a NOTIFY during
     # the run can bring in a real gateway, so outside CI nobody runs this by accident.
-    if not ON_CI and OPT_IN not in os.environ:
+    if not ON_CI and os.environ.get(OPT_IN) != '1':
         print(f'SKIP: set {OPT_IN}=1 on a network with no real gateway to run this test')
         sys.exit(SKIP)
     gateway_address = real_gateway_answers()
