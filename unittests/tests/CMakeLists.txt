@@ -2944,6 +2944,29 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND Python3_Interpreter_FOUND)
 	# 60 s lane. Launches three daemons, each with a 15 s watchdog.
 	set_tests_properties (UnicodeCommandLineIntegrationTest PROPERTIES LABELS "slow")
 endif ()
+# Linux only: the fake gateway joins multicast groups by interface index.
+if (ENABLE_INTEGRATION_TESTS AND ENABLE_UPNP AND Python3_Interpreter_FOUND AND UNIX AND NOT APPLE)
+	add_executable (UPnPPortMappingDriver
+		UPnPPortMappingDriver.cpp
+		${CMAKE_SOURCE_DIR}/src/UPnPBase.cpp
+	)
+	# Not muleunit: this has its own main. MULEUNIT drops the logging calls into the core logger.
+	target_compile_definitions (UPnPPortMappingDriver PRIVATE MULEUNIT wxUSE_GUI=0)
+	target_include_directories (UPnPPortMappingDriver PRIVATE
+		${CMAKE_BINARY_DIR}
+		${CMAKE_SOURCE_DIR}/src
+		${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs
+	)
+	target_link_libraries (UPnPPortMappingDriver mulecommon wxWidgets::BASE UPNP::Shared)
+	add_test (NAME UPnPPortMappingIntegrationTest
+		COMMAND ${Python3_EXECUTABLE} -u
+			${CMAKE_CURRENT_SOURCE_DIR}/UPnPPortMappingIntegrationTest.py
+			$<TARGET_FILE:UPnPPortMappingDriver>
+	)
+	set_tests_properties (UPnPPortMappingIntegrationTest PROPERTIES
+		SKIP_RETURN_CODE 77 LABELS "integration")
+endif ()
 if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 	if (Python3_Interpreter_FOUND)
 		add_test (NAME ECDisconnectIntegrationTest
