@@ -91,6 +91,24 @@ def parse_tags(data, offset, count):
     return result, offset
 
 
+def tag_list(data, offset, count):
+    """Like parse_tags, but keeps repeated tag names: one EC_TAG_KNOWNFILE per shared file."""
+    result = []
+    for _ in range(count):
+        name, kind, length = struct.unpack_from('!HBI', data, offset)
+        offset += 7
+        children = []
+        if name & 1:
+            n = struct.unpack_from('!H', data, offset)[0]
+            offset += 2
+            start = offset
+            children, offset = tag_list(data, offset, n)
+            length -= offset - start
+        result.append((name >> 1, data[offset:offset + length], children))
+        offset += length
+    return result, offset
+
+
 class EC:
     def __init__(self, port, host="127.0.0.1", password="regression", timeout=60, capabilities=()):
         self.sock = socket.create_connection((host, port), timeout=timeout)
@@ -101,13 +119,20 @@ class EC:
         assert op == C['EC_OP_AUTH_OK'] and C['EC_TAG_CAN_SEARCH_ALL'] in tags, (op, tags)
         self.auth_tags = tags
 
-    def call(self, op, tags=()):
+    def _reply(self, op, tags):
         payload = bytes([op]) + struct.pack('!H', len(tags)) + b''.join(tags)
         self.sock.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
         flags, length = struct.unpack('!II', exact(self.sock, 8))
         assert flags == 0x20, flags
-        reply = exact(self.sock, length)
+        return exact(self.sock, length)
+
+    def call(self, op, tags=()):
+        reply = self._reply(op, tags)
         return reply[0], parse_tags(reply, 3, struct.unpack_from('!H', reply, 1)[0])[0]
+
+    def call_list(self, op, tags=()):
+        reply = self._reply(op, tags)
+        return reply[0], tag_list(reply, 3, struct.unpack_from('!H', reply, 1)[0])[0]
 
     def start(self, query, kind=C['EC_SEARCH_ALL'], wait=False):
         request = tag(C['EC_TAG_SEARCH_TYPE'], bytes([kind]), 2, [string(C['EC_TAG_SEARCH_NAME'], query), string(C['EC_TAG_SEARCH_FILE_TYPE'], '')])

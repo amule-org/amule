@@ -10,42 +10,20 @@ Incoming path.
 import os
 from pathlib import Path
 import shutil
-import struct
 import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import C, exact, free_ports, retry_port_collisions, running_daemon
+from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
-
-
-def tag_list(data, offset, count):
-    """Like parse_tags, but keeps repeated tag names: one EC_TAG_KNOWNFILE per shared file."""
-    result = []
-    for _ in range(count):
-        name, kind, length = struct.unpack_from('!HBI', data, offset)
-        offset += 7
-        children = []
-        if name & 1:
-            n = struct.unpack_from('!H', data, offset)[0]
-            offset += 2
-            start = offset
-            children, offset = tag_list(data, offset, n)
-            length -= offset - start
-        result.append((name >> 1, data[offset:offset + length], children))
-        offset += length
-    return result, offset
 
 
 def shared(ec):
     """Map each shared file name to its eD2k hash."""
-    payload = bytes([C['EC_OP_GET_SHARED_FILES']]) + struct.pack('!H', 0)
-    ec.sock.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
-    _, length = struct.unpack('!II', exact(ec.sock, 8))
-    reply = exact(ec.sock, length)
-    assert reply[0] == C['EC_OP_SHARED_FILES'], reply[0]
+    opcode, tags = ec.call_list(C['EC_OP_GET_SHARED_FILES'])
+    assert opcode == C['EC_OP_SHARED_FILES'], opcode
     files = {}
-    for name, _, children in tag_list(reply, 3, struct.unpack_from('!H', reply, 1)[0])[0]:
+    for name, _, children in tags:
         if name == C['EC_TAG_KNOWNFILE']:
             fields = {child: value for child, value, _ in children}
             files[fields[C['EC_TAG_PARTFILE_NAME']].rstrip(b'\0').decode()] = fields[C['EC_TAG_PARTFILE_HASH']]
