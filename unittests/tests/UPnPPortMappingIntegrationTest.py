@@ -14,7 +14,7 @@ import tempfile
 import threading
 import time
 
-from AllSearchIntegrationTest import stop_daemon
+from AllSearchIntegrationTest import free_ports, stop_daemon
 from DaemonConfig import daemon_env, write_amule_conf
 
 SKIP = 77
@@ -25,6 +25,7 @@ DISCOVERY_TIMEOUT = 15
 AFTER_SEARCH_TIMER = 3.5
 # The control point stops holding callers back this long after the search.
 AFTER_DISCOVERY_DEADLINE = 4.5
+PENDING_POLLS = 20
 ADD, DELETE = 'AddPortMapping', 'DeletePortMapping'
 SSDP_GROUP = '239.255.255.250'
 SSDP_PORT = 1900
@@ -33,7 +34,7 @@ SERVICE_TYPES = {
     'ip': 'urn:schemas-upnp-org:service:WANIPConnection:1',
     'ppp': 'urn:schemas-upnp-org:service:WANPPPConnection:1',
 }
-TCP_PORT, UDP_PORT, EC_PORT = 59662, 59672, 59682
+TCP_PORT, UDP_PORT = 59662, 59672
 TCP, UDP = (str(TCP_PORT), 'TCP'), (str(UDP_PORT), 'UDP')
 ADD_ARGS = {
     'NewRemoteHost': 'RemoteHost',
@@ -426,6 +427,15 @@ def run_late_scenarios(driver, failures):
                 record_failure(failures, f'{name}: {service} holds {mappings}, expected {table}')
 
 
+def wait_not_pending(running):
+    # Under 2 s, so a pass at "gateway registered" can't come from the 4 s deadline.
+    for _ in range(PENDING_POLLS):
+        if running.run(1) == {'pending': 'false'}:
+            return
+        time.sleep(0.1)
+    raise ScenarioFailed('still pending after the gateway registered')
+
+
 def check_discovery_pending(driver, failures):
     def check(name, got, expected):
         if got != {'pending': expected}:
@@ -436,18 +446,17 @@ def check_discovery_pending(driver, failures):
             check('no gateway yet', running.run(1), 'true')
             time.sleep(AFTER_DISCOVERY_DEADLINE)
             check('search over', running.run(1), 'false')
-        with FakeGateway() as gateway, Driver(driver, ['pending']) as running:
+        # The gateway sees the subscription just before the control point finishes with it.
+        with FakeGateway() as gateway, Driver(driver, ['pending'] * PENDING_POLLS) as running:
             wait_registered(gateway)
-            check('gateway registered', running.run(1), 'false')
+            wait_not_pending(running)
         # A registration that outlasts the search keeps the hold.
-        with FakeGateway(held='ip') as gateway, Driver(driver, ['pending'] * 2) as running:
+        with FakeGateway(held='ip') as gateway, Driver(driver, ['pending'] * (1 + PENDING_POLLS)) as running:
             time.sleep(AFTER_DISCOVERY_DEADLINE)
             check('still registering', running.run(1), 'true')
             gateway.release.set()
             wait_registered(gateway)
-            # The gateway sees the subscription just before the control point finishes with it.
-            time.sleep(0.5)
-            check('registration done', running.run(1), 'false')
+            wait_not_pending(running)
         # A Netgear GS308EP answers as a gateway and lists no services.
         with FakeGateway(services=()), Driver(driver, ['pending']) as running:
             time.sleep(1)
@@ -480,6 +489,7 @@ def wait_login(listener):
 def tcp_mapped_at_login(amuled, gateway):
     """Starts amuled with autoconnect on, and returns whether the port is mapped at its login."""
     address = local_address()
+    ec_port, tcp_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
     with tempfile.TemporaryDirectory() as root, socket.socket() as listener:
         listener.bind((address, 0))
         listener.listen(1)
@@ -487,7 +497,7 @@ def tcp_mapped_at_login(amuled, gateway):
         server_port = listener.getsockname()[1]
         (Path(root) / 'Temp').mkdir()
         (Path(root) / 'Incoming').mkdir()
-        write_amule_conf(root, EC_PORT, Address=None, Port=TCP_PORT, UDPPort=UDP_PORT, FilterLanIPs=0,
+        write_amule_conf(root, ec_port, Address=None, Port=tcp_port, UDPPort=udp_port, FilterLanIPs=0,
                          ConnectToED2K=1, Autoconnect=1, UPnPEnabled=1, UPnPTCPPort=0)
         (Path(root) / 'server.met').write_bytes(
             b'\xe0' + struct.pack('<I', 1) + socket.inet_aton(address)
@@ -499,7 +509,7 @@ def tcp_mapped_at_login(amuled, gateway):
                 stderr=subprocess.STDOUT) as process:
             try:
                 wait_login(listener)
-                mapped = any(TCP in table for table in gateway.tables.values())
+                mapped = any((str(tcp_port), 'TCP') in table for table in gateway.tables.values())
                 stop_daemon(process, timeout=20)
                 return mapped
             except (OSError, AssertionError) as error:
