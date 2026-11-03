@@ -16,7 +16,8 @@ import tempfile
 import threading
 import time
 
-from AllSearchIntegrationTest import C, exact, free_ports, retry_port_collisions, running_daemon, string
+from AllSearchIntegrationTest import (C, exact, free_ports, retry_port_collisions,
+                                      running_daemon, string, tag)
 from DaemonConfig import write_amule_conf
 
 OP_GLOBGETSOURCES = 0x9a
@@ -76,11 +77,13 @@ def run(binary):
                 assert logged_in.wait(30), 'the daemon did not log in'
                 for port in asked:
                     assert add(f'localhost:{port}') == C['EC_OP_NOOP']
-                # AddNewFilesPaused leaves the first download of an empty queue running.
+                # Both files start paused; explicitly resume the one that should request sources.
                 active, paused = os.urandom(16), os.urandom(16)
                 for index, file_hash in enumerate((active, paused)):
                     link = f'ed2k://|file|global-{index}.bin|1048576|{file_hash.hex()}|/'
                     assert ec.call(C['EC_OP_ADD_LINK'], [string(C['EC_TAG_STRING'], link)])[0] == C['EC_OP_NOOP']
+                assert ec.call(C['EC_OP_PARTFILE_RESUME'], [
+                    tag(C['EC_TAG_PARTFILE'], active, 9)])[0] == C['EC_OP_NOOP']
                 deadline = time.monotonic() + 30
                 while not all(active in hashes for hashes in asked.values()):
                     assert time.monotonic() < deadline, f'servers known by name were not asked: {asked}'
