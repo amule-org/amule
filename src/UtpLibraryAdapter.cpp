@@ -286,27 +286,44 @@ public:
 		// candidate, or none at all; a SYN and a reset are refused by the decision itself.
 		utp_socket *repointedSocket = nullptr;
 		Endpoint repointedFrom{ 0, 0 };
+		bool unproven = false;
 		if (translation == m_remapInputs.end() && remappedSocket == nullptr) {
 			const std::optional<SRepointCandidate> candidate = FindRepointCandidate(ip, port);
-			if (candidate.has_value() && header.has_value() &&
-				DecideUtpMove(*header, MoveFactsFor(candidate->socket)) ==
-					EUtpMoveVerdict::Move &&
-				m_repointLimiter.TryAdmit(StreamKey(candidate->socket), nowMs)) {
-				// Replace this socket's pair rather than add one: libutp keeps the tuple the
-				// socket was created with, so a socket holds exactly one translation.
-				RemovePortRemap(candidate->socket);
-				InstallPortRemap(candidate->socket, candidate->libutpEndpoint, observed);
-				repointedSocket = candidate->socket;
-				repointedFrom = candidate->libutpEndpoint;
-				expected = repointedFrom;
+			if (candidate.has_value()) {
+				if (header.has_value() &&
+					DecideUtpMove(*header, MoveFactsFor(candidate->socket)) ==
+						EUtpMoveVerdict::Move &&
+					m_repointLimiter.TryAdmit(StreamKey(candidate->socket), nowMs)) {
+					// Replace this socket's pair rather than add one: libutp keeps the
+					// tuple the socket was created with, so a socket holds exactly one
+					// translation.
+					RemovePortRemap(candidate->socket);
+					InstallPortRemap(
+						candidate->socket, candidate->libutpEndpoint, observed);
+					repointedSocket = candidate->socket;
+					repointedFrom = candidate->libutpEndpoint;
+					expected = repointedFrom;
+				} else if (ClassifyUtpFrame(payload, length) == EUtpFrameKind::Existing) {
+					// One connected stream could own this frame and it did not prove
+					// itself. Handing it over anyway would make libutp answer an
+					// unmatched non-SYN with an RST to that source (:2925-2940), which is
+					// the reflection the ingress gate exists to prevent, so it is dropped
+					// instead. A SYN is not one of these: it asks for a new connection
+					// and keeps normal admission.
+					unproven = true;
+				}
 			}
 		}
 		const sockaddr_in address = MakeAddress(expected.first, expected.second);
-		const bool claimed = utp_process_udp(m_context,
-					     payload,
-					     length,
-					     reinterpret_cast<const sockaddr *>(&address),
-					     sizeof(address)) != 0;
+		// A frame that a candidate could own but that did not prove itself stops here.
+		bool claimed = false;
+		if (!unproven) {
+			claimed = utp_process_udp(m_context,
+					  payload,
+					  length,
+					  reinterpret_cast<const sockaddr *>(&address),
+					  sizeof(address)) != 0;
+		}
 		// Both translations stay for the life of the socket: libutp keeps the tuple it was created
 		// with, so these maps are what hold the stream on the observed port in both directions. Only
 		// a refused claim gives one up, and Forget() drops them with the socket.
@@ -460,17 +477,14 @@ private:
 
 	//! Every stream this adapter believes is connected at this address, with the tuple libutp holds
 	//! for it. The repoint window applies to the peer port we believe, not to that tuple, since the
-	//! belief is what a repoint moves.
+	//! belief is what a repoint moves. Accepted streams are candidates too: the header has to prove
+	//! itself before anything moves, so a stranger cannot take one over by guessing its port.
 	std::vector<SRepointCandidate> ConnectedStreamsAt(uint32_t ip) const
 	{
 		std::vector<SRepointCandidate> streams;
 		for (const auto &entry : m_endpoints) {
 			const CUtpSocketTransport *transport = TransportOf(entry.first);
-			// Only a stream we dialled: an accepted one chose its endpoint, so moving it on a
-			// datagram would let whoever sent that datagram take the stream over. The handshake
-			// remap already applies to our own dials alone.
-			if (entry.second.first != ip || transport == nullptr || !transport->IsConnected() ||
-				transport->IsInbound()) {
+			if (entry.second.first != ip || transport == nullptr || !transport->IsConnected()) {
 				continue;
 			}
 			SRepointCandidate candidate;

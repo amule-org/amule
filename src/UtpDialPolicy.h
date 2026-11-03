@@ -548,17 +548,17 @@ private:
 constexpr std::uint8_t kUtpTypeReset = 3;
 constexpr std::uint8_t kUtpTypeSyn = 4;
 
-//! How far from the peer's last sequence number a frame may sit and still be that stream's.
+//! How far a frame's sequence number may be AHEAD of the peer's last one and still be that stream's.
 //! Mirrors libutp's own receive bound (REORDER_BUFFER_MAX_SIZE, utp_internal.cpp:55, enforced at
-//! :1894-1906): anything further apart is not a packet this connection could have in flight.
+//! :1894-1906): anything further ahead is not a packet this connection could have in flight.
 constexpr std::uint16_t kUtpMoveSeqWindow = 1024;
 
-//! Distance between two uTP sequence numbers, which wrap at 2^16 (utp_internal.cpp:79).
-inline std::uint16_t UtpSeqDistance(std::uint16_t left, std::uint16_t right)
+//! How far @p candidate is ahead of @p known, counting modulo 2^16 (utp_internal.cpp:79). Zero means
+//! equal and anything above 32768 means behind, both of which a window this small never admits: a
+//! move only ever follows the peer into newer sequence numbers, never back into older ones.
+inline std::uint16_t UtpSeqAhead(std::uint16_t candidate, std::uint16_t known)
 {
-	const std::uint16_t forward = static_cast<std::uint16_t>(left - right);
-	const std::uint16_t backward = static_cast<std::uint16_t>(right - left);
-	return forward < backward ? forward : backward;
+	return static_cast<std::uint16_t>(candidate - known);
 }
 
 //! The base uTP header fields a move decision needs, read off the wire by ReadUtpWireHeader()
@@ -596,7 +596,9 @@ enum class EUtpMoveVerdict
  *
  * Deliberately stricter than libutp's own admission, which window-checks the ack against our last
  * send (utp_internal.cpp:1799-1815) but never against what the peer already acknowledged, and which
- * accepts a far wider sequence range. Any disagreement here means no move.
+ * accepts a far wider sequence range. A move also only ever follows the peer FORWARD: a frame at or
+ * behind the sequence number it last used is a late one, and acting on it would move the stream
+ * back to a port the peer has already left. Any disagreement here means no move.
  */
 inline EUtpMoveVerdict DecideUtpMove(const SUtpMoveHeader &header, const SUtpPeerStreamFacts &facts)
 {
@@ -615,7 +617,9 @@ inline EUtpMoveVerdict DecideUtpMove(const SUtpMoveHeader &header, const SUtpPee
 		header.acknowledgeNumber > facts.lastSentSequenceNumber) {
 		return EUtpMoveVerdict::Refuse;
 	}
-	if (UtpSeqDistance(header.sequenceNumber, facts.peerSequenceNumber) > kUtpMoveSeqWindow) {
+	// Forward only, and strictly so: equal or older is a late frame from a port the peer has left.
+	const std::uint16_t ahead = UtpSeqAhead(header.sequenceNumber, facts.peerSequenceNumber);
+	if (ahead == 0 || ahead > kUtpMoveSeqWindow) {
 		return EUtpMoveVerdict::Refuse;
 	}
 	return EUtpMoveVerdict::Move;

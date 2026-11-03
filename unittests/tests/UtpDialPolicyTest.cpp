@@ -482,25 +482,39 @@ TEST(UtpDialPolicy, MoveNeedsAnAckBetweenThePeersAckAndOurLastSend)
 	ASSERT_TRUE(DecideUtpMove(header, inverted) == EUtpMoveVerdict::Refuse);
 }
 
-TEST(UtpDialPolicy, MoveNeedsASequenceNumberInsideTheReorderWindow)
+TEST(UtpDialPolicy, MoveOnlyEverFollowsNewerSequenceNumbers)
 {
 	const SUtpPeerStreamFacts facts{ true, 0x1234, 1'000, 98, 104 };
-	SUtpMoveHeader header{ 2, 0x1234, 1'000, 100 };
+	SUtpMoveHeader header{ 2, 0x1234, 1'001, 100 };
 
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
 	header.sequenceNumber = 1'000 + kUtpMoveSeqWindow;
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
-	header.sequenceNumber = 1'000 - kUtpMoveSeqWindow;
-	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
 
+	// A frame at or behind the peer's last sequence number is late: acting on it would move the
+	// stream back to a port the peer has already left.
+	header.sequenceNumber = 1'000;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.sequenceNumber = 1'000 - 1;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.sequenceNumber = 1'000 - kUtpMoveSeqWindow;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+
+	// Past the reorder bound, in either direction.
 	header.sequenceNumber = 1'000 + kUtpMoveSeqWindow + 1;
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
 	header.sequenceNumber = 1'000 - kUtpMoveSeqWindow - 1;
 	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
 
-	// The window also closes across the wrap, where a plain ordered compare would not.
-	ASSERT_EQUALS((std::uint16_t)2, UtpSeqDistance(1, 65'535));
-	ASSERT_EQUALS((std::uint16_t)0, UtpSeqDistance(7, 7));
+	// Counting is modulo 2^16, so a genuinely newer number past the wrap still counts, and a late
+	// one across the wrap is still late.
+	ASSERT_EQUALS((std::uint16_t)2, UtpSeqAhead(1, 65'535));
+	ASSERT_EQUALS((std::uint16_t)0, UtpSeqAhead(7, 7));
+	const SUtpPeerStreamFacts wrapped{ true, 0x1234, 65'535, 98, 104 };
+	const SUtpMoveHeader newer{ 2, 0x1234, 1, 100 };
+	ASSERT_TRUE(DecideUtpMove(newer, wrapped) == EUtpMoveVerdict::Move);
+	const SUtpMoveHeader lateAcrossTheWrap{ 2, 0x1234, 65'530, 100 };
+	ASSERT_TRUE(DecideUtpMove(lateAcrossTheWrap, wrapped) == EUtpMoveVerdict::Refuse);
 }
 
 TEST(UtpDialPolicy, MoveRefusesResetAndSynWhileTheOwnTupleIsNeverAStepCompetitor)
