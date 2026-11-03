@@ -2595,7 +2595,10 @@ if (TARGET wxWidgets::CORE)
         )
         target_link_libraries (${name} PRIVATE wxWidgets::CORE mulecommon)
         add_test (NAME ${name} COMMAND ${name})
-        set_tests_properties (${name} PROPERTIES SKIP_RETURN_CODE 77)
+        # On native Wayland, GTK never re-allocates the test window's tree
+        # view after a column resize, so the widths the tests set never land.
+        set_tests_properties (${name} PROPERTIES SKIP_RETURN_CODE 77
+            ENVIRONMENT GDK_BACKEND=x11)
     endfunction()
 
     add_native_list_test (ColumnLayoutTest)
