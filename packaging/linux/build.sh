@@ -63,7 +63,6 @@ prepare_media_source() {
 }
 
 build_appimage() {
-    prepare_media_source
     # Resolve target arch. "host" (default) builds natively for the
     # current machine; x86_64/aarch64 build via QEMU emulation if not
     # native (slow — wx-from-source step takes ~30-50 min on aarch64-
@@ -113,6 +112,7 @@ build_appimage() {
     # it. --load puts the image in the local daemon, which the docker run
     # below requires; it is a no-op on the default driver, so local dev
     # builds are unaffected.
+    prepare_media_source
     docker buildx build \
         --platform "${docker_platform}" \
         --build-arg "UBUNTU_BASE=${UBUNTU_BASE}" \
@@ -260,7 +260,6 @@ build_flatpak() {
 }
 
 build_static() {
-    prepare_media_source
     # Fully static amuled/amulecmd/amuleapi (musl/Alpine). Unlike the
     # AppImage track (toolchain image + docker run over a repo mount), this
     # COPYs the checkout into the build and exports the binaries from a
@@ -304,6 +303,7 @@ build_static() {
     fi
 
     echo "==> Building static binaries (${target_arch}, platform=${docker_platform})"
+    prepare_media_source
     docker buildx build \
         --platform "${docker_platform}" \
         -f "${SCRIPT_DIR}/static/Dockerfile" \
