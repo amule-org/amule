@@ -31,6 +31,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <optional>
 #include <utility>
 
 // IPv4 uses aMule's low-byte-first integer representation; ports are host order.
@@ -127,6 +128,9 @@ public:
 	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
 	//! True only for one live, remap-enabled handshake peer near the observed source port.
 	virtual bool HasExpectedPortRemapPeer(uint32_t, uint16_t, std::uint64_t) const { return false; }
+	//! True only when one connected stream on that address could own this source port, as a NAT would
+	//! have moved it. Read-only: it neither installs a translation nor spends the move budget.
+	virtual bool HasRepointCandidate(uint32_t, uint16_t) const { return false; }
 };
 
 // Counted, not a set: one endpoint can hold several sockets, and forgetting on
@@ -273,6 +277,9 @@ public:
 	virtual bool HasRegisteredPeer(uint32_t ip, uint16_t port) const = 0;
 	//! True only for one live, remap-enabled handshake peer near the observed source port.
 	virtual bool HasExpectedPortRemapPeer(uint32_t, uint16_t, std::uint64_t) const { return false; }
+	//! True only when one connected stream on that address could own this source port, as a NAT would
+	//! have moved it. Read-only: it neither installs a translation nor spends the move budget.
+	virtual bool HasRepointCandidate(uint32_t, uint16_t) const { return false; }
 };
 
 // Main-thread only. Tick never recreates state abandoned by socket Close().
@@ -389,6 +396,10 @@ public:
 	{
 		return m_library->HasExpectedPortRemapPeer(ip, port, nowMs);
 	}
+	bool HasRepointCandidate(uint32_t ip, uint16_t port) const override
+	{
+		return m_library->HasRepointCandidate(ip, port);
+	}
 
 	//! Held, so it survives the context being destroyed and rebuilt.
 	void SetAcceptor(IUtpStreamAcceptor *acceptor)
@@ -406,8 +417,8 @@ private:
 	bool m_active = false;
 };
 
-// libutp answers an unmatched non-SYN with an unsolicited RST to the claimed
-// source, which makes this host a reflector for a forged address.
+//! libutp answers an unmatched non-SYN with an unsolicited RST to the claimed
+//! source, which makes this host a reflector for a forged address.
 enum class EUtpFrameKind
 {
 	//! Shorter than a header, or a version libutp does not implement.
@@ -418,16 +429,18 @@ enum class EUtpFrameKind
 	Existing
 };
 
+//! Header is 20 bytes in version 1 (PacketFormatV1, utp_internal.cpp:113-136); anything shorter
+//! cannot be parsed.
+constexpr size_t kUtpWireHeaderBytes = 20;
+//! libutp's validity test constants, shared with ClassifyUtpFrame().
+constexpr uint8_t kUtpVersion = 1;
+constexpr uint8_t kStNumStates = 5;
+
 //! Mirrors libutp's validity test (UTP_Version): type < ST_NUM_STATES,
 //! extension < 3, version 1.
 inline EUtpFrameKind ClassifyUtpFrame(const uint8_t *payload, size_t length)
 {
-	// Header is 20 bytes in version 1; anything shorter cannot be parsed.
-	constexpr size_t kUtpHeaderBytes = 20;
-	constexpr uint8_t kUtpVersion = 1;
-	constexpr uint8_t kStNumStates = 5;
-	constexpr uint8_t kStSyn = 4;
-	if (payload == nullptr || length < kUtpHeaderBytes) {
+	if (payload == nullptr || length < kUtpWireHeaderBytes) {
 		return EUtpFrameKind::Malformed;
 	}
 	const uint8_t type = static_cast<uint8_t>(payload[0] >> 4);
@@ -436,7 +449,29 @@ inline EUtpFrameKind ClassifyUtpFrame(const uint8_t *payload, size_t length)
 	if (type >= kStNumStates || extension >= 3 || version != kUtpVersion) {
 		return EUtpFrameKind::Malformed;
 	}
-	return type == kStSyn ? EUtpFrameKind::Syn : EUtpFrameKind::Existing;
+	return type == kUtpTypeSyn ? EUtpFrameKind::Syn : EUtpFrameKind::Existing;
+}
+
+//! Reads the base header of a frame ClassifyUtpFrame() accepts. Returns nothing for anything it does
+//! not: no decision may rest on a frame libutp itself would refuse to parse. Field offsets are
+//! PacketFormatV1's, all big endian (utp_internal.cpp:113-136): ver_type, ext, connid at 2, tv_usec,
+//! reply_micro, windowsize, seq_nr at 16, ack_nr at 18. Extensions follow the base header.
+inline std::optional<SUtpMoveHeader> ReadUtpWireHeader(const uint8_t *payload, size_t length)
+{
+	const EUtpFrameKind kind = ClassifyUtpFrame(payload, length);
+	if (kind == EUtpFrameKind::Malformed) {
+		return std::nullopt;
+	}
+	const auto bigEndian16 = [payload](size_t offset) {
+		return static_cast<std::uint16_t>(
+			(static_cast<std::uint16_t>(payload[offset]) << 8) | payload[offset + 1]);
+	};
+	SUtpMoveHeader header;
+	header.type = static_cast<std::uint8_t>(payload[0] >> 4);
+	header.connectionId = bigEndian16(2);
+	header.sequenceNumber = bigEndian16(16);
+	header.acknowledgeNumber = bigEndian16(18);
+	return header;
 }
 
 inline bool ProcessUtpFrame(

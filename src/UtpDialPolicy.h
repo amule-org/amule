@@ -416,4 +416,312 @@ std::optional<std::size_t> FindUniqueUtpPortRemapCandidate(
 	return match;
 }
 
+//! Whether a datagram's source port may be the NAT moving the port this stream already holds. The
+//! address is implied: the caller only asks about streams on the source address, and a different
+//! address is a different peer rather than a repoint.
+inline bool IsUtpPortRepointOf(std::uint16_t observedPort, std::uint16_t heldPort)
+{
+	if (observedPort == 0 || heldPort == 0 || observedPort == heldPort) {
+		return false;
+	}
+	const std::uint16_t delta =
+		observedPort > heldPort ? observedPort - heldPort : heldPort - observedPort;
+	return delta <= kUtpPortRemapWindow;
+}
+
+//! A connected stream as the repoint decision sees it: the address it holds and whether it is
+//! usable at all.
+struct SUtpConnectedStream
+{
+	std::uint32_t ip = 0;
+	std::uint16_t port = 0;
+	bool connected = false;
+};
+
+//! The one connected stream this datagram can belong to, or none when two could be it. libutp
+//! takes the address it is given at face value, so an ambiguous candidate must fail closed here,
+//! exactly as an ambiguous handshake remap does.
+template <typename Range>
+std::optional<std::size_t> FindUniqueUtpRepointCandidate(
+	const Range &streams, std::uint32_t observedIp, std::uint16_t observedPort)
+{
+	std::optional<std::size_t> match;
+	std::size_t index = 0;
+	for (const auto &stream : streams) {
+		const bool eligible = stream.connected && observedIp != 0 && stream.ip == observedIp &&
+				      IsUtpPortRepointOf(observedPort, stream.port);
+		if (eligible) {
+			if (match.has_value()) {
+				return std::nullopt;
+			}
+			match = index;
+		}
+		++index;
+	}
+	return match;
+}
+
+/**
+ * Bounds how often a stream may follow a NAT source-port change: one move per stream per ten seconds.
+ * A stream keeps its slot for that window, so the fixed table is also the bound on how many streams
+ * can move at once: a peer replaying source ports can neither grow it nor evict a live record, and a
+ * full table refuses, which keeps the failure closed. Time is injected, so the bound is testable.
+ */
+class UtpPortRepointLimiter
+{
+public:
+	static constexpr std::size_t MovesPerStream = 1;
+	static constexpr std::uint64_t WindowMs = 10'000;
+	static constexpr std::size_t MaxStreams = 16;
+
+	//! Records this stream's attempt and returns true, or returns false and records nothing.
+	bool TryAdmit(std::uint64_t streamId, std::uint64_t nowMs)
+	{
+		ExpireStreams(nowMs);
+		SStreamMoves *stream = FindStream(streamId);
+		if (stream == nullptr) {
+			stream = ReserveStream(streamId, nowMs);
+			if (stream == nullptr) {
+				return false;
+			}
+		}
+		if (stream->moves >= MovesPerStream) {
+			return false;
+		}
+		++stream->moves;
+		return true;
+	}
+
+private:
+	struct SStreamMoves
+	{
+		std::uint64_t id = 0;
+		std::uint64_t windowStart = 0;
+		std::size_t moves = 0;
+		bool used = false;
+	};
+
+	SStreamMoves *FindStream(std::uint64_t streamId)
+	{
+		for (auto &stream : m_streams) {
+			if (stream.used && stream.id == streamId) {
+				return &stream;
+			}
+		}
+		return nullptr;
+	}
+
+	//! A free slot for a stream that has not moved inside the window, or none at all.
+	SStreamMoves *ReserveStream(std::uint64_t streamId, std::uint64_t nowMs)
+	{
+		for (auto &stream : m_streams) {
+			if (stream.used) {
+				continue;
+			}
+			stream = SStreamMoves{};
+			stream.used = true;
+			stream.id = streamId;
+			stream.windowStart = nowMs;
+			return &stream;
+		}
+		return nullptr;
+	}
+
+	void ExpireStreams(std::uint64_t nowMs)
+	{
+		for (auto &stream : m_streams) {
+			if (stream.used && IsExpired(stream.windowStart, nowMs)) {
+				stream = SStreamMoves{};
+			}
+		}
+	}
+
+	static bool IsExpired(std::uint64_t sinceMs, std::uint64_t nowMs)
+	{
+		return nowMs >= sinceMs && nowMs - sinceMs >= WindowMs;
+	}
+
+	std::array<SStreamMoves, MaxStreams> m_streams{};
+};
+
+//! How far a frame's sequence number may sit from the peer's last one, in either direction, and still
+//! be that stream's. Mirrors libutp's own receive bound (REORDER_BUFFER_MAX_SIZE, utp_internal.cpp:55,
+//! enforced at :1894-1907): anything further apart is not a packet this connection could have in
+//! flight.
+constexpr std::uint16_t kUtpMoveSeqWindow = 1024;
+
+//! Half the sequence space. The ack range runs from the peer's last ack minus one up to the last
+//! number we sent, so a span that wide means our facts disagree: the peer acknowledged more than we
+//! sent. Anything narrower is a legitimate window and is admitted, however wide our sends run ahead.
+constexpr std::uint16_t kUtpMoveAckSpanLimit = 32'768;
+
+//! The circular distance between two sequence numbers, counting modulo 2^16 (utp_internal.cpp:79).
+//! libutp measures a packet the same way against the one it expects next - `seqnr = (pk_seq_nr -
+//! conn->ack_nr - 1) & SEQ_NR_MASK` (:1894) - and admits it while that is below
+//! REORDER_BUFFER_MAX_SIZE (:1897).
+inline std::uint16_t UtpSeqDistance(std::uint16_t left, std::uint16_t right)
+{
+	const std::uint16_t forward = static_cast<std::uint16_t>(left - right);
+	const std::uint16_t backward = static_cast<std::uint16_t>(right - left);
+	return forward < backward ? forward : backward;
+}
+
+//! Whether @p value lies in the modular range [@p lowest, @p lowest + @p span], counting modulo
+//! 2^16. Comparison has to be modular because a long-lived stream wraps past 65535.
+inline bool IsUtpSeqWithin(std::uint16_t value, std::uint16_t lowest, std::uint16_t span)
+{
+	return static_cast<std::uint16_t>(value - lowest) <= span;
+}
+
+//! libutp packet types (utp_internal.cpp:157-163). A data frame is the one that carries payload, and
+//! only a reset or a SYN change what a move may do.
+constexpr std::uint8_t kUtpTypeData = 0;
+constexpr std::uint8_t kUtpTypeState = 2;
+constexpr std::uint8_t kUtpTypeReset = 3;
+constexpr std::uint8_t kUtpTypeSyn = 4;
+
+//! How long a connected stream may stay silent before we poke libutp into sending an ack, and how
+//! stale its last data may be before poking is pointless.
+constexpr std::uint64_t kUtpProbeIdleMs = 3'000;
+constexpr std::uint64_t kUtpProbeFreshMs = 15'000;
+
+//! What the probe decision needs: when this stream last received data, when it last sent any, and
+//! when it was last probed.
+struct SUtpProbeFacts
+{
+	bool receivedData = false;
+	std::uint64_t lastDataReceivedMs = 0;
+	bool sentData = false;
+	std::uint64_t lastDataSentMs = 0;
+	bool probed = false;
+	std::uint64_t lastProbeMs = 0;
+};
+
+/**
+ * Whether a silent downloader should be poked so the peer learns where the stream went. A receiver
+ * whose NAT dropped the incoming data has nothing to acknowledge, so it stays quiet until its 29 s
+ * keepalive, while the sender gives up somewhere around 16.5 s: the keepalive then moves the stream
+ * but acknowledges nothing, and the sender's socket is gone before the next one. The probe makes
+ * libutp emit an ack of its own - growing the receive buffer raises the window, so utp_read_drained()
+ * schedules one (utp_internal.cpp:3232-3239) - and that ack leaves through the new mapping.
+ *
+ * Only the receiving side probes: a stream that has sent data inside the same idle window is the
+ * uploader, whose own traffic already keeps its mapping alive. One probe per idle window is enough.
+ */
+inline bool ShouldProbeIdleStream(const SUtpProbeFacts &facts, std::uint64_t nowMs)
+{
+	if (!facts.receivedData || nowMs < facts.lastDataReceivedMs) {
+		return false;
+	}
+	const std::uint64_t sinceData = nowMs - facts.lastDataReceivedMs;
+	if (sinceData < kUtpProbeIdleMs || sinceData >= kUtpProbeFreshMs) {
+		return false;
+	}
+	if (facts.sentData && nowMs >= facts.lastDataSentMs &&
+		nowMs - facts.lastDataSentMs < kUtpProbeIdleMs) {
+		return false;
+	}
+	if (facts.probed && nowMs >= facts.lastProbeMs && nowMs - facts.lastProbeMs < kUtpProbeIdleMs) {
+		return false;
+	}
+	return true;
+}
+
+//! Whether @p candidate is strictly ahead of @p known, counting modulo 2^16. A resend carries an
+//! older number, so a high-water mark must never move backwards on one - and an equal number changes
+//! nothing.
+inline bool IsUtpSeqAhead(std::uint16_t candidate, std::uint16_t known)
+{
+	const std::uint16_t distance = static_cast<std::uint16_t>(candidate - known);
+	return distance != 0 && distance < 32'768;
+}
+
+//! Whether @p observedPort is the port this stream has just moved away from, still inside the window
+//! that bounds moves. A port-preserving NAT can hand the old port back, so the refusal expires with
+//! the same ten seconds as the limiter rather than blocking the stream forever.
+inline bool IsUtpAbandonedPort(std::uint16_t observedPort,
+	std::uint16_t abandonedPort,
+	std::uint64_t abandonedAtMs,
+	std::uint64_t nowMs)
+{
+	if (abandonedPort == 0 || observedPort != abandonedPort) {
+		return false;
+	}
+	return nowMs < abandonedAtMs || nowMs - abandonedAtMs < UtpPortRepointLimiter::WindowMs;
+}
+
+//! The base uTP header fields a move decision needs, read off the wire by ReadUtpWireHeader()
+//! (src/UtpContext.h); the layout is PacketFormatV1 (utp_internal.cpp:113-136).
+struct SUtpMoveHeader
+{
+	std::uint8_t type = 0;
+	std::uint32_t connectionId = 0;
+	std::uint16_t sequenceNumber = 0;
+	std::uint16_t acknowledgeNumber = 0;
+};
+
+//! What the adapter has observed of one stream: its peer's identity and sequence numbers, and the
+//! last sequence number we sent. All of it comes from frames, since libutp exposes none of it.
+struct SUtpPeerStreamFacts
+{
+	bool known = false;
+	std::uint32_t connectionId = 0;
+	std::uint16_t peerSequenceNumber = 0;
+	std::uint16_t peerAcknowledgeNumber = 0;
+	std::uint16_t lastSentSequenceNumber = 0;
+};
+
+enum class EUtpMoveVerdict
+{
+	Move,
+	Refuse
+};
+
+/**
+ * Whether a frame from a new source port can be the same stream. utp_process_udp() returns 1 for
+ * every non-SYN frame it is given -- processed, stale or unmatched alike (utp_internal.cpp:2909,
+ * :2925, :2933, :2940) -- so its answer is no evidence and the decision has to come from the
+ * header, before the frame is handed over.
+ *
+ * Deliberately stricter than libutp's own admission, which window-checks the ack against our last
+ * send (utp_internal.cpp:1799-1815) but never against what the peer already acknowledged, and which
+ * accepts a far wider sequence range. It is not stricter than ordinary traffic, though: an ack-only
+ * ST_STATE carries the peer's next sequence number, the same one its next data frame will use, and a
+ * keepalive repeats both numbers with the ack one lower (:782, :1085-1086, :833-843); and a peer with
+ * a full send window resends its OLDEST unacked packet, whose number sits BEHIND the highest one we
+ * have seen. Refusing either would refuse a download-only stream, every idle one, and the frame that
+ * recovers a bulk transfer after its port changes. What keeps a replay from dragging a stream back to
+ * a port it left is the abandoned-port refusal and the ten-second move limit, not this window.
+ */
+inline EUtpMoveVerdict DecideUtpMove(const SUtpMoveHeader &header, const SUtpPeerStreamFacts &facts)
+{
+	// A reset is acted on from its connection id alone (utp_internal.cpp:2866-2887 through
+	// LookupAdjacent at :2809-2823) and a SYN asks for a new connection: neither may ever be
+	// mapped onto a live stream.
+	if (header.type == kUtpTypeReset || header.type == kUtpTypeSyn) {
+		return EUtpMoveVerdict::Refuse;
+	}
+	if (!facts.known || header.connectionId == 0 || header.connectionId != facts.connectionId) {
+		return EUtpMoveVerdict::Refuse;
+	}
+	// From one below the peer's last ack (a keepalive sends exactly that: :835) up to the last number
+	// we sent, which is libutp's own upper bound (:1799-1815). Modular at both ends: only a span that
+	// would mean the peer acknowledged more than we sent is refused, so a wide send window with slow
+	// acks still moves.
+	const std::uint16_t lowestAck = static_cast<std::uint16_t>(facts.peerAcknowledgeNumber - 1);
+	const std::uint16_t allowedAcks =
+		static_cast<std::uint16_t>(facts.lastSentSequenceNumber - lowestAck);
+	if (allowedAcks > kUtpMoveAckSpanLimit ||
+		!IsUtpSeqWithin(header.acknowledgeNumber, lowestAck, allowedAcks)) {
+		return EUtpMoveVerdict::Refuse;
+	}
+	// Both directions, exactly as libutp measures it against the packet it expects next (:1894-1897):
+	// the resend of a full window's oldest unacked packet is behind the highest number we have seen and
+	// must still be admitted, or a bulk transfer could never recover after a port change.
+	if (UtpSeqDistance(header.sequenceNumber, facts.peerSequenceNumber) > kUtpMoveSeqWindow) {
+		return EUtpMoveVerdict::Refuse;
+	}
+	return EUtpMoveVerdict::Move;
+}
+
 #endif // UTP_DIAL_POLICY_H

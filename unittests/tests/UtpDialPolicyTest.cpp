@@ -359,3 +359,257 @@ TEST(UtpDialPolicy, FailureMemoryIsBoundedAndForgetsTheOldestFirst)
 	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 3'000));
 	ASSERT_TRUE(failures.IsCoolingDown(0x0B000000, 4672, 3'000));
 }
+
+TEST(UtpDialPolicy, RepointIsABoundedChangeOfAnExistingPort)
+{
+	// Both edges of the window are inside it, one port past them is not.
+	ASSERT_TRUE(IsUtpPortRepointOf(4673, 4672));
+	ASSERT_TRUE(IsUtpPortRepointOf(4672 + kUtpPortRemapWindow, 4672));
+	ASSERT_TRUE(IsUtpPortRepointOf(4672 - kUtpPortRemapWindow, 4672));
+	ASSERT_FALSE(IsUtpPortRepointOf(4672 + kUtpPortRemapWindow + 1, 4672));
+	ASSERT_FALSE(IsUtpPortRepointOf(4672 - kUtpPortRemapWindow - 1, 4672));
+
+	// The same port is the tuple we already hold, and a zero port is no endpoint at all.
+	ASSERT_FALSE(IsUtpPortRepointOf(4672, 4672));
+	ASSERT_FALSE(IsUtpPortRepointOf(0, 4672));
+	ASSERT_FALSE(IsUtpPortRepointOf(4672, 0));
+	ASSERT_FALSE(IsUtpPortRepointOf(0, 0));
+}
+
+TEST(UtpDialPolicy, RepointNeedsExactlyOneConnectedStreamOnThatAddress)
+{
+	constexpr std::uint32_t ip = 0x0100007F;
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(std::vector<SUtpConnectedStream>{}, ip, 4160).has_value());
+
+	std::vector<SUtpConnectedStream> streams{ { ip, 4672, true } };
+	const auto unique = FindUniqueUtpRepointCandidate(streams, ip, 4160);
+	ASSERT_TRUE(unique.has_value());
+	ASSERT_EQUALS((std::size_t)0, *unique);
+
+	// A stream that is not connected is no candidate, and neither is another address.
+	streams[0].connected = false;
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4160).has_value());
+	streams[0].connected = true;
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip + 1, 4160).has_value());
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4672).has_value());
+
+	// Two streams within the window are a guess, so they fail closed; 4160 is within reach of
+	// 4672 only, which makes that one unique again.
+	streams.push_back({ ip, 5000, true });
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4800).has_value());
+	const auto bounded = FindUniqueUtpRepointCandidate(streams, ip, 4160);
+	ASSERT_TRUE(bounded.has_value());
+	ASSERT_EQUALS((std::size_t)0, *bounded);
+	// The same endpoint twice is ambiguous even before the window is consulted.
+	streams[1].port = 4672;
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4160).has_value());
+}
+
+TEST(UtpDialPolicy, RepointLimiterAllowsOneMovePerStreamPerWindow)
+{
+	UtpPortRepointLimiter limiter;
+	constexpr std::uint64_t stream = 7;
+	ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
+	ASSERT_FALSE(limiter.TryAdmit(stream, 1'000));
+	ASSERT_FALSE(limiter.TryAdmit(stream, 1'000 + UtpPortRepointLimiter::WindowMs - 1));
+
+	// The budget is per stream: another one still has its own.
+	ASSERT_TRUE(limiter.TryAdmit(8, 1'000));
+}
+
+TEST(UtpDialPolicy, RepointLimiterRefillsOnceTheWindowPasses)
+{
+	UtpPortRepointLimiter limiter;
+	constexpr std::uint64_t stream = 3;
+	ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
+	ASSERT_FALSE(limiter.TryAdmit(stream, 1'000 + UtpPortRepointLimiter::WindowMs - 1));
+	ASSERT_TRUE(limiter.TryAdmit(stream, 1'000 + UtpPortRepointLimiter::WindowMs));
+}
+
+TEST(UtpDialPolicy, RepointLimiterFailsClosedWhenItsTableIsFull)
+{
+	UtpPortRepointLimiter limiter;
+	for (std::uint64_t stream = 0; stream < UtpPortRepointLimiter::MaxStreams; ++stream) {
+		ASSERT_TRUE(limiter.TryAdmit(stream, 1'000));
+	}
+	// A stream with budget left is still refused: a live record is never evicted for it.
+	ASSERT_FALSE(limiter.TryAdmit(100, 1'000));
+	ASSERT_TRUE(limiter.TryAdmit(100, 1'000 + UtpPortRepointLimiter::WindowMs));
+}
+
+TEST(UtpDialPolicy, MoveNeedsThePeersConnectionIdAndAWitnessedStream)
+{
+	// A stream whose peer said connId 0x1234, seq 100, ack 98, and to which we last sent seq 104.
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 100, 98, 104 };
+	const SUtpMoveHeader matching{ 2, 0x1234, 101, 100 };
+	ASSERT_TRUE(DecideUtpMove(matching, facts) == EUtpMoveVerdict::Move);
+
+	SUtpMoveHeader wrongConnection = matching;
+	wrongConnection.connectionId = 0x1235;
+	ASSERT_TRUE(DecideUtpMove(wrongConnection, facts) == EUtpMoveVerdict::Refuse);
+	wrongConnection.connectionId = 0;
+	ASSERT_TRUE(DecideUtpMove(wrongConnection, facts) == EUtpMoveVerdict::Refuse);
+
+	// Nothing witnessed on the stream means nothing to hold the frame to.
+	SUtpPeerStreamFacts unknown = facts;
+	unknown.known = false;
+	ASSERT_TRUE(DecideUtpMove(matching, unknown) == EUtpMoveVerdict::Refuse);
+}
+
+TEST(UtpDialPolicy, MoveAdmitsAckOnlyKeepaliveAndOutOfOrderResends)
+{
+	// The peer's last frame used sequence number 1'000, so 1'001 is the number its next data frame
+	// will carry and the one an ack-only ST_STATE carries today (utp_internal.cpp:782).
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 1'001, 98, 104 };
+	SUtpMoveHeader header{ 2, 0x1234, 1'001, 100 };
+
+	// Zero apart is ordinary: a download-only peer only ever sends ST_STATE, so its sequence number
+	// never moves. A keepalive repeats the same one.
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+	header.sequenceNumber = 1'001 + kUtpMoveSeqWindow;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+
+	// Behind is admitted too, because that is what recovers a stalled bulk transfer: a peer whose
+	// send window is full resends its OLDEST unacked packet, which sits behind the highest number we
+	// have seen. libutp measures the same distance and accepts it (:1894-1907).
+	header.sequenceNumber = 1'001 - kUtpMoveSeqWindow;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+	header.sequenceNumber = 1'000;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+
+	// One past either end of the window is not in flight and is refused.
+	header.sequenceNumber = 1'001 + kUtpMoveSeqWindow + 1;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.sequenceNumber = 1'001 - kUtpMoveSeqWindow - 1;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+
+	// Counting is modulo 2^16, so both directions hold across the wrap.
+	ASSERT_EQUALS((std::uint16_t)2, UtpSeqDistance(1, 65'535));
+	ASSERT_EQUALS((std::uint16_t)2, UtpSeqDistance(65'535, 1));
+	ASSERT_EQUALS((std::uint16_t)0, UtpSeqDistance(7, 7));
+	const SUtpPeerStreamFacts wrapped{ true, 0x1234, 65'535, 98, 104 };
+	const SUtpMoveHeader newer{ 2, 0x1234, 1, 100 };
+	ASSERT_TRUE(DecideUtpMove(newer, wrapped) == EUtpMoveVerdict::Move);
+	const SUtpMoveHeader sameAcrossTheWrap{ 2, 0x1234, 65'535, 100 };
+	ASSERT_TRUE(DecideUtpMove(sameAcrossTheWrap, wrapped) == EUtpMoveVerdict::Move);
+	const SUtpMoveHeader olderAcrossTheWrap{ 2, 0x1234, 65'530, 100 };
+	ASSERT_TRUE(DecideUtpMove(olderAcrossTheWrap, wrapped) == EUtpMoveVerdict::Move);
+	const SUtpMoveHeader tooOldAcrossTheWrap{ 2, 0x1234, 65'535 - kUtpMoveSeqWindow - 1, 100 };
+	ASSERT_TRUE(DecideUtpMove(tooOldAcrossTheWrap, wrapped) == EUtpMoveVerdict::Refuse);
+}
+
+TEST(UtpDialPolicy, MoveNeedsAnAckFromOneBelowThePeersLastUpToOurLastSend)
+{
+	// The peer last acknowledged 98 and we last sent 104.
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 101, 98, 104 };
+	SUtpMoveHeader header{ 2, 0x1234, 101, 104 };
+
+	// The upper end, then the peer's own last ack, then the one below it a keepalive carries
+	// (utp_internal.cpp:833-843).
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+	header.acknowledgeNumber = 98;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+	header.acknowledgeNumber = 97;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+
+	// Further back than a keepalive ever goes, and past anything we sent.
+	header.acknowledgeNumber = 96;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.acknowledgeNumber = 105;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+
+	// Facts that would mean the peer acknowledged more than we sent fail closed.
+	SUtpPeerStreamFacts stale = facts;
+	stale.peerAcknowledgeNumber = 104 - kUtpMoveAckSpanLimit - 1;
+	header.acknowledgeNumber = 104;
+	ASSERT_TRUE(DecideUtpMove(header, stale) == EUtpMoveVerdict::Refuse);
+
+	// The range is modular, so a stream can move while its numbers sit either side of the wrap.
+	const SUtpPeerStreamFacts wrapped{ true, 0x1234, 101, 0, 3 };
+	SUtpMoveHeader aroundTheWrap{ 2, 0x1234, 101, 0 };
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Move);
+	aroundTheWrap.acknowledgeNumber = 3;
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Move);
+	// 65'535 is the peer's last ack minus one across the wrap, so it is still admissible.
+	aroundTheWrap.acknowledgeNumber = 65'535;
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Move);
+	aroundTheWrap.acknowledgeNumber = 65'534;
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Refuse);
+	aroundTheWrap.acknowledgeNumber = 4;
+	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Refuse);
+}
+
+TEST(UtpDialPolicy, AMoveNeverReturnsToThePortTheStreamLeftUntilThatRefusalExpires)
+{
+	const std::uint64_t nowMs = 1'000;
+	ASSERT_FALSE(IsUtpAbandonedPort(4672, 0, 0, nowMs));
+	ASSERT_TRUE(IsUtpAbandonedPort(4672, 4672, nowMs, nowMs));
+	ASSERT_TRUE(IsUtpAbandonedPort(4672, 4672, nowMs, nowMs + UtpPortRepointLimiter::WindowMs - 1));
+	ASSERT_FALSE(IsUtpAbandonedPort(4673, 4672, nowMs, nowMs));
+
+	// A port-preserving NAT can hand the old port back, so the refusal ends with the move window.
+	ASSERT_FALSE(IsUtpAbandonedPort(4672, 4672, nowMs, nowMs + UtpPortRepointLimiter::WindowMs));
+}
+
+TEST(UtpDialPolicy, AResendNeverLowersTheLastSentNumber)
+{
+	ASSERT_TRUE(IsUtpSeqAhead(101, 100));
+	ASSERT_TRUE(IsUtpSeqAhead(1, 65'535)); // across the wrap
+
+	// A resend carries an older number: it must not drag the record backwards, or the ack that
+	// arrives for the newer frame would fall outside the range.
+	ASSERT_FALSE(IsUtpSeqAhead(99, 100));
+	ASSERT_FALSE(IsUtpSeqAhead(100, 100));
+	ASSERT_FALSE(IsUtpSeqAhead(65'535, 1));
+}
+
+TEST(UtpDialPolicy, ProbeFiresOnlyForAFreshlySilentReceiver)
+{
+	SUtpProbeFacts facts;
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 10'000)); // never received data
+
+	facts.receivedData = true;
+	facts.lastDataReceivedMs = 10'000;
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 10'000));
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 10'000 + kUtpProbeIdleMs - 1));
+	ASSERT_TRUE(ShouldProbeIdleStream(facts, 10'000 + kUtpProbeIdleMs));
+	ASSERT_TRUE(ShouldProbeIdleStream(facts, 10'000 + kUtpProbeFreshMs - 1));
+	// Too stale: the sender has already given up, so a probe would only talk to itself.
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 10'000 + kUtpProbeFreshMs));
+
+	// The uploader also receives data, and its own sends are what keep it quiet.
+	facts.sentData = true;
+	facts.lastDataSentMs = 12'000;
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 12'500));
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 12'000 + kUtpProbeIdleMs - 1));
+	ASSERT_TRUE(ShouldProbeIdleStream(facts, 12'000 + kUtpProbeIdleMs));
+
+	// One probe per idle window.
+	facts.sentData = false;
+	facts.probed = true;
+	facts.lastProbeMs = 13'000;
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 13'000 + kUtpProbeIdleMs - 1));
+	ASSERT_TRUE(ShouldProbeIdleStream(facts, 13'000 + kUtpProbeIdleMs));
+}
+
+TEST(UtpDialPolicy, MoveRefusesResetAndSynWhileTheOwnTupleIsNeverAStepCompetitor)
+{
+	const SUtpPeerStreamFacts facts{ true, 0x1234, 100, 98, 104 };
+	SUtpMoveHeader header{ 2, 0x1234, 101, 100 };
+
+	// libutp acts on a reset from its connection id alone (utp_internal.cpp:2866-2887) and a SYN
+	// asks for a new connection: neither may be mapped onto a live stream.
+	header.type = kUtpTypeReset;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.type = kUtpTypeSyn;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Refuse);
+	header.type = 0;
+	ASSERT_TRUE(DecideUtpMove(header, facts) == EUtpMoveVerdict::Move);
+
+	// A frame on the socket's own tuple is never a move: the port does not change, so the adapter
+	// hands it to libutp untouched and libutp's own handling of a reset still applies there.
+	constexpr std::uint32_t ip = 0x0100007F;
+	std::vector<SUtpConnectedStream> streams{ { ip, 4672, true } };
+	ASSERT_FALSE(IsUtpPortRepointOf(4672, 4672));
+	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4672).has_value());
+}
