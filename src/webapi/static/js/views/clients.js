@@ -5,7 +5,7 @@
 // hash to show who is online now. Clicking a row opens the full client detail in
 // the bottom panel (SplitDetail). Columns/formatting live in client-table.js.
 
-import { html, useState } from "../dom.js";
+import { html, useTabState, useState } from "../dom.js";
 import { Tabs } from "../components.js";
 import { ClientFilters, ClientTable, HIDDEN_EVERYWHERE, KNOWN_COLS, KNOWN_HIDDEN,
          fileNameOf, isDown, isUp, useClients, useKnownClients } from "./client-table.js";
@@ -29,7 +29,7 @@ const TAB_SORT = { active: "downloaded", downloading: "downloaded", uploading: "
 export default function ClientsPanel() {
   const raw = useClients(); // undefined until the first snapshot lands
   const clients = raw || [];
-  const [filter, setFilter] = useState("active"); // active / downloading / uploading / known
+  const [filter, setFilter] = useTabState("clients", "active"); // active / downloading / uploading / known
   const [ident, setIdent] = useState("all");
   const [q, setQ] = useState("");
   const [sel, setSel] = useState(null); // { key, ecid?, known? } row shown in detail

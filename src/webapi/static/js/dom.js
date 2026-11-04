@@ -29,3 +29,11 @@ export function useStore(key) {
   useEffect(() => store.subscribe(key, setValue), [key]);
   return value;
 }
+
+// Tab choices outlive route components, but reset on a full page reload.
+// Keep them separate from live daemon data and persistent browser preferences.
+export function useTabState(key, initial) {
+  const active = useStore("tab:" + key);
+  return [active === undefined ? initial : active,
+          (value) => store.set("tab:" + key, value)];
+}

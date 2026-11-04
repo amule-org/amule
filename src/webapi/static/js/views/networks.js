@@ -9,7 +9,7 @@
 import { api } from "../api.js";
 import { data } from "../events.js";
 import { store, loadGraphInterval } from "../store.js";
-import { html, useState, useEffect, useRef, useStore } from "../dom.js";
+import { html, useTabState, useState, useEffect, useRef, useStore } from "../dom.js";
 import { Tabs, listPlaceholder, toast, confirmDialog, CountryCell, Section, statRow } from "../components.js";
 import { VirtualTable, sortRows, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
 import { Chart, graphPollMs } from "../charts.js";
@@ -52,8 +52,8 @@ const flagCell = (flags, letters) => {
 };
 
 export default function Networks({ isGuest }) {
-  const [top, setTop] = useState("ed2k");
-  const [bottom, setBottom] = useState("amulelog");
+  const [top, setTop] = useTabState("networks.top", "ed2k");
+  const [bottom, setBottom] = useTabState("networks.bottom", "amulelog");
   // Draggable divider like the desktop NetDialog's wxSplitterWindow. On phones
   // the CSS hides it and both panes flow (see .net-split in app.css).
   const { height, containerRef, splitterProps } = useSplitHeight("net:split");

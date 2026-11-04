@@ -6,7 +6,7 @@
 import { api, bulkFailures } from "../api.js";
 import { prepareDownloadDeletion, selectionAfterDeletion } from "../download-delete.js";
 import { data } from "../events.js";
-import { html, useState, useEffect, useStore } from "../dom.js";
+import { html, useTabState, useState, useEffect, useStore } from "../dom.js";
 import { ProgressBar, Badge, checkCell, listPlaceholder, Tabs, toast, confirmDialog, PRIORITIES, prioValue, prioLabel } from "../components.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker } from "../table.js";
 import { formatBytes, formatFreeSpace, formatSpeed } from "../format.js";
@@ -26,12 +26,13 @@ export default function Downloads({ isGuest }) {
   const downloads = rawDownloads || [];
   const loading = rawDownloads === undefined;
   const disk = (useStore("status") || {}).disk || {};
-  const [categories, setCategories] = useState([]);
+  const [loadedCategories, setCategories] = useState(null);
+  const categories = loadedCategories || [];
   const [selection, setSelection] = useState(() => new Set());
   const { sortKey, sortDir, hidden, widths, toggleSort, toggleCol, setWidth, resetPrefs } =
     useTablePrefs("downloads", { sortKey: "name", sortDir: 1, hidden: ["done", "category_index"] });
   const [filterStatus, setFilterStatus] = useState("all");
-  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterCategory, setFilterCategory] = useTabState("downloads.category", "all");
   const [filterText, setFilterText] = useState("");
   const [manageCats, setManageCats] = useState(false);
   const [detailHash, setDetailHash] = useState(null); // row shown in the detail panel
@@ -56,11 +57,11 @@ export default function Downloads({ isGuest }) {
   // A deleted category_index renumbers the survivors, so a stale filter tab can point
   // at a now-missing index (empty list, no active tab). Fall back to "all".
   useEffect(() => {
-    if (filterCategory !== "all" &&
+    if (loadedCategories !== null && filterCategory !== "all" &&
         !categories.some((c) => c.index !== 0 && String(c.index) === filterCategory)) {
       setFilterCategory("all");
     }
-  }, [categories]);
+  }, [loadedCategories]);
 
   // Close the detail panel if its download leaves the queue (cancelled/cleared).
   useEffect(() => {
