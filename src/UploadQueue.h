@@ -80,6 +80,8 @@ public:
 	CKnownFile *GetAllUploadingKnownFile() { return m_allUploadingKnownFile; }
 
 private:
+	bool TryTakeLowIdAlternationSlot(CUpDownClient *client);
+	bool IsWithinUploadScopeLimit(CUpDownClient *client);
 	void RemoveFromWaitingQueue(CClientRefList::iterator pos);
 	uint32 GetMaxSlots() const;
 	void AddUpNextClient(CUpDownClient *directadd = 0);

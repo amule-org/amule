@@ -2081,6 +2081,19 @@ void CUpDownClient::RetryLugdunumCallbackAwaitingServerKey(uint64 now)
 #endif
 #endif
 
+bool CUpDownClient::SendClassicCallbackRequest()
+{
+	CMemFile data;
+	// AFAICS, this id must be reversed to be sent to clients
+	// But if I reverse it, we do a serve violation ;)
+	data.WriteUInt32(m_nUserIDHybrid);
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_CALLBACKREQUEST);
+	theStats::AddUpOverheadServer(packet->GetPacketSize());
+	AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
+	theApp->serverconnect->SendPacket(packet);
+	return true;
+}
+
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 {
 	// Kad reviewed
@@ -2232,15 +2245,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 
 		if (theApp->serverconnect->IsLocalServer(m_dwServerIP, m_nServerPort)) {
-			CMemFile data;
-			// AFAICS, this id must be reversed to be sent to clients
-			// But if I reverse it, we do a serve violation ;)
-			data.WriteUInt32(m_nUserIDHybrid);
-			CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_CALLBACKREQUEST);
-			theStats::AddUpOverheadServer(packet->GetPacketSize());
-			AddDebugLogLineN(
-				logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
-			theApp->serverconnect->SendPacket(packet);
+			SendClassicCallbackRequest();
 			SetDownloadState(DS_WAITCALLBACK);
 			contacted = true;
 		} else {

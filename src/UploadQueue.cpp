@@ -478,6 +478,70 @@ CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
 	}
 }
 
+/**
+ * Gives a LowID client its extra upload slot once it reaches the top of the queue.
+ *
+ * A LowID client cannot be contacted when it reaches the top, so it is only marked for
+ * uploading and takes its slot through the connection it initiates next. No slot is free then,
+ * so it is assigned an extra one, taking the count one over the configured number; no further
+ * LowID client gets a slot until a HighID client has, or a slot really is free.
+ */
+bool CUploadQueue::TryTakeLowIdAlternationSlot(CUpDownClient *client)
+{
+	if (!client->m_bAddNextConnect) {
+		return false;
+	}
+	uint32 maxSlots = GetMaxSlots();
+	if (lastupslotHighID) {
+		maxSlots++;
+	}
+	if (m_uploadinglist.size() >= maxSlots || UploadSlotsInScope(client) >= MaxUploadSlotsPerScope) {
+		return false;
+	}
+	client->m_bAddNextConnect = false;
+	RemoveFromWaitingQueue(client);
+	AddUpNextClient(client);
+	lastupslotHighID = false; // LowID alternate
+	return true;
+}
+
+/**
+ * Whether the queue may take another client from this client's address-accounting scope.
+ *
+ * Identity stays keyed by the exact canonical address, while IPv6 rate limiting aggregates a
+ * delegated /64. A client without an address has no host identity and is intentionally outside
+ * this cap. Only clients actually queued are counted: an earlier check also counted the tracked
+ * "deleted clients" list, so a client behind a shared or NAT IP that simply cancelled a few
+ * downloads was locked out for up to two hours, cleared only by a restart. Flood protection is
+ * the aggressiveness/ban path's job.
+ */
+bool CUploadQueue::IsWithinUploadScopeLimit(CUpDownClient *client)
+{
+	const CNetworkAddress clientAddress = client->GetUserAddress();
+	if (!UploadQueueAddressPolicy::IsMatchable(clientAddress)) {
+		return true;
+	}
+	// The scope is one value for the whole walk, which runs to thePrefs::GetQueueSize() entries.
+	const CNetworkAddress clientScope = PeerAddressing::RateLimitScope(clientAddress);
+	int ipCount = 1;
+	for (const auto &entry : m_waitinglist) {
+		CUpDownClient *cur_client = entry.GetClient();
+		const CNetworkAddress &otherAddress = cur_client->GetUserAddress();
+		if (cur_client != client && UploadQueueAddressPolicy::IsMatchable(otherAddress) &&
+			PeerAddressing::RateLimitScope(otherAddress) == clientScope) {
+			ipCount++;
+		}
+	}
+	if (ipCount <= 3) {
+		return true;
+	}
+	AddDebugLogLineN(logLocalClient,
+		CFormat("Rejected upload request from %s: too many clients (%d) in the same "
+			"accounting scope (%s) already on the upload queue") %
+			clientAddress.ToWxString() % ipCount % clientScope.ToWxString());
+	return false;
+}
+
 void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 {
 	if (theApp->serverconnect->IsConnected() && theApp->serverconnect->IsLowID() &&
@@ -510,19 +574,8 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 				// extra one, taking the count one over the configured number; no
 				// further LowID client gets a slot until a HighID client has, or a
 				// slot really is free.
-				if (client->m_bAddNextConnect) {
-					uint32 maxSlots = GetMaxSlots();
-					if (lastupslotHighID) {
-						maxSlots++;
-					}
-					if (m_uploadinglist.size() < maxSlots &&
-						UploadSlotsInScope(client) < MaxUploadSlotsPerScope) {
-						client->m_bAddNextConnect = false;
-						RemoveFromWaitingQueue(client);
-						AddUpNextClient(client);
-						lastupslotHighID = false; // LowID alternate
-						return;
-					}
+				if (TryTakeLowIdAlternationSlot(client)) {
+					return;
 				}
 
 				client->SendRankingInfo();
@@ -561,36 +614,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 		}
 	}
 
-	// Count clients in the same address-accounting scope. Identity remains keyed by the exact
-	// canonical address, while IPv6 rate limiting aggregates a delegated /64. A client without
-	// an address has no host identity and is intentionally outside this cap.
-	const CNetworkAddress clientAddress = client->GetUserAddress();
-	// The scope is one value for the whole walk, and the list runs to
-	// thePrefs::GetQueueSize() entries. Held past the loop for the refusal below.
-	const CNetworkAddress clientScope = PeerAddressing::RateLimitScope(clientAddress);
-	int ipCount = 0;
-	if (UploadQueueAddressPolicy::IsMatchable(clientAddress)) {
-		ipCount = 1;
-		for (const auto &entry : m_waitinglist) {
-			CUpDownClient *cur_client = entry.GetClient();
-			const CNetworkAddress &otherAddress = cur_client->GetUserAddress();
-			if (cur_client != client && UploadQueueAddressPolicy::IsMatchable(otherAddress) &&
-				PeerAddressing::RateLimitScope(otherAddress) == clientScope) {
-				ipCount++;
-			}
-		}
-	}
-
-	// No more than 3 clients from the same address-accounting scope may be on the upload queue.
-	// Only clients actually queued are counted: an earlier check also counted the tracked
-	// "deleted clients" list, so a client behind a shared or NAT IP that simply cancelled a few
-	// downloads was locked out for up to two hours, cleared only by a restart. Flood protection is
-	// the aggressiveness/ban path's job.
-	if (ipCount > 3) {
-		AddDebugLogLineN(logLocalClient,
-			CFormat("Rejected upload request from %s: too many clients (%d) in the same "
-				"accounting scope (%s) already on the upload queue") %
-				clientAddress.ToWxString() % ipCount % clientScope.ToWxString());
+	if (!IsWithinUploadScopeLimit(client)) {
 		return;
 	}
 

@@ -976,6 +976,7 @@ private:
 	CPartFile *m_reqfile;
 
 	void Init();
+	bool SendClassicCallbackRequest();
 	bool ProcessHelloTypePacket(const CMemFile &data);
 	void SendHelloTypePacket(CMemFile *data);
 	void SendFirewallCheckUDPRequest();
