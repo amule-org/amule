@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 aMule Team
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Build the pinned metadata-only FFmpeg; keep exact source and LGPL notices."""
 import argparse
 import hashlib
@@ -10,10 +12,11 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
-DEMUXERS = ('aac,ac3,aiff,amr,ape,asf,avi,dts,eac3,flac,flv,gsm,h264,hevc,'
-            'matroska,mov,mp3,mpegps,mpegts,mpegvideo,ogg,wav,wv,tta')
+DEMUXERS = ('aac,ac3,aiff,amr,ape,asf,au,avi,caf,dts,dv,eac3,flac,flv,gsm,h264,hevc,ivf,m4v,'
+            'matroska,mov,mp3,mpc,mpc8,mpegps,mpegts,mpegvideo,mxf,ogg,rm,w64,wav,wtv,wv,tta')
 
 
 def pins():
@@ -36,11 +39,10 @@ def main():
     prefix, work = Path(args.prefix).resolve(), Path(args.work).resolve()
     work.mkdir(parents=True, exist_ok=True)
     pin = pins()
-    env = {k: v for k, v in os.environ.items()
-           if k.lower() not in ('http_proxy', 'https_proxy', 'all_proxy', 'ld_preload')}
+    env = dict(os.environ)
     identity = pin['FFMPEG_VERSION'] + '-' + pin['FFMPEG_SHA256'][:16]
-    archive_name = 'FFmpeg-' + pin['FFMPEG_VERSION'] + '.tar.gz'
-    archive = work / ('FFmpeg-' + identity + '.tar.gz')
+    archive_name = 'ffmpeg-' + pin['FFMPEG_VERSION'] + '.tar.xz'
+    archive = work / ('ffmpeg-' + identity + '.tar.xz')
     # Reuse a staged/legacy archive only after checking it against the current
     # pin. An old archive under the same version must not prevent a fresh fetch.
     for cached in (ROOT / 'packaging/media/sources' / archive_name, work / archive_name):
@@ -48,9 +50,10 @@ def main():
             shutil.copy2(cached, archive)
     if not archive.exists():
         partial = archive.with_suffix('.partial')
-        with partial.open('wb') as output:
-            subprocess.run(['gh', 'api', 'repos/FFmpeg/FFmpeg/tarball/n' + pin['FFMPEG_VERSION']],
-                           stdout=output, env=env, check=True)
+        # The release archive is stable and does not require a GitHub token.
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(pin['FFMPEG_TARBALL_URL'], timeout=60) as response, partial.open('wb') as output:
+            shutil.copyfileobj(response, output)
         partial.replace(archive)
     if hashlib.sha256(archive.read_bytes()).hexdigest() != pin['FFMPEG_SHA256']:
         raise SystemExit('FFmpeg source checksum mismatch: ' + str(archive))

@@ -87,7 +87,6 @@ permissions:
 # Release builds (release.yml) restore the cache too. Only master pushes
 # save it.
 env:
-  GH_TOKEN: ${{ github.token }}
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_MAXSIZE: 1G
 
@@ -855,7 +854,6 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
-          path-type: inherit
           update: true
           # The action's package cache saves on every event, with no way to limit
           # it to master, and spares only the 10-20 s the ~400 MB download takes.
@@ -1053,7 +1051,6 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
-          path-type: inherit
           update: true
           install: git unzip python
           # The action's package cache saves on every event, with no way to limit

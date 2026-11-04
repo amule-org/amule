@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 aMule Team
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Exercise source pin updates through the real builder, without compiling FFmpeg."""
 import hashlib
 import importlib.util
 import io
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -29,18 +32,15 @@ class BuildRecipeTests(unittest.TestCase):
             downloads = []
 
             def run(command, cwd=None, **kwargs):
-                if command[0] == 'gh':
-                    downloads.append(command[-1])
-                    kwargs['stdout'].write(archive_bytes)
-                elif Path(command[0]).name.startswith('bash'):
+                if Path(command[0]).name.startswith('bash'):
                     configured.append(Path(command[1]).read_text())
                     (cwd / 'config.h').write_text('/* fixture configuration */')
                 return subprocess.CompletedProcess(command, 0)
 
             for version, marker in zip(versions, ('old source', 'new source')):
-                archive_name = 'FFmpeg-' + version + '.tar.gz'
+                archive_name = 'ffmpeg-' + version + '.tar.xz'
                 buffer = io.BytesIO()
-                with tarfile.open(fileobj=buffer, mode='w:gz') as tar:
+                with tarfile.open(fileobj=buffer, mode='w:xz') as tar:
                     for name in ('configure', 'COPYING.LGPLv2.1', 'LICENSE.md'):
                         entry = tarfile.TarInfo('fixture/' + name)
                         payload = marker.encode()
@@ -49,7 +49,14 @@ class BuildRecipeTests(unittest.TestCase):
                 archive_bytes = buffer.getvalue()
                 pin = dict(FFMPEG_VERSION=version, FFMPEG_TARBALL_URL='https://example.invalid/source',
                            FFMPEG_SHA256=hashlib.sha256(archive_bytes).hexdigest())
-                with mock.patch.object(BUILDER, 'pins', return_value=pin), \
+                def download(url, **kwargs):
+                    downloads.append(url)
+                    return io.BytesIO(archive_bytes)
+
+                opener = mock.Mock()
+                opener.open.side_effect = download
+                with mock.patch.object(BUILDER.urllib.request, 'build_opener', return_value=opener), \
+                     mock.patch.object(BUILDER, 'pins', return_value=pin), \
                      mock.patch.object(sys, 'argv', ['build-ffmpeg.py', str(prefix), str(work)]), \
                      mock.patch.object(BUILDER.shutil, 'which', side_effect=lambda name, **kw: str(tools / name)), \
                      mock.patch.object(BUILDER.subprocess, 'run', side_effect=run):
@@ -61,6 +68,21 @@ class BuildRecipeTests(unittest.TestCase):
             self.assertEqual(len(downloads), 2)
             self.assertEqual((prefix / 'share/licenses/amule-media-probe/FFmpeg-LICENSE.md').read_text(),
                              'new source')
+
+    def test_runtime_builder_and_flatpak_demuxers_match(self):
+        root = Path(__file__).resolve().parents[2]
+        main = (root / 'src/mediaprobe/main.cpp').read_text()
+        declaration = re.search(r'const char \*formats\s*=\s*(.*?);', main, re.S).group(1)
+        runtime = set(''.join(re.findall(r'"([^"]*)"', declaration)).split(','))
+        # Runtime names include aliases; configure uses one demuxer name.
+        aliases = dict(webm='matroska', mp4='mov', m4a='mov', **{'3gp': 'mov', '3g2': 'mov'},
+                       mj2='mov', mpeg='mpegps')
+        normalized = {aliases.get(name, name) for name in runtime}
+        configured = set(BUILDER.DEMUXERS.split(','))
+        flatpak = (root / 'packaging/linux/flatpak/org.amule.aMule.yaml.in').read_text()
+        template = set(re.search(r'--enable-demuxer=([^\s]+)', flatpak).group(1).split(','))
+        self.assertEqual(configured, normalized)
+        self.assertEqual(configured, template)
 
     def test_version_update_reuses_no_old_sources(self):
         self.check_update(('1.0', '2.0'))

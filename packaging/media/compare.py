@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 aMule Team
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Compare all six published fields on a pinned corpus or a real media directory.
 
 Examples:
@@ -33,7 +35,8 @@ def main():
     else:
         cases = [dict(file=p.name, sha256=hashlib.sha256(p.read_bytes()).hexdigest())
                  for p in sorted(root.iterdir()) if p.suffix.lower() in
-                 ('.mp4', '.mkv', '.webm', '.avi', '.mov', '.ogv', '.ogg', '.mp3', '.m4a', '.flac', '.wav', '.flv')]
+                 ('.mp4', '.mkv', '.webm', '.avi', '.mov', '.ogv', '.ogg', '.mp3', '.m4a', '.flac', '.wav', '.flv',
+                  '.rm', '.rmvb', '.ra', '.mpc', '.mxf', '.wtv', '.au', '.caf', '.dv', '.ivf', '.m4v', '.w64', '.dts', '.m1v', '.m3u8', '.ffconcat', '.sdp', '.mpd')]
     report = dict(platform=platform.platform(), versions={}, cases=[], summary={})
     for key, command in helpers.items():
         report['versions'][key] = subprocess.check_output([command, '--version'], text=True).strip()
@@ -51,6 +54,9 @@ def main():
                 metadata={key: metadata.get(key) for key in FIELDS})
         row['differences'] = {key: {name: value['metadata'][key] for name, value in row['results'].items()}
                               for key in FIELDS if len({value['metadata'][key] for value in row['results'].values()}) > 1}
+        exits = {name: result['exit'] for name, result in row['results'].items()}
+        if len(set(exits.values())) > 1:
+            row['differences']['exit'] = exits
         report['cases'].append(row)
     for name in helpers:
         values = [row['results'][name] for row in report['cases']]

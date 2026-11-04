@@ -257,6 +257,17 @@ source bundle and requires it before assembling the draft release. The builder
 also retains it in `share/sources/amule-media-probe`, with configuration and source
 identity recorded alongside the installed notices. Do not enable `--enable-nonfree`.
 
+### FFmpeg release checklist
+
+Before tagging each aMule release, check the pinned FFmpeg version against
+[FFmpeg security advisories](https://ffmpeg.org/security.html) and
+[official releases](https://ffmpeg.org/releases/). If a security release applies,
+update the release URL and SHA-256 in `packaging/linux/versions.env`, rebuild all
+bundles, and rerun the system/bundled helper and packaged-runtime checks. Publish
+the exact updated source archive and notices with those rebuilt binaries. Record
+the checked version and any applicable fixes in the release notes; do not reuse
+older bundle artifacts after a pin update.
+
 ## Web UI libraries - Preact and htm
 
 The Web UI that amuleapi serves loads these from

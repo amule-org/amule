@@ -1,14 +1,10 @@
 name: Media parser compatibility
 on:
   workflow_dispatch:
-  push:
-    branches: [feature/libav-media-probe-2349]
   pull_request:
-    paths: ['src/mediaprobe/**', 'packaging/media/**', '.github/workflows/media-probe.yml']
+    paths: ['src/mediaprobe/**', 'packaging/media/**', 'packaging/linux/versions.env', '.github/workflows/media-probe.yml']
 permissions:
   contents: read
-env:
-  GH_TOKEN: ${{ github.token }}
 jobs:
   system:
     strategy:
@@ -67,7 +63,6 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
-          path-type: inherit
           # ARM runner images can lack paccache; cache cleanup must not block tests.
           cache: false
           update: true

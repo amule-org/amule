@@ -199,8 +199,6 @@ jobs:
             --files-from=/tmp/sources.txt
 
       - name: Include exact bundled FFmpeg source
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: python3 packaging/media/build-ffmpeg.py dist /tmp/amule-ffmpeg-release-source --source-only
 
       - name: Upload source bundle
@@ -209,7 +207,7 @@ jobs:
           name: source-bundle
           path: |
             dist/aMule-*-src.tar.gz
-            dist/FFmpeg-*.tar.gz
+            dist/ffmpeg-*.tar.xz
 
   release:
     name: Assemble draft Release
@@ -293,7 +291,7 @@ jobs:
           check "Windows installer .exe (x64 + arm64)" 2 'aMule-*-Windows-Setup-*.exe'
           check "Linux static daemon (x86_64 + aarch64)" 2 'aMule-*-Linux-*-static.tar.gz'
           check "Source bundle"                     1 'aMule-*-src.tar.gz'
-          check "Bundled FFmpeg source"             1 'FFmpeg-*.tar.gz'
+          check "Bundled FFmpeg source"             1 'ffmpeg-*.tar.xz'
           if [ "$fail" -ne 0 ]; then
             echo "::error::Artifact manifest incomplete — refusing to assemble the draft Release."
             exit 1
