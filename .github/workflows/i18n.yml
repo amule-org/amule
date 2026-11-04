@@ -127,9 +127,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-        with:
-          # Include both parents of the checked PR merge, not a stale event base.
-          fetch-depth: 2
 
       - uses: actions/setup-node@v7
         with:
@@ -138,15 +135,11 @@ jobs:
       # Gives the check a base to diff against, so it can reject English text
       # added to a locale file. Not for Weblate's PRs: there a value equal to
       # the English one is a translator's choice.
-      - name: Selecting the checked merge's target commit
+      - name: Fetching the pull request base
         if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'weblate'
-        env:
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # The event base can predate upstream Weblate updates included in this
-          # merge. Only additions relative to the actual target belong to this PR.
-          test "$(git rev-parse HEAD^2)" = "$PR_HEAD_SHA"
-          echo "I18N_BASE=$(git rev-parse HEAD^1)" >> "$GITHUB_ENV"
+          git fetch --no-tags --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          echo "I18N_BASE=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_ENV"
 
       # Checks every locale key exists in en.json with matching
       # {placeholders} (plural forms may drop {n}; missing keys fall back to
