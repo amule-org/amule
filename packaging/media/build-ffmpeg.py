@@ -123,9 +123,17 @@ def main():
         subprocess.run(command, cwd=build, env=env, check=True)
     run(['make', '--version'])
     stamp = build / 'requested-config.json'
-    if not stamp.exists() or json.loads(stamp.read_text()) != configure:
+    # Configure consumes these flags from the environment, outside its argv.
+    # Reconfigure AND discard old objects when they change; make alone cannot
+    # detect a compiler-flag change in otherwise unchanged sources.
+    requested = dict(configure=configure, environment={name: env.get(name, '') for name in (
+        'CFLAGS', 'CPPFLAGS', 'CXXFLAGS', 'OBJCFLAGS', 'ASFLAGS', 'LDFLAGS',
+        'LDEXEFLAGS', 'LDSOFLAGS', 'SDKROOT', 'MACOSX_DEPLOYMENT_TARGET')})
+    if not stamp.exists() or json.loads(stamp.read_text()) != requested:
+        if (build / 'ffbuild/config.mak').exists():
+            run(['make', 'distclean'])
         run(['bash', (source / 'configure').as_posix(), *configure])
-        stamp.write_text(json.dumps(configure, indent=2) + '\n')
+        stamp.write_text(json.dumps(requested, indent=2) + '\n')
     run(['make', '-j' + str(min(os.cpu_count() or 2, 8))])
     run(['make', 'install'])
     notices = prefix / 'share/licenses/amule-media-probe'

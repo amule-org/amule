@@ -38,6 +38,9 @@ in code before opening input:
 
 The runtime whitelist in `src/mediaprobe/main.cpp` and the demuxer list in
 `packaging/media/build-ffmpeg.py` / the Flatpak template must stay aligned.
+Production scheduling and the GUI refresh gate share the audio/video registry
+in `src/OtherFunctions.cpp`. A supported parser also needs an eligible file type;
+the registry includes `.dv`, `.ivf`, `.wtv`, `.w64`, `.tta` and `.eac3`.
 FFmpeg's runtime aliases differ from configure names, notably `mpeg`/`mpegps`.
 Keep the MPEG video demuxer: container readers use it for stream identification.
 `test_build_recipe.py` checks all three lists, normalizing runtime aliases. Raw
@@ -122,6 +125,10 @@ uses strace to assert that no canary file is opened and no sockets are created.
 Set `AMULE_REQUIRE_STRACE=1` to require that observation. The compatibility workflow
 runs against full system FFmpeg on Debian 12 and Ubuntu 22.04/24.04, as well as
 native bundled builds on Linux, macOS and Windows CLANG64/CLANGARM64.
+
+The private FFmpeg builder records configure arguments and compiler/linker
+flags, including macOS SDK/deployment settings. Changing them in a reused build
+directory cleans old objects and reconfigures; unchanged settings reuse the build.
 
 `packaging/media/compare.py` checks all six fields against the existing corpus
 manifest and verifies fixture hashes. It can also compare a directory of real

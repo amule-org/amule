@@ -40,6 +40,17 @@ def make_wave(path):
     path.write_bytes(data)
 
 
+def make_wave64(path):
+    # Wave64 GUIDs and 64-bit chunk sizes, with independently known PCM samples.
+    tail = bytes.fromhex('f3 ac d3 11 8c d1 00 c0 4f 8e db 8a')
+    riff = b'riff' + bytes.fromhex('2e 91 cf 11 a5 d6 28 db 04 c1 00 00')
+    samples = bytes(48000 * 2 * 3)
+    fmt = struct.pack('<HHIIHH', 1, 1, 48000, 96000, 2, 16)
+    body = b'wave' + tail + b'fmt ' + tail + struct.pack('<Q', 24 + len(fmt)) + fmt
+    body += b'data' + tail + struct.pack('<Q', 24 + len(samples)) + samples
+    path.write_bytes(riff + struct.pack('<Q', 24 + len(body)) + body)
+
+
 def known_files(path):
     """Read the daemon's persisted known.met, preserving numeric media tags."""
     data = io.BytesIO(path.read_bytes())
@@ -153,6 +164,14 @@ def run(args, root):
     assert len(lines) == 9 and lines[0] == 'AMMP 1' and lines[-1] == 'END', reply.stdout
     assert b'\r' not in reply.stdout and reply.stdout.endswith(b'END\n'), reply.stdout
     print('PASS packaged helper: duration, codec, tags, Unicode and exact framing', flush=True)
+    wave64 = incoming / 'restored.w64'
+    make_wave64(wave64)
+    with wave64.open('rb') as source:
+        reply = subprocess.run(helper + ['--json'], stdin=source, env=child_env,
+                               capture_output=True, check=True, timeout=30)
+    metadata = json.loads(reply.stdout)
+    assert metadata['length_seconds'] == 3 and metadata['codec'] == 'pcm_s16le', metadata
+    print('PASS packaged helper reads Wave64; daemon must also schedule its extension', flush=True)
     broken = incoming / 'broken.wav'
     broken.write_bytes(b'not a media file')
     for payload in (b'', b'not a media file'):
@@ -202,18 +221,24 @@ Enabled=1
                 assert proc.poll() is None, 'packaged daemon exited before metadata was saved'
                 try:
                     records = known_files(root / 'known.met')
-                    good = next((r for r in records if r.get(b'\xd5') == 'pcm_s16le'), None)
+                    # known.met can contain a legacy-encoded Unicode filename.
+                    # Distinguish the WAV control from the ASCII Wave64 fixture.
+                    good = next((r for r in records if r.get(b'\xd5') == 'pcm_s16le' and
+                                 r.get(b'\x01') != wave64.name), None)
+                    restored = next((r for r in records if r.get(b'\x01') == wave64.name and
+                                     r.get(b'\xd5') == 'pcm_s16le'), None)
                     bad = next((r for r in records if r.get(b'\x57') == 2), None)
                 except (OSError, ValueError):
-                    good = bad = None
-                if good and bad:
+                    good = bad = restored = None
+                if good and bad and restored:
+                    assert restored[b'\xd3'] == 3 and restored[b'\xd4'] == 768, restored
                     assert good[b'\xd3'] == 3 and good[b'\xd4'] == 768, good
                     assert good[b'\xd0'] == 'Runtime Artist', good
                     assert good[b'\xd1'] == 'Runtime Album', good
                     assert good[b'\xd2'] == TITLE, good
                     break
                 if time.monotonic() >= deadline:
-                    raise AssertionError('packaged daemon did not persist metadata and marker 2')
+                    raise AssertionError('packaged daemon did not persist WAV/Wave64 metadata and marker 2')
                 time.sleep(0.25)
         finally:
             if proc.poll() is None:
@@ -223,7 +248,7 @@ Enabled=1
             except subprocess.TimeoutExpired:
                 proc.kill()
                 proc.wait(timeout=15)
-    print('PASS packaged daemon: sibling-helper discovery, metadata persistence and failure marker 2', flush=True)
+    print('PASS packaged daemon: sibling-helper discovery, WAV/Wave64 metadata persistence and failure marker 2', flush=True)
 
 
 def main():

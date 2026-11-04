@@ -718,6 +718,8 @@ public:
 		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".dts", ED2KFT_AUDIO)); // DTS Encoded Audio File
 		ED2KFileTypesMap.insert(
+			SED2KFileTypeMapElement(".eac3", ED2KFT_AUDIO)); // Enhanced AC-3 Audio File
+		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".far", ED2KFT_AUDIO)); // Farandole Composer Module
 		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".flac", ED2KFT_AUDIO)); // Free Lossless Audio Codec File
@@ -764,9 +766,11 @@ public:
 			SED2KFileTypeMapElement(".snd", ED2KFT_AUDIO)); // Audio File (Sun, Unix)
 		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".stm", ED2KFT_AUDIO)); // Scream Tracker 2 Module
+		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(".tta", ED2KFT_AUDIO)); // True Audio File
 		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(".ult", ED2KFT_AUDIO)); // UltraTracker
 		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".umx", ED2KFT_AUDIO)); // Unreal Music Package
+		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(".w64", ED2KFT_AUDIO));  // Wave64 Audio File
 		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(".wav", ED2KFT_AUDIO));  // WAVE Audio File
 		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(".weba", ED2KFT_AUDIO)); // WebM Audio File
 		ED2KFileTypesMap.insert(
@@ -795,6 +799,7 @@ public:
 		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(".bik", ED2KFT_VIDEO)); // BINK Video File
 		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".divx", ED2KFT_VIDEO)); // DivX-Encoded Movie File
+		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(".dv", ED2KFT_VIDEO)); // DV Video File
 		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(
 			".dvr-ms", ED2KFT_VIDEO)); // Microsoft Digital Video Recording
 		ED2KFileTypesMap.insert(
@@ -813,6 +818,7 @@ public:
 			SED2KFileTypeMapElement(".hevc", ED2KFT_VIDEO)); // HEVC Raw Video Stream
 		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".ifo", ED2KFT_VIDEO)); // DVD-Video Disc Information File
+		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(".ivf", ED2KFT_VIDEO)); // IVF Video File
 		ED2KFileTypesMap.insert(SED2KFileTypeMapElement(".m1v", ED2KFT_VIDEO)); // MPEG-1 Video File
 		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".m2t", ED2KFT_VIDEO)); // MPEG-2 Video Transport Stream
@@ -876,6 +882,8 @@ public:
 			SED2KFileTypeMapElement(".wm", ED2KFT_VIDEO)); // Windows Media Video File
 		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".wmv", ED2KFT_VIDEO)); // Windows Media Video File
+		ED2KFileTypesMap.insert(
+			SED2KFileTypeMapElement(".wtv", ED2KFT_VIDEO)); // Windows TV Recording
 		ED2KFileTypesMap.insert(
 			SED2KFileTypeMapElement(".xvid", ED2KFT_VIDEO)); // Xvid-Encoded Video File
 

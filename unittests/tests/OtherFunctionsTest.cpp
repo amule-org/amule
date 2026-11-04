@@ -156,6 +156,26 @@ TEST(VersionCompare, ParseErrorNonNumeric)
 	ASSERT_TRUE(r.state == CVersionCompareResult::ParseError);
 }
 
+DECLARE_SIMPLE(MediaProbeCandidates)
+
+TEST(MediaProbeCandidates, RestoredFormatsReachTheSharedMediaGate)
+{
+	for (const char *name : { "clip.dv", "clip.ivf", "recording.WTV" }) {
+		const CPath file(wxString::FromUTF8(name));
+		ASSERT_TRUE(GetED2KFileTypeID(file) == ED2KFT_VIDEO);
+		ASSERT_TRUE(IsMediaProbeCandidate(file));
+	}
+	for (const char *name : { "audio.w64", "audio.tta", "audio.EAC3" }) {
+		const CPath file(wxString::FromUTF8(name));
+		ASSERT_TRUE(GetED2KFileTypeID(file) == ED2KFT_AUDIO);
+		ASSERT_TRUE(IsMediaProbeCandidate(file));
+	}
+	ASSERT_TRUE(IsMediaProbeCandidate(CPath(wxT("control.mp3"))));
+	ASSERT_TRUE(IsMediaProbeCandidate(CPath(wxT("control.mkv"))));
+	ASSERT_FALSE(IsMediaProbeCandidate(CPath(wxT("archive.zip"))));
+	ASSERT_FALSE(IsMediaProbeCandidate(CPath(wxT("unknown.extension"))));
+}
+
 DECLARE_SIMPLE(MediaCodec)
 
 // ffprobe and peers differ in case, and both have to land on the same label -- the GUI and the API render
