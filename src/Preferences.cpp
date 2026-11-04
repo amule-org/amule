@@ -25,6 +25,7 @@
 
 #include <wx/wx.h>
 #include "Preferences.h"
+#include "AdvertisedIPv6.h"
 #include "ECClientPassword.h"
 #include "libs/ec/cpp/ECSRPConfig.h"
 #include "ServerListSources.h"
@@ -109,7 +110,7 @@ wxString CPreferences::s_Addr;
 wxString CPreferences::s_NetworkInterface;
 #ifdef ENABLE_IPV6
 long CPreferences::s_addressFamiliesSetting;
-bool CPreferences::s_advertiseIPv6;
+int CPreferences::s_advertiseIPv6Mode = static_cast<int>(EIPv6AdvertisingMode::Verified);
 #ifdef CLIENT_GUI
 bool CPreferences::s_addressFamiliesTagSupported = false;
 #endif
@@ -1620,7 +1621,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	// AddressFamilies is read only in CamuleApp::OnInit, hence the restart note on its control.
 	NewCfgItem(IDC_ADDRESSFAMILIES,
 		(new Cfg_AddressFamilies("/eMule/AddressFamilies", s_addressFamiliesSetting, 0)));
-	NewCfgItem(IDC_ADVERTISEIPV6, (new Cfg_Bool("/eMule/AdvertiseIPv6", s_advertiseIPv6, false)));
+	NewCfgItem(IDC_ADVERTISEIPV6MODE, MkCfg_Int("/eMule/AdvertiseIPv6Mode", s_advertiseIPv6Mode, 0));
 #endif
 
 	s_MiscList.push_back(new Cfg_Bool("/eMule/DropSlowSources", s_DropSlowSources, false));
@@ -1713,6 +1714,15 @@ void CPreferences::EraseItemList()
 
 void CPreferences::LoadAllItems(wxConfigBase *cfg)
 {
+#ifdef ENABLE_IPV6
+	if (cfg->HasEntry("/eMule/AdvertiseIPv6") && !cfg->HasEntry("/eMule/AdvertiseIPv6Mode")) {
+		bool storedAdvertiseIPv6 = false;
+		cfg->Read("/eMule/AdvertiseIPv6", &storedAdvertiseIPv6, false);
+		s_advertiseIPv6Mode = static_cast<int>(LegacyAdvertiseIPv6Mode(storedAdvertiseIPv6));
+		cfg->DeleteEntry("/eMule/AdvertiseIPv6");
+		cfg->Write("/eMule/AdvertiseIPv6Mode", static_cast<long>(s_advertiseIPv6Mode));
+	}
+#endif
 	if (cfg->HasEntry("/MediaMetadata/FFProbePath")) {
 		const wxString oldPath = cfg->Read("/MediaMetadata/FFProbePath", wxEmptyString);
 		if (!oldPath.empty()) {

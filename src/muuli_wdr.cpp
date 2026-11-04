@@ -1676,8 +1676,12 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     wxStaticText *addressFamilyNote = new wxStaticText( addressFamilyBox, -1, _("Takes effect after restarting aMule."), wxDefaultPosition, wxDefaultSize, 0 );
     addressFamilySizer->Add( addressFamilyNote, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
 
-    wxCheckBox *advertiseIPv6Chk = new wxCheckBox( addressFamilyBox, IDC_ADVERTISEIPV6, _("Advertise my IPv6 address to other peers"), wxDefaultPosition, wxDefaultSize, 0 );
-    addressFamilySizer->Add( advertiseIPv6Chk, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
+    wxBoxSizer *advertiseIPv6Row = new wxBoxSizer( wxHORIZONTAL );
+    advertiseIPv6Row->Add( new wxStaticText( addressFamilyBox, -1, _("Advertise my IPv6 address:") ), wxSizerFlags().CenterVertical() );
+    wxString advertiseIPv6Choices[] = { _("When verified"), _("Always"), _("Never") };
+    wxChoice *advertiseIPv6Choice = new wxChoice( addressFamilyBox, IDC_ADVERTISEIPV6MODE, wxDefaultPosition, wxDefaultSize, 3, advertiseIPv6Choices, 0 );
+    advertiseIPv6Row->Add( advertiseIPv6Choice, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+    addressFamilySizer->Add( advertiseIPv6Row, wxSizerFlags().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 5) );
 
     item0->Add( addressFamilySizer, wxSizerFlags().Expand().CenterVertical().Border(wxTOP, 5) );
 #endif

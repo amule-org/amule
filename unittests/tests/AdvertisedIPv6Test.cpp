@@ -69,7 +69,7 @@ SAdvertisedIPv6Facts AdvertisableFacts()
 {
 	SAdvertisedIPv6Facts facts;
 	facts.choice = CNetworkAddress::IPv6FromOctets(Global(0x0a));
-	facts.declaredReachable = true;
+	facts.mode = EIPv6AdvertisingMode::Always;
 	facts.ipv6Built = true;
 	facts.familyPermitted = true;
 	facts.proxyEnabled = false;
@@ -145,6 +145,35 @@ TEST(AdvertisedIPv6, TheChoiceIsAdvertisedWhenEveryConditionHolds)
 	ASSERT_TRUE(*advertised == CNetworkAddress::IPv6FromOctets(Global(0x0a)));
 }
 
+TEST(AdvertisedIPv6, LegacyAdvertisingModeMigratesStoredValues)
+{
+	ASSERT_TRUE(LegacyAdvertiseIPv6Mode(true) == EIPv6AdvertisingMode::Always);
+	ASSERT_TRUE(LegacyAdvertiseIPv6Mode(false) == EIPv6AdvertisingMode::Verified);
+}
+
+TEST(AdvertisedIPv6, AdvertisingModeReportsLegacyECBoolean)
+{
+	ASSERT_TRUE(IPv6AdvertisingModeAsECBool(EIPv6AdvertisingMode::Always));
+	ASSERT_FALSE(IPv6AdvertisingModeAsECBool(EIPv6AdvertisingMode::Verified));
+	ASSERT_FALSE(IPv6AdvertisingModeAsECBool(EIPv6AdvertisingMode::Never));
+}
+
+TEST(AdvertisedIPv6, LegacyECBooleanAppliesWithoutOverridingNever)
+{
+	const EIPv6AdvertisingMode trueFromNever =
+		IPv6AdvertisingModeFromECBool(EIPv6AdvertisingMode::Never, true);
+	const EIPv6AdvertisingMode falseFromAlways =
+		IPv6AdvertisingModeFromECBool(EIPv6AdvertisingMode::Always, false);
+	const EIPv6AdvertisingMode falseFromNever =
+		IPv6AdvertisingModeFromECBool(EIPv6AdvertisingMode::Never, false);
+	const EIPv6AdvertisingMode falseFromVerified =
+		IPv6AdvertisingModeFromECBool(EIPv6AdvertisingMode::Verified, false);
+	ASSERT_TRUE(trueFromNever == EIPv6AdvertisingMode::Always);
+	ASSERT_TRUE(falseFromAlways == EIPv6AdvertisingMode::Verified);
+	ASSERT_TRUE(falseFromNever == EIPv6AdvertisingMode::Never);
+	ASSERT_TRUE(falseFromVerified == EIPv6AdvertisingMode::Verified);
+}
+
 TEST(AdvertisedIPv6, NothingIsAdvertisedWithoutAChoice)
 {
 	SAdvertisedIPv6Facts facts = AdvertisableFacts();
@@ -159,10 +188,60 @@ TEST(AdvertisedIPv6, NothingIsAdvertisedWhenPeersContradictThePrefix)
 	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
 }
 
-TEST(AdvertisedIPv6, NothingIsAdvertisedUnlessTheUserDeclaresThePortReachable)
+TEST(AdvertisedIPv6, AutoDoesNotAdvertiseWithoutEvidence)
 {
 	SAdvertisedIPv6Facts facts = AdvertisableFacts();
-	facts.declaredReachable = false;
+	facts.mode = EIPv6AdvertisingMode::Verified;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, AutoAdvertisesWhenTheServerVerifiesReachability)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.mode = EIPv6AdvertisingMode::Verified;
+	facts.serverVerified = true;
+	ASSERT_TRUE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, AutoAdvertisesAfterAnInboundHello)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.mode = EIPv6AdvertisingMode::Verified;
+	facts.provedByInboundHello = true;
+	ASSERT_TRUE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, FailedServerProbeOutranksPositiveEvidence)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.mode = EIPv6AdvertisingMode::Verified;
+	facts.serverProbeFailed = true;
+	facts.serverVerified = true;
+	facts.provedByInboundHello = true;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, NeverSuppressesPositiveEvidence)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.mode = EIPv6AdvertisingMode::Never;
+	facts.serverVerified = true;
+	facts.provedByInboundHello = true;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, AlwaysAdvertisesWithoutEvidence)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.mode = EIPv6AdvertisingMode::Always;
+	ASSERT_TRUE(DecideAdvertisedIPv6(facts).has_value());
+}
+
+TEST(AdvertisedIPv6, PrefixContradictionVetoesAlways)
+{
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.mode = EIPv6AdvertisingMode::Always;
+	facts.contradicted = true;
 	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
 }
 
@@ -206,7 +285,7 @@ TEST(AdvertisedIPv6, KadSourcesRepublishOnlyWhenTheirPublishedAddressBecomesWron
 	ASSERT_TRUE(ShouldRepublishKadSources(published, changed));
 
 	SAdvertisedIPv6Facts disabled = AdvertisableFacts();
-	disabled.declaredReachable = false;
+	disabled.mode = EIPv6AdvertisingMode::Never;
 	ASSERT_TRUE(ShouldRepublishKadSources(published, disabled));
 }
 
@@ -245,6 +324,6 @@ TEST(AdvertisedIPv6, NothingPublishedNeedsNoRepublish)
 	ASSERT_FALSE(ShouldRepublishKadSources(std::nullopt, vetoed));
 
 	SAdvertisedIPv6Facts disabled = AdvertisableFacts();
-	disabled.declaredReachable = false;
+	disabled.mode = EIPv6AdvertisingMode::Never;
 	ASSERT_FALSE(ShouldRepublishKadSources(std::nullopt, disabled));
 }

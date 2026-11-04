@@ -295,12 +295,14 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::GetAddressFamiliesTagSupported()) {
 			connPrefs.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES,
 				static_cast<uint32>(thePrefs::GetAddressFamiliesSetting())));
-			connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6, thePrefs::GetAdvertiseIPv6()));
+			connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6,
+				IPv6AdvertisingModeAsECBool(thePrefs::GetAdvertiseIPv6Mode())));
 		}
 #else
 		connPrefs.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES,
 			static_cast<uint32>(thePrefs::GetAddressFamiliesSetting())));
-		connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6, thePrefs::GetAdvertiseIPv6()));
+		connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6,
+			IPv6AdvertisingModeAsECBool(thePrefs::GetAdvertiseIPv6Mode())));
 #endif
 #endif
 		AddTag(connPrefs);
@@ -921,7 +923,8 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 		}
 #endif
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_ADVERTISE_IPV6)) != nullptr) {
-			thePrefs::SetAdvertiseIPv6(oneTag->GetInt() != 0);
+			thePrefs::SetAdvertiseIPv6Mode(IPv6AdvertisingModeFromECBool(
+				thePrefs::GetAdvertiseIPv6Mode(), oneTag->GetInt() != 0));
 		}
 #endif
 	}

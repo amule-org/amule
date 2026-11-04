@@ -393,6 +393,11 @@ add_test (NAME AdvertisedIPv6Test COMMAND AdvertisedIPv6Test)
 target_include_directories (AdvertisedIPv6Test PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (AdvertisedIPv6Test muleunit mulecommon)
 
+add_executable (IPv6ReachabilityProofTest IPv6ReachabilityProofTest.cpp)
+add_test (NAME IPv6ReachabilityProofTest COMMAND IPv6ReachabilityProofTest)
+target_include_directories (IPv6ReachabilityProofTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (IPv6ReachabilityProofTest muleunit mulecommon)
+
 # Credit identity and wait ownership run without the application. The test supplies
 # a deterministic GetTickCount64; do not link the production clock into this target.
 add_executable (ClientCreditsTest
