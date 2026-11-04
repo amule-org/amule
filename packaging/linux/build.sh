@@ -57,7 +57,13 @@ set -a; source "${VERSIONS_ENV}"; set +a
 
 target="$1"; shift || true
 
+prepare_media_source() {
+    python3 "${SCRIPT_DIR}/../media/build-ffmpeg.py" \
+        "${SCRIPT_DIR}/../media/sources" "${REPO_ROOT}/.cache/media-source" --source-only
+}
+
 build_appimage() {
+    prepare_media_source
     # Resolve target arch. "host" (default) builds natively for the
     # current machine; x86_64/aarch64 build via QEMU emulation if not
     # native (slow — wx-from-source step takes ~30-50 min on aarch64-
@@ -254,6 +260,7 @@ build_flatpak() {
 }
 
 build_static() {
+    prepare_media_source
     # Fully static amuled/amulecmd/amuleapi (musl/Alpine). Unlike the
     # AppImage track (toolchain image + docker run over a repo mount), this
     # COPYs the checkout into the build and exports the binaries from a

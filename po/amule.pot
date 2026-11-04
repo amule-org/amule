@@ -6821,7 +6821,7 @@ msgid "no options available"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
+msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media helper. Removing the old setting."
 msgstr ""
 
 #: src/Preferences.cpp

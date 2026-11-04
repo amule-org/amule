@@ -1,57 +1,127 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Isolated media parser: input is an inherited, seekable regular file on stdin.
+// Isolated metadata-only parser, adapted from 3togo/mini-media-probe.
+// The core owns the wall-clock watchdog and Windows Job object.
 #include <algorithm>
-#include <cmath>
-#include <cstdio>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include <cctype>
+#include <cerrno>
+#include <chrono>
 #include <clocale>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <iostream>
-#include <locale>
-#include <map>
+#include <limits>
 #include <string>
-#include <vector>
-#include <type_traits>
+#include <sys/stat.h>
 #ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
-#define MI_CALL __stdcall
 #else
 #include <sys/resource.h>
-#include <sys/types.h>
-static_assert(sizeof(off_t) >= sizeof(int64_t), "Media probe requires 64-bit file offsets");
-#define MI_CALL
+#include <unistd.h>
 #endif
 extern "C" {
-// MediaInfoLib's stable wide-character C ABI; no C++/ZenLib ABI dependency.
-void *MI_CALL MediaInfo_New();
-void MI_CALL MediaInfo_Delete(void *);
-size_t MI_CALL MediaInfo_Open_Buffer_Init(void *, uint64_t, uint64_t);
-size_t MI_CALL MediaInfo_Open_Buffer_Continue(void *, const unsigned char *, size_t);
-uint64_t MI_CALL MediaInfo_Open_Buffer_Continue_GoTo_Get(void *);
-size_t MI_CALL MediaInfo_Open_Buffer_Finalize(void *);
-const wchar_t *MI_CALL MediaInfo_Get(void *, int, size_t, const wchar_t *, int, int);
-size_t MI_CALL MediaInfo_Count_Get(void *, int, size_t);
-const wchar_t *MI_CALL MediaInfo_Option(void *, const wchar_t *, const wchar_t *);
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/avstring.h>
+#include <libavutil/dict.h>
+#include <libavutil/mem.h>
+#include <libavutil/version.h>
 }
 
+namespace
+{
+constexpr uint64_t MaxRead = 1024ULL * 1024 * 1024;
+constexpr unsigned MaxBackwardSeeks = 256;
+using Clock = std::chrono::steady_clock;
+struct Input
+{
+	int64_t size = 0;
+	uint64_t bytes = 0;
+	unsigned backwardSeeks = 0;
+	bool exhausted = false;
+	Clock::time_point deadline = Clock::now() + std::chrono::seconds(25);
+};
 struct Result
 {
 	uint32_t length = 0, bitrate = 0;
 	std::string codec, artist, album, title;
-	bool usable() const { return length || !codec.empty(); }
 };
-static int seek(int64_t offset, int whence)
+// Layer III frame duration is fixed by its MPEG version/sample rate, not bitrate.
+// Validate complete packets before counting: a parser flush can expose a truncated
+// last frame, and resynchronisation can otherwise hide damaged bytes in the middle.
+// These header-size rules follow libavcodec/mpegaudiodecheader.c; its full
+// validator is private API. Free-format frames are deliberately left unknown.
+bool mp3FrameTicks(const AVPacket &packet, int64_t &ticks)
 {
-#ifdef _WIN32
-	return _fseeki64(stdin, offset, whence);
-#else
-	return fseeko(stdin, offset, whence);
-#endif
+	if (packet.size < 4 || (packet.flags & AV_PKT_FLAG_CORRUPT))
+		return false;
+	const uint32_t header = uint32_t(packet.data[0]) << 24 | uint32_t(packet.data[1]) << 16 |
+				uint32_t(packet.data[2]) << 8 | packet.data[3];
+	const unsigned version = (header >> 19) & 3;
+	const unsigned bitrateIndex = (header >> 12) & 15;
+	const unsigned rateIndex = (header >> 10) & 3;
+	if ((header & 0xffe00000U) != 0xffe00000U || version == 1 || ((header >> 17) & 3) != 1 ||
+		!bitrateIndex || bitrateIndex == 15 || rateIndex == 3 || (header & 3) == 2)
+		return false;
+	constexpr unsigned rates[] = { 44100, 48000, 32000 };
+	constexpr unsigned mpeg1[] = { 0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320 };
+	constexpr unsigned mpeg2[] = { 0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160 };
+	const unsigned rate = rates[rateIndex] / (version == 3 ? 1 : version == 2 ? 2 : 4);
+	const unsigned bitrate = version == 3 ? mpeg1[bitrateIndex] : mpeg2[bitrateIndex];
+	const unsigned bytes = (version == 3 ? 144000 : 72000) * bitrate / rate + ((header >> 9) & 1);
+	if (static_cast<unsigned>(packet.size) != bytes)
+		return false;
+	// 14,112,000 is divisible by every Layer III sample rate; integer sums avoid drift.
+	ticks = (version == 3 ? 1152LL : 576LL) * (14112000 / rate);
+	return true;
 }
-static int64_t tell()
+bool scanMp3(AVFormatContext *format, const AVStream *stream, const Input &input, double &seconds)
+{
+	if (input.size > 512LL * 1024 * 1024)
+		return false;
+	auto *packet = av_packet_alloc();
+	if (!packet)
+		return false;
+	struct Owner
+	{
+		AVPacket *&packet;
+		~Owner() { av_packet_free(&packet); }
+	} owner{ packet };
+	int64_t total = 0, end = -1;
+	int status = 0;
+	// find_stream_info buffers the initial packets: read_frame starts at the
+	// logical beginning without seeking away encoder-delay or cover-art state.
+	while ((status = av_read_frame(format, packet)) >= 0) {
+		if (packet->stream_index == stream->index) {
+			int64_t ticks = 0;
+			if (!mp3FrameTicks(*packet, ticks) || packet->pos < 0 ||
+				packet->pos > input.size - packet->size || (end >= 0 && packet->pos != end) ||
+				total > std::numeric_limits<int64_t>::max() - ticks)
+				return false;
+			total += ticks;
+			end = packet->pos + packet->size;
+		}
+		av_packet_unref(packet);
+	}
+	if (status != AVERROR_EOF || input.exhausted || Clock::now() >= input.deadline ||
+		std::ferror(stdin) || !total || end < 0)
+		return false;
+	if (end != input.size) {
+		// Accept the well-defined ID3v1 footer. Unknown trailing bytes, damaged
+		// frames and unsupported footer layouts must not become counted duration.
+		unsigned char footer[128];
+		if (input.size - end != 128 || avio_seek(format->pb, end, SEEK_SET) != end ||
+			avio_read(format->pb, footer, sizeof(footer)) != sizeof(footer) ||
+			std::memcmp(footer, "TAG", 3) != 0)
+			return false;
+	}
+	if (input.exhausted || Clock::now() >= input.deadline)
+		return false;
+	seconds = double(total) / 14112000;
+	return true;
+}
+int64_t position()
 {
 #ifdef _WIN32
 	return _ftelli64(stdin);
@@ -59,432 +129,317 @@ static int64_t tell()
 	return ftello(stdin);
 #endif
 }
-static std::string utf8(const wchar_t *value)
+int reposition(int64_t offset, int whence)
 {
-	if (!value)
-		return {};
-	std::string out;
-	while (*value) {
-		uint32_t c = static_cast<uint32_t>(static_cast<std::make_unsigned_t<wchar_t>>(*value++));
 #ifdef _WIN32
-		if (c >= 0xd800 && c <= 0xdbff && *value >= 0xdc00 && *value <= 0xdfff)
-			c = 0x10000 + ((c - 0xd800) << 10) +
-			    (static_cast<uint32_t>(static_cast<std::make_unsigned_t<wchar_t>>(*value++)) -
-				    0xdc00);
+	return _fseeki64(stdin, offset, whence);
+#else
+	return fseeko(stdin, offset, whence);
 #endif
-		if ((c >= 0xd800 && c <= 0xdfff) || c > 0x10ffff)
-			c = 0xfffd;
-		const size_t width = c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4;
-		if (out.size() + width > 4096)
-			break;
-		if (c < 0x80)
-			out += char(c);
-		else if (c < 0x800) {
-			out += char(0xc0 | (c >> 6));
-			out += char(0x80 | (c & 63));
-		} else if (c < 0x10000) {
-			out += char(0xe0 | (c >> 12));
-			out += char(0x80 | ((c >> 6) & 63));
-			out += char(0x80 | (c & 63));
-		} else {
-			out += char(0xf0 | (c >> 18));
-			out += char(0x80 | ((c >> 12) & 63));
-			out += char(0x80 | ((c >> 6) & 63));
-			out += char(0x80 | (c & 63));
-		}
-		if (out.size() >= 4096)
-			break;
-	}
-	return out;
 }
-static uint32_t numeric(const std::string &text, double divisor, bool round)
+int interrupted(void *opaque)
 {
-	char *end = nullptr;
-	double value = std::strtod(text.c_str(), &end) / divisor;
-	if (end == text.c_str() || *end || !std::isfinite(value) || value <= 0)
+	const auto &input = *static_cast<Input *>(opaque);
+	return input.exhausted || Clock::now() >= input.deadline;
+}
+int readInput(void *opaque, uint8_t *buffer, int capacity)
+{
+	auto &input = *static_cast<Input *>(opaque);
+	if (interrupted(opaque))
+		return AVERROR_EXIT;
+	if (input.bytes >= MaxRead) {
+		input.exhausted = true;
+		return AVERROR(EFBIG);
+	}
+	const auto count = std::fread(buffer, 1, std::min<uint64_t>(capacity, MaxRead - input.bytes), stdin);
+	input.bytes += count;
+	if (count)
+		return static_cast<int>(count);
+	return std::ferror(stdin) ? AVERROR(EIO) : AVERROR_EOF;
+}
+int64_t seekInput(void *opaque, int64_t offset, int whence)
+{
+	auto &input = *static_cast<Input *>(opaque);
+	if (whence == AVSEEK_SIZE)
+		return input.size;
+	if (interrupted(opaque))
+		return AVERROR_EXIT;
+	whence &= ~AVSEEK_FORCE;
+	const auto current = position();
+	const auto base = whence == SEEK_SET ? 0 : whence == SEEK_CUR ? current : input.size;
+	if (current < 0 || (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END) ||
+		offset < -base || offset > input.size - base)
+		return AVERROR(EINVAL);
+	const auto target = base + offset;
+	if (target <= current && ++input.backwardSeeks > MaxBackwardSeeks) {
+		input.exhausted = true;
+		return AVERROR(EFBIG);
+	}
+	return reposition(target, SEEK_SET) ? AVERROR(EIO) : target;
+}
+int denyOpen(AVFormatContext *, AVIOContext **, const char *, int, AVDictionary **)
+{
+	// Containers must never open external tracks, playlists, URLs or local files.
+	return AVERROR(EACCES);
+}
+std::string clean(const char *text)
+{
+	if (!text)
+		return {};
+	std::string result;
+	const auto *cursor = reinterpret_cast<const uint8_t *>(text);
+	const auto *end = cursor + std::strlen(text);
+	while (cursor < end && result.size() < 4096) {
+		const auto *start = cursor;
+		int32_t codepoint = 0;
+		if (av_utf8_decode(&codepoint, &cursor, end, 0) < 0) {
+			cursor = start + 1;
+			if (result.size() + 3 <= 4096)
+				result += "\xef\xbf\xbd";
+			continue;
+		}
+		if (codepoint < 32 && codepoint != '\t' && codepoint != '\n' && codepoint != '\r')
+			continue;
+		if (codepoint == 127 || (codepoint >= 128 && codepoint <= 159))
+			continue;
+		const auto length = static_cast<size_t>(cursor - start);
+		if (result.size() + length > 4096)
+			break;
+		result.append(reinterpret_cast<const char *>(start), length);
+	}
+	return result;
+}
+std::string tag(const AVDictionary *dict, const char *key)
+{
+	const auto *entry = av_dict_get(dict, key, nullptr, 0);
+	return entry ? clean(entry->value) : std::string();
+}
+uint32_t bounded(double value, bool round)
+{
+	if (!std::isfinite(value) || value <= 0)
 		return 0;
-	value = round ? std::floor(value + 0.5) : std::floor(value);
-	return static_cast<uint32_t>(std::min(value, double(UINT32_MAX)));
+	return static_cast<uint32_t>(std::min(round ? std::floor(value + 0.5) : std::floor(value),
+		double(std::numeric_limits<uint32_t>::max())));
 }
-static std::string get(void *h, int kind, size_t index, const wchar_t *field)
+int probe(Input &input, Result &result)
 {
-	return utf8(MediaInfo_Get(h, kind, index, field, 1, 0));
-}
-static std::string miCodec(void *h, int kind, size_t i)
-{
-	const std::string format = get(h, kind, i, L"Format");
-	const std::string id = get(h, kind, i, L"CodecID");
-	// A format family can contain incompatible codecs with distinct wire names.
-	if (format == "MPEG-4 Visual") {
-		if (id == "MPG4" || id == "MP41")
-			return "msmpeg4v1";
-		if (id == "MP42")
-			return "msmpeg4v2";
-		if (id == "MP43" || id == "DIV3" || id == "DIV4" || id == "DIV5" || id == "DIV6")
-			return "msmpeg4v3";
-	}
-	if (format == "VC-1" && id == "WMV3")
-		return "wmv3";
-	if (format == "HuffYUV")
-		return id == "FFVH" ? "ffvhuff" : "huffyuv";
-	if (format == "AMR") {
-		const auto profile = get(h, kind, i, L"Format_Profile");
-		if (profile == "Narrow band")
-			return "amr_nb";
-		if (profile == "Wide band")
-			return "amr_wb";
-	}
-	if (format == "GSM 6.10" && get(h, 0, 0, L"Format") == "Wave" && id == "31")
-		return "gsm_ms";
-	if (format == "ADPCM") {
-		const auto profile = get(h, kind, i, L"Format_Profile");
-		if (profile == "A-Law")
-			return "pcm_alaw";
-		if (profile == "U-Law")
-			return "pcm_mulaw";
-		if (id == "ima4")
-			return "adpcm_ima_qt";
-		// Numeric CodecID values are hexadecimal WAVE format identifiers.
-		if (get(h, 0, 0, L"Format") == "Wave") {
-			if (id == "11")
-				return "adpcm_ima_wav";
-			if (id == "2")
-				return "adpcm_ms";
-			if (id == "20")
-				return "adpcm_yamaha";
-		}
-	}
-	if (format == "YUV" && (id == "I420" || id == "IYUV" || id == "YV12" || id == "UYVY" || id == "YUY2"))
-		return "rawvideo";
-	static const std::map<std::string, std::string> names = { { "AVC", "h264" },
-		{ "HEVC", "hevc" },
-		{ "AV1", "av1" },
-		{ "VP8", "vp8" },
-		{ "VP9", "vp9" },
-		{ "MPEG-4 Visual", "mpeg4" },
-		{ "xvid", "mpeg4" },
-		{ "XviD", "mpeg4" },
-		{ "DivX", "mpeg4" },
-		{ "H.263", "h263" },
-		{ "ProRes", "prores" },
-		{ "MLP FBA", "truehd" },
-		{ "TrueHD", "truehd" },
-		{ "AAC", "aac" },
-		{ "FLAC", "flac" },
-		{ "Opus", "opus" },
-		{ "Vorbis", "vorbis" },
-		{ "Speex", "speex" },
-		{ "AC-3", "ac3" },
-		{ "E-AC-3", "eac3" },
-		{ "DTS", "dts" },
-		{ "Theora", "theora" },
-		{ "FFV1", "ffv1" },
-		{ "ALAC", "alac" },
-		{ "WavPack", "wavpack" },
-		{ "TTA", "tta" },
-		{ "Monkey's Audio", "ape" },
-		{ "Musepack SV7", "musepack7" },
-		{ "Musepack SV8", "musepack8" },
-		{ "MLP", "mlp" },
-		{ "CineForm", "cfhd" },
-		{ "JPEG 2000", "jpeg2000" },
-		{ "VC-3", "dnxhd" },
-		{ "Sorenson Spark", "flv1" },
-		{ "VC-1", "vc1" },
-		{ "WMV2", "wmv2" },
-		{ "WMV1", "wmv1" },
-		{ "JPEG", "mjpeg" } };
-	auto it = names.find(format);
-	if (it != names.end())
-		return it->second;
-	if (format == "WMA") {
-		const auto profile = get(h, kind, i, L"Format_Profile");
-		const auto version = get(h, kind, i, L"Format_Version");
-		if (profile.find("Lossless") != std::string::npos)
-			return "wmalossless";
-		if (profile.find("Pro") != std::string::npos)
-			return "wmapro";
-		if (profile.find("Voice") != std::string::npos)
-			return "wmavoice";
-		return version == "Version 1" ? "wmav1" : "wmav2";
-	}
-	if (format == "MPEG Audio") {
-		auto profile = get(h, kind, i, L"Format_Profile");
-		if (profile.find("Layer 3") != std::string::npos)
-			return "mp3";
-		if (profile.find("Layer 2") != std::string::npos)
-			return "mp2";
-		if (profile.find("Layer 1") != std::string::npos)
-			return "mp1";
-	}
-	if (format == "MPEG Video") {
-		auto version = get(h, kind, i, L"Format_Version");
-		if (version.find('2') != std::string::npos)
-			return "mpeg2video";
-		if (version.find('1') != std::string::npos)
-			return "mpeg1video";
-	}
-	if (format == "PCM") {
-		auto bits = get(h, kind, i, L"BitDepth");
-		auto sign = get(h, kind, i, L"Format_Settings_Sign");
-		auto endian = get(h, kind, i, L"Format_Settings_Endianness");
-		if (sign.empty() && (get(h, kind, i, L"Format_Profile") == "Float" || id == "fl32" ||
-					    id == "FL32" || id == "fl64" || id == "FL64"))
-			sign = "Float";
-		if (sign == "Float" && endian.empty() && get(h, 0, 0, L"Format") == "Wave") {
-			// MediaInfo omits float WAV endianness. Read the RIFF signature,
-			// including the big-endian RIFX variant, rather than guessing it.
-			const auto position = tell();
-			unsigned char header[12];
-			if (position >= 0 && !seek(0, SEEK_SET)) {
-				if (std::fread(header, 1, sizeof(header), stdin) == sizeof(header) &&
-					!std::memcmp(header + 8, "WAVE", 4)) {
-					if (!std::memcmp(header, "RIFX", 4))
-						endian = "Big";
-					else if (!std::memcmp(header, "RIFF", 4) ||
-						 !std::memcmp(header, "RF64", 4) ||
-						 !std::memcmp(header, "BW64", 4))
-						endian = "Little";
-				}
-				if (seek(position, SEEK_SET))
-					return {};
-			}
-		}
-		if (sign.empty() && get(h, 0, 0, L"Format") == "AIFF")
-			sign = "Signed";
-		if (bits == "8" && sign == "Unsigned")
-			return "pcm_u8";
-		if (bits == "8" && sign == "Signed")
-			return "pcm_s8";
-		if ((bits == "16" || bits == "24" || bits == "32" || bits == "64") &&
-			(endian == "Little" || endian == "Big") &&
-			(sign == "Signed" || sign == "Unsigned" || sign == "Float"))
-			return std::string("pcm_") +
-			       (sign == "Float"           ? "f"
-				       : sign == "Signed" ? "s"
-							  : "u") +
-			       bits + (endian == "Little" ? "le" : "be");
-	}
-	return {}; // Unknown vocabulary is explicit missing data.
-}
-static bool streamTags(const std::string &codec)
-{
-	return codec == "vorbis" || codec == "opus" || codec == "flac" || codec == "speex";
-}
-static void miTags(void *h, int kind, size_t index, Result &r)
-{
-	auto first = [&](std::initializer_list<const wchar_t *> fields) {
-		for (auto field : fields) {
-			auto s = get(h, kind, index, field);
-			if (!s.empty())
-				return s;
-		}
-		return std::string{};
-	};
-	r.artist = first({ L"Performer", L"Artist", L"ARTIST", L"artist" });
-	r.album = first({ L"Album", L"ALBUM", L"album" });
-	r.title = first({ L"Title", L"Track", L"TITLE" });
-	if (kind == 0 && (get(h, 0, 0, L"Format") == "Wave" || get(h, 0, 0, L"Format") == "AVI")) {
-		if (r.artist.empty())
-			r.artist = get(h, 0, 0, L"Director");
-		if (r.album.empty())
-			r.album = get(h, 0, 0, L"OriginalSourceForm/Name");
-	}
-}
-static int mediaInfo(Result &r, int64_t size, bool full = false, unsigned seekCount = 0)
-{
-	void *h = MediaInfo_New();
-	if (!h)
+	auto *buffer = static_cast<unsigned char *>(av_malloc(64 * 1024));
+	if (!buffer)
 		return 12;
+	auto *io = avio_alloc_context(buffer, 64 * 1024, 0, &input, readInput, nullptr, seekInput);
+	if (!io) {
+		av_free(buffer);
+		return 12;
+	}
+	auto *format = avformat_alloc_context();
+	if (!format) {
+		av_free(io->buffer);
+		io->buffer = nullptr;
+		avio_context_free(&io);
+		return 12;
+	}
 	struct Owner
 	{
-		void *h;
-		~Owner() { MediaInfo_Delete(h); }
-	} owner{ h };
-	MediaInfo_Option(h, L"CarriageReturnReplace", L"");
-	MediaInfo_Option(h, L"ParseSpeed", full ? L"1" : L"0.5");
-	if (seek(0, SEEK_SET))
-		return 12;
-	MediaInfo_Open_Buffer_Init(h, size, 0);
-	unsigned char buffer[64 * 1024];
-	for (;;) {
-		const size_t n = std::fread(buffer, 1, sizeof(buffer), stdin);
-		if (!n)
-			break;
-		const size_t status = MediaInfo_Open_Buffer_Continue(h, buffer, n);
-		uint64_t next = MediaInfo_Open_Buffer_Continue_GoTo_Get(h);
-		if (next != UINT64_MAX) {
-			// Forward seeks make progress through the bounded file. Count only
-			// repeated or backward seeks across both parses to stop seek loops.
-			const auto position = tell();
-			if (position < 0)
-				return 12;
-			if (next > static_cast<uint64_t>(size))
-				return 11;
-			if (next <= static_cast<uint64_t>(position) && ++seekCount > 64)
-				return 11;
-			if (seek(static_cast<int64_t>(next), SEEK_SET))
-				return 11;
-			MediaInfo_Open_Buffer_Init(h, size, next);
-		} else if (status & 8) {
-			// A completed stream can still request a seek to trailing tags.
-			// Honour that request before accepting the finished flag (e.g. TTA).
-			break;
+		AVFormatContext *&format;
+		AVIOContext *&io;
+		~Owner()
+		{
+			avformat_close_input(&format);
+			// libavformat can replace the original AVIO buffer.
+			av_free(io->buffer);
+			io->buffer = nullptr;
+			avio_context_free(&io);
 		}
-	}
+	} owner{ format, io };
+	format->pb = io;
+	format->flags |= AVFMT_FLAG_CUSTOM_IO;
+	format->interrupt_callback = { interrupted, &input };
+	format->io_open = denyOpen;
+	format->probesize = 5 * 1024 * 1024;
+	format->max_analyze_duration = 5 * AV_TIME_BASE;
+	AVDictionary *options = nullptr;
+	av_dict_set(&options, "protocol_whitelist", "", 0);
+	// Keep this policy in code: distro FFmpeg enables network and playlist readers.
+	// Match packaging/media/build-static.sh, including libavformat's runtime aliases.
+	av_dict_set(&options,
+		"format_whitelist",
+		"aac,ac3,aiff,amr,ape,asf,avi,dts,eac3,flac,flv,gsm,h264,hevc,matroska,webm,"
+		"mov,mp4,m4a,3gp,3g2,mj2,mp3,mpeg,mpegts,mpegvideo,ogg,wav,wv,tta",
+		0);
+	// find_stream_info may otherwise open decoders in a full system FFmpeg.
+	// Container metadata and parsers suffice; match the decoder-free bundle.
+	av_dict_set(&options, "codec_whitelist", "", 0);
+	const int opened = avformat_open_input(&format, nullptr, nullptr, &options);
+	av_dict_free(&options);
+	if (opened < 0)
+		return interrupted(&input) ? (input.exhausted ? 11 : 13) : 11;
+	// A partial stream-info result can still contain usable container metadata.
+	(void)avformat_find_stream_info(format, nullptr);
+	if (interrupted(&input))
+		return input.exhausted ? 11 : 13;
 	if (std::ferror(stdin))
 		return 12;
-	MediaInfo_Open_Buffer_Finalize(h);
-	r.length = numeric(get(h, 0, 0, L"Duration"), 1000, true); // C API milliseconds.
-	r.bitrate = numeric(get(h, 0, 0, L"OverallBitRate"), 1000, false);
-	// A fast raw AVC parse can expose a duration for only the inspected frames.
-	// Neither a nonzero value nor VUI frame rate proves a complete timeline.
-	// Keep codec/tags, but do not publish this partial duration or derived bitrate.
-	const bool rawAvc = get(h, 0, 0, L"Format") == "AVC";
-	if (rawAvc) {
-		r.length = 0;
-		r.bitrate = 0;
+	if (format->duration != AV_NOPTS_VALUE)
+		result.length = bounded(double(format->duration) / AV_TIME_BASE, true);
+	result.bitrate = bounded(double(format->bit_rate) / 1000, false);
+	const AVStream *selected = nullptr;
+	for (unsigned i = 0; i < format->nb_streams; ++i) {
+		const auto *stream = format->streams[i];
+		if (stream->disposition & AV_DISPOSITION_ATTACHED_PIC)
+			continue;
+		const auto type = stream->codecpar->codec_type;
+		if (type == AVMEDIA_TYPE_VIDEO) {
+			selected = stream;
+			break;
+		}
+		if (!selected && type == AVMEDIA_TYPE_AUDIO)
+			selected = stream;
 	}
-	miTags(h, 0, 0, r);
-	const size_t videos = MediaInfo_Count_Get(h, 1, size_t(-1));
-	const size_t audios = MediaInfo_Count_Get(h, 2, size_t(-1));
-	// Images are Stream_Image, not video. Prefer first actual video, then audio.
-	if (videos)
-		r.codec = miCodec(h, 1, 0);
-	else if (audios)
-		r.codec = miCodec(h, 2, 0);
-	if (!videos && audios == 1 && streamTags(r.codec)) {
-		Result tags;
-		miTags(h, 2, 0, tags);
-		if (r.artist.empty())
-			r.artist = tags.artist;
-		if (r.album.empty())
-			r.album = tags.album;
-		if (r.title.empty())
-			r.title = tags.title;
+	if (selected && selected->codecpar->codec_id != AV_CODEC_ID_NONE)
+		result.codec = avcodec_get_name(selected->codecpar->codec_id);
+	result.artist = tag(format->metadata, "artist");
+	result.album = tag(format->metadata, "album");
+	result.title = tag(format->metadata, "title");
+	// RIFF INFO calls the album IPRD (libav's "product"). Prefer an explicit album.
+	if (result.album.empty() && std::strcmp(format->iformat->name, "avi") == 0)
+		result.album = tag(format->metadata, "product");
+	// Ogg video also carries programme comments on its selected stream.
+	// Other containers can use stream title for a track label (e.g. "VP8 video stream").
+	if (selected && std::strcmp(format->iformat->name, "ogg") == 0) {
+		if (result.artist.empty())
+			result.artist = tag(selected->metadata, "artist");
+		if (result.album.empty())
+			result.album = tag(selected->metadata, "album");
+		if (result.title.empty())
+			result.title = tag(selected->metadata, "title");
 	}
-	// Full scans are bounded by size and the parent's process watchdog.
-	if (!r.length && !rawAvc && !full && size <= 512LL * 1024 * 1024) {
-		Result retry;
-		int rc = mediaInfo(retry, size, true, seekCount);
-		if (rc == 0 || rc == 10) {
-			// The full pass can recover fields independently, and may omit
-			// fields found during the fast pass. Merge what it found even when
-			// it still has no duration or codec of its own.
-			if (retry.length)
-				r.length = retry.length;
-			if (retry.bitrate)
-				r.bitrate = retry.bitrate;
-			if (!retry.codec.empty())
-				r.codec = retry.codec;
-			if (!retry.artist.empty())
-				r.artist = retry.artist;
-			if (!retry.album.empty())
-				r.album = retry.album;
-			if (!retry.title.empty())
-				r.title = retry.title;
-		} else if (rc && !r.usable())
-			return rc;
+	if (selected && selected->codecpar->codec_id == AV_CODEC_ID_MP3 &&
+		std::strcmp(format->iformat->name, "mp3") == 0 &&
+		format->duration_estimation_method == AVFMT_DURATION_FROM_BITRATE) {
+		// A sampled bitrate cannot establish VBR duration without Xing/VBRI.
+		// Keep other fields if the optional bounded scan cannot establish a total.
+		result.length = 0;
+		result.bitrate = 0;
+		double seconds = 0;
+		if (scanMp3(format, selected, input, seconds)) {
+			result.length = bounded(seconds, true);
+			result.bitrate = bounded(double(input.size) * 8 / seconds / 1000, false);
+		}
 	}
-	return r.usable() ? 0 : 10;
+	return result.length || !result.codec.empty() ? 0 : 10;
 }
-static void quoted(const std::string &s, bool json = true)
+void quoted(const std::string &text, bool json = true)
 {
 	std::cout << '"';
-	// utf8() already validates and bounds complete code points.
-	for (unsigned char c : s) {
-		if (c == '\\' || c == '"')
-			std::cout << '\\' << c;
-		else if (c == '\n')
+	for (unsigned char ch : text) {
+		switch (ch) {
+		case '"':
+			std::cout << "\\\"";
+			break;
+		case '\\':
+			std::cout << "\\\\";
+			break;
+		case '\n':
 			std::cout << "\\n";
-		else if (c == '\r')
+			break;
+		case '\r':
 			std::cout << "\\r";
-		else if (c == '\t')
+			break;
+		case '\t':
 			std::cout << (json ? "\\t" : "\t");
-		else if (c >= 32 && c != 127)
-			std::cout << c;
+			break;
+		default:
+			std::cout << ch;
+		}
 	}
 	std::cout << '"';
 }
+void limits()
+{
+#ifndef _WIN32
+	rlimit cpu{ 25, 25 }, writes{ 256 * 1024, 256 * 1024 }, core{ 0, 0 };
+	setrlimit(RLIMIT_CPU, &cpu);
+	setrlimit(RLIMIT_FSIZE, &writes);
+	setrlimit(RLIMIT_CORE, &core);
+#if !defined(__SANITIZE_ADDRESS__)
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+	return;
+#endif
+#endif
+	rlimit memory{ 1024ULL * 1024 * 1024, 1024ULL * 1024 * 1024 };
+	setrlimit(RLIMIT_AS, &memory);
+#endif
+#endif
+}
+} // namespace
 int main(int argc, char **argv)
 {
 	std::setlocale(LC_NUMERIC, "C");
-#ifdef _WIN32
-	_setmode(_fileno(stdin), _O_BINARY);
-	_setmode(_fileno(stdout), _O_BINARY);
-#else
-	rlimit noCore{ 0, 0 };
-	setrlimit(RLIMIT_CORE, &noCore);
-	rlimit cpu{ 25, 25 };
-	setrlimit(RLIMIT_CPU, &cpu);
-	// stdout is a regular file the core reads, so 0 would block the reply. Four times the
-	// core's 64 KiB reply cap still leaves no room for any real file write.
-	rlimit writes{ 256 * 1024, 256 * 1024 };
-	setrlimit(RLIMIT_FSIZE, &writes);
-#if !defined(__SANITIZE_ADDRESS__)
-	// ASan reserves a large shadow address space; ordinary builds have a 1 GiB cap.
-#if defined(__has_feature)
-#if !__has_feature(address_sanitizer)
-	rlimit memory{ 1024ULL * 1024 * 1024, 1024ULL * 1024 * 1024 };
-	setrlimit(RLIMIT_AS, &memory);
-#endif
-#else
-	rlimit memory{ 1024ULL * 1024 * 1024, 1024ULL * 1024 * 1024 };
-	setrlimit(RLIMIT_AS, &memory);
-#endif
-#endif
-#endif
 	bool json = false;
 	for (int i = 1; i < argc; ++i) {
-		std::string arg = argv[i];
+		const std::string arg = argv[i];
 		if (arg == "--json")
 			json = true;
 		else if (arg == "--version") {
-			std::cout << "amule-media-probe 1; "
-				  << utf8(MediaInfo_Option(nullptr, L"Info_Version", L"")) << '\n';
+			std::cout << "amule-media-probe 1; FFmpeg " << av_version_info() << '\n';
 			return 0;
 		} else
 			return 12;
 	}
-	if (seek(0, SEEK_END))
+#ifdef _WIN32
+	_setmode(_fileno(stdin), _O_BINARY);
+	_setmode(_fileno(stdout), _O_BINARY);
+	struct _stat64 statbuf
+	{
+	};
+	if (_fstat64(_fileno(stdin), &statbuf) || (statbuf.st_mode & _S_IFMT) != _S_IFREG)
 		return 12;
-	const auto size = tell();
-	if (size < 0 || seek(0, SEEK_SET))
+#else
+	struct stat statbuf
+	{
+	};
+	if (fstat(fileno(stdin), &statbuf) || !S_ISREG(statbuf.st_mode))
 		return 12;
-	if (!json) {
-		// Before parsing: a crash after this line is the file's doing, not a broken install.
+#endif
+	limits();
+	if (statbuf.st_size < 0 || reposition(0, SEEK_SET))
+		return 12;
+	av_log_set_level(AV_LOG_QUIET);
+	av_max_alloc(128 * 1024 * 1024);
+	Input input;
+	input.size = statbuf.st_size;
+	if (!json)
 		std::cout << "AMMP 1\n" << std::flush;
-	}
-	Result r;
-	int rc = 12;
+	Result result;
+	int status = 12;
 	try {
-		rc = mediaInfo(r, size);
+		status = probe(input, result);
 	} catch (...) {
 		return 12;
 	}
-	if (rc)
-		return rc;
+	if (status)
+		return status;
 	if (json) {
-		std::cout << "{\"backend\":";
-		quoted("mediainfo");
-		std::cout << ",\"length_seconds\":" << r.length << ",\"bitrate_kbps\":" << r.bitrate;
-		for (const auto &item : { std::make_pair("codec", r.codec),
-			     { "artist", r.artist },
-			     { "album", r.album },
-			     { "title", r.title } }) {
+		std::cout << "{\"backend\":\"libav\",\"length_seconds\":" << result.length
+			  << ",\"bitrate_kbps\":" << result.bitrate << ",\"codec\":";
+		quoted(result.codec);
+		for (const auto &item : { std::make_pair("artist", result.artist),
+			     { "album", result.album },
+			     { "title", result.title } }) {
 			std::cout << ",\"" << item.first << "\":";
 			quoted(item.second);
 		}
 		std::cout << "}\n";
 	} else {
-		// Versioned, fixed flat vocabulary reuses the core's tested escaping parser.
-		std::cout << "format.duration=" << r.length
-			  << "\nformat.bit_rate=" << uint64_t(r.bitrate) * 1000 << '\n';
-		std::cout << "streams.stream.0.codec_type=\"audio\"\nstreams.stream.0.codec_name=";
-		quoted(r.codec);
+		std::cout << "format.duration=" << result.length
+			  << "\nformat.bit_rate=" << uint64_t(result.bitrate) * 1000
+			  << "\nstreams.stream.0.codec_type=\"audio\"\nstreams.stream.0.codec_name=";
+		quoted(result.codec);
 		std::cout << '\n';
-		for (const auto &item :
-			{ std::make_pair("artist", r.artist), { "album", r.album }, { "title", r.title } }) {
+		for (const auto &item : { std::make_pair("artist", result.artist),
+			     { "album", result.album },
+			     { "title", result.title } }) {
 			std::cout << "format.tags." << item.first << '=';
 			quoted(item.second, false);
 			std::cout << '\n';

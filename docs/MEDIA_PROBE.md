@@ -1,54 +1,92 @@
 # Bundled media metadata extraction
 
-The core launches `amule-media-probe`. It looks next to its own executable first
-(the Windows, macOS, AppImage and static bundles, and the build tree, where the
-macOS `aMule.app` gets a copy after each link), then at the
-installed `libexec/amule/amule-media-probe`, relative to its own folder. It never
-searches `PATH`: the helper is internal, so installs keep it out of `bin`. The
-helper uses MediaInfoLib only. It consumes an already-open, seekable regular file on stdin;
-the parent validates a bounded, versioned nine-line response containing duration
-(rounded seconds), bitrate (kbps), codec, artist, album and title. The existing
-metadata queue and enable/refresh controls remain.
+The core launches `amule-media-probe` at a fixed location next to its executable
+or in the installed `libexec/amule` directory (`bin` on Windows). It never
+searches `PATH` and has no configurable parser path. The helper links FFmpeg's
+libavformat, libavcodec and libavutil; it does not execute ffprobe. The small
+frontend derives from [mini-media-probe](https://github.com/3togo/mini-media-probe).
 
-The parent enforces a wall-clock deadline, cancellation and a 64 KiB output
-limit while the child runs. It rejects malformed framing and numeric values
-outside the helper protocol. Windows uses a Job object and an explicit inherited
-handle list. POSIX builds limit CPU, memory, core dumps and file size (256 KiB:
-stdout is a file the core reads, so 0 would block the reply). Bundle library search paths
-are preserved. This is process isolation and resource limiting, not an operating
-system sandbox. Pinned bundle builds disable curl and libmms readers.
+The input is an already-open, seekable regular file inherited on stdin. The
+versioned nine-line `AMMP 1` response retains the existing flat vocabulary:
+rounded duration, overall bitrate in kbps, FFmpeg codec name, artist, album and
+title, followed by `END`. Tags are valid UTF-8, escaped and limited to 4096 bytes
+per field. `--json` is available for diagnostics and tests.
 
-`MediaMetadata/FFProbePath` is obsolete: a nonempty old setting is logged once
-and the key is removed from `amule.conf`. The EC tag stays reserved and the frozen
-`/api/v1` field `files.ffprobe_path` reads as empty; a PATCH that would change it
-is `400 read_only_field`.
-The old path, Browse and Detect controls are removed. When the core has no helper
-(built with `-DENABLE_MEDIA_PROBE=OFF`, or installed without it), the toggle and the
-"Re-extract media metadata" actions stay visible but disabled, and amuleapi reports
-`files.media_metadata_available` as `false`. EC tag
-`EC_TAG_FILES_MEDIA_METADATA_AVAILABLE` carries this to remote GUIs; an older core
-sends nothing, and the controls stay enabled there. A re-extract request that still
-arrives is refused with a reason (EC and REST) or a log line (the monolithic GUI).
+## Isolation and parser policy
 
-Files with a legacy ffprobe failure marker (`FT_MEDIA_PROBE_FAILED=1`) receive
-one retry. Only a MediaInfo file verdict writes marker `2`; the normal scheduling
-path skips only `2`. Refresh ignores markers and success clears them. The helper
-prints its `AMMP 1` header before it parses the file, so a crash after the header
-is this file's doing and writes marker `2`. Missing helpers, crashes before the
-header, malformed output and cancellation never become file verdicts.
+The parent retains its 30-second watchdog, cancellation, strict response
+validation and 64 KiB output limit. Windows uses a Job object and an explicit
+inherited handle list. The helper sets POSIX CPU, address-space, core-dump and
+file-size limits itself. These are process isolation and resource limits, not
+an operating-system sandbox.
 
-## Build and tests
+Every build, including a full distribution FFmpeg, applies these restrictions
+in code before opening input:
 
-Install MediaInfoLib (`libmediainfo-dev` on Debian/Ubuntu, `libmediainfo-devel` on
-Fedora, `libmediainfo` on Arch or Homebrew, `mingw-w64-<toolchain>-libmediainfo` on MSYS2). CMake builds
-and installs the helper by default with either core target, to
-`${CMAKE_INSTALL_LIBEXECDIR}/amule` (`bin` on Windows). Configure
-`-DENABLE_MEDIA_PROBE=OFF` to omit it.
+- Custom AVIO reads only inherited stdin; `io_open` denies secondary opens and
+  `protocol_whitelist` is empty. No network initialization is requested.
+- `format_whitelist` permits AAC/ADTS, AC-3/E-AC-3, AIFF, AMR, APE, ASF/WMA/WMV,
+  AVI, DTS, FLAC, FLV, GSM, raw H.264/HEVC, Matroska/WebM, MOV/MP4/M4A/3GP,
+  MP3, MPEG-PS/TS/video, Ogg, WAV, WavPack and TTA. Playlists, SDP, concat and
+  DASH are excluded. Other MediaInfo formats are intentionally outside this policy.
+- An empty `codec_whitelist` prevents stream-info probing from opening decoders
+  supplied by a full system FFmpeg. Parsers and demuxers provide the metadata.
+- Reads total at most 1 GiB, repeated/backward seeks at most 256, individual
+  libav allocations at most 128 MiB and parsing at most 25 seconds. The parent
+  remains responsible for killing a stuck child.
 
-The helper declares the C API itself, so it needs no headers. On Debian/Ubuntu,
-`libmediainfo0v5` and `libzen0t64` (`libzen0v5` on Debian 12 and Ubuntu 22.04) are
-enough to build it. Use them with `libcurl4-openssl-dev`, because `libmediainfo-dev`
-pulls in the conflicting `libcurl4-gnutls-dev`.
+The runtime whitelist in `src/mediaprobe/main.cpp` and the demuxer list in
+`packaging/media/build-ffmpeg.py` / the Flatpak template must stay aligned.
+FFmpeg's runtime aliases differ from configure names, notably `mpeg`/`mpegps`.
+Keep the MPEG video demuxer: container readers use it for stream identification.
+
+## Duration and tags
+
+Reliable container/header duration uses the normal fast path. Raw MP3 duration
+estimated from bitrate instead receives a bounded full frame scan (at most
+512 MiB), counting complete contiguous Layer III frames through EOF. Reliable
+Xing/VBRI timing is retained. Gaps, truncation, unsupported framing or an exceeded
+budget leave duration and its derived bitrate unknown while preserving codec and
+tags. This counts encoded samples; absent gapless metadata, it does not establish
+sample-exact original programme duration.
+
+Raw H.264 without a reliable presentation timeline remains unknown. Variable-rate
+pictures and a nominal frame rate cannot reconstruct missing timestamps. Valid
+container timing is used for variable-rate video in timed containers.
+
+Container artist/album/title take precedence. Attached pictures are not selected
+as video. AVI's RIFF `product` is an album fallback; Ogg comments are read from
+the selected video/audio stream. Other containers' stream titles are track labels
+and are not promoted to programme titles. FFmpeg does not expose the three 3GP user-data tags found by
+MediaInfo in the existing synthetic fixture; that is a known metadata loss.
+
+## Configuration and failure markers
+
+`ENABLE_MEDIA_PROBE` remains ON by default for core builds. Missing FFmpeg
+headers/libraries fail configuration; `-DENABLE_MEDIA_PROBE=OFF` omits extraction.
+The minimum FFmpeg is 4.4 (libavformat 58.76.100, libavcodec 58.134.100,
+libavutil 56.70.100), covering Ubuntu 22.04 and Debian 12's FFmpeg 5.1.
+
+`MediaMetadata/FFProbePath` remains obsolete and is removed when loading settings.
+The EC tag stays reserved; `/api/v1`'s `files.ffprobe_path` remains read-only and
+empty. Without an installed helper the metadata controls remain visible but
+disabled; `files.media_metadata_available` reports false.
+
+Failure markers retain their existing meaning: legacy ffprobe marker `1` gets
+one retry; helper file verdicts write `2`; normal scheduling skips `2`. Refresh
+ignores markers, and success clears them. The child flushes `AMMP 1` before
+parsing. A crash after that header is a file verdict; a missing helper, a crash
+before the header, malformed output or cancellation is not. Exit codes remain
+0 (usable), 10 (no usable metadata), 11 (rejected input), 12 (configuration/I/O)
+and 13 (internal deadline). The core's startup and failure-classification code
+is shared with the previous backend.
+
+## Building and testing
+
+Install `pkg-config`, `libavformat-dev`, `libavcodec-dev` and `libavutil-dev` on
+Debian/Ubuntu; `ffmpeg-devel` on Fedora; `ffmpeg` on Arch/Homebrew; or the matching
+`mingw-w64-clang-{x86_64,aarch64}-ffmpeg` package on MSYS2. Unlike the previous
+MediaInfo C ABI bridge, the FFmpeg build requires development headers.
 
 ```sh
 cmake -S . -B build -DBUILD_TESTING=ON
@@ -56,111 +94,52 @@ cmake --build build -j2
 ctest --test-dir build -R MediaProbe --output-on-failure
 ```
 
-The real-library tests generate WAV fixtures without extra dependencies. They
-cover rounding, subsecond audio, empty and malformed files, Unicode, invalid tag
-encoding, large tags and protocol framing. Optional ffmpeg-generated fixtures
-cover raw AVC, Xvid, ProRes, H.263, WMA and AVI/FLV metadata. ffmpeg is a test
-fixture generator only. The runner tests cover cancellation, timeout, crashes,
-strict output validation, partial results and file-verdict classification. The
-real WAV runner test is portable; shell-based failure tests run on POSIX.
+The helper can also be built standalone from `src/mediaprobe`. WAV/encoding,
+framing and production AVIO callback tests need no media generator. Additional
+codec, MP3 duration and raw-video timing tests use ffmpeg/ffprobe only to generate
+and inspect fixtures. `-DMEDIA_PROBE_REQUIRE_FIXTURES=ON` requires LAME/x264 rather
+than silently skipping duration tests.
 
-For a short comparison, generate a tagged fixture and run both tools:
+`test_hostile.py` supplies misleadingly named HLS/concat/SDP/DASH, encryption-key
+URLs and a supported MOV with an external QuickTime track reference. On Linux it
+uses strace to assert that no canary file is opened and no sockets are created.
+Set `AMULE_REQUIRE_STRACE=1` to require that observation. The compatibility workflow
+runs against full system FFmpeg on Debian 12 and Ubuntu 22.04/24.04, as well as
+native bundled builds on Linux, macOS and Windows CLANG64/CLANGARM64.
 
-```sh
-ffmpeg -f lavfi -i sine=duration=3 -metadata artist=Example /tmp/probe.wav
-build/src/amule-media-probe --json < /tmp/probe.wav
-ffprobe -v quiet -show_format -show_streams -of json /tmp/probe.wav
-```
-
-ffprobe agreement measures compatibility, not correctness. MediaInfo can differ
-on encoder padding and bitrate accounting. For raw H.264, MediaInfo's duration
-can describe only inspected frames even at full parse speed, so the helper
-publishes codec but leaves duration and derived bitrate unknown. Reliable raw
-H.264 timing remains follow-up work. Files lacking duration get a full scan up
-to 512 MiB, bounded by the parent's watchdog.
+`packaging/media/compare.py` checks all six fields against the existing corpus
+manifest and verifies fixture hashes. It can also compare a directory of real
+media. Record versions, differences and run-specific results in the PR discussion;
+agreement between backends alone is not correctness.
 
 ## Packaging
 
-All bundles build MediaInfoLib and ZenLib from checksum-pinned source archives.
-AppImage, macOS, Windows and static Alpine use
-`packaging/media/build-static.sh`; Flatpak manifests use the same pins and
-explicitly disable curl and libmms. AppImage, macOS and Windows link these two
-libraries statically into the helper to avoid platform package dependency
-closures. No FFmpeg runtime or development libraries are needed.
+All binary bundles use checksum-pinned, metadata-only static FFmpeg archives.
+AppImage, Windows, macOS and Alpine static builds use
+`packaging/media/build-static.sh`; Flatpak uses the same pin and component list.
+Decoders, encoders, programs, muxers, filters, external auto-detected libraries,
+network and protocols are disabled. GPL/nonfree FFmpeg components are not enabled.
+The existing macOS packaging builds each architecture before merging Universal2.
 
 ```sh
 packaging/media/build-static.sh /tmp/media-prefix /tmp/media-sources
 cmake -S src/mediaprobe -B /tmp/media-helper \
-  -DMEDIAINFO_LIBRARY=/tmp/media-prefix/lib/libmediainfo.a \
-  -DMEDIA_ZEN_LIBRARY=/tmp/media-prefix/lib/libzen.a -DMEDIA_PROBE_STATIC=ON
+  -DCMAKE_PREFIX_PATH=/tmp/media-prefix -DMEDIA_PROBE_STATIC=ON
 cmake --build /tmp/media-helper -j2
 ctest --test-dir /tmp/media-helper --output-on-failure
 ```
 
-The helper installs MediaInfoLib, ZenLib, aes-gladman and tinyxml2 notices under
-`share/licenses/amule-media-probe`; macOS places them in the app's Resources.
-See `docs/THIRDPARTY.md`. Update the source pins in `packaging/linux/versions.env`,
-render the Flatpak template with `packaging/linux/build.sh render-flatpak-manifest`.
-The Flathub manifest remains pinned to 3.2.0, which uses ffprobe; add the media
-modules with resolved pins when updating it to the first release with this helper.
-Keep the exact sources
-and build recipes with redistributed bundles.
-Windows/macOS packaging, Flatpak runtime and the fully static Alpine image need
-validation on their respective platforms.
+The builder uses `gh` to download GitHub sources directly and checks SHA-256.
+Linux wrappers pre-stage the archive so Docker builds consume it offline. The
+exact source is retained under the prefix's `share/sources/amule-media-probe`;
+the release workflow attaches that same archive as a release asset. LGPL text
+and FFmpeg's licence description ship under `share/licenses/amule-media-probe`
+(or macOS Resources). See `docs/THIRDPARTY.md`.
 
-## Packaged runtime validation
-
-`packaging/media/test-runtime.py` checks the shipped notices, pinned helper
-version, inherited-file input, duration/bitrate/codec, Unicode tags, exact
-protocol framing and rejection of empty/malformed media. It then launches the
-packaged daemon with isolated configuration and verifies persisted metadata and
-failure marker 2. AppImage tests enter through the extracted AppRun; Flatpak
-tests execute inside the installed sandbox. Windows tests use a relocated
-extraction of the final zip, and macOS tests use the mounted dmg.
-
-The Packaging workflow runs these checks against the bundle produced by each
-build job. Flatpak clones the exact local HEAD commit rather than upstream
-master, and its notices are checked in the installed bundle. Final PR validation
-uses one full workflow dispatch with no `only` filter, so every build and runtime
-check covers the same commit. For the Universal2 dmg, both slices are exercised
-on macOS (Intel via Rosetta).
-
-### System-library compatibility
-
-The minimum supported MediaInfoLib is 21.09 (Ubuntu 22.04 package
-`libmediainfo0v5_21.09+dfsg-4`, with ZenLib 0.4.39). All 15 tests in
-`src/mediaprobe/test_backends.py` pass against that library and the bundled 26.05,
-including the optional FFmpeg-generated codec/container and raw H.264 fixtures.
-The suite checks Unicode tags, malformed input, duration rounding and the
-removed `--backend` option as well as codec/tag field compatibility. Run it
-against the helper linked to the system library:
-
-```sh
-python3 src/mediaprobe/test_backends.py build/src/amule-media-probe -v
-```
-
-## Compatibility scope and remaining gaps
-
-The helper replaces the six fields aMule used from ffprobe: duration, bitrate,
-codec, artist, album and title. It does not reproduce ffprobe's complete stream,
-chapter, attachment or technical-field output. Codec names are translated
-explicitly; an unknown MediaInfo format stays empty instead of publishing a
-misleading identifier.
-
-The expanded fixture audit covers WMA 1/2, WavPack, TTA, AMR-NB/WB, WAV GSM,
-A-law/mu-law, IMA/MS/Yamaha ADPCM, TrueHD/MLP, float PCM in WAV/AIFF, Microsoft
-MPEG-4 v2/v3, HuffYUV/FFVH, CineForm, JPEG 2000, DNxHR, raw YUV video and FLV1,
-in addition to the original codec/container cases. CodecID distinguishes codec
-variants within one MediaInfo Format family. A finished stream can also request
-a seek to trailing tags; the helper follows that seek before finalizing, which
-preserves TTA artist/album/title.
-
-This is not universal ffprobe parity. In the expanded 36-file audit, 35 codec
-names match ffprobe; raw GSM is not recognized by MediaInfoLib. Raw AMR-WB and
-video-only Ogg/Theora fixtures identify their codec but provide no duration or
-overall bitrate through MediaInfo, even with a full parse. Raw H.264 timing also
-remains unknown as described above. RIFX float WAV is not recognized in the tested
-library. Container overhead and encoder padding can produce duration/bitrate
-differences, such as 193 versus 192 kbps for a Yamaha ADPCM WAV. These are library
-coverage or accounting differences, not missing string translations; no duration
-is invented when the library has insufficient timing data.
+`packaging/media/test-runtime.py` checks installed notices and the pinned helper
+version, inherited-file input, all six fields, Unicode, framing and malformed-file
+rejection. It then starts the packaged daemon with isolated configuration and
+checks persisted metadata and failure marker 2. AppImage enters through AppRun;
+Flatpak executes inside its sandbox; Windows uses the relocated zip, and macOS
+the mounted dmg, including both Universal2 slices. Run the complete Packaging
+workflow at the reviewed head to establish actual bundle-platform coverage.

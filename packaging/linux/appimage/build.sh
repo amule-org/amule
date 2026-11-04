@@ -37,10 +37,9 @@ MEDIA_PREFIX="${BUILD_DIR}/media-prefix"
 "${REPO}/packaging/media/build-static.sh" "${MEDIA_PREFIX}" "${BUILD_DIR}/media-sources"
 
 # Configure + build aMule.
-cmake -B "${BUILD_DIR}" -S "${REPO}" -G Ninja \
+PKG_CONFIG_PATH="${MEDIA_PREFIX}/lib/pkgconfig:${PKG_CONFIG_PATH:-}" cmake -B "${BUILD_DIR}" -S "${REPO}" -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
-    -DMEDIAINFO_LIBRARY="${MEDIA_PREFIX}/lib/libmediainfo.a" \
-    -DMEDIA_ZEN_LIBRARY="${MEDIA_PREFIX}/lib/libzen.a" \
+    -DCMAKE_PREFIX_PATH="${MEDIA_PREFIX}" \
     -DMEDIA_PROBE_STATIC=ON \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DBUILD_MONOLITHIC=YES \

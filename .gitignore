@@ -57,3 +57,6 @@ __pycache__/
 
 # Temporary catalog regeneration files left after a crash
 /po/.update-po.*/
+
+# Downloaded exact FFmpeg source, staged for offline Docker builds.
+/packaging/media/sources/

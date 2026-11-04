@@ -389,7 +389,7 @@ foreach (experimental_option IN LISTS AMULE_EXPERIMENTAL_OPTIONS)
 	endif()
 endforeach()
 
-option(ENABLE_MEDIA_PROBE "Build bundled MediaInfo media metadata helper" ON)
+option(ENABLE_MEDIA_PROBE "Build bundled FFmpeg media metadata helper" ON)
 # The helper is internal, not a command: installs keep it out of PATH in libexec, and the core
 # finds it there relative to its own folder. Bundles put it next to the core instead.
 if (ENABLE_MEDIA_PROBE AND (BUILD_DAEMON OR BUILD_MONOLITHIC))

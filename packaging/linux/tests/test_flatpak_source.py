@@ -71,7 +71,7 @@ Path(sys.argv[-3]).touch()
             source = json.loads((root / 'source-result.json').read_text())
             self.assertEqual(source['commit'], commit)
             self.assertEqual(source['notices'], sorted(p.name for p in notices.iterdir()))
-            self.assertIn('MediaInfoLib.html', source['notices'])
+            self.assertIn('FFmpeg-COPYING.LGPLv2.1', source['notices'])
             self.assertEqual(len(list((root / 'dist').glob('*.flatpak'))), 1)
 
 

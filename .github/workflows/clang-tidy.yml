@@ -84,7 +84,7 @@ env:
     libgd-dev \
     libglib2.0-dev \
     libgnutls28-dev \
-    libmediainfo-dev libmaxminddb-dev \
+    libavformat-dev libavcodec-dev libavutil-dev libmaxminddb-dev \
     libreadline-dev \
     libupnp-dev \
     libwxgtk3.2-dev \

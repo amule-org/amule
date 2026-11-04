@@ -72,7 +72,7 @@ class BackendTests(unittest.TestCase):
         self.assertLess(len(p.stdout), 64 * 1024)
         self.assertLessEqual(len(data['title'].encode('utf-8')), 4096)
 
-    def test_mediainfo_extracts_wav(self):
+    def test_libav_extracts_wav(self):
         p = self.run_probe()
         self.assertEqual(p.returncode, 0, p.stderr)
         data = json.loads(p.stdout)
@@ -250,6 +250,20 @@ class BackendTests(unittest.TestCase):
             tested += 1
         if not tested:
             self.skipTest('no optional fixture encoders available')
+
+    def test_track_title_is_not_a_programme_title(self):
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            self.skipTest('track metadata fixture requires ffmpeg')
+        # PCM in Matroska needs no optional encoder. Its title belongs to the track.
+        path = Path(self.tmp.name) / 'track.mka'
+        subprocess.run([ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i',
+                        'sine=duration=1', '-c:a', 'pcm_s16le', '-metadata:s:a:0',
+                        'title=Audio track label', str(path)], check=True, timeout=20)
+        self.path = path
+        result = self.run_probe()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['title'], '')
 
     def test_control_characters_cannot_inject_records(self):
         payload = b'Name\nformat.duration=99999\r\nEND\0'

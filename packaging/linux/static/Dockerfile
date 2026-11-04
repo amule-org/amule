@@ -34,7 +34,7 @@ ARG LIBUPNP_TARBALL_URL
 ARG LIBUPNP_SHA256
 
 RUN apk add --no-cache \
-        build-base cmake git python3 pkgconf wget \
+        build-base cmake git github-cli python3 pkgconf wget \
         autoconf automake libtool \
         linux-headers \
         boost-dev \

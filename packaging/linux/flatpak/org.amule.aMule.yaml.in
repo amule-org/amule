@@ -355,30 +355,40 @@ modules:
         url: ${WX_TARBALL_URL}
         sha256: ${WX_SHA256}
 
-  - name: media-zenlib
-    buildsystem: cmake-ninja
-    subdir: Project/CMake
-    config-opts: [-DCMAKE_CXX_STANDARD=17, -DBUILD_SHARED_LIBS=ON, -DCMAKE_INSTALL_LIBDIR=lib, -DCMAKE_POLICY_VERSION_MINIMUM=3.10]
+  # Runtime whitelist in src/mediaprobe/main.cpp also applies to system builds.
+  - name: media-ffmpeg
+    buildsystem: autotools
+    config-opts:
+      - --disable-autodetect
+      - --disable-everything
+      - --disable-programs
+      - --disable-doc
+      - --disable-debug
+      - --disable-network
+      - --disable-avdevice
+      - --disable-avfilter
+      - --disable-swscale
+      - --disable-swresample
+      - --disable-shared
+      - --enable-static
+      - --enable-small
+      - --enable-zlib
+      - --disable-x86asm
+      - --enable-pic
+      - --extra-version=amule-${FFMPEG_VERSION}
+      - --enable-parsers
+      - --enable-demuxer=aac,ac3,aiff,amr,ape,asf,avi,dts,eac3,flac,flv,gsm,h264,hevc,matroska,mov,mp3,mpegps,mpegts,mpegvideo,ogg,wav,wv,tta
     sources:
       - type: archive
-        url: ${ZENLIB_TARBALL_URL}
-        dest-filename: ZenLib-${ZENLIB_VERSION}.tar.gz
-        sha256: ${ZENLIB_SHA256}
-
-  - name: media-mediainfo
-    buildsystem: cmake-ninja
-    subdir: Project/CMake
-    config-opts: [-DCMAKE_CXX_STANDARD=17, -DBUILD_SHARED_LIBS=ON, -DBUILD_ZENLIB=OFF, -DBUILD_ZLIB=OFF, -DCMAKE_DISABLE_FIND_PACKAGE_TinyXML=ON, -DCMAKE_DISABLE_FIND_PACKAGE_CURL=ON, '-DCMAKE_CXX_FLAGS=-DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_LIBMMS_NO']
-    sources:
-      - type: archive
-        url: ${MEDIAINFO_TARBALL_URL}
-        dest-filename: MediaInfoLib-${MEDIAINFO_VERSION}.tar.gz
-        sha256: ${MEDIAINFO_SHA256}
+        url: ${FFMPEG_TARBALL_URL}
+        dest-filename: FFmpeg-${FFMPEG_VERSION}.tar.gz
+        sha256: ${FFMPEG_SHA256}
 
   - name: amule
     buildsystem: cmake-ninja
     config-opts:
       - -DCMAKE_BUILD_TYPE=Release
+      - -DMEDIA_PROBE_STATIC=ON
       - -DBUILD_MONOLITHIC=YES
       # The GNOME 49 SDK ships libbfd (in /usr/lib) and bfd.h (in
       # /usr/include), so aMule's auto-detection at cmake/bfd.cmake

@@ -707,7 +707,7 @@ message (STATUS "
 	Should aMule daemon version be built?				${BUILD_DAEMON}
 	Should aMule remote gui be built?				${BUILD_REMOTEGUI}
 
-	Build the bundled MediaInfo metadata helper?			${ENABLE_MEDIA_PROBE}
+	Build the bundled FFmpeg metadata helper?			${ENABLE_MEDIA_PROBE}
 
 	**** aMule TextClient ****
 	Should aMule Command Line Client be built?			${BUILD_AMULECMD}

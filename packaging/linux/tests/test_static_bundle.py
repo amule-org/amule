@@ -17,6 +17,10 @@ class StaticBundleTests(unittest.TestCase):
             packaging.mkdir(parents=True)
             for name in ('build.sh', 'versions.env'):
                 shutil.copy2(SOURCE / 'packaging' / 'linux' / name, packaging / name)
+            media = root / 'packaging' / 'media'
+            media.mkdir()
+            (media / 'build-ffmpeg.py').write_text(
+                "import sys\nassert '--source-only' in sys.argv\n")
             webui = root / 'src' / 'webapi' / 'static'
             for name in ('index.html', 'css/app.css', 'js/app.js'):
                 path = webui / name
@@ -36,7 +40,7 @@ root = Path(output)
 for name in ('amuled', 'amulecmd', 'amuleapi', 'amule-media-probe'):
     (root / name).write_text('fixture executable')
 (root / 'licenses' / 'amule-media-probe').mkdir(parents=True)
-(root / 'licenses' / 'amule-media-probe' / 'MediaInfoLib.html').write_text('fixture notice')
+(root / 'licenses' / 'amule-media-probe' / 'FFmpeg-COPYING.LGPLv2.1').write_text('fixture notice')
 ''',
                 'file': '#!/bin/sh\necho "ELF statically linked"\n',
                 'git': '''#!/bin/sh
@@ -61,7 +65,7 @@ fi
                 names = {Path(name).relative_to(archive.getnames()[0]).as_posix()
                          for name in archive.getnames()}
             for name in ('amuled', 'amulecmd', 'amuleapi', 'amule-media-probe',
-                         'licenses/amule-media-probe/MediaInfoLib.html', 'LICENSE.md', 'THIRDPARTY.md',
+                         'licenses/amule-media-probe/FFmpeg-COPYING.LGPLv2.1', 'LICENSE.md', 'THIRDPARTY.md',
                          'amuleapi-static/index.html'):
                 self.assertIn(name, names)
 

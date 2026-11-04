@@ -20,7 +20,7 @@
 # `0.0.0-fork-test` — the tag and the draft Release land on the fork,
 # not upstream.
 #
-# Before the draft is created, the release job asserts that all twelve
+# Before the draft is created, the release job asserts that all thirteen
 # expected platform assets are present, so a half-built matrix can never
 # silently produce a draft that's missing a platform.
 #
@@ -198,11 +198,18 @@ jobs:
             --transform "s|^|${STEM}/|" \
             --files-from=/tmp/sources.txt
 
+      - name: Include exact bundled FFmpeg source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 packaging/media/build-ffmpeg.py dist /tmp/amule-ffmpeg-release-source --source-only
+
       - name: Upload source bundle
         uses: actions/upload-artifact@v7
         with:
           name: source-bundle
-          path: dist/aMule-*-src.tar.gz
+          path: |
+            dist/aMule-*-src.tar.gz
+            dist/FFmpeg-*.tar.gz
 
   release:
     name: Assemble draft Release
@@ -286,11 +293,12 @@ jobs:
           check "Windows installer .exe (x64 + arm64)" 2 'aMule-*-Windows-Setup-*.exe'
           check "Linux static daemon (x86_64 + aarch64)" 2 'aMule-*-Linux-*-static.tar.gz'
           check "Source bundle"                     1 'aMule-*-src.tar.gz'
+          check "Bundled FFmpeg source"             1 'FFmpeg-*.tar.gz'
           if [ "$fail" -ne 0 ]; then
             echo "::error::Artifact manifest incomplete — refusing to assemble the draft Release."
             exit 1
           fi
-          echo "All 12 expected release artifacts present."
+          echo "All 13 expected release artifacts present."
 
       - name: Create draft Release
         env:

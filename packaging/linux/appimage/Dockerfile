@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ccache \
         cmake \
         ninja-build \
-        pkg-config \
+        pkg-config gh \
         git \
         ca-certificates \
         wget \

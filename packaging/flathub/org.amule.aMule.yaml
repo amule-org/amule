@@ -20,7 +20,7 @@
 #        git rev-parse <tag>^{commit}
 #   2. Update the amule source block's `tag:` and `commit:`.
 #   3. If the tag is the first with the amule-media-probe helper (it replaced ffprobe),
-#      add the media-zenlib and media-mediainfo modules before amule, resolved from
+#      add the media-ffmpeg module before amule, resolved from
 #      packaging/linux/flatpak/org.amule.aMule.yaml.in and packaging/linux/versions.env.
 #   4. PR to github.com/flathub/org.amule.aMule (once that repo exists).
 

@@ -152,10 +152,9 @@ build() {
     #                      every libc header check fails.
     # ccache also gets disabled here; on CLANGARM64 it triggered the
     # same family of try_compile crashes that pushed us off Ninja.
-    cmake -B "${BUILD_DIR}" -S "${REPO_ROOT}" -G "MinGW Makefiles" \
+    PKG_CONFIG_PATH="${media_prefix}/lib/pkgconfig:${PKG_CONFIG_PATH:-}" cmake -B "${BUILD_DIR}" -S "${REPO_ROOT}" -G "MinGW Makefiles" \
         -DCMAKE_BUILD_TYPE=Release \
-        -DMEDIAINFO_LIBRARY="${media_prefix}/lib/libmediainfo.a" \
-        -DMEDIA_ZEN_LIBRARY="${media_prefix}/lib/libzen.a" \
+        -DCMAKE_PREFIX_PATH="${media_prefix}" \
         -DMEDIA_PROBE_STATIC=ON \
         -DCMAKE_C_COMPILER_LAUNCHER= \
         -DCMAKE_CXX_COMPILER_LAUNCHER= \

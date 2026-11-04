@@ -19,8 +19,7 @@ import time
 import wave
 
 
-NOTICES = ('MediaInfoLib.html', 'ZenLib.txt', 'AES.txt', 'TinyXML2.txt',
-           'SHA-Gladman.txt', 'HMAC-Gladman.txt', 'TFSXML.txt', 'fmt.txt')
+NOTICES = ('FFmpeg-COPYING.LGPLv2.1', 'FFmpeg-LICENSE.md')
 TITLE = 'Runtime 艺术家 🎵 "quoted" \\ path'
 
 
@@ -128,7 +127,11 @@ def run(args, root):
                              text=True, timeout=30)
     assert version.returncode == 0, (version.returncode, version.stdout, version.stderr)
     assert 'amule-media-probe 1;' in version.stdout, version.stdout + version.stderr
-    assert 'v26.05' in version.stdout, 'package did not use pinned MediaInfoLib: ' + version.stdout
+    assert 'FFmpeg ' in version.stdout, version.stdout
+    pin_file = Path(__file__).resolve().parents[1] / 'linux/versions.env'
+    expected = next(line.split('=', 1)[1] for line in pin_file.read_text().splitlines()
+                    if line.startswith('FFMPEG_VERSION='))
+    assert 'amule-' + expected in version.stdout, 'package did not use pinned FFmpeg: ' + version.stdout
     print('PASS packaged helper version:', version.stdout.strip(), flush=True)
     incoming = root / 'Incoming'
     incoming.mkdir()

@@ -788,7 +788,7 @@ bool CSharedFileList::MaybeScheduleMediaProbe(CKnownFile *pFile, MediaProbeMode 
 			CFormat(wxT("MediaProbe: skip (already has metadata) %s")) % pFile->GetFileName());
 		return false;
 	}
-	// Skip MediaInfo failures only. Legacy ffprobe marker 1 gets one retry;
+	// Skip helper file verdicts only. Legacy ffprobe marker 1 gets one retry;
 	// refresh always retries and successful extraction clears the marker.
 	if (mode == MediaProbeMode::Normal && pFile->GetIntTagValue(FT_MEDIA_PROBE_FAILED) == 2) {
 		AddDebugLogLineN(logMediaProbe,

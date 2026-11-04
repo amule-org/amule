@@ -74,7 +74,7 @@ env:
     libgd-dev \
     libglib2.0-dev \
     libgnutls28-dev \
-    libmediainfo-dev libmaxminddb-dev \
+    libavformat-dev libavcodec-dev libavutil-dev libmaxminddb-dev \
     libreadline-dev \
     libupnp-dev \
     libwxgtk3.2-dev \
@@ -92,7 +92,7 @@ env:
     cryptopp \
     gd \
     gettext \
-    libmediainfo libmaxminddb \
+    ffmpeg libmaxminddb \
     libupnp \
     pkg-config \
     wxwidgets
@@ -108,7 +108,7 @@ env:
     mingw-w64-clang-x86_64-crypto++
     mingw-w64-clang-x86_64-gettext
     mingw-w64-clang-x86_64-libgd
-    mingw-w64-clang-x86_64-libmediainfo
+    mingw-w64-clang-x86_64-ffmpeg
     mingw-w64-clang-x86_64-libmaxminddb
     mingw-w64-clang-x86_64-ngtcp2
     mingw-w64-clang-x86_64-ninja
