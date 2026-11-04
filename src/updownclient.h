@@ -901,6 +901,12 @@ public:
 	bool SupportsCryptLayer() const { return m_fSupportsCryptLayer; }
 	bool RequestsCryptLayer() const { return SupportsCryptLayer() && m_fRequestsCryptLayer; }
 	bool RequiresCryptLayer() const { return RequestsCryptLayer() && m_fRequiresCryptLayer; }
+	// SourceExchange v4 and source seeds use only the three encryption bits.
+	uint8_t GetCryptOptions() const
+	{
+		return static_cast<uint8_t>(
+			(RequiresCryptLayer() << 2) | (RequestsCryptLayer() << 1) | SupportsCryptLayer());
+	}
 	bool SupportsDirectUDPCallback() const
 	{
 		return m_fDirectUDPCallback != 0 && HasValidHash() && GetKadPort() != 0;
