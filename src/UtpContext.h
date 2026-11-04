@@ -54,6 +54,8 @@ public:
 		const uint8_t *userHash) = 0;
 	//! Sends our key frame, obfuscated with @a peerHash, ahead of an obfuscated dial's SYN.
 	virtual void SendUtpKeyFrame(uint32_t, uint16_t, const uint8_t *) {}
+	//! A connected stream now follows its peer to a new source port, after libutp took the frame.
+	virtual void OnUtpStreamMoved() {}
 };
 
 class IStreamTransport;

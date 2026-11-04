@@ -614,6 +614,7 @@
   "stats_tree_natt_server_punch_successes": "Successful Server Hole Punches: %s",
   "stats_tree_natt_lugdunum_callback_attempts": "Lugdunum Callbacks: %s",
   "stats_tree_natt_lugdunum_callback_successes": "Successful Lugdunum Callbacks: %s",
+  "stats_tree_natt_utp_stream_moves": "uTP Streams Moved to a New Port: %s",
   "stats_tree_clients": "Clients",
   "stats_tree_clients_total": "Total: %i Known: %i",
   "stats_tree_clients_unknown": "Unknown: %s",

@@ -105,6 +105,7 @@ public:
 		keyFrameIp = ip;
 		keyFramePort = port;
 	}
+	void OnUtpStreamMoved() override { ++streamMoves; }
 	uint32_t lastIp = 0;
 	uint16_t lastPort = 0;
 	//! The last datagram this side put on the wire, so a test can read the numbers it carried.
@@ -118,6 +119,7 @@ public:
 	std::vector<uint8_t> lastUserHash;
 	unsigned droppedOldPortDatagrams = 0;
 	unsigned datagrams = 0;
+	unsigned streamMoves = 0;
 };
 
 //! Admission, reduced to the decision each test varies.
@@ -532,6 +534,8 @@ TEST(UtpLibraryAdapter, OutboundHandshakeRemapsOneExpectedPeerToItsObservedPort)
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort + kUtpPortRemapWindow));
 	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
 	ASSERT_EQUALS((int)(kPeerPort + kUtpPortRemapWindow), (int)transport->GetPeerPort());
+	// Following the port during the handshake is not a move of a connected stream.
+	ASSERT_EQUALS(0, (int)sink.streamMoves);
 
 	const uint8_t payload = 0xA5;
 	sink.dropOldPort = true;
@@ -609,6 +613,7 @@ TEST(UtpLibraryAdapter, AFrameWithoutThePeersConnectionIdNeverMovesTheStream)
 	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, movedPort));
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
 	ASSERT_EQUALS((int)heldPort, (int)transport->GetPeerPort());
+	ASSERT_EQUALS(0, (int)sink.streamMoves);
 	Teardown(loop);
 }
 
@@ -652,6 +657,7 @@ TEST(UtpLibraryAdapter, AConnectedStreamFollowsANATPortChange)
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, movedPort));
 	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
 	ASSERT_EQUALS((int)movedPort, (int)transport->GetPeerPort());
+	ASSERT_EQUALS(1, (int)sink.streamMoves);
 
 	// Both directions still cross on the moved stream. The buffer covers the payload, so the
 	// inlined deque copy in UtpStream::Read is bounded by the object it writes into.
@@ -717,6 +723,7 @@ TEST(UtpLibraryAdapter, AFrameThatDoesNotProveItselfIsDroppedWithoutAnRst)
 		// been answered with an RST to that source (utp_internal.cpp:2925-2940).
 		ASSERT_EQUALS((int)sentBefore, (int)sink.datagrams);
 		ASSERT_TRUE(sink.lastPort != newPort);
+		ASSERT_EQUALS(0, (int)sink.streamMoves);
 	}
 	Teardown(loop);
 }
@@ -764,6 +771,7 @@ TEST(UtpLibraryAdapter, ALateFrameFromThePortThePeerLeftNeverMovesItBack)
 	ASSERT_EQUALS((int)movedPort, (int)transport->GetPeerPort());
 	ASSERT_EQUALS((int)sentBefore, (int)sink.datagrams);
 	ASSERT_TRUE(sink.lastPort != heldPort);
+	ASSERT_EQUALS(1, (int)sink.streamMoves);
 	Teardown(loop);
 }
 
@@ -815,6 +823,7 @@ TEST(UtpLibraryAdapter, ARefusedMoveSendsNothingAndLeavesTheStreamWhereItIs)
 	ASSERT_EQUALS((int)movedPort, (int)transport->GetPeerPort());
 	ASSERT_EQUALS((int)sentBefore, (int)sink.datagrams);
 	ASSERT_TRUE(sink.lastPort != thirdPort);
+	ASSERT_EQUALS(1, (int)sink.streamMoves);
 	Teardown(loop);
 }
 
