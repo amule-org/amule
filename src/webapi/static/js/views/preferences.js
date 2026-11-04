@@ -15,7 +15,7 @@
 // AmuleApiCredentials).
 
 import { api } from "../api.js";
-import { html, useState, useEffect } from "../dom.js";
+import { html, useTabState, useState, useEffect } from "../dom.js";
 import { Placeholder, toast, Tabs, confirmDialog } from "../components.js";
 import { Icon } from "../icons.js";
 import { SharedDirectories } from "./shared-dirs.js";
@@ -519,7 +519,7 @@ export default function Preferences({ isGuest }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const [values, setValues] = useState({}); // "cat.key" -> value (display units)
-  const [active, setActive] = useState("webui");
+  const [active, setActive] = useTabState("preferences", "webui");
   const [busy, setBusy] = useState(false);
   const [savedSources, setSavedSources] = useState("");
   const [savedChangedOnly, setSavedChangedOnly] = useState({}); // changedOnly "cat.key" -> daemon value
@@ -797,7 +797,7 @@ export default function Preferences({ isGuest }) {
   const tabList = shownTabs.map((s) => ({ key: s.id, label: t(s.labelKey) }));
   return html`
     <form onSubmit=${save} class="net-pane">
-      <${Tabs} tabs=${tabList} active=${active} onSelect=${setActive} />
+      <${Tabs} tabs=${tabList} active=${tab.id} onSelect=${setActive} />
       <div class="net-pane-body prefs-panel">
         ${tab.noteKey ? html`<p class="hint prefs-warning">${t(tab.noteKey)}</p>` : null}
         <div class="prefs-groups">

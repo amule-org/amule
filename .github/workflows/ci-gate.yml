@@ -23,6 +23,7 @@ on:
       - clang-tidy
       - I18n CI
       - Icons CI
+      - WebUI browser tests
     types: [completed]
 
 permissions:
