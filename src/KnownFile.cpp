@@ -1151,10 +1151,6 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 
 			if (byUsedVersion >= 4) {
 				// CryptSettings - SourceExchange V4
-				// 5 Reserved (!)
-				// 1 CryptLayer Required
-				// 1 CryptLayer Requested
-				// 1 CryptLayer Supported
 				data.WriteUInt8(cur_src->GetCryptOptions());
 			}
 
