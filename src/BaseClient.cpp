@@ -24,6 +24,7 @@
 //
 
 #include "KadCallbackPolicy.h"
+#include "UploadCallbackPolicy.h"
 #include <wx/wx.h>
 #include <wx/mstream.h>
 #include <wx/tokenzr.h>
@@ -211,6 +212,9 @@ void CUpDownClient::Init()
 	m_browseEcInitiated = false;
 	m_browsePinned = false;
 	m_dwLastUpRequest = 0;
+	m_uploadCallbackSentAt = 0;
+	m_uploadCallbackSpent = false;
+	m_uploadCallbackExpected = false;
 	m_bEmuleProtocol = false;
 	m_bCompleteSource = false;
 	m_bFriendSlot = false;
@@ -1462,6 +1466,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 {
 	// wxASSERT(theApp->clientlist->IsValidClient(this));
 
+	ClearUploadCallbackInFlight();
 	if (HasBeenDeleted()) {
 		AddDebugLogLineN(logClient,
 			"Disconnected() called for already deleted client on ip " +

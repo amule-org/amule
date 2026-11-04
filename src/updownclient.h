@@ -50,6 +50,7 @@
 #include "ClientRef.h"        // Needed for debug defines
 #include "PeerCapabilities.h" // Needed for CPeerCapabilities
 #include "ProtocolPeerIdentity.h"
+#include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
@@ -559,8 +560,37 @@ public:
 	void ClearAskedCount() { m_cAsked = 1; } // 1, because it's cleared *after* the first request...
 	void FlushSendBlocks();                  // call this when you stop upload,
 						 // or the socket might be not able to send
-	void SetLastUpRequest() { m_dwLastUpRequest = ::GetTickCount64(); }
+	void SetLastUpRequest()
+	{
+		m_dwLastUpRequest = ::GetTickCount64();
+		ClearUploadCallbackRecord();
+	}
 	uint64 GetLastUpRequest() const { return m_dwLastUpRequest; }
+	void NoteUploadCallbackSent(uint64 now)
+	{
+		m_uploadCallbackSentAt = now;
+		m_uploadCallbackExpected = true;
+	}
+	bool HasUploadCallbackInFlight(uint64 now) const
+	{
+		return IsUploadCallbackInFlight(m_uploadCallbackSentAt, now);
+	}
+	void MarkUploadCallbackSpent() { m_uploadCallbackSpent = true; }
+	bool IsUploadCallbackExpected(uint64 now) const
+	{
+		// An answer that never came must not keep a later arrival exempt from counting as a request.
+		return m_uploadCallbackExpected && HasUploadCallbackInFlight(now);
+	}
+	void ClearUploadCallbackInFlight()
+	{
+		m_uploadCallbackSentAt = 0;
+		m_uploadCallbackExpected = false;
+	}
+	void ClearUploadCallbackRecord()
+	{
+		ClearUploadCallbackInFlight();
+		m_uploadCallbackSpent = false;
+	}
 	size_t GetUpPartCount() const { return m_upPartStatus.size(); }
 
 	// download
@@ -1054,6 +1084,9 @@ private:
 	uint64 m_dwUploadTime;
 	uint32 m_cAsked;
 	uint64 m_dwLastUpRequest;
+	uint64 m_uploadCallbackSentAt = 0;
+	bool m_uploadCallbackSpent = false;
+	bool m_uploadCallbackExpected = false;
 	uint32 m_nCurSessionUp;
 	uint16 m_nUpPartCount;
 	CMD4Hash m_requpfileid;

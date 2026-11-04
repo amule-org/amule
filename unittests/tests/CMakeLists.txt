@@ -478,6 +478,11 @@ target_include_directories (UtpDialPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (UtpDialPolicyTest muleunit mulecommon)
 add_test (NAME UtpDialPolicyTest COMMAND UtpDialPolicyTest)
 
+add_executable (UploadCallbackPolicyTest UploadCallbackPolicyTest.cpp)
+target_include_directories (UploadCallbackPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (UploadCallbackPolicyTest muleunit mulecommon)
+add_test (NAME UploadCallbackPolicyTest COMMAND UploadCallbackPolicyTest)
+
 # Pure admission and rate-limit policy for the future NAT rendezvous control path.
 add_executable (NatRendezvousPolicyTest
 	NatRendezvousPolicyTest.cpp

@@ -25,6 +25,7 @@
 
 #include "UploadQueue.h" // Interface declarations
 #include "UploadQueueAddressPolicy.h"
+#include "UploadCallbackPolicy.h"
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
@@ -74,6 +75,40 @@ CUploadQueue::CUploadQueue()
 	lastupslotHighID = true;
 	m_allowKicking = true;
 	m_allUploadingKnownFile = new CKnownFile;
+}
+
+/**
+ * Asks a queued peer that cannot be contacted to connect instead of waiting for its own re-ask.
+ *
+ * Only the client the pass marked `m_bAddNextConnect` needs this, and only when a slot could
+ * actually be given: the in-flight ceiling mirrors the slots admission can hand out, so an
+ * all-LowID queue cannot turn into a burst of requests.
+ */
+bool CUploadQueue::TryStartUploadCallback(CUpDownClient *client, uint64 now)
+{
+	if (!IsUploadCallbackCandidate(client->m_bAddNextConnect,
+		    theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort())) ||
+		!MayStartUploadCallback(client->m_uploadCallbackSpent,
+			client->m_uploadCallbackSentAt,
+			client->GetLastUpRequest())) {
+		return false;
+	}
+	const unsigned maxSlots = GetMaxSlots();
+	const unsigned freeSlots = maxSlots > m_uploadinglist.size() ? maxSlots - m_uploadinglist.size() : 0;
+	unsigned inFlight = 0;
+	for (const CClientRef &waiting : m_waitinglist) {
+		if (waiting.GetClient()->HasUploadCallbackInFlight(now)) {
+			inFlight++;
+		}
+	}
+	if (inFlight >= MaxInflightUploadCallbacks(freeSlots, lastupslotHighID)) {
+		return false;
+	}
+	client->SendClassicCallbackRequest();
+	client->NoteUploadCallbackSent(now);
+	client->MarkUploadCallbackSpent();
+	AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
+	return true;
 }
 
 void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
@@ -146,6 +181,9 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 			} else if (waitsForConnect) {
 				// No better high id client, so start upload to this one once it connects
 				cur_client->m_bAddNextConnect = true;
+				if (bestClient) {
+					TryStartUploadCallback(cur_client, tick);
+				}
 			} else {
 				// We found a high id client (or a currently connected low id client, or a
 				// client dialled at a native or advertised IPv6 that has not gone unanswered)
@@ -556,8 +594,13 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 		return;
 	}
 
-	client->AddAskedCount();
-	client->SetLastUpRequest();
+	if (client->IsUploadCallbackExpected(::GetTickCount64())) {
+		// This arrival answers our callback; it is not a new peer request.
+		client->ClearUploadCallbackInFlight();
+	} else {
+		client->AddAskedCount();
+		client->SetLastUpRequest();
+	}
 
 	CClientList::SourceList found = theApp->clientlist->GetClientsByHash(client->GetUserHash());
 
