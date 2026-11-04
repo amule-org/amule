@@ -111,6 +111,42 @@ class BuildRecipeTests(unittest.TestCase):
             self.assertEqual(configured, ['-DOLD_FLAGS=1', '-DNEW_FLAGS=1'])
             self.assertEqual(cleaned, ['-DNEW_FLAGS=1'])
 
+    def test_interrupted_download_restarts_and_preserves_existing_archive(self):
+        class Interrupted(io.BytesIO):
+            def read(self, size=-1):
+                if self.tell():
+                    raise ConnectionResetError('fixture interrupted response')
+                return super().read(3)
+        with tempfile.TemporaryDirectory() as temporary:
+            archive = Path(temporary) / 'source.tar.xz'
+            archive.write_bytes(b'old archive')
+            opener = mock.Mock()
+            opener.open.side_effect = [Interrupted(b'partial'), io.BytesIO(b'complete archive')]
+            with mock.patch.object(BUILDER.urllib.request, 'build_opener', return_value=opener), \
+                 mock.patch.object(BUILDER.time, 'sleep'):
+                BUILDER.download_archive('https://example.invalid/source', archive)
+            self.assertEqual(archive.read_bytes(), b'complete archive')
+            self.assertEqual(opener.open.call_count, 2)
+            self.assertFalse(archive.with_suffix('.partial').exists())
+
+    def test_download_failures_are_bounded_and_preserve_existing_archive(self):
+        errors = ((BUILDER.urllib.error.URLError(TimeoutError('fixture timeout')), 3),
+                  (BUILDER.urllib.error.HTTPError('https://example.invalid/source', 404,
+                                                'fixture missing', None, None), 1))
+        for error, attempts in errors:
+            with self.subTest(error=error), tempfile.TemporaryDirectory() as temporary:
+                archive = Path(temporary) / 'source.tar.xz'
+                archive.write_bytes(b'old archive')
+                opener = mock.Mock()
+                opener.open.side_effect = error
+                with mock.patch.object(BUILDER.urllib.request, 'build_opener', return_value=opener), \
+                     mock.patch.object(BUILDER.time, 'sleep'), \
+                     self.assertRaises(BUILDER.urllib.error.URLError):
+                    BUILDER.download_archive('https://example.invalid/source', archive)
+                self.assertEqual(opener.open.call_count, attempts)
+                self.assertEqual(archive.read_bytes(), b'old archive')
+                self.assertFalse(archive.with_suffix('.partial').exists())
+
     def test_runtime_builder_and_flatpak_demuxers_match(self):
         root = Path(__file__).resolve().parents[2]
         main = (root / 'src/mediaprobe/main.cpp').read_text()

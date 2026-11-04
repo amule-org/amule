@@ -4,6 +4,7 @@
 """Build the pinned metadata-only FFmpeg; keep exact source and LGPL notices."""
 import argparse
 import hashlib
+import http.client
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,8 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+import time
+import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,6 +31,27 @@ def pins():
     values['FFMPEG_TARBALL_URL'] = values['FFMPEG_TARBALL_URL'].replace(
         '${FFMPEG_VERSION}', values['FFMPEG_VERSION'])
     return values
+
+
+def download_archive(url, archive):
+    # Retry direct transient failures, never replacing a complete archive with
+    # interrupted bytes. The caller still verifies the pinned SHA256 afterwards.
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+    partial = archive.with_suffix('.partial')
+    for attempt in range(3):
+        try:
+            with opener.open(url, timeout=60) as response, partial.open('wb') as output:
+                shutil.copyfileobj(response, output)
+            partial.replace(archive)
+            return
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as error:
+            if partial.exists():
+                partial.unlink()
+            if (isinstance(error, urllib.error.HTTPError) and
+                    error.code not in (408, 429, 500, 502, 503, 504)) or attempt == 2:
+                raise
+            print(f'FFmpeg download attempt {attempt + 1} failed: {error}; retrying', flush=True)
+            time.sleep(attempt + 1)
 
 
 def main():
@@ -49,12 +73,8 @@ def main():
         if not archive.exists() and cached.exists() and hashlib.sha256(cached.read_bytes()).hexdigest() == pin['FFMPEG_SHA256']:
             shutil.copy2(cached, archive)
     if not archive.exists():
-        partial = archive.with_suffix('.partial')
         # The release archive is stable and does not require a GitHub token.
-        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
-        with opener.open(pin['FFMPEG_TARBALL_URL'], timeout=60) as response, partial.open('wb') as output:
-            shutil.copyfileobj(response, output)
-        partial.replace(archive)
+        download_archive(pin['FFMPEG_TARBALL_URL'], archive)
     if hashlib.sha256(archive.read_bytes()).hexdigest() != pin['FFMPEG_SHA256']:
         raise SystemExit('FFmpeg source checksum mismatch: ' + str(archive))
     source_dest = prefix if args.source_only else prefix / 'share/sources/amule-media-probe'

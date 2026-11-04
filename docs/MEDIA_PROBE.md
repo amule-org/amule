@@ -126,6 +126,10 @@ Set `AMULE_REQUIRE_STRACE=1` to require that observation. The compatibility work
 runs against full system FFmpeg on Debian 12 and Ubuntu 22.04/24.04, as well as
 native bundled builds on Linux, macOS and Windows CLANG64/CLANGARM64.
 
+The private FFmpeg builder retries transient source-download failures up to three
+times using the official URL, restarting interrupted downloads and retaining
+checksum verification. Permanent HTTP errors fail immediately.
+
 The private FFmpeg builder records configure arguments and compiler/linker
 flags, including macOS SDK/deployment settings. Changing them in a reused build
 directory cleans old objects and reconfigures; unchanged settings reuse the build.
