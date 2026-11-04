@@ -12,37 +12,9 @@ static int failure(int checkpoint)
 
 int main()
 {
-	// CTest may start us with closed or non-seekable stdin. Own the fixture;
-	// duplicate before closing FILE so this also works when tmpfile obtains fd 0.
-	FILE *file = std::tmpfile();
-	if (!file)
-		return failure(10);
-	char data[4096] = {};
-	if (std::fwrite(data, 1, sizeof(data), file) != sizeof(data) || std::fflush(file))
-		return failure(11);
-#ifdef _WIN32
-	const int descriptor = _dup(_fileno(file));
-#else
-	const int descriptor = dup(fileno(file));
-#endif
-	if (descriptor < 0)
-		return failure(12);
-	std::fclose(file);
-#ifdef _WIN32
-	if (_dup2(descriptor, _fileno(stdin)))
-		return failure(13);
-	_close(descriptor);
-#else
-	if (dup2(descriptor, fileno(stdin)) < 0)
-		return failure(13);
-	close(descriptor);
-#endif
-	std::clearerr(stdin);
-	std::setvbuf(stdin, nullptr, _IONBF, 0);
-	if (reposition(0, SEEK_SET))
-		return failure(14);
+	// test_io.py supplies a seekable file explicitly, including on native Windows.
 	Input input;
-	input.size = sizeof(data);
+	input.size = 4096;
 	uint8_t byte = 1;
 	if (readInput(&input, &byte, 1) != 1 || byte != 0)
 		return failure(15);
@@ -59,7 +31,7 @@ int main()
 	if (readInput(&expired, &byte, 1) != AVERROR_EXIT || !interrupted(&expired))
 		return failure(4);
 	Input seeking;
-	seeking.size = sizeof(data);
+	seeking.size = 4096;
 	if (reposition(0, SEEK_SET))
 		return failure(16);
 	for (int64_t pos = 1; pos <= 1024; ++pos) {
@@ -81,7 +53,7 @@ int main()
 #endif
 	std::clearerr(stdin);
 	Input failedRead;
-	failedRead.size = sizeof(data);
+	failedRead.size = 4096;
 	Result result;
 	// The core treats exit 12 as retryable, retaining preview metadata and
 	// avoiding a permanent known.met failure marker after a real read error.
