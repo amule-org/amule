@@ -215,6 +215,9 @@ CStatTreeItemNativeCounter *CStatistics::s_serverHolePunchSuccesses;
 CStatTreeItemNativeCounter *CStatistics::s_lugdunumCallbackAttempts;
 CStatTreeItemNativeCounter *CStatistics::s_lugdunumCallbackSuccesses;
 #endif
+#ifdef AMULE_UTP_TRANSPORT
+CStatTreeItemNativeCounter *CStatistics::s_utpStreamMoves;
+#endif
 #ifdef ENABLE_IPV6
 CStatTreeItemCounter *CStatistics::s_ipv6Upload;
 CStatTreeItemCounter *CStatistics::s_ipv6Download;
@@ -945,9 +948,11 @@ void CStatistics::InitStatsTree()
 	s_avgConnections->SetValue(0.0);
 	tmpRoot1->AddChild((new CStatTreeItemPeakConnections(wxTRANSLATE("Peak Connections (estimate): %i")))
 				   ->SetKey("peak_connections"));
-#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+#ifdef AMULE_UTP_TRANSPORT
 	tmpRoot2 = tmpRoot1->AddChild(
 		(new CStatTreeItemBase(wxTRANSLATE("NAT Traversal (Session)")))->SetKey("nat_traversal"));
+#endif
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	s_serverHolePunchAttempts = static_cast<CStatTreeItemNativeCounter *>(
 		tmpRoot2->AddChild(new CStatTreeItemNativeCounter(wxTRANSLATE("Server Hole Punches: %s"))));
 	s_serverHolePunchSuccesses = static_cast<CStatTreeItemNativeCounter *>(tmpRoot2->AddChild(
@@ -956,6 +961,10 @@ void CStatistics::InitStatsTree()
 		tmpRoot2->AddChild(new CStatTreeItemNativeCounter(wxTRANSLATE("Lugdunum Callbacks: %s"))));
 	s_lugdunumCallbackSuccesses = static_cast<CStatTreeItemNativeCounter *>(tmpRoot2->AddChild(
 		new CStatTreeItemNativeCounter(wxTRANSLATE("Successful Lugdunum Callbacks: %s"))));
+#endif
+#ifdef AMULE_UTP_TRANSPORT
+	s_utpStreamMoves = static_cast<CStatTreeItemNativeCounter *>(tmpRoot2->AddChild(
+		new CStatTreeItemNativeCounter(wxTRANSLATE("uTP Streams Moved to a New Port: %s"))));
 #endif
 
 	s_clients = static_cast<CStatTreeItemHiddenCounter *>(s_statTree->AddChild(
@@ -1063,6 +1072,9 @@ void CStatistics::InitStatsTree()
 	s_serverHolePunchSuccesses->SetKey("natt_server_punch_successes");
 	s_lugdunumCallbackAttempts->SetKey("natt_lugdunum_callback_attempts");
 	s_lugdunumCallbackSuccesses->SetKey("natt_lugdunum_callback_successes");
+#endif
+#ifdef AMULE_UTP_TRANSPORT
+	s_utpStreamMoves->SetKey("natt_utp_stream_moves");
 #endif
 #ifdef ENABLE_IPV6
 	s_ipv6Upload->SetKey("upload_ipv6_data");

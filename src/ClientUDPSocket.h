@@ -167,6 +167,7 @@ private:
 		bool encrypt,
 		const uint8_t *userHash) override;
 	void SendUtpKeyFrame(uint32_t ip, uint16_t port, const uint8_t *peerHash) override;
+	void OnUtpStreamMoved() override;
 	void HandleUtpKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
 	//! How to key the reply to a uTP SYN, having sent our key frame first when the plan says so.
 	NatKeyFrame::UtpSynPlan PrepareUtpSynReply(uint32_t ip, uint16_t port, bool synObfuscated);

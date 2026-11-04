@@ -469,6 +469,11 @@ void CClientUDPSocket::SendUtpKeyFrame(uint32_t ip, uint16_t port, const uint8_t
 	}
 }
 
+void CClientUDPSocket::OnUtpStreamMoved()
+{
+	theStats::AddUtpStreamMove();
+}
+
 void CClientUDPSocket::HandleUtpKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
 {
 	const std::optional<NatKeyFrame::Hash> announced = NatKeyFrame::ParsePayload(payload, length);

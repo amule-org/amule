@@ -576,8 +576,8 @@ LowID-to-LowID session and how much data such sessions carry. The nodes travel i
 tree like any other, so amulegui, amuleweb and amuleapi show them without new EC tags; each has a
 stable `key`.
 
-- **NAT Traversal (Session)** (`nat_traversal`, under Connection), in builds with
-  `ENABLE_NATT_SERVER_COORDINATION` and uTP: attempts and successes for the ed2k-server punch
+- **NAT Traversal (Session)** (`nat_traversal`, under Connection), in uTP builds. With
+  `ENABLE_NATT_SERVER_COORDINATION` it holds attempts and successes for the ed2k-server punch
   (`natt_server_punch_attempts`, `natt_server_punch_successes`) and Lugdunum's callback
   (`natt_lugdunum_callback_attempts`, `natt_lugdunum_callback_successes`). An attempt is each
   rendezvous we act on, counted once per peer: a `0x61` we punch for, or a Lugdunum callback we
@@ -585,10 +585,14 @@ stable `key`.
   Lugdunum, as does a cross-server request: on the requester the attempt is the request and the
   success that source's hello, on the target the wake and the requester's hello. A success is a
   stream to or from that peer, on either side, whose hello is processed within 60 s
-  (`NatServerHolePunch::RendezvousOutcomes`, at most 64 pending).
+  (`NatServerHolePunch::RendezvousOutcomes`, at most 64 pending). In every uTP build it holds
+  `natt_utp_stream_moves`: connected uTP streams that followed their peer to a new source port,
+  counted once per move libutp accepted. A refused or rate-limited move, and the port a
+  handshake settles on, are not counted.
 - **LowID to LowID Data (Session)** (`upload_lowid_to_lowid_data`,
-  `download_lowid_to_lowid_data`), in the same builds: payload exchanged with a LowID peer while
-  we are LowID on a server, which only NAT traversal connects.
+  `download_lowid_to_lowid_data`), in builds with `ENABLE_NATT_SERVER_COORDINATION` and uTP:
+  payload exchanged with a LowID peer while we are LowID on a server, which only NAT traversal
+  connects.
 - **IPv6 Data (Session)** (`upload_ipv6_data`, `download_ipv6_data`), in `ENABLE_IPV6` builds:
   payload exchanged with a peer connected over IPv6.
 

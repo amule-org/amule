@@ -369,6 +369,8 @@ public:
 						"%u") %
 						(uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) %
 						(uint8)(ip >> 24) % repointedFrom.second % port);
+				static_cast<IUtpDatagramSink *>(utp_context_get_userdata(m_context))
+					->OnUtpStreamMoved();
 			} else {
 				// libutp refused the frame after all: put back whatever pair the socket held
 				// before the attempt, so the stream is never left without a translation.

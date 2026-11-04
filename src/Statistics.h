@@ -400,6 +400,10 @@ public:
 	static void AddLugdunumCallbackAttempt() { ++(*s_lugdunumCallbackAttempts); }
 	static void AddLugdunumCallbackSuccess() { ++(*s_lugdunumCallbackSuccesses); }
 #endif
+#ifdef AMULE_UTP_TRANSPORT
+	// A connected uTP stream that followed its peer's NAT to a new source port.
+	static void AddUtpStreamMove() { ++(*s_utpStreamMoves); }
+#endif
 
 	// Servers
 	static void AddServer() { ++(*s_totalServers); }
@@ -621,6 +625,9 @@ private:
 	static CStatTreeItemNativeCounter *s_serverHolePunchSuccesses;
 	static CStatTreeItemNativeCounter *s_lugdunumCallbackAttempts;
 	static CStatTreeItemNativeCounter *s_lugdunumCallbackSuccesses;
+#endif
+#ifdef AMULE_UTP_TRANSPORT
+	static CStatTreeItemNativeCounter *s_utpStreamMoves;
 #endif
 #ifdef ENABLE_IPV6
 	static CStatTreeItemCounter *s_ipv6Upload;
