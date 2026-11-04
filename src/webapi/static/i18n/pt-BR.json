@@ -1076,5 +1076,10 @@
   "stats_tree_natt_lugdunum_callback_attempts": "Callbacks Lugdunum: %s",
   "stats_tree_natt_lugdunum_callback_successes": "Callbacks Lugdunum bem-sucedidos: %s",
   "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Um limite maior pode suavizar travamentos curtos do disco ao custo de mais memória. Dados já solicitados podem exceder este limite.",
-  "prefs_field_advanced_write_buffer_limit_mebibytes": "Limite do buffer de gravação de downloads (MiB)"
+  "prefs_field_advanced_write_buffer_limit_mebibytes": "Limite do buffer de gravação de downloads (MiB)",
+  "prefs_debugging": "Depuração",
+  "prefs_group_debug_logging": "Log de depuração",
+  "prefs_group_debug_categories": "Categorias de mensagens",
+  "prefs_debugging_warning": "Os logs de depuração podem conter endereços IP de pares, hashes de usuário e nomes de arquivos. Convidados podem ler o log, a menos que as mensagens de depuração sejam enviadas apenas para o arquivo de log. Essa opção vale somente para novas linhas: as linhas anteriores continuam legíveis até que o log seja limpo, e limpá-lo também esvazia o arquivo de log do daemon.",
+  "prefs_field_advanced_verbose_logging_logfile_only": "Apenas para o arquivo de log"
 }

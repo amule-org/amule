@@ -6496,18 +6496,17 @@ msgid "Only to Logfile"
 msgstr "Само във файла с дневника"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Core Message Categories:"
-msgstr "Категории съобщения:"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Remote GUI Message Categories:"
-msgstr "Категории съобщения:"
-
-#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Категории съобщения:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Connected Core:"
+msgstr "Свързан от:"
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -10613,6 +10612,14 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Core Message Categories:"
+#~ msgstr "Категории съобщения:"
+
+#, fuzzy
+#~ msgid "Remote GUI Message Categories:"
+#~ msgstr "Категории съобщения:"
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."

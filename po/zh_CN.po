@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-03 11:54+0000\n"
+"PO-Revision-Date: 2026-11-04 09:09+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -6444,18 +6444,16 @@ msgid "Only to Logfile"
 msgstr "只记录到日志文件"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Core Message Categories:"
-msgstr "消息分类:"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Remote GUI Message Categories:"
-msgstr "消息分类:"
-
-#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "消息分类:"
+
+#: src/muuli_wdr.cpp
+msgid "Connected Core:"
+msgstr "已连接的核心："
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
+msgstr "这个远程 GUI："
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -10548,6 +10546,14 @@ msgstr "无法将旧的 ECPassword 和 ECPasswordVerifier 进行比较；拒绝�
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再对本次运行进行身份认证。"
+
+#, fuzzy
+#~ msgid "Core Message Categories:"
+#~ msgstr "消息分类:"
+
+#, fuzzy
+#~ msgid "Remote GUI Message Categories:"
+#~ msgstr "消息分类:"
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."

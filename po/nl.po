@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-02 15:46+0000\n"
+"PO-Revision-Date: 2026-11-04 09:09+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -21,7 +21,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.dev0\n"
+"X-Generator: Weblate 2026.11.1.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -6441,21 +6441,19 @@ msgstr "Schakel Loggen van Uitgebreide Foutopsporing in."
 
 #: src/muuli_wdr.cpp
 msgid "Only to Logfile"
-msgstr "Alleen naar logbestand"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Core Message Categories:"
-msgstr "Berichtcategorieën:"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Remote GUI Message Categories:"
-msgstr "Berichtcategorieën:"
+msgstr "Alleen naar Logbestand"
 
 #: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Berichtcategorieën:"
+
+#: src/muuli_wdr.cpp
+msgid "Connected Core:"
+msgstr "Verbonden Kern:"
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
+msgstr "Deze Externe GUI:"
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -10555,6 +10553,12 @@ msgstr "Kon verouderde ECPassword niet vergelijken met ECPasswordVerifier. Exter
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migreren van een vernaderde ECPassword na downgrade. De vorige verificatie authenticeert deze uitvoer niet meer."
+
+#~ msgid "Core Message Categories:"
+#~ msgstr "Kernbericht Categoriën:"
+
+#~ msgid "Remote GUI Message Categories:"
+#~ msgstr "Externe GUI-Bericht Categoriën:"
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."

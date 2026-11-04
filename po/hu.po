@@ -6459,18 +6459,17 @@ msgid "Only to Logfile"
 msgstr "Csak napló fájlba"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Core Message Categories:"
-msgstr "Üzenet kategóriák:"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Remote GUI Message Categories:"
-msgstr "Üzenet kategóriák:"
-
-#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Üzenet kategóriák:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Connected Core:"
+msgstr "Csatlakozva ekkortól:"
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -10565,6 +10564,14 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Core Message Categories:"
+#~ msgstr "Üzenet kategóriák:"
+
+#, fuzzy
+#~ msgid "Remote GUI Message Categories:"
+#~ msgstr "Üzenet kategóriák:"
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."
