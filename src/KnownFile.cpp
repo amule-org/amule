@@ -1155,13 +1155,7 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 				// 1 CryptLayer Required
 				// 1 CryptLayer Requested
 				// 1 CryptLayer Supported
-				const uint8 uSupportsCryptLayer = cur_src->SupportsCryptLayer() ? 1 : 0;
-				const uint8 uRequestsCryptLayer = cur_src->RequestsCryptLayer() ? 1 : 0;
-				const uint8 uRequiresCryptLayer = cur_src->RequiresCryptLayer() ? 1 : 0;
-				const uint8 byCryptOptions = (uRequiresCryptLayer << 2) |
-							     (uRequestsCryptLayer << 1) |
-							     (uSupportsCryptLayer << 0);
-				data.WriteUInt8(byCryptOptions);
+				data.WriteUInt8(cur_src->GetCryptOptions());
 			}
 
 			if (nCount > 500) {
