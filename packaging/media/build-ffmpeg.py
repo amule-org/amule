@@ -59,7 +59,7 @@ def main():
     if not source.exists():
         source.mkdir()
         with tarfile.open(archive) as tar:
-            # Older Python versions has no tar extraction filters.
+            # Older Python versions have no tar extraction filters.
             for entry in tar.getmembers():
                 parts = Path(entry.name).parts[1:]
                 if not parts:
@@ -95,11 +95,21 @@ def main():
                           '--extra-ldflags=-mmacosx-version-min=' + target]
         elif option not in ('-G', 'MinGW Makefiles'):
             raise SystemExit('Unsupported FFmpeg build option: ' + option)
+    bash = shutil.which('bash', path=env.get('PATH'))
+    if not bash:
+        raise SystemExit('Bash is required to configure FFmpeg')
+    # FFmpeg Makefiles contain MSYS paths. A native make elsewhere on the
+    # inherited Windows PATH cannot interpret them, even inside an MSYS shell.
+    make = str(Path(bash).with_name('make.exe')) if os.name == 'nt' else shutil.which('make', path=env.get('PATH'))
+    if not make or not Path(make).is_file():
+        raise SystemExit('MSYS2 make is required on Windows (pacman -S make)')
+
     def run(command):
         command = list(map(str, command))
-        # Native Windows must select MSYS2 Bash, never System32's WSL stub.
-        command[0] = shutil.which(command[0], path=env.get('PATH')) or command[0]
+        command[0] = {'bash': bash, 'make': make}.get(command[0], command[0])
+        print('+', ' '.join(command), flush=True)
         subprocess.run(command, cwd=build, env=env, check=True)
+    run(['make', '--version'])
     stamp = build / 'requested-config.json'
     if not stamp.exists() or json.loads(stamp.read_text()) != configure:
         run(['bash', (source / 'configure').as_posix(), *configure])

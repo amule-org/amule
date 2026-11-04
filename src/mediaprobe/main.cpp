@@ -19,6 +19,7 @@
 #else
 #include <sys/resource.h>
 #include <unistd.h>
+static_assert(sizeof(off_t) >= sizeof(int64_t), "Media probe requires 64-bit file offsets");
 #endif
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -40,6 +41,7 @@ struct Input
 	uint64_t bytes = 0;
 	unsigned backwardSeeks = 0;
 	bool exhausted = false;
+	bool ioError = false;
 	Clock::time_point deadline = Clock::now() + std::chrono::seconds(25);
 };
 struct Result
@@ -153,9 +155,13 @@ int readInput(void *opaque, uint8_t *buffer, int capacity)
 	}
 	const auto count = std::fread(buffer, 1, std::min<uint64_t>(capacity, MaxRead - input.bytes), stdin);
 	input.bytes += count;
+	if (std::ferror(stdin))
+		input.ioError = true;
 	if (count)
 		return static_cast<int>(count);
-	return std::ferror(stdin) ? AVERROR(EIO) : AVERROR_EOF;
+	if (input.ioError)
+		return AVERROR(EIO);
+	return AVERROR_EOF;
 }
 int64_t seekInput(void *opaque, int64_t offset, int whence)
 {
@@ -167,15 +173,23 @@ int64_t seekInput(void *opaque, int64_t offset, int whence)
 	whence &= ~AVSEEK_FORCE;
 	const auto current = position();
 	const auto base = whence == SEEK_SET ? 0 : whence == SEEK_CUR ? current : input.size;
-	if (current < 0 || (whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END) ||
-		offset < -base || offset > input.size - base)
+	if (current < 0) {
+		input.ioError = true;
+		return AVERROR(EIO);
+	}
+	if ((whence != SEEK_SET && whence != SEEK_CUR && whence != SEEK_END) || offset < -base ||
+		offset > input.size - base)
 		return AVERROR(EINVAL);
 	const auto target = base + offset;
 	if (target <= current && ++input.backwardSeeks > MaxBackwardSeeks) {
 		input.exhausted = true;
 		return AVERROR(EFBIG);
 	}
-	return reposition(target, SEEK_SET) ? AVERROR(EIO) : target;
+	if (reposition(target, SEEK_SET)) {
+		input.ioError = true;
+		return AVERROR(EIO);
+	}
+	return target;
 }
 int denyOpen(AVFormatContext *, AVIOContext **, const char *, int, AVDictionary **)
 {
@@ -258,23 +272,29 @@ int probe(Input &input, Result &result)
 	format->probesize = 5 * 1024 * 1024;
 	format->max_analyze_duration = 5 * AV_TIME_BASE;
 	AVDictionary *options = nullptr;
-	av_dict_set(&options, "protocol_whitelist", "", 0);
-	// Keep this policy in code: distro FFmpeg enables network and playlist readers.
-	// Match packaging/media/build-static.sh, including libavformat's runtime aliases.
-	av_dict_set(&options,
-		"format_whitelist",
-		"aac,ac3,aiff,amr,ape,asf,avi,dts,eac3,flac,flv,gsm,h264,hevc,matroska,webm,"
-		"mov,mp4,m4a,3gp,3g2,mj2,mp3,mpeg,mpegts,mpegvideo,ogg,wav,wv,tta",
-		0);
-	// find_stream_info may otherwise open decoders in a full system FFmpeg.
-	// Container metadata and parsers suffice; match the decoder-free bundle.
-	av_dict_set(&options, "codec_whitelist", "", 0);
+	// Fail closed if allocating any policy option fails. These restrictions must
+	// also hold with full distro libraries, not just the reduced bundle.
+	// Match packaging/media/build-ffmpeg.py, including runtime format aliases.
+	const char *formats = "aac,ac3,aiff,amr,ape,asf,avi,dts,eac3,flac,flv,gsm,h264,hevc,matroska,webm,"
+			      "mov,mp4,m4a,3gp,3g2,mj2,mp3,mpeg,mpegts,mpegvideo,ogg,wav,wv,tta";
+	// find_stream_info must not open decoders supplied by system FFmpeg.
+	if (av_dict_set(&options, "protocol_whitelist", "", 0) < 0 ||
+		av_dict_set(&options, "format_whitelist", formats, 0) < 0 ||
+		av_dict_set(&options, "codec_whitelist", "", 0) < 0) {
+		av_dict_free(&options);
+		return 12;
+	}
 	const int opened = avformat_open_input(&format, nullptr, nullptr, &options);
+	const bool unusedPolicy = av_dict_count(options) != 0;
 	av_dict_free(&options);
+	if (input.ioError || (opened >= 0 && unusedPolicy) || opened == AVERROR(ENOMEM))
+		return 12;
 	if (opened < 0)
 		return interrupted(&input) ? (input.exhausted ? 11 : 13) : 11;
 	// A partial stream-info result can still contain usable container metadata.
-	(void)avformat_find_stream_info(format, nullptr);
+	const int info = avformat_find_stream_info(format, nullptr);
+	if (input.ioError || info == AVERROR(ENOMEM))
+		return 12;
 	if (interrupted(&input))
 		return input.exhausted ? 11 : 13;
 	if (std::ferror(stdin))
@@ -326,6 +346,9 @@ int probe(Input &input, Result &result)
 			result.bitrate = bounded(double(input.size) * 8 / seconds / 1000, false);
 		}
 	}
+	// Optional frame scanning can encounter a transient device/read failure too.
+	if (input.ioError)
+		return 12;
 	return result.length || !result.codec.empty() ? 0 : 10;
 }
 void quoted(const std::string &text, bool json = true)

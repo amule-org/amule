@@ -22,5 +22,18 @@ int main()
 	expired.deadline = Clock::now() - std::chrono::seconds(1);
 	if (readInput(&expired, &byte, 1) != AVERROR_EXIT || !interrupted(&expired))
 		return 4;
+#ifdef _WIN32
+	_close(_fileno(stdin));
+#else
+	close(fileno(stdin));
+#endif
+	std::clearerr(stdin);
+	Input failedRead;
+	failedRead.size = 4096;
+	Result result;
+	// A real stdio/descriptor error during opening must remain exit 12, which
+	// the core treats as retryable rather than persisting a file-failure marker.
+	if (probe(failedRead, result) != 12)
+		return 14;
 	return 0;
 }

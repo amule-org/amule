@@ -882,6 +882,7 @@ jobs:
             ${{ matrix.pkg_prefix }}-wxwidgets3.3-msw
             ${{ matrix.pkg_prefix }}-zlib
             git
+            make
             python
             zip
         run: |

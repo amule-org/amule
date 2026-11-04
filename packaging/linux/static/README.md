@@ -13,6 +13,16 @@ packaging/linux/build.sh static aarch64
 
 Output: `dist/aMule-<version>-Linux-<x64|arm64>-static.tar.gz`.
 
+The wrapper downloads the checksum-pinned FFmpeg source with `gh` before entering
+Docker. For a direct `docker build`, stage it first from the repository root:
+
+```sh
+python3 packaging/media/build-ffmpeg.py packaging/media/sources /tmp/amule-media-source --source-only
+```
+
+The image consumes that archive offline; GitHub credentials are not passed into
+the Docker build.
+
 ## What's included
 
 Feature set is complete for a headless node: **UPnP**, **IP2Country**

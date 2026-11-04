@@ -28,6 +28,10 @@ int main()
 		}
 		std::fflush(stdout);
 	}
+	if (mode == 'i')
+		return 12; // I/O/configuration failures must not poison known.met.
+	if (mode == 't')
+		return 13; // The helper's internal deadline is also retryable.
 	if (mode == 'e')
 		return 1;
 	if (mode == 'o')

@@ -28,6 +28,10 @@ class DurationTests(unittest.TestCase):
         cls.xing = cls.directory / 'xing.mp3'
         encoders = subprocess.check_output([FFMPEG, '-v', 'error', '-encoders'], text=True)
         cls.has_x264 = 'libx264' in encoders
+        help_text = subprocess.check_output([FFMPEG, '-hide_banner', '-h', 'full'],
+                                            stderr=subprocess.DEVNULL)
+        # 4.4 predates fps_mode; recent releases remove the old vsync option.
+        cls.frame_sync = ['-fps_mode', 'vfr'] if b'-fps_mode' in help_text else ['-vsync', 'vfr']
         if REQUIRE_FIXTURES and ('libmp3lame' not in encoders or not cls.has_x264):
             cls.temp.cleanup()
             raise RuntimeError('Required duration fixture encoders libmp3lame and libx264 are missing')
@@ -46,8 +50,12 @@ class DurationTests(unittest.TestCase):
 
     @staticmethod
     def generate(arguments):
-        subprocess.run([FFMPEG, '-v', 'error', '-nostdin', '-y', *arguments],
-                       capture_output=True, check=True, timeout=30)
+        try:
+            subprocess.run([FFMPEG, '-v', 'error', '-nostdin', '-y', *arguments],
+                           capture_output=True, check=True, timeout=30)
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError('Fixture generation failed: ' +
+                               error.stderr.decode(errors='replace')) from error
 
     def probe(self, path):
         with path.open('rb') as source:
@@ -147,7 +155,7 @@ class DurationTests(unittest.TestCase):
         container = self.directory / 'vfr.mkv'
         raw = self.directory / 'vfr.h264'
         self.generate(['-f', 'lavfi', '-i', 'testsrc2=size=64x64:rate=30:duration=10',
-                       '-vf', r'select=not(mod(n\,7))', '-vsync', 'vfr', '-c:v', 'libx264',
+                       '-vf', r'select=not(mod(n\,7))', *self.frame_sync, '-c:v', 'libx264',
                        '-x264-params', 'force-cfr=0', '-threads', '1', str(container)])
         self.generate(['-i', str(container), '-c:v', 'copy', '-bsf:v', 'h264_mp4toannexb',
                        '-f', 'h264', str(raw)])

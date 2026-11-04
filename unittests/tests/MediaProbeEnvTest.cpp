@@ -46,12 +46,14 @@ TEST(MediaProbeEnv, NativeHelperFailuresRespectHeaderAndOutputBudget)
 {
 	const wxString path = wxFileName::CreateTempFileName(wxT("amule-native-exit"));
 	const std::atomic<bool> running(true);
-	for (const char mode : { 's', 'e', 'c', 'o' }) {
+	for (const char mode : { 's', 'e', 'c', 'o', 'i', 't' }) {
 		wxFFile input(path, wxT("wb"));
 		ASSERT_TRUE(input.IsOpened());
 		ASSERT_EQUALS(size_t(1), input.Write(&mode, 1));
 		input.Close();
 		MediaInfo info;
+		info.length_seconds = 99;
+		info.title = wxT("Retained preview");
 		const auto outcome = MediaProbe::Probe(wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE),
 			CPath(path),
 			info,
@@ -59,6 +61,8 @@ TEST(MediaProbeEnv, NativeHelperFailuresRespectHeaderAndOutputBudget)
 			running,
 			true,
 			false);
+		ASSERT_EQUALS(uint32_t(99), info.length_seconds);
+		ASSERT_EQUALS(wxString(wxT("Retained preview")), info.title);
 		if (mode == 'c') {
 			ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::UnreadableFile);
 			ASSERT_TRUE(MediaProbe::IsFileVerdict(outcome));
