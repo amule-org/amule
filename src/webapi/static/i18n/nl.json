@@ -1066,5 +1066,10 @@
   "stats_tree_natt_lugdunum_callback_attempts": "Lugdunum Terugroepen: %s",
   "stats_tree_natt_lugdunum_callback_successes": "Succesvolle Lugdunum Terugroepen: %s",
   "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Een hogere limiet kan het vastlopen van de schijf versoepelen maar gebruikt meer geheugen. Al gedane gegevensverzoeken kunnen groter zijn dan deze limiet.",
-  "prefs_field_advanced_write_buffer_limit_mebibytes": "Download schrijfbuffer limiet (MiB)"
+  "prefs_field_advanced_write_buffer_limit_mebibytes": "Download schrijfbuffer limiet (MiB)",
+  "prefs_debugging": "Foutopsporing",
+  "prefs_group_debug_logging": "Loggen van foutopsporing",
+  "prefs_debugging_warning": "Foutopsporingslogs kunnen peer-IP-adressen, gebruikershashes en bestandsnamen bevatten. Gasten kunnen het logbestand lezen behalve als de foutopsporingsberichten alleen naar het logbestand gaan. Die optie is alleen van toepassing op nieuwe regels: eerder geschreven regels blijven leesbaar totdat het logbestand is gewist en het wissen leegt ook het logbestand van de daemon.",
+  "prefs_group_debug_categories": "Berichtcategoriën",
+  "prefs_field_advanced_verbose_logging_logfile_only": "Alleen naar logbestand"
 }

@@ -6462,18 +6462,17 @@ msgid "Only to Logfile"
 msgstr "Sadece Kütük Dosyasına"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Core Message Categories:"
-msgstr "İleti Sınıfları:"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Remote GUI Message Categories:"
-msgstr "İleti Sınıfları:"
-
-#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "İleti Sınıfları:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Connected Core:"
+msgstr "Bağlantı başlangıç tarihi:"
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -10582,6 +10581,14 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Core Message Categories:"
+#~ msgstr "İleti Sınıfları:"
+
+#, fuzzy
+#~ msgid "Remote GUI Message Categories:"
+#~ msgstr "İleti Sınıfları:"
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."

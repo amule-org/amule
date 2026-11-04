@@ -4,21 +4,21 @@
 # This file is distributed under the same license as the aMule package.
 #
 # David Watzke <david@watzke.cz>, 2010.
-#
+# mslr8 <hosted.weblate.org.poncho089@passmail.net>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-31 11:58+0000\n"
-"Last-Translator: David Watzke <david@watzke.cz>\n"
-"Language-Team: cs <cs@li.org>\n"
+"PO-Revision-Date: 2026-11-04 10:48+0000\n"
+"Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
+"Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
-"X-Generator: Poedit 2.3\n"
+"X-Generator: Weblate 2026.11.1.dev0\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AboutDialog.cpp
@@ -777,9 +777,9 @@ msgid "ServerMessage: %s"
 msgstr "Zpráva od serveru: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace nodes.dat: %s"
-msgstr "Selhalo nahrazení databáze MaxMindDB '%s': %s"
+msgstr "Selhalo nahrazení nodes.dat: %s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -1333,9 +1333,8 @@ msgid "The daemon refused these folders because they are outside the folders it 
 msgstr "Daemon odmítl tyto složky, protože jsou mimo daemonem povolené složky (nastavené na daemonu):%s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
-#, fuzzy
 msgid "The EC password was not changed."
-msgstr "- Port TCP byl změněn.\n"
+msgstr "Heslo EC nebylo změněno."
 
 #: src/amule-remote-gui.cpp
 #, fuzzy
@@ -1902,7 +1901,7 @@ msgstr "Uživatel %s (%u) odmítl přístup k seznamu sdílených adresářů/so
 
 #: src/CommentDialog.cpp src/CommentDialogLst.cpp
 msgid "File Comments"
-msgstr "Komentáře k souboru"
+msgstr "Komentáře u souboru"
 
 #: src/CommentDialog.cpp
 msgid "Add Comment/Rating"
@@ -2620,9 +2619,8 @@ msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
 msgstr "EC_TAG_FRIEND_SHARED vyžaduje EC_TAG_FRIEND nebo EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No open search holds this result."
-msgstr "Tuto část nemá žádný jiný zdroj"
+msgstr "Žádné otevřené hledání nemá tento výsledek."
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
@@ -2630,7 +2628,7 @@ msgstr "Webové hledání ze vzdáleného rozhraní nedává smysl."
 
 #: src/ExternalConn.cpp
 msgid "Invalid media search filter."
-msgstr ""
+msgstr "Neplatný filtr vyhledávání médií."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -2726,11 +2724,11 @@ msgstr "Heslo EC změnil(a) %s"
 
 #: src/ExternalConn.cpp
 msgid "One or more folders were outside the allowed remote directories and were left unchanged."
-msgstr ""
+msgstr "Jedna nebo více složek byly mimo povolené vzdálené složky a zůstaly nezměněny."
 
 #: src/ExternalConn.cpp
 msgid "The category folder is outside the allowed remote directories."
-msgstr ""
+msgstr "Složka kategorie je mimo povolené vzdálené složky."
 
 #: src/ExternalConn.cpp
 msgid "No such category."
@@ -2758,7 +2756,7 @@ msgstr "Extrakce metadat médií je zakázána v nastavení"
 
 #: src/ExternalConn.cpp
 msgid "This aMule has no media helper (amule-media-probe)"
-msgstr ""
+msgstr "Tento aMule nemá žádného pomocníka médií (amule-media-probe)"
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -3035,7 +3033,7 @@ msgstr "Nezapisovat soubor logu; vypisovat jen do konzole."
 
 #: src/ExternalConnector.cpp
 msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr ""
+msgstr "Ověřovač daemona nemůže dodat heslo klienta. Použijte -P nebo dialog zadání hesla.\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -3133,65 +3131,61 @@ msgstr "CHYBA: Selhalo otevření '%s' pomocí výchozí aplikace."
 
 #: src/FilterSelectionSummary.h
 msgid "The message filter is off; its selected rules are saved."
-msgstr ""
+msgstr "Filtr zpráv je vypnutý; jeho zvolená pravidla jsou uložena."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "All incoming messages outside current chats will be discarded."
-msgstr "Filtrovat příchozí zprávy (s výjimkou aktuálního chatu):"
+msgstr "Všechny příchozí zprávy mimo aktuální chaty budou zahozeny."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Messages from people not on your friend list will be discarded."
-msgstr "Filtrovat zprávy od lidí, kteří nejsou na seznamu kamarádů"
+msgstr "Zprávy od lidí, kteří nejsou na vašem seznamu přátel, budou zahozeny."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Messages from unknown clients will be discarded."
-msgstr "Filtrovat zprávy od neznámých klientů"
+msgstr "Zprávy od neznámých klientů budou zahozeny."
 
 #: src/FilterSelectionSummary.h
 #, c-format
 msgid "Messages containing any of these terms will be discarded (ignoring case): %s."
-msgstr ""
+msgstr "Zprávy obsahující kterékoli z těchto výrazů budou zahozeny (velikost písmen nehraje roli): %s."
 
 #: src/FilterSelectionSummary.h
 msgid "No messages will be discarded by the message filter: the word list is empty."
-msgstr ""
+msgstr "Filtrem zpráv nebudou zahozeny žádné zprávy: seznam slov je prázdný."
 
 #: src/FilterSelectionSummary.h
 msgid "No messages will be discarded by the message filter: select at least one option."
-msgstr ""
+msgstr "Filtrem zpráv nebudou zahozeny žádné zprávy: vyberte alespoň jednu možnost."
 
 #: src/FilterSelectionSummary.h
 msgid "Current chats are exempt from these rules."
-msgstr ""
+msgstr "Tato pravidla neplatí na současné chaty."
 
 #: src/FilterSelectionSummary.h
 msgid "Advanced spam filtering for non-friends is also enabled."
-msgstr ""
+msgstr "Pokročilé filtrování spamu platné na ty, kteří nejsou přáteli, je také zapnuto."
 
 #: src/FilterSelectionSummary.h
 msgid "First messages from non-friends require a CAPTCHA."
-msgstr ""
+msgstr "První zprávy od těch, kdo nejsou přáteli, vyžaduje CAPTCHA."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Received message text will also be written to the log."
-msgstr "Zobrazit přijaté zprávy v protokolu"
+msgstr "Text přijatých zpráv bude také zapsán do logu."
 
 #: src/FilterSelectionSummary.h
 msgid "File comment filtering is off."
-msgstr ""
+msgstr "Filtrování komentářů u souborů je vypnuto."
 
 #: src/FilterSelectionSummary.h
 msgid "No file comments will be hidden: the word list is empty."
-msgstr ""
+msgstr "Žádné komentáře u souborů nebudou skryty: seznam slov je prázdný."
 
 #: src/FilterSelectionSummary.h
 #, c-format
 msgid "File comments containing any of these literal terms will be hidden (ignoring case): %s."
-msgstr ""
+msgstr "Komentáře u souborů, které obsahují kterýkoli z těchto doslovných výrazů, budou skryty (bez ohledu na velikost písmen): %s."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -3516,7 +3510,7 @@ msgstr "Stahování přes HTTP bylo zrušeno"
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "Refusing to download %s: only http and https URLs are supported."
-msgstr ""
+msgstr "Odmítám stáhnout %s: jsou podporovány jen adresy s http a https."
 
 #: src/HTTPDownload.cpp
 #, c-format
@@ -3644,9 +3638,9 @@ msgstr[1] "%u chybné řádky byly zahozeny."
 msgstr[2] "%u chybných řádků bylo zahozeno."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace %s file, aborting update: %s"
-msgstr "Soubor %s se nepodařilo přejmenovat, aktualizace bude ukončena."
+msgstr "Selhalo nahrazení souboru %s, přerušování aktualizace: %s"
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
@@ -4172,9 +4166,8 @@ msgid "Invalid password, not a MD5 hash!"
 msgstr "Neplatné heslo: nejedná se o hash MD5!"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Could not generate SRP credentials."
-msgstr "Nešlo smazat '%s' z disku."
+msgstr "Nepodařilo se vygenerovat údaje SRP."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
@@ -4194,13 +4187,12 @@ msgid "EC connection failed. Empty reply."
 msgstr "EC připojení selhalo. Prázdná odpověď."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Invalid SRP handshake or unsupported profile. Connection closed."
-msgstr "Externí připojení: Chybná odpověď, handshake selhal. Spojení uzavřeno."
+msgstr "Neplatné handshake SRP nebo nepodporovaný profil. Spojení uzavřeno."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "An EC daemon of version 3.3.0 or later is required."
-msgstr ""
+msgstr "Je vyžadován daemon EC verze 3.3.0 nebo vyšší."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
@@ -4247,7 +4239,7 @@ msgstr "CHYBA: Nelze naslouchat na portu TCP."
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: bundled amule-media-probe helper is unavailable."
-msgstr ""
+msgstr "Metadata médií: vestavěný pomocník amule-media-probe není dostupný."
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -4255,14 +4247,14 @@ msgid "Media metadata: %s is gone, nothing to extract"
 msgstr "Mediální metadata: %s je pryč, nic k extrahování"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Extracting media metadata: %s"
-msgstr "Extrahování mediálních metadat pomocí ffprobe: %s"
+msgstr "Extrahování mediálních metadat: %s"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: parser failed for %s"
-msgstr "Mediální metadata: ffprobe selhalo (kód %d) pro %s"
+msgstr "Metadata médií: parser selhal u %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5376,11 +5368,11 @@ msgstr "Nastavit ručně přidaným serverům vysokou prioritu"
 
 #: src/muuli_wdr.cpp
 msgid "Publish shared files faster on servers that allow it"
-msgstr ""
+msgstr "Zveřejněte sdílené soubory rychleji na serverech, které to umožňují"
 
 #: src/muuli_wdr.cpp
 msgid "Follow the publication pace that the server advertises. Other servers get the standard pace."
-msgstr ""
+msgstr "Řiďte se tempem zveřejňování, které server udává. Ostatní servery se řídí běžným tempem."
 
 #: src/muuli_wdr.cpp
 msgid "Add files to download in pause mode"
@@ -5532,7 +5524,7 @@ msgstr "Získat délku / datový tok / kodek ze sdílených zvukových a video s
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
-msgstr ""
+msgstr "Pokud je povoleno, aMule používá vestavěný parser MediaInfo pro extrahování metadat ze sdílených mediálních souborů."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5608,11 +5600,11 @@ msgstr "Podívejte se, kolik souborů a složek ve sdílených složkách by sou
 
 #: src/muuli_wdr.cpp
 msgid "Folders the daemon allows remote changes in"
-msgstr ""
+msgstr "Složky, ve kterých daemon umožňuje vzdálené změny"
 
 #: src/muuli_wdr.cpp
 msgid "(Read-only. Configured on the daemon; if empty, the daemon refuses every remote folder change.)"
-msgstr ""
+msgstr "(Pouze pro čtení. Nastavené na daemonu; pokud je prázdné, daemon odmítá každou změnu vzdálené složky.)"
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
@@ -5744,11 +5736,11 @@ msgstr "Interval opakovaného dotazování zdrojů (minuty)"
 
 #: src/muuli_wdr.cpp
 msgid "Download write buffer limit (MiB)"
-msgstr ""
+msgstr "Limit mezipaměti zápisu stahování (MiB)"
 
 #: src/muuli_wdr.cpp
 msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
-msgstr ""
+msgstr "Celková obdržená data stahování čekající na zápis. Vyšší limit může omezit krátké přestávky práce disku za cenu vyššího využití paměti. Již vyžádaná data mohou překročit tento limit."
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -5884,15 +5876,15 @@ msgstr "Heslo"
 
 #: src/muuli_wdr.cpp
 msgid "Folders remote clients may use"
-msgstr ""
+msgstr "Složky, které mohou použít vzdálení klienti"
 
 #: src/muuli_wdr.cpp
 msgid "(Remote clients may set the incoming, temp, shared and category folders only inside these. Empty means no remote folder change is allowed. Local changes here are never restricted.)"
-msgstr ""
+msgstr "(Vzdálení klienti mohou nastavovat pouze složky pro příchozí soubory, dočasné soubory, sdílené soubory a kategorie, a to pouze v rámci těchto složek. Pokud není vyplněno, není dovolena žádná změna vzdálených složek. Místní změny zde nejsou nikdy omezeny.)"
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder, e.g. /home/user/aMule. A remote client may then set any folder at or below it."
-msgstr ""
+msgstr "Absolutní cesta složky, např. /home/user/aMule. Vzdálený klient může poté nastavit libovolnou složku v této složce nebo pod ní."
 
 #: src/muuli_wdr.cpp
 msgid "aMule API server parameters"
@@ -6321,9 +6313,8 @@ msgid "Check for a newer GeoIP database at startup and every week while aMule is
 msgstr "Zkontrolovat aktualizace GeoIP databáze při spuštění a každý týden, pokud aMule běží."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable incoming message filtering (except current chat):"
-msgstr "Filtrovat příchozí zprávy (s výjimkou aktuálního chatu):"
+msgstr "Povolit filtrování příchozích zpráv (s výjimkou aktuálního chatu):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6331,6 +6322,9 @@ msgid ""
 "Turning this off keeps your selected options and word list.\n"
 "Filtered messages are discarded without opening a chat or replying to the sender."
 msgstr ""
+"Povolte filtrační možnosti níže. Vyberte alespoň jednu možnost filtrace zpráv.\n"
+"Vypnutí zachová vámi vybrané předvolby a seznam slov.\n"
+"Filtrované zprávy jsou zahozeny bez toho, aby byl otevřen chat, nebo aby bylo odesílateli odpovězeno."
 
 #: src/muuli_wdr.cpp
 msgid "Filter all messages"
@@ -6354,6 +6348,9 @@ msgid ""
 "Terms match anywhere in a message: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported. A * is literal, except that a word list of exactly * blocks every message."
 msgstr ""
+"Nechte zahodit zprávy chatu, obsahující jakýkoli z výrazů, který oddělíte čárkou. Proces ignoruje velikost písmen a mezery.\n"
+"Výrazy jsou hledány kdekoli ve zprávě: pes bude odpovídat maxipes a černý pes spatřen.\n"
+"Zástupné znaky nejsou podporovány. * je tedy použit doslovně, až na případ kdy byste použili v seznamu výrazů jen znak * , což by zablokovalo každou zprávu."
 
 #: src/muuli_wdr.cpp
 msgid "Enable advanced spam filter"
@@ -6369,21 +6366,19 @@ msgstr "Vyžadovat CAPTCHA u prvních zpráv od těch, kdo nejsou přátelé"
 
 #: src/muuli_wdr.cpp
 msgid "Withhold the message until the sender solves the challenge. Clients without CAPTCHA support cannot start a chat."
-msgstr ""
+msgstr "Zdržet zprávu do doby, než odesílatel vyřeší výzvu proti SPAMu. Klienti bez podpory CAPTCHA nemohou začít chat."
 
 #: src/muuli_wdr.cpp
 msgid "Show received messages in the log"
 msgstr "Zobrazit přijaté zprávy v protokolu"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "File comments"
-msgstr "Komentáře k souboru"
+msgstr "Komentáře u souboru"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Filter file comments containing (use ',' as separator):"
-msgstr "Filtrovat komentáře obsahující některý z výrazů (oddělujte je čárkou):"
+msgstr "Filtrovat komentáře u souborů, které obsahují (výrazy oddělujte čárkou):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6391,11 +6386,13 @@ msgid ""
 "Matching ignores case and spaces around each term. Terms match anywhere in a comment: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported; * is matched literally."
 msgstr ""
+"Skrýt cizí komentáře u souborů, pokud obsahují kterýkoli z výrazů oddělených čárkou. Toto nefiltruje zprávy chatu.\n"
+"Proces vyhledávání výrazů ignoruje velikost písmen a mezery kolem každého z výrazů. Výrazy jsou hledány kdekoli v textu komentáře: pes bude odpovídat maxipes a černý pes spatřen.\n"
+"Zástupné znaky nejsou podporovány. * je tedy použit doslovně."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "With these settings"
-msgstr "Zapamatovat tato nastavení"
+msgstr "S těmito nastaveními"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Proxy"
@@ -6466,18 +6463,16 @@ msgid "Only to Logfile"
 msgstr "Pouze do souboru protokolu"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Core Message Categories:"
-msgstr "Kategorie zpráv:"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Remote GUI Message Categories:"
-msgstr "Kategorie zpráv:"
-
-#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Kategorie zpráv:"
+
+#: src/muuli_wdr.cpp
+msgid "Connected Core:"
+msgstr "Připojeno jádro:"
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
+msgstr "Toto vzdálené GUI:"
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -6907,7 +6902,7 @@ msgstr[2] "Nalezena poškozená část (%d) v %d částečných souborech %s - F
 #: src/PartFile.cpp
 #, c-format
 msgid "'%s' does not match its file hash, and without the part hashset the corrupt part cannot be found. Waiting for the hashset."
-msgstr ""
+msgstr "'%s' se neshoduje s hashovou hodnotou souboru a bez sady hashů dané části nelze poškozenou část najít. Čeká se na sadu hashů."
 
 #: src/PartFile.cpp
 #, c-format
@@ -10615,6 +10610,14 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Core Message Categories:"
+#~ msgstr "Kategorie zpráv:"
+
+#, fuzzy
+#~ msgid "Remote GUI Message Categories:"
+#~ msgstr "Kategorie zpráv:"
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."

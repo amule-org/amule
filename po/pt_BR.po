@@ -11,12 +11,14 @@
 # Fabio Junior Beneditto <fabiobeneditto@uol.com.br>, 2008.
 # Marcelo Jimenez <mroberto@users.sourceforge.com>, 2026.
 # Marcelo Roberto Jimenez <mrjimenez@users.noreply.hosted.weblate.org>, 2026.
+# Emertels <emertels@users.noreply.hosted.weblate.org>, 2026.
+# Douglas Pimentel <douglaspimentel@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-01 21:47+0000\n"
+"PO-Revision-Date: 2026-11-04 09:09+0000\n"
 "Last-Translator: Marcelo Roberto Jimenez <mrjimenez@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/amule/amule-application/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -24,7 +26,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 2026.11.dev0\n"
+"X-Generator: Weblate 2026.11.1.dev0\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AboutDialog.cpp
@@ -2612,9 +2614,8 @@ msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
 msgstr "EC_TAG_FRIEND_SHARED requer EC_TAG_FRIEND ou EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No open search holds this result."
-msgstr "Nenhuma outra fonte tem esta parte"
+msgstr "Nenhuma busca aberta contém este resultado."
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
@@ -6448,18 +6449,16 @@ msgid "Only to Logfile"
 msgstr "Apenas para o arquivo de log"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Core Message Categories:"
-msgstr "Categorias de Mensagens:"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Remote GUI Message Categories:"
-msgstr "Categorias de Mensagens:"
-
-#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Categorias de Mensagens:"
+
+#: src/muuli_wdr.cpp
+msgid "Connected Core:"
+msgstr "Núcleo conectado:"
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
+msgstr "Esta GUI remota:"
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -10555,6 +10554,14 @@ msgstr "Não foi possível comparar o ECPassword legado com o ECPasswordVerifier
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrando um ECPassword legado alterado após um downgrade; o verificador anterior não autentica mais esta sessão."
+
+#, fuzzy
+#~ msgid "Core Message Categories:"
+#~ msgstr "Categorias de Mensagens:"
+
+#, fuzzy
+#~ msgid "Remote GUI Message Categories:"
+#~ msgstr "Categorias de Mensagens:"
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."

@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-03 11:54+0000\n"
+"PO-Revision-Date: 2026-11-03 23:27+0000\n"
 "Last-Translator: Kisnov <kisnov@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Catalan <https://hosted.weblate.org/projects/amule/amule-application/ca/>\n"
 "Language: ca\n"
@@ -6444,18 +6444,16 @@ msgid "Only to Logfile"
 msgstr "Només al fitxer de registre"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Core Message Categories:"
-msgstr "Categories de missatge:"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Remote GUI Message Categories:"
-msgstr "Categories de missatge:"
-
-#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Categories de missatge:"
+
+#: src/muuli_wdr.cpp
+msgid "Connected Core:"
+msgstr "Nucli connectat:"
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
+msgstr "Aquesta IGU remota:"
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -10551,6 +10549,14 @@ msgstr "No s'ha pogut comparar l'ECPassword antic amb l'ECPasswordVerifier; es r
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "S'està migrant un ECPassword antic modificat després de tornar a una versió anterior; el verificador anterior ja no autentica aquesta execució."
+
+#, fuzzy
+#~ msgid "Core Message Categories:"
+#~ msgstr "Categories de missatge:"
+
+#, fuzzy
+#~ msgid "Remote GUI Message Categories:"
+#~ msgstr "Categories de missatge:"
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."

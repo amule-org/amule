@@ -1076,5 +1076,10 @@
   "stats_tree_natt_lugdunum_callback_attempts": "Обратные вызовы Lugdunum: %s",
   "stats_tree_natt_lugdunum_callback_successes": "Успешные обратные вызовы Lugdunum: %s",
   "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Больший предел может сгладить короткие задержки диска ценой большего потребления памяти. Уже запрошенные данные могут превысить этот предел.",
-  "prefs_field_advanced_write_buffer_limit_mebibytes": "Предел буфера записи загрузок (МиБ)"
+  "prefs_field_advanced_write_buffer_limit_mebibytes": "Предел буфера записи загрузок (МиБ)",
+  "prefs_debugging": "Отладка",
+  "prefs_group_debug_logging": "Журналирование отладки",
+  "prefs_group_debug_categories": "Категории сообщений",
+  "prefs_debugging_warning": "Журналы отладки могут содержать IP-адреса пиров, хеши пользователей и имена файлов. Гости могут читать журнал, если только отладочные сообщения не направляются исключительно в файл журнала. Этот параметр действует только для новых строк: прежние строки остаются доступными для чтения, пока журнал не очищен, а при очистке также очищается файл журнала демона.",
+  "prefs_field_advanced_verbose_logging_logfile_only": "Только в файл журнала"
 }

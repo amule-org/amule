@@ -10,21 +10,23 @@
 # Carlos Diaz <cskyline@gmail.com>, 2007, 2008.
 # Festor Wailon Dacoba <festor90@gmail.com>, 2007.
 # micrococo, 2018.
-#
+# Kyra Synth <synthkyra@users.noreply.hosted.weblate.org>, 2026.
+# thorin <thorin@users.noreply.hosted.weblate.org>, 2026.
+# Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-27 11:03+0000\n"
-"Last-Translator: Diego Heras <ngosang@hotmail.es>\n"
+"PO-Revision-Date: 2026-11-04 09:09+0000\n"
+"Last-Translator: Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.6\n"
+"X-Generator: Weblate 2026.11.1.dev0\n"
 "X-Language: es_ES\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
@@ -430,7 +432,7 @@ msgstr "ADVERTENCIA: la interfaz de red configurada '%s' no se encontró; el tr�
 #: src/amule.cpp
 #, c-format
 msgid "WARNING: binding to network interface '%s' requires elevated privileges and was NOT applied - traffic may leave via the default route. Grant the capability (e.g. 'sudo setcap cap_net_raw+ep' on the aMule binary) or run with sufficient privileges."
-msgstr "ADVERTENCIA: vincularse a la interfaz de red '%s' requiere privilegios elevados y NO se aplicó; el tráfico puede salir por la ruta predeterminada. Conceda la capacidad (por ejemplo, \"sudo setcap capnetraw+ep\" al binario de aMule) o ejecute con privilegios suficientes."
+msgstr "ADVERTENCIA: vincularse a la interfaz de red '%s' requiere privilegios elevados y NO se aplicó; el tráfico puede salir por la ruta predeterminada. Conceda la capacidad (por ejemplo, 'sudo setcap capnetraw+ep' al binario de aMule) o ejecute con privilegios suficientes."
 
 #: src/amule.cpp src/LibSocketAsio.cpp
 #, c-format
@@ -455,7 +457,7 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
+msgstr "No se pudo guardar AcceptExternalConnections en amule.conf."
 
 #: src/amule.cpp
 msgid "Password set and external connections enabled."
@@ -1386,14 +1388,13 @@ msgid "Can't create directory '%s' for category '%s', keeping directory '%s'."
 msgstr "No se puede crear el directorio '%s' para la categoría '%s', se mantiene el directorio '%s'."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "the daemon refused the request"
-msgstr "El demonio rechazó la petición."
+msgstr "El demonio rechazó la petición"
 
 #: src/amule-remote-gui.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "The daemon refused the category: %s"
-msgstr "El demonio rechazó la petición."
+msgstr "El demonio rechazó la categoría: %s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp src/ServerList.cpp
 msgid "Invalid URL"
@@ -2513,7 +2514,7 @@ msgstr "¡No puede conectar a una versión final desde una versión de desarroll
 
 #: src/ExternalConn.cpp
 msgid "Invalid SRP handshake or EC verifier."
-msgstr ""
+msgstr "Negociación SRP o verificador EC no válidos."
 
 #: src/ExternalConn.cpp
 msgid "Invalid protocol version."
@@ -2695,7 +2696,7 @@ msgstr "No se pudo reasignar el cliente a ese archivo."
 
 #: src/ExternalConn.cpp
 msgid "Duplicate remote-control preference groups are not allowed."
-msgstr ""
+msgstr "No se permiten grupos de preferencias de control remoto duplicados."
 
 #: src/ExternalConn.cpp
 msgid "Only password-authenticated sessions may change the EC password."
@@ -2707,9 +2708,8 @@ msgid "Could not update EC password verifier."
 msgstr "No se pudo guardar la contraseña amuleapi: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not apply preferences."
-msgstr "Kad está deshabilitado en las preferencias."
+msgstr "No se pudieron aplicar las preferencias."
 
 #: src/ExternalConn.cpp
 #, c-format
@@ -2717,14 +2717,13 @@ msgid "Could not save the amuleapi password: %s"
 msgstr "No se pudo guardar la contraseña amuleapi: %s"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "Could not update EC password verifier. The other preferences were saved."
-msgstr "Contraseña fijada y conexiones externas habilitadas."
+msgstr "No se ha podido actualizar el verificador de contraseñas de EC. El resto de preferencias se han guardado."
 
 #: src/ExternalConn.cpp
 #, c-format
 msgid "EC password changed by %s"
-msgstr ""
+msgstr "La contraseña de EC ha sido cambiada por %s"
 
 #: src/ExternalConn.cpp
 msgid "One or more folders were outside the allowed remote directories and were left unchanged."
@@ -6463,18 +6462,17 @@ msgid "Only to Logfile"
 msgstr "Sólo al archivo de registro"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Core Message Categories:"
-msgstr "Categorías de mensajes:"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Remote GUI Message Categories:"
-msgstr "Categorías de mensajes:"
-
-#: src/muuli_wdr.cpp
 msgid "Message Categories:"
 msgstr "Categorías de mensajes:"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Connected Core:"
+msgstr "Conectado desde:"
+
+#: src/muuli_wdr.cpp
+msgid "This Remote GUI:"
+msgstr ""
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -10575,6 +10573,14 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, fuzzy
+#~ msgid "Core Message Categories:"
+#~ msgstr "Categorías de mensajes:"
+
+#, fuzzy
+#~ msgid "Remote GUI Message Categories:"
+#~ msgstr "Categorías de mensajes:"
 
 #, c-format
 #~ msgid "Failed to remove %s file, aborting update."
