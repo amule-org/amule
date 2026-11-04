@@ -8917,6 +8917,11 @@ msgstr "%s 갱신에 성공했습니다"
 
 #: src/Statistics.cpp
 #, c-format
+msgid "uTP Streams Moved to a New Port: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Unknown: %s"
 msgstr "알 수 없음: %s"
 

@@ -8866,6 +8866,11 @@ msgstr "%s aggiornato con successo"
 
 #: src/Statistics.cpp
 #, c-format
+msgid "uTP Streams Moved to a New Port: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Unknown: %s"
 msgstr "Sconosciuti: %s"
 

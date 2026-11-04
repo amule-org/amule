@@ -8915,6 +8915,11 @@ msgid "Successful Lugdunum Callbacks: %s"
 msgstr ""
 
 #: src/Statistics.cpp
+#, c-format
+msgid "uTP Streams Moved to a New Port: %s"
+msgstr ""
+
+#: src/Statistics.cpp
 #, fuzzy, c-format
 msgid "Unknown: %s"
 msgstr "Nepoznat: %i"
