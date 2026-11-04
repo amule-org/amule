@@ -104,7 +104,10 @@ def run(binary):
                 assert proc.poll() is None
                 assert time.monotonic() < deadline, 'GUI did not start'
                 time.sleep(0.2)
-        expect('empty', 'Select a download')
+        actual = expect('default-sources', 'File sources:')
+        assert 'a download to view its details.' not in actual
+        tab('General')
+        expect('empty', 'a download to view its details.')
         hashes = [bytes.fromhex('0123456789abcdef0123456789abcdef'),
                   bytes.fromhex('1123456789abcdef0123456789abcdef')]
         for name, file_hash in zip(('pane-test.bin', 'second.bin'), hashes):
@@ -126,7 +129,7 @@ def run(binary):
         key(38)
         xt.XTestFakeKeyEvent(connection, 37, 0, 0)
         x.XFlush(connection)
-        expect('multiple', 'Select a single download')
+        expect('multiple', 'a single download to view its details.')
         click(150, 170)
         key(110)
         expect('single-again', 'Filename: pane-test.bin')
@@ -135,7 +138,7 @@ def run(binary):
         click(filter_x + 55, filter_y)
         for code in (38, 38, 38):  # 'aaa', which matches neither file
             key(code)
-        expect('filtered', 'Select a download')
+        expect('filtered', 'a download to view its details.')
         xt.XTestFakeKeyEvent(connection, 37, 1, 0)  # Ctrl+A, Backspace
         key(38)
         xt.XTestFakeKeyEvent(connection, 37, 0, 0)
@@ -146,7 +149,7 @@ def run(binary):
         expect('restored', 'Filename: pane-test.bin')
         assert ec.call(C['EC_OP_PARTFILE_DELETE'], [tag(C['EC_TAG_PARTFILE'], hashes[0], 9)])[0] == C['EC_OP_NOOP']
         actual = expect('removed')
-        assert 'Select a download' in actual or 'Filename: second.bin' in actual
+        assert 'a download to view its details.' in actual or 'Filename: second.bin' in actual
         assert 'Filename: pane-test.bin' not in actual
         # Collapse must survive both frame resize and expansion afterwards.
         _, tab_y = tab('General', activate=False)
@@ -174,7 +177,9 @@ def run(binary):
         assert 'General' not in expect('collapsed-after-restart', 'File sources:')
         _, header_y = tab('sources:', activate=False)
         click(18, header_y)
-        expect('expanded-after-restart', 'General', 'Select a download')
+        expect('expanded-after-restart', 'General')
+        tab('General')
+        expect('empty-after-restart', 'a download to view its details.')
         print('Download details selection, tabs, filtering, removal, collapsed resize and restart passed')
     except BaseException:
         print('GUI evidence:', root, file=sys.stderr)

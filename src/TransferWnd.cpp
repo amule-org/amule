@@ -128,7 +128,7 @@ CTransferWnd::CTransferWnd(wxWindow *pParent)
 	auto *sourceLayout = new wxBoxSizer(wxVERTICAL);
 	sourceLayout->Add(clientlistctrl, 1, wxEXPAND);
 	sources->SetSizer(sourceLayout);
-	details->AddPage(sources, _("Sources"));
+	details->AddPage(sources, _("Sources"), true);
 	bottom->GetSizer()->Add(details, 1, wxEXPAND);
 	m_detailsTimer.SetOwner(this);
 	Bind(
