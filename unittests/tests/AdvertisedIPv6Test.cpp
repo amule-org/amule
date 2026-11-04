@@ -174,6 +174,15 @@ TEST(AdvertisedIPv6, LegacyECBooleanAppliesWithoutOverridingNever)
 	ASSERT_TRUE(falseFromVerified == EIPv6AdvertisingMode::Verified);
 }
 
+TEST(AdvertisedIPv6, StoredModesOutsideTheRangeFallBackToTheDefault)
+{
+	ASSERT_TRUE(NormalizeIPv6AdvertisingMode(0) == EIPv6AdvertisingMode::Verified);
+	ASSERT_TRUE(NormalizeIPv6AdvertisingMode(1) == EIPv6AdvertisingMode::Always);
+	ASSERT_TRUE(NormalizeIPv6AdvertisingMode(2) == EIPv6AdvertisingMode::Never);
+	ASSERT_TRUE(NormalizeIPv6AdvertisingMode(5) == EIPv6AdvertisingMode::Verified);
+	ASSERT_TRUE(NormalizeIPv6AdvertisingMode(-1) == EIPv6AdvertisingMode::Verified);
+}
+
 TEST(AdvertisedIPv6, NothingIsAdvertisedWithoutAChoice)
 {
 	SAdvertisedIPv6Facts facts = AdvertisableFacts();

@@ -83,6 +83,20 @@ inline EIPv6AdvertisingMode LegacyAdvertiseIPv6Mode(bool stored)
 	return stored ? EIPv6AdvertisingMode::Always : EIPv6AdvertisingMode::Verified;
 }
 
+//! Whether a stored integer is one of the three modes.
+inline bool IsValidIPv6AdvertisingMode(int stored)
+{
+	return stored >= static_cast<int>(EIPv6AdvertisingMode::Verified) &&
+	       stored <= static_cast<int>(EIPv6AdvertisingMode::Never);
+}
+
+//! Map a stored integer to a mode; anything unrecognised falls back to the default.
+inline EIPv6AdvertisingMode NormalizeIPv6AdvertisingMode(int stored)
+{
+	return IsValidIPv6AdvertisingMode(stored) ? static_cast<EIPv6AdvertisingMode>(stored)
+						  : EIPv6AdvertisingMode::Verified;
+}
+
 //! Report the legacy EC boolean for an advertising mode.
 inline bool IPv6AdvertisingModeAsECBool(EIPv6AdvertisingMode mode)
 {

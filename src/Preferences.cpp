@@ -1718,9 +1718,13 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 	if (cfg->HasEntry("/eMule/AdvertiseIPv6") && !cfg->HasEntry("/eMule/AdvertiseIPv6Mode")) {
 		bool storedAdvertiseIPv6 = false;
 		cfg->Read("/eMule/AdvertiseIPv6", &storedAdvertiseIPv6, false);
-		s_advertiseIPv6Mode = static_cast<int>(LegacyAdvertiseIPv6Mode(storedAdvertiseIPv6));
-		cfg->DeleteEntry("/eMule/AdvertiseIPv6");
-		cfg->Write("/eMule/AdvertiseIPv6Mode", static_cast<long>(s_advertiseIPv6Mode));
+		const int migrated = static_cast<int>(LegacyAdvertiseIPv6Mode(storedAdvertiseIPv6));
+		s_advertiseIPv6Mode = migrated;
+		// Delete the only stored copy only once the replacement is on disk, so a read-only
+		// configuration keeps the old key and retries the migration on the next start.
+		if (cfg->Write("/eMule/AdvertiseIPv6Mode", static_cast<long>(migrated))) {
+			cfg->DeleteEntry("/eMule/AdvertiseIPv6");
+		}
 	}
 #endif
 	if (cfg->HasEntry("/MediaMetadata/FFProbePath")) {
@@ -1764,6 +1768,11 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 	for (; it_b != s_MiscList.end(); ++it_b) {
 		(*it_b)->LoadFromFile(cfg);
 	}
+
+#ifdef ENABLE_IPV6
+	// A hand-edited or foreign value must reach neither the policy nor the choice control.
+	s_advertiseIPv6Mode = static_cast<int>(NormalizeIPv6AdvertisingMode(s_advertiseIPv6Mode));
+#endif
 
 	// Validate the signed configuration value before narrowing to unsigned MiB.
 	long writeBufferMiB = WriteBufferLimits::defaultMiB;

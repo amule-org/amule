@@ -1316,8 +1316,12 @@ void PrefsUnifiedDlg::OnAddressFamiliesChange(wxCommandEvent &WXUNUSED(event))
 
 void PrefsUnifiedDlg::UpdateAddressFamiliesControls()
 {
-	const bool dualStack = CastChild(IDC_ADDRESSFAMILIES, wxChoice)->GetSelection() == 1;
-	FindWindow(IDC_ADVERTISEIPV6MODE)->Enable(dualStack);
+	wxChoice *families = CastChild(IDC_ADDRESSFAMILIES, wxChoice);
+	wxWindow *advertise = FindWindow(IDC_ADVERTISEIPV6MODE);
+	if (!families || !advertise) {
+		return;
+	}
+	advertise->Enable(families->GetSelection() == 1);
 }
 #endif
 
