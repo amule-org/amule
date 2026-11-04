@@ -10,7 +10,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-04 10:48+0000\n"
+"PO-Revision-Date: 2026-11-04 14:28+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
@@ -4239,7 +4239,7 @@ msgstr "CHYBA: Nelze naslouchat na portu TCP."
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: bundled amule-media-probe helper is unavailable."
-msgstr "Metadata médií: vestavěný pomocník amule-media-probe není dostupný."
+msgstr "Mediální metadata: vestavěný pomocník amule-media-probe není dostupný."
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -4254,7 +4254,7 @@ msgstr "Extrahování mediálních metadat: %s"
 #: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: parser failed for %s"
-msgstr "Metadata médií: parser selhal u %s"
+msgstr "Mediální metadata: parser selhal u %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -7000,7 +7000,7 @@ msgstr "nejsou k dispozici žádné možnosti"
 
 #: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
-msgstr ""
+msgstr "Mediální metadata: FFProbePath je zastaralý; aMule nyní používá vestavěný parser MediaInfo. Odebírání staré předvolby."
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -7022,16 +7022,16 @@ msgstr "Bude použit výchozí port (%d)"
 #: src/Preferences.cpp
 #, c-format
 msgid "Ignoring a relative path in allowed-remote-dirs.dat (only absolute paths are accepted): %s"
-msgstr ""
+msgstr "Ignorování relativní cesty v allowed-remote-dirs.dat (přijatelné jsou jen absolutní/celé cesty): %s"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
 msgstr "Upravte povolený limit z 1 KiB/s na kapacitu připojení."
 
 #: src/BandwidthLimitSlider.h src/PrefsUnifiedDlg.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "KiB/s (%.2f MiB/s)"
-msgstr "%.1f MiB/s"
+msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -7097,7 +7097,7 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "No system tray found. Use a desktop with a system tray, or build aMule with libayatana-appindicator3."
-msgstr ""
+msgstr "Nebyla nalezena systémová lišta. Použijte desktop se systémovou lištou, nebo sestavte aMule s libayatana-appindicator3."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Not available on Wayland: the protocol does not report when a window is minimized, so this option cannot intercept the system minimize button. Workaround: launch aMule with `GDK_BACKEND=x11` to use XWayland instead."
@@ -7131,7 +7131,7 @@ msgstr "Nepodařilo se přenést data z Cfg do prvku s ID %d a klíčem %s"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
-msgstr ""
+msgstr "Tento aMule nemá pomocníka médií (amule-media-probe), takže nemůže extrahovat mediální metadata."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -7139,7 +7139,7 @@ msgstr "Typ používaného proxy serveru"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Set in the daemon's own configuration (amule.conf); not editable remotely."
-msgstr ""
+msgstr "Nastavitelné v konfiguraci daemona (amule.conf); není vzdáleně upravovatelné."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -7183,9 +7183,8 @@ msgid "- Network interface binding changed.\n"
 msgstr "- Vázání síťového rozhraní bylo změněno.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Local address binding changed.\n"
-msgstr "- Vázání síťového rozhraní bylo změněno.\n"
+msgstr "- Vázání lokální adresy změněno.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- TCP port changed.\n"
@@ -7200,9 +7199,8 @@ msgid "- External connect port changed.\n"
 msgstr "- Port externího připojení byl změněn.\n"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "- Address families changed.\n"
-msgstr "- Vázání síťového rozhraní bylo změněno.\n"
+msgstr "- Rodiny adres změněny.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- External connect acceptance changed.\n"
@@ -8910,6 +8908,11 @@ msgstr ""
 #, fuzzy, c-format
 msgid "Successful Lugdunum Callbacks: %s"
 msgstr "Soubor %s byl úspěšně aktualizován"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "uTP Streams Moved to a New Port: %s"
+msgstr ""
 
 #: src/Statistics.cpp
 #, c-format

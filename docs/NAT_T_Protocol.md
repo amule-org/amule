@@ -590,8 +590,9 @@ stable `key`.
   counted once per move libutp accepted. A refused or rate-limited move, and the port a
   handshake settles on, are not counted.
 - **LowID to LowID Data (Session)** (`upload_lowid_to_lowid_data`,
-  `download_lowid_to_lowid_data`), in the same builds: payload exchanged with a LowID peer while
-  we are LowID on a server, which only NAT traversal connects.
+  `download_lowid_to_lowid_data`), in builds with `ENABLE_NATT_SERVER_COORDINATION` and uTP:
+  payload exchanged with a LowID peer while we are LowID on a server, which only NAT traversal
+  connects.
 - **IPv6 Data (Session)** (`upload_ipv6_data`, `download_ipv6_data`), in `ENABLE_IPV6` builds:
   payload exchanged with a peer connected over IPv6.
 

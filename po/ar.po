@@ -8878,6 +8878,11 @@ msgstr "تم تحديث %s بنجاح"
 
 #: src/Statistics.cpp
 #, c-format
+msgid "uTP Streams Moved to a New Port: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Unknown: %s"
 msgstr "غير معروف: %s"
 

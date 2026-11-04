@@ -88,6 +88,9 @@
 #include "CCtypeAsciiScope.h"  // Needed for locale-safe ASCII lowercasing of art ids
 
 #include <wx/artprov.h>
+#if defined(__WXGTK__) && !defined(__APPLE__)
+#include <wx/dynlib.h>
+#endif
 #ifdef __WINDOWS__
 #include <wx/msw/private.h> // Needed for wxGetInstance
 #endif
@@ -453,6 +456,28 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	DoNetworkRearrange();
 }
 
+#if defined(__WXGTK__) && !defined(__APPLE__)
+// On X11, GTK stops drawing a window until the compositor confirms its last frame. Mutter can lose
+// that message (it logs "no frame drawn time"), and the window then stays stale for good while it
+// still handles input. Looked up at runtime because only the AppIndicator build has GTK headers.
+static void DisableFrameSync(wxWindow *window)
+{
+	if (wxGetDisplayInfo().type != wxDisplayX11) {
+		return;
+	}
+	const wxDllType self = wxDynamicLibrary::GetProgramHandle();
+	const auto getGdkWindow = reinterpret_cast<void *(*)(void *)>(
+		wxDynamicLibrary::RawGetSymbol(self, "gtk_widget_get_window"));
+	const auto setFrameSync = reinterpret_cast<void (*)(void *, int)>(
+		wxDynamicLibrary::RawGetSymbol(self, "gdk_x11_window_set_frame_sync_enabled"));
+	if (getGdkWindow && setFrameSync) {
+		if (void *gdkWindow = getGdkWindow(window->GetHandle())) {
+			setFrameSync(gdkWindow, 0);
+		}
+	}
+}
+#endif
+
 // Madcat - Sets Fast ED2K Links Handler on/off.
 void CamuleDlg::ShowStartupWindow()
 {
@@ -461,6 +486,10 @@ void CamuleDlg::ShowStartupWindow()
 	}
 
 	Show(true);
+
+#if defined(__WXGTK__) && !defined(__APPLE__)
+	DisableFrameSync(this);
+#endif
 
 	// Workaround for wxMSW: Create_Toolbar() (and the Realize() inside Apply_Toolbar_Skin)
 	// runs before the frame is mapped at its final on-screen size. wxMSW's native toolbar

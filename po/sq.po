@@ -8921,6 +8921,11 @@ msgstr "%s u përditësua me sukses"
 
 #: src/Statistics.cpp
 #, c-format
+msgid "uTP Streams Moved to a New Port: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Unknown: %s"
 msgstr "I panjohur: %s"
 

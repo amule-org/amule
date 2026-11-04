@@ -8868,6 +8868,11 @@ msgstr "%s を正常に更新しました"
 
 #: src/Statistics.cpp
 #, c-format
+msgid "uTP Streams Moved to a New Port: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Unknown: %s"
 msgstr "不明：%s"
 
