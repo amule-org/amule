@@ -92,7 +92,7 @@ wxString MacReadHandler(HandlerTarget target)
 	if (handler == nullptr) {
 		return wxEmptyString;
 	}
-	wxString result = WxStringFromNSString((__bridge NSString *)handler);
+	wxString result = WxStringFromNSString((NSString *)handler);
 	CFRelease(handler);
 	return result;
 }
@@ -184,17 +184,18 @@ static AmuleURLAppleEventHandler *g_url_handler = nil;
 // already registered. NSAppleEventManager is available at library-load in Cocoa apps.
 __attribute__((constructor)) static void amule_install_url_handler_at_load(void)
 {
-	@autoreleasepool {
-		if (g_url_handler != nil) {
-			return;
-		}
-		g_url_handler = [[AmuleURLAppleEventHandler alloc] init];
-		[[NSAppleEventManager sharedAppleEventManager] setEventHandler:g_url_handler
-			andSelector:@selector(getUrl:withReplyEvent:)
-			forEventClass:kInternetEventClass
-			andEventID:kAEGetURL];
-		NSLog(@"[amuleurl] library-load: kAEGetURL handler installed");
+	if (g_url_handler != nil) {
+		return;
 	}
+	// GCC does not support @autoreleasepool.
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	g_url_handler = [[AmuleURLAppleEventHandler alloc] init];
+	[[NSAppleEventManager sharedAppleEventManager] setEventHandler:g_url_handler
+		andSelector:@selector(getUrl:withReplyEvent:)
+		forEventClass:kInternetEventClass
+		andEventID:kAEGetURL];
+	NSLog(@"[amuleurl] library-load: kAEGetURL handler installed");
+	[pool drain];
 }
 
 #endif // __APPLE__
