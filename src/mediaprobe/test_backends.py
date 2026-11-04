@@ -251,6 +251,24 @@ class BackendTests(unittest.TestCase):
         if not tested:
             self.skipTest('no optional fixture encoders available')
 
+    def test_single_audio_comments_survive_in_matroska(self):
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            self.skipTest('track metadata fixture requires ffmpeg')
+        self.path = Path(self.tmp.name) / 'audio-comments.mka'
+        subprocess.run([ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i',
+                        'sine=duration=1', '-c:a', 'flac',
+                        '-metadata:s:a:0', 'artist=Track Artist',
+                        '-metadata:s:a:0', 'album=Track Album',
+                        '-metadata:s:a:0', 'title=Track Title', str(self.path)],
+                       check=True, timeout=20)
+        result = self.run_probe()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(data['artist'], 'Track Artist')
+        self.assertEqual(data['album'], 'Track Album')
+        self.assertEqual(data['title'], 'Track Title')
+
     def test_track_title_is_not_a_programme_title(self):
         ffmpeg = shutil.which('ffmpeg')
         if not ffmpeg:

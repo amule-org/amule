@@ -303,6 +303,7 @@ int probe(Input &input, Result &result)
 		result.length = bounded(double(format->duration) / AV_TIME_BASE, true);
 	result.bitrate = bounded(double(format->bit_rate) / 1000, false);
 	const AVStream *selected = nullptr;
+	unsigned audioCount = 0;
 	for (unsigned i = 0; i < format->nb_streams; ++i) {
 		const auto *stream = format->streams[i];
 		if (stream->disposition & AV_DISPOSITION_ATTACHED_PIC)
@@ -312,8 +313,11 @@ int probe(Input &input, Result &result)
 			selected = stream;
 			break;
 		}
-		if (!selected && type == AVMEDIA_TYPE_AUDIO)
-			selected = stream;
+		if (type == AVMEDIA_TYPE_AUDIO) {
+			++audioCount;
+			if (!selected)
+				selected = stream;
+		}
 	}
 	if (selected && selected->codecpar->codec_id != AV_CODEC_ID_NONE)
 		result.codec = avcodec_get_name(selected->codecpar->codec_id);
@@ -323,9 +327,14 @@ int probe(Input &input, Result &result)
 	// RIFF INFO calls the album IPRD (libav's "product"). Prefer an explicit album.
 	if (result.album.empty() && std::strcmp(format->iformat->name, "avi") == 0)
 		result.album = tag(format->metadata, "product");
-	// Ogg video also carries programme comments on its selected stream.
-	// Other containers can use stream title for a track label (e.g. "VP8 video stream").
-	if (selected && std::strcmp(format->iformat->name, "ogg") == 0) {
+	// Preserve the previous backend's single-audio comment fallback, including
+	// FLAC/Opus/Vorbis/Speex in Matroska. Ogg video also carries programme comments.
+	// Other video containers can use stream title for a generic track label.
+	const bool audioComments = selected && selected->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+				   audioCount == 1 &&
+				   (result.codec == "flac" || result.codec == "opus" ||
+					   result.codec == "vorbis" || result.codec == "speex");
+	if (selected && (std::strcmp(format->iformat->name, "ogg") == 0 || audioComments)) {
 		if (result.artist.empty())
 			result.artist = tag(selected->metadata, "artist");
 		if (result.album.empty())

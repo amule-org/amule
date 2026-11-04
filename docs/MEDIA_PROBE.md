@@ -56,8 +56,9 @@ container timing is used for variable-rate video in timed containers.
 
 Container artist/album/title take precedence. Attached pictures are not selected
 as video. AVI's RIFF `product` is an album fallback; Ogg comments are read from
-the selected video/audio stream. Other containers' stream titles are track labels
-and are not promoted to programme titles. FFmpeg does not expose the three 3GP user-data tags found by
+the selected video/audio stream. The existing single-audio FLAC/Opus/Vorbis/Speex
+comment fallback also applies inside Matroska. Generic video track titles in
+other containers are not promoted to programme titles. FFmpeg does not expose the three 3GP user-data tags found by
 MediaInfo in the existing synthetic fixture; that is a known metadata loss.
 
 ## Configuration and failure markers
