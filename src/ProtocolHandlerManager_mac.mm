@@ -38,6 +38,21 @@
 
 #import <wx/app.h>
 
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+#if __has_feature(objc_arc)
+#define BRIDGE(T, x) ((__bridge T)(x))
+#define AUTORELEASE_POOL_BEGIN @autoreleasepool {
+#define AUTORELEASE_POOL_DRAIN
+#define AUTORELEASE_POOL_END   }
+#else
+#define BRIDGE(T, x) ((T)(x))
+#define AUTORELEASE_POOL_BEGIN { NSAutoreleasePool* pool = [[NSAutoreleasePool alloc] init];
+#define AUTORELEASE_POOL_DRAIN [pool drain];
+#define AUTORELEASE_POOL_END   [pool drain]; }
+#endif
+
 namespace
 {
 // The scheme for a URL protocol, or the imported UTI for the collection
@@ -92,7 +107,7 @@ wxString MacReadHandler(HandlerTarget target)
 	if (handler == nullptr) {
 		return wxEmptyString;
 	}
-	wxString result = WxStringFromNSString((__bridge NSString *)handler);
+	wxString result = WxStringFromNSString(BRIDGE(NSString *, handler));
 	CFRelease(handler);
 	return result;
 }
@@ -184,8 +199,9 @@ static AmuleURLAppleEventHandler *g_url_handler = nil;
 // already registered. NSAppleEventManager is available at library-load in Cocoa apps.
 __attribute__((constructor)) static void amule_install_url_handler_at_load(void)
 {
-	@autoreleasepool {
+	AUTORELEASE_POOL_BEGIN
 		if (g_url_handler != nil) {
+			AUTORELEASE_POOL_DRAIN
 			return;
 		}
 		g_url_handler = [[AmuleURLAppleEventHandler alloc] init];
@@ -194,7 +210,7 @@ __attribute__((constructor)) static void amule_install_url_handler_at_load(void)
 			forEventClass:kInternetEventClass
 			andEventID:kAEGetURL];
 		NSLog(@"[amuleurl] library-load: kAEGetURL handler installed");
-	}
+	AUTORELEASE_POOL_END
 }
 
 #endif // __APPLE__
