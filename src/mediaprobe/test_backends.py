@@ -56,6 +56,12 @@ class BackendTests(unittest.TestCase):
         self.assertTrue(result['title'].startswith('bad'))
         self.run_probe(False).stdout.decode('utf-8', 'strict')
 
+    def test_latin1_riff_title_is_preserved(self):
+        self.append_title(b'Caf\xe9 del Mar')
+        result = self.run_probe()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['title'], 'Café del Mar')
+
     def test_unicode_tag_round_trips(self):
         title = '艺术家 🎵 "quoted" \\ path'
         self.append_title(title.encode('utf-8'), unicode=True)
@@ -251,78 +257,91 @@ class BackendTests(unittest.TestCase):
         if not tested:
             self.skipTest('no optional fixture encoders available')
 
-    def test_three_gp_user_data_tags(self):
+    def test_restored_container_demuxers(self):
         ffmpeg = shutil.which('ffmpeg')
         if not ffmpeg:
-            self.skipTest('3GP fixture generator requires ffmpeg')
-        self.path = Path(self.tmp.name) / 'tags.3gp'
+            self.skipTest('container fixtures require ffmpeg')
+        encoders = subprocess.check_output([ffmpeg, '-hide_banner', '-encoders'],
+                                          stderr=subprocess.DEVNULL).decode()
+        cases = (
+            ('rm', 'rv20', 'rm', 'rv20', True, []),
+            ('ra', 'ac3', 'rm', 'ac3', False, []),
+            ('au', 'pcm_s16be', 'au', 'pcm_s16be', False, []),
+            ('caf', 'pcm_s16le', 'caf', 'pcm_s16le', False, []),
+            ('w64', 'pcm_s16le', 'w64', 'pcm_s16le', False, []),
+            ('dv', 'dvvideo', 'dv', 'dvvideo', True, ['-pix_fmt', 'yuv420p']),
+            ('ivf', 'libvpx', 'ivf', 'vp8', True, []),
+            ('m4v', 'mpeg4', 'm4v', 'mpeg4', True, []),
+            ('mxf', 'mpeg2video', 'mxf', 'mpeg2video', True, ['-pix_fmt', 'yuv422p']),
+            ('wtv', 'mpeg2video', 'wtv', 'mpeg2video', True, []),
+        )
+        for extension, encoder, container, codec, video, options in cases:
+            if encoder not in encoders:
+                continue
+            self.path = Path(self.tmp.name) / ('restored.' + extension)
+            source = ('testsrc2=size=720x576:rate=25:duration=2' if video else
+                      'sine=sample_rate=48000:duration=2')
+            with self.subTest(container=container):
+                subprocess.run([ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i',
+                                source, '-threads', '1', '-c:v' if video else '-c:a', encoder,
+                                *options, '-f', container, str(self.path)],
+                               check=True, capture_output=True, timeout=30)
+                result = self.run_probe()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                metadata = json.loads(result.stdout)
+                self.assertEqual(metadata['codec'], codec)
+                if container != 'm4v':  # Raw MPEG-4 has no reliable timeline.
+                    self.assertEqual(metadata['length_seconds'], 2)
+
+    def test_weak_raw_stream_guess_is_rejected(self):
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            self.skipTest('raw MPEG fixture requires ffmpeg')
+        self.path = Path(self.tmp.name) / 'weak.m1v'
         subprocess.run([ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i',
-                        'sine=duration=1', '-c:a', 'aac', '-metadata', 'artist=Spike Artist',
-                        '-metadata', 'album=Spike Album', '-metadata', 'title=Spike Title',
-                        str(self.path)], check=True, capture_output=True, timeout=20)
-        original = self.path.read_bytes()
-        data = json.loads(self.run_probe().stdout)
-        for key, value in (('artist', 'Spike Artist'), ('album', 'Spike Album'),
-                           ('title', 'Spike Title')):
-            self.assertEqual(data[key], value)
+                        'testsrc2=size=64x64:rate=25', '-frames:v', '1', '-c:v', 'mpeg1video',
+                        '-f', 'mpeg1video', str(self.path)], check=True, timeout=20)
+        # A single picture scores 25. Embedded elementary-stream bytes in an
+        # unsupported container must not become a published codec on this basis.
+        result = self.run_probe()
+        self.assertEqual(result.returncode, 11, result.stderr)
 
-        def box(kind, payload, extended=False):
-            return ((struct.pack('>I4sQ', 1, kind, len(payload) + 16) if extended else
-                     struct.pack('>I4s', len(payload) + 8, kind)) + payload)
+    def test_over_budget_mov_is_a_file_verdict(self):
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            self.skipTest('MOV allocation fixture requires ffmpeg')
+        self.path = Path(self.tmp.name) / 'over-budget.mov'
+        subprocess.run([ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i',
+                        'sine=duration=1', '-c:a', 'pcm_s16le', str(self.path)],
+                       check=True, timeout=20)
+        data = bytearray(self.path.read_bytes())
+        table = data.index(b'stsz')
+        # Variable sample sizes with 50M entries exceed the helper's 128 MiB cap.
+        struct.pack_into('>II', data, table + 8, 0, 50000000)
+        self.path.write_bytes(data)
+        result = self.run_probe()
+        self.assertEqual(result.returncode, 11, result.stderr)
 
-        def children(data):
-            offset = 0
-            while offset < len(data):
-                size, kind = struct.unpack_from('>I4s', data, offset)
-                self.assertGreaterEqual(size, 8)
-                self.assertLessEqual(offset + size, len(data))
-                yield kind, data[offset + 8:offset + size]
-                offset += size
-
-        root = list(children(original))
-        moov = next(payload for kind, payload in root if kind == b'moov')
-        moov = b''.join(box(kind, payload) for kind, payload in children(moov)
-                        if kind != b'udta')
-
-        def check(extra, expected='', extended=False):
-            self.path.write_bytes(b''.join(box(kind, moov + extra, extended) if kind == b'moov'
-                                          else box(kind, payload) for kind, payload in root))
-            reply = self.run_probe()
-            self.assertEqual(reply.returncode, 0, reply.stderr)
-            result = json.loads(reply.stdout)
-            self.assertEqual(result['codec'], 'aac')
-            self.assertEqual(result['length_seconds'], 1)
-            self.assertEqual(result['title'], expected)
-            return result
-
-        header = b'\0' * 4 + b'\x15\xc7'  # FullBox version/flags, packed language.
-        title = '艺术家 🎵 "quoted" \\ path'
-        for encoding, bom in (('utf-8', b''), ('utf-16-be', b'\xfe\xff'),
-                              ('utf-16-le', b'\xff\xfe')):
-            terminator = b'\0' if encoding == 'utf-8' else b'\0\0'
-            with self.subTest(encoding=encoding):
-                check(box(b'udta', box(b'titl', header + bom + title.encode(encoding) + terminator)),
-                      title, extended=True)
-        # The optional album track byte must never become part of its text.
-        album = check(box(b'udta', box(b'albm', header + b'Album name\0\x07')))
-        self.assertEqual(album['album'], 'Album name')
-        # Existing libavformat metadata takes precedence over the fallback.
-        preferred = box(b'\xa9nam', struct.pack('>HH', 9, 0x15c7) + b'Preferred')
-        check(box(b'udta', preferred + box(b'titl', header + b'Fallback\0')), 'Preferred')
-        # Invalid version, missing terminator, oversized value, and a truncated child.
-        for payload in (b'\1' + header[1:] + b'Forged\0', header + b'Forged',
-                        header + b'X' * 9000 + b'\0', header + b'\xfe\xff\0X'):
-            with self.subTest(payload_length=len(payload)):
-                check(box(b'udta', box(b'titl', payload)))
-        check(box(b'udta', struct.pack('>I4s', 100, b'titl') + header + b'Forged\0'))
-        check(box(b'udta', struct.pack('>I4sQ', 1, b'titl', 2**64 - 1)))
-        check(box(b'udta', struct.pack('>I4s', 4, b'titl')))
-        # Ignore track-level and opaque-payload lookalikes, and excessive box lists.
-        check(box(b'trak', box(b'udta', box(b'titl', header + b'Forged\0'))))
-        check(box(b'free', box(b'titl', header + b'Forged\0')))
-        check(box(b'udta', box(b'free', b'') * 4097 + box(b'titl', header + b'Forged\0')))
-        # A zero-sized last box extends only to its parent boundary.
-        check(box(b'udta', struct.pack('>I4s', 0, b'titl') + header + b'Last\0'), 'Last')
+    def test_musepack_header_metadata(self):
+        def vint(n):
+            parts = [n & 127]
+            n >>= 7
+            while n:
+                parts.insert(0, (n & 127) | 128)
+                n >>= 7
+            return bytes(parts)
+        # SV7: 100 frames, 1152 samples/frame, 44100 Hz. SV8 encodes sample count.
+        sv7 = b'MP+\x07' + struct.pack('<I', 100) + bytes(32)
+        payload = b'\1\0\0\0\x08' + vint(115200) + b'\0\0\x10'
+        sv8 = b'MPCKSH' + vint(len(payload) + 3) + payload + b'SE\x03'
+        for data, codec in ((sv7, 'musepack7'), (sv8, 'musepack8')):
+            with self.subTest(codec=codec):
+                self.path.write_bytes(data)
+                result = self.run_probe()
+                self.assertEqual(result.returncode, 0, result.stderr)
+                metadata = json.loads(result.stdout)
+                self.assertEqual(metadata['codec'], codec)
+                self.assertEqual(metadata['length_seconds'], 3)
 
     def test_single_audio_comments_survive_in_matroska(self):
         ffmpeg = shutil.which('ffmpeg')

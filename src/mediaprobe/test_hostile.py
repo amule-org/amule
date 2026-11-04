@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 aMule Team
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Hostile inputs: run this against full system FFmpeg as well as the bundle.
 
 Linux strace observes actual file/network syscalls, including opens that don't

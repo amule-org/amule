@@ -50,8 +50,8 @@ struct Result
 	std::string codec, artist, album, title;
 };
 // Layer III frame duration is fixed by its MPEG version/sample rate, not bitrate.
-// Validate complete packets before counting: a parser flush can expose a truncated
-// last frame, and resynchronisation can otherwise hide damaged bytes in the middle.
+// Count complete frames across gaps and ignore partial/trailing packets. The
+// result is useful programme timing even when a few damaged frames are skipped.
 // These header-size rules follow libavcodec/mpegaudiodecheader.c; its full
 // validator is private API. Free-format frames are deliberately left unknown.
 bool mp3FrameTicks(const AVPacket &packet, int64_t &ticks)
@@ -78,7 +78,11 @@ bool mp3FrameTicks(const AVPacket &packet, int64_t &ticks)
 	ticks = (version == 3 ? 1152LL : 576LL) * (14112000 / rate);
 	return true;
 }
-bool scanMp3(AVFormatContext *format, const AVStream *stream, const Input &input, double &seconds)
+bool scanMp3(AVFormatContext *format,
+	const AVStream *stream,
+	const Input &input,
+	double &seconds,
+	uint64_t &frameBytes)
 {
 	if (input.size > 512LL * 1024 * 1024)
 		return false;
@@ -90,35 +94,24 @@ bool scanMp3(AVFormatContext *format, const AVStream *stream, const Input &input
 		AVPacket *&packet;
 		~Owner() { av_packet_free(&packet); }
 	} owner{ packet };
-	int64_t total = 0, end = -1;
+	int64_t total = 0;
+	frameBytes = 0;
 	int status = 0;
 	// find_stream_info buffers the initial packets: read_frame starts at the
 	// logical beginning without seeking away encoder-delay or cover-art state.
 	while ((status = av_read_frame(format, packet)) >= 0) {
 		if (packet->stream_index == stream->index) {
 			int64_t ticks = 0;
-			if (!mp3FrameTicks(*packet, ticks) || packet->pos < 0 ||
-				packet->pos > input.size - packet->size || (end >= 0 && packet->pos != end) ||
-				total > std::numeric_limits<int64_t>::max() - ticks)
-				return false;
-			total += ticks;
-			end = packet->pos + packet->size;
+			if (mp3FrameTicks(*packet, ticks) &&
+				total <= std::numeric_limits<int64_t>::max() - ticks) {
+				total += ticks;
+				frameBytes += static_cast<unsigned>(packet->size);
+			}
 		}
 		av_packet_unref(packet);
 	}
 	if (status != AVERROR_EOF || input.exhausted || Clock::now() >= input.deadline ||
-		std::ferror(stdin) || !total || end < 0)
-		return false;
-	if (end != input.size) {
-		// Accept the well-defined ID3v1 footer. Unknown trailing bytes, damaged
-		// frames and unsupported footer layouts must not become counted duration.
-		unsigned char footer[128];
-		if (input.size - end != 128 || avio_seek(format->pb, end, SEEK_SET) != end ||
-			avio_read(format->pb, footer, sizeof(footer)) != sizeof(footer) ||
-			std::memcmp(footer, "TAG", 3) != 0)
-			return false;
-	}
-	if (input.exhausted || Clock::now() >= input.deadline)
+		std::ferror(stdin) || !total)
 		return false;
 	seconds = double(total) / 14112000;
 	return true;
@@ -203,19 +196,34 @@ std::string clean(const char *text)
 	std::string result;
 	const auto *cursor = reinterpret_cast<const uint8_t *>(text);
 	const auto *end = cursor + std::strlen(text);
+	bool utf8 = true;
+	while (cursor < end) {
+		int32_t codepoint = 0;
+		if (av_utf8_decode(&codepoint, &cursor, end, 0) < 0) {
+			utf8 = false;
+			break;
+		}
+	}
+	cursor = reinterpret_cast<const uint8_t *>(text);
 	while (cursor < end && result.size() < 4096) {
 		const auto *start = cursor;
 		int32_t codepoint = 0;
-		if (av_utf8_decode(&codepoint, &cursor, end, 0) < 0) {
-			cursor = start + 1;
-			if (result.size() + 3 <= 4096)
-				result += "\xef\xbf\xbd";
-			continue;
-		}
+		if (utf8) {
+			if (av_utf8_decode(&codepoint, &cursor, end, 0) < 0)
+				break;
+		} else
+			codepoint = *cursor++;
 		if (codepoint < 32 && codepoint != '\t' && codepoint != '\n' && codepoint != '\r')
 			continue;
 		if (codepoint == 127 || (codepoint >= 128 && codepoint <= 159))
 			continue;
+		if (!utf8 && codepoint >= 128) {
+			if (result.size() + 2 > 4096)
+				break;
+			result += static_cast<char>(0xc0 | (codepoint >> 6));
+			result += static_cast<char>(0x80 | (codepoint & 0x3f));
+			continue;
+		}
 		const auto length = static_cast<size_t>(cursor - start);
 		if (result.size() + length > 4096)
 			break;
@@ -227,81 +235,6 @@ std::string tag(const AVDictionary *dict, const char *key)
 {
 	const auto *entry = av_dict_get(dict, key, nullptr, 0);
 	return entry ? clean(entry->value) : std::string();
-}
-// FFmpeg's MOV muxer writes these 3GPP TS 26.244 FullBoxes, but its
-// demuxer does not expose them. Visit only root/moov/udta: track labels and
-// lookalike bytes in media payloads are not file metadata. All I/O still uses
-// the inherited AVIO and its shared budgets; no second file is opened.
-std::string threeGpText(AVIOContext *io, int64_t size)
-{
-	if (size < 7 || size > 8192)
-		return {};
-	unsigned char payload[8192];
-	const int64_t start = avio_tell(io);
-	if (avio_read(io, payload, static_cast<int>(size)) != size ||
-		std::memcmp(payload, "\0\0\0\0", 4) != 0)
-		return {};
-	const auto *text = payload + 6; // version/flags + packed language.
-	const size_t length = static_cast<size_t>(size - 6);
-	if (length >= 2 && ((text[0] == 0xfe && text[1] == 0xff) || (text[0] == 0xff && text[1] == 0xfe))) {
-		// A BOM selects UTF-16; require its aligned terminator within the box.
-		for (size_t end = 2; end + 1 < length; end += 2) {
-			if (text[end] || text[end + 1])
-				continue;
-			if (avio_seek(io, start + 8, SEEK_SET) != start + 8)
-				return {};
-			char utf8[16384];
-			const int bytes = static_cast<int>(end);
-			const int read = text[0] == 0xfe ? avio_get_str16be(io, bytes, utf8, sizeof(utf8))
-							 : avio_get_str16le(io, bytes, utf8, sizeof(utf8));
-			return read == bytes ? clean(utf8) : std::string();
-		}
-		return {};
-	}
-	if (!std::memchr(text, 0, length))
-		return {};
-	// The NUL ends the album name before its optional track-number byte.
-	return clean(reinterpret_cast<const char *>(text));
-}
-bool threeGpBoxes(AVIOContext *io, int64_t end, unsigned depth, unsigned &boxes, Result &tags)
-{
-	for (int64_t start = avio_tell(io); start < end; start = avio_tell(io)) {
-		if (start < 0 || end - start < 8 || ++boxes > 4096)
-			return false;
-		uint64_t size = avio_rb32(io);
-		const uint32_t type = avio_rl32(io);
-		unsigned header = 8;
-		if (size == 1) {
-			if (end - start < 16)
-				return false;
-			size = avio_rb64(io);
-			header = 16;
-		} else if (size == 0) {
-			size = static_cast<uint64_t>(end - start);
-		}
-		if (io->error || avio_tell(io) != start + header || size < header ||
-			size > static_cast<uint64_t>(end - start))
-			return false;
-		const int64_t next = start + static_cast<int64_t>(size);
-		if ((depth == 0 && type == MKTAG('m', 'o', 'o', 'v')) ||
-			(depth == 1 && type == MKTAG('u', 'd', 't', 'a'))) {
-			if (!threeGpBoxes(io, next, depth + 1, boxes, tags))
-				return false;
-		} else if (depth == 2) {
-			std::string *target = nullptr;
-			if (type == MKTAG('p', 'e', 'r', 'f'))
-				target = &tags.artist;
-			else if (type == MKTAG('a', 'l', 'b', 'm'))
-				target = &tags.album;
-			else if (type == MKTAG('t', 'i', 't', 'l'))
-				target = &tags.title;
-			if (target && target->empty())
-				*target = threeGpText(io, static_cast<int64_t>(size) - header);
-		}
-		if (avio_seek(io, next, SEEK_SET) != next)
-			return false;
-	}
-	return avio_tell(io) == end;
 }
 uint32_t bounded(double value, bool round)
 {
@@ -350,8 +283,10 @@ int probe(Input &input, Result &result)
 	// Fail closed if allocating any policy option fails. These restrictions must
 	// also hold with full distro libraries, not just the reduced bundle.
 	// Match packaging/media/build-ffmpeg.py, including runtime format aliases.
-	const char *formats = "aac,ac3,aiff,amr,ape,asf,avi,dts,eac3,flac,flv,gsm,h264,hevc,matroska,webm,"
-			      "mov,mp4,m4a,3gp,3g2,mj2,mp3,mpeg,mpegts,mpegvideo,ogg,wav,wv,tta";
+	const char *formats =
+		"aac,ac3,aiff,amr,ape,asf,au,avi,caf,dts,dv,eac3,flac,flv,gsm,h264,hevc,ivf,m4v,"
+		"matroska,webm,mov,mp4,m4a,3gp,3g2,mj2,mp3,mpc,mpc8,mpeg,mpegts,mpegvideo,mxf,"
+		"ogg,rm,w64,wav,wtv,wv,tta";
 	// find_stream_info must not open decoders supplied by system FFmpeg.
 	if (av_dict_set(&options, "protocol_whitelist", "", 0) < 0 ||
 		av_dict_set(&options, "format_whitelist", formats, 0) < 0 ||
@@ -362,13 +297,18 @@ int probe(Input &input, Result &result)
 	const int opened = avformat_open_input(&format, nullptr, nullptr, &options);
 	const bool unusedPolicy = av_dict_count(options) != 0;
 	av_dict_free(&options);
-	if (input.ioError || (opened >= 0 && unusedPolicy) || opened == AVERROR(ENOMEM))
+	if (input.ioError || (opened >= 0 && unusedPolicy))
 		return 12;
 	if (opened < 0)
 		return interrupted(&input) ? (input.exhausted ? 11 : 13) : 11;
+	// A reduced build must not publish an excluded container as a guessed raw
+	// stream. Raw demuxers need at least the extension probe score (50).
+	if (av_match_name(format->iformat->name, "aac,ac3,dts,eac3,gsm,h264,hevc,m4v,mpegvideo") &&
+		format->probe_score < AVPROBE_SCORE_EXTENSION)
+		return 11;
 	// A partial stream-info result can still contain usable container metadata.
-	const int info = avformat_find_stream_info(format, nullptr);
-	if (input.ioError || info == AVERROR(ENOMEM))
+	avformat_find_stream_info(format, nullptr);
+	if (input.ioError)
 		return 12;
 	if (interrupted(&input))
 		return input.exhausted ? 11 : 13;
@@ -420,30 +360,18 @@ int probe(Input &input, Result &result)
 	if (selected && selected->codecpar->codec_id == AV_CODEC_ID_MP3 &&
 		std::strcmp(format->iformat->name, "mp3") == 0 &&
 		format->duration_estimation_method == AVFMT_DURATION_FROM_BITRATE) {
-		// A sampled bitrate cannot establish VBR duration without Xing/VBRI.
-		// Keep other fields if the optional bounded scan cannot establish a total.
-		result.length = 0;
-		result.bitrate = 0;
+		// Count complete frames when affordable; otherwise retain the container's
+		// estimate. Tags, cover art, gaps and trailing bytes are not audio bitrate.
 		double seconds = 0;
-		if (scanMp3(format, selected, input, seconds)) {
+		uint64_t frameBytes = 0;
+		if (scanMp3(format, selected, input, seconds, frameBytes)) {
 			result.length = bounded(seconds, true);
-			result.bitrate = bounded(double(input.size) * 8 / seconds / 1000, false);
+			result.bitrate = bounded(double(frameBytes) * 8 / seconds / 1000, true);
+		} else if (interrupted(&input)) {
+			return input.exhausted ? 11 : 13;
 		}
 	}
-	if (std::strcmp(format->iformat->name, "mov,mp4,m4a,3gp,3g2,mj2") == 0 &&
-		(result.artist.empty() || result.album.empty() || result.title.empty())) {
-		Result tags;
-		unsigned boxes = 0;
-		if (avio_seek(io, 0, SEEK_SET) == 0 && threeGpBoxes(io, input.size, 0, boxes, tags)) {
-			if (result.artist.empty())
-				result.artist = tags.artist;
-			if (result.album.empty())
-				result.album = tags.album;
-			if (result.title.empty())
-				result.title = tags.title;
-		}
-	}
-	// Optional metadata/frame scanning can encounter a transient read failure too.
+	// Optional frame scanning can encounter a transient read failure too.
 	if (input.ioError)
 		return 12;
 	return result.length || !result.codec.empty() ? 0 : 10;

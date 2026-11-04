@@ -26,9 +26,10 @@ in code before opening input:
 - Custom AVIO reads only inherited stdin; `io_open` denies secondary opens and
   `protocol_whitelist` is empty. No network initialization is requested.
 - `format_whitelist` permits AAC/ADTS, AC-3/E-AC-3, AIFF, AMR, APE, ASF/WMA/WMV,
-  AVI, DTS, FLAC, FLV, GSM, raw H.264/HEVC, Matroska/WebM, MOV/MP4/M4A/3GP,
-  MP3, MPEG-PS/TS/video, Ogg, WAV, WavPack and TTA. Playlists, SDP, concat and
-  DASH are excluded. Other MediaInfo formats are intentionally outside this policy.
+  AU, AVI, CAF, DTS, DV, FLAC, FLV, GSM, raw H.264/HEVC, IVF, Matroska/WebM,
+  MOV/MP4/M4A/3GP, MP3, Musepack SV7/SV8, MPEG-PS/TS/video, raw MPEG-4, MXF,
+  Ogg, RealMedia/RealAudio, Wave64, WAV, WTV, WavPack and TTA. Playlists, SDP,
+  concat and DASH are excluded. Other MediaInfo formats are intentionally outside this policy.
 - An empty `codec_whitelist` prevents stream-info probing from opening decoders
   supplied by a full system FFmpeg. Parsers and demuxers provide the metadata.
 - Reads total at most 1 GiB, repeated/backward seeks at most 256, individual
@@ -39,16 +40,21 @@ The runtime whitelist in `src/mediaprobe/main.cpp` and the demuxer list in
 `packaging/media/build-ffmpeg.py` / the Flatpak template must stay aligned.
 FFmpeg's runtime aliases differ from configure names, notably `mpeg`/`mpegps`.
 Keep the MPEG video demuxer: container readers use it for stream identification.
+`test_build_recipe.py` checks all three lists, normalizing runtime aliases. Raw
+stream guesses below the extension probe score (50) are rejected so weak matches
+in excluded containers are not published as codecs.
 
 ## Duration and tags
 
 Reliable container/header duration uses the normal fast path. Raw MP3 duration
-estimated from bitrate instead receives a bounded full frame scan (at most
-512 MiB), counting complete contiguous Layer III frames through EOF. Reliable
-Xing/VBRI timing is retained. Gaps, truncation, unsupported framing or an exceeded
-budget leave duration and its derived bitrate unknown while preserving codec and
-tags. This counts encoded samples; absent gapless metadata, it does not establish
-sample-exact original programme duration.
+estimated from bitrate receives a bounded frame scan (at most 512 MiB), counting
+complete Layer III frames across small gaps and ignoring trailing/partial bytes.
+The audio bitrate uses only counted frame bytes and rounds to whole kbps; tags
+and cover art are excluded. Reliable Xing/VBRI timing is retained. Above the scan
+size limit, or when no complete total can be counted, FFmpeg's estimate remains
+available. Scan deadlines are retryable, while read/seek budget exhaustion is a
+file verdict. This counts encoded samples; absent gapless metadata, it does not
+establish sample-exact original programme duration.
 
 Raw H.264 without a reliable presentation timeline remains unknown. Variable-rate
 pictures and a nominal frame rate cannot reconstruct missing timestamps. Valid
@@ -58,12 +64,15 @@ Container artist/album/title take precedence. Attached pictures are not selected
 as video. AVI's RIFF `product` is an album fallback; Ogg comments are read from
 the selected video/audio stream. The existing single-audio FLAC/Opus/Vorbis/Speex
 comment fallback also applies inside Matroska. Generic video track titles in
-other containers are not promoted to programme titles. A bounded fallback reads
-3GPP `perf` (artist), `albm` (album) and `titl` (title) FullBoxes directly under
-`moov/udta` when libavformat leaves a field empty. It accepts NUL-terminated UTF-8
-and BOM-marked UTF-16, examines at most 4096 box headers and caps each tag payload
-at 8 KiB, using the same restricted AVIO. Invalid optional tags are ignored;
-track-level boxes and media-payload lookalikes are never promoted.
+other containers are not promoted to programme titles. A tag valid as UTF-8
+stays UTF-8; otherwise the whole tag is converted from Latin-1, preserving legacy
+RIFF text. FFmpeg does not expose the three 3GP user-data fields found by MediaInfo
+in the existing fixture; that artist/album/title loss is declared for review rather
+than adding a second box parser.
+
+Known timing differences remain for raw DTS, MPEG-1 video and MPEG-4 video:
+the codec is identified but duration can remain unknown without decoder-derived
+parameters or a container timeline. MediaInfo may estimate a duration for these.
 
 ## Configuration and failure markers
 
@@ -83,8 +92,10 @@ ignores markers, and success clears them. The child flushes `AMMP 1` before
 parsing. A crash after that header is a file verdict; a missing helper, a crash
 before the header, malformed output or cancellation is not. Exit codes remain
 0 (usable), 10 (no usable metadata), 11 (rejected input), 12 (configuration/I/O)
-and 13 (internal deadline). The core's startup and failure-classification code
-is shared with the previous backend.
+and 13 (internal deadline). The per-file allocation cap rejects oversized
+container tables as file verdicts; partial stream information remains usable.
+The core's startup and failure-classification code is shared with the previous
+backend.
 
 ## Building and testing
 

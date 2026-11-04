@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 aMule Team
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Generated-media regressions for counted MP3 duration and conservative raw AVC timing."""
 import json
 from pathlib import Path
@@ -64,17 +66,20 @@ class DurationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)
 
+    @staticmethod
+    def audio_bitrate(path):
+        packets = json.loads(subprocess.check_output([
+            FFPROBE, '-v', 'error', '-select_streams', 'a:0', '-show_packets',
+            '-show_entries', 'packet=size', '-of', 'json', str(path)], text=True, timeout=30))['packets']
+        seconds = len(packets) * 1152 / 44100
+        return int(sum(int(p['size']) for p in packets) * 8 / seconds / 1000 + 0.5)
+
     def test_noxing_vbr_full_scan_rounds_to_62(self):
         result = self.probe(self.noxing)
         self.assertEqual(result['length_seconds'], 62)
-        # Encoder versions can produce different VBR byte counts. Independently
-        # count MPEG-1 audio packets, then use their fixed 1152 samples at 44.1 kHz.
-        packets = int(subprocess.check_output([
-            FFPROBE, '-v', 'error', '-select_streams', 'a:0', '-count_packets',
-            '-show_entries', 'stream=nb_read_packets', '-of', 'csv=p=0', str(self.noxing)],
-            text=True, timeout=30))
-        expected_bitrate = self.noxing.stat().st_size * 8 * 44100 // (packets * 1152 * 1000)
-        self.assertEqual(result['bitrate_kbps'], expected_bitrate)
+        # Derive audio bytes and encoded samples independently from packets,
+        # excluding ID3 tags and pictures. Encoder versions vary in VBR bytes.
+        self.assertEqual(result['bitrate_kbps'], self.audio_bitrate(self.noxing))
         self.assertEqual(result['codec'], 'mp3')
         self.assertEqual(result['artist'], 'Duration Artist')
         self.assertEqual(result['title'], 'Duration Title')
@@ -83,16 +88,18 @@ class DurationTests(unittest.TestCase):
         self.assertEqual(self.probe(self.xing)['length_seconds'], 62)
 
     def test_noxing_with_cover_art_counts_only_audio(self):
-        cover = self.directory / 'cover.png'
-        self.generate(['-f', 'lavfi', '-i', 'color=size=64x64:duration=1',
+        cover = self.directory / 'cover.bmp'
+        self.generate(['-f', 'lavfi', '-i', 'color=size=1024x1024:duration=1',
                        '-frames:v', '1', '-threads', '1', str(cover)])
         path = self.directory / 'covered.mp3'
         self.generate(['-i', str(self.noxing), '-i', str(cover), '-map', '0:a', '-map', '1:v',
                        '-c', 'copy', '-write_xing', '0', '-disposition:v', 'attached_pic', str(path)])
+        self.assertGreater(path.stat().st_size, 1024 * 1024)
         result = self.probe(path)
         self.assertEqual(result['length_seconds'], 62)
         self.assertEqual(result['codec'], 'mp3')
         self.assertEqual(result['artist'], 'Duration Artist')
+        self.assertEqual(result['bitrate_kbps'], self.audio_bitrate(self.noxing))
 
     def test_sample_rates_cover_mpeg1_mpeg2_and_mpeg25(self):
         # Header sample counts differ between MPEG-1 and MPEG-2/2.5 Layer III.
@@ -104,11 +111,13 @@ class DurationTests(unittest.TestCase):
                                '-threads', '1', str(path)])
                 self.assertEqual(self.probe(path)['length_seconds'], 1)
 
-    def test_damage_never_publishes_a_partial_total(self):
+    def test_minor_damage_and_trailing_tags_keep_useful_timing(self):
         original = self.noxing.read_bytes()
         middle = len(original) // 2
         for name, data in [('truncated', original[:-17]),
                            ('trailing-junk', original + b'garbage'),
+                           ('ape-tag', original + b'APETAGEX' + (2000).to_bytes(4, 'little') +
+                            (32).to_bytes(4, 'little') + bytes(16)),
                            ('resynchronised', original[:middle] + bytes(400) + original[middle:])]:
             with self.subTest(case=name):
                 path = self.directory / (name + '.mp3')
@@ -116,24 +125,46 @@ class DurationTests(unittest.TestCase):
                 result = self.probe(path)
                 self.assertEqual(result['codec'], 'mp3')
                 self.assertEqual(result['artist'], 'Duration Artist')
-                self.assertEqual(result['length_seconds'], 0)
-                self.assertEqual(result['bitrate_kbps'], 0)
+                self.assertLessEqual(abs(result['length_seconds'] - 62), 1)
+                self.assertLessEqual(abs(result['bitrate_kbps'] - self.audio_bitrate(self.noxing)), 1)
+
+    def test_cbr_damage_and_trailing_bytes_preserve_columns(self):
+        path = self.directory / 'damaged-cbr.mp3'
+        self.generate(['-f', 'lavfi', '-i', 'sine=sample_rate=44100:duration=60',
+                       '-c:a', 'libmp3lame', '-b:a', '128k', '-write_xing', '0',
+                       '-metadata', 'artist=Duration Artist', str(path)])
+        original = path.read_bytes()
+        middle = len(original) // 2
+        footer = b'APETAGEX' + (2000).to_bytes(4, 'little') + (32).to_bytes(4, 'little') + bytes(16)
+        for name, data in (('ape', original + footer), ('junk', original + b'garbage'),
+                           ('cut', original[:-17]), ('gap', original[:middle] + bytes(400) + original[middle:])):
+            with self.subTest(case=name):
+                path.write_bytes(data)
+                result = self.probe(path)
+                self.assertEqual(result['length_seconds'], 60)
+                self.assertEqual(result['bitrate_kbps'], 128)
+                self.assertEqual(result['artist'], 'Duration Artist')
 
     def test_id3v1_footer_is_not_counted_as_audio(self):
         path = self.directory / 'id3v1.mp3'
         path.write_bytes(self.noxing.read_bytes() + b'TAG' + bytes(125))
         self.assertEqual(self.probe(path)['length_seconds'], 62)
 
-    def test_scan_size_limit_keeps_metadata_but_not_estimated_duration(self):
+    def test_scan_size_limit_keeps_the_ffmpeg_estimate(self):
         path = self.directory / 'oversized.mp3'
+        cbr = self.directory / 'cbr.mp3'
+        self.generate(['-f', 'lavfi', '-i', 'sine=sample_rate=44100:duration=2',
+                       '-c:a', 'libmp3lame', '-b:a', '128k', '-write_xing', '0',
+                       '-metadata', 'artist=Duration Artist', str(cbr)])
+        self.assertEqual(self.probe(cbr)['bitrate_kbps'], 128)
         with path.open('wb') as output:
-            output.write(self.noxing.read_bytes())
+            output.write(cbr.read_bytes())
             output.truncate(512 * 1024 * 1024 + 1)
         result = self.probe(path)
         self.assertEqual(result['codec'], 'mp3')
         self.assertEqual(result['artist'], 'Duration Artist')
-        self.assertEqual(result['length_seconds'], 0)
-        self.assertEqual(result['bitrate_kbps'], 0)
+        self.assertGreater(result['length_seconds'], 30000)
+        self.assertEqual(result['bitrate_kbps'], 128)
 
     def test_raw_h264_is_not_timed_from_an_assumed_rate(self):
         if not self.has_x264:

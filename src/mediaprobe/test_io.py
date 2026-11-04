@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 aMule Team
+# SPDX-License-Identifier: GPL-2.0-or-later
 """Give the native AVIO test a real inherited file, independent of CTest's stdin."""
 from pathlib import Path
 import subprocess
