@@ -35,9 +35,12 @@ extern "C" void mac_set_table_view_flush(void *windowHandle)
 	if (!table) {
 		return;
 	}
+	// GCC does not support @available, so its builds keep the default style.
+#ifdef __clang__
 	if (@available(macOS 11.0, *)) {
 		table.style = NSTableViewStyleFullWidth;
 	}
+#endif
 }
 
 extern "C" double mac_tab_view_buttons_mid_y(void *windowHandle)
@@ -50,8 +53,9 @@ extern "C" double mac_tab_view_buttons_mid_y(void *windowHandle)
 	[tabView layoutSubtreeIfNeeded];
 
 	// The buttons are a private segmented-control subview; its frame is the only public way to
-	// learn where AppKit placed them.
-	for (NSView *sub in tabView.subviews) {
+	// learn where AppKit placed them. GCC does not support for...in in Objective-C++.
+	NSEnumerator *subviews = [tabView.subviews objectEnumerator];
+	while (NSView *sub = [subviews nextObject]) {
 		if ([sub isKindOfClass:[NSSegmentedControl class]]) {
 			NSView *parent = tabView.superview;
 			NSRect r = [sub convertRect:sub.bounds toView:parent];
@@ -80,14 +84,13 @@ bool mac_reveal_in_finder(const char *path)
 	if (path == nullptr) {
 		return false;
 	}
-	@autoreleasepool {
-		NSString *file = [NSString stringWithUTF8String:path];
-		if (file == nil) {
-			return false;
-		}
-		// selectFile: with an empty root opens the enclosing folder and selects
-		// the file in it, which is the behaviour "Show in Finder" implies.
-		return [[NSWorkspace sharedWorkspace] selectFile:file
-							inFileViewerRootedAtPath:@""] ? true : false;
-	}
+	// GCC does not support @autoreleasepool.
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	NSString *file = [NSString stringWithUTF8String:path];
+	// selectFile: with an empty root opens the enclosing folder and selects
+	// the file in it, which is the behaviour "Show in Finder" implies.
+	const bool revealed = file != nil && [[NSWorkspace sharedWorkspace] selectFile:file
+							inFileViewerRootedAtPath:@""];
+	[pool drain];
+	return revealed;
 }
