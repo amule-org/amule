@@ -45,6 +45,11 @@ and installs the helper by default with either core target, to
 `${CMAKE_INSTALL_LIBEXECDIR}/amule` (`bin` on Windows). Configure
 `-DENABLE_MEDIA_PROBE=OFF` to omit it.
 
+The helper declares the C API itself, so it needs no headers. On Debian/Ubuntu,
+`libmediainfo0v5` and `libzen0t64` (`libzen0v5` on Debian 12 and Ubuntu 22.04) are
+enough to build it. Use them with `libcurl4-openssl-dev`, because `libmediainfo-dev`
+pulls in the conflicting `libcurl4-gnutls-dev`.
+
 ```sh
 cmake -S . -B build -DBUILD_TESTING=ON
 cmake --build build -j2
