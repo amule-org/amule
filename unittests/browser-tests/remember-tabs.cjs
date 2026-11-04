@@ -23,12 +23,14 @@ const server = http.createServer((req, res) => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch({ executablePath: process.env.AMULE_BROWSER_EXECUTABLE || undefined });
   try {
-    const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+    const page = await browser.newPage({ locale: 'en-US', viewport: { width: 1400, height: 1000 } });
     page.setDefaultTimeout(10000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     let categories = [{ index: 0, name: 'Default' }, { index: 1, name: 'Books' }];
     let releaseCategories = null;
+    let categoriesFail = false;
+    let geoipSupported = true;
     await page.route('**/api/v1/**', async route => {
       const endpoint = new URL(route.request().url()).pathname.replace('/api/v1/', '');
       let body = {};
@@ -36,6 +38,7 @@ const server = http.createServer((req, res) => {
         case 'auth/session': body = { role: 'admin' }; break;
         case 'events': await route.fulfill({ contentType: 'text/event-stream', body: ': connected\n\n' }); return;
         case 'categories':
+          if (categoriesFail) { await route.fulfill({ status: 503, json: { error: { code: 'unavailable' } } }); return; }
           if (releaseCategories) await new Promise(resolve => { releaseCategories.resolve = resolve; });
           body = { categories }; break;
         case 'search': body = { searches: [
@@ -49,10 +52,12 @@ const server = http.createServer((req, res) => {
         case 'clients': body = { clients: [] }; break;
         case 'known_clients': body = { known_clients: [] }; break;
         case 'chats': body = { chats: [] }; break;
+        case 'preferences': body = { geoip: { supported: geoipSupported } }; break;
       }
       await route.fulfill({ json: body });
     });
     await page.goto(`http://127.0.0.1:${server.address().port}/#/networks`);
+    assert.equal(await page.evaluate(() => navigator.language), 'en-US');
     const go = async route => {
       await page.locator(`nav a[data-route="${route}"]`).click();
       await page.waitForFunction(route => location.hash === '#/' + route, route);
@@ -115,6 +120,34 @@ const server = http.createServer((req, res) => {
     await selected(page.getByRole('tab', { name: /^All/ }));
     console.log('PASS: a deleted category falls back to All and stays cleared');
 
+    await books.click();
+    await go('networks');
+    categoriesFail = true;
+    await go('downloads');
+    await selected(page.getByRole('tab', { name: /^All/ }));
+    categoriesFail = false;
+    await go('networks');
+    await go('downloads');
+    await books.waitFor();
+    await selected(page.getByRole('tab', { name: /^All/ }));
+    console.log('PASS: failed initial category load clears the filter and recovers on return');
+
+    await books.click();
+    const manageCategories = page.getByRole('button', { name: 'Manage categories', exact: true });
+    await manageCategories.click();
+    await page.locator('.cat-panel-header').waitFor();
+    await page.locator('.card table').getByText('Books', { exact: true }).waitFor();
+    categoriesFail = true;
+    const failedRefresh = page.waitForResponse(response =>
+      new URL(response.url()).pathname === '/api/v1/categories' && response.status() === 503);
+    await manageCategories.click();
+    await failedRefresh;
+    // Let the rejected request reach its catch and any fallback effect.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await selected(books);
+    categoriesFail = false;
+    console.log('PASS: failed category refresh preserves loaded categories and the selected tab');
+
     await go('search');
     const first = page.getByRole('tab', { name: /^First query/ });
     await first.click();
@@ -131,6 +164,14 @@ const server = http.createServer((req, res) => {
     await go('preferences');
     await selected(tab(prefName));
     console.log('PASS: Preferences remembers its selected tab');
+
+    await tab('IP2Country').click();
+    await go('networks');
+    geoipSupported = false;
+    await go('preferences');
+    await selected(prefTabs.nth(0));
+    assert.equal(await tab('IP2Country').count(), 0);
+    console.log('PASS: an unavailable Preferences tab highlights the displayed fallback');
 
     await go('networks');
     await page.reload();

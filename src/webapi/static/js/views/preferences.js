@@ -797,7 +797,7 @@ export default function Preferences({ isGuest }) {
   const tabList = shownTabs.map((s) => ({ key: s.id, label: t(s.labelKey) }));
   return html`
     <form onSubmit=${save} class="net-pane">
-      <${Tabs} tabs=${tabList} active=${active} onSelect=${setActive} />
+      <${Tabs} tabs=${tabList} active=${tab.id} onSelect=${setActive} />
       <div class="net-pane-body prefs-panel">
         ${tab.noteKey ? html`<p class="hint prefs-warning">${t(tab.noteKey)}</p>` : null}
         <div class="prefs-groups">

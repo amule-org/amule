@@ -45,7 +45,8 @@ export default function Downloads({ isGuest }) {
   };
 
   const loadCategories = () =>
-    api.list("categories").then((r) => setCategories(r.categories || [])).catch(() => {});
+    api.list("categories").then((r) => setCategories(r.categories || []))
+      .catch(() => setCategories((c) => c || []));
 
   useEffect(() => {
     data.register({ key: "downloads", eventPrefix: "download", id: "hash",

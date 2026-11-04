@@ -1,4 +1,4 @@
-name: WebUI navigation
+name: WebUI browser tests
 
 on:
   push:
@@ -6,16 +6,16 @@ on:
     paths:
       - 'src/webapi/static/**'
       - 'unittests/browser-tests/remember-tabs.cjs'
-      - '.github/workflows/webui-navigation.yml'
+      - '.github/workflows/webui-browser.yml'
   pull_request:
     branches: [ "**" ]
     paths:
       - 'src/webapi/static/**'
       - 'unittests/browser-tests/remember-tabs.cjs'
-      - '.github/workflows/webui-navigation.yml'
+      - '.github/workflows/webui-browser.yml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.sha || '' }}
   cancel-in-progress: true
 
 permissions:
@@ -31,9 +31,9 @@ jobs:
           node-version: '24'
       - name: Install browser test dependencies
         run: |
-          npm install --prefix "$RUNNER_TEMP/amule-navigation-browser" --no-package-lock playwright@1.62.1
-          "$RUNNER_TEMP/amule-navigation-browser/node_modules/.bin/playwright" install --with-deps chromium
+          npm install --prefix "$RUNNER_TEMP/amule-webui-browser" --no-package-lock playwright@1.62.1
+          "$RUNNER_TEMP/amule-webui-browser/node_modules/.bin/playwright" install --with-deps chromium
       - name: Check tab selections through the WebUI router
         env:
-          NODE_PATH: ${{ runner.temp }}/amule-navigation-browser/node_modules
+          NODE_PATH: ${{ runner.temp }}/amule-webui-browser/node_modules
         run: node unittests/browser-tests/remember-tabs.cjs
