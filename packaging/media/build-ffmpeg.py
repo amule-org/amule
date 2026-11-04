@@ -8,7 +8,6 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
-import sys
 import tarfile
 import tempfile
 
@@ -39,10 +38,14 @@ def main():
     pin = pins()
     env = {k: v for k, v in os.environ.items()
            if k.lower() not in ('http_proxy', 'https_proxy', 'all_proxy', 'ld_preload')}
-    archive = work / ('FFmpeg-' + pin['FFMPEG_VERSION'] + '.tar.gz')
-    cached = ROOT / 'packaging/media/sources' / archive.name
-    if not archive.exists() and cached.exists():
-        shutil.copy2(cached, archive)
+    identity = pin['FFMPEG_VERSION'] + '-' + pin['FFMPEG_SHA256'][:16]
+    archive_name = 'FFmpeg-' + pin['FFMPEG_VERSION'] + '.tar.gz'
+    archive = work / ('FFmpeg-' + identity + '.tar.gz')
+    # Reuse a staged/legacy archive only after checking it against the current
+    # pin. An old archive under the same version must not prevent a fresh fetch.
+    for cached in (ROOT / 'packaging/media/sources' / archive_name, work / archive_name):
+        if not archive.exists() and cached.exists() and hashlib.sha256(cached.read_bytes()).hexdigest() == pin['FFMPEG_SHA256']:
+            shutil.copy2(cached, archive)
     if not archive.exists():
         partial = archive.with_suffix('.partial')
         with partial.open('wb') as output:
@@ -53,12 +56,11 @@ def main():
         raise SystemExit('FFmpeg source checksum mismatch: ' + str(archive))
     source_dest = prefix if args.source_only else prefix / 'share/sources/amule-media-probe'
     source_dest.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(archive, source_dest / archive.name)
+    shutil.copy2(archive, source_dest / archive_name)
     if args.source_only:
         return
     # A pin update must never reuse the previous source/build tree. Include the
     # digest as well as version so correcting an archive under the same tag works.
-    identity = pin['FFMPEG_VERSION'] + '-' + pin['FFMPEG_SHA256'][:16]
     source = work / ('ffmpeg-' + identity)
     if not source.exists():
         with tempfile.TemporaryDirectory(prefix='ffmpeg-extract-', dir=work) as temporary:

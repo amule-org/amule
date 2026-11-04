@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Exercise the production AVIO callbacks without replacing the parser library.
 #define main mediaProbeMain
-#include "main.cpp"
+#include "main.cpp" // NOLINT(bugprone-suspicious-include): test the production AVIO callbacks.
 #undef main
 
 static int failure(int checkpoint)

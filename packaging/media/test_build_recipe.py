@@ -26,32 +26,39 @@ class BuildRecipeTests(unittest.TestCase):
             for name in ('bash', 'make', 'bash.exe', 'make.exe'):
                 (tools / name).touch()
             configured = []
+            downloads = []
 
-            def run(command, cwd, **kwargs):
-                if Path(command[0]).name.startswith('bash'):
+            def run(command, cwd=None, **kwargs):
+                if command[0] == 'gh':
+                    downloads.append(command[-1])
+                    kwargs['stdout'].write(archive_bytes)
+                elif Path(command[0]).name.startswith('bash'):
                     configured.append(Path(command[1]).read_text())
                     (cwd / 'config.h').write_text('/* fixture configuration */')
                 return subprocess.CompletedProcess(command, 0)
 
             for version, marker in zip(versions, ('old source', 'new source')):
-                archive = work / ('FFmpeg-' + version + '.tar.gz')
-                with tarfile.open(archive, 'w:gz') as tar:
+                archive_name = 'FFmpeg-' + version + '.tar.gz'
+                buffer = io.BytesIO()
+                with tarfile.open(fileobj=buffer, mode='w:gz') as tar:
                     for name in ('configure', 'COPYING.LGPLv2.1', 'LICENSE.md'):
                         entry = tarfile.TarInfo('fixture/' + name)
                         payload = marker.encode()
                         entry.size = len(payload)
                         tar.addfile(entry, io.BytesIO(payload))
+                archive_bytes = buffer.getvalue()
                 pin = dict(FFMPEG_VERSION=version, FFMPEG_TARBALL_URL='https://example.invalid/source',
-                           FFMPEG_SHA256=hashlib.sha256(archive.read_bytes()).hexdigest())
+                           FFMPEG_SHA256=hashlib.sha256(archive_bytes).hexdigest())
                 with mock.patch.object(BUILDER, 'pins', return_value=pin), \
                      mock.patch.object(sys, 'argv', ['build-ffmpeg.py', str(prefix), str(work)]), \
                      mock.patch.object(BUILDER.shutil, 'which', side_effect=lambda name, **kw: str(tools / name)), \
                      mock.patch.object(BUILDER.subprocess, 'run', side_effect=run):
                     BUILDER.main()
-                installed = prefix / 'share/sources/amule-media-probe' / archive.name
-                self.assertEqual(installed.read_bytes(), archive.read_bytes())
+                installed = prefix / 'share/sources/amule-media-probe' / archive_name
+                self.assertEqual(installed.read_bytes(), archive_bytes)
             # Inspect the configure script actually selected, not the directory naming scheme.
             self.assertEqual(configured, ['old source', 'new source'])
+            self.assertEqual(len(downloads), 2)
             self.assertEqual((prefix / 'share/licenses/amule-media-probe/FFmpeg-LICENSE.md').read_text(),
                              'new source')
 
