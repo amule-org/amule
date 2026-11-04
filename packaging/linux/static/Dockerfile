@@ -103,7 +103,7 @@ RUN wget -qO /tmp/libupnp.tar.gz "${LIBUPNP_TARBALL_URL}" \
 # resets it during project()). Dropping just the libX.so dev symlinks — while
 # keeping libX.so.N for dynamic build tools like msgfmt — makes find_library
 # resolve to the static archive. Every lib below has a .a present.
-RUN for l in bfd opcodes ctf sframe zstd z maxminddb intl; do \
+RUN for l in bfd opcodes ctf sframe zstd z maxminddb intl atomic; do \
         rm -f "/usr/lib/lib$l.so" "/lib/lib$l.so"; \
     done
 
