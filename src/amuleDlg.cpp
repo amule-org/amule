@@ -2318,13 +2318,7 @@ void CamuleDlg::OnMainGUISizeChange(wxSizeEvent &evt)
 {
 	wxFrame::OnSize(evt);
 	if (m_transferwnd && m_transferwnd->clientlistctrl) {
-		// Transfer window's splitter set again if it's hidden.
-		if (!m_transferwnd->clientlistctrl->GetShowing()) {
-			int height = m_transferwnd->clientlistctrl->GetSize().GetHeight();
-			wxSplitterWindow *splitter = CastChild("splitterWnd", wxSplitterWindow);
-			height += splitter->GetWindow1()->GetSize().GetHeight();
-			splitter->SetSashPosition(height);
-		}
+		m_transferwnd->UpdateDetailsLayout();
 	}
 }
 

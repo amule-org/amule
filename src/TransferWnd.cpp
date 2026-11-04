@@ -32,6 +32,7 @@
 
 #include <wx/artprov.h> // Needed for the "amule:" art ids
 #include <wx/config.h>
+#include <wx/textctrl.h>
 
 // This include must be before amuleDlg.h
 #ifdef __WINDOWS__
@@ -98,6 +99,49 @@ CTransferWnd::CTransferWnd(wxWindow *pParent)
 	clientlistctrl = CastChild(ID_CLIENTLIST, CSourceListCtrl);
 	m_dlTab = CastChild(ID_CATEGORIES, CMuleNotebook);
 
+	// Keep the existing header outside the tabs: queue totals and the collapse
+	// button must remain accessible whichever details page is selected.
+	auto *splitter = CastChild("splitterWnd", wxSplitterWindow);
+	wxWindow *bottom = splitter->GetWindow2();
+	splitter->SetSashGravity(0.6);
+	auto *details = new wxNotebook(bottom, wxID_ANY);
+	auto addDetailsPage = [details](const wxString &title) {
+		auto *page = new wxPanel(details);
+		auto *layout = new wxBoxSizer(wxVERTICAL);
+		auto *text = new wxTextCtrl(page,
+			wxID_ANY,
+			wxEmptyString,
+			wxDefaultPosition,
+			wxDefaultSize,
+			wxTE_MULTILINE | wxTE_READONLY);
+		layout->Add(text, wxSizerFlags(1).Expand().Border(wxALL, 5));
+		page->SetSizer(layout);
+		details->AddPage(page, title);
+		return text;
+	};
+	m_generalDetails = addDetailsPage(_("General"));
+	m_transferDetails = addDetailsPage(_("Transfers"));
+	m_commentDetails = addDetailsPage(_("Comments"));
+	bottom->GetSizer()->Detach(clientlistctrl);
+	auto *sources = new wxPanel(details);
+	clientlistctrl->Reparent(sources);
+	auto *sourceLayout = new wxBoxSizer(wxVERTICAL);
+	sourceLayout->Add(clientlistctrl, 1, wxEXPAND);
+	sources->SetSizer(sourceLayout);
+	details->AddPage(sources, _("Sources"));
+	bottom->GetSizer()->Add(details, 1, wxEXPAND);
+	m_detailsTimer.SetOwner(this);
+	Bind(
+		wxEVT_TIMER,
+		[this](wxTimerEvent &) {
+			if (IsShownOnScreen() && clientlistctrl->GetShowing()) {
+				UpdateDownloadDetails();
+			}
+		},
+		m_detailsTimer.GetId());
+	m_detailsTimer.Start(1000);
+	UpdateDownloadDetails();
+
 #ifdef __WXMAC__
 	// The native tab view draws its buttons across the top edge of its page bezel, so the dark bar
 	// sits below the row's centre and the controls beside it looked misaligned. Move them down onto
@@ -135,10 +179,13 @@ CTransferWnd::CTransferWnd(wxWindow *pParent)
 	config->Read("/GUI/TransferWnd/ShowClientList", &show, true);
 	clientlistctrl->SetShowing(show);
 	m_splitter = config->Read("/GUI/TransferWnd/Splitter", 463l);
+	splitter->Bind(wxEVT_SIZE, &CTransferWnd::OnDetailsSize, this);
 }
 
 CTransferWnd::~CTransferWnd()
 {
+	m_detailsTimer.Stop();
+	CastChild("splitterWnd", wxSplitterWindow)->Unbind(wxEVT_SIZE, &CTransferWnd::OnDetailsSize, this);
 	wxConfigBase *config = wxConfigBase::Get();
 
 	if (!clientlistctrl->GetShowing()) {
@@ -152,6 +199,52 @@ CTransferWnd::~CTransferWnd()
 
 		config->Write("/GUI/TransferWnd/ShowClientList", true);
 	}
+}
+
+void CTransferWnd::UpdateDownloadDetails()
+{
+	// Resolve from the live list each time: cancellation, category changes and
+	// remote disconnects must not leave a retained file pointer in this pane.
+	const auto selectionCount = downloadlistctrl->GetSelectedItemsCount();
+	wxString general = selectionCount == 0 ? _("Select a download to view its details.")
+					       : _("Select a single download to view its details.");
+	wxString transfers;
+	wxString comments;
+	if (selectionCount == 1) {
+		const auto selected = downloadlistctrl->GetSelectedItemData();
+		const auto *file = reinterpret_cast<const CPartFile *>(selected.front());
+		general = _("Filename:") + " " + file->GetFileName().GetPrintable() + "\n" + _("Hash:") +
+			  " " + file->GetFileHash().Encode() + "\n" + _("Size:") + " " +
+			  CastItoXBytes(file->GetFileSize());
+		if (file->IsPartFile()) {
+			transfers = _("Status:") + " " + file->getPartfileStatus() + "\n" + _("Completed:") +
+				    " " + CastItoXBytes(file->GetCompletedSize()) + "\n" + _("Transferred:") +
+				    " " + CastItoXBytes(file->GetTransferred()) + "\n" +
+				    _("Download speed:") + " " +
+				    (CFormat(_("%.2f KiB/s")) % file->GetKBpsDown()) + "\n" + _("Sources:") +
+				    " " +
+				    (CFormat("%u (%u)") % file->GetSourceCount() %
+					    file->GetTransferingSrcCount());
+		} else {
+			transfers = _("Completed");
+		}
+		FileRatingList ratings;
+		file->GetShownRatingAndComments(ratings);
+		for (const auto &rating : ratings) {
+			comments += rating.UserName + " (" + (CFormat("%d") % rating.Rating) +
+				    "): " + rating.Comment + "\n";
+		}
+		if (comments.empty()) {
+			comments = _("No comments available.");
+		}
+	}
+	// Preserve selection and scroll position while values have not changed.
+	if (m_generalDetails->GetValue() != general)
+		m_generalDetails->ChangeValue(general);
+	if (m_transferDetails->GetValue() != transfers)
+		m_transferDetails->ChangeValue(transfers);
+	if (m_commentDetails->GetValue() != comments)
+		m_commentDetails->ChangeValue(comments);
 }
 
 void CTransferWnd::AddCategory(Category_Struct *category)
@@ -457,64 +550,66 @@ void CTransferWnd::OnFilterChanged(wxCommandEvent &WXUNUSED(evt))
 	downloadlistctrl->SetFilterText(CastChild(IDC_TRANSFER_FILTER, wxTextCtrl)->GetValue());
 }
 
+void CTransferWnd::OnDetailsSize(wxSizeEvent &event)
+{
+	event.Skip();
+	if (!m_layoutPending) {
+		m_layoutPending = true;
+		CallAfter([this]() {
+			m_layoutPending = false;
+			UpdateDetailsLayout();
+		});
+	}
+}
+
+void CTransferWnd::UpdateDetailsLayout()
+{
+	auto *splitter = CastChild("splitterWnd", wxSplitterWindow);
+	const int height = splitter->GetClientSize().y;
+	const int header = s_clientlistHeader->GetSize().y;
+	if (height <= header) {
+		return; // Wait until the frame has a usable layout.
+	}
+	if (clientlistctrl->GetShowing()) {
+		const int maximum = wxMax(s_splitterMin, height - FromDIP(180));
+		const int position = wxMax(s_splitterMin, wxMin(splitter->GetSashPosition(), maximum));
+		if (position != splitter->GetSashPosition()) {
+			splitter->SetSashPosition(position);
+		}
+	} else {
+		// The header is outside the tabs and must remain visible after resize.
+		splitter->SetSashPosition(wxMax(1, height - header - splitter->GetSashSize()));
+	}
+	const wxBitmapBundle art = wxArtProvider::GetBitmapBundle(
+		clientlistctrl->GetShowing() ? "amule:arrows_down" : "amule:arrows_up");
+	auto *button = CastChild(ID_CLIENTTOGGLE, wxBitmapButton);
+	button->SetBitmapLabel(art);
+	button->SetBitmapFocus(art);
+	button->SetBitmapPressed(art);
+	button->SetBitmapCurrent(art);
+}
+
 void CTransferWnd::Prepare()
 {
-	wxSplitterWindow *splitter = CastChild("splitterWnd", wxSplitterWindow);
-	int height = splitter->GetSize().GetHeight();
-	int header_height = s_clientlistHeader->GetSize().GetHeight();
-
-	if (m_splitter) {
-		// Some sanity checking
-		if (m_splitter < s_splitterMin) {
-			m_splitter = s_splitterMin;
-		} else if (m_splitter > height - header_height * 2) {
-			m_splitter = height - header_height * 2;
-		}
-		splitter->SetSashPosition(m_splitter);
+	if (clientlistctrl->GetShowing() && m_splitter) {
+		CastChild("splitterWnd", wxSplitterWindow)->SetSashPosition(m_splitter);
 		m_splitter = 0;
 	}
-
-	if (!clientlistctrl->GetShowing()) {
-		// use a toggle event to close it (calculate size, change button)
-		clientlistctrl->SetShowing(true); // so it will be toggled to false
-		wxCommandEvent evt1;
-		OnToggleClientList(evt1);
-	}
+	UpdateDetailsLayout();
 }
 
 void CTransferWnd::OnToggleClientList(wxCommandEvent &WXUNUSED(evt))
 {
-	wxSplitterWindow *splitter = CastChild("splitterWnd", wxSplitterWindow);
-	wxBitmapButton *button = CastChild(ID_CLIENTTOGGLE, wxBitmapButton);
-
-	if (!clientlistctrl->GetShowing()) {
+	auto *splitter = CastChild("splitterWnd", wxSplitterWindow);
+	if (clientlistctrl->GetShowing()) {
+		m_splitter = splitter->GetSashPosition();
+		clientlistctrl->SetShowing(false);
+	} else {
+		clientlistctrl->SetShowing(true);
 		splitter->SetSashPosition(m_splitter);
 		m_splitter = 0;
-
-		clientlistctrl->SetShowing(true);
-
-		const wxBitmapBundle art = wxArtProvider::GetBitmapBundle("amule:arrows_down");
-		button->SetBitmapLabel(art);
-		button->SetBitmapFocus(art);
-		button->SetBitmapPressed(art);
-		button->SetBitmapCurrent(art);
-	} else {
-		clientlistctrl->SetShowing(false);
-
-		m_splitter = splitter->GetSashPosition();
-
-		// Add the height of the listctrl to the top-window
-		int height =
-			clientlistctrl->GetSize().GetHeight() + splitter->GetWindow1()->GetSize().GetHeight();
-
-		splitter->SetSashPosition(height);
-
-		const wxBitmapBundle art = wxArtProvider::GetBitmapBundle("amule:arrows_up");
-		button->SetBitmapLabel(art);
-		button->SetBitmapFocus(art);
-		button->SetBitmapPressed(art);
-		button->SetBitmapCurrent(art);
 	}
+	UpdateDetailsLayout();
 }
 
 void CTransferWnd::OnSashPositionChanging(wxSplitterEvent &evt)
