@@ -58,8 +58,12 @@ Container artist/album/title take precedence. Attached pictures are not selected
 as video. AVI's RIFF `product` is an album fallback; Ogg comments are read from
 the selected video/audio stream. The existing single-audio FLAC/Opus/Vorbis/Speex
 comment fallback also applies inside Matroska. Generic video track titles in
-other containers are not promoted to programme titles. FFmpeg does not expose the three 3GP user-data tags found by
-MediaInfo in the existing synthetic fixture; that is a known metadata loss.
+other containers are not promoted to programme titles. A bounded fallback reads
+3GPP `perf` (artist), `albm` (album) and `titl` (title) FullBoxes directly under
+`moov/udta` when libavformat leaves a field empty. It accepts NUL-terminated UTF-8
+and BOM-marked UTF-16, examines at most 4096 box headers and caps each tag payload
+at 8 KiB, using the same restricted AVIO. Invalid optional tags are ignored;
+track-level boxes and media-payload lookalikes are never promoted.
 
 ## Configuration and failure markers
 

@@ -251,6 +251,79 @@ class BackendTests(unittest.TestCase):
         if not tested:
             self.skipTest('no optional fixture encoders available')
 
+    def test_three_gp_user_data_tags(self):
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            self.skipTest('3GP fixture generator requires ffmpeg')
+        self.path = Path(self.tmp.name) / 'tags.3gp'
+        subprocess.run([ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i',
+                        'sine=duration=1', '-c:a', 'aac', '-metadata', 'artist=Spike Artist',
+                        '-metadata', 'album=Spike Album', '-metadata', 'title=Spike Title',
+                        str(self.path)], check=True, capture_output=True, timeout=20)
+        original = self.path.read_bytes()
+        data = json.loads(self.run_probe().stdout)
+        for key, value in (('artist', 'Spike Artist'), ('album', 'Spike Album'),
+                           ('title', 'Spike Title')):
+            self.assertEqual(data[key], value)
+
+        def box(kind, payload, extended=False):
+            return ((struct.pack('>I4sQ', 1, kind, len(payload) + 16) if extended else
+                     struct.pack('>I4s', len(payload) + 8, kind)) + payload)
+
+        def children(data):
+            offset = 0
+            while offset < len(data):
+                size, kind = struct.unpack_from('>I4s', data, offset)
+                self.assertGreaterEqual(size, 8)
+                self.assertLessEqual(offset + size, len(data))
+                yield kind, data[offset + 8:offset + size]
+                offset += size
+
+        root = list(children(original))
+        moov = next(payload for kind, payload in root if kind == b'moov')
+        moov = b''.join(box(kind, payload) for kind, payload in children(moov)
+                        if kind != b'udta')
+
+        def check(extra, expected='', extended=False):
+            self.path.write_bytes(b''.join(box(kind, moov + extra, extended) if kind == b'moov'
+                                          else box(kind, payload) for kind, payload in root))
+            reply = self.run_probe()
+            self.assertEqual(reply.returncode, 0, reply.stderr)
+            result = json.loads(reply.stdout)
+            self.assertEqual(result['codec'], 'aac')
+            self.assertEqual(result['length_seconds'], 1)
+            self.assertEqual(result['title'], expected)
+            return result
+
+        header = b'\0' * 4 + b'\x15\xc7'  # FullBox version/flags, packed language.
+        title = '艺术家 🎵 "quoted" \\ path'
+        for encoding, bom in (('utf-8', b''), ('utf-16-be', b'\xfe\xff'),
+                              ('utf-16-le', b'\xff\xfe')):
+            terminator = b'\0' if encoding == 'utf-8' else b'\0\0'
+            with self.subTest(encoding=encoding):
+                check(box(b'udta', box(b'titl', header + bom + title.encode(encoding) + terminator)),
+                      title, extended=True)
+        # The optional album track byte must never become part of its text.
+        album = check(box(b'udta', box(b'albm', header + b'Album name\0\x07')))
+        self.assertEqual(album['album'], 'Album name')
+        # Existing libavformat metadata takes precedence over the fallback.
+        preferred = box(b'\xa9nam', struct.pack('>HH', 9, 0x15c7) + b'Preferred')
+        check(box(b'udta', preferred + box(b'titl', header + b'Fallback\0')), 'Preferred')
+        # Invalid version, missing terminator, oversized value, and a truncated child.
+        for payload in (b'\1' + header[1:] + b'Forged\0', header + b'Forged',
+                        header + b'X' * 9000 + b'\0', header + b'\xfe\xff\0X'):
+            with self.subTest(payload_length=len(payload)):
+                check(box(b'udta', box(b'titl', payload)))
+        check(box(b'udta', struct.pack('>I4s', 100, b'titl') + header + b'Forged\0'))
+        check(box(b'udta', struct.pack('>I4sQ', 1, b'titl', 2**64 - 1)))
+        check(box(b'udta', struct.pack('>I4s', 4, b'titl')))
+        # Ignore track-level and opaque-payload lookalikes, and excessive box lists.
+        check(box(b'trak', box(b'udta', box(b'titl', header + b'Forged\0'))))
+        check(box(b'free', box(b'titl', header + b'Forged\0')))
+        check(box(b'udta', box(b'free', b'') * 4097 + box(b'titl', header + b'Forged\0')))
+        # A zero-sized last box extends only to its parent boundary.
+        check(box(b'udta', struct.pack('>I4s', 0, b'titl') + header + b'Last\0'), 'Last')
+
     def test_single_audio_comments_survive_in_matroska(self):
         ffmpeg = shutil.which('ffmpeg')
         if not ffmpeg:

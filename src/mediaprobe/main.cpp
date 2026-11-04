@@ -228,6 +228,81 @@ std::string tag(const AVDictionary *dict, const char *key)
 	const auto *entry = av_dict_get(dict, key, nullptr, 0);
 	return entry ? clean(entry->value) : std::string();
 }
+// FFmpeg's MOV muxer writes these 3GPP TS 26.244 FullBoxes, but its
+// demuxer does not expose them. Visit only root/moov/udta: track labels and
+// lookalike bytes in media payloads are not file metadata. All I/O still uses
+// the inherited AVIO and its shared budgets; no second file is opened.
+std::string threeGpText(AVIOContext *io, int64_t size)
+{
+	if (size < 7 || size > 8192)
+		return {};
+	unsigned char payload[8192];
+	const int64_t start = avio_tell(io);
+	if (avio_read(io, payload, static_cast<int>(size)) != size ||
+		std::memcmp(payload, "\0\0\0\0", 4) != 0)
+		return {};
+	const auto *text = payload + 6; // version/flags + packed language.
+	const size_t length = static_cast<size_t>(size - 6);
+	if (length >= 2 && ((text[0] == 0xfe && text[1] == 0xff) || (text[0] == 0xff && text[1] == 0xfe))) {
+		// A BOM selects UTF-16; require its aligned terminator within the box.
+		for (size_t end = 2; end + 1 < length; end += 2) {
+			if (text[end] || text[end + 1])
+				continue;
+			if (avio_seek(io, start + 8, SEEK_SET) != start + 8)
+				return {};
+			char utf8[16384];
+			const int bytes = static_cast<int>(end);
+			const int read = text[0] == 0xfe ? avio_get_str16be(io, bytes, utf8, sizeof(utf8))
+							 : avio_get_str16le(io, bytes, utf8, sizeof(utf8));
+			return read == bytes ? clean(utf8) : std::string();
+		}
+		return {};
+	}
+	if (!std::memchr(text, 0, length))
+		return {};
+	// The NUL ends the album name before its optional track-number byte.
+	return clean(reinterpret_cast<const char *>(text));
+}
+bool threeGpBoxes(AVIOContext *io, int64_t end, unsigned depth, unsigned &boxes, Result &tags)
+{
+	for (int64_t start = avio_tell(io); start < end; start = avio_tell(io)) {
+		if (start < 0 || end - start < 8 || ++boxes > 4096)
+			return false;
+		uint64_t size = avio_rb32(io);
+		const uint32_t type = avio_rl32(io);
+		unsigned header = 8;
+		if (size == 1) {
+			if (end - start < 16)
+				return false;
+			size = avio_rb64(io);
+			header = 16;
+		} else if (size == 0) {
+			size = static_cast<uint64_t>(end - start);
+		}
+		if (io->error || avio_tell(io) != start + header || size < header ||
+			size > static_cast<uint64_t>(end - start))
+			return false;
+		const int64_t next = start + static_cast<int64_t>(size);
+		if ((depth == 0 && type == MKTAG('m', 'o', 'o', 'v')) ||
+			(depth == 1 && type == MKTAG('u', 'd', 't', 'a'))) {
+			if (!threeGpBoxes(io, next, depth + 1, boxes, tags))
+				return false;
+		} else if (depth == 2) {
+			std::string *target = nullptr;
+			if (type == MKTAG('p', 'e', 'r', 'f'))
+				target = &tags.artist;
+			else if (type == MKTAG('a', 'l', 'b', 'm'))
+				target = &tags.album;
+			else if (type == MKTAG('t', 'i', 't', 'l'))
+				target = &tags.title;
+			if (target && target->empty())
+				*target = threeGpText(io, static_cast<int64_t>(size) - header);
+		}
+		if (avio_seek(io, next, SEEK_SET) != next)
+			return false;
+	}
+	return avio_tell(io) == end;
+}
 uint32_t bounded(double value, bool round)
 {
 	if (!std::isfinite(value) || value <= 0)
@@ -355,7 +430,20 @@ int probe(Input &input, Result &result)
 			result.bitrate = bounded(double(input.size) * 8 / seconds / 1000, false);
 		}
 	}
-	// Optional frame scanning can encounter a transient device/read failure too.
+	if (std::strcmp(format->iformat->name, "mov,mp4,m4a,3gp,3g2,mj2") == 0 &&
+		(result.artist.empty() || result.album.empty() || result.title.empty())) {
+		Result tags;
+		unsigned boxes = 0;
+		if (avio_seek(io, 0, SEEK_SET) == 0 && threeGpBoxes(io, input.size, 0, boxes, tags)) {
+			if (result.artist.empty())
+				result.artist = tags.artist;
+			if (result.album.empty())
+				result.album = tags.album;
+			if (result.title.empty())
+				result.title = tags.title;
+		}
+	}
+	// Optional metadata/frame scanning can encounter a transient read failure too.
 	if (input.ioError)
 		return 12;
 	return result.length || !result.codec.empty() ? 0 : 10;
