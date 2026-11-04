@@ -103,6 +103,10 @@
 #include <unistd.h>      // close() for the startup bind probe
 #include <cstring>       // strlen() for SO_BINDTODEVICE
 #include <cerrno>        // errno / EPERM
+// The 10.6 SDK has IP_BOUND_IF but not IPV6_BOUND_IF. Value is ABI-stable.
+#if defined(__APPLE__) && !defined(IPV6_BOUND_IF)
+#define IPV6_BOUND_IF 125
+#endif
 #endif
 
 using namespace boost::asio;
