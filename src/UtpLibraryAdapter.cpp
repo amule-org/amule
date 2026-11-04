@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <map>
@@ -298,6 +299,7 @@ public:
 		// the handshake branch has already refused is never offered to a stream as well.
 		utp_socket *repointedSocket = nullptr;
 		Endpoint repointedFrom{ 0, 0 };
+		std::optional<std::pair<Endpoint, Endpoint>> repointedPrevious;
 		if (!unproven && translation == m_remapInputs.end() && remappedSocket == nullptr) {
 			const std::optional<SRepointCandidate> candidate = FindRepointCandidate(ip, port);
 			if (candidate.has_value()) {
@@ -309,11 +311,17 @@ public:
 					DecideUtpMove(*header, MoveFactsFor(candidate->socket)) ==
 						EUtpMoveVerdict::Move &&
 					m_repointLimiter.TryAdmit(StreamKey(candidate->socket), nowMs)) {
-					// Probe only: the pair this socket already holds stays exactly as it
-					// is until libutp confirms the move below, so a refused attempt can
-					// never leave the stream without a translation.
+					// Installed before the hand-over, exactly as the handshake path does.
+					// Reversal of the previous choice: libutp sends frames of its own
+					// while it handles this one, and without the new pair they leave for
+					// the port the peer has already abandoned (measured live: one
+					// 1410-byte frame lost). A move libutp still refuses gets the
+					// previous pair back below.
 					repointedSocket = candidate->socket;
 					repointedFrom = candidate->libutpEndpoint;
+					repointedPrevious = PreviousRemapOf(candidate->socket);
+					RemovePortRemap(candidate->socket);
+					InstallPortRemap(candidate->socket, repointedFrom, observed);
 					expected = repointedFrom;
 				} else if (ClassifyUtpFrame(payload, length) == EUtpFrameKind::Existing) {
 					// One connected stream could own this frame and it did not prove
@@ -346,26 +354,34 @@ public:
 				RemovePortRemap(remappedSocket);
 			}
 		}
-		if (repointedSocket != nullptr && claimed) {
-			// libutp took the datagram as part of that stream, so the move is confirmed: replace
-			// this socket's pair - a socket holds exactly one translation - and remember the port
-			// being left, so a later frame cannot bring the stream back to it while that refusal
-			// lasts.
-			if (const auto here = m_endpoints.find(repointedSocket); here != m_endpoints.end()) {
-				SPeerStreamState &state = m_peerStreams[repointedSocket];
-				state.abandonedPort = here->second.second;
-				state.abandonedAtMs = nowMs;
+		if (repointedSocket != nullptr) {
+			if (claimed) {
+				// The pair is already the new one: remember the port being left, so a later
+				// frame cannot bring the stream back to it while that refusal lasts.
+				if (const auto here = m_endpoints.find(repointedSocket);
+					here != m_endpoints.end()) {
+					SPeerStreamState &state = m_peerStreams[repointedSocket];
+					state.abandonedPort = here->second.second;
+					state.abandonedAtMs = nowMs;
+				}
+				UpdatePeerEndpoint(repointedSocket, ip, port);
+				// Formatted here rather than through NetworkFunctions.h, whose Types.h
+				// typedefs clash with libutp's own in this translation unit.
+				AddDebugLogLineN(logClient,
+					CFormat("uTP: moved the stream to %u.%u.%u.%u from port %u to port "
+						"%u") %
+						(uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) %
+						(uint8)(ip >> 24) % repointedFrom.second % port);
+			} else {
+				// libutp refused the frame after all: put back whatever pair the socket held
+				// before the attempt, so the stream is never left without a translation.
+				RemovePortRemap(repointedSocket);
+				if (repointedPrevious.has_value()) {
+					InstallPortRemap(repointedSocket,
+						repointedPrevious->first,
+						repointedPrevious->second);
+				}
 			}
-			RemovePortRemap(repointedSocket);
-			InstallPortRemap(repointedSocket, repointedFrom, observed);
-			UpdatePeerEndpoint(repointedSocket, ip, port);
-			// Formatted here rather than through NetworkFunctions.h, whose Types.h
-			// typedefs clash with libutp's own in this translation unit.
-			AddDebugLogLineN(logClient,
-				CFormat("uTP: moved the stream to %u.%u.%u.%u from port %u to port "
-					"%u") %
-					(uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) % (uint8)(ip >> 24) %
-					repointedFrom.second % port);
 		}
 		if (claimed) {
 			NoteInboundHeader(remappedSocket != nullptr ? remappedSocket : repointedSocket,
@@ -404,7 +420,11 @@ public:
 		return applied;
 	}
 	void IssueDeferredAcks() override { utp_issue_deferred_acks(m_context); }
-	void CheckTimeouts() override { utp_check_timeouts(m_context); }
+	void CheckTimeouts() override
+	{
+		utp_check_timeouts(m_context);
+		ProbeIdleStreams();
+	}
 
 private:
 	struct SPendingHandshake : SUtpRemapCandidate
@@ -420,6 +440,10 @@ private:
 		std::uint16_t lastSequenceNumber = 0;
 		bool hasSyn = false;
 		std::uint16_t synSequenceNumber = 0;
+		//! Set when we sent ST_DATA there, which is what marks this side as the uploader for the
+		//! probe.
+		bool sentData = false;
+		std::uint64_t lastDataMs = 0;
 	};
 
 	//! A connected stream, with what the repoint needs beyond the shared facts.
@@ -440,6 +464,11 @@ private:
 	{
 		std::uint16_t abandonedPort = 0;
 		std::uint64_t abandonedAtMs = 0;
+		//! Whether this stream has received ST_DATA, when, and when it was last probed.
+		bool receivedData = false;
+		std::uint64_t lastDataReceivedMs = 0;
+		bool probed = false;
+		std::uint64_t lastProbeMs = 0;
 	};
 
 	static sockaddr_in MakeAddress(uint32_t ip, uint16_t port)
@@ -494,6 +523,16 @@ private:
 		       m_socketRemaps.find(socket) == m_socketRemaps.end();
 	}
 
+	//! The pair a socket already holds, so a move that libutp refuses can put it back.
+	std::optional<std::pair<Endpoint, Endpoint>> PreviousRemapOf(utp_socket *socket) const
+	{
+		const auto found = m_socketRemaps.find(socket);
+		if (found == m_socketRemaps.end()) {
+			return std::nullopt;
+		}
+		return found->second;
+	}
+
 	//! The tuple libutp keys a socket by. libutp has no way to re-key a live socket, which is why a
 	//! moved stream keeps both translations: the outgoing one only knows this tuple.
 	Endpoint LibutpEndpointOf(utp_socket *socket) const
@@ -545,6 +584,66 @@ private:
 	//! (utp_call_sendto(ctx, NULL, ...), utp_internal.cpp:709), so the destination is the only key
 	//! available; a move requires exactly one connected stream on that address, which makes it
 	//! unambiguous. Always the last write, since that is the sequence number the peer must ack.
+	//! A receiver whose data has stopped has nothing to acknowledge, so after a port change the peer
+	//! hears nothing and gives up long before the next keepalive. Growing the receive buffer raises the
+	//! window, which makes utp_read_drained() schedule an ack (utp_internal.cpp:3232-3239); flushing it
+	//! sends that ack through whatever mapping the stream now holds, which is what tells the peer where
+	//! the stream went. Reading, writing the option, draining and flushing are all public libutp API.
+	void SendIdleProbe(utp_socket *socket)
+	{
+		const int window = utp_getsockopt(socket, UTP_RCVBUF);
+		utp_setsockopt(socket, UTP_RCVBUF, window + 1);
+		utp_read_drained(socket);
+		utp_issue_deferred_acks(m_context);
+	}
+
+	//! Pokes every connected stream the probe rule names. Runs from CheckTimeouts(), so a silent
+	//! downloader emits an ack at most once per idle window without any datagram having to arrive.
+	void ProbeIdleStreams()
+	{
+		const std::uint64_t nowMs = NowMs();
+		std::vector<utp_socket *> idle;
+		for (const auto &entry : m_endpoints) {
+			const CUtpSocketTransport *transport = TransportOf(entry.first);
+			if (transport == nullptr || !transport->IsConnected()) {
+				continue;
+			}
+			SUtpProbeFacts facts;
+			const auto state = m_peerStreams.find(entry.first);
+			if (state != m_peerStreams.end()) {
+				facts.receivedData = state->second.receivedData;
+				facts.lastDataReceivedMs = state->second.lastDataReceivedMs;
+				facts.probed = state->second.probed;
+				facts.lastProbeMs = state->second.lastProbeMs;
+			}
+			const auto sent = m_sentTo.find(entry.second);
+			if (sent != m_sentTo.end()) {
+				facts.sentData = sent->second.sentData;
+				facts.lastDataSentMs = sent->second.lastDataMs;
+			}
+			if (ShouldProbeIdleStream(facts, nowMs)) {
+				idle.push_back(entry.first);
+			}
+		}
+		for (utp_socket *socket : idle) {
+			SendIdleProbe(socket);
+			SPeerStreamState &state = m_peerStreams[socket];
+			state.probed = true;
+			state.lastProbeMs = nowMs;
+		}
+	}
+
+	//! Monotonic milliseconds for the probe's own bookkeeping. The probe is driven by CheckTimeouts(),
+	//! which carries no time, so it keeps one clock domain of its own rather than mixing the caller's
+	//! injected one into it.
+	static std::uint64_t NowMs()
+	{
+		using Clock = std::chrono::steady_clock;
+		const auto sinceEpoch = Clock::now().time_since_epoch();
+		return static_cast<std::uint64_t>(
+			std::chrono::duration_cast<std::chrono::milliseconds>(sinceEpoch).count());
+	}
+
 	void NoteSentHeader(uint32_t ip, uint16_t port, const uint8_t *payload, size_t length)
 	{
 		const std::optional<SUtpMoveHeader> header = ReadUtpWireHeader(payload, length);
@@ -557,8 +656,16 @@ private:
 			m_sentTo.erase(m_sentTo.begin());
 		}
 		SSentToEndpoint &sent = m_sentTo[destination];
+		// Only forwards: a resend carries an older number, and letting it lower the mark would refuse
+		// the ack that actually arrives for the newer frame.
+		if (!sent.hasSent || IsUtpSeqAhead(header->sequenceNumber, sent.lastSequenceNumber)) {
+			sent.lastSequenceNumber = header->sequenceNumber;
+		}
 		sent.hasSent = true;
-		sent.lastSequenceNumber = header->sequenceNumber;
+		if (header->type == kUtpTypeData) {
+			sent.sentData = true;
+			sent.lastDataMs = NowMs();
+		}
 		if (header->type == kUtpTypeSyn) {
 			sent.hasSyn = true;
 			sent.synSequenceNumber = header->sequenceNumber;
@@ -612,6 +719,11 @@ private:
 		state.connectionId = header->connectionId;
 		state.peerSequenceNumber = header->sequenceNumber;
 		state.peerAcknowledgeNumber = header->acknowledgeNumber;
+		if (header->type == kUtpTypeData) {
+			// Only data tells the probe this stream is a live download whose peer went quiet.
+			state.receivedData = true;
+			state.lastDataReceivedMs = NowMs();
+		}
 	}
 
 	//! What the move decision may rely on for this socket, complete or not at all: a missing send

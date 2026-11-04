@@ -551,6 +551,47 @@ TEST(UtpDialPolicy, AMoveNeverReturnsToThePortTheStreamLeftUntilThatRefusalExpir
 	ASSERT_FALSE(IsUtpAbandonedPort(4672, 4672, nowMs, nowMs + UtpPortRepointLimiter::WindowMs));
 }
 
+TEST(UtpDialPolicy, AResendNeverLowersTheLastSentNumber)
+{
+	ASSERT_TRUE(IsUtpSeqAhead(101, 100));
+	ASSERT_TRUE(IsUtpSeqAhead(1, 65'535)); // across the wrap
+
+	// A resend carries an older number: it must not drag the record backwards, or the ack that
+	// arrives for the newer frame would fall outside the range.
+	ASSERT_FALSE(IsUtpSeqAhead(99, 100));
+	ASSERT_FALSE(IsUtpSeqAhead(100, 100));
+	ASSERT_FALSE(IsUtpSeqAhead(65'535, 1));
+}
+
+TEST(UtpDialPolicy, ProbeFiresOnlyForAFreshlySilentReceiver)
+{
+	SUtpProbeFacts facts;
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 10'000)); // never received data
+
+	facts.receivedData = true;
+	facts.lastDataReceivedMs = 10'000;
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 10'000));
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 10'000 + kUtpProbeIdleMs - 1));
+	ASSERT_TRUE(ShouldProbeIdleStream(facts, 10'000 + kUtpProbeIdleMs));
+	ASSERT_TRUE(ShouldProbeIdleStream(facts, 10'000 + kUtpProbeFreshMs - 1));
+	// Too stale: the sender has already given up, so a probe would only talk to itself.
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 10'000 + kUtpProbeFreshMs));
+
+	// The uploader also receives data, and its own sends are what keep it quiet.
+	facts.sentData = true;
+	facts.lastDataSentMs = 12'000;
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 12'500));
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 12'000 + kUtpProbeIdleMs - 1));
+	ASSERT_TRUE(ShouldProbeIdleStream(facts, 12'000 + kUtpProbeIdleMs));
+
+	// One probe per idle window.
+	facts.sentData = false;
+	facts.probed = true;
+	facts.lastProbeMs = 13'000;
+	ASSERT_FALSE(ShouldProbeIdleStream(facts, 13'000 + kUtpProbeIdleMs - 1));
+	ASSERT_TRUE(ShouldProbeIdleStream(facts, 13'000 + kUtpProbeIdleMs));
+}
+
 TEST(UtpDialPolicy, MoveRefusesResetAndSynWhileTheOwnTupleIsNeverAStepCompetitor)
 {
 	const SUtpPeerStreamFacts facts{ true, 0x1234, 100, 98, 104 };

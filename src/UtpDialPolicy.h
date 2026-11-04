@@ -544,10 +544,6 @@ private:
 	std::array<SStreamMoves, MaxStreams> m_streams{};
 };
 
-//! libutp packet types (utp_internal.cpp:166-173). Only a reset and a SYN change what a move may do.
-constexpr std::uint8_t kUtpTypeReset = 3;
-constexpr std::uint8_t kUtpTypeSyn = 4;
-
 //! How far a frame's sequence number may sit from the peer's last one, in either direction, and still
 //! be that stream's. Mirrors libutp's own receive bound (REORDER_BUFFER_MAX_SIZE, utp_internal.cpp:55,
 //! enforced at :1894-1907): anything further apart is not a packet this connection could have in
@@ -575,6 +571,69 @@ inline std::uint16_t UtpSeqDistance(std::uint16_t left, std::uint16_t right)
 inline bool IsUtpSeqWithin(std::uint16_t value, std::uint16_t lowest, std::uint16_t span)
 {
 	return static_cast<std::uint16_t>(value - lowest) <= span;
+}
+
+//! libutp packet types (utp_internal.cpp:157-163). A data frame is the one that carries payload, and
+//! only a reset or a SYN change what a move may do.
+constexpr std::uint8_t kUtpTypeData = 0;
+constexpr std::uint8_t kUtpTypeState = 2;
+constexpr std::uint8_t kUtpTypeReset = 3;
+constexpr std::uint8_t kUtpTypeSyn = 4;
+
+//! How long a connected stream may stay silent before we poke libutp into sending an ack, and how
+//! stale its last data may be before poking is pointless.
+constexpr std::uint64_t kUtpProbeIdleMs = 3'000;
+constexpr std::uint64_t kUtpProbeFreshMs = 15'000;
+
+//! What the probe decision needs: when this stream last received data, when it last sent any, and
+//! when it was last probed.
+struct SUtpProbeFacts
+{
+	bool receivedData = false;
+	std::uint64_t lastDataReceivedMs = 0;
+	bool sentData = false;
+	std::uint64_t lastDataSentMs = 0;
+	bool probed = false;
+	std::uint64_t lastProbeMs = 0;
+};
+
+/**
+ * Whether a silent downloader should be poked so the peer learns where the stream went. A receiver
+ * whose NAT dropped the incoming data has nothing to acknowledge, so it stays quiet until its 29 s
+ * keepalive, while the sender gives up somewhere around 16.5 s: the keepalive then moves the stream
+ * but acknowledges nothing, and the sender's socket is gone before the next one. The probe makes
+ * libutp emit an ack of its own - growing the receive buffer raises the window, so utp_read_drained()
+ * schedules one (utp_internal.cpp:3232-3239) - and that ack leaves through the new mapping.
+ *
+ * Only the receiving side probes: a stream that has sent data inside the same idle window is the
+ * uploader, whose own traffic already keeps its mapping alive. One probe per idle window is enough.
+ */
+inline bool ShouldProbeIdleStream(const SUtpProbeFacts &facts, std::uint64_t nowMs)
+{
+	if (!facts.receivedData || nowMs < facts.lastDataReceivedMs) {
+		return false;
+	}
+	const std::uint64_t sinceData = nowMs - facts.lastDataReceivedMs;
+	if (sinceData < kUtpProbeIdleMs || sinceData >= kUtpProbeFreshMs) {
+		return false;
+	}
+	if (facts.sentData && nowMs >= facts.lastDataSentMs &&
+		nowMs - facts.lastDataSentMs < kUtpProbeIdleMs) {
+		return false;
+	}
+	if (facts.probed && nowMs >= facts.lastProbeMs && nowMs - facts.lastProbeMs < kUtpProbeIdleMs) {
+		return false;
+	}
+	return true;
+}
+
+//! Whether @p candidate is strictly ahead of @p known, counting modulo 2^16. A resend carries an
+//! older number, so a high-water mark must never move backwards on one - and an equal number changes
+//! nothing.
+inline bool IsUtpSeqAhead(std::uint16_t candidate, std::uint16_t known)
+{
+	const std::uint16_t distance = static_cast<std::uint16_t>(candidate - known);
+	return distance != 0 && distance < 32'768;
 }
 
 //! Whether @p observedPort is the port this stream has just moved away from, still inside the window

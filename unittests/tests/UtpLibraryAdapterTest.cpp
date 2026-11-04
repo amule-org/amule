@@ -35,9 +35,11 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <deque>
 #include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace muleunit;
@@ -1110,6 +1112,60 @@ TEST(UtpLibraryAdapter, AFailingHandshakeLeavesTheConnectedStreamTranslated)
 		receivedBytes = connected->Read(received.data(), static_cast<uint32_t>(received.size()));
 	}
 	ASSERT_TRUE(receivedBytes != 0);
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AnIdleReceiverProbesSoThePeerCanFollowItsPort)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+
+	std::unique_ptr<IStreamTransport> transport;
+	const SUtpDialOptions options{ true, loop.nowMs };
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
+	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
+	ASSERT_TRUE(transport != nullptr);
+	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+
+	// An accepted socket is not writable until it has received data: libutp leaves it in CS_SYN_RECV
+	// and only ST_DATA moves it to CS_CONNECTED (utp_internal.cpp:3168, :2166-2168), so this side
+	// speaks first. That also starts the probe rule's uploader window on our own send, which is why
+	// the wait below has to outlast kUtpProbeIdleMs and not merely reach it.
+	const uint8_t greeting = 0x20;
+	ASSERT_EQUALS(1, (int)transport->Write(&greeting, 1));
+	transport->Flush();
+	Pump(loop);
+
+	// Data from the peer, which also moves the stream to its new port. Nothing else is written from
+	// this side, so utp_check_timeouts() has no retransmission of ours to send and any datagram that
+	// leaves below can only be the probe's.
+	const uint8_t payload = 0x21;
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	const uint16_t movedPort = heldPort + 100;
+	loop.clientSourcePort = movedPort;
+	Pump(loop);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, movedPort));
+
+	// While the data is fresh there is nothing to probe.
+	const unsigned beforeFresh = sink.datagrams;
+	loop.server->CheckTimeouts();
+	ASSERT_EQUALS((int)beforeFresh, (int)sink.datagrams);
+
+	// After the idle window a datagram must leave, and it must go where the peer is now: that ack is
+	// the only thing that tells it the stream moved. If the mechanism broke - libutp stopping acking
+	// a grown window, or the flush not reaching the wire - nothing would leave and this fails. The
+	// margin keeps both the received-data and the sent-data windows comfortably in the past, since
+	// real time is what this rule runs on.
+	std::this_thread::sleep_for(std::chrono::milliseconds(kUtpProbeIdleMs + 600));
+	const unsigned beforeProbe = sink.datagrams;
+	loop.server->CheckTimeouts();
+	ASSERT_TRUE(sink.datagrams > beforeProbe);
+	ASSERT_EQUALS((int)movedPort, (int)sink.lastPort);
 	Teardown(loop);
 }
 
