@@ -548,9 +548,10 @@ private:
 constexpr std::uint8_t kUtpTypeReset = 3;
 constexpr std::uint8_t kUtpTypeSyn = 4;
 
-//! How far a frame's sequence number may be AHEAD of the peer's last one and still be that stream's.
-//! Mirrors libutp's own receive bound (REORDER_BUFFER_MAX_SIZE, utp_internal.cpp:55, enforced at
-//! :1894-1906): anything further ahead is not a packet this connection could have in flight.
+//! How far a frame's sequence number may sit from the peer's last one, in either direction, and still
+//! be that stream's. Mirrors libutp's own receive bound (REORDER_BUFFER_MAX_SIZE, utp_internal.cpp:55,
+//! enforced at :1894-1907): anything further apart is not a packet this connection could have in
+//! flight.
 constexpr std::uint16_t kUtpMoveSeqWindow = 1024;
 
 //! Half the sequence space. The ack range runs from the peer's last ack minus one up to the last
@@ -558,13 +559,15 @@ constexpr std::uint16_t kUtpMoveSeqWindow = 1024;
 //! sent. Anything narrower is a legitimate window and is admitted, however wide our sends run ahead.
 constexpr std::uint16_t kUtpMoveAckSpanLimit = 32'768;
 
-//! How far @p candidate is ahead of @p known, counting modulo 2^16 (utp_internal.cpp:79). Zero means
-//! equal, which is ordinary for a stream that only acknowledges, and anything above 32768 means
-//! behind, which a window this small never admits: a move only ever follows the peer into newer
-//! sequence numbers, never back into older ones.
-inline std::uint16_t UtpSeqAhead(std::uint16_t candidate, std::uint16_t known)
+//! The circular distance between two sequence numbers, counting modulo 2^16 (utp_internal.cpp:79).
+//! libutp measures a packet the same way against the one it expects next - `seqnr = (pk_seq_nr -
+//! conn->ack_nr - 1) & SEQ_NR_MASK` (:1894) - and admits it while that is below
+//! REORDER_BUFFER_MAX_SIZE (:1897).
+inline std::uint16_t UtpSeqDistance(std::uint16_t left, std::uint16_t right)
 {
-	return static_cast<std::uint16_t>(candidate - known);
+	const std::uint16_t forward = static_cast<std::uint16_t>(left - right);
+	const std::uint16_t backward = static_cast<std::uint16_t>(right - left);
+	return forward < backward ? forward : backward;
 }
 
 //! Whether @p value lies in the modular range [@p lowest, @p lowest + @p span], counting modulo
@@ -574,11 +577,18 @@ inline bool IsUtpSeqWithin(std::uint16_t value, std::uint16_t lowest, std::uint1
 	return static_cast<std::uint16_t>(value - lowest) <= span;
 }
 
-//! Whether @p observedPort is the port this stream has just moved away from. A move follows the peer
-//! forward, never back to a mapping it has already left.
-inline bool IsUtpAbandonedPort(std::uint16_t observedPort, std::uint16_t abandonedPort)
+//! Whether @p observedPort is the port this stream has just moved away from, still inside the window
+//! that bounds moves. A port-preserving NAT can hand the old port back, so the refusal expires with
+//! the same ten seconds as the limiter rather than blocking the stream forever.
+inline bool IsUtpAbandonedPort(std::uint16_t observedPort,
+	std::uint16_t abandonedPort,
+	std::uint64_t abandonedAtMs,
+	std::uint64_t nowMs)
 {
-	return abandonedPort != 0 && observedPort == abandonedPort;
+	if (abandonedPort == 0 || observedPort != abandonedPort) {
+		return false;
+	}
+	return nowMs < abandonedAtMs || nowMs - abandonedAtMs < UtpPortRepointLimiter::WindowMs;
 }
 
 //! The base uTP header fields a move decision needs, read off the wire by ReadUtpWireHeader()
@@ -618,9 +628,11 @@ enum class EUtpMoveVerdict
  * send (utp_internal.cpp:1799-1815) but never against what the peer already acknowledged, and which
  * accepts a far wider sequence range. It is not stricter than ordinary traffic, though: an ack-only
  * ST_STATE carries the peer's next sequence number, the same one its next data frame will use, and a
- * keepalive repeats both numbers with the ack one lower (:782, :1085-1086, :833-843). Refusing either
- * would refuse a download-only stream and every idle one. What is refused is a frame that is behind
- * the peer, since a move follows the peer forward, never back.
+ * keepalive repeats both numbers with the ack one lower (:782, :1085-1086, :833-843); and a peer with
+ * a full send window resends its OLDEST unacked packet, whose number sits BEHIND the highest one we
+ * have seen. Refusing either would refuse a download-only stream, every idle one, and the frame that
+ * recovers a bulk transfer after its port changes. What keeps a replay from dragging a stream back to
+ * a port it left is the abandoned-port refusal and the ten-second move limit, not this window.
  */
 inline EUtpMoveVerdict DecideUtpMove(const SUtpMoveHeader &header, const SUtpPeerStreamFacts &facts)
 {
@@ -644,9 +656,10 @@ inline EUtpMoveVerdict DecideUtpMove(const SUtpMoveHeader &header, const SUtpPee
 		!IsUtpSeqWithin(header.acknowledgeNumber, lowestAck, allowedAcks)) {
 		return EUtpMoveVerdict::Refuse;
 	}
-	// Zero ahead is ordinary and admitted: see the doc comment. Behind the peer is not, because its
-	// modular distance lands far above the window.
-	if (UtpSeqAhead(header.sequenceNumber, facts.peerSequenceNumber) > kUtpMoveSeqWindow) {
+	// Both directions, exactly as libutp measures it against the packet it expects next (:1894-1897):
+	// the resend of a full window's oldest unacked packet is behind the highest number we have seen and
+	// must still be admitted, or a bulk transfer could never recover after a port change.
+	if (UtpSeqDistance(header.sequenceNumber, facts.peerSequenceNumber) > kUtpMoveSeqWindow) {
 		return EUtpMoveVerdict::Refuse;
 	}
 	return EUtpMoveVerdict::Move;

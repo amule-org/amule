@@ -294,24 +294,24 @@ public:
 		// after its NAT moved the port. libutp cannot re-key a socket, and it answers 1 to every
 		// non-SYN frame it is given -- processed, stale or unmatched alike (:2909, :2925, :2933,
 		// :2940) -- so the header decides here, before the frame is handed over. One attempt, one
-		// candidate, or none at all; a SYN and a reset are refused by the decision itself.
+		// candidate, or none at all; a SYN and a reset are refused by the decision itself. A frame
+		// the handshake branch has already refused is never offered to a stream as well.
 		utp_socket *repointedSocket = nullptr;
 		Endpoint repointedFrom{ 0, 0 };
-		if (translation == m_remapInputs.end() && remappedSocket == nullptr) {
+		if (!unproven && translation == m_remapInputs.end() && remappedSocket == nullptr) {
 			const std::optional<SRepointCandidate> candidate = FindRepointCandidate(ip, port);
 			if (candidate.has_value()) {
-				// A move never goes back to the port this stream has just left.
-				const bool abandoned = IsUtpAbandonedPort(port, candidate->abandonedPort);
+				// A move never goes back to the port this stream has just left, for as long
+				// as the move limit itself lasts.
+				const bool abandoned = IsUtpAbandonedPort(
+					port, candidate->abandonedPort, candidate->abandonedAtMs, nowMs);
 				if (!abandoned && header.has_value() &&
 					DecideUtpMove(*header, MoveFactsFor(candidate->socket)) ==
 						EUtpMoveVerdict::Move &&
 					m_repointLimiter.TryAdmit(StreamKey(candidate->socket), nowMs)) {
-					// Replace this socket's pair rather than add one: libutp keeps the
-					// tuple the socket was created with, so a socket holds exactly one
-					// translation.
-					RemovePortRemap(candidate->socket);
-					InstallPortRemap(
-						candidate->socket, candidate->libutpEndpoint, observed);
+					// Probe only: the pair this socket already holds stays exactly as it
+					// is until libutp confirms the move below, so a refused attempt can
+					// never leave the stream without a translation.
 					repointedSocket = candidate->socket;
 					repointedFrom = candidate->libutpEndpoint;
 					expected = repointedFrom;
@@ -346,25 +346,26 @@ public:
 				RemovePortRemap(remappedSocket);
 			}
 		}
-		if (repointedSocket != nullptr) {
-			if (claimed) {
-				// Remember the port being left, so a later frame cannot bring the stream back
-				// to it.
-				if (const auto here = m_endpoints.find(repointedSocket);
-					here != m_endpoints.end()) {
-					m_peerStreams[repointedSocket].abandonedPort = here->second.second;
-				}
-				UpdatePeerEndpoint(repointedSocket, ip, port);
-				// Formatted here rather than through NetworkFunctions.h, whose Types.h
-				// typedefs clash with libutp's own in this translation unit.
-				AddDebugLogLineN(logClient,
-					CFormat("uTP: moved the stream to %u.%u.%u.%u from port %u to port "
-						"%u") %
-						(uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) %
-						(uint8)(ip >> 24) % repointedFrom.second % port);
-			} else {
-				RemovePortRemap(repointedSocket);
+		if (repointedSocket != nullptr && claimed) {
+			// libutp took the datagram as part of that stream, so the move is confirmed: replace
+			// this socket's pair - a socket holds exactly one translation - and remember the port
+			// being left, so a later frame cannot bring the stream back to it while that refusal
+			// lasts.
+			if (const auto here = m_endpoints.find(repointedSocket); here != m_endpoints.end()) {
+				SPeerStreamState &state = m_peerStreams[repointedSocket];
+				state.abandonedPort = here->second.second;
+				state.abandonedAtMs = nowMs;
 			}
+			RemovePortRemap(repointedSocket);
+			InstallPortRemap(repointedSocket, repointedFrom, observed);
+			UpdatePeerEndpoint(repointedSocket, ip, port);
+			// Formatted here rather than through NetworkFunctions.h, whose Types.h
+			// typedefs clash with libutp's own in this translation unit.
+			AddDebugLogLineN(logClient,
+				CFormat("uTP: moved the stream to %u.%u.%u.%u from port %u to port "
+					"%u") %
+					(uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) % (uint8)(ip >> 24) %
+					repointedFrom.second % port);
 		}
 		if (claimed) {
 			NoteInboundHeader(remappedSocket != nullptr ? remappedSocket : repointedSocket,
@@ -427,8 +428,10 @@ private:
 		utp_socket *socket = nullptr;
 		//! The tuple libutp keys this socket by, which is the observed one only until it moves.
 		Endpoint libutpEndpoint;
-		//! The port this stream moved away from, so a move never returns to it.
+		//! The port this stream moved away from, and when, so a move never returns to it while that
+		//! refusal lasts.
 		std::uint16_t abandonedPort = 0;
+		std::uint64_t abandonedAtMs = 0;
 	};
 
 	//! What the adapter knows about one stream: the peer facts a move is decided on, plus where the
@@ -436,6 +439,7 @@ private:
 	struct SPeerStreamState : SUtpPeerStreamFacts
 	{
 		std::uint16_t abandonedPort = 0;
+		std::uint64_t abandonedAtMs = 0;
 	};
 
 	static sockaddr_in MakeAddress(uint32_t ip, uint16_t port)
@@ -523,6 +527,7 @@ private:
 			const auto state = m_peerStreams.find(entry.first);
 			if (state != m_peerStreams.end()) {
 				candidate.abandonedPort = state->second.abandonedPort;
+				candidate.abandonedAtMs = state->second.abandonedAtMs;
 			}
 			streams.push_back(candidate);
 		}

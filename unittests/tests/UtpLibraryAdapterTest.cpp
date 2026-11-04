@@ -992,6 +992,127 @@ TEST(UtpLibraryAdapter, AFailedSynAckSendsNothing)
 	Teardown(loop);
 }
 
+TEST(UtpLibraryAdapter, AResendBehindTheLastNumberStillMovesTheStream)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+
+	std::unique_ptr<IStreamTransport> transport;
+	const SUtpDialOptions options{ true, loop.nowMs };
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
+	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
+	ASSERT_TRUE(transport != nullptr);
+	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+
+	const uint8_t payload = 0x18;
+	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
+	transport->Flush();
+	Pump(loop);
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	Pump(loop);
+
+	// A peer whose send window filled up and whose acks went to a dead mapping resends its OLDEST
+	// unacked packet, whose number sits BEHIND the highest we have seen. That frame is the one that
+	// recovers a bulk transfer, so it has to be admitted (libutp measures the same distance and
+	// accepts it, utp_internal.cpp:1894-1907). libutp's own retransmit timer is not reachable in this
+	// harness, so the resend is reproduced as the frame it produces.
+	constexpr uint8_t kState = 2; // ST_STATE (utp_internal.cpp:169)
+	const std::vector<uint8_t> genuine = loop.lastClientDatagram;
+	ASSERT_TRUE(genuine.size() >= kUtpWireHeaderBytes);
+	const auto connectionId = static_cast<uint16_t>((genuine[2] << 8) | genuine[3]);
+	const auto peerSeqNr = static_cast<uint16_t>((genuine[16] << 8) | genuine[17]);
+	const auto peerAckNr = static_cast<uint16_t>((genuine[18] << 8) | genuine[19]);
+	const uint16_t oldestUnacked = static_cast<uint16_t>(peerSeqNr - kUtpMoveSeqWindow);
+
+	const uint16_t newPort = heldPort + 100;
+	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, newPort));
+	const std::vector<uint8_t> resend = UtpFrame(kState, connectionId, oldestUnacked, peerAckNr);
+	ASSERT_TRUE(UtpSeqDistance(oldestUnacked, peerSeqNr) <= kUtpMoveSeqWindow);
+	loop.server->ProcessDatagram(resend.data(), resend.size(), kPeerIp, newPort, loop.nowMs);
+
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, newPort));
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
+	ASSERT_EQUALS((int)newPort, (int)transport->GetPeerPort());
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AFailingHandshakeLeavesTheConnectedStreamTranslated)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+
+	// First dial: established, and moved to the observed port by the handshake remap.
+	std::unique_ptr<IStreamTransport> connected;
+	const SUtpDialOptions options{ true, loop.nowMs };
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, connected));
+	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
+	ASSERT_TRUE(connected != nullptr);
+	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+
+	const uint8_t payload = 0x1A;
+	ASSERT_EQUALS(1, (int)connected->Write(&payload, 1));
+	connected->Flush();
+	Pump(loop);
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	Pump(loop);
+	const std::vector<uint8_t> genuine = loop.lastClientDatagram;
+	ASSERT_TRUE(genuine.size() >= kUtpWireHeaderBytes);
+	const auto connectionId = static_cast<uint16_t>((genuine[2] << 8) | genuine[3]);
+	const auto peerSeqNr = static_cast<uint16_t>((genuine[16] << 8) | genuine[17]);
+	const auto peerAckNr = static_cast<uint16_t>((genuine[18] << 8) | genuine[19]);
+
+	// Second dial to the same address: a handshake candidate now sits at kPeerPort, as a second user
+	// behind the same CGNAT would leave it. Its SYN is the last datagram this side sent.
+	std::unique_ptr<IStreamTransport> pending;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, pending));
+	const std::vector<uint8_t> syn = sink.lastPayload;
+	ASSERT_TRUE(syn.size() >= kUtpWireHeaderBytes);
+	const auto pendingSynSeqNr = static_cast<uint16_t>((syn[16] << 8) | syn[17]);
+
+	// A frame from a port both candidates cover, carrying the CONNECTED stream's own numbers, so the
+	// move decision would say Move - but it cannot acknowledge the pending SYN.
+	constexpr uint8_t kState = 2; // ST_STATE (utp_internal.cpp:169)
+	const uint16_t sharedPort = kPeerPort + 300;
+	const uint16_t ackNr =
+		peerAckNr == pendingSynSeqNr ? static_cast<uint16_t>(peerAckNr - 1) : peerAckNr;
+	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, sharedPort));
+	const std::vector<uint8_t> frame = UtpFrame(kState, connectionId, peerSeqNr, ackNr);
+	const unsigned sentBefore = sink.datagrams;
+	loop.server->ProcessDatagram(frame.data(), frame.size(), kPeerIp, sharedPort, loop.nowMs);
+
+	// The handshake refused it, so it never reached the stream: nothing moved, nothing was sent, and
+	// the translation the stream already holds is still in place.
+	ASSERT_EQUALS((int)sentBefore, (int)sink.datagrams);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, sharedPort));
+	ASSERT_EQUALS((int)heldPort, (int)connected->GetPeerPort());
+
+	// Proof the translation survived: a genuine frame from the held port still reaches the stream
+	// instead of drawing an RST.
+	const uint8_t second = 0x1B;
+	utp_iovec followUp{ const_cast<uint8_t *>(&second), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &followUp, 1));
+	Pump(loop);
+	std::array<uint8_t, 4> received{};
+	uint32_t receivedBytes = 0;
+	for (int round = 0; round < 64 && receivedBytes == 0; ++round) {
+		Pump(loop);
+		receivedBytes = connected->Read(received.data(), static_cast<uint32_t>(received.size()));
+	}
+	ASSERT_TRUE(receivedBytes != 0);
+	Teardown(loop);
+}
+
 TEST(UtpLibraryAdapter, AnAcceptedStreamIsNoHandshakeCandidateButFollowsItsPeerPort)
 {
 	SLoopback loop;
