@@ -68,6 +68,8 @@ jobs:
         with:
           msystem: ${{ matrix.msystem }}
           path-type: inherit
+          # ARM runner images can lack paccache; cache cleanup must not block tests.
+          cache: false
           update: true
           install: >-
             make

@@ -62,7 +62,7 @@ all six as repo secrets.
 
 `packaging/macos/versions.env` carries the build-time settings:
 - `MACOS_DEPLOYMENT_TARGET` — bump up only if a dep requires it
-- `MACOS_ARCHITECTURES` — keep `x86_64;arm64` for Universal2
+- `MACOS_ARCHITECTURES` — select one slice (`x86_64` or `arm64`); Packaging builds both and merges Universal2
 
 Other version pins (wxWidgets, cryptopp, libupnp, libgd) come from
 Homebrew's currently-installed versions; we deliberately don't pin them
