@@ -63,6 +63,8 @@ if(Python3_Interpreter_FOUND)
     target_compile_features(media-probe-io-test PRIVATE cxx_std_17)
     target_link_libraries(media-probe-io-test PRIVATE ${media_av_target})
     add_test(NAME MediaProbeIOLimits COMMAND media-probe-io-test)
+    add_test(NAME MediaProbeBuildRecipe COMMAND ${Python3_EXECUTABLE}
+      ${CMAKE_CURRENT_SOURCE_DIR}/../../packaging/media/test_build_recipe.py)
     add_test(NAME MediaProbeHostileFiles COMMAND ${Python3_EXECUTABLE}
       ${CMAKE_CURRENT_SOURCE_DIR}/test_hostile.py $<TARGET_FILE:amule-media-probe>)
     set(DURATION_ARGS)

@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 DEMUXERS = ('aac,ac3,aiff,amr,ape,asf,avi,dts,eac3,flac,flv,gsm,h264,hevc,'
@@ -55,20 +56,26 @@ def main():
     shutil.copy2(archive, source_dest / archive.name)
     if args.source_only:
         return
-    source = work / 'ffmpeg'
+    # A pin update must never reuse the previous source/build tree. Include the
+    # digest as well as version so correcting an archive under the same tag works.
+    identity = pin['FFMPEG_VERSION'] + '-' + pin['FFMPEG_SHA256'][:16]
+    source = work / ('ffmpeg-' + identity)
     if not source.exists():
-        source.mkdir()
-        with tarfile.open(archive) as tar:
-            # Older Python versions have no tar extraction filters.
-            for entry in tar.getmembers():
-                parts = Path(entry.name).parts[1:]
-                if not parts:
-                    continue
-                if '..' in parts or entry.issym() or entry.islnk():
-                    raise SystemExit('Unexpected archive member: ' + entry.name)
-                entry.name = Path(*parts).as_posix()
-                tar.extract(entry, source)
-    build = work / 'ffmpeg-build'
+        with tempfile.TemporaryDirectory(prefix='ffmpeg-extract-', dir=work) as temporary:
+            extracted = Path(temporary) / 'source'
+            extracted.mkdir()
+            with tarfile.open(archive) as tar:
+                # Older Python versions have no tar extraction filters.
+                for entry in tar.getmembers():
+                    parts = Path(entry.name).parts[1:]
+                    if not parts:
+                        continue
+                    if '..' in parts or entry.issym() or entry.islnk():
+                        raise SystemExit('Unexpected archive member: ' + entry.name)
+                    entry.name = Path(*parts).as_posix()
+                    tar.extract(entry, extracted)
+            extracted.replace(source)
+    build = work / ('ffmpeg-build-' + identity)
     build.mkdir(exist_ok=True)
     configure = ['--prefix=' + prefix.as_posix(), '--libdir=' + (prefix / 'lib').as_posix(),
                  '--disable-autodetect', '--disable-everything', '--disable-programs',
