@@ -311,12 +311,9 @@ public:
 					DecideUtpMove(*header, MoveFactsFor(candidate->socket)) ==
 						EUtpMoveVerdict::Move &&
 					m_repointLimiter.TryAdmit(StreamKey(candidate->socket), nowMs)) {
-					// Installed before the hand-over, exactly as the handshake path does.
-					// Reversal of the previous choice: libutp sends frames of its own
-					// while it handles this one, and without the new pair they leave for
-					// the port the peer has already abandoned (measured live: one
-					// 1410-byte frame lost). A move libutp still refuses gets the
-					// previous pair back below.
+					// Installed before the hand-over, as the handshake path does: libutp
+					// can send while it handles this frame, and those frames must reach
+					// the new port. A move libutp refuses gets the previous pair back.
 					repointedSocket = candidate->socket;
 					repointedFrom = candidate->libutpEndpoint;
 					repointedPrevious = PreviousRemapOf(candidate->socket);
@@ -580,10 +577,6 @@ private:
 		return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(socket));
 	}
 
-	//! Remembers what we last put on the wire to one destination. UTP_SENDTO carries no socket
-	//! (utp_call_sendto(ctx, NULL, ...), utp_internal.cpp:709), so the destination is the only key
-	//! available; a move requires exactly one connected stream on that address, which makes it
-	//! unambiguous. Always the last write, since that is the sequence number the peer must ack.
 	//! A receiver whose data has stopped has nothing to acknowledge, so after a port change the peer
 	//! hears nothing and gives up long before the next keepalive. Growing the receive buffer raises the
 	//! window, which makes utp_read_drained() schedule an ack (utp_internal.cpp:3232-3239); flushing it
@@ -644,6 +637,10 @@ private:
 			std::chrono::duration_cast<std::chrono::milliseconds>(sinceEpoch).count());
 	}
 
+	//! Remembers what we last put on the wire to one destination. UTP_SENDTO carries no socket
+	//! (utp_call_sendto(ctx, NULL, ...), utp_internal.cpp:709), so the destination is the only key
+	//! available; a move requires exactly one connected stream on that address, which makes it
+	//! unambiguous.
 	void NoteSentHeader(uint32_t ip, uint16_t port, const uint8_t *payload, size_t length)
 	{
 		const std::optional<SUtpMoveHeader> header = ReadUtpWireHeader(payload, length);
