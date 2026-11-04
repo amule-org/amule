@@ -5375,7 +5375,7 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
+msgid "When enabled, aMule uses its bundled media helper to extract metadata from shared media files."
 msgstr ""
 
 #: src/muuli_wdr.cpp

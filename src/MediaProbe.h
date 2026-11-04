@@ -95,8 +95,8 @@ wxString DetectedPath(bool redetect = false);
 enum class ProbeOutcome
 {
 	Extracted,        //!< usable metadata came back
-	NoUsableMetadata, //!< MediaInfo found no usable metadata
-	UnreadableFile,   //!< MediaInfo explicitly rejected the input
+	NoUsableMetadata, //!< helper found no usable metadata
+	UnreadableFile,   //!< helper explicitly rejected the input
 	OutputTooLarge,   //!< legacy outcome retained for compatibility
 	Unavailable,      //!< helper unavailable, bad protocol or unexpected exit
 	Cancelled,        //!< timed out, or shutdown cancelled the drain

@@ -1882,7 +1882,7 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
     wxCheckBox *item23 = new wxCheckBox( item22, IDC_MEDIAMETA_ENABLED,
         _("Extract length / bitrate / codec from shared audio and video files"),
         wxDefaultPosition, wxDefaultSize, 0 );
-    item23->SetToolTip( _("When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files.") );
+    item23->SetToolTip( _("When enabled, aMule uses its bundled media helper to extract metadata from shared media files.") );
     item22sz->Add( item23, wxSizerFlags().CenterVertical().Border(wxRIGHT, 0) );
 
     item0->Add( item22sz, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT|wxRIGHT|wxBOTTOM, 0) );
