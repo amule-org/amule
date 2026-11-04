@@ -985,4 +985,17 @@ TEST(LibSocketTransport, ConnectIPv6ReportsAClosedPort)
 }
 #endif
 
+#ifdef __APPLE__
+TEST(LibSocketTransport, RawSocketBindUsesTheOptionOfItsFamily)
+{
+	for (const int family : { AF_INET, AF_INET6 }) {
+		const int fd = ::socket(family, SOCK_STREAM, 0);
+		ASSERT_TRUE(fd >= 0);
+		const bool bound = BindRawSocketToInterface(static_cast<uintptr_t>(fd), wxString("lo0"));
+		::close(fd);
+		ASSERT_TRUE(bound);
+	}
+}
+#endif
+
 // File_checked_for_headers

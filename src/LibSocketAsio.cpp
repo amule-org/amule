@@ -384,8 +384,15 @@ bool BindRawSocketToInterface(uintptr_t fd, const wxString &iface)
 	if (iface.IsEmpty()) {
 		return true;
 	}
+	const NativeSocketHandle native = static_cast<NativeSocketHandle>(fd);
+	// libcurl opens one socket per resolved address, and macOS rejects the IPv4 option on a v6 one.
+	sockaddr_storage local{};
+	socklen_t localLen = sizeof(local);
+	if (::getsockname(native, reinterpret_cast<sockaddr *>(&local), &localLen) != 0) {
+		return false;
+	}
 	bool notFound = false;
-	return ApplyBindToInterface(static_cast<NativeSocketHandle>(fd), iface, false, &notFound) == 0;
+	return ApplyBindToInterface(native, iface, local.ss_family == AF_INET6, &notFound) == 0;
 }
 
 // Validate the configured interface once, on a throwaway socket, so the core can report the
