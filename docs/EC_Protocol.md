@@ -677,7 +677,8 @@ itself only once no route holds messages.
 | `EC_TAG_CONN_MAX_FILE_SOURCES`     | `0x1309` | `uint16` | Max sources per file |
 | `EC_TAG_CONN_MAX_CONN`             | `0x130A` | `uint16` | Max connections |
 | `EC_TAG_CONN_ADDRESS_FAMILIES`     | `0x131A` | `uint32` | `AddressFamilies` setting: `0` = IPv4 only, `1` = IPv4 and IPv6 |
-| `EC_TAG_CONN_ADVERTISE_IPV6`       | `0x131B` | `bool`   | `AdvertiseIPv6` setting |
+| `EC_TAG_CONN_ADVERTISE_IPV6`       | `0x131B` | `bool`   | Legacy view of `AdvertiseIPv6Mode`: `true` only for `1` (always) |
+| `EC_TAG_CONN_ADVERTISE_IPV6_MODE`  | `0x131C` | `uint32` | `AdvertiseIPv6Mode`: `0` when verified, `1` always, `2` never. Authoritative when present; the boolean above is the fallback an older peer understands |
 
 > **Note**: `EC_TAG_CONN_MAX_DL`, `EC_TAG_CONN_MAX_UL`, and
 > `EC_TAG_CONN_SLOT_ALLOCATION` were widened from `uint16` to `uint32`

@@ -112,14 +112,31 @@ inline EIPv6AdvertisingMode IPv6AdvertisingModeFromECBool(EIPv6AdvertisingMode c
 	return current == EIPv6AdvertisingMode::Always ? EIPv6AdvertisingMode::Verified : current;
 }
 
+//! The mode an EC preferences packet carries.
+//!
+//! The mode tag wins when its value is one of the three; an invalid value leaves the current mode
+//! alone rather than letting a malformed packet move it. The legacy boolean is the fallback for a
+//! client or daemon that predates the tag, and an absent pair changes nothing.
+inline EIPv6AdvertisingMode ResolveAdvertiseIPv6ModeFromEC(
+	EIPv6AdvertisingMode current, bool hasMode, long modeValue, bool hasBoolean, bool booleanValue)
+{
+	if (hasMode) {
+		return IsValidIPv6AdvertisingMode(static_cast<int>(modeValue))
+			       ? static_cast<EIPv6AdvertisingMode>(modeValue)
+			       : current;
+	}
+	return hasBoolean ? IPv6AdvertisingModeFromECBool(current, booleanValue) : current;
+}
+
 struct SAdvertisedIPv6Facts
 {
 	std::optional<CNetworkAddress> choice; // ChooseAdvertisedIPv6() at the last interface refresh
 	bool contradicted = false;             // Peers see us arrive from a /64 we do not hold
 	EIPv6AdvertisingMode mode = EIPv6AdvertisingMode::Verified; // User's IPv6 advertising preference
-	bool serverVerified = false;       // Server's dial-back probe reached us and reported us reachable
-	bool serverProbeFailed = false;    // Server probed and could not reach us
-	bool provedByInboundHello = false; // Inbound IPv6 hello arrived from a prefix we hold
+	bool serverVerified = false;    // Server's dial-back probe reached us and reported us reachable
+	bool serverProbeFailed = false; // Server probed and could not reach us
+	// A completed hello reached the chosen address from outside our /48.
+	bool provedByInboundHello = false;
 	bool ipv6Built = false;
 	bool familyPermitted = false;
 	bool proxyEnabled = false;

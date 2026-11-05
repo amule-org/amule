@@ -27,7 +27,9 @@
 #define PREFERENCES_H
 
 #include "MD4Hash.h" // Needed for CMD4Hash
+#ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h"
+#endif
 
 #include <wx/arrstr.h> // Needed for wxArrayString
 

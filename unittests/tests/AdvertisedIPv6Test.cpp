@@ -183,6 +183,20 @@ TEST(AdvertisedIPv6, StoredModesOutsideTheRangeFallBackToTheDefault)
 	ASSERT_TRUE(NormalizeIPv6AdvertisingMode(-1) == EIPv6AdvertisingMode::Verified);
 }
 
+TEST(AdvertisedIPv6, TheECModeTagWinsAndAnInvalidValueLeavesTheModeAlone)
+{
+	ASSERT_TRUE(ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode::Verified, true, 2, true, false) ==
+		    EIPv6AdvertisingMode::Never);
+	ASSERT_TRUE(ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode::Never, true, 7, false, false) ==
+		    EIPv6AdvertisingMode::Never);
+	ASSERT_TRUE(ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode::Never, false, 0, true, true) ==
+		    EIPv6AdvertisingMode::Always);
+	ASSERT_TRUE(ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode::Never, false, 0, true, false) ==
+		    EIPv6AdvertisingMode::Never);
+	ASSERT_TRUE(ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode::Always, false, 0, false, false) ==
+		    EIPv6AdvertisingMode::Always);
+}
+
 TEST(AdvertisedIPv6, NothingIsAdvertisedWithoutAChoice)
 {
 	SAdvertisedIPv6Facts facts = AdvertisableFacts();
@@ -197,14 +211,14 @@ TEST(AdvertisedIPv6, NothingIsAdvertisedWhenPeersContradictThePrefix)
 	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
 }
 
-TEST(AdvertisedIPv6, AutoDoesNotAdvertiseWithoutEvidence)
+TEST(AdvertisedIPv6, VerifiedDoesNotAdvertiseWithoutEvidence)
 {
 	SAdvertisedIPv6Facts facts = AdvertisableFacts();
 	facts.mode = EIPv6AdvertisingMode::Verified;
 	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
 }
 
-TEST(AdvertisedIPv6, AutoAdvertisesWhenTheServerVerifiesReachability)
+TEST(AdvertisedIPv6, VerifiedAdvertisesWhenTheServerVerifiesReachability)
 {
 	SAdvertisedIPv6Facts facts = AdvertisableFacts();
 	facts.mode = EIPv6AdvertisingMode::Verified;
@@ -212,7 +226,7 @@ TEST(AdvertisedIPv6, AutoAdvertisesWhenTheServerVerifiesReachability)
 	ASSERT_TRUE(DecideAdvertisedIPv6(facts).has_value());
 }
 
-TEST(AdvertisedIPv6, AutoAdvertisesAfterAnInboundHello)
+TEST(AdvertisedIPv6, VerifiedAdvertisesAfterAnInboundHello)
 {
 	SAdvertisedIPv6Facts facts = AdvertisableFacts();
 	facts.mode = EIPv6AdvertisingMode::Verified;
