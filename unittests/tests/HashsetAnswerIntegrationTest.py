@@ -5,7 +5,8 @@
 
 A file under one part has no part hashes, and the answer says so with a count of 0: a peer that
 gets no answer waits for it until the connection times out. A file of exactly one part has two
-part hashes, the second being the MD4 of nothing.
+part hashes, the second being the MD4 of nothing. A download that should have part hashes but
+has none yet gets no answer, as a count of 0 would be a bad hashset to the peer.
 """
 import hashlib
 from pathlib import Path
@@ -15,19 +16,16 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import exact, free_ports, retry_port_collisions, running_daemon
+from AllSearchIntegrationTest import C, exact, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
+from ED2KLinkIntegrationTest import add_link
 from ShareWatcherMoveIntegrationTest import shared
+from UploadSlotScopeIntegrationTest import OP_HELLOANSWER, send
 
 PARTSIZE = 9728000
 EMPTY_MD4 = bytes.fromhex('31D6CFE0D16AE931B73C59D7E0C089C0')
 OP_HASHSETREQUEST = 0x51
 OP_HASHSETANSWER = 0x52
-OP_HELLOANSWER = 0x4c
-
-
-def send(sock, opcode, data=b''):
-    sock.sendall(struct.pack('<BIB', 0xe3, len(data) + 1, opcode) + data)
 
 
 def wait_for(sock, opcode, seconds):
@@ -81,7 +79,20 @@ def run(binary):
                 assert answer[:18] == files['onepart.bin'] + b'\2\0', answer.hex()
                 assert len(answer) == 18 + 2 * 16, answer.hex()
                 assert answer[34:] == EMPTY_MD4, answer.hex()
-    print('a file under one part answered with no part hashes; one of exactly one part with two')
+
+                # A queued download with no part hashes yet gets no answer, so the next answer is
+                # for the one under one part, which has none to wait for.
+                queued, queued_small = bytes([1] * 16), bytes([2] * 16)
+                for name, size, file_hash in (('queued.bin', 2 * PARTSIZE, queued),
+                                              ('queued-small.bin', 1 << 20, queued_small)):
+                    link = f'ed2k://|file|{name}|{size}|{file_hash.hex()}|/'
+                    assert add_link(ec, link) == C['EC_OP_NOOP'], name
+                send(sock, OP_HASHSETREQUEST, queued)
+                send(sock, OP_HASHSETREQUEST, queued_small)
+                answer = wait_for(sock, OP_HASHSETANSWER, 10)
+                assert answer == queued_small + b'\0\0', answer.hex()
+    print('a file or download under one part answered with no part hashes; one of exactly one '
+          'part with two; a download still missing its hashes got no answer')
 
 
 if __name__ == '__main__':
