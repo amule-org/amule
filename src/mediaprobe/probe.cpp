@@ -216,6 +216,8 @@ void dispatch(Reader &r, Result &res)
 		return parseAsf(r, res);
 	if (r.match(0, "FLV\x01", 4))
 		return parseFlv(r, res);
+	if (r.match(0, ".RMF", 4))
+		return parseRealMedia(r, res);
 	if (r.match(0, "#!AMR", 5))
 		return parseAmr(r, res);
 	if (r.match(0, "TTA1", 4))

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// Less common containers: ASF (WMA, WMV), FLV, MPEG program streams (MPG, VOB) and
-// MPEG transport streams (TS, M2TS).
+// Less common containers: ASF (WMA, WMV), FLV, MPEG program streams (MPG, VOB),
+// MPEG transport streams (TS, M2TS) and RealMedia (RM, RMVB).
 #include "probe.h"
 
 #include <algorithm>
@@ -516,6 +516,97 @@ void parseMpegPs(Reader &r, Result &res)
 	scan(std::max<int64_t>(0, r.size() - 1024 * 1024), r.size(), false);
 	if (first >= 0 && last >= 0)
 		res.seconds = span(static_cast<uint64_t>(first), static_cast<uint64_t>(last));
+}
+
+namespace
+{
+std::string realCodec(const std::string &tag)
+{
+	static const char *const map[][2] = {
+		{ "RV10", "rv10" },
+		{ "RV20", "rv20" },
+		{ "RV30", "rv30" },
+		{ "RV40", "rv40" },
+		{ "RV60", "rv60" },
+		{ "cook", "cook" },
+		{ "28_8", "ra_288" },
+		{ "atrc", "atrac3" },
+		{ "sipr", "sipr" },
+		{ "dnet", "ac3" },
+		{ "raac", "aac" },
+		{ "racp", "aac" },
+		{ "LSD:", "ralf" },
+		{ "lpcJ", "ra_144" },
+	};
+	for (const auto &m : map)
+		if (tag == m[0])
+			return m[1];
+	return {};
+}
+} // namespace
+
+// RealMedia: PROP has the duration, MDPR the streams and CONT the tags. The walk stops at
+// the first DATA chunk, so packets are never read.
+void parseRealMedia(Reader &r, Result &res)
+{
+	std::string video, audio;
+	int64_t p = 0;
+	for (unsigned guard = 0; r.has(p, 10) && guard < 4096; ++guard) {
+		char id[4];
+		r.read(p, id, 4);
+		const uint32_t size = r.be32(p + 4);
+		if (size < 10 || !r.has(p, size))
+			throw Malformed{};
+		if (!std::memcmp(id, "DATA", 4) || !std::memcmp(id, "INDX", 4))
+			break;
+		const int64_t d = p + 10, end = p + size; // Data after id, size and object version.
+		// Length-prefixed strings; each must stay inside its chunk.
+		auto prefixed = [&](int64_t &q, unsigned prefix) {
+			const unsigned n = prefix == 1 ? r.u8(q) : r.be16(q);
+			q += prefix;
+			if (static_cast<int64_t>(n) > end - q)
+				throw Malformed{};
+			std::string s = r.bytes(q, std::min<size_t>(n, kMaxTagRead));
+			q += n;
+			return s;
+		};
+		if (!std::memcmp(id, "PROP", 4) && size >= 50) {
+			res.seconds = r.be32(d + 20) / 1000.0;
+		} else if (!std::memcmp(id, "MDPR", 4) && size >= 41) {
+			int64_t q =
+				d + 30; // Stream number, bit rates, packet sizes, start, preroll, duration.
+			prefixed(q, 1); // Stream name.
+			const std::string mime = prefixed(q, 1);
+			if (q + 4 > end)
+				throw Malformed{};
+			const uint32_t length = r.be32(q);
+			q += 4;
+			if (length > end - q)
+				throw Malformed{};
+			if (mime == "video/x-pn-realvideo" && length >= 12 && r.match(q + 4, "VIDO", 4)) {
+				if (video.empty())
+					video = realCodec(r.bytes(q + 8, 4));
+			} else if (mime == "audio/x-pn-realaudio" && length >= 6 &&
+				   r.match(q, ".ra\xFD", 4) && audio.empty()) {
+				const unsigned version = r.be16(q + 4);
+				if (version == 3) {
+					audio = "ra_144";
+				} else if (version == 4 && length >= 57) {
+					int64_t o = q + 56;
+					prefixed(o, 1); // Interleaver.
+					audio = realCodec(prefixed(o, 1));
+				} else if (version == 5 && length >= 70) {
+					audio = realCodec(r.bytes(q + 66, 4));
+				}
+			}
+		} else if (!std::memcmp(id, "CONT", 4)) {
+			int64_t q = d;
+			setTag(res.title, prefixed(q, 2));
+			setTag(res.artist, prefixed(q, 2));
+		}
+		p = end;
+	}
+	res.codec = !video.empty() ? video : audio;
 }
 
 } // namespace probe

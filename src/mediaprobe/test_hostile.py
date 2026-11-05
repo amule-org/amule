@@ -15,7 +15,7 @@ MAGICS = (b'RIFF\xff\xff\xff\x7fWAVE', b'RIFF\xff\xff\xff\x7fAVI ', b'FORM\xff\x
           b'\x1aE\xdf\xa3', b'\x00\x00\x00\x18ftypisom', b'OggS\x00\x02', b'fLaC', b'ID3\x04\x00\x00',
           b'0&\xb2u\x8ef\xcf\x11\xa6\xd9\x00\xaa\x00b\xcel', b'FLV\x01\x05\x00\x00\x00\x09',
           b'#!AMR\n', b'TTA1', b'wvpk', b'\x00\x00\x01\xba', b'\x47\x40\x00\x10', b'\xff\xfb\x90\x64',
-          b'\xff\xf1\x50\x80', b'\x00\x00\x00\x01\x67')
+          b'\xff\xf1\x50\x80', b'\x00\x00\x00\x01\x67', b'.RMF\x00\x00\x00\x12\x00\x00')
 
 
 class HostileTests(unittest.TestCase):
@@ -97,15 +97,15 @@ class HostileTests(unittest.TestCase):
 
 
 class RealWorldQuirkTests(unittest.TestCase):
-    """Quirks found in a real library: each must still produce the metadata ffprobe reports."""
+    """Real-world files: each must produce the metadata ffprobe reports."""
     setUp, tearDown, verdict = HostileTests.setUp, HostileTests.tearDown, HostileTests.verdict
 
-    def probe(self, data):
+    def probe(self, data, fields=('length_seconds', 'codec')):
         self.assertEqual(self.verdict(data), 0)
         with self.path.open('rb') as f:
             result = json.loads(subprocess.run([HELPER, '--json'], stdin=f, capture_output=True,
                                                timeout=10).stdout)
-        return result['length_seconds'], result['codec']
+        return tuple(result[k] for k in fields)
 
     def test_matroska_truncated_segment_and_nul_padded_codec_id(self):
         def element(eid, payload):
@@ -146,6 +146,27 @@ class RealWorldQuirkTests(unittest.TestCase):
                   struct.pack('<II', 64, 48))
         data = page(2, 0, header) + page(0, 0, b'\x03') + page(4, 50, b'\x08')
         self.assertEqual(self.probe(data), (2, 'mpeg4'))
+
+    def test_realmedia_headers(self):
+        def chunk(cid, payload):
+            return cid + struct.pack('>IH', 10 + len(payload), 0) + payload
+        def mdpr(mime, specific):
+            return chunk(b'MDPR', struct.pack('>H7I', 0, 0, 0, 0, 0, 0, 0, 0) + b'\x00' +
+                         bytes((len(mime),)) + mime + struct.pack('>I', len(specific)) + specific)
+        def str16(s):
+            return struct.pack('>H', len(s)) + s
+        header = chunk(b'.RMF', struct.pack('>II', 0, 5))
+        prop = chunk(b'PROP', struct.pack('>9I2H', 0, 0, 0, 0, 0, 5000, 0, 0, 0, 2, 0))
+        cook = b'.ra\xfd\x00\x05' + b'\0' * 60 + b'cook'  # RealAudio v5: FourCC at 66.
+        audio = mdpr(b'audio/x-pn-realaudio', cook)
+        video = mdpr(b'video/x-pn-realvideo', struct.pack('>I', 34) + b'VIDORV40' + b'\0' * 22)
+        cont = chunk(b'CONT', str16(b'Real Title') + str16(b'Real Author') + str16(b'') + str16(b''))
+        data = header + prop + audio + video + cont + chunk(b'DATA', b'\0' * 8)
+        # Video wins over the earlier audio stream; CONT author is the artist.
+        self.assertEqual(self.probe(data, ('length_seconds', 'codec', 'title', 'artist')),
+                         (5, 'rv40', 'Real Title', 'Real Author'))
+        self.assertEqual(self.probe(header + prop + audio + chunk(b'DATA', b'')), (5, 'cook'))
+
 
 
 if __name__ == '__main__':

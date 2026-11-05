@@ -105,6 +105,7 @@ void parseAsf(Reader &r, Result &res);
 void parseFlv(Reader &r, Result &res);
 void parseMpegTs(Reader &r, Result &res);
 void parseMpegPs(Reader &r, Result &res);
+void parseRealMedia(Reader &r, Result &res);
 void parseFlac(Reader &r, int64_t start, Result &res);
 void parseMpegAudio(Reader &r, int64_t start, Result &res);
 void parseAdts(Reader &r, int64_t start, Result &res);

@@ -49,8 +49,8 @@ indexes only, never audio or video data:
 | `isobmff.cpp` | MP4, M4A, M4V, MOV, 3GP (iTunes, QuickTime and 3GPP tags) |
 | `matroska.cpp` | MKV, MKA, WebM (Info, Tracks and global Tags, through SeekHead) |
 | `audio.cpp` | MP1/MP2/MP3 (Xing, VBRI or a bounded frame count), ADTS AAC, FLAC, TTA, WavPack, AMR |
-| `ogg.cpp` | Vorbis, Opus, FLAC, Speex and Theora in Ogg |
-| `legacy.cpp` | ASF (WMA, WMV), FLV, MPEG program and transport streams |
+| `ogg.cpp` | Vorbis, Opus, FLAC, Speex, Theora and OGM streams in Ogg |
+| `legacy.cpp` | ASF (WMA, WMV), FLV, MPEG program and transport streams, RealMedia (RM, RMVB) |
 | `tags.cpp` | ID3v2, ID3v1, APEv2 and Vorbis comments |
 | `codecs.cpp` | FourCC, WAVE format tags and Matroska CodecIDs to FFmpeg codec names |
 
@@ -136,5 +136,5 @@ The helper replaces the six fields aMule used from ffprobe: duration, bitrate,
 codec, artist, album and title. It does not reproduce ffprobe's complete stream,
 chapter, attachment or technical-field output. Codec names are translated
 explicitly; an unknown codec identifier stays empty instead of publishing a
-misleading name. Formats outside the parser table, such as RealMedia, are
-reported as unreadable and get failure marker 2.
+misleading name. Formats outside the parser table are reported as unreadable
+and get failure marker 2.
