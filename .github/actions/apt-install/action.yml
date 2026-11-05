@@ -18,7 +18,7 @@ inputs:
     description: A Depends field, versions allowed, passed to apt-get satisfy.
     default: ''
   save:
-    description: "'true' saves the .deb files when apt downloaded any. Let one job per workflow run save."
+    description: "'true' saves the .deb files when apt downloaded any. Only the first job to save in a workflow run succeeds."
     default: 'false'
 
 runs:
