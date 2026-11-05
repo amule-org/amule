@@ -131,13 +131,13 @@ void comments(const Stream &s, Result &res)
 
 double seconds(const Stream &s, uint64_t granule)
 {
-	if (s.unit)
-		return double(granule) * s.unit;
+	if (s.unit > 0)
+		return static_cast<double>(granule) * s.unit;
 	if (s.codec == "theora") {
-		if (!s.fps || s.shift >= 32)
+		if (s.fps <= 0 || s.shift >= 32)
 			return 0;
 		const uint64_t frames = (granule >> s.shift) + (granule & ((1ULL << s.shift) - 1));
-		return frames / s.fps;
+		return static_cast<double>(frames) / s.fps;
 	}
 	if (!s.rate)
 		return 0;

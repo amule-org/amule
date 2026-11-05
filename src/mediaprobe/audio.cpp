@@ -244,7 +244,7 @@ void parseAmr(Reader &r, Result &res)
 		p += 1 + sizes[type];
 		++frames;
 	}
-	res.seconds = frames * 0.02;
+	res.seconds = static_cast<double>(frames) * 0.02;
 }
 
 } // namespace probe

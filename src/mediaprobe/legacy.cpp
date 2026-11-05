@@ -54,7 +54,8 @@ void parseAsf(Reader &r, Result &res)
 			throw Malformed{};
 		const int64_t data = p + 24, objectEnd = p + static_cast<int64_t>(size);
 		if (!std::memcmp(guid, kFileProperties, 16) && size >= 104) {
-			const double play = r.le64(data + 40) / 1e7, preroll = r.le64(data + 56) / 1e3;
+			const double play = static_cast<double>(r.le64(data + 40)) / 1e7,
+				     preroll = static_cast<double>(r.le64(data + 56)) / 1e3;
 			if (play > preroll)
 				res.seconds = play - preroll;
 		} else if (!std::memcmp(guid, kStreamProperties, 16) && size >= 78) {
@@ -262,7 +263,7 @@ void parseFlv(Reader &r, Result &res)
 				r.read(data + 1, fourcc, 4);
 				video = fourccCodec(fourcc);
 			} else {
-				video = flvVideo(b & 15);
+				video = flvVideo(static_cast<int>(b & 15));
 			}
 		} else if (type == 8 && size >= 1 && audio.empty()) {
 			audio = flvAudio(r.u8(data) >> 4);
