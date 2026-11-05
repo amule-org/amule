@@ -27,6 +27,7 @@
 
 #include "NatServerHolePunch.h"
 
+#ifdef ENABLE_NATT_SERVER_COORDINATION
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -45,5 +46,6 @@ std::vector<std::uint8_t> BuildKeepaliveProof(
 
 } // namespace NatServerHolePunch
 
+#endif // ENABLE_NATT_SERVER_COORDINATION
 #endif // NATSERVERKEEPALIVEPROOF_H
 // File_checked_for_headers

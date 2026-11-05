@@ -531,6 +531,7 @@ add_executable (NatServerKeepaliveProofTest
 target_include_directories (NatServerKeepaliveProofTest PRIVATE
 	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_compile_features (NatServerKeepaliveProofTest PRIVATE cxx_std_17)
+target_compile_definitions (NatServerKeepaliveProofTest PRIVATE ENABLE_NATT_SERVER_COORDINATION)
 target_link_libraries (NatServerKeepaliveProofTest muleunit mulecommon CRYPTOPP::CRYPTOPP)
 add_test (NAME NatServerKeepaliveProofTest COMMAND NatServerKeepaliveProofTest)
 

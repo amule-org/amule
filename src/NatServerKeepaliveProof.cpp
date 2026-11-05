@@ -23,6 +23,8 @@
 //
 
 #include "NatServerKeepaliveProof.h"
+
+#ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "CryptoPP_Inc.h"
 #include "WarningsPush_CryptoPP.h"
 #include CRYPTO_HEADER(hmac.h)
@@ -45,4 +47,5 @@ std::vector<std::uint8_t> BuildKeepaliveProof(
 }
 
 } // namespace NatServerHolePunch
+#endif // ENABLE_NATT_SERVER_COORDINATION
 // File_checked_for_headers
