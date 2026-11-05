@@ -39,7 +39,11 @@
 #endif
 
 // Application implementation
+#ifdef WXCAS_NO_MAIN
+IMPLEMENT_APP_NO_MAIN(WxCas)
+#else
 IMPLEMENT_APP(WxCas)
+#endif
 
 bool WxCas::OnInit()
 {
