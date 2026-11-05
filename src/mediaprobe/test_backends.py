@@ -72,7 +72,7 @@ class BackendTests(unittest.TestCase):
         self.assertLess(len(p.stdout), 64 * 1024)
         self.assertLessEqual(len(data['title'].encode('utf-8')), 4096)
 
-    def test_mediainfo_extracts_wav(self):
+    def test_extracts_wav(self):
         p = self.run_probe()
         self.assertEqual(p.returncode, 0, p.stderr)
         data = json.loads(p.stdout)

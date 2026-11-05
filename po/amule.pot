@@ -5387,7 +5387,7 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
+msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -6833,7 +6833,7 @@ msgid "no options available"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
+msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
 #: src/Preferences.cpp
