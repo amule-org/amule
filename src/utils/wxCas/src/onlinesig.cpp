@@ -264,6 +264,7 @@ void OnLineSig::ResetSessionMaxDL()
 	m_sessionMaxDL = 0.0;
 	m_sessionMaxDLDate = wxDateTime::Now();
 	m_isSessionMaxDlReseted = true;
+	m_isSessionMaxDlChanged = true;
 }
 
 bool OnLineSig::IsSessionMaxDlChanged() const
@@ -286,6 +287,7 @@ void OnLineSig::ResetAbsoluteMaxDL()
 	m_absoluteMaxDL = 0.0;
 	m_absoluteMaxDlDate = wxDateTime::Now();
 	m_isAbsoluteMaxDlReseted = true;
+	m_isAbsoluteMaxDlChanged = true;
 }
 
 bool OnLineSig::IsAbsoluteMaxDlChanged() const
@@ -296,7 +298,7 @@ bool OnLineSig::IsAbsoluteMaxDlChanged() const
 // Private use
 wxString OnLineSig::BytesConvertion(const wxString &bytes)
 {
-	double d_bytes;
+	double d_bytes = 0.0;
 	wxString c_bytes;
 
 	bytes.ToDouble(&d_bytes);

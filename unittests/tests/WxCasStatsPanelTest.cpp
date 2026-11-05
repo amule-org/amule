@@ -32,6 +32,7 @@
 #include <wx/mstream.h>
 #include <wx/statusbr.h>
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -57,12 +58,14 @@ public:
 	}
 	using WxCasFrame::OnRefreshTimer;
 	using WxCasFrame::UpdateAll;
-	using WxCasFrame::UpdateStatsPanel;
 };
 
 void CollectLabels(wxWindow &window, std::vector<wxString> &labels)
 {
 	for (auto *child : window.GetChildren()) {
+		if (!child) {
+			throw std::runtime_error("Invalid child in GUI fixture");
+		}
 		if (auto *text = dynamic_cast<wxStaticText *>(child)) {
 			labels.push_back(text->GetLabel());
 		}
@@ -82,25 +85,105 @@ wxString SharingLine(StatsFrame &frame)
 	throw std::runtime_error("Missing sharing label");
 }
 
+class SignatureFixture
+{
+private:
+	wxMemoryInputStream m_empty;
+	wxConfigBase *m_previous = nullptr;
+
+public:
+	wxFileConfig prefs;
+	const wxString directory;
+	const wxString path;
+
+	SignatureFixture()
+	: m_empty("", 0)
+	, prefs(m_empty)
+	, directory(wxFileName::CreateTempFileName("wxcas-stats-"))
+	, path(wxFileName(directory, WxCasCte::AMULESIG_FILENAME).GetFullPath())
+	{
+		wxRemoveFile(directory);
+		Check(wxMkdir(directory), "Cannot create fixture directory");
+		prefs.Write(WxCasCte::REFRESH_RATE_KEY, 3600L);
+		prefs.Write(WxCasCte::FTP_UPDATE_RATE_KEY, 1440L);
+		prefs.Write(WxCasCte::AMULESIG_PATH_KEY, directory);
+		m_previous = wxConfigBase::Set(&prefs);
+	}
+
+	~SignatureFixture()
+	{
+		wxConfigBase::Set(m_previous);
+		// Cleanup must not replace an assertion failure with a logging exit.
+		wxLogNull quiet;
+		for (const auto &file :
+			{ path, wxFileName(directory, WxCasCte::AMULESIG_IMG_NAME, "png").GetFullPath() }) {
+			if (wxFileExists(file) && !wxRemoveFile(file)) {
+				std::cerr << "Could not remove fixture file\n";
+			}
+		}
+		if (!wxRmdir(directory)) {
+			std::cerr << "Could not remove fixture directory\n";
+		}
+	}
+};
+
 void WriteSignature(const wxString &path,
 	int ed2k,
 	int kad,
 	int runtime,
 	int rate,
 	int queue,
-	const wxString &user = "user")
+	const wxString &user = "user",
+	bool changedTotals = false)
 {
 	wxFile file(path, wxFile::write);
 	Check(file.IsOpened(), "Cannot create signature fixture");
-	Check(file.Write(wxString::Format("%d\nserver\n127.0.0.1\n4661\nH\n%d\n%d\n1\n%"
-					  "d\n42\n%s\n1024\n2048\ntest\n512\n256\n%d\n",
-		      ed2k,
-		      kad,
-		      rate,
-		      queue,
-		      user,
-		      runtime)),
-		"Cannot write signature fixture");
+	const wxString contents = wxString::Format(
+		"%d\nserver\n127.0.0.1\n4661\nH\n%d\n%d\n%d\n%d\n%d\n%s\n%d\n%d\ntest\n%d\n%d\n%d\n",
+		ed2k,
+		kad,
+		rate,
+		changedTotals ? 7 : 1,
+		queue,
+		changedTotals ? 84 : 42,
+		user,
+		changedTotals ? 4096 : 1024,
+		changedTotals ? 8192 : 2048,
+		changedTotals ? 3072 : 512,
+		changedTotals ? 6144 : 256,
+		runtime);
+	Check(file.Write(contents), "Cannot write signature fixture");
+}
+
+void RequireLabel(StatsFrame &frame, const wxString &expected)
+{
+	std::vector<wxString> labels;
+	CollectLabels(frame, labels);
+	if (std::find(labels.begin(), labels.end(), expected) == labels.end()) {
+		throw std::runtime_error("Missing label: " + expected.ToStdString());
+	}
+}
+
+std::vector<wxButton *> ResetButtons(StatsFrame &frame)
+{
+	std::vector<wxButton *> result;
+	for (auto *child : frame.GetChildren()) {
+		for (auto *control : child->GetChildren()) {
+			if (auto *button = dynamic_cast<wxButton *>(control)) {
+				result.push_back(button);
+			}
+		}
+	}
+	Check(result.size() == 2, "Missing reset buttons");
+	return result;
+}
+
+void PressReset(StatsFrame &frame, int index)
+{
+	auto *button = ResetButtons(frame)[index];
+	wxCommandEvent event(wxEVT_BUTTON, button->GetId());
+	event.SetEventObject(button);
+	Check(button->GetEventHandler()->ProcessEvent(event), "Reset event was not handled");
 }
 
 void TestResetCallers(const wxString &path, wxFileConfig &prefs)
@@ -186,109 +269,207 @@ void TestResetCallers(const wxString &path, wxFileConfig &prefs)
 		wxImage exported(imagePath);
 		Check(exported.IsOk() && exported.GetSize() == image->GetSize(),
 			"Timer did not export a valid statistics image");
-		wxRemoveFile(imagePath);
 	}
 	prefs.Write(WxCasCte::ENABLE_AUTOSTATIMG_KEY, false);
 }
 
-void TestRefreshStates()
+wxString ExpectedConnection(int ed2k, int kad, const wxString &user)
 {
-	// Stream-backed preferences never read or write the user's wxCas settings.
-	wxMemoryInputStream empty("", 0);
-	wxFileConfig prefs(empty);
-	const wxString directory = wxFileName::CreateTempFileName("wxcas-stats-");
-	wxRemoveFile(directory);
-	Check(wxMkdir(directory), "Cannot create fixture directory");
-	const wxString path = wxFileName(directory, WxCasCte::AMULESIG_FILENAME).GetFullPath();
-	auto *previous = wxConfigBase::Set(&prefs);
-	try {
-		prefs.Write(WxCasCte::REFRESH_RATE_KEY, 3600L);
-		prefs.Write(WxCasCte::FTP_UPDATE_RATE_KEY, 1440L);
-		prefs.Write(WxCasCte::AMULESIG_PATH_KEY, directory);
-		TestResetCallers(path, prefs);
-		for (int runtime : { 0, 3600 }) {
-			for (int ed2k : { -1, 0, 1, 2, 3 }) {
-				for (int kad : { -1, 0, 1, 2, 3 }) {
-					std::cout << "runtime=" << runtime << " ed2k=" << ed2k
-						  << " kad=" << kad << '\n';
-					prefs.Write(WxCasCte::ABSOLUTE_MAX_DL_KEY, 0L);
-					WriteSignature(path, 1, 2, 3600, 1, 101);
-					// Constructor needs its default signature path before
-					// SetAmuleSigFile.
-					wxFileName fixture(path);
-					prefs.Write(WxCasCte::AMULESIG_PATH_KEY, fixture.GetPath());
-					StatsFrame frame;
-					frame.SetAmuleSigFile(fixture);
-					frame.UpdateStatsPanel();
-					const wxString oldSharing = SharingLine(frame);
-					WriteSignature(path, ed2k, kad, runtime, 123, 987);
-					frame.UpdateStatsPanel();
+	if (ed2k == 0 && kad == 0) {
+		return user + " is not connected !";
+	}
+	const wxString kadText = kad == 2 ? "ok" : kad == 1 ? "firewalled" : "off";
+	return user +
+	       (ed2k == 0 ? " is connected to  Kad: "
+			  : " is on server [127.0.0.1:4661] with HighID | Kad: ") +
+	       kadText;
+}
 
-					const bool known = ed2k == 2 ||
-							   ((ed2k == 0 || ed2k == 1) && kad >= 0 && kad <= 2);
-					const bool refresh = runtime != 0 && known;
-					const wxString expected =
-						runtime == 0            ? "Oh Oh, aMule is not running..."
-						: !known                ? "Oh Oh, aMule status is unknown..."
-						: ed2k == 2             ? "aMule is connecting..."
-						: ed2k == 0 && kad == 0 ? "aMule is running, but disconnected"
-									: "aMule is running";
-					Check(frame.GetStatusBar()->GetStatusText() == expected,
-						"Wrong status message");
-					Check(SharingLine(frame) == (refresh ? "Sharing: 42 file(s), Clients "
-									       "on queue: 987"
-									     : oldSharing),
-						"Wrong running/stopped/unknown refresh behavior");
-					Check(prefs.Read(WxCasCte::ABSOLUTE_MAX_DL_KEY, 0L) ==
-							(refresh ? 123L * 1024 : 1024L),
-						"Wrong persisted download record");
-					std::vector<wxString> labels;
-					CollectLabels(frame, labels);
-					int records = 0;
-					for (const auto &label : labels) {
-						if (label.StartsWith(refresh ? "123.00 KiB/s on "
-									     : "1.00 KiB/s on ")) {
-							++records;
-						}
-					}
-					Check(records == 2,
-						"Both session and absolute record labels must be preserved");
-					Check(!frame.UpdateStatsPanel(),
-						"Unchanged refresh must not request a resize");
-					Check(!frame.IsFrozen(), "Refresh left frame frozen");
-					WriteSignature(path, 1, 2, 3600, 1, 202);
-					wxTimer timerSource(&frame);
-					wxTimerEvent timer(timerSource);
-					frame.OnRefreshTimer(timer);
-					Check(frame.GetStatusBar()->GetStatusText() == "aMule is running" &&
-							SharingLine(frame) ==
-								"Sharing: 42 file(s), Clients on queue: 202",
-						"Timer failed to recover from the previous connection state");
-				}
+void TestRefreshStates(SignatureFixture &fixture)
+{
+	auto &prefs = fixture.prefs;
+	const auto &path = fixture.path;
+	for (int runtime : { 0, 3600 }) {
+		for (int ed2k : { -1, 0, 1, 2, 3 }) {
+			for (int kad : { -1, 0, 1, 2, 3 }) {
+				std::cout << "runtime=" << runtime << " ed2k=" << ed2k << " kad=" << kad
+					  << '\n';
+				prefs.Write(WxCasCte::ABSOLUTE_MAX_DL_KEY, 0L);
+				WriteSignature(path, 1, 2, 3600, 1, 101);
+				StatsFrame frame;
+				frame.UpdateAll();
+				WriteSignature(path, ed2k, kad, runtime, 123, 987, "updated-user", true);
+				frame.UpdateAll();
+
+				const bool known =
+					ed2k == 2 || ((ed2k == 0 || ed2k == 1) && kad >= 0 && kad <= 2);
+				const bool refresh = runtime != 0 && known;
+				const wxString expected = runtime == 0 ? "Oh Oh, aMule is not running..."
+							  : !known     ? "Oh Oh, aMule status is unknown..."
+							  : ed2k == 2  ? "aMule is connecting..."
+							  : ed2k == 0 && kad == 0
+								  ? "aMule is running, but disconnected"
+								  : "aMule is running";
+				Check(frame.GetStatusBar()->GetStatusText() == expected,
+					"Wrong status message");
+				RequireLabel(frame,
+					refresh || runtime == 0
+						? ExpectedConnection(ed2k, kad, "updated-user")
+						: ExpectedConnection(1, 2, "user"));
+				RequireLabel(frame,
+					refresh ? "Total Download: 4.00 KiB, Upload: 8.00 KiB"
+						: "Total Download: 1024 B, Upload: 2.00 KiB");
+				RequireLabel(frame,
+					refresh ? "Session Download: 3.00 KiB, Upload: 6.00 KiB"
+						: "Session Download: 512 B, Upload: 256 B");
+				RequireLabel(frame,
+					refresh ? "Download: 123 KiB/s, Upload: 7 KiB/s"
+						: "Download: 1 KiB/s, Upload: 1 KiB/s");
+				RequireLabel(frame,
+					refresh ? "Sharing: 84 file(s), Clients on queue: 987"
+						: "Sharing: 42 file(s), Clients on queue: 101");
+				Check(prefs.Read(WxCasCte::ABSOLUTE_MAX_DL_KEY, 0L) == 123L * 1024,
+					"Record must persist in stopped and unknown states too");
+				std::vector<wxString> labels;
+				CollectLabels(frame, labels);
+				Check(std::count_if(labels.begin(),
+					      labels.end(),
+					      [](const wxString &label) {
+						      return label.StartsWith("123.00 KiB/s on ");
+					      }) == 2,
+					"Both record labels must update in every state");
+				frame.UpdateAll();
+				const wxSize unchanged = frame.GetClientSize();
+				frame.UpdateAll();
+				Check(frame.GetClientSize() == unchanged,
+					"Unchanged refresh resized the frame");
+				Check(!frame.IsFrozen(), "Refresh left frame frozen");
+				WriteSignature(path, 1, 2, 3600, 1, 202);
+				wxTimer timerSource(&frame);
+				wxTimerEvent timer(timerSource);
+				frame.OnRefreshTimer(timer);
+				Check(frame.GetStatusBar()->GetStatusText() == "aMule is running" &&
+						SharingLine(frame) ==
+							"Sharing: 42 file(s), Clients on queue: 202",
+					"Timer failed to recover from the previous connection state");
 			}
 		}
-	} catch (...) {
-		const wxString imagePath =
-			wxFileName(directory, WxCasCte::AMULESIG_IMG_NAME, "png").GetFullPath();
-		if (wxFileExists(imagePath)) {
-			wxRemoveFile(imagePath);
-		}
-		wxConfigBase::Set(previous);
-		wxRemoveFile(path);
-		wxRmdir(directory);
-		throw;
 	}
-	wxConfigBase::Set(previous);
-	wxRemoveFile(path);
-	wxRmdir(directory);
+}
+
+void TestPixelSizing(SignatureFixture &fixture)
+{
+	WriteSignature(fixture.path, 1, 2, 3600, 1, 101);
+	StatsFrame frame;
+	frame.UpdateAll(true);
+	const int originalWidth = frame.GetClientSize().x;
+	const wxString suffix = ExpectedConnection(1, 2, "");
+	wxString wide = "W";
+	while (frame.GetTextExtent(wide + suffix).x < originalWidth) {
+		wide += 'W';
+	}
+	const wxString narrow('i', wide.length());
+	WriteSignature(fixture.path, 1, 2, 3600, 1, 101, narrow);
+	frame.UpdateAll();
+	const int narrowWidth = frame.GetClientSize().x;
+	WriteSignature(fixture.path, 1, 2, 3600, 1, 101, wide);
+	frame.UpdateAll();
+	Check(frame.GetClientSize().x > narrowWidth, "Equal-length wider text was clipped");
+
+	// New records may be the longest labels in locales with verbose dates.
+	WriteSignature(fixture.path, 0, 0, 3600, 999, 101, wide);
+	frame.UpdateAll();
+	const wxSize enlarged = frame.GetClientSize() + wxSize(40, 20);
+	frame.SetClientSize(enlarged);
+	frame.UpdateAll();
+	frame.UpdateAll();
+	Check(frame.GetClientSize() == enlarged, "Unchanged content undid a manual enlargement");
+}
+
+void TestStoppedResets(SignatureFixture &fixture)
+{
+	for (int index : { 0, 1 }) {
+		fixture.prefs.Write(WxCasCte::ABSOLUTE_MAX_DL_KEY, 0L);
+		WriteSignature(fixture.path, 1, 2, 3600, 100, 101);
+		StatsFrame frame;
+		WriteSignature(fixture.path, 0, 0, 0, 0, 101);
+		PressReset(frame, index);
+		std::vector<wxString> labels;
+		CollectLabels(frame, labels);
+		Check(std::count_if(labels.begin(),
+			      labels.end(),
+			      [](const wxString &label) { return label.StartsWith("0.00 KiB/s on "); }) == 1,
+			"Stopped reset left a stale record label");
+		Check(fixture.prefs.Read(WxCasCte::ABSOLUTE_MAX_DL_KEY, 0L) ==
+				(index == 1 ? 0L : 100L * 1024),
+			"Stopped reset persisted the wrong record");
+		WriteSignature(fixture.path, 0, 0, 3600, 0, 101);
+		frame.UpdateAll();
+		labels.clear();
+		CollectLabels(frame, labels);
+		Check(std::count_if(labels.begin(),
+			      labels.end(),
+			      [](const wxString &label) { return label.StartsWith("0.00 KiB/s on "); }) == 1,
+			"Restart at zero restored the stale record label");
+	}
+}
+
+void TestTimerLifetime(SignatureFixture &fixture)
+{
+	WriteSignature(fixture.path, 1, 2, 3600, 1, 101);
+	{
+		StatsFrame frame;
+		Check(frame.ChangeRefreshPeriod(1) && frame.ChangeFtpUpdatePeriod(1),
+			"Could not start lifetime-test timers");
+	}
+	// Let the real GUI loop observe expired timers after their frame is gone.
+	wxMilliSleep(5);
+	wxYield();
+}
+
+void TestMissingSignature(SignatureFixture &fixture)
+{
+	wxRemoveFile(fixture.path);
+	// Missing input is deliberately exercised; ignore wxFile's expected open error.
+	wxLogNull quiet;
+	OnLineSig signature(wxFileName(fixture.path));
+	Check(signature.GetAmuleState() == 0 && signature.GetKadState() == 0 &&
+			signature.GetUpStatus() == 0 && !signature.IsSessionMaxDlChanged() &&
+			!signature.IsAbsoluteMaxDlChanged(),
+		"Missing signature has undefined state");
+	Check(signature.GetConvertedTotalDL() == "0 B" && signature.GetConvertedTotalUL() == "0 B",
+		"Missing totals must convert to zero");
+	fixture.prefs.Write(WxCasCte::ABSOLUTE_MAX_DL_KEY, 100L * 1024);
+	StatsFrame frame;
+	frame.UpdateAll();
+	Check(frame.GetStatusBar()->GetStatusText() == "Oh Oh, aMule is not running...",
+		"Missing signature must report not running");
+	PressReset(frame, 1);
+	std::vector<wxString> labels;
+	CollectLabels(frame, labels);
+	Check(std::count_if(labels.begin(),
+		      labels.end(),
+		      [](const wxString &label) { return label.StartsWith("0.00 KiB/s on "); }) == 2,
+		"Missing-file reset left a stale record label");
 }
 } // namespace
 
 int main(int argc, char **argv)
 {
 	wxApp::SetInstance(new WxCasTestApp);
-	return RunGuiTest(argc, argv, "No GUI display available; skipping wxCas tests", [] {
-		wxInitAllImageHandlers();
-		TestRefreshStates();
-	});
+	return RunGuiTest(
+		argc,
+		argv,
+		"No GUI display available; skipping wxCas tests",
+		[] {
+			wxInitAllImageHandlers();
+			SignatureFixture fixture;
+			TestResetCallers(fixture.path, fixture.prefs);
+			TestPixelSizing(fixture);
+			TestStoppedResets(fixture);
+			TestRefreshStates(fixture);
+			TestTimerLifetime(fixture);
+			TestMissingSignature(fixture);
+		},
+		GuiTestEventLoop::Activate);
 }

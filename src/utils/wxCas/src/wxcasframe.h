@@ -96,7 +96,7 @@ private:
 	wxTimer *m_ftp_update_timer;
 
 	OnLineSig *m_aMuleSig;
-	unsigned int m_maxLineCount;
+	wxSize m_lastFittedSize;
 
 #ifdef __LINUX__ // System monitoring on Linux
 
@@ -118,12 +118,6 @@ private:
 		ID_ABS_HIT_BUTTON
 	};
 
-	// Get maximum of 2 uint
-	unsigned int GetMaxUInt(const unsigned int a, const unsigned int b)
-	{
-		return ((a) > (b) ? (a) : (b));
-	}
-
 	// Constructing Stat_lines
 	wxString MakeStatLine_1() const;
 	wxString MakeStatLine_2() const;
@@ -144,7 +138,7 @@ private:
 #endif
 
 protected:
-	bool UpdateStatsPanel();
+	void UpdateStatsPanel();
 	void UpdateAll(bool forceFitting = FALSE);
 	void SaveAbsoluteHits();
 
