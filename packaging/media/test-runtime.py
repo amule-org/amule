@@ -3,7 +3,7 @@
 
 No build-tree libraries or ffmpeg are used. --appimage extracts the actual
 artifact and enters through AppRun; --flatpak runs installed binaries inside
-the sandbox. Other packages provide --bin-dir and --licenses explicitly.
+the sandbox. Other packages provide --bin-dir explicitly.
 """
 import argparse
 import io
@@ -19,8 +19,6 @@ import time
 import wave
 
 
-NOTICES = ('MediaInfoLib.html', 'ZenLib.txt', 'AES.txt', 'TinyXML2.txt',
-           'SHA-Gladman.txt', 'HMAC-Gladman.txt', 'TFSXML.txt', 'fmt.txt')
 TITLE = 'Runtime 艺术家 🎵 "quoted" \\ path'
 
 
@@ -91,7 +89,6 @@ def run(args, root):
     env = dict(os.environ)
     env.pop('LD_PRELOAD', None)
     bin_dir = Path(args.bin_dir).resolve() if args.bin_dir else None
-    licenses = Path(args.licenses).resolve() if args.licenses else None
     appdir = None
     if args.appimage:
         image = Path(args.appimage).resolve()
@@ -99,11 +96,6 @@ def run(args, root):
         subprocess.run([str(image), '--appimage-extract'], cwd=root, env=env,
                        stdout=subprocess.DEVNULL, check=True, timeout=120)
         appdir = root / 'squashfs-root'
-        licenses = appdir / 'usr/share/licenses/amule-media-probe'
-    if licenses is None:
-        raise AssertionError('--licenses is required for this package')
-    for name in NOTICES:
-        assert (licenses / name).is_file(), 'missing packaged notice: ' + str(licenses / name)
     if args.flatpak:
         assert bin_dir is None, '--flatpak does not use a host bin directory'
     elif not appdir:
@@ -128,7 +120,7 @@ def run(args, root):
                              text=True, timeout=30)
     assert version.returncode == 0, (version.returncode, version.stdout, version.stderr)
     assert 'amule-media-probe 1;' in version.stdout, version.stdout + version.stderr
-    assert 'v26.05' in version.stdout, 'package did not use pinned MediaInfoLib: ' + version.stdout
+    assert 'native' in version.stdout, 'package did not use the native parsers: ' + version.stdout
     print('PASS packaged helper version:', version.stdout.strip(), flush=True)
     incoming = root / 'Incoming'
     incoming.mkdir()
@@ -226,7 +218,6 @@ Enabled=1
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--bin-dir')
-    parser.add_argument('--licenses')
     parser.add_argument('--appimage')
     parser.add_argument('--flatpak')
     parser.add_argument('--arch', choices=('arm64', 'x86_64'))

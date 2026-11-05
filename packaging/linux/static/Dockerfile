@@ -115,10 +115,8 @@ RUN for l in bfd opcodes ctf sframe zstd z maxminddb intl; do \
 # (static) libcurl webrequest backend.
 COPY . /src
 WORKDIR /src
-RUN packaging/media/build-static.sh /usr/local
 RUN export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig \
  && cmake -S . -B build-static \
-        -DMEDIA_PROBE_STATIC=ON \
         -DCMAKE_BUILD_TYPE=Release \
         -DBUILD_MONOLITHIC=OFF \
         -DBUILD_DAEMON=ON \
@@ -140,8 +138,7 @@ RUN export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig \
  && for b in amuled amulecmd amuleapi amule-media-probe; do \
         cp "$(find build-static -type f -name "$b" | head -1)" /out/; \
     done \
- && strip /out/amuled /out/amulecmd /out/amuleapi /out/amule-media-probe \
- && mkdir -p /out/licenses && cp -r /usr/local/share/licenses/amule-media-probe /out/licenses/
+ && strip /out/amuled /out/amulecmd /out/amuleapi /out/amule-media-probe
 
 # Sanity gate: fail the build unless each binary is a static executable.
 RUN for b in amuled amulecmd amuleapi amule-media-probe; do \

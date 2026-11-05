@@ -1,4 +1,4 @@
-"""Ensure local Flatpak builds use the reviewed commit, including its notices."""
+"""Ensure local Flatpak builds use the reviewed commit."""
 import json
 import os
 from pathlib import Path
@@ -12,15 +12,13 @@ SOURCE = Path(__file__).resolve().parents[3]
 
 class FlatpakSourceTests(unittest.TestCase):
     @unittest.skipUnless(shutil.which('envsubst'), 'Flatpak rendering requires gettext-base')
-    def test_flatpak_clones_current_commit_with_media_notices(self):
+    def test_flatpak_clones_current_commit(self):
         with tempfile.TemporaryDirectory(prefix='amule flatpak source ') as scratch:
             root = Path(scratch)
             packaging = root / 'packaging' / 'linux'
             (packaging / 'flatpak').mkdir(parents=True)
             for name in ('build.sh', 'versions.env', 'flatpak/org.amule.aMule.yaml.in'):
                 shutil.copy2(SOURCE / 'packaging' / 'linux' / name, packaging / name)
-            notices = root / 'packaging' / 'media' / 'licenses'
-            shutil.copytree(SOURCE / 'packaging' / 'media' / 'licenses', notices)
             helper = root / 'src' / 'mediaprobe' / 'main.cpp'
             helper.parent.mkdir(parents=True)
             helper.write_text('reviewed helper')
@@ -50,8 +48,7 @@ clone = root / 'cloned source'
 subprocess.run(['git', 'clone', '-q', '--no-checkout', url, str(clone)], check=True)
 subprocess.run(['git', '-C', str(clone), 'checkout', '-q', commit], check=True)
 assert (clone / 'src/mediaprobe/main.cpp').read_text() == 'reviewed helper'
-notices = sorted(p.name for p in (clone / 'packaging/media/licenses').iterdir())
-(root / 'source-result.json').write_text(json.dumps({'commit': commit, 'notices': notices}))
+(root / 'source-result.json').write_text(json.dumps({'commit': commit}))
 ''',
                 'flatpak': '''#!/usr/bin/env python3
 from pathlib import Path
@@ -70,8 +67,6 @@ Path(sys.argv[-3]).touch()
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             source = json.loads((root / 'source-result.json').read_text())
             self.assertEqual(source['commit'], commit)
-            self.assertEqual(source['notices'], sorted(p.name for p in notices.iterdir()))
-            self.assertIn('MediaInfoLib.html', source['notices'])
             self.assertEqual(len(list((root / 'dist').glob('*.flatpak'))), 1)
 
 
