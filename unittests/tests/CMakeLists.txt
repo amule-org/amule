@@ -524,6 +524,16 @@ target_compile_definitions (NatServerHolePunchTest PRIVATE ENABLE_NATT_SERVER_CO
 target_link_libraries (NatServerHolePunchTest muleunit mulecommon)
 add_test (NAME NatServerHolePunchTest COMMAND NatServerHolePunchTest)
 
+add_executable (NatServerKeepaliveProofTest
+	NatServerKeepaliveProofTest.cpp
+	${CMAKE_SOURCE_DIR}/src/NatServerKeepaliveProof.cpp
+)
+target_include_directories (NatServerKeepaliveProofTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_compile_features (NatServerKeepaliveProofTest PRIVATE cxx_std_17)
+target_link_libraries (NatServerKeepaliveProofTest muleunit mulecommon CRYPTOPP::CRYPTOPP)
+add_test (NAME NatServerKeepaliveProofTest COMMAND NatServerKeepaliveProofTest)
+
 # Local control framing and pure relay decisions; no sockets or libutp.
 add_executable (NatRendezvousProtocolTest
 	NatRendezvousProtocolTest.cpp

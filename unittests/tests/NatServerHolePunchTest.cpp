@@ -608,6 +608,21 @@ TEST(NatServerHolePunch, ObfuscatesTheKeepaliveOnlyOnAnExtensionServerWithItsUdp
 	ASSERT_FALSE(ShouldObfuscateKeepalive(noServerObfuscation));
 }
 
+TEST(NatServerHolePunch, AProofKeepaliveStaysPlainAndAwaitsNoKey)
+{
+	KeepaliveCryptFacts facts;
+	facts.extensionActive = true;
+	facts.cryptLayerUdpEnabled = true;
+	facts.serverKeyUdp = 42;
+	facts.serverSupportsObfuscationUdp = true;
+	facts.keepaliveProof = true;
+	ASSERT_FALSE(ShouldObfuscateKeepalive(facts));
+
+	KeepaliveCryptFacts noKey = facts;
+	noKey.serverKeyUdp = 0;
+	ASSERT_FALSE(KeepaliveAwaitsServerKey(noKey));
+}
+
 TEST(NatServerHolePunch, AWakeSendsThreeKeepalivesHalfASecondApart)
 {
 	KeepaliveBurst burst;

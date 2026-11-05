@@ -782,14 +782,17 @@ struct KeepaliveCryptFacts
 	bool cryptLayerUdpEnabled = false;
 	std::uint32_t serverKeyUdp = 0;
 	bool serverSupportsObfuscationUdp = false;
+	bool keepaliveProof = false;
 };
 
-// An extension server ignores a session's plain 0x9F once it has sent an obfuscated one, so every
-// 0x9F is obfuscated once the key exists. An older server reads only plain ones.
+// An extension server ignores a session's plain 0x9F once it has sent an obfuscated one, so a
+// 0x9F is obfuscated once the key exists: that also keeps the token off the path. A proof needs
+// neither, and stays plain so no key derived from our address can fail it. An older server reads
+// only plain ones.
 inline bool ShouldObfuscateKeepalive(const KeepaliveCryptFacts &facts)
 {
-	return facts.extensionActive && facts.cryptLayerUdpEnabled && facts.serverKeyUdp != 0 &&
-	       facts.serverSupportsObfuscationUdp;
+	return !facts.keepaliveProof && facts.extensionActive && facts.cryptLayerUdpEnabled &&
+	       facts.serverKeyUdp != 0 && facts.serverSupportsObfuscationUdp;
 }
 
 // A keepalive that went plain only for want of the key is sent again, obfuscated, once it arrives.

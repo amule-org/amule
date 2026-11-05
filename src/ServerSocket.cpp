@@ -610,6 +610,9 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				/*uint16 nServerPort = */ data.ReadUInt16();
 
 				uint32 nTags = data.ReadUInt32();
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+				bool nattKeepaliveChanged = false;
+#endif
 				for (uint32 i = 0; i < nTags; i++) {
 					// Force Unicode=true rather than relying on the server's
 					// SRV_TCPFLG_UNICODE bit: many real-world servers ship
@@ -635,12 +638,24 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 							AddDebugLogLineN(logServer,
 								"Server: NAT-T session token received");
 							m_nattSessionToken = token;
-							// The login keepalive went out before this ident.
-							serverconnect->TrySendLowIdHolePunchKeepalive();
+							nattKeepaliveChanged = true;
 						}
+					} else if (tag.GetNameID() == ST_NATT_PROOF && tag.IsInt() &&
+						   tag.GetInt() == 1 && !m_nattKeepaliveProof) {
+						AddDebugLogLineN(
+							logServer, "Server: NAT-T keepalive proof offered");
+						m_nattKeepaliveProof = true;
+						nattKeepaliveChanged = true;
 					}
 #endif
 				}
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+				// The login keepalive went out before this ident. Sent after the loop, as the
+				// proof tag may follow the token.
+				if (nattKeepaliveChanged) {
+					serverconnect->TrySendLowIdHolePunchKeepalive();
+				}
+#endif
 
 				if (firstIdent) {
 					m_offerFilesPolicy.Commit(data.GetPosition() == data.GetLength()
