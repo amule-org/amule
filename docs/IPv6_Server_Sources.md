@@ -16,7 +16,8 @@ ordinary userid.
 
 ## Login: advertising our IPv6 address
 
-A client that currently advertises an IPv6 address to peers (`AdvertiseIPv6=1`
+A client that currently advertises an IPv6 address to peers (`AdvertiseIPv6Mode`
+set to `1`, or to `0` with reachability verified,
 and the gates in `AdvertisedIPv6ForPeers()`: corroboration, an inbound-capable
 listener, and no proxy) adds a `CT_MOD_IP_V6` (`0xAE`) tag to
 `OP_LOGINREQUEST`: `TAGTYPE_HASH` (0x01), carrying the address as 16 raw bytes
@@ -94,7 +95,7 @@ publishable IPv6 only as a sentinel, never as its LowID. Without this
 extension, a HighID aMule reaches such a source through a server callback;
 with it, only by dialling the IPv6. eMuleAI sends `CT_MOD_IP_V6` whenever it
 holds a public IPv6, whether or not it accepts inbound IPv6, and many home
-routers block inbound IPv6. So `AdvertiseIPv6=1` gains sources while we are
+routers block inbound IPv6. So advertising our address gains sources while we are
 LowID, and can lose some while we are HighID. `ed2k-server` 0.9.83 fixed this:
 it now sends the sentinel only to a LowID requester
 (`ipv6_capable && !is_high_id`).

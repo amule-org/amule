@@ -58,7 +58,7 @@ struct SKadPublishFacts
  * nobody can reach is worse than none. Older receivers (eMule 0.70b, aMule up to 3.1) ignore the
  * "ip6" tag and accept a type 3/5 source without buddy tags, store a zero buddy ID and spend a Kad
  * buddy lookup on it. We publish anyway because the case needs an ENABLE_IPV6 build and the
- * AdvertiseIPv6 opt-in, and IPv6-capable eMuleAI, emule-qt and aMule peers can dial the source.
+ * IPv6 advertising mode, and IPv6-capable eMuleAI, emule-qt and aMule peers can dial the source.
  */
 inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
 {

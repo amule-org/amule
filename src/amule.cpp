@@ -2070,7 +2070,7 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 	facts.choice = s_advertisedIPv6Choice;
 	facts.contradicted = s_advertisedIPv6Choice &&
 			     ObservedPublicIPv6().IsPrefixVetoed(*s_advertisedIPv6Choice, ::GetTickCount64());
-	facts.declaredReachable = thePrefs::GetAdvertiseIPv6();
+	facts.mode = thePrefs::GetAdvertiseIPv6Mode();
 	facts.ipv6Built = true;
 	facts.familyPermitted = AddressFamilyPolicy::PermitsIPv6();
 	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;

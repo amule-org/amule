@@ -27,6 +27,9 @@
 #define PREFERENCES_H
 
 #include "MD4Hash.h" // Needed for CMD4Hash
+#ifdef ENABLE_IPV6
+#include "AdvertisedIPv6.h"
+#endif
 
 #include <wx/arrstr.h> // Needed for wxArrayString
 
@@ -242,9 +245,14 @@ public:
 	// AddressFamilyPolicy::FamiliesFromSetting().
 	static long GetAddressFamiliesSetting() { return s_addressFamiliesSetting; }
 	static void SetAddressFamiliesSetting(long val) { s_addressFamiliesSetting = val; }
-	// The user's word that the ed2k TCP port accepts inbound IPv6: nothing can test it from outside.
-	static bool GetAdvertiseIPv6() { return s_advertiseIPv6; }
-	static void SetAdvertiseIPv6(bool val) { s_advertiseIPv6 = val; }
+	static EIPv6AdvertisingMode GetAdvertiseIPv6Mode()
+	{
+		return static_cast<EIPv6AdvertisingMode>(s_advertiseIPv6Mode);
+	}
+	static void SetAdvertiseIPv6Mode(EIPv6AdvertisingMode mode)
+	{
+		s_advertiseIPv6Mode = static_cast<int>(mode);
+	}
 #ifdef CLIENT_GUI
 	// Whether the daemon's last prefs reply carried EC_TAG_CONN_ADDRESS_FAMILIES; absent means an
 	// old daemon or one without ENABLE_IPV6, which is not the same as "IPv4 only".
@@ -1062,7 +1070,8 @@ protected:
 	static wxString s_NetworkInterface;
 #ifdef ENABLE_IPV6
 	static long s_addressFamiliesSetting;
-	static bool s_advertiseIPv6;
+	// Stored as an int because Cfg_Int stages integers; the accessors above are the typed view.
+	static int s_advertiseIPv6Mode;
 #ifdef CLIENT_GUI
 	static bool s_addressFamiliesTagSupported;
 #endif

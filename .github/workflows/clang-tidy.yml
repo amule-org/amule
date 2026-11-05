@@ -242,7 +242,8 @@ jobs:
         id: base
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            base="${{ github.event.pull_request.base.sha }}"
+            # The event base can predate the target of the checked merge.
+            base="$(git rev-parse HEAD^1)"
           else
             def="${{ github.event.repository.default_branch }}"
             git fetch --no-tags origin "+refs/heads/$def:refs/remotes/origin/$def" || true

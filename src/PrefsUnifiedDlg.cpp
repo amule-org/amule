@@ -1316,8 +1316,12 @@ void PrefsUnifiedDlg::OnAddressFamiliesChange(wxCommandEvent &WXUNUSED(event))
 
 void PrefsUnifiedDlg::UpdateAddressFamiliesControls()
 {
-	const bool dualStack = CastChild(IDC_ADDRESSFAMILIES, wxChoice)->GetSelection() == 1;
-	FindWindow(IDC_ADVERTISEIPV6)->Enable(dualStack);
+	wxChoice *families = CastChild(IDC_ADDRESSFAMILIES, wxChoice);
+	wxWindow *advertise = FindWindow(IDC_ADVERTISEIPV6MODE);
+	if (!families || !advertise) {
+		return;
+	}
+	advertise->Enable(families->GetSelection() == 1);
 }
 #endif
 
@@ -1574,7 +1578,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 #if defined(ENABLE_IPV6) && !defined(CLIENT_GUI)
 	// Act on an AdvertiseIPv6 change now, not at the next periodic refresh.
-	if (CfgChanged(IDC_ADVERTISEIPV6)) {
+	if (CfgChanged(IDC_ADVERTISEIPV6MODE)) {
 		AdvertisedIPv6ForPeers();
 	}
 #endif

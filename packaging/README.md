@@ -97,6 +97,15 @@ workflow manually against the PR branch.
 deployment-target values consumed by the recipes. Bumping a dep
 version is a one-line edit in the right `versions.env`.
 
+The `Linux static (x86_64)` job in the Packaging workflow, which releases also
+run, lists the bundled dependencies in `linux/versions.env` that have a newer
+upstream release and links their release notes. It never fails the run. Run
+`python3 scripts/check-dependency-pins.py` to get the same report by hand.
+
+Check that report before each release. If a newer release has security fixes,
+update the version and SHA-256, then let the Packaging workflow rebuild the
+bundles and rerun their media checks.
+
 The Flatpak manifest is a template (`linux/flatpak/org.amule.aMule.yaml.in`);
 `linux/build.sh` renders it via `envsubst` against `linux/versions.env`
 to produce `linux/flatpak/org.amule.aMule.yaml`. Don't hand-edit the
