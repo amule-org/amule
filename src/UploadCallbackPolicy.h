@@ -42,9 +42,14 @@ inline bool IsUploadCallbackCandidate(bool markedAddNextConnect, bool classicRou
 	return markedAddNextConnect && classicRoutePossible;
 }
 
-inline bool MayStartUploadCallback(bool spent, std::uint64_t lastSentAtMs, std::uint64_t peerRequestAtMs)
+//! A callback may start unless this peer was already spent in the current request interval.
+//!
+//! Only the spent marker decides: the sent time is cleared on every disconnect and on the answer,
+//! so comparing against it would re-arm the callback after any socket close and the marker would
+//! never bite. SetLastUpRequest() clears the marker when the peer's own request arrives.
+inline bool MayStartUploadCallback(bool spent)
 {
-	return !spent || peerRequestAtMs > lastSentAtMs;
+	return !spent;
 }
 
 inline bool IsUploadCallbackInFlight(std::uint64_t sentAtMs, std::uint64_t nowMs)

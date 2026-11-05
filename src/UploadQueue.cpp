@@ -86,9 +86,7 @@ CUploadQueue::CUploadQueue()
  */
 bool CUploadQueue::TryStartUploadCallback(CUpDownClient *client, uint64 now, unsigned inFlightCeiling)
 {
-	if (!client->m_bAddNextConnect || !MayStartUploadCallback(client->m_uploadCallbackSpent,
-						  client->m_uploadCallbackSentAt,
-						  client->GetLastUpRequest())) {
+	if (!client->m_bAddNextConnect || !MayStartUploadCallback(client->m_uploadCallbackSpent)) {
 		return false;
 	}
 	unsigned inFlight = 0;
@@ -100,8 +98,13 @@ bool CUploadQueue::TryStartUploadCallback(CUpDownClient *client, uint64 now, uns
 	if (inFlight >= inFlightCeiling) {
 		return false;
 	}
+	// CanDoCallback() alone is also true for a peer on another server and for a Kad-only
+	// session, and TryToContact() checks both for the same reason: a LowID is valid only on its
+	// own server, so the request would wake a different client on ours.
 	if (IsUploadCallbackCandidate(client->m_bAddNextConnect,
-		    theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort())) &&
+		    theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort()) &&
+			    theApp->serverconnect->IsLocalServer(
+				    client->GetServerIP(), client->GetServerPort())) &&
 		client->SendClassicCallbackRequest()) {
 		AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
 	} else {

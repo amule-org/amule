@@ -13,11 +13,10 @@ TEST(UploadCallbackPolicy, CandidateRequiresMarkAndClassicRoute)
 	ASSERT_TRUE(IsUploadCallbackCandidate(true, true));
 }
 
-TEST(UploadCallbackPolicy, SpentRecordRearmsAfterPeerRequest)
+TEST(UploadCallbackPolicy, OnlyTheSpentMarkerDecides)
 {
-	ASSERT_TRUE(MayStartUploadCallback(false, 0, 0));
-	ASSERT_FALSE(MayStartUploadCallback(true, 100, 100));
-	ASSERT_TRUE(MayStartUploadCallback(true, 100, 101));
+	ASSERT_TRUE(MayStartUploadCallback(false));
+	ASSERT_FALSE(MayStartUploadCallback(true));
 }
 
 TEST(UploadCallbackPolicy, InFlightBoundary)
