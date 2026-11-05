@@ -380,7 +380,8 @@ private:
 	CServer *ForeignNatCallbackServer() const;
 	//! Sends the cross-server OP_NAT_CALLBACKREQUEST to ForeignNatCallbackServer(). Returns whether
 	//! the request went out; the request limits can hold it back.
-	bool TrySendForeignNatCallbackRequest(unsigned maxTargets = kForeignTargetsPerWindow);
+	bool TrySendForeignNatCallbackRequest(
+		unsigned maxTargets = NatServerHolePunch::kForeignTargetsPerWindow);
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	// The source's own target dials us, so our request's success is that source's hello.
