@@ -90,6 +90,7 @@ def run(binary):
                 send(sock, OP_HASHSETREQUEST, queued)
                 send(sock, OP_HASHSETREQUEST, queued_small)
                 answer = wait_for(sock, OP_HASHSETANSWER, 10)
+                assert answer is not None, 'no answer for a queued download under one part'
                 assert answer == queued_small + b'\0\0', answer.hex()
     print('a file or download under one part answered with no part hashes; one of exactly one '
           'part with two; a download still missing its hashes got no answer')
