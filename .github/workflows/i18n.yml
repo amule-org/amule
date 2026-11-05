@@ -145,7 +145,10 @@ jobs:
         run: |
           # The event base can predate upstream Weblate updates included in this
           # merge. Only additions relative to the actual target belong to this PR.
-          test "$(git rev-parse HEAD^2)" = "$PR_HEAD_SHA"
+          test "$(git rev-parse HEAD^2)" = "$PR_HEAD_SHA" || {
+            echo "::error::Merge second parent is not the PR head."
+            exit 1
+          }
           echo "I18N_BASE=$(git rev-parse HEAD^1)" >> "$GITHUB_ENV"
 
       # Checks every locale key exists in en.json with matching
