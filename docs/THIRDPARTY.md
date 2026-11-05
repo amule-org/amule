@@ -256,8 +256,10 @@ under `share/licenses/amule-media-probe` (Resources in the macOS app):
 - [TFSXML notice](../packaging/media/licenses/TFSXML.txt), MediaArea's MIT XML parser
 - [fmt notice](../packaging/media/licenses/fmt.txt), MIT formatting library
 
-Retain these notices with redistributed binaries and publish the exact pinned
-sources and build recipes. MediaInfoLib does not pull FFmpeg into the bundles.
+Retain these notices with redistributed binaries.
+
+Before each release, check these pins for security fixes, as described in
+[`packaging/README.md`](../packaging/README.md#versions-and-dependency-pins).
 
 ## Web UI libraries - Preact and htm
 

@@ -44,6 +44,9 @@ jobs:
       - name: Check update-po.sh
         run: python3 -m unittest discover -s scripts/tests -p 'test_update_po.py'
 
+      - name: Check dependency pin report
+        run: python3 -m unittest discover -s scripts/tests -p 'test_check_dependency_pins.py'
+
       - name: Check installer translation bridge
         run: python3 -m unittest discover -s packaging/windows/tests -p 'test_*.py'
 
