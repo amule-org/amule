@@ -199,6 +199,13 @@ jobs:
         with:
           fetch-depth: 0  # git describe for the version string
 
+      # Not a gate: a newer upstream release isn't always a security fix, and a
+      # failed lookup says nothing about the build. One leg is enough.
+      - name: Report dependency pins with a newer upstream release
+        if: matrix.arch == 'x86_64'
+        continue-on-error: true
+        run: python3 scripts/check-dependency-pins.py
+
       - name: Check Linux packaging wrappers
         run: python3 -m unittest discover -s packaging/linux/tests -v
 
