@@ -57,6 +57,12 @@ void OnLineSig::SetAmuleSig(const wxFileName &file)
 
 void OnLineSig::Refresh()
 {
+	// Deliver each explicit reset once, including a refresh with no input file.
+	m_isSessionMaxDlChanged = m_isSessionMaxDlReseted;
+	m_isSessionMaxDlReseted = false;
+	m_isAbsoluteMaxDlChanged = m_isAbsoluteMaxDlReseted;
+	m_isAbsoluteMaxDlReseted = false;
+
 	wxFile file;
 	if (file.Open(m_amulesig.GetFullPath())) {
 		wxFileInputStream input(file);
@@ -82,25 +88,19 @@ void OnLineSig::Refresh()
 		text >> m_sessionUL;
 		text >> m_runTimeS;
 
-		double dl;
+		double dl = 0.0;
 		m_DLRate.ToDouble(&dl);
 
-		if (dl > m_sessionMaxDL || m_isSessionMaxDlReseted) {
+		if (dl > m_sessionMaxDL) {
 			m_sessionMaxDL = dl;
 			m_sessionMaxDLDate = wxDateTime::Now();
 			m_isSessionMaxDlChanged = true;
-			m_isSessionMaxDlReseted = false;
-		} else {
-			m_isSessionMaxDlChanged = false;
 		}
 
-		if (dl > m_absoluteMaxDL || m_isAbsoluteMaxDlReseted) {
+		if (dl > m_absoluteMaxDL) {
 			m_absoluteMaxDL = dl;
 			m_absoluteMaxDlDate = wxDateTime::Now();
 			m_isAbsoluteMaxDlChanged = true;
-			m_isAbsoluteMaxDlReseted = false;
-		} else {
-			m_isAbsoluteMaxDlChanged = false;
 		}
 	}
 	file.Close();
@@ -264,7 +264,6 @@ void OnLineSig::ResetSessionMaxDL()
 	m_sessionMaxDL = 0.0;
 	m_sessionMaxDLDate = wxDateTime::Now();
 	m_isSessionMaxDlReseted = true;
-	m_isSessionMaxDlChanged = true;
 }
 
 bool OnLineSig::IsSessionMaxDlChanged() const
@@ -287,7 +286,6 @@ void OnLineSig::ResetAbsoluteMaxDL()
 	m_absoluteMaxDL = 0.0;
 	m_absoluteMaxDlDate = wxDateTime::Now();
 	m_isAbsoluteMaxDlReseted = true;
-	m_isAbsoluteMaxDlChanged = true;
 }
 
 bool OnLineSig::IsAbsoluteMaxDlChanged() const

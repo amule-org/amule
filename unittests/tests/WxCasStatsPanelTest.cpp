@@ -31,6 +31,7 @@
 #include <wx/fileconf.h>
 #include <wx/mstream.h>
 #include <wx/statusbr.h>
+#include <wx/textfile.h>
 
 #include <algorithm>
 #include <iostream>
@@ -85,6 +86,19 @@ wxString SharingLine(StatsFrame &frame)
 	throw std::runtime_error("Missing sharing label");
 }
 
+class CountingFileConfig : public wxFileConfig
+{
+public:
+	using wxFileConfig::wxFileConfig;
+	unsigned int flushCount = 0;
+
+	bool Flush(bool currentOnly = false) override
+	{
+		++flushCount;
+		return wxFileConfig::Flush(currentOnly);
+	}
+};
+
 class SignatureFixture
 {
 private:
@@ -92,7 +106,7 @@ private:
 	wxConfigBase *m_previous = nullptr;
 
 public:
-	wxFileConfig prefs;
+	CountingFileConfig prefs;
 	const wxString directory;
 	const wxString path;
 
@@ -200,21 +214,8 @@ void TestResetCallers(const wxString &path, wxFileConfig &prefs)
 		StatsFrame frame;
 		frame.UpdateAll(true);
 		const wxSize before = frame.GetClientSize();
-		wxWindow *panel = nullptr;
-		std::vector<wxButton *> buttons;
-		for (auto *child : frame.GetChildren()) {
-			if (dynamic_cast<wxPanel *>(child)) {
-				panel = child;
-				for (auto *control : child->GetChildren()) {
-					if (auto *button = dynamic_cast<wxButton *>(control)) {
-						buttons.push_back(button);
-					}
-				}
-			}
-		}
-		Check(panel && buttons.size() == 2, "Missing statistics panel or reset buttons");
-		// Reset also reloads the signature. Its new labels must be fitted immediately,
-		// since the refresh consumes the width change before the next timer tick.
+		auto *panel = ResetButtons(frame).front()->GetParent();
+		Check(panel && panel->GetSizer(), "Missing statistics panel");
 		// Grow just past the existing width: a fixed long name can exceed the
 		// Windows CI desktop, where native frame sizing clamps to the work area.
 		std::vector<wxString> initialLabels;
@@ -231,10 +232,7 @@ void TestResetCallers(const wxString &path, wxFileConfig &prefs)
 			longUser += 'W';
 		}
 		WriteSignature(path, 1, 2, 3600, 5, 987, longUser);
-		wxCommandEvent reset(wxEVT_BUTTON, buttons[resetIndex]->GetId());
-		reset.SetEventObject(buttons[resetIndex]);
-		Check(buttons[resetIndex]->GetEventHandler()->ProcessEvent(reset),
-			"Reset event was not handled");
+		PressReset(frame, resetIndex);
 		Check(frame.GetClientSize().x > before.x, "Reset caller discarded the required frame resize");
 		std::cout << "Reset " << resetIndex << ": initial width=" << before.x
 			  << " frame width=" << frame.GetClientSize().x
@@ -439,19 +437,81 @@ void TestMissingSignature(SignatureFixture &fixture)
 		"Missing signature has undefined state");
 	Check(signature.GetConvertedTotalDL() == "0 B" && signature.GetConvertedTotalUL() == "0 B",
 		"Missing totals must convert to zero");
+	signature.ResetSessionMaxDL();
+	signature.ResetAbsoluteMaxDL();
+	signature.Refresh();
+	Check(signature.IsSessionMaxDlChanged() && signature.IsAbsoluteMaxDlChanged(),
+		"Missing-file refresh lost the pending resets");
+	signature.Refresh();
+	Check(!signature.IsSessionMaxDlChanged() && !signature.IsAbsoluteMaxDlChanged(),
+		"Missing-file refresh repeated the reset notification");
 	fixture.prefs.Write(WxCasCte::ABSOLUTE_MAX_DL_KEY, 100L * 1024);
 	StatsFrame frame;
 	frame.UpdateAll();
 	Check(frame.GetStatusBar()->GetStatusText() == "Oh Oh, aMule is not running...",
 		"Missing signature must report not running");
+	const auto beforeReset = fixture.prefs.flushCount;
 	PressReset(frame, 1);
+	Check(fixture.prefs.flushCount == beforeReset + 1,
+		"Absolute reset must flush the record exactly once");
+	frame.UpdateAll();
+	frame.UpdateAll();
+	Check(fixture.prefs.flushCount == beforeReset + 1,
+		"Missing-file ticks flushed an unchanged record again");
 	std::vector<wxString> labels;
 	CollectLabels(frame, labels);
 	Check(std::count_if(labels.begin(),
 		      labels.end(),
 		      [](const wxString &label) { return label.StartsWith("0.00 KiB/s on "); }) == 2,
 		"Missing-file reset left a stale record label");
+	WriteSignature(fixture.path, 1, 2, 3600, 7, 101);
+	frame.UpdateAll();
+	Check(fixture.prefs.Read(WxCasCte::ABSOLUTE_MAX_DL_KEY, 0L) == 7L * 1024 &&
+			fixture.prefs.flushCount == beforeReset + 2,
+		"New record was not saved once after the file reappeared");
+	frame.UpdateAll();
+	Check(fixture.prefs.flushCount == beforeReset + 2, "Unchanged recovered record was saved again");
 }
+
+void TestInvalidRates(SignatureFixture &fixture)
+{
+	for (const wxString &rate : { wxString(), wxString("not-a-number") }) {
+		WriteSignature(fixture.path, 1, 2, 3600, 100, 101);
+		OnLineSig signature(wxFileName(fixture.path));
+		{
+			wxTextFile file(fixture.path);
+			Check(file.Open(), "Cannot open the invalid-rate fixture");
+			if (rate.empty()) {
+				// The stream skips blank lines. End at the rate field to
+				// exercise an empty conversion rather than the next field.
+				while (file.GetLineCount() > 6) {
+					file.RemoveLine(6);
+				}
+				file.AddLine(rate);
+			} else {
+				file[6] = rate;
+			}
+			Check(file.Write(), "Cannot write the invalid-rate fixture");
+		}
+		signature.ResetSessionMaxDL();
+		signature.ResetAbsoluteMaxDL();
+		signature.Refresh();
+		Check(signature.GetDLRate() == rate, "Fixture did not reach the invalid rate parser");
+		Check(signature.GetSessionMaxDL() == 0.0 && signature.GetAbsoluteMaxDL() == 0.0,
+			"Invalid rate became a download record");
+		Check(signature.IsSessionMaxDlChanged() && signature.IsAbsoluteMaxDlChanged(),
+			"Zero-rate parsing must preserve reset notifications");
+		signature.Refresh();
+		Check(!signature.IsSessionMaxDlChanged() && !signature.IsAbsoluteMaxDlChanged(),
+			"Unchanged invalid rate repeated reset notifications");
+		WriteSignature(fixture.path, 1, 2, 3600, 7, 101);
+		signature.Refresh();
+		Check(signature.GetSessionMaxDL() == 7.0 && signature.GetAbsoluteMaxDL() == 7.0 &&
+				signature.IsSessionMaxDlChanged() && signature.IsAbsoluteMaxDlChanged(),
+			"Valid rate did not recover after invalid input");
+	}
+}
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -470,6 +530,7 @@ int main(int argc, char **argv)
 			TestRefreshStates(fixture);
 			TestTimerLifetime(fixture);
 			TestMissingSignature(fixture);
+			TestInvalidRates(fixture);
 		},
 		GuiTestEventLoop::Activate);
 }

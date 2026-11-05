@@ -451,7 +451,6 @@ void WxCasFrame::OnHitButton(wxCommandEvent &WXUNUSED(event))
 void WxCasFrame::OnAbsHitButton(wxCommandEvent &WXUNUSED(event))
 {
 	m_aMuleSig->ResetAbsoluteMaxDL();
-	SaveAbsoluteHits();
 	UpdateAll();
 }
 
@@ -515,7 +514,7 @@ void WxCasFrame::UpdateStatsPanel()
 	}
 
 	// Records and explicit resets apply even when aMule is stopped or its
-	// connection state is unknown. Refresh clears the change flags next time.
+	// connection state is unknown. Refresh consumes each reset notification once.
 	if (m_aMuleSig->IsSessionMaxDlChanged()) {
 		m_hitLine->SetLabel(MakeHitsLine_1());
 	}
