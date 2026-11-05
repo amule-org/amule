@@ -132,12 +132,31 @@ void TestResetCallers(const wxString &path, wxFileConfig &prefs)
 		Check(panel && buttons.size() == 2, "Missing statistics panel or reset buttons");
 		// Reset also reloads the signature. Its new labels must be fitted immediately,
 		// since the refresh consumes the width change before the next timer tick.
-		WriteSignature(path, 1, 2, 3600, 5, 987, wxString('W', 100));
+		// Grow just past the existing width: a fixed long name can exceed the
+		// Windows CI desktop, where native frame sizing clamps to the work area.
+		std::vector<wxString> initialLabels;
+		CollectLabels(frame, initialLabels);
+		wxString suffix;
+		for (const auto &label : initialLabels) {
+			if (label.StartsWith("user is on ")) {
+				suffix = label.Mid(4);
+			}
+		}
+		Check(!suffix.empty(), "Missing connection label");
+		wxString longUser = "user";
+		while (frame.GetTextExtent(longUser + suffix).x < before.x) {
+			longUser += 'W';
+		}
+		WriteSignature(path, 1, 2, 3600, 5, 987, longUser);
 		wxCommandEvent reset(wxEVT_BUTTON, buttons[resetIndex]->GetId());
 		reset.SetEventObject(buttons[resetIndex]);
 		Check(buttons[resetIndex]->GetEventHandler()->ProcessEvent(reset),
 			"Reset event was not handled");
 		Check(frame.GetClientSize().x > before.x, "Reset caller discarded the required frame resize");
+		std::cout << "Reset " << resetIndex << ": initial width=" << before.x
+			  << " frame width=" << frame.GetClientSize().x
+			  << " panel width=" << panel->GetSize().x
+			  << " required width=" << panel->GetSizer()->GetMinSize().x << '\n';
 		Check(panel->GetSize().x >= panel->GetSizer()->GetMinSize().x,
 			"Refreshed statistics are clipped after reset");
 		Check(prefs.Read(WxCasCte::ABSOLUTE_MAX_DL_KEY, 0L) ==
