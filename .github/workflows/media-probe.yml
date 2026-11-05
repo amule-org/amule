@@ -37,6 +37,10 @@ jobs:
       - run: python3 packaging/media/build-ffmpeg.py "$PWD/media-prefix" "$PWD/media-sources"
       - run: PKG_CONFIG_PATH="$PWD/media-prefix/lib/pkgconfig" cmake -S src/mediaprobe -B build-media -G Ninja -DCMAKE_BUILD_TYPE=MinSizeRel -DMEDIA_PROBE_STATIC=ON -DCMAKE_PREFIX_PATH="$PWD/media-prefix" -DBUILD_TESTING=ON -DMEDIA_PROBE_REQUIRE_FIXTURES=ON
       - run: cmake --build build-media -j3 && ctest --test-dir build-media --output-on-failure
+      - if: runner.os == 'Linux'
+        run: |
+          docker pull ubuntu:24.04
+          python3 packaging/media/test-headless.py build-media/src/amule-media-probe --image ubuntu:24.04
       - uses: actions/upload-artifact@v7
         with:
           name: media-${{ runner.os }}-${{ runner.arch }}

@@ -47,6 +47,63 @@ tray: an X11 tray, or a StatusNotifierItem host when wxWidgets 3.2.12+ is
 built with AppIndicator support. Apt: `libayatana-appindicator3-dev`; RPM:
 `libayatana-appindicator-gtk3-devel`.
 
+### Headless Linux packages and media-library dependencies
+
+The default helper links the distribution's shared FFmpeg libraries. Disabling
+decoders and network access in the helper does not remove those libraries'
+package dependencies: they can still bring X11, cairo, pango and librsvg onto a
+headless installation. `--no-install-recommends` does not remove hard library
+dependencies. Do not make metadata support optional to conceal this cost.
+
+Where distribution policy permits a private FFmpeg build, the existing minimal
+static recipe avoids linking those shared FFmpeg libraries. From the source root,
+in a build environment with Python 3, Bash, Make, a C/C++ toolchain, pkg-config,
+CMake and zlib development files:
+
+```sh
+# Prepare the pinned source/cache before entering an offline package builder.
+python3 packaging/media/build-ffmpeg.py "$PWD/media-source" "$PWD/media-work" --source-only
+# This reuses the checksum-verified archive; no network is needed with that cache.
+python3 packaging/media/build-ffmpeg.py "$PWD/media-prefix" "$PWD/media-work"
+PKG_CONFIG_PATH="$PWD/media-prefix/lib/pkgconfig" cmake -S . -B build-headless \
+  -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_PREFIX_PATH="$PWD/media-prefix" \
+  -DMEDIA_PROBE_STATIC=ON -DENABLE_MEDIA_PROBE=ON \
+  -DBUILD_MONOLITHIC=OFF -DBUILD_DAEMON=ON
+cmake --build build-headless -j2
+DESTDIR="$PWD/package-root" cmake --install build-headless --prefix /usr
+```
+
+Use fresh aMule build directories when switching between system and private
+FFmpeg. `MEDIA_PROBE_STATIC=ON` selects archives; it does not itself reduce a
+full distribution FFmpeg build. The private prefix is a build input, not a
+runtime directory to copy into `/usr/lib`. Include the installed helper in the
+daemon's package or a mandatory dependency, and retain the recipe's configuration,
+notices and source as described in [THIRDPARTY.md](THIRDPARTY.md#ffmpeg-media-parser).
+Generate package dependencies from the actual staged binaries (for Debian,
+`dpkg-shlibdeps`) rather than adding FFmpeg packages by hand.
+
+The minimal helper needs only the C/C++ runtimes, libm and zlib on glibc Linux.
+Check its ELF dependencies and exercise it in a clean matching base image:
+
+```sh
+docker pull ubuntu:24.04
+python3 packaging/media/test-headless.py \
+  package-root/usr/libexec/amule/amule-media-probe --image ubuntu:24.04
+```
+
+Build on Ubuntu 24.04 for this example; use the target release and architecture
+for other builds. The check installs no packages and runs without network access.
+It rejects shared FFmpeg or unexpected direct dependencies, verifies that the
+image has no FFmpeg/X11/cairo/pango/librsvg packages, and tests WAV metadata,
+protocol framing and malformed-file rejection. Linux minimal-build CI runs it.
+It does not measure the complete daemon package's installed size.
+
+This is an alternative for packagers, not a change to Debian's default package.
+It trades shared-library security updates for maintaining and rebuilding a
+private FFmpeg copy. Distribution acceptance, security ownership and per-release
+package dependency/size measurements remain necessary; the normal system-linked
+build retains its full dependency closure.
+
 ### Linux-only note: glib-2.0 dev headers
 
 The GUI build calls `g_set_prgname()` to bind the Wayland `wl_app_id` to
