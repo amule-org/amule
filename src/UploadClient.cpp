@@ -612,7 +612,9 @@ void CUpDownClient::SendHashsetPacket(const CMD4Hash &forfileid)
 		}
 	}
 
-	if (!file->GetHashCount()) {
+	// A file under one part has no part hashes, and the answer says so. As eMule does: a peer that
+	// asks waits for the answer until the connection times out.
+	if (!file->GetHashCount() && file->GetED2KPartHashCount() != 0) {
 		if (from_dq) {
 			AddDebugLogLineN(logRemoteClient, "Requested hashset could not be found");
 			return;
