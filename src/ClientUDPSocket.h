@@ -118,7 +118,7 @@ public:
 		uint8_t ourCrypt,
 		uint16 sourceTcpPort,
 		const std::optional<NatServerHolePunch::Hash> &knownHash,
-		unsigned maxTargets = kUploadCallbackTargetBudget);
+		unsigned maxTargets = kForeignTargetsPerWindow);
 #endif
 #endif
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)

@@ -1172,7 +1172,7 @@ public:
 		std::uint16_t sourceTcpPort,
 		std::optional<Hash> knownHash,
 		std::uint64_t now,
-		unsigned maxTargets = kUploadCallbackTargetBudget)
+		unsigned maxTargets = kForeignTargetsPerWindow)
 	{
 		Expire(now);
 		if (FindPending(serverIp, targetId) != m_pending.end() ||

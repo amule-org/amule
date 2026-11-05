@@ -33,14 +33,9 @@
 // A callback stops counting against the in-flight limit after this long, or at the hello, whichever comes
 // first.
 constexpr std::uint64_t kUploadCallbackInFlightMs = 30'000;
-// The upload side may occupy at most the first of the shared cross-server target budget.
-constexpr unsigned kUploadCallbackClassicTargetShare = 15;
-constexpr unsigned kUploadCallbackTargetBudget = 30;
-
-inline bool IsUploadCallbackCandidate(bool markedAddNextConnect, bool classicRoutePossible)
-{
-	return markedAddNextConnect && classicRoutePossible;
-}
+// Uploads may occupy at most this share of the shared cross-server target budget; the budget
+// itself is kForeignTargetsPerWindow, so the download side keeps the whole of it.
+constexpr unsigned kUploadCallbackForeignTargetShare = 15;
 
 //! A callback may start unless this peer was already spent in the current request interval.
 //!
@@ -60,11 +55,6 @@ inline bool IsUploadCallbackInFlight(std::uint64_t sentAtMs, std::uint64_t nowMs
 inline unsigned MaxInflightUploadCallbacks(unsigned freeSlots, bool lowIdAlternationSlot)
 {
 	return freeSlots + (lowIdAlternationSlot ? 1U : 0U);
-}
-
-inline bool UploadCallbackFitsTargetBudget(unsigned targetsInUse)
-{
-	return targetsInUse < kUploadCallbackClassicTargetShare && targetsInUse < kUploadCallbackTargetBudget;
 }
 
 #endif // UPLOAD_CALLBACK_POLICY_H

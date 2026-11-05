@@ -971,22 +971,22 @@ TEST(NatServerHolePunch, CrossServerTargetLimitCanBeSharedWithUploads)
 {
 	ForeignCallbackRequests limited;
 	std::uint64_t now = 0;
-	for (std::uint32_t target = 1; target <= kUploadCallbackClassicTargetShare; ++target) {
+	for (std::uint32_t target = 1; target <= kUploadCallbackForeignTargetShare; ++target) {
 		ASSERT_TRUE(limited.TryStart(kForeignServer,
 			42,
 			target,
 			4662,
 			std::nullopt,
 			now,
-			kUploadCallbackClassicTargetShare));
+			kUploadCallbackForeignTargetShare));
 		now += kForeignRequestRefillMs;
 	}
 	ASSERT_FALSE(limited.TryStart(
-		kForeignServer, 42, 16, 4662, std::nullopt, now, kUploadCallbackClassicTargetShare));
+		kForeignServer, 42, 16, 4662, std::nullopt, now, kUploadCallbackForeignTargetShare));
 
 	ForeignCallbackRequests defaultLimit;
 	now = 0;
-	for (std::uint32_t target = 1; target <= kUploadCallbackTargetBudget; ++target) {
+	for (std::uint32_t target = 1; target <= kForeignTargetsPerWindow; ++target) {
 		ASSERT_TRUE(defaultLimit.TryStart(kForeignServer, 42, target, 4662, std::nullopt, now));
 		now += kForeignRequestRefillMs;
 	}
