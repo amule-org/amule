@@ -17,7 +17,7 @@ ordinary userid.
 ## Login: advertising our IPv6 address
 
 A client that currently advertises an IPv6 address to peers (`AdvertiseIPv6Mode`
-set to `0` or `1`, and the gates below
+set to `1`, or to `0` with reachability verified,
 and the gates in `AdvertisedIPv6ForPeers()`: corroboration, an inbound-capable
 listener, and no proxy) adds a `CT_MOD_IP_V6` (`0xAE`) tag to
 `OP_LOGINREQUEST`: `TAGTYPE_HASH` (0x01), carrying the address as 16 raw bytes

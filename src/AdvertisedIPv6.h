@@ -29,6 +29,7 @@
 #include "NetworkInterfaces.h"
 #include "PeerAddressing.h" // Needed for IsUsableTagIdentity
 
+#include <cstdint>
 #include <optional>
 #include <tuple>
 #include <vector>
@@ -117,11 +118,14 @@ inline EIPv6AdvertisingMode IPv6AdvertisingModeFromECBool(EIPv6AdvertisingMode c
 //! The mode tag wins when its value is one of the three; an invalid value leaves the current mode
 //! alone rather than letting a malformed packet move it. The legacy boolean is the fallback for a
 //! client or daemon that predates the tag, and an absent pair changes nothing.
-inline EIPv6AdvertisingMode ResolveAdvertiseIPv6ModeFromEC(
-	EIPv6AdvertisingMode current, bool hasMode, long modeValue, bool hasBoolean, bool booleanValue)
+inline EIPv6AdvertisingMode ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode current,
+	bool hasMode,
+	std::uint64_t modeValue,
+	bool hasBoolean,
+	bool booleanValue)
 {
 	if (hasMode) {
-		return IsValidIPv6AdvertisingMode(static_cast<int>(modeValue))
+		return modeValue <= static_cast<std::uint64_t>(EIPv6AdvertisingMode::Never)
 			       ? static_cast<EIPv6AdvertisingMode>(modeValue)
 			       : current;
 	}

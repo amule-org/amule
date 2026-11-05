@@ -189,6 +189,10 @@ TEST(AdvertisedIPv6, TheECModeTagWinsAndAnInvalidValueLeavesTheModeAlone)
 		    EIPv6AdvertisingMode::Never);
 	ASSERT_TRUE(ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode::Never, true, 7, false, false) ==
 		    EIPv6AdvertisingMode::Never);
+	// The low 32 bits are a valid mode; the value is not.
+	ASSERT_TRUE(ResolveAdvertiseIPv6ModeFromEC(
+			    EIPv6AdvertisingMode::Verified, true, 0x100000002ULL, false, false) ==
+		    EIPv6AdvertisingMode::Verified);
 	ASSERT_TRUE(ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode::Never, false, 0, true, true) ==
 		    EIPv6AdvertisingMode::Always);
 	ASSERT_TRUE(ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode::Never, false, 0, true, false) ==
