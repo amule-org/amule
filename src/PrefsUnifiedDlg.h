@@ -329,7 +329,7 @@ public:
 	void OnFilterSummaryChange(wxCommandEvent &event);
 
 #ifdef ENABLE_IPV6
-	// Enables the AdvertiseIPv6 checkbox only while dual stack is selected.
+	// Enables the IPv6 advertising choice only while dual stack is selected.
 	void UpdateAddressFamiliesControls();
 #endif
 

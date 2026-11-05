@@ -29,6 +29,7 @@
 #include "NetworkInterfaces.h"
 #include "PeerAddressing.h" // Needed for IsUsableTagIdentity
 
+#include <cstdint>
 #include <optional>
 #include <tuple>
 #include <vector>
@@ -68,11 +69,78 @@ inline std::optional<CNetworkAddress> ChooseAdvertisedIPv6(
 	return CNetworkAddress::IPv6FromOctets(best->bytes);
 }
 
+// Verified advertises when reachability has been verified; Always declares inbound IPv6 reachable;
+// Never suppresses advertising regardless of evidence.
+enum class EIPv6AdvertisingMode
+{
+	Verified,
+	Always,
+	Never
+};
+
+//! Convert the stored legacy checkbox value to its equivalent advertising mode.
+inline EIPv6AdvertisingMode LegacyAdvertiseIPv6Mode(bool stored)
+{
+	return stored ? EIPv6AdvertisingMode::Always : EIPv6AdvertisingMode::Verified;
+}
+
+//! Whether a stored integer is one of the three modes.
+inline bool IsValidIPv6AdvertisingMode(int stored)
+{
+	return stored >= static_cast<int>(EIPv6AdvertisingMode::Verified) &&
+	       stored <= static_cast<int>(EIPv6AdvertisingMode::Never);
+}
+
+//! Map a stored integer to a mode; anything unrecognised falls back to the default.
+inline EIPv6AdvertisingMode NormalizeIPv6AdvertisingMode(int stored)
+{
+	return IsValidIPv6AdvertisingMode(stored) ? static_cast<EIPv6AdvertisingMode>(stored)
+						  : EIPv6AdvertisingMode::Verified;
+}
+
+//! Report the legacy EC boolean for an advertising mode.
+inline bool IPv6AdvertisingModeAsECBool(EIPv6AdvertisingMode mode)
+{
+	return mode == EIPv6AdvertisingMode::Always;
+}
+
+//! Apply the legacy EC boolean without allowing false to replace an explicit Never mode.
+inline EIPv6AdvertisingMode IPv6AdvertisingModeFromECBool(EIPv6AdvertisingMode current, bool received)
+{
+	if (received) {
+		return EIPv6AdvertisingMode::Always;
+	}
+	return current == EIPv6AdvertisingMode::Always ? EIPv6AdvertisingMode::Verified : current;
+}
+
+//! The mode an EC preferences packet carries.
+//!
+//! The mode tag wins when its value is one of the three; an invalid value leaves the current mode
+//! alone rather than letting a malformed packet move it. The legacy boolean is the fallback for a
+//! client or daemon that predates the tag, and an absent pair changes nothing.
+inline EIPv6AdvertisingMode ResolveAdvertiseIPv6ModeFromEC(EIPv6AdvertisingMode current,
+	bool hasMode,
+	std::uint64_t modeValue,
+	bool hasBoolean,
+	bool booleanValue)
+{
+	if (hasMode) {
+		return modeValue <= static_cast<std::uint64_t>(EIPv6AdvertisingMode::Never)
+			       ? static_cast<EIPv6AdvertisingMode>(modeValue)
+			       : current;
+	}
+	return hasBoolean ? IPv6AdvertisingModeFromECBool(current, booleanValue) : current;
+}
+
 struct SAdvertisedIPv6Facts
 {
 	std::optional<CNetworkAddress> choice; // ChooseAdvertisedIPv6() at the last interface refresh
 	bool contradicted = false;             // Peers see us arrive from a /64 we do not hold
-	bool declaredReachable = false;        // The user says the ed2k TCP port accepts inbound IPv6
+	EIPv6AdvertisingMode mode = EIPv6AdvertisingMode::Verified; // User's IPv6 advertising preference
+	bool serverVerified = false;    // Server's dial-back probe reached us and reported us reachable
+	bool serverProbeFailed = false; // Server probed and could not reach us
+	// A completed hello reached the chosen address from outside our /48.
+	bool provedByInboundHello = false;
 	bool ipv6Built = false;
 	bool familyPermitted = false;
 	bool proxyEnabled = false;
@@ -80,14 +148,31 @@ struct SAdvertisedIPv6Facts
 };
 
 /**
+ * Whether the user's declaration or current evidence says inbound IPv6 is reachable.
+ *
+ * A failed server probe outranks positive inbound proof, failing closed until the server re-probes.
+ * Always outranks the verdicts because it is the user's own declaration.
+ */
+inline bool IsIPv6DeclaredReachable(const SAdvertisedIPv6Facts &facts)
+{
+	if (facts.mode == EIPv6AdvertisingMode::Never) {
+		return false;
+	}
+	if (facts.mode == EIPv6AdvertisingMode::Always) {
+		return true;
+	}
+	return !facts.serverProbeFailed && (facts.serverVerified || facts.provedByInboundHello);
+}
+
+/**
  * The IPv6 address to advertise as ours, or none.
  *
  * eMuleAI treats a peer's CT_MOD_IP_V6 as reachable: it dials that address for every later
  * connection with no IPv4 fallback, skips LowID callbacks, keeps it for the whole session and passes
  * it on in source exchange. An address a firewall drops would therefore cost connections we have
- * today, so it is advertised only when the user declares the port reachable, which nothing here can
- * test from outside. A proxy carries IPv4 only and advertising around it would leak our address;
- * without an IPv6 listener there is nothing to reach.
+ * today, so it is advertised only when evidence says it is reachable or the user declares it, and
+ * never against a contradiction. A proxy carries IPv4 only and advertising around it would leak our
+ * address; without an IPv6 listener there is nothing to reach.
  *
  * Peer corroboration is a veto, not a precondition. Requiring it first deadlocks: votes arrive only
  * over IPv6 connections, which peers open only to an address we advertise. Behind IPv6 NAT, the case
@@ -95,7 +180,7 @@ struct SAdvertisedIPv6Facts
  */
 inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6Facts &facts)
 {
-	const bool reachable = facts.declaredReachable && !facts.contradicted;
+	const bool reachable = IsIPv6DeclaredReachable(facts) && !facts.contradicted;
 	const bool permitted = facts.ipv6Built && facts.familyPermitted && !facts.proxyEnabled;
 	if (!facts.choice || !reachable || !permitted || !facts.listenerAcceptsIPv6) {
 		return std::nullopt;

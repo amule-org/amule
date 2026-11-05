@@ -295,12 +295,18 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		if (thePrefs::GetAddressFamiliesTagSupported()) {
 			connPrefs.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES,
 				static_cast<uint32>(thePrefs::GetAddressFamiliesSetting())));
-			connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6, thePrefs::GetAdvertiseIPv6()));
+			connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6,
+				IPv6AdvertisingModeAsECBool(thePrefs::GetAdvertiseIPv6Mode())));
+			connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6_MODE,
+				static_cast<uint32>(thePrefs::GetAdvertiseIPv6Mode())));
 		}
 #else
 		connPrefs.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES,
 			static_cast<uint32>(thePrefs::GetAddressFamiliesSetting())));
-		connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6, thePrefs::GetAdvertiseIPv6()));
+		connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6,
+			IPv6AdvertisingModeAsECBool(thePrefs::GetAdvertiseIPv6Mode())));
+		connPrefs.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6_MODE,
+			static_cast<uint32>(thePrefs::GetAdvertiseIPv6Mode())));
 #endif
 #endif
 		AddTag(connPrefs);
@@ -920,8 +926,17 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 			thePrefs::SetAddressFamiliesTagSupported(false);
 		}
 #endif
-		if ((oneTag = thisTab->GetTagByName(EC_TAG_CONN_ADVERTISE_IPV6)) != nullptr) {
-			thePrefs::SetAdvertiseIPv6(oneTag->GetInt() != 0);
+		{
+			// The mode tag is authoritative; the boolean is only what a client that predates it
+			// can express, so it is consulted when the mode tag is absent.
+			const CECTag *modeTag = thisTab->GetTagByName(EC_TAG_CONN_ADVERTISE_IPV6_MODE);
+			const CECTag *booleanTag = thisTab->GetTagByName(EC_TAG_CONN_ADVERTISE_IPV6);
+			thePrefs::SetAdvertiseIPv6Mode(
+				ResolveAdvertiseIPv6ModeFromEC(thePrefs::GetAdvertiseIPv6Mode(),
+					modeTag != nullptr,
+					modeTag != nullptr ? modeTag->GetInt() : 0,
+					booleanTag != nullptr,
+					booleanTag != nullptr && booleanTag->GetInt() != 0));
 		}
 #endif
 	}
