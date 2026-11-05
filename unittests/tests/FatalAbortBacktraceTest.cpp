@@ -45,6 +45,12 @@
 #define MULE_HAVE_ABORT_BACKTRACE 1
 #endif
 
+// get_backtrace() resolves frames only on Linux, through bfd or else addr2line. Elsewhere --
+// FreeBSD has execinfo.h in base -- it returns a placeholder, with no frames to check.
+#if defined(MULE_HAVE_ABORT_BACKTRACE) && defined(__linux__)
+#define MULE_HAVE_LINUX_BACKTRACE 1
+#endif
+
 #ifdef MULE_HAVE_ABORT_BACKTRACE
 #include <cerrno>
 #include <chrono>
@@ -58,8 +64,17 @@
 #include <stdexcept>
 #include <thread>
 #include <string>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <climits>
+#include <fstream>
+#include <spawn.h>
+#include <ostream>
+#include <streambuf>
+#include <utility>
+
+extern char **environ; // for posix_spawnp()
 #endif
 
 using namespace muleunit;
@@ -445,6 +460,209 @@ bool Contains(const std::string &haystack, const char *needle)
 	return haystack.find(needle) != std::string::npos;
 }
 
+#ifdef MULE_HAVE_LINUX_BACKTRACE
+// The child is a copy of this binary, exec'd with this variable set. It reports from static
+// initialisation and exits, so get_backtrace() must work before main(), without wx or muleunit.
+const char kBacktraceChildEnv[] = "MULE_TEST_BACKTRACE_CHILD";
+
+std::string s_childCopy;
+// The PATH the child runs with, when not this process's own.
+std::string s_childPath;
+
+void OnAssertInBacktraceChild(const wxString &, int, const wxString &, const wxString &cond, const wxString &)
+{
+	fprintf(stderr, "ASSERT FIRED: %s\n", static_cast<const char *>(cond.utf8_str()));
+	_exit(99);
+}
+
+// The canonical path this process runs from; readlink() needs no read access to the binary.
+std::string ThisBinaryPath()
+{
+	char self[PATH_MAX];
+	const ssize_t len = readlink("/proc/self/exe", self, sizeof(self) - 1);
+	if (len <= 0) {
+		return std::string();
+	}
+	return std::string(self, static_cast<size_t>(len));
+}
+
+// Its name runs past 1100 characters, longer than one fgets() of addr2line's output.
+template <int... I> __attribute__((noinline)) void ReportFromALongName(std::integer_sequence<int, I...>)
+{
+	// Twice: the second call must not retry the bfd setup.
+	fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
+	fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
+	_exit(0);
+}
+
+// Called from std::ostream::write(), so the stack holds a C++ library frame to demangle.
+struct ReportingStreamBuf : public std::streambuf
+{
+	std::streamsize xsputn(const char *, std::streamsize) override
+	{
+		ReportFromALongName(std::make_integer_sequence<int, 200>());
+		return 0; // not reached
+	}
+};
+
+struct BacktraceChild
+{
+	BacktraceChild()
+	{
+		// Only the copy the variable names acts, so a variable left set cannot skip the suite.
+		const char *copy = getenv(kBacktraceChildEnv);
+		if (!copy || ThisBinaryPath() != copy) {
+			return;
+		}
+		wxSetAssertHandler(OnAssertInBacktraceChild);
+		ReportingStreamBuf buf;
+		std::ostream(&buf).write("x", 1);
+		_exit(97); // the stream buffer was never called
+	}
+} s_backtraceChild;
+
+void ChildExecCopy()
+{
+	setenv(kBacktraceChildEnv, s_childCopy.c_str(), 1);
+	if (!s_childPath.empty()) {
+		setenv("PATH", s_childPath.c_str(), 1);
+	}
+	execl(s_childCopy.c_str(), s_childCopy.c_str(), static_cast<char *>(nullptr));
+	_exit(98); // exec failed
+}
+
+// Next to this binary, as /tmp may be noexec. The tag goes into the copy's name.
+bool CopyThisBinary(const char *tag)
+{
+	const std::string self = ThisBinaryPath();
+	if (self.empty()) {
+		return false;
+	}
+	s_childCopy = self + tag + std::to_string(getpid());
+	std::ifstream in(self, std::ios::binary);
+	std::ofstream out(s_childCopy, std::ios::binary);
+	out << in.rdbuf();
+	return out.good();
+}
+
+struct RemoveTheCopyOnExit
+{
+	~RemoveTheCopyOnExit() { unlink(s_childCopy.c_str()); }
+};
+
+// False when strip is missing or fails.
+bool StripTheCopy()
+{
+	posix_spawn_file_actions_t actions;
+	posix_spawn_file_actions_init(&actions);
+	posix_spawn_file_actions_addopen(&actions, STDERR_FILENO, "/dev/null", O_WRONLY, 0);
+	std::string path = s_childCopy;
+	char strip[] = "strip";
+	char stripAll[] = "--strip-all";
+	char *const argv[] = { strip, stripAll, &path[0], nullptr };
+	pid_t pid = 0;
+	const int rc = posix_spawnp(&pid, "strip", &actions, nullptr, argv, environ);
+	posix_spawn_file_actions_destroy(&actions);
+	if (rc != 0) {
+		return false;
+	}
+	int status = 0;
+	while (waitpid(pid, &status, 0) < 0) {
+		if (errno != EINTR) {
+			return false;
+		}
+	}
+	return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+}
+
+// ELF e_type ET_DYN (3), in the byte order of e_ident[EI_DATA] (2 = big-endian).
+bool ThisBinaryIsPie()
+{
+	std::ifstream self("/proc/self/exe", std::ios::binary);
+	unsigned char header[18] = {};
+	if (!self.read(reinterpret_cast<char *>(header), sizeof(header)) ||
+		memcmp(header, "\177ELF", 4) != 0) {
+		return false;
+	}
+	const unsigned type =
+		header[5] == 2 ? (header[16] << 8 | header[17]) : (header[17] << 8 | header[16]);
+	return type == 3;
+}
+
+// Both calls printed the copy's frames as "?? in path(+0x...)[0x...]". Only a PIE binary has the
+// offset: a non-PIE one loads where it was linked.
+bool HasRawFramesOfTheCopy(const std::string &stderrText)
+{
+	const std::string frame = "?? in " + s_childCopy;
+	if (CountOccurrences(stderrText, frame.c_str()) < 2) {
+		return false;
+	}
+	return !ThisBinaryIsPie() || CountOccurrences(stderrText, (frame + "(+0x").c_str()) >= 2;
+}
+
+// Both calls printed a library frame as "ns::function(args)+0x... in lib.so...", and no line holds
+// a mangled name. Which function depends on the libstdc++ version.
+bool NamesLibraryFramesDemangled(const std::string &stderrText)
+{
+	int named = 0;
+	std::string::size_type start = 0;
+	while (start < stderrText.size()) {
+		std::string::size_type end = stderrText.find('\n', start);
+		if (end == std::string::npos) {
+			end = stderrText.size();
+		}
+		const std::string line = stderrText.substr(start, end - start);
+		const std::string::size_type in = line.find("+0x");
+		if (line.find("::") < in && in != std::string::npos &&
+			line.find(" in ", in) != std::string::npos &&
+			line.find(".so", in) != std::string::npos) {
+			++named;
+		}
+		start = end + 1;
+	}
+	return named >= 2 && !Contains(stderrText, "(_Z") && !Contains(stderrText, "] _Z");
+}
+
+// How many lines name `what` and run longer than `length` characters.
+int CountLinesLongerThan(const std::string &stderrText, const char *what, size_t length)
+{
+	int found = 0;
+	std::string::size_type start = 0;
+	while (start < stderrText.size()) {
+		std::string::size_type end = stderrText.find('\n', start);
+		if (end == std::string::npos) {
+			end = stderrText.size();
+		}
+		if (end - start > length &&
+			stderrText.substr(start, end - start).find(what) != std::string::npos) {
+			++found;
+		}
+		start = end + 1;
+	}
+	return found;
+}
+
+// The path only appears after " in ", never where the function name goes. bfd may resolve the
+// frame to file:line, so it may not appear at all.
+bool ThePathOnlyFollowsIn(const std::string &stderrText, const char *pathPart)
+{
+	std::string::size_type start = 0;
+	while (start < stderrText.size()) {
+		std::string::size_type end = stderrText.find('\n', start);
+		if (end == std::string::npos) {
+			end = stderrText.size();
+		}
+		const std::string line = stderrText.substr(start, end - start);
+		const std::string::size_type at = line.find(pathPart);
+		if (at != std::string::npos && line.rfind(" in ", at) == std::string::npos) {
+			return false;
+		}
+		start = end + 1;
+	}
+	return true;
+}
+#endif // MULE_HAVE_LINUX_BACKTRACE
+
 } // namespace
 
 DECLARE_SIMPLE(FatalAbortBacktrace)
@@ -721,6 +939,121 @@ TEST(FatalAbortBacktrace, TheTrapSuppressionDoesNotMuteAnAbort)
 	ASSERT_EQUALS(SIGABRT, r.signal_number);
 	ASSERT_TRUE(Contains(r.stderr_text, "FATAL BACKTRACE FOLLOWS"));
 }
+
+#ifdef MULE_HAVE_LINUX_BACKTRACE
+TEST(FatalAbortBacktrace, AnUnreadableBinaryStillGivesRawFrames)
+{
+	// Root reads an execute-only file regardless, so the case cannot be set up there.
+	if (geteuid() == 0) {
+		return;
+	}
+
+	const bool copied = CopyThisBinary(".unreadable.");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0111));
+
+	const ChildResult r = RunInChild(ChildExecCopy);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+#ifdef HAVE_BFD
+	ASSERT_EQUALS(1, CountOccurrences(r.stderr_text, "Error while opening file for backtrace symbols"));
+#endif
+	ASSERT_TRUE(HasRawFramesOfTheCopy(r.stderr_text));
+	ASSERT_TRUE(NamesLibraryFramesDemangled(r.stderr_text));
+}
+
+// Opens fine, but the symbol table is empty.
+TEST(FatalAbortBacktrace, AStrippedBinaryStillGivesRawFrames)
+{
+	const bool copied = CopyThisBinary(".stripped.");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	// A host can have the bfd headers without strip.
+	if (!StripTheCopy()) {
+		return;
+	}
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
+
+	const ChildResult r = RunInChild(ChildExecCopy);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+#ifdef HAVE_BFD
+	ASSERT_EQUALS(1, CountOccurrences(r.stderr_text, "No symbols in the executable"));
+#endif
+	ASSERT_TRUE(HasRawFramesOfTheCopy(r.stderr_text));
+	ASSERT_TRUE(NamesLibraryFramesDemangled(r.stderr_text));
+}
+
+// bfd never resolves a shared library's frames, so those keep backtrace_symbols()' offset. The
+// copy's name holds '+' and parentheses, which the parser must not take for glibc's.
+TEST(FatalAbortBacktrace, AnUnresolvedFrameKeepsItsOffset)
+{
+	const bool copied = CopyThisBinary(".odd+(name).");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
+
+	const ChildResult r = RunInChild(ChildExecCopy);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	// The piece a parser splitting at the path's '(' puts in the function's place.
+	ASSERT_TRUE(ThePathOnlyFollowsIn(r.stderr_text, "name)."));
+	// On every startup stack.
+	ASSERT_TRUE(CountOccurrences(r.stderr_text, "] __libc_start_main+0x") >= 2);
+}
+
+#ifndef HAVE_BFD
+// A name longer than one fgets() read must not shift the name of every later frame.
+TEST(FatalAbortBacktrace, ALongFunctionNameKeepsTheFramesResolved)
+{
+	const bool copied = CopyThisBinary(".longname.");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
+
+	const ChildResult r = RunInChild(ChildExecCopy);
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	// addr2line may leave the long name mangled; only its length matters here.
+	ASSERT_TRUE(CountLinesLongerThan(r.stderr_text, "ReportFromALongName", 1023) >= 2);
+	ASSERT_TRUE(
+		CountOccurrences(r.stderr_text, "] (anonymous namespace)::ReportingStreamBuf::xsputn(") >= 2);
+}
+
+// A failed addr2line run prints nothing, and must not be read as an answer.
+TEST(FatalAbortBacktrace, AMissingAddr2lineStillGivesRawFrames)
+{
+	const bool copied = CopyThisBinary(".noaddr2line.");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
+
+	s_childPath = "/nonexistent";
+	const ChildResult r = RunInChild(ChildExecCopy);
+	s_childPath.clear();
+
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	ASSERT_TRUE(HasRawFramesOfTheCopy(r.stderr_text));
+	ASSERT_TRUE(NamesLibraryFramesDemangled(r.stderr_text));
+}
+#endif
+#endif // MULE_HAVE_LINUX_BACKTRACE
 
 #else /* !MULE_HAVE_ABORT_BACKTRACE */
 
