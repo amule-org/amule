@@ -5,12 +5,13 @@
 #
 # David Watzke <david@watzke.cz>, 2010.
 # mslr8 <hosted.weblate.org.poncho089@passmail.net>, 2026.
+# Tomáš Homola <molekula2000@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-04 14:28+0000\n"
+"PO-Revision-Date: 2026-11-05 10:40+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
@@ -18,7 +19,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
-"X-Generator: Weblate 2026.11.1.dev0\n"
+"X-Generator: Weblate 2026.11.2.dev0\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AboutDialog.cpp
@@ -1337,9 +1338,8 @@ msgid "The EC password was not changed."
 msgstr "Heslo EC nebylo změněno."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "The daemon could not apply the preference changes."
-msgstr "Daemon nemohl použít změny portu připojení."
+msgstr "Daemon nemohl použít změny předvolby."
 
 #: src/amule-remote-gui.cpp
 msgid "not readable"
@@ -1408,7 +1408,7 @@ msgstr "Neznámý"
 
 #: src/amule-remote-gui.cpp
 msgid "The connected daemon does not support All searches."
-msgstr "Připojený daemon nepodporuje Všechna vyhledávání."
+msgstr "Připojený daemon nepodporuje Vyhledávání všude."
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
@@ -5319,8 +5319,21 @@ msgid "Takes effect after restarting aMule."
 msgstr "Vejde v platnost po restartování aMule."
 
 #: src/muuli_wdr.cpp
-msgid "Advertise my IPv6 address to other peers"
+#, fuzzy
+msgid "Advertise my IPv6 address:"
 msgstr "Propagovat mojí IPv6 adresu k jiným peerům"
+
+#: src/muuli_wdr.cpp
+msgid "When verified"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Always"
+msgstr ""
+
+#: src/muuli_wdr.cpp src/StatTree.cpp
+msgid "Never"
+msgstr "Nikdy"
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -6112,7 +6125,7 @@ msgstr "Tato možnost nastavuje aMule tak, aby při připojování k ostatním k
 
 #: src/muuli_wdr.cpp
 msgid "Accept only obfuscated connections"
-msgstr "Přijímat pouze obfuskovaná připojení"
+msgstr "Přijímat pouze zamaskovaná připojení"
 
 #: src/muuli_wdr.cpp
 msgid "This option makes aMule only accept obfuscated connections. You will have less sources, but all your traffic will be obfuscated"
@@ -7326,7 +7339,7 @@ msgstr "Nepodařilo se odstranit registraci obslužného programu URL."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "macOS does not let an application stop being the default handler. To stop aMule opening these, make another application the default."
-msgstr ""
+msgstr "macOS neumožňuje aplikaci přestat být výchozím obslužným programem. Abyste zabránili otevírání aMule, nastavte jinou aplikaci jako výchozí."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The web server and aMule API require external connections to be enabled."
@@ -7337,15 +7350,14 @@ msgid "The aMule web server is deprecated. Consider running the aMule API instea
 msgstr "Webový server aMule je zastaralý. Zvažte místo něho použít aMule API."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid ""
 "Your server list sources are empty.\n"
 "Please add at least one URL of a valid server.met file.\n"
 "Click the \"Edit sources...\" button next to this checkbox to add one."
 msgstr ""
-"Váš seznam pro automatickou aktualizaci serverů je prázdný.\n"
+"Vaše zdroje seznamu serverů chybí.\n"
 "Zadejte prosím alespoň jednu URL adresu odkazující na platný soubor server.met.\n"
-"Kliknutím na tlačítko \"Seznam\" vedle tohoto zaškrtávacího políčka zadáte URL."
+"URL zadáte po kliknutím na tlačítko \"Upravit zdroje...\" vedle tohoto zaškrtávacího políčka."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Temporary files"
@@ -7495,23 +7507,20 @@ msgid "Server connection refresh interval: Disabled"
 msgstr "Interval obnovování připojení k serveru: zakázáno"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Bandwidth calculator"
-msgstr "Limity šířky pásma"
+msgstr "Kalkulačka šířky pásma"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Enter limits in Mbit/s. Zero means unlimited."
-msgstr ""
+msgstr "Zadejte limity v Mbit/s. Nula znamená bez omezení."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Download (Mbit/s)"
-msgstr "Stahování (%i)"
+msgstr "Stahování (Mbit/s)"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Upload (Mbit/s)"
-msgstr "Limit odesílání"
+msgstr "Odesílání (Mbit/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "disabled"
@@ -7544,6 +7553,9 @@ msgid ""
 "Chat and observed download completions support GUI commands with a remote core.\n"
 "Already completed downloads do not run commands at first sync or reconnect."
 msgstr ""
+"Základní příkazy je třeba nastavit v souboru amule.conf daemona.\n"
+"Chat a sledování dokončených stahování podporují příkazy z grafického rozhraní při použití vzdáleného jádra.\n"
+"U již dokončených stahování se příkazy při první synchronizaci nebo opětovném připojení nespouštějí."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The following variables will be replaced:"
@@ -7601,16 +7613,15 @@ msgstr "Zvolte místní složku"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Please enter an absolute path. A relative path would be resolved against the daemon's working directory, so it is not accepted."
-msgstr ""
+msgstr "Zadejte prosím absolutní/celou cestu. Relativní cesta by byla vedena od pracovní složky daemona, což není přijatelné."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Allowed folders for remote clients"
-msgstr ""
+msgstr "Povolené složky pro vzdálené klienty"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose a folder remote clients may use"
-msgstr "Vyberte adresář pro příchozí soubory"
+msgstr "Vyberte složku, kterou mohou používat vzdálení klienti"
 
 #: src/SearchDlg.cpp
 msgid "Clear Search History"
@@ -7660,20 +7671,19 @@ msgstr "Hlavní"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum duration (minutes)"
-msgstr ""
+msgstr "Minimální doba trvání (minuty)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
-msgstr ""
+msgstr "Minimální datový tok (kbps)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Kad applies these filters; eD2k servers may ignore them"
-msgstr ""
+msgstr "Kad používá tyto filtry; eD2k servery je mohou ignorovat"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
-msgstr "Připojený daemon nepodporuje Všechna vyhledávání."
+msgstr "Připojený daemon nepodporuje filtry médií. Pro použití těchto polí aktualizujte daemona."
 
 #: src/SearchList.cpp
 #, c-format
@@ -7686,9 +7696,9 @@ msgid "Only saving the first %u of %u results for search \"%s\"."
 msgstr "Ukládání jen prvních %u z %u výsledků vyhledávání \"%s\"."
 
 #: src/SearchList.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IO error while saving %s: %s"
-msgstr "Chyba I/O při čtení souboru %s: %s"
+msgstr "Chyba IO při ukládání %s: %s"
 
 #: src/SearchList.cpp
 msgid "WARNING: Stored search list corrupted, contains invalid header."
@@ -7699,9 +7709,8 @@ msgid "Invalid entry in stored search list, file may be corrupt"
 msgstr "Neplatný vstup v uchovávaném seznamu vyhledávání, soubor může být poškozen"
 
 #: src/SearchList.cpp
-#, fuzzy
 msgid "All search can't be done if neither eD2k nor Kad is available"
-msgstr "Vyhledávání v síti Kad není možné, pokud síť Kad není spuštěna"
+msgstr "Vyhledávání všude nelze provést, pokud není k dispozici eD2k ani Kad"
 
 #: src/SearchList.cpp
 msgid "eD2k search can't be done if eD2k is not connected"
@@ -7709,7 +7718,7 @@ msgstr "Vyhledávání v síti eD2k není možné bez připojení k této síti"
 
 #: src/SearchList.cpp
 msgid "All search: no usable Kad keyword; continuing with eD2k."
-msgstr ""
+msgstr "Vyhledávání všude: žádná použitelná klíčová slova Kad; pokračuji s eD2k."
 
 #: src/SearchList.cpp
 msgid "No keyword for Kad search - aborting"
@@ -7721,7 +7730,7 @@ msgstr "Neočekávaná chyba při pokusu o vyhledávání v síti Kad: "
 
 #: src/SearchList.cpp
 msgid "All search: Kad component could not start: "
-msgstr ""
+msgstr "Vyhledávání všude: komponent Kad nemohl být spuštěn: "
 
 #: src/SearchList.cpp
 msgid "Search timed out: the server did not answer."
@@ -7772,37 +7781,32 @@ msgid "New"
 msgstr "Nový"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "eD2k: Current server"
-msgstr "Seznam serverů eD2k (server.met)"
+msgstr "eD2k: Aktuální server"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "eD2k: All servers"
-msgstr "Odstranit všechny servery"
+msgstr "eD2k: Všechny servery"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "All networks"
-msgstr "Žádná síť"
+msgstr "Všechny sítě"
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "Search the connected eD2k server."
-msgstr "Aktuálně připojený server."
+msgstr "Prohledat připojený server eD2k."
 
 #: src/SearchModeIcons.h
 msgid "Search the connected eD2k server and other servers in the server list."
-msgstr ""
+msgstr "Prohledejte připojený server eD2k a další servery v seznamu serverů."
 
 #: src/SearchModeIcons.h
-#, fuzzy
 msgid "Search the Kad network."
-msgstr "Připojit se k síti."
+msgstr "Prohledat síť Kad."
 
 #: src/SearchModeIcons.h
 msgid "Search eD2k servers and Kad, using whichever networks are available."
-msgstr ""
+msgstr "Prohledejte servery eD2k a Kad, pomocí libovolných dostupných sítí."
 
 #: src/SearchPacket.cpp
 #, c-format
@@ -7851,36 +7855,35 @@ msgstr "Žádné vyhledávání k nahlášení.\n"
 #: src/SearchSourceFormat.h
 #, c-format
 msgid "Estimated availability: %u"
-msgstr ""
+msgstr "Odhadovaná dostupnost: %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "eD2k sources: %u"
-msgstr "Zdroje souboru:"
+msgstr "eD2k zdroje: %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Kad sources: %u"
-msgstr "Nalezené zdroje: %s"
+msgstr "Kad zdroje: %u"
 
 #: src/SearchSourceFormat.h
 msgid "Network counts may overlap; they are not added together."
-msgstr ""
+msgstr "Počty v jednotlivých sítích se mohou překrývat; nesčítají se."
 
 #: src/SearchSourceFormat.h
-#, fuzzy
 msgid "Network breakdown unavailable."
-msgstr "K dispozici je nová verze"
+msgstr "Rozbor sítě není k dispozici."
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Complete sources: %u"
-msgstr "Kompletní zdroje"
+msgstr "Kompletní zdroje: %u"
 
 #: src/SearchSourceFormat.h
-#, fuzzy, c-format
+#, c-format
 msgid "Direct client endpoints: %u"
-msgstr "Nové clientid je %u"
+msgstr "Přímé koncové body klienta: %u"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
@@ -7888,7 +7891,7 @@ msgstr "Selhalo připojení ke všem stálým serverům se zamaskováním, kter�
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
-msgstr "Připojení ke všem uvedeným serverům s obfuskací se nezdařilo. Následuje další pokus bez obfuskace."
+msgstr "Selhalo připojení ke všem uvedeným serverům se zamaskováním. Následuje další pokus bez zamaskování."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all static servers listed."
@@ -7915,19 +7918,19 @@ msgid "No valid servers to which to connect found in server list"
 msgstr "V seznamu serverů nebyly nalezeny žádné platné servery, ke kterým by bylo možné se připojit"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connected to %s (%s:%i), sending login request"
-msgstr "Připojeno k %s (%s:%i)"
+msgstr "Připojeno k %s (%s:%i), odesílání požadavku na přihlášení"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Obfuscated connection established on: %s (%s:%i)"
-msgstr "Připojení navázáno se serverem: %s"
+msgstr "Navázáno zamaskované spojení: %s (%s:%i)"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connection established on: %s (%s:%i)"
-msgstr "Připojení navázáno se serverem: %s"
+msgstr "Připojení navázáno: %s (%s:%i)"
 
 #: src/ServerConnect.cpp
 msgid "Fatal Error while trying to connect. Internet connection might be down"
@@ -7958,9 +7961,9 @@ msgid "ERROR: Socket invalid at timeout check"
 msgstr "CHYBA: Socket neplatný při kontrole časového limitu"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connection attempt to %s (%s:%i) timed out; retrying without obfuscation."
-msgstr "Vypršel časový limit pokusu o připojení k %s (%s:%i)."
+msgstr "Pokus o připojení k %s (%s:%i) vypršel; zkouším to znovu ale bez zamaskování."
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -8054,11 +8057,11 @@ msgstr "Selhání I/O při zápisu 'server.met': %s"
 
 #: src/ServerList.cpp
 msgid "A server list download is already in progress."
-msgstr ""
+msgstr "Stahování seznamu serverů již probíhá."
 
 #: src/ServerList.cpp
 msgid "No server list sources configured"
-msgstr ""
+msgstr "Nejsou nastavené žádné zdroje seznamu serverů"
 
 #: src/ServerList.cpp
 #, c-format
@@ -8125,7 +8128,7 @@ msgstr "(neznámý název)"
 #: src/ServerListCtrl.cpp
 #, c-format
 msgid "Are you sure you want to delete the static server %s"
-msgstr "Opravdu chcete odstranit statický server %s?"
+msgstr "Opravdu chcete smazat statický server %s"
 
 #: src/ServerListCtrl.cpp
 msgid "ms"
@@ -8280,11 +8283,11 @@ msgstr "Protokol aMuleGUI"
 
 #: src/ServerWnd.cpp
 msgid "Download and merge every saved source"
-msgstr ""
+msgstr "Stáhnout a sloučit každý uložený zdroj"
 
 #: src/ServerWnd.cpp
 msgid "Download this server.met URL once without saving it."
-msgstr ""
+msgstr "Stáhnout tuto adresu server.met jedenkrát a bez jejího uložení."
 
 #: src/ServerWnd.cpp
 msgid "Server not added: No IP or hostname specified."
@@ -8464,7 +8467,7 @@ msgstr "Extrakce mediálních metadat je zakázána v nastavení, není tedy co 
 
 #: src/SharedFileList.cpp
 msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
-msgstr ""
+msgstr "Tento aMule nemá pomocníka médií (amule-media-probe), takže nemůže znovu extrahovat mediální metadata."
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -8476,7 +8479,7 @@ msgstr[2] "Opětovná extrakce mediálních metadat %u sdílených souborů"
 
 #: src/SharedFileList.cpp
 msgid "The selected file has changed or is not a complete file."
-msgstr ""
+msgstr "Zvolený soubor byl změněn a nebo není kompletní."
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -8525,7 +8528,7 @@ msgstr[2] "Nalezeno %u nových sdílených souborů"
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Refused to rename '%s' to '%s': the new name must be a plain file name, not a path."
-msgstr ""
+msgstr "Odmítnuto přejmenování '%s' na '%s': nový název musí být prostý název souboru, ne cesta."
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8735,9 +8738,8 @@ msgid "A4AF"
 msgstr "A4AF"
 
 #: src/SplashScreen.cpp
-#, fuzzy
 msgid "Closing aMule"
-msgstr "Zobrazit aMule"
+msgstr "Zavírání aMule"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8775,14 +8777,14 @@ msgid "Crypt overhead (UDP): %s"
 msgstr "Režie šifrování (UDP): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "LowID to LowID Data (Session): %s"
-msgstr "Stažená data (relace / celkem): %s"
+msgstr "LowID na LowID Data (relace): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IPv6 Data (Session): %s"
-msgstr "Odeslaná data (relace / celkem): %s"
+msgstr "IPv6 Data (relace): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8885,34 +8887,33 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Nejvyšší počet připojení (odhad): %i"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "NAT Traversal (Session)"
-msgstr "NAT traverzování (uTP)"
+msgstr "NAT Traversal (relace)"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Server Hole Punches: %s"
-msgstr "Režie serveru (počet paketů): %s"
+msgstr "Server Hole Punches: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Successful Server Hole Punches: %s"
-msgstr ""
+msgstr "Úspěšné Server Hole Punches: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Lugdunum Callbacks: %s"
-msgstr ""
+msgstr "Zpětná volání v Lugdunum: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Successful Lugdunum Callbacks: %s"
-msgstr "Soubor %s byl úspěšně aktualizován"
+msgstr "Úspěšná zpětná volání Lugdunum: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "uTP Streams Moved to a New Port: %s"
-msgstr ""
+msgstr "uTP streamy přesunuty na nový port: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9016,10 +9017,6 @@ msgstr "Aktivní připojení (1:%u)"
 msgid "Not available"
 msgstr "Není k dispozici"
 
-#: src/StatTree.cpp
-msgid "Never"
-msgstr "Nikdy"
-
 #: src/TerminationProcess.cpp
 #, c-format
 msgid "Command '%s' with pid '%d' has finished with status code '%d'."
@@ -9063,7 +9060,7 @@ msgstr "Neplatný hash (délka by měla být přesně 32 znaků)\n"
 
 #: src/TextClient.cpp
 msgid "The connected daemon does not support All searches.\n"
-msgstr ""
+msgstr "Připojený daemon nepodporuje Vyhledávání všude.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -9461,7 +9458,6 @@ msgid "Execute a search."
 msgstr "Spustit vyhledávání."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -9484,16 +9480,18 @@ msgstr ""
 "    GLOBAL\n"
 "    LOCAL\n"
 "    KAD\n"
-"Příklad: 'search kad file' provede kad hledání výrazu \"file\".\n"
+"    ALL: Všechny sítě (vyžaduje podporu daemona)\n"
+"Příklad: 'search kad soubor' provede kad hledání výrazu \"soubor\".\n"
 "\n"
-"Před, za nebo mezi klíčová slova hledání lze přidat volitelné filtry:\n"
+"Volitelně je možné přidat další filtry před, za, nebo mezi\n"
+"vyhledávaná slova:\n"
 "    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
 "    --extension <ext>      (alias: --ext)\n"
 "    --avail <N>            minimální počet zdrojů\n"
 "    --min-size <N[KMG]>    nejmenší velikost souboru; K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    největší velikost souboru; stejné přípony\n"
 "Příklad: 'search global linux iso --type Iso --min-size 100M' vrátí\n"
-"výsledky pro \"linux iso\" typu souboru Iso o velikosti alespoň 100 MiB.\n"
+"výsledky pro \"linux iso\" typu souboru iso o velikosti alespoň 100 MiB.\n"
 
 #: src/TextClient.cpp
 msgid "Execute a global search."
@@ -9508,9 +9506,8 @@ msgid "Execute a kad search"
 msgstr "Spustit vyhledávání v síti Kad"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Execute an eD2k and Kad search"
-msgstr "Spustit vyhledávání v síti Kad"
+msgstr "Spustit vyhledávání v eD2k a Kad"
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -9546,6 +9543,9 @@ msgid ""
 "Without an id, the number refers to the last 'results' output, or to the most recently started search if nothing was listed yet.\n"
 "Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3.\n"
 msgstr ""
+"Zadejte číslo souboru uvedené v seznamu „výsledky“, případně následované identifikátorem vyhledávání.\n"
+"Bez identifikátoru se číslo vztahuje k poslednímu výstupu „výsledků“ nebo k naposledy spuštěnému vyhledávání, pokud zatím nebyl zobrazen žádný výpis.\n"
+"Příklad: příkaz 'download 12' stáhne soubor č. 12 z posledních výsledků; příkaz 'download 12 3' stáhne soubor č. 12 z vyhledávání č. 3.\n"
 
 #: src/TextClient.cpp
 msgid "Pause download."
@@ -9666,42 +9666,42 @@ msgstr "Ověření místních dat (%s): NALEZENY CHYBY! %s Chybné bloky: MD4: %
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: file %s was removed before it could be checked."
-msgstr ""
+msgstr "Ověření místních dat: soubor %s byl odebrán před tím, než mohl být kontrolován."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: could not read %s, so it was not checked."
-msgstr ""
+msgstr "Ověření místních dat: nešlo číst %s, takže jeho kontrola neproběhla."
 
 #: src/ThreadTasks.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Verify Local Data: ERRORS FOUND! %s Size on disk: %u bytes, expected: %u bytes."
-msgstr "Ověření místních dat (%s): NALEZENY CHYBY! %s Chybné bloky: MD4: %s. %s %s"
+msgstr "Ověření místních dat: NALEZENY CHYBY! %s velikost na disku je %u bajtů, očekáváno: %u bajtů."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: %s is larger than aMule supports, so it was not checked."
-msgstr ""
+msgstr "Ověření místních dat: %s je větší než aMule podporuje, takže nebyl zkontrolován."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: %s is empty, so there is nothing to check."
-msgstr ""
+msgstr "Ověření místních dat: %s je prázdný, takže není co kontrolovat."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: missing MD4 hashes for %s, so it was not checked."
-msgstr ""
+msgstr "Ověření místních dat: chybí MD4 hashe %s, takže nedošlo ke kontrole."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: %s was removed or changed during the check, which did not finish."
-msgstr ""
+msgstr "Ověření místních dat: %s byl odebrán nebo změněn během kontroly, která nebyla dokončena."
 
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "Verify Local Data: could not read %s, so the check did not finish: %s"
-msgstr ""
+msgstr "Ověření místních dat: nešlo číst %s, takže kontrola nebyla dokončena: %s"
 
 #: src/ThreadTasks.cpp
 #, c-format
@@ -9755,14 +9755,14 @@ msgid "Hashset requested for unknown file: %s"
 msgstr "Vyžádána hashová sada pro neznámý soubor: %s"
 
 #: src/UploadDiskIOThread.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not start the upload disk readers: %s"
-msgstr "Nepodařilo se zahájit Kad hledání"
+msgstr "Nepodařilo se spustit čtečky odesílání z disku: %s"
 
 #: src/UploadDiskIOThread.cpp
 #, c-format
 msgid "Upload disk reader error: %s"
-msgstr ""
+msgstr "Chyba čtení stavu odesílání z disku: %s"
 
 #: src/UploadDiskIOThread.cpp
 #, c-format
@@ -9782,7 +9782,7 @@ msgstr "Pozastavování odesílání souboru: %s"
 #: src/UserEvents.cpp
 #, c-format
 msgid "Command '%s' was not run on '%s' event: %s"
-msgstr ""
+msgstr "Příkaz '%s nebyl spuštěn na '%s' události: %s"
 
 #: src/UserEvents.cpp
 #, c-format
@@ -9794,9 +9794,8 @@ msgid "Download completed"
 msgstr "Stahování dokončeno"
 
 #: src/UserEvents.h
-#, fuzzy
 msgid "The full path to the file (empty in remote GUI mode)."
-msgstr "Celá cesta k souboru."
+msgstr "Úplná cesta k souboru (prázdná v režimu vzdáleného GUI)."
 
 #: src/UserEvents.h
 msgid "The name of the file without path component."
@@ -10558,61 +10557,60 @@ msgstr "Odstraňuji uživatelská data z $APPDATA\\aMule..."
 #: src/kademlia/kademlia/Indexed.cpp
 #, c-format
 msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be saved at shutdown."
-msgstr ""
+msgstr "Kad nemohl číst %s. Byl přejmenován na %s.bad, a nový index bude uložen při vypnutí."
 
 #: src/kademlia/kademlia/Indexed.cpp
 #, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad: %s. Its original file will not be overwritten."
-msgstr ""
+msgstr "Kad nemohl zachovat nečitelný index %s jako %s.bad: %s. Původní soubor nebude přepsán."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."
-msgstr ""
+msgstr "Kad nemohl načíst svůj uložený index. Byly zachovány stávající indexové soubory."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not save an index. The previous copy of that file was preserved."
-msgstr ""
+msgstr "Kad nemohl uložit index. Předchozí kopie souboru byla zachována."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not remove legacy ECPassword; cleanup will be retried on restart."
-msgstr ""
+msgstr "Nepodařilo se odebrat zastaralé ECPassword; pokus o vyčištění bude opakován při restartování."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not persist ECPasswordVerifier; using the legacy ECPassword in memory for this run. Migration will be retried on restart."
-msgstr ""
+msgstr "Nelze nastavit napevno ECPasswordVerifier; používám pro tuto relaci zastaralý ECPassword v paměti. Pokus o migraci bude opakován při restartu."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "Could not generate ECPasswordVerifier; external connections are disabled."
-msgstr "Heslo bylo nastaveno a externí připojení povolena."
+msgstr "Nepodařilo se vygenerovat ECPasswordVerifier; externí připojení jsou zakázána."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not generate ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Zamítnuta změna EC hesla; nepodařilo se vygenerovat ECPasswordVerifier. Aktivní přihlašovací údaj nebyl změněn."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not persist ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Zamítnuta změna EC hesla; nepodařilo se nastavit napevno ECPasswordVerifier. Aktivní přihlašovací údaj nebyl změněn."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not store ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Zamítnuta změna EC hesla; nepodařilo se uložit ECPasswordVerifier. Aktivní přihlašovací údaj nebyl změněn."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
-msgstr ""
+msgstr "ECPassword obsahuje digest, který je neplatný nebo má prázdné heslo. Pro nastavení nového EC hesla spusťte amuled --ec-config."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "Neplatný nebo nepodporovaný ECPasswordVerifier; odmítám externí připojení."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not compare legacy ECPassword with ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "Nelze porovnat zastaralé ECPassword s ECPasswordVerifier; odmítám externí připojení."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
-msgstr ""
+msgstr "Migrace změněného zastaralého ECPassword po přechodu na starší verzi; předchozí ověřovač již tuto relaci neověřuje."
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

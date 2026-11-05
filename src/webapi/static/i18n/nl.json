@@ -1071,5 +1071,6 @@
   "prefs_group_debug_logging": "Loggen van foutopsporing",
   "prefs_debugging_warning": "Foutopsporingslogs kunnen peer-IP-adressen, gebruikershashes en bestandsnamen bevatten. Gasten kunnen het logbestand lezen behalve als de foutopsporingsberichten alleen naar het logbestand gaan. Die optie is alleen van toepassing op nieuwe regels: eerder geschreven regels blijven leesbaar totdat het logbestand is gewist en het wissen leegt ook het logbestand van de daemon.",
   "prefs_group_debug_categories": "Berichtcategoriën",
-  "prefs_field_advanced_verbose_logging_logfile_only": "Alleen naar logbestand"
+  "prefs_field_advanced_verbose_logging_logfile_only": "Alleen naar logbestand",
+  "stats_tree_natt_utp_stream_moves": "uTP-Streams Verplaatst naar een Nieuwe Poort: %s"
 }
