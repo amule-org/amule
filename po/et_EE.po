@@ -5344,8 +5344,20 @@ msgid "Takes effect after restarting aMule."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Advertise my IPv6 address to other peers"
+msgid "Advertise my IPv6 address:"
 msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "When verified"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Always"
+msgstr ""
+
+#: src/muuli_wdr.cpp src/StatTree.cpp
+msgid "Never"
+msgstr "Mitte kunagi"
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -9023,10 +9035,6 @@ msgstr "Aktiivseid ühendusi (l:%u)"
 #: src/StatTree.cpp
 msgid "Not available"
 msgstr "Info puudub"
-
-#: src/StatTree.cpp
-msgid "Never"
-msgstr "Mitte kunagi"
 
 #: src/TerminationProcess.cpp
 #, c-format

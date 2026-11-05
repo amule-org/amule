@@ -5182,7 +5182,19 @@ msgid "Takes effect after restarting aMule."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Advertise my IPv6 address to other peers"
+msgid "Advertise my IPv6 address:"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "When verified"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Always"
+msgstr ""
+
+#: src/muuli_wdr.cpp src/StatTree.cpp
+msgid "Never"
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -8764,10 +8776,6 @@ msgstr ""
 
 #: src/StatTree.cpp
 msgid "Not available"
-msgstr ""
-
-#: src/StatTree.cpp
-msgid "Never"
 msgstr ""
 
 #: src/TerminationProcess.cpp

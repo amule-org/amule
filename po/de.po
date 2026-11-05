@@ -5390,8 +5390,21 @@ msgid "Takes effect after restarting aMule."
 msgstr "Wird nach einem Neustart von aMule wirksam."
 
 #: src/muuli_wdr.cpp
-msgid "Advertise my IPv6 address to other peers"
+#, fuzzy
+msgid "Advertise my IPv6 address:"
 msgstr "Meine IPv6-Adresse an andere Peers bekanntgeben"
+
+#: src/muuli_wdr.cpp
+msgid "When verified"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Always"
+msgstr ""
+
+#: src/muuli_wdr.cpp src/StatTree.cpp
+msgid "Never"
+msgstr "Niemals"
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -9106,10 +9119,6 @@ msgstr "Aktive Verbindungen (1:%u)"
 #: src/StatTree.cpp
 msgid "Not available"
 msgstr "Nicht verfügbar"
-
-#: src/StatTree.cpp
-msgid "Never"
-msgstr "Niemals"
 
 #: src/TerminationProcess.cpp
 #, c-format

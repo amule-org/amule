@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-04 09:09+0000\n"
+"PO-Revision-Date: 2026-11-05 10:40+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -21,7 +21,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.1.dev0\n"
+"X-Generator: Weblate 2026.11.2.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -5300,8 +5300,21 @@ msgid "Takes effect after restarting aMule."
 msgstr "Heeft effect nadat aMule herstart is."
 
 #: src/muuli_wdr.cpp
-msgid "Advertise my IPv6 address to other peers"
+#, fuzzy
+msgid "Advertise my IPv6 address:"
 msgstr "Adverteer mijn IPv6-adres naar andere peers"
+
+#: src/muuli_wdr.cpp
+msgid "When verified"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Always"
+msgstr ""
+
+#: src/muuli_wdr.cpp src/StatTree.cpp
+msgid "Never"
+msgstr "Nooit"
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -8852,7 +8865,7 @@ msgstr "Succesvolle Lugdunum Terugroepen: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "uTP Streams Moved to a New Port: %s"
-msgstr ""
+msgstr "uTP-Streams Verplaatst naar een Nieuwe Poort: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8955,10 +8968,6 @@ msgstr "Actieve verbindingen (1:%u)"
 #: src/StatTree.cpp
 msgid "Not available"
 msgstr "Niet beschikbaar"
-
-#: src/StatTree.cpp
-msgid "Never"
-msgstr "Nooit"
 
 #: src/TerminationProcess.cpp
 #, c-format

@@ -21,7 +21,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-03 11:54+0000\n"
+"PO-Revision-Date: 2026-11-05 10:40+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -29,7 +29,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.1.dev0\n"
+"X-Generator: Weblate 2026.11.2.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -541,9 +541,8 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "%s non avviato: non si trova né accanto ad aMule né nel PATH."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "An exception occurred while launching amuleweb."
-msgstr "Si è verificata un’eccezione durante l’avvio di amuleapi."
+msgstr "Si è verificata un’eccezione durante l’avvio di amuleweb."
 
 #: src/amule.cpp
 #, c-format
@@ -2757,7 +2756,7 @@ msgstr "L'estrazione dei metadati multimediali è disabilitata nelle preferenze"
 
 #: src/ExternalConn.cpp
 msgid "This aMule has no media helper (amule-media-probe)"
-msgstr "Questo aMule non dispone di un helper multimediale (amule-media-probe)."
+msgstr "Questo aMule non dispone di un helper multimediale (amule-media-probe)"
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -3165,29 +3164,28 @@ msgstr "Le chat correnti sono escluse da queste regole."
 
 #: src/FilterSelectionSummary.h
 msgid "Advanced spam filtering for non-friends is also enabled."
-msgstr ""
+msgstr "Anche il filtro antispam avanzato per i non amici è abilitato."
 
 #: src/FilterSelectionSummary.h
 msgid "First messages from non-friends require a CAPTCHA."
-msgstr ""
+msgstr "È richiesto un CAPTCHA per i primi messaggi provenienti dai non amici."
 
 #: src/FilterSelectionSummary.h
-#, fuzzy
 msgid "Received message text will also be written to the log."
-msgstr "Mostra nel log i messaggi ricevuti"
+msgstr "I messaggi ricevuti saranno scritti anche nei log."
 
 #: src/FilterSelectionSummary.h
 msgid "File comment filtering is off."
-msgstr ""
+msgstr "Il filtro dei commenti ai file è disattivato."
 
 #: src/FilterSelectionSummary.h
 msgid "No file comments will be hidden: the word list is empty."
-msgstr ""
+msgstr "Nessun commento al file verrà nascosto: l'elenco delle parole è vuoto."
 
 #: src/FilterSelectionSummary.h
 #, c-format
 msgid "File comments containing any of these literal terms will be hidden (ignoring case): %s."
-msgstr ""
+msgstr "I commenti ai file contenenti uno qualsiasi di questi termini letterali verranno nascosti (senza distinzione tra maiuscole e minuscole): %s."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -3512,7 +3510,7 @@ msgstr "Download HTTP cancellato"
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "Refusing to download %s: only http and https URLs are supported."
-msgstr ""
+msgstr "Impossibile scaricare %s: sono supportati solo URL http e https."
 
 #: src/HTTPDownload.cpp
 #, c-format
@@ -3638,9 +3636,9 @@ msgstr[0] "%u riga non valida è stata scartata."
 msgstr[1] "%u righe non valide sono state scartate."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace %s file, aborting update: %s"
-msgstr "Impossibile rinominare %s file, interruzione aggiornamento."
+msgstr "Impossibile rimpiazzare il file %s, aggiornamento interrotto: %s"
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
@@ -4163,9 +4161,8 @@ msgid "Invalid password, not a MD5 hash!"
 msgstr "Password non valida, non è un hash MD5!"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Could not generate SRP credentials."
-msgstr "Impossibile eliminare '%s' dal disco."
+msgstr "Impossibile generare le credenziali SRP."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
@@ -4251,9 +4248,9 @@ msgid "Extracting media metadata: %s"
 msgstr "Estrazione dei metadati multimediali con ffprobe: %s"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: parser failed for %s"
-msgstr "Metadati multimediali: ffprobe non riuscito (codice %d) per %s"
+msgstr "Metadati multimediali: parser fallito per %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5314,8 +5311,21 @@ msgid "Takes effect after restarting aMule."
 msgstr "Ha effetto dopo il riavvio di aMule."
 
 #: src/muuli_wdr.cpp
-msgid "Advertise my IPv6 address to other peers"
+#, fuzzy
+msgid "Advertise my IPv6 address:"
 msgstr "Comunica il mio indirizzo IPv6 agli altri peer"
+
+#: src/muuli_wdr.cpp
+msgid "When verified"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Always"
+msgstr ""
+
+#: src/muuli_wdr.cpp src/StatTree.cpp
+msgid "Never"
+msgstr "Mai"
 
 #: src/muuli_wdr.cpp
 msgid "Remove dead server after"
@@ -8971,10 +8981,6 @@ msgstr "Connessioni attive (1:%u)"
 msgid "Not available"
 msgstr "Non disponibile"
 
-#: src/StatTree.cpp
-msgid "Never"
-msgstr "Mai"
-
 #: src/TerminationProcess.cpp
 #, c-format
 msgid "Command '%s' with pid '%d' has finished with status code '%d'."
@@ -9713,9 +9719,9 @@ msgid "Hashset requested for unknown file: %s"
 msgstr "Hashset richiesto per il file sconosciuto: %s"
 
 #: src/UploadDiskIOThread.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not start the upload disk readers: %s"
-msgstr "Impossibile avviare una ricerca Kad"
+msgstr "Impossibile avviare i lettori dei dischi per gli upload: %s"
 
 #: src/UploadDiskIOThread.cpp
 #, c-format
@@ -10518,9 +10524,9 @@ msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be 
 msgstr "Kad non è riuscito a leggere %s. È stato rinominato in %s.bad e un nuovo indice verrà salvato alla chiusura."
 
 #: src/kademlia/kademlia/Indexed.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad: %s. Its original file will not be overwritten."
-msgstr "Kad non è riuscito a conservare l’indice illeggibile %s come %s.bad. Il file originale non verrà sovrascritto."
+msgstr "Kad non è riuscito a conservare l’indice illeggibile %s come %s.bad: %s. Il file originale non verrà sovrascritto."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."
