@@ -73,6 +73,7 @@
 #elif defined(HAVE_BFD)
 #include <ansidecl.h> // Do_not_auto_remove
 #include <bfd.h>      // Do_not_auto_remove
+#include <atomic>
 #endif
 
 #include <vector>
@@ -297,10 +298,10 @@ static void init_pie_base()
 
 static bfd *s_a_bfd;
 static asymbol **s_symbol_list;
-static bool s_have_backtrace_symbols = false;
-// One attempt per process: a binary we cannot read (an execute-only mode, or a container user
-// the owner does not map to) stays unreadable, and each retry would print the error again.
-static bool s_backtrace_info_tried = false;
+// Atomic: two threads may report at once.
+static std::atomic<bool> s_have_backtrace_symbols{ false };
+// One attempt per process: an unreadable binary stays unreadable, and each retry prints the error.
+static std::atomic<bool> s_backtrace_info_tried{ false };
 static const char *s_file_name;
 static const char *s_function_name;
 static unsigned int s_line_number;
@@ -342,8 +343,7 @@ static int get_backtrace_symbols(bfd *a_bfd, asymbol ***symbol_list_ptr)
 		return -1;
 	}
 
-	// A stripped binary: the bound above still counts the list's terminating NULL, but there is
-	// nothing in the list. Say so, or the report's raw frames come with no reason.
+	// Stripped: the bound above counted only the terminating NULL.
 	if (vectorsize == 0) {
 		fprintf(stderr,
 			"Error while getting backtrace symbols : No symbols in the executable (stripped?)\n");
@@ -375,12 +375,15 @@ void init_backtrace_info()
 		return;
 	}
 
-	s_have_backtrace_symbols = (get_backtrace_symbols(s_a_bfd, &s_symbol_list) > 0);
+	const bool haveSymbols = get_backtrace_symbols(s_a_bfd, &s_symbol_list) > 0;
 
 	// Same PIE-offset lookup the addr2line fallback uses: untranslated PCs fail
 	// bfd's section-bounds check and every amule frame symbolicates to "??" on
 	// PIE-by-default distros. init_pie_base() is idempotent.
 	init_pie_base();
+
+	// Last, so a thread that sees the symbols also sees the PIE base.
+	s_have_backtrace_symbols = haveSymbols;
 }
 
 void get_file_line_info(bfd *a_bfd, asection *section, void *_address)
@@ -470,8 +473,8 @@ wxString get_backtrace(unsigned n)
 	for (int i = 0; i < num_entries; ++i) {
 		wxString wxBtString = wxConvLibc.cMB2WX(bt_strings[i]);
 		rawline[i] = wxBtString;
-		// glibc writes "path(symbol+0xoffset) [0xaddress]". Search from the end: the path comes
-		// first and may itself hold any of these characters, a mangled symbol holds none.
+		// glibc writes "path(symbol+0xoffset) [0xaddress]". Search from the end: the path may hold
+		// any of these characters, a mangled symbol none.
 		int posLPar = wxBtString.Find('(', true);
 		int posRPar = wxBtString.Find(')', true);
 		int posLBra = wxBtString.Find('[', true);
@@ -523,22 +526,14 @@ wxString get_backtrace(unsigned n)
 	bool hasLineNumberInfo = false;
 
 #ifdef HAVE_BFD
-	// Marked tried before the attempt, on purpose: a fault inside bfd while it reads the binary
-	// reaches the crash handler, which calls back in here. That call skips the attempt and still
-	// reports. std::call_once would instead have it wait on the attempt it interrupted, forever.
-	if (!s_backtrace_info_tried) {
-		s_backtrace_info_tried = true;
+	// Marked before the attempt: a fault inside bfd re-enters here through the crash handler,
+	// which must report rather than retry. std::call_once would deadlock there.
+	if (!s_backtrace_info_tried.exchange(true)) {
 		init_backtrace_info();
 	}
 
-	// No assert when the symbols are missing: this runs from the fatal-signal and assert
-	// handlers, so a failed assert here re-enters get_backtrace(), fails again, and wx traps on
-	// the nested assert -- replacing the crash being reported with a SIGTRAP. The frames fall
-	// back to what backtrace_symbols() gave us: each one's name, where it has one, and offset.
-	// Who watches the watchmen? Not an assert, it turns out.
-	//
-	// Read once: another thread may still be setting the symbols up, and the loop and the
-	// formatting below must agree on whether the loop filled the line info.
+	// No assert on missing symbols: this runs from the crash and assert handlers, where a failed
+	// assert nests and wx traps. Read once, so the loop and the formatting below agree.
 	const bool haveSymbols = s_have_backtrace_symbols;
 	for (int i = 0; haveSymbols && i < num_entries; ++i) {
 		s_file_name = NULL;
@@ -599,10 +594,7 @@ wxString get_backtrace(unsigned n)
 		// through to wxTrap()'s int3. popen() is fork+waitpid with no wx in it.
 		FILE *pipe = popen((const char *)command.mb_str(), "r");
 		if (pipe) {
-			// One entry per line, however long: fgets() also stops where its buffer ends, and a
-			// demangled name can run to several times that -- hundreds of Boost.Asio ones do.
-			// Taking each piece for a line would pair every later frame with the wrong name,
-			// or fail the count below.
+			// fgets() also stops at the end of its buffer; demangled Boost.Asio names run longer.
 			std::string line;
 			char chunk[1024];
 			bool more = true;
@@ -622,11 +614,8 @@ wxString get_backtrace(unsigned n)
 				out.Add(wxConvLibc.cMB2WX(line.c_str()));
 				line.clear();
 			}
-			// Only an addr2line that ran and answered every address. pclose() returns -1 only
-			// for its own failure: a missing addr2line (the shell's 127) or one that could not
-			// read the binary exits non-zero having printed nothing, and the frames below
-			// would read past the end of out[] -- inside the crash handler, where wx's range
-			// assert then nests.
+			// A missing addr2line, or one that cannot read the binary, exits non-zero with no
+			// output. Trusting it would read past the end of out[].
 			const int status = pclose(pipe);
 			hasLineNumberInfo = status != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0 &&
 					    out.GetCount() == 2 * static_cast<size_t>(num_entries);
@@ -642,8 +631,7 @@ wxString get_backtrace(unsigned n)
 	for (int i = n + 1; i < num_entries; ++i) {
 		wxString btLine;
 		btLine << "[" << i << "] ";
-		// A line the parser could not split: as backtrace_symbols() gave it, which still holds
-		// whatever offset there is.
+		// A line the parser could not split.
 		if (libname[i].IsEmpty()) {
 			trace += btLine + rawline[i] + "\n";
 			continue;
@@ -653,12 +641,10 @@ wxString get_backtrace(unsigned n)
 		if (!namedBySymbols) {
 			funcname[i] = hasLineNumberInfo ? out[2 * i] : wxString("??");
 		}
-		/* If addr2line did not find a line number, use bt_string. So does a frame with nothing to
-		 * resolve against at all: a stripped or unreadable binary, or no addr2line. */
+		/* If addr2line did not find a line number, use bt_string */
 		if (!hasLineNumberInfo || out[2 * i + 1].Mid(0, 2) == "??") {
-			// Keep the offset: into the function backtrace_symbols() named, or else into the
-			// module, which is how a frame in a shared library -- never one bfd resolves -- is
-			// looked up later. The runtime address only matches a core of this same run.
+			// The offset, into the function or else the module, is what resolves the frame later;
+			// the runtime address only matches a core of this run.
 			if (namedBySymbols) {
 				btLine << funcname[i] << offset[i] << " in " << libname[i];
 			} else {

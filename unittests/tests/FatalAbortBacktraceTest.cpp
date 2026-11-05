@@ -461,18 +461,8 @@ bool Contains(const std::string &haystack, const char *needle)
 }
 
 #ifdef MULE_HAVE_LINUX_BACKTRACE
-// A binary bfd or addr2line gets no symbols from: one the running user may execute but not read
-// (an execute-only mode, or a container user the file's owner does not map to), so
-// /proc/self/exe cannot be opened, or a stripped one, which opens but has no symbol table. Or,
-// without bfd, no addr2line to ask at all. get_backtrace() is
-// called from the fatal-signal and assert handlers, so it has to degrade to raw frames rather than
-// assert -- the assert re-entered get_backtrace() and turned the crash being reported into a
-// SIGTRAP.
-//
-// The child is such a copy of this binary -- or, for the frame format, an intact one -- exec'd
-// with this variable set. It runs the scenario from static initialisation and exits before the
-// suite starts. So get_backtrace() runs before main(), with neither wx's app nor muleunit set up,
-// and has to keep needing nothing from them.
+// The child is a copy of this binary, exec'd with this variable set. It reports from static
+// initialisation and exits, so get_backtrace() must work before main(), without wx or muleunit.
 const char kBacktraceChildEnv[] = "MULE_TEST_BACKTRACE_CHILD";
 
 std::string s_childCopy;
@@ -496,20 +486,16 @@ std::string ThisBinaryPath()
 	return std::string(self, static_cast<size_t>(len));
 }
 
-// The frame the backtraces are taken in. Its name runs to over 1100 characters, mangled or not,
-// longer than a line fgets() reads in one go: Boost.Asio has hundreds of names like it, and
-// addr2line prints them whole.
+// Its name runs past 1100 characters, longer than one fgets() of addr2line's output.
 template <int... I> __attribute__((noinline)) void ReportFromALongName(std::integer_sequence<int, I...>)
 {
-	// Twice: the second call must neither retry the open nor use the handle the first one
-	// failed to set up.
+	// Twice: the second call must not retry the bfd setup.
 	fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
 	fprintf(stderr, "%s", static_cast<const char *>(get_backtrace(0).utf8_str()));
 	_exit(0);
 }
 
-// Reports from the virtual call std::ostream::write() makes into it, so the stack holds a
-// library frame with a C++ name, which has to come out demangled whether or not symbols loaded.
+// Called from std::ostream::write(), so the stack holds a C++ library frame to demangle.
 struct ReportingStreamBuf : public std::streambuf
 {
 	std::streamsize xsputn(const char *, std::streamsize) override
@@ -523,9 +509,7 @@ struct BacktraceChild
 {
 	BacktraceChild()
 	{
-		// The variable holds the copy's path, and only that copy acts on it. Set to anything
-		// for a whole run, it would otherwise end every run of this binary here, with exit 0
-		// and no test run.
+		// Only the copy the variable names acts, so a variable left set cannot skip the suite.
 		const char *copy = getenv(kBacktraceChildEnv);
 		if (!copy || ThisBinaryPath() != copy) {
 			return;
@@ -547,8 +531,7 @@ void ChildExecCopy()
 	_exit(98); // exec failed
 }
 
-// Copies this binary next to itself, rather than to /tmp, which may be mounted noexec. The tag
-// ends up in the copy's name, so the raw frames of a backtrace taken in it can be recognised.
+// Next to this binary, as /tmp may be noexec. The tag goes into the copy's name.
 bool CopyThisBinary(const char *tag)
 {
 	const std::string self = ThisBinaryPath();
@@ -562,14 +545,12 @@ bool CopyThisBinary(const char *tag)
 	return out.good();
 }
 
-// Removes the copy when the test leaves, also when an assertion throws on the way out.
 struct RemoveTheCopyOnExit
 {
 	~RemoveTheCopyOnExit() { unlink(s_childCopy.c_str()); }
 };
 
-// Strips the copy in place with binutils' strip, run directly rather than through a shell. False
-// when strip is missing or fails.
+// False when strip is missing or fails.
 bool StripTheCopy()
 {
 	posix_spawn_file_actions_t actions;
@@ -594,8 +575,7 @@ bool StripTheCopy()
 	return WIFEXITED(status) && WEXITSTATUS(status) == 0;
 }
 
-// Whether this binary is position-independent: ELF e_type ET_DYN (3), read in the byte order
-// e_ident[EI_DATA] gives (1 little-endian, 2 big-endian).
+// ELF e_type ET_DYN (3), in the byte order of e_ident[EI_DATA] (2 = big-endian).
 bool ThisBinaryIsPie()
 {
 	std::ifstream self("/proc/self/exe", std::ios::binary);
@@ -609,9 +589,8 @@ bool ThisBinaryIsPie()
 	return type == 3;
 }
 
-// Both calls printed the copy's frames unresolved, as "?? in path(+0x...)[0x...]". For a PIE
-// binary the "+0x" offset into it must be there: ASLR makes the runtime address worthless, and the
-// offset is what addr2line resolves later. A non-PIE binary loads where it was linked and has none.
+// Both calls printed the copy's frames as "?? in path(+0x...)[0x...]". Only a PIE binary has the
+// offset: a non-PIE one loads where it was linked.
 bool HasRawFramesOfTheCopy(const std::string &stderrText)
 {
 	const std::string frame = "?? in " + s_childCopy;
@@ -621,8 +600,8 @@ bool HasRawFramesOfTheCopy(const std::string &stderrText)
 	return !ThisBinaryIsPie() || CountOccurrences(stderrText, (frame + "(+0x").c_str()) >= 2;
 }
 
-// Both calls named a shared library's C++ frame, "ns::function(args)+0x... in lib.so...", and
-// no line holds a mangled name. Which function it is depends on the C++ library's version.
+// Both calls printed a library frame as "ns::function(args)+0x... in lib.so...", and no line holds
+// a mangled name. Which function depends on the libstdc++ version.
 bool NamesLibraryFramesDemangled(const std::string &stderrText)
 {
 	int named = 0;
@@ -663,9 +642,8 @@ int CountLinesLongerThan(const std::string &stderrText, const char *what, size_t
 	return found;
 }
 
-// Every line that names the path names it as the module, after " in ", and never where the
-// function goes -- which is where a parser that takes the path's '(' for glibc's put it. bfd may
-// resolve the frame to file:line instead, so the path may not appear at all.
+// The path only appears after " in ", never where the function name goes. bfd may resolve the
+// frame to file:line, so it may not appear at all.
 bool ThePathOnlyFollowsIn(const std::string &stderrText, const char *pathPart)
 {
 	std::string::size_type start = 0;
@@ -988,15 +966,13 @@ TEST(FatalAbortBacktrace, AnUnreadableBinaryStillGivesRawFrames)
 	ASSERT_TRUE(NamesLibraryFramesDemangled(r.stderr_text));
 }
 
-// Stripped opens fine and reaches the symbol table, which is empty -- a different way to the
-// same missing symbols, and one that prints no error on its way there.
+// Opens fine, but the symbol table is empty.
 TEST(FatalAbortBacktrace, AStrippedBinaryStillGivesRawFrames)
 {
 	const bool copied = CopyThisBinary(".stripped.");
 	RemoveTheCopyOnExit removeTheCopy;
 	ASSERT_TRUE(copied);
-	// strip comes with binutils, like the bfd headers, but a build host can have one without
-	// the other. Without it the case cannot be set up.
+	// A host can have the bfd headers without strip.
 	if (!StripTheCopy()) {
 		return;
 	}
@@ -1015,9 +991,8 @@ TEST(FatalAbortBacktrace, AStrippedBinaryStillGivesRawFrames)
 	ASSERT_TRUE(NamesLibraryFramesDemangled(r.stderr_text));
 }
 
-// With symbols loaded, bfd resolves this binary's own frames, never a shared library's. Those keep
-// the offset backtrace_symbols() gave, which is what looks them up later. The name the copy runs
-// under holds '+' and parentheses, which the line parser must not take for its own.
+// bfd never resolves a shared library's frames, so those keep backtrace_symbols()' offset. The
+// copy's name holds '+' and parentheses, which the parser must not take for glibc's.
 TEST(FatalAbortBacktrace, AnUnresolvedFrameKeepsItsOffset)
 {
 	const bool copied = CopyThisBinary(".odd+(name).");
@@ -1031,17 +1006,14 @@ TEST(FatalAbortBacktrace, AnUnresolvedFrameKeepsItsOffset)
 	ASSERT_FALSE(r.exited_on_signal);
 	ASSERT_EQUALS(0, r.exit_code);
 	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
-	// A piece rather than the whole name: a parser that splits the path at its '(' leaves the
-	// whole nowhere, and this piece in the function's place.
+	// The piece a parser splitting at the path's '(' puts in the function's place.
 	ASSERT_TRUE(ThePathOnlyFollowsIn(r.stderr_text, "name)."));
-	// glibc's exported entry point, on every startup stack, with its offset into the function.
+	// On every startup stack.
 	ASSERT_TRUE(CountOccurrences(r.stderr_text, "] __libc_start_main+0x") >= 2);
 }
 
 #ifndef HAVE_BFD
-// addr2line prints the long name of the frame the backtraces are taken in on one line, longer than
-// a single fgets() reads. Read in pieces, the extra lines would pair every later frame with the
-// wrong name, or fail the count and leave every frame unresolved.
+// A name longer than one fgets() read must not shift the name of every later frame.
 TEST(FatalAbortBacktrace, ALongFunctionNameKeepsTheFramesResolved)
 {
 	const bool copied = CopyThisBinary(".longname.");
@@ -1055,16 +1027,13 @@ TEST(FatalAbortBacktrace, ALongFunctionNameKeepsTheFramesResolved)
 	ASSERT_FALSE(r.exited_on_signal);
 	ASSERT_EQUALS(0, r.exit_code);
 	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
-	// Named by addr2line on one line longer than fgets() reads at once -- its demangler may leave
-	// the name mangled, which is beside the point here -- and the frame after it named right,
-	// which a pairing shifted by extra lines would not give.
+	// addr2line may leave the long name mangled; only its length matters here.
 	ASSERT_TRUE(CountLinesLongerThan(r.stderr_text, "ReportFromALongName", 1023) >= 2);
 	ASSERT_TRUE(
 		CountOccurrences(r.stderr_text, "] (anonymous namespace)::ReportingStreamBuf::xsputn(") >= 2);
 }
 
-// Without bfd, frames are resolved by running addr2line, which may not be installed. A failed run
-// still prints nothing, and its frames must not be read as though it had answered.
+// A failed addr2line run prints nothing, and must not be read as an answer.
 TEST(FatalAbortBacktrace, AMissingAddr2lineStillGivesRawFrames)
 {
 	const bool copied = CopyThisBinary(".noaddr2line.");
