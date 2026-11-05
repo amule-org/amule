@@ -2094,7 +2094,7 @@ msgid "Progress"
 msgstr ""
 
 #: src/DownloadListCtrl.cpp src/FileDetailListCtrl.cpp src/PartFile.cpp
-#: src/SearchListCtrl.cpp
+#: src/SearchListCtrl.cpp src/TransferWnd.cpp
 msgid "Sources"
 msgstr ""
 
@@ -2936,7 +2936,8 @@ msgstr ""
 msgid "%.1f%% done"
 msgstr ""
 
-#: src/FileDetailDialog.cpp src/utils/wxCas/src/wxcasframe.cpp
+#: src/FileDetailDialog.cpp src/TransferWnd.cpp
+#: src/utils/wxCas/src/wxcasframe.cpp
 #, c-format
 msgid "%.2f KiB/s"
 msgstr ""
@@ -4600,7 +4601,7 @@ msgstr ""
 msgid "File sources:"
 msgstr ""
 
-#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+#: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp src/TransferWnd.cpp
 msgid "General"
 msgstr ""
 
@@ -8104,7 +8105,7 @@ msgstr ""
 msgid "Kademlia client ID:"
 msgstr ""
 
-#: src/ServerWnd.cpp
+#: src/ServerWnd.cpp src/TransferWnd.cpp
 msgid "Status:"
 msgstr ""
 
@@ -9412,6 +9413,54 @@ msgstr ""
 #: src/ThreadTasks.cpp
 #, c-format
 msgid "WARNING: The file '%s' already exists, new file renamed to '%s'."
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Transfers"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Comments"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Select a download to view its details."
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Select a single download to view its details."
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Filename:"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Hash:"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Size:"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Completed:"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Transferred:"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Download speed:"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "Sources:"
+msgstr ""
+
+#: src/TransferWnd.cpp
+msgid "No comments available."
 msgstr ""
 
 #: src/TransferWnd.cpp

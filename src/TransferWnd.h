@@ -26,6 +26,7 @@
 #ifndef TRANSFERWND_H
 #define TRANSFERWND_H
 
+#include <wx/timer.h>
 #include <wx/panel.h>    // Needed for wxPanel
 #include <wx/notebook.h> // needed for wxBookCtrlEvent in wx 2.8
 #include "Types.h"       // Needed for uint32
@@ -40,6 +41,7 @@ class wxCommandEvent;
 class wxMouseEvent;
 class wxEvent;
 class wxMenu;
+class wxTextCtrl;
 
 /**
  * Manages the lists and other controls in the transfer window; primarily, the user-defined
@@ -82,6 +84,8 @@ public:
 	 * Call before displaying the dialog: does a few tasks to make sure it looks the right way.
 	 */
 	void Prepare();
+	void UpdateDetailsLayout();
+	void UpdateDownloadDetails();
 
 	//! Pointer to the download-queue.
 	CDownloadListCtrl *downloadlistctrl;
@@ -89,6 +93,13 @@ public:
 	CSourceListCtrl *clientlistctrl;
 
 private:
+	void OnDetailsSize(wxSizeEvent &event);
+	bool m_layoutPending = false;
+	wxTextCtrl *m_generalDetails = nullptr;
+	wxTextCtrl *m_transferDetails = nullptr;
+	wxTextCtrl *m_commentDetails = nullptr;
+	wxTimer m_detailsTimer;
+
 	//! Contains the current (or last if the clientlist is hidden) position of the splitter.
 	int m_splitter;
 	//! Minimum position of splitter bar

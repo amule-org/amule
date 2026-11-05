@@ -522,7 +522,12 @@ void CGenericClientListCtrl::RemoveKnownFile(CKnownFile *file)
 void CGenericClientListCtrl::ShowSourcesCount(int diff)
 {
 	m_clientcount += diff;
-	wxStaticText *label = CastByID(ID_CLIENTCOUNT, GetParent(), wxStaticText);
+	// Sources can be nested in a notebook while the count remains in its outer
+	// header. Start locally so other client lists keep their own count label.
+	wxStaticText *label = nullptr;
+	for (wxWindow *scope = GetParent(); scope && !label; scope = scope->GetParent()) {
+		label = wxDynamicCast(scope->FindWindow(ID_CLIENTCOUNT), wxStaticText);
+	}
 
 	if (label) {
 		label->SetLabel(CFormat("%i") % m_clientcount);

@@ -870,6 +870,7 @@ void CDownloadListCtrl::DoItemSelectionChanged()
 	}
 	std::sort(filesVector.begin(), filesVector.end());
 	theApp->amuledlg->m_transferwnd->clientlistctrl->ShowSources(filesVector);
+	theApp->amuledlg->m_transferwnd->UpdateDownloadDetails();
 }
 
 void CDownloadListCtrl::ShowFileDetailDialog(long row)
