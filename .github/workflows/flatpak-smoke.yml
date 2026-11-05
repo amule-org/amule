@@ -11,7 +11,9 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  # cache-save-newest lists the repository's caches and deletes the generations
+  # its save replaces.
+  actions: write
 
 defaults:
   run:
@@ -21,13 +23,17 @@ jobs:
   desktop:
     name: ${{ matrix.session }} (software rendering)
     runs-on: ubuntu-26.04
-    timeout-minutes: 15
+    # Allows for a slow mirror on an empty cache. The GUI step has its own limit.
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       # One session at a time on master pushes, like the packaging matrices.
       max-parallel: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 1 || 10 }}
       matrix:
         session: [x11, gnome-wayland, kde-wayland]
+        include:
+          - { session: gnome-wayland, compositor: gnome-shell }
+          - { session: kde-wayland, compositor: kwin-wayland }
     steps:
       - uses: actions/checkout@v7
       - name: Record bundle provenance
@@ -47,17 +53,16 @@ jobs:
           run-id: ${{ inputs.build_run_id }}
           github-token: ${{ github.token }}
       - name: Install desktop test tools
-        env:
-          SESSION: ${{ matrix.session }}
+        uses: ./.github/actions/apt-install
+        with:
+          packages: >-
+            flatpak dbus-x11 xvfb xauth xdotool openbox x11-utils
+            python3-gi python3-pil imagemagick mesa-utils ${{ matrix.compositor }}
+          # The sessions install different packages. Only the first to add any
+          # saves in a run, so the cache takes up to three runs to hold them all.
+          save: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+      - name: Install the bundle
         run: |
-          sudo apt-get update
-          packages=(flatpak dbus-x11 xvfb xauth xdotool openbox x11-utils
-                    python3-gi python3-pil imagemagick mesa-utils)
-          case "$SESSION" in
-            gnome-wayland) packages+=(gnome-shell) ;;
-            kde-wayland) packages+=(kwin-wayland) ;;
-          esac
-          sudo apt-get install -y "${packages[@]}"
           flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           flatpak install --user --noninteractive dist/*.flatpak
       - name: Check drawing failure policy

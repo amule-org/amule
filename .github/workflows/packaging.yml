@@ -27,6 +27,8 @@ on:
       - 'packaging/**'
       - '.github/workflows/packaging.yml'
       - '.github/workflows/flatpak-smoke.yml'
+      - '.github/apt-ci.conf'
+      - '.github/actions/apt-install/**'
       - 'src/**'
       # Web UI translations; I18n CI checks them.
       - '!src/webapi/static/i18n/**'
@@ -342,7 +344,7 @@ jobs:
       build_run_id: ${{ inputs.flatpak_smoke_run_id || format('{0}', github.run_id) }}
     permissions:
       contents: read
-      actions: read
+      actions: write
 
   # ------------------------------------------------------------------
   # macOS — native arm64 + x86_64 builds, then lipo-merge to Universal2
