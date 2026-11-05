@@ -86,11 +86,9 @@ CUploadQueue::CUploadQueue()
  */
 bool CUploadQueue::TryStartUploadCallback(CUpDownClient *client, uint64 now)
 {
-	if (!IsUploadCallbackCandidate(client->m_bAddNextConnect,
-		    theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort())) ||
-		!MayStartUploadCallback(client->m_uploadCallbackSpent,
-			client->m_uploadCallbackSentAt,
-			client->GetLastUpRequest())) {
+	if (!client->m_bAddNextConnect || !MayStartUploadCallback(client->m_uploadCallbackSpent,
+						  client->m_uploadCallbackSentAt,
+						  client->GetLastUpRequest())) {
 		return false;
 	}
 	const unsigned maxSlots = GetMaxSlots();
@@ -104,10 +102,23 @@ bool CUploadQueue::TryStartUploadCallback(CUpDownClient *client, uint64 now)
 	if (inFlight >= MaxInflightUploadCallbacks(freeSlots, lastupslotHighID)) {
 		return false;
 	}
-	client->SendClassicCallbackRequest();
+	if (IsUploadCallbackCandidate(client->m_bAddNextConnect,
+		    theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort())) &&
+		client->SendClassicCallbackRequest()) {
+		AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
+	} else {
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+		if (!client->TrySendForeignNatCallbackRequest(kUploadCallbackClassicTargetShare) &&
+			!client->TrySendLowIdHolePunchRequest() &&
+			!client->TrySendLugdunumNatCallbackRequest(client->GetUserIDHybrid())) {
+			return false;
+		}
+#else
+		return false;
+#endif
+	}
 	client->NoteUploadCallbackSent(now);
 	client->MarkUploadCallbackSpent();
-	AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
 	return true;
 }
 

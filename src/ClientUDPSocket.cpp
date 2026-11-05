@@ -1089,7 +1089,8 @@ bool CClientUDPSocket::SendForeignNatCallbackRequest(CServer *server,
 	uint32 targetId,
 	uint8_t ourCrypt,
 	uint16 sourceTcpPort,
-	const std::optional<NatServerHolePunch::Hash> &knownHash)
+	const std::optional<NatServerHolePunch::Hash> &knownHash,
+	unsigned maxTargets)
 {
 	if (server == nullptr || !Ok() ||
 		!m_foreignCallbacks.TryStart(server->GetIP(),
@@ -1097,7 +1098,8 @@ bool CClientUDPSocket::SendForeignNatCallbackRequest(CServer *server,
 			targetId,
 			sourceTcpPort,
 			knownHash,
-			::GetTickCount64())) {
+			::GetTickCount64(),
+			maxTargets)) {
 		return false;
 	}
 	const auto payload = NatServerHolePunch::BuildForeignCallbackRequest(targetId, ourCrypt);

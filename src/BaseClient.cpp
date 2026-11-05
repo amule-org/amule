@@ -2007,7 +2007,7 @@ CServer *CUpDownClient::ForeignNatCallbackServer() const
 #endif
 }
 
-bool CUpDownClient::TrySendForeignNatCallbackRequest()
+bool CUpDownClient::TrySendForeignNatCallbackRequest(unsigned maxTargets)
 {
 #ifndef AMULE_UTP_TRANSPORT
 	return false;
@@ -2027,7 +2027,7 @@ bool CUpDownClient::TrySendForeignNatCallbackRequest()
 		knownHash = hash;
 	}
 	if (!theApp->clientudp->SendForeignNatCallbackRequest(
-		    server, GetUserIDHybrid(), ourCrypt, GetUserPort(), knownHash)) {
+		    server, GetUserIDHybrid(), ourCrypt, GetUserPort(), knownHash, maxTargets)) {
 		return false;
 	}
 	// As a Lugdunum request: the attempt is the request, its success this source's hello.

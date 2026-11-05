@@ -52,9 +52,11 @@
 #include "ProtocolPeerIdentity.h"
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
-#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "NatServerHolePunch.h" // Needed for callback request policy
+#if defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
-#include "NatServerHolePunch.h" // Needed for PendingCallbackRequest
+#endif
 #endif
 #include "SessionTrafficStats.h" // Needed for AMULE_SESSION_TRAFFIC_STATS
 
@@ -378,7 +380,7 @@ private:
 	CServer *ForeignNatCallbackServer() const;
 	//! Sends the cross-server OP_NAT_CALLBACKREQUEST to ForeignNatCallbackServer(). Returns whether
 	//! the request went out; the request limits can hold it back.
-	bool TrySendForeignNatCallbackRequest();
+	bool TrySendForeignNatCallbackRequest(unsigned maxTargets = kUploadCallbackTargetBudget);
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	// The source's own target dials us, so our request's success is that source's hello.
