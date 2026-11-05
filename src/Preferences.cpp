@@ -1405,7 +1405,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 		(new Cfg_Bool("/eMule/SearchHistoryEnabled", s_rememberSearchHistory, true)));
 
 	/** GUI appearance */
-	NewCfgItem(IDC_3DDEPTH, (MkCfg_Int("/eMule/3DDepth", s_depth3D, 10)));
+	NewCfgItem(IDC_3DDEPTH, (MkCfg_Int("/eMule/3DDepth", s_depth3D, 3)));
 	NewCfgItem(IDC_TOOLTIPDELAY, (MkCfg_Int("/eMule/ToolTipDelay", s_iToolDelayTime, 1)));
 	NewCfgItem(IDC_SHOWOVERHEAD, (new Cfg_Bool("/eMule/ShowOverhead", s_bshowoverhead, false)));
 	NewCfgItem(IDC_EXTCATINFO, (new Cfg_Bool("/eMule/ShowInfoOnCatTabs", s_showCatTabInfos, true)));
