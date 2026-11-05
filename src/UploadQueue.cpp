@@ -84,22 +84,20 @@ CUploadQueue::CUploadQueue()
  * actually be given: the in-flight ceiling mirrors the slots admission can hand out, so an
  * all-LowID queue cannot turn into a burst of requests.
  */
-bool CUploadQueue::TryStartUploadCallback(CUpDownClient *client, uint64 now)
+bool CUploadQueue::TryStartUploadCallback(CUpDownClient *client, uint64 now, unsigned inFlightCeiling)
 {
 	if (!client->m_bAddNextConnect || !MayStartUploadCallback(client->m_uploadCallbackSpent,
 						  client->m_uploadCallbackSentAt,
 						  client->GetLastUpRequest())) {
 		return false;
 	}
-	const unsigned maxSlots = GetMaxSlots();
-	const unsigned freeSlots = maxSlots > m_uploadinglist.size() ? maxSlots - m_uploadinglist.size() : 0;
 	unsigned inFlight = 0;
 	for (const CClientRef &waiting : m_waitinglist) {
 		if (waiting.GetClient()->HasUploadCallbackInFlight(now)) {
 			inFlight++;
 		}
 	}
-	if (inFlight >= MaxInflightUploadCallbacks(freeSlots, lastupslotHighID)) {
+	if (inFlight >= inFlightCeiling) {
 		return false;
 	}
 	if (IsUploadCallbackCandidate(client->m_bAddNextConnect,
@@ -170,6 +168,12 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 	// clients as enabled for upload.
 	uint16 rank = 1;
 	bool bestClientFound = false;
+	// How many callbacks this pass may have in flight: the slots admission can give at its start.
+	// Read once here because lastupslotHighID changes as the pass takes clients, and a callback
+	// started halfway through must not be judged against a ceiling the pass itself moved.
+	const unsigned maxSlots = GetMaxSlots();
+	const unsigned freeSlots = maxSlots > m_uploadinglist.size() ? maxSlots - m_uploadinglist.size() : 0;
+	const unsigned callbackCeiling = MaxInflightUploadCallbacks(freeSlots, lastupslotHighID);
 	// The first client its scope cap holds back that could take a spare slot now.
 	CClientRefList::iterator overCap = m_waitinglist.end();
 	for (it = m_waitinglist.begin(); it != m_waitinglist.end();) {
@@ -193,7 +197,7 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 				// No better high id client, so start upload to this one once it connects
 				cur_client->m_bAddNextConnect = true;
 				if (bestClient) {
-					TryStartUploadCallback(cur_client, tick);
+					TryStartUploadCallback(cur_client, tick, callbackCeiling);
 				}
 			} else {
 				// We found a high id client (or a currently connected low id client, or a

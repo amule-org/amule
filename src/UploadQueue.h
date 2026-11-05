@@ -82,7 +82,7 @@ public:
 private:
 	bool TryTakeLowIdAlternationSlot(CUpDownClient *client);
 	bool IsWithinUploadScopeLimit(CUpDownClient *client);
-	bool TryStartUploadCallback(CUpDownClient *client, uint64 now);
+	bool TryStartUploadCallback(CUpDownClient *client, uint64 now, unsigned inFlightCeiling);
 	void RemoveFromWaitingQueue(CClientRefList::iterator pos);
 	uint32 GetMaxSlots() const;
 	void AddUpNextClient(CUpDownClient *directadd = 0);
