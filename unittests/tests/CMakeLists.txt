@@ -3087,6 +3087,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			)
 			set_tests_properties (UploadSlotScopeIntegrationTest PROPERTIES LABELS "integration")
 		endif()
+		add_test (NAME HashsetAnswerIntegrationTest
+			COMMAND ${Python3_EXECUTABLE} -u
+				${CMAKE_CURRENT_SOURCE_DIR}/HashsetAnswerIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (HashsetAnswerIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME ShareExcludeDefaultsIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ShareExcludeDefaultsIntegrationTest.py $<TARGET_FILE:amuled>
@@ -3922,6 +3927,7 @@ foreach (ec_wire_test IN ITEMS
 	GlobalSearchSilentServerIntegrationTest
 	GlobalSourceRequestIntegrationTest
 	HashingCancelIntegrationTest
+	HashsetAnswerIntegrationTest
 	IntegrationFixtureUnitTest
 	KadBuddyLifecycleIntegrationTest
 	KadDistributionECTest
