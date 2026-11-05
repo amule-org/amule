@@ -580,6 +580,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		ApplyUtpCryptParameters();
 #endif
 		Notify_SharedCtrlRefreshClient(m_client->ECID(), AVAILABLE_SOURCE);
+#ifndef CLIENT_GUI
+		theApp->uploadqueue->AdmitUploadCallbackAnswer(m_client);
+#endif
 		if ((m_client->GetHashType() == SO_EMULE) && !bIsMuleHello) {
 			m_client->SendMuleInfoPacket(false);
 		}

@@ -1978,7 +1978,6 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 	if (theApp->serverconnect->IsHolePunchExtensionActive()) {
 		theApp->serverconnect->TrySendLowIdHolePunchKeepalive();
 	}
-	m_lowIdHolePunchRequested = true;
 	return true;
 }
 
@@ -2086,7 +2085,7 @@ void CUpDownClient::RetryLugdunumCallbackAwaitingServerKey(uint64 now)
 #endif
 #endif
 
-bool CUpDownClient::SendClassicCallbackRequest()
+void CUpDownClient::SendClassicCallbackRequest()
 {
 	CMemFile data;
 	// AFAICS, this id must be reversed to be sent to clients
@@ -2096,7 +2095,6 @@ bool CUpDownClient::SendClassicCallbackRequest()
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
 	theApp->serverconnect->SendPacket(packet);
-	return true;
 }
 
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
@@ -2141,7 +2139,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 					// The source is on another server, which wakes it for us.
 				} else if (NatServerHolePunch::ShouldRequestLowIdHolePunch(
 						   BuildLowIdHolePunchRequestFacts(*this))) {
-					TrySendLowIdHolePunchRequest();
+					m_lowIdHolePunchRequested = TrySendLowIdHolePunchRequest();
 				} else {
 					TrySendLugdunumNatCallbackRequest();
 				}

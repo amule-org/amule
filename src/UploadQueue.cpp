@@ -84,16 +84,11 @@ CUploadQueue::CUploadQueue()
  * actually be given: the in-flight ceiling mirrors the slots admission can hand out, so an
  * all-LowID queue cannot turn into a burst of requests.
  */
-bool CUploadQueue::TryStartUploadCallback(CUpDownClient *client, uint64 now, unsigned inFlightCeiling)
+bool CUploadQueue::TryStartUploadCallback(
+	CUpDownClient *client, uint64 now, unsigned inFlight, unsigned inFlightCeiling)
 {
 	if (!client->m_bAddNextConnect || !MayStartUploadCallback(client->m_uploadCallbackSpent)) {
 		return false;
-	}
-	unsigned inFlight = 0;
-	for (const CClientRef &waiting : m_waitinglist) {
-		if (waiting.GetClient()->HasUploadCallbackInFlight(now)) {
-			inFlight++;
-		}
 	}
 	if (inFlight >= inFlightCeiling) {
 		return false;
@@ -102,15 +97,16 @@ bool CUploadQueue::TryStartUploadCallback(CUpDownClient *client, uint64 now, uns
 	// session, and TryToContact() checks both for the same reason: a LowID is valid only on its
 	// own server, so the request would wake a different client on ours.
 	if (theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort()) &&
-		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort()) &&
-		client->SendClassicCallbackRequest()) {
+		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort())) {
+		client->SendClassicCallbackRequest();
 		AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
 	} else {
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 		if (!client->TrySendForeignNatCallbackRequest(kUploadCallbackForeignTargetShare) &&
-			!client->TrySendLowIdHolePunchRequest() &&
-			!client->TrySendLugdunumNatCallbackRequest(client->GetUserIDHybrid())) {
-			return false;
+			!client->TrySendLowIdHolePunchRequest()) {
+			// The route that records the attempt reports nothing, exactly as it does on the
+			// download side, so reaching it counts as the attempt.
+			client->TrySendLugdunumNatCallbackRequest();
 		}
 #else
 		return false;
@@ -175,6 +171,12 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 	const unsigned maxSlots = GetMaxSlots();
 	const unsigned freeSlots = maxSlots > m_uploadinglist.size() ? maxSlots - m_uploadinglist.size() : 0;
 	const unsigned callbackCeiling = MaxInflightUploadCallbacks(freeSlots, lastupslotHighID);
+	unsigned inFlightCallbacks = 0;
+	for (const CClientRef &waiting : m_waitinglist) {
+		if (waiting.GetClient()->HasUploadCallbackInFlight(tick)) {
+			++inFlightCallbacks;
+		}
+	}
 	// The first client its scope cap holds back that could take a spare slot now.
 	CClientRefList::iterator overCap = m_waitinglist.end();
 	for (it = m_waitinglist.begin(); it != m_waitinglist.end();) {
@@ -198,7 +200,10 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 				// No better high id client, so start upload to this one once it connects
 				cur_client->m_bAddNextConnect = true;
 				if (bestClient) {
-					TryStartUploadCallback(cur_client, tick, callbackCeiling);
+					if (TryStartUploadCallback(
+						    cur_client, tick, inFlightCallbacks, callbackCeiling)) {
+						++inFlightCallbacks;
+					}
 				}
 			} else {
 				// We found a high id client (or a currently connected low id client, or a
@@ -540,6 +545,17 @@ CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
  * so it is assigned an extra one, taking the count one over the configured number; no further
  * LowID client gets a slot until a HighID client has, or a slot really is free.
  */
+void CUploadQueue::AdmitUploadCallbackAnswer(CUpDownClient *client)
+{
+	if (!client->IsUploadCallbackExpected(::GetTickCount64())) {
+		return;
+	}
+	client->ClearUploadCallbackInFlight();
+	if (!TryTakeLowIdAlternationSlot(client)) {
+		client->SendRankingInfo();
+	}
+}
+
 bool CUploadQueue::TryTakeLowIdAlternationSlot(CUpDownClient *client)
 {
 	if (!client->m_bAddNextConnect) {
