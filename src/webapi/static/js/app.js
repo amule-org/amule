@@ -42,9 +42,15 @@ function currentRoute() {
   return known ? key : DEFAULT_ROUTE;
 }
 
-// Set when a reverse proxy signed the user in: signing out of amuleapi alone
-// would sign them straight back in on the next page load.
+// Set when a reverse proxy signed the user in. Such a user may have no
+// password, and signing out of amuleapi alone would sign them straight back in.
+let proxyUser = null;
 let proxyLogoutUrl = null;
+
+function rememberSession(s) {
+  proxyUser = s.user || null;
+  proxyLogoutUrl = s.logout_url || null;
+}
 
 // --- root ---------------------------------------------------------------
 function App() {
@@ -53,6 +59,9 @@ function App() {
   const [auth, setAuth] = useState("checking");
   // Why we landed back on the login screen, when it wasn't the user's doing.
   const [notice, setNotice] = useState("");
+  // Bumped to remount the shell, and so restart the live-data layer, after a
+  // proxy sign-in replaces a dead session.
+  const [sessionKey, setSessionKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -66,23 +75,39 @@ function App() {
       searches.reset(); // its poll timer and tabs are module-level too
       chats.reset();
       if (!alive) return;
-      setNotice(reason === "rate_limited" ? t("login_err_rate_limited") : t("login_session_expired"));
-      setAuth("out");
+      const showLogin = () => {
+        setNotice(reason === "rate_limited" ? t("login_err_rate_limited") : t("login_session_expired"));
+        setAuth("out");
+      };
+      if (!proxyUser || reason === "rate_limited") {
+        showLogin();
+        return;
+      }
+      // Once: if the proxy still signs the user in, carry on without a form.
+      proxyUser = null;
+      api.session()
+        .then((s) => {
+          if (!alive) return;
+          rememberSession(s);
+          setSessionKey((k) => k + 1);
+          setAuth(s.role || "guest");
+        })
+        .catch(() => { if (alive) showLogin(); });
     });
     api.session()
       .then((s) => {
-        proxyLogoutUrl = s.logout_url || null;
+        rememberSession(s);
         if (alive) setAuth(s.role || "guest");
       })
       .catch(() => { if (alive) setAuth("out"); });
     return () => { alive = false; setUnauthorizedHandler(null); };
   }, []);
 
-  const onLoggedIn = (role) => { setNotice(""); setAuth(role); };
+  const onLoggedIn = (role) => { rememberSession({}); setNotice(""); setAuth(role); };
 
   if (auth === "checking") return html`<${Placeholder} kind="loading">${t("app_loading")}<//>`;
   if (auth === "out") return html`<${Login} notice=${notice} onSuccess=${onLoggedIn} />`;
-  return html`<${Shell} role=${auth} onLogout=${() => setAuth("out")} />`;
+  return html`<${Shell} key=${sessionKey} role=${auth} onLogout=${() => setAuth("out")} />`;
 }
 
 // --- shell --------------------------------------------------------------

@@ -11,6 +11,8 @@
 #   * A proxy session needs the same header from a trusted address on every
 #     request, so a missing or different user, an untrusted address or the
 #     option turned off gives 401.
+#   * A header sent twice, in any spelling, is no header.
+#   * A changed ProxyAuthRole ends older proxy sessions.
 #   * A password change does not end a proxy session. Password logins keep
 #     working, and their sessions have `user: null`.
 #   * ProxyAuthHeader without ProxyAuthTrustedAddresses stops the daemon.
@@ -132,6 +134,10 @@ _assert_status 401 "proxy cookie with another user"
 _curl -H "Cookie: amuleapi_token=$ALICE" -H "Remote-User: alice" -H "remote-user: alice" "$P/auth/passwords"
 _assert_status 401 "header sent twice"
 
+# A proxy that appends leaves the client's copy first.
+_curl -H "Remote-User: mallory" -H "Remote-User: alice" "$P/auth/session"
+_assert_status 401 "two copies of the header in the same spelling start no session"
+
 _curl -H "Cookie: amuleapi_token=$ALICE" -H "Remote-User: bob" "$P/auth/session"
 _assert_status 200 "GET /auth/session as another user replaces the session"
 _assert_json_eq '.user' bob "new session is for the new user"
@@ -172,6 +178,12 @@ BOB=$(_cookie)
 # --- Guest role. -----------------------------------------------------
 echo "--- trusted proxy, guest role, no logout URL ---"
 _restart Remote-User "127.0.0.1" guest ""
+_curl -H "Cookie: amuleapi_token=$BOB" -H "Remote-User: bob" "$P/auth/passwords"
+_assert_status 401 "admin proxy session ends when ProxyAuthRole becomes guest"
+_curl -H "Cookie: amuleapi_token=$BOB" -H "Remote-User: bob" "$P/auth/session"
+_assert_status 200 "GET /auth/session after the role change"
+_assert_json_eq '.role' guest "the new session has the new role"
+_assert_json_eq '.user' bob "the new session is for the same user"
 _curl -H "Remote-User: carol" "$P/auth/session"
 _assert_status 200 "GET /auth/session as guest"
 _assert_json_eq '.role' guest "session role is guest"

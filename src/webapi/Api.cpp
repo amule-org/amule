@@ -35,6 +35,7 @@
 #include "AmuleApiConfig.h"
 #include "App.h"
 #include "Auth.h"
+#include "ProxyAuth.h"
 #include "ConstantTime.h"
 #include "Etag.h"
 #include "JsonWriter.h"
@@ -262,9 +263,12 @@ AuthOutcome AuthenticateRequest(const CHttpServer::Request &req,
 	}
 	// A proxy session lives only while the proxy keeps naming the same user. This ends
 	// it on SSO sign-out, stops a cookie left in a shared browser, and stops a route
-	// that skips the proxy's own auth.
+	// that skips the proxy's own auth. A changed ProxyAuthRole ends it too, as a
+	// password change ends password sessions.
 	if (!out.verified.sub.empty()) {
-		if (webapi::ProxyAuthUser(proxy, req.remote_addr, req.headers) != out.verified.sub) {
+		if (webapi::ProxyAuthUser(proxy, req.remote_addr, req.headers, req.repeated_headers) !=
+				out.verified.sub ||
+			out.verified.role != proxy.role) {
 			out.rejection = ErrorResponse(
 				401, "unauthorized", "reverse proxy sign-in does not match this session");
 			return out;
@@ -2218,7 +2222,8 @@ CHttpServer::Response CApiDispatcher::HandleSession(const CHttpServer::Request &
 	// authenticates a request: the proxy adds it to cross-site requests too, and the
 	// SameSite cookie is what keeps those out.
 	const webapi::ProxyAuthPolicy &proxy = m_config.AuthCfg().proxy;
-	const std::string proxy_user = webapi::ProxyAuthUser(proxy, req.remote_addr, req.headers);
+	const std::string proxy_user =
+		webapi::ProxyAuthUser(proxy, req.remote_addr, req.headers, req.repeated_headers);
 	AuthOutcome a;
 	if (!proxy_user.empty()) {
 		// Not rate limited: the proxy has already signed this user in, and every

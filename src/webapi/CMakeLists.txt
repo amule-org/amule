@@ -28,6 +28,7 @@ add_executable (amuleapi
 	Api.cpp
 	App.cpp
 	Auth.cpp
+	ProxyAuth.cpp
 	EventBus.cpp
 	EventDiff.cpp
 	HttpServer.cpp

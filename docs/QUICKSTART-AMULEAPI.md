@@ -259,7 +259,9 @@ runs on another host or in another container, list that address. amuleapi
 refuses to start when the header is set and the list is empty. Every user the
 proxy lets in gets `ProxyAuthRole`. `ProxyAuthLogoutUrl` is optional: when it is
 set, the WebUI sign-out goes there. Without it, sign-out ends the amuleapi
-session, and the next page load starts a new one from the header.
+session, and the next page load starts a new one from the header. When a
+session ends on its own, for example after 24 hours, the WebUI asks for a new
+one before it shows the password form.
 
 **The proxy must replace the header on every request.** If it passes on a
 header the browser sent, anyone can sign in as anyone. nginx's

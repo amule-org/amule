@@ -29,6 +29,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <thread>
 
@@ -77,6 +78,9 @@ public:
 		std::string method; // "GET", "POST", ...
 		std::string target; // raw URI: "/api/v1/version?x=1"
 		std::map<std::string, std::string> headers;
+		// Lowercase names that arrived more than once in the same spelling. `headers` keeps
+		// only the first copy of those.
+		std::set<std::string> repeated_headers;
 		std::string body;
 		// Client IP as observed by the accept socket. amuleapi rate-limits by this
 		// string verbatim; an `X-Forwarded-For` honour toggle is a follow-up.

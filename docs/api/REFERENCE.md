@@ -227,10 +227,11 @@ How it works:
 
 - amuleapi reads the header only when the TCP peer address is in `ProxyAuthTrustedAddresses`. It never reads `X-Forwarded-For` for this. From any other address the header is ignored, and password login works as usual.
 - [`GET /auth/session`](#get-apiv1authsession) with no valid session but with the header from a trusted address starts a session and sets the normal session cookie. The header alone authenticates no other request: the proxy adds it to cross-site requests too, and the `SameSite=Strict` cookie is what keeps those out.
-- Every later request with that session must come from a trusted address and carry the same, non-empty user name in the header. Otherwise it gets `401 unauthorized` (`reverse proxy sign-in does not match this session`). So signing out of the proxy, another user in the same browser, a route that skips the proxy's own login, or turning `ProxyAuthHeader` off, all end the session.
-- A header value that is empty, longer than 256 bytes or holds a control character counts as no header.
+- Every later request with that session must come from a trusted address and carry the same, non-empty user name in the header. Otherwise it gets `401 unauthorized` (`reverse proxy sign-in does not match this session`). So signing out of the proxy, another user in the same browser, a route that skips the proxy's own login, or turning `ProxyAuthHeader` off, all end the session. A change to `ProxyAuthRole` ends it too, and the next `/auth/session` starts one with the new role.
+- A header value that is empty, longer than 256 bytes, holds a control character, or comes more than once counts as no header.
 - `POST /auth/logout` revokes the session as usual. Without `ProxyAuthLogoutUrl`, the next page load starts a new session from the header.
-- Rate limits, revocation and event streams work as they do for a password session.
+- Starting a session from the header is not rate limited: the proxy has already signed the user in, and every user behind it shares one address. Other requests count against the token limiter as usual, and revocation works as for a password session.
+- An open [`/events`](EVENTS.md) stream keeps the headers it opened with, so a sign-out at the proxy does not end it. It ends at logout, revocation or expiry.
 
 **The proxy must replace the header on every request.** If it passes a header the client sent through unchanged, anyone can sign in as any user. See the QUICKSTART for nginx examples.
 

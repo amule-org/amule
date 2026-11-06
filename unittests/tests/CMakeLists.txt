@@ -2303,7 +2303,7 @@ endif()
 add_executable (AmuleApiConfigTest
 	AmuleApiConfigTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/AmuleApiConfig.cpp
-	${CMAKE_SOURCE_DIR}/src/webapi/Auth.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/ProxyAuth.cpp
 )
 add_test (NAME AmuleApiConfigTest COMMAND AmuleApiConfigTest)
 # 60 s lane. Runs the production 210,000-iteration PBKDF2.
@@ -2326,6 +2326,7 @@ target_link_libraries (AmuleApiConfigTest
 add_executable (AuthTest
 	AuthTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/Auth.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/ProxyAuth.cpp
 )
 add_test (NAME AuthTest COMMAND AuthTest)
 target_include_directories (AuthTest

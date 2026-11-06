@@ -25,6 +25,7 @@
 #include <muleunit/test.h>
 
 #include "Auth.h"
+#include "ProxyAuth.h"
 
 #include "Jwt.h"
 
@@ -344,6 +345,8 @@ ProxyAuthPolicy TrustLoopback()
 	return p;
 }
 
+const std::set<std::string> kNone;
+
 std::map<std::string, std::string> UserHeader(const std::string &name, const std::string &value)
 {
 	return { { name, value } };
@@ -366,11 +369,12 @@ TEST(Auth, CanonicalIpAddress_ReducesMappedIpv4)
 TEST(Auth, ProxyAuthUser_TrustedPeer)
 {
 	const ProxyAuthPolicy p = TrustLoopback();
-	ASSERT_EQUALS(
-		std::string("alice"), ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "alice")));
 	ASSERT_EQUALS(std::string("alice"),
-		ProxyAuthUser(p, "::ffff:127.0.0.1", UserHeader("remote-user", " alice ")));
-	ASSERT_EQUALS(std::string("alice"), ProxyAuthUser(p, "::1", UserHeader("REMOTE-USER", "alice")));
+		ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "alice"), kNone));
+	ASSERT_EQUALS(std::string("alice"),
+		ProxyAuthUser(p, "::ffff:127.0.0.1", UserHeader("remote-user", " alice "), kNone));
+	ASSERT_EQUALS(
+		std::string("alice"), ProxyAuthUser(p, "::1", UserHeader("REMOTE-USER", "alice"), kNone));
 }
 
 // X-Forwarded-For is the client's to set; only the TCP peer counts.
@@ -379,28 +383,29 @@ TEST(Auth, ProxyAuthUser_UntrustedPeerIgnored)
 	const ProxyAuthPolicy p = TrustLoopback();
 	auto headers = UserHeader("Remote-User", "alice");
 	headers["X-Forwarded-For"] = "127.0.0.1";
-	ASSERT_TRUE(ProxyAuthUser(p, "192.0.2.7", headers).empty());
-	ASSERT_TRUE(ProxyAuthUser(p, "", headers).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "192.0.2.7", headers, kNone).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "", headers, kNone).empty());
 }
 
 TEST(Auth, ProxyAuthUser_OffWithoutHeaderName)
 {
 	ProxyAuthPolicy p = TrustLoopback();
 	p.header.clear();
-	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "alice")).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "alice"), kNone).empty());
 }
 
 TEST(Auth, ProxyAuthUser_RejectsBadValues)
 {
 	const ProxyAuthPolicy p = TrustLoopback();
-	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", {}).empty());
-	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "")).empty());
-	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "  ")).empty());
-	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "al\x01ice")).empty());
-	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", std::string(257, 'a'))).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", {}, kNone).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", ""), kNone).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "  "), kNone).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "al\x01ice"), kNone).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", std::string(257, 'a')), kNone)
+			    .empty());
 	ASSERT_EQUALS(std::string(256, 'a'),
-		ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", std::string(256, 'a'))));
-	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote_User", "alice")).empty());
+		ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", std::string(256, 'a')), kNone));
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote_User", "alice"), kNone).empty());
 }
 
 // A second copy means the proxy appended to a client-sent header instead of replacing it.
@@ -408,5 +413,10 @@ TEST(Auth, ProxyAuthUser_RepeatedHeaderRejected)
 {
 	const ProxyAuthPolicy p = TrustLoopback();
 	std::map<std::string, std::string> headers{ { "Remote-User", "alice" }, { "remote-user", "alice" } };
-	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", headers).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", headers, kNone).empty());
+	// The transport keeps the first of two copies in the same spelling and names it here.
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "mallory"), { "remote-user" })
+			    .empty());
+	ASSERT_EQUALS(std::string("alice"),
+		ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "alice"), { "cookie" }));
 }

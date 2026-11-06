@@ -31,10 +31,10 @@
 
 #include <wx/string.h>
 
-class wxFileConfig;
-
-#include "Auth.h"
 #include "Credentials.h"
+#include "ProxyAuth.h"
+
+class wxFileConfig;
 
 // amuleapi's three on-disk config files, in the user's amule config dir, independent of
 // remote.conf:

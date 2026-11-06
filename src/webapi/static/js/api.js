@@ -153,7 +153,7 @@ export const api = {
   del: (path, body) => request("DELETE", path, { body }),
 
   // auth. login/session bypass the gate (they are how a dead session comes
-  // back); a winning login re-arms the client. logout stays gated on purpose:
+  // back); a winning login or session check re-arms the client. logout stays gated on purpose:
   // once the session is dead the server would only answer it with another
   // 401, and the caller treats a failure as "logged out" anyway.
   login: async (password) => {
@@ -163,5 +163,11 @@ export const api = {
     return res;
   },
   logout: () => request("POST", "auth/logout"),
-  session: () => request("GET", "auth/session", { noGate: true }),
+  // A reverse proxy sign-in comes back through here, so a winning check
+  // re-arms the client too.
+  session: async () => {
+    const res = await request("GET", "auth/session", { noGate: true });
+    sessionDead = false;
+    return res;
+  },
 };
