@@ -393,6 +393,11 @@ add_test (NAME AdvertisedIPv6Test COMMAND AdvertisedIPv6Test)
 target_include_directories (AdvertisedIPv6Test PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (AdvertisedIPv6Test muleunit mulecommon)
 
+add_executable (IPv6ReachabilityProofTest IPv6ReachabilityProofTest.cpp)
+add_test (NAME IPv6ReachabilityProofTest COMMAND IPv6ReachabilityProofTest)
+target_include_directories (IPv6ReachabilityProofTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (IPv6ReachabilityProofTest muleunit mulecommon)
+
 add_executable (ServerIPv6VerdictTest ServerIPv6VerdictTest.cpp)
 add_test (NAME ServerIPv6VerdictTest COMMAND ServerIPv6VerdictTest)
 target_include_directories (ServerIPv6VerdictTest PRIVATE ${CMAKE_SOURCE_DIR}/src)

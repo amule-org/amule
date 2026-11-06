@@ -87,6 +87,7 @@
 #include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h"         // Needed for AdvertisedIPv6ForPeers
+#include "IPv6ReachabilityProof.h"  // Needed for inbound IPv6 hello proof
 #include "IPv6ChangeNotification.h" // Needed for OP_CHANGE_CLIENT_IP policy
 #endif
 #include "ChatState.h"         // Needed for ChatStateAfterFailedConnect
@@ -805,6 +806,16 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 		if (!m_preserveIdentityOnHello) {
 			SetUserAddress(m_socket->GetPeerAddress());
 		}
+#ifdef ENABLE_IPV6
+		// ProcessHelloTypePacket is reached only after a complete inbound OP_HELLO was parsed.
+		// Count it only when the actual route reached our chosen address from another /48.
+		const CNetworkAddress localIPv6 = SelectedLocalIPv6().value_or(CNetworkAddress::Absent());
+		const CNetworkAddress peerAddress = m_socket->GetPeerAddress();
+		if (localIPv6.IsIPv6() && peerAddress.IsIPv6() &&
+			peerAddress.TruncatedToPrefix(48) != localIPv6.TruncatedToPrefix(48)) {
+			IPv6ReachabilityProof().NoteHello(::GetTickCount64());
+		}
+#endif
 	} else {
 		throw wxString("Huh, socket failure. Avoided crash this time.");
 	}

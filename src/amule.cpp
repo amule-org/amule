@@ -77,6 +77,7 @@
 #ifdef ENABLE_IPV6
 #include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::SetConfigured
 #include "AdvertisedIPv6.h"         // Needed for ChooseAdvertisedIPv6
+#include "IPv6ReachabilityProof.h"  // Needed for clearing inbound proof on address changes
 #include "IPv6ChangeNotification.h" // Needed for ShouldMarkIPv6ChangeNotification
 #endif
 #include "HashListFile.h"
@@ -2053,6 +2054,7 @@ void RefreshLocalPublicIPv6Addresses()
 		ChooseAdvertisedIPv6(interfaces, thePrefs::GetNetworkInterface());
 	if (choice != s_advertisedIPv6Choice) {
 		ObservedPublicIPv6().ForgetVerdicts();
+		IPv6ReachabilityProof().Clear();
 	}
 	s_advertisedIPv6Choice = choice;
 #endif
