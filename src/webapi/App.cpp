@@ -38,10 +38,6 @@
 #include "PathPatterns.h" // StripTrailingSlash
 #include "config.h"       // VERSION
 
-#ifdef __WXMAC__
-#include "MacBackgroundOnly_mac.h" // Needed for mac_declare_background_only
-#endif
-
 #include <ec/cpp/RemoteConnect.h> // SetEcConnectionLostHandler
 #include <wx/filename.h>          // wxFileName::FileExists
 
@@ -67,22 +63,7 @@
 #endif
 #endif
 
-#ifdef __WXMAC__
-// This daemon's executable sits in aMule.app/Contents/MacOS, so LaunchServices gives it the
-// bundle's identity the moment it reaches the window server -- which wxEntryStart() does even
-// with wxUSE_GUI=0 compiled out. The result is a second aMule tile in the Dock that bounces
-// forever, because a daemon never completes an application launch. Becoming background-only
-// before wx starts prevents the registration; amuleapi has no window to show.
-IMPLEMENT_APP_NO_MAIN(CamuleapiApp)
-int main(int argc, char **argv)
-{
-	wxDISABLE_DEBUG_SUPPORT();
-	mac_declare_background_only();
-	return wxEntry(argc, argv);
-}
-#else
 IMPLEMENT_APP(CamuleapiApp)
-#endif
 
 namespace
 {

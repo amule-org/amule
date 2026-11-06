@@ -92,9 +92,7 @@ if (WITH_LIBPNG)
 endif()
 
 if (APPLE)
-	# Keeps amuleweb out of the Dock: launched from aMule.app/Contents/MacOS,
-	# it would otherwise register as a Foreground app of the bundle and bounce
-	# there forever. See MacBackgroundOnly_mac.mm.
+	# Mark this helper process background-only before wx starts.
 	target_sources (amuleweb
 		PRIVATE ${CMAKE_SOURCE_DIR}/src/MacBackgroundOnly_mac.mm
 	)

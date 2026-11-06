@@ -11,13 +11,15 @@
 
 #include <ApplicationServices/ApplicationServices.h>
 
-#include "MacBackgroundOnly_mac.h"
-
-extern "C" bool mac_declare_background_only()
+// Run before main(), so wxEntry() cannot register this helper process as a foreground app.
+// The background-only process transform was added to the SDK in macOS 10.7.
+__attribute__((constructor)) static void mac_declare_background_only()
 {
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1070
 	// kCurrentProcess names this process; the first field of the serial number is unused then.
 	// TransformProcessType is the runtime equivalent of LSUIElement for a binary that shares a
 	// bundle with a real GUI app, so it narrows the effect to this process only.
 	ProcessSerialNumber psn = { 0, kCurrentProcess };
-	return TransformProcessType(&psn, kProcessTransformToBackgroundApplication) == noErr;
+	TransformProcessType(&psn, kProcessTransformToBackgroundApplication);
+#endif
 }
