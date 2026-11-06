@@ -468,6 +468,11 @@ wxString get_backtrace(unsigned n)
 	std::vector<wxString> funcname(num_entries);
 	std::vector<wxString> offset(num_entries);
 	std::vector<wxString> address(num_entries);
+	// backtrace() gives return addresses. A call that ends its function, as a noreturn call can,
+	// returns to the first byte of the next function, so frames are looked up a byte back. A PC a
+	// signal interrupted is exact, and a byte back stays in its function unless it faulted on the
+	// function's first instruction.
+	std::vector<unsigned long> callSite(num_entries, 0);
 	wxString AllAddresses;
 
 	for (int i = 0; i < num_entries; ++i) {
@@ -514,6 +519,10 @@ wxString get_backtrace(unsigned n)
 			len = posRBra - posLBra - 1;
 			address[i] = wxBtString.Mid(posLBra + 1, len);
 			AllAddresses += address[i] + " ";
+			unsigned long pc = 0;
+			if (address[i].ToULong(&pc, 0) && pc != 0) {
+				callSite[i] = pc - 1;
+			}
 		}
 	}
 	// bt_strings is backtrace_symbols()'s char** block; passing it through
@@ -541,11 +550,7 @@ wxString get_backtrace(unsigned n)
 		s_line_number = 0;
 		s_found = false;
 
-		unsigned long addr;
-		address[i].ToULong(
-			&addr, 0); // As it's "0x" prepended, wx will read it as base 16. Hopefully.
-
-		bfd_map_over_sections(s_a_bfd, get_file_line_info, (void *)addr);
+		bfd_map_over_sections(s_a_bfd, get_file_line_info, (void *)callSite[i]);
 
 		if (s_found) {
 			wxString function = wxConvLibc.cMB2WX(s_function_name);
@@ -574,10 +579,8 @@ wxString get_backtrace(unsigned n)
 		init_pie_base();
 		wxString translatedAddresses;
 		for (int i = 0; i < num_entries; ++i) {
-			unsigned long addr = 0;
-			address[i].ToULong(&addr, 0);
 			translatedAddresses +=
-				CFormat("0x%lx ") % static_cast<unsigned long>(addr - s_pie_base);
+				CFormat("0x%lx ") % static_cast<unsigned long>(callSite[i] - s_pie_base);
 		}
 
 		// Its stderr would be ours, which may be a pipe nobody drains: a warning there would

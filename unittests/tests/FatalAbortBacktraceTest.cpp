@@ -1004,6 +1004,21 @@ TEST(FatalAbortBacktrace, AnUnresolvedFrameKeepsItsOffset)
 	ASSERT_TRUE(CountOccurrences(r.stderr_text, "] __libc_start_main+0x") >= 2);
 }
 
+// xsputn() ends with a call that never returns, so its return address lies past its last
+// instruction, where padding or the next function starts. The frame must still name xsputn.
+TEST(FatalAbortBacktrace, AFrameEndingInANoreturnCallNamesItsOwnFunction)
+{
+	const bool copied = CopyThisBinary(".callsite.");
+	RemoveTheCopyOnExit removeTheCopy;
+	ASSERT_TRUE(copied);
+	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
+
+	const ChildResult r = RunInChild(ChildExecCopy);
+	AssertCleanChildExit(r);
+	ASSERT_TRUE(
+		CountOccurrences(r.stderr_text, "] (anonymous namespace)::ReportingStreamBuf::xsputn(") >= 2);
+}
+
 #ifndef HAVE_BFD
 // A name longer than one fgets() read must not shift the name of every later frame.
 TEST(FatalAbortBacktrace, ALongFunctionNameKeepsTheFramesResolved)
