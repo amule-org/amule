@@ -158,11 +158,10 @@ public:
 	/// Number of selected rows.
 	int GetSelectedItemCount() const;
 
-	/// Downloads every selected item into @a category, or into the drop-down's selection if -1.
-	/// With @a fromContextMenu the snapshotted files the menu was opened on (see
-	/// m_contextFiles); otherwise the live selection. The menu snapshot must not leak into
-	/// the toolbar button or double-click paths, which act on what is selected now.
-	void DownloadSelected(int category = -1, bool fromContextMenu = false);
+	/// Downloads @a files into @a category, or into the drop-down's selection if -1.
+	/// Callers pass what the action was invoked on: GetSelectedFiles() for the toolbar
+	/// button and double-click, ContextFiles() for the context menu.
+	void DownloadSelected(int category, const std::vector<CSearchFile *> &files);
 
 	static wxString DetermineStatusPrintable(CSearchFile *toshow);
 
@@ -251,11 +250,9 @@ protected:
 	//! The folder the context menu was opened on, if any. A right-click does not select the row
 	//! on every platform, so the handlers cannot ask for the selection.
 	wxDataViewItem m_contextFolder;
-	//! The files the context menu was opened on. Same reason as m_contextFolder, plus live
-	//! results keep arriving while the menu is open: a resort between popup and click would
-	//! otherwise make the handlers act on whatever row the selection now points at instead of
-	//! what the user clicked. Snapshotted at popup time (file objects outlive the tab's
-	//! results, so the pointers stay valid) and re-validated on use.
+	//! Files the context menu was opened on (clicked row, or selection when it covers the
+	//! row). Pointers into the tab's results, re-validated on use: RemoveResults()
+	//! deletes them, so a vanished file is dropped instead of acted on.
 	std::vector<CSearchFile *> m_contextFiles;
 	//! Peer display name and lifecycle (EBrowseStatus) for a browse tab.
 	wxString m_browseName;
@@ -306,9 +303,7 @@ protected:
 	//! Folders the expand/collapse entries act on: the whole selection when the
 	//! clicked row belongs to it, otherwise just that row.
 	std::vector<wxDataViewItem> ContextFolders();
-	//! Validated snapshot of the files the file entries act on: only pointers still present
-	//! in this tab's results (top level or grouped children); falls back to the live
-	//! selection if the snapshot is empty or went stale.
+	//! Snapshot above, validated against the tab's current results (empty when stale).
 	std::vector<CSearchFile *> ContextFiles();
 	void OnExpandAll(wxCommandEvent &event);
 	void OnCollapseAll(wxCommandEvent &event);

@@ -27,8 +27,9 @@
 
 #include "MenuIcons.h"
 
-#include <algorithm> // Needed for std::find, std::min, std::sort
-#include <vector>    // Needed for std::vector
+#include <algorithm>     // Needed for std::find, std::min, std::sort
+#include <unordered_set> // Needed for std::unordered_set (ContextFiles validation)
+#include <vector>        // Needed for std::vector
 #include <wx/bmpcbox.h>
 
 #include <common/MenuIDs.h>
@@ -81,6 +82,20 @@ namespace
 const unsigned SORT_DES = 0x1000;
 const unsigned SORT_ALT = 0x2000;
 const unsigned SORTING_MASK = 0x3000;
+
+//! Order-insensitive item-set comparison for the selection guards below.
+bool SameItemSet(const wxDataViewItemArray &a, const wxDataViewItemArray &b)
+{
+	if (a.GetCount() != b.GetCount()) {
+		return false;
+	}
+	for (size_t i = 0; i < a.GetCount(); ++i) {
+		if (b.Index(a[i]) == wxNOT_FOUND) {
+			return false;
+		}
+	}
+	return true;
+}
 } // namespace
 
 CSearchListCtrl::CSearchListCtrl(
@@ -703,7 +718,30 @@ void CSearchListCtrl::OnIdleHook()
 		// rows, so there is nothing to preserve around it. This is the path a search takes
 		// while results stream in, which is why the list no longer jumps back to the top on
 		// every burst.
+		//
+		// Keep the selection on the same items anyway: on macOS a top-level add re-derives
+		// the view and Cocoa keeps the selection by row index, so an insertion above would
+		// move it onto other files -- and with it the toolbar and double-click actions,
+		// not just the menu. Restored only when it moved, so the other backends (which keep
+		// it on the same items) pay two selection reads and nothing else.
+		wxDataViewItemArray selected;
+		GetSelections(selected);
 		m_model->FlushPending();
+		if (!selected.IsEmpty()) {
+			wxDataViewItemArray current;
+			GetSelections(current);
+			if (!SameItemSet(current, selected)) {
+				wxDataViewItemArray live;
+				m_model->GetChildren(wxDataViewItem(), live);
+				wxDataViewItemArray restore;
+				for (size_t i = 0; i < selected.GetCount(); ++i) {
+					if (live.Index(selected[i]) != wxNOT_FOUND) {
+						restore.Add(selected[i]);
+					}
+				}
+				SetSelections(restore);
+			}
+		}
 	} else if (m_model->HasPending()) {
 		// A browse still streaming in is rebuilt on a growth schedule rather than on every
 		// burst. The rebuild below is O(rows) and a browse arrives one directory at a time,
@@ -813,12 +851,19 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		return;
 	}
 
-	// Snapshot the selection now: results keep arriving (and the list re-sorting) while the
-	// menu is open, so reading it in the handler would act on whatever row the selection
-	// points at then instead of what the user clicked.
+	// Snapshot what the menu acts on: the clicked row when it is outside the selection
+	// (right-click does not select on every platform), otherwise the whole selection.
+	// Handlers must not read the live selection: results keep arriving while the menu
+	// is open and a resort would move it onto other files.
 	m_contextFiles = GetSelectedFiles();
+	const wxDataViewItem clicked = event.GetItem();
+	if (clicked.IsOk() && !m_model->IsFolder(clicked) && !IsSelected(clicked)) {
+		if (CSearchFile *file = CSearchListModel::ToFile(clicked)) {
+			m_contextFiles = { file };
+		}
+	}
 
-	if (GetSelectedItemCount()) {
+	if (!m_contextFiles.empty()) {
 		// No title: wxMenu's title parameter renders inconsistently or not at all
 		// as a context-popup header across platforms (issue #767).
 		wxMenu menu;
@@ -846,7 +891,7 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		// Singular or plural to match what it will copy, as the server list does.
 		// OnPopupGetUrl has always walked the whole selection and joined the links with
 		// newlines -- only the menu stopped it being handed more than one.
-		const bool single = (GetSelectedItemCount() == 1);
+		const bool single = (m_contextFiles.size() == 1);
 		AppendMenuIcon(&menu,
 			MP_GETED2KLINK,
 			single ? _("Copy eD2k link to clipboard") : _("Copy eD2k links to clipboard"),
@@ -875,7 +920,7 @@ void CSearchListCtrl::OnItemActivated(wxDataViewEvent &event)
 			Expand(event.GetItem());
 		}
 	} else {
-		DownloadSelected();
+		DownloadSelected(-1, GetSelectedFiles());
 	}
 }
 
@@ -954,40 +999,33 @@ std::vector<wxDataViewItem> CSearchListCtrl::ContextFolders()
 	return folders;
 }
 
-namespace
-{
-//! True when @a file is still in this tab's results, top level or grouped child.
-bool ContainsSearchFile(const CSearchResultList &list, const CSearchFile *file)
-{
-	for (CSearchFile *item : list) {
-		if (item == file) {
-			return true;
-		}
-		if (!item->GetChildren().empty() && ContainsSearchFile(item->GetChildren(), file)) {
-			return true;
-		}
-	}
-	return false;
-}
-} // namespace
-
 std::vector<CSearchFile *> CSearchListCtrl::ContextFiles()
 {
-	// The menu was built from this snapshot; only pointers still in the tab's results are
-	// kept, so a file vanishing mid-menu cannot make a handler touch freed memory.
-	if (!m_contextFiles.empty() && m_nResultsID) {
-		const CSearchResultList &results = theApp->searchlist->GetSearchResults(m_nResultsID);
-		std::vector<CSearchFile *> live;
-		for (CSearchFile *file : m_contextFiles) {
-			if (ContainsSearchFile(results, file)) {
-				live.push_back(file);
-			}
-		}
-		if (!live.empty()) {
-			return live;
+	// Only pointers still in this tab's results (top level or grouped children); empty
+	// when the snapshot went stale, so the action does nothing instead of falling back
+	// to the live selection and acting on the wrong files.
+	std::vector<CSearchFile *> validated;
+	if (m_contextFiles.empty() || !m_nResultsID) {
+		return validated;
+	}
+	const CSearchResultList &results = theApp->searchlist->GetSearchResults(m_nResultsID);
+	std::unordered_set<const CSearchFile *> current;
+	current.reserve(results.size());
+	std::vector<CSearchFile *> stack(results.begin(), results.end());
+	while (!stack.empty()) {
+		CSearchFile *item = stack.back();
+		stack.pop_back();
+		current.insert(item);
+		for (CSearchFile *child : item->GetChildren()) {
+			stack.push_back(child);
 		}
 	}
-	return GetSelectedFiles();
+	for (CSearchFile *file : m_contextFiles) {
+		if (current.count(file)) {
+			validated.push_back(file);
+		}
+	}
+	return validated;
 }
 
 void CSearchListCtrl::OnExpandAll(wxCommandEvent &WXUNUSED(event))
@@ -1092,14 +1130,17 @@ void CSearchListCtrl::AppendDisplayOrder(const wxDataViewItem &parent, wxDataVie
 void CSearchListCtrl::OnPopupDownload(wxCommandEvent &event)
 {
 	if (event.GetId() == MP_RESUME) {
-		DownloadSelected(-1, true);
+		DownloadSelected(-1, ContextFiles());
 	} else {
-		DownloadSelected(event.GetId() - MP_ASSIGNCAT, true);
+		DownloadSelected(event.GetId() - MP_ASSIGNCAT, ContextFiles());
 	}
 }
 
-void CSearchListCtrl::DownloadSelected(int category, bool fromContextMenu)
+void CSearchListCtrl::DownloadSelected(int category, const std::vector<CSearchFile *> &files)
 {
+	if (files.empty()) {
+		return;
+	}
 	FindWindowById(IDC_SDOWNLOAD)->Enable(false);
 
 	// -1 means "no explicit category", i.e. anything but the right-click "Download in category"
@@ -1119,7 +1160,7 @@ void CSearchListCtrl::DownloadSelected(int category, bool fromContextMenu)
 	downloadlist->BeginBatchUpdate();
 #endif
 
-	for (CSearchFile *file : (fromContextMenu ? ContextFiles() : GetSelectedFiles())) {
+	for (CSearchFile *file : files) {
 		// Exempt from "Hide Known Files" before queueing, so the row survives the status
 		// change this is about to cause. Results are grouped only when their hashes match,
 		// so the one insert covers a group's variants too.
