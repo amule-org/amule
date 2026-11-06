@@ -491,16 +491,12 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 	}
 }
 
-// Checks if the dir a is the same as b. If they are, then logs the message and returns true.
-static bool CheckDirectory(const wxString &a, const CPath &b)
+// Never shared, whatever the folder list says: the user's home folder, the config folder and
+// Temp, which holds the downloads' .part and .part.met files.
+static bool IsReservedDir(const CPath &dir)
 {
-	if (CPath(a).IsSameDir(b)) {
-		AddLogLineC(CFormat(_("ERROR: Attempted to share %s")) % a);
-
-		return true;
-	}
-
-	return false;
+	return CPath(wxGetHomeDir()).IsSameDir(dir) || CPath(thePrefs::GetConfigDir()).IsSameDir(dir) ||
+	       thePrefs::GetTempDir().IsSameDir(dir);
 }
 
 unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
@@ -510,13 +506,8 @@ unsigned CSharedFileList::AddFilesFromDirectory(const CPath &directory,
 	size_t &excluded,
 	bool &aborted)
 {
-	// Do not allow these folders to be shared: the .aMule folder, the Temp folder, and the
-	// user's home dir.
-	if (CheckDirectory(wxGetHomeDir(), directory)) {
-		return 0;
-	} else if (CheckDirectory(thePrefs::GetConfigDir(), directory)) {
-		return 0;
-	} else if (CheckDirectory(thePrefs::GetTempDir().GetRaw(), directory)) {
+	if (IsReservedDir(directory)) {
+		AddLogLineC(CFormat(_("ERROR: Attempted to share %s")) % directory.GetPrintable());
 		return 0;
 	}
 
@@ -1154,6 +1145,13 @@ void CSharedFileList::NotifyPathAdded(const wxString &fullPath, bool bulkScan)
 	const CPath directory = full.GetPath();
 	const CPath fname = CPath(full.GetFullName());
 	if (!directory.IsOk() || !fname.IsOk()) {
+		return;
+	}
+	// The startup scan skips these folders, but a listed one still raises watcher events. A hash
+	// of a .part file would also discard its download's completion hash, which has the same key.
+	if (IsReservedDir(directory)) {
+		AddDebugLogLineN(logKnownFiles,
+			CFormat("Not sharing a file in the Temp, config or home folder: %s") % fullPath);
 		return;
 	}
 

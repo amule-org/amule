@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""Keep partial downloads shared; detach excluded completions and completed renames.
+"""Keep partial downloads shared and files in Temp unshared; detach excluded completions and
+completed renames.
 
 Reusing old paths through the watcher observes stale index entries without exposing
 private state. No full reload is allowed between removal and path reuse.
@@ -70,10 +71,19 @@ def run(binary):
             wait_for(proc, 'excluded completion detached',
                      lambda: complete_hash.hex() not in ec.files(True))
             assert shared(ec).get('done.txt') == md4(b'abc')
-            # A stale Temp/done.txt key makes NotifyPathAdded skip this new file.
+            # Temp is never shared, even when the folder list names it. Hashing runs in queue
+            # order, so once the second barrier is shared, all queued with the first is done.
             (temp / 'done.txt').write_bytes(b'message digest')
-            wait_for(proc, 'old completion path reusable',
-                     lambda: md4(b'message digest').hex() in ec.files(True))
+            for barrier in ('temp-barrier-1.bin', 'temp-barrier-2.bin'):
+                (incoming / barrier).write_bytes(barrier.encode())
+                wait_for(proc, f'{barrier} shared', lambda name=barrier: name in shared(ec))
+            assert md4(b'message digest').hex() not in ec.files(True), 'a file in Temp was shared'
+            # A stale Temp/done.txt key from the completion would detach what it points at.
+            (temp / 'done.txt').unlink()
+            (incoming / 'temp-barrier-3.bin').write_bytes(b'temp barrier 3')
+            wait_for(proc, 'Temp delete drained', lambda: 'temp-barrier-3.bin' in shared(ec))
+            assert f'Stopped sharing removed file: {temp / "done.txt"}' not in \
+                (root / 'logfile').read_text(errors='replace')
 
             # A completed rename must re-key even when the new name is allowed.
             control_hash = md4(b'abc')
