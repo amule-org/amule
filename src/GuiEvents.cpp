@@ -23,6 +23,7 @@
 //
 
 #include "MuleGUIEvent.h"
+#include "GuiConfirm.h" // Needed for GuiConfirmStyle (confirm default Yes/No)
 #include "amule.h"
 #ifndef CLIENT_GUI
 #include "ClientList.h"   // Needed for FindClientByECID (Browse_Started)
@@ -1153,7 +1154,7 @@ void CompletedFiles_DeleteFromDisk(const std::vector<CKnownFile *> &files, wxWin
 	}
 
 	if (wxMessageBox(
-		    question, _("Delete from disk"), wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, parent) !=
+		    question, _("Delete from disk"), GuiConfirmStyle(wxICON_QUESTION | wxYES_NO), parent) !=
 		wxYES) {
 		return;
 	}
@@ -1190,7 +1191,8 @@ void CompletedFiles_DeleteFromDisk(const std::vector<CKnownFile *> &files, wxWin
 			  "share the files again.\n"
 			  "No: keep the files shared and listed.")) %
 		listing;
-	if (wxMessageBox(failure, _("Delete from disk"), wxICON_WARNING | wxYES_NO | wxNO_DEFAULT, parent) !=
+	if (wxMessageBox(
+		    failure, _("Delete from disk"), GuiConfirmStyle(wxICON_WARNING | wxYES_NO), parent) !=
 		wxYES) {
 		return;
 	}

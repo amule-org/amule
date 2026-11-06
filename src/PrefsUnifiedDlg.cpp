@@ -59,6 +59,7 @@
 // drop-downs.
 #include <vector>
 #include "NetworkInterfaces.h"
+#include "GuiConfirm.h" // Needed for GuiConfirmStyle (confirm default Yes/No)
 
 #include "AmuleApiCredentials.h"
 #include "amule.h" // Needed for theApp
@@ -3214,7 +3215,7 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 		msg += _("Sharing them recursively will publish every file underneath on the eD2k/Kad "
 			 "networks. Do you really want to do this?");
 		const int rv = wxMessageBox(
-			msg, _("Confirm shared folders"), wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, this);
+			msg, _("Confirm shared folders"), GuiConfirmStyle(wxICON_QUESTION | wxYES_NO), this);
 		if (rv != wxYES) {
 			return SharedDirsCommitResult::CancelledByUser;
 		}

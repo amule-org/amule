@@ -1433,6 +1433,12 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     item9->SetToolTip( _("Makes aMule prompt before exiting.") );
     item0->Add( item9, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
+    wxCheckBox *itemConfirmYes = new wxCheckBox(
+        parent, IDC_CONFIRM_DEFAULT_YES, _("Default confirm dialogs to Yes"), wxDefaultPosition, wxDefaultSize, 0 );
+    itemConfirmYes->SetToolTip( _("When off (default), Yes/No confirmations highlight No so Enter keeps "
+        "the safe choice. When on, Yes is highlighted instead.") );
+    item0->Add( itemConfirmYes, 0, wxALIGN_CENTER_VERTICAL, 0 );
+
     wxCheckBox *item11 = new wxCheckBox( parent, IDC_ENABLETRAYICON, _("Enable Tray Icon"), wxDefaultPosition, wxDefaultSize, 0 );
     item11->SetToolTip( _("This Enables/Disables the system tray (or taskbar) icon.") );
     item0->Add( item11, wxSizerFlags().Expand().CenterVertical() );

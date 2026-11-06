@@ -46,7 +46,9 @@
 #include "SearchHistory.h"  // Needed for ApplySearchHistoryEntry
 #include "SearchListCtrl.h" // Needed for CSearchListCtrl
 #include "muuli_wdr.h"      // Needed for IDC_STARTS
-#include "amuleDlg.h"       // Needed for CamuleDlg
+#include "amuleDlg.h"
+#include "GuiConfirm.h" // Needed for GuiConfirmStyle
+#include "amuleDlg.h"   // Needed for CamuleDlg
 #include "MuleNotebook.h"
 #include "GetTickCount.h"
 #include "Preferences.h"
@@ -325,7 +327,7 @@ void CSearchDlg::ConfirmAndClearSearchHistory()
 {
 	const int answer = wxMessageBox(_("Clear the saved search history? This cannot be undone."),
 		_("Clear Search History"),
-		wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION,
+		GuiConfirmStyle(wxYES_NO | wxICON_QUESTION),
 		this);
 	if (answer == wxYES) {
 		ClearSearchHistory();

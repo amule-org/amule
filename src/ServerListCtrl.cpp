@@ -42,6 +42,7 @@
 #include "CountryFlags.h"   // Needed for CCountryFlags (flag bitmaps)
 #include "CountryDisplay.h" // Needed for GetDisplayCountryCode
 #endif
+#include "GuiConfirm.h"    // Needed for GuiConfirmStyle
 #include "ServerList.h"    // Needed for CServerList
 #include "ServerConnect.h" // Needed for CServerConnect
 #include "Server.h"        // Needed for CServer and SRV_PR_*
@@ -203,7 +204,7 @@ void CServerListCtrl::RemoveAllServers(bool selectedOnly)
 			if (wxMessageBox(
 				    CFormat(_("Are you sure you want to delete the static server %s")) % name,
 				    _("Cancel"),
-				    wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT,
+				    GuiConfirmStyle(wxICON_QUESTION | wxYES_NO),
 				    this) != wxYES) {
 				continue;
 			}
@@ -732,9 +733,10 @@ void CServerListCtrl::OnRemoveServers(wxCommandEvent &event)
 		if (ItemDataCount()) {
 			wxString question = _("Are you sure that you wish to delete all servers?");
 
-			if (wxMessageBox(
-				    question, _("Cancel"), wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, this) ==
-				wxYES) {
+			if (wxMessageBox(question,
+				    _("Cancel"),
+				    GuiConfirmStyle(wxICON_QUESTION | wxYES_NO),
+				    this) == wxYES) {
 				if (theApp->serverconnect->IsConnecting()) {
 					theApp->downloadqueue->StopUDPRequests();
 					theApp->serverconnect->StopConnectionTry();
@@ -753,9 +755,10 @@ void CServerListCtrl::OnRemoveServers(wxCommandEvent &event)
 				question = _("Are you sure that you wish to delete the selected servers?");
 			}
 
-			if (wxMessageBox(
-				    question, _("Cancel"), wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, this) ==
-				wxYES) {
+			if (wxMessageBox(question,
+				    _("Cancel"),
+				    GuiConfirmStyle(wxICON_QUESTION | wxYES_NO),
+				    this) == wxYES) {
 				RemoveAllServers(true);
 			}
 		}

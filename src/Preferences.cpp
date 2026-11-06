@@ -150,6 +150,7 @@ uint16 CPreferences::s_statsInterval;
 uint32 CPreferences::s_maxGraphDownloadRate;
 uint32 CPreferences::s_maxGraphUploadRate;
 bool CPreferences::s_confirmExit;
+bool CPreferences::s_confirmDefaultYes;
 bool CPreferences::s_filterLanIP;
 bool CPreferences::s_paranoidfilter;
 bool CPreferences::s_IPFilterSys;
@@ -1400,6 +1401,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_MINTRAY, (new Cfg_Bool("/eMule/MinToTray", s_mintotray, false)));
 	NewCfgItem(IDC_NOTIF, (new Cfg_Bool("/eMule/Notifications", s_notify, false)));
 	NewCfgItem(IDC_EXIT, (new Cfg_Bool("/eMule/ConfirmExit", s_confirmExit, true)));
+	NewCfgItem(IDC_CONFIRM_DEFAULT_YES,
+		(new Cfg_Bool("/eMule/ConfirmDefaultYes", s_confirmDefaultYes, false)));
 	NewCfgItem(IDC_STARTMIN, (new Cfg_Bool("/eMule/StartupMinimized", s_startMinimized, false)));
 	NewCfgItem(IDC_SEARCHHISTORYENABLED,
 		(new Cfg_Bool("/eMule/SearchHistoryEnabled", s_rememberSearchHistory, true)));

@@ -34,6 +34,7 @@
 #include "muuli_wdr.h"
 #include "OScopeCtrl.h"
 #include "OtherFunctions.h"
+#include "GuiConfirm.h" // Needed for GuiConfirmStyle (confirm default Yes/No)
 #include "HTTPDownload.h"
 #include "Logger.h"
 #include "amule.h"
@@ -309,7 +310,7 @@ void CKadDlg::OnBnClickedUpdateNodeList(wxCommandEvent &WXUNUSED(evt))
 		    wxString(_("Are you sure you want to download a new nodes.dat file?\n")) +
 			    _("Doing so will remove your current nodes and restart Kademlia connection."),
 		    _("Continue?"),
-		    wxICON_EXCLAMATION | wxYES_NO | wxNO_DEFAULT,
+		    GuiConfirmStyle(wxICON_EXCLAMATION | wxYES_NO),
 		    this) == wxYES) {
 		wxString strURL = dynamic_cast<wxTextCtrl *>(FindWindowById(IDC_NODESLISTURL))->GetValue();
 

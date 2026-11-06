@@ -28,6 +28,7 @@
 #include "AppImageEnv.h" // Needed for GetSanitizedExecEnv
 #include "Logger.h"
 #include "Preferences.h"
+#include "GuiConfirm.h" // Needed for GuiConfirmStyle (confirm default Yes/No)
 
 #include <wx/arrstr.h>
 #include <wx/dir.h>
@@ -391,7 +392,7 @@ void PromptAndInstall(wxWindow *parent)
 		  "~/.local/share/icons, and ~/.local/bin, and can be removed at any time.\n\n"
 		  "Install desktop integration now?"),
 		_("Add aMule to your application menu?"),
-		wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+		GuiConfirmStyle(wxYES_NO | wxICON_QUESTION));
 	dlg.SetYesNoLabels(_("Install"), _("Not now"));
 	dlg.ShowCheckBox(_("Don't ask again"));
 
@@ -486,7 +487,7 @@ void PromptAndInstall(wxWindow *parent)
 		  "restart is the safe fallback if the icon stays generic.\n\n"
 		  "Restart aMule now?"),
 		_("aMule installed"),
-		wxYES_NO | wxNO_DEFAULT | wxICON_INFORMATION);
+		GuiConfirmStyle(wxYES_NO | wxICON_INFORMATION));
 	success.SetYesNoLabels(_("Restart now"), _("Later"));
 
 	if (success.ShowModal() != wxID_YES) {

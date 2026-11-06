@@ -312,6 +312,8 @@ public:
 	static uint16 GetStatsInterval() { return s_statsInterval; }
 	static void SetStatsInterval(uint16 in) { s_statsInterval = in; }
 	static bool IsConfirmExitEnabled() { return s_confirmExit; }
+	static bool ConfirmDefaultYes() { return s_confirmDefaultYes; }
+	static void SetConfirmDefaultYes(bool val) { s_confirmDefaultYes = val; }
 	static bool FilterLanIPs() { return s_filterLanIP; }
 	static void SetFilterLanIPs(bool val) { s_filterLanIP = val; }
 	static bool ParanoidFilter() { return s_paranoidfilter; }
@@ -1122,6 +1124,7 @@ protected:
 	static uint32 s_maxGraphDownloadRate;
 	static uint32 s_maxGraphUploadRate;
 	static bool s_confirmExit;
+	static bool s_confirmDefaultYes;
 
 	static bool s_filterLanIP;
 	static bool s_paranoidfilter;

@@ -55,6 +55,7 @@
 #include "amule.h"            // Needed for theApp
 #include "AppImageEnv.h"      // Needed for GetSanitizedExecEnv
 #include "ExternalCommand.h"  // Needed for WithAbsoluteProgram
+#include "GuiConfirm.h"       // Needed for GuiConfirmStyle
 #include "ChatWnd.h"          // Needed for CChatWnd
 #include "ClientsWnd.h"       // Needed for CClientsWnd
 #include "SourceListCtrl.h"   // Needed for CSourceListCtrl
@@ -1627,7 +1628,7 @@ void CamuleDlg::OnClose(wxCloseEvent &evt)
 		if (wxNO == wxMessageBox(wxString(CFormat(_("Do you really want to exit %s?")) %
 						  theApp->GetMuleAppName()),
 				    wxString(_("Exit confirmation")),
-				    wxYES_NO | wxNO_DEFAULT,
+				    GuiConfirmStyle(wxYES_NO),
 				    this)) {
 			evt.Veto();
 			// User cancelled the quit. Clear the IsQuitting flag so a subsequent close-button

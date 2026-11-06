@@ -36,7 +36,9 @@
 #include "AddFriend.h"          // Needed for CAddFriend
 #include "ChatWnd.h"            // Needed for CChatWnd
 #include "Friend.h"             // Needed for CFriend
-#include "SearchDlg.h"          // Needed for CSearchDlg (View Files browse tab)
+#include "SearchDlg.h"
+#include "GuiConfirm.h" // Needed for GuiConfirmStyle
+#include "SearchDlg.h"  // Needed for CSearchDlg (View Files browse tab)
 #include "muuli_wdr.h"
 #include "SafeFile.h"
 #include "FriendList.h" // Needed for the friends list
@@ -233,7 +235,7 @@ void CFriendListCtrl::OnRemoveFriend(wxCommandEvent &WXUNUSED(event))
 		question = _("Are you sure that you wish to delete the selected friends?");
 	}
 
-	if (wxMessageBox(question, _("Cancel"), wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, this) == wxYES) {
+	if (wxMessageBox(question, _("Cancel"), GuiConfirmStyle(wxICON_QUESTION | wxYES_NO), this) == wxYES) {
 		// Collect the selected friends first, then remove them. On amuleGUI RemoveFriend()
 		// is asynchronous -- it only sends an EC request, and the row is dropped when the
 		// daemon pushes the updated list -- so the removed friend is still selected when it

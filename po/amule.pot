@@ -5011,6 +5011,14 @@ msgid "Makes aMule prompt before exiting."
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "Default confirm dialogs to Yes"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "When off (default), Yes/No confirmations highlight No so Enter keeps the safe choice. When on, Yes is highlighted instead."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Enable Tray Icon"
 msgstr ""
 

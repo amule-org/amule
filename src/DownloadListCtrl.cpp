@@ -36,6 +36,7 @@
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst
 #include "DataToText.h"       // Needed for PriorityToStr
 #include "DownloadQueue.h"
+#include "GuiConfirm.h"       // Needed for GuiConfirmStyle
 #include "FileDetailDialog.h" // Needed for CFileDetailDialog
 #include "FileRenameDialog.h" // Needed for AskNewFileName
 #include "FileLaunch.h"       // Needed for FileLaunch::Open / Reveal
@@ -616,7 +617,7 @@ void CDownloadListCtrl::OnCancelFile(wxCommandEvent &WXUNUSED(event))
 	const wxString question =
 		files.size() == 1 ? wxString(_("Are you sure that you wish to delete the selected file?"))
 				  : wxString(_("Are you sure that you wish to delete the selected files?"));
-	if (wxMessageBox(question, _("Cancel"), wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT, this) == wxYES) {
+	if (wxMessageBox(question, _("Cancel"), GuiConfirmStyle(wxICON_QUESTION | wxYES_NO), this) == wxYES) {
 		for (const CDownloadTarget &target : files) {
 			MuleNotify::DoNotify(&MuleNotify::Download_Execute, target, DownloadCommand::Cancel);
 		}

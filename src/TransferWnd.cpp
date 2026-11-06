@@ -44,6 +44,7 @@
 #include "PartFile.h"         // Needed for PR_LOW
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "CatDialog.h"        // Needed for CCatDialog
+#include "GuiConfirm.h"       // Needed for GuiConfirmStyle
 #include "DownloadListCtrl.h" // Needed for CDownloadListCtrl
 #include "SourceListCtrl.h"   // Needed for CSourceListCtrl
 #include "amule.h"            // Needed for theApp
@@ -231,7 +232,7 @@ void CTransferWnd::OnSetCatStatus(wxCommandEvent &event)
 	if (event.GetId() == MP_CANCEL) {
 		if (wxMessageBox(_("Are you sure you wish to cancel and delete all files in this category?"),
 			    _("Confirmation Required"),
-			    wxYES_NO | wxNO_DEFAULT | wxCENTRE | wxICON_EXCLAMATION,
+			    GuiConfirmStyle(wxYES_NO | wxCENTRE | wxICON_EXCLAMATION),
 			    this) == wxNO) {
 			return;
 		}
