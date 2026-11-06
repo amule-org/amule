@@ -23,12 +23,13 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include <wx/artprov.h> // Needed for the "amule:" art ids
 #include <wx/config.h>
 #include <wx/gauge.h> // Do_not_auto_remove (win32)
 #include <wx/radiobut.h>
 
 #include "SharedFilesWnd.h" // Interface declarations
+
+#include "ClientListSplitter.h"
 #include "SharedFilesCtrl.h"
 #include "SharedFilesReloadProgress.h" // ReloadSharedFilesWithProgress
 #include "SharedFilePeersListCtrl.h"
@@ -88,6 +89,13 @@ CSharedFilesWnd::CSharedFilesWnd(wxWindow *pParent)
 	m_splitter = config->Read("/GUI/SharedWnd/Splitter", 463l);
 	m_clientShow = (EClientShow)config->Read("/GUI/SharedWnd/ClientShowMode", ClientShowAll);
 	SetClientShowMode(m_clientShow);
+
+	m_clientListSplitter =
+		std::make_unique<CClientListSplitter>(*CastChild("sharedsplitterWnd", wxSplitterWindow),
+			*peerslistctrl,
+			*CastChild(ID_SHAREDCLIENTTOGGLE, wxBitmapButton),
+			*s_sharedfilespeerHeader,
+			m_splitter);
 }
 
 CSharedFilesWnd::EClientShow CSharedFilesWnd::GetClientShowMode() const
@@ -290,102 +298,17 @@ void CSharedFilesWnd::Prepare()
 		return;
 	}
 	m_prepared = true;
-	wxSplitterWindow *splitter = CastChild("sharedsplitterWnd", wxSplitterWindow);
-	int height = splitter->GetSize().GetHeight();
-	int header_height = s_sharedfilespeerHeader->GetSize().GetHeight();
-
-	if (m_splitter) {
-		// Some sanity checking
-		if (m_splitter < s_splitterMin) {
-			m_splitter = s_splitterMin;
-		} else if (m_splitter > height - header_height * 2) {
-			m_splitter = height - header_height * 2;
-		}
-		splitter->SetSashPosition(m_splitter);
-		m_splitter = 0;
-	}
-
-	if (!peerslistctrl->GetShowing()) {
-		// use a toggle event to close it (calculate size, change button)
-		peerslistctrl->SetShowing(true); // so it will be toggled to false
-		wxCommandEvent evt1;
-		OnToggleClientList(evt1);
-	}
+	m_clientListSplitter->Prepare();
 }
 
 void CSharedFilesWnd::OnToggleClientList(wxCommandEvent &WXUNUSED(evt))
 {
-	wxSplitterWindow *splitter = CastChild("sharedsplitterWnd", wxSplitterWindow);
-	wxBitmapButton *button = CastChild(ID_SHAREDCLIENTTOGGLE, wxBitmapButton);
-
-	if (!peerslistctrl->GetShowing()) {
-		splitter->SetSashPosition(m_splitter);
-		m_splitter = 0;
-
-		peerslistctrl->SetShowing(true);
-
-		const wxBitmapBundle art = wxArtProvider::GetBitmapBundle("amule:arrows_down");
-		button->SetBitmapLabel(art);
-		button->SetBitmapFocus(art);
-		button->SetBitmapPressed(art);
-		button->SetBitmapCurrent(art);
-	} else {
-		peerslistctrl->SetShowing(false);
-
-		m_splitter = splitter->GetSashPosition();
-
-		// Add the height of the listctrl to the top-window
-		int height =
-			peerslistctrl->GetSize().GetHeight() + splitter->GetWindow1()->GetSize().GetHeight();
-
-		splitter->SetSashPosition(height);
-
-		const wxBitmapBundle art = wxArtProvider::GetBitmapBundle("amule:arrows_up");
-		button->SetBitmapLabel(art);
-		button->SetBitmapFocus(art);
-		button->SetBitmapPressed(art);
-		button->SetBitmapCurrent(art);
-	}
+	m_clientListSplitter->Toggle();
 }
 
 void CSharedFilesWnd::OnSashPositionChanging(wxSplitterEvent &evt)
 {
-	if (evt.GetSashPosition() < s_splitterMin) {
-		evt.SetSashPosition(s_splitterMin);
-	} else {
-		wxSplitterWindow *splitter = wxStaticCast(evt.GetEventObject(), wxSplitterWindow);
-		wxCHECK_RET(splitter, "ERROR: NULL splitter in CSharedFilesWnd::OnSashPositionChanging");
-
-		int height = splitter->GetSize().GetHeight();
-		int header_height = s_sharedfilespeerHeader->GetSize().GetHeight();
-		int mousey = wxGetMousePosition().y - splitter->GetScreenRect().GetTop();
-
-		if (!peerslistctrl->GetShowing()) {
-			// lower window hidden
-			if (height - mousey < header_height * 2) {
-				// no moving down if already hidden
-				evt.Veto();
-			} else {
-				// show it
-				m_splitter = mousey; // prevent jumping if it was minimized and is then shown
-						     // by dragging the sash
-				wxCommandEvent evt1;
-				OnToggleClientList(evt1);
-			}
-		} else {
-			// lower window showing
-			if (height - mousey < header_height * 2) {
-				// hide it
-				wxCommandEvent evt1;
-				OnToggleClientList(evt1);
-			} else {
-				// Normal resize. If several events queue up, setting the sash to
-				// the current mouse position speeds things up and makes sash moving
-				// smoother.
-				evt.SetSashPosition(mousey);
-			}
-		}
-	}
+	m_clientListSplitter->OnSashPositionChanging(evt);
 }
 
 void CSharedFilesWnd::OnSelectClientsMode(wxCommandEvent &WXUNUSED(evt))

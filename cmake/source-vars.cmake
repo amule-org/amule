@@ -110,6 +110,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		ChatWnd.cpp
 		ClientDetailDialog.cpp
 		ClientHistoryListCtrl.cpp
+		ClientListSplitter.cpp
 		ClientNameCell.cpp
 		ClientNameCellDrawing.cpp
 		ClientRowListCtrl.cpp

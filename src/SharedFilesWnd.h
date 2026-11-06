@@ -26,6 +26,8 @@
 #ifndef SHAREDFILESWND_H
 #define SHAREDFILESWND_H
 
+#include <memory>
+
 #include <wx/panel.h> // Needed for wxPanel
 
 class CKnownFile;
@@ -34,6 +36,7 @@ class CSharedFilePeersListCtrl;
 class wxListEvent;
 class wxGauge;
 class wxSplitterEvent;
+class CClientListSplitter;
 class wxRadioButton;
 
 /**
@@ -120,8 +123,8 @@ private:
 	wxRadioButton *m_radioShowUploading;
 	//! Flag if window has been prepared
 	bool m_prepared;
-	//! Minimum position of splitter bar
-	static const int s_splitterMin = 90;
+	//! Collapse, restore and sash dragging of the client list.
+	std::unique_ptr<CClientListSplitter> m_clientListSplitter;
 
 	/**
 	 * Which clients are shown.

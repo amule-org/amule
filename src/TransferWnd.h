@@ -26,6 +26,8 @@
 #ifndef TRANSFERWND_H
 #define TRANSFERWND_H
 
+#include <memory>
+
 #include <wx/panel.h>    // Needed for wxPanel
 #include <wx/notebook.h> // needed for wxBookCtrlEvent in wx 2.8
 #include "Types.h"       // Needed for uint32
@@ -36,6 +38,7 @@ class CDownloadListCtrl;
 class CMuleNotebook;
 class wxListCtrl;
 class wxSplitterEvent;
+class CClientListSplitter;
 class wxCommandEvent;
 class wxMouseEvent;
 class wxEvent;
@@ -91,8 +94,8 @@ public:
 private:
 	//! Contains the current (or last if the clientlist is hidden) position of the splitter.
 	int m_splitter;
-	//! Minimum position of splitter bar
-	static const int s_splitterMin = 90;
+	//! Collapse, restore and sash dragging of the client list.
+	std::unique_ptr<CClientListSplitter> m_clientListSplitter;
 
 	/**
 	 * Handler for the set-status-by-category menu item.
