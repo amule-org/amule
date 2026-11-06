@@ -367,7 +367,7 @@ private:
 	//! Sends OP_NAT_CALLBACKREQUEST for this LowID source when the Lugdunum preconditions hold.
 	//! Called from TryToContact's LowID->LowID decline, so at most once per source: a
 	//! DS_LOWTOLOWIP source is not asked again.
-	void TrySendLugdunumNatCallbackRequest();
+	bool TrySendLugdunumNatCallbackRequest();
 	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) for this LowID source when its
 	//! preconditions hold. Mutually exclusive with the Lugdunum callback per server.
 	//! Called from TryToContact's LowID->LowID decline. Returns whether the request went out;

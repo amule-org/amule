@@ -102,11 +102,12 @@ bool CUploadQueue::TryStartUploadCallback(
 		AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
 	} else {
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+		// Each route reports whether it actually sent: with no route, or with the NAT-T
+		// settings off, the peer must not be marked spent nor fill the in-flight ceiling.
 		if (!client->TrySendForeignNatCallbackRequest(kUploadCallbackForeignTargetShare) &&
-			!client->TrySendLowIdHolePunchRequest()) {
-			// The route that records the attempt reports nothing, exactly as it does on the
-			// download side, so reaching it counts as the attempt.
-			client->TrySendLugdunumNatCallbackRequest();
+			!client->TrySendLowIdHolePunchRequest() &&
+			!client->TrySendLugdunumNatCallbackRequest()) {
+			return false;
 		}
 #else
 		return false;
@@ -537,17 +538,14 @@ CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
 	}
 }
 
-/**
- * Gives a LowID client its extra upload slot once it reaches the top of the queue.
- *
- * A LowID client cannot be contacted when it reaches the top, so it is only marked for
- * uploading and takes its slot through the connection it initiates next. No slot is free then,
- * so it is assigned an extra one, taking the count one over the configured number; no further
- * LowID client gets a slot until a HighID client has, or a slot really is free.
- */
 void CUploadQueue::AdmitUploadCallbackAnswer(CUpDownClient *client)
 {
 	if (!client->IsUploadCallbackExpected(::GetTickCount64())) {
+		return;
+	}
+	// A banned peer never gets a slot, and one that already left the queue has nothing to admit:
+	// the exemption lasts 30 s, longer than the queue does.
+	if (client->IsBanned() || !IsOnUploadQueue(client)) {
 		return;
 	}
 	client->ClearUploadCallbackInFlight();
@@ -556,6 +554,14 @@ void CUploadQueue::AdmitUploadCallbackAnswer(CUpDownClient *client)
 	}
 }
 
+/**
+ * Gives a LowID client its extra upload slot once it reaches the top of the queue.
+ *
+ * A LowID client cannot be contacted when it reaches the top, so it is only marked for
+ * uploading and takes its slot through the connection it initiates next. No slot is free then,
+ * so it is assigned an extra one, taking the count one over the configured number; no further
+ * LowID client gets a slot until a HighID client has, or a slot really is free.
+ */
 bool CUploadQueue::TryTakeLowIdAlternationSlot(CUpDownClient *client)
 {
 	if (!client->m_bAddNextConnect) {

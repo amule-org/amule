@@ -1887,20 +1887,21 @@ std::optional<LugdunumCallbackRoute> BuildLugdunumCallbackRoute(const CUpDownCli
 }
 } // namespace
 
-void CUpDownClient::TrySendLugdunumNatCallbackRequest()
+bool CUpDownClient::TrySendLugdunumNatCallbackRequest()
 {
 #ifdef AMULE_UTP_TRANSPORT
 	m_lugdunumCallbackAwaitsServerKey = false;
 	if (!TrySendLugdunumNatCallbackRequest(GetUserIDHybrid())) {
 		m_lugdunumCallbackAwaitsServerKey = AwaitServerKeyForLugdunumCallback();
-		return;
+		return false;
 	}
 	// The source's target dials us: the attempt is the request, its success that source's hello.
 	theStats::AddLugdunumCallbackAttempt();
 	m_lugdunumCallbackRequest.NoteSent(::GetTickCount64());
 	theApp->clientudp->NoteLugdunumCallbackRequested(GetUserIDHybrid());
+	return true;
 #else
-	TrySendLugdunumNatCallbackRequest(GetUserIDHybrid());
+	return TrySendLugdunumNatCallbackRequest(GetUserIDHybrid());
 #endif
 }
 
@@ -2055,8 +2056,8 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 		m_nextAwaitedServerKeyCheck = now + NatServerHolePunch::kAwaitedServerKeyCheckMs;
 		RetryLugdunumCallbackAwaitingServerKey(now);
 	}
-	if (!m_lowIdHolePunchRequested) {
-		TrySendLowIdHolePunchRequest();
+	if (!m_lowIdHolePunchRequested && TrySendLowIdHolePunchRequest()) {
+		m_lowIdHolePunchRequested = true;
 	}
 }
 
@@ -2139,7 +2140,9 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 					// The source is on another server, which wakes it for us.
 				} else if (NatServerHolePunch::ShouldRequestLowIdHolePunch(
 						   BuildLowIdHolePunchRequestFacts(*this))) {
-					m_lowIdHolePunchRequested = TrySendLowIdHolePunchRequest();
+					if (TrySendLowIdHolePunchRequest()) {
+						m_lowIdHolePunchRequested = true;
+					}
 				} else {
 					TrySendLugdunumNatCallbackRequest();
 				}
