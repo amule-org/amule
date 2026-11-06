@@ -306,6 +306,18 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
   nonzero (`NatServerHolePunch::ShouldSendKeepalive()`)
   -- ed2k-server refuses a HighID target (`FAIL_TARGET_IS_HIGHID`), and a disabled UDP port has
   no socket to send from;
+- keepalive proof: ed2k-server sends a session token, `ST_NATT_TOKEN` (`0xAC`, 16 bytes), in
+  `OP_SERVERIDENT`, new at every login. From 0.9.88 the same ident also carries `ST_NATT_PROOF`
+  (`0xA9`, u32 = 1): the `0x9F` is then `<user hash 16><counter u32 LE><mac 16>`, the mac being
+  the first 16 bytes of HMAC-SHA256 keyed with the token over the hash and counter
+  (`NatServerHolePunch::BuildKeepaliveProof()`). The counter starts at 1 and rises with each
+  `0x9F` of the login; the server takes only one above the last it accepted, from any address, so
+  a client whose UDP leaves from another public IP still works. The token never goes on UDP: a
+  proof `0x9F` is always plain to TCP port + 4 and needs no server UDP key. Without the proof tag
+  the `0x9F` is the user hash alone, which the server takes only from the session's own address.
+  0.9.87 also took `<user hash 16><token 16>` from any address; aMule does not send that form,
+  because anyone on the path can read the token and move the session's endpoint for the whole
+  login;
 - sending `0x60`: where a LowID-to-LowID contact is declined in `TryToContact()`, next to
   `TrySendLugdunumNatCallbackRequest()`, `CUpDownClient::TrySendLowIdHolePunchRequest()` sends
   `<target_id 4><our_udp_port 2>` over the server TCP link
@@ -395,8 +407,9 @@ that announced it to a server that sets `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENS
   (`CServerConnect::IsHolePunchExtensionActive()`);
 - `0x9F`: on such a server every `0x9F`, the standing keepalive included, is obfuscated the
   server way once its UDP key is known, and sent to its obfuscation UDP port from the client UDP
-  socket. The server ignores a session's plain `0x9F` after its first obfuscated one. Without the
-  key it stays plain, and an older server always gets it plain
+  socket. The server ignores a session's plain `0x9F` after its first obfuscated one, unless it
+  carries a valid proof. Without the key it stays plain, a proof `0x9F` is always plain, and an
+  older server always gets it plain
   (`NatServerHolePunch::ShouldObfuscateKeepalive()`); the key is then recovered and the `0x9F`
   sent again, obfuscated, when it arrives (see [Missing server UDP key](#missing-server-udp-key)).
   One `0x9F` goes with each `0x60`;

@@ -86,11 +86,15 @@ public:
 	// aux port rather than the advertised one.
 	uint16 GetConnectPort() const { return m_connectPort; }
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	// This login's ST_NATT_TOKEN, appended to every OP_SERVER_NATT_KEEPALIVE.
+	// This login's ST_NATT_TOKEN, the key of the keepalive proof. It never goes on UDP.
 	const std::optional<NatServerHolePunch::Hash> &GetNattSessionToken() const
 	{
 		return m_nattSessionToken;
 	}
+	// Set by ST_NATT_PROOF: each OP_SERVER_NATT_KEEPALIVE then proves the token instead.
+	bool UsesNattKeepaliveProof() const { return m_nattKeepaliveProof; }
+	// The server takes a proof only with a counter above the last it accepted in this login.
+	uint32 NextNattKeepaliveCounter() { return ++m_nattKeepaliveCounter; }
 #endif
 
 #ifdef ENABLE_IPV6
@@ -132,6 +136,8 @@ private:
 	uint16 m_connectPort = 0;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	std::optional<NatServerHolePunch::Hash> m_nattSessionToken;
+	bool m_nattKeepaliveProof = false;
+	uint32 m_nattKeepaliveCounter = 0;
 #endif
 #ifdef ENABLE_IPV6
 	CNetworkAddress m_loginIPv6;

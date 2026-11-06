@@ -84,21 +84,8 @@ TEST(NatServerHolePunch, BuildsExactPayloadsAndParsesFields)
 	ASSERT_TRUE(parsedFailure.has_value());
 	ASSERT_EQUALS(failure.targetId, parsedFailure->targetId);
 	ASSERT_EQUALS(failure.reason, parsedFailure->reason);
-	const std::vector<std::uint8_t> keepalive = BuildKeepalive(hash, std::nullopt);
+	const std::vector<std::uint8_t> keepalive = BuildKeepalive(hash);
 	ASSERT_TRUE(keepalive == std::vector<std::uint8_t>(hash.begin(), hash.end()));
-	ASSERT_TRUE(ParseKeepalive(keepalive.data(), keepalive.size()).value() == hash);
-}
-
-TEST(NatServerHolePunch, KeepaliveCarriesTheSessionTokenAfterTheUserHash)
-{
-	const Hash hash{ { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 } };
-	const Hash token{ { 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31 } };
-	const std::vector<std::uint8_t> keepalive = BuildKeepalive(hash, token);
-	ASSERT_EQUALS(32u, keepalive.size());
-	for (std::size_t i = 0; i < keepalive.size(); ++i) {
-		ASSERT_EQUALS(i, static_cast<std::size_t>(keepalive[i]));
-	}
-	// A server without the token reads the user hash and ignores the rest.
 	ASSERT_TRUE(ParseKeepalive(keepalive.data(), keepalive.size()).value() == hash);
 }
 
@@ -606,6 +593,21 @@ TEST(NatServerHolePunch, ObfuscatesTheKeepaliveOnlyOnAnExtensionServerWithItsUdp
 	KeepaliveCryptFacts noServerObfuscation = facts;
 	noServerObfuscation.serverSupportsObfuscationUdp = false;
 	ASSERT_FALSE(ShouldObfuscateKeepalive(noServerObfuscation));
+}
+
+TEST(NatServerHolePunch, AProofKeepaliveStaysPlainAndAwaitsNoKey)
+{
+	KeepaliveCryptFacts facts;
+	facts.extensionActive = true;
+	facts.cryptLayerUdpEnabled = true;
+	facts.serverKeyUdp = 42;
+	facts.serverSupportsObfuscationUdp = true;
+	facts.keepaliveProof = true;
+	ASSERT_FALSE(ShouldObfuscateKeepalive(facts));
+
+	KeepaliveCryptFacts noKey = facts;
+	noKey.serverKeyUdp = 0;
+	ASSERT_FALSE(KeepaliveAwaitsServerKey(noKey));
 }
 
 TEST(NatServerHolePunch, AWakeSendsThreeKeepalivesHalfASecondApart)

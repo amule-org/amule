@@ -51,6 +51,7 @@ enum Server_tags
 	ST_UDPKEYIP = 0x96,           // <uint32>
 	ST_TCPPORTOBFUSCATION = 0x97, // <uint16>
 	ST_UDPPORTOBFUSCATION = 0x98, // <uint16>
+	ST_NATT_PROOF = 0xA9,         // <uint32> 1: ed2k-server takes a proof 0x9F instead of the token
 	ST_NATT_TOKEN = 0xAC          // <hash16> ed2k-server NAT-T session token
 };
 

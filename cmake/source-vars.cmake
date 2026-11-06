@@ -40,6 +40,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		KnownFileList.cpp
 		ListenSocket.cpp
 		MuleUDPSocket.cpp
+		NatServerKeepaliveProof.cpp
 		OfferFilesPolicy.cpp
 		SearchFile.cpp
 		SearchList.cpp
