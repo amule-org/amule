@@ -98,6 +98,15 @@ int CMuleDataViewCtrl::ColumnWidthAdapter::GetColumnWidth(int col) const
 	return (cached > 0) ? cached : m_ctrl->m_columnStore.GetColumnDefaultWidth(col);
 }
 
+int CMuleDataViewCtrl::ColumnWidthAdapter::GetColumnMinimumWidth(int col) const
+{
+	const wxDataViewColumn *column = m_ctrl->GetColumn(static_cast<unsigned>(col));
+	if (!column) {
+		return COL_SIZE_MIN + 1;
+	}
+	return std::max(COL_SIZE_MIN + 1, m_ctrl->GetHeaderMinimumWidth(column->GetTitle()));
+}
+
 void CMuleDataViewCtrl::AppendSpacerColumn(unsigned modelColumn)
 {
 #ifdef __WXOSX__
@@ -120,13 +129,18 @@ void CMuleDataViewCtrl::AppendBarColumn(
 	AppendColumn(column);
 }
 
+int CMuleDataViewCtrl::GetHeaderMinimumWidth(const wxString &label) const
+{
+	return GetTextExtent(label).x + FromDIP(28);
+}
+
 int CMuleDataViewCtrl::GetDefaultColumnWidth(const wxString &label, int width) const
 {
 	// Preserve wx's special auto-size values. Saved pixel widths are restored later.
 	if (width < 0) {
 		return width;
 	}
-	return std::max(FromDIP(width), GetTextExtent(label).x + FromDIP(28));
+	return std::max(FromDIP(width), GetHeaderMinimumWidth(label));
 }
 
 void CMuleDataViewCtrl::AddTextColumn(const wxString &label,
@@ -624,7 +638,7 @@ void CMuleDataViewCtrl::FitColumnWidths(int column)
 			continue;
 		}
 		wxDataViewColumn *col = GetColumn(i);
-		const int headerWidth = GetTextExtent(col->GetTitle()).x + FromDIP(28);
+		const int headerWidth = GetHeaderMinimumWidth(col->GetTitle());
 		int width = rows.empty()
 				    ? std::max(headerWidth, m_columnStore.GetColumnDefaultWidth(columnIndex))
 				    : headerWidth;

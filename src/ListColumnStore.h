@@ -61,6 +61,13 @@ public:
 	virtual bool SetColumnWidth(int col, int width) = 0;
 	//! Width coordinate units per DIP; providers already using DIPs use identity.
 	virtual double GetWidthScale() const { return 1.0; }
+	/**
+	 * Narrowest width (pixels) a restored column may take. A saved width from another
+	 * language, an older default, or a narrower user drag must not clip the current
+	 * header text, so restore clamps to this. Hidden columns (saved width <= 0) are
+	 * unaffected. Providers without a measurable header keep the legacy floor.
+	 */
+	virtual int GetColumnMinimumWidth(int WXUNUSED(col)) const { return COL_SIZE_MIN + 1; }
 };
 
 /**

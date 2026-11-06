@@ -298,6 +298,7 @@ protected:
 		//! CListColumnStore already persists hidden state.
 		int GetColumnWidth(int col) const override;
 		double GetWidthScale() const override;
+		int GetColumnMinimumWidth(int col) const override;
 		bool SetColumnWidth(int col, int width) override
 		{
 			m_ctrl->SetColumnHidden(col, width <= COL_SIZE_MIN, width);
@@ -351,6 +352,9 @@ protected:
 private:
 	//! Default width in device pixels, wide enough for the translated heading and sort caret.
 	int GetDefaultColumnWidth(const wxString &label, int width) const;
+
+	//! Narrowest width (pixels) that fits the given header text plus the sort caret.
+	int GetHeaderMinimumWidth(const wxString &label) const;
 
 	//! Per-column hidden state, indexed like the control's columns.
 	std::vector<bool> m_columnHidden;

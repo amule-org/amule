@@ -217,7 +217,12 @@ bool CListColumnStore::RestoreWidth(IColumnWidthProvider &widget, int column, lo
 	}
 	const int pixels = static_cast<int>(std::round(scaled));
 	SetCachedWidth(column, pixels > COL_SIZE_MIN ? pixels : GetColumnDefaultWidth(column));
-	widget.SetColumnWidth(column, width > 0 ? std::max(COL_SIZE_MIN + 1, pixels) : 0);
+	// Never restore a visible column narrower than its current header: a width saved under
+	// another language, an older default, or a narrower user drag would otherwise clip the
+	// header text (e.g. Italian "Dimensione" in 60 px saved for English "Size") with no way
+	// back except a manual resize. Hidden columns (saved width <= 0) keep their state.
+	const int minimum = std::max(COL_SIZE_MIN + 1, widget.GetColumnMinimumWidth(column));
+	widget.SetColumnWidth(column, width > 0 ? std::max(minimum, pixels) : 0);
 	return true;
 }
 
