@@ -652,7 +652,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 				// The login keepalive went out before this ident. Sent after the loop, as the
 				// proof tag may follow the token.
-				if (nattKeepaliveChanged) {
+				if (nattKeepaliveChanged && m_nattSessionToken && m_nattKeepaliveProof) {
 					serverconnect->TrySendLowIdHolePunchKeepalive();
 				}
 #endif

@@ -165,16 +165,11 @@ inline std::optional<Failure> ParseFailure(const std::uint8_t *data, std::size_t
 	return Failure{ Detail::ReadLE(data, 4), data[4] };
 }
 // Keepalive framing: protocol byte 0xE3, NAT-T payload opcode 0x9F, sent via
-// the client's UDP socket to the server TCP port plus 4. With the session token from
-// OP_SERVERIDENT appended, the server takes the keepalive from any source address.
-inline std::vector<std::uint8_t> BuildKeepalive(
-	const Hash &ownUserHash, const std::optional<Hash> &sessionToken)
+// the client's UDP socket to the server TCP port plus 4. The user hash alone counts only from the
+// session's own address; BuildKeepaliveProof() is the form taken from any address.
+inline std::vector<std::uint8_t> BuildKeepalive(const Hash &ownUserHash)
 {
-	std::vector<std::uint8_t> payload(ownUserHash.begin(), ownUserHash.end());
-	if (sessionToken) {
-		payload.insert(payload.end(), sessionToken->begin(), sessionToken->end());
-	}
-	return payload;
+	return std::vector<std::uint8_t>(ownUserHash.begin(), ownUserHash.end());
 }
 inline std::optional<Hash> ParseKeepalive(const std::uint8_t *data, std::size_t size)
 {

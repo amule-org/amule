@@ -1007,8 +1007,8 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 	const std::vector<std::uint8_t> payload =
 		keepaliveProof ? NatServerHolePunch::BuildKeepaliveProof(
 					 ownHash, *sessionToken, connectedsocket->NextNattKeepaliveCounter())
-			       : NatServerHolePunch::BuildKeepalive(ownHash, sessionToken);
-	const char *const form = keepaliveProof ? " with proof" : sessionToken ? " with session token" : "";
+			       : NatServerHolePunch::BuildKeepalive(ownHash);
+	const char *const form = keepaliveProof ? " with proof" : "";
 	CMemFile data(payload.data(), payload.size());
 	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, NatServerUdp::OP_NATT_KEEPALIVE);
 

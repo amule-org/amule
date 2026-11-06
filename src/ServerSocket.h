@@ -86,7 +86,7 @@ public:
 	// aux port rather than the advertised one.
 	uint16 GetConnectPort() const { return m_connectPort; }
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	// This login's ST_NATT_TOKEN, appended to every OP_SERVER_NATT_KEEPALIVE.
+	// This login's ST_NATT_TOKEN, the key of the keepalive proof. It never goes on UDP.
 	const std::optional<NatServerHolePunch::Hash> &GetNattSessionToken() const
 	{
 		return m_nattSessionToken;
