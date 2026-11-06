@@ -39,20 +39,20 @@ class OnLineSig
 private:
 	double m_sessionMaxDL;
 	wxDateTime m_sessionMaxDLDate;
-	bool m_isSessionMaxDlChanged;
+	bool m_isSessionMaxDlChanged = false;
 	bool m_isSessionMaxDlReseted;
 
 	double m_absoluteMaxDL;
 	wxDateTime m_absoluteMaxDlDate;
-	bool m_isAbsoluteMaxDlChanged;
+	bool m_isAbsoluteMaxDlChanged = false;
 	bool m_isAbsoluteMaxDlReseted;
 
-	int m_amuleState;
+	int m_amuleState = 0;
 	wxString m_serverName;
 	wxString m_serverIP;
 	wxString m_serverPort;
 	wxString m_connexionID;
-	int m_kadInfo;
+	int m_kadInfo = 0;
 	wxString m_ULRate;
 	wxString m_DLRate;
 	wxString m_queue;
@@ -63,7 +63,7 @@ private:
 	wxString m_version;
 	wxString m_sessionUL;
 	wxString m_sessionDL;
-	unsigned int m_runTimeS;
+	unsigned int m_runTimeS = 0;
 
 	wxFileName m_amulesig;
 

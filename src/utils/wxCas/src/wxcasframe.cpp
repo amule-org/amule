@@ -58,8 +58,6 @@ WxCasFrame::WxCasFrame(const wxString &title)
 
 	wxConfigBase *prefs = wxConfigBase::Get();
 
-	m_maxLineCount = 0;
-
 	// Check if we have a previous DL max hit
 	double absoluteMaxDL =
 		(double)(prefs->Read(WxCasCte::ABSOLUTE_MAX_DL_KEY, 0L)) / 1024.0; // Stored in bytes
@@ -205,6 +203,7 @@ WxCasFrame::WxCasFrame(const wxString &title)
 	m_frameVBox->Add(m_mainPanel, wxSizerFlags(1).Expand().Border(wxALL, 0));
 	SetAutoLayout(TRUE);
 	SetSizerAndFit(m_frameVBox);
+	m_lastFittedSize = m_mainPanelVBox->GetMinSize();
 
 	m_refresh_timer = new wxTimer(this, ID_REFRESH_TIMER);
 	m_refresh_timer->Start(
@@ -217,6 +216,8 @@ WxCasFrame::WxCasFrame(const wxString &title)
 
 WxCasFrame::~WxCasFrame()
 {
+	delete m_refresh_timer;
+	delete m_ftp_update_timer;
 	delete m_aMuleSig;
 
 #ifdef __LINUX__ // System monitoring on Linux
@@ -444,433 +445,86 @@ void WxCasFrame::OnFtpUpdateTimer(wxTimerEvent &WXUNUSED(event))
 void WxCasFrame::OnHitButton(wxCommandEvent &WXUNUSED(event))
 {
 	m_aMuleSig->ResetSessionMaxDL();
-	UpdateStatsPanel();
+	UpdateAll();
 }
 
 void WxCasFrame::OnAbsHitButton(wxCommandEvent &WXUNUSED(event))
 {
 	m_aMuleSig->ResetAbsoluteMaxDL();
-	SaveAbsoluteHits();
-	UpdateStatsPanel();
+	UpdateAll();
 }
 
 // Update all panels and frame, call Fit if needed
 void WxCasFrame::UpdateAll(bool forceFitting)
 {
-	bool needFit = UpdateStatsPanel();
+	UpdateStatsPanel();
+	const wxSize requiredSize = m_mainPanelVBox->GetMinSize();
 
-	if (needFit || forceFitting) {
-		// Fit stats panel
+	// Compare content requirements, not the current window size: an unchanged
+	// refresh must preserve a manual enlargement of the frame.
+	if (forceFitting || requiredSize != m_lastFittedSize) {
 		m_mainPanel->Fit();
-
-		// Fit main frame
 		SetClientSize(m_mainPanel->GetSize());
+		m_lastFittedSize = requiredSize;
 	}
 }
 
 // Update stat panel
-bool WxCasFrame::UpdateStatsPanel()
+void WxCasFrame::UpdateStatsPanel()
 {
-	// Set labels
 	m_aMuleSig->Refresh();
-
 #ifdef __LINUX__ // System monitoring on Linux
-
 	m_sysMonitor->Refresh();
 #endif
 
-	wxString newline;
-	wxString status;
-	unsigned int newMaxLineCount = 0;
-
 	Freeze();
+	m_statLine_1->SetLabel(MakeStatLine_1());
 
-	// Stat line 1
-	newline = MakeStatLine_1();
-	m_statLine_1->SetLabel(newline);
+	const int ed2k = m_aMuleSig->GetAmuleState();
+	const int kad = m_aMuleSig->GetKadState();
+	wxString status;
+	bool updateRunningStats = true;
 
-	newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-	// aMule is stopped
-	// if ( m_aMuleSig->GetRunTime () == 0
-
-	// aMule is not running
 	if (m_aMuleSig->GetUpStatus() == 0) {
 		status = _("Oh Oh, aMule is not running...");
-		newline = MakeStatLine_2();
-		m_statLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-	}
-	// aMule is running, ed2k and kad are connected
-	else if ((m_aMuleSig->GetAmuleState() == 1) &&
-		 (m_aMuleSig->GetKadState() == 1 || m_aMuleSig->GetKadState() == 2)) {
-		// Stat line 2
-		newline = MakeStatLine_2();
-		m_statLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 3
-		newline = MakeStatLine_3();
-		m_statLine_3->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 4
-		newline = MakeStatLine_4();
-		m_statLine_4->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 5
-		newline = MakeStatLine_5();
-		m_statLine_5->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 6
-		newline = MakeStatLine_6();
-		m_statLine_6->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 7
-		newline = MakeStatLine_7();
-		m_statLine_7->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Hits line 1
-		if (m_aMuleSig->IsSessionMaxDlChanged()) {
-			newline = MakeHitsLine_1();
-			m_hitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-		}
-
-		// Hits line 2
-		if (m_aMuleSig->IsAbsoluteMaxDlChanged()) {
-			newline = MakeHitsLine_2();
-			m_absHitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-			// Save new records
-			SaveAbsoluteHits();
-		}
-
-#ifdef __LINUX__ // System monitoring on Linux
-		newline = MakeSysLine_1();
-		m_sysLine_1->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		newline = MakeSysLine_2();
-		m_sysLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-#endif
-
-		status = _("aMule is running");
-	}
-	// aMule is running, ed2k is off, but kad connected
-	else if ((m_aMuleSig->GetAmuleState() == 0) &&
-		 (m_aMuleSig->GetKadState() == 1 || m_aMuleSig->GetKadState() == 2)) {
-		// Stat line 2
-		newline = MakeStatLine_2();
-		m_statLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 3
-		newline = MakeStatLine_3();
-		m_statLine_3->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 4
-		newline = MakeStatLine_4();
-		m_statLine_4->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 5
-		newline = MakeStatLine_5();
-		m_statLine_5->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 6
-		newline = MakeStatLine_6();
-		m_statLine_6->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 7
-		newline = MakeStatLine_7();
-		m_statLine_7->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Hits line 1
-		if (m_aMuleSig->IsSessionMaxDlChanged()) {
-			newline = MakeHitsLine_1();
-			m_hitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-		}
-
-		// Hits line 2
-		if (m_aMuleSig->IsAbsoluteMaxDlChanged()) {
-			newline = MakeHitsLine_2();
-			m_absHitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-			// Save new records
-			SaveAbsoluteHits();
-		}
-
-#ifdef __LINUX__ // System monitoring on Linux
-		newline = MakeSysLine_1();
-		m_sysLine_1->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		newline = MakeSysLine_2();
-		m_sysLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-#endif
-		status = _("aMule is running");
-	} else if ((m_aMuleSig->GetAmuleState() == 1) && (m_aMuleSig->GetKadState() == 0)) {
-		// Stat line 2
-		newline = MakeStatLine_2();
-		m_statLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 3
-		newline = MakeStatLine_3();
-		m_statLine_3->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 4
-		newline = MakeStatLine_4();
-		m_statLine_4->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 5
-		newline = MakeStatLine_5();
-		m_statLine_5->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 6
-		newline = MakeStatLine_6();
-		m_statLine_6->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 7
-		newline = MakeStatLine_7();
-		m_statLine_7->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Hits line 1
-		if (m_aMuleSig->IsSessionMaxDlChanged()) {
-			newline = MakeHitsLine_1();
-			m_hitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-		}
-
-		// Hits line 2
-		if (m_aMuleSig->IsAbsoluteMaxDlChanged()) {
-			newline = MakeHitsLine_2();
-			m_absHitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-			// Save new records
-			SaveAbsoluteHits();
-		}
-
-#ifdef __LINUX__ // System monitoring on Linux
-		newline = MakeSysLine_1();
-		m_sysLine_1->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		newline = MakeSysLine_2();
-		m_sysLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-#endif
-		status = _("aMule is running");
-	}
-	// both disconnected
-	else if ((m_aMuleSig->GetAmuleState() == 0) && (m_aMuleSig->GetKadState() == 0)) {
-		// Stat line 2
-		newline = MakeStatLine_2();
-		m_statLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 3
-		newline = MakeStatLine_3();
-		m_statLine_3->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 4
-		newline = MakeStatLine_4();
-		m_statLine_4->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 5
-		newline = MakeStatLine_5();
-		m_statLine_5->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 6
-		newline = MakeStatLine_6();
-		m_statLine_6->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 7
-		newline = MakeStatLine_7();
-		m_statLine_7->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Hits line 1
-		if (m_aMuleSig->IsSessionMaxDlChanged()) {
-			newline = MakeHitsLine_1();
-			m_hitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-		}
-
-		// Hits line 2
-		if (m_aMuleSig->IsAbsoluteMaxDlChanged()) {
-			newline = MakeHitsLine_2();
-			m_absHitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-			// Save new records
-			SaveAbsoluteHits();
-		}
-
-#ifdef __LINUX__ // System monitoring on Linux
-		newline = MakeSysLine_1();
-		m_sysLine_1->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		newline = MakeSysLine_2();
-		m_sysLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-#endif
+		m_statLine_2->SetLabel(MakeStatLine_2());
+		updateRunningStats = false;
+	} else if (ed2k == 0 && kad == 0) {
 		status = _("aMule is running, but disconnected");
-	}
-	// aMule is connecting
-	else if (m_aMuleSig->GetAmuleState() == 2) {
-		// Stat line 2
-		newline = MakeStatLine_2();
-		m_statLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 3
-		newline = MakeStatLine_3();
-		m_statLine_3->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 4
-		newline = MakeStatLine_4();
-		m_statLine_4->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 5
-		newline = MakeStatLine_5();
-		m_statLine_5->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 6
-		newline = MakeStatLine_6();
-		m_statLine_6->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Stat line 7
-		newline = MakeStatLine_7();
-		m_statLine_7->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		// Hits line 1
-		if (m_aMuleSig->IsSessionMaxDlChanged()) {
-			newline = MakeHitsLine_1();
-			m_hitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-		}
-
-		// Hits line 2
-		if (m_aMuleSig->IsAbsoluteMaxDlChanged()) {
-			newline = MakeHitsLine_2();
-			m_absHitLine->SetLabel(newline);
-
-			newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-			// Save new records
-			SaveAbsoluteHits();
-		}
-
-#ifdef __LINUX__ // System monitoring on Linux
-		newline = MakeSysLine_1();
-		m_sysLine_1->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-
-		newline = MakeSysLine_2();
-		m_sysLine_2->SetLabel(newline);
-
-		newMaxLineCount = GetMaxUInt(newline.Length(), newMaxLineCount);
-#endif
-
+	} else if ((ed2k == 0 || ed2k == 1) && kad >= 0) {
+		status = _("aMule is running");
+	} else if (ed2k == 2) {
 		status = _("aMule is connecting...");
-	}
-	// aMule status is unknown
-	else {
+	} else {
 		status = _("Oh Oh, aMule status is unknown...");
+		updateRunningStats = false;
+	}
+
+	if (updateRunningStats) {
+		m_statLine_2->SetLabel(MakeStatLine_2());
+		m_statLine_3->SetLabel(MakeStatLine_3());
+		m_statLine_4->SetLabel(MakeStatLine_4());
+		m_statLine_5->SetLabel(MakeStatLine_5());
+		m_statLine_6->SetLabel(MakeStatLine_6());
+		m_statLine_7->SetLabel(MakeStatLine_7());
+#ifdef __LINUX__ // System monitoring on Linux
+		m_sysLine_1->SetLabel(MakeSysLine_1());
+		m_sysLine_2->SetLabel(MakeSysLine_2());
+#endif
+	}
+
+	// Records and explicit resets apply even when aMule is stopped or its
+	// connection state is unknown. Refresh consumes each reset notification once.
+	if (m_aMuleSig->IsSessionMaxDlChanged()) {
+		m_hitLine->SetLabel(MakeHitsLine_1());
+	}
+	if (m_aMuleSig->IsAbsoluteMaxDlChanged()) {
+		m_absHitLine->SetLabel(MakeHitsLine_2());
+		SaveAbsoluteHits();
 	}
 
 	Thaw();
-
-	// Set status bar
 	SetStatusText(status);
-
-	// Resize only if needed
-	if (m_maxLineCount != newMaxLineCount) {
-		m_maxLineCount = newMaxLineCount;
-		return (TRUE);
-	} else {
-		return (FALSE);
-	}
 }
 
 // Refresh period changing
