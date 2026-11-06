@@ -2634,6 +2634,10 @@ bool LoadDirListFile(const wxString &path, CPreferences::PathList &out)
 			return false;
 		}
 		const wxString text(bytes.data(), wxMBConvUTF16LE(), bytes.size());
+		// A failed conversion yields an empty string: an unreadable file, not an empty one.
+		if (!bytes.empty() && text.IsEmpty()) {
+			return false;
+		}
 		for (wxString line : wxSplit(text, '\n', '\0')) {
 			line.Trim(true).Trim(false);
 			if (!line.IsEmpty() && !line.StartsWith("#")) {
@@ -2668,6 +2672,17 @@ CPath WithoutTrailingSeparator(const CPath &dir)
 	return CPath(raw);
 }
 
+bool LoadLegacySharedDirFile(const wxString &path, CPreferences::PathList &out)
+{
+	if (!LoadDirListFile(path, out)) {
+		return false;
+	}
+	for (CPath &dir : out) {
+		dir = WithoutTrailingSeparator(dir);
+	}
+	return true;
+}
+
 // The explicit and recursive lists as saved. Until either file exists, the shareddir.dat an
 // older aMule or eMule wrote stands in for the explicit list: none of it is made recursive, so
 // the watcher (#591/#606) does not start sharing new subfolders on its own. Returns true when
@@ -2678,18 +2693,14 @@ bool LoadSharedFolderIntents(const wxString &configDir,
 {
 	const bool haveExplicit = LoadDirListFile(configDir + "shareddir-explicit.dat", explicitList);
 	const bool haveRecursive = LoadDirListFile(configDir + "shareddir-recursive.dat", recursiveList);
-	if (haveExplicit || haveRecursive || !LoadDirListFile(configDir + "shareddir.dat", explicitList)) {
-		return false;
-	}
-	for (CPath &dir : explicitList) {
-		dir = WithoutTrailingSeparator(dir);
-	}
-	return true;
+	return !haveExplicit && !haveRecursive &&
+	       LoadLegacySharedDirFile(configDir + "shareddir.dat", explicitList);
 }
 
 // shareddir.dat was the union older versions read and wrote. It is read once, to migrate. One
 // that turns up later, from an older aMule or a script, is ignored: say so, name the folders it
-// would have shared, and remove it so it cannot look like configuration.
+// would have shared, and remove it so it cannot look like configuration. One that cannot be read
+// is left in place.
 void RetireLegacySharedDirFile(const wxString &configDir,
 	bool migrated,
 	bool saved,
@@ -2710,7 +2721,11 @@ void RetireLegacySharedDirFile(const wxString &configDir,
 			CFormat(_("Moved the shared folders from %s to shareddir-explicit.dat")) % legacy);
 	} else {
 		CPreferences::PathList listed;
-		LoadDirListFile(legacy, listed);
+		if (!LoadLegacySharedDirFile(legacy, listed)) {
+			AddLogLineC(
+				CFormat(_("Could not read %s. It is left in place and ignored.")) % legacy);
+			return;
+		}
 		std::set<wxString> known;
 		for (const CPath &dir : explicitList) {
 			known.insert(dir.GetRaw());
@@ -2725,10 +2740,17 @@ void RetireLegacySharedDirFile(const wxString &configDir,
 				ignored += "\n  " + dir.GetPrintable();
 			}
 		}
-		AddLogLineC(CFormat(_("Ignoring %s: shared folders are kept in shareddir-explicit.dat and "
-				      "shareddir-recursive.dat. The file will be removed.")) %
-			    legacy);
-		if (count) {
+		// aMule 3.0 to 3.2 wrote the union of the two files: nothing is lost then.
+		if (!count) {
+			AddLogLineN(
+				CFormat(_("Removing %s: its folders are already in shareddir-explicit.dat "
+					  "and shareddir-recursive.dat")) %
+				legacy);
+		} else {
+			AddLogLineC(
+				CFormat(_("Ignoring %s: shared folders are kept in shareddir-explicit.dat "
+					  "and shareddir-recursive.dat. The file will be removed.")) %
+				legacy);
 			AddLogLineC(CFormat(wxPLURAL("%u folder listed only there is not shared:%s",
 					    "%u folders listed only there are not shared:%s",
 					    count)) %

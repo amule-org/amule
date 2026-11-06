@@ -89,6 +89,17 @@ def run(binary):
         assert not legacy.exists(), 'ignored shareddir.dat was kept'
         assert lines(explicit) == [str(folder['B'])], lines(explicit)
 
+        # aMule 3.0 to 3.2 wrote the union of the two files: nothing is lost, so no warning.
+        write_lines(legacy, [folder['B'], folder['R2']])
+        log = expect_shared('union left by aMule 3.2', ['b.bin', 'r2.bin'])
+        assert 'Removing ' in log and 'Ignoring ' not in log, log
+        assert not legacy.exists(), 'union shareddir.dat was kept'
+        # The same from eMule, whose folders end with a separator.
+        legacy.write_bytes(b'\xff\xfe' + ''.join(f'{folder[n]}{os.sep}\r\n' for n in ('B', 'R2'))
+                           .encode('utf-16-le'))
+        log = expect_shared('eMule file after migration', ['b.bin', 'r2.bin'])
+        assert 'Removing ' in log and 'Ignoring ' not in log, log
+
         # A legacy EC client sends the whole union: B, A, and R2 with its tree.
         def set_union(dirs):
             def apply(ec):
@@ -114,6 +125,15 @@ def run(binary):
         assert 'Moved the shared folders from' in log, log
         assert lines(explicit) == [str(folder['A'])], lines(explicit)
         assert not legacy.exists(), 'migrated eMule shareddir.dat was kept'
+
+        # A file that does not decode (a lone surrogate) is neither imported nor removed.
+        explicit.unlink()
+        recursive.unlink()
+        legacy.write_bytes(b'\xff\xfe\x00\xd8')
+        for attempt in ('first', 'second'):
+            log = expect_shared(f'undecodable legacy file, {attempt} start', [])
+            assert 'Could not read ' in log and 'Moved the shared folders' not in log, log
+            assert legacy.exists(), 'undecodable shareddir.dat was removed'
     print('Shared-folder files: migration, hand edits, legacy file and EC union edit passed')
 
 

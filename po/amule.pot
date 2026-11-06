@@ -6860,6 +6860,16 @@ msgstr ""
 
 #: src/Preferences.cpp
 #, c-format
+msgid "Could not read %s. It is left in place and ignored."
+msgstr ""
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Removing %s: its folders are already in shareddir-explicit.dat and shareddir-recursive.dat"
+msgstr ""
+
+#: src/Preferences.cpp
+#, c-format
 msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
 msgstr ""
 
