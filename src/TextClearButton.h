@@ -31,6 +31,7 @@
 #include <wx/bmpbuttn.h>
 #include <wx/sizer.h>
 #include <wx/textentry.h>
+#include <algorithm>
 
 // Keep the original text control (including the search-history dropdown) and
 // its text events. The clear button stays visible even when the field is empty.
@@ -39,14 +40,18 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 	wxWindow *parent = input->GetParent();
 	const wxWindowID inputId = input->GetId();
 	auto *row = new wxBoxSizer(wxHORIZONTAL);
-	row->Add(input, wxSizerFlags(1).CenterVertical());
-	const int side = input->GetBestSize().y;
+	row->Add(input, wxSizerFlags(1).Expand());
+	// Width for the 16px icon + padding; height stays flexible so the sizer
+	// stretches the button to the field's height -- a fixed square computed
+	// from GetBestSize().y before layout ends up smaller than the real field
+	// on macOS and the X looks off-center.
+	const int side = std::max(input->GetBestSize().y, input->FromDIP(22));
 	auto *clear = new wxBitmapButton(
-		parent, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(side, side), wxBU_EXACTFIT);
+		parent, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
 	clear->SetToolTip(_("Clear"));
-	// A fixed square keeps the row at the field's height: on macOS the bezel's
-	// best size is taller and would shift neighbouring labels.
-	clear->SetMinSize(wxSize(side, side));
+	// Fixed width, flexible height: the row stretches it to match the field,
+	// so the bitmap stays vertically centered on every platform.
+	clear->SetMinSize(wxSize(side, -1));
 	const auto updateArtwork = [clear]() {
 		// Bundles take a size at 100% DPI and rasterize the SVG at each scale.
 		clear->SetBitmap(CamuleArtProvider::GetMenuBitmapBundle(
@@ -60,7 +65,7 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 		event.Skip();
 	});
 	// Clear of the macOS focus ring, which is drawn outside the field.
-	row->Add(clear, wxSizerFlags().CenterVertical().Border(wxLEFT, input->FromDIP(5)));
+	row->Add(clear, wxSizerFlags().Expand().Border(wxLEFT, input->FromDIP(5)));
 	clear->Enable(!dynamic_cast<wxTextEntry *>(input)->GetValue().IsEmpty());
 
 	// Bind by ID on the parent: Search can replace its Name control when the
