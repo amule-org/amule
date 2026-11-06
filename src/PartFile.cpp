@@ -350,7 +350,7 @@ CPartFile::CPartFile(const CED2KFileLink *fileLink)
 	CreatePartFile();
 
 	if (fileLink->m_hashset) {
-		if (!LoadHashsetFromFile(fileLink->m_hashset, true)) {
+		if (!LoadHashsetFromFile(fileLink->m_hashset.get(), true)) {
 			AddDebugLogLineC(
 				logPartFile, "eD2K link contained invalid hashset: " + fileLink->GetLink());
 		}

@@ -39,6 +39,17 @@ def run(binary, root):
         assert add_link(ec, forged) == C['EC_OP_FAILED'], 'a server-list address with a line break was accepted'
         assert add_link(ec, 'ed2k://|serverlist|http://127.0.0.1:9/server.met|/') == C['EC_OP_NOOP']
 
+        # A malformed part hash, or a bad field after p=, rejects the link, raw or encoded.
+        file_hash = '1111222233334444' * 2
+        prefix = f'ed2k://|file|hashes.bin|9728000|{file_hash}|'
+        for fields in (
+                'p=invalid|', f'p={file_hash}:invalid|',
+                f'p={file_hash}|p=invalid|', f'p={file_hash}|h=invalid|',
+                f'p={file_hash}|sources,127.0.0.1:0|'):
+            link = prefix + fields + '/'
+            assert add_link(ec, link) == C['EC_OP_FAILED'], fields
+            assert add_link(ec, link.replace('|', '%7C')) == C['EC_OP_FAILED'], fields
+
         # Only category 0 exists.
         assert add_link(ec, f'ed2k://|file|big.bin|{BIG}|{"0123456789ABCDEF" * 2}|/', 200) == C['EC_OP_NOOP']
         log = (root / 'logfile').read_text(errors='replace')

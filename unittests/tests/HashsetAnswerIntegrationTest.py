@@ -18,6 +18,7 @@ import time
 
 from AllSearchIntegrationTest import C, exact, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
+from CancelCompletedIntegrationTest import md4
 from ED2KLinkIntegrationTest import add_link
 from ShareWatcherMoveIntegrationTest import shared
 from UploadSlotScopeIntegrationTest import OP_HELLOANSWER, send
@@ -92,6 +93,21 @@ def run(binary):
                 answer = wait_for(sock, OP_HASHSETANSWER, 10)
                 assert answer is not None, 'no answer for a queued download under one part'
                 assert answer == queued_small + b'\0\0', answer.hex()
+
+                # The link parser hands its buffer to CPartFile only after all fields
+                # validate. Read the loaded hashes back through the real peer protocol.
+                for index, hashes in enumerate((bytes(range(32)), bytes(range(32, 64)))):
+                    file_hash = md4(hashes)
+                    parts = ':'.join(hashes[i:i + 16].hex() for i in (0, 16))
+                    # Repeated p= fields keep the last set.
+                    fields = (f'p={EMPTY_MD4.hex()}|' if index else '') + f'p={parts}|'
+                    link = (f'ed2k://|file|linked-{index}.bin|{PARTSIZE + 1}|'
+                            f'{file_hash.hex()}|{fields}/')
+                    assert add_link(ec, link) == C['EC_OP_NOOP'], link
+                    send(sock, OP_HASHSETREQUEST, file_hash)
+                    answer = wait_for(sock, OP_HASHSETANSWER, 10)
+                    assert answer == file_hash + b'\2\0' + hashes, (
+                        'link part hashes were not retained', answer)
     print('a file or download under one part answered with no part hashes; one of exactly one '
           'part with two; a download still missing its hashes got no answer')
 

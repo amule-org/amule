@@ -163,7 +163,6 @@ uint16 CED2KServerLink::GetPort() const
 // CED2KFileLink implementation
 CED2KFileLink::CED2KFileLink(const wxString &link)
 : CED2KLink(kFile)
-, m_hashset(NULL)
 , m_size(0)
 , m_bAICHHashValid(false)
 {
@@ -244,7 +243,7 @@ CED2KFileLink::CED2KFileLink(const wxString &link)
 		} else if (field.StartsWith("p=")) {
 			wxStringTokenizer hashTokens(field.AfterFirst('='), ":", wxTOKEN_RET_EMPTY_ALL);
 
-			m_hashset = new CMemFile();
+			m_hashset = std::make_unique<CMemFile>();
 			m_hashset->WriteHash(m_hash);
 			m_hashset->WriteUInt16(0);
 
@@ -264,8 +263,7 @@ CED2KFileLink::CED2KFileLink(const wxString &link)
 				m_hashset->WriteUInt16(count);
 				m_hashset->Seek(0, wxFromStart);
 			} else {
-				delete m_hashset;
-				m_hashset = NULL;
+				m_hashset.reset();
 			}
 		} else if (field.StartsWith("h=")) {
 			wxString hash = field.AfterFirst('=').MakeUpper();
@@ -281,11 +279,7 @@ CED2KFileLink::CED2KFileLink(const wxString &link)
 	}
 }
 
-CED2KFileLink::~CED2KFileLink()
-{
-	delete m_hashset;
-	m_hashset = NULL;
-}
+CED2KFileLink::~CED2KFileLink() = default;
 
 wxString CED2KFileLink::GetLink() const
 {
