@@ -32,7 +32,6 @@
 #include <CoreFoundation/CFBundle.h>                 // Do_not_auto_remove
 #include <ApplicationServices/ApplicationServices.h> // Do_not_auto_remove
 #include <wx/osx/core/cfstring.h>                    // Do_not_auto_remove
-
 #endif
 
 #include <ec/cpp/ECFileConfig.h> // Needed for CECFileConfig

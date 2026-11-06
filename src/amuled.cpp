@@ -58,6 +58,9 @@
 #include "PartFile.h"           // Needed for CPartFile
 #include "PartFileHashThread.h" // Needed for EVT_PARTFILE_HASH_RESULT
 #include "Logger.h"
+#ifdef __APPLE__
+#include "MacBackgroundOnly_mac.h"
+#endif
 #include <common/Format.h>
 #include "InternalEvents.h" // Needed for wxEVT_*
 #include "ThreadTasks.h"
@@ -247,6 +250,11 @@ int main(int argc, char **argv)
 	if (AmuledWantsDaemonFork(argc, argv)) {
 		AmuledDaemonizeEarly();
 	}
+#ifdef __APPLE__
+	// Transform only in the daemon process: the process transform starts framework threads,
+	// and Cocoa cannot be initialized in a child forked from a multithreaded parent.
+	MacDeclareBackgroundOnly();
+#endif
 	const int rc = wxEntry(argc, argv);
 #endif
 	// Startup stopped before InitCommon reported, for example because another instance holds

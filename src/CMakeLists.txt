@@ -211,7 +211,6 @@ if (BUILD_AMULECMD)
 		# foreground Dock application when it starts.
 		target_sources (amulecmd PRIVATE ${SRC_DIR}/MacBackgroundOnly_mac.mm)
 		target_link_libraries (amulecmd
-			PRIVATE "-framework CoreServices"
 			PRIVATE "-framework ApplicationServices"
 		)
 	endif()
@@ -369,7 +368,6 @@ if (BUILD_DAEMON)
 		)
 		# amuled is also bundled beside the GUI, but has no UI of its own.
 		target_sources (amuled PRIVATE ${SRC_DIR}/MacBackgroundOnly_mac.mm)
-		target_link_libraries (amuled PRIVATE "-framework CoreServices")
 	endif()
 
 	install (TARGETS amuled
