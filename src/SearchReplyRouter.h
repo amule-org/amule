@@ -31,29 +31,27 @@
 #include <iterator>
 #include <map>
 
-// Routes eD2k server answers to the search that asked for them.
+// Routes eD2k UDP server answers to the search that asked for them.
 //
-// Neither TCP OP_SEARCHRESULT nor UDP OP_GLOBSEARCHRES carries a search id on the wire;
-// historically both were filed into a single "current search" scalar. Starting a second
-// search while late answers to the first are still in flight therefore files the old
-// hits into the new search's bucket.
+// UDP OP_GLOBSEARCHRES carries no search id on the wire; answers were filed into a
+// single "current search" scalar. Starting a second search while late answers to the
+// first are still in flight therefore files the old hits into the new search's bucket.
+// (TCP OP_SEARCHRESULT is deliberately untouched and behaves exactly as on master.)
 //
 // Servers answer each query at most once, in the order asked, so every ask pushes the
 // owning search id and every answer pops the oldest outstanding one. A server asked by
 // two searches in a row attributes its first answer to the first search even though a
 // newer search is current. Entries expire (asks a server never answers, e.g. a
-// Lugdunum server with no match sends nothing) and explicit stops/timeouts remove
-// their search, so an answer arriving after its ask expired is attributed to the next
+// Lugdunum server with no match sends nothing) and explicit stops remove their
+// search, so an answer arriving after its ask expired is attributed to the next
 // outstanding ask instead of a search that can no longer own it.
 //
 // Two known trade-offs without a wire cookie. (1) If a server skips an old ask and
 // answers only the newer one within the old ask's window, FIFO attributes to the older
-// search: callers bound this with short expiries (UDP) or by dropping the replaced
-// TCP ask when a new search takes the slot (favouring the visible search, as on
-// master). (2) One UDP datagram carries one ask's answer -- records packed in the same
-// datagram share the claim, which pops once up front; a hypothetical second datagram
-// for the same ask would find no owner and be dropped rather than contaminate the next
-// search.
+// search: callers bound this with a short expiry (a few seconds). (2) One UDP datagram
+// carries one ask's answer -- records packed in the same datagram share the claim,
+// which pops once up front; a hypothetical second datagram for the same ask would
+// find no owner and be dropped rather than contaminate the next search.
 //
 // Pure logic, no application dependencies, so it is unit-testable on its own.
 class CSearchReplyRouter
@@ -93,8 +91,8 @@ public:
 	}
 
 	//! The timed-out or explicitly stopped search no longer expects this server's answer.
-	//! Removes its oldest outstanding ask, since a search asks a server at most once per
-	//! sweep but may re-ask it from a later search (both entries coexist).
+	//! Removes its oldest outstanding ask, since a sweep asks a server at most once but a
+	//! later search may re-ask it (both entries coexist).
 	void Remove(uint32_t serverKey, uint32_t searchId)
 	{
 		auto it = m_pending.find(serverKey);

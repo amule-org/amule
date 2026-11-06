@@ -523,26 +523,12 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 
 			theStats::AddDownOverheadServer(size);
 			CServer *cur_srv = (serverconnect) ? serverconnect->GetCurrentServer() : NULL;
-			// Attribute the answer to the search that asked for it: a replaced search's late
-			// answer belongs in its own tab, not the current one. Nothing outstanding owns it
-			// (duplicate, or answered to a stopped search) -- drop it the same way.
-			const uint32 resolvedSearch = theApp->searchlist->ClaimTcpReply();
-			if (!resolvedSearch) {
-				AddDebugLogLineN(
-					logServer, "Dropping OP_SEARCHRESULT with no outstanding ask.");
-				break;
-			}
 			theApp->searchlist->ProcessSearchAnswer(packet,
 				size,
 				true /*(cur_srv && cur_srv->GetUnicodeSupport())*/,
 				cur_srv ? cur_srv->GetIP() : 0,
-				cur_srv ? cur_srv->GetPort() : 0,
-				resolvedSearch);
-			// Only the current search drives the lifecycle: an older search's late answer
-			// only files results, it must not arm a sweep with another search's packet.
-			if (resolvedSearch == theApp->searchlist->GetCurrentSearchId()) {
-				theApp->searchlist->LocalSearchEnd();
-			}
+				cur_srv ? cur_srv->GetPort() : 0);
+			theApp->searchlist->LocalSearchEnd();
 			break;
 		}
 		case OP_FOUNDSOURCES_OBFU:
