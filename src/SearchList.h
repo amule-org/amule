@@ -548,6 +548,16 @@ private:
 	static const int SERVER_ANSWER_TIMEOUT_MS = 12000;
 
 	/**
+	 * How long a UDP ask stays attributable to its search (seconds).
+	 *
+	 * Servers send nothing when they have no match, so a silent server's ask must expire:
+	 * otherwise a later search re-asking the same server pops the older search's ask and
+	 * files the new hits into the old tab. A few seconds bounds that window while keeping
+	 * slow-but-alive servers routable for the single-search case.
+	 */
+	static const int UDP_SEARCH_ANSWER_TIMEOUT_SEC = 8;
+
+	/**
 	 * Adds the specified file to the current search's results.
 	 *
 	 * @param toadd The result to add.
@@ -589,8 +599,11 @@ private:
 	//! for it instead of whatever search is current when it arrives. The socket-level
 	//! WasServerAsked() guard only drops servers never asked by the current search; a server
 	//! asked by two searches in a row passes it, and TCP answers carry no check at all.
-	//! Pruned in StopSearchById (explicit stop) and RemoveResults (free path); a replaced
-	//! search keeps its entries on purpose, so its late answers still find its own bucket.
+	//! Pruned in StopSearchById (explicit stop) and RemoveResults (free path). A replaced
+	//! search's TCP ask is dropped when the replacement takes the slot (favouring the
+	//! visible search, as on master); UDP asks expire after UDP_SEARCH_ANSWER_TIMEOUT_SEC
+	//! so a silent server stops owning the next search's answer. See SearchReplyRouter for
+	//! the residual wire-cookie trade-off.
 	CSearchReplyRouter m_tcpReplies;
 	CSearchReplyRouter m_udpReplies;
 

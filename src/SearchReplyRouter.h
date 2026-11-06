@@ -36,8 +36,7 @@
 // Neither TCP OP_SEARCHRESULT nor UDP OP_GLOBSEARCHRES carries a search id on the wire;
 // historically both were filed into a single "current search" scalar. Starting a second
 // search while late answers to the first are still in flight therefore files the old
-// hits into the new search's bucket (e.g. "nord sud ovest est" hits showing up inside
-// a "georgie mandy" tab).
+// hits into the new search's bucket.
 //
 // Servers answer each query at most once, in the order asked, so every ask pushes the
 // owning search id and every answer pops the oldest outstanding one. A server asked by
@@ -46,6 +45,15 @@
 // Lugdunum server with no match sends nothing) and explicit stops/timeouts remove
 // their search, so an answer arriving after its ask expired is attributed to the next
 // outstanding ask instead of a search that can no longer own it.
+//
+// Two known trade-offs without a wire cookie. (1) If a server skips an old ask and
+// answers only the newer one within the old ask's window, FIFO attributes to the older
+// search: callers bound this with short expiries (UDP) or by dropping the replaced
+// TCP ask when a new search takes the slot (favouring the visible search, as on
+// master). (2) One UDP datagram carries one ask's answer -- records packed in the same
+// datagram share the claim, which pops once up front; a hypothetical second datagram
+// for the same ask would find no owner and be dropped rather than contaminate the next
+// search.
 //
 // Pure logic, no application dependencies, so it is unit-testable on its own.
 class CSearchReplyRouter
@@ -60,6 +68,8 @@ public:
 
 	//! Attribute one incoming answer from @a serverKey: drop expired fronts, pop and
 	//! return the oldest outstanding search id, or 0 when nothing outstanding owns it.
+	//! Callers claim once per datagram: every record packed in that datagram shares the
+	//! returned owner. See the trade-offs in the file header.
 	uint32_t ClaimReply(uint32_t serverKey, time_t now)
 	{
 		auto it = m_pending.find(serverKey);

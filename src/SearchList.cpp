@@ -64,6 +64,14 @@
 #include "kademlia/kademlia/Search.h"
 #include "kademlia/kademlia/Defines.h" // Needed for SEARCHKEYWORD_LIFETIME (Kad ramp)
 
+namespace
+{
+//! Router key for the connected server's TCP answers. TCP and UDP use separate routers,
+//! so this key cannot collide with a UDP entry; real servers are keyed by IP, which is
+//! never 0 for a connection we hold, so the single TCP slot stays distinct.
+constexpr uint32_t kTcpReplyKey = 0;
+} // namespace
+
 ///////////////////////////////////////////////////////////
 // CSearchList
 
@@ -758,6 +766,17 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 			// Bound the wait for the server's answer, for either kind: a local search has no
 			// other terminal path, and a global one's sweep is armed by the very answer we are
 			// waiting for.
+			// A replacement drops the previous search's TCP ask first: the connected server
+			// sends nothing when it has no match (the normal zero-hit case), so keeping the
+			// old ask would attribute the new search's answer to the old tab and skip
+			// LocalSearchEnd (no sweep, wrong lifecycle). Dropping it favours the search the
+			// user is looking at; a genuinely late answer to the old search then files into
+			// the new one, exactly as on master -- unavoidable without a wire cookie, and
+			// strictly better than breaking every refined search within the 12 s window.
+			if (m_awaitingTcpSearchId != 0 &&
+				m_awaitingTcpSearchId != static_cast<uint32_t>(*searchID)) {
+				m_tcpReplies.Remove(kTcpReplyKey, m_awaitingTcpSearchId);
+			}
 			m_awaitingServerAnswer = true;
 			m_awaitingTcpSearchId = static_cast<uint32_t>(*searchID);
 			// The answer carries no search id on the wire: record whose ask this is, so a
@@ -1029,11 +1048,12 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 					theStats::AddUpOverheadServer(extSearchPacket->GetPacketSize());
 					theApp->serverconnect->SendUDPPacket(extSearchPacket, server, true);
 					m_askedServers.insert(server->ECID());
-					// Attribute this server's eventual answer to the search running this
-					// sweep. A replaced search keeps its own entries, so its late answers
-					// still find its bucket instead of this one's.
+					// One datagram per ask: the claim pops once up front and every record in
+					// that datagram shares the owner (see ServerUDPSocket). Expires so a
+					// silent server's ask stops owning the next search's answer.
 					m_udpReplies.Ask(
-						server->GetIP(), static_cast<uint32_t>(m_currentSearch));
+						server->GetIP(), static_cast<uint32_t>(m_currentSearch),
+						time(nullptr) + UDP_SEARCH_ANSWER_TIMEOUT_SEC);
 					AddDebugLogLineN(logServerUDP,
 						"Sending OP_GLOBSEARCHREQ3 to server " +
 							Uint32_16toStringIP_Port(
@@ -1050,12 +1070,9 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 						theApp->serverconnect->SendUDPPacket(
 							m_searchPacket.get(), server, false);
 						m_askedServers.insert(server->ECID());
-						// Attribute this server's eventual answer to the search
-						// running this sweep. A replaced search keeps its own
-						// entries, so its late answers still find its bucket instead
-						// of this one's.
 						m_udpReplies.Ask(server->GetIP(),
-							static_cast<uint32_t>(m_currentSearch));
+							static_cast<uint32_t>(m_currentSearch),
+							time(nullptr) + UDP_SEARCH_ANSWER_TIMEOUT_SEC);
 					} else {
 						AddDebugLogLineN(logServerUDP,
 							"Skipped UDP search on server " +
@@ -1075,12 +1092,9 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 						theApp->serverconnect->SendUDPPacket(
 							m_searchPacket.get(), server, false);
 						m_askedServers.insert(server->ECID());
-						// Attribute this server's eventual answer to the search
-						// running this sweep. A replaced search keeps its own
-						// entries, so its late answers still find its bucket instead
-						// of this one's.
 						m_udpReplies.Ask(server->GetIP(),
-							static_cast<uint32_t>(m_currentSearch));
+							static_cast<uint32_t>(m_currentSearch),
+							time(nullptr) + UDP_SEARCH_ANSWER_TIMEOUT_SEC);
 					} else {
 						AddDebugLogLineN(logServerUDP,
 							"Skipped UDP search on server " +
@@ -1178,13 +1192,6 @@ static inline bool IsActiveSearchTypeEd2k(SearchType t)
 {
 	return t == LocalSearch || t == GlobalSearch || t == AllSearch;
 }
-
-namespace
-{
-//! Router key for the connected server's TCP answers. Real servers are keyed by IP, which is
-//! never 0 for a connection we hold, so the single TCP slot cannot collide with a UDP entry.
-constexpr uint32_t kTcpReplyKey = 0;
-} // namespace
 
 bool CSearchList::CanFileServerAnswer() const
 {

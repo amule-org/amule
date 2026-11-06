@@ -70,6 +70,41 @@ TEST(SearchReplyRouter, ExpiredAskIsSkipped)
 	ASSERT_EQUALS(uint32_t(0), router.ClaimReply(0x0a000001, 200));
 }
 
+TEST(SearchReplyRouter, TcpReplacementDropsOldAskSoNewSearchOwnsItsAnswer)
+{
+	CSearchReplyRouter router;
+	// Search 1 finds nothing: the server sends nothing, the user refines within 12 s.
+	// StartNewSearch drops search 1's TCP ask before recording search 2's, so search 2's
+	// answer files into search 2 and still drives the lifecycle (review point 5).
+	router.Ask(0x0a000001, 11, 112);
+	router.Remove(0x0a000001, 11);
+	router.Ask(0x0a000001, 22, 122);
+	ASSERT_EQUALS(uint32_t(22), router.ClaimReply(0x0a000001, 115));
+	ASSERT_EQUALS(uint32_t(0), router.ClaimReply(0x0a000001, 115));
+}
+
+TEST(SearchReplyRouter, UdpSilentServerExpiresSoResweepRoutesToNewSearch)
+{
+	CSearchReplyRouter router;
+	// Search 1's ask expired unanswered (silent server); search 2 re-asked the same
+	// server. The next datagram belongs to search 2 (review point 4).
+	router.Ask(0x0a000001, 11, 108);
+	router.Ask(0x0a000001, 22, 118);
+	ASSERT_EQUALS(uint32_t(22), router.ClaimReply(0x0a000001, 110));
+	ASSERT_TRUE(router.Empty());
+}
+
+TEST(SearchReplyRouter, SecondDatagramForSameAskHasNoOwner)
+{
+	CSearchReplyRouter router;
+	// One UDP datagram carries one ask's answer (review point 6): a hypothetical
+	// second datagram for the same ask finds no owner and is dropped instead of
+	// contaminating the next search.
+	router.Ask(0x0a000001, 11);
+	ASSERT_EQUALS(uint32_t(11), router.ClaimReply(0x0a000001, 1000));
+	ASSERT_EQUALS(uint32_t(0), router.ClaimReply(0x0a000001, 1000));
+}
+
 TEST(SearchReplyRouter, RemovedAskOwnsNothing)
 {
 	CSearchReplyRouter router;
