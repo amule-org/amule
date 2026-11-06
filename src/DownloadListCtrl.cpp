@@ -144,10 +144,19 @@ private:
 		wxCoord textheight;
 		dc->GetTextExtent(buffer, &textwidth, &textheight);
 		const wxColour oldColour = dc->GetTextForeground();
-		// Ordinary progress bar: white percentage. Hashing (green/yellow
-		// bar): black percentage.
+		const int x = middlex - (textwidth >> 1);
+		const int y = middley - (textheight >> 1);
+		// Outline white text so it stays readable on light fills.
+		if (hashingProgress == 0) {
+			dc->SetTextForeground(*wxBLACK);
+			const int offset = GetView()->FromDIP(1);
+			dc->DrawText(buffer, x - offset, y);
+			dc->DrawText(buffer, x + offset, y);
+			dc->DrawText(buffer, x, y - offset);
+			dc->DrawText(buffer, x, y + offset);
+		}
 		dc->SetTextForeground(hashingProgress == 0 ? *wxWHITE : *wxBLACK);
-		dc->DrawText(buffer, middlex - (textwidth >> 1), middley - (textheight >> 1));
+		dc->DrawText(buffer, x, y);
 		dc->SetTextForeground(oldColour);
 	}
 };
