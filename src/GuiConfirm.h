@@ -25,8 +25,19 @@
 #ifndef GUI_CONFIRM_H
 #define GUI_CONFIRM_H
 
+// NOTE: amuled builds with wxUSE_GUI=0, where no wx GUI header (not even
+// <wx/msgdlg.h>) may be included. GuiEvents.cpp is compiled for both the
+// monolithic GUI and the daemon, so this header must stay includable there.
+#ifdef AMULE_DAEMON
+// No message boxes in the daemon: keep the base style untouched and do not
+// touch wx at all.
+inline int GuiConfirmStyle(int baseStyle)
+{
+	return baseStyle;
+}
+#else
 // Must be included after "amule.h" (which sets up config/wx): including
-// <wx/msgdlg.h> first breaks daemon builds with incomplete wx types.
+// <wx/msgdlg.h> first breaks builds with incomplete wx types.
 #include <wx/msgdlg.h> // Needed for wxYES_NO / wxNO_DEFAULT
 
 #include "Preferences.h" // Needed for thePrefs::ConfirmDefaultYes
@@ -41,5 +52,6 @@ inline int GuiConfirmStyle(int baseStyle)
 	}
 	return baseStyle | wxNO_DEFAULT;
 }
+#endif                   // AMULE_DAEMON
 
 #endif // GUI_CONFIRM_H

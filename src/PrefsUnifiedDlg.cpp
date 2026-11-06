@@ -61,7 +61,7 @@
 #include "NetworkInterfaces.h"
 
 #include "AmuleApiCredentials.h"
-#include "amule.h" // Needed for theApp
+#include "amule.h"      // Needed for theApp
 #include "GuiConfirm.h" // Needed for GuiConfirmStyle (confirm default Yes/No)
 #include "amuleDlg.h"
 #include "AutostartManager.h"       // Autostart-on-login toggle backend
