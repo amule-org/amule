@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-05 10:40+0000\n"
+"PO-Revision-Date: 2026-11-06 08:28+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -5340,17 +5340,16 @@ msgid "Takes effect after restarting aMule."
 msgstr "Вступает в силу после перезапуска aMule."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Advertise my IPv6 address:"
-msgstr "Сообщать другим пирам мой IPv6-адрес"
+msgstr "Сообщать мой IPv6-адрес:"
 
 #: src/muuli_wdr.cpp
 msgid "When verified"
-msgstr ""
+msgstr "После проверки"
 
 #: src/muuli_wdr.cpp
 msgid "Always"
-msgstr ""
+msgstr "Всегда"
 
 #: src/muuli_wdr.cpp src/StatTree.cpp
 msgid "Never"
@@ -10205,12 +10204,12 @@ msgid "Oh Oh, aMule is not running..."
 msgstr "Ох-ох... aMule то не запущен..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid "aMule is running"
-msgstr "aMule запущен"
-
-#: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is running, but disconnected"
 msgstr "aMule запущен, но не подключён"
+
+#: src/utils/wxCas/src/wxcasframe.cpp
+msgid "aMule is running"
+msgstr "aMule запущен"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is connecting..."

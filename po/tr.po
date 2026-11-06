@@ -10148,12 +10148,12 @@ msgid "Oh Oh, aMule is not running..."
 msgstr "Aman aman, aMule çalışmıyor…"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid "aMule is running"
-msgstr "aMule çalışıyor"
-
-#: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is running, but disconnected"
 msgstr "aMule çalışıyor ama bağlı değil."
+
+#: src/utils/wxCas/src/wxcasframe.cpp
+msgid "aMule is running"
+msgstr "aMule çalışıyor"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is connecting..."
