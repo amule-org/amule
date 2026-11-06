@@ -26,7 +26,8 @@
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "ArchSpecific.h"
-#include "NetworkFunctions.h" // Needed for IsLowID
+#include "UploadCallbackPolicy.h" // Needed for the shared target budget
+#include "NetworkFunctions.h"     // Needed for IsLowID
 #include "include/protocol/Protocols.h"
 #include "include/protocol/ed2k/Client2Server/TCP.h" // Needed for SRV_TCPFLG_LOWID_HOLEPUNCH
 #include "include/protocol/ed2k/Client2Server/UDP.h" // Needed for SRV_UDPFLG_FOREIGN_NAT_CALLBACK
@@ -1170,7 +1171,8 @@ public:
 		std::uint32_t targetId,
 		std::uint16_t sourceTcpPort,
 		std::optional<Hash> knownHash,
-		std::uint64_t now)
+		std::uint64_t now,
+		unsigned maxTargets = kForeignTargetsPerWindow)
 	{
 		Expire(now);
 		if (FindPending(serverIp, targetId) != m_pending.end() ||
@@ -1182,8 +1184,7 @@ public:
 		const bool knownTarget = std::any_of(budget.targets.begin(),
 			budget.targets.end(),
 			[targetId](const TargetSeen &seen) { return seen.targetId == targetId; });
-		if ((!knownTarget && budget.targets.size() >= kForeignTargetsPerWindow) ||
-			!budget.pacer.TryTake(now)) {
+		if ((!knownTarget && budget.targets.size() >= maxTargets) || !budget.pacer.TryTake(now)) {
 			return false;
 		}
 		if (!knownTarget) {

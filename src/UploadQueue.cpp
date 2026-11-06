@@ -25,6 +25,7 @@
 
 #include "UploadQueue.h" // Interface declarations
 #include "UploadQueueAddressPolicy.h"
+#include "UploadCallbackPolicy.h"
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
@@ -76,6 +77,47 @@ CUploadQueue::CUploadQueue()
 	m_allUploadingKnownFile = new CKnownFile;
 }
 
+/**
+ * Asks a queued peer that cannot be contacted to connect instead of waiting for its own re-ask.
+ *
+ * Only the client the pass marked `m_bAddNextConnect` needs this, and only when a slot could
+ * actually be given: the in-flight ceiling mirrors the slots admission can hand out, so an
+ * all-LowID queue cannot turn into a burst of requests.
+ */
+bool CUploadQueue::TryStartUploadCallback(
+	CUpDownClient *client, uint64 now, unsigned inFlight, unsigned inFlightCeiling)
+{
+	if (!client->m_bAddNextConnect || !MayStartUploadCallback(client->m_uploadCallbackSpent)) {
+		return false;
+	}
+	if (inFlight >= inFlightCeiling) {
+		return false;
+	}
+	// CanDoCallback() alone is also true for a peer on another server and for a Kad-only
+	// session, and TryToContact() checks both for the same reason: a LowID is valid only on its
+	// own server, so the request would wake a different client on ours.
+	if (theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort()) &&
+		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort())) {
+		client->SendClassicCallbackRequest();
+		AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
+	} else {
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+		// Each route reports whether it actually sent: with no route, or with the NAT-T
+		// settings off, the peer must not be marked spent nor fill the in-flight ceiling.
+		if (!client->TrySendForeignNatCallbackRequest(kUploadCallbackForeignTargetShare) &&
+			!client->TrySendLowIdHolePunchRequest() &&
+			!client->TrySendLugdunumNatCallbackRequest()) {
+			return false;
+		}
+#else
+		return false;
+#endif
+	}
+	client->NoteUploadCallbackSent(now);
+	client->MarkUploadCallbackSpent();
+	return true;
+}
+
 void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 {
 	uint64 tick = GetTickCount64();
@@ -124,6 +166,18 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 	// clients as enabled for upload.
 	uint16 rank = 1;
 	bool bestClientFound = false;
+	// How many callbacks this pass may have in flight: the slots admission can give at its start.
+	// Read once here because lastupslotHighID changes as the pass takes clients, and a callback
+	// started halfway through must not be judged against a ceiling the pass itself moved.
+	const unsigned maxSlots = GetMaxSlots();
+	const unsigned freeSlots = maxSlots > m_uploadinglist.size() ? maxSlots - m_uploadinglist.size() : 0;
+	const unsigned callbackCeiling = MaxInflightUploadCallbacks(freeSlots, lastupslotHighID);
+	unsigned inFlightCallbacks = 0;
+	for (const CClientRef &waiting : m_waitinglist) {
+		if (waiting.GetClient()->HasUploadCallbackInFlight(tick)) {
+			++inFlightCallbacks;
+		}
+	}
 	// The first client its scope cap holds back that could take a spare slot now.
 	CClientRefList::iterator overCap = m_waitinglist.end();
 	for (it = m_waitinglist.begin(); it != m_waitinglist.end();) {
@@ -146,6 +200,12 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 			} else if (waitsForConnect) {
 				// No better high id client, so start upload to this one once it connects
 				cur_client->m_bAddNextConnect = true;
+				if (bestClient) {
+					if (TryStartUploadCallback(
+						    cur_client, tick, inFlightCallbacks, callbackCeiling)) {
+						++inFlightCallbacks;
+					}
+				}
 			} else {
 				// We found a high id client (or a currently connected low id client, or a
 				// client dialled at a native or advertised IPv6 that has not gone unanswered)
@@ -478,6 +538,86 @@ CUpDownClient *CUploadQueue::GetWaitingClientByIP_UDP(
 	}
 }
 
+void CUploadQueue::AdmitUploadCallbackAnswer(CUpDownClient *client)
+{
+	if (!client->IsUploadCallbackExpected(::GetTickCount64())) {
+		return;
+	}
+	// A banned peer never gets a slot, and one that already left the queue has nothing to admit:
+	// the exemption lasts 30 s, longer than the queue does.
+	if (client->IsBanned() || !IsOnUploadQueue(client)) {
+		return;
+	}
+	client->ClearUploadCallbackInFlight();
+	if (!TryTakeLowIdAlternationSlot(client)) {
+		client->SendRankingInfo();
+	}
+}
+
+/**
+ * Gives a LowID client its extra upload slot once it reaches the top of the queue.
+ *
+ * A LowID client cannot be contacted when it reaches the top, so it is only marked for
+ * uploading and takes its slot through the connection it initiates next. No slot is free then,
+ * so it is assigned an extra one, taking the count one over the configured number; no further
+ * LowID client gets a slot until a HighID client has, or a slot really is free.
+ */
+bool CUploadQueue::TryTakeLowIdAlternationSlot(CUpDownClient *client)
+{
+	if (!client->m_bAddNextConnect) {
+		return false;
+	}
+	uint32 maxSlots = GetMaxSlots();
+	if (lastupslotHighID) {
+		maxSlots++;
+	}
+	if (m_uploadinglist.size() >= maxSlots || UploadSlotsInScope(client) >= MaxUploadSlotsPerScope) {
+		return false;
+	}
+	client->m_bAddNextConnect = false;
+	RemoveFromWaitingQueue(client);
+	AddUpNextClient(client);
+	lastupslotHighID = false; // LowID alternate
+	return true;
+}
+
+/**
+ * Whether the queue may take another client from this client's address-accounting scope.
+ *
+ * Identity stays keyed by the exact canonical address, while IPv6 rate limiting aggregates a
+ * delegated /64. A client without an address has no host identity and is intentionally outside
+ * this cap. Only clients actually queued are counted: an earlier check also counted the tracked
+ * "deleted clients" list, so a client behind a shared or NAT IP that simply cancelled a few
+ * downloads was locked out for up to two hours, cleared only by a restart. Flood protection is
+ * the aggressiveness/ban path's job.
+ */
+bool CUploadQueue::IsWithinUploadScopeLimit(CUpDownClient *client)
+{
+	const CNetworkAddress clientAddress = client->GetUserAddress();
+	if (!UploadQueueAddressPolicy::IsMatchable(clientAddress)) {
+		return true;
+	}
+	// The scope is one value for the whole walk, which runs to thePrefs::GetQueueSize() entries.
+	const CNetworkAddress clientScope = PeerAddressing::RateLimitScope(clientAddress);
+	int ipCount = 1;
+	for (const auto &entry : m_waitinglist) {
+		CUpDownClient *cur_client = entry.GetClient();
+		const CNetworkAddress &otherAddress = cur_client->GetUserAddress();
+		if (cur_client != client && UploadQueueAddressPolicy::IsMatchable(otherAddress) &&
+			PeerAddressing::RateLimitScope(otherAddress) == clientScope) {
+			ipCount++;
+		}
+	}
+	if (ipCount <= 3) {
+		return true;
+	}
+	AddDebugLogLineN(logLocalClient,
+		CFormat("Rejected upload request from %s: too many clients (%d) in the same "
+			"accounting scope (%s) already on the upload queue") %
+			clientAddress.ToWxString() % ipCount % clientScope.ToWxString());
+	return false;
+}
+
 void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 {
 	if (theApp->serverconnect->IsConnected() && theApp->serverconnect->IsLowID() &&
@@ -492,8 +632,13 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 		return;
 	}
 
-	client->AddAskedCount();
-	client->SetLastUpRequest();
+	if (client->IsUploadCallbackExpected(::GetTickCount64())) {
+		// This arrival answers our callback; it is not a new peer request.
+		client->ClearUploadCallbackInFlight();
+	} else {
+		client->AddAskedCount();
+		client->SetLastUpRequest();
+	}
 
 	CClientList::SourceList found = theApp->clientlist->GetClientsByHash(client->GetUserHash());
 
@@ -510,19 +655,8 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 				// extra one, taking the count one over the configured number; no
 				// further LowID client gets a slot until a HighID client has, or a
 				// slot really is free.
-				if (client->m_bAddNextConnect) {
-					uint32 maxSlots = GetMaxSlots();
-					if (lastupslotHighID) {
-						maxSlots++;
-					}
-					if (m_uploadinglist.size() < maxSlots &&
-						UploadSlotsInScope(client) < MaxUploadSlotsPerScope) {
-						client->m_bAddNextConnect = false;
-						RemoveFromWaitingQueue(client);
-						AddUpNextClient(client);
-						lastupslotHighID = false; // LowID alternate
-						return;
-					}
+				if (TryTakeLowIdAlternationSlot(client)) {
+					return;
 				}
 
 				client->SendRankingInfo();
@@ -561,36 +695,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 		}
 	}
 
-	// Count clients in the same address-accounting scope. Identity remains keyed by the exact
-	// canonical address, while IPv6 rate limiting aggregates a delegated /64. A client without
-	// an address has no host identity and is intentionally outside this cap.
-	const CNetworkAddress clientAddress = client->GetUserAddress();
-	// The scope is one value for the whole walk, and the list runs to
-	// thePrefs::GetQueueSize() entries. Held past the loop for the refusal below.
-	const CNetworkAddress clientScope = PeerAddressing::RateLimitScope(clientAddress);
-	int ipCount = 0;
-	if (UploadQueueAddressPolicy::IsMatchable(clientAddress)) {
-		ipCount = 1;
-		for (const auto &entry : m_waitinglist) {
-			CUpDownClient *cur_client = entry.GetClient();
-			const CNetworkAddress &otherAddress = cur_client->GetUserAddress();
-			if (cur_client != client && UploadQueueAddressPolicy::IsMatchable(otherAddress) &&
-				PeerAddressing::RateLimitScope(otherAddress) == clientScope) {
-				ipCount++;
-			}
-		}
-	}
-
-	// No more than 3 clients from the same address-accounting scope may be on the upload queue.
-	// Only clients actually queued are counted: an earlier check also counted the tracked
-	// "deleted clients" list, so a client behind a shared or NAT IP that simply cancelled a few
-	// downloads was locked out for up to two hours, cleared only by a restart. Flood protection is
-	// the aggressiveness/ban path's job.
-	if (ipCount > 3) {
-		AddDebugLogLineN(logLocalClient,
-			CFormat("Rejected upload request from %s: too many clients (%d) in the same "
-				"accounting scope (%s) already on the upload queue") %
-				clientAddress.ToWxString() % ipCount % clientScope.ToWxString());
+	if (!IsWithinUploadScopeLimit(client)) {
 		return;
 	}
 

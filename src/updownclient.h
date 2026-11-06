@@ -50,10 +50,13 @@
 #include "ClientRef.h"        // Needed for debug defines
 #include "PeerCapabilities.h" // Needed for CPeerCapabilities
 #include "ProtocolPeerIdentity.h"
+#include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
-#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "NatServerHolePunch.h" // Needed for callback request policy
+#if defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
-#include "NatServerHolePunch.h" // Needed for PendingCallbackRequest
+#endif
 #endif
 #include "SessionTrafficStats.h" // Needed for AMULE_SESSION_TRAFFIC_STATS
 
@@ -361,14 +364,15 @@ private:
 	EContactRoute ContactRoute() const;
 	SContactFacts ContactFactsFor(const CNetworkAddress &address) const;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	//! Sends OP_NAT_CALLBACKREQUEST for this LowID source when the Lugdunum preconditions hold.
-	//! Called from TryToContact's LowID->LowID decline, so at most once per source: a
-	//! DS_LOWTOLOWIP source is not asked again.
-	void TrySendLugdunumNatCallbackRequest();
-	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) for this LowID source when its
+	//! Sends OP_NAT_CALLBACKREQUEST to this LowID peer when the Lugdunum preconditions hold.
+	//! Returns whether the request went out; a request held for the server's UDP key is not a
+	//! send. Called from TryToContact's LowID->LowID decline (a DS_LOWTOLOWIP source is not
+	//! asked again) and from the upload callback.
+	bool TrySendLugdunumNatCallbackRequest();
+	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) to this LowID peer when its
 	//! preconditions hold. Mutually exclusive with the Lugdunum callback per server.
-	//! Called from TryToContact's LowID->LowID decline. Returns whether the request went out;
-	//! a busy server slot is not a send.
+	//! Called from TryToContact's LowID->LowID decline and from the upload callback. Returns
+	//! whether the request went out; a busy server slot is not a send.
 	bool TrySendLowIdHolePunchRequest();
 	bool m_lowIdHolePunchRequested = false;
 	//! The server of this LowID source when it is not ours and would wake the source for us
@@ -377,7 +381,8 @@ private:
 	CServer *ForeignNatCallbackServer() const;
 	//! Sends the cross-server OP_NAT_CALLBACKREQUEST to ForeignNatCallbackServer(). Returns whether
 	//! the request went out; the request limits can hold it back.
-	bool TrySendForeignNatCallbackRequest();
+	bool TrySendForeignNatCallbackRequest(
+		unsigned maxTargets = NatServerHolePunch::kForeignTargetsPerWindow);
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	// The source's own target dials us, so our request's success is that source's hello.
@@ -559,8 +564,37 @@ public:
 	void ClearAskedCount() { m_cAsked = 1; } // 1, because it's cleared *after* the first request...
 	void FlushSendBlocks();                  // call this when you stop upload,
 						 // or the socket might be not able to send
-	void SetLastUpRequest() { m_dwLastUpRequest = ::GetTickCount64(); }
+	void SetLastUpRequest()
+	{
+		m_dwLastUpRequest = ::GetTickCount64();
+		ClearUploadCallbackRecord();
+	}
 	uint64 GetLastUpRequest() const { return m_dwLastUpRequest; }
+	void NoteUploadCallbackSent(uint64 now)
+	{
+		m_uploadCallbackSentAt = now;
+		m_uploadCallbackExpected = true;
+	}
+	bool HasUploadCallbackInFlight(uint64 now) const
+	{
+		return IsUploadCallbackInFlight(m_uploadCallbackSentAt, now);
+	}
+	void MarkUploadCallbackSpent() { m_uploadCallbackSpent = true; }
+	bool IsUploadCallbackExpected(uint64 now) const
+	{
+		// An answer that never came must not keep a later arrival exempt from counting as a request.
+		return m_uploadCallbackExpected && HasUploadCallbackInFlight(now);
+	}
+	void ClearUploadCallbackInFlight()
+	{
+		m_uploadCallbackSentAt = 0;
+		m_uploadCallbackExpected = false;
+	}
+	void ClearUploadCallbackRecord()
+	{
+		ClearUploadCallbackInFlight();
+		m_uploadCallbackSpent = false;
+	}
 	size_t GetUpPartCount() const { return m_upPartStatus.size(); }
 
 	// download
@@ -976,6 +1010,7 @@ private:
 	CPartFile *m_reqfile;
 
 	void Init();
+	void SendClassicCallbackRequest();
 	bool ProcessHelloTypePacket(const CMemFile &data);
 	void SendHelloTypePacket(CMemFile *data);
 	void SendFirewallCheckUDPRequest();
@@ -1053,6 +1088,9 @@ private:
 	uint64 m_dwUploadTime;
 	uint32 m_cAsked;
 	uint64 m_dwLastUpRequest;
+	uint64 m_uploadCallbackSentAt = 0;
+	bool m_uploadCallbackSpent = false;
+	bool m_uploadCallbackExpected = false;
 	uint32 m_nCurSessionUp;
 	uint16 m_nUpPartCount;
 	CMD4Hash m_requpfileid;

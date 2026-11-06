@@ -51,6 +51,7 @@ public:
 	~CUploadQueue();
 	void Process();
 	void AddClientToQueue(CUpDownClient *client);
+	void AdmitUploadCallbackAnswer(CUpDownClient *client);
 	bool RemoveFromUploadQueue(CUpDownClient *client, const wxString &reason);
 	// A client whose callback dial failed goes back to the waiting list, keeping its waiting
 	// time, to get its slot through its own next connection like a LowID.
@@ -80,6 +81,10 @@ public:
 	CKnownFile *GetAllUploadingKnownFile() { return m_allUploadingKnownFile; }
 
 private:
+	bool TryTakeLowIdAlternationSlot(CUpDownClient *client);
+	bool IsWithinUploadScopeLimit(CUpDownClient *client);
+	bool TryStartUploadCallback(
+		CUpDownClient *client, uint64 now, unsigned inFlight, unsigned inFlightCeiling);
 	void RemoveFromWaitingQueue(CClientRefList::iterator pos);
 	uint32 GetMaxSlots() const;
 	void AddUpNextClient(CUpDownClient *directadd = 0);

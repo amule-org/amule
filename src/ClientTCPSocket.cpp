@@ -478,6 +478,14 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 			m_client->ConnectionEstablished();
 		}
 
+#ifndef CLIENT_GUI
+		// A peer we dialled answers with HELLOANSWER and never sends a hello, so its callback
+		// answer is admitted here.
+		if (m_client) {
+			theApp->uploadqueue->AdmitUploadCallbackAnswer(m_client);
+		}
+#endif
+
 		// Socket might die on ConnectionEstablished somehow. Check it.
 		if (m_client) {
 			Notify_SharedCtrlRefreshClient(m_client->ECID(), AVAILABLE_SOURCE);
@@ -606,6 +614,14 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		if (m_client) {
 			m_client->ConnectionEstablished();
 		}
+
+#ifndef CLIENT_GUI
+		// After the hello answer and the handshake's own traffic: a queue ranking or an accept
+		// reaching the peer first would make it drop the connection.
+		if (m_client) {
+			theApp->uploadqueue->AdmitUploadCallbackAnswer(m_client);
+		}
+#endif
 
 		// start secure identification, if
 		//	- we have received eMule-OP_HELLO (new eMule)

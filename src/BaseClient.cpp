@@ -24,6 +24,7 @@
 //
 
 #include "KadCallbackPolicy.h"
+#include "UploadCallbackPolicy.h"
 #include <wx/wx.h>
 #include <wx/mstream.h>
 #include <wx/tokenzr.h>
@@ -211,6 +212,9 @@ void CUpDownClient::Init()
 	m_browseEcInitiated = false;
 	m_browsePinned = false;
 	m_dwLastUpRequest = 0;
+	m_uploadCallbackSentAt = 0;
+	m_uploadCallbackSpent = false;
+	m_uploadCallbackExpected = false;
 	m_bEmuleProtocol = false;
 	m_bCompleteSource = false;
 	m_bFriendSlot = false;
@@ -1462,6 +1466,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 {
 	// wxASSERT(theApp->clientlist->IsValidClient(this));
 
+	ClearUploadCallbackInFlight();
 	if (HasBeenDeleted()) {
 		AddDebugLogLineN(logClient,
 			"Disconnected() called for already deleted client on ip " +
@@ -1882,20 +1887,21 @@ std::optional<LugdunumCallbackRoute> BuildLugdunumCallbackRoute(const CUpDownCli
 }
 } // namespace
 
-void CUpDownClient::TrySendLugdunumNatCallbackRequest()
+bool CUpDownClient::TrySendLugdunumNatCallbackRequest()
 {
 #ifdef AMULE_UTP_TRANSPORT
 	m_lugdunumCallbackAwaitsServerKey = false;
 	if (!TrySendLugdunumNatCallbackRequest(GetUserIDHybrid())) {
 		m_lugdunumCallbackAwaitsServerKey = AwaitServerKeyForLugdunumCallback();
-		return;
+		return false;
 	}
 	// The source's target dials us: the attempt is the request, its success that source's hello.
 	theStats::AddLugdunumCallbackAttempt();
 	m_lugdunumCallbackRequest.NoteSent(::GetTickCount64());
 	theApp->clientudp->NoteLugdunumCallbackRequested(GetUserIDHybrid());
+	return true;
 #else
-	TrySendLugdunumNatCallbackRequest(GetUserIDHybrid());
+	return TrySendLugdunumNatCallbackRequest(GetUserIDHybrid());
 #endif
 }
 
@@ -1973,7 +1979,6 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 	if (theApp->serverconnect->IsHolePunchExtensionActive()) {
 		theApp->serverconnect->TrySendLowIdHolePunchKeepalive();
 	}
-	m_lowIdHolePunchRequested = true;
 	return true;
 }
 
@@ -2002,7 +2007,7 @@ CServer *CUpDownClient::ForeignNatCallbackServer() const
 #endif
 }
 
-bool CUpDownClient::TrySendForeignNatCallbackRequest()
+bool CUpDownClient::TrySendForeignNatCallbackRequest(unsigned maxTargets)
 {
 #ifndef AMULE_UTP_TRANSPORT
 	return false;
@@ -2022,7 +2027,7 @@ bool CUpDownClient::TrySendForeignNatCallbackRequest()
 		knownHash = hash;
 	}
 	if (!theApp->clientudp->SendForeignNatCallbackRequest(
-		    server, GetUserIDHybrid(), ourCrypt, GetUserPort(), knownHash)) {
+		    server, GetUserIDHybrid(), ourCrypt, GetUserPort(), knownHash, maxTargets)) {
 		return false;
 	}
 	// As a Lugdunum request: the attempt is the request, its success this source's hello.
@@ -2051,8 +2056,8 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 		m_nextAwaitedServerKeyCheck = now + NatServerHolePunch::kAwaitedServerKeyCheckMs;
 		RetryLugdunumCallbackAwaitingServerKey(now);
 	}
-	if (!m_lowIdHolePunchRequested) {
-		TrySendLowIdHolePunchRequest();
+	if (!m_lowIdHolePunchRequested && TrySendLowIdHolePunchRequest()) {
+		m_lowIdHolePunchRequested = true;
 	}
 }
 
@@ -2080,6 +2085,18 @@ void CUpDownClient::RetryLugdunumCallbackAwaitingServerKey(uint64 now)
 }
 #endif
 #endif
+
+void CUpDownClient::SendClassicCallbackRequest()
+{
+	CMemFile data;
+	// AFAICS, this id must be reversed to be sent to clients
+	// But if I reverse it, we do a serve violation ;)
+	data.WriteUInt32(m_nUserIDHybrid);
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_CALLBACKREQUEST);
+	theStats::AddUpOverheadServer(packet->GetPacketSize());
+	AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
+	theApp->serverconnect->SendPacket(packet);
+}
 
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 {
@@ -2123,7 +2140,9 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 					// The source is on another server, which wakes it for us.
 				} else if (NatServerHolePunch::ShouldRequestLowIdHolePunch(
 						   BuildLowIdHolePunchRequestFacts(*this))) {
-					TrySendLowIdHolePunchRequest();
+					if (TrySendLowIdHolePunchRequest()) {
+						m_lowIdHolePunchRequested = true;
+					}
 				} else {
 					TrySendLugdunumNatCallbackRequest();
 				}
@@ -2232,15 +2251,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 
 		if (theApp->serverconnect->IsLocalServer(m_dwServerIP, m_nServerPort)) {
-			CMemFile data;
-			// AFAICS, this id must be reversed to be sent to clients
-			// But if I reverse it, we do a serve violation ;)
-			data.WriteUInt32(m_nUserIDHybrid);
-			CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_CALLBACKREQUEST);
-			theStats::AddUpOverheadServer(packet->GetPacketSize());
-			AddDebugLogLineN(
-				logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
-			theApp->serverconnect->SendPacket(packet);
+			SendClassicCallbackRequest();
 			SetDownloadState(DS_WAITCALLBACK);
 			contacted = true;
 		} else {

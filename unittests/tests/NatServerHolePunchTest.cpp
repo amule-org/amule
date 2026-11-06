@@ -967,6 +967,32 @@ TEST(NatServerHolePunch, CrossServerTargetsPerServerStayBelowTheServerWindow)
 		kForeignTargetWindowMs + kForeignRequestRefillMs));
 }
 
+TEST(NatServerHolePunch, CrossServerTargetLimitCanBeSharedWithUploads)
+{
+	ForeignCallbackRequests limited;
+	std::uint64_t now = 0;
+	for (std::uint32_t target = 1; target <= kUploadCallbackForeignTargetShare; ++target) {
+		ASSERT_TRUE(limited.TryStart(kForeignServer,
+			42,
+			target,
+			4662,
+			std::nullopt,
+			now,
+			kUploadCallbackForeignTargetShare));
+		now += kForeignRequestRefillMs;
+	}
+	ASSERT_FALSE(limited.TryStart(
+		kForeignServer, 42, 16, 4662, std::nullopt, now, kUploadCallbackForeignTargetShare));
+
+	ForeignCallbackRequests defaultLimit;
+	now = 0;
+	for (std::uint32_t target = 1; target <= kForeignTargetsPerWindow; ++target) {
+		ASSERT_TRUE(defaultLimit.TryStart(kForeignServer, 42, target, 4662, std::nullopt, now));
+		now += kForeignRequestRefillMs;
+	}
+	ASSERT_FALSE(defaultLimit.TryStart(kForeignServer, 42, 31, 4662, std::nullopt, now));
+}
+
 TEST(NatServerHolePunch, ACrossServerAnswerIsDecryptedWithTheKeyItsRequestWasSentWith)
 {
 	// Two listed servers can share an IP with different ports, and so different UDP keys.
