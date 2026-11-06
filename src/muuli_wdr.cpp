@@ -458,7 +458,10 @@ wxSizer *transferTopPane( wxWindow *parent, bool call_fit, bool set_sizer )
     item1->Add( item3, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     CMuleNotebook *item4 = new CMuleNotebook( parent, ID_CATEGORIES, wxDefaultPosition, wxSize(15,MULE_NOTEBOOK_TAB_HEIGHT), 0 );
     wxASSERT( item4 );
-    item1->Add( item4, wxSizerFlags(1).FixedMinSize().Center() );
+    // Proportion 0: the tab bar hugs its tabs instead of stretching across the whole row.
+    // Stretched, a single category painted a full-width grey bar ("tutti (1/2)") for no
+    // information; hugging keeps the filter beside it and every tab-menu entry reachable.
+    item1->Add( item4, wxSizerFlags().FixedMinSize().Center() );
     wxStaticText *itemDlFilterLabel = new wxStaticText( parent, -1, _("Filter:"), wxDefaultPosition, wxDefaultSize, 0 );
     item1->Add( itemDlFilterLabel, wxSizerFlags().Center().Border(wxLEFT, 5) );
     wxTextCtrl *itemDlFilter = new wxTextCtrl( parent, IDC_TRANSFER_FILTER, "", wxDefaultPosition, wxSize(150,-1), 0 );
