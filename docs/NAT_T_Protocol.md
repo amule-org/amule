@@ -12,6 +12,43 @@ exchange does not change the normal eD2k handshake. The QUIC dial has been
 tested live between two aMule nodes; it has not yet been live-tested against
 eMuleAI 1.6.
 
+## Wire values
+
+Every value on the wire that this document uses, with its name in the source. One value can mean
+different things in different fields (`0x100000` is three different flags below), so always read it
+with its field.
+
+| Value | Name | Field or transport | Use |
+| --- | --- | --- | --- |
+| `0xC5` | `OP_EMULEPROT` | Client UDP protocol byte | Carries `OP_HOLEPUNCH` |
+| `0xA1` | `OP_HOLEPUNCH` | Client UDP opcode under `0xC5` | Empty peer punch ([Punch schedule](#punch-schedule-and-port-sweep)) |
+| `0xB2` | `OP_UDPRESERVEDPROT2` | Client UDP protocol byte | NAT-T frames; the next byte is the frame type ([Datagram envelope](#datagram-envelope)) |
+| `0x01` | `OP_NATT_FRAME_QUIC` | Frame type after `0xB2` | QUIC datagram |
+| `0x02` | `OP_NATT_FRAME_CAPS` | Frame type after `0xB2` | Capability request |
+| `0x03` | `OP_NATT_FRAME_CAPS_ACK` | Frame type after `0xB2` | Capability answer |
+| `0xFF` | `OP_NATT_FRAME_KEY` | Frame type after `0xB2` | Key frame ([Key frame](#key-frame-quic-and-utp-datagram-obfuscation)) |
+| `0x60` | `OP_LOWID_HOLEPUNCH_REQUEST` | Server TCP, client to server | Ask for a punch to a LowID ([ed2k-server LowID hole punch](#ed2k-server-lowid-hole-punch)) |
+| `0x61` | `OP_LOWID_HOLEPUNCH_INFO` | Server TCP, server to client | The other side's endpoint; 25, 29 or 30 bytes |
+| `0x62` | `OP_LOWID_HOLEPUNCH_FAIL` | Server TCP, server to client | The server can't punch |
+| `0x9F` | `OP_NATT_KEEPALIVE` | Server UDP, client UDP socket to server | Tells the server our UDP endpoint; user hash alone or proof |
+| `0x37` | `OP_NAT_CALLBACKREQUESTED` | Server TCP, server to client | Callback or wake ([Lugdunum NAT callback](#lugdunum-nat-callback-eserver-1715)) |
+| `0xA6` | `OP_NAT_CALLBACKREQUEST` | Server UDP, client to server | Callback request, same server or [cross-server](#cross-server-nat-callback-ed2k-server-0986) |
+| `0xA7` | `OP_NAT_CALLBACKREQUESTED_UDP` | Server UDP, server to client | Callback or cross-server answer |
+| `0xF9` | `CT_EMULE_UDPPORTS` | Login tag | Our UDP ports, so a `0x60` can name us |
+| `0x20` | `CT_SERVER_FLAGS` | Login tag | Bits below; bits 9-11 are our crypt options |
+| `0x1000` | `SRVCAP_NATTRAVERSAL` | `CT_SERVER_FLAGS` bit | Lugdunum callback opt-in |
+| `0x100000` | `SRVCAP_HOLEPUNCH_EXTENSION` | `CT_SERVER_FLAGS` bit | Hole-punch extension opt-in |
+| `0x1000` | `SRV_TCPFLG_NATTRAVERSAL` | `OP_IDCHANGE` TCP flag | Lugdunum callback support |
+| `0x20000` | `SRV_TCPFLG_LOWID_HOLEPUNCH` | `OP_IDCHANGE` TCP flag | ed2k-server hole punch support |
+| `0x100000` | `SRV_TCPFLG_HOLEPUNCH_EXTENSION` | `OP_IDCHANGE` TCP flag | Hole-punch extension support |
+| `0x100000` | `SRV_UDPFLG_FOREIGN_NAT_CALLBACK` | Server status UDP flag | Takes a cross-server callback |
+| `0xAC` | `ST_NATT_TOKEN` | `OP_SERVERIDENT` tag | Session token, new at every login; never on UDP |
+| `0xA9` | `ST_NATT_PROOF` | `OP_SERVERIDENT` tag | u32 = 1: the server takes a proof `0x9F` |
+| `0xAA` | `CT_MOD_MISCOPTIONS` | Hello tag | Bit 1 (`0x02`, `MOD_MISCOPT_NAT_TRAVERSAL`) uTP NAT-T, bit 4 (`0x10`, `MOD_MISCOPT_NAT_TRAVERSAL_QUIC`) QUIC NAT-T |
+
+The server takes a plain `0x9F` at its TCP port + 4, and the server-way obfuscated datagrams at
+the obfuscation UDP port it advertises.
+
 ## Availability and discovery
 
 The exchange is compile-time gated by `ENABLE_QUIC`, which defines
@@ -34,15 +71,16 @@ that such an advertisement would imply.
 A CAPS or CAPS_ACK datagram is:
 
 ```text
-OP_UDPRESERVEDPROT2 (0xB2) | type | EAQC payload (54 bytes)
+0xB2 (OP_UDPRESERVEDPROT2) | type | EAQC payload (54 bytes)
 ```
 
-The type byte is `0x02` for CAPS and `0x03` for CAPS_ACK. The EAQC payload is
-exactly 54 bytes. CAPS is obfuscated with the dialled peer's hash and CAPS_ACK
-with the sender hash from CAPS, when the sender has a public IP and UDP
-obfuscation is enabled. `0xB2` is a reserved UDP protocol byte,
-not an eD2k opcode; the type byte selects the frame. The constants are defined
-in [`src/include/protocol/Protocols.h`](../src/include/protocol/Protocols.h).
+The type byte is `0x02` (`OP_NATT_FRAME_CAPS`) for CAPS and `0x03`
+(`OP_NATT_FRAME_CAPS_ACK`) for CAPS_ACK. The EAQC payload is exactly 54 bytes.
+CAPS is obfuscated with the dialled peer's hash and CAPS_ACK with the sender
+hash from CAPS, when the sender has a public IP and UDP obfuscation is enabled.
+`0xB2` is a reserved UDP protocol byte, not an eD2k opcode; the type byte
+selects the frame. The constants are defined in
+[`src/include/protocol/Protocols.h`](../src/include/protocol/Protocols.h).
 
 ## EAQC payload layout
 
@@ -94,7 +132,7 @@ A CAPS_ACK is never answered. It is accepted only when it decodes as above,
 names a nonzero sender hash and nonzero options, and matches an unexpired CAPS
 that aMule sent to the same peer hash, IP and UDP port; any other CAPS_ACK is
 dropped. An accepted ACK records the peer as QUIC-compatible when the `0x40`
-bit is set, and as incompatible otherwise, for 29 minutes.
+(QUIC) bit is set, and as incompatible otherwise, for 29 minutes.
 
 The receive and response path is in
 [`src/ClientUDPSocket.cpp`](../src/ClientUDPSocket.cpp), with the limiter policy
@@ -114,10 +152,10 @@ user hash and UDP endpoint, aMule looks the peer up in its capability cache:
 If a QUIC dial cannot start, or ends before its stream opens, the peer gets a
 30-second cooldown and the rendezvous falls back to uTP.
 
-Only a dial with a known peer hash can use QUIC: the ed2k-server requester
-that received a 29- or 30-byte `0x61`, and a Lugdunum forward that carries the
-user hash. The target-side dial triggered by `OP_HOLEPUNCH`, and its dial-back,
-have no peer hash and always use uTP.
+Only a dial with a known peer hash can use QUIC: the ed2k-server requester that
+received a 29- or 30-byte `0x61` (`OP_LOWID_HOLEPUNCH_INFO`), and a Lugdunum
+forward that carries the user hash. The target-side dial triggered by
+`OP_HOLEPUNCH`, and its dial-back, have no peer hash and always use uTP.
 
 The first CAPS to a peer endpoint is recorded for 30 seconds; the first
 matching ACK consumes it. The request ledger and the capability cache each
@@ -134,7 +172,7 @@ ledger in [`src/QuicCapsRequestLedger.h`](../src/QuicCapsRequestLedger.h).
 A key frame tells the receiver which user hash to obfuscate its datagrams to the sender with:
 
 ```text
-OP_UDPRESERVEDPROT2 (0xB2) | 0xFF | user hash (16 bytes)
+0xB2 (OP_UDPRESERVEDPROT2) | 0xFF (OP_NATT_FRAME_KEY) | user hash (16 bytes)
 ```
 
 The wire format is eMuleAI's. A receiver accepts a payload of at least 16 bytes, ignores any surplus and
@@ -150,17 +188,18 @@ What aMule does with it, in QUIC builds and only while `QuicNatT=1`:
   one per endpoint every 10 s. aMule sends its key frame only where it can itself be obfuscated; eMuleAI
   also sends it in the clear when it has no key, which exposes the sender's user hash to anyone on the
   path. With either prerequisite unavailable, datagrams go plain and no key frame is sent.
-- **Receiving.** A key frame is honoured only from an endpoint a rendezvous announced (the ed2k-server
-  `0x61` or Lugdunum's forwarded callback) in the last 30 s, and only when that rendezvous did not provide
-  a peer hash. The server-vouched hash remains authoritative when present. An accepted key frame can
-  replace an earlier announced hash but never the identity aMule dialled; nothing authenticates the frame.
-  A learned hash (including a server-vouched hash) expires after 120 s without outbound use; active
-  datagrams refresh it. The 30 s expected-endpoint window controls only admission of unauthenticated key
-  frames, not the lifetime of a vouched key for an active exchange. Distinct live server-vouched hashes
-  for one endpoint are ambiguous: QUIC datagrams and key frames to that endpoint are dropped until the
-  conflicting 30 s expectation expires, never downgraded to plaintext. The table holds at most 256 endpoints.
-  Nothing is persisted: the hash selects an obfuscation key for one live exchange and is not an identity, which the
-  `OP_HELLO` still establishes.
+- **Receiving.** A key frame is honoured only from an endpoint a rendezvous announced (the
+  ed2k-server `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) or Lugdunum's forwarded callback) in the last 30 s,
+  and only when that rendezvous did not provide a peer hash. The server-vouched hash remains
+  authoritative when present. An accepted key frame can replace an earlier announced hash but never
+  the identity aMule dialled; nothing authenticates the frame. A learned hash (including a
+  server-vouched hash) expires after 120 s without outbound use; active datagrams refresh it. The
+  30 s expected-endpoint window controls only admission of unauthenticated key frames, not the
+  lifetime of a vouched key for an active exchange. Distinct live server-vouched hashes for one
+  endpoint are ambiguous: QUIC datagrams and key frames to that endpoint are dropped until the
+  conflicting 30 s expectation expires, never downgraded to plaintext. The table holds at most 256
+  endpoints. Nothing is persisted: the hash selects an obfuscation key for one live exchange and is
+  not an identity, which the `OP_HELLO` still establishes.
 
 The datagram's own TLS 1.3 protection does not depend on this layer. It only hides the Initial and its
 ALPN from the path. eMuleAI does not require it: its QUIC receiver drops a frame only when no session
@@ -271,24 +310,24 @@ QUIC/TLS/EAQN1 result.
 
 ## ed2k-server LowID hole punch
 
-ed2k-server coordinates a hole punch between two LowID clients with
-`OP_LOWID_HOLEPUNCH_REQUEST` (`0x60`), `OP_LOWID_HOLEPUNCH_INFO` (`0x61`),
-`OP_LOWID_HOLEPUNCH_FAIL` (`0x62`) and the UDP keepalive `OP_SERVER_NATT_KEEPALIVE`
-(`0x9F`) (eMule wiki "NatT protocol"; ed2k-server README "Implementing a compatible
-client", 0.9.84 `39b9d85`). Since 0.9.84 it announces support with `OP_IDCHANGE`
-TCP flag `0x20000` (`SRV_TCPFLG_LOWID_HOLEPUNCH`), and always sets it.
+ed2k-server coordinates a hole punch between two LowID clients with `0x60`
+(`OP_LOWID_HOLEPUNCH_REQUEST`), `0x61` (`OP_LOWID_HOLEPUNCH_INFO`), `0x62`
+(`OP_LOWID_HOLEPUNCH_FAIL`) and the UDP keepalive `0x9F` (`OP_NATT_KEEPALIVE`) (eMule wiki "NatT
+protocol"; ed2k-server README "Implementing a compatible client", 0.9.84 `39b9d85`). Since 0.9.84 it
+announces support with `OP_IDCHANGE` TCP flag `0x20000` (`SRV_TCPFLG_LOWID_HOLEPUNCH`), and always
+sets it.
 
 aMule implements this only when both `ENABLE_NATT_SERVER_COORDINATION` and `ENABLE_UTP`
 are built (**experimental**, off by default; default and `ENABLE_IPV6` builds are unaffected)
 and the runtime setting below is also on. With NAT-T compiled but uTP absent, aMule sends
-none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
+none of `0xF9` (`CT_EMULE_UDPPORTS`), `0x9F` or `0x60` and cannot act on `0x61`:
 
 - runtime opt-in: `thePrefs::IsLowIdHolePunchEnabled()` (`amule.conf` key
   `/eMule/LowIdHolePunch`, default **off**, no widget, no EC tag). It gates the `0xF9` login
   tag, the `0x9F` keepalive, sending `0x60` and keeping LowID sources, independently of
   `LugdunumNatCallback` -- a server is either Lugdunum or ed2k-server, never both
   (`NatServerHolePunch::ShouldRequestLowIdHolePunch()`'s `serverIsLugdunumActive` gate);
-- login opt-in: `CT_EMULE_UDPPORTS` (`0xF9`), value `(kadUDPPort << 16) | clientUDPPort`
+- login opt-in: `0xF9` (`CT_EMULE_UDPPORTS`), value `(kadUDPPort << 16) | clientUDPPort`
   (`ServerConnect.cpp`). aMule shares one UDP socket for Kad and the client protocol, so both
   halves carry `thePrefs::GetEffectiveUDPPort()`. Sent even when we never send `0x60`
   ourselves: it is what lets another LowID client's `0x60` name us as its target
@@ -297,7 +336,7 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
   (`NatServerHolePunch::ServerAcceptsHolePunchRequest()`), read directly off `cur_server` --
   unlike Lugdunum's UDP-only fields, the TCP flags are already live there, so no server-list
   copy is needed;
-- keepalive `OP_SERVER_NATT_KEEPALIVE` (`0x9F`): sent once as soon as the connection reaches
+- keepalive `0x9F` (`OP_NATT_KEEPALIVE`): sent once as soon as the connection reaches
   `CS_CONNECTED` (`CServerConnect::ConnectionEstablished()`), and then roughly every 60 s from
   `CamuleApp::OnCoreTimer`, no new thread. `CServerConnect::TrySendLowIdHolePunchKeepalive()`
   sends our 16-byte user hash from the client UDP socket (`theApp->clientudp`, not the server
@@ -306,18 +345,17 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
   nonzero (`NatServerHolePunch::ShouldSendKeepalive()`)
   -- ed2k-server refuses a HighID target (`FAIL_TARGET_IS_HIGHID`), and a disabled UDP port has
   no socket to send from;
-- keepalive proof: ed2k-server sends a session token, `ST_NATT_TOKEN` (`0xAC`, 16 bytes), in
-  `OP_SERVERIDENT`, new at every login. From 0.9.88 the same ident also carries `ST_NATT_PROOF`
-  (`0xA9`, u32 = 1): the `0x9F` is then `<user hash 16><counter u32 LE><mac 16>`, the mac being
-  the first 16 bytes of HMAC-SHA256 keyed with the token over the hash and counter
-  (`NatServerHolePunch::BuildKeepaliveProof()`). The counter starts at 1 and rises with each
-  `0x9F` of the login; the server takes only one above the last it accepted, from any address, so
-  a client whose UDP leaves from another public IP still works. The token never goes on UDP: a
-  proof `0x9F` is always plain to TCP port + 4 and needs no server UDP key. Without the proof tag
-  the `0x9F` is the user hash alone, which the server takes only from the session's own address.
-  0.9.87 also took `<user hash 16><token 16>` from any address; aMule does not send that form,
-  because anyone on the path can read the token and move the session's endpoint for the whole
-  login;
+- keepalive proof: ed2k-server sends a session token, `0xAC` (`ST_NATT_TOKEN`, 16 bytes), in
+  `OP_SERVERIDENT`, new at every login. From 0.9.88 the same ident also carries `0xA9`
+  (`ST_NATT_PROOF`, u32 = 1): the `0x9F` is then `<user hash 16><counter u32 LE><mac 16>`, the mac
+  being the first 16 bytes of HMAC-SHA256 keyed with the token over the hash and counter
+  (`NatServerHolePunch::BuildKeepaliveProof()`). The counter starts at 1 and rises with each `0x9F`
+  of the login; the server takes only one above the last it accepted, from any address, so a client
+  whose UDP leaves from another public IP still works. The token never goes on UDP: a proof `0x9F`
+  is always plain to TCP port + 4 and needs no server UDP key. Without the proof tag the `0x9F` is
+  the user hash alone, which the server takes only from the session's own address. 0.9.87 also took
+  `<user hash 16><token 16>` from any address; aMule does not send that form, because anyone on the
+  path can read the token and move the session's endpoint for the whole login;
 - sending `0x60`: where a LowID-to-LowID contact is declined in `TryToContact()`, next to
   `TrySendLugdunumNatCallbackRequest()`, `CUpDownClient::TrySendLowIdHolePunchRequest()` sends
   `<target_id 4><our_udp_port 2>` over the server TCP link
@@ -361,11 +399,12 @@ none of `0xF9`, `0x9F` or `0x60` and cannot act on `0x61`:
 
 ### Punch schedule and port sweep
 
-Every punch a server path sends goes out more than once: to the endpoint the server named at
-0, 0.5, 1 and 2 s: the wake's `0x9F` offsets, 0, 0.5 and 1 s, plus one more at 2 s. It applies
-to the `0x61` above, to the cross-server `0xA7` answer and to the extension wake, which each sent
-a single `OP_HOLEPUNCH` before. The wire format is unchanged: an empty `OP_HOLEPUNCH` (`0xA1`,
-`OP_EMULEPROT`) to the given UDP port. The due punches are sent from `CamuleApp::OnCoreTimer`
+Every punch a server path sends goes out more than once: to the endpoint the server named at 0, 0.5,
+1 and 2 s: the wake's `0x9F` (`OP_NATT_KEEPALIVE`) offsets, 0, 0.5 and 1 s, plus one more at 2 s. It
+applies to the `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) above, to the cross-server `0xA7`
+(`OP_NAT_CALLBACKREQUESTED_UDP`) answer and to the extension wake, which each sent a single
+`OP_HOLEPUNCH` before. The wire format is unchanged: an empty `0xA1` (`OP_HOLEPUNCH`) under `0xC5`
+(`OP_EMULEPROT`) to the given UDP port. The due punches are sent from `CamuleApp::OnCoreTimer`
 (`CServerConnect::StartLowIdHolePunchSchedule()` sends the first, `SendDueLowIdHolePunches()` the
 rest), so no thread is added.
 
@@ -394,16 +433,17 @@ rest), so no thread is added.
 
 ### Hole-punch extension (ed2k-server 0.9.85)
 
-The extension (andrey23127/ed2k-server#39) lets the server hand out the UDP port from a fresh
-`0x9F` at punch time, not from the last standing keepalive. It applies only between two clients
-that announced it to a server that sets `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENSION`) in its
-`OP_IDCHANGE` TCP flags; every other pair gets the punch above unchanged.
+The extension (andrey23127/ed2k-server#39) lets the server hand out the UDP port from a fresh `0x9F`
+(`OP_NATT_KEEPALIVE`) at punch time, not from the last standing keepalive. It applies only between
+two clients that announced it to a server that sets `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENSION`) in
+its `OP_IDCHANGE` TCP flags; every other pair gets the punch above unchanged.
 
 - announcing: `CT_SERVER_FLAGS` carries `0x100000` (`SRVCAP_HOLEPUNCH_EXTENSION`), always with
-  Lugdunum's `0x1000`, only when both `LowIdHolePunch` and `LugdunumNatCallback` are on and uTP
-  is built (`NatServerHolePunch::ShouldAnnounceHolePunchExtension()`). The server wakes an
-  extension target with Lugdunum's `0x37`, which only the Lugdunum path serves. The session
-  uses the extension when the server also set `0x100000` and answered our `0x1000` opt-in
+  Lugdunum's `0x1000` (`SRVCAP_NATTRAVERSAL`), only when both `LowIdHolePunch` and
+  `LugdunumNatCallback` are on and uTP is built
+  (`NatServerHolePunch::ShouldAnnounceHolePunchExtension()`). The server wakes an extension target
+  with Lugdunum's `0x37` (`OP_NAT_CALLBACKREQUESTED`), which only the Lugdunum path serves. The
+  session uses the extension when the server also set `0x100000` and answered our `0x1000` opt-in
   (`CServerConnect::IsHolePunchExtensionActive()`);
 - `0x9F`: on such a server every `0x9F`, the standing keepalive included, is obfuscated the
   server way once its UDP key is known, and sent to its obfuscation UDP port from the client UDP
@@ -413,17 +453,17 @@ that announced it to a server that sets `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENS
   (`NatServerHolePunch::ShouldObfuscateKeepalive()`); the key is then recovered and the `0x9F`
   sent again, obfuscated, when it arrives (see [Missing server UDP key](#missing-server-udp-key)).
   One `0x9F` goes with each `0x60`;
-- woken by `0x37`: send `0x9F` at 0, 0.5 and 1 s and `OP_HOLEPUNCH` to the requester's endpoint
-  on the [schedule above](#punch-schedule-and-port-sweep), with no dial and no reverse callback.
-  The `0x61` that follows (30 bytes, with `peer_crypt`) decides who dials, as above. A `0x37` can
-  also come from a Lugdunum `0xA6`, which no `0x61` follows: if none names the requester within
-  5 s (the server waits 3 s, then resends at +1.2 s and +3 s), aMule dials the Lugdunum way, as
-  it would on any Lugdunum server. Any `0x61` that names the requester answers the wake, even one
-  the action limit or the duplicate window keeps us from acting on. At most 16 wakes wait at once
-  (`NatServerHolePunch::PendingWakeSet`).
-  A UDP `0xA7` from our own server answers a Lugdunum `0xA6` of ours and is dialled at once,
-  except a cross-server wake (requester ID 0, below), which the server sends by UDP when we asked
-  for a callback ourselves less than 20 s before.
+- woken by `0x37`: send `0x9F` at 0, 0.5 and 1 s and `OP_HOLEPUNCH` to the requester's endpoint on
+  the [schedule above](#punch-schedule-and-port-sweep), with no dial and no reverse callback. The
+  `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) that follows (30 bytes, with `peer_crypt`) decides who dials,
+  as above. A `0x37` can also come from a Lugdunum `0xA6` (`OP_NAT_CALLBACKREQUEST`), which no
+  `0x61` follows: if none names the requester within 5 s (the server waits 3 s, then resends at
+  +1.2 s and +3 s), aMule dials the Lugdunum way, as it would on any Lugdunum server. Any `0x61` that
+  names the requester answers the wake, even one the action limit or the duplicate window keeps us
+  from acting on. At most 16 wakes wait at once (`NatServerHolePunch::PendingWakeSet`). A UDP `0xA7`
+  (`OP_NAT_CALLBACKREQUESTED_UDP`) from our own server answers a Lugdunum `0xA6` of ours and is
+  dialled at once, except a cross-server wake (requester ID 0, below), which the server sends by UDP
+  when we asked for a callback ourselves less than 20 s before.
 
 ### Cross-server NAT callback (ed2k-server 0.9.86)
 
@@ -443,23 +483,24 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
   that lacks only its UDP key is dropped, and that server's key is recovered (see
   [Missing server UDP key](#missing-server-udp-key)), so later sources of it are kept;
 - requester: where a LowID-to-LowID contact is declined in `TryToContact()`, an odd LowID source
-  on such a server gets `OP_NAT_CALLBACKREQUEST` (`0xA6`) `<target_id 4><0 4><crypt 1>`, server-key
+  on such a server gets `0xA6` (`OP_NAT_CALLBACKREQUEST`) `<target_id 4><0 4><crypt 1>`, server-key
   obfuscated, from the client UDP socket to that server's obfuscation UDP port. Requester ID 0
   marks it foreign; `crypt` is our `(CT_SERVER_FLAGS >> 9) & 7`. Per server we send a burst of 5,
   then one every 2 s, and at most 30 different targets in 10 minutes, below the server's own
   limits. A request waits 30 s for its answer; a target that never answers is not asked again for
   10 minutes (`NatServerHolePunch::ForeignCallbackRequests`);
-- requester, answer: the server's `0xA7` is accepted only from that server's IP, decrypted with
-  its key, exactly 27 bytes (`<target_ip 4><target_udp_port 2><target_id 4><crypt 1><hash 16>`),
-  for a pending target, and with the hash source exchange gave us for the source when it did.
-  Only the first copy is used; the server resends it at +1.2 s and +3 s. The requester punches
-  (on the [schedule above](#punch-schedule-and-port-sweep)) and dials, as on the server punch:
-  QUIC first, uTP as the fallback, keyed with the target's hash and crypt options;
-- target: on a `0x100000` server, a `0x37` with requester ID 0, or a `0xA7` with requester ID 0
-  when we sent an `0xA6` ourselves less than 20 s before, comes from a client logged in elsewhere.
-  No `0x61` follows it: the target punches the requester's endpoint, sends its `0x9F` burst and
-  waits to be dialled, with no fallback dial of its own. On a server without `0x100000`,
-  requester ID 0 keeps its Lugdunum meaning, a reverse callback;
+- requester, answer: the server's `0xA7` (`OP_NAT_CALLBACKREQUESTED_UDP`) is accepted only from that
+  server's IP, decrypted with its key, exactly 27 bytes (`<target_ip 4><target_udp_port 2><target_id
+  4><crypt 1><hash 16>`), for a pending target, and with the hash source exchange gave us for the
+  source when it did. Only the first copy is used; the server resends it at +1.2 s and +3 s. The
+  requester punches (on the [schedule above](#punch-schedule-and-port-sweep)) and dials, as on the
+  server punch: QUIC first, uTP as the fallback, keyed with the target's hash and crypt options;
+- target: on a `0x100000` server, a `0x37` (`OP_NAT_CALLBACKREQUESTED`) with requester ID 0, or a
+  `0xA7` with requester ID 0 when we sent an `0xA6` ourselves less than 20 s before, comes from a
+  client logged in elsewhere. No `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) follows it: the target punches
+  the requester's endpoint, sends its `0x9F` (`OP_NATT_KEEPALIVE`) burst and waits to be dialled,
+  with no fallback dial of its own. On a server without `0x100000`, requester ID 0 keeps its
+  Lugdunum meaning, a reverse callback;
 - not sent: when we or the source (by its crypt options from source exchange) require the crypt
   layer, since the server answers nothing then, and without the server's UDP key for our current
   IP (`CServer::GetServerKeyUDP()` is 0 once our public IP changed). Such a server's key is then
@@ -521,7 +562,7 @@ forwarded callback by dialing additionally requires `ENABLE_UTP` (`AMULE_UTP_TRA
   LowID. As in NeoMule (`CanLow2Low()`), an opted-in server sends only LowID sources it can
   call back, and source records carry no NatT flag of their own
   (`LugdunumNatTraversal::ShouldKeepLowIdServerSource()`);
-- sending `OP_NAT_CALLBACKREQUEST` (`0xA6`): when we are LowID, the source we want is an odd
+- sending `0xA6` (`OP_NAT_CALLBACKREQUEST`): when we are LowID, the source we want is an odd
   LowID on our current, callback-active server (both server families give callback-capable
   clients odd LowIDs, so an even one cannot answer; the reverse callback follows the same rule),
   and the server-way UDP crypto preconditions hold
@@ -550,7 +591,7 @@ LowID sharing a file and an opted-in LowID requester on the same server, both be
 IP, completed the opt-in and the server handed the requester a `DS_LOWTOLOWIP` source -- a
 NatT-capable LowID source is only handed to a NatT-capable LowID requester, matching the wiki.
 The requester's `OP_NAT_CALLBACKREQUEST` then reached the sharer: the forwarded callback arrived
-as **`OP_NAT_CALLBACKREQUESTED` (`0x37`) over the TCP link**, not `0xA7` over UDP. This historical
+as **`0x37` (`OP_NAT_CALLBACKREQUESTED`) over the TCP link**, not `0xA7` over UDP. This historical
 observation confirms the relay delivery path; it does not validate the current uTP implementation.
 
 ## Missing server UDP key
@@ -560,8 +601,8 @@ from the answer to the server's status ping, which `CServerList::ServerStats()` 
 4.5 hours: obfuscated first, then plain when the obfuscated one is not answered within 20 s. The
 obfuscated answer always carries the key; the plain one does on ed2k-server but not on Lugdunum. So
 a lost obfuscated ping to Lugdunum, or a round where both pings are lost, leaves no key for hours,
-and the Lugdunum request, the extension `0x9F` and the cross-server `0xA6` to that server are held
-back meanwhile.
+and the Lugdunum request, the extension `0x9F` (`OP_NATT_KEEPALIVE`) and the cross-server `0xA6`
+(`OP_NAT_CALLBACKREQUEST`) to that server are held back meanwhile.
 
 When one of them is held back only by the missing key (`LugdunumNatCallbackAwaitsServerKey()`,
 `KeepaliveAwaitsServerKey()`, `ForeignCallbackServerAwaitsKey()`, the last also from the LowID
@@ -593,15 +634,15 @@ stable `key`.
   `ENABLE_NATT_SERVER_COORDINATION` it holds attempts and successes for the ed2k-server punch
   (`natt_server_punch_attempts`, `natt_server_punch_successes`) and Lugdunum's callback
   (`natt_lugdunum_callback_attempts`, `natt_lugdunum_callback_successes`). An attempt is each
-  rendezvous we act on, counted once per peer: a `0x61` we punch for, or a Lugdunum callback we
-  dial. The extension counts under the ed2k-server punch, and its 5 s fallback dial under
-  Lugdunum, as does a cross-server request: on the requester the attempt is the request and the
-  success that source's hello, on the target the wake and the requester's hello. A success is a
-  stream to or from that peer, on either side, whose hello is processed within 60 s
+  rendezvous we act on, counted once per peer: a `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) we punch for, or
+  a Lugdunum callback we dial. The extension counts under the ed2k-server punch, and its 5 s
+  fallback dial under Lugdunum, as does a cross-server request: on the requester the attempt is the
+  request and the success that source's hello, on the target the wake and the requester's hello. A
+  success is a stream to or from that peer, on either side, whose hello is processed within 60 s
   (`NatServerHolePunch::RendezvousOutcomes`, at most 64 pending). In every uTP build it holds
   `natt_utp_stream_moves`: connected uTP streams that followed their peer to a new source port,
-  counted once per move libutp accepted. A refused or rate-limited move, and the port a
-  handshake settles on, are not counted.
+  counted once per move libutp accepted. A refused or rate-limited move, and the port a handshake
+  settles on, are not counted.
 - **LowID to LowID Data (Session)** (`upload_lowid_to_lowid_data`,
   `download_lowid_to_lowid_data`), in builds with `ENABLE_NATT_SERVER_COORDINATION` and uTP:
   payload exchanged with a LowID peer while we are LowID on a server, which only NAT traversal
