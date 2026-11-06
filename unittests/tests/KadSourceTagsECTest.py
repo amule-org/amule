@@ -2,6 +2,7 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Publish Kad sources with other clients' tags to an isolated daemon and read them back."""
+from contextlib import contextmanager
 import socket
 import struct
 import sys
@@ -116,22 +117,46 @@ def wait_ready(ec, proc):
         time.sleep(0.05)
 
 
+def start_kad(ec, proc):
+    assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
+    wait_ready(ec, proc)
+
+
+def restart_kad(ec, proc):
+    assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
+    start_kad(ec, proc)
+
+
+def kad_id(ec, proc, root):
+    """The running daemon's Kad ID, from the index header that stopping Kad saves."""
+    assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
+    key = (Path(root) / 'key_index.dat').read_bytes()[8:24]
+    assert len(key) == 16
+    start_kad(ec, proc)
+    return key
+
+
+@contextmanager
+def running_kad_daemon(binary, root, *, console='console.log', **conf):
+    """amuled on root with Kad started; yields (proc, ec, udp_port, peer_port).
+
+    conf goes to write_amule_conf. Files such as nodes.dat must be in root before the call.
+    """
+    ec_port, udp_port, peer_port = free_ports(3, udp_indices=(1,), peer_index=2)
+    write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
+                     Autoconnect=0, **conf)
+    with running_daemon(binary, root, (ec_port, peer_port, udp_port),
+                        console=console) as (proc, ec):
+        start_kad(ec, proc)
+        yield proc, ec, udp_port, peer_port
+
+
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='kad-source-tags-') as directory:
         root = Path(directory)
-        port, udp_port, peer_port = free_ports(3, udp_indices=(1,), peer_index=2)
-        write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
-                         Autoconnect=0)
-        with running_daemon(binary, root, (port, peer_port, udp_port),
-                            console='stdout.log') as (proc, ec):
-            # Stopping Kad saves the index, whose header names our Kad ID: a publish
-            # aimed at it is within tolerance.
-            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-            wait_ready(ec, proc)
-            assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-            file_id = (root / 'key_index.dat').read_bytes()[8:24]
-            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-            wait_ready(ec, proc)
+        with running_kad_daemon(binary, root, console='stdout.log') as (proc, ec, udp_port, _):
+            # A publish aimed at our Kad ID is within tolerance.
+            file_id = kad_id(ec, proc, root)
 
             cache_source, big_source = b'\x11' * 16, b'\x22' * 16
             publish(udp_port, file_id, cache_source, core_tags(4001) + http_cache_tags()
@@ -172,9 +197,7 @@ def run(binary):
 
             # Source tags must survive disk loading without adding an encoding layer.
             for _ in range(3):
-                assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-                assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-                wait_ready(ec, proc)
+                restart_kad(ec, proc)
                 cached = search(udp_port, file_id)[cache_source]
                 assert cached[TAG_FILENAME] == UNICODE_NAME, 'source filename changed on reload'
             print('PASS: emule-qt cache tags, eMuleAI buddy and IPv6 tags kept; '

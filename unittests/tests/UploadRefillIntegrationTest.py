@@ -36,6 +36,20 @@ def packet(sock):
     return proto, data[0], data[1:]
 
 
+def wait_packet(sock, opcode, seconds):
+    """The payload of the first packet with opcode, or None if none arrives in time."""
+    deadline = time.monotonic() + seconds
+    while (remaining := deadline - time.monotonic()) > 0:
+        sock.settimeout(remaining)
+        try:
+            _, received, payload = packet(sock)
+        except TimeoutError:
+            return None
+        if received == opcode:
+            return payload
+    return None
+
+
 def usage(pid):
     fields = Path(f'/proc/{pid}/stat').read_text().split(') ', 1)[1].split()
     cpu = (int(fields[11]) + int(fields[12])) / os.sysconf('SC_CLK_TCK')

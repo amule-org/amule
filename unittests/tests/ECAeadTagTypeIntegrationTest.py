@@ -7,11 +7,11 @@ GetTagData() asserts on a tag that is not raw bytes, and with --disable-fatal an
 aborts. Each case sends one mistyped login request and checks that amuled answers and keeps
 running.
 """
-import hashlib, socket, struct, subprocess, sys, tempfile
+import hashlib, socket, struct, sys, tempfile
 from pathlib import Path
 from AllSearchIntegrationTest import (C, EC, free_ports, log_snapshot, retry_port_collisions,
-                                      stop_daemon, wait_daemon_started)
-from DaemonConfig import EC_PASSWORD, daemon_env, write_amule_conf
+                                      spawn_daemon, stop_daemon, wait_daemon_started)
+from DaemonConfig import EC_PASSWORD, write_amule_conf
 from ECWire import assert_refused, authenticate  # Preflight before starting the daemon.
 
 UINT8, STRING = 2, 6
@@ -34,31 +34,29 @@ def run(binary):
         root = Path(root)
         ec_port, peer_port = free_ports(2, peer_index=1)
         write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0)
-        with (root / 'stdout.log').open('w') as log:
-            snapshot = log_snapshot(root / 'logfile')
-            proc = subprocess.Popen([binary, '-c', str(root), '--disable-fatal'],
-                                    stdout=log, stderr=log, env=daemon_env(root))
-            try:
-                # Logging in first would hide what the mistyped logins do to a fresh daemon.
-                wait_daemon_started(proc, ec_port, root, peer_port, snapshot=snapshot)
+        snapshot = log_snapshot(root / 'logfile')
+        proc = spawn_daemon(binary, root, console='stdout.log')
+        try:
+            # Logging in first would hide what the mistyped logins do to a fresh daemon.
+            wait_daemon_started(proc, ec_port, root, peer_port, snapshot=snapshot)
 
-                cases = [
-                    ('offer as UINT8', 'EC_TAG_CAN_AEAD', UINT8),
-                    ('nonce as STRING', 'EC_TAG_AEAD_CLIENT_NONCE', STRING),
-                    ('public key as STRING', 'EC_TAG_AEAD_CLIENT_PUBKEY', STRING),
-                ]
-                for name, field_name, field_type in cases:
-                    op, reply = login(ec_port, field_name, field_type)
-                    assert proc.poll() is None, f'{name}: daemon exited with {proc.returncode}'
-                    assert_refused(op, reply, 'EC_AUTH_FAIL_INCOMPATIBLE', b'Invalid SRP handshake', label=name)
-                    print(f'PASS: {name} is refused and amuled keeps running')
+            cases = [
+                ('offer as UINT8', 'EC_TAG_CAN_AEAD', UINT8),
+                ('nonce as STRING', 'EC_TAG_AEAD_CLIENT_NONCE', STRING),
+                ('public key as STRING', 'EC_TAG_AEAD_CLIENT_PUBKEY', STRING),
+            ]
+            for name, field_name, field_type in cases:
+                op, reply = login(ec_port, field_name, field_type)
+                assert proc.poll() is None, f'{name}: daemon exited with {proc.returncode}'
+                assert_refused(op, reply, 'EC_AUTH_FAIL_INCOMPATIBLE', b'Invalid SRP handshake', label=name)
+                print(f'PASS: {name} is refused and amuled keeps running')
 
-                EC(ec_port, password=EC_PASSWORD).sock.close()
-                print('PASS: a normal login still works')
-            except BaseException:
-                stop_daemon(proc, check=False)
-                raise
-            stop_daemon(proc)
+            EC(ec_port, password=EC_PASSWORD).sock.close()
+            print('PASS: a normal login still works')
+        except BaseException:
+            stop_daemon(proc, check=False)
+            raise
+        stop_daemon(proc)
 
 
 if __name__ == '__main__':

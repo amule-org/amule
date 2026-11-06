@@ -14,8 +14,8 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon, string, tag
-from CancelCompletedIntegrationTest import wait_for
+from AllSearchIntegrationTest import (C, free_ports, retry_port_collisions, running_daemon, string,
+                                      tag, wait_for)
 from CompletedFileDeleteIntegrationTest import EC
 from DaemonConfig import write_amule_conf
 from ShareWatcherMoveIntegrationTest import shared
@@ -34,8 +34,7 @@ def write_lines(path, dirs):
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-shareddir-') as scratch:
         root = Path(scratch).resolve()
-        for d in ('Incoming', 'Temp'):
-            (root / d).mkdir()
+        (root / 'Incoming').mkdir()
         share = root / 'share'
         folder = {}
         for name, file_name in FOLDERS.items():

@@ -13,12 +13,10 @@ import socket
 import struct
 import sys
 import tempfile
-import time
 from pathlib import Path
 
-from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
-from DaemonConfig import write_amule_conf
-from KadSourceTagsECTest import KADEMLIA2_PUBLISH_SOURCE_REQ, core_tags, search, wait_ready
+from AllSearchIntegrationTest import retry_port_collisions, wait_for
+from KadSourceTagsECTest import KADEMLIA2_PUBLISH_SOURCE_REQ, core_tags, kad_id, running_kad_daemon, search
 
 UDP_KEY_SECRET = 0x5eed1234
 MAGIC_UDP_SYNC_CLIENT = 0x395F2EC1
@@ -66,19 +64,10 @@ def encrypted(packet, kad_id, receiver_key):
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='kad-publish-key-') as directory:
         root = Path(directory)
-        port, udp_port, peer_port = free_ports(3, udp_indices=(1,), peer_index=2)
-        write_amule_conf(root, port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1, Autoconnect=0,
-                         VerboseDebug=1, VerboseDebugLogfile=1,
-                         sections={'Debug': {'Cat_Client Kademlia UDP': 1},
-                                   'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}})
-        with running_daemon(binary, root, (port, peer_port, udp_port), console='stdout.log') as (proc, ec):
-            # Stopping Kad saves the index, whose header names our Kad ID.
-            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-            wait_ready(ec, proc)
-            assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-            file_id = (root / 'key_index.dat').read_bytes()[8:24]
-            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-            wait_ready(ec, proc)
+        with running_kad_daemon(binary, root, console='stdout.log', VerboseDebug=1, VerboseDebugLogfile=1,
+                                sections={'Debug': {'Cat_Client Kademlia UDP': 1},
+                                          'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, ec, udp_port, _):
+            file_id = kad_id(ec, proc, root)
 
             keyed = lambda p: encrypted(p, file_id, verify_key('127.0.0.1'))
 
@@ -104,10 +93,8 @@ def run(binary):
                     peer.bind(('127.0.0.1', 0))
                     peer.sendto(wrap(bytes([0xE4, opcode]) + body), ('127.0.0.1', udp_port))
                     line = f'{name} from 127.0.0.1:{peer.getsockname()[1]}: receiver key {expected}\n'
-                    deadline = time.monotonic() + 10
-                    while line not in (root / 'logfile').read_text(errors='replace'):
-                        assert time.monotonic() < deadline, f'not logged: {line}'
-                        time.sleep(0.05)
+                    wait_for(proc, f'the log line {line!r}',
+                             lambda: line in (root / 'logfile').read_text(errors='replace'), 10, interval=0.05)
 
             indexed = search(udp_port, file_id)
             assert len(indexed) == 2, f'{len(indexed)} of 2 publishes were indexed'

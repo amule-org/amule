@@ -9,18 +9,18 @@ waiting one takes its slot. Linux uses 127.0.0.2 and 127.0.0.3; elsewhere pass t
 addresses with --addresses.
 """
 import argparse
-import hashlib
 import ipaddress
 import os
 from pathlib import Path
 import socket
-import struct
 import tempfile
 import time
 
-from AllSearchIntegrationTest import exact, free_ports, retry_port_collisions, running_daemon
+from AllSearchIntegrationTest import free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
-from ShareWatcherMoveIntegrationTest import shared
+from DownloadDisplayRatesIntegrationTest import hello
+from ShareWatcherMoveIntegrationTest import wait_shared
+from UploadRefillIntegrationTest import send, wait_packet
 
 HARD_CAP = 10
 OP_HELLOANSWER = 0x4c
@@ -30,21 +30,13 @@ OP_ACCEPTUPLOADREQ = 0x55
 OP_CANCELTRANSFER = 0x56
 
 
-def send(sock, opcode, data=b''):
-    sock.sendall(struct.pack('<BIB', 0xe3, len(data) + 1, opcode) + data)
-
-
 class Peer:
     def __init__(self, address, target, port, name, file_hash):
         self.sock = socket.socket()
         try:
             self.sock.bind((address, 0))
             self.sock.connect((target, port))
-            nick = name.encode()
-            tags = b'\x02\x01\x00\x01' + struct.pack('<H', len(nick)) + nick
-            hello = (b'\x10' + hashlib.md5(nick).digest() + socket.inet_aton(address)
-                     + struct.pack('<HI', self.sock.getsockname()[1], 1) + tags + bytes(6))
-            send(self.sock, 0x01, hello)
+            send(self.sock, 0x01, hello(name.encode(), address, self.sock.getsockname()[1]))
             self.wait_for(OP_HELLOANSWER, 10)
             send(self.sock, OP_SETREQFILEID, file_hash)
             send(self.sock, OP_STARTUPLOADREQ, file_hash)
@@ -54,18 +46,7 @@ class Peer:
 
     def wait_for(self, opcode, seconds):
         """True once the opcode arrives, False if it does not within the time."""
-        deadline = time.monotonic() + seconds
-        while True:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                return False
-            self.sock.settimeout(remaining)
-            try:
-                _, size = struct.unpack('<BI', exact(self.sock, 5))
-                if exact(self.sock, size)[0] == opcode:
-                    return True
-            except TimeoutError:
-                return False
+        return wait_packet(self.sock, opcode, seconds) is not None
 
     def close(self):
         self.sock.close()
@@ -85,11 +66,7 @@ def run(binary, address_a, address_b):
         peers = []
         with running_daemon(binary, root, (ec_port, peer_port)) as (proc, ec):
             try:
-                deadline = time.monotonic() + 30
-                while 'shared.bin' not in (files := shared(ec)):
-                    assert time.monotonic() < deadline, 'shared file was not hashed'
-                    time.sleep(0.1)
-                file_hash = files['shared.bin']
+                file_hash = wait_shared(proc, ec, ['shared.bin'], 30)['shared.bin']
 
                 def open_peer(address, name):
                     target = '127.0.0.1' if loopback else address

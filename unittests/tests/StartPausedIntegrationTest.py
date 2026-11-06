@@ -5,10 +5,9 @@
 from pathlib import Path
 import sys
 import tempfile
-import time
 
 from AllSearchIntegrationTest import (C, free_ports, integer, retry_port_collisions, running_daemon,
-                                      stored_result, stored_search, string, tag)
+                                      stored_result, stored_search, string, tag, wait_for)
 from DaemonConfig import write_amule_conf
 
 FIRST = bytes(range(16))
@@ -31,17 +30,17 @@ def downloads(ec):
 
 def expect(proc, ec, expected):
     # Full allocation completes asynchronously; verify its final state too.
-    deadline = time.monotonic() + 15
-    while True:
-        states = downloads(ec)
-        if set(states) == set(expected) and all(
-                state in ({PS_PAUSED} if expected[file_hash] else {PS_READY, PS_EMPTY})
-                and bool(stopped) == expected[file_hash]
-                for file_hash, (state, stopped) in states.items()):
-            return
-        assert proc.poll() is None, 'daemon exited'
-        assert time.monotonic() < deadline, (expected, states)
-        time.sleep(0.05)
+    states = {}
+
+    def reached():
+        states.clear()
+        states.update(downloads(ec))
+        return set(states) == set(expected) and all(
+            state in ({PS_PAUSED} if expected[file_hash] else {PS_READY, PS_EMPTY})
+            and bool(stopped) == expected[file_hash]
+            for file_hash, (state, stopped) in states.items())
+
+    wait_for(proc, lambda: (expected, states), reached, 15, interval=0.05)
 
 
 def add(ec, source, hashes, result_ids):
@@ -60,8 +59,6 @@ def add(ec, source, hashes, result_ids):
 def run(binary, paused, allocate):
     with tempfile.TemporaryDirectory(prefix='amule-start-paused-') as scratch:
         root = Path(scratch)
-        for directory in ('Temp', 'Incoming'):
-            (root / directory).mkdir()
         port, peer_port = free_ports(2, peer_index=1)
         write_amule_conf(root, port, Port=peer_port, UDPEnable=0,
                          AddNewFilesPaused=int(paused), AllocateFullFile=int(allocate))

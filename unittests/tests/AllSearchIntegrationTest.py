@@ -244,19 +244,28 @@ def connect_daemon(proc, port, root=None, peer_port=None, udp_port=None,
             return ec
 
 
+def spawn_daemon(binary, root, *, args=DAEMON_ARGS, env=None, console='console.log'):
+    """Start amuled on root and return its process at once.
+
+    The console log is appended to, so a restart keeps the earlier run's output. env
+    defaults to daemon_env(root).
+    """
+    root = Path(root)
+    with (root / console).open('a') as log:
+        return subprocess.Popen([binary, '-c', str(root), *args],
+                                env=env if env is not None else daemon_env(root),
+                                stdout=log, stderr=subprocess.STDOUT)
+
+
 def start_daemon(binary, root, ports, *, args=DAEMON_ARGS, env=None,
                  console='console.log', server_udp=False, **connect_kwargs):
-    """Start amuled on root and return (proc, ec) once it serves EC on the fixture ports.
+    """spawn_daemon, then return (proc, ec) once it serves EC on the fixture ports.
 
-    ports is (ec, peer) or (ec, peer, udp). The console log is appended to, so a restart
-    keeps the earlier run's output. env defaults to daemon_env(root).
+    ports is (ec, peer) or (ec, peer, udp).
     """
     root = Path(root)
     snapshot = log_snapshot(root / 'logfile')
-    with (root / console).open('a') as log:
-        proc = subprocess.Popen([binary, '-c', str(root), *args],
-                                env=env if env is not None else daemon_env(root),
-                                stdout=log, stderr=subprocess.STDOUT)
+    proc = spawn_daemon(binary, root, args=args, env=env, console=console)
     ec_port, peer_port, udp_port = (*ports, None)[:3]
     try:
         return proc, connect_daemon(proc, ec_port, root, peer_port, udp_port, server_udp,
@@ -428,6 +437,22 @@ def stored_search(results, kind=C['EC_SEARCH_ALL'], params=b''):
     if params:
         data += struct.pack('<II', 0x534D5052, 1) + struct.pack('<I', 123) + params
     return data
+
+
+def wait_for(proc, what, check, timeout=120, interval=0.2):
+    """Poll check until it returns a true value, and return that value.
+
+    Fails at once if proc exits, so a crash is not reported as a timeout. what may be a
+    callable, for a description that shows the state at the failure.
+    """
+    deadline = time.monotonic() + timeout
+    while not (result := check()):
+        if proc.poll() is not None:
+            raise AssertionError(f'daemon exited while waiting for {what() if callable(what) else what}')
+        if time.monotonic() > deadline:
+            raise AssertionError(f'timed out waiting for {what() if callable(what) else what}')
+        time.sleep(interval)
+    return result
 
 
 def stop_daemon(proc, timeout=10, check=True, codes=(0,)):
