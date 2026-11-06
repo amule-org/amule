@@ -25,7 +25,7 @@ ROOT="${AMULEAPI_ROOT:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
 . "$SCRIPT_DIR/lib/amuleapi-bin.sh"
 
 export AMULEAPI_BIN="${AMULEAPI_BIN:-$(_find_amuleapi_bin "$ROOT")}"
-export AMULED_BIN="${AMULED_BIN:-$(dirname "$AMULEAPI_BIN")/../amuled}"
+export AMULED_BIN="${AMULED_BIN:-$(_find_amuled_bin "$AMULEAPI_BIN")}"
 export EC_PORT=${EC_PORT:-4712}
 
 PROBLEMS=()

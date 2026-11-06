@@ -23,8 +23,7 @@ TEST_PATH="/tmp/18-categories-crud-cat-dir"
 _preflight
 
 mkdir -p "$TEST_PATH"
-# amuled stores the symlink-resolved path, so on macOS /tmp reads back as /private/tmp.
-TEST_PATH_STORED=$(cd "$TEST_PATH" && pwd -P)
+TEST_PATH_STORED=$(_canon "$TEST_PATH")
 
 echo "amuleapi 18-categories-crud smoke @ $HOST"
 
