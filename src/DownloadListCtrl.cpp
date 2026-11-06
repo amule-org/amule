@@ -146,8 +146,7 @@ private:
 		const wxColour oldColour = dc->GetTextForeground();
 		const int x = middlex - (textwidth >> 1);
 		const int y = middley - (textheight >> 1);
-		// White text can disappear over light fills (including few-source gaps and stopped rows).
-		// A one-DIP outline keeps it readable; hashing uses black text and needs no outline.
+		// Outline white text so it stays readable on light fills.
 		if (hashingProgress == 0) {
 			dc->SetTextForeground(*wxBLACK);
 			const int offset = GetView()->FromDIP(1);
