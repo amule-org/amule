@@ -18,7 +18,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-05 10:40+0000\n"
+"PO-Revision-Date: 2026-11-06 12:27+0000\n"
 "Last-Translator: Marcelo Roberto Jimenez <mrjimenez@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/amule/amule-application/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -5305,17 +5305,16 @@ msgid "Takes effect after restarting aMule."
 msgstr "Só tem efeito após reiniciar o aMule."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Advertise my IPv6 address:"
-msgstr "Anunciar meu endereço IPv6 aos outros pares"
+msgstr "Anunciar meu endereço IPv6:"
 
 #: src/muuli_wdr.cpp
 msgid "When verified"
-msgstr ""
+msgstr "Quando verificado"
 
 #: src/muuli_wdr.cpp
 msgid "Always"
-msgstr ""
+msgstr "Sempre"
 
 #: src/muuli_wdr.cpp src/StatTree.cpp
 msgid "Never"
@@ -7013,6 +7012,38 @@ msgstr "A porta TCP não pode ser maior que 65532, pois o socket UDP de servidor
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "Porta padrão será utilizada (%d)"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Moved the shared folders from %s to shareddir-explicit.dat"
+msgstr ""
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Could not read %s. It is left in place and ignored."
+msgstr ""
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Removing %s: its folders are already in shareddir-explicit.dat and shareddir-recursive.dat"
+msgstr ""
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
+msgstr ""
+
+#: src/Preferences.cpp
+#, c-format
+msgid "%u folder listed only there is not shared:%s"
+msgid_plural "%u folders listed only there are not shared:%s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Preferences.cpp
+#, fuzzy, c-format
+msgid "Could not remove %s"
+msgstr "Não foi possível mover arquivo baixado para %s"
 
 #: src/Preferences.cpp
 #, c-format

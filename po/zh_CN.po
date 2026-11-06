@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-06 08:28+0000\n"
+"PO-Revision-Date: 2026-11-06 14:19+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -7007,6 +7007,38 @@ msgstr "TCP端口不可高于65532，因为服务器UDP端口值为TCP端口值+
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "缺省端口将被使用（%d）"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Moved the shared folders from %s to shareddir-explicit.dat"
+msgstr "已将共享文件夹从 %s 移动到 shareddir-explicit.dat"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Could not read %s. It is left in place and ignored."
+msgstr "无法读取 %s。它被留在原处并被忽略。"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Removing %s: its folders are already in shareddir-explicit.dat and shareddir-recursive.dat"
+msgstr "删除 %s：其文件夹已在 shareddir-explicit.dat 和 shareddir-recursive.dat 中"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
+msgstr "忽略 %s：共享文件夹被保留在 shareddir-explicit.dat 和 shareddir-recursive.dat 中。文件将被删除。"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "%u folder listed only there is not shared:%s"
+msgid_plural "%u folders listed only there are not shared:%s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Could not remove %s"
+msgstr "无法删除 %s"
 
 #: src/Preferences.cpp
 #, c-format
