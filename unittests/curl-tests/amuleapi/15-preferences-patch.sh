@@ -32,12 +32,18 @@ set -o pipefail
 
 HELD_PORT_FILE=$(mktemp -t amuleapi_15_preferences_patch_port.XXXXXX)
 PORT_HOLDER_PID=
+# Set while the debug settings are changed, so an early exit restores them.
+DEBUG_RESTORE=
 _cleanup() {
 	if [ -n "$PORT_HOLDER_PID" ]; then
 		kill "$PORT_HOLDER_PID" 2>/dev/null || true
 		wait "$PORT_HOLDER_PID" 2>/dev/null || true
 	fi
 	rm -f "$HELD_PORT_FILE"
+	if [ -n "$DEBUG_RESTORE" ]; then
+		curl -s -o /dev/null --max-time 10 -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+			-H "Content-Type: application/json" -d "$DEBUG_RESTORE" "$API/preferences"
+	fi
 }
 _on_exit _cleanup
 
@@ -1011,6 +1017,7 @@ _assert_json_eq '(.advanced.debug_categories_enabled|type)' array 'advanced.debu
 _assert_json_eq '(.advanced.verbose_logging_logfile_only|type)' boolean 'advanced.verbose_logging_logfile_only is boolean'
 SAVED_DEBUG=$(printf '%s' "$CURL_BODY" | jq -c '{debug_categories_enabled:.advanced.debug_categories_enabled,verbose_logging_logfile_only:.advanced.verbose_logging_logfile_only}')
 if [ "$(printf '%s' "$CURL_BODY" | jq -r '.advanced.debug_categories_supported')" = "true" ]; then
+	DEBUG_RESTORE="{\"advanced\":$SAVED_DEBUG}"
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 		-d '{"advanced":{"debug_categories_enabled":["Hasher","General"],"verbose_logging_logfile_only":true}}' \
 		"$API/preferences"
@@ -1025,8 +1032,9 @@ if [ "$(printf '%s' "$CURL_BODY" | jq -r '.advanced.debug_categories_supported')
 	_assert_status 200 'PATCH an empty debug_categories_enabled -> 200'
 	_assert_json_eq '.advanced.debug_categories_enabled|length' 0 'an empty set disables every category'
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-		-d "{\"advanced\":$SAVED_DEBUG}" "$API/preferences"
+		-d "$DEBUG_RESTORE" "$API/preferences"
 	_assert_status 200 'restored the debug settings'
+	DEBUG_RESTORE=
 else
 	_skip 'the daemon does not report debug categories'
 fi

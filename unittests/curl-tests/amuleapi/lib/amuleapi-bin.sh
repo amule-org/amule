@@ -26,3 +26,6 @@ _find_amuleapi_bin() {
 	[ -n "$best" ] || return 1
 	echo "$best"
 }
+
+# Every build tree puts amuled at src/amuled, next to src/webapi/amuleapi.
+_find_amuled_bin() { echo "$(dirname "$1")/../amuled"; }

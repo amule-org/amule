@@ -15,7 +15,7 @@ on:
       - 'docs/THIRDPARTY.md'
       - 'unittests/tests/IconArtworkTest*'
       - 'unittests/curl-tests/amuleapi/32-country-flags.sh'
-      - 'unittests/browser-tests/country-flags.cjs'
+      - 'unittests/browser-tests/**'
       - '.github/workflows/icons.yml'
       - '.github/workflows/ccpp.yml'
   pull_request:
@@ -32,7 +32,7 @@ on:
       - 'docs/THIRDPARTY.md'
       - 'unittests/tests/IconArtworkTest*'
       - 'unittests/curl-tests/amuleapi/32-country-flags.sh'
-      - 'unittests/browser-tests/country-flags.cjs'
+      - 'unittests/browser-tests/**'
       - '.github/workflows/icons.yml'
       - '.github/workflows/ccpp.yml'
 
@@ -78,8 +78,8 @@ jobs:
             exit 1
           fi
 
-  browser-country-flags:
-    name: WebUI country flags at 1x, 2x and 3x
+  browser-tests:
+    name: WebUI browser tests
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -95,6 +95,14 @@ jobs:
           NODE_PATH: ${{ runner.temp }}/amule-artwork-browser/node_modules
           AMULE_BROWSER_OUTPUT: ${{ runner.temp }}/amule-artwork-screenshots
         run: node unittests/browser-tests/country-flags.cjs
+      - name: Check WebUI tabs survive menu navigation
+        env:
+          NODE_PATH: ${{ runner.temp }}/amule-artwork-browser/node_modules
+        run: node unittests/browser-tests/remember-tabs.cjs
+      - name: Check WebUI chat CAPTCHA replies
+        env:
+          NODE_PATH: ${{ runner.temp }}/amule-artwork-browser/node_modules
+        run: node unittests/browser-tests/chat-captcha.cjs
       - uses: actions/upload-artifact@v7
         if: always()
         with:

@@ -16,8 +16,6 @@ TOKEN=$(_login "$ADMIN_PASS")
 CURL_AUTO_AUTH=1
 AUTH=(-H "Authorization: Bearer $TOKEN")
 
-_canon() { (cd "$1" 2>/dev/null && pwd -P); }
-
 # --- Networks. 19 searches both; 00 needs sources for 04, 33 and 43. ---
 _curl "$API/status"
 _assert_json_eq '.ed2k.state' connected 'ed2k is connected'

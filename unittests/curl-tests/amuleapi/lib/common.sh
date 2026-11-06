@@ -51,6 +51,9 @@ _lib_exit() {
 trap _lib_exit EXIT
 
 _die()  { echo "FATAL: $*" >&2; exit 2; }
+# amuled stores paths symlink-resolved: on macOS /tmp reads back as
+# /private/tmp. Fails when the directory does not exist.
+_canon() { (cd "$1" 2>/dev/null && pwd -P); }
 _pass() { TEST_COUNT=$((TEST_COUNT+1)); echo "  PASS  $1"; }
 _skip() { SKIP_COUNT=$((SKIP_COUNT+1)); echo "  SKIP  $1"; }
 _fail() {

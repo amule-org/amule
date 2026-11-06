@@ -100,7 +100,7 @@ SEARCH_ID=$(printf '%s' "$CURL_BODY" | jq -r '.search_id // empty')
 # amuled caps concurrent searches; do not charge the rest of the suite for ours.
 # Not before the download below: promoting a result from a deleted search is
 # accepted with 202 and queues nothing.
-_on_exit 'curl -s -o /dev/null -X DELETE -H "$AUTH" "$API/search/$SEARCH_ID"'
+_on_exit 'curl -s -o /dev/null --max-time 10 -X DELETE -H "$AUTH" "$API/search/$SEARCH_ID"'
 echo "    search_id=$SEARCH_ID; collecting results for up to ${SEARCH_WAIT}s"
 
 # The result floor is a second exit for a server that keeps a search open long

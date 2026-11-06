@@ -5,7 +5,8 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 if [ "${1:-}" != "--fixture-ready" ]; then
 	: "${AMULEAPI_BIN:?Run through run-all.sh or set AMULEAPI_BIN}"
-	AMULED_BIN=${AMULED_BIN:-$(dirname "$AMULEAPI_BIN")/../amuled}
+	. "$SCRIPT_DIR/lib/amuleapi-bin.sh"
+	AMULED_BIN=${AMULED_BIN:-$(_find_amuled_bin "$AMULEAPI_BIN")}
 	exec python3 "$SCRIPT_DIR/../../tests/AllSearchApiSmoke.py" \
 		"$AMULED_BIN" "$AMULEAPI_BIN" "$SCRIPT_DIR/45-all-search.sh"
 fi
