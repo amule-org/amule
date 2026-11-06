@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-06 08:28+0000\n"
+"PO-Revision-Date: 2026-11-06 14:04+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -7007,6 +7007,38 @@ msgstr "TCP-poort kan niet hoger zijn dan 65532 omdat de server UDP socket gelij
 #, c-format
 msgid "Default port will be used (%d)"
 msgstr "Standaard poort zal worden gebruikt (%d)"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Moved the shared folders from %s to shareddir-explicit.dat"
+msgstr "De gedeelde mappen zijn van %s verplaatst naar shareddir-explicit.dat"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Could not read %s. It is left in place and ignored."
+msgstr "Kon %s niet lezen. Het is op de plek gelaten en genegeerd."
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Removing %s: its folders are already in shareddir-explicit.dat and shareddir-recursive.dat"
+msgstr "%s wordt verwijderd: de mappen zijn al aanwezig in shareddir-explicit.dat en shareddir-recursive.dat"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
+msgstr "%s wordt genegeerd: gedeelde mappen worden bewaard in shareddir-explicit.dat en shareddir-recursive.dat. Het bestand zal worden verwijderd."
+
+#: src/Preferences.cpp
+#, c-format
+msgid "%u folder listed only there is not shared:%s"
+msgid_plural "%u folders listed only there are not shared:%s"
+msgstr[0] "%u map benoemd maar die is niet gedeeld:%s"
+msgstr[1] "%u mappen benoemd maar die zijn niet gedeeld:%s"
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Could not remove %s"
+msgstr "Kon %s niet verwijderen"
 
 #: src/Preferences.cpp
 #, c-format
