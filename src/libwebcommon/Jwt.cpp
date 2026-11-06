@@ -34,7 +34,7 @@
 #include <cryptopp/sha.h>
 #include "../WarningsPop.h"
 
-#include <cstdio>
+#include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 #include <utility>
@@ -191,7 +191,7 @@ CJwt::CJwt(std::vector<unsigned char> secret)
 	}
 }
 
-CJwt::IssuedToken CJwt::Issue(Role role)
+CJwt::IssuedToken CJwt::Issue(Role role, const std::string &sub)
 {
 	IssuedToken out;
 	const std::time_t now = std::time(nullptr);
@@ -202,19 +202,18 @@ CJwt::IssuedToken CJwt::Issue(Role role)
 	rng.GenerateBlock(jti_bytes, sizeof(jti_bytes));
 	out.jti = Base64UrlEncode(jti_bytes, sizeof(jti_bytes));
 
-	const char *role_str = (role == Role::ADMIN) ? "admin" : "guest";
-
 	const std::string header_json = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
 
-	char payload_buf[256];
-	std::snprintf(payload_buf,
-		sizeof(payload_buf),
-		"{\"role\":\"%s\",\"iat\":%lld,\"exp\":%lld,\"jti\":\"%s\"}",
-		role_str,
-		static_cast<long long>(now),
-		static_cast<long long>(out.expires_at),
-		out.jti.c_str());
-	const std::string payload_json = payload_buf;
+	// picojson escapes `sub`, which comes from a request header.
+	picojson::object payload;
+	payload["role"] = picojson::value(role == Role::ADMIN ? "admin" : "guest");
+	payload["iat"] = picojson::value(static_cast<int64_t>(now));
+	payload["exp"] = picojson::value(static_cast<int64_t>(out.expires_at));
+	payload["jti"] = picojson::value(out.jti);
+	if (!sub.empty()) {
+		payload["sub"] = picojson::value(sub);
+	}
+	const std::string payload_json = picojson::value(payload).serialize();
 
 	const std::string header_b64 = Base64UrlEncode(
 		reinterpret_cast<const unsigned char *>(header_json.data()), header_json.size());
@@ -363,6 +362,14 @@ bool CJwt::Verify(const std::string &token, VerifyResult &out) const
 	out.jti = jti_it->second.get<std::string>();
 	if (out.jti.empty())
 		return false;
+
+	out.sub.clear();
+	const auto sub_it = obj.find("sub");
+	if (sub_it != obj.end()) {
+		if (!sub_it->second.is<std::string>() || sub_it->second.get<std::string>().empty())
+			return false;
+		out.sub = sub_it->second.get<std::string>();
+	}
 
 	// nbf (RFC 7519 4.1.5, "not before") is intentionally not enforced: Issue() never emits the
 	// claim and we do not accept externally-issued tokens. If federated tokens are ever added,

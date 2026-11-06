@@ -42,6 +42,10 @@ function currentRoute() {
   return known ? key : DEFAULT_ROUTE;
 }
 
+// Set when a reverse proxy signed the user in: signing out of amuleapi alone
+// would sign them straight back in on the next page load.
+let proxyLogoutUrl = null;
+
 // --- root ---------------------------------------------------------------
 function App() {
   // "checking" while we probe the session; "out" when logged out; otherwise
@@ -66,7 +70,10 @@ function App() {
       setAuth("out");
     });
     api.session()
-      .then((s) => { if (alive) setAuth(s.role || "guest"); })
+      .then((s) => {
+        proxyLogoutUrl = s.logout_url || null;
+        if (alive) setAuth(s.role || "guest");
+      })
       .catch(() => { if (alive) setAuth("out"); });
     return () => { alive = false; setUnauthorizedHandler(null); };
   }, []);
@@ -164,6 +171,10 @@ function Toolbar({ route, onLogout }) {
     data.stop(); // the SSE stream and poll timer outlive this component
     searches.reset(); // ...and so do the search tabs and their poll timer
     chats.reset();
+    if (proxyLogoutUrl) {
+      location.assign(proxyLogoutUrl);
+      return;
+    }
     location.hash = "";
     onLogout();
   };

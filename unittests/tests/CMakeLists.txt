@@ -2303,6 +2303,7 @@ endif()
 add_executable (AmuleApiConfigTest
 	AmuleApiConfigTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/AmuleApiConfig.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/Auth.cpp
 )
 add_test (NAME AmuleApiConfigTest COMMAND AmuleApiConfigTest)
 # 60 s lane. Runs the production 210,000-iteration PBKDF2.
@@ -2315,6 +2316,7 @@ target_link_libraries (AmuleApiConfigTest
 	webcommon
 	mulecommon
 	wxWidgets::BASE
+	${Boost_LIBRARIES}
 )
 
 # amuleapi auth state — revocation set, rate limiter, header
@@ -2333,6 +2335,7 @@ target_link_libraries (AuthTest
 	muleunit
 	webcommon
 	mulecommon
+	${Boost_LIBRARIES}
 )
 
 # EC password-exchange throttle: exercises the limiter at the values the

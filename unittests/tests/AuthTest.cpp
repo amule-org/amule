@@ -330,3 +330,83 @@ TEST(Auth, CrossOrigin_ForwardedHostCountsAsOwnOrigin)
 	ASSERT_FALSE(Refused("POST", "", "https://mule.example", false, "mule.example, 10.0.0.2"));
 	ASSERT_TRUE(Refused("POST", "", "https://evil.example", false, "mule.example"));
 }
+
+// ---------- Reverse proxy sign-in --------------------------------
+
+namespace
+{
+
+ProxyAuthPolicy TrustLoopback()
+{
+	ProxyAuthPolicy p;
+	p.header = "Remote-User";
+	p.trusted_addresses = { "127.0.0.1", "::1" };
+	return p;
+}
+
+std::map<std::string, std::string> UserHeader(const std::string &name, const std::string &value)
+{
+	return { { name, value } };
+}
+
+} // namespace
+
+TEST(Auth, CanonicalIpAddress_ReducesMappedIpv4)
+{
+	std::string out;
+	ASSERT_TRUE(CanonicalIpAddress("::ffff:127.0.0.1", out));
+	ASSERT_EQUALS(std::string("127.0.0.1"), out);
+	ASSERT_TRUE(CanonicalIpAddress("0:0:0:0:0:0:0:1", out));
+	ASSERT_EQUALS(std::string("::1"), out);
+	ASSERT_FALSE(CanonicalIpAddress("localhost", out));
+	ASSERT_FALSE(CanonicalIpAddress("127.0.0.0/8", out));
+	ASSERT_FALSE(CanonicalIpAddress("", out));
+}
+
+TEST(Auth, ProxyAuthUser_TrustedPeer)
+{
+	const ProxyAuthPolicy p = TrustLoopback();
+	ASSERT_EQUALS(
+		std::string("alice"), ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "alice")));
+	ASSERT_EQUALS(std::string("alice"),
+		ProxyAuthUser(p, "::ffff:127.0.0.1", UserHeader("remote-user", " alice ")));
+	ASSERT_EQUALS(std::string("alice"), ProxyAuthUser(p, "::1", UserHeader("REMOTE-USER", "alice")));
+}
+
+// X-Forwarded-For is the client's to set; only the TCP peer counts.
+TEST(Auth, ProxyAuthUser_UntrustedPeerIgnored)
+{
+	const ProxyAuthPolicy p = TrustLoopback();
+	auto headers = UserHeader("Remote-User", "alice");
+	headers["X-Forwarded-For"] = "127.0.0.1";
+	ASSERT_TRUE(ProxyAuthUser(p, "192.0.2.7", headers).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "", headers).empty());
+}
+
+TEST(Auth, ProxyAuthUser_OffWithoutHeaderName)
+{
+	ProxyAuthPolicy p = TrustLoopback();
+	p.header.clear();
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "alice")).empty());
+}
+
+TEST(Auth, ProxyAuthUser_RejectsBadValues)
+{
+	const ProxyAuthPolicy p = TrustLoopback();
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", {}).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "")).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "  ")).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", "al\x01ice")).empty());
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", std::string(257, 'a'))).empty());
+	ASSERT_EQUALS(std::string(256, 'a'),
+		ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote-User", std::string(256, 'a'))));
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", UserHeader("Remote_User", "alice")).empty());
+}
+
+// A second copy means the proxy appended to a client-sent header instead of replacing it.
+TEST(Auth, ProxyAuthUser_RepeatedHeaderRejected)
+{
+	const ProxyAuthPolicy p = TrustLoopback();
+	std::map<std::string, std::string> headers{ { "Remote-User", "alice" }, { "remote-user", "alice" } };
+	ASSERT_TRUE(ProxyAuthUser(p, "127.0.0.1", headers).empty());
+}

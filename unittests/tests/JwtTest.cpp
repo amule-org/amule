@@ -471,3 +471,48 @@ TEST(Jwt, DeeplyNestedHeaderRejected)
 	CJwt::VerifyResult r;
 	ASSERT_FALSE(auth.Verify(token, r));
 }
+
+TEST(Jwt, PasswordSessionHasNoSub)
+{
+	CJwt auth(MakeSecret(0x14));
+	CJwt::VerifyResult r;
+	ASSERT_TRUE(auth.Verify(auth.Issue(Role::ADMIN).token, r));
+	ASSERT_TRUE(r.sub.empty());
+}
+
+TEST(Jwt, SubRoundtrips)
+{
+	CJwt auth(MakeSecret(0x15));
+	CJwt::VerifyResult r;
+	ASSERT_TRUE(auth.Verify(auth.Issue(Role::GUEST, "alice").token, r));
+	ASSERT_EQUALS(std::string("alice"), r.sub);
+	ASSERT_TRUE(r.role == Role::GUEST);
+}
+
+// The name comes from a request header, so JSON metacharacters must not change the payload.
+TEST(Jwt, SubIsEscaped)
+{
+	CJwt auth(MakeSecret(0x16));
+	const std::string sub = "a\",\"role\":\"admin\\ \xc3\xa9";
+	CJwt::VerifyResult r;
+	ASSERT_TRUE(auth.Verify(auth.Issue(Role::GUEST, sub).token, r));
+	ASSERT_EQUALS(sub, r.sub);
+	ASSERT_TRUE(r.role == Role::GUEST);
+}
+
+TEST(Jwt, EmptyOrNonStringSubRejected)
+{
+	const auto secret = MakeSecret(0x17);
+	CJwt auth(secret);
+	const std::time_t now = std::time(nullptr);
+	const std::string claims = std::string("{\"role\":\"admin\",\"iat\":") + std::to_string(now) +
+				   ",\"exp\":" + std::to_string(now + 3600) + ",\"jti\":\"t\",\"sub\":";
+	CJwt::VerifyResult r;
+	ASSERT_FALSE(
+		auth.Verify(CraftToken(secret, "{\"alg\":\"HS256\",\"typ\":\"JWT\"}", claims + "\"\"}"), r));
+	ASSERT_FALSE(
+		auth.Verify(CraftToken(secret, "{\"alg\":\"HS256\",\"typ\":\"JWT\"}", claims + "7}"), r));
+	ASSERT_TRUE(auth.Verify(
+		CraftToken(secret, "{\"alg\":\"HS256\",\"typ\":\"JWT\"}", claims + "\"bob\"}"), r));
+	ASSERT_EQUALS(std::string("bob"), r.sub);
+}

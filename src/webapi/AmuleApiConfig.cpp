@@ -178,6 +178,10 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 			       "TokenFailureWindowSeconds=60\n"
 			       "TokenFailureThreshold=30\n"
 			       "TokenLockoutSeconds=300\n"
+			       "ProxyAuthHeader=\n"
+			       "ProxyAuthTrustedAddresses=\n"
+			       "ProxyAuthRole=admin\n"
+			       "ProxyAuthLogoutUrl=\n"
 			       "\n"
 			       "[Metrics]\n"
 			       "Enabled=0\n"
@@ -285,6 +289,10 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		m_auth.token_lockout_seconds = static_cast<unsigned>(n);
 	}
 
+	if (!LoadProxyAuth(cfg)) {
+		return false;
+	}
+
 	// Restore defaults on every load, including when a reused config object reads
 	// a profile without a Metrics section. Never retain a previous scrape credential.
 	m_metrics = Metrics{};
@@ -338,6 +346,72 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 		m_streaming.max_concurrent_file_responses = static_cast<unsigned>(n);
 	}
 
+	return true;
+}
+
+bool CAmuleApiConfig::LoadProxyAuth(wxFileConfig &cfg)
+{
+	webapi::ProxyAuthPolicy &proxy = m_auth.proxy;
+	proxy = webapi::ProxyAuthPolicy{};
+	wxString s;
+
+	if (cfg.Read("/Auth/ProxyAuthHeader", &s)) {
+		proxy.header = std::string(s.Trim(true).Trim(false).utf8_str());
+	}
+	if (!proxy.Enabled()) {
+		return true;
+	}
+	// RFC 9110 token characters, so the name can never match a header split or folded in transit.
+	if (proxy.header.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+					   "0123456789!#$%&'*+-.^_`|~") != std::string::npos) {
+		m_lastError = "invalid [Auth]/ProxyAuthHeader '" + proxy.header + "': not a header name";
+		return false;
+	}
+
+	if (cfg.Read("/Auth/ProxyAuthTrustedAddresses", &s)) {
+		wxStringTokenizer tk(s, ",");
+		while (tk.HasMoreTokens()) {
+			const std::string item(tk.GetNextToken().Trim(true).Trim(false).utf8_str());
+			if (item.empty()) {
+				continue;
+			}
+			std::string canonical;
+			if (!webapi::CanonicalIpAddress(item, canonical)) {
+				m_lastError = "invalid address '" + item +
+					      "' in [Auth]/ProxyAuthTrustedAddresses: list IP addresses only";
+				return false;
+			}
+			proxy.trusted_addresses.push_back(canonical);
+		}
+	}
+	// Without the list any client could name itself.
+	if (proxy.trusted_addresses.empty()) {
+		m_lastError = "[Auth]/ProxyAuthHeader is set but [Auth]/ProxyAuthTrustedAddresses is "
+			      "empty: list the reverse proxy's address, e.g. 127.0.0.1,::1";
+		return false;
+	}
+
+	if (cfg.Read("/Auth/ProxyAuthRole", &s)) {
+		const std::string role(s.Trim(true).Trim(false).Lower().utf8_str());
+		if (role == "guest") {
+			proxy.role = Role::GUEST;
+		} else if (role != "admin" && !role.empty()) {
+			m_lastError = "invalid [Auth]/ProxyAuthRole '" + role + "': use admin or guest";
+			return false;
+		}
+	}
+
+	if (cfg.Read("/Auth/ProxyAuthLogoutUrl", &s)) {
+		proxy.logout_url = std::string(s.Trim(true).Trim(false).utf8_str());
+	}
+	// The WebUI navigates to it, so no javascript: or data: URLs.
+	const std::string &url = proxy.logout_url;
+	if (!url.empty() && url.compare(0, 7, "http://") != 0 && url.compare(0, 8, "https://") != 0 &&
+		url[0] != '/') {
+		m_lastError = "invalid [Auth]/ProxyAuthLogoutUrl '" + url +
+			      "': use an http:// or https:// URL, or a path starting with /";
+		return false;
+	}
 	return true;
 }
 

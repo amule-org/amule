@@ -33,8 +33,11 @@
 #include <mutex>
 #include <set>
 #include <string>
+#include <vector>
 
 #include <common/RateLimiter.h>
+
+#include "Role.h"
 
 // State containers + helpers for the /auth/* surface. They live on the amuleapi process side rather
 // than in libwebcommon because they are stateful and amuleweb has no use for them.
@@ -94,6 +97,29 @@ bool IsCrossOriginBrowserWrite(const std::string &method,
 	bool origin_allowlisted,
 	const std::string &host,
 	const std::string &forwarded_host);
+
+// A reverse proxy that signs users in itself and names the user in a request header. Off while
+// `header` is empty.
+struct ProxyAuthPolicy
+{
+	std::string header;
+	// Canonical form, from CanonicalIpAddress(). Matched against the TCP peer, never against
+	// X-Forwarded-For, which the client controls.
+	std::vector<std::string> trusted_addresses;
+	Role role = Role::ADMIN;
+	std::string logout_url;
+	bool Enabled() const { return !header.empty(); }
+};
+
+// Text form of an IPv4 or IPv6 address, with an IPv4-mapped IPv6 address reduced to IPv4: a
+// dual-stack listener reports "::ffff:127.0.0.1" for a client that connected to 127.0.0.1.
+bool CanonicalIpAddress(const std::string &text, std::string &out);
+
+// The user name the proxy sent with this request, or empty when proxy auth is off, the peer is not
+// trusted, or the header is missing, empty, sent more than once or holds a control character.
+std::string ProxyAuthUser(const ProxyAuthPolicy &policy,
+	const std::string &remote_addr,
+	const std::map<std::string, std::string> &headers);
 
 } // namespace webapi
 

@@ -26,6 +26,8 @@
 
 #include "HeaderParse.h"
 
+#include <boost/asio/ip/address.hpp>
+
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -178,6 +180,67 @@ bool IsCrossOriginBrowserWrite(const std::string &method,
 	}
 	const std::string forwarded = FirstListEntry(forwarded_host);
 	return !EqualsNoCase(authority, host) && (forwarded.empty() || !EqualsNoCase(authority, forwarded));
+}
+
+bool CanonicalIpAddress(const std::string &text, std::string &out)
+{
+	boost::system::error_code ec;
+	const boost::asio::ip::address addr = boost::asio::ip::make_address(text, ec);
+	if (ec) {
+		return false;
+	}
+	if (addr.is_v6() && addr.to_v6().is_v4_mapped()) {
+		out = boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, addr.to_v6()).to_string();
+	} else {
+		out = addr.to_string();
+	}
+	return true;
+}
+
+std::string ProxyAuthUser(const ProxyAuthPolicy &policy,
+	const std::string &remote_addr,
+	const std::map<std::string, std::string> &headers)
+{
+	if (!policy.Enabled()) {
+		return std::string();
+	}
+	std::string peer;
+	if (!CanonicalIpAddress(remote_addr, peer) ||
+		std::find(policy.trusted_addresses.begin(), policy.trusted_addresses.end(), peer) ==
+			policy.trusted_addresses.end()) {
+		return std::string();
+	}
+	// The map keeps each spelling of a name apart, so a second copy in other letter case
+	// shows up here. Two values mean the proxy appended rather than overwrote.
+	const std::string *value = nullptr;
+	for (const auto &h : headers) {
+		if (EqualsNoCase(h.first, policy.header)) {
+			if (value) {
+				return std::string();
+			}
+			value = &h.second;
+		}
+	}
+	if (!value) {
+		return std::string();
+	}
+	const std::size_t first = value->find_first_not_of(" \t");
+	if (first == std::string::npos) {
+		return std::string();
+	}
+	const std::size_t last = value->find_last_not_of(" \t");
+	std::string user = value->substr(first, last - first + 1);
+	// The name goes into the token, and the token has a size cap.
+	if (user.size() > 256) {
+		return std::string();
+	}
+	for (const char c : user) {
+		const unsigned char u = static_cast<unsigned char>(c);
+		if (u < 0x20 || u == 0x7f) {
+			return std::string();
+		}
+	}
+	return user;
 }
 
 } // namespace webapi

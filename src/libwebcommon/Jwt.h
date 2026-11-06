@@ -39,7 +39,7 @@
 // <base64url(header)>.<base64url(payload)>.<base64url(sig)>
 //
 //   header  = {"alg":"HS256","typ":"JWT"}
-//   payload = {"role":"admin"|"guest","iat":<unix>,"exp":<unix>,"jti":"<random base64url>"}
+//   payload = {"role":"admin"|"guest","iat":<unix>,"exp":<unix>,"jti":"<random base64url>"[,"sub":"<user>"]}
 //   sig     = HMAC-SHA-256(secret, header_b64 + "." + payload_b64)
 //
 // The owning binary supplies the HMAC secret at construction (amuleapi loads it from
@@ -64,8 +64,9 @@ public:
 	};
 
 	// Generates a fresh JWT for the given role with a 24 h expiry.
-	// Each call returns a fresh `jti`.
-	IssuedToken Issue(Role role);
+	// Each call returns a fresh `jti`. A non-empty `sub` is the user a reverse proxy named; password
+	// sessions have none.
+	IssuedToken Issue(Role role, const std::string &sub = std::string());
 
 	struct VerifyResult
 	{
@@ -76,6 +77,7 @@ public:
 		// every token minted before some event -- which is how changing a password ends the
 		// sessions the old password opened.
 		std::time_t iat;
+		std::string sub; // empty when the claim is absent
 	};
 
 	// Verifies a token's signature, header `alg`/`typ`, and payload shape. True and fills `out`

@@ -275,6 +275,7 @@ PHASES=(
 	47-shared-delete.sh
 	48-cross-origin-writes.sh
 	49-search-metadata.sh
+	50-proxy-auth.sh
 	99-peer-fixture-teardown.sh
 )
 

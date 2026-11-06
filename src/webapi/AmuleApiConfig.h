@@ -31,6 +31,9 @@
 
 #include <wx/string.h>
 
+class wxFileConfig;
+
+#include "Auth.h"
 #include "Credentials.h"
 
 // amuleapi's three on-disk config files, in the user's amule config dir, independent of
@@ -91,6 +94,7 @@ public:
 		unsigned token_failure_window_seconds = 60;
 		unsigned token_failure_threshold = 30;
 		unsigned token_lockout_seconds = 300;
+		webapi::ProxyAuthPolicy proxy;
 	};
 
 	struct Metrics
@@ -203,6 +207,7 @@ private:
 	void RehashInPlace(webcommon::CredentialRole role, const std::string &md5_hex);
 
 	bool LoadAmuleapiConf(const wxString &path);
+	bool LoadProxyAuth(wxFileConfig &cfg);
 	bool LoadJwtSecret(const wxString &path);
 	bool LoadPasswords(const wxString &path);
 
