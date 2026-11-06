@@ -206,6 +206,8 @@ public:
 	bool SupportsIPv6Sources() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6) != 0; }
 	// Whether this connection may receive OP_IPV6_UPDATE: set together with SRV_TCPFLG_IPV6.
 	bool SupportsIPv6Updates() const { return ServerAcceptsIPv6Updates(GetTCPFlags()); }
+	//! Whether this server proves an address before publishing it; without it, it publishes on trust.
+	bool SupportsIPv6Probe() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6_PROBE) != 0; }
 #endif
 
 	const wxString &GetAuxPortsList() const { return m_auxPorts; }

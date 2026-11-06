@@ -497,10 +497,20 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			// SetConnectionState(CS_CONNECTED) above is what makes serverconnect's
 			// connectedsocket (and so GetCurrentServer()) point at this connection;
 			// UpdateAdvertisedIPv6() needs it.
-			if (cur_server->SupportsIPv6Updates()) {
-				AddDebugLogLineN(logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
-				// The address may have changed between the login and this IDCHANGE.
-				serverconnect->UpdateAdvertisedIPv6(AdvertisedIPv6ForPeers());
+			// Verified mode withholds the address from peers until it is proven, so the server
+			// could never receive what it has to probe. It gets the local address itself, and
+			// only when it announced the probe: a server without it publishes on trust.
+			const bool probeRequested = cur_server->SupportsIPv6Probe();
+			if (probeRequested ||
+				thePrefs::GetAdvertiseIPv6Mode() != EIPv6AdvertisingMode::Verified) {
+				if (cur_server->SupportsIPv6Updates()) {
+					AddDebugLogLineN(
+						logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
+					// The address may have changed between the login and this IDCHANGE.
+					serverconnect->UpdateAdvertisedIPv6(
+						probeRequested ? SelectedLocalIPv6()
+							       : AdvertisedIPv6ForPeers());
+				}
 			}
 #endif
 
