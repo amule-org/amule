@@ -514,12 +514,6 @@ void CSearchDlg::FixSearchTypes()
 {
 	wxBitmapComboBox *searchchoice = CastChild(ID_SEARCHTYPE, wxBitmapComboBox);
 
-	// A connection flap rebuilds the choices mid-session: keep the user's current pick when
-	// it survives the rebuild (e.g. Global stays Global across a reconnect), instead of
-	// snapping back to the saved default and silently downgrading the next search to Local.
-	// Captured before Clear(), while the combo and m_searchTypeChoices still agree.
-	const int currentPick = GetSelectedSearchTypeCanonical();
-
 	searchchoice->Clear();
 
 	bool supportsAll = true;
@@ -537,7 +531,7 @@ void CSearchDlg::FixSearchTypes()
 		searchchoice->Append(SearchModeLabel(type),
 			wxArtProvider::GetBitmapBundle(SearchModeArtId(type), wxART_OTHER, wxSize(16, 16)));
 	}
-	int selection = RebuildSearchTypeSelection(m_searchTypeChoices, currentPick, choices.selection);
+	const int selection = choices.selection;
 	if (selection >= 0) {
 		searchchoice->SetSelection(selection);
 		const int canonical = GetSelectedSearchTypeCanonical();

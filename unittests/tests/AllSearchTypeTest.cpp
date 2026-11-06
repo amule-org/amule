@@ -207,6 +207,16 @@ TEST(AllSearchType, CapabilityDoesNotDisturbOtherSavedModes)
 	}
 }
 
+TEST(AllSearchType, RestoresSavedModeAfterItsNetworkIsReenabled)
+{
+	const auto kadDisabled = BuildSearchTypeChoices(true, false, true, KadSearch);
+	ASSERT_EQUALS(size_t(2), kadDisabled.types.size());
+	ASSERT_EQUALS(LocalSearch, kadDisabled.types[kadDisabled.selection]);
+
+	const auto kadEnabled = BuildSearchTypeChoices(true, true, true, KadSearch);
+	ASSERT_EQUALS(KadSearch, kadEnabled.types[kadEnabled.selection]);
+}
+
 TEST(AllSearchType, AcceptedReplacementInvalidatesPreviousEd2kOwnerBeforePolling)
 {
 	CSearchEd2kSlot slot;
