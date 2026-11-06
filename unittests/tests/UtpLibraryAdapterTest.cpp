@@ -297,6 +297,59 @@ void Teardown(SLoopback &loop)
 	loop.server.reset();
 	g_loop = nullptr;
 }
+
+//! Dials the client with the handshake remap allowed while its NAT moves it to the edge of the
+//! window. Returns the port the stream then holds.
+uint16_t DialRemapped(SLoopback &loop, CServerSink &sink, std::unique_ptr<IStreamTransport> &transport)
+{
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+	const SUtpDialOptions options{ true, loop.nowMs };
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
+	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
+	ASSERT_TRUE(transport != nullptr);
+	return kPeerPort + kUtpPortRemapWindow;
+}
+
+//! So the adapter has seen the peer's connection id and sequence numbers, and a send of ours.
+void ExchangeOneFrameEachWay(SLoopback &loop, IStreamTransport &transport, uint8_t payload)
+{
+	ASSERT_EQUALS(1, (int)transport.Write(&payload, 1));
+	transport.Flush();
+	Pump(loop);
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	Pump(loop);
+}
+
+struct SFrameNumbers
+{
+	uint16_t connectionId;
+	uint16_t seqNr;
+	uint16_t ackNr;
+};
+
+//! Parsed by hand, so the tests do not share ReadUtpWireHeader() with the code under test.
+SFrameNumbers FrameNumbers(const std::vector<uint8_t> &frame)
+{
+	ASSERT_TRUE(frame.size() >= kUtpWireHeaderBytes);
+	return { static_cast<uint16_t>((frame[2] << 8) | frame[3]),
+		static_cast<uint16_t>((frame[16] << 8) | frame[17]),
+		static_cast<uint16_t>((frame[18] << 8) | frame[19]) };
+}
+
+//! Pumps until @a transport yields data; returns the bytes read into @a buffer.
+template <typename Buffer>
+uint32_t ReadUntilData(SLoopback &loop, IStreamTransport &transport, Buffer &buffer)
+{
+	uint32_t receivedBytes = 0;
+	for (int round = 0; round < 64 && receivedBytes == 0; ++round) {
+		Pump(loop);
+		receivedBytes = transport.Read(buffer.data(), static_cast<uint32_t>(buffer.size()));
+	}
+	return receivedBytes;
+}
 } // namespace
 
 TEST(UtpLibraryAdapter, AnInboundSynReachesAdmissionWithItsPeer)
@@ -519,16 +572,10 @@ TEST(UtpLibraryAdapter, OutboundHandshakeRemapsOneExpectedPeerToItsObservedPort)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
+	DialRemapped(loop, sink, transport);
 
-	ASSERT_TRUE(transport != nullptr);
 	ASSERT_TRUE(transport->IsConnected());
 	ASSERT_TRUE(loop.sawRemapCandidate);
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort + kUtpPortRemapWindow));
@@ -549,11 +596,7 @@ TEST(UtpLibraryAdapter, OutboundHandshakeRemapsOneExpectedPeerToItsObservedPort)
 	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
 	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
 	std::vector<uint8_t> received(1024);
-	uint32_t receivedBytes = 0;
-	for (int round = 0; round < 64 && receivedBytes == 0; ++round) {
-		Pump(loop);
-		receivedBytes = transport->Read(received.data(), static_cast<uint32_t>(received.size()));
-	}
+	const uint32_t receivedBytes = ReadUntilData(loop, *transport, received);
 	ASSERT_EQUALS(1, (int)receivedBytes);
 	ASSERT_EQUALS((int)payload, (int)received[0]);
 	Teardown(loop);
@@ -582,33 +625,20 @@ TEST(UtpLibraryAdapter, AFrameWithoutThePeersConnectionIdNeverMovesTheStream)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 	ASSERT_TRUE(transport->IsConnected());
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
 
-	// One frame each way, so the adapter has seen this peer's connection id and a send of ours.
 	const uint8_t payload = 0x5A;
-	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
-	transport->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
+	ExchangeOneFrameEachWay(loop, *transport, payload);
 
 	// A frame from a plausible new port, with plausible numbers but a connection id no stream here
 	// uses. utp_process_udp() would have answered 1 for it all the same.
 	const uint16_t movedPort = heldPort + 100;
 	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, movedPort));
-	const std::vector<uint8_t> forged = UtpFrame(0, 0, 1, 1);
+	const std::vector<uint8_t> forged = UtpFrame(kUtpTypeData, 0, 1, 1);
 	loop.server->ProcessDatagram(forged.data(), forged.size(), kPeerIp, movedPort, loop.nowMs);
 	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, movedPort));
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
@@ -622,28 +652,16 @@ TEST(UtpLibraryAdapter, AConnectedStreamFollowsANATPortChange)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 	ASSERT_TRUE(transport->IsConnected());
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
 
 	// One frame each way, so the adapter has the peer's connection id, its sequence numbers and one
 	// of our own sends to hold a move to.
 	const uint8_t payload = 0x33;
-	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
-	transport->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
+	ExchangeOneFrameEachWay(loop, *transport, payload);
 	ASSERT_TRUE(!loop.clientRead.empty());
 
 	// The NAT moves the source port once more, still inside the window of the port we hold.
@@ -662,11 +680,7 @@ TEST(UtpLibraryAdapter, AConnectedStreamFollowsANATPortChange)
 	// Both directions still cross on the moved stream. The buffer covers the payload, so the
 	// inlined deque copy in UtpStream::Read is bounded by the object it writes into.
 	std::array<uint8_t, 4> received{};
-	uint32_t receivedBytes = 0;
-	for (int round = 0; round < 64 && receivedBytes == 0; ++round) {
-		Pump(loop);
-		receivedBytes = transport->Read(received.data(), static_cast<uint32_t>(received.size()));
-	}
+	ReadUntilData(loop, *transport, received);
 	ASSERT_EQUALS((int)payload, (int)received[0]);
 	Teardown(loop);
 }
@@ -676,40 +690,25 @@ TEST(UtpLibraryAdapter, AFrameThatDoesNotProveItselfIsDroppedWithoutAnRst)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 	ASSERT_TRUE(transport->IsConnected());
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, heldPort));
 
 	// One frame each way, then keep a genuine one: its connection id is the peer's own, which is
 	// what a forgery would have to guess.
 	const uint8_t payload = 0x77;
-	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
-	transport->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
-	const std::vector<uint8_t> genuine = loop.lastClientDatagram;
-	ASSERT_TRUE(genuine.size() >= kUtpWireHeaderBytes);
-	const auto peerConnectionId = static_cast<uint16_t>((genuine[2] << 8) | genuine[3]);
-	const auto peerSequenceNumber = static_cast<uint16_t>((genuine[16] << 8) | genuine[17]);
+	ExchangeOneFrameEachWay(loop, *transport, payload);
+	const SFrameNumbers genuine = FrameNumbers(loop.lastClientDatagram);
 
 	const uint16_t newPort = heldPort + 100;
 	// A reset is refused even carrying the right connection id: libutp would act on it from the id
 	// alone (utp_internal.cpp:2866-2887 through LookupAdjacent at :2809-2823).
 	const std::vector<uint8_t> reset =
-		UtpFrame(kUtpTypeReset, peerConnectionId, peerSequenceNumber + 5, 0);
+		UtpFrame(kUtpTypeReset, genuine.connectionId, genuine.seqNr + 5, 0);
 	// A connection id no stream here has ever used.
-	const std::vector<uint8_t> stranger = UtpFrame(0, 0, peerSequenceNumber + 5, 0);
+	const std::vector<uint8_t> stranger = UtpFrame(kUtpTypeData, 0, genuine.seqNr + 5, 0);
 
 	for (const std::vector<uint8_t> &frame : { reset, stranger }) {
 		ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, newPort));
@@ -733,24 +732,12 @@ TEST(UtpLibraryAdapter, ALateFrameFromThePortThePeerLeftNeverMovesItBack)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 
 	const uint8_t payload = 0x44;
-	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
-	transport->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
+	ExchangeOneFrameEachWay(loop, *transport, payload);
 	// The frame the peer sent while it still used heldPort.
 	const std::vector<uint8_t> lateFrame = loop.lastClientDatagram;
 	ASSERT_TRUE(lateFrame.size() >= kUtpWireHeaderBytes);
@@ -780,24 +767,12 @@ TEST(UtpLibraryAdapter, ARefusedMoveSendsNothingAndLeavesTheStreamWhereItIs)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 
 	const uint8_t payload = 0x22;
-	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
-	transport->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
+	ExchangeOneFrameEachWay(loop, *transport, payload);
 
 	// First move, at the same injected time as the second attempt below.
 	const uint16_t movedPort = heldPort + 100;
@@ -832,38 +807,21 @@ TEST(UtpLibraryAdapter, AnAckOnlyFrameFromANewPortMovesTheStream)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 
 	const uint8_t payload = 0x11;
-	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
-	transport->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
+	ExchangeOneFrameEachWay(loop, *transport, payload);
 
 	// A peer that only downloads sends nothing but ST_STATE, whose seq_nr is the number its next
 	// data frame would carry and therefore never advances (utp_internal.cpp:782). It must still be
 	// able to move its stream, which is the whole point of the feature.
-	constexpr uint8_t kState = 2; // ST_STATE (utp_internal.cpp:169)
-	const std::vector<uint8_t> genuine = loop.lastClientDatagram;
-	ASSERT_TRUE(genuine.size() >= kUtpWireHeaderBytes);
-	const auto connectionId = static_cast<uint16_t>((genuine[2] << 8) | genuine[3]);
-	const auto peerSeqNr = static_cast<uint16_t>((genuine[16] << 8) | genuine[17]);
-	const auto peerAckNr = static_cast<uint16_t>((genuine[18] << 8) | genuine[19]);
+	const auto [connectionId, peerSeqNr, peerAckNr] = FrameNumbers(loop.lastClientDatagram);
 
 	const uint16_t newPort = heldPort + 100;
 	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, newPort));
-	const std::vector<uint8_t> ackOnly = UtpFrame(kState, connectionId, peerSeqNr, peerAckNr);
+	const std::vector<uint8_t> ackOnly = UtpFrame(kUtpTypeState, connectionId, peerSeqNr, peerAckNr);
 	loop.server->ProcessDatagram(ackOnly.data(), ackOnly.size(), kPeerIp, newPort, loop.nowMs);
 
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, newPort));
@@ -877,38 +835,21 @@ TEST(UtpLibraryAdapter, AKeepaliveFrameFromANewPortMovesTheStream)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 
 	const uint8_t payload = 0x13;
-	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
-	transport->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
+	ExchangeOneFrameEachWay(loop, *transport, payload);
 
 	// A keepalive repeats the sequence number and sends the ack one lower than the last one
 	// (utp_internal.cpp:833-843), which is what an idle stream emits between keepalive intervals.
-	constexpr uint8_t kState = 2; // ST_STATE (utp_internal.cpp:169)
-	const std::vector<uint8_t> genuine = loop.lastClientDatagram;
-	ASSERT_TRUE(genuine.size() >= kUtpWireHeaderBytes);
-	const auto connectionId = static_cast<uint16_t>((genuine[2] << 8) | genuine[3]);
-	const auto peerSeqNr = static_cast<uint16_t>((genuine[16] << 8) | genuine[17]);
-	const auto peerAckNr = static_cast<uint16_t>((genuine[18] << 8) | genuine[19]);
+	const auto [connectionId, peerSeqNr, peerAckNr] = FrameNumbers(loop.lastClientDatagram);
 
 	const uint16_t newPort = heldPort + 100;
 	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, newPort));
 	const std::vector<uint8_t> keepalive =
-		UtpFrame(kState, connectionId, peerSeqNr, static_cast<uint16_t>(peerAckNr - 1));
+		UtpFrame(kUtpTypeState, connectionId, peerSeqNr, static_cast<uint16_t>(peerAckNr - 1));
 	loop.server->ProcessDatagram(keepalive.data(), keepalive.size(), kPeerIp, newPort, loop.nowMs);
 
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, newPort));
@@ -922,41 +863,25 @@ TEST(UtpLibraryAdapter, AMoveBackToThePortTheStreamLeftIsRefused)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 
 	const uint8_t payload = 0x15;
-	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
-	transport->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
-	const std::vector<uint8_t> genuine = loop.lastClientDatagram;
-	ASSERT_TRUE(genuine.size() >= kUtpWireHeaderBytes);
-	const auto connectionId = static_cast<uint16_t>((genuine[2] << 8) | genuine[3]);
-	const auto peerSeqNr = static_cast<uint16_t>((genuine[16] << 8) | genuine[17]);
-	const auto peerAckNr = static_cast<uint16_t>((genuine[18] << 8) | genuine[19]);
+	ExchangeOneFrameEachWay(loop, *transport, payload);
+	const auto [connectionId, peerSeqNr, peerAckNr] = FrameNumbers(loop.lastClientDatagram);
 
 	const uint16_t movedPort = heldPort + 100;
 	loop.clientSourcePort = movedPort;
+	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
 	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
 	Pump(loop);
 	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, movedPort));
 
 	// A frame that would otherwise prove itself - right connection id, one number ahead, an ack in
 	// range - but comes from the port this stream has just left: the guard refuses it.
-	constexpr uint8_t kState = 2; // ST_STATE (utp_internal.cpp:169)
 	const std::vector<uint8_t> fromTheLeftPort =
-		UtpFrame(kState, connectionId, static_cast<uint16_t>(peerSeqNr + 1), peerAckNr);
+		UtpFrame(kUtpTypeState, connectionId, static_cast<uint16_t>(peerSeqNr + 1), peerAckNr);
 	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, heldPort));
 	const unsigned sentBefore = sink.datagrams;
 	loop.server->ProcessDatagram(
@@ -982,17 +907,14 @@ TEST(UtpLibraryAdapter, AFailedSynAckSendsNothing)
 	const SUtpDialOptions options{ true, loop.nowMs };
 	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
 	ASSERT_TRUE(transport != nullptr);
-	const std::vector<uint8_t> syn = sink.lastPayload;
-	ASSERT_TRUE(syn.size() >= kUtpWireHeaderBytes);
-	const auto synSeqNr = static_cast<uint16_t>((syn[16] << 8) | syn[17]);
+	const uint16_t synSeqNr = FrameNumbers(sink.lastPayload).seqNr;
 	const uint16_t reportedPort = kPeerPort + 200;
 
 	// The ingress gate admits a frame from that port because the handshake expects it. This one does
 	// not acknowledge our SYN, and there is no connected stream to fall through to, so handing it to
 	// libutp would draw an RST to that port (utp_internal.cpp:2925-2940).
-	constexpr uint8_t kState = 2; // ST_STATE (utp_internal.cpp:169)
 	const std::vector<uint8_t> notOurSynAck =
-		UtpFrame(kState, 0x4242, 1, static_cast<uint16_t>(synSeqNr + 1));
+		UtpFrame(kUtpTypeState, 0x4242, 1, static_cast<uint16_t>(synSeqNr + 1));
 	const unsigned sentBefore = sink.datagrams;
 	loop.server->ProcessDatagram(
 		notOurSynAck.data(), notOurSynAck.size(), kPeerIp, reportedPort, loop.nowMs);
@@ -1008,41 +930,24 @@ TEST(UtpLibraryAdapter, AResendBehindTheLastNumberStillMovesTheStream)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 
 	const uint8_t payload = 0x18;
-	ASSERT_EQUALS(1, (int)transport->Write(&payload, 1));
-	transport->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
+	ExchangeOneFrameEachWay(loop, *transport, payload);
 
 	// A peer whose send window filled up and whose acks went to a dead mapping resends its OLDEST
 	// unacked packet, whose number sits BEHIND the highest we have seen. That frame is the one that
 	// recovers a bulk transfer, so it has to be admitted (libutp measures the same distance and
 	// accepts it, utp_internal.cpp:1894-1907). libutp's own retransmit timer is not reachable in this
 	// harness, so the resend is reproduced as the frame it produces.
-	constexpr uint8_t kState = 2; // ST_STATE (utp_internal.cpp:169)
-	const std::vector<uint8_t> genuine = loop.lastClientDatagram;
-	ASSERT_TRUE(genuine.size() >= kUtpWireHeaderBytes);
-	const auto connectionId = static_cast<uint16_t>((genuine[2] << 8) | genuine[3]);
-	const auto peerSeqNr = static_cast<uint16_t>((genuine[16] << 8) | genuine[17]);
-	const auto peerAckNr = static_cast<uint16_t>((genuine[18] << 8) | genuine[19]);
+	const auto [connectionId, peerSeqNr, peerAckNr] = FrameNumbers(loop.lastClientDatagram);
 	const uint16_t oldestUnacked = static_cast<uint16_t>(peerSeqNr - kUtpMoveSeqWindow);
 
 	const uint16_t newPort = heldPort + 100;
 	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, newPort));
-	const std::vector<uint8_t> resend = UtpFrame(kState, connectionId, oldestUnacked, peerAckNr);
+	const std::vector<uint8_t> resend = UtpFrame(kUtpTypeState, connectionId, oldestUnacked, peerAckNr);
 	ASSERT_TRUE(UtpSeqDistance(oldestUnacked, peerSeqNr) <= kUtpMoveSeqWindow);
 	loop.server->ProcessDatagram(resend.data(), resend.size(), kPeerIp, newPort, loop.nowMs);
 
@@ -1057,47 +962,29 @@ TEST(UtpLibraryAdapter, AFailingHandshakeLeavesTheConnectedStreamTranslated)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	// First dial: established, and moved to the observed port by the handshake remap.
 	std::unique_ptr<IStreamTransport> connected;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, connected));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(connected != nullptr);
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	const uint16_t heldPort = DialRemapped(loop, sink, connected);
 
 	const uint8_t payload = 0x1A;
-	ASSERT_EQUALS(1, (int)connected->Write(&payload, 1));
-	connected->Flush();
-	Pump(loop);
-	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
-	const std::vector<uint8_t> genuine = loop.lastClientDatagram;
-	ASSERT_TRUE(genuine.size() >= kUtpWireHeaderBytes);
-	const auto connectionId = static_cast<uint16_t>((genuine[2] << 8) | genuine[3]);
-	const auto peerSeqNr = static_cast<uint16_t>((genuine[16] << 8) | genuine[17]);
-	const auto peerAckNr = static_cast<uint16_t>((genuine[18] << 8) | genuine[19]);
+	ExchangeOneFrameEachWay(loop, *connected, payload);
+	const auto [connectionId, peerSeqNr, peerAckNr] = FrameNumbers(loop.lastClientDatagram);
 
 	// Second dial to the same address: a handshake candidate now sits at kPeerPort, as a second user
 	// behind the same CGNAT would leave it. Its SYN is the last datagram this side sent.
 	std::unique_ptr<IStreamTransport> pending;
+	const SUtpDialOptions options{ true, loop.nowMs };
 	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, pending));
-	const std::vector<uint8_t> syn = sink.lastPayload;
-	ASSERT_TRUE(syn.size() >= kUtpWireHeaderBytes);
-	const auto pendingSynSeqNr = static_cast<uint16_t>((syn[16] << 8) | syn[17]);
+	const uint16_t pendingSynSeqNr = FrameNumbers(sink.lastPayload).seqNr;
 
 	// A frame from a port both candidates cover, carrying the CONNECTED stream's own numbers, so the
 	// move decision would say Move - but it cannot acknowledge the pending SYN.
-	constexpr uint8_t kState = 2; // ST_STATE (utp_internal.cpp:169)
 	const uint16_t sharedPort = kPeerPort + 300;
 	const uint16_t ackNr =
 		peerAckNr == pendingSynSeqNr ? static_cast<uint16_t>(peerAckNr - 1) : peerAckNr;
 	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, sharedPort));
-	const std::vector<uint8_t> frame = UtpFrame(kState, connectionId, peerSeqNr, ackNr);
+	const std::vector<uint8_t> frame = UtpFrame(kUtpTypeState, connectionId, peerSeqNr, ackNr);
 	const unsigned sentBefore = sink.datagrams;
 	loop.server->ProcessDatagram(frame.data(), frame.size(), kPeerIp, sharedPort, loop.nowMs);
 
@@ -1115,11 +1002,7 @@ TEST(UtpLibraryAdapter, AFailingHandshakeLeavesTheConnectedStreamTranslated)
 	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &followUp, 1));
 	Pump(loop);
 	std::array<uint8_t, 4> received{};
-	uint32_t receivedBytes = 0;
-	for (int round = 0; round < 64 && receivedBytes == 0; ++round) {
-		Pump(loop);
-		receivedBytes = connected->Read(received.data(), static_cast<uint32_t>(received.size()));
-	}
+	const uint32_t receivedBytes = ReadUntilData(loop, *connected, received);
 	ASSERT_TRUE(receivedBytes != 0);
 	Teardown(loop);
 }
@@ -1129,16 +1012,9 @@ TEST(UtpLibraryAdapter, AnIdleReceiverProbesSoThePeerCanFollowItsPort)
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	StartClientAcceptor(loop);
 
 	std::unique_ptr<IStreamTransport> transport;
-	const SUtpDialOptions options{ true, loop.nowMs };
-	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, options, transport));
-	Pump(loop, 64, kPeerPort + kUtpPortRemapWindow);
-	ASSERT_TRUE(transport != nullptr);
-	const uint16_t heldPort = kPeerPort + kUtpPortRemapWindow;
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
 
 	// An accepted socket is not writable until it has received data: libutp leaves it in CS_SYN_RECV
 	// and only ST_DATA moves it to CS_CONNECTED (utp_internal.cpp:3168, :2166-2168), so this side
