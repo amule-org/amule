@@ -330,7 +330,10 @@ TEST(LugdunumNatTraversal, ParsesForwardedCallbackWithAndWithoutObfuscation)
 	ASSERT_TRUE(extraResult.hasObfuscation);
 }
 
-TEST(LugdunumNatTraversal, RequestsCallbackOnlyWhenEveryPreconditionHolds)
+namespace
+{
+//! Every precondition for a callback request holds.
+CallbackRequestFacts ReadyCallbackFacts()
 {
 	CallbackRequestFacts facts;
 	facts.ourId = 100;    // LowID
@@ -341,6 +344,13 @@ TEST(LugdunumNatTraversal, RequestsCallbackOnlyWhenEveryPreconditionHolds)
 	facts.serverKeyUdp = 42;
 	facts.serverSupportsObfuscationUdp = true;
 	facts.settingEnabled = true;
+	return facts;
+}
+} // namespace
+
+TEST(LugdunumNatTraversal, RequestsCallbackOnlyWhenEveryPreconditionHolds)
+{
+	const CallbackRequestFacts facts = ReadyCallbackFacts();
 	ASSERT_TRUE(ShouldRequestLugdunumNatCallback(facts));
 
 	// The runtime setting (amule.conf's LugdunumNatCallback) defaults to off and overrides every
@@ -707,15 +717,8 @@ TEST(LugdunumNatTraversal, ForwardedCallbackGuardDeduplicatesAndBoundsActions)
 
 TEST(LugdunumNatTraversal, ACallbackHeldBackOnlyByTheMissingKeyAwaitsIt)
 {
-	CallbackRequestFacts facts;
-	facts.ourId = 100;
-	facts.sourceId = 201;
-	facts.sameServer = true;
-	facts.serverCallbackCapable = true;
-	facts.serverCryptLayerUdpEnabled = true;
+	CallbackRequestFacts facts = ReadyCallbackFacts();
 	facts.serverKeyUdp = 0;
-	facts.serverSupportsObfuscationUdp = true;
-	facts.settingEnabled = true;
 	ASSERT_TRUE(LugdunumNatCallbackAwaitsServerKey(facts));
 
 	CallbackRequestFacts keyed = facts;

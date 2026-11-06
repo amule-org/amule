@@ -441,7 +441,7 @@ TEST(UtpDialPolicy, MoveNeedsThePeersConnectionIdAndAWitnessedStream)
 {
 	// A stream whose peer said connId 0x1234, seq 100, ack 98, and to which we last sent seq 104.
 	const SUtpPeerStreamFacts facts{ true, 0x1234, 100, 98, 104 };
-	const SUtpMoveHeader matching{ 2, 0x1234, 101, 100 };
+	const SUtpMoveHeader matching{ kUtpTypeState, 0x1234, 101, 100 };
 	ASSERT_TRUE(DecideUtpMove(matching, facts) == EUtpMoveVerdict::Move);
 
 	SUtpMoveHeader wrongConnection = matching;
@@ -461,7 +461,7 @@ TEST(UtpDialPolicy, MoveAdmitsAckOnlyKeepaliveAndOutOfOrderResends)
 	// The peer's last frame used sequence number 1'000, so 1'001 is the number its next data frame
 	// will carry and the one an ack-only ST_STATE carries today (utp_internal.cpp:782).
 	const SUtpPeerStreamFacts facts{ true, 0x1234, 1'001, 98, 104 };
-	SUtpMoveHeader header{ 2, 0x1234, 1'001, 100 };
+	SUtpMoveHeader header{ kUtpTypeState, 0x1234, 1'001, 100 };
 
 	// Zero apart is ordinary: a download-only peer only ever sends ST_STATE, so its sequence number
 	// never moves. A keepalive repeats the same one.
@@ -488,13 +488,15 @@ TEST(UtpDialPolicy, MoveAdmitsAckOnlyKeepaliveAndOutOfOrderResends)
 	ASSERT_EQUALS((std::uint16_t)2, UtpSeqDistance(65'535, 1));
 	ASSERT_EQUALS((std::uint16_t)0, UtpSeqDistance(7, 7));
 	const SUtpPeerStreamFacts wrapped{ true, 0x1234, 65'535, 98, 104 };
-	const SUtpMoveHeader newer{ 2, 0x1234, 1, 100 };
+	const SUtpMoveHeader newer{ kUtpTypeState, 0x1234, 1, 100 };
 	ASSERT_TRUE(DecideUtpMove(newer, wrapped) == EUtpMoveVerdict::Move);
-	const SUtpMoveHeader sameAcrossTheWrap{ 2, 0x1234, 65'535, 100 };
+	const SUtpMoveHeader sameAcrossTheWrap{ kUtpTypeState, 0x1234, 65'535, 100 };
 	ASSERT_TRUE(DecideUtpMove(sameAcrossTheWrap, wrapped) == EUtpMoveVerdict::Move);
-	const SUtpMoveHeader olderAcrossTheWrap{ 2, 0x1234, 65'530, 100 };
+	const SUtpMoveHeader olderAcrossTheWrap{ kUtpTypeState, 0x1234, 65'530, 100 };
 	ASSERT_TRUE(DecideUtpMove(olderAcrossTheWrap, wrapped) == EUtpMoveVerdict::Move);
-	const SUtpMoveHeader tooOldAcrossTheWrap{ 2, 0x1234, 65'535 - kUtpMoveSeqWindow - 1, 100 };
+	const SUtpMoveHeader tooOldAcrossTheWrap{
+		kUtpTypeState, 0x1234, 65'535 - kUtpMoveSeqWindow - 1, 100
+	};
 	ASSERT_TRUE(DecideUtpMove(tooOldAcrossTheWrap, wrapped) == EUtpMoveVerdict::Refuse);
 }
 
@@ -502,7 +504,7 @@ TEST(UtpDialPolicy, MoveNeedsAnAckFromOneBelowThePeersLastUpToOurLastSend)
 {
 	// The peer last acknowledged 98 and we last sent 104.
 	const SUtpPeerStreamFacts facts{ true, 0x1234, 101, 98, 104 };
-	SUtpMoveHeader header{ 2, 0x1234, 101, 104 };
+	SUtpMoveHeader header{ kUtpTypeState, 0x1234, 101, 104 };
 
 	// The upper end, then the peer's own last ack, then the one below it a keepalive carries
 	// (utp_internal.cpp:833-843).
@@ -526,7 +528,7 @@ TEST(UtpDialPolicy, MoveNeedsAnAckFromOneBelowThePeersLastUpToOurLastSend)
 
 	// The range is modular, so a stream can move while its numbers sit either side of the wrap.
 	const SUtpPeerStreamFacts wrapped{ true, 0x1234, 101, 0, 3 };
-	SUtpMoveHeader aroundTheWrap{ 2, 0x1234, 101, 0 };
+	SUtpMoveHeader aroundTheWrap{ kUtpTypeState, 0x1234, 101, 0 };
 	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Move);
 	aroundTheWrap.acknowledgeNumber = 3;
 	ASSERT_TRUE(DecideUtpMove(aroundTheWrap, wrapped) == EUtpMoveVerdict::Move);
@@ -595,7 +597,7 @@ TEST(UtpDialPolicy, ProbeFiresOnlyForAFreshlySilentReceiver)
 TEST(UtpDialPolicy, MoveRefusesResetAndSynWhileTheOwnTupleIsNeverAStepCompetitor)
 {
 	const SUtpPeerStreamFacts facts{ true, 0x1234, 100, 98, 104 };
-	SUtpMoveHeader header{ 2, 0x1234, 101, 100 };
+	SUtpMoveHeader header{ kUtpTypeState, 0x1234, 101, 100 };
 
 	// libutp acts on a reset from its connection id alone (utp_internal.cpp:2866-2887) and a SYN
 	// asks for a new connection: neither may be mapped onto a live stream.
