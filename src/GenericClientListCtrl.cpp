@@ -475,6 +475,15 @@ void CGenericClientListCtrl::ShowSources(const CKnownFileVector &files)
 
 	ShowSourcesCount(itemDiff);
 
+	// The bulk rebuild just recomputed the full row set, so it is the natural sync point:
+	// the header count must equal the rows actually present. A no-op when every runtime
+	// update kept the running diff in step; otherwise heals a stale count (e.g. "File
+	// sources: 0" beside rows on screen) instead of carrying it until restart.
+	if (m_clientcount != static_cast<int>(m_ListItems.size())) {
+		m_clientcount = static_cast<int>(m_ListItems.size());
+		UpdateSourcesCountLabel();
+	}
+
 	SortList();
 
 	Thaw();
@@ -522,6 +531,11 @@ void CGenericClientListCtrl::RemoveKnownFile(CKnownFile *file)
 void CGenericClientListCtrl::ShowSourcesCount(int diff)
 {
 	m_clientcount += diff;
+	UpdateSourcesCountLabel();
+}
+
+void CGenericClientListCtrl::UpdateSourcesCountLabel()
+{
 	wxStaticText *label = CastByID(ID_CLIENTCOUNT, GetParent(), wxStaticText);
 
 	if (label) {

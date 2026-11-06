@@ -191,6 +191,9 @@ private:
 
 	/// Updates the displayed count of clients currently shown.
 	void ShowSourcesCount(int diff);
+	//! Paints the "File sources:" header from m_clientcount; the bulk rebuild also calls it
+	//! after reconciling the running diff with the rows actually present (see ShowSources).
+	void UpdateSourcesCountLabel();
 
 	/// Sets the "show sources" or "show peers" flag on a known file.
 	virtual void SetShowSources(CKnownFile *, bool) const = 0;
