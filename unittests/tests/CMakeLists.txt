@@ -3208,6 +3208,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/ShareExclusionLifecycleIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (ShareExclusionLifecycleIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME SharedDirFilesIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/SharedDirFilesIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (SharedDirFilesIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME ShareWatcherMoveIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ShareWatcherMoveIntegrationTest.py $<TARGET_FILE:amuled>
@@ -3968,6 +3973,7 @@ foreach (ec_wire_test IN ITEMS
 	ShareExcludeDefaultsIntegrationTest
 	ShareExclusionLifecycleIntegrationTest
 	ShareWatcherMoveIntegrationTest
+	SharedDirFilesIntegrationTest
 	SharedFileReverifyIntegrationTest
 	SharedMembershipIntegrationTest
 	ShortBlockPacketIntegrationTest

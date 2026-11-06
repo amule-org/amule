@@ -35,9 +35,8 @@ class CSharedFileList;
 // and modification, and triggers a debounced CSharedFileList::Reload() so newly-added files become
 // shared without a manual "Reload shared files" click.
 //
-// New subdirectories created under any watched path are auto-added to shareddir_list so the watcher
-// keeps following them, mirroring what the "recursive share" button already does. No per-entry
-// recursive flag is persisted, because shareddir.dat enumerates each subdirectory individually.
+// New subdirectories created under a recursive share root are auto-added to shareddir_list so the
+// watcher keeps following them. They are not saved: the next load expands the root again.
 //
 // Backends come from wxFileSystemWatcher: inotify on Linux, FSEvents on macOS,
 // ReadDirectoryChangesW on Windows, kqueue on BSD. AddTree() handles the initial recursive setup;
@@ -102,8 +101,7 @@ private:
 
 	// Tear down a renamed-away or deleted shared dir: detach its subtree, drop it from the
 	// runtime shared set and its watch. Never touches the user's explicit/recursive config.
-	// Returns true if it removed a set entry.
-	bool HandleDirRemoved(const wxString &path);
+	void HandleDirRemoved(const wxString &path);
 
 	// Is `path` in the runtime shared set? Distinguishes a dir event from a
 	// file event once the path is gone from disk.
@@ -122,12 +120,12 @@ private:
 	// Recursively walk each path in shareddir_list and add any subdir not already listed. The
 	// "cold" twin of RegisterNewSubdirectory: the watcher only fires CREATE events post-
 	// Enable(), so without this a /Music share that grew three albums while aMule was offline
-	// would never see them. Batches in memory and writes shareddir.dat once at the end.
+	// would never see them.
 	void ColdDiscoverSubdirs();
 
 	// Recursive walker used by ColdDiscoverSubdirs. Visits every subdirectory of `root`,
 	// inserting each one not already in `known` into `known` and `out`. Always recurses, even
-	// through known subdirs, so a tree whose top layer is in shareddir.dat but whose deeper
+	// through known subdirs, so a tree whose top layer is in shareddir_list but whose deeper
 	// layers are not is still fully covered.
 	void WalkForUnknownSubdirs(const CPath &root, std::set<wxString> &known, std::vector<CPath> &out);
 

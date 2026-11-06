@@ -89,6 +89,11 @@ enum class RecursiveCoverage
 RecursiveCoverage GetRecursiveCoverage(
 	const CShareExcludeFilter &filter, const PathList &roots, const CPath &path);
 
+// The entries of `dirs` that no root in `roots` covers, in order and without repeats. One under a
+// root only through an excluded folder is dropped too: an expansion from before the filter matched
+// listed it.
+PathList UncoveredDirs(const CShareExcludeFilter &filter, const PathList &roots, const PathList &dirs);
+
 // Appends `root` and every descendant directory to `out`, hidden ones included, matching the
 // runtime watcher's AddTree(). A subfolder
 // `filter` matches is skipped with its subtree and reported to `onExcluded`, if set. `seen`

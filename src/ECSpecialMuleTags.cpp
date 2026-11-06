@@ -1172,8 +1172,8 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 			// reported (reason code 3). Removing a folder (absent from the list) is always
 			// allowed. This is the EC_TAG_DIRECTORIES_SHARED route; EC_OP_SET_SHARED_DIRS applies
 			// the same rule.
-			const CPreferences::PathList storedDirs = theApp->glob_prefs->shareddir_list;
-			theApp->glob_prefs->shareddir_list.clear();
+			const CPreferences::PathList &storedDirs = theApp->glob_prefs->shareddir_list;
+			CPreferences::PathList dirs;
 			for (const CECTag &dirTag : *oneTag) {
 				const CPath dir(dirTag.GetStringData());
 				bool alreadyShared = false;
@@ -1184,16 +1184,17 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 					}
 				}
 				if (alreadyShared) {
-					theApp->glob_prefs->shareddir_list.push_back(dir);
+					dirs.push_back(dir);
 				} else if (theApp->glob_prefs->IsRemoteDirChangeAllowed(dir)) {
 					// Store the canonical path we checked, not the raw string (see
 					// ApplyRemoteDirChange / Get_EC_Response_SetSharedDirs).
-					theApp->glob_prefs->shareddir_list.push_back(
-						dir.CanonicalForContainment());
+					dirs.push_back(dir.CanonicalForContainment());
 				} else if (refusedDirs != nullptr) {
 					refusedDirs->Add(dirTag.GetStringData());
 				}
 			}
+			// The client sent the union, but only the explicit and recursive lists are saved.
+			theApp->glob_prefs->SetSharedFoldersFromUnion(dirs);
 #endif
 		}
 #ifdef CLIENT_GUI

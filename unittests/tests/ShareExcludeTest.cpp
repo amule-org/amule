@@ -104,6 +104,32 @@ TEST(ShareExclude, CoverageClassifiesPaths)
 		    RecursiveCoverage::None);
 }
 
+TEST(ShareExclude, UncoveredDirsKeepsWhatNoRootCovers)
+{
+	CShareExcludeFilter filter;
+	filter.Compile(".unwanted", false);
+	const CPath root("/share");
+	const CPath other("/other");
+	const CPath sibling("/share2");
+	PathList roots;
+	roots.push_back(root);
+	PathList dirs;
+	dirs.push_back(other);
+	dirs.push_back(root);
+	dirs.push_back(root.JoinPaths(CPath("a")));
+	dirs.push_back(root.JoinPaths(CPath(".unwanted")).JoinPaths(CPath("a")));
+	dirs.push_back(sibling);
+	dirs.push_back(other);
+	dirs.push_back(CPath());
+
+	const PathList uncovered = ShareExclude::UncoveredDirs(filter, roots, dirs);
+	ASSERT_EQUALS(2u, uncovered.size());
+	ASSERT_TRUE(other == uncovered[0]);
+	ASSERT_TRUE(sibling == uncovered[1]);
+	// With no roots every folder stays, each once, and the empty path still goes.
+	ASSERT_EQUALS(5u, ShareExclude::UncoveredDirs(filter, PathList(), dirs).size());
+}
+
 TEST(ShareExclude, NestedRootCoversWhatItsParentExcludes)
 {
 	CShareExcludeFilter filter;
