@@ -26,6 +26,8 @@
 #ifndef SHAREDFILESWND_H
 #define SHAREDFILESWND_H
 
+#include <memory>
+
 #include <wx/panel.h> // Needed for wxPanel
 
 class CKnownFile;
@@ -121,8 +123,8 @@ private:
 	wxRadioButton *m_radioShowUploading;
 	//! Flag if window has been prepared
 	bool m_prepared;
-	//! Access the common behavior using this pane's controls and saved position.
-	CClientListSplitter ClientListSplitter();
+	//! Collapse, restore and sash dragging of the client list.
+	std::unique_ptr<CClientListSplitter> m_clientListSplitter;
 
 	/**
 	 * Which clients are shown.

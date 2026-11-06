@@ -26,6 +26,8 @@
 #ifndef TRANSFERWND_H
 #define TRANSFERWND_H
 
+#include <memory>
+
 #include <wx/panel.h>    // Needed for wxPanel
 #include <wx/notebook.h> // needed for wxBookCtrlEvent in wx 2.8
 #include "Types.h"       // Needed for uint32
@@ -92,8 +94,8 @@ public:
 private:
 	//! Contains the current (or last if the clientlist is hidden) position of the splitter.
 	int m_splitter;
-	//! Access the common behavior using this pane's controls and saved position.
-	CClientListSplitter ClientListSplitter();
+	//! Collapse, restore and sash dragging of the client list.
+	std::unique_ptr<CClientListSplitter> m_clientListSplitter;
 
 	/**
 	 * Handler for the set-status-by-category menu item.

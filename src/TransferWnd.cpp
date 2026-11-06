@@ -137,6 +137,13 @@ CTransferWnd::CTransferWnd(wxWindow *pParent)
 	config->Read("/GUI/TransferWnd/ShowClientList", &show, true);
 	clientlistctrl->SetShowing(show);
 	m_splitter = config->Read("/GUI/TransferWnd/Splitter", 463l);
+
+	m_clientListSplitter =
+		std::make_unique<CClientListSplitter>(*CastChild("splitterWnd", wxSplitterWindow),
+			*clientlistctrl,
+			*CastChild(ID_CLIENTTOGGLE, wxBitmapButton),
+			*s_clientlistHeader,
+			m_splitter);
 }
 
 CTransferWnd::~CTransferWnd()
@@ -459,28 +466,19 @@ void CTransferWnd::OnFilterChanged(wxCommandEvent &WXUNUSED(evt))
 	downloadlistctrl->SetFilterText(CastChild(IDC_TRANSFER_FILTER, wxTextCtrl)->GetValue());
 }
 
-CClientListSplitter CTransferWnd::ClientListSplitter()
-{
-	return CClientListSplitter(*CastChild("splitterWnd", wxSplitterWindow),
-		*clientlistctrl,
-		*CastChild(ID_CLIENTTOGGLE, wxBitmapButton),
-		*s_clientlistHeader,
-		m_splitter);
-}
-
 void CTransferWnd::Prepare()
 {
-	ClientListSplitter().Prepare();
+	m_clientListSplitter->Prepare();
 }
 
 void CTransferWnd::OnToggleClientList(wxCommandEvent &WXUNUSED(evt))
 {
-	ClientListSplitter().Toggle();
+	m_clientListSplitter->Toggle();
 }
 
 void CTransferWnd::OnSashPositionChanging(wxSplitterEvent &evt)
 {
-	ClientListSplitter().OnSashPositionChanging(evt);
+	m_clientListSplitter->OnSashPositionChanging(evt);
 }
 #ifdef __WXMAC__
 void CTransferWnd::CentreHeaderOnCategoryBar()

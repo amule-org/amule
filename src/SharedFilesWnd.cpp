@@ -23,7 +23,6 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include <wx/artprov.h> // Needed for the "amule:" art ids
 #include <wx/config.h>
 #include <wx/gauge.h> // Do_not_auto_remove (win32)
 #include <wx/radiobut.h>
@@ -90,6 +89,13 @@ CSharedFilesWnd::CSharedFilesWnd(wxWindow *pParent)
 	m_splitter = config->Read("/GUI/SharedWnd/Splitter", 463l);
 	m_clientShow = (EClientShow)config->Read("/GUI/SharedWnd/ClientShowMode", ClientShowAll);
 	SetClientShowMode(m_clientShow);
+
+	m_clientListSplitter =
+		std::make_unique<CClientListSplitter>(*CastChild("sharedsplitterWnd", wxSplitterWindow),
+			*peerslistctrl,
+			*CastChild(ID_SHAREDCLIENTTOGGLE, wxBitmapButton),
+			*s_sharedfilespeerHeader,
+			m_splitter);
 }
 
 CSharedFilesWnd::EClientShow CSharedFilesWnd::GetClientShowMode() const
@@ -286,32 +292,23 @@ void CSharedFilesWnd::RemoveAllSharedFiles()
 	SelectionUpdated();
 }
 
-CClientListSplitter CSharedFilesWnd::ClientListSplitter()
-{
-	return CClientListSplitter(*CastChild("sharedsplitterWnd", wxSplitterWindow),
-		*peerslistctrl,
-		*CastChild(ID_SHAREDCLIENTTOGGLE, wxBitmapButton),
-		*s_sharedfilespeerHeader,
-		m_splitter);
-}
-
 void CSharedFilesWnd::Prepare()
 {
 	if (m_prepared) {
 		return;
 	}
 	m_prepared = true;
-	ClientListSplitter().Prepare();
+	m_clientListSplitter->Prepare();
 }
 
 void CSharedFilesWnd::OnToggleClientList(wxCommandEvent &WXUNUSED(evt))
 {
-	ClientListSplitter().Toggle();
+	m_clientListSplitter->Toggle();
 }
 
 void CSharedFilesWnd::OnSashPositionChanging(wxSplitterEvent &evt)
 {
-	ClientListSplitter().OnSashPositionChanging(evt);
+	m_clientListSplitter->OnSashPositionChanging(evt);
 }
 
 void CSharedFilesWnd::OnSelectClientsMode(wxCommandEvent &WXUNUSED(evt))
