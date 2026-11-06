@@ -144,11 +144,19 @@ private:
 		wxCoord textheight;
 		dc->GetTextExtent(buffer, &textwidth, &textheight);
 		const wxColour oldColour = dc->GetTextForeground();
-		// White text can disappear over the light unfilled background and the few-source gaps.
-		// While hashing, black already reads over the green/yellow fill, so don't add a shadow.
+		// White text can disappear over light fills (including few-source gaps and stopped rows).
+		// A one-DIP outline keeps it readable; hashing uses black text and needs no outline.
 		if (hashingProgress == 0) {
 			dc->SetTextForeground(*wxBLACK);
-			dc->DrawText(buffer, middlex - (textwidth >> 1) + 1, middley - (textheight >> 1) + 1);
+			const int offset = GetOwner() && GetOwner()->GetOwner()
+					   ? GetOwner()->GetOwner()->FromDIP(1)
+					   : 1;
+			const int x = middlex - (textwidth >> 1);
+			const int y = middley - (textheight >> 1);
+			dc->DrawText(buffer, x - offset, y);
+			dc->DrawText(buffer, x + offset, y);
+			dc->DrawText(buffer, x, y - offset);
+			dc->DrawText(buffer, x, y + offset);
 		}
 		dc->SetTextForeground(hashingProgress == 0 ? *wxWHITE : *wxBLACK);
 		dc->DrawText(buffer, middlex - (textwidth >> 1), middley - (textheight >> 1));
