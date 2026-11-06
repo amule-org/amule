@@ -1546,9 +1546,9 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 
 // Serialise the daemon's shared-directory configuration: one EC_TAG_SHAREDDIR per
 // configured root, with an EC_TAG_SHAREDDIR_RECURSIVE subtag on the roots whose
-// entire subtree is shared. Only the two *intent* lists travel -- shareddir.dat is
-// the runtime union the daemon regenerates itself, so sending it would invite a
-// remote client to edit a derived artefact.
+// entire subtree is shared. Only the two *intent* lists travel -- the runtime union
+// is derived from them, so sending it would invite a remote client to edit a
+// derived artefact.
 static CECPacket *Get_EC_Response_GetSharedDirs()
 {
 	CECPacket *response = new CECPacket(EC_OP_GET_SHARED_DIRS);
@@ -1845,10 +1845,7 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 
 	theApp->glob_prefs->shareddir_explicit_list = explicitDirs;
 	theApp->glob_prefs->shareddir_recursive_list = recursiveDirs;
-	// The union (shareddir.dat) has to be refreshed here too, not just the two intent
-	// lists. ReloadSharedFolders reconciles against the union on disk and drops any
-	// explicit root missing from it -- that is how it honours external edits -- so a
-	// stale union would make it trim the roots we just added.
+	// Until the reload below expands the recursive roots, they stand in for their trees.
 	CPreferences::PathList unionDirs = explicitDirs;
 	unionDirs.insert(unionDirs.end(), recursiveDirs.begin(), recursiveDirs.end());
 	theApp->glob_prefs->shareddir_list = unionDirs;

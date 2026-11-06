@@ -396,7 +396,7 @@ void CSharedFileList::FindSharedFiles(const ReloadYieldCb &yieldCb, bool &aborte
 	// Clear statistics.
 	theStats::ClearSharedFilesInfo();
 
-	// Reload shareddir.dat
+	// Reload the shared-folder lists
 	theApp->glob_prefs->ReloadSharedFolders();
 
 	{

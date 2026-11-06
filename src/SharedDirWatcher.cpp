@@ -393,8 +393,7 @@ void CSharedDirWatcher::OnFileSystemEvent(wxFileSystemWatcherEvent &event)
 	// *queued* to us before that, which the MSW one does (wxFSWatcherImplMSW::SendEvent
 	// wxQueueEvent()s from its worker thread). Acting on it would re-arm the debounce timer
 	// StopTimers() just stopped, and a directory CREATE would reach RegisterNewSubdirectory and
-	// persist a shareddir_list change -- SaveSharedFolders() and all -- after the user turned
-	// auto-rescan off.
+	// change shareddir_list after the user turned auto-rescan off.
 	if (!m_watcher) {
 		return;
 	}
@@ -519,9 +518,6 @@ void CSharedDirWatcher::RegisterNewSubdirectory(const wxString &path)
 
 	AddDebugLogLineN(logKnownFiles, CFormat("Shared-dir watcher: auto-shared new subdir %s") % path);
 
-	// Persist the new entry so the change survives a restart.
-	theApp->glob_prefs->SaveSharedFolders();
-
 	// Close the inotify race window. Between the kernel mkdir() that fired this CREATE event and
 	// our wxFileSystemWatcher::Add() above, any file or subdir created inside `path` fires on a
 	// watch that does not exist yet, so the event is silently dropped. Common with tools that
@@ -562,29 +558,28 @@ bool CSharedDirWatcher::IsInSharedSet(const wxString &path) const
 	return false;
 }
 
-bool CSharedDirWatcher::HandleDirRemoved(const wxString &path)
+void CSharedDirWatcher::HandleDirRemoved(const wxString &path)
 {
 	// Detach the vanished dir's subtree (NotifyPathRemoved is per-file only).
 	m_parent->NotifyDirRemoved(path);
 
 	// Drop it from the runtime union so scans stop chasing a dead path. Leave the user's
 	// explicit/recursive config alone -- the union is recomputed from it on reload anyway.
-	bool removed = false;
-	CPath gone(path);
-	if (gone.IsOk()) {
-		thePrefs::PathList &shared = theApp->glob_prefs->shareddir_list;
-		for (size_t i = 0; i < shared.size(); ++i) {
-			if (shared[i].IsSameDir(gone)) {
-				shared.erase(shared.begin() + i);
-				removed = true;
-				AddDebugLogLineN(logKnownFiles,
-					CFormat("Shared-dir watcher: dropped '%s' from shared set "
-						"(directory removed)") %
-						path);
-				break;
-			}
-		}
+	const CPath gone(path);
+	if (!gone.IsOk()) {
+		return;
 	}
+	thePrefs::PathList &shared = theApp->glob_prefs->shareddir_list;
+	auto it = shared.begin();
+	while (it != shared.end() && !it->IsSameDir(gone)) {
+		++it;
+	}
+	if (it == shared.end()) {
+		return;
+	}
+	shared.erase(it);
+	AddDebugLogLineN(logKnownFiles,
+		CFormat("Shared-dir watcher: dropped '%s' from shared set (directory removed)") % path);
 
 #ifndef __WXOSX__
 	// Remove its per-subdir watch (macOS covers the whole tree via FSEvents). Only if wx still
@@ -594,7 +589,7 @@ bool CSharedDirWatcher::HandleDirRemoved(const wxString &path)
 	// assertion and aborts amuled (issue #458). A same-filesystem rename keeps the inode watch
 	// under the old key, so the guarded Remove() still cleans that up. GetWatchedPaths() reports
 	// the exact key Remove() looks up.
-	if (removed && m_watcher) {
+	if (m_watcher) {
 		const wxFileName dir = wxFileName::DirName(path);
 		wxArrayString watched;
 		m_watcher->GetWatchedPaths(&watched);
@@ -603,8 +598,6 @@ bool CSharedDirWatcher::HandleDirRemoved(const wxString &path)
 		}
 	}
 #endif
-
-	return removed;
 }
 
 void CSharedDirWatcher::ScanNewSubdirRace(const CPath &parent)
@@ -671,9 +664,7 @@ void CSharedDirWatcher::ColdDiscoverSubdirs()
 		known.insert(shared[i].GetRaw());
 	}
 
-	// Discovered new subdirs go here; they are added in bulk after the walk so a single
-	// SaveSharedFolders() flushes the whole batch rather than rewriting shareddir.dat once per
-	// discovery.
+	// Discovered new subdirs go here; they are added in bulk after the walk.
 	std::vector<CPath> discovered;
 
 	// Walk each recursive root's subtree. CSharedFileList's Reload already handled the root
@@ -711,9 +702,6 @@ void CSharedDirWatcher::ColdDiscoverSubdirs()
 	AddDebugLogLineN(logKnownFiles,
 		CFormat("Shared-dir watcher: cold discovery added %u subdir(s)") %
 			(unsigned)discovered.size());
-
-	// Single rewrite of shareddir.dat for the whole batch.
-	theApp->glob_prefs->SaveSharedFolders();
 
 	// The initial share-scan already ran (amule.cpp invokes Reload before
 	// EnableDirectoryWatcher), so the in-memory shared file list does not yet reflect the
@@ -854,9 +842,7 @@ void CSharedDirWatcher::FlushPendingEvents()
 			// window, must not unshare a directory that still exists. The shared-set check also
 			// keeps this off the hot path of ordinary file DELETEs (no O(files) scan per file).
 			if (IsInSharedSet(path) && !wxFileName::DirExists(path)) {
-				if (HandleDirRemoved(path)) {
-					theApp->glob_prefs->SaveSharedFolders();
-				}
+				HandleDirRemoved(path);
 			} else {
 				m_parent->NotifyPathRemoved(path);
 			}

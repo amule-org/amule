@@ -174,20 +174,19 @@ public:
 
 	void Save();
 	void SaveCats();
-	// Read the three shared-dir files, recompute shareddir_list as the union of the explicit
-	// list and the recursive expansion, reconcile drift from external writers (a Docker
-	// entrypoint editing shareddir.dat directly, then calling Reload over EC) and rewrite
-	// shareddir.dat as the new union.
+	// Read shareddir-explicit.dat and shareddir-recursive.dat, recompute shareddir_list as the
+	// union of the explicit list and the recursive expansion, and save both files. A legacy
+	// shareddir.dat is migrated when neither file exists yet, and otherwise ignored; either
+	// way it is removed.
 	void ReloadSharedFolders();
-	// The three shared-dir files as saved: no expansion, no reconciliation, nothing written.
-	// shareddir.dat holds the union the last expansion saved, so until ReloadSharedFolders()
-	// runs, anyone asking for the shared folders gets that rather than an empty list.
+	// The two files as saved, with no tree walk and nothing written: until ReloadSharedFolders()
+	// runs, shareddir_list holds the explicit folders and the recursive roots.
 	void LoadSavedSharedFolders();
-	// Persist all three shared-dir files: the two canonical sources of truth plus shareddir.dat,
-	// regenerated as the union for older binaries and scripts that read it. Called by
-	// CSharedDirWatcher after it auto-appends a new subdir, so the change survives a restart
-	// without a full preferences.dat write.
-	void SaveSharedFolders();
+	// Persist shareddir-explicit.dat and shareddir-recursive.dat. False if either write failed.
+	bool SaveSharedFolders();
+	// For a client that knows only the union (EC_TAG_DIRECTORIES_SHARED): what no recursive root
+	// covers becomes the explicit list. Recursive roots are unchanged.
+	void SetSharedFoldersFromUnion(const std::vector<CPath> &dirs);
 	// True iff `path` is in shareddir_recursive_list or descends from an entry there through no
 	// excluded folder. The watcher gates auto-add on this: non-recursive share roots do not
 	// collect new subdirs, recursive ones do.
@@ -475,21 +474,19 @@ public:
 
 	typedef std::vector<CPath> PathList;
 	// The effective set of shared directories at runtime, computed at load time as the explicit
-	// list plus the expansion of the recursive one. Persisted as the union to shareddir.dat for
-	// older binaries and external scripts; live consumers treat it as authoritative.
+	// list plus the expansion of the recursive one. Not saved: live consumers treat it as
+	// authoritative, and the next load recomputes it.
 	PathList shareddir_list;
 
-	// User-explicit non-recursive share roots: only the files directly under each entry are
-	// shared, and new subdirs created at runtime are NOT auto-shared
-	// (CSharedDirWatcher::RegisterNewSubdirectory gates on "ancestor is recursive"). A
-	// pre-existing shareddir.dat with no shareddir-recursive.dat migrates entirely into this
-	// list, so nothing is silently made recursive.
+	// User-explicit non-recursive share roots (shareddir-explicit.dat): only the files directly
+	// under each entry are shared, and new subdirs created at runtime are NOT auto-shared
+	// (CSharedDirWatcher::RegisterNewSubdirectory gates on "ancestor is recursive"). A legacy
+	// shareddir.dat migrates entirely into this list, so nothing is silently made recursive.
 	PathList shareddir_explicit_list;
 
-	// User-explicit recursive share roots: each contributes itself and every descendant directory
-	// to shareddir_list at load time, and new subdirs are auto-added by the watcher. Kept in a
-	// file of its own so older binaries see the already-expanded union in shareddir.dat, while
-	// round-tripping that file through an older binary still preserves the recursive intent here.
+	// User-explicit recursive share roots (shareddir-recursive.dat): each contributes itself and
+	// every descendant directory to shareddir_list at load time, and new subdirs are auto-added
+	// by the watcher.
 	PathList shareddir_recursive_list;
 
 	// Local-only allow-list of roots that confine remote folder changes (see the accessors above).

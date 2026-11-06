@@ -22,6 +22,8 @@
 
 #include <common/FileFunctions.h> // ListSubdirectories
 
+#include <set>
+
 CShareExcludeFilter::CShareExcludeFilter()
 : m_regex(nullptr)
 , m_useRegex(false)
@@ -147,6 +149,19 @@ RecursiveCoverage GetRecursiveCoverage(
 		}
 	}
 	return result;
+}
+
+PathList UncoveredDirs(const CShareExcludeFilter &filter, const PathList &roots, const PathList &dirs)
+{
+	PathList out;
+	std::set<wxString> seen;
+	for (const CPath &dir : dirs) {
+		if (dir.IsOk() && GetRecursiveCoverage(filter, roots, dir) == RecursiveCoverage::None &&
+			seen.insert(dir.GetRaw()).second) {
+			out.push_back(dir);
+		}
+	}
+	return out;
 }
 
 void ExpandRecursiveRoot(const CShareExcludeFilter &filter,

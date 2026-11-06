@@ -6855,6 +6855,28 @@ msgstr ""
 
 #: src/Preferences.cpp
 #, c-format
+msgid "Moved the shared folders from %s to shareddir-explicit.dat"
+msgstr ""
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
+msgstr ""
+
+#: src/Preferences.cpp
+#, c-format
+msgid "%u folder listed only there is not shared:%s"
+msgid_plural "%u folders listed only there are not shared:%s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Preferences.cpp
+#, c-format
+msgid "Could not remove %s"
+msgstr ""
+
+#: src/Preferences.cpp
+#, c-format
 msgid "Ignoring a relative path in allowed-remote-dirs.dat (only absolute paths are accepted): %s"
 msgstr ""
 

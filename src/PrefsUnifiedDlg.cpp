@@ -1362,7 +1362,7 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 
 	// Commit the share list with the recursive-expand-on-worker-thread path. After
 	// TransferFromWindow, so other prefs are already in glob_prefs, but before Save() so a
-	// successful commit ends up in shareddir.dat alongside the rest. If the user cancels at
+	// successful commit is saved alongside the rest. If the user cancels at
 	// the confirm or the progress dialog, bail out of OnOk *before* anything is persisted,
 	// so the dialog stays open and the rest of their pending changes are not lost.
 	const SharedDirsCommitResult shareResult = CommitSharedDirsWithProgress();
@@ -3223,8 +3223,7 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 	// Snapshot the current shared-dirs state so we can restore it atomically if the user
 	// cancels at any phase (expansion or reload). Cancel means "leave my saved state alone"
 	// -- we do not persist a half-committed list to disk. All three lists are captured: the
-	// explicit/recursive intent plus the runtime union, since SaveSharedFolders persists
-	// all three together.
+	// explicit/recursive intent SaveSharedFolders persists, plus the runtime union.
 	const CDirectoryTreeCtrl::PathList originalShares = theApp->glob_prefs->shareddir_list;
 	const CDirectoryTreeCtrl::PathList originalExplicit = theApp->glob_prefs->shareddir_explicit_list;
 	const CDirectoryTreeCtrl::PathList originalRecursive = theApp->glob_prefs->shareddir_recursive_list;
@@ -3305,12 +3304,11 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 
 	// ----- Phase 2: persist + reload --------------------------------
 	//
-	// Update all three canonical/derived lists on the Preferences instance and persist them
-	// to disk *before* invoking Reload(): FindSharedFiles starts by calling
-	// ReloadSharedFolders() which re-reads from disk, so the in-memory state alone is not
-	// enough. shareddir-explicit.dat and shareddir-recursive.dat record the user's intent
-	// (non-recursive vs recursive roots); shareddir.dat is regenerated as the runtime union
-	// (= finalShares from the apply walk) so older binaries still see the right paths.
+	// Update all three lists on the Preferences instance and persist the intent to disk
+	// *before* invoking Reload(): FindSharedFiles starts by calling ReloadSharedFolders()
+	// which re-reads from disk, so the in-memory state alone is not enough.
+	// shareddir-explicit.dat and shareddir-recursive.dat record the user's intent
+	// (non-recursive vs recursive roots); the union is finalShares from the apply walk.
 	theApp->glob_prefs->shareddir_explicit_list = explicitShares;
 	theApp->glob_prefs->shareddir_recursive_list = recursiveIntents;
 	theApp->glob_prefs->shareddir_list = finalShares;
@@ -3337,8 +3335,8 @@ PrefsUnifiedDlg::SharedDirsCommitResult PrefsUnifiedDlg::CommitSharedDirsWithPro
 	progress.reset();
 
 	if (!reloadOk || reloadAborted) {
-		// Roll back: both the in-memory state and the on-disk files (shareddir.dat +
-		// shareddir-explicit.dat + shareddir-recursive.dat) have to be reverted. The in-memory
+		// Roll back: both the in-memory state and the on-disk files (shareddir-explicit.dat +
+		// shareddir-recursive.dat) have to be reverted. The in-memory
 		// shared-file map is partially populated against the new list, so rebuild it from the
 		// restored list.
 		//
