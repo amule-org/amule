@@ -1048,11 +1048,11 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 					theStats::AddUpOverheadServer(extSearchPacket->GetPacketSize());
 					theApp->serverconnect->SendUDPPacket(extSearchPacket, server, true);
 					m_askedServers.insert(server->ECID());
-					// One datagram per ask: the claim pops once up front and every record in
-					// that datagram shares the owner (see ServerUDPSocket). Expires so a
-					// silent server's ask stops owning the next search's answer.
-					m_udpReplies.Ask(
-						server->GetIP(), static_cast<uint32_t>(m_currentSearch),
+					// One datagram per ask: the claim pops once up front and every record
+					// in that datagram shares the owner (see ServerUDPSocket). Expires so
+					// a silent server's ask stops owning the next search's answer.
+					m_udpReplies.Ask(server->GetIP(),
+						static_cast<uint32_t>(m_currentSearch),
 						time(nullptr) + UDP_SEARCH_ANSWER_TIMEOUT_SEC);
 					AddDebugLogLineN(logServerUDP,
 						"Sending OP_GLOBSEARCHREQ3 to server " +
