@@ -8,9 +8,8 @@ import struct
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
-from DaemonConfig import write_amule_conf
-from KadSourceTagsECTest import wait_ready
+from AllSearchIntegrationTest import C, retry_port_collisions
+from KadSourceTagsECTest import kad_id, restart_kad, running_kad_daemon
 
 
 def entry(number):
@@ -23,30 +22,14 @@ def entry(number):
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-kad-packet-validation-') as directory:
         root = Path(directory)
-        ec_port, udp_port, peer_port = free_ports(3, udp_indices=(1,), peer_index=2)
-        write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1,
-                         Autoconnect=0)
-        with running_daemon(binary, root, (ec_port, peer_port, udp_port),
-                            console='stdout.log') as (proc, ec):
-            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-            wait_ready(ec, proc)
-            assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-            key = (root / 'key_index.dat').read_bytes()[8:24]
-            assert len(key) == 16
-            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-            wait_ready(ec, proc)
+        with running_kad_daemon(binary, root, console='stdout.log') as (proc, ec, udp_port, _):
+            key = kad_id(ec, proc, root)
 
             def indexed():
                 assert proc.poll() is None, 'malformed packet killed the daemon'
                 return ec.call(C['EC_OP_STAT_REQ'])[1][C['EC_TAG_STATS_KAD_INDEXED_KEYWORDS']][0]
 
             assert indexed() == 0
-
-            def restart():
-                # Reset per-peer flood accounting between malformed cases.
-                assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-                assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-                wait_ready(ec, proc)
 
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
                 peer.bind(('127.0.0.1', 0))
@@ -67,18 +50,19 @@ def run(binary):
                 # Impossible count, then a plausible count with a truncated final ID.
                 publish(65535, entry(1), False)
                 assert indexed() == 0, 'impossible count published its valid prefix'
-                restart()
+                # Reset per-peer flood accounting between malformed cases.
+                restart_kad(ec, proc)
                 publish(2, entry(2) + bytes(15), False)
                 assert indexed() == 0, 'truncated ID published its valid prefix'
-                restart()
+                restart_kad(ec, proc)
                 # The 17-byte minimum fits, but the tag count has no following tag.
                 publish(2, entry(3) + bytes(16) + b'\x01', False)
                 assert indexed() == 0, 'truncated tag list published its valid prefix'
-                restart()
+                restart_kad(ec, proc)
                 # A string tag whose declared length exceeds its available bytes.
                 publish(2, entry(4) + bytes(16) + b'\x01\x02\x01\x00\x01\xff\xffx', False)
                 assert indexed() == 0, 'truncated string published its valid prefix'
-                restart()
+                restart_kad(ec, proc)
                 publish(0, b'', True)
                 assert indexed() == 0
                 publish(2, entry(5) + entry(6), True)

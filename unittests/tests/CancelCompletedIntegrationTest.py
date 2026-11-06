@@ -11,10 +11,9 @@ from pathlib import Path
 import struct
 import sys
 import tempfile
-import time
 
 from AllSearchIntegrationTest import (C, free_ports, retry_port_collisions, running_daemon,
-                                      tag, integer)
+                                      tag, integer, wait_for)
 from DaemonConfig import write_amule_conf
 
 DONE_NAME = 'done.bin'
@@ -58,16 +57,6 @@ def part_met(file_hash, name, size, gaps=()):
             tags.append(b'\x03' + struct.pack('<H', len(key)) + key + struct.pack('<I', value))
     return (b'\xe0' + struct.pack('<I', 0) + file_hash + struct.pack('<H', 0)
             + struct.pack('<I', len(tags)) + b''.join(tags))
-
-
-def wait_for(proc, what, check, timeout=120):
-    deadline = time.monotonic() + timeout
-    while not check():
-        if proc.poll() is not None:
-            raise AssertionError(f'daemon exited while waiting for {what}')
-        if time.monotonic() > deadline:
-            raise AssertionError(f'timed out waiting for {what}')
-        time.sleep(0.2)
 
 
 def run(binary, root):

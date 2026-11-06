@@ -38,8 +38,6 @@ def roots(ec):
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-symlink-share-root-') as scratch:
         root = Path(scratch).resolve()
-        (root / 'Incoming').mkdir()
-        (root / 'Temp').mkdir()
         real = root / 'real'
         real.mkdir()
         link = root / 'link'

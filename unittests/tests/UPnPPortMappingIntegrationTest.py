@@ -14,8 +14,8 @@ import tempfile
 import threading
 import time
 
-from AllSearchIntegrationTest import free_ports, stop_daemon
-from DaemonConfig import daemon_env, write_amule_conf
+from AllSearchIntegrationTest import free_ports, spawn_daemon, stop_daemon
+from DaemonConfig import write_amule_conf
 
 SKIP = 77
 OPT_IN = 'AMULE_TEST_UPNP_NO_REAL_GATEWAY'
@@ -495,8 +495,6 @@ def tcp_mapped_at_login(amuled, gateway):
         listener.listen(1)
         listener.settimeout(30)
         server_port = listener.getsockname()[1]
-        (Path(root) / 'Temp').mkdir()
-        (Path(root) / 'Incoming').mkdir()
         write_amule_conf(root, ec_port, Address=None, Port=tcp_port, UDPPort=udp_port, FilterLanIPs=0,
                          ConnectToED2K=1, Autoconnect=1, UPnPEnabled=1, UPnPTCPPort=0)
         (Path(root) / 'server.met').write_bytes(
@@ -504,9 +502,7 @@ def tcp_mapped_at_login(amuled, gateway):
             + struct.pack('<HI', server_port, 0))
         console_path = Path(root) / 'console.log'
         # Not running_daemon(): its wait for EC would read the table after the login.
-        with console_path.open('w') as console, subprocess.Popen(
-                [amuled, '-c', root, '--disable-fatal'], env=daemon_env(root), stdout=console,
-                stderr=subprocess.STDOUT) as process:
+        with spawn_daemon(amuled, root) as process:
             try:
                 wait_login(listener)
                 mapped = any((str(tcp_port), 'TCP') in table for table in gateway.tables.values())

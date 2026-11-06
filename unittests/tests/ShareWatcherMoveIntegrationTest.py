@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 
+import AllSearchIntegrationTest
 from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
 from DaemonConfig import write_amule_conf
 
@@ -28,6 +29,15 @@ def shared(ec):
             fields = {child: value for child, value, _ in children}
             files[fields[C['EC_TAG_PARTFILE_NAME']].rstrip(b'\0').decode()] = fields[C['EC_TAG_PARTFILE_HASH']]
     return files
+
+
+def wait_shared(proc, ec, names, timeout):
+    """shared() once it lists every file in names."""
+    def listed():
+        files = shared(ec)
+        return files if set(names) <= files.keys() else None
+    return AllSearchIntegrationTest.wait_for(proc, f'{", ".join(names)} to be shared', listed,
+                                             timeout)
 
 
 def log(ec):

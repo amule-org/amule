@@ -7,12 +7,10 @@ import socket
 import struct
 import sys
 import tempfile
-import time
 from pathlib import Path
 
-from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon
-from DaemonConfig import write_amule_conf
-from KadSourceTagsECTest import wait_ready
+from AllSearchIntegrationTest import C, retry_port_collisions, wait_for
+from KadSourceTagsECTest import running_kad_daemon
 
 KADEMLIA2_HELLO_REQ = 0x11
 PRIVATE_CONTACT = int.from_bytes(socket.inet_aton('10.255.0.1'), 'big')
@@ -28,32 +26,35 @@ def write_private_contacts(root, count=1):
     (Path(root) / 'nodes.dat').write_bytes(struct.pack('<III', 0, 2, count) + contacts)
 
 
+def kad2_hello():
+    """A KADEMLIA2_HELLO_REQ body: a random Kad ID, TCP port 1, Kad version 8, no tags."""
+    return os.urandom(16) + struct.pack('<HBB', 1, 8, 0)
+
+
 def kad_stats(ec):
     return ec.call(C['EC_OP_STAT_REQ'])[1]
+
+
+def stat(ec, name):
+    return kad_stats(ec)[C[name]][0]
+
+
+def wait_stat(proc, ec, name, expected, timeout):
+    wait_for(proc, f'{name} to become {expected}', lambda: stat(ec, name) == expected, timeout)
 
 
 def run_daemon(binary, filter_lan):
     with tempfile.TemporaryDirectory(prefix='amule-kad-lan-mode-') as directory:
         root = Path(directory)
-        ec_port, peer_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
         write_private_contacts(root)
-        write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToKad=1, Autoconnect=0,
-                         FilterLanIPs=int(filter_lan))
-        with running_daemon(binary, root, (ec_port, peer_port, udp_port)) as (proc, ec):
-            assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-            wait_ready(ec, proc)
+        with running_kad_daemon(binary, root, FilterLanIPs=int(filter_lan)) as (proc, ec, udp_port, _):
             # The Kad stats need a first packet. A loopback sender never becomes a contact.
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
-                peer.sendto(bytes([0xE4, KADEMLIA2_HELLO_REQ]) + os.urandom(16) + struct.pack('<HBB', 1, 8, 0),
-                            ('127.0.0.1', udp_port))
-            deadline = time.monotonic() + LAN_MODE_TIMEOUT
-            while C['EC_TAG_STATS_KAD_IN_LAN_MODE'] not in kad_stats(ec):
-                assert time.monotonic() < deadline, 'Kad never saw the first packet'
-                time.sleep(0.1)
+                peer.sendto(bytes([0xE4, KADEMLIA2_HELLO_REQ]) + kad2_hello(), ('127.0.0.1', udp_port))
+            wait_for(proc, 'Kad to see the first packet',
+                     lambda: C['EC_TAG_STATS_KAD_IN_LAN_MODE'] in kad_stats(ec), LAN_MODE_TIMEOUT)
             if not filter_lan:
-                while not kad_stats(ec)[C['EC_TAG_STATS_KAD_IN_LAN_MODE']][0]:
-                    assert time.monotonic() < deadline, 'LAN mode never started with the filter off'
-                    time.sleep(0.1)
+                wait_stat(proc, ec, 'EC_TAG_STATS_KAD_IN_LAN_MODE', 1, LAN_MODE_TIMEOUT)
             stats = kad_stats(ec)
             expected = 0 if filter_lan else 1
             assert stats[C['EC_TAG_STATS_KAD_NODES']][0] == expected, f'contacts with filter_lan={filter_lan}'

@@ -11,8 +11,7 @@ import sys
 import tempfile
 
 from AllSearchIntegrationTest import (C, free_ports, retry_port_collisions, running_daemon,
-                                      stored_result, stored_search, tag)
-from CancelCompletedIntegrationTest import wait_for
+                                      stored_result, stored_search, tag, wait_for)
 from CompletedFileDeleteIntegrationTest import EC
 from DaemonConfig import write_amule_conf
 
@@ -29,8 +28,6 @@ def download(ec, file_hash):
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-search-result-download-') as scratch:
         root = Path(scratch).resolve()
-        (root / 'Incoming').mkdir()
-        (root / 'Temp').mkdir()
         (root / 'StoredSearches.met').write_bytes(stored_search([stored_result('stored.bin')]))
         ec_port, peer_port = free_ports(2, peer_index=1)
         write_amule_conf(root, ec_port, Port=peer_port, UDPEnable=0)
