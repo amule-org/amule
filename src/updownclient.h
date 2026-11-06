@@ -364,14 +364,15 @@ private:
 	EContactRoute ContactRoute() const;
 	SContactFacts ContactFactsFor(const CNetworkAddress &address) const;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	//! Sends OP_NAT_CALLBACKREQUEST for this LowID source when the Lugdunum preconditions hold.
-	//! Called from TryToContact's LowID->LowID decline, so at most once per source: a
-	//! DS_LOWTOLOWIP source is not asked again.
+	//! Sends OP_NAT_CALLBACKREQUEST to this LowID peer when the Lugdunum preconditions hold.
+	//! Returns whether the request went out; a request held for the server's UDP key is not a
+	//! send. Called from TryToContact's LowID->LowID decline (a DS_LOWTOLOWIP source is not
+	//! asked again) and from the upload callback.
 	bool TrySendLugdunumNatCallbackRequest();
-	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) for this LowID source when its
+	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) to this LowID peer when its
 	//! preconditions hold. Mutually exclusive with the Lugdunum callback per server.
-	//! Called from TryToContact's LowID->LowID decline. Returns whether the request went out;
-	//! a busy server slot is not a send.
+	//! Called from TryToContact's LowID->LowID decline and from the upload callback. Returns
+	//! whether the request went out; a busy server slot is not a send.
 	bool TrySendLowIdHolePunchRequest();
 	bool m_lowIdHolePunchRequested = false;
 	//! The server of this LowID source when it is not ours and would wake the source for us
