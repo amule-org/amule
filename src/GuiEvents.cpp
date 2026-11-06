@@ -23,8 +23,8 @@
 //
 
 #include "MuleGUIEvent.h"
-#include "GuiConfirm.h" // Needed for GuiConfirmStyle (confirm default Yes/No)
 #include "amule.h"
+#include "GuiConfirm.h" // Needed for GuiConfirmStyle (confirm default Yes/No)
 #ifndef CLIENT_GUI
 #include "ClientList.h"   // Needed for FindClientByECID (Browse_Started)
 #include "updownclient.h" // Needed for IsBrowseEcInitiated (Browse_Started)

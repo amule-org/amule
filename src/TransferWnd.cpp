@@ -44,10 +44,10 @@
 #include "PartFile.h"         // Needed for PR_LOW
 #include "DownloadQueue.h"    // Needed for CDownloadQueue
 #include "CatDialog.h"        // Needed for CCatDialog
-#include "GuiConfirm.h"       // Needed for GuiConfirmStyle
 #include "DownloadListCtrl.h" // Needed for CDownloadListCtrl
 #include "SourceListCtrl.h"   // Needed for CSourceListCtrl
 #include "amule.h"            // Needed for theApp
+#include "GuiConfirm.h"       // Needed for GuiConfirmStyle
 #include "muuli_wdr.h"        // Needed for ID_CATEGORIES
 #include "OtherFunctions.h"   // Needed for CastItoXBytes
 #include "SearchDlg.h"        // Needed for CSearchDlg->UpdateCatChoice()

@@ -25,6 +25,8 @@
 #ifndef GUI_CONFIRM_H
 #define GUI_CONFIRM_H
 
+// Must be included after "amule.h" (which sets up config/wx): including
+// <wx/msgdlg.h> first breaks daemon builds with incomplete wx types.
 #include <wx/msgdlg.h> // Needed for wxYES_NO / wxNO_DEFAULT
 
 #include "Preferences.h" // Needed for thePrefs::ConfirmDefaultYes

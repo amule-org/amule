@@ -34,10 +34,10 @@
 #include "muuli_wdr.h"
 #include "OScopeCtrl.h"
 #include "OtherFunctions.h"
-#include "GuiConfirm.h" // Needed for GuiConfirmStyle (confirm default Yes/No)
 #include "HTTPDownload.h"
 #include "Logger.h"
 #include "amule.h"
+#include "GuiConfirm.h" // Needed for GuiConfirmStyle (confirm default Yes/No)
 #include "Preferences.h"
 #include "StatisticsDlg.h"
 #include "ColorFrameCtrl.h"

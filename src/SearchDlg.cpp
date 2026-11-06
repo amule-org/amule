@@ -47,12 +47,11 @@
 #include "SearchListCtrl.h" // Needed for CSearchListCtrl
 #include "muuli_wdr.h"      // Needed for IDC_STARTS
 #include "amuleDlg.h"
-#include "GuiConfirm.h" // Needed for GuiConfirmStyle
-#include "amuleDlg.h"   // Needed for CamuleDlg
 #include "MuleNotebook.h"
 #include "GetTickCount.h"
 #include "Preferences.h"
 #include "amule.h"        // Needed for theApp
+#include "GuiConfirm.h" // Needed for GuiConfirmStyle
 #include "ScopedPtr.h"    // Needed for CScopedFlag
 #include "SearchList.h"   // Needed for CSearchList
 #include "updownclient.h" // Needed for EBrowseStatus (browse tab lifecycle)

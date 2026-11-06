@@ -36,9 +36,8 @@
 #include "AddFriend.h"          // Needed for CAddFriend
 #include "ChatWnd.h"            // Needed for CChatWnd
 #include "Friend.h"             // Needed for CFriend
-#include "SearchDlg.h"
-#include "GuiConfirm.h" // Needed for GuiConfirmStyle
-#include "SearchDlg.h"  // Needed for CSearchDlg (View Files browse tab)
+#include "SearchDlg.h"          // Needed for CSearchDlg (View Files browse tab)
+#include "GuiConfirm.h"         // Needed for GuiConfirmStyle
 #include "muuli_wdr.h"
 #include "SafeFile.h"
 #include "FriendList.h" // Needed for the friends list
