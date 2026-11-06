@@ -94,6 +94,14 @@ public:
 	bool IsReloadPending() const { return m_reloadLatch.IsPending(); }
 	void SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd = false);
 	void RemoveFile(CKnownFile *toremove);
+	// Re-key m_pathIndex for an already-shared file whose on-disk path or name changed. A
+	// partfile shared while downloading is keyed under Temp (or "" before SetFilePath ran)
+	// and moves to Incoming on completion, but AddFile writes m_pathIndex only on a fresh
+	// insert, so the re-add leaves the index stale. A shared partfile renamed by an ED2K
+	// metadata update (CPartFile::SetFileName) moves the same way. Drops any keys pointing
+	// at `file` and installs its current one, so the watcher can resolve a later DELETE and
+	// RemoveFile finds the entry it must erase. Takes list_mut.
+	void RefreshPathIndex(CKnownFile *file);
 	// Core event thread only. Revalidate the confirmed identity and path before unlinking.
 	// On failure leave lists/uploads intact. removeOnly is the desktop's explicit
 	// fallback after a failed unlink; EC never requests it.
@@ -242,13 +250,6 @@ private:
 
 	bool AddFile(CKnownFile *pFile);
 	CKnownFile *GetNextKadFile(CKadPublishCursor<CMD4Hash> &cursor);
-
-	// Re-key m_pathIndex for an already-shared file whose on-disk path changed. A partfile
-	// shared while downloading is keyed under Temp (or "" before SetFilePath ran) and moves to
-	// Incoming on completion, but AddFile writes m_pathIndex only on a fresh insert, so the re-
-	// add leaves the index stale. Drops any keys pointing at `file` and installs its current
-	// one, so the watcher can resolve a later DELETE. Takes list_mut.
-	void RefreshPathIndex(CKnownFile *file);
 
 	// Invoked by AddFile with list_mut held. Kicks off a CMediaProbeTask when the preference is
 	// enabled, the file looks like media by ED2K file type, and it has not been probed yet;

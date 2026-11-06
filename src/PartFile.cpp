@@ -4966,7 +4966,8 @@ void CPartFile::SetFileName(const CPath &fileName)
 		theApp->sharedfiles->RemoveKeywords(this);
 	}
 
-	if (GetFileName() != fileName) {
+	const bool renamed = GetFileName() != fileName;
+	if (renamed) {
 		MarkMetDirty();
 	}
 	CKnownFile::SetFileName(fileName);
@@ -4974,6 +4975,13 @@ void CPartFile::SetFileName(const CPath &fileName)
 	if (is_shared) {
 		// And of course, we must advertise the new name if the file is shared.
 		theApp->sharedfiles->AddKeywords(this);
+		if (renamed) {
+			// The path index keys on the name: without a re-key the old key keeps
+			// pointing at this file, so a later RemoveFile misses its erase (the
+			// blue "no entry" diagnostic) and leaks the stale entry, which then
+			// short-circuits the watcher into treating the old name as still shared.
+			theApp->sharedfiles->RefreshPathIndex(this);
+		}
 	}
 
 	UpdateDisplayedInfo(true);
