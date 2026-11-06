@@ -813,6 +813,11 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		return;
 	}
 
+	// Snapshot the selection now: results keep arriving (and the list re-sorting) while the
+	// menu is open, so reading it in the handler would act on whatever row the selection
+	// points at then instead of what the user clicked.
+	m_contextFiles = GetSelectedFiles();
+
 	if (GetSelectedItemCount()) {
 		// No title: wxMenu's title parameter renders inconsistently or not at all
 		// as a context-popup header across platforms (issue #767).
@@ -877,7 +882,7 @@ void CSearchListCtrl::OnItemActivated(wxDataViewEvent &event)
 void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 {
 	wxString URIs;
-	for (CSearchFile *file : GetSelectedFiles()) {
+	for (CSearchFile *file : ContextFiles()) {
 		URIs += theApp->CreateED2kLink(file) + "\n";
 	}
 	if (!URIs.IsEmpty()) {
@@ -949,6 +954,42 @@ std::vector<wxDataViewItem> CSearchListCtrl::ContextFolders()
 	return folders;
 }
 
+namespace
+{
+//! True when @a file is still in this tab's results, top level or grouped child.
+bool ContainsSearchFile(const CSearchResultList &list, const CSearchFile *file)
+{
+	for (CSearchFile *item : list) {
+		if (item == file) {
+			return true;
+		}
+		if (!item->GetChildren().empty() && ContainsSearchFile(item->GetChildren(), file)) {
+			return true;
+		}
+	}
+	return false;
+}
+} // namespace
+
+std::vector<CSearchFile *> CSearchListCtrl::ContextFiles()
+{
+	// The menu was built from this snapshot; only pointers still in the tab's results are
+	// kept, so a file vanishing mid-menu cannot make a handler touch freed memory.
+	if (!m_contextFiles.empty() && m_nResultsID) {
+		const CSearchResultList &results = theApp->searchlist->GetSearchResults(m_nResultsID);
+		std::vector<CSearchFile *> live;
+		for (CSearchFile *file : m_contextFiles) {
+			if (ContainsSearchFile(results, file)) {
+				live.push_back(file);
+			}
+		}
+		if (!live.empty()) {
+			return live;
+		}
+	}
+	return GetSelectedFiles();
+}
+
 void CSearchListCtrl::OnExpandAll(wxCommandEvent &WXUNUSED(event))
 {
 	// Every selected folder, not just the clicked one (issue #910 follow-up). Nesting needs no
@@ -967,7 +1008,10 @@ void CSearchListCtrl::OnCollapseAll(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
 {
-	CSearchFile *file = GetFocusedFile();
+	// Single-only (the menu entry is disabled otherwise): act on the snapshotted file, not
+	// whatever the live selection points at after a resort.
+	const std::vector<CSearchFile *> files = ContextFiles();
+	CSearchFile *file = (files.size() == 1) ? files.front() : nullptr;
 	if (file) {
 		// Same dialog the download list uses; its "Get from Kad" button drives
 		// the on-demand community ratings/comments lookup for this result.
@@ -978,7 +1022,8 @@ void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
 {
-	CSearchFile *file = GetFocusedFile();
+	const std::vector<CSearchFile *> files = ContextFiles();
+	CSearchFile *file = files.empty() ? nullptr : files.front();
 	if (!file) {
 		return;
 	}
@@ -989,7 +1034,7 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 {
 	// Every selected result, not just the focused one: the keyword this
 	// builds is a "related" query over all of their hashes.
-	const std::vector<CSearchFile *> files = GetSelectedFiles();
+	const std::vector<CSearchFile *> files = ContextFiles();
 	if (files.empty()) {
 		return;
 	}
@@ -1047,13 +1092,13 @@ void CSearchListCtrl::AppendDisplayOrder(const wxDataViewItem &parent, wxDataVie
 void CSearchListCtrl::OnPopupDownload(wxCommandEvent &event)
 {
 	if (event.GetId() == MP_RESUME) {
-		DownloadSelected();
+		DownloadSelected(-1, true);
 	} else {
-		DownloadSelected(event.GetId() - MP_ASSIGNCAT);
+		DownloadSelected(event.GetId() - MP_ASSIGNCAT, true);
 	}
 }
 
-void CSearchListCtrl::DownloadSelected(int category)
+void CSearchListCtrl::DownloadSelected(int category, bool fromContextMenu)
 {
 	FindWindowById(IDC_SDOWNLOAD)->Enable(false);
 
@@ -1074,7 +1119,7 @@ void CSearchListCtrl::DownloadSelected(int category)
 	downloadlist->BeginBatchUpdate();
 #endif
 
-	for (CSearchFile *file : GetSelectedFiles()) {
+	for (CSearchFile *file : (fromContextMenu ? ContextFiles() : GetSelectedFiles())) {
 		// Exempt from "Hide Known Files" before queueing, so the row survives the status
 		// change this is about to cause. Results are grouped only when their hashes match,
 		// so the one insert covers a group's variants too.

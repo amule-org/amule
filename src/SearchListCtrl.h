@@ -159,7 +159,10 @@ public:
 	int GetSelectedItemCount() const;
 
 	/// Downloads every selected item into @a category, or into the drop-down's selection if -1.
-	void DownloadSelected(int category = -1);
+	/// With @a fromContextMenu the snapshotted files the menu was opened on (see
+	/// m_contextFiles); otherwise the live selection. The menu snapshot must not leak into
+	/// the toolbar button or double-click paths, which act on what is selected now.
+	void DownloadSelected(int category = -1, bool fromContextMenu = false);
 
 	static wxString DetermineStatusPrintable(CSearchFile *toshow);
 
@@ -248,6 +251,12 @@ protected:
 	//! The folder the context menu was opened on, if any. A right-click does not select the row
 	//! on every platform, so the handlers cannot ask for the selection.
 	wxDataViewItem m_contextFolder;
+	//! The files the context menu was opened on. Same reason as m_contextFolder, plus live
+	//! results keep arriving while the menu is open: a resort between popup and click would
+	//! otherwise make the handlers act on whatever row the selection now points at instead of
+	//! what the user clicked. Snapshotted at popup time (file objects outlive the tab's
+	//! results, so the pointers stay valid) and re-validated on use.
+	std::vector<CSearchFile *> m_contextFiles;
 	//! Peer display name and lifecycle (EBrowseStatus) for a browse tab.
 	wxString m_browseName;
 	uint32 m_browseStatus;
@@ -297,6 +306,10 @@ protected:
 	//! Folders the expand/collapse entries act on: the whole selection when the
 	//! clicked row belongs to it, otherwise just that row.
 	std::vector<wxDataViewItem> ContextFolders();
+	//! Validated snapshot of the files the file entries act on: only pointers still present
+	//! in this tab's results (top level or grouped children); falls back to the live
+	//! selection if the snapshot is empty or went stale.
+	std::vector<CSearchFile *> ContextFiles();
 	void OnExpandAll(wxCommandEvent &event);
 	void OnCollapseAll(wxCommandEvent &event);
 
