@@ -2073,6 +2073,13 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 	facts.contradicted = s_advertisedIPv6Choice &&
 			     ObservedPublicIPv6().IsPrefixVetoed(*s_advertisedIPv6Choice, ::GetTickCount64());
 	facts.mode = thePrefs::GetAdvertiseIPv6Mode();
+	// The two kinds of evidence: the server's dial-back verdict, and a hello that reached us from
+	// another /48. A failed probe withdraws the address even when the hello proved it, because the
+	// server tests what peers actually reach.
+	CServer *const server = theApp->serverconnect ? theApp->serverconnect->GetCurrentServer() : nullptr;
+	facts.serverVerified = server != nullptr && server->GetIPv6Verdict() == EServerIPv6Verdict::Verified;
+	facts.serverProbeFailed = server != nullptr && server->GetIPv6Verdict() == EServerIPv6Verdict::Failed;
+	facts.provedByInboundHello = IPv6ReachabilityProof().IsProven(::GetTickCount64());
 	facts.ipv6Built = true;
 	facts.familyPermitted = AddressFamilyPolicy::PermitsIPv6();
 	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
