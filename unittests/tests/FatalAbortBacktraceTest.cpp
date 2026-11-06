@@ -73,6 +73,7 @@
 #include <ostream>
 #include <streambuf>
 #include <utility>
+#include <vector>
 
 extern char **environ; // for posix_spawnp()
 #endif
@@ -600,25 +601,33 @@ bool HasRawFramesOfTheCopy(const std::string &stderrText)
 	return !ThisBinaryIsPie() || CountOccurrences(stderrText, (frame + "(+0x").c_str()) >= 2;
 }
 
+std::vector<std::string> SplitLines(const std::string &text)
+{
+	std::vector<std::string> lines;
+	std::string::size_type start = 0;
+	while (start < text.size()) {
+		std::string::size_type end = text.find('\n', start);
+		if (end == std::string::npos) {
+			end = text.size();
+		}
+		lines.push_back(text.substr(start, end - start));
+		start = end + 1;
+	}
+	return lines;
+}
+
 // Both calls printed a library frame as "ns::function(args)+0x... in lib.so...", and no line holds
 // a mangled name. Which function depends on the libstdc++ version.
 bool NamesLibraryFramesDemangled(const std::string &stderrText)
 {
 	int named = 0;
-	std::string::size_type start = 0;
-	while (start < stderrText.size()) {
-		std::string::size_type end = stderrText.find('\n', start);
-		if (end == std::string::npos) {
-			end = stderrText.size();
-		}
-		const std::string line = stderrText.substr(start, end - start);
+	for (const std::string &line : SplitLines(stderrText)) {
 		const std::string::size_type in = line.find("+0x");
 		if (line.find("::") < in && in != std::string::npos &&
 			line.find(" in ", in) != std::string::npos &&
 			line.find(".so", in) != std::string::npos) {
 			++named;
 		}
-		start = end + 1;
 	}
 	return named >= 2 && !Contains(stderrText, "(_Z") && !Contains(stderrText, "] _Z");
 }
@@ -627,17 +636,10 @@ bool NamesLibraryFramesDemangled(const std::string &stderrText)
 int CountLinesLongerThan(const std::string &stderrText, const char *what, size_t length)
 {
 	int found = 0;
-	std::string::size_type start = 0;
-	while (start < stderrText.size()) {
-		std::string::size_type end = stderrText.find('\n', start);
-		if (end == std::string::npos) {
-			end = stderrText.size();
-		}
-		if (end - start > length &&
-			stderrText.substr(start, end - start).find(what) != std::string::npos) {
+	for (const std::string &line : SplitLines(stderrText)) {
+		if (line.size() > length && line.find(what) != std::string::npos) {
 			++found;
 		}
-		start = end + 1;
 	}
 	return found;
 }
@@ -646,20 +648,22 @@ int CountLinesLongerThan(const std::string &stderrText, const char *what, size_t
 // frame to file:line, so it may not appear at all.
 bool ThePathOnlyFollowsIn(const std::string &stderrText, const char *pathPart)
 {
-	std::string::size_type start = 0;
-	while (start < stderrText.size()) {
-		std::string::size_type end = stderrText.find('\n', start);
-		if (end == std::string::npos) {
-			end = stderrText.size();
-		}
-		const std::string line = stderrText.substr(start, end - start);
+	for (const std::string &line : SplitLines(stderrText)) {
 		const std::string::size_type at = line.find(pathPart);
 		if (at != std::string::npos && line.rfind(" in ", at) == std::string::npos) {
 			return false;
 		}
-		start = end + 1;
 	}
 	return true;
+}
+
+// The copy reports from a normal run and exits 0, as ChildExecCopy has it.
+void AssertCleanChildExit(const ChildResult &r)
+{
+	ASSERT_FALSE(r.timed_out);
+	ASSERT_FALSE(r.exited_on_signal);
+	ASSERT_EQUALS(0, r.exit_code);
+	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
 }
 #endif // MULE_HAVE_LINUX_BACKTRACE
 
@@ -954,11 +958,7 @@ TEST(FatalAbortBacktrace, AnUnreadableBinaryStillGivesRawFrames)
 	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0111));
 
 	const ChildResult r = RunInChild(ChildExecCopy);
-
-	ASSERT_FALSE(r.timed_out);
-	ASSERT_FALSE(r.exited_on_signal);
-	ASSERT_EQUALS(0, r.exit_code);
-	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	AssertCleanChildExit(r);
 #ifdef HAVE_BFD
 	ASSERT_EQUALS(1, CountOccurrences(r.stderr_text, "Error while opening file for backtrace symbols"));
 #endif
@@ -979,11 +979,7 @@ TEST(FatalAbortBacktrace, AStrippedBinaryStillGivesRawFrames)
 	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
 
 	const ChildResult r = RunInChild(ChildExecCopy);
-
-	ASSERT_FALSE(r.timed_out);
-	ASSERT_FALSE(r.exited_on_signal);
-	ASSERT_EQUALS(0, r.exit_code);
-	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	AssertCleanChildExit(r);
 #ifdef HAVE_BFD
 	ASSERT_EQUALS(1, CountOccurrences(r.stderr_text, "No symbols in the executable"));
 #endif
@@ -1001,11 +997,7 @@ TEST(FatalAbortBacktrace, AnUnresolvedFrameKeepsItsOffset)
 	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
 
 	const ChildResult r = RunInChild(ChildExecCopy);
-
-	ASSERT_FALSE(r.timed_out);
-	ASSERT_FALSE(r.exited_on_signal);
-	ASSERT_EQUALS(0, r.exit_code);
-	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	AssertCleanChildExit(r);
 	// The piece a parser splitting at the path's '(' puts in the function's place.
 	ASSERT_TRUE(ThePathOnlyFollowsIn(r.stderr_text, "name)."));
 	// On every startup stack.
@@ -1022,11 +1014,7 @@ TEST(FatalAbortBacktrace, ALongFunctionNameKeepsTheFramesResolved)
 	ASSERT_EQUALS(0, chmod(s_childCopy.c_str(), 0755));
 
 	const ChildResult r = RunInChild(ChildExecCopy);
-
-	ASSERT_FALSE(r.timed_out);
-	ASSERT_FALSE(r.exited_on_signal);
-	ASSERT_EQUALS(0, r.exit_code);
-	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	AssertCleanChildExit(r);
 	// addr2line may leave the long name mangled; only its length matters here.
 	ASSERT_TRUE(CountLinesLongerThan(r.stderr_text, "ReportFromALongName", 1023) >= 2);
 	ASSERT_TRUE(
@@ -1044,11 +1032,7 @@ TEST(FatalAbortBacktrace, AMissingAddr2lineStillGivesRawFrames)
 	s_childPath = "/nonexistent";
 	const ChildResult r = RunInChild(ChildExecCopy);
 	s_childPath.clear();
-
-	ASSERT_FALSE(r.timed_out);
-	ASSERT_FALSE(r.exited_on_signal);
-	ASSERT_EQUALS(0, r.exit_code);
-	ASSERT_FALSE(Contains(r.stderr_text, "ASSERT FIRED"));
+	AssertCleanChildExit(r);
 	ASSERT_TRUE(HasRawFramesOfTheCopy(r.stderr_text));
 	ASSERT_TRUE(NamesLibraryFramesDemangled(r.stderr_text));
 }
