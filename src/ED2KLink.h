@@ -26,6 +26,8 @@
 #ifndef ED2KLINK_H
 #define ED2KLINK_H
 
+#include <memory>
+
 #include "MD4Hash.h"    // Needed for CMD4Hash
 #include "SHAHashSet.h" // Needed for CAICHHash
 
@@ -81,7 +83,7 @@ public:
 	bool HasValidAICHHash() const;
 	const CAICHHash &GetAICHHash() const;
 
-	CMemFile *m_hashset;
+	std::unique_ptr<CMemFile> m_hashset;
 
 	/**
 	 * Stores sources found in file links.

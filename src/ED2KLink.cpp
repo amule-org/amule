@@ -25,8 +25,6 @@
 
 #include <wx/wx.h>
 
-#include <memory>
-
 #include "ED2KLink.h" // Interface declarations.
 
 #include <wx/string.h>
@@ -165,13 +163,9 @@ uint16 CED2KServerLink::GetPort() const
 // CED2KFileLink implementation
 CED2KFileLink::CED2KFileLink(const wxString &link)
 : CED2KLink(kFile)
-, m_hashset(nullptr)
 , m_size(0)
 , m_bAICHHashValid(false)
 {
-	// Keep ownership local until construction succeeds, including all later fields.
-	std::unique_ptr<CMemFile> hashset;
-
 	// Start tokenizing after the "ed2k:://|file|" part of the link
 	wxStringTokenizer tokens(link, "|", wxTOKEN_RET_EMPTY_ALL);
 
@@ -249,9 +243,9 @@ CED2KFileLink::CED2KFileLink(const wxString &link)
 		} else if (field.StartsWith("p=")) {
 			wxStringTokenizer hashTokens(field.AfterFirst('='), ":", wxTOKEN_RET_EMPTY_ALL);
 
-			hashset = std::make_unique<CMemFile>();
-			hashset->WriteHash(m_hash);
-			hashset->WriteUInt16(0);
+			m_hashset = std::make_unique<CMemFile>();
+			m_hashset->WriteHash(m_hash);
+			m_hashset->WriteUInt16(0);
 
 			while (hashTokens.HasMoreTokens()) {
 				CMD4Hash hash;
@@ -259,17 +253,17 @@ CED2KFileLink::CED2KFileLink(const wxString &link)
 					throw wxString("Invalid hash in part-hashes list");
 				}
 
-				hashset->WriteHash(hash);
+				m_hashset->WriteHash(hash);
 			}
 
-			unsigned count = hashset->GetLength() / 16u - 1u;
+			unsigned count = m_hashset->GetLength() / 16u - 1u;
 
 			if (count) {
-				hashset->Seek(16, wxFromStart);
-				hashset->WriteUInt16(count);
-				hashset->Seek(0, wxFromStart);
+				m_hashset->Seek(16, wxFromStart);
+				m_hashset->WriteUInt16(count);
+				m_hashset->Seek(0, wxFromStart);
 			} else {
-				hashset.reset();
+				m_hashset.reset();
 			}
 		} else if (field.StartsWith("h=")) {
 			wxString hash = field.AfterFirst('=').MakeUpper();
@@ -283,14 +277,9 @@ CED2KFileLink::CED2KFileLink(const wxString &link)
 			m_bAICHHashValid = true;
 		}
 	}
-	m_hashset = hashset.release();
 }
 
-CED2KFileLink::~CED2KFileLink()
-{
-	delete m_hashset;
-	m_hashset = NULL;
-}
+CED2KFileLink::~CED2KFileLink() = default;
 
 wxString CED2KFileLink::GetLink() const
 {
