@@ -554,11 +554,12 @@ void parseRealMedia(Reader &r, Result &res)
 	for (unsigned guard = 0; r.has(p, 10) && guard < 4096; ++guard) {
 		char id[4];
 		r.read(p, id, 4);
+		// FFmpeg's DATA size can run past the end of the file; it is never read.
+		if (!std::memcmp(id, "DATA", 4) || !std::memcmp(id, "INDX", 4))
+			break;
 		const uint32_t size = r.be32(p + 4);
 		if (size < 10 || !r.has(p, size))
 			throw Malformed{};
-		if (!std::memcmp(id, "DATA", 4) || !std::memcmp(id, "INDX", 4))
-			break;
 		const int64_t d = p + 10, end = p + size; // Data after id, size and object version.
 		// Length-prefixed strings; each must stay inside its chunk.
 		auto prefixed = [&](int64_t &q, unsigned prefix) {

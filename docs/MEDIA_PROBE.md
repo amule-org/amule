@@ -138,3 +138,13 @@ chapter, attachment or technical-field output. Codec names are translated
 explicitly; an unknown codec identifier stays empty instead of publishing a
 misleading name. Formats outside the parser table are reported as unreadable
 and get failure marker 2.
+
+These fields are a best-effort aid for spotting fakes, not a core feature, so
+the scope is deliberately closed:
+
+- A format outside the parser table, or an unusual layout of a supported one,
+  leaves the fields empty. That is expected behaviour, not a bug.
+- A new format is added only with evidence that it is shared on ed2k, not
+  because another media library reads it.
+- A wrong value for a supported format is a bug, and so is any crash, hang or
+  out-of-bounds read on any input.

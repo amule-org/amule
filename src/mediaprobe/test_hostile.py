@@ -118,12 +118,39 @@ class RealWorldQuirkTests(unittest.TestCase):
         # The Segment claims 1 TiB: the file was cut short.
         segment = b'\x18\x53\x80\x67\x01' + (1 << 40).to_bytes(7, 'big') + info + tracks
         self.assertEqual(self.probe(ebml + segment), (2, 'h264'))
+        # Cut inside the first Cluster: the headers before it are complete.
+        cluster = b'\x1f\x43\xb6\x75\x01' + (1 << 30).to_bytes(7, 'big') + b'\xe7\x81\x00'
+        self.assertEqual(self.probe(ebml + segment + cluster), (2, 'h264'))
         # VfW-wrapped video: CodecPrivate is a binary BITMAPINFOHEADER full of NULs.
         bih = struct.pack('<IiiHH', 40, 64, 48, 1, 24) + b'XVID' + b'\0' * 20
         entry = element(b'\xae', element(b'\x83', b'\x01') + element(b'\x86', b'V_MS/VFW/FOURCC') +
                         element(b'\x63\xa2', bih))
         segment = b'\x18\x53\x80\x67\x01' + (1 << 40).to_bytes(7, 'big') + info + element(b'\x16\x54\xae\x6b', entry)
         self.assertEqual(self.probe(ebml + segment), (2, 'mpeg4'))
+
+    def test_fragmented_mp4_without_total_duration(self):
+        def box(kind, *payload):
+            body = b''.join(payload)
+            return struct.pack('>I', 8 + len(body)) + kind + body
+        def full(kind, version_flags, *payload):
+            return box(kind, struct.pack('>I', version_flags), *payload)
+        stsd = full(b'stsd', 0, struct.pack('>I', 1), box(b'avc1', b'\0' * 78))
+        mdia = box(b'mdia', full(b'mdhd', 0, struct.pack('>5I', 0, 0, 1000, 0, 0)),
+                   full(b'hdlr', 0, b'\0' * 4 + b'vide' + b'\0' * 13),
+                   box(b'minf', box(b'stbl', stsd)))
+        trak = box(b'trak', full(b'tkhd', 1, struct.pack('>5I', 0, 0, 1, 0, 0) + b'\0' * 64), mdia)
+        mvex = box(b'mvex', full(b'trex', 0, struct.pack('>5I', 1, 1, 0, 0, 0)))
+        # Version 1 mvhd with an all-ones duration, which means unknown (Smooth Streaming).
+        mvhd = full(b'mvhd', 1 << 24, struct.pack('>QQIQ', 0, 0, 1000, (1 << 64) - 1) + b'\0' * 80)
+        moov = box(b'moov', mvhd, trak, mvex)
+        # Five samples of the default 1,000 units, then two at an explicit decode time.
+        first = box(b'moof', box(b'traf', full(b'tfhd', 8, struct.pack('>II', 1, 1000)),
+                                 full(b'trun', 0, struct.pack('>I', 5))))
+        second = box(b'moof', box(b'traf', full(b'tfhd', 0, struct.pack('>I', 1)),
+                                  full(b'tfdt', 0, struct.pack('>I', 5000)),
+                                  full(b'trun', 0x100, struct.pack('>3I', 2, 1000, 1000))))
+        data = box(b'ftyp', b'isom\0\0\0\0') + moov + first + box(b'mdat') + second + box(b'mdat')
+        self.assertEqual(self.probe(data), (7, 'h264'))
 
     def test_avi_ignores_dmlh_counting_every_chunk(self):
         def chunk(cid, payload):
@@ -166,6 +193,9 @@ class RealWorldQuirkTests(unittest.TestCase):
         self.assertEqual(self.probe(data, ('length_seconds', 'codec', 'title', 'artist')),
                          (5, 'rv40', 'Real Title', 'Real Author'))
         self.assertEqual(self.probe(header + prop + audio + chunk(b'DATA', b'')), (5, 'cook'))
+        # FFmpeg writes a DATA size that can run past the end of the file.
+        data = b'DATA' + struct.pack('>IH', 1 << 30, 0)
+        self.assertEqual(self.probe(header + prop + audio + data), (5, 'cook'))
 
 
 

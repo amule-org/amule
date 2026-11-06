@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-// ISO base media file format: MP4, M4A, M4V, MOV and 3GP. Reads moov only; mdat and
-// fragments are skipped by size.
+// ISO base media file format: MP4, M4A, M4V, MOV and 3GP. Reads moov, and the moof boxes of
+// a fragmented file that has no total duration. mdat is skipped by size.
 #include "probe.h"
 
 #include <algorithm>
@@ -52,6 +52,8 @@ void timing(Reader &r, const Box &b, uint64_t &duration, uint32_t &scale)
 			throw Malformed{};
 		scale = r.be32(b.data + 20);
 		duration = r.be64(b.data + 24);
+		if (duration == ~0ULL) // Unknown, as in Smooth Streaming files.
+			duration = 0;
 	} else {
 		scale = r.be32(b.data + 12);
 		duration = r.be32(b.data + 16);
@@ -192,6 +194,7 @@ struct Track
 {
 	char handler[4] = {};
 	bool enabled = true;
+	uint32_t id = 0;
 	uint64_t duration = 0;
 	uint32_t scale = 0;
 	std::string codec;
@@ -201,8 +204,12 @@ Track track(Reader &r, const Box &trak)
 {
 	Track t;
 	boxes(r, trak.data, trak.end, [&](const Box &b) {
-		if (is(b, "tkhd") && b.end - b.data >= 4)
+		if (is(b, "tkhd") && b.end - b.data >= 4) {
 			t.enabled = r.be24(b.data + 1) & 1;
+			const int64_t id = r.u8(b.data) == 1 ? 20 : 12;
+			if (b.end - b.data >= id + 4)
+				t.id = r.be32(b.data + id);
+		}
 		if (!is(b, "mdia"))
 			return true;
 		Box stsd{};
@@ -234,6 +241,61 @@ Track track(Reader &r, const Box &trak)
 		return true;
 	});
 	return t;
+}
+
+// Sample durations of one track across the fragments, in its timescale.
+struct Fragmented
+{
+	uint32_t id, defaultDuration;
+	uint64_t sum = 0, end = 0; // Sum of durations; latest decode time plus duration.
+};
+
+void moof(Reader &r, const Box &moof, std::vector<Fragmented> &tracks)
+{
+	boxes(r, moof.data, moof.end, [&](const Box &traf) {
+		if (!is(traf, "traf"))
+			return true;
+		Fragmented *t = nullptr;
+		uint32_t duration = 0;
+		uint64_t base = 0, total = 0;
+		boxes(r, traf.data, traf.end, [&](const Box &b) {
+			if (is(b, "tfhd") && b.end - b.data >= 8) {
+				const uint32_t flags = r.be24(b.data + 1), id = r.be32(b.data + 4);
+				for (auto &f : tracks)
+					if (f.id == id)
+						t = &f;
+				if (!t)
+					return false; // Not declared in moov.
+				duration = t->defaultDuration;
+				const int64_t o = b.data + 8 + (flags & 1 ? 8 : 0) + (flags & 2 ? 4 : 0);
+				if (flags & 8 && o + 4 <= b.end)
+					duration = r.be32(o);
+			} else if (is(b, "tfdt") && b.end - b.data >= 8) {
+				base = r.u8(b.data) == 1 && b.end - b.data >= 12 ? r.be64(b.data + 4)
+										 : r.be32(b.data + 4);
+			} else if (is(b, "trun") && t && b.end - b.data >= 8) {
+				const uint32_t flags = r.be24(b.data + 1), count = r.be32(b.data + 4);
+				if (!(flags & 0x100)) { // Every sample has the default duration.
+					total += uint64_t(count) * duration;
+					return true;
+				}
+				int64_t entry = 0;
+				for (uint32_t bit = 0x100; bit <= 0x800; bit <<= 1)
+					entry += flags & bit ? 4 : 0;
+				const int64_t p = b.data + 8 + (flags & 1 ? 4 : 0) + (flags & 4 ? 4 : 0);
+				if (p > b.end || count > (b.end - p) / entry)
+					throw Malformed{};
+				for (uint32_t i = 0; i < count; ++i)
+					total += r.be32(p + i * entry);
+			}
+			return true;
+		});
+		if (t) {
+			t->sum += total;
+			t->end = std::max(t->end, base + total);
+		}
+		return true;
+	});
 }
 
 std::string *tagField(const char type[4], Result &res)
@@ -329,11 +391,17 @@ void udta(Reader &r, const Box &u, Result &res)
 
 void parseMp4(Reader &r, Result &res)
 {
-	bool moov = false;
+	bool moov = false, mvex = false;
 	uint64_t duration = 0, fragments = 0;
 	uint32_t scale = 0;
 	std::vector<Track> tracks;
+	std::vector<Fragmented> fragmented;
+	// ponytail: the top-level walk stops after 10,000 boxes (about 5,000 fragments).
 	boxes(r, 0, r.size(), [&](const Box &top) {
+		if (is(top, "moof")) {
+			moof(r, top, fragmented);
+			return true;
+		}
 		if (!is(top, "moov"))
 			return true;
 		moov = true;
@@ -348,14 +416,20 @@ void parseMp4(Reader &r, Result &res)
 				meta(r, b, res);
 			else if (is(b, "mvex"))
 				boxes(r, b.data, b.end, [&](const Box &m) {
+					mvex = true;
 					if (is(m, "mehd") && m.end - m.data >= 8)
 						fragments = r.u8(m.data) == 1 ? r.be64(m.data + 4)
 									      : r.be32(m.data + 4);
+					else if (is(m, "trex") && m.end - m.data >= 16 &&
+						 fragmented.size() < 64)
+						fragmented.push_back(
+							{ r.be32(m.data + 4), r.be32(m.data + 12) });
 					return true;
 				});
 			return true;
 		});
-		return false;
+		// A fragmented file without a total duration: add up the fragments.
+		return mvex && !duration && !fragments;
 	});
 	if (!moov)
 		throw Malformed{};
@@ -367,6 +441,12 @@ void parseMp4(Reader &r, Result &res)
 		for (const auto &t : tracks)
 			if (t.scale)
 				res.seconds = std::max(res.seconds, double(t.duration) / t.scale);
+	if (res.seconds <= 0)
+		for (const auto &f : fragmented)
+			for (const auto &t : tracks)
+				if (t.id == f.id && t.scale)
+					res.seconds = std::max(
+						res.seconds, double(std::max(f.sum, f.end)) / t.scale);
 	// First enabled video track, else first enabled audio track. Disabled tracks
 	// (chapter images in audiobooks) count only when nothing else exists.
 	const Track *chosen = nullptr;

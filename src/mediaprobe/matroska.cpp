@@ -268,10 +268,12 @@ void parseMatroska(Reader &r, Result &res)
 				    ? r.size()
 				    : std::min<int64_t>(r.size(), start + static_cast<int64_t>(segment.size));
 	State s;
-	// Level 1 elements in order, up to the first Cluster or unknown-size element.
+	// Level 1 elements in order, up to the first Cluster or unknown-size element. A file
+	// cut inside an element keeps what came before it.
 	for (int64_t p = start; p < end;) {
-		const Element e = header(r, p, end);
-		if (e.id == kCluster || e.size == kUnknown)
+		const Element e = header(r, p, INT64_MAX);
+		if (e.id == kCluster || e.size == kUnknown || e.data > end ||
+			e.size > static_cast<uint64_t>(end - e.data))
 			break;
 		top(r, e, s, res);
 		p = e.data + static_cast<int64_t>(e.size);
@@ -282,8 +284,9 @@ void parseMatroska(Reader &r, Result &res)
 				    (seek.first == kTracks && !s.tracks) || (seek.first == kTags && !s.tags);
 		if (!wanted || seek.second >= static_cast<uint64_t>(end - start))
 			continue;
-		const Element e = header(r, start + static_cast<int64_t>(seek.second), end);
-		if (e.id == seek.first && e.size != kUnknown)
+		const Element e = header(r, start + static_cast<int64_t>(seek.second), INT64_MAX);
+		if (e.id == seek.first && e.size != kUnknown && e.data <= end &&
+			e.size <= static_cast<uint64_t>(end - e.data))
 			top(r, e, s, res);
 	}
 	setTag(res.title, s.segmentTitle);
