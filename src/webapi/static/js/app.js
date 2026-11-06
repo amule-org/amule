@@ -46,6 +46,11 @@ function currentRoute() {
 // password, and signing out of amuleapi alone would sign them straight back in.
 let proxyUser = null;
 let proxyLogoutUrl = null;
+// When the last dead session was replaced without a form. A second death soon
+// after means the proxy signs the user in but other requests still fail, and
+// retrying again would loop and spend the rate limit of everyone behind it.
+let lastSilentSignInAt = 0;
+const SILENT_SIGN_IN_INTERVAL_MS = 60 * 1000;
 
 function rememberSession(s) {
   proxyUser = s.user || null;
@@ -59,9 +64,6 @@ function App() {
   const [auth, setAuth] = useState("checking");
   // Why we landed back on the login screen, when it wasn't the user's doing.
   const [notice, setNotice] = useState("");
-  // Bumped to remount the shell, and so restart the live-data layer, after a
-  // proxy sign-in replaces a dead session.
-  const [sessionKey, setSessionKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -79,17 +81,21 @@ function App() {
         setNotice(reason === "rate_limited" ? t("login_err_rate_limited") : t("login_session_expired"));
         setAuth("out");
       };
-      if (!proxyUser || reason === "rate_limited") {
+      const now = Date.now();
+      if (!proxyUser || reason === "rate_limited" ||
+          now - lastSilentSignInAt < SILENT_SIGN_IN_INTERVAL_MS) {
         showLogin();
         return;
       }
-      // Once: if the proxy still signs the user in, carry on without a form.
-      proxyUser = null;
+      // If the proxy still signs the user in, carry on without a form.
+      // "checking" unmounts the shell, so nothing can be clicked against the
+      // gated client meanwhile, and the new role mounts a fresh one.
+      lastSilentSignInAt = now;
+      setAuth("checking");
       api.session()
         .then((s) => {
           if (!alive) return;
           rememberSession(s);
-          setSessionKey((k) => k + 1);
           setAuth(s.role || "guest");
         })
         .catch(() => { if (alive) showLogin(); });
@@ -107,7 +113,7 @@ function App() {
 
   if (auth === "checking") return html`<${Placeholder} kind="loading">${t("app_loading")}<//>`;
   if (auth === "out") return html`<${Login} notice=${notice} onSuccess=${onLoggedIn} />`;
-  return html`<${Shell} key=${sessionKey} role=${auth} onLogout=${() => setAuth("out")} />`;
+  return html`<${Shell} role=${auth} onLogout=${() => setAuth("out")} />`;
 }
 
 // --- shell --------------------------------------------------------------
