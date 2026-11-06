@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <algorithm>
 #include <cmath>
 
 class ClearButtonTestApp : public wxApp
@@ -115,8 +116,11 @@ void CheckRow(wxWindow *field, wxSizer *outer)
 	Require(clear && clear->IsShown(), "Clear button must always be visible");
 	Require(clear->IsEnabled() == !entry->GetValue().IsEmpty(), "Initial enabled state");
 	const wxSize buttonMin = clear->GetMinSize();
-	Require(buttonMin == wxSize(field->GetBestSize().y, field->GetBestSize().y),
-		"Square button must stay at the field's height");
+	// Fixed width, flexible height: the row stretches the button to the field's
+	// height so the bitmap stays vertically centered (macOS bezel fix).
+	const int side = std::max(field->GetBestSize().y, field->FromDIP(22));
+	Require(buttonMin == wxSize(side, -1),
+		"Clear button keeps a fixed width and stretches to the field's height");
 	Require((clear->GetWindowStyleFlag() & wxBORDER_MASK) != wxBORDER_NONE,
 		"Clear button must look like a button");
 	Require(row->GetItem(clear)->GetBorder() == field->FromDIP(5),
