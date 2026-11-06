@@ -34,6 +34,7 @@
 #include <protocol/ed2k/Client2Server/UDP.h>
 #ifdef ENABLE_IPV6
 #include "ServerIPv6Update.h" // Needed for ServerAcceptsIPv6Updates
+#include "ServerIPv6Verdict.h"
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "NatServerHolePunch.h" // Needed for ServerAcceptsHolePunchRequest
@@ -200,6 +201,8 @@ public:
 	void SetSeenTcpPort(uint16 nPort) { m_nSeenTcpPort = nPort; }
 #endif
 #ifdef ENABLE_IPV6
+	EServerIPv6Verdict GetIPv6Verdict() const { return m_ipv6Verdict; }
+	void SetIPv6Verdict(EServerIPv6Verdict verdict) { m_ipv6Verdict = verdict; }
 	bool SupportsIPv6Sources() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6) != 0; }
 	// Whether this connection may receive OP_IPV6_UPDATE: set together with SRV_TCPFLG_IPV6.
 	bool SupportsIPv6Updates() const { return ServerAcceptsIPv6Updates(GetTCPFlags()); }
@@ -256,6 +259,9 @@ private:
 	uint32 m_dwIPServerKeyUDP;
 	uint16 m_nObfuscationPortTCP;
 	uint16 m_nObfuscationPortUDP;
+#ifdef ENABLE_IPV6
+	EServerIPv6Verdict m_ipv6Verdict = EServerIPv6Verdict::Unknown;
+#endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	uint16 m_nSeenTcpPort = 0;
 	bool m_bLugdunumNatCallbackActive = false;

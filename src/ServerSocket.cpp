@@ -629,6 +629,12 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					} else if (update && tag.GetNameID() == ST_DESCRIPTION) {
 						update->SetDescription(tag.GetStr());
 					}
+#ifdef ENABLE_IPV6
+					else if (tag.GetNameID() == ST_IPV6_STATUS && tag.IsInt()) {
+						cur_server->SetIPv6Verdict(ParseServerIPv6Verdict(
+							static_cast<std::uint8_t>(tag.GetInt())));
+					}
+#endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 					else if (tag.GetNameID() == ST_NATT_TOKEN && tag.IsHash()) {
 						NatServerHolePunch::Hash token{};
