@@ -239,6 +239,80 @@ ssh -N -L 4713:127.0.0.1:4713 you@your-amule-box
 
 The API is then at `http://127.0.0.1:4713` on your own machine.
 
+### Signing in at the proxy
+
+If the proxy already asks users to sign in (nginx basic auth, or a single
+sign-on service such as Authelia, Authentik or oauth2-proxy), amuleapi can take
+the user name from a header the proxy sets and skip its own login form:
+
+```ini
+[Auth]
+ProxyAuthHeader=Remote-User
+ProxyAuthTrustedAddresses=127.0.0.1,::1
+ProxyAuthRole=admin
+ProxyAuthLogoutUrl=https://auth.example.com/logout
+```
+
+amuleapi reads the header only on connections from an address in
+`ProxyAuthTrustedAddresses`, so list the proxy and nothing else. If the proxy
+runs on another host or in another container, list that address. amuleapi
+refuses to start when the header is set and the list is empty. Every user the
+proxy lets in gets `ProxyAuthRole`. `ProxyAuthLogoutUrl` is optional: when it is
+set, the WebUI sign-out goes there. Without it, sign-out ends the amuleapi
+session, and the next page load starts a new one from the header. When a
+session ends on its own, for example after 24 hours, the WebUI asks for a new
+one before it shows the password form.
+
+**The proxy must replace the header on every request.** If it passes on a
+header the browser sent, anyone can sign in as anyone. nginx's
+`proxy_set_header` replaces it, as in the examples below. Password login keeps
+working, and a session started from the header ends as soon as a request
+arrives without the same user name.
+
+nginx basic auth:
+
+```nginx
+location / {
+    auth_basic           "aMule";
+    auth_basic_user_file /etc/nginx/amule.htpasswd;
+
+    proxy_pass http://127.0.0.1:4713;
+    proxy_http_version 1.1;
+    proxy_set_header X-Forwarded-Host $http_host;
+    proxy_set_header Remote-User $remote_user;
+}
+```
+
+nginx with a forward-auth service (`auth_request`), shown for Authelia on port
+9091. Other services differ in the URL and the name of the header they return:
+
+```nginx
+location / {
+    auth_request /internal/auth;
+    auth_request_set $auth_user $upstream_http_remote_user;
+    error_page 401 =302 https://auth.example.com/?rd=$scheme://$http_host$request_uri;
+
+    proxy_pass http://127.0.0.1:4713;
+    proxy_http_version 1.1;
+    proxy_set_header X-Forwarded-Host $http_host;
+    proxy_set_header Remote-User $auth_user;
+}
+
+location = /internal/auth {
+    internal;
+    proxy_pass http://127.0.0.1:9091/api/authz/auth-request;
+    proxy_pass_request_body off;
+    proxy_set_header Content-Length "";
+    proxy_set_header X-Original-Method $request_method;
+    proxy_set_header X-Original-URL $scheme://$http_host$request_uri;
+}
+```
+
+amuleapi has no TLS listener of its own. If the proxy runs on another machine
+and you want the link between the two authenticated with client certificates,
+put a TLS sidecar such as ghostunnel or stunnel in front of amuleapi and trust
+the sidecar's address.
+
 ## `amuleapi.conf`
 
 Created with sensible defaults on first run. Your edits and comments survive
@@ -265,6 +339,10 @@ LoginLockoutSeconds=300   ; ...locks that address out for this long
 TokenFailureWindowSeconds=60
 TokenFailureThreshold=30  ; same, for rejected tokens on any other endpoint
 TokenLockoutSeconds=300
+ProxyAuthHeader=          ; user header from a signed-in proxy, e.g. Remote-User
+ProxyAuthTrustedAddresses= ; the proxy's addresses, e.g. 127.0.0.1,::1
+ProxyAuthRole=admin       ; role for every user the proxy lets in
+ProxyAuthLogoutUrl=       ; where the WebUI sign-out goes
 
 [Streaming]
 EventBusRingCapacity=16384

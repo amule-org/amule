@@ -127,6 +127,16 @@ or copy its MD5 digest from [EC]/Password in remote.conf to [EC]/PasswordMD5
 here. Plaintext [EC]/Password is also supported. Set only one: amuleapi refuses
 to start if both are nonempty or PasswordMD5 is not 32 hexadecimal characters.
 The digest logs in to amuled just like the password, so keep this file private.
+.IP
+To let a reverse proxy that signs users in itself start sessions, set
+[Auth]/ProxyAuthHeader to the header that holds the user name, for example
+Remote\-User, and [Auth]/ProxyAuthTrustedAddresses to the proxy's IP
+addresses, for example 127.0.0.1,::1. amuleapi reads the header only on
+connections from those addresses, and refuses to start if the header is set
+and the list is empty. [Auth]/ProxyAuthRole (admin or guest) is the role every
+such user gets. [Auth]/ProxyAuthLogoutUrl is where the web interface sends a
+user who signs out. The proxy must replace the header on every request;
+if it passes on a header the client sent, anyone can sign in as any user.
 .TP
 \fI~/.aMule/amuleapi\-jwt\-secret\fR
 Key used to sign login tokens. Created on first launch. Deleting it signs

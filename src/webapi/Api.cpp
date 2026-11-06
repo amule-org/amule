@@ -35,6 +35,7 @@
 #include "AmuleApiConfig.h"
 #include "App.h"
 #include "Auth.h"
+#include "ProxyAuth.h"
 #include "ConstantTime.h"
 #include "Etag.h"
 #include "JsonWriter.h"
@@ -214,7 +215,8 @@ AuthOutcome AuthenticateRequest(const CHttpServer::Request &req,
 	CJwt &jwt,
 	webapi::CRevocationSet &revocations,
 	const std::string &cookie_name,
-	std::time_t credentials_changed_at)
+	std::time_t credentials_changed_at,
+	const webapi::ProxyAuthPolicy &proxy)
 {
 	AuthOutcome out;
 
@@ -257,6 +259,21 @@ AuthOutcome AuthenticateRequest(const CHttpServer::Request &req,
 	}
 	if (revocations.IsRevoked(out.verified.jti)) {
 		out.rejection = ErrorResponse(401, "unauthorized", "token has been revoked");
+		return out;
+	}
+	// A proxy session lives only while the proxy keeps naming the same user. This ends
+	// it on SSO sign-out, stops a cookie left in a shared browser, and stops a route
+	// that skips the proxy's own auth. A changed ProxyAuthRole ends it too, as a
+	// password change ends password sessions.
+	if (!out.verified.sub.empty()) {
+		if (webapi::ProxyAuthUser(proxy, req.remote_addr, req.headers, req.repeated_headers) !=
+				out.verified.sub ||
+			out.verified.role != proxy.role) {
+			out.rejection = ErrorResponse(
+				401, "unauthorized", "reverse proxy sign-in does not match this session");
+			return out;
+		}
+		out.ok = true;
 		return out;
 	}
 	// A password change ends the sessions the old password opened. The cutoff is the
@@ -323,7 +340,8 @@ AuthOutcome AuthenticateRequestRateLimited(const CHttpServer::Request &req,
 	webapi::CRevocationSet &revocations,
 	webapi::CRateLimiter &limiter,
 	const std::string &cookie_name,
-	std::time_t credentials_changed_at)
+	std::time_t credentials_changed_at,
+	const webapi::ProxyAuthPolicy &proxy)
 {
 	AuthOutcome out;
 	const std::string &ip = req.remote_addr;
@@ -342,7 +360,7 @@ AuthOutcome AuthenticateRequestRateLimited(const CHttpServer::Request &req,
 		return out;
 	}
 
-	out = AuthenticateRequest(req, jwt, revocations, cookie_name, credentials_changed_at);
+	out = AuthenticateRequest(req, jwt, revocations, cookie_name, credentials_changed_at, proxy);
 	if (out.ok) {
 		limiter.NoteSuccess(ip);
 	} else {
@@ -2029,7 +2047,7 @@ CHttpServer::Response CApiDispatcher::HandleLogin(const CHttpServer::Request &re
 
 	CJsonWriter w;
 	w.BeginObject();
-	BeginSession(req, role, r, w);
+	BeginSession(req, role, std::string(), r, w);
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
@@ -2038,11 +2056,15 @@ CHttpServer::Response CApiDispatcher::HandleLogin(const CHttpServer::Request &re
 // Issues a session for `role`, attaches the cookie to `r`, and writes the standard
 // session fields into the object `w` is building. Shared with the password change,
 // which re-issues so that changing a password does not sign the caller out of the
-// request they are making.
-void CApiDispatcher::BeginSession(
-	const CHttpServer::Request &req, Role role, CHttpServer::Response &r, CJsonWriter &w)
+// request they are making. `user` is the name a reverse proxy sent, empty for a
+// password session.
+void CApiDispatcher::BeginSession(const CHttpServer::Request &req,
+	Role role,
+	const std::string &user,
+	CHttpServer::Response &r,
+	CJsonWriter &w)
 {
-	const CJwt::IssuedToken issued = m_jwt.Issue(role);
+	const CJwt::IssuedToken issued = m_jwt.Issue(role, user);
 	r.headers["Set-Cookie"] = MakeSetCookie(
 		kSessionCookieName, issued.token, issued.expires_at, m_config.ServerCfg().base_path);
 
@@ -2086,6 +2108,14 @@ void CApiDispatcher::BeginSession(
 	// returns for the same session.
 	w.Key("session_id");
 	w.ValueString(wxString::FromUTF8(issued.jti.c_str()));
+	WriteSessionUser(w, user);
+}
+
+void CApiDispatcher::WriteSessionUser(CJsonWriter &w, const std::string &user) const
+{
+	const std::string &logout_url = m_config.AuthCfg().proxy.logout_url;
+	WriteStringOrNull(w, "user", !user.empty(), user);
+	WriteStringOrNull(w, "logout_url", !user.empty() && !logout_url.empty(), logout_url);
 }
 
 CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &req)
@@ -2174,20 +2204,49 @@ AuthOutcome CApiDispatcher::Authenticate(const CHttpServer::Request &req)
 		m_revocations,
 		m_authRateLimiter,
 		kSessionCookieName,
-		m_config.CredentialsChangedAt());
+		m_config.CredentialsChangedAt(),
+		m_config.AuthCfg().proxy);
 }
 
 CHttpServer::Response CApiDispatcher::HandleSession(const CHttpServer::Request &req)
 {
-	auto a = Authenticate(req);
-	if (!a.ok)
-		return a.rejection;
-
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "application/json";
-
+	// Per-principal document: a shared cache must not hand one caller another's
+	// session. The ETag memo excludes this target for the same reason.
+	r.headers["Cache-Control"] = "private, no-store";
 	CJsonWriter w;
+
+	// The only place a proxy sign-in starts a session. The header alone never
+	// authenticates a request: the proxy adds it to cross-site requests too, and the
+	// SameSite cookie is what keeps those out.
+	const webapi::ProxyAuthPolicy &proxy = m_config.AuthCfg().proxy;
+	const std::string proxy_user =
+		webapi::ProxyAuthUser(proxy, req.remote_addr, req.headers, req.repeated_headers);
+	AuthOutcome a;
+	if (!proxy_user.empty()) {
+		// Not rate limited: the proxy has already signed this user in, and every
+		// user behind it shares one address.
+		a = AuthenticateRequest(req,
+			m_jwt,
+			m_revocations,
+			kSessionCookieName,
+			m_config.CredentialsChangedAt(),
+			proxy);
+		if (!a.ok) {
+			w.BeginObject();
+			BeginSession(req, proxy.role, proxy_user, r, w);
+			w.EndObject();
+			FinalizeJsonBody(w, r);
+			return r;
+		}
+	} else {
+		a = Authenticate(req);
+		if (!a.ok)
+			return a.rejection;
+	}
+
 	w.BeginObject();
 	w.Key("role");
 	w.ValueString(a.verified.role == Role::ADMIN ? wxT("admin") : wxT("guest"));
@@ -2195,10 +2254,8 @@ CHttpServer::Response CApiDispatcher::HandleSession(const CHttpServer::Request &
 	w.ValueString(wxString::FromUTF8(a.verified.jti.c_str()));
 	w.Key("expires_at");
 	w.ValueInt(static_cast<int64_t>(a.verified.exp));
+	WriteSessionUser(w, a.verified.sub);
 	w.EndObject();
-	// Per-principal document: a shared cache must not hand one caller another's
-	// session. The ETag memo excludes this target for the same reason.
-	r.headers["Cache-Control"] = "private, no-store";
 	FinalizeJsonBody(w, r);
 	return r;
 }
@@ -2364,7 +2421,7 @@ CHttpServer::Response CApiDispatcher::HandleAuthPasswordsPatch(const CHttpServer
 	// Writing the file invalidated every token issued before it, this caller's
 	// included. Re-issuing theirs keeps the operator who changed the password signed
 	// in while everyone else is signed out, which is the point of changing it.
-	BeginSession(req, Role::ADMIN, r, w);
+	BeginSession(req, Role::ADMIN, a.verified.sub, r, w);
 	w.EndObject();
 	FinalizeJsonBody(w, r);
 	return r;
@@ -11738,8 +11795,12 @@ void CApiDispatcher::DispatchEvents(const CHttpServer::Request &req,
 		// Auth ran once, when the stream opened. Check it again on every wake, so a logout,
 		// revocation, credential change or expiry ends the stream before it delivers more.
 		// Not through Authenticate(): its limiter would reset the IP's failure count each pass.
-		if (!AuthenticateRequest(
-			    req, m_jwt, m_revocations, kSessionCookieName, m_config.CredentialsChangedAt())
+		if (!AuthenticateRequest(req,
+			    m_jwt,
+			    m_revocations,
+			    kSessionCookieName,
+			    m_config.CredentialsChangedAt(),
+			    m_config.AuthCfg().proxy)
 				.ok)
 			break;
 

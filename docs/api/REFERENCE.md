@@ -23,7 +23,7 @@ The API is versioned in the path. **`/api/v1/` is frozen**: anything that could 
 **Authentication**
 - [`POST /api/v1/auth/login`](#post-apiv1authlogin) — mint a JWT, optionally return it in the body
 - [`POST /api/v1/auth/logout`](#post-apiv1authlogout) — revoke the bearer's `jti`
-- [`GET /api/v1/auth/session`](#get-apiv1authsession) — verified bearer's role and expiry
+- [`GET /api/v1/auth/session`](#get-apiv1authsession) — verified bearer's role and expiry; starts a reverse proxy sign-in
 - [`GET /api/v1/auth/passwords`](#get-apiv1authpasswords) — which roles have a password configured
 - [`PATCH /api/v1/auth/passwords`](#patch-apiv1authpasswords) — change the admin password, enable/disable guest
 
@@ -138,7 +138,7 @@ JSON in, JSON out. Every request body that carries a payload is `Content-Type: a
 
 ## Authentication
 
-Two carriers, one token. amuleapi mints HS256 JWTs at `/auth/login` and accepts them either as:
+Two carriers, one token. amuleapi mints HS256 JWTs at `/auth/login`, or at `/auth/session` for a [reverse proxy sign-in](#reverse-proxy-sign-in), and accepts them either as:
 
 - An `Authorization: Bearer <jwt>` header (SDK / curl / server-to-server clients).
 - An HttpOnly session cookie named `amuleapi_token` (browser clients).
@@ -167,10 +167,12 @@ The two are equivalent.
 
 | Mode | Body keys | Set-Cookie |
 |------|-----------|------------|
-| Default (cookie) | `role`, `expires_at`, `session_id` | yes |
-| Token opt-in | `token`, `role`, `expires_at`, `session_id` | yes (cookie also goes out so a hybrid client can use either) |
+| Default (cookie) | `role`, `expires_at`, `session_id`, `user`, `logout_url` | yes |
+| Token opt-in | `token`, `role`, `expires_at`, `session_id`, `user`, `logout_url` | yes (cookie also goes out so a hybrid client can use either) |
 
 `include_token` adds exactly the one key it names: `session_id` and `expires_at` are unconditional, so a cookie client can identify and expire its own session without asking for a token it will not use.
+
+`user` and `logout_url` are `null` for a password session. They are set only for a session that a reverse proxy started (see [Reverse proxy sign-in](#reverse-proxy-sign-in)).
 
 ### Role model
 
@@ -208,6 +210,31 @@ Any credential change invalidates every token issued before it, whichever entry 
 
 This is what makes rotating a leaked password effective: without it, whoever held the old password would stay signed in for up to the full token lifetime. `PATCH /auth/passwords` issues the caller a replacement token in the same response, so the operator making the change is not signed out by their own request.
 
+A session that a reverse proxy started does not depend on a password, so a password change does not end it.
+
+### Reverse proxy sign-in
+
+A reverse proxy that signs users in itself (Authelia, Authentik, oauth2-proxy, nginx basic auth and similar) can pass the user name to amuleapi in a request header. Set it in `[Auth]` in `amuleapi.conf`:
+
+| Key | Meaning |
+|-----|---------|
+| `ProxyAuthHeader` | Name of the header that holds the user name, for example `Remote-User`. Empty (the default) turns the feature off. |
+| `ProxyAuthTrustedAddresses` | Comma-separated IP addresses of the proxy, for example `127.0.0.1,::1`. Required when `ProxyAuthHeader` is set: amuleapi refuses to start without it. |
+| `ProxyAuthRole` | `admin` (the default) or `guest`. Every user the proxy lets through gets this role. |
+| `ProxyAuthLogoutUrl` | Optional. The WebUI sign-out goes to this URL, which should be the proxy's own sign-out. An `http://` or `https://` URL, or a path that starts with `/`. |
+
+How it works:
+
+- amuleapi reads the header only when the TCP peer address is in `ProxyAuthTrustedAddresses`. It never reads `X-Forwarded-For` for this. From any other address the header is ignored, and password login works as usual.
+- [`GET /auth/session`](#get-apiv1authsession) with no valid session but with the header from a trusted address starts a session and sets the normal session cookie. The header alone authenticates no other request: the proxy adds it to cross-site requests too, and the `SameSite=Strict` cookie is what keeps those out.
+- Every later request with that session must come from a trusted address and carry the same, non-empty user name in the header. Otherwise it gets `401 unauthorized` (`reverse proxy sign-in does not match this session`). So signing out of the proxy, another user in the same browser, a route that skips the proxy's own login, or turning `ProxyAuthHeader` off, all end the session. A change to `ProxyAuthRole` ends it too, and the next `/auth/session` starts one with the new role.
+- A header value that is empty, longer than 256 bytes, holds a control character, or comes more than once counts as no header.
+- `POST /auth/logout` revokes the session as usual. Without `ProxyAuthLogoutUrl`, the next page load starts a new session from the header.
+- Starting a session from the header is not rate limited: the proxy has already signed the user in, and every user behind it shares one address. Other requests count against the token limiter as usual, and revocation works as for a password session.
+- An open [`/events`](EVENTS.md) stream keeps the headers it opened with, so a sign-out at the proxy does not end it. It ends at logout, revocation or expiry.
+
+**The proxy must replace the header on every request.** If it passes a header the client sent through unchanged, anyone can sign in as any user. See the QUICKSTART for nginx examples.
+
 ### Rate limiting
 
 Two per-IP failure counters, both with sliding-window semantics:
@@ -223,7 +250,7 @@ A polling client must treat its first `401` as terminal for that session and sto
 
 ### JWT structure
 
-Header: `{"alg":"HS256","typ":"JWT"}`. Payload: `{"role":"admin"|"guest","iat":<unix>,"exp":<unix>,"jti":"<base64url>"}`. The signing secret is auto-generated as 32 random bytes into `${config_dir}/amuleapi-jwt-secret` on first launch (mode 0600). Delete that file and restart to invalidate every issued token. The `jti` claim drives the server-side revocation list (`/auth/logout`), and the `iat` claim drives the credential-change cutoff described above.
+Header: `{"alg":"HS256","typ":"JWT"}`. Payload: `{"role":"admin"|"guest","iat":<unix>,"exp":<unix>,"jti":"<base64url>"}`, plus `"sub":"<user>"` for a reverse proxy sign-in. The signing secret is auto-generated as 32 random bytes into `${config_dir}/amuleapi-jwt-secret` on first launch (mode 0600). Delete that file and restart to invalidate every issued token. The `jti` claim drives the server-side revocation list (`/auth/logout`), the `iat` claim drives the credential-change cutoff described above, and `sub` is the user name the proxy must keep sending.
 
 ## Response model
 
@@ -702,7 +729,7 @@ HTTP/1.1 200 OK
 Set-Cookie: amuleapi_token=eyJhbGciOi...; HttpOnly; SameSite=Strict; Path=/api/v1; Max-Age=86400
 Content-Type: application/json
 
-{"role":"admin","expires_at":1781434800,"session_id":"b3iY9oA1tUW2pK..."}
+{"role":"admin","expires_at":1781434800,"session_id":"b3iY9oA1tUW2pK...","user":null,"logout_url":null}
 ```
 
 **Token opt-in request:**
@@ -718,7 +745,9 @@ curl -s -X POST "http://$HOST/api/v1/auth/login?include_token=true" \
   "token": "eyJhbGciOi...",
   "role": "admin",
   "expires_at": 1781434800,
-  "session_id": "b3iY9oA1tUW2pK..."
+  "session_id": "b3iY9oA1tUW2pK...",
+  "user": null,
+  "logout_url": null
 }
 ```
 
@@ -759,9 +788,29 @@ curl -s -H "Authorization: Bearer $TOKEN" http://$HOST/api/v1/auth/session
 {
   "role": "admin",
   "session_id": "b3iY9oA1tUW2pK...",
-  "expires_at": 1781434800
+  "expires_at": 1781434800,
+  "user": null,
+  "logout_url": null
 }
 ```
+
+`user` is the name a reverse proxy signed in, and `logout_url` is `[Auth]/ProxyAuthLogoutUrl`. Both are `null` for a password session, and `logout_url` is also `null` when it is not configured.
+
+With [reverse proxy sign-in](#reverse-proxy-sign-in) on, a request from a trusted address that carries the user header but no valid session for that user starts one. The answer is then `200` with a `Set-Cookie`, the same keys, and the same `?include_token=true` / `Accept: application/jwt` opt-in as `/auth/login`:
+
+```sh
+curl -i -H "Remote-User: alice" http://127.0.0.1:4713/api/v1/auth/session
+```
+
+```
+HTTP/1.1 200 OK
+Set-Cookie: amuleapi_token=eyJhbGciOi...; HttpOnly; SameSite=Strict; Path=/api/v1; Max-Age=86400
+Content-Type: application/json
+
+{"role":"admin","expires_at":1781434800,"session_id":"Xc1v8sQ0Wm3kLp...","user":"alice","logout_url":"https://auth.example.com/logout"}
+```
+
+**Errors:** `401 unauthorized` when there is no valid session and no usable proxy header.
 
 ---
 
@@ -819,7 +868,9 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
   "token": "eyJhbGciOiJIUzI1NiIs...",
   "role": "admin",
   "expires_at": 1781521200,
-  "session_id": "9pQ2xR7mLk4vTn..."
+  "session_id": "9pQ2xR7mLk4vTn...",
+  "user": null,
+  "logout_url": null
 }
 ```
 

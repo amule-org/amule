@@ -116,8 +116,13 @@ private:
 	// last credential change is dead.
 	AuthOutcome Authenticate(const CHttpServer::Request &req);
 
-	void BeginSession(
-		const CHttpServer::Request &req, Role role, CHttpServer::Response &r, CJsonWriter &w);
+	void BeginSession(const CHttpServer::Request &req,
+		Role role,
+		const std::string &user,
+		CHttpServer::Response &r,
+		CJsonWriter &w);
+	// The session's `user` and `logout_url` keys.
+	void WriteSessionUser(CJsonWriter &w, const std::string &user) const;
 	CHttpServer::Response HandleStatus(const CHttpServer::Request &);
 	CHttpServer::Response HandleDownloads(const CHttpServer::Request &);
 	// `key` accepts the lowercase 32-char hex hash OR the decimal ECID.

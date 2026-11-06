@@ -42,6 +42,21 @@ function currentRoute() {
   return known ? key : DEFAULT_ROUTE;
 }
 
+// Set when a reverse proxy signed the user in. Such a user may have no
+// password, and signing out of amuleapi alone would sign them straight back in.
+let proxyUser = null;
+let proxyLogoutUrl = null;
+// When the last dead session was replaced without a form. A second death soon
+// after means the proxy signs the user in but other requests still fail, and
+// retrying again would loop and spend the rate limit of everyone behind it.
+let lastSilentSignInAt = 0;
+const SILENT_SIGN_IN_INTERVAL_MS = 60 * 1000;
+
+function rememberSession(s) {
+  proxyUser = s.user || null;
+  proxyLogoutUrl = s.logout_url || null;
+}
+
 // --- root ---------------------------------------------------------------
 function App() {
   // "checking" while we probe the session; "out" when logged out; otherwise
@@ -62,16 +77,39 @@ function App() {
       searches.reset(); // its poll timer and tabs are module-level too
       chats.reset();
       if (!alive) return;
-      setNotice(reason === "rate_limited" ? t("login_err_rate_limited") : t("login_session_expired"));
-      setAuth("out");
+      const showLogin = () => {
+        setNotice(reason === "rate_limited" ? t("login_err_rate_limited") : t("login_session_expired"));
+        setAuth("out");
+      };
+      const now = Date.now();
+      if (!proxyUser || reason === "rate_limited" ||
+          now - lastSilentSignInAt < SILENT_SIGN_IN_INTERVAL_MS) {
+        showLogin();
+        return;
+      }
+      // If the proxy still signs the user in, carry on without a form.
+      // "checking" unmounts the shell, so nothing can be clicked against the
+      // gated client meanwhile, and the new role mounts a fresh one.
+      lastSilentSignInAt = now;
+      setAuth("checking");
+      api.session()
+        .then((s) => {
+          if (!alive) return;
+          rememberSession(s);
+          setAuth(s.role || "guest");
+        })
+        .catch(() => { if (alive) showLogin(); });
     });
     api.session()
-      .then((s) => { if (alive) setAuth(s.role || "guest"); })
+      .then((s) => {
+        rememberSession(s);
+        if (alive) setAuth(s.role || "guest");
+      })
       .catch(() => { if (alive) setAuth("out"); });
     return () => { alive = false; setUnauthorizedHandler(null); };
   }, []);
 
-  const onLoggedIn = (role) => { setNotice(""); setAuth(role); };
+  const onLoggedIn = (role) => { rememberSession({}); setNotice(""); setAuth(role); };
 
   if (auth === "checking") return html`<${Placeholder} kind="loading">${t("app_loading")}<//>`;
   if (auth === "out") return html`<${Login} notice=${notice} onSuccess=${onLoggedIn} />`;
@@ -164,6 +202,10 @@ function Toolbar({ route, onLogout }) {
     data.stop(); // the SSE stream and poll timer outlive this component
     searches.reset(); // ...and so do the search tabs and their poll timer
     chats.reset();
+    if (proxyLogoutUrl) {
+      location.assign(proxyLogoutUrl);
+      return;
+    }
     location.hash = "";
     onLogout();
   };

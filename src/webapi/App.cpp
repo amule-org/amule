@@ -560,6 +560,19 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 		return;
 	}
 
+	const webapi::ProxyAuthPolicy &proxy = m_apiConfig.AuthCfg().proxy;
+	if (proxy.Enabled()) {
+		std::string trusted;
+		for (const auto &address : proxy.trusted_addresses) {
+			trusted += (trusted.empty() ? "" : ",") + address;
+		}
+		webapi::CLogDiagnostic(LogLevel::Warning, "Auth")
+			<< "reverse proxy sign-in is on: a request from " << trusted << " with a "
+			<< proxy.header << " header signs in as "
+			<< (proxy.role == Role::ADMIN ? "admin" : "guest")
+			<< ". The proxy must overwrite that header on every request.\n";
+	}
+
 	// Build the JWT machinery from the loaded secret plus a dispatcher holding the rate-limiter
 	// and revocation set by value. The dispatcher reaches the State cache through CamuleapiApp;
 	// the lambda below pins its lifetime to App's.

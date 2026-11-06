@@ -61,6 +61,7 @@
 
 #include <zlib.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cassert>
 #include <cctype>
@@ -574,7 +575,13 @@ private:
 		r.target = std::string(req.target());
 		r.body = req.body();
 		for (const auto &h : req) {
-			r.headers.emplace(std::string(h.name_string()), std::string(h.value()));
+			std::string name(h.name_string());
+			if (!r.headers.emplace(name, std::string(h.value())).second) {
+				std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c) {
+					return static_cast<char>(std::tolower(c));
+				});
+				r.repeated_headers.insert(std::move(name));
+			}
 		}
 		// Content-Encoding negotiation is per-request state, not per-response. Sample once here
 		// so both WriteResponse and the streaming SocketWriter see the same decision; the header

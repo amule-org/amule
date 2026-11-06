@@ -559,3 +559,72 @@ TEST(AmuleApiConfig, MetricsLimiterIsConfigurableAndResetsOnReload)
 	ASSERT_EQUALS(60u, cfg.MetricsCfg().failure_window_seconds);
 	ASSERT_EQUALS(300u, cfg.MetricsCfg().lockout_seconds);
 }
+
+TEST(AmuleApiConfig, ProxyAuthOffByDefault)
+{
+	const wxString dir = MakeTmpDir("proxy-default");
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(cfg.Load(dir));
+	ASSERT_FALSE(cfg.AuthCfg().proxy.Enabled());
+	ASSERT_TRUE(cfg.AuthCfg().proxy.role == Role::ADMIN);
+}
+
+TEST(AmuleApiConfig, ProxyAuthIsParsed)
+{
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(LoadHandWrittenConf("proxy-ok",
+		"[Auth]\nProxyAuthHeader= Remote-User \nProxyAuthTrustedAddresses=127.0.0.1, "
+		"::ffff:10.0.0.2,,"
+		"0:0:0:0:0:0:0:1\nProxyAuthRole=Guest\nProxyAuthLogoutUrl=https://sso.example/logout",
+		cfg));
+	const webapi::ProxyAuthPolicy &p = cfg.AuthCfg().proxy;
+	ASSERT_EQUALS(std::string("Remote-User"), p.header);
+	ASSERT_EQUALS(static_cast<std::size_t>(3), p.trusted_addresses.size());
+	ASSERT_EQUALS(std::string("127.0.0.1"), p.trusted_addresses[0]);
+	ASSERT_EQUALS(std::string("10.0.0.2"), p.trusted_addresses[1]);
+	ASSERT_EQUALS(std::string("::1"), p.trusted_addresses[2]);
+	ASSERT_TRUE(p.role == Role::GUEST);
+	ASSERT_EQUALS(std::string("https://sso.example/logout"), p.logout_url);
+}
+
+// Without a trusted address any client could name itself.
+TEST(AmuleApiConfig, ProxyAuthWithoutTrustedAddressesFailsLoad)
+{
+	CAmuleApiConfig cfg;
+	ASSERT_FALSE(LoadHandWrittenConf("proxy-nolist", "[Auth]\nProxyAuthHeader=Remote-User", cfg));
+	ASSERT_TRUE(cfg.LastError().find("ProxyAuthTrustedAddresses") != std::string::npos);
+}
+
+TEST(AmuleApiConfig, ProxyAuthRejectsBadSettings)
+{
+	const std::string base = "[Auth]\nProxyAuthTrustedAddresses=127.0.0.1\n";
+	CAmuleApiConfig cfg;
+	ASSERT_FALSE(LoadHandWrittenConf("proxy-name", base + "ProxyAuthHeader=Remote User", cfg));
+	ASSERT_TRUE(cfg.LastError().find("ProxyAuthHeader") != std::string::npos);
+	ASSERT_FALSE(LoadHandWrittenConf("proxy-addr",
+		"[Auth]\nProxyAuthHeader=Remote-User\nProxyAuthTrustedAddresses=127.0.0.0/8",
+		cfg));
+	ASSERT_TRUE(cfg.LastError().find("ProxyAuthTrustedAddresses") != std::string::npos);
+	ASSERT_FALSE(LoadHandWrittenConf(
+		"proxy-role", base + "ProxyAuthHeader=Remote-User\nProxyAuthRole=root", cfg));
+	ASSERT_TRUE(cfg.LastError().find("ProxyAuthRole") != std::string::npos);
+	ASSERT_FALSE(LoadHandWrittenConf("proxy-url",
+		base + "ProxyAuthHeader=Remote-User\nProxyAuthLogoutUrl=javascript:alert(1)",
+		cfg));
+	ASSERT_TRUE(cfg.LastError().find("ProxyAuthLogoutUrl") != std::string::npos);
+	ASSERT_TRUE(LoadHandWrittenConf(
+		"proxy-path", base + "ProxyAuthHeader=Remote-User\nProxyAuthLogoutUrl=/logout", cfg));
+	ASSERT_EQUALS(std::string("/logout"), cfg.AuthCfg().proxy.logout_url);
+}
+
+// A reload that turns the option off must drop the old policy.
+TEST(AmuleApiConfig, ProxyAuthResetsOnReload)
+{
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(LoadHandWrittenConf(
+		"proxy-on", "[Auth]\nProxyAuthHeader=Remote-User\nProxyAuthTrustedAddresses=::1", cfg));
+	ASSERT_TRUE(cfg.AuthCfg().proxy.Enabled());
+	ASSERT_TRUE(LoadHandWrittenConf("proxy-off", "", cfg));
+	ASSERT_FALSE(cfg.AuthCfg().proxy.Enabled());
+	ASSERT_TRUE(cfg.AuthCfg().proxy.trusted_addresses.empty());
+}
