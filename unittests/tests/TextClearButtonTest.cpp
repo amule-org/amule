@@ -121,6 +121,8 @@ void CheckRow(wxWindow *field, wxSizer *outer)
 	const int side = std::max(field->GetBestSize().y, field->FromDIP(22));
 	Require(buttonMin == wxSize(side, -1),
 		"Clear button keeps a fixed width and stretches to the field's height");
+	Require(clear->GetMaxSize() == wxSize(side, field->GetBestSize().y),
+		"Clear button never raises the row above the field's height");
 	Require((clear->GetWindowStyleFlag() & wxBORDER_MASK) != wxBORDER_NONE,
 		"Clear button must look like a button");
 	Require(row->GetItem(clear)->GetBorder() == field->FromDIP(5),

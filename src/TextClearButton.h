@@ -50,8 +50,13 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 		parent, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
 	clear->SetToolTip(_("Clear"));
 	// Fixed width, flexible height: the row stretches it to match the field,
-	// so the bitmap stays vertically centered on every platform.
+	// so the bitmap stays vertically centered on every platform. The max
+	// height keeps the button's own best size (native chrome is taller than
+	// the field on some platforms) from raising the row above the field's
+	// height; the min height stays open so the button still stretches when
+	// the field ends up taller (macOS bezel).
 	clear->SetMinSize(wxSize(side, -1));
+	clear->SetMaxSize(wxSize(side, input->GetBestSize().y));
 	const auto updateArtwork = [clear]() {
 		// Bundles take a size at 100% DPI and rasterize the SVG at each scale.
 		clear->SetBitmap(CamuleArtProvider::GetMenuBitmapBundle(
