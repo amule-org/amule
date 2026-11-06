@@ -65,4 +65,23 @@ inline CSearchTypeChoices BuildSearchTypeChoices(
 	return choices;
 }
 
+/**
+ * Selection index after the type combo is rebuilt (e.g. on a connection flap): the user's
+ * current pick wins when it is still offered, otherwise the saved-default-based selection
+ * stands. Keeps a reconnect from silently downgrading the next search (Global -> Local).
+ * currentPick is a SearchType value, or negative when the combo has no selection.
+ */
+inline int RebuildSearchTypeSelection(
+	const std::vector<SearchType> &types, int currentPick, int savedSelection)
+{
+	if (currentPick >= 0) {
+		const auto kept = std::find(types.begin(), types.end(), static_cast<SearchType>(currentPick));
+		if (kept != types.end()) {
+			// There are at most four choices; wxWidgets takes an int index.
+			return static_cast<int>(kept - types.begin());
+		}
+	}
+	return savedSelection;
+}
+
 #endif
