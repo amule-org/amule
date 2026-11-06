@@ -145,7 +145,11 @@ private:
 		dc->GetTextExtent(buffer, &textwidth, &textheight);
 		const wxColour oldColour = dc->GetTextForeground();
 		// Ordinary progress bar: white percentage. Hashing (green/yellow
-		// bar): black percentage.
+		// bar): black percentage. Either face colour vanishes over part of the bar -- white
+		// over the light unfilled background, black over the dark chunk fill -- so paint the
+		// label twice: a 1-px dark plate underneath, the face colour on top. Reads on both.
+		dc->SetTextForeground(*wxBLACK);
+		dc->DrawText(buffer, middlex - (textwidth >> 1) + 1, middley - (textheight >> 1) + 1);
 		dc->SetTextForeground(hashingProgress == 0 ? *wxWHITE : *wxBLACK);
 		dc->DrawText(buffer, middlex - (textwidth >> 1), middley - (textheight >> 1));
 		dc->SetTextForeground(oldColour);
