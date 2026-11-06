@@ -128,6 +128,10 @@ if (APPLE)
 	# CoreServices / ApplicationServices — same set amuleweb links, used
 	# by wxStandardPaths::GetUserDataDir() on a .app bundle to look up
 	# Application Support/ correctly.
+	target_sources (amuleapi
+		PRIVATE ${SRC_DIR}/MacBackgroundOnly_mac.mm
+	)
+
 	target_link_libraries (amuleapi
 		PRIVATE "-framework CoreServices"
 		PRIVATE "-framework ApplicationServices"

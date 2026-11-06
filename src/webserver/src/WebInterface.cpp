@@ -32,6 +32,8 @@
 #include <CoreFoundation/CFBundle.h>                 // Do_not_auto_remove
 #include <ApplicationServices/ApplicationServices.h> // Do_not_auto_remove
 #include <wx/osx/core/cfstring.h>                    // Do_not_auto_remove
+
+#include "MacBackgroundOnly_mac.h" // Needed for mac_declare_background_only
 #endif
 
 #include <ec/cpp/ECFileConfig.h> // Needed for CECFileConfig
@@ -51,7 +53,20 @@
 #endif
 
 //-------------------------------------------------------------------
+#ifdef __WXMAC__
+// Launched from aMule.app/Contents/MacOS just like amuleapi: see the comment there. The web
+// server reaches the window server through wxEntryStart(), gets registered as a Foreground app
+// of the bundle, and leaves a bouncing Dock tile that a windowless daemon never resolves.
+IMPLEMENT_APP_NO_MAIN(CamulewebApp)
+int main(int argc, char **argv)
+{
+	wxDISABLE_DEBUG_SUPPORT();
+	mac_declare_background_only();
+	return wxEntry(argc, argv);
+}
+#else
 IMPLEMENT_APP(CamulewebApp)
+#endif
 //-------------------------------------------------------------------
 
 wxDEFINE_EVENT(MULE_EVT_NOTIFY, wxEvent);
