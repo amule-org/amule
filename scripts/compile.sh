@@ -161,10 +161,11 @@ cmake_build() {
 }
 
 cmake_test() {
-	ctest \
-		--test-dir build \
-		--output-on-failure \
-		--timeout 10
+	# Same per-label time budgets as CI (.github/workflows/ccpp.yml).
+	local CTEST=( ctest --test-dir build --output-on-failure )
+	"${CTEST[@]}" --timeout 10 -LE '^(slow|integration|reverify)$' &&
+		"${CTEST[@]}" --timeout 60 -L '^slow$' &&
+		"${CTEST[@]}" --timeout 300 -L '^(integration|reverify)$'
 
 	die 4 "CMake test failed"
 }
