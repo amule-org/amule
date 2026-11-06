@@ -759,6 +759,13 @@ wxString CSearchList::StartNewSearch(uint32 *searchID, SearchType type, CSearchP
 			// other terminal path, and a global one's sweep is armed by the very answer we are
 			// waiting for.
 			m_awaitingServerAnswer = true;
+			m_awaitingTcpSearchId = static_cast<uint32_t>(*searchID);
+			// The answer carries no search id on the wire: record whose ask this is, so a
+			// late answer to a replaced search files into its own bucket instead of this
+			// one's. Expires with the protocol's own patience for a silent server.
+			m_tcpReplies.Ask(kTcpReplyKey,
+				static_cast<uint32_t>(*searchID),
+				time(nullptr) + SERVER_ANSWER_TIMEOUT_MS / 1000);
 			m_searchTimer.Start(SERVER_ANSWER_TIMEOUT_MS, true /* one shot */);
 
 			if (type == GlobalSearch || type == AllSearch) {
@@ -967,6 +974,10 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 		// Lugdunum servers send nothing when they have no match, so a global search still asks
 		// the other servers, as if the answer had been empty. Tested before the packet check
 		// below, which a local search would otherwise fall into.
+		// The unanswered ask no longer owns answers; anything arriving late belongs to a
+		// newer ask, if any.
+		m_tcpReplies.Remove(kTcpReplyKey, m_awaitingTcpSearchId);
+		m_awaitingTcpSearchId = 0;
 		if (m_searchType == GlobalSearch || m_searchType == AllSearch) {
 			AddDebugLogLineN(
 				logServer, "The server did not answer the search, asking the other servers");
@@ -1018,6 +1029,11 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 					theStats::AddUpOverheadServer(extSearchPacket->GetPacketSize());
 					theApp->serverconnect->SendUDPPacket(extSearchPacket, server, true);
 					m_askedServers.insert(server->ECID());
+					// Attribute this server's eventual answer to the search running this
+					// sweep. A replaced search keeps its own entries, so its late answers
+					// still find its bucket instead of this one's.
+					m_udpReplies.Ask(
+						server->GetIP(), static_cast<uint32_t>(m_currentSearch));
 					AddDebugLogLineN(logServerUDP,
 						"Sending OP_GLOBSEARCHREQ3 to server " +
 							Uint32_16toStringIP_Port(
@@ -1034,6 +1050,12 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 						theApp->serverconnect->SendUDPPacket(
 							m_searchPacket.get(), server, false);
 						m_askedServers.insert(server->ECID());
+						// Attribute this server's eventual answer to the search
+						// running this sweep. A replaced search keeps its own
+						// entries, so its late answers still find its bucket instead
+						// of this one's.
+						m_udpReplies.Ask(server->GetIP(),
+							static_cast<uint32_t>(m_currentSearch));
 					} else {
 						AddDebugLogLineN(logServerUDP,
 							"Skipped UDP search on server " +
@@ -1053,6 +1075,12 @@ void CSearchList::OnGlobalSearchTimer(CTimerEvent &WXUNUSED(evt))
 						theApp->serverconnect->SendUDPPacket(
 							m_searchPacket.get(), server, false);
 						m_askedServers.insert(server->ECID());
+						// Attribute this server's eventual answer to the search
+						// running this sweep. A replaced search keeps its own
+						// entries, so its late answers still find its bucket instead
+						// of this one's.
+						m_udpReplies.Ask(server->GetIP(),
+							static_cast<uint32_t>(m_currentSearch));
 					} else {
 						AddDebugLogLineN(logServerUDP,
 							"Skipped UDP search on server " +
@@ -1151,6 +1179,13 @@ static inline bool IsActiveSearchTypeEd2k(SearchType t)
 	return t == LocalSearch || t == GlobalSearch || t == AllSearch;
 }
 
+namespace
+{
+//! Router key for the connected server's TCP answers. Real servers are keyed by IP, which is
+//! never 0 for a connection we hold, so the single TCP slot cannot collide with a UDP entry.
+constexpr uint32_t kTcpReplyKey = 0;
+} // namespace
+
 bool CSearchList::CanFileServerAnswer() const
 {
 	// Late server replies keep arriving after a search is over, and where they may be filed is
@@ -1164,8 +1199,12 @@ bool CSearchList::CanFileServerAnswer() const
 	return IsActiveSearchTypeEd2k(m_searchType) && m_currentSearch != wxUIntPtr(-1);
 }
 
-void CSearchList::ProcessSearchAnswer(
-	const uint8_t *in_packet, uint32_t size, bool optUTF8, uint32_t serverIP, uint16_t serverPort)
+void CSearchList::ProcessSearchAnswer(const uint8_t *in_packet,
+	uint32_t size,
+	bool optUTF8,
+	uint32_t serverIP,
+	uint16_t serverPort,
+	uint32_t resolvedSearchId)
 {
 	if (!CanFileServerAnswer()) {
 		return;
@@ -1174,20 +1213,30 @@ void CSearchList::ProcessSearchAnswer(
 
 	uint32_t results = packet.ReadUInt32();
 	for (; results > 0; --results) {
-		auto file =
-			std::make_unique<CSearchFile>(packet, optUTF8, m_currentSearch, serverIP, serverPort);
+		auto file = std::make_unique<CSearchFile>(
+			packet, optUTF8, resolvedSearchId, serverIP, serverPort);
 		AddToList(std::move(file), false);
 	}
 }
 
 void CSearchList::ProcessUDPSearchAnswer(
-	const CMemFile &packet, bool optUTF8, uint32_t serverIP, uint16_t serverPort)
+	const CMemFile &packet, bool optUTF8, uint32 serverIP, uint16 serverPort, uint32_t resolvedSearchId)
 {
 	if (!CanFileServerAnswer()) {
 		return;
 	}
-	auto file = std::make_unique<CSearchFile>(packet, optUTF8, m_currentSearch, serverIP, serverPort);
+	auto file = std::make_unique<CSearchFile>(packet, optUTF8, resolvedSearchId, serverIP, serverPort);
 	AddToList(std::move(file), false);
+}
+
+uint32_t CSearchList::ClaimTcpReply()
+{
+	return m_tcpReplies.ClaimReply(kTcpReplyKey, time(nullptr));
+}
+
+uint32_t CSearchList::ClaimUdpReply(uint32 serverIP)
+{
+	return m_udpReplies.ClaimReply(serverIP, time(nullptr));
 }
 
 bool CSearchList::WasServerAsked(uint32 serverIP) const
@@ -1463,11 +1512,16 @@ bool CSearchList::RequestMoreResults(uint32_t searchID)
 
 void CSearchList::StopSearch(bool globalOnly)
 {
+	// Explicit abort: outstanding answers for the stopped search are dropped with it, so
+	// late replies cannot land in any bucket. Purge before resetting m_currentSearch.
+	const uint32_t stoppedSearch = static_cast<uint32_t>(m_currentSearch);
 	if (m_searchType == GlobalSearch || m_searchType == AllSearch) {
 		if (m_searchType == AllSearch && !globalOnly) {
 			StopSearchById(m_currentSearch);
 		} else {
 			FinalizeGlobalSearch();
+			m_tcpReplies.PurgeSearch(stoppedSearch);
+			m_udpReplies.PurgeSearch(stoppedSearch);
 		}
 		m_currentSearch = -1;
 	} else if (m_searchType == LocalSearch) {
@@ -1479,6 +1533,8 @@ void CSearchList::StopSearch(bool globalOnly)
 		// Not gated on globalOnly: that spares Kad, and a local search is ed2k, exactly like the
 		// global branch above.
 		FinalizeLocalSearch();
+		m_tcpReplies.PurgeSearch(stoppedSearch);
+		m_udpReplies.PurgeSearch(stoppedSearch);
 		m_currentSearch = -1;
 	} else if (m_searchType == KadSearch && !globalOnly) {
 		Kademlia::CSearchManager::StopSearch(m_currentSearch, false);
@@ -1500,6 +1556,11 @@ void CSearchList::StopSearchById(wxUIntPtr searchID)
 	if (searchID == m_currentSearch && m_searchInProgress) {
 		FinalizeGlobalSearch();
 	}
+	// An explicitly stopped search owns no more answers: drop its outstanding asks so late
+	// replies cannot land anywhere. A replaced search (new search started) takes the
+	// StopInFlightEd2kSearch path instead, which keeps its asks routable on purpose.
+	m_tcpReplies.PurgeSearch(static_cast<uint32_t>(searchID));
+	m_udpReplies.PurgeSearch(static_cast<uint32_t>(searchID));
 	// Results are intentionally retained -- the multi-search EC "stop" halts
 	// activity but keeps the bucket; RemoveResults() is the free path.
 }
@@ -1545,10 +1606,10 @@ CSearchList::SearchLifecycleState CSearchList::GetSearchLifecycleStateById(wxUIn
 	if (searchID == m_currentSearch) {
 		return GetSearchLifecycleState();
 	}
-	// Otherwise this id is done, whatever any sweep is still doing: results are filed under the
-	// scalar m_currentSearch (ProcessSearchAnswer / ProcessUDPSearchAnswer), so once a newer
-	// ed2k search takes that scalar nothing further can land in this id's bucket. Unreachable,
-	// not idle.
+	// Otherwise this id is done, whatever any sweep is still doing: answers are routed per
+	// outstanding ask (CSearchReplyRouter::ClaimReply), so once a newer ed2k search takes the
+	// slot only answers to the older search's own asks can still land in this id's bucket.
+	// Unreachable, not idle.
 	//
 	// StartNewSearch finalizes the previous eD2k slot before publishing a new one.
 	// Any surviving Kad component was handled above, independently of that slot.

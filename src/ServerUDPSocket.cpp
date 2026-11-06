@@ -145,8 +145,20 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 				throw wxString(CFormat("Unrequested OP_GLOBSEARCHRES packet from %s:%d") %
 					       Uint32toStringIP(ip) % port);
 			}
+			// Attribute the whole packet once, up front: every record in it belongs to the
+			// same ask. Returning early per record would misalign the stream, since the
+			// next iteration reads protocol and opcode from the middle of the record.
+			const uint32 resolvedSearch = theApp->searchlist->ClaimUdpReply(ip);
+			if (!resolvedSearch) {
+				AddDebugLogLineN(logServerUDP,
+					CFormat("Dropping OP_GLOBSEARCHRES from %s:%d with no outstanding "
+						"ask (duplicate, or answered to a stopped search).") %
+						Uint32toStringIP(ip) % port);
+				break;
+			}
 			do {
-				theApp->searchlist->ProcessUDPSearchAnswer(packet, true, ip, port - 4);
+				theApp->searchlist->ProcessUDPSearchAnswer(
+					packet, true, ip, port - 4, resolvedSearch);
 
 				if (packet.GetPosition() + 2 < size) {
 					// An additional packet?

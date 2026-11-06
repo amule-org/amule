@@ -2892,6 +2892,16 @@ target_include_directories (SearchRequestTest PRIVATE
 )
 target_link_libraries (SearchRequestTest muleunit mulecommon)
 
+# eD2k answer routing is per outstanding ask, without a GUI or network.
+add_executable (SearchReplyRouterTest SearchReplyRouterTest.cpp)
+add_test (NAME SearchReplyRouterTest COMMAND SearchReplyRouterTest)
+target_include_directories (SearchReplyRouterTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (SearchReplyRouterTest muleunit mulecommon)
+
 # Source estimates must be independent of network arrival order and filename grouping.
 add_executable (SearchSourceCountTest SearchSourceCountTest.cpp)
 add_test (NAME SearchSourceCountTest COMMAND SearchSourceCountTest)

@@ -30,6 +30,7 @@
 #include "ObservableQueue.h"   // Needed for CQueueObserver
 #include "SearchFile.h"        // Needed for CSearchFile
 #include "SearchResultIndex.h" // Needed for CSearchResultIndex
+#include "SearchReplyRouter.h" // Needed for CSearchReplyRouter (answer routing)
 #include <common/SmartPtr.h>   // Needed for CSmartPtr
 #include <memory>
 #include <set>    // Needed for std::set (per-search Kad completion)
@@ -398,9 +399,14 @@ public:
 	 * @param optUTF8 Specifies if the server supports UTF8.
 	 * @param serverIP The IP of the server sending the results.
 	 * @param serverPort The Port of the server sending the results.
+	 * @param resolvedSearchId The search that asked for this answer (ClaimTcpReply).
 	 */
-	void ProcessSearchAnswer(
-		const uint8_t *packet, uint32_t size, bool optUTF8, uint32_t serverIP, uint16_t serverPort);
+	void ProcessSearchAnswer(const uint8_t *packet,
+		uint32_t size,
+		bool optUTF8,
+		uint32_t serverIP,
+		uint16_t serverPort,
+		uint32_t resolvedSearchId);
 
 	/**
 	 * Processes a search result sent via UDP. Only one result is read from the packet.
@@ -409,8 +415,13 @@ public:
 	 * @param optUTF8 Specifies if the server supports UTF8.
 	 * @param serverIP The IP of the server sending the results.
 	 * @param serverPort The Port of the server sending the results.
+	 * @param resolvedSearchId The search that asked that server (ClaimUdpReply).
 	 */
-	void ProcessUDPSearchAnswer(const CMemFile &packet, bool optUTF8, uint32 serverIP, uint16 serverPort);
+	void ProcessUDPSearchAnswer(const CMemFile &packet,
+		bool optUTF8,
+		uint32 serverIP,
+		uint16 serverPort,
+		uint32_t resolvedSearchId);
 
 	/**
 	 * Tells if the current global search sent its request to a server at this IP.
@@ -420,6 +431,24 @@ public:
 	 * @param serverIP The IP of the server sending the results.
 	 */
 	bool WasServerAsked(uint32 serverIP) const;
+
+	/**
+	 * Attributes one incoming TCP OP_SEARCHRESULT to the search that asked for it (see
+	 * CSearchReplyRouter): pops the oldest outstanding connected-server ask. Returns 0 when
+	 * nothing outstanding owns the answer -- a duplicate or an answer to a stopped search --
+	 * and the caller must drop it instead of filing it into the current search.
+	 */
+	uint32_t ClaimTcpReply();
+
+	/**
+	 * Attributes one incoming UDP OP_GLOBSEARCHRES packet to the search that asked that
+	 * server. Returns 0 when nothing outstanding owns it; the caller keeps its existing
+	 * WasServerAsked() never-asked drop and additionally drops the asked-but-answered case.
+	 */
+	uint32_t ClaimUdpReply(uint32 serverIP);
+
+	//! The ed2k search owning the single in-flight slot (wxUIntPtr(-1) when none).
+	wxUIntPtr GetCurrentSearchId() const { return m_currentSearch; }
 
 	/**
 	 * Adds a result in the form of a kad search keyword to the specified result list.
@@ -555,6 +584,19 @@ private:
 
 	//! ECIDs of the servers the current global search sent a UDP request to.
 	std::set<uint32> m_askedServers;
+
+	//! Outstanding eD2k asks per server, so a late answer files into the search that asked
+	//! for it instead of whatever search is current when it arrives. The socket-level
+	//! WasServerAsked() guard only drops servers never asked by the current search; a server
+	//! asked by two searches in a row passes it, and TCP answers carry no check at all.
+	//! Pruned in StopSearchById (explicit stop) and RemoveResults (free path); a replaced
+	//! search keeps its entries on purpose, so its late answers still find its own bucket.
+	CSearchReplyRouter m_tcpReplies;
+	CSearchReplyRouter m_udpReplies;
+
+	//! The search whose TCP answer the one-shot is waiting for. ClaimTcpReply() pops the
+	//! answer itself, so the timeout only removes this id if it is still outstanding.
+	uint32_t m_awaitingTcpSearchId = 0;
 
 	//! Does the current search packet contain 64bit values?
 	bool m_64bitSearchPacket;
