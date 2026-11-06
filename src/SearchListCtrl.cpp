@@ -83,19 +83,6 @@ const unsigned SORT_DES = 0x1000;
 const unsigned SORT_ALT = 0x2000;
 const unsigned SORTING_MASK = 0x3000;
 
-//! Order-insensitive item-set comparison for the selection guards below.
-bool SameItemSet(const wxDataViewItemArray &a, const wxDataViewItemArray &b)
-{
-	if (a.GetCount() != b.GetCount()) {
-		return false;
-	}
-	for (size_t i = 0; i < a.GetCount(); ++i) {
-		if (b.Index(a[i]) == wxNOT_FOUND) {
-			return false;
-		}
-	}
-	return true;
-}
 } // namespace
 
 CSearchListCtrl::CSearchListCtrl(
@@ -719,29 +706,7 @@ void CSearchListCtrl::OnIdleHook()
 		// while results stream in, which is why the list no longer jumps back to the top on
 		// every burst.
 		//
-		// Keep the selection on the same items anyway: on macOS a top-level add re-derives
-		// the view and Cocoa keeps the selection by row index, so an insertion above would
-		// move it onto other files -- and with it the toolbar and double-click actions,
-		// not just the menu. Restored only when it moved, so the other backends (which keep
-		// it on the same items) pay two selection reads and nothing else.
-		wxDataViewItemArray selected;
-		GetSelections(selected);
 		m_model->FlushPending();
-		if (!selected.IsEmpty()) {
-			wxDataViewItemArray current;
-			GetSelections(current);
-			if (!SameItemSet(current, selected)) {
-				wxDataViewItemArray live;
-				m_model->GetChildren(wxDataViewItem(), live);
-				wxDataViewItemArray restore;
-				for (size_t i = 0; i < selected.GetCount(); ++i) {
-					if (live.Index(selected[i]) != wxNOT_FOUND) {
-						restore.Add(selected[i]);
-					}
-				}
-				SetSelections(restore);
-			}
-		}
 	} else if (m_model->HasPending()) {
 		// A browse still streaming in is rebuilt on a growth schedule rather than on every
 		// burst. The rebuild below is O(rows) and a browse arrives one directory at a time,
