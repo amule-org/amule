@@ -98,20 +98,18 @@ static wxString Demangle(const wxCharBuffer &fn, const wxString &filename)
 /** Splits a full path into its path and filename component. */
 inline void DoSplitPath(const wxString &strPath, wxString *path, wxString *name)
 {
-	bool hasExt = false;
-	wxString ext, vol;
-
-	wxString *pVol = (path ? &vol : NULL);
-	wxString *pExt = (name ? &ext : NULL);
-
-	wxFileName::SplitPath(strPath, pVol, path, name, pExt, &hasExt);
-
-	if (hasExt && pExt) {
-		*name += "." + ext;
+	if (path) {
+		// This overload rejoins the volume itself: "C:" for a drive, but "\\server" for a UNC path.
+		wxFileName::SplitPath(strPath, path, nullptr, nullptr);
 	}
 
-	if (path && vol.Length()) {
-		*path = vol + wxFileName::GetVolumeSeparator() + *path;
+	if (name) {
+		bool hasExt = false;
+		wxString ext;
+		wxFileName::SplitPath(strPath, nullptr, nullptr, name, &ext, &hasExt);
+		if (hasExt) {
+			*name += "." + ext;
+		}
 	}
 }
 

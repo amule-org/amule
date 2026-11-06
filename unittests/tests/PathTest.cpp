@@ -404,6 +404,33 @@ TEST(CPath, GetPath_FullName)
 		ASSERT_EQUALS(CPath(), path.GetPath());
 		ASSERT_EQUALS(Norm("mule.ext"), path.GetFullName());
 	}
+
+#ifdef __WXMSW__
+	{
+		const CPath path("C:\\mule\\file.bin");
+
+		ASSERT_EQUALS(CPath("C:\\mule"), path.GetPath());
+		ASSERT_EQUALS(CPath("file.bin"), path.GetFullName());
+	}
+
+	// A UNC volume takes no ':' (#2377).
+	{
+		const CPath path("\\\\nas\\share\\mule\\file.bin");
+
+		ASSERT_EQUALS(CPath("\\\\nas\\share\\mule"), path.GetPath());
+		ASSERT_EQUALS(CPath("file.bin"), path.GetFullName());
+		ASSERT_EQUALS(path, path.GetPath().JoinPaths(path.GetFullName()));
+	}
+
+	// Nor does an extended-length one.
+	{
+		const CPath path("\\\\?\\C:\\mule\\file.bin");
+
+		ASSERT_EQUALS(CPath("\\\\?\\C:\\mule"), path.GetPath());
+		ASSERT_EQUALS(CPath("file.bin"), path.GetFullName());
+		ASSERT_EQUALS(path, path.GetPath().JoinPaths(path.GetFullName()));
+	}
+#endif
 }
 
 TEST(CPath, Cleanup)
