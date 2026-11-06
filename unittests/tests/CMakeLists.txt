@@ -3993,25 +3993,15 @@ if (BUILD_WXCAS)
 	add_executable (WxCasStatsPanelTest
 		WxCasStatsPanelTest.cpp
 		${CMAKE_SOURCE_DIR}/src/utils/wxCas/src/wxcas.cpp
-		${CMAKE_SOURCE_DIR}/src/utils/wxCas/src/linuxmon.cpp
-		${CMAKE_SOURCE_DIR}/src/utils/wxCas/src/onlinesig.cpp
-		${CMAKE_SOURCE_DIR}/src/utils/wxCas/src/wxcascte.cpp
-		${CMAKE_SOURCE_DIR}/src/utils/wxCas/src/wxcasframe.cpp
-		${CMAKE_SOURCE_DIR}/src/utils/wxCas/src/wxcasprefs.cpp
-		${CMAKE_SOURCE_DIR}/src/utils/wxCas/src/wxcaspix.cpp
-		${CMAKE_SOURCE_DIR}/src/utils/wxCas/src/wxcasprint.cpp
 	)
 	if (WIN32)
 		target_sources (WxCasStatsPanelTest PRIVATE ${CMAKE_SOURCE_DIR}/src/utils/wxCas/wxcas.rc)
 	endif ()
 	target_include_directories (WxCasStatsPanelTest PRIVATE
-		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src/utils/wxCas/src
+		${CMAKE_SOURCE_DIR}/src/utils/wxCas/src
 		${CMAKE_SOURCE_DIR}/src/utils/wxCas)
 	target_compile_definitions (WxCasStatsPanelTest PRIVATE WXCAS_NO_MAIN)
-	target_link_libraries (WxCasStatsPanelTest PRIVATE wxWidgets::CORE wxWidgets::NET)
-	if (APPLE)
-		target_link_libraries (WxCasStatsPanelTest PRIVATE "-framework CoreServices")
-	endif ()
+	target_link_libraries (WxCasStatsPanelTest PRIVATE wxcas_objects)
 	add_test (NAME WxCasStatsPanelTest COMMAND WxCasStatsPanelTest)
 	set_tests_properties (WxCasStatsPanelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
 endif ()

@@ -1,7 +1,7 @@
-add_executable (wxcas
+# All of wxCas but wxcas.cpp, which WxCasStatsPanelTest builds without main().
+add_library (wxcas_objects OBJECT
 	linuxmon.cpp
 	onlinesig.cpp
-	wxcas.cpp
 	wxcascte.cpp
 	wxcasframe.cpp
 	wxcasprefs.cpp
@@ -9,8 +9,23 @@ add_executable (wxcas
 	wxcasprint.cpp
 )
 
-target_include_directories (wxcas
-	PRIVATE ${amule_BINARY_DIR}
+target_include_directories (wxcas_objects
+	PUBLIC ${amule_BINARY_DIR}
+)
+
+target_link_libraries (wxcas_objects
+	PUBLIC wxWidgets::CORE
+	PUBLIC wxWidgets::NET
+)
+
+if (APPLE)
+	target_link_libraries (wxcas_objects
+		PUBLIC "-framework CoreServices"
+	)
+endif()
+
+add_executable (wxcas
+	wxcas.cpp
 )
 
 if (WIN32)
@@ -25,15 +40,8 @@ if (WIN32)
 endif()
 
 target_link_libraries (wxcas
-	PRIVATE wxWidgets::CORE
-	PRIVATE wxWidgets::NET
+	PRIVATE wxcas_objects
 )
-
-if (APPLE)
-	target_link_libraries (wxcas
-		PRIVATE "-framework CoreServices"
-	)
-endif()
 
 install (TARGETS wxcas
 	RUNTIME DESTINATION bin
