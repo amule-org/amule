@@ -69,9 +69,8 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 		updateArtwork();
 		event.Skip();
 	});
-	// Keep the clear button flush with the text field: an extra left border
-	// leaves a visible gap immediately before the X on macOS.
-	row->Add(clear, wxSizerFlags().Expand());
+	// Keep clear of the macOS focus ring, which is drawn outside the field.
+	row->Add(clear, wxSizerFlags().Expand().Border(wxLEFT, input->FromDIP(5)));
 	clear->Enable(!dynamic_cast<wxTextEntry *>(input)->GetValue().IsEmpty());
 
 	// Bind by ID on the parent: Search can replace its Name control when the

@@ -125,10 +125,8 @@ void CheckRow(wxWindow *field, wxSizer *outer)
 		"Clear button never raises the row above the field's height");
 	Require((clear->GetWindowStyleFlag() & wxBORDER_MASK) != wxBORDER_NONE,
 		"Clear button must look like a button");
-	Require(row->GetItem(clear)->GetBorder() == 0,
-		"Clear button must not add a gap before the X");
-	Require(clear->GetPosition().x == field->GetPosition().x + field->GetSize().x,
-		"Clear button must sit flush against the field");
+	Require(row->GetItem(clear)->GetBorder() == field->FromDIP(5),
+		"Clear button must keep a gap for the field's focus ring");
 	Require(row->GetMinSize().y == field->GetBestSize().y,
 		"Clear button must not increase the row height");
 	Require(clear->GetBitmap().GetLogicalSize() == clear->FromDIP(wxSize(16, 16)),
