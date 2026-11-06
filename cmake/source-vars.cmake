@@ -107,6 +107,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		BrowseListModel.cpp
 		CatDialog.cpp
 		ChatSelector.cpp
+		ClientListSplitter.cpp
 		ChatWnd.cpp
 		ClientDetailDialog.cpp
 		ClientHistoryListCtrl.cpp

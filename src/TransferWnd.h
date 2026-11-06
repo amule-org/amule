@@ -36,6 +36,7 @@ class CDownloadListCtrl;
 class CMuleNotebook;
 class wxListCtrl;
 class wxSplitterEvent;
+class CClientListSplitter;
 class wxCommandEvent;
 class wxMouseEvent;
 class wxEvent;
@@ -91,8 +92,8 @@ public:
 private:
 	//! Contains the current (or last if the clientlist is hidden) position of the splitter.
 	int m_splitter;
-	//! Minimum position of splitter bar
-	static const int s_splitterMin = 90;
+	//! Access the common behavior using this pane's controls and saved position.
+	CClientListSplitter ClientListSplitter();
 
 	/**
 	 * Handler for the set-status-by-category menu item.

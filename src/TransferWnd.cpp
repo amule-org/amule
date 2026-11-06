@@ -25,6 +25,8 @@
 
 #include "TransferWnd.h" // Interface declarations
 
+#include "ClientListSplitter.h"
+
 #include "MenuIcons.h"
 #include "FileLaunch.h" // Needed for opening category folders
 
@@ -457,104 +459,28 @@ void CTransferWnd::OnFilterChanged(wxCommandEvent &WXUNUSED(evt))
 	downloadlistctrl->SetFilterText(CastChild(IDC_TRANSFER_FILTER, wxTextCtrl)->GetValue());
 }
 
+CClientListSplitter CTransferWnd::ClientListSplitter()
+{
+	return CClientListSplitter(*CastChild("splitterWnd", wxSplitterWindow),
+		*clientlistctrl,
+		*CastChild(ID_CLIENTTOGGLE, wxBitmapButton),
+		*s_clientlistHeader,
+		m_splitter);
+}
+
 void CTransferWnd::Prepare()
 {
-	wxSplitterWindow *splitter = CastChild("splitterWnd", wxSplitterWindow);
-	int height = splitter->GetSize().GetHeight();
-	int header_height = s_clientlistHeader->GetSize().GetHeight();
-
-	if (m_splitter) {
-		// Some sanity checking
-		if (m_splitter < s_splitterMin) {
-			m_splitter = s_splitterMin;
-		} else if (m_splitter > height - header_height * 2) {
-			m_splitter = height - header_height * 2;
-		}
-		splitter->SetSashPosition(m_splitter);
-		m_splitter = 0;
-	}
-
-	if (!clientlistctrl->GetShowing()) {
-		// use a toggle event to close it (calculate size, change button)
-		clientlistctrl->SetShowing(true); // so it will be toggled to false
-		wxCommandEvent evt1;
-		OnToggleClientList(evt1);
-	}
+	ClientListSplitter().Prepare();
 }
 
 void CTransferWnd::OnToggleClientList(wxCommandEvent &WXUNUSED(evt))
 {
-	wxSplitterWindow *splitter = CastChild("splitterWnd", wxSplitterWindow);
-	wxBitmapButton *button = CastChild(ID_CLIENTTOGGLE, wxBitmapButton);
-
-	if (!clientlistctrl->GetShowing()) {
-		splitter->SetSashPosition(m_splitter);
-		m_splitter = 0;
-
-		clientlistctrl->SetShowing(true);
-
-		const wxBitmapBundle art = wxArtProvider::GetBitmapBundle("amule:arrows_down");
-		button->SetBitmapLabel(art);
-		button->SetBitmapFocus(art);
-		button->SetBitmapPressed(art);
-		button->SetBitmapCurrent(art);
-	} else {
-		clientlistctrl->SetShowing(false);
-
-		m_splitter = splitter->GetSashPosition();
-
-		// Add the height of the listctrl to the top-window
-		int height =
-			clientlistctrl->GetSize().GetHeight() + splitter->GetWindow1()->GetSize().GetHeight();
-
-		splitter->SetSashPosition(height);
-
-		const wxBitmapBundle art = wxArtProvider::GetBitmapBundle("amule:arrows_up");
-		button->SetBitmapLabel(art);
-		button->SetBitmapFocus(art);
-		button->SetBitmapPressed(art);
-		button->SetBitmapCurrent(art);
-	}
+	ClientListSplitter().Toggle();
 }
 
 void CTransferWnd::OnSashPositionChanging(wxSplitterEvent &evt)
 {
-	if (evt.GetSashPosition() < s_splitterMin) {
-		evt.SetSashPosition(s_splitterMin);
-	} else {
-		wxSplitterWindow *splitter = wxStaticCast(evt.GetEventObject(), wxSplitterWindow);
-		wxCHECK_RET(splitter, "ERROR: NULL splitter in CTransferWnd::OnSashPositionChanging");
-
-		int height = splitter->GetSize().GetHeight();
-		int header_height = s_clientlistHeader->GetSize().GetHeight();
-		int mousey = wxGetMousePosition().y - splitter->GetScreenRect().GetTop();
-
-		if (!clientlistctrl->GetShowing()) {
-			// lower window hidden
-			if (height - mousey < header_height * 2) {
-				// no moving down if already hidden
-				evt.Veto();
-			} else {
-				// show it
-				m_splitter = mousey; // prevent jumping if it was minimized and is then shown
-						     // by dragging the sash
-				wxCommandEvent event;
-				OnToggleClientList(event);
-			}
-		} else {
-			// lower window showing
-			if (height - mousey < header_height * 2) {
-				// hide it
-				wxCommandEvent event;
-				OnToggleClientList(event);
-			} else {
-				// Normal resize. If several events queue up, setting the sash to
-				// the current mouse position speeds things up and makes sash moving
-				// smoother.
-				evt.SetSashPosition(mousey);
-			}
-		}
-	}
+	ClientListSplitter().OnSashPositionChanging(evt);
 }
 #ifdef __WXMAC__
 void CTransferWnd::CentreHeaderOnCategoryBar()

@@ -34,6 +34,7 @@ class CSharedFilePeersListCtrl;
 class wxListEvent;
 class wxGauge;
 class wxSplitterEvent;
+class CClientListSplitter;
 class wxRadioButton;
 
 /**
@@ -120,8 +121,8 @@ private:
 	wxRadioButton *m_radioShowUploading;
 	//! Flag if window has been prepared
 	bool m_prepared;
-	//! Minimum position of splitter bar
-	static const int s_splitterMin = 90;
+	//! Access the common behavior using this pane's controls and saved position.
+	CClientListSplitter ClientListSplitter();
 
 	/**
 	 * Which clients are shown.
