@@ -2088,6 +2088,19 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 	// address only, which need not be the one chosen from the interfaces.
 	facts.listenerAcceptsIPv6 = theApp->listensocket && theApp->listensocket->BoundHost() == "[::]";
 
+	// Always ignores a failed probe by design: the user asserted the port is reachable. It must
+	// not pass silently, but this runs on every refresh, so only the transition is logged.
+	static bool loggedFailedProbe = false;
+	if (facts.mode == EIPv6AdvertisingMode::Always && facts.serverProbeFailed != loggedFailedProbe) {
+		loggedFailedProbe = facts.serverProbeFailed;
+		if (facts.serverProbeFailed) {
+			AddLogLineN(
+				CFormat("Advertising our IPv6 address anyway: the server could not "
+					"reach %s in its dial-back probe") %
+				(facts.choice ? facts.choice->ToWxString() : wxString("the chosen address")));
+		}
+	}
+
 	const std::optional<CNetworkAddress> advertised = DecideAdvertisedIPv6(facts);
 	if (ShouldRepublishKadSources(s_lastKadPublishedIPv6, facts)) {
 		if (theApp->sharedfiles) {
