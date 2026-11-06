@@ -250,10 +250,9 @@ protected:
 	//! The folder the context menu was opened on, if any. A right-click does not select the row
 	//! on every platform, so the handlers cannot ask for the selection.
 	wxDataViewItem m_contextFolder;
-	//! Files the context menu was opened on (clicked row, or selection when it covers the
-	//! row). Pointers into the tab's results, re-validated on use: RemoveResults()
-	//! deletes them, so a vanished file is dropped instead of acted on.
-	std::vector<CSearchFile *> m_contextFiles;
+	//! EC IDs of files the context menu was opened on (clicked row, or selection when it
+	//! covers the row). IDs remain safe to compare after RemoveResults() deletes the objects.
+	std::vector<uint32_t> m_contextFileIds;
 	//! Peer display name and lifecycle (EBrowseStatus) for a browse tab.
 	wxString m_browseName;
 	uint32 m_browseStatus;

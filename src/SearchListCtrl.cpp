@@ -28,7 +28,7 @@
 #include "MenuIcons.h"
 
 #include <algorithm>     // Needed for std::find, std::min, std::sort
-#include <unordered_set> // Needed for std::unordered_set (ContextFiles validation)
+#include <unordered_map> // Needed for EC ID lookup (ContextFiles validation)
 #include <vector>        // Needed for std::vector
 #include <wx/bmpcbox.h>
 
@@ -855,15 +855,18 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 	// (right-click does not select on every platform), otherwise the whole selection.
 	// Handlers must not read the live selection: results keep arriving while the menu
 	// is open and a resort would move it onto other files.
-	m_contextFiles = GetSelectedFiles();
+	m_contextFileIds.clear();
+	for (CSearchFile *file : GetSelectedFiles()) {
+		m_contextFileIds.push_back(file->ECID());
+	}
 	const wxDataViewItem clicked = event.GetItem();
 	if (clicked.IsOk() && !m_model->IsFolder(clicked) && !IsSelected(clicked)) {
 		if (CSearchFile *file = CSearchListModel::ToFile(clicked)) {
-			m_contextFiles = { file };
+			m_contextFileIds = { file->ECID() };
 		}
 	}
 
-	if (!m_contextFiles.empty()) {
+	if (!m_contextFileIds.empty()) {
 		// No title: wxMenu's title parameter renders inconsistently or not at all
 		// as a context-popup header across platforms (issue #767).
 		wxMenu menu;
@@ -891,7 +894,7 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		// Singular or plural to match what it will copy, as the server list does.
 		// OnPopupGetUrl has always walked the whole selection and joined the links with
 		// newlines -- only the menu stopped it being handed more than one.
-		const bool single = (m_contextFiles.size() == 1);
+		const bool single = (m_contextFileIds.size() == 1);
 		AppendMenuIcon(&menu,
 			MP_GETED2KLINK,
 			single ? _("Copy eD2k link to clipboard") : _("Copy eD2k links to clipboard"),
@@ -1001,28 +1004,28 @@ std::vector<wxDataViewItem> CSearchListCtrl::ContextFolders()
 
 std::vector<CSearchFile *> CSearchListCtrl::ContextFiles()
 {
-	// Only pointers still in this tab's results (top level or grouped children); empty
-	// when the snapshot went stale, so the action does nothing instead of falling back
-	// to the live selection and acting on the wrong files.
+	// Resolve the captured EC IDs against this tab's current results. IDs avoid retaining
+	// dangling pointers and cannot alias a new result if an allocator reuses an old address.
 	std::vector<CSearchFile *> validated;
-	if (m_contextFiles.empty() || !m_nResultsID) {
+	if (m_contextFileIds.empty() || !m_nResultsID) {
 		return validated;
 	}
 	const CSearchResultList &results = theApp->searchlist->GetSearchResults(m_nResultsID);
-	std::unordered_set<const CSearchFile *> current;
+	std::unordered_map<uint32_t, CSearchFile *> current;
 	current.reserve(results.size());
 	std::vector<CSearchFile *> stack(results.begin(), results.end());
 	while (!stack.empty()) {
 		CSearchFile *item = stack.back();
 		stack.pop_back();
-		current.insert(item);
+		current.emplace(item->ECID(), item);
 		for (CSearchFile *child : item->GetChildren()) {
 			stack.push_back(child);
 		}
 	}
-	for (CSearchFile *file : m_contextFiles) {
-		if (current.count(file)) {
-			validated.push_back(file);
+	for (uint32_t id : m_contextFileIds) {
+		const auto it = current.find(id);
+		if (it != current.end()) {
+			validated.push_back(it->second);
 		}
 	}
 	return validated;
