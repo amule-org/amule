@@ -10182,12 +10182,12 @@ msgid "Oh Oh, aMule is not running..."
 msgstr "어어, 어뮬이 실행중이 아닙니다..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid "aMule is running"
-msgstr "어뮬은 실행중입니다."
-
-#: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is running, but disconnected"
 msgstr "어뮬은 실행중이나 연결이 끊겨 있습니다."
+
+#: src/utils/wxCas/src/wxcasframe.cpp
+msgid "aMule is running"
+msgstr "어뮬은 실행중입니다."
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is connecting..."

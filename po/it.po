@@ -21,7 +21,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-05 10:40+0000\n"
+"PO-Revision-Date: 2026-11-06 08:28+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -4182,13 +4182,12 @@ msgid "EC connection failed. Empty reply."
 msgstr "Connessione EC fallita. Risposta vuota."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Invalid SRP handshake or unsupported profile. Connection closed."
-msgstr "Connessione esterna: risposta errata dal server. Connessione terminata."
+msgstr "Handshake SRP invalido o profilo non supportato. Connessione chiusa."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "An EC daemon of version 3.3.0 or later is required."
-msgstr ""
+msgstr "È richiesto un demone di versione 3.3.0 o successiva."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
@@ -4235,7 +4234,7 @@ msgstr "ERRORE: Impossibile mettersi in ascolto sulla porta TCP."
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: bundled amule-media-probe helper is unavailable."
-msgstr ""
+msgstr "Metadati multimediali: l'helper integrato amule-media-probe non è disponibile."
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -4243,9 +4242,9 @@ msgid "Media metadata: %s is gone, nothing to extract"
 msgstr "Metadati multimediali: %s non esiste più, nulla da estrarre"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Extracting media metadata: %s"
-msgstr "Estrazione dei metadati multimediali con ffprobe: %s"
+msgstr "Estrazione dei metadati multimediali: %s"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -5311,17 +5310,16 @@ msgid "Takes effect after restarting aMule."
 msgstr "Ha effetto dopo il riavvio di aMule."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Advertise my IPv6 address:"
-msgstr "Comunica il mio indirizzo IPv6 agli altri peer"
+msgstr "Pubblica il mio indirizzo IPv6:"
 
 #: src/muuli_wdr.cpp
 msgid "When verified"
-msgstr ""
+msgstr "Quando verificato"
 
 #: src/muuli_wdr.cpp
 msgid "Always"
-msgstr ""
+msgstr "Sempre"
 
 #: src/muuli_wdr.cpp src/StatTree.cpp
 msgid "Never"
@@ -5373,11 +5371,11 @@ msgstr "Assegna priorità alta ai server aggiunti manualmente"
 
 #: src/muuli_wdr.cpp
 msgid "Publish shared files faster on servers that allow it"
-msgstr ""
+msgstr "Pubblica più velocemente i file condivisi sui server che lo consentono"
 
 #: src/muuli_wdr.cpp
 msgid "Follow the publication pace that the server advertises. Other servers get the standard pace."
-msgstr ""
+msgstr "Segui il ritmo di pubblicazione che i server pubblicizzano. Gli altri server ottengono il ritmo standard."
 
 #: src/muuli_wdr.cpp
 msgid "Add files to download in pause mode"
@@ -5529,7 +5527,7 @@ msgstr "Estrai durata / bitrate / codec dai file audio e video condivisi"
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
-msgstr ""
+msgstr "Quando abilitato, aMule utilizza il suo analizzatore integrato MediaInfo per estrarre metadata dai file multimediali condivisi."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5605,7 +5603,7 @@ msgstr "Mostra quanti file e cartelle delle tue cartelle condivise verrebbero es
 
 #: src/muuli_wdr.cpp
 msgid "Folders the daemon allows remote changes in"
-msgstr ""
+msgstr "Cartelle in cui il demone consente modifiche da remoto"
 
 #: src/muuli_wdr.cpp
 msgid "(Read-only. Configured on the daemon; if empty, the daemon refuses every remote folder change.)"
@@ -10130,12 +10128,12 @@ msgid "Oh Oh, aMule is not running..."
 msgstr "Oh oh, aMule non è in esecuzione..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid "aMule is running"
-msgstr "aMule è in funzione"
-
-#: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is running, but disconnected"
 msgstr "aMule è in esecuzione, ma non connesso"
+
+#: src/utils/wxCas/src/wxcasframe.cpp
+msgid "aMule is running"
+msgstr "aMule è in funzione"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is connecting..."

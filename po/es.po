@@ -18,7 +18,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-05 10:40+0000\n"
+"PO-Revision-Date: 2026-11-06 08:28+0000\n"
 "Last-Translator: Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -3187,12 +3187,12 @@ msgstr "El filtrado de comentarios de archivos está desactivado."
 
 #: src/FilterSelectionSummary.h
 msgid "No file comments will be hidden: the word list is empty."
-msgstr ""
+msgstr "No se ocultará ningún comentario del archivo: la lista de palabras está vacía."
 
 #: src/FilterSelectionSummary.h
 #, c-format
 msgid "File comments containing any of these literal terms will be hidden (ignoring case): %s."
-msgstr ""
+msgstr "Se ocultarán los comentarios de los archivos que contengan cualquiera de estos términos literales (sin distinguir entre mayúsculas y minúsculas): %s."
 
 #: src/FirstRunWizard.cpp
 msgid "Mobile / 4G-5G (20 / 5 Mbit)"
@@ -3517,7 +3517,7 @@ msgstr "Descarga HTTP cancelada"
 #: src/HTTPDownload.cpp
 #, c-format
 msgid "Refusing to download %s: only http and https URLs are supported."
-msgstr ""
+msgstr "Se rechaza la descarga de %s: solo se admiten URL http y https."
 
 #: src/HTTPDownload.cpp
 #, c-format
@@ -3643,9 +3643,9 @@ msgstr[0] "%u línea malformada fue descartada."
 msgstr[1] "%u líneas malformadas fueron descartadas."
 
 #: src/IPFilter.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace %s file, aborting update: %s"
-msgstr "Error al renombrar el archivo %s, actualización cancelada."
+msgstr "No se ha podido sustituir el archivo %s; se cancela la actualización: %s"
 
 #: src/IPFilter.cpp
 msgid "IP filter is ready"
@@ -4168,9 +4168,8 @@ msgid "Invalid password, not a MD5 hash!"
 msgstr "¡Contraseña incorrecta, no es un hash MD5!"
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Could not generate SRP credentials."
-msgstr "No se pudo borrar '%s' del disco."
+msgstr "No se pudieron generar las credenciales SRP."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 #, c-format
@@ -4190,13 +4189,12 @@ msgid "EC connection failed. Empty reply."
 msgstr "La conexión EC ha fallado. Respuesta vacía."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
-#, fuzzy
 msgid "Invalid SRP handshake or unsupported profile. Connection closed."
-msgstr "Conexión externa: respuesta errónea, error al establecer la comunicación. Conexión cerrada."
+msgstr "Negociación SRP no válido o perfil no compatible. Conexión cerrada."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "An EC daemon of version 3.3.0 or later is required."
-msgstr ""
+msgstr "Se requiere un demonio EC de la versión 3.3.0 o posterior."
 
 #: src/libs/ec/cpp/RemoteConnect.cpp
 msgid "External Connection: the daemon failed to prove it knows the password. Connection closed."
@@ -4243,7 +4241,7 @@ msgstr "ERROR: no se puede escuchar en el puerto TCP."
 
 #: src/MediaProbe.cpp
 msgid "Media metadata: bundled amule-media-probe helper is unavailable."
-msgstr ""
+msgstr "Metadatos multimedia: el asistente integrado amule-media-probe no está disponible."
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -4251,14 +4249,14 @@ msgid "Media metadata: %s is gone, nothing to extract"
 msgstr "Metadatos multimedia: %s ya no existe, nada que extraer"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Extracting media metadata: %s"
-msgstr "Extrayendo metadatos multimedia con ffprobe: %s"
+msgstr "Extracción de metadatos multimedia: %s"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: parser failed for %s"
-msgstr "Metadatos multimedia: ffprobe falló (código %d) para %s"
+msgstr "Metadatos multimedia: error en el análisis de %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5385,7 +5383,7 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Follow the publication pace that the server advertises. Other servers get the standard pace."
-msgstr ""
+msgstr "Sigue el ritmo de publicación que indica el servidor. Los demás servidores siguen el ritmo estándar."
 
 #: src/muuli_wdr.cpp
 msgid "Add files to download in pause mode"
@@ -5537,7 +5535,7 @@ msgstr "Extraer la duración, el bitrate y el códec de los archivos multimedia 
 
 #: src/muuli_wdr.cpp
 msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
-msgstr ""
+msgstr "Cuando está activada, aMule utiliza su analizador MediaInfo integrado para extraer metadatos de los archivos multimedia compartidos."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5613,11 +5611,11 @@ msgstr "Muestra cuántos de los archivos y carpetas de sus carpetas compartidas 
 
 #: src/muuli_wdr.cpp
 msgid "Folders the daemon allows remote changes in"
-msgstr ""
+msgstr "Carpetas en las que el demonio permite cambios remotos"
 
 #: src/muuli_wdr.cpp
 msgid "(Read-only. Configured on the daemon; if empty, the daemon refuses every remote folder change.)"
-msgstr ""
+msgstr "(Solo lectura. Se configura en el demonio; si está vacío, el demonio rechaza cualquier cambio en las carpetas remotas.)"
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
@@ -5889,15 +5887,15 @@ msgstr "Contraseña"
 
 #: src/muuli_wdr.cpp
 msgid "Folders remote clients may use"
-msgstr ""
+msgstr "Carpetas que pueden utilizar los clientes remotos"
 
 #: src/muuli_wdr.cpp
 msgid "(Remote clients may set the incoming, temp, shared and category folders only inside these. Empty means no remote folder change is allowed. Local changes here are never restricted.)"
-msgstr ""
+msgstr "(Los clientes remotos solo pueden configurar las carpetas \"entrantes\", \"temporales\", \"compartidos\" y categorías dentro de estas \"Vacío\". Dejarlo vacío significa que no se permite ningún cambio remoto de carpetas. Los cambios locales aquí nunca están restringidos.)"
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder, e.g. /home/user/aMule. A remote client may then set any folder at or below it."
-msgstr ""
+msgstr "Ruta absoluta de una carpeta, p. ej., /home/user/aMule. Un cliente remoto podrá establecer cualquier carpeta en ella o dentro de ella."
 
 #: src/muuli_wdr.cpp
 msgid "aMule API server parameters"
@@ -6326,9 +6324,8 @@ msgid "Check for a newer GeoIP database at startup and every week while aMule is
 msgstr "Comprobar si hay una base de datos GeoIP más reciente al inicio y cada semana mientras aMule esté en ejecución."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable incoming message filtering (except current chat):"
-msgstr "Filtrar los mensajes entrantes (salvo la conversación actual):"
+msgstr "Activar el filtrado de mensajes entrantes (excepto el chat actual):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6336,6 +6333,9 @@ msgid ""
 "Turning this off keeps your selected options and word list.\n"
 "Filtered messages are discarded without opening a chat or replying to the sender."
 msgstr ""
+"Activa las opciones de filtro de abajo. Selecciona al menos una opción para filtrar los mensajes.\n"
+"Si desactivas esta función, se mantendrán las opciones seleccionadas y la lista de palabras.\n"
+"Los mensajes filtrados se descartan sin abrir el chat ni responder al remitente."
 
 #: src/muuli_wdr.cpp
 msgid "Filter all messages"
@@ -10137,12 +10137,12 @@ msgid "Oh Oh, aMule is not running..."
 msgstr "Oh oh, aMule no está ejecutándose..."
 
 #: src/utils/wxCas/src/wxcasframe.cpp
-msgid "aMule is running"
-msgstr "aMule ya está ejecutándose"
-
-#: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is running, but disconnected"
 msgstr "aMule se está ejecutando, pero está desconectado"
+
+#: src/utils/wxCas/src/wxcasframe.cpp
+msgid "aMule is running"
+msgstr "aMule ya está ejecutándose"
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "aMule is connecting..."
