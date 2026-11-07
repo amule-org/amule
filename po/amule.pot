@@ -2671,8 +2671,8 @@ msgstr ""
 msgid "Media metadata extraction is disabled in preferences"
 msgstr ""
 
-#: src/ExternalConn.cpp
-msgid "This aMule has no media helper (amule-media-probe)"
+#: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -7008,10 +7008,6 @@ msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
 msgstr ""
 
@@ -8288,10 +8284,6 @@ msgstr ""
 
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
-msgstr ""
-
-#: src/SharedFileList.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
 msgstr ""
 
 #: src/SharedFileList.cpp
