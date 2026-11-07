@@ -4113,6 +4113,11 @@ msgstr ""
 
 #: src/MediaProbe.cpp
 #, c-format
+msgid "Media metadata: no result for %s: %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
 msgstr ""
 
@@ -4123,12 +4128,7 @@ msgstr ""
 
 #: src/MediaProbe.cpp
 #, c-format
-msgid "Media metadata: no result for %s: %s"
-msgstr ""
-
-#: src/MediaProbe.cpp
-#, c-format
-msgid "Media metadata: no result: %s"
+msgid "Media metadata extraction disabled until restart: %s"
 msgstr ""
 
 #: src/MediaProbeThread.cpp
