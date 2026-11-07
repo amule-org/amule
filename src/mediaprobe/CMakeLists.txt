@@ -15,7 +15,7 @@ set(MEDIA_PROBE_PARSERS probe.cpp tags.cpp codecs.cpp riff.cpp isobmff.cpp matro
 add_library(media-probe-sandbox STATIC sandbox.cpp sandbox-windows.cpp)
 target_compile_features(media-probe-sandbox PRIVATE cxx_std_17)
 if(WIN32)
-  target_link_libraries(media-probe-sandbox PUBLIC advapi32)
+  target_link_libraries(media-probe-sandbox PUBLIC advapi32 user32)
 endif()
 add_executable(amule-media-probe main.cpp ${MEDIA_PROBE_PARSERS})
 target_link_libraries(amule-media-probe PRIVATE media-probe-sandbox)

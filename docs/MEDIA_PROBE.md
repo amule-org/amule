@@ -115,6 +115,8 @@ vulnerabilities or a system already compromised outside aMule.
   restricted primary token (NULL restricting SID, other groups/user deny-only,
   privileges removed). Trusted loader/runtime startup uses low integrity and
   a restricted impersonation token retaining only the caller's existing access.
+  Startup uses a separate, noninteractive window station and low-integrity
+  desktop; the restricted token receives no access to the interactive desktop.
   Before parsing, the helper lowers its primary integrity to untrusted and drops
   the startup token. A failure at either step returns no metadata.
   Reverting again cannot restore privileges because its primary token is already

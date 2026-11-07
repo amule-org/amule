@@ -4,6 +4,7 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <sddl.h>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -24,6 +25,66 @@ public:
 	Handle() = default;
 	Handle(const Handle &) = delete;
 	Handle &operator=(const Handle &) = delete;
+};
+
+class PrivateDesktop
+{
+public:
+	std::wstring name;
+	~PrivateDesktop()
+	{
+		if (desktop != nullptr)
+			CloseDesktop(desktop);
+		if (station != nullptr)
+			CloseWindowStation(station);
+	}
+	bool create(PSID user, PSID logon)
+	{
+		// Never grant the restricted token access to the interactive desktop.
+		// Runtime initialization needs its own low-integrity desktop instead.
+		LPWSTR userText = nullptr, logonText = nullptr;
+		if (!ConvertSidToStringSidW(user, &userText))
+			return false;
+		if (!ConvertSidToStringSidW(logon, &logonText)) {
+			LocalFree(userText);
+			return false;
+		}
+		std::wstring sddl = L"D:(A;;GA;;;";
+		sddl += userText;
+		sddl += L")(A;;GA;;;";
+		sddl += logonText;
+		sddl += L")(A;;GA;;;S-1-0-0)S:(ML;;NW;;;LW)";
+		LocalFree(userText);
+		LocalFree(logonText);
+		PSECURITY_DESCRIPTOR descriptor = nullptr;
+		if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
+			    sddl.c_str(), SDDL_REVISION_1, &descriptor, nullptr))
+			return false;
+		SECURITY_ATTRIBUTES attributes{ sizeof(attributes), descriptor, FALSE };
+		const std::wstring stationName = L"AMuleProbe-" + std::to_wstring(GetCurrentProcessId()) +
+						 L"-" + std::to_wstring(GetTickCount64());
+		station = CreateWindowStationW(stationName.c_str(), 0, WINSTA_ALL_ACCESS, &attributes);
+		const auto previous = GetProcessWindowStation();
+		bool restored = true;
+		if (station != nullptr && previous != nullptr && SetProcessWindowStation(station)) {
+			desktop = CreateDesktopW(L"Parser", nullptr, nullptr, 0, GENERIC_ALL, &attributes);
+			const DWORD error = GetLastError();
+			restored = SetProcessWindowStation(previous) != 0;
+			if (restored)
+				SetLastError(error);
+		}
+		const DWORD error = GetLastError();
+		LocalFree(descriptor);
+		SetLastError(error);
+		if (desktop == nullptr || !restored)
+			return false;
+		name = stationName + L"\\Parser";
+		return true;
+	}
+
+private:
+	HWINSTA station = nullptr;
+	HDESK desktop = nullptr;
 };
 
 bool tokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS type, std::vector<unsigned char> &buffer)
@@ -130,6 +191,18 @@ int launch()
 		    TokenImpersonation,
 		    &startup.value))
 		return failure("duplicate startup impersonation token");
+	PSID logon = nullptr;
+	for (DWORD i = 0; i < groups->GroupCount; ++i) {
+		if ((groups->Groups[i].Attributes & SE_GROUP_LOGON_ID) == SE_GROUP_LOGON_ID)
+			logon = groups->Groups[i].Sid;
+	}
+	PrivateDesktop desktop;
+	if (logon == nullptr) {
+		SetLastError(ERROR_NO_SUCH_LOGON_SESSION);
+		return failure("find parser logon SID");
+	}
+	if (!desktop.create(reinterpret_cast<const TOKEN_USER *>(userBuffer.data())->User.Sid, logon))
+		return failure("create private parser desktop");
 
 	job.value = CreateJobObjectW(nullptr, nullptr);
 	JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{};
@@ -160,6 +233,7 @@ int launch()
 	info.StartupInfo.hStdInput = inherited[0];
 	info.StartupInfo.hStdOutput = inherited[1];
 	info.StartupInfo.hStdError = inherited[2];
+	info.StartupInfo.lpDesktop = desktop.name.data();
 	SIZE_T bytes = 0;
 	InitializeProcThreadAttributeList(nullptr, 1, 0, &bytes);
 	std::vector<unsigned char> attributes(bytes);
