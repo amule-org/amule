@@ -2,6 +2,7 @@
 // Native denial tests use the very same sandbox as the production helper.
 #include "sandbox.h"
 #include <cerrno>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -17,7 +18,6 @@
 #include <netinet/in.h>
 #include <sys/un.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <sys/uio.h>
 #include <unistd.h>
 #ifdef __linux__
@@ -170,8 +170,9 @@ int main(int argc, char **argv)
 #endif
 	} else if (action == "inherited") {
 #ifndef _WIN32
-		struct stat info;
-		blocked = fstat(std::atoi(path.c_str()), &info) < 0 && errno == EBADF;
+		// Test closure directly. Some 32-bit libc fstat wrappers use path-based
+		// stat syscalls, which remain denied even for an already-closed descriptor.
+		blocked = close(std::atoi(path.c_str())) < 0 && errno == EBADF;
 #endif
 	} else if (action == "unix-network") {
 #ifndef _WIN32
@@ -200,21 +201,37 @@ int main(int argc, char **argv)
 #endif
 	} else if (action == "map-file" || action == "map-executable") {
 #ifdef __linux__
-		void *memory = mmap(nullptr,
+		const int protection = action == "map-executable" ? PROT_READ | PROT_EXEC : PROT_READ;
+		const int flags = action == "map-executable" ? MAP_PRIVATE | MAP_ANONYMOUS : MAP_PRIVATE;
+		// Inspect the kernel result: musl translates an anonymous mmap's EPERM
+		// into ENOMEM. Calling the syscall avoids confusing that with no denial.
+#if defined(__s390x__)
+		unsigned long arguments[] = { 0,
 			4096,
-			action == "map-executable" ? PROT_READ | PROT_EXEC : PROT_READ,
-			action == "map-executable" ? MAP_PRIVATE | MAP_ANONYMOUS : MAP_PRIVATE,
+			static_cast<unsigned long>(protection),
+			static_cast<unsigned long>(flags),
 			STDIN_FILENO,
-			0);
-		blocked = memory == MAP_FAILED && errno == EPERM;
-		if (memory != MAP_FAILED)
-			munmap(memory, 4096);
+			0 };
+		const long mapped = syscall(__NR_mmap, arguments);
+#elif defined(__NR_mmap2)
+		const long mapped = syscall(__NR_mmap2, nullptr, 4096, protection, flags, STDIN_FILENO, 0);
+#else
+		const long mapped = syscall(__NR_mmap, nullptr, 4096, protection, flags, STDIN_FILENO, 0);
+#endif
+		blocked = mapped == -1 && errno == EPERM;
+		if (mapped != -1)
+			munmap(reinterpret_cast<void *>(static_cast<uintptr_t>(mapped)), 4096);
 #endif
 	} else if (action == "allocate") {
 		// Catch a filter that accidentally prevents ordinary parser allocations.
 		std::string memory(4 * 1024 * 1024, 'x');
 		return memory.back() == 'x' ? 0 : 1;
 	}
+	if (!blocked)
+		std::fprintf(stderr,
+			"sandbox test: %s did not produce the expected denial (errno %d)\n",
+			action.c_str(),
+			errno);
 	std::fputs(blocked ? "blocked\n" : "UNRESTRICTED\n", stdout);
 	return blocked ? 0 : 1;
 }

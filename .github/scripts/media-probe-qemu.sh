@@ -72,8 +72,11 @@ sudo rm -f "$root"/linux-image-*.deb
   gzip -1 > media-probe-vm/root.cpio.gz
 # No user-mode networking, host shares or forwarded services. A serial result
 # marker is required as well as a successful VM exit: a panic is not a pass.
+display=()
+if [[ "$EMULATOR" = ppc64 ]]; then display=(-vga none); fi
 timeout --kill-after=10 1200 "qemu-system-${EMULATOR}" \
   -machine "$MACHINE" -cpu "$CPU" -m 2048 -smp 2 -nographic -no-reboot \
+  "${display[@]}" \
   -nic none -kernel "$kernel" -initrd media-probe-vm/root.cpio.gz \
   -append "console=$CONSOLE rdinit=/init panic=-1" 2>&1 | tee media-probe-vm/console.log
 grep -qx 'MEDIA_PROBE_QEMU_RESULT=0' <(tr -d '\r' < media-probe-vm/console.log)

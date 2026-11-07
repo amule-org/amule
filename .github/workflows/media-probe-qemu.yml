@@ -62,11 +62,15 @@ jobs:
       - uses: docker/setup-qemu-action@v3
       - name: Install cross-build and VM tools
         run: |
+          package=qemu-system-${{ matrix.emulator }}
+          case '${{ matrix.emulator }}' in
+            ppc64) package=qemu-system-ppc ;;
+            riscv64) package=qemu-system-misc ;;
+          esac
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             debootstrap debian-archive-keyring cpio \
-            g++-${{ matrix.compiler }} qemu-system-arm qemu-system-ppc \
-            qemu-system-misc opensbi
+            g++-${{ matrix.compiler }} "$package" opensbi
       - name: Build, boot and verify restrictions under a real kernel
         env:
           ARCH: ${{ matrix.arch }}

@@ -4648,7 +4648,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 		if (!thePrefs::IsMediaMetadataAvailable()) {
 			response = new CECPacket(EC_OP_FAILED);
 			response->AddTag(CECTag(EC_TAG_STRING,
-				wxTRANSLATE("This aMule has no media helper (amule-media-probe)")));
+				wxTRANSLATE("Media metadata extraction is unavailable: the helper is missing "
+					    "or its OS restrictions failed. See the core log for details.")));
 			break;
 		}
 		// Every EC_TAG_KNOWNFILE child, not just the first: the GUI sends one request for a
