@@ -103,6 +103,7 @@ bool filterSyscalls()
 	statement(BPF_RET | BPF_K, SECCOMP_RET_KILL_PROCESS);
 	statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, nr));
 	allowFd(__NR_read, STDIN_FILENO);
+	allowFd(__NR_readv, STDIN_FILENO);
 #ifdef __NR_pread64
 	allowFd(__NR_pread64, STDIN_FILENO);
 #endif
@@ -110,13 +111,16 @@ bool filterSyscalls()
 #ifdef __NR__llseek
 	allowFd(__NR__llseek, STDIN_FILENO);
 #endif
-	// No writev, sendfile, splice, descriptor duplication or descriptor acquisition.
-	jump(__NR_write, 0, 5);
-	statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[0]));
-	jump(STDOUT_FILENO, 2, 0);
-	jump(STDERR_FILENO, 1, 0);
-	statement(BPF_RET | BPF_K, SECCOMP_RET_ERRNO | EPERM);
-	statement(BPF_RET | BPF_K, SECCOMP_RET_ALLOW);
+	// musl stdio uses vectored I/O. Both APIs obey the same descriptor rules;
+	// sendfile, splice, descriptor duplication and acquisition remain denied.
+	for (const auto nr : { __NR_write, __NR_writev }) {
+		jump(nr, 0, 5);
+		statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[0]));
+		jump(STDOUT_FILENO, 2, 0);
+		jump(STDERR_FILENO, 1, 0);
+		statement(BPF_RET | BPF_K, SECCOMP_RET_ERRNO | EPERM);
+		statement(BPF_RET | BPF_K, SECCOMP_RET_ALLOW);
+	}
 	// Allocations are anonymous and cannot introduce executable memory or map
 	// another inherited file. Executable mappings already loaded by the runtime stay.
 #ifdef __NR_mmap

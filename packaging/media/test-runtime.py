@@ -224,7 +224,12 @@ def main():
         root = Path(scratch).resolve()
         try:
             run(args, root)
-        except BaseException:
+        except BaseException as error:
+            if isinstance(error, subprocess.CalledProcessError):
+                for stream in ('stdout', 'stderr'):
+                    captured = getattr(error, stream)
+                    if captured:
+                        print(f'Packaged command {stream} (last 8 KiB): {captured[-8192:]!r}', flush=True)
             for name in ('console.log', 'logfile'):
                 path = root / name
                 if path.is_file():

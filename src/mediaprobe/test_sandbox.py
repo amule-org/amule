@@ -37,6 +37,8 @@ class SandboxTests(unittest.TestCase):
     def test_input_read_and_seek_still_work(self):
         self.run_action('read-input')
         self.run_action('allocate')
+        if os.name != 'nt':
+            self.assertEqual(self.run_action('vectored').stdout, b'vector ok\n')
 
     @unittest.skipUnless(os.name == 'nt', 'Windows input handle access reduction')
     def test_writable_input_handle_cannot_modify_the_input(self):

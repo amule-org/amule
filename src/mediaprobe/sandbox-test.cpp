@@ -18,6 +18,7 @@
 #include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/uio.h>
 #include <unistd.h>
 #ifdef __linux__
 #include <sys/syscall.h>
@@ -59,7 +60,23 @@ int main(int argc, char **argv)
 			       ? 0
 			       : 1;
 	}
-	if (action == "write-input") {
+	if (action == "vectored") {
+#ifndef _WIN32
+		char input[4] = {};
+		iovec reads[] = { { input, 2 }, { input + 2, 2 } };
+		char message[] = "vector ok\n";
+		iovec writes[] = { { message, 7 }, { message + 7, 3 } };
+#ifdef __linux__
+		if (readv(STDOUT_FILENO, reads, 2) != -1 || errno != EPERM ||
+			writev(STDIN_FILENO, writes, 2) != -1 || errno != EPERM)
+			return 1;
+#endif
+		return readv(STDIN_FILENO, reads, 2) == 4 && std::memcmp(input, "RIFF", 4) == 0 &&
+				       writev(STDOUT_FILENO, writes, 2) == 10
+			       ? 0
+			       : 1;
+#endif
+	} else if (action == "write-input") {
 #ifdef _WIN32
 		DWORD written = 0;
 		blocked = !WriteFile(GetStdHandle(STD_INPUT_HANDLE), "X", 1, &written, nullptr) &&

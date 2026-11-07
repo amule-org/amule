@@ -93,7 +93,8 @@ vulnerabilities or a system already compromised outside aMule.
 
 - **Linux (x86-64 and arm64):** close all unrelated inherited descriptors, disable
   core-dump/ptrace exposure, set `no_new_privs`, and install a default-deny seccomp
-  filter. Reads/seeks are limited to stdin and writes to stdout/stderr. New file
+  filter. Reads/seeks are limited to stdin and writes to stdout/stderr, including
+  the vectored I/O used by musl's standard library in static builds. New file
   opens, sockets (including Unix sockets), process creation, execution, tracing,
   descriptor acquisition and io_uring are denied. Allocations remain available,
   but new executable mappings are denied. The filter checks the syscall ABI.
