@@ -31,7 +31,6 @@
 #include <wx/bmpbuttn.h>
 #include <wx/sizer.h>
 #include <wx/textentry.h>
-#include <algorithm>
 
 // Keep the original text control (including the search-history dropdown) and
 // its text events. The clear button stays visible even when the field is empty.
@@ -40,23 +39,19 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 	wxWindow *parent = input->GetParent();
 	const wxWindowID inputId = input->GetId();
 	auto *row = new wxBoxSizer(wxHORIZONTAL);
-	row->Add(input, wxSizerFlags(1).Expand());
-	// Width for the 16px icon + padding; height stays flexible so the sizer
-	// stretches the button to the field's height -- a fixed square computed
-	// from GetBestSize().y before layout ends up smaller than the real field
-	// on macOS and the X looks off-center.
-	const int side = std::max(input->GetBestSize().y, input->FromDIP(22));
+	row->Add(input, wxSizerFlags(1).CenterVertical());
+	long clearStyle = wxBU_EXACTFIT;
+#if defined(__WXOSX__)
+	// Cocoa's default rounded bezel needs a 40 DIP fitting width for a 16 DIP
+	// bitmap, but this row gives the button 24 DIP. Use the compact square bezel,
+	// whose native fitting size is smaller than the button.
+	clearStyle |= wxBORDER_SIMPLE;
+#endif
+	const int side = input->GetBestSize().y;
 	auto *clear = new wxBitmapButton(
-		parent, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+		parent, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(side, side), clearStyle);
 	clear->SetToolTip(_("Clear"));
-	// Fixed width, flexible height: the row stretches it to match the field,
-	// so the bitmap stays vertically centered on every platform. The max
-	// height keeps the button's own best size (native chrome is taller than
-	// the field on some platforms) from raising the row above the field's
-	// height; the min height stays open so the button still stretches when
-	// the field ends up taller (macOS bezel).
-	clear->SetMinSize(wxSize(side, -1));
-	clear->SetMaxSize(wxSize(side, input->GetBestSize().y));
+	clear->SetMinSize(wxSize(side, side));
 	const auto updateArtwork = [clear]() {
 		// Bundles take a size at 100% DPI and rasterize the SVG at each scale.
 		clear->SetBitmap(CamuleArtProvider::GetMenuBitmapBundle(
@@ -70,7 +65,7 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 		event.Skip();
 	});
 	// Keep clear of the macOS focus ring, which is drawn outside the field.
-	row->Add(clear, wxSizerFlags().Expand().Border(wxLEFT, input->FromDIP(5)));
+	row->Add(clear, wxSizerFlags().CenterVertical().Border(wxLEFT, input->FromDIP(5)));
 	clear->Enable(!dynamic_cast<wxTextEntry *>(input)->GetValue().IsEmpty());
 
 	// Bind by ID on the parent: Search can replace its Name control when the
