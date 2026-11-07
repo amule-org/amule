@@ -48,3 +48,41 @@ jobs:
     uses: ./.github/workflows/media-probe-fuzz.yml
     with:
       seconds: 600
+  musl:
+    if: ${{ !inputs.fuzz_only }}
+    name: Static musl restrictions (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build and test the static helper with the packaging C library
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Match the static package's pinned Alpine release without building
+          # the whole application just to exercise the helper's libc ABI.
+          . packaging/linux/versions.env
+          mkdir -p build-probe-musl
+          docker run --rm \
+            --volume "$PWD:/source:ro" --volume "$PWD/build-probe-musl:/build" \
+            "alpine:$ALPINE_STATIC_BASE" sh -ec '
+              apk add --no-cache cmake g++ python3
+              cat /etc/os-release
+              c++ --version
+              cmake -S /source/src/mediaprobe -B /build \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS=-static
+              cmake --build /build --parallel 2
+              ctest --test-dir /build --output-on-failure
+            '
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: media-probe-tests-musl-${{ matrix.os }}
+          path: |
+            build-probe-musl/Testing/Temporary/
+            build-probe-musl/src/amule-media-probe
+          if-no-files-found: warn
