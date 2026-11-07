@@ -661,7 +661,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 							static_cast<std::uint64_t>(tag.GetInt());
 						cur_server->SetIPv6Verdict(
 							ParseServerIPv6Verdict(
-								rawStatus >= 0 && rawStatus <= 0xFF
+								rawStatus <= 0xFF
 									? std::optional<std::uint8_t>(
 										  static_cast<std::uint8_t>(
 											  rawStatus))

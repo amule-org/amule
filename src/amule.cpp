@@ -2134,6 +2134,21 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 			theApp->serverconnect->UpdateAdvertisedIPv6(advertised);
 		}
 	}
+
+#ifdef ENABLE_IPV6
+	// A probing server needs the address it is about to test, and the peers-facing decision drops
+	// an address as soon as the proof or the verdict stops covering it. Without this a renumbered
+	// prefix withdraws the address and the server never probes the new one until the next login.
+	// UpdateAdvertisedIPv6() sends only when the address changed.
+	CServer *const probeServer =
+		theApp->serverconnect ? theApp->serverconnect->GetCurrentServer() : nullptr;
+	const bool mayExposeProbeAddress = facts.mode != EIPv6AdvertisingMode::Never && !facts.proxyEnabled &&
+					   facts.familyPermitted && facts.listenerAcceptsIPv6 &&
+					   !facts.contradicted;
+	if (probeServer != nullptr && probeServer->SupportsIPv6Probe() && mayExposeProbeAddress) {
+		theApp->serverconnect->UpdateAdvertisedIPv6(SelectedLocalIPv6());
+	}
+#endif
 	return advertised;
 }
 #endif

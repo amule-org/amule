@@ -274,16 +274,10 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 
 		uint32 tagcount = 4;
 #ifdef ENABLE_IPV6
-		// In verified mode an unproven address is never sent, and a server known not to probe
-		// publishes on trust, so it does not get one either: the address it would receive is the
-		// one we would be advertising without proof.
-		const bool serverProbes =
-			sender->cur_server != nullptr && sender->cur_server->SupportsIPv6Probe();
-		const std::optional<CNetworkAddress> peersIPv6 =
-			(thePrefs::GetAdvertiseIPv6Mode() == EIPv6AdvertisingMode::Verified && !serverProbes)
-				? std::nullopt
-				: AdvertisedIPv6ForPeers();
-		const SServerLoginIPv6Decision ipv6Login = DecideServerLoginIPv6(peersIPv6);
+		// The login carries what the peers-facing decision allows; a probing server receives the
+		// address it has to test at OP_IDCHANGE, so this needs no probe-flag guess from a previous
+		// session.
+		const SServerLoginIPv6Decision ipv6Login = DecideServerLoginIPv6(AdvertisedIPv6ForPeers());
 		if (ipv6Login.advertise) {
 			tagcount++;
 		}
