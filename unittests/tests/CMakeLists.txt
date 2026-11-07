@@ -729,6 +729,7 @@ endif()
 
 add_executable (PacketTest
 	PacketTest.cpp
+	SourceExchangePacketTest.cpp
 	ServerUDPPacketQueueTest.cpp
 	${CMAKE_SOURCE_DIR}/src/Packet.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
@@ -3329,6 +3330,12 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/PacketReceiveIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		add_test (NAME SourceExchangeIntegrationTest
+			COMMAND ${Python3_EXECUTABLE} -u
+				${CMAKE_CURRENT_SOURCE_DIR}/SourceExchangeIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (SourceExchangeIntegrationTest PROPERTIES
+			LABELS "integration" TIMEOUT 180 SKIP_RETURN_CODE 77)
 		add_test (NAME ServerListFallbackIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ServerListFallbackIntegrationTest.py $<TARGET_FILE:amuled>

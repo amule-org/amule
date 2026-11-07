@@ -80,6 +80,7 @@
 #include "Statistics.h"       // Needed for theStats
 #include "FreeSpaceSamples.h" // Needed for FreeSpaceAllows
 #include "FreeSpaceThread.h"  // Needed for CFreeSpaceThread
+#include "SourceExchangePacket.h"
 #include "Logger.h"
 #include <common/Format.h>        // Needed for CFormat
 #include <common/FileFunctions.h> // Needed for GetLastModificationTime
@@ -3167,12 +3168,12 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 	const CUpDownClient *forClient, uint8 byRequestedVersion, uint16 nRequestedOptions)
 {
 
-	if (m_SrcList.empty()) {
-		return NULL;
-	}
-
 	if (!IsPartFile()) {
 		return CKnownFile::CreateSrcInfoPacket(forClient, byRequestedVersion, nRequestedOptions);
+	}
+
+	if (m_SrcList.empty()) {
+		return nullptr;
 	}
 
 	if (((forClient->GetRequestFile() != this) && (forClient->GetUploadFile() != this)) ||
@@ -3196,7 +3197,9 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 		return NULL;
 	}
 
-	const BitVector &reqstatus = forClient->GetPartStatus();
+	// The requester is downloading from us. Its upload-side bitmap belongs to this file;
+	// its download-side bitmap can describe an entirely different file we request from it.
+	const BitVector &reqstatus = forClient->GetUpPartStatus();
 	bool KnowNeededParts = !reqstatus.empty();
 	// wxASSERT(rcvstatus.size() == GetPartCount()); // Obviously!
 	if (KnowNeededParts && (reqstatus.size() != GetPartCount())) {
@@ -3211,36 +3214,11 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 		return NULL;
 	}
 
-	CMemFile data(1024);
-
-	uint8 byUsedVersion;
-	bool bIsSX2Packet;
-	if (forClient->SupportsSourceExchange2() && byRequestedVersion > 0) {
-		// the client uses SourceExchange2 and requested the highest version he knows
-		// and we send the highest version we know, but of course not higher than his request
-		byUsedVersion = std::min(byRequestedVersion, (uint8)SOURCEEXCHANGE2_VERSION);
-		bIsSX2Packet = true;
-		data.WriteUInt8(byUsedVersion);
-
-		// we don't support any special SX2 options yet, reserved for later use
-		if (nRequestedOptions != 0) {
-			AddDebugLogLineN(logKnownFiles,
-				CFormat("Client requested unknown options for SourceExchange2: %u") %
-					nRequestedOptions);
-		}
-	} else {
-		byUsedVersion = forClient->GetSourceExchange1Version();
-		bIsSX2Packet = false;
-		if (forClient->SupportsSourceExchange2()) {
-			AddDebugLogLineN(logKnownFiles,
-				"Client which announced to support SX2 sent SX1 packet instead");
-		}
-	}
-
-	uint16 nCount = 0;
-
-	data.WriteHash(m_abyFileHash);
-	data.WriteUInt16(nCount);
+	CSourceExchangePacket packet(GetFileHash(),
+		forClient->SupportsSourceExchange2(),
+		forClient->GetSourceExchange1Version(),
+		byRequestedVersion,
+		nRequestedOptions);
 	bool bNeeded;
 	for (SourceSet::iterator it = m_SrcList.begin(); it != m_SrcList.end(); ++it) {
 		bNeeded = false;
@@ -3285,47 +3263,25 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 			}
 		}
 		if (bNeeded) {
-			++nCount;
 			uint32 dwID;
-			if (forClient->GetSourceExchange1Version() > 2) {
+			if (packet.GetVersion() >= 3) {
 				dwID = cur_src->GetUserIDHybrid();
 			} else {
 				dwID = wxUINT32_SWAP_ALWAYS(cur_src->GetUserIDHybrid());
 			}
-			data.WriteUInt32(dwID);
-			data.WriteUInt16(cur_src->GetUserPort());
-			data.WriteUInt32(cur_src->GetServerIP());
-			data.WriteUInt16(cur_src->GetServerPort());
+			packet.AddSource(dwID,
+				cur_src->GetUserPort(),
+				cur_src->GetServerIP(),
+				cur_src->GetServerPort(),
+				cur_src->GetUserHash(),
+				cur_src->GetCryptOptions());
 
-			if (byUsedVersion >= 2) {
-				data.WriteHash(cur_src->GetUserHash());
-			}
-
-			if (byUsedVersion >= 4) {
-				// CryptSettings - SourceExchange V4
-				data.WriteUInt8(cur_src->GetCryptOptions());
-			}
-
-			if (nCount > 500) {
+			if (packet.IsFull()) {
 				break;
 			}
 		}
 	}
-	if (!nCount) {
-		return 0;
-	}
-	data.Seek(bIsSX2Packet ? 17 : 16, wxFromStart);
-	data.WriteUInt16(nCount);
-
-	CPacket *result =
-		new CPacket(data, OP_EMULEPROT, bIsSX2Packet ? OP_ANSWERSOURCES2 : OP_ANSWERSOURCES);
-
-	// 16+2+501*(4+2+4+2+16) = 14046 bytes max.
-	if (result->GetPacketSize() > 354) {
-		result->PackPacket();
-	}
-
-	return result;
+	return packet.CreatePacket();
 }
 
 void CPartFile::AddClientSources(CMemFile *sources,

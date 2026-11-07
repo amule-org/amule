@@ -1445,7 +1445,7 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 				// Although this shouldn't happen, it's a just in case to any Mods that mess
 				// with version numbers.
 
-				if (byRequestedVersion > 0 || m_client->GetSourceExchange1Version() > 1) {
+				if (byRequestedVersion > 0 || m_client->GetSourceExchange1Version() >= 1) {
 					uint64 dwTimePassed = ::GetTickCount64() -
 							      m_client->GetLastSrcReqTime() +
 							      CONNECTION_LATENCY;
@@ -1754,6 +1754,11 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			throw wxString("Client send OP_REQUESTSOURCES before finishing handshake");
 		}
 
+		// SX2 prefixes the file hash with a version byte and two option bytes.
+		if (size != (opcode == OP_REQUESTSOURCES2 ? 19u : 16u)) {
+			throw wxString("Invalid size (OP_REQUESTSOURCES)");
+		}
+
 		uint8 byRequestedVersion = 0;
 		uint16 byRequestedOptions = 0;
 		CMemFile data_in(buffer, size);
@@ -1763,11 +1768,8 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		}
 
 		if (byRequestedVersion > 0 || m_client->GetSourceExchange1Version() >= 1) {
-			if (size != 16) {
-				throw wxString("Invalid size (OP_QUEUERANKING)");
-			}
 			// first check shared file list, then download list
-			const CMD4Hash fileID(buffer);
+			const CMD4Hash fileID = data_in.ReadHash();
 			CKnownFile *file = theApp->sharedfiles->GetFileByID(fileID);
 			if (!file) {
 				file = theApp->downloadqueue->GetFileByID(fileID);
