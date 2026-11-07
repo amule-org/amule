@@ -116,6 +116,13 @@ int launch()
 		    startupSids.data(),
 		    &startupPrimary.value))
 		return failure("create restricted startup token");
+	// A higher-integrity impersonation token can be downgraded to identification
+	// when assigned to this low-integrity process. Match the primary token here.
+	if (!SetTokenInformation(startupPrimary.value,
+		    TokenIntegrityLevel,
+		    &label,
+		    static_cast<DWORD>(sizeof(label)) + GetLengthSid(integritySid)))
+		return failure("set startup impersonation integrity");
 	if (!DuplicateTokenEx(startupPrimary.value,
 		    TOKEN_IMPERSONATE | TOKEN_QUERY,
 		    nullptr,
@@ -214,9 +221,27 @@ int launch()
 	thread.value = child.hThread;
 	// Only trusted loader/runtime initialization uses this impersonation token.
 	// enter() removes it before any media is read. It is never inherited as a handle.
-	if (!AssignProcessToJobObject(job.value, process.value) ||
-		!SetThreadToken(&thread.value, startup.value) || ResumeThread(thread.value) == DWORD(-1)) {
+	Handle assignedToken;
+	SECURITY_IMPERSONATION_LEVEL level = SecurityAnonymous;
+	DWORD levelSize = sizeof(level);
+	bool confined =
+		AssignProcessToJobObject(job.value, process.value) &&
+		SetThreadToken(&thread.value, startup.value) &&
+		OpenThreadToken(thread.value, TOKEN_QUERY, TRUE, &assignedToken.value) &&
+		GetTokenInformation(
+			assignedToken.value, TokenImpersonationLevel, &level, sizeof(level), &levelSize);
+	if (confined && level < SecurityImpersonation) {
+		SetLastError(ERROR_BAD_IMPERSONATION_LEVEL);
+		confined = false;
+	}
+	if (!confined) {
 		const int rc = failure("confine suspended parser");
+		TerminateProcess(process.value, 12);
+		WaitForSingleObject(process.value, 5000);
+		return rc;
+	}
+	if (ResumeThread(thread.value) == DWORD(-1)) {
+		const int rc = failure("resume confined parser");
 		TerminateProcess(process.value, 12);
 		WaitForSingleObject(process.value, 5000);
 		return rc;
