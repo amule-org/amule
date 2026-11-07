@@ -58,8 +58,9 @@ therefore best effort and subject to the following conditions.
    is left empty; partial values are never published. In files with video, the
    duration and codec are those of the video stream, as in eMule.
 4. **Security.** Any crash, hang or out-of-bounds read on any input is a defect.
-   Every parser change keeps `test_hostile.py` passing and is fuzzed with the
-   libFuzzer harness. Security fixes are not optional.
+   Every parser change keeps `test_hostile.py` passing and is fuzzed. Security
+   fixes are not optional. The fuzzing harness is delivered in a separate
+   change.
 5. **Isolation.** The helper runs in a separate process under the limits
    described above and the read budget described under [Parsers](#parsers).
 6. **Operating system restrictions.** On Linux, macOS and Windows the helper
@@ -112,7 +113,9 @@ size and charges a fixed budget of reads and bytes. Malformed structure, an
 out-of-range read or an exhausted budget is a file verdict (exit 11). Loops have
 iteration caps and recursion has a fixed depth, so no input can make a parser spin
 or exhaust the stack. A file may use at most 640 MiB of reads and 8 Mi read
-calls; the MP3 and ADTS frame count stops at 512 MiB.
+calls. MP3 and ADTS frame counts stop at 512 MiB and cross up to 64 KiB of
+damage, and junk at the end of the file is ignored. Past either limit the
+duration stays empty.
 
 ## Build and tests
 
@@ -136,14 +139,6 @@ ctest --test-dir build -R MediaProbe --output-on-failure
 - `MediaProbeParseTest` and `MediaProbeEnvTest`: the core's protocol parser and
   process runner (timeouts, cancellation, crashes, output limits). The runner
   tests that use shell scripts run on POSIX only.
-
-The libFuzzer harness covers every parser through the format dispatch:
-
-```sh
-cmake -S src/mediaprobe -B /tmp/fuzz -DCMAKE_CXX_COMPILER=clang++ -DMEDIA_PROBE_FUZZ=ON
-cmake --build /tmp/fuzz --target amule-media-probe-fuzz
-/tmp/fuzz/amule-media-probe-fuzz /tmp/fuzz-corpus -max_len=262144
-```
 
 Durations can differ from FFmpeg's by a fraction of a second where containers
 count encoder padding differently.

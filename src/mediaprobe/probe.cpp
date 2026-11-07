@@ -168,7 +168,9 @@ bool isMp4(Reader &r)
 	return false;
 }
 
-bool isMpegTs(Reader &r)
+// 188 for TS, 192 for M2TS (a 4-byte prefix per packet), or 0 without three sync bytes one
+// packet apart.
+int64_t mpegTsPacket(Reader &r)
 {
 	for (int64_t packet : { 188, 192 }) {
 		const int64_t lead = packet == 192 ? 4 : 0;
@@ -176,9 +178,9 @@ bool isMpegTs(Reader &r)
 		for (int i = 0; ok && i < 3; ++i)
 			ok = r.u8(lead + i * packet) == 0x47;
 		if (ok)
-			return true;
+			return packet;
 	}
-	return false;
+	return 0;
 }
 
 void dispatch(Reader &r, Result &res)
@@ -228,8 +230,8 @@ void dispatch(Reader &r, Result &res)
 		return parseMp4(r, res);
 	if (r.match(0, "\0\0\1\xBA", 4))
 		return parseMpegPs(r, res);
-	if (isMpegTs(r))
-		return parseMpegTs(r, res);
+	if (const int64_t packet = mpegTsPacket(r))
+		return parseMpegTs(r, packet, res);
 	if (rawVideo(r, res))
 		return;
 	if (isAdtsSync(r, 0))

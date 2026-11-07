@@ -145,8 +145,50 @@ class RealWorldQuirkTests(unittest.TestCase):
         second = box(b'moof', box(b'traf', full(b'tfhd', 0, struct.pack('>I', 1)),
                                   full(b'tfdt', 0, struct.pack('>I', 5000)),
                                   full(b'trun', 0x100, struct.pack('>3I', 2, 1000, 1000))))
-        data = box(b'ftyp', b'isom\0\0\0\0') + moov + first + box(b'mdat') + second + box(b'mdat')
-        self.assertEqual(self.probe(data), (7, 'h264'))
+        head = box(b'ftyp', b'isom\0\0\0\0') + moov + first + box(b'mdat')
+        self.assertEqual(self.probe(head + second + box(b'mdat')), (7, 'h264'))
+        # A file cut in its last mdat keeps every fragment.
+        self.assertEqual(self.probe(head + second + box(b'mdat', b'\0' * 100)[:50]), (7, 'h264'))
+        # A broken fragment, a zeroed hole or the box limit would make the sum short.
+        self.assertEqual(self.probe(head + second[:20]), (0, 'h264'))
+        self.assertEqual(self.probe(head + b'\0' * 4096 + second), (0, 'h264'))
+        self.assertEqual(self.probe(head + box(b'free') * 200000 + second), (0, 'h264'))
+
+    def test_damage_in_mp3_and_adts_frame_counts(self):
+        mp3 = b'\xff\xfb\x90\x64' + b'\0' * 413  # 128 kbps, 44.1 kHz: 1,152 samples.
+        length = 200
+        adts = (b'\xff\xf1\x50\x80' + bytes((length >> 3, (length & 7) << 5 | 0x1f, 0xfc)) +
+                b'\0' * (length - 7))  # 44.1 kHz AAC: 1,024 samples.
+        for frame, codec, seconds in ((mp3, 'mp3', 5), (adts, 'aac', 5)):
+            half = frame * 100
+            with self.subTest(codec=codec):
+                # A gap within the 64 KiB resync window is crossed, and trailing junk is ignored.
+                self.assertEqual(self.probe(half + b'\0' * 8192 + half), (seconds, codec))
+                self.assertEqual(self.probe(half + half + b'\0' * 100000), (seconds, codec))
+                # Even when the junk ends in something that looks like a frame header.
+                self.assertEqual(self.probe(half + half + b'\0' * 70000 + frame[:4]), (seconds, codec))
+                # A wider gap would leave the count short, so there is no duration.
+                self.assertEqual(self.probe(half + b'\0' * 100000 + half), (0, codec))
+
+    def test_amr_with_a_reserved_frame_type(self):
+        frames = b'\x3c' + b'\0' * 31  # 12.2 kbit/s, 20 ms.
+        self.assertEqual(self.probe(b'#!AMR\n' + frames * 500), (10, 'amr_nb'))
+        self.assertEqual(self.probe(b'#!AMR\n' + frames * 250 + b'\x74' + frames * 250), (0, 'amr_nb'))
+
+    def test_m2ts_sync_byte_at_offset_188_and_last_packet(self):
+        def packet(pid, payload):
+            body = payload + b'\xff' * (184 - len(payload))
+            return b'\0' * 4 + bytes((0x47, 0x40 | pid >> 8, pid & 0xff, 0x10)) + body
+        def pes(pts):
+            stamp = bytes((0x21 | (pts >> 29 & 0x0e), pts >> 22 & 0xff, (pts >> 14 & 0xfe) | 1,
+                           pts >> 7 & 0xff, (pts << 1 & 0xfe) | 1))
+            return packet(0x100, b'\0\0\1\xe0\0\0\x80\x80\x05' + stamp)
+        pat = packet(0, b'\0\x00\xb0\x0d\0\x01\xc1\0\0' + b'\0\x01\xf0\x00' + b'\0' * 4)
+        pmt = packet(0x1000, b'\0\x02\xb0\x12\0\x01\xc1\0\0' + b'\xe1\x00\xf0\x00' +
+                     b'\x1b\xe1\x00\xf0\x00' + b'\0' * 4)
+        data = bytearray(pat + pmt + pes(0) + pes(900000))
+        data[188] = 0x47  # Inside the first packet's stuffing. The last PTS is in the last packet.
+        self.assertEqual(self.probe(bytes(data)), (10, 'h264'))
 
     def test_avi_ignores_dmlh_counting_every_chunk(self):
         def chunk(cid, payload):

@@ -17,26 +17,43 @@ struct Box
 	int64_t data, end;
 };
 
-template <typename F> void boxes(Reader &r, int64_t p, int64_t end, F visit)
+// Returns false when the walk is incomplete. At the top level, where a fragmented file has
+// two boxes per fragment, the limit is higher, and a box that does not fit ends the walk: an
+// mdat as a cut file, anything else as damage.
+template <typename F> bool boxes(Reader &r, int64_t p, int64_t end, F visit, bool top = false)
 {
-	for (unsigned guard = 0; p + 8 <= end && guard < 10000; ++guard) {
+	const unsigned limit = top ? 200000 : 10000;
+	for (unsigned guard = 0; p + 8 <= end; ++guard) {
+		if (guard == limit)
+			return false;
 		Box b;
 		uint64_t size = r.be32(p);
 		r.read(p + 4, b.type, 4);
+		const bool mdat = !std::memcmp(b.type, "mdat", 4);
 		b.data = p + 8;
 		if (size == 1) {
+			if (top && !r.has(p + 8, 8))
+				return mdat;
 			size = r.be64(p + 8);
 			b.data = p + 16;
 		} else if (size == 0) {
-			size = static_cast<uint64_t>(end - p); // Extends to the end of the parent.
+			if (top && !mdat)
+				return false; // Zeroed damage rather than a box running to the end.
+			size = static_cast<uint64_t>(end - p);
 		}
-		if (size < static_cast<uint64_t>(b.data - p) || size > static_cast<uint64_t>(end - p))
+		if (size < static_cast<uint64_t>(b.data - p))
 			throw Malformed{};
+		if (size > static_cast<uint64_t>(end - p)) {
+			if (!top)
+				throw Malformed{};
+			return mdat;
+		}
 		b.end = p + static_cast<int64_t>(size);
 		if (!visit(b))
-			return;
+			return true;
 		p = b.end;
 	}
+	return true;
 }
 
 bool is(const Box &b, const char *type)
@@ -396,8 +413,7 @@ void parseMp4(Reader &r, Result &res)
 	uint32_t scale = 0;
 	std::vector<Track> tracks;
 	std::vector<Fragmented> fragmented;
-	// ponytail: the top-level walk stops after 10,000 boxes (about 5,000 fragments).
-	boxes(r, 0, r.size(), [&](const Box &top) {
+	auto visitTop = [&](const Box &top) {
 		if (is(top, "moof")) {
 			moof(r, top, fragmented);
 			return true;
@@ -430,7 +446,9 @@ void parseMp4(Reader &r, Result &res)
 		});
 		// A fragmented file without a total duration: add up the fragments.
 		return mvex && !duration && !fragments;
-	});
+	};
+	// An incomplete walk would make the fragment sum short.
+	const bool complete = boxes(r, 0, r.size(), visitTop, true);
 	if (!moov)
 		throw Malformed{};
 	if (!duration)
@@ -441,7 +459,7 @@ void parseMp4(Reader &r, Result &res)
 		for (const auto &t : tracks)
 			if (t.scale)
 				res.seconds = std::max(res.seconds, double(t.duration) / t.scale);
-	if (res.seconds <= 0)
+	if (res.seconds <= 0 && complete)
 		for (const auto &f : fragmented)
 			for (const auto &t : tracks)
 				if (t.id == f.id && t.scale)

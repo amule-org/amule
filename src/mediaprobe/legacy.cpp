@@ -355,11 +355,10 @@ double span(uint64_t first, uint64_t last)
 }
 } // namespace
 
-void parseMpegTs(Reader &r, Result &res)
+void parseMpegTs(Reader &r, int64_t packet, Result &res)
 {
-	const int64_t packet = r.has(2 * 188, 1) && r.u8(188) == 0x47 ? 188 : 192;
 	const int64_t lead = packet == 192 ? 4 : 0;
-	int pmtPid = -1, videoPid = -1, audioPid = -1, pcrPid = -1;
+	int pmtPid = -1, videoPid = -1, audioPid = -1;
 	unsigned videoType = 0, audioType = 0;
 	// Program tables from the first packets.
 	for (int64_t p = lead; p + 188 <= r.size() && p < 4 * 1024 * 1024 && (videoPid < 0 && audioPid < 0);
@@ -391,7 +390,6 @@ void parseMpegTs(Reader &r, Result &res)
 					break;
 				}
 		} else if (static_cast<int>(pid) == pmtPid && table == 0x02 && q + 12 <= sectionEnd) {
-			pcrPid = r.be16(q + 8) & 0x1FFF;
 			int64_t e = q + 12 + (r.be16(q + 10) & 0x0FFF);
 			while (e + 5 <= sectionEnd) {
 				const unsigned type = r.u8(e), esPid = r.be16(e + 1) & 0x1FFF,
@@ -440,11 +438,10 @@ void parseMpegTs(Reader &r, Result &res)
 			return -1;
 		return static_cast<int64_t>(pts(r, q + 9));
 	};
-	(void)pcrPid;
 	int64_t first = -1, last = -1;
 	for (int64_t p = lead; first < 0 && p + 188 <= r.size() && p < 8 * 1024 * 1024; p += packet)
 		first = ptsAt(p);
-	const int64_t count = (r.size() - lead) / packet;
+	const int64_t count = (r.size() - lead - 188) / packet + 1; // Whole packets.
 	for (int64_t i = count - 1; last < 0 && i >= 0 && i > count - 65536; --i)
 		last = ptsAt(lead + i * packet);
 	if (first >= 0 && last >= 0)

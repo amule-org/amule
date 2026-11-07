@@ -103,7 +103,7 @@ void parseMp4(Reader &r, Result &res);
 void parseOgg(Reader &r, Result &res);
 void parseAsf(Reader &r, Result &res);
 void parseFlv(Reader &r, Result &res);
-void parseMpegTs(Reader &r, Result &res);
+void parseMpegTs(Reader &r, int64_t packet, Result &res);
 void parseMpegPs(Reader &r, Result &res);
 void parseRealMedia(Reader &r, Result &res);
 void parseFlac(Reader &r, int64_t start, Result &res);

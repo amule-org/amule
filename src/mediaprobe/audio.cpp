@@ -12,6 +12,10 @@ namespace
 {
 // Frame scans read only headers, but touch the whole file; larger files use an estimate.
 constexpr int64_t kMaxScan = 512LL * 1024 * 1024;
+// After damage, how far a frame count looks for the next frame. Damage it cannot cross leaves
+// the duration unknown, since the count would be short, unless no frame follows in the last
+// kResync bytes either: that is trailing junk, and the count stands.
+constexpr int64_t kResync = 64 * 1024;
 
 struct MpegFrame
 {
@@ -90,6 +94,18 @@ bool adtsFrame(Reader &r, int64_t p, AdtsFrame &f)
 	f.samples = 1024 * ((b[6] & 3) + 1);
 	return true;
 }
+
+// First frame in [p, limit) at this rate whose successor is also one, or which ends the file.
+int64_t findAdtsFrame(Reader &r, int64_t p, int64_t limit, int64_t end, unsigned rate, AdtsFrame &f)
+{
+	for (; p + 7 <= limit; ++p) {
+		AdtsFrame g;
+		if (adtsFrame(r, p, f) && f.rate == rate && p + f.length <= end &&
+			(p + f.length + 7 > end || (adtsFrame(r, p + f.length, g) && g.rate == rate)))
+			return p;
+	}
+	return -1;
+}
 } // namespace
 
 void parseMpegAudio(Reader &r, int64_t start, Result &res)
@@ -112,18 +128,27 @@ void parseMpegAudio(Reader &r, int64_t start, Result &res)
 		res.seconds = double(frames) * f.samples / f.rate;
 		return;
 	}
-	if (end - first > kMaxScan) {
-		res.seconds = double(end - first) * 8 / (f.bitrate * 1000.0);
-		return;
-	}
-	// No header: count frames. A lost sync gets one short resync search, then the scan ends.
+	if (end - first > kMaxScan)
+		return; // No reliable duration without a full scan.
+	// No header: count frames. Mid-file damage shows as a frame pair in the last kResync bytes.
+	auto pairNearEnd = [&](int64_t from) {
+		MpegFrame h;
+		for (int64_t q = from; (q = findMpegFrame(r, q, end, end, h)) >= 0; ++q)
+			if (q + h.length + 4 <= end && same(f, h))
+				return true;
+		return false;
+	};
 	uint64_t count = 0;
 	for (int64_t p = first; p + 4 <= end;) {
 		MpegFrame g;
 		if (!mpegFrame(r.be32(p), g) || !same(f, g)) {
-			p = findMpegFrame(r, p + 1, std::min(end, p + 4096), end, g);
-			if (p < 0 || !same(f, g))
+			const int64_t limit = std::min(end, p + kResync);
+			p = findMpegFrame(r, p + 1, limit, end, g);
+			if (p < 0 || !same(f, g)) {
+				if (limit < end && pairNearEnd(std::max(limit, end - kResync)))
+					return;
 				break;
+			}
 		}
 		++count;
 		p += g.length;
@@ -143,8 +168,17 @@ void parseAdts(Reader &r, int64_t start, Result &res)
 	uint64_t samples = 0;
 	for (int64_t p = start; p + 7 <= end;) {
 		AdtsFrame g;
-		if (!adtsFrame(r, p, g) || g.rate != f.rate || p + g.length > end)
-			break;
+		if (!adtsFrame(r, p, g) || g.rate != f.rate || p + g.length > end) {
+			const int64_t limit = std::min(end, p + kResync);
+			p = findAdtsFrame(r, p + 1, limit, end, f.rate, g);
+			if (p < 0) {
+				if (limit < end &&
+					findAdtsFrame(
+						r, std::max(limit, end - kResync), end, end, f.rate, g) >= 0)
+					return;
+				break;
+			}
+		}
 		samples += g.samples;
 		p += g.length;
 	}
@@ -239,8 +273,8 @@ void parseAmr(Reader &r, Result &res)
 		return;
 	while (p < r.size()) {
 		const unsigned type = (r.u8(p) >> 3) & 15;
-		if (type < 14 && !sizes[type] && type != 15)
-			break; // Reserved frame type.
+		if (!sizes[type] && type != 15 && !(wb && type == 14))
+			return; // Reserved frame type: damaged, so the count would be short.
 		p += 1 + sizes[type];
 		++frames;
 	}
