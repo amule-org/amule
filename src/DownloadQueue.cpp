@@ -505,21 +505,13 @@ void CDownloadQueue::Process()
 		{
 			// Synchronous desktop calls can wait for a service; let other queue users proceed.
 			CMutexUnlocker unlocker(m_mutex);
-			if (thePrefs::GetPreventSleepWhileDownloading()) {
-				if ((mustPreventSleep == false) &&
-					(theStats::GetSessionSentBytes() <
-						theStats::GetSessionReceivedBytes())) {
-					// I can see right through your clever plan.
-					mustPreventSleep = true;
-				}
-
-				if (mustPreventSleep) {
-					PlatformSpecific::PreventSleepMode();
-				} else {
-					PlatformSpecific::AllowSleepMode();
-				}
+			if (PowerManagement::ShouldPreventSleep(thePrefs::GetSleepMode(),
+				    mustPreventSleep,
+				    theStats::GetSessionSentBytes(),
+				    theStats::GetSessionReceivedBytes())) {
+				PlatformSpecific::PreventSleepMode();
 			} else {
-				// Just in case the value changes while we're preventing.
+				// Also release immediately after a preference or queue-state change.
 				PlatformSpecific::AllowSleepMode();
 			}
 		}

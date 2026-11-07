@@ -26,6 +26,7 @@
 #include "Logger.h"
 
 #include <gio/gio.h>
+#include <sys/wait.h>
 #include <wx/init.h>
 #include <chrono>
 #include <cstdio>
@@ -96,6 +97,7 @@ public:
 			bus = g_dbus_connection_new_for_address_sync(
 				address, flags, nullptr, nullptr, &error);
 			Check(bus != nullptr, error ? error->message : "service connection failed");
+			g_dbus_connection_set_exit_on_close(bus, false);
 			GDBusNodeInfo *info = g_dbus_node_info_new_for_xml(xml, &error);
 			Check(info != nullptr, "invalid service XML");
 			static const GDBusInterfaceVTable vtable = { Call, nullptr, nullptr, { nullptr } };
@@ -311,6 +313,100 @@ private:
 	std::vector<GDBusMethodInvocation *> pending;
 };
 
+void WaitForRecovery(Service &service, bool portal)
+{
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(40);
+	while (std::chrono::steady_clock::now() < deadline) {
+		PlatformSpecific::PreventSleepMode();
+		const State state = service.Read();
+		if ((portal ? state.portal : state.direct).size() == 1) {
+			return;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	}
+	Check(false, "sleep inhibition did not recover without a policy toggle");
+}
+
+void RestartService(Service &service, const char *address, bool portal)
+{
+	service.Configure(portal);
+	PlatformSpecific::PreventSleepMode();
+	Check((portal ? service.Read().portal : service.Read().direct).size() == 1,
+		"missing inhibitor before service restart");
+	service.SetName("org.gnome.SessionManager", false);
+	service.SetName("org.freedesktop.portal.Desktop", false);
+	{
+		Service replacement(address);
+		if (portal) {
+			replacement.SetName("org.gnome.SessionManager", false);
+		}
+		WaitForRecovery(replacement, portal);
+		service.WaitReleased();
+		// Replacement services reuse the same cookie/request path. Cleanup must
+		// address the old owner, leaving the replacement's inhibitor intact.
+		Check(replacement.Read().releases == 0, "released against the replacement owner");
+		PlatformSpecific::AllowSleepMode();
+		replacement.WaitReleased();
+	}
+	service.SetName("org.gnome.SessionManager", true);
+	service.SetName("org.freedesktop.portal.Desktop", true);
+	service.Configure();
+}
+
+int DaemonModes(Service &service, char **argv)
+{
+	struct Case
+	{
+		const char *mode;
+		const char *legacy;
+		const char *expected;
+	};
+	const Case cases[] = { { "missing", "missing", "0" },
+		{ "missing", "0", "0" },
+		{ "missing", "1", "1" },
+		{ "0", "1", "0" },
+		{ "1", "0", "1" },
+		{ "2", "0", "2" },
+		{ "-1", "1", "0" },
+		{ "4294967297", "1", "0" },
+		{ "invalid", "1", "0" } };
+	for (const auto &test : cases) {
+		const State before = service.Read();
+		gchar *args[] = { argv[2],
+			argv[3],
+			argv[4],
+			const_cast<char *>(test.mode),
+			const_cast<char *>(test.legacy),
+			const_cast<char *>(test.expected),
+			nullptr };
+		GError *error = nullptr;
+		gint status = 0;
+		Check(g_spawn_sync(nullptr,
+			      args,
+			      nullptr,
+			      G_SPAWN_DEFAULT,
+			      nullptr,
+			      nullptr,
+			      nullptr,
+			      nullptr,
+			      &status,
+			      &error),
+			error ? error->message : "could not start daemon fixture");
+		if (WIFEXITED(status) && WEXITSTATUS(status) == 77) {
+			return 77;
+		}
+		Check(status == 0, "daemon sleep-mode fixture failed");
+		service.WaitReleased();
+		const State after = service.Read();
+		const unsigned expected = std::string(test.expected) == "2" ? 2 : 0;
+		Check(after.directCalls == before.directCalls + expected &&
+				after.releases == before.releases + expected &&
+				after.portalCalls == before.portalCalls,
+			"empty daemon did not follow its configured sleep mode or release on shutdown");
+	}
+	return 0;
+}
+
 void Cycle(Service &service, bool portal)
 {
 	const State before = service.Read();
@@ -340,13 +436,11 @@ int main(int argc, char **argv)
 		g_setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/nonexistent/amule-sleep-test", true);
 		PlatformSpecific::PreventSleepMode();
 		PlatformSpecific::PreventSleepMode();
-		PlatformSpecific::AllowSleepMode();
 		const wxString &log = theLogger.GetUnwrittenLog();
 		Check(log.Contains("Cannot inhibit idle sleep:"), "missing session-bus failure log");
 		Check(!log.AfterFirst('\n').Contains("Cannot inhibit idle sleep:"),
 			"failure logged every tick");
 		Check(log.Contains("[log status=0 replay=1]"), "failure was not noncritical debug logging");
-		return 0;
 	}
 	gchar *daemon = g_find_program_in_path("dbus-daemon");
 	if (daemon == nullptr) {
@@ -356,53 +450,109 @@ int main(int argc, char **argv)
 	g_free(daemon);
 	GTestDBus *testBus = g_test_dbus_new(G_TEST_DBUS_NONE);
 	g_test_dbus_up(testBus);
+	if (argc == 5 && std::string(argv[1]) == "--daemon") {
+		int status = 0;
+		{
+			Service service(g_test_dbus_get_bus_address(testBus));
+			status = DaemonModes(service, argv);
+		}
+		g_test_dbus_down(testBus);
+		g_object_unref(testBus);
+		return status;
+	}
+	if (argc == 2 && std::string(argv[1]) == "--restart-bus") {
+		{
+			Service service(g_test_dbus_get_bus_address(testBus));
+			PlatformSpecific::PreventSleepMode();
+			Check(service.Read().direct.size() == 1, "initial bus inhibition failed");
+		}
+		g_test_dbus_stop(testBus);
+		GTestDBus *replacementBus = g_test_dbus_new(G_TEST_DBUS_NONE);
+		g_test_dbus_up(replacementBus);
+		{
+			Service service(g_test_dbus_get_bus_address(replacementBus));
+			WaitForRecovery(service, false);
+			PlatformSpecific::AllowSleepMode();
+			service.WaitReleased();
+		}
+		g_test_dbus_down(replacementBus);
+		g_object_unref(replacementBus);
+		g_test_dbus_down(testBus);
+		g_object_unref(testBus);
+		std::puts("Sleep inhibition recovered after session bus restart");
+		return 0;
+	}
 	{
 		Service service(g_test_dbus_get_bus_address(testBus));
-		// Hold the shared connection throughout: production must use a private one.
-		GDBusConnection *shared = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, nullptr);
-		Check(shared != nullptr, "shared connection failed");
-		Cycle(service, false);
-		Cycle(service, false); // release/re-enable
-		service.Configure(false, false, true);
-		Cycle(service, false); // Uninhibit failure cleans up on disconnect
-		service.Configure(true);
-		Cycle(service, true); // permission refusal falls back
-		service.Configure(true, false, true);
-		Cycle(service, true); // Close failure cleans up despite shared caller
-		service.Configure();
-		service.SetName("org.gnome.SessionManager", false);
-		Cycle(service, true); // absent service (Plasma/Flatpak path)
-		service.SetName("org.freedesktop.portal.Desktop", false);
-		PlatformSpecific::PreventSleepMode(); // neither service
-		PlatformSpecific::PreventSleepMode();
-		PlatformSpecific::AllowSleepMode();
-		service.SetName("org.gnome.SessionManager", true);
-		service.SetName("org.freedesktop.portal.Desktop", true);
-		service.Configure(true, true);
-		const State before = service.Read();
-		PlatformSpecific::PreventSleepMode();
-		PlatformSpecific::PreventSleepMode();
-		Check(service.Read().directCalls == before.directCalls + 1 &&
-				service.Read().portalCalls == before.portalCalls + 1,
-			"failed acquisition retried every tick");
-		PlatformSpecific::AllowSleepMode();
-		const wxString &log = theLogger.GetUnwrittenLog();
-		Check(log.Contains("trying portal:") && log.Contains("test refusal"),
-			"lost fallback failure details");
-		Check(log.Contains("Cannot release idle sleep inhibition:") &&
-				log.Contains("test release failure"),
-			"lost release failure details");
-		Check(!log.Contains("[log status=1"), "sleep failures became critical logs");
-		service.Configure(true, false, false, false, true);
-		PlatformSpecific::PreventSleepMode(); // portal allocates before timeout
-		service.WaitReleased();
-		PlatformSpecific::AllowSleepMode();
-		service.Configure(false, false, false, true);
-		Cycle(service, true); // direct timeout falls back; disconnect releases both
-		service.Configure();
-		Cycle(service, false); // recovery after failures
-		Check(!g_dbus_connection_is_closed(shared), "production closed the shared connection");
-		g_object_unref(shared);
+		if (argc == 2 && std::string(argv[1]) == "--no-bus") {
+			WaitForRecovery(service, false);
+			PlatformSpecific::AllowSleepMode();
+			service.WaitReleased();
+		} else {
+			// Hold the shared connection throughout: production must use a private one.
+			GDBusConnection *shared = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, nullptr);
+			Check(shared != nullptr, "shared connection failed");
+			Cycle(service, false);
+			Cycle(service, false); // release/re-enable
+			service.Configure(false, false, true);
+			Cycle(service, false); // Uninhibit failure cleans up on disconnect
+			service.Configure(true);
+			Cycle(service, true); // permission refusal falls back
+			service.Configure(true, false, true);
+			Cycle(service, true); // Close failure cleans up despite shared caller
+			service.Configure();
+			service.SetName("org.gnome.SessionManager", false);
+			Cycle(service, true); // absent service (Plasma/Flatpak path)
+			service.SetName("org.freedesktop.portal.Desktop", false);
+			PlatformSpecific::PreventSleepMode(); // neither service
+			PlatformSpecific::PreventSleepMode();
+			PlatformSpecific::AllowSleepMode();
+			service.SetName("org.gnome.SessionManager", true);
+			service.SetName("org.freedesktop.portal.Desktop", true);
+			service.Configure(true, true);
+			const State before = service.Read();
+			PlatformSpecific::PreventSleepMode();
+			PlatformSpecific::PreventSleepMode();
+			Check(service.Read().directCalls == before.directCalls + 1 &&
+					service.Read().portalCalls == before.portalCalls + 1,
+				"failed acquisition retried every tick");
+			service.Configure();
+			WaitForRecovery(service, false);
+			Check(service.Read().directCalls == before.directCalls + 2 &&
+					service.Read().portalCalls == before.portalCalls + 1,
+				"recovery retried more than necessary");
+			PlatformSpecific::AllowSleepMode();
+			service.WaitReleased();
+			const wxString &log = theLogger.GetUnwrittenLog();
+			Check(log.Contains("trying portal:") && log.Contains("test refusal"),
+				"lost fallback failure details");
+			Check(log.Contains("Cannot release idle sleep inhibition:") &&
+					log.Contains("test release failure"),
+				"lost release failure details");
+			Check(!log.Contains("[log status=1"), "sleep failures became critical logs");
+			service.Configure(true, false, false, false, true);
+			PlatformSpecific::PreventSleepMode(); // portal allocates before timeout
+			service.WaitReleased();
+			PlatformSpecific::AllowSleepMode();
+			service.Configure(false, false, false, true);
+			Cycle(service, true); // direct timeout falls back; disconnect releases both
+			service.Configure();
+			Cycle(service, false); // recovery after failures
+			PlatformSpecific::PreventSleepMode();
+			const State healthy = service.Read();
+			std::this_thread::sleep_for(std::chrono::seconds(31));
+			PlatformSpecific::PreventSleepMode();
+			Check(service.Read().directCalls == healthy.directCalls &&
+					service.Read().releases == healthy.releases,
+				"healthy owner was unnecessarily released or reacquired");
+			PlatformSpecific::AllowSleepMode();
+			service.WaitReleased();
+			RestartService(service, g_test_dbus_get_bus_address(testBus), false);
+			RestartService(service, g_test_dbus_get_bus_address(testBus), true);
+			Check(!g_dbus_connection_is_closed(shared),
+				"production closed the shared connection");
+			g_object_unref(shared);
+		}
 	}
 	g_test_dbus_down(testBus);
 	g_object_unref(testBus);

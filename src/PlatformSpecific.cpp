@@ -335,6 +335,87 @@ PlatformSpecific::EFSType PlatformSpecific::GetFilesystemType(const CPath &path)
 static guint sleepInhibitorCookie = 0;
 static GDBusConnection *sleepInhibitorBus = nullptr;
 static gchar *sleepInhibitorRequest = nullptr;
+static gchar *sleepInhibitorOwner = nullptr;
+static gint64 sleepInhibitorNextCheck = 0;
+constexpr gint64 sleepInhibitorCheckInterval = 30 * G_TIME_SPAN_SECOND;
+
+// Pin requests to the service's unique owner: after a restart an old cookie must
+// never be released against a replacement service that could have reused it.
+static gchar *GetSleepServiceOwner(GDBusConnection *bus, const char *service, GError **error)
+{
+	GVariant *reply = g_dbus_connection_call_sync(bus,
+		"org.freedesktop.DBus",
+		"/org/freedesktop/DBus",
+		"org.freedesktop.DBus",
+		"GetNameOwner",
+		g_variant_new("(s)", service),
+		G_VARIANT_TYPE("(s)"),
+		G_DBUS_CALL_FLAGS_NONE,
+		5000,
+		nullptr,
+		error);
+	gchar *owner = nullptr;
+	if (reply != nullptr) {
+		g_variant_get(reply, "(s)", &owner);
+		g_variant_unref(reply);
+	}
+	return owner;
+}
+
+static GVariant *InhibitSleepService(GDBusConnection *bus,
+	const char *service,
+	const char *path,
+	const char *interface,
+	GVariant *parameters,
+	const GVariantType *replyType,
+	gchar **owner,
+	GError **error)
+{
+	// Send to the well-known name to retain normal D-Bus auto-activation. Pin
+	// cleanup to the actual reply sender, without a race between owner lookup
+	// and acquisition or a dependency on permission to StartServiceByName.
+	GDBusMessage *message = g_dbus_message_new_method_call(service, path, interface, "Inhibit");
+	g_dbus_message_set_body(message, parameters);
+	GDBusMessage *reply = g_dbus_connection_send_message_with_reply_sync(
+		bus, message, G_DBUS_SEND_MESSAGE_FLAGS_NONE, 5000, nullptr, nullptr, error);
+	g_object_unref(message);
+	if (reply == nullptr) {
+		return nullptr;
+	}
+	GVariant *result = nullptr;
+	if (!g_dbus_message_to_gerror(reply, error)) {
+		GVariant *body = g_dbus_message_get_body(reply);
+		const gchar *sender = g_dbus_message_get_sender(reply);
+		if (body != nullptr && g_variant_is_of_type(body, replyType) && sender != nullptr) {
+			*owner = g_strdup(sender);
+			result = g_variant_ref(body);
+		} else {
+			g_set_error_literal(error,
+				G_DBUS_ERROR,
+				G_DBUS_ERROR_INVALID_ARGS,
+				"Unexpected sleep inhibition reply");
+		}
+	}
+	g_object_unref(reply);
+	return result;
+}
+
+static bool SleepServiceStillPresent()
+{
+	if (sleepInhibitorBus == nullptr || g_dbus_connection_is_closed(sleepInhibitorBus)) {
+		return false;
+	}
+	GError *error = nullptr;
+	gchar *owner = GetSleepServiceOwner(sleepInhibitorBus,
+		sleepInhibitorRequest != nullptr ? "org.freedesktop.portal.Desktop"
+						 : "org.gnome.SessionManager",
+		&error);
+	const bool unchanged = owner != nullptr && g_strcmp0(owner, sleepInhibitorOwner) == 0;
+	g_free(owner);
+	g_clear_error(&error);
+	return unchanged;
+}
+
 #endif
 
 // Power event vetoing
@@ -348,6 +429,20 @@ static IOPMAssertionID assertionID;
 
 void PlatformSpecific::PreventSleepMode()
 {
+#if defined(__linux__) && defined(HAVE_GIO)
+	const gint64 now = g_get_monotonic_time();
+	if (now < sleepInhibitorNextCheck) {
+		return;
+	}
+	if (m_preventingSleepMode && !SleepServiceStillPresent()) {
+		// Drops stale resources even when the bus has disconnected or the owner
+		// has disappeared. This also permits acquisition through the fallback.
+		AllowSleepMode();
+	}
+	// Poll healthy owners and retry failures at a bounded rate, never every tick.
+	sleepInhibitorNextCheck = now + sleepInhibitorCheckInterval;
+#endif
+
 	if (!m_preventingSleepMode) {
 #ifdef __WINDOWS__
 		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
@@ -379,8 +474,6 @@ void PlatformSpecific::PreventSleepMode()
 			// ??
 		}
 #elif defined(__linux__) && defined(HAVE_GIO)
-		// Make one attempt per state change, including when neither service is available.
-		m_preventingSleepMode = true;
 		GError *error = nullptr;
 		// A private connection lets us release even a failed/timed-out request by
 		// disconnecting, without closing another caller's shared session bus.
@@ -399,20 +492,21 @@ void PlatformSpecific::PreventSleepMode()
 		if (bus != nullptr) {
 			// Cinnamon's portal may return a handle before failing because a native
 			// process has no app ID. Supply it directly to the session manager first.
-			GVariant *reply = g_dbus_connection_call_sync(bus,
+			g_dbus_connection_set_exit_on_close(bus, false);
+			gchar *owner = nullptr;
+			GVariant *reply = InhibitSleepService(bus,
 				"org.gnome.SessionManager",
 				"/org/gnome/SessionManager",
 				"org.gnome.SessionManager",
-				"Inhibit",
 				g_variant_new("(susu)", "org.amule.aMule", 0u, "Transferring files", 4u),
 				G_VARIANT_TYPE("(u)"),
-				G_DBUS_CALL_FLAGS_NONE,
-				5000,
-				nullptr,
+				&owner,
 				&error);
 			if (reply != nullptr) {
 				g_variant_get(reply, "(u)", &sleepInhibitorCookie);
 				sleepInhibitorBus = bus;
+				sleepInhibitorOwner = owner;
+				m_preventingSleepMode = true;
 				g_variant_unref(reply);
 				return;
 			}
@@ -421,29 +515,31 @@ void PlatformSpecific::PreventSleepMode()
 					"%s") %
 					wxString::FromUTF8(error->message));
 			g_clear_error(&error);
+			g_free(owner);
+			owner = nullptr;
 
 			GVariantBuilder options;
 			g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
 			g_variant_builder_add(
 				&options, "{sv}", "reason", g_variant_new_string("Transferring files"));
 			// Suspend only; leave screen blanking and idle detection alone.
-			reply = g_dbus_connection_call_sync(bus,
+			reply = InhibitSleepService(bus,
 				"org.freedesktop.portal.Desktop",
 				"/org/freedesktop/portal/desktop",
 				"org.freedesktop.portal.Inhibit",
-				"Inhibit",
 				g_variant_new("(sua{sv})", "", 4u, &options),
 				G_VARIANT_TYPE("(o)"),
-				G_DBUS_CALL_FLAGS_NONE,
-				5000,
-				nullptr,
+				&owner,
 				&error);
 			if (reply != nullptr) {
 				g_variant_get(reply, "(o)", &sleepInhibitorRequest);
 				// The portal also releases the inhibition if this connection closes.
 				sleepInhibitorBus = bus;
+				sleepInhibitorOwner = owner;
+				m_preventingSleepMode = true;
 				g_variant_unref(reply);
 			} else {
+				g_free(owner);
 				g_dbus_connection_close_sync(bus, nullptr, nullptr);
 				g_object_unref(bus);
 			}
@@ -454,6 +550,8 @@ void PlatformSpecific::PreventSleepMode()
 					wxString::FromUTF8(error->message));
 			g_error_free(error);
 		}
+		// Start the backoff after slow failures too.
+		sleepInhibitorNextCheck = g_get_monotonic_time() + sleepInhibitorCheckInterval;
 #else
 		// #warning Power event vetoing not implemented.
 		//  Not implemented
@@ -463,6 +561,11 @@ void PlatformSpecific::PreventSleepMode()
 
 void PlatformSpecific::AllowSleepMode()
 {
+#if defined(__linux__) && defined(HAVE_GIO)
+	// Off must cancel a pending retry even if acquisition never succeeded.
+	sleepInhibitorNextCheck = 0;
+#endif
+
 	if (m_preventingSleepMode) {
 #ifdef __WINDOWS__
 		SetThreadExecutionState(ES_CONTINUOUS); // Clear the system request flag.
@@ -479,17 +582,21 @@ void PlatformSpecific::AllowSleepMode()
 		if (sleepInhibitorBus != nullptr) {
 			GError *error = nullptr;
 			const bool portal = sleepInhibitorRequest != nullptr;
-			GVariant *reply = g_dbus_connection_call_sync(sleepInhibitorBus,
-				portal ? "org.freedesktop.portal.Desktop" : "org.gnome.SessionManager",
-				portal ? sleepInhibitorRequest : "/org/gnome/SessionManager",
-				portal ? "org.freedesktop.portal.Request" : "org.gnome.SessionManager",
-				portal ? "Close" : "Uninhibit",
-				portal ? nullptr : g_variant_new("(u)", sleepInhibitorCookie),
-				G_VARIANT_TYPE("()"),
-				G_DBUS_CALL_FLAGS_NONE,
-				5000,
-				nullptr,
-				&error);
+			GVariant *reply = nullptr;
+			if (!g_dbus_connection_is_closed(sleepInhibitorBus)) {
+				reply = g_dbus_connection_call_sync(sleepInhibitorBus,
+					sleepInhibitorOwner,
+					portal ? sleepInhibitorRequest : "/org/gnome/SessionManager",
+					portal ? "org.freedesktop.portal.Request"
+					       : "org.gnome.SessionManager",
+					portal ? "Close" : "Uninhibit",
+					portal ? nullptr : g_variant_new("(u)", sleepInhibitorCookie),
+					G_VARIANT_TYPE("()"),
+					G_DBUS_CALL_FLAGS_NONE,
+					5000,
+					nullptr,
+					&error);
+			}
 			if (reply != nullptr) {
 				g_variant_unref(reply);
 			}
@@ -501,6 +608,8 @@ void PlatformSpecific::AllowSleepMode()
 			}
 			g_free(sleepInhibitorRequest);
 			sleepInhibitorRequest = nullptr;
+			g_free(sleepInhibitorOwner);
+			sleepInhibitorOwner = nullptr;
 			sleepInhibitorCookie = 0;
 			g_dbus_connection_close_sync(sleepInhibitorBus, nullptr, nullptr);
 			g_object_unref(sleepInhibitorBus);

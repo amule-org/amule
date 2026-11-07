@@ -475,6 +475,19 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		prefs_sizer->Add(Widget, wxSizerFlags().Expand().Expand());
 
 		if (pages[i].m_function == PreferencesGeneralTab) {
+#if defined CLIENT_GUI || !PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+			auto *sleepMode = CastChild(IDC_PREVENT_SLEEP, wxChoice);
+			sleepMode->Enable(false);
+#ifdef CLIENT_GUI
+			sleepMode->SetToolTip(
+				_("This setting belongs to the computer running amuled. "
+				  "Set PreventSleep in its amule.conf [PowerManagement] section: "
+				  "0 = Off, 1 = While downloading, 2 = While aMule is running."));
+#else
+			sleepMode->SetToolTip(_("Sleep inhibition is not available in this build."));
+#endif
+#endif
+
 // Adjust visibility before measuring the page contents.
 #if defined(CLIENT_GUI)
 			// Remote GUI: this checkbox toggles the *daemon's* version-check preference, so
@@ -583,10 +596,6 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			// widened the whole dialog; a space keeps the gap without the bug.
 			warning.Replace("\n\n", "\n \n");
 			txt->SetLabel(warning);
-#if defined CLIENT_GUI || !PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
-			CastChild(IDC_PREVENT_SLEEP, wxCheckBox)->Enable(false);
-			thePrefs::SetPreventSleepWhileDownloading(false);
-#endif
 		} else if (pages[i].m_function == PreferencesDebug) {
 			int count = theLogger.GetDebugCategoryCount();
 			wxCheckListBox *list = CastChild(ID_DEBUGCATS, wxCheckListBox);

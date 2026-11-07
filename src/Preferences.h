@@ -26,6 +26,7 @@
 #ifndef PREFERENCES_H
 #define PREFERENCES_H
 
+#include "PowerManagement.h"
 #include "MD4Hash.h" // Needed for CMD4Hash
 #ifdef ENABLE_IPV6
 #include "AdvertisedIPv6.h"
@@ -1013,8 +1014,10 @@ public:
 	static void SetLastHTTPDownloadURL(uint8 t, const wxString &val);
 
 	// Sleep
-	static bool GetPreventSleepWhileDownloading() { return s_preventSleepWhileDownloading; }
-	static void SetPreventSleepWhileDownloading(bool status) { s_preventSleepWhileDownloading = status; }
+	static PowerManagement::SleepMode GetSleepMode()
+	{
+		return PowerManagement::NormalizeMode(s_sleepMode);
+	}
 
 protected:
 	//! Temporary storage for statistic-colors.
@@ -1336,7 +1339,7 @@ protected:
 	static wxString s_GeoIPUpdateUrl; // legacy v2.x single-URL, kept for migration only
 
 	// Sleep vetoing
-	static bool s_preventSleepWhileDownloading;
+	static int s_sleepMode;
 
 	// Stats server
 	static wxString s_StatsServerName;
