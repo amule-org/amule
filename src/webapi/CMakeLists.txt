@@ -130,7 +130,9 @@ if (APPLE)
 		PRIVATE ${SRC_DIR}/MacBackgroundOnly_mac.mm
 	)
 
-	# wxStandardPaths uses these frameworks to look up Application Support in a .app bundle.
+	# CoreServices / ApplicationServices — same set amuleweb links, used
+	# by wxStandardPaths::GetUserDataDir() on a .app bundle to look up
+	# Application Support/ correctly.
 	target_link_libraries (amuleapi
 		PRIVATE "-framework CoreServices"
 		PRIVATE "-framework ApplicationServices"

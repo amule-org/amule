@@ -25,6 +25,7 @@
 #ifndef MAC_BACKGROUND_ONLY_MAC_H
 #define MAC_BACKGROUND_ONLY_MAC_H
 
+// Marks this process BackgroundOnly, so Launch Services gives it no Dock tile.
 void MacDeclareBackgroundOnly();
 
 #endif // MAC_BACKGROUND_ONLY_MAC_H
