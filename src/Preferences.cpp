@@ -321,7 +321,7 @@ wxString CPreferences::s_GeoIPMaxMindLicense;
 wxString CPreferences::s_GeoIPCustomUrl;
 bool CPreferences::s_GeoIPAutoUpdate;
 wxString CPreferences::s_GeoIPUpdateUrl;
-bool CPreferences::s_preventSleepWhileDownloading;
+int CPreferences::s_sleepMode;
 wxString CPreferences::s_StatsServerName;
 wxString CPreferences::s_StatsServerURL;
 
@@ -714,6 +714,27 @@ template <class TYPE> Cfg_Base *MkCfg_Int(const wxString &keyname, TYPE &value, 
 {
 	return new Cfg_Int<TYPE>(keyname, value, defaultVal);
 }
+
+/** Sleep policy with migration from the original checkbox and downgrade compatibility. */
+class Cfg_SleepMode : public Cfg_Int<int>
+{
+public:
+	explicit Cfg_SleepMode(int &value)
+	: Cfg_Int<int>("/PowerManagement/PreventSleep", value, 0)
+	{
+	}
+
+	void LoadFromFile(wxConfigBase *cfg) override
+	{
+		m_real_value = static_cast<int>(PowerManagement::LoadMode(*cfg));
+		m_temp_value = m_real_value;
+	}
+
+	void SaveToFile(wxConfigBase *cfg) override
+	{
+		PowerManagement::SaveMode(*cfg, PowerManagement::NormalizeMode(m_real_value));
+	}
+};
 
 /** Cfg class for bools. */
 class Cfg_Bool : public Cfg_Tmpl<bool>
@@ -1604,10 +1625,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 		(new Cfg_Bool("/eMule/ED2KAcceleratedPublication", s_ED2KAcceleratedPublication, true)));
 
 	/** Power management */
-	NewCfgItem(IDC_PREVENT_SLEEP,
-		(new Cfg_Bool("/PowerManagement/PreventSleepWhileDownloading",
-			s_preventSleepWhileDownloading,
-			false)));
+	NewCfgItem(IDC_PREVENT_SLEEP, new Cfg_SleepMode(s_sleepMode));
 
 	/** The following does not have an associated widget or section */
 	s_MiscList.push_back(new Cfg_Str("/eMule/Language", s_languageID));

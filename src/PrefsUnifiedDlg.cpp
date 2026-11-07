@@ -475,6 +475,11 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		prefs_sizer->Add(Widget, wxSizerFlags().Expand().Expand());
 
 		if (pages[i].m_function == PreferencesGeneralTab) {
+#if defined CLIENT_GUI || !PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+			FindWindow(IDC_PREVENT_SLEEP_LABEL)->Hide();
+			FindWindow(IDC_PREVENT_SLEEP)->Hide();
+#endif
+
 // Adjust visibility before measuring the page contents.
 #if defined(CLIENT_GUI)
 			// Remote GUI: this checkbox toggles the *daemon's* version-check preference, so
@@ -583,10 +588,6 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			// widened the whole dialog; a space keeps the gap without the bug.
 			warning.Replace("\n\n", "\n \n");
 			txt->SetLabel(warning);
-#if defined CLIENT_GUI || !PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
-			CastChild(IDC_PREVENT_SLEEP, wxCheckBox)->Enable(false);
-			thePrefs::SetPreventSleepWhileDownloading(false);
-#endif
 		} else if (pages[i].m_function == PreferencesDebug) {
 			int count = theLogger.GetDebugCategoryCount();
 			wxCheckListBox *list = CastChild(ID_DEBUGCATS, wxCheckListBox);

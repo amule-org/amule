@@ -99,7 +99,7 @@
 #include "NetworkInterfaces.h"    // Needed for DetectNetworkInterfaces
 #include "OtherFunctions.h"
 #include "PartFile.h"                   // Needed for CPartFile
-#include "PlatformSpecific.h"           // Needed for PlatformSpecific::AllowSleepMode();
+#include "PlatformSpecific.h"           // Needed for PlatformSpecific::ShutdownSleepInhibition();
 #include "Preferences.h"                // Needed for CPreferences
 #include "PublicIPv6Corroboration.h"    // Needed for ObservedPublicIPv6
 #include "SearchList.h"                 // Needed for CSearchList
@@ -3209,8 +3209,8 @@ void CamuleApp::ReportShutdownStatus(const wxString &status)
 
 void CamuleApp::ShutDown()
 {
-	// Just in case
-	PlatformSpecific::AllowSleepMode();
+	// Stop the inhibitor worker before logger and application teardown.
+	PlatformSpecific::ShutdownSleepInhibition();
 
 	// Log
 	AddDebugLogLineN(logGeneral, "CamuleApp::ShutDown() has started.");

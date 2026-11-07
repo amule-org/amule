@@ -120,8 +120,16 @@ inline bool CanFSHandleLargeFiles(const CPath &path)
 #define PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE 0
 #endif
 
-void PreventSleepMode();
+// On Linux these requests are asynchronous; shutdown must cancel and join them.
+void PreventSleepMode(bool whileRunning = false);
 void AllowSleepMode();
+// Cancel outstanding inhibition work, release resources and join the Linux worker
+// before application teardown. No further inhibition requests are accepted afterwards.
+void ShutdownSleepInhibition();
+#if defined(AMULE_SLEEP_INHIBITION_TEST)
+// Call before the first request. Production builds keep the 30-second interval.
+void SetSleepInhibitionRetryIntervalForTesting(unsigned seconds);
+#endif
 
 }; /* namespace PlatformSpecific */
 

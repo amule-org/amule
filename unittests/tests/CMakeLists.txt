@@ -55,6 +55,12 @@ foreach (logger_test IN ITEMS LoggerRuntimeTest LoggerConsoleRuntimeTest)
 	add_test (NAME ${logger_test} COMMAND ${logger_test})
 endforeach ()
 
+# Config migration, downgrade compatibility and the shared core sleep policy.
+add_executable (PowerManagementTest PowerManagementTest.cpp)
+target_include_directories (PowerManagementTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (PowerManagementTest muleunit mulecommon)
+add_test (NAME PowerManagementTest COMMAND PowerManagementTest)
+
 # Exercise the production sleep entry points against an isolated session bus.
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
 	add_executable (SleepInhibitionTest
@@ -66,7 +72,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
 		${CMAKE_SOURCE_DIR}/src/PlatformSpecific.cpp
 		${CMAKE_SOURCE_DIR}/src/Logger.cpp
 	)
-	target_compile_definitions (SleepInhibitionTest PRIVATE HAVE_GIO AMULE_DAEMON wxUSE_GUI=0)
+	target_compile_definitions (SleepInhibitionTest PRIVATE HAVE_GIO AMULE_DAEMON wxUSE_GUI=0 AMULE_SLEEP_INHIBITION_TEST)
 	target_include_directories (SleepInhibitionTest PRIVATE
 		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
 		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
@@ -75,8 +81,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
 	target_link_libraries (SleepInhibitionTest PRIVATE mulecommon wxWidgets::BASE ${GLIB_LIBRARIES})
 	add_test (NAME SleepInhibitionTest COMMAND SleepInhibitionTest)
 	add_test (NAME SleepInhibitionNoBusTest COMMAND SleepInhibitionTest --no-bus)
-	set_tests_properties (SleepInhibitionTest SleepInhibitionNoBusTest PROPERTIES
-		SKIP_RETURN_CODE 77 LABELS "integration")
+	add_test (NAME SleepInhibitionBusRestartTest COMMAND SleepInhibitionTest --restart-bus)
+	set_tests_properties (SleepInhibitionTest SleepInhibitionNoBusTest SleepInhibitionBusRestartTest PROPERTIES
+		SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 240)
 endif ()
 
 # Shared application anchors for headless tests that link production core code.
@@ -90,6 +97,7 @@ function (add_application_test_stubs target)
 endfunction()
 
 find_package (Python3 QUIET COMPONENTS Interpreter)
+
 if (BUILD_FILEVIEW AND Python3_Interpreter_FOUND)
 	add_test (NAME FileViewLoggingRegressionTest
 		COMMAND ${Python3_EXECUTABLE}
@@ -2980,6 +2988,13 @@ endif()
 option (ENABLE_INTEGRATION_TESTS
 	"Register tests that run real aMule programs on loopback. Timing-sensitive, so off for package builds"
 	OFF)
+if (ENABLE_INTEGRATION_TESTS AND Python3_Interpreter_FOUND AND TARGET SleepInhibitionTest AND TARGET amuled)
+	add_test (NAME SleepModeDaemonIntegrationTest
+		COMMAND SleepInhibitionTest --daemon ${Python3_EXECUTABLE}
+			${CMAKE_CURRENT_SOURCE_DIR}/SleepModeDaemonIntegrationTest.py $<TARGET_FILE:amuled>)
+	set_tests_properties (SleepModeDaemonIntegrationTest PROPERTIES
+		SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 120)
+endif ()
 if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND Python3_Interpreter_FOUND)
 	add_test (NAME UnicodeCommandLineIntegrationTest
 		COMMAND ${Python3_EXECUTABLE}
@@ -3988,6 +4003,7 @@ foreach (ec_wire_test IN ITEMS
 	SharedMembershipIntegrationTest
 	ShortBlockPacketIntegrationTest
 	StartPausedIntegrationTest
+	SleepModeDaemonIntegrationTest
 	SymlinkShareRootIntegrationTest
 	TinyBlockPacketIntegrationTest
 	UnwritableTagIntegrationTest

@@ -1407,6 +1407,17 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     itemAutostart->SetToolTip( _("Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry.") );
     item0->Add( itemAutostart, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
+    auto *sleepRow = new wxBoxSizer(wxHORIZONTAL);
+    sleepRow->Add(new wxStaticText(parent, IDC_PREVENT_SLEEP_LABEL, _("Prevent automatic sleep: ")),
+        wxSizerFlags().CenterVertical());
+    auto *sleepMode = new wxChoice(parent, IDC_PREVENT_SLEEP);
+    sleepMode->Append(_("Off"));
+    sleepMode->Append(_("While downloading"));
+    sleepMode->Append(_("While aMule is running"));
+    sleepMode->SetToolTip(_("While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."));
+    sleepRow->Add(sleepMode, wxSizerFlags().CenterVertical());
+    item0->Add(sleepRow, wxSizerFlags().Expand().Border(wxTOP|wxBOTTOM, 5));
+
     // URL-scheme handler toggles. Same OS-is-source-of-truth model as autostart above: state lives
     // in HKCU\Software\Classes\<scheme> (Windows), $XDG_CONFIG_HOME/mimeapps.list (Linux), or
     // LaunchServices (macOS), never in aMule.conf.
@@ -2206,8 +2217,6 @@ wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit, bool set_si
     item4->Add( item12, wxSizerFlags().CenterVertical().Border(wxTOP, 5) );
     wxSlider *item13 = new wxSlider( item5, IDC_SERVERKEEPALIVE, 0, 0, 30, wxDefaultPosition, wxSize(100,-1), wxSL_HORIZONTAL );
     item4->Add( item13, wxSizerFlags().Expand().CenterVertical() );
-    wxCheckBox *item14 = new wxCheckBox( item5, IDC_PREVENT_SLEEP, _("Disable computer's timed standby mode"), wxDefaultPosition, wxDefaultSize, 0 );
-    item4->Add( item14, wxSizerFlags().CenterVertical().Border(wxTOP|wxBOTTOM, 5) );
     item0->Add( item4, wxSizerFlags().Expand().Border(wxALL, 5) );
     if (set_sizer)
     {

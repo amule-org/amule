@@ -29,6 +29,12 @@
 #include "Logger.h"
 #include "common/Format.h"
 #include <gio/gio.h>
+#include <chrono>
+#include <condition_variable>
+#include <cstdint>
+#include <mutex>
+#include <system_error>
+#include <thread>
 #endif
 
 // NTFS Sparse Files (only for MSW)
@@ -332,32 +338,406 @@ PlatformSpecific::EFSType PlatformSpecific::GetFilesystemType(const CPath &path)
 }
 
 #if defined(__linux__) && defined(HAVE_GIO)
-static guint sleepInhibitorCookie = 0;
-static GDBusConnection *sleepInhibitorBus = nullptr;
-static gchar *sleepInhibitorRequest = nullptr;
+namespace
+{
+// All D-Bus state belongs to this worker. Queue ticks only change the desired
+// state: a slow desktop service must never stall transfers or the GUI.
+class LinuxSleepInhibitor
+{
+public:
+	static LinuxSleepInhibitor &Get()
+	{
+		static LinuxSleepInhibitor inhibitor;
+		return inhibitor;
+	}
+
+	~LinuxSleepInhibitor() { Stop(); }
+
+	void SetDesired(bool desired, bool whileRunning = false)
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (m_stopping) {
+			return;
+		}
+		if (m_desired != desired || m_whileRunning != whileRunning) {
+			m_desired = desired;
+			m_whileRunning = whileRunning;
+			++m_generation;
+			if (m_cancellable != nullptr) {
+				g_cancellable_cancel(m_cancellable);
+			}
+			m_changed.notify_all();
+		}
+		if (desired && !m_worker.joinable() && std::chrono::steady_clock::now() >= m_startRetry) {
+			try {
+				m_worker = std::thread(&LinuxSleepInhibitor::Run, this);
+			} catch (const std::system_error &error) {
+				m_startRetry = std::chrono::steady_clock::now() + m_retryInterval;
+				AddDebugLogLineN(logGeneral,
+					CFormat("Cannot start sleep inhibition worker: %s") %
+						wxString::FromUTF8(error.what()));
+			}
+		}
+	}
+
+#if defined(AMULE_SLEEP_INHIBITION_TEST)
+	void SetRetryIntervalForTesting(unsigned seconds)
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_retryInterval = std::chrono::seconds(seconds);
+	}
+#endif
+
+	void Stop()
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+		if (m_stopping) {
+			return;
+		}
+		m_stopping = true;
+		++m_generation;
+		if (m_cancellable != nullptr) {
+			g_cancellable_cancel(m_cancellable);
+		}
+		m_changed.notify_all();
+		std::thread worker = std::move(m_worker);
+		lock.unlock();
+		if (worker.joinable()) {
+			worker.join();
+		}
+	}
+
+private:
+	LinuxSleepInhibitor() = default;
+
+	void Run()
+	{
+		std::unique_lock<std::mutex> lock(m_mutex);
+		for (;;) {
+			if (!m_stopping && !m_desired && m_bus == nullptr) {
+				m_changed.wait(lock, [this] { return m_stopping || m_desired; });
+			}
+			const bool stopping = m_stopping;
+			const bool prevent = m_desired && !stopping;
+			const auto generation = m_generation;
+			const bool whileRunning = m_whileRunning;
+			m_cancellable = g_cancellable_new();
+			if (stopping) {
+				g_cancellable_cancel(m_cancellable);
+			}
+			lock.unlock();
+			if (prevent) {
+				Refresh(whileRunning, m_cancellable);
+			} else {
+				Release(m_cancellable);
+			}
+			lock.lock();
+			g_object_unref(m_cancellable);
+			m_cancellable = nullptr;
+			if (stopping) {
+				break;
+			}
+			if (generation == m_generation && m_desired) {
+				m_changed.wait_for(lock, m_retryInterval, [this, generation] {
+					return m_stopping || generation != m_generation;
+				});
+			}
+		}
+	}
+
+	static void LogError(const char *operation, GError *error)
+	{
+		if (error != nullptr && !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_CANCELLED)) {
+			AddDebugLogLineN(logGeneral,
+				CFormat("%s: %s") % wxString::FromUTF8(operation) %
+					wxString::FromUTF8(error->message));
+		}
+	}
+
+	GVariant *Call(const char *destination,
+		const char *path,
+		const char *interface,
+		const char *method,
+		GVariant *parameters,
+		const GVariantType *type,
+		GCancellable *cancellable,
+		GError **error)
+	{
+		return g_dbus_connection_call_sync(m_bus,
+			destination,
+			path,
+			interface,
+			method,
+			parameters,
+			type,
+			G_DBUS_CALL_FLAGS_NONE,
+			5000,
+			cancellable,
+			error);
+	}
+
+	bool IsRetained(GCancellable *cancellable)
+	{
+		if (m_bus == nullptr || g_dbus_connection_is_closed(m_bus)) {
+			return false;
+		}
+		GError *error = nullptr;
+		GVariant *reply = Call("org.freedesktop.DBus",
+			"/org/freedesktop/DBus",
+			"org.freedesktop.DBus",
+			"GetNameOwner",
+			g_variant_new("(s)",
+				m_request != nullptr ? "org.freedesktop.portal.Desktop"
+						     : "org.gnome.SessionManager"),
+			G_VARIANT_TYPE("(s)"),
+			cancellable,
+			&error);
+		const gchar *owner = nullptr;
+		if (reply != nullptr) {
+			g_variant_get(reply, "(&s)", &owner);
+		}
+		bool retained = owner != nullptr && g_strcmp0(owner, m_owner) == 0;
+		if (reply != nullptr) {
+			g_variant_unref(reply);
+		}
+		reply = nullptr;
+		g_clear_error(&error);
+		if (retained && m_request != nullptr) {
+			// A portal may remove a failed request without changing its bus owner.
+			// Check the Request interface too, rather than retaining a dead handle.
+			reply = Call(m_owner,
+				m_request,
+				"org.freedesktop.DBus.Introspectable",
+				"Introspect",
+				nullptr,
+				G_VARIANT_TYPE("(s)"),
+				cancellable,
+				&error);
+			const gchar *xml = nullptr;
+			if (reply != nullptr) {
+				g_variant_get(reply, "(&s)", &xml);
+			}
+			GDBusNodeInfo *info =
+				xml != nullptr ? g_dbus_node_info_new_for_xml(xml, nullptr) : nullptr;
+			retained = info != nullptr && g_dbus_node_info_lookup_interface(info,
+							      "org.freedesktop.portal.Request") != nullptr;
+			if (info != nullptr) {
+				g_dbus_node_info_unref(info);
+			}
+			if (reply != nullptr) {
+				g_variant_unref(reply);
+			}
+			g_clear_error(&error);
+		}
+		return retained;
+	}
+
+	static GVariant *Inhibit(GDBusConnection *bus,
+		const char *service,
+		const char *path,
+		const char *interface,
+		GVariant *parameters,
+		const GVariantType *type,
+		gchar **owner,
+		GCancellable *cancellable,
+		GError **error)
+	{
+		// Keep normal service auto-activation, and pin cleanup to the actual reply
+		// sender so a replacement service cannot inherit an old cookie or handle.
+		GDBusMessage *message = g_dbus_message_new_method_call(service, path, interface, "Inhibit");
+		g_dbus_message_set_body(message, parameters);
+		GDBusMessage *reply = g_dbus_connection_send_message_with_reply_sync(
+			bus, message, G_DBUS_SEND_MESSAGE_FLAGS_NONE, 5000, nullptr, cancellable, error);
+		g_object_unref(message);
+		if (reply == nullptr) {
+			return nullptr;
+		}
+		GVariant *result = nullptr;
+		if (!g_dbus_message_to_gerror(reply, error)) {
+			GVariant *body = g_dbus_message_get_body(reply);
+			const gchar *sender = g_dbus_message_get_sender(reply);
+			if (body != nullptr && g_variant_is_of_type(body, type) && sender != nullptr) {
+				*owner = g_strdup(sender);
+				result = g_variant_ref(body);
+			} else {
+				g_set_error_literal(error,
+					G_DBUS_ERROR,
+					G_DBUS_ERROR_INVALID_ARGS,
+					"Unexpected sleep inhibition reply");
+			}
+		}
+		g_object_unref(reply);
+		return result;
+	}
+
+	void Refresh(bool whileRunning, GCancellable *cancellable)
+	{
+		if (IsRetained(cancellable) && m_inhibitedWhileRunning == whileRunning) {
+			return;
+		}
+		Release(cancellable);
+		if (g_cancellable_is_cancelled(cancellable)) {
+			return;
+		}
+		const char *reason = whileRunning ? "aMule is running" : "Transferring files";
+		GError *error = nullptr;
+		gchar *address = g_dbus_address_get_for_bus_sync(G_BUS_TYPE_SESSION, cancellable, &error);
+		GDBusConnection *bus = nullptr;
+		if (address != nullptr) {
+			// GIO requires this combination of bit flags, not a single enum value.
+			// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+			const auto flags = static_cast<GDBusConnectionFlags>(
+				G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
+				G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION);
+			bus = g_dbus_connection_new_for_address_sync(
+				address, flags, nullptr, cancellable, &error);
+			g_free(address);
+		}
+		if (bus != nullptr) {
+			g_dbus_connection_set_exit_on_close(bus, false);
+			gchar *owner = nullptr;
+			GVariant *reply = Inhibit(bus,
+				"org.gnome.SessionManager",
+				"/org/gnome/SessionManager",
+				"org.gnome.SessionManager",
+				g_variant_new("(susu)", "org.amule.aMule", 0u, reason, 4u),
+				G_VARIANT_TYPE("(u)"),
+				&owner,
+				cancellable,
+				&error);
+			if (reply != nullptr) {
+				g_variant_get(reply, "(u)", &m_cookie);
+				m_bus = bus;
+				m_owner = owner;
+				m_inhibitedWhileRunning = whileRunning;
+				g_variant_unref(reply);
+				return;
+			}
+			LogError("Cannot inhibit idle sleep through session manager; trying portal", error);
+			g_clear_error(&error);
+			g_free(owner);
+			owner = nullptr;
+			if (!g_cancellable_is_cancelled(cancellable)) {
+				GVariantBuilder options;
+				g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
+				g_variant_builder_add(
+					&options, "{sv}", "reason", g_variant_new_string(reason));
+				// Suspend only; leave screen blanking and idle detection alone.
+				reply = Inhibit(bus,
+					"org.freedesktop.portal.Desktop",
+					"/org/freedesktop/portal/desktop",
+					"org.freedesktop.portal.Inhibit",
+					g_variant_new("(sua{sv})", "", 4u, &options),
+					G_VARIANT_TYPE("(o)"),
+					&owner,
+					cancellable,
+					&error);
+				if (reply != nullptr) {
+					g_variant_get(reply, "(o)", &m_request);
+					m_bus = bus;
+					m_owner = owner;
+					m_inhibitedWhileRunning = whileRunning;
+					g_variant_unref(reply);
+					return;
+				}
+			}
+			g_free(owner);
+			// Disconnect even after cancellation/timeout: the service may have
+			// allocated an inhibitor before its reply was lost.
+			g_dbus_connection_close_sync(bus, nullptr, nullptr);
+			g_object_unref(bus);
+		}
+		LogError("Cannot inhibit idle sleep", error);
+		g_clear_error(&error);
+	}
+
+	void Release(GCancellable *cancellable)
+	{
+		if (m_bus == nullptr) {
+			return;
+		}
+		GError *error = nullptr;
+		GVariant *reply = nullptr;
+		if (!g_dbus_connection_is_closed(m_bus)) {
+			reply = Call(m_owner,
+				m_request != nullptr ? m_request : "/org/gnome/SessionManager",
+				m_request != nullptr ? "org.freedesktop.portal.Request"
+						     : "org.gnome.SessionManager",
+				m_request != nullptr ? "Close" : "Uninhibit",
+				m_request != nullptr ? nullptr : g_variant_new("(u)", m_cookie),
+				G_VARIANT_TYPE("()"),
+				cancellable,
+				&error);
+		}
+		if (reply != nullptr) {
+			g_variant_unref(reply);
+		}
+		LogError("Cannot release idle sleep inhibition", error);
+		g_clear_error(&error);
+		g_free(m_request);
+		m_request = nullptr;
+		g_free(m_owner);
+		m_owner = nullptr;
+		m_cookie = 0;
+		g_dbus_connection_close_sync(m_bus, nullptr, nullptr);
+		g_object_unref(m_bus);
+		m_bus = nullptr;
+	}
+
+	std::mutex m_mutex;
+	std::condition_variable m_changed;
+	std::thread m_worker;
+	std::chrono::steady_clock::time_point m_startRetry{};
+	std::chrono::seconds m_retryInterval{ 30 };
+	std::uint64_t m_generation = 0;
+	bool m_desired = false;
+	bool m_whileRunning = false;
+	bool m_stopping = false;
+	GCancellable *m_cancellable = nullptr; // protected by m_mutex
+	// The fields below are accessed only by the worker.
+	bool m_inhibitedWhileRunning = false;
+	GDBusConnection *m_bus = nullptr;
+	gchar *m_owner = nullptr;
+	gchar *m_request = nullptr;
+	guint m_cookie = 0;
+};
+} // namespace
 #endif
 
 // Power event vetoing
 
+#if !defined(__linux__) || !defined(HAVE_GIO)
 static bool m_preventingSleepMode = false;
+static bool m_preventingWhileRunning = false;
+#endif
 
 #if defined(__WXMAC__) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1050 // 10.5 only
 #include <IOKit/pwr_mgt/IOPMLib.h>
 static IOPMAssertionID assertionID;
 #endif
 
-void PlatformSpecific::PreventSleepMode()
+void PlatformSpecific::PreventSleepMode(bool whileRunning)
 {
+#if defined(__linux__) && defined(HAVE_GIO)
+	LinuxSleepInhibitor::Get().SetDesired(true, whileRunning);
+#else
+
+	if (m_preventingSleepMode && m_preventingWhileRunning != whileRunning) {
+		AllowSleepMode();
+		if (m_preventingSleepMode) {
+			return; // Retry the mode change if releasing the previous assertion failed.
+		}
+	}
 	if (!m_preventingSleepMode) {
 #ifdef __WINDOWS__
-		SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
-		m_preventingSleepMode = true;
+		m_preventingSleepMode = SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED) != 0;
 
 // IOPMAssertionCreate arrived in Leopard (10.5) but is deprecated from Snow Leopard (10.6). See
 // http://developer.apple.com/library/mac/#qa/qa1340/_index.html and
 // http://www.cimgf.com/2009/10/14/the-journey-to-disabling-sleep-with-iokit/
 #elif defined(__WXMAC__) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060 // 10.6 only
-		CFStringRef reasonForActivity = CFSTR("aMule is transferring files");
+		CFStringRef reasonForActivity =
+			whileRunning ? CFSTR("aMule is running") : CFSTR("aMule is transferring files");
 		IOReturn success = IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep,
 			kIOPMAssertionLevelOn,
 			reasonForActivity,
@@ -378,95 +758,30 @@ void PlatformSpecific::PreventSleepMode()
 		} else {
 			// ??
 		}
-#elif defined(__linux__) && defined(HAVE_GIO)
-		// Make one attempt per state change, including when neither service is available.
-		m_preventingSleepMode = true;
-		GError *error = nullptr;
-		// A private connection lets us release even a failed/timed-out request by
-		// disconnecting, without closing another caller's shared session bus.
-		gchar *address = g_dbus_address_get_for_bus_sync(G_BUS_TYPE_SESSION, nullptr, &error);
-		GDBusConnection *bus = nullptr;
-		if (address != nullptr) {
-			// GIO requires this combination of bit flags, not a single enum value.
-			// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
-			const auto flags = static_cast<GDBusConnectionFlags>(
-				G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT |
-				G_DBUS_CONNECTION_FLAGS_MESSAGE_BUS_CONNECTION);
-			bus = g_dbus_connection_new_for_address_sync(
-				address, flags, nullptr, nullptr, &error);
-			g_free(address);
-		}
-		if (bus != nullptr) {
-			// Cinnamon's portal may return a handle before failing because a native
-			// process has no app ID. Supply it directly to the session manager first.
-			GVariant *reply = g_dbus_connection_call_sync(bus,
-				"org.gnome.SessionManager",
-				"/org/gnome/SessionManager",
-				"org.gnome.SessionManager",
-				"Inhibit",
-				g_variant_new("(susu)", "org.amule.aMule", 0u, "Transferring files", 4u),
-				G_VARIANT_TYPE("(u)"),
-				G_DBUS_CALL_FLAGS_NONE,
-				5000,
-				nullptr,
-				&error);
-			if (reply != nullptr) {
-				g_variant_get(reply, "(u)", &sleepInhibitorCookie);
-				sleepInhibitorBus = bus;
-				g_variant_unref(reply);
-				return;
-			}
-			AddDebugLogLineN(logGeneral,
-				CFormat("Cannot inhibit idle sleep through session manager; trying portal: "
-					"%s") %
-					wxString::FromUTF8(error->message));
-			g_clear_error(&error);
 
-			GVariantBuilder options;
-			g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
-			g_variant_builder_add(
-				&options, "{sv}", "reason", g_variant_new_string("Transferring files"));
-			// Suspend only; leave screen blanking and idle detection alone.
-			reply = g_dbus_connection_call_sync(bus,
-				"org.freedesktop.portal.Desktop",
-				"/org/freedesktop/portal/desktop",
-				"org.freedesktop.portal.Inhibit",
-				"Inhibit",
-				g_variant_new("(sua{sv})", "", 4u, &options),
-				G_VARIANT_TYPE("(o)"),
-				G_DBUS_CALL_FLAGS_NONE,
-				5000,
-				nullptr,
-				&error);
-			if (reply != nullptr) {
-				g_variant_get(reply, "(o)", &sleepInhibitorRequest);
-				// The portal also releases the inhibition if this connection closes.
-				sleepInhibitorBus = bus;
-				g_variant_unref(reply);
-			} else {
-				g_dbus_connection_close_sync(bus, nullptr, nullptr);
-				g_object_unref(bus);
-			}
-		}
-		if (error != nullptr) {
-			AddDebugLogLineN(logGeneral,
-				CFormat("Cannot inhibit idle sleep: %s") %
-					wxString::FromUTF8(error->message));
-			g_error_free(error);
-		}
 #else
 		// #warning Power event vetoing not implemented.
 		//  Not implemented
 #endif
 	}
+	if (m_preventingSleepMode) {
+		m_preventingWhileRunning = whileRunning;
+	}
+#endif
 }
 
 void PlatformSpecific::AllowSleepMode()
 {
+#if defined(__linux__) && defined(HAVE_GIO)
+	LinuxSleepInhibitor::Get().SetDesired(false);
+#else
+
 	if (m_preventingSleepMode) {
 #ifdef __WINDOWS__
-		SetThreadExecutionState(ES_CONTINUOUS); // Clear the system request flag.
-		m_preventingSleepMode = false;
+		// Keep the flag set if clearing fails, so a later Off tick can retry.
+		if (SetThreadExecutionState(ES_CONTINUOUS) != 0) {
+			m_preventingSleepMode = false;
+		}
 #elif defined(__WXMAC__) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1050 // 10.5 only
 		IOReturn success = IOPMAssertionRelease(assertionID);
 		if (success == kIOReturnSuccess) {
@@ -475,40 +790,26 @@ void PlatformSpecific::AllowSleepMode()
 		} else {
 			// ??
 		}
-#elif defined(__linux__) && defined(HAVE_GIO)
-		if (sleepInhibitorBus != nullptr) {
-			GError *error = nullptr;
-			const bool portal = sleepInhibitorRequest != nullptr;
-			GVariant *reply = g_dbus_connection_call_sync(sleepInhibitorBus,
-				portal ? "org.freedesktop.portal.Desktop" : "org.gnome.SessionManager",
-				portal ? sleepInhibitorRequest : "/org/gnome/SessionManager",
-				portal ? "org.freedesktop.portal.Request" : "org.gnome.SessionManager",
-				portal ? "Close" : "Uninhibit",
-				portal ? nullptr : g_variant_new("(u)", sleepInhibitorCookie),
-				G_VARIANT_TYPE("()"),
-				G_DBUS_CALL_FLAGS_NONE,
-				5000,
-				nullptr,
-				&error);
-			if (reply != nullptr) {
-				g_variant_unref(reply);
-			}
-			if (error != nullptr) {
-				AddDebugLogLineN(logGeneral,
-					CFormat("Cannot release idle sleep inhibition: %s") %
-						wxString::FromUTF8(error->message));
-				g_error_free(error);
-			}
-			g_free(sleepInhibitorRequest);
-			sleepInhibitorRequest = nullptr;
-			sleepInhibitorCookie = 0;
-			g_dbus_connection_close_sync(sleepInhibitorBus, nullptr, nullptr);
-			g_object_unref(sleepInhibitorBus);
-			sleepInhibitorBus = nullptr;
-		}
-		m_preventingSleepMode = false;
+
 #else
 		// Not implemented
 #endif
 	}
+#endif
 }
+
+void PlatformSpecific::ShutdownSleepInhibition()
+{
+#if defined(__linux__) && defined(HAVE_GIO)
+	LinuxSleepInhibitor::Get().Stop();
+#else
+	AllowSleepMode();
+#endif
+}
+
+#if defined(AMULE_SLEEP_INHIBITION_TEST)
+void PlatformSpecific::SetSleepInhibitionRetryIntervalForTesting(unsigned seconds)
+{
+	LinuxSleepInhibitor::Get().SetRetryIntervalForTesting(seconds);
+}
+#endif

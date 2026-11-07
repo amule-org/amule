@@ -4982,6 +4982,26 @@ msgstr ""
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr ""
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Off"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "While downloading"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "While aMule is running"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr ""
@@ -5622,10 +5642,6 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
 msgstr ""
 
 #: src/muuli_wdr.cpp
