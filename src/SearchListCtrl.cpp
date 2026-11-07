@@ -788,8 +788,8 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 {
 	// A folder row is not a result: none of the actions below apply to it, and
 	// GetSelectedItemCount() counts results, so it would otherwise get no menu at all.
-	// Remembered rather than re-derived when the handler runs, because a right-click does not
-	// select the row on every platform.
+	// Remembered rather than re-derived when the handler runs, because macOS does not select
+	// the right-clicked row.
 	m_contextFolder = m_model->IsFolder(event.GetItem()) ? event.GetItem() : wxDataViewItem();
 	if (m_contextFolder.IsOk()) {
 		wxMenu menu;
@@ -916,7 +916,7 @@ std::vector<wxDataViewItem> CSearchListCtrl::ContextFolders()
 	GetSelections(selection);
 
 	// The whole selection, but only when the row clicked is part of it: the rule a file manager
-	// follows, since right-clicking outside a selection addresses the row under the pointer. A
+	// follows, since right-clicking outside a selection addresses the row under the pointer.
 	// macOS does not select the clicked folder, which is why m_contextFolder is remembered.
 	bool clicked_is_selected = false;
 	for (const wxDataViewItem &item : selection) {
@@ -1007,8 +1007,7 @@ void CSearchListCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 {
-	// Every captured result: the keyword this
-	// builds is a "related" query over all of their hashes.
+	// Every captured result: the "related" query covers all of their hashes.
 	const std::vector<CSearchFile *> files = ContextFiles();
 	if (files.empty()) {
 		return;

@@ -1426,7 +1426,7 @@ void CSearchDlg::OnBnClickedDownload(wxCommandEvent &WXUNUSED(evt))
 		CSearchListCtrl *list = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(sel));
 
 		// Download with items added to category specified in the drop-down menu
-		list->DownloadSelected(-1, list->GetSelectedFiles());
+		list->DownloadFiles(-1, list->GetSelectedFiles());
 	}
 }
 
