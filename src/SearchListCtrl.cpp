@@ -27,8 +27,9 @@
 
 #include "MenuIcons.h"
 
-#include <algorithm> // Needed for std::find, std::min, std::sort
-#include <vector>    // Needed for std::vector
+#include <algorithm>     // Needed for std::find, std::min, std::sort
+#include <unordered_map> // Needed for std::unordered_map (ECID lookup)
+#include <vector>        // Needed for std::vector
 #include <wx/bmpcbox.h>
 
 #include <common/MenuIDs.h>
@@ -409,21 +410,6 @@ size_t CSearchListCtrl::GetItemCount() const
 	return shown;
 }
 
-CSearchFile *CSearchListCtrl::GetFocusedFile() const
-{
-	wxDataViewItemArray selections;
-	GetSelections(selections);
-	// The first selected RESULT, not the first selected item: a folder picked up alongside one
-	// would otherwise make this give up, while GetSelectedItemCount() still enables the menu
-	// entry that calls it.
-	for (const wxDataViewItem &item : selections) {
-		if (!m_model->IsFolder(item)) {
-			return CSearchListModel::ToFile(item);
-		}
-	}
-	return nullptr;
-}
-
 std::vector<CSearchFile *> CSearchListCtrl::GetSelectedFiles() const
 {
 	wxDataViewItemArray selections;
@@ -802,8 +788,8 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 {
 	// A folder row is not a result: none of the actions below apply to it, and
 	// GetSelectedItemCount() counts results, so it would otherwise get no menu at all.
-	// Remembered rather than re-derived when the handler runs, because a right-click does not
-	// select the row on every platform.
+	// Remembered rather than re-derived when the handler runs, because macOS does not select
+	// the right-clicked row.
 	m_contextFolder = m_model->IsFolder(event.GetItem()) ? event.GetItem() : wxDataViewItem();
 	if (m_contextFolder.IsOk()) {
 		wxMenu menu;
@@ -813,7 +799,18 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		return;
 	}
 
-	if (GetSelectedItemCount()) {
+	// macOS does not select the row on right-click.
+	const wxDataViewItem clicked = event.GetItem();
+	const std::vector<CSearchFile *> files =
+		(clicked.IsOk() && !IsSelected(clicked))
+			? std::vector<CSearchFile *>{ CSearchListModel::ToFile(clicked) }
+			: GetSelectedFiles();
+	m_contextFileIds.clear();
+	for (CSearchFile *file : files) {
+		m_contextFileIds.push_back(file->ECID());
+	}
+
+	if (!m_contextFileIds.empty()) {
 		// No title: wxMenu's title parameter renders inconsistently or not at all
 		// as a context-popup header across platforms (issue #767).
 		wxMenu menu;
@@ -838,10 +835,8 @@ void CSearchListCtrl::OnRightClick(wxDataViewEvent &event)
 		menu.Append(MP_SEARCHRELATED, _("Search related files (eD2k, local server)"));
 		AppendMenuIcon(&menu, MP_GETCOMMENTS, _("Show all comments"), MenuIcon::Comments);
 		menu.AppendSeparator();
-		// Singular or plural to match what it will copy, as the server list does.
-		// OnPopupGetUrl has always walked the whole selection and joined the links with
-		// newlines -- only the menu stopped it being handed more than one.
-		const bool single = (GetSelectedItemCount() == 1);
+		// Singular or plural to match the files this menu captured.
+		const bool single = (m_contextFileIds.size() == 1);
 		AppendMenuIcon(&menu,
 			MP_GETED2KLINK,
 			single ? _("Copy eD2k link to clipboard") : _("Copy eD2k links to clipboard"),
@@ -870,14 +865,14 @@ void CSearchListCtrl::OnItemActivated(wxDataViewEvent &event)
 			Expand(event.GetItem());
 		}
 	} else {
-		DownloadSelected();
+		DownloadFiles(-1, GetSelectedFiles());
 	}
 }
 
 void CSearchListCtrl::OnPopupGetUrl(wxCommandEvent &WXUNUSED(event))
 {
 	wxString URIs;
-	for (CSearchFile *file : GetSelectedFiles()) {
+	for (CSearchFile *file : ContextFiles()) {
 		URIs += theApp->CreateED2kLink(file) + "\n";
 	}
 	if (!URIs.IsEmpty()) {
@@ -921,9 +916,8 @@ std::vector<wxDataViewItem> CSearchListCtrl::ContextFolders()
 	GetSelections(selection);
 
 	// The whole selection, but only when the row clicked is part of it: the rule a file manager
-	// follows, since right-clicking outside a selection addresses the row under the pointer. A
-	// right-click does not select on every platform, which is why m_contextFolder is remembered
-	// separately (see OnRightClick).
+	// follows, since right-clicking outside a selection addresses the row under the pointer.
+	// macOS does not select the clicked folder, which is why m_contextFolder is remembered.
 	bool clicked_is_selected = false;
 	for (const wxDataViewItem &item : selection) {
 		if (item == m_contextFolder) {
@@ -949,6 +943,30 @@ std::vector<wxDataViewItem> CSearchListCtrl::ContextFolders()
 	return folders;
 }
 
+std::vector<CSearchFile *> CSearchListCtrl::ContextFiles()
+{
+	std::vector<CSearchFile *> validated;
+	if (m_contextFileIds.empty() || !m_nResultsID) {
+		return validated;
+	}
+	const CSearchResultList &results = theApp->searchlist->GetSearchResults(m_nResultsID);
+	std::unordered_map<uint32, CSearchFile *> current;
+	current.reserve(results.size());
+	for (CSearchFile *file : results) {
+		current.emplace(file->ECID(), file);
+		for (CSearchFile *child : file->GetChildren()) {
+			current.emplace(child->ECID(), child);
+		}
+	}
+	for (uint32 id : m_contextFileIds) {
+		const auto it = current.find(id);
+		if (it != current.end()) {
+			validated.push_back(it->second);
+		}
+	}
+	return validated;
+}
+
 void CSearchListCtrl::OnExpandAll(wxCommandEvent &WXUNUSED(event))
 {
 	// Every selected folder, not just the clicked one (issue #910 follow-up). Nesting needs no
@@ -967,7 +985,8 @@ void CSearchListCtrl::OnCollapseAll(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
 {
-	CSearchFile *file = GetFocusedFile();
+	const std::vector<CSearchFile *> files = ContextFiles();
+	CSearchFile *file = (files.size() == 1) ? files.front() : nullptr;
 	if (file) {
 		// Same dialog the download list uses; its "Get from Kad" button drives
 		// the on-demand community ratings/comments lookup for this result.
@@ -978,18 +997,18 @@ void CSearchListCtrl::OnGetComments(wxCommandEvent &WXUNUSED(event))
 
 void CSearchListCtrl::OnRazorStatsCheck(wxCommandEvent &WXUNUSED(event))
 {
-	CSearchFile *file = GetFocusedFile();
-	if (!file) {
+	const std::vector<CSearchFile *> files = ContextFiles();
+	if (files.empty()) {
 		return;
 	}
+	CSearchFile *file = files.front();
 	theApp->amuledlg->LaunchUrl(thePrefs::GetStatsServerURL() + file->GetFileHash().Encode());
 }
 
 void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 {
-	// Every selected result, not just the focused one: the keyword this
-	// builds is a "related" query over all of their hashes.
-	const std::vector<CSearchFile *> files = GetSelectedFiles();
+	// Every captured result: the "related" query covers all of their hashes.
+	const std::vector<CSearchFile *> files = ContextFiles();
 	if (files.empty()) {
 		return;
 	}
@@ -1047,14 +1066,17 @@ void CSearchListCtrl::AppendDisplayOrder(const wxDataViewItem &parent, wxDataVie
 void CSearchListCtrl::OnPopupDownload(wxCommandEvent &event)
 {
 	if (event.GetId() == MP_RESUME) {
-		DownloadSelected();
+		DownloadFiles(-1, ContextFiles());
 	} else {
-		DownloadSelected(event.GetId() - MP_ASSIGNCAT);
+		DownloadFiles(event.GetId() - MP_ASSIGNCAT, ContextFiles());
 	}
 }
 
-void CSearchListCtrl::DownloadSelected(int category)
+void CSearchListCtrl::DownloadFiles(int category, const std::vector<CSearchFile *> &files)
 {
+	if (files.empty()) {
+		return;
+	}
 	FindWindowById(IDC_SDOWNLOAD)->Enable(false);
 
 	// -1 means "no explicit category", i.e. anything but the right-click "Download in category"
@@ -1074,7 +1096,7 @@ void CSearchListCtrl::DownloadSelected(int category)
 	downloadlist->BeginBatchUpdate();
 #endif
 
-	for (CSearchFile *file : GetSelectedFiles()) {
+	for (CSearchFile *file : files) {
 		// Exempt from "Hide Known Files" before queueing, so the row survives the status
 		// change this is about to cause. Results are grouped only when their hashes match,
 		// so the one insert covers a group's variants too.

@@ -140,26 +140,14 @@ public:
 	/// Number of results shown: one per top-level hit that passes the filter.
 	size_t GetItemCount() const;
 
-	/**
-	 * The selected result, or NULL if nothing is selected -- or if what is selected is not a
-	 * result at all.
-	 *
-	 * Every item here is a wxDataViewItem holding a bare pointer, and ToFile() turns one back
-	 * into a CSearchFile with an unchecked cast. A browse tab's tree also holds folder nodes,
-	 * and a handler that casts one anyway reads whatever is at that address. These two
-	 * accessors ask the model (IsFolder) first, so the question is answered in one place.
-	 */
-	CSearchFile *GetFocusedFile() const;
-
 	/// Every selected item that is a result, skipping any that are not.
-	/// @see GetFocusedFile
 	std::vector<CSearchFile *> GetSelectedFiles() const;
 
 	/// Number of selected rows.
 	int GetSelectedItemCount() const;
 
-	/// Downloads every selected item into @a category, or into the drop-down's selection if -1.
-	void DownloadSelected(int category = -1);
+	/// Downloads @a files into @a category, or into the drop-down's selection if -1.
+	void DownloadFiles(int category, const std::vector<CSearchFile *> &files);
 
 	static wxString DetermineStatusPrintable(CSearchFile *toshow);
 
@@ -245,9 +233,10 @@ protected:
 	//! ECID of the browsed peer for a "View Files" tab, or 0 for a search tab.
 	uint32 m_browseEcid;
 
-	//! The folder the context menu was opened on, if any. A right-click does not select the row
-	//! on every platform, so the handlers cannot ask for the selection.
+	//! The folder the context menu was opened on; macOS does not select a right-clicked folder.
 	wxDataViewItem m_contextFolder;
+	//! Files the context menu acts on, by ECID: macOS does not select the right-clicked row.
+	std::vector<uint32> m_contextFileIds;
 	//! Peer display name and lifecycle (EBrowseStatus) for a browse tab.
 	wxString m_browseName;
 	uint32 m_browseStatus;
@@ -297,6 +286,7 @@ protected:
 	//! Folders the expand/collapse entries act on: the whole selection when the
 	//! clicked row belongs to it, otherwise just that row.
 	std::vector<wxDataViewItem> ContextFolders();
+	std::vector<CSearchFile *> ContextFiles();
 	void OnExpandAll(wxCommandEvent &event);
 	void OnCollapseAll(wxCommandEvent &event);
 
