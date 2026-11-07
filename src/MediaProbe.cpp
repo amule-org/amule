@@ -22,9 +22,6 @@
 
 #include "config.h" // Needed for AMULE_MEDIA_PROBE, AMULE_MEDIA_PROBE_RELPATH
 
-#include <map>
-#include <cmath>
-#include <cstdlib>
 #include <cstdint>
 #include <cstring>
 #include <mutex>
@@ -73,17 +70,13 @@ namespace
 {
 
 // Return values for RunBoundedHelper: a child exit code (>= 0), or one of:
-constexpr int kSpawnFailed = -1;    // unavailable helper, abnormal exit or malformed response
-constexpr int kKilled = -2;         // overran timeoutMs, or keepRunning went false
-constexpr int kOutputTooLarge = -3; // reply exceeded the read budget; see the slurp
-constexpr int kCrashed = -4;        // died abnormally after printing its header
+constexpr int kSpawnFailed = -1; // unavailable helper, abnormal exit, malformed or oversized reply
+constexpr int kKilled = -2;      // overran timeoutMs, or keepRunning went false
+constexpr int kCrashed = -3;     // died abnormally after printing its header
 
-// Spawn `exe argv...`, capturing stdout to a temp file, bounded by `timeoutMs` wall-clock. The wait
-// loop also polls `keepRunning`, so worker shutdown kills the child at once. Real argv, no shell,
-// so paths need no escaping. See the include-block note for why this bypasses wxExecute/wxProcess
-// entirely.
+// Runs `exe` with `input` as stdin, capturing stdout to a temp file, bounded by `timeoutMs`
+// wall-clock. The wait loop also polls `keepRunning`, so worker shutdown kills the child at once.
 int RunBoundedHelper(const wxString &exe,
-	const wxArrayString &argv,
 	unsigned timeoutMs,
 	const std::atomic<bool> &keepRunning,
 	wxArrayString &stdoutLines,
@@ -104,12 +97,6 @@ int RunBoundedHelper(const wxString &exe,
 	};
 
 #ifdef __WXMSW__
-	const wxString program = exe;
-	if (program.IsEmpty()) {
-		wxRemoveFile(tmpPath);
-		return kSpawnFailed;
-	}
-
 	SECURITY_ATTRIBUTES sa;
 	sa.nLength = sizeof(sa);
 	sa.bInheritHandle = TRUE;
@@ -126,9 +113,7 @@ int RunBoundedHelper(const wxString &exe,
 		return kSpawnFailed;
 	}
 
-	// Kill-on-close job so terminating it takes down the whole process tree, the Windows
-	// equivalent of the POSIX process-group kill. ffprobe.exe forks nothing, but a wrapper-
-	// style path would, and TerminateProcess would orphan it.
+	// Kill-on-close job: one process, 1 GiB of memory.
 	HANDLE hJob = ::CreateJobObjectW(nullptr, nullptr);
 	if (hJob != nullptr) {
 		JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
@@ -145,11 +130,7 @@ int RunBoundedHelper(const wxString &exe,
 		}
 	}
 
-	// Quote each token for the single command-line string CreateProcess wants.
-	wxString cmdLine = wxT("\"") + program + wxT("\"");
-	for (const wxString &a : argv) {
-		cmdLine += wxT(" \"") + a + wxT("\"");
-	}
+	const wxString cmdLine = wxT("\"") + exe + wxT("\"");
 	std::vector<wchar_t> cmdBuf(cmdLine.wc_str(), cmdLine.wc_str() + cmdLine.length() + 1);
 
 	HANDLE hIn = ::CreateFileW(input.GetRaw().wc_str(),
@@ -260,15 +241,13 @@ int RunBoundedHelper(const wxString &exe,
 		}
 		const bool oversized = outputTooLarge();
 		if (!keepRunning || static_cast<unsigned>(sw.Time()) >= timeoutMs || oversized) {
-			// Kill the whole job (wrapper + real ffprobe); fall back to the bare
-			// process if the job could not be created.
 			if (hJob != nullptr) {
 				::TerminateJobObject(hJob, 1);
 			} else {
 				::TerminateProcess(pi.hProcess, 1);
 			}
 			::WaitForSingleObject(pi.hProcess, INFINITE);
-			exitCode = oversized ? kOutputTooLarge : kKilled;
+			exitCode = oversized ? kSpawnFailed : kKilled;
 			break;
 		}
 	}
@@ -278,18 +257,8 @@ int RunBoundedHelper(const wxString &exe,
 		::CloseHandle(hJob);
 	}
 #else
-	std::vector<std::string> storage;
-	storage.reserve(argv.GetCount() + 1);
-	storage.emplace_back(exe.fn_str());
-	for (const wxString &a : argv) {
-		storage.emplace_back(a.fn_str());
-	}
-	std::vector<char *> cargv;
-	cargv.reserve(storage.size() + 1);
-	for (std::string &s : storage) {
-		cargv.push_back(const_cast<char *>(s.c_str()));
-	}
-	cargv.push_back(nullptr);
+	const std::string exeNative(exe.fn_str());
+	char *const cargv[] = { const_cast<char *>(exeNative.c_str()), nullptr };
 
 	// Bundled helper must inherit the bundle library environment.
 	char **envp = environ;
@@ -317,17 +286,14 @@ int RunBoundedHelper(const wxString &exe,
 		&fa, STDOUT_FILENO, tmpNative.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	posix_spawn_file_actions_addopen(&fa, STDERR_FILENO, "/dev/null", O_WRONLY, 0);
 
-	// Own process group so a kill takes out the whole tree: ffprobe forks nothing, but a
-	// wrapper-style path (snap's /snap/bin/ffprobe, a flatpak-run shim) is a shell that execs
-	// the real binary as a child. setpgroup(0) makes the child a group leader, and the kill
-	// path below signals -pid.
+	// Own process group, so the kill below (-pid) also takes any child it started.
 	posix_spawnattr_t attr;
 	posix_spawnattr_init(&attr);
 	posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP);
 	posix_spawnattr_setpgroup(&attr, 0);
 
 	pid_t pid = 0;
-	const int rc = posix_spawn(&pid, cargv[0], &fa, &attr, cargv.data(), envp);
+	const int rc = posix_spawn(&pid, cargv[0], &fa, &attr, cargv, envp);
 	close(inputFd);
 	posix_spawnattr_destroy(&attr);
 	posix_spawn_file_actions_destroy(&fa);
@@ -353,31 +319,23 @@ int RunBoundedHelper(const wxString &exe,
 		}
 		const bool oversized = outputTooLarge();
 		if (!keepRunning || static_cast<unsigned>(sw.Time()) >= timeoutMs || oversized) {
-			kill(-pid, SIGKILL); // whole group: wrapper + real ffprobe
+			kill(-pid, SIGKILL);
 			while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {
 			} // reap the leader; init reaps the rest
-			exitCode = oversized ? kOutputTooLarge : kKilled;
+			exitCode = oversized ? kSpawnFailed : kKilled;
 			break;
 		}
 		wxMilliSleep(25);
 	}
 #endif
 
-	// Slurp captured stdout. On a kill the file is partial or empty, but the caller treats
-	// kKilled as failure and never reads stdoutLines then.
-	//
-	// Bounded, because container tags are attacker-chosen text of arbitrary length: uncapped, a
-	// crafted 100 MB title is slurped whole into a wxString and copied again by the tokenizer
-	// and the unescaper before kMaxTagChars ever applies. A legitimate five-field reply is a
-	// few hundred bytes, and anything past the cap is treated as a failed probe rather than
-	// truncated.
-	// The helper prints its header once it has started. A crash before that is a broken
-	// install, which must not mark every file; a crash after it is this file's doing.
-	// A fast exit can beat the polling limit, including a crash after excessive
-	// output. Enforce the same budget before interpreting any exit as a verdict.
+	// A legitimate reply is a few hundred bytes; past 64 KiB it is a failed probe. A fast exit
+	// can beat the polling check, so check again before reading any exit as a verdict.
 	if (outputTooLarge()) {
-		exitCode = kOutputTooLarge;
+		AddDebugLogLineN(logMediaProbe, wxT("MediaProbe: helper output over 64 KiB, ignoring"));
+		exitCode = kSpawnFailed;
 	}
+	// A crash before the header is a broken install; after it, the file caused it.
 	if (exitCode == kCrashed) {
 		wxFFile f(tmpPath, wxT("rb"));
 		char header[7] = {};
@@ -389,14 +347,7 @@ int RunBoundedHelper(const wxString &exe,
 	if (exitCode == 0) {
 		wxFFile f(tmpPath, wxT("rb"));
 		wxString content;
-		if (f.IsOpened() && f.Length() > kMaxProbeOutputBytes) {
-			AddDebugLogLineN(logMediaProbe,
-				CFormat(wxT("MediaProbe: helper output too large (%lld bytes), ignoring")) %
-					static_cast<long long>(f.Length()));
-			// Its own sentinel, not kSpawnFailed: ffprobe ran fine, so
-			// reporting "failed (code -1)" would name the wrong thing.
-			exitCode = kOutputTooLarge;
-		} else if (f.IsOpened() && f.ReadAll(&content, wxConvUTF8)) {
+		if (f.IsOpened() && f.ReadAll(&content, wxConvUTF8)) {
 			// Exactly LF-delimited records, including the terminal newline. Do not
 			// silently discard blank lines or CR bytes from malformed responses.
 			if (content.empty() || content.Last() != wxT('\n') ||
@@ -470,378 +421,108 @@ wxString DetectedPath(bool redetect)
 namespace
 {
 
-// ffprobe emits float durations with a locale-independent `.` separator, so a
-// plain strtod suffices -- no locale-sensitive wxString::ToDouble() here.
-bool ParseSeconds(const wxString &value, uint32 &out)
-{
-	if (value.IsEmpty()) {
-		return false;
-	}
-	// Named local: `value.utf8_str().data()` twice would be two separate temporaries, each dead
-	// at the end of its own full-expression, so the comparison below would read a freed pointer
-	// and compare it against one from a different object -- which happens to work only because
-	// the allocator hands back the same block.
-	const wxScopedCharBuffer buf = value.utf8_str();
-	const char *const str = buf.data();
-	char *end = nullptr;
-	const double d = std::strtod(str, &end);
-	if (end == str || d < 0.0) {
-		return false;
-	}
-	// Cap at uint32 range (~136 years -- plenty).
-	if (d > static_cast<double>(0xFFFFFFFFu)) {
-		out = 0xFFFFFFFFu;
-	} else {
-		// Sub-second precision has no consumer in the FT_MEDIA_LENGTH tag.
-		out = static_cast<uint32>(std::llround(d));
-	}
-	return true;
-}
-
-// ffprobe emits format.bit_rate as bits/second; the tag wire format
-// is kbps.
-bool ParseBitrateKbps(const wxString &value, uint32 &out)
-{
-	if (value.IsEmpty() || value == wxT("N/A")) {
-		return false;
-	}
-	// Named local, for the reason given in ParseSeconds above.
-	const wxScopedCharBuffer buf = value.utf8_str();
-	const char *const str = buf.data();
-	char *end = nullptr;
-	const unsigned long long bps = std::strtoull(str, &end, 10);
-	if (end == str) {
-		return false;
-	}
-	const unsigned long long kbps = bps / 1000ULL;
-	if (kbps > 0xFFFFFFFFULL) {
-		out = 0xFFFFFFFFu;
-	} else {
-		out = static_cast<uint32>(kbps);
-	}
-	return true;
-}
-
-} // anonymous namespace
-
-const wxChar *ProbeEntries()
-{
-	// Per stream: codec_name and codec_type (so a video track's codec beats an audio one and
-	// subtitle/data streams never win), attached_pic, and its own artist/title/album. Per
-	// format: duration, bit_rate and the same three tags.
-	return wxT("format=duration,bit_rate"
-		   ":format_tags=artist,title,album"
-		   ":stream=codec_name,codec_type"
-		   ":stream_disposition=attached_pic"
-		   ":stream_tags=artist,title,album");
-}
-
-namespace
-{
-
-// One stream, accumulated from the `streams.stream.<n>.*` keys.
-struct ProbeStream
-{
-	wxString codec;
-	wxString type;
-	bool attached_pic = false;
-	wxString artist, album, title;
-};
-
-// Unwrap a `flat` value: quoted, with \n \r \\ and \" escaped. Anything
-// unquoted (ffprobe emits bare integers for dispositions) is returned as-is.
-wxString UnflattenValue(const wxString &raw)
-{
-	if (raw.length() < 2 || raw[0] != wxT('"') || raw.Last() != wxT('"')) {
-		return raw;
-	}
-	const wxString body = raw.Mid(1, raw.length() - 2);
-	wxString out;
-	out.reserve(body.length());
-	for (size_t i = 0; i < body.length(); ++i) {
-		if (body[i] != wxT('\\') || i + 1 >= body.length()) {
-			out += body[i];
-			continue;
-		}
-		switch (body[++i].GetValue()) {
-		case wxT('n'):
-			out += wxT('\n');
-			break;
-		case wxT('r'):
-			out += wxT('\r');
-			break;
-		case wxT('\\'):
-			out += wxT('\\');
-			break;
-		case wxT('"'):
-			out += wxT('"');
-			break;
-		default:
-			// Not an escape ffprobe produces; keep both characters rather
-			// than silently eating the backslash.
-			out += wxT('\\');
-			out += body[i];
-			break;
-		}
-	}
-	return out;
-}
-
-// Longest tag value we keep. Generous for a real artist/album/title; the point is to bound what a
-// crafted file can make this node store and publish, not to fit any real metadata. These values go
-// into known.met, into the log line, and into every offered-file packet sent to every server and
-// client.
+// Longest tag value we keep. Tags are attacker-chosen and go into known.met, the log and every
+// offered-file packet.
 const size_t kMaxTagChars = 256;
 
-// Clean one tag value before it is allowed any further: bound the length and drop control
-// characters.
-//
-// The cap is what keeps oversized text out of known.met, out of the log line and off the wire;
-// without it the only bound anywhere was the wire format's 0xFFFF truncation, a packet-integrity
-// guard rather than a policy. How much is READ is bounded separately, at the slurp in
-// RunBoundedHelper.
-//
-// Control characters are dropped because the value reaches a log line (and through it GET
-// /api/v1/logs/amule) and several list controls, where a raw newline lets one field impersonate
-// several.
+// Caps the length and drops control characters, which would let one log line look like several.
 wxString SanitiseTagValue(const wxString &value)
 {
 	wxString out;
-	out.reserve(value.length() < kMaxTagChars ? value.length() : kMaxTagChars);
 	for (const wxUniChar c : value) {
-		if (out.length() >= kMaxTagChars) {
+		if (out.length() >= kMaxTagChars)
 			break;
-		}
-		// Keep printable characters and ordinary spaces; drop C0/C1 controls
-		// and DEL. Non-ASCII is kept as-is -- these are UTF-8 tags.
 		const wxUint32 v = c.GetValue();
-		if (v == 0x09 || v == 0x20 || (v > 0x1F && v != 0x7F && !(v >= 0x80 && v <= 0x9F))) {
+		if (v == 0x09 || (v > 0x1F && v != 0x7F && !(v >= 0x80 && v <= 0x9F)))
 			out += c;
-		}
 	}
 	out.Trim(true).Trim(false);
 	return out;
 }
 
-// ffprobe prints the container's own key case -- Matroska yields format.tags.ARTIST and
-// format.tags.ALBUM beside a lower-case format.tags.title, in one file -- while matching the
-// requested names case-insensitively. So the parser has to as well.
-void AssignTag(const wxString &key, const wxString &value, wxString &artist, wxString &album, wxString &title)
+// A quoted helper string: only \n, \r, \\ and \" escapes; no raw quotes or control characters
+// other than tab.
+bool Unquote(const wxString &raw, wxString &out)
 {
-	const wxString lower = key.Lower();
-	// Sanitised here rather than at each call site: this is the one door every
-	// container tag comes through.
-	if (lower == wxT("artist")) {
-		artist = SanitiseTagValue(value);
-	} else if (lower == wxT("album")) {
-		album = SanitiseTagValue(value);
-	} else if (lower == wxT("title")) {
-		title = SanitiseTagValue(value);
+	if (raw.length() < 2 || raw[0] != wxT('"') || raw.Last() != wxT('"'))
+		return false;
+	out.clear();
+	for (size_t i = 1; i + 1 < raw.length(); ++i) {
+		wxUniChar c = raw[i];
+		if (c == wxT('"') || (c < 32 && c != wxT('\t')) || c == 127)
+			return false;
+		if (c == wxT('\\')) {
+			if (++i + 1 >= raw.length())
+				return false;
+			c = raw[i];
+			if (c == wxT('n'))
+				c = wxT('\n');
+			else if (c == wxT('r'))
+				c = wxT('\r');
+			else if (c != wxT('\\') && c != wxT('"'))
+				return false;
+		}
+		out += c;
 	}
+	return true;
+}
+
+// Digits only; 13 of them cover UINT32_MAX kbps in bits per second.
+bool ParseNumber(const wxString &value, wxULongLong_t &out)
+{
+	if (value.empty() || value.length() > 13)
+		return false;
+	for (const wxUniChar c : value)
+		if (c < wxT('0') || c > wxT('9'))
+			return false;
+	return value.ToULongLong(&out);
 }
 
 } // namespace
 
-bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out)
-{
-	MediaInfo info;
-	bool got_duration = false;
-
-	// Keyed by the stream index ffprobe puts in the key, so ordering comes from the data rather
-	// than from the order lines happen to arrive in; the map also hands the streams back in
-	// index order for the selection below.
-	std::map<unsigned long, ProbeStream> streams;
-	wxString formatArtist, formatAlbum, formatTitle;
-
-	for (const wxString &line : lines) {
-		// Split on the first '=' only. Values are quoted and escaped by the
-		// `flat` writer, so a '=' inside one cannot end the key.
-		const int eq = line.Find(wxT('='));
-		if (eq == wxNOT_FOUND) {
-			continue;
-		}
-		const wxString key = line.Mid(0, eq);
-		const wxString value = UnflattenValue(line.Mid(eq + 1));
-
-		if (key.StartsWith(wxT("format."))) {
-			const wxString field = key.Mid(7);
-			if (field == wxT("duration")) {
-				// A parsed ZERO is not a duration; see the note below.
-				got_duration =
-					ParseSeconds(value, info.length_seconds) && info.length_seconds > 0;
-			} else if (field == wxT("bit_rate")) {
-				(void)ParseBitrateKbps(value, info.bitrate_kbps);
-			} else if (field.StartsWith(wxT("tags."))) {
-				AssignTag(field.Mid(5), value, formatArtist, formatAlbum, formatTitle);
-			}
-			continue;
-		}
-
-		if (!key.StartsWith(wxT("streams.stream."))) {
-			continue;
-		}
-		wxString rest = key.Mid(15);
-		const wxString indexText = rest.BeforeFirst(wxT('.'));
-		unsigned long index = 0;
-		if (indexText.IsEmpty() || !indexText.ToULong(&index)) {
-			continue;
-		}
-		const wxString field = rest.AfterFirst(wxT('.'));
-		ProbeStream &cur = streams[index];
-		if (field == wxT("codec_name")) {
-			cur.codec = value;
-		} else if (field == wxT("codec_type")) {
-			cur.type = value;
-		} else if (field == wxT("disposition.attached_pic")) {
-			cur.attached_pic = (value == wxT("1"));
-		} else if (field.StartsWith(wxT("tags."))) {
-			AssignTag(field.Mid(5), value, cur.artist, cur.album, cur.title);
-		}
-	}
-
-	// First video track's codec, else the first audio track's. Subtitle and data
-	// streams never win, so we don't advertise "subrip" as a file's codec.
-	wxString videoCodec, audioCodec;
-	// Tags of the stream that supplied audioCodec: the fallback source for Ogg/Opus, where
-	// Vorbis comments belong to the logical stream and the format section carries nothing at
-	// all.
-	wxString streamArtist, streamAlbum, streamTitle;
-	// Real (non-artwork) audio streams; the fallback below requires exactly one.
-	unsigned audioStreamCount = 0;
-
-	for (const auto &entry : streams) {
-		const ProbeStream &st = entry.second;
-		// Cover art (ID3 APIC, FLAC PICTURE, MOV covr, Matroska image attachments) is
-		// reported as an ordinary video stream, and is the only non-content stream claiming
-		// codec_type=video. Without this an MP3 with artwork advertises "mjpeg" as the
-		// file's codec -- to every peer, since the tag goes out on the wire. FFmpeg's own
-		// "real video" selector is the same test.
-		if (st.attached_pic || st.codec.IsEmpty()) {
-			continue;
-		}
-		if (st.type == wxT("video")) {
-			if (videoCodec.IsEmpty()) {
-				videoCodec = st.codec;
-			}
-		} else if (st.type == wxT("audio")) {
-			++audioStreamCount;
-			if (audioCodec.IsEmpty()) {
-				audioCodec = st.codec;
-				streamArtist = st.artist;
-				streamAlbum = st.album;
-				streamTitle = st.title;
-			}
-		}
-	}
-
-	if (!videoCodec.IsEmpty()) {
-		info.codec = videoCodec;
-	} else if (!audioCodec.IsEmpty()) {
-		info.codec = audioCodec;
-	}
-
-	info.artist = formatArtist;
-	info.album = formatAlbum;
-	info.title = formatTitle;
-	// Stream tags are consulted only for a file with exactly one audio stream, no video and an
-	// Ogg-family codec, and only where the format section gave nothing. Vorbis comments belong
-	// to the single logical stream there, which is why the fallback exists at all. Anywhere
-	// else stream tags are track LABELS ("Deutsch", "Espanol"), and publishing one as the
-	// file's title sends it to every peer over ed2k and Kad; on a one-track file nothing
-	// structural tells a label from a title (a single .mka muxed with --track-name 0:Deutsch
-	// passes every other test here), so the scope is by codec rather than by "not a video". The
-	// other containers lose nothing: they report in the format section.
-	const bool streamTagCodec = (audioCodec == wxT("vorbis") || audioCodec == wxT("opus") ||
-				     audioCodec == wxT("flac") || audioCodec == wxT("speex"));
-	if (audioStreamCount == 1 && videoCodec.IsEmpty() && streamTagCodec) {
-		if (info.artist.IsEmpty()) {
-			info.artist = streamArtist;
-		}
-		if (info.album.IsEmpty()) {
-			info.album = streamAlbum;
-		}
-		if (info.title.IsEmpty()) {
-			info.title = streamTitle;
-		}
-	}
-
-	// A zero duration is not a duration (see the format.duration branch), so a container
-	// ffprobe can open and time as zero while reporting no codec would otherwise be a
-	// successful probe carrying an all-empty MediaInfo -- which the authoritative apply step
-	// treats as grounds to clear every media tag the file had.
-	if (!got_duration && info.codec.IsEmpty()) {
-		return false;
-	}
-	out = info;
-	return true;
-}
-
-namespace
-{
-bool IsHelperString(const wxString &value)
-{
-	if (value.length() < 2 || value[0] != wxT('"') || value.Last() != wxT('"'))
-		return false;
-	for (size_t i = 1; i + 1 < value.length(); ++i) {
-		const wxUniChar c = value[i];
-		if (c == wxT('"') || (c < 32 && c != wxT('\t')) || c == 127)
-			return false;
-		if (c == wxT('\\')) {
-			if (++i + 1 >= value.length())
-				return false;
-			const wxUniChar escaped = value[i];
-			if (escaped != wxT('n') && escaped != wxT('r') && escaped != wxT('\\') &&
-				escaped != wxT('"'))
-				return false;
-		}
-	}
-	return true;
-}
-bool ParseHelperOutput(const wxArrayString &lines, MediaInfo &info)
+bool ParseHelperOutput(const wxArrayString &lines, MediaMetadata &out)
 {
 	if (lines.size() != 9 || lines[0] != wxT("AMMP 1") || lines[8] != wxT("END"))
 		return false;
-	static const wxChar *keys[] = { wxT("format.duration="),
+	static const wxChar *const keys[] = { wxT("format.duration="),
 		wxT("format.bit_rate="),
 		wxT("streams.stream.0.codec_type="),
 		wxT("streams.stream.0.codec_name="),
 		wxT("format.tags.artist="),
 		wxT("format.tags.album="),
 		wxT("format.tags.title=") };
+	wxString values[7];
 	for (size_t i = 0; i < 7; ++i)
-		if (!lines[i + 1].StartsWith(keys[i]))
+		if (!lines[i + 1].StartsWith(keys[i], &values[i]))
 			return false;
-	if (lines[3].AfterFirst(wxT('=')) != wxT("\"audio\""))
+	wxULongLong_t seconds = 0, bitsPerSecond = 0;
+	wxString type, codec, tags[3];
+	if (!ParseNumber(values[0], seconds) || seconds > UINT32_MAX ||
+		!ParseNumber(values[1], bitsPerSecond) || bitsPerSecond % 1000 ||
+		bitsPerSecond / 1000 > UINT32_MAX || !Unquote(values[2], type) || type != wxT("audio") ||
+		!Unquote(values[3], codec) || codec.length() > 32)
 		return false;
-	for (size_t i = 4; i <= 7; ++i)
-		if (!IsHelperString(lines[i].AfterFirst(wxT('='))))
-			return false;
-	for (size_t i : { size_t(1), size_t(2) }) {
-		const wxString value = lines[i].AfterFirst(wxT('='));
-		if (value.empty() || value.length() > 13)
-			return false;
-		for (const wxUniChar c : value)
-			if (c < wxT('0') || c > wxT('9'))
-				return false;
-		wxULongLong_t number = 0;
-		if (!value.ToULongLong(&number) || (i == 1 && number > UINT32_MAX) ||
-			(i == 2 && (number > uint64_t(UINT32_MAX) * 1000 || number % 1000 != 0)))
-			return false;
-	}
-	const wxString codec = UnflattenValue(lines[4].AfterFirst(wxT('=')));
-	if (codec.length() > 32)
-		return false;
-	for (const wxUniChar c : codec) {
+	for (const wxUniChar c : codec)
 		if (!((c >= wxT('a') && c <= wxT('z')) || (c >= wxT('0') && c <= wxT('9')) || c == wxT('_')))
 			return false;
-	}
-	return ParseProbeOutput(lines, info);
+	for (size_t i = 0; i < 3; ++i)
+		if (!Unquote(values[i + 4], tags[i]))
+			return false;
+	// A result with neither duration nor codec would clear the file's existing tags.
+	if (!seconds && codec.empty())
+		return false;
+	out.length_seconds = static_cast<uint32>(seconds);
+	out.bitrate_kbps = static_cast<uint32>(bitsPerSecond / 1000);
+	out.codec = codec;
+	out.artist = SanitiseTagValue(tags[0]);
+	out.album = SanitiseTagValue(tags[1]);
+	out.title = SanitiseTagValue(tags[2]);
+	return true;
 }
-} // namespace
 
 ProbeOutcome Probe(const wxString &helperPath,
 	const CPath &file,
-	MediaInfo &out,
+	MediaMetadata &out,
 	unsigned timeoutMs,
 	const std::atomic<bool> &keepRunning,
 	bool bulk,
@@ -863,9 +544,9 @@ ProbeOutcome Probe(const wxString &helperPath,
 	}
 	if (!bulk)
 		AddLogLineN(CFormat(_("Extracting media metadata: %s")) % file.GetPrintable());
-	wxArrayString args, lines;
-	MediaInfo result;
-	const int rc = RunBoundedHelper(helperPath, args, timeoutMs, keepRunning, lines, file);
+	wxArrayString lines;
+	MediaMetadata result;
+	const int rc = RunBoundedHelper(helperPath, timeoutMs, keepRunning, lines, file);
 	if (!keepRunning || rc == kKilled)
 		return ProbeOutcome::Cancelled;
 	if (rc == 0 && ParseHelperOutput(lines, result)) {

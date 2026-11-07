@@ -33,18 +33,16 @@ class CPath;
 // Media metadata extracted from a shared file, advertised alongside search results via
 // FT_MEDIA_LENGTH / _BITRATE / _CODEC on the CKnownFile. Populated by the bundled helper; fields default to 0
 // or empty so downstream code can gate on nonzero-ness cheaply.
-struct MediaInfo
+struct MediaMetadata
 {
 	// FT_MEDIA_LENGTH -- seconds, uint32 on the wire.
 	uint32 length_seconds = 0;
 	// FT_MEDIA_BITRATE -- kilobits per second, uint32 on the wire.
 	uint32 bitrate_kbps = 0;
-	// FT_MEDIA_CODEC -- free-form codec name as ffprobe reports it ("h264", "aac", "vorbis").
-	// Stored and sent raw; MediaCodecLabel() gives the label the UIs show.
+	// FT_MEDIA_CODEC -- FFmpeg codec name ("h264", "aac"). Stored and sent raw;
+	// MediaCodecLabel() gives the label the UIs show.
 	wxString codec;
 	// FT_MEDIA_ARTIST / _ALBUM / _TITLE -- container tags, empty when the file carries none.
-	// Read from the format section, falling back to the stream's own tags only for an audio-
-	// only file; see ParseProbeOutput.
 	wxString artist;
 	wxString album;
 	wxString title;
@@ -53,15 +51,9 @@ struct MediaInfo
 namespace MediaProbe
 {
 
-// Parse ffprobe's output into a MediaInfo. Split out of Probe() so the parsing rules -- which carry
-// all the container-specific subtleties -- are testable without spawning a process or shipping
-// media fixtures. Returns false when nothing usable was parsed (neither a duration nor a codec),
-// which the caller reports as a failed probe so no empty tags are attached.
-bool ParseProbeOutput(const wxArrayString &lines, MediaInfo &out);
-
-// The legacy ffprobe `-show_entries` reference request, exposed so a test feeds the parser output produced
-// by this exact request rather than a hand-written approximation of it.
-const wxChar *ProbeEntries();
+// Validates the helper's reply ("AMMP 1", seven fixed fields, "END") and fills `out`. False for
+// any protocol error, or when the reply has neither a duration nor a codec.
+bool ParseHelperOutput(const wxArrayString &lines, MediaMetadata &out);
 
 // Where the helper may be, in order: next to the core's executable (bundles, the build tree),
 // then the installed libexec path relative to it. Never PATH.
@@ -95,9 +87,8 @@ wxString DetectedPath(bool redetect = false);
 enum class ProbeOutcome
 {
 	Extracted,        //!< usable metadata came back
-	NoUsableMetadata, //!< MediaInfo found no usable metadata
-	UnreadableFile,   //!< MediaInfo explicitly rejected the input
-	OutputTooLarge,   //!< legacy outcome retained for compatibility
+	NoUsableMetadata, //!< the helper found no usable metadata
+	UnreadableFile,   //!< the helper explicitly rejected the input
 	Unavailable,      //!< helper unavailable, bad protocol or unexpected exit
 	Cancelled,        //!< timed out, or shutdown cancelled the drain
 	Vanished,         //!< the file was gone by the time the worker got to it
@@ -115,11 +106,11 @@ inline bool IsFileVerdict(ProbeOutcome outcome)
 //! file "extracting" announcement is suppressed and the caller reports one summary -- otherwise a
 //! large media library produces one line per file. A genuine single-file event still speaks.
 //! \param logFailure whether a failure may name its file. Failures are worth naming even in bulk,
-//! since a count alone is not actionable, but a broken ffprobe fails EVERY file, so the caller caps
+//! since a count alone is not actionable, but a broken helper fails EVERY file, so the caller caps
 //! how many it names.
 ProbeOutcome Probe(const wxString &helperPath,
 	const CPath &file,
-	MediaInfo &out,
+	MediaMetadata &out,
 	unsigned timeoutMs,
 	const std::atomic<bool> &keepRunning,
 	bool bulk = false,

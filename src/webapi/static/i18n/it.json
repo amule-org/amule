@@ -455,7 +455,7 @@
   "shared_verify_started_selected_many": "Verifica avviata per {n} file. I risultati compaiono nel log di aMule.",
   "shared_verify_started_selected_other": "Verifica avviata per {n} file. I risultati compaiono nel log di aMule.",
   "shared_media_refresh": "Estrai di nuovo i metadati multimediali",
-  "shared_media_refresh_tip": "Analizza di nuovo questo file con ffprobe e sostituisce durata, bitrate, codec e tag. L'esito è riportato nel log di aMule.",
+  "shared_media_refresh_tip": "Analizza di nuovo questo file con l'analizzatore multimediale incluso e sostituisce durata, bitrate, codec e tag. L'esito è riportato nel log di aMule.",
   "shared_media_refresh_tip_partfile": "Non disponibile mentre il file è ancora in download.",
   "shared_media_refresh_started": "Nuova estrazione dei metadati multimediali avviata. I valori si aggiornano al termine dell'analisi.",
   "shared_media_refresh_all": "Estrai di nuovo i metadati",

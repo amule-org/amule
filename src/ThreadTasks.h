@@ -28,7 +28,7 @@
 #define TASKS_H
 
 #include "ThreadScheduler.h"
-#include "MediaProbe.h" // Needed for MediaInfo
+#include "MediaProbe.h" // Needed for MediaMetadata
 #include "MD4Hash.h"    // Needed for CMD4Hash on CMediaProbeTask + CMediaProbeEvent
 #include <common/Path.h>
 #include <wx/event.h>              // Needed for wxEvent and wxDECLARE_EVENT
@@ -110,7 +110,7 @@ private:
 };
 
 // Media metadata probing (#140/#280) runs on the dedicated CMediaProbeThread, not the shared
-// CThreadScheduler, so a slow or hung ffprobe cannot stall completions. Results still arrive via
+// CThreadScheduler, so a slow or hung helper cannot stall completions. Results still arrive via
 // the CMediaProbeEvent below.
 
 /**
@@ -274,37 +274,37 @@ private:
  *
  * A FAILED probe is reported too (issue #1116): the handler records that the file was tried and
  * produced nothing, so the "already probed" gate stops re-queueing it on every reload and every
- * restart. Without that round trip a file ffprobe cannot read is indistinguishable from one never
+ * restart. Without that round trip a file the helper cannot read is indistinguishable from one never
  * probed.
  */
 class CMediaProbeEvent : public wxEvent
 {
 public:
-	// Carries the MediaInfo whole rather than one accessor per field: the struct already IS the
+	// Carries the MediaMetadata whole rather than one accessor per field: the struct already IS the
 	// set of extracted fields, and mirroring them here meant every new field touched the event,
 	// its ctor, its Clone and the handler. Strings are deep-copied on construction for the
 	// thread hop -- see the ctor.
 	//
-	// succeeded == false carries no MediaInfo worth reading: the handler records the failure
+	// succeeded == false carries no MediaMetadata worth reading: the handler records the failure
 	// and leaves whatever tags the file already had. markUnprobeable is meaningful only then --
-	// it says the probe reached a verdict about the FILE (ffprobe ran and found nothing usable)
-	// rather than failing on the environment (no binary, a timeout, a file that vanished). Only
+	// it says the probe reached a verdict about the FILE (the helper ran and found nothing usable)
+	// rather than failing on the environment (no helper, a timeout, a file that vanished). Only
 	// the former may be recorded against the file.
 	CMediaProbeEvent(const CMD4Hash &hash,
-		const MediaInfo &info,
+		const MediaMetadata &info,
 		bool succeeded = true,
 		bool markUnprobeable = false);
 
 	virtual wxEvent *Clone() const;
 
 	const CMD4Hash &GetHash() const { return m_hash; }
-	const MediaInfo &GetInfo() const { return m_info; }
+	const MediaMetadata &GetInfo() const { return m_info; }
 	bool Succeeded() const { return m_succeeded; }
 	bool MarkUnprobeable() const { return m_markUnprobeable; }
 
 private:
 	CMD4Hash m_hash;
-	MediaInfo m_info;
+	MediaMetadata m_info;
 	bool m_succeeded;
 	bool m_markUnprobeable;
 };

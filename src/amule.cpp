@@ -478,7 +478,7 @@ int CamuleApp::OnExit()
 	uploadqueue = NULL;
 
 	// Stop the media-probe worker: it is independent of the download pipeline, so tear it
-	// down early. Queued probes are dropped; any in-flight ffprobe is bounded by
+	// down early. Queued probes are dropped; any in-flight helper is bounded by
 	// MediaProbe's timeout.
 	if (mediaProbeThread) {
 		mediaProbeThread->EndThread();
@@ -2961,10 +2961,9 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	// reload and restart. The existing media tags are left alone: a probe that failed has
 	// established nothing about the file.
 	if (!evt.Succeeded()) {
-		// Only a verdict about the file is recorded. A missing or broken ffprobe, a timeout,
+		// Only a verdict about the file is recorded. A missing or broken helper, a timeout,
 		// or a file that vanished between queue and probe says nothing about the file itself,
-		// and marking on those would mean one mistyped ffprobe path brands every media file
-		// in the library.
+		// and marking on those would brand every media file in the library.
 		if (evt.MarkUnprobeable()) {
 			file->AddTagUnique(CTagInt32(FT_MEDIA_PROBE_FAILED, 2));
 			if (sharedFile) {
@@ -2999,7 +2998,7 @@ void CamuleApp::OnMediaProbeFinished(CMediaProbeEvent &evt)
 	//
 	// There is deliberately no migration for either: correcting them needs an explicit
 	// user-triggered re-extraction, which is what issue #1079 is for.
-	const MediaInfo &info = evt.GetInfo();
+	const MediaMetadata &info = evt.GetInfo();
 	const auto setOrClearInt = [&](uint8 id, uint32 value) {
 		for (CKnownFile *target : { file, sharedFile }) {
 			if (!target) {

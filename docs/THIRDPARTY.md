@@ -237,30 +237,6 @@ The retained legacy `an.png` and `unknown.png` flags are FamFamFam artwork by
 Mark James (http://www.famfamfam.com/lab/icons/flags/), distributed as public
 domain; attribution appreciated but not required, per the original notice.
 
-## MediaInfoLib and ZenLib
-
-`amule-media-probe` links MediaInfoLib. Binary bundles build MediaInfoLib 26.05
-and ZenLib 0.4.41 from the checksum-pinned sources in
-[`packaging/linux/versions.env`](../packaging/linux/versions.env), with curl and libmms
-readers disabled. System-package builds may use the distribution's MediaInfoLib.
-
-MediaInfoLib uses BSD-2-Clause; ZenLib uses the zlib licence. Full notices are installed
-under `share/licenses/amule-media-probe` (Resources in the macOS app):
-
-- [MediaInfoLib licence](../packaging/media/licenses/MediaInfoLib.html)
-- [ZenLib licence](../packaging/media/licenses/ZenLib.txt)
-- [aes-gladman notice](../packaging/media/licenses/AES.txt), included in MediaInfoLib
-- [tinyxml2 notice](../packaging/media/licenses/TinyXML2.txt), included in MediaInfoLib
-- [SHA notice](../packaging/media/licenses/SHA-Gladman.txt) and
-  [HMAC notice](../packaging/media/licenses/HMAC-Gladman.txt), Brian Gladman's routines
-- [TFSXML notice](../packaging/media/licenses/TFSXML.txt), MediaArea's MIT XML parser
-- [fmt notice](../packaging/media/licenses/fmt.txt), MIT formatting library
-
-Retain these notices with redistributed binaries.
-
-Before each release, check these pins for security fixes, as described in
-[`packaging/README.md`](../packaging/README.md#versions-and-dependency-pins).
-
 ## Web UI libraries - Preact and htm
 
 The Web UI that amuleapi serves loads these from

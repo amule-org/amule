@@ -43,7 +43,7 @@
 #define COLUMN_SHARED_SINCE 11
 #define COLUMN_SHARED_LASTUP 12
 #define COLUMN_SHARED_PATH 13
-//! Media metadata from FT_MEDIA_*, as the search list shows. Only files ffprobe has run over have
+//! Media metadata from FT_MEDIA_*, as the search list shows. Only probed files have
 //! them, so these columns start hidden (see SetColumnHidden() in the constructor).
 #define COLUMN_SHARED_MEDIA_LENGTH 14
 #define COLUMN_SHARED_MEDIA_BITRATE 15

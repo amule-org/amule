@@ -152,7 +152,7 @@ uint32 CKnownFile::GetMetaDataVer() const
 	//
 	// ANY FT_MEDIA_* tag counts, not FT_MEDIA_LENGTH alone. The length-only test rested on a
 	// false premise -- that a successful probe always yields a duration. MediaProbe succeeds on
-	// a duration OR a codec, so a file ffprobe can identify but not time gets a codec and no
+	// a duration OR a codec, so a file the helper can identify but not time gets a codec and no
 	// length. That left the four consumers of this predicate disagreeing: the ed2k publisher
 	// checks each tag individually and advertised the codec to every peer, while Kad, EC and
 	// the file-detail dialog reported no metadata at all. It also drives the "already probed"

@@ -158,8 +158,8 @@ TEST(VersionCompare, ParseErrorNonNumeric)
 
 DECLARE_SIMPLE(MediaCodec)
 
-// ffprobe and peers differ in case, and both have to land on the same label -- the GUI and the API render
-// this string side by side for the same file.
+// FFmpeg names and eMule peers differ in case, and both have to land on the same label -- the GUI
+// and the API render this string side by side for the same file.
 TEST(MediaCodec, MapsKnownCodecsWhateverTheCase)
 {
 	ASSERT_EQUALS(wxT("H.264"), FormatMediaCodec(wxT("h264")));
@@ -177,7 +177,7 @@ TEST(MediaCodec, MapsLegacyIds)
 	ASSERT_EQUALS(wxT("WMA 2"), FormatMediaCodec(wxT("wma2")));
 }
 
-// One label per format, whether ffprobe or an eMule peer named it, and whoever encoded it.
+// One label per format, whether FFmpeg or an eMule peer named it, and whoever encoded it.
 TEST(MediaCodec, LabelsTheFormatNotTheEncoder)
 {
 	ASSERT_EQUALS(wxT("H.264"), FormatMediaCodec(wxT("x264")));
