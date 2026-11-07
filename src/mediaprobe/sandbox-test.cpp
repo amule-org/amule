@@ -65,6 +65,23 @@ int main(int argc, char **argv)
 		blocked = !WriteFile(GetStdHandle(STD_INPUT_HANDLE), "X", 1, &written, nullptr) &&
 			  GetLastError() == ERROR_ACCESS_DENIED;
 #endif
+	} else if (action == "resize-output") {
+#ifdef _WIN32
+		blocked = !SetEndOfFile(GetStdHandle(STD_OUTPUT_HANDLE));
+#endif
+	} else if (action == "overflow-output" || action == "overflow-errors") {
+#ifdef _WIN32
+		const auto handle =
+			GetStdHandle(action == "overflow-output" ? STD_OUTPUT_HANDLE : STD_ERROR_HANDLE);
+		const char bytes[4096] = {};
+		for (unsigned i = 0; i < 256; ++i) {
+			DWORD written = 0;
+			if (!WriteFile(handle, bytes, sizeof(bytes), &written, nullptr) ||
+				written != sizeof(bytes))
+				return 1;
+		}
+		return 0;
+#endif
 	} else if (action == "read-file" || action == "write-file") {
 		FILE *file = std::fopen(path.c_str(), action == "read-file" ? "rb" : "wb");
 		blocked = file == nullptr;

@@ -121,6 +121,10 @@ vulnerabilities or a system already compromised outside aMule.
   desktop; the restricted token receives no access to the interactive desktop.
   Both stages start detached, using inherited standard handles without creating
   a console whose initialization would require additional permissions.
+  The parser's output handles are pipes. The trusted launcher relays at most
+  64 KiB of metadata and 8 KiB of diagnostics. It kills a parser that exceeds
+  either bound; the parser cannot resize or preallocate the core's temporary
+  output files, even between parent polling checks.
   Before parsing, the helper lowers its primary integrity to untrusted and drops
   the startup token. A failure at either step returns no metadata.
   Reverting again cannot restore privileges because its primary token is already

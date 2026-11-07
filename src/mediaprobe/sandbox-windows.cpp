@@ -5,6 +5,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <sddl.h>
+#include <algorithm>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -17,11 +18,13 @@ class Handle
 {
 public:
 	HANDLE value = nullptr;
-	~Handle()
+	void close()
 	{
 		if (value != nullptr && value != INVALID_HANDLE_VALUE)
 			CloseHandle(value);
+		value = nullptr;
 	}
+	~Handle() { close(); }
 	Handle() = default;
 	Handle(const Handle &) = delete;
 	Handle &operator=(const Handle &) = delete;
@@ -115,6 +118,44 @@ bool regularInput(HANDLE input)
 	if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 		SetLastError(ERROR_DIRECTORY);
 		return false;
+	}
+	return true;
+}
+
+bool relay(HANDLE pipe, HANDLE destination, size_t &total, size_t limit, const char *name)
+{
+	DWORD available = 0;
+	if (!PeekNamedPipe(pipe, nullptr, 0, nullptr, &available, nullptr))
+		return GetLastError() == ERROR_BROKEN_PIPE;
+	if (available > limit - total) {
+		std::fprintf(stderr,
+			"media-probe sandbox: %s budget exceeded (%zu relayed, %lu pending, %zu maximum)\n",
+			name,
+			total,
+			available,
+			limit);
+		SetLastError(ERROR_FILE_TOO_LARGE);
+		return false;
+	}
+	// Drain only the current bounded snapshot, so a continuously writing parser
+	// cannot prevent the launcher from checking its process/deadline again.
+	char buffer[4096];
+	while (available != 0) {
+		DWORD read = 0, written = 0;
+		if (!ReadFile(pipe, buffer, std::min<DWORD>(available, sizeof(buffer)), &read, nullptr))
+			return false;
+		if (read == 0) {
+			SetLastError(ERROR_READ_FAULT);
+			return false;
+		}
+		if (!WriteFile(destination, buffer, read, &written, nullptr))
+			return false;
+		if (written != read) {
+			SetLastError(ERROR_WRITE_FAULT);
+			return false;
+		}
+		total += read;
+		available -= read;
 	}
 	return true;
 }
@@ -248,7 +289,16 @@ int launch()
 		!SetInformationJobObject(job.value, JobObjectBasicUIRestrictions, &ui, sizeof(ui)))
 		return failure("configure parser job");
 
-	HANDLE inherited[] = { input.value, GetStdHandle(STD_OUTPUT_HANDLE), GetStdHandle(STD_ERROR_HANDLE) };
+	// The parser receives pipe write ends, never writable file handles that it
+	// could resize/preallocate to exhaust disk space between parent polling ticks.
+	Handle outputRead, outputWrite, errorRead, errorWrite;
+	SECURITY_ATTRIBUTES pipeAttributes{ sizeof(pipeAttributes), nullptr, TRUE };
+	if (!CreatePipe(&outputRead.value, &outputWrite.value, &pipeAttributes, 4096) ||
+		!CreatePipe(&errorRead.value, &errorWrite.value, &pipeAttributes, 4096) ||
+		!SetHandleInformation(outputRead.value, HANDLE_FLAG_INHERIT, 0) ||
+		!SetHandleInformation(errorRead.value, HANDLE_FLAG_INHERIT, 0))
+		return failure("create bounded output pipes");
+	HANDLE inherited[] = { input.value, outputWrite.value, errorWrite.value };
 	for (const auto handle : inherited) {
 		if (handle == nullptr || handle == INVALID_HANDLE_VALUE ||
 			!SetHandleInformation(handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT))
@@ -301,7 +351,8 @@ int launch()
 				SetLastError(ERROR_ENVVAR_NOT_FOUND);
 				return false;
 			}
-			return GetLastError() == ERROR_SUCCESS || GetLastError() == ERROR_ENVVAR_NOT_FOUND;
+			const DWORD error = GetLastError();
+			return error == ERROR_SUCCESS || error == ERROR_ENVVAR_NOT_FOUND;
 		}
 		environment.append(name);
 		environment += L'=';
@@ -340,6 +391,8 @@ int launch()
 	Handle process, thread;
 	process.value = child.hProcess;
 	thread.value = child.hThread;
+	outputWrite.close();
+	errorWrite.close();
 	// Only trusted loader/runtime initialization uses this impersonation token.
 	// enter() removes it before any media is read. It is never inherited as a handle.
 	Handle assignedToken;
@@ -367,11 +420,44 @@ int launch()
 		WaitForSingleObject(process.value, 5000);
 		return rc;
 	}
-	if (WaitForSingleObject(process.value, 30000) != WAIT_OBJECT_0) {
-		std::fprintf(stderr, "media-probe sandbox: parser exceeded 30 second deadline\n");
-		TerminateJobObject(job.value, 12);
-		WaitForSingleObject(process.value, 5000);
-		return 12;
+	size_t outputBytes = 0, errorBytes = 0;
+	const auto relayOutput = [&] {
+		return relay(outputRead.value,
+			       GetStdHandle(STD_OUTPUT_HANDLE),
+			       outputBytes,
+			       kReplyLimitBytes,
+			       "metadata") &&
+		       relay(errorRead.value,
+			       GetStdHandle(STD_ERROR_HANDLE),
+			       errorBytes,
+			       kDiagnosticLimitBytes,
+			       "diagnostics");
+	};
+	const auto started = GetTickCount64();
+	for (;;) {
+		if (!relayOutput()) {
+			const int rc = failure("relay bounded parser output");
+			TerminateJobObject(job.value, 12);
+			WaitForSingleObject(process.value, 5000);
+			return rc;
+		}
+		const DWORD waited = WaitForSingleObject(process.value, 10);
+		if (waited == WAIT_OBJECT_0) {
+			// The process has closed its write ends; drain its final bytes too.
+			if (!relayOutput())
+				return failure("relay final bounded parser output");
+			break;
+		}
+		if (waited == WAIT_FAILED || GetTickCount64() - started >= 30000) {
+			if (waited == WAIT_FAILED)
+				failure("wait for restricted parser");
+			else
+				std::fprintf(
+					stderr, "media-probe sandbox: parser exceeded 30 second deadline\n");
+			TerminateJobObject(job.value, 12);
+			WaitForSingleObject(process.value, 5000);
+			return 12;
+		}
 	}
 	DWORD code = 12;
 	if (!GetExitCodeProcess(process.value, &code))

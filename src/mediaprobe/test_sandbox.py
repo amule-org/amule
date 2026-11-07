@@ -48,6 +48,19 @@ class SandboxTests(unittest.TestCase):
         self.assertEqual(result.stdout, b'blocked\n')
         self.assertEqual(self.media.read_bytes(), original)
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows output pipe containment')
+    def test_output_handles_cannot_resize_files_and_output_is_bounded(self):
+        self.run_action('resize-output')
+        for action in ('overflow-output', 'overflow-errors'):
+            with self.media.open('rb') as source:
+                result = subprocess.run([FIXTURE, action, str(self.secret)],
+                                        stdin=source, capture_output=True, timeout=35)
+            self.assertEqual(result.returncode, 12, (action, result.stderr))
+            self.assertLessEqual(len(result.stdout), 65536)
+            # The trusted launcher's fixed failure diagnostic follows the relay.
+            self.assertLessEqual(len(result.stderr), 8192 + 256)
+            self.assertIn(b'bounded parser output', result.stderr)
+
     def test_other_files_cannot_be_read(self):
         self.assertEqual(self.run_action('read-file').stdout, b'blocked\n')
 
