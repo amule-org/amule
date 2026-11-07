@@ -18,7 +18,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-06 08:28+0000\n"
+"PO-Revision-Date: 2026-11-07 10:50+0000\n"
 "Last-Translator: Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -536,9 +536,8 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "No se iniciará %s: no se encuentra junto a aMule ni en el PATH."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "An exception occurred while launching amuleweb."
-msgstr "Una excepción sucedió mientras se lanzaba amuleapi."
+msgstr "Una excepción sucedió mientras se lanzaba amuleweb."
 
 #: src/amule.cpp
 #, c-format
@@ -547,7 +546,7 @@ msgstr "servidor web corriendo con pid: %d"
 
 #: src/amule.cpp
 msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
+msgstr "No se ha podido preparar el token de autenticación de Amuleweb. El servidor web no estaba en funcionamiento."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -581,14 +580,13 @@ msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot 
 msgstr "Ha solicitado ejecutar amuleapi al inicio pero no se puede ejecutar el binario amuleapi. Por favor, instale el paquete que contiene el servidor API REST de aMule, o compile aMule desde el código fuente con -DBUILD_AMULEAPI=YES e instálelo."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Could not prepare the amuleweb EC token."
-msgstr "No se pudo quitar el archivo token EC de amuleapi: %s"
+msgstr "No se ha podido preparar el token EC de amuleweb."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "No se pudo quitar el archivo token EC de amuleapi: %s"
+msgstr "No se pudo quitar el archivo token EC de amuleweb: %s"
 
 #: src/amule.cpp
 #, c-format
@@ -787,9 +785,9 @@ msgid "ServerMessage: %s"
 msgstr "Mensaje del servidor: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace nodes.dat: %s"
-msgstr "No se pudo reemplazar la base de datos de MaxMindDB '%s': %s"
+msgstr "No se ha podido sustituir el archivo nodes.dat: %s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -908,11 +906,11 @@ msgstr "ERROR: el demonio de aMule no se puede usar cuando están desactivadas l
 
 #: src/amuled.cpp
 msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
-msgstr ""
+msgstr "ERROR: Se requiere una contraseña EC. Ejecuta amuled --ec-config para configurarla."
 
 #: src/amuled.cpp
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
-msgstr ""
+msgstr "ERROR: ECPasswordVerifier no válido en amule.conf. Ejecuta amuled --ec-config para establecer una nueva contraseña EC."
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -1331,26 +1329,24 @@ msgstr "Todos"
 
 #: src/amule-remote-gui.cpp
 msgid "The EC password changed on the daemon, but the saved client password could not be updated."
-msgstr ""
+msgstr "Se ha cambiado la contraseña de EC en el demonio, pero no se ha podido actualizar la contraseña guardada en el cliente."
 
 #: src/amule-remote-gui.cpp src/muuli_wdr.cpp
 msgid "To allow a folder, add it to allowed-remote-dirs.dat in the daemon's configuration folder, one absolute path per line, then restart the daemon."
-msgstr ""
+msgstr "Para permitir una carpeta, añádela al archivo \"allowed-remote-dirs.dat\" en la carpeta de configuración del demonio, indicando una ruta absoluta por línea, y reinicia el demonio."
 
 #: src/amule-remote-gui.cpp
 #, c-format
 msgid "The daemon refused these folders because they are outside the folders it allows (configured on the daemon):%s"
-msgstr ""
+msgstr "El demonio ha rechazado estas carpetas porque se encuentran fuera de las carpetas permitidas (configurado en el demonio): %s"
 
 #: src/amule-remote-gui.cpp src/ExternalConn.cpp
-#, fuzzy
 msgid "The EC password was not changed."
-msgstr "- El puerto TCP ha cambiado.\n"
+msgstr "La contraseña de EC no se ha cambiado."
 
 #: src/amule-remote-gui.cpp
-#, fuzzy
 msgid "The daemon could not apply the preference changes."
-msgstr "El demonio no pudo aplicar los cambios en los puertos de conexión."
+msgstr "El demonio no ha podido aplicar los cambios en las preferencias."
 
 #: src/amule-remote-gui.cpp
 msgid "not readable"
@@ -1358,7 +1354,7 @@ msgstr "no legible"
 
 #: src/amule-remote-gui.cpp
 msgid "outside the folders the daemon allows (configured on the daemon)"
-msgstr ""
+msgstr "fuera de las carpetas que permite el demonio (configuradas en el propio demonio)"
 
 #: src/amule-remote-gui.cpp
 msgid "not found"
@@ -2412,15 +2408,15 @@ msgstr "¡Enlace eD2k inválido! ERROR: %s"
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
+msgstr "Se ha rechazado una solicitud remota para configurar la plantilla del servidor web: el valor debe ser un nombre de plantilla sin formato, no una ruta."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
-msgstr ""
+msgstr "Se ha rechazado una solicitud remota para cambiar la carpeta de firmas online: sólo se puede configurar en la propia configuración del demonio."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the follow-symlinks-in-shares setting: it can only be set in the daemon's own configuration."
-msgstr ""
+msgstr "Se ha rechazado una solicitud remota para modificar el parámetro follow-symlinks-in-shares: sólo se puede configurar en la propia configuración del demonio."
 
 #: src/EditServerListDlg.cpp
 msgid "Edit server list sources"
@@ -2456,19 +2452,17 @@ msgid "External connections disabled due to empty password!"
 msgstr "¡Las conexiones externas están deshabilitadas por estar la contraseña en blanco!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled due to invalid ECPasswordVerifier!"
-msgstr "¡Las conexiones externas están deshabilitadas por estar la contraseña en blanco!"
+msgstr "¡Conexiones externas desactivadas debido a un ECPasswordVerifier no válido!"
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "External connections disabled: could not prepare the EC token verifier."
-msgstr "Conexiones externas deshabilitadas en el archivo de configuración"
+msgstr "Conexiones externas desactivadas: no se ha podido preparar el verificador de tokens EC."
 
 #: src/ExternalConn.cpp
 #, c-format
 msgid "Remote clients cannot change folders: no folder is listed in %s"
-msgstr ""
+msgstr "Los clientes remotos no pueden cambiar carpetas: no aparece ninguna carpeta en %s"
 
 #: src/ExternalConn.cpp
 msgid "External connections disabled in config file"
@@ -2502,7 +2496,7 @@ msgstr "Versión desconocida"
 
 #: src/ExternalConn.cpp
 msgid "An EC client of version 3.3.0 or later is required."
-msgstr ""
+msgstr "Se requiere cliente EC de la versión 3.3.0 o superior."
 
 #: src/ExternalConn.cpp
 msgid "Incorrect EC version ID, there might be binary incompatibility. Use core and remote from same snapshot."
@@ -2620,9 +2614,8 @@ msgid "EC_TAG_FRIEND_SHARED requires EC_TAG_FRIEND or EC_TAG_CLIENT."
 msgstr "EC_TAG_FRIEND_SHARED requiere EC_TAG_FRIEND o EC_TAG_CLIENT."
 
 #: src/ExternalConn.cpp
-#, fuzzy
 msgid "No open search holds this result."
-msgstr "Ninguna otra fuente tiene esta parte"
+msgstr "Ninguna búsqueda abierta arroja este resultado."
 
 #: src/ExternalConn.cpp
 msgid "WebSearch from remote interface makes no sense."
@@ -2630,7 +2623,7 @@ msgstr "La búsqueda web desde una interfaz remota no tiene sentido."
 
 #: src/ExternalConn.cpp
 msgid "Invalid media search filter."
-msgstr ""
+msgstr "Filtro de búsqueda de archivos multimedia no válido."
 
 #: src/ExternalConn.cpp
 msgid "A browse is not a search that can be started."
@@ -2700,12 +2693,11 @@ msgstr "No se permiten grupos de preferencias de control remoto duplicados."
 
 #: src/ExternalConn.cpp
 msgid "Only password-authenticated sessions may change the EC password."
-msgstr ""
+msgstr "Solo las sesiones autenticadas mediante contraseña pueden cambiar la contraseña de EC."
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Could not update EC password verifier."
-msgstr "No se pudo guardar la contraseña amuleapi: %s"
+msgstr "No se pudo actualizar el verificador de contraseñas de EC."
 
 #: src/ExternalConn.cpp
 msgid "Could not apply preferences."
@@ -5116,6 +5108,29 @@ msgstr "Habilitando esto hará que aMule compruebe si existe una versión nueva 
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Registra una entrada en el SO por usuario para arrancar automáticamente aMule al iniciar sesión. Si se mueve el binario de aMule, tras ello deberá lanzarse una vez manualmente para actualizar esa entrada."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "apagado"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Ya se está descargando"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule ya está ejecutándose"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Hace que aMule sea el manejador predeterminado de los enlaces ed2k://, de modo que al hacer clic en uno desde el navegador o el gestor de archivos se abra aquí."
@@ -5317,17 +5332,16 @@ msgid "Takes effect after restarting aMule."
 msgstr "Surtirá efecto tras reiniciar aMule."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Advertise my IPv6 address:"
-msgstr "Anunciar mi dirección IPv6 a otros pares"
+msgstr "Anunciar mi dirección IPv6:"
 
 #: src/muuli_wdr.cpp
 msgid "When verified"
-msgstr ""
+msgstr "Cuando sea verificado"
 
 #: src/muuli_wdr.cpp
 msgid "Always"
-msgstr ""
+msgstr "Siempre"
 
 #: src/muuli_wdr.cpp src/StatTree.cpp
 msgid "Never"
@@ -5379,7 +5393,7 @@ msgstr "Asignar la prioridad alta a los servidores añadidos manualmente"
 
 #: src/muuli_wdr.cpp
 msgid "Publish shared files faster on servers that allow it"
-msgstr ""
+msgstr "Publica archivos compartidos más rápido en los servidores que lo permiten"
 
 #: src/muuli_wdr.cpp
 msgid "Follow the publication pace that the server advertises. Other servers get the standard pace."
@@ -5747,11 +5761,11 @@ msgstr "Intervalo re‐solicitud de fuentes (minutos)"
 
 #: src/muuli_wdr.cpp
 msgid "Download write buffer limit (MiB)"
-msgstr ""
+msgstr "Límite del búfer de escritura de descargas (MiB)"
 
 #: src/muuli_wdr.cpp
 msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
-msgstr ""
+msgstr "Total de datos de descarga recibidos a la espera de ser escritos. Un límite mayor puede suavizar los breves bloqueos del disco, aunque a costa de un mayor consumo de memoria. Los datos ya solicitados pueden superar este límite."
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -5772,10 +5786,6 @@ msgstr "Tamaño de cola de espera: 5000 clientes"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Intervalo de actualización de la conexión al servidor: desactivado"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Deshabilitar el modo de reposo del ordenador"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -6359,6 +6369,9 @@ msgid ""
 "Terms match anywhere in a message: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported. A * is literal, except that a word list of exactly * blocks every message."
 msgstr ""
+"Descarta los mensajes de chat que contengan cualquier término separado por comas. La coincidencia no distingue entre mayúsculas y minúsculas ni tiene en cuenta los espacios a ambos lados de cada término.\n"
+"Los términos coinciden en cualquier parte del mensaje: \"pan\" coincide con \"campanario\" y \"pan integral\".\n"
+"No se admiten caracteres comodín. El asterisco * se interpreta literalmente, salvo que una lista de palabras que contenga exactamente * bloquea todos los mensajes."
 
 #: src/muuli_wdr.cpp
 msgid "Enable advanced spam filter"
@@ -6381,14 +6394,12 @@ msgid "Show received messages in the log"
 msgstr "Mostrar los mensajes recibidos en el registro"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "File comments"
 msgstr "Comentarios del archivo"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Filter file comments containing (use ',' as separator):"
-msgstr "Filtrar los comentarios que contengan (use ',' como separador):"
+msgstr "Filtrar los comentarios archivados que contengan (utilice «,» como separador):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6396,11 +6407,13 @@ msgid ""
 "Matching ignores case and spaces around each term. Terms match anywhere in a comment: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported; * is matched literally."
 msgstr ""
+"Ocultar los comentarios de los archivos de otros usuarios que contengan cualquier término separado por comas. Esto no filtra los mensajes del chat.\n"
+"La búsqueda de coincidencias no distingue entre mayúsculas y minúsculas ni tiene en cuenta los espacios a ambos lados de cada término. Los términos coinciden en cualquier parte del comentario: \"pan\" coincide con \"campanario\" y \"pan integral\".\n"
+"No se admiten caracteres comodín; el símbolo * se interpreta literalmente."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "With these settings"
-msgstr "Recordar estas opciones"
+msgstr "Con estos ajustes"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Proxy"
@@ -6475,13 +6488,12 @@ msgid "Message Categories:"
 msgstr "Categorías de mensajes:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Connected Core:"
-msgstr "Conectado desde:"
+msgstr "Núcleo conectado:"
 
 #: src/muuli_wdr.cpp
 msgid "This Remote GUI:"
-msgstr ""
+msgstr "Esta Interfaz remota:"
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -6907,7 +6919,7 @@ msgstr[1] "Parte corrupta encontrada (%d) en %d partes del archivo %s - Resultad
 #: src/PartFile.cpp
 #, c-format
 msgid "'%s' does not match its file hash, and without the part hashset the corrupt part cannot be found. Waiting for the hashset."
-msgstr ""
+msgstr "«%s» no coincide con el hash del archivo y, sin el hashset de la parte, no es posible localizar la parte dañada. A la espera del hashset."
 
 #: src/PartFile.cpp
 #, c-format
@@ -7005,7 +7017,7 @@ msgstr "no hay opciones disponibles"
 
 #: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
-msgstr ""
+msgstr "Metadatos multimedia: FFProbePath ha quedado obsoleto; aMule utiliza ahora su analizador MediaInfo integrado. Se elimina la configuración anterior."
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -7027,39 +7039,39 @@ msgstr "Puerto por defecto que será usado (%d)"
 #: src/Preferences.cpp
 #, c-format
 msgid "Moved the shared folders from %s to shareddir-explicit.dat"
-msgstr ""
+msgstr "Se ha movido las carpetas compartidas desde %s a shareddir-explicit.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Could not read %s. It is left in place and ignored."
-msgstr ""
+msgstr "No se puedo leer %s. Se queda en su sitio y se ignora."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Removing %s: its folders are already in shareddir-explicit.dat and shareddir-recursive.dat"
-msgstr ""
+msgstr "Eliminando %s: sus carpetas ya están en shareddir-explicit.dat y shareddir-recursive.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
-msgstr ""
+msgstr "Ignorando %s: las carpetas compartidas están en shareddir-explicit.dat y shareddir-recursive.dat. El fichero será eliminado."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "%u folder listed only there is not shared:%s"
 msgid_plural "%u folders listed only there are not shared:%s"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u carpeta listada sólo no está compartida:%s"
+msgstr[1] "%u carpetas listadas sólo no están compartidas:%s"
 
 #: src/Preferences.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove %s"
-msgstr "No se ha podido mover el archivo descargado a %s"
+msgstr "No se pudo eliminar %s"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Ignoring a relative path in allowed-remote-dirs.dat (only absolute paths are accepted): %s"
-msgstr ""
+msgstr "Se ignora una ruta relativa en el archivo \"allowed-remote-dirs.dat\" (solo se aceptan rutas absolutas): %s"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
@@ -7168,7 +7180,7 @@ msgstr "Error al transferir datos desde la configuración al programa, con el ID
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
-msgstr ""
+msgstr "Esta versión de aMule no dispone del complemento multimedia (amule-media-probe), por lo que no puede extraer metadatos multimedia."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -7176,7 +7188,7 @@ msgstr "El tipo de proxy al que se está conectando"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Set in the daemon's own configuration (amule.conf); not editable remotely."
-msgstr ""
+msgstr "Se establece en el propio archivo de configuración del demonio (amule.conf); no se puede editar de forma remota."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -7374,15 +7386,14 @@ msgid "The aMule web server is deprecated. Consider running the aMule API instea
 msgstr "El servidor web aMule está obsoleto. Considere usar el API de aMule en su lugar."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid ""
 "Your server list sources are empty.\n"
 "Please add at least one URL of a valid server.met file.\n"
 "Click the \"Edit sources...\" button next to this checkbox to add one."
 msgstr ""
-"Su lista de autoactualización de servidores está en blanco.\n"
-"Por favor, introduzca al menos un URL que apunte a un archivo server.met válido.\n"
-"Haga clic en el botón \"Lista\" junto a esta casilla para introducir un URL."
+"Las fuentes de tu lista de servidores están vacías.\n"
+"Añade al menos una URL de un archivo server.met válido.\n"
+"Haz clic en el botón «Editar fuentes...» situado junto a esta casilla de selección para añadir una."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Temporary files"
@@ -7631,16 +7642,15 @@ msgstr "Elija la carpeta local"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Please enter an absolute path. A relative path would be resolved against the daemon's working directory, so it is not accepted."
-msgstr ""
+msgstr "Introduce una ruta absoluta. Una ruta relativa se resolvería contra el directorio de trabajo del demonio, por lo que no se acepta."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Allowed folders for remote clients"
-msgstr ""
+msgstr "Carpetas permitidas para clientes remotos"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose a folder remote clients may use"
-msgstr "Elija una carpeta para los archivos entrantes"
+msgstr "Elige una carpeta que puedan utilizar los clientes remotos"
 
 #: src/SearchDlg.cpp
 msgid "Clear Search History"
@@ -7690,20 +7700,19 @@ msgstr "Principal"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum duration (minutes)"
-msgstr ""
+msgstr "Duración mínima (minutos)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
-msgstr ""
+msgstr "Tasa de bits mínima (kbps)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Kad applies these filters; eD2k servers may ignore them"
-msgstr ""
+msgstr "Kad aplica estos filtros; es posible que los servidores eD2k los ignoren"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
-msgstr "El demonio conectado no admite búsquedas en todas las redes."
+msgstr "El demonio conectado no admite filtros multimedia. Actualice el demonio para que utilice estos campos."
 
 #: src/SearchList.cpp
 #, c-format
@@ -8480,7 +8489,7 @@ msgstr "La extracción de metadatos multimedia está desactivada en preferencias
 
 #: src/SharedFileList.cpp
 msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
-msgstr ""
+msgstr "Esta versión de aMule no dispone del complemento multimedia (amule-media-probe), por lo que no puede volver a extraer los metadatos multimedia."
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -8916,7 +8925,7 @@ msgstr "Se ha actualizado %s con éxito"
 #: src/Statistics.cpp
 #, c-format
 msgid "uTP Streams Moved to a New Port: %s"
-msgstr ""
+msgstr "Los flujos uTP se han movido a un nuevo puerto: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -10615,6 +10624,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Deshabilitar el modo de reposo del ordenador"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

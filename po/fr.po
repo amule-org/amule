@@ -5130,6 +5130,29 @@ msgstr "Si vous activer ceci, aMule vérifiera si de nouvelles versions sont dis
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Enregistre une entrée de lancement automatique auprès du système d'exploitation pour qu'aMule se lance à l'ouverture d'une session. Si vous déplacez le binaire d'aMule, lancez-le par la suite une fois manuellement pour que l'entrée soit actualisée."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "éteint"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Déjà en téléchargement"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule fonctionne"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Fait d'aMule le gestionnaire par défaut des liens ed2k:// pour qu'un clic sur un tel lien sur votre navigateur ou gestionnaire de fichiers l'ouvre ici."
@@ -5788,10 +5811,6 @@ msgstr "Taille de la file d'attente d'envoi : 5000 clients"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Intervalle de rafraîchissement de la connexion serveur : Désactivé"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Désactiver la mise en veille programmé de l'ordinateur"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10636,6 +10655,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Désactiver la mise en veille programmé de l'ordinateur"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

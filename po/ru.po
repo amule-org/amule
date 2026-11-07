@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-06 08:28+0000\n"
+"PO-Revision-Date: 2026-11-07 10:50+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -5139,6 +5139,29 @@ msgstr "При включённом флажке aMule проверяет нал
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Регистрирует запись автозапуска для текущего пользователя в ОС, чтобы aMule запускался при входе в систему. Если вы переместите исполняемый файл aMule, запустите его после этого один раз вручную, чтобы обновить запись."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "отключён"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Уже загружается"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule запущен"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Делает aMule обработчиком по умолчанию для ссылок ed2k://, чтобы при нажатии на них в браузере или файловом менеджере, они открывались здесь."
@@ -5795,10 +5818,6 @@ msgstr "Размер очереди отдачи: 5000 клиентов"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Интервал обновления соединения с сервером: Отключено"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Отключить таймер перехода компьютера в режим ожидания"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -7064,35 +7083,35 @@ msgstr "Используется порт по умолчанию (%d)"
 #: src/Preferences.cpp
 #, c-format
 msgid "Moved the shared folders from %s to shareddir-explicit.dat"
-msgstr ""
+msgstr "Общие папки перенесены из %s в shareddir-explicit.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Could not read %s. It is left in place and ignored."
-msgstr ""
+msgstr "Не удалось прочитать %s. Файл оставлен на месте и игнорируется."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Removing %s: its folders are already in shareddir-explicit.dat and shareddir-recursive.dat"
-msgstr ""
+msgstr "Удаление %s: его папки уже есть в shareddir-explicit.dat и shareddir-recursive.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
-msgstr ""
+msgstr "%s игнорируется: общие папки хранятся в shareddir-explicit.dat и shareddir-recursive.dat. Файл будет удалён."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "%u folder listed only there is not shared:%s"
 msgid_plural "%u folders listed only there are not shared:%s"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "%u папка, указанная только там, не публикуется:%s"
+msgstr[1] "%u папки, указанные только там, не публикуются:%s"
+msgstr[2] "%u папок, указанных только там, не публикуются:%s"
 
 #: src/Preferences.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove %s"
-msgstr "Не удалось переместить загруженный файл в %s"
+msgstr "Не удалось удалить %s"
 
 #: src/Preferences.cpp
 #, c-format
@@ -10684,6 +10703,9 @@ msgstr "Не удалось сравнить устаревший ECPassword с 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Выполняется миграция изменённого устаревшего ECPassword после отката версии; предыдущий верификатор больше не действует в этом запуске."
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Отключить таймер перехода компьютера в режим ожидания"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

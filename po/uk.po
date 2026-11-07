@@ -5170,6 +5170,29 @@ msgstr "Якщо увімкнено, aMule перевірятиме наявні
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Реєструє запис автозапуску для поточного користувача в ОС, щоб aMule запускався під час входу в систему. Якщо ви перемістите виконуваний файл aMule, запустіть aMule вручну один раз після цього, щоб оновити запис."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "вимкнено"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Вже звантажений"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule запущений"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Робить aMule обробником за замовчуванням для посилань ed2k://, щоб клацання по них у браузері чи файловому менеджері відкривало їх тут."
@@ -5822,10 +5845,6 @@ msgstr "Розмір черги вивантаження: 5000 клієнтів"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Час оновлення з'єднання з сервером: вимкнено"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Вимкнути режим очікування комп’ютера за таймером"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10730,6 +10749,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Вимкнути режим очікування комп’ютера за таймером"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

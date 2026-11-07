@@ -5117,6 +5117,29 @@ msgstr "これを有効にすると、aMule は起動時および実行中 1 日
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "OSにユーザごとの自動起動エントリを登録し、ログイン時にaMuleを起動します。aMuleバイナリを移動した場合は、その後一度手動でaMuleを起動してエントリを更新してください。"
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "オフ"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "すでにダウンロード中です"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMuleは動作しています"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "aMule を ed2k:// リンクのデフォルトのハンドラーにします。ブラウザやファイルマネージャーでリンクをクリックすると、ここで開かれるようになります。"
@@ -5767,10 +5790,6 @@ msgstr "アップロードキューサイズ：5000クライアント"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "サーバ接続のリフレッシュ空間：無効にする"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "コンピューターの自動スタンバイモードを無効にする"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10604,6 +10623,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "コンピューターの自動スタンバイモードを無効にする"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

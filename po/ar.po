@@ -5112,6 +5112,29 @@ msgstr "تفعيل هذا الخيار سيجعل aMule يتحقق من وجود
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "يسجل إدخال بدء تشغيل تلقائي خاص بالمستخدم لدى نظام التشغيل بحيث يبدأ تشغيل aMule عند تسجيل الدخول. إذا قمت بنقل الملف التنفيذي لـ aMule، فشغّل aMule يدويًا مرة واحدة بعد ذلك لتحديث الإدخال."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "متوقف"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "قيد التحميل بالفعل"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule قيد التشغيل"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "يجعل aMule المعالج الافتراضي لروابط ed2k://، بحيث يؤدي النقر على أحدها في متصفحك أو مدير الملفات إلى فتحه هنا."
@@ -5765,10 +5788,6 @@ msgstr "حجم قائمة انتظار الرفع: 5000 عميل"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "فاصل تحديث اتصال الخادم: تعطيل"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "تعطيل وضع الاستعداد المؤقت للكمبيوتر"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10616,6 +10635,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "تعطيل وضع الاستعداد المؤقت للكمبيوتر"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

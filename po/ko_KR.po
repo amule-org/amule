@@ -5142,6 +5142,29 @@ msgstr "이 옵션을 활성화하면 aMule이 시작 시와 실행 중 하루�
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "사용자별 자동 시작 항목을 OS에 등록하여 로그인 시 aMule이 실행되도록 합니다. aMule 바이너리를 이동한 경우, 이후 항목을 갱신하려면 수동으로 aMule을 한 번 실행하세요."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "끔"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "이미 내려받는중"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "어뮬은 실행중입니다."
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "aMule을 ed2k:// 링크의 기본 처리기로 지정하여 브라우저나 파일 관리자에서 링크를 클릭하면 여기서 열리도록 합니다."
@@ -5792,10 +5815,6 @@ msgstr "올려주기 대기열 크기: 5000 클라이언트"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "서버 연결 갱신 간격: 사용않함"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "컴퓨터의 자동 절전 모드 비활성화"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10655,6 +10674,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "컴퓨터의 자동 절전 모드 비활성화"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

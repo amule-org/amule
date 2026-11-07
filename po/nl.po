@@ -5099,6 +5099,29 @@ msgstr "Als u dit inschakelt, controleert aMule bij het opstarten en eenmaal per
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Registreert een autostart-item per gebruiker bij het besturingssysteem, zodat aMule bij aanmelden wordt gestart. Als u het aMule-programma verplaatst, start aMule dan handmatig eenmaal opnieuw om het item bij te werken."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "uit"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Wordt al gedownload"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule draait"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Maakt aMule de standaardafhandelaar voor ed2k://-koppelingen, zodat het klikken op een dergelijke koppeling in uw browser of bestandsbeheerder deze hier opent."
@@ -5754,10 +5777,6 @@ msgstr "Grootte van uploadwachtrij: 5000 clients"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Server-verbinding verversingsinterval: Uitschakelen"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Schakel standby-modus van computer uit"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10598,6 +10617,9 @@ msgstr "Kon verouderde ECPassword niet vergelijken met ECPasswordVerifier. Exter
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migreren van een vernaderde ECPassword na downgrade. De vorige verificatie authenticeert deze uitvoer niet meer."
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Schakel standby-modus van computer uit"
 
 #~ msgid "Core Message Categories:"
 #~ msgstr "Kernbericht Categoriën:"

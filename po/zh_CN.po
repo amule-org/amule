@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-06 14:19+0000\n"
+"PO-Revision-Date: 2026-11-07 10:50+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -5099,6 +5099,29 @@ msgstr "启用此选项将让 aMule 检查新版本（开启时检查及运行�
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "在操作系统中注册一个按用户自动启动的条目，以便在登录时启动 aMule。如果移动了 aMule 的可执行文件，之后请手动启动一次 aMule 以刷新该条目。"
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "关闭"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "已经在下载"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule 正在运行"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "让 aMule 成为 ed2k:// 链接的默认处理程序，因而在浏览器或文件管理器中点击一个该类型链接时可以在本应用打开。"
@@ -5754,10 +5777,6 @@ msgstr "上传队列长度：5000 用户"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "服务器连接刷新周期：禁用"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "停用电脑自动进入待命模式功能"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -7032,8 +7051,8 @@ msgstr "忽略 %s：共享文件夹被保留在 shareddir-explicit.dat 和 share
 #, c-format
 msgid "%u folder listed only there is not shared:%s"
 msgid_plural "%u folders listed only there are not shared:%s"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "没有分享只在那里列出的 %u 个文件夹：%s"
+msgstr[1] "没有分享只在那里列出的 %u 个文件夹：%s"
 
 #: src/Preferences.cpp
 #, c-format
@@ -10591,6 +10610,9 @@ msgstr "无法将旧的 ECPassword 和 ECPasswordVerifier 进行比较；拒绝�
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再对本次运行进行身份认证。"
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "停用电脑自动进入待命模式功能"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

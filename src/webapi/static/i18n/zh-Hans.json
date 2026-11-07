@@ -47,5 +47,13 @@
   "app_toast_connecting": "连接中…",
   "app_theme_dark": "深色",
   "app_theme": "主题",
-  "networks_server_add": "添加服务器"
+  "networks_server_add": "添加服务器",
+  "about_update_not_checked": "尚未检查",
+  "app_nav_about": "关于",
+  "about_update_available": "新版本可用",
+  "about_update_uptodate": "已是最新",
+  "common_free_space_temp": "临时",
+  "app_logout": "退出登录",
+  "about_update_latest": "最新版本",
+  "about_country_data": "IP2country数据"
 }

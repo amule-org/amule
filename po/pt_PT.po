@@ -5154,6 +5154,29 @@ msgstr "Ativar esta opção fará com que o aMule verifique se existe uma nova v
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Regista uma entrada de arranque automático por utilizador no sistema operativo para que o aMule seja iniciado ao iniciar sessão. Se mover o executável do aMule, execute o aMule manualmente uma vez para atualizar a entrada."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "parado"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Já a transferir"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "O aMule está em execução"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Torna o aMule o manipulador predefinido para ligações ed2k://, para que ao clicar numa delas no seu navegador ou gestor de ficheiros esta seja aberta aqui."
@@ -5807,10 +5830,6 @@ msgstr "Tamanho da Lista de Espera de Upload: 5000 clientes"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Intervalo de actualização da ligação ao servidor: Desactivado"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Desactivar o modo de espera temporizado do computador"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10675,6 +10694,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Desactivar o modo de espera temporizado do computador"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

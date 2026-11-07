@@ -5099,6 +5099,29 @@ msgstr "Si ho activeu, l'aMule comprovarà si hi ha una versió nova en iniciar-
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Registra una entrada d'inici automàtic per usuari al sistema operatiu perquè l'aMule s'iniciï en iniciar la sessió. Si moveu el binari de l'aMule, executeu-lo un cop manualment després per actualitzar l'entrada."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "inactiu"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Ja s'està baixant"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "L'aMule s'està executant"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Fa que l'aMule sigui el gestor predeterminat dels enllaços ed2k://, de manera que en clicar-ne un al navegador o al gestor de fitxers s'obri aquí."
@@ -5755,10 +5778,6 @@ msgstr "Mida de la cua de pujades: 5000 clients"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Interval de refresc de la connexió amb el servidor: Inhabilitat"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Inhabilita el mode d'espera programat de l'ordinador"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10595,6 +10614,9 @@ msgstr "No s'ha pogut comparar l'ECPassword antic amb l'ECPasswordVerifier; es r
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "S'està migrant un ECPassword antic modificat després de tornar a una versió anterior; el verificador anterior ja no autentica aquesta execució."
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Inhabilita el mode d'espera programat de l'ordinador"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

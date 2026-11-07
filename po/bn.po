@@ -5101,6 +5101,29 @@ msgstr "এটি সক্রিয় করলে aMule স্টার্ট
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "OS-এ প্রতি-ব্যবহারকারী অটোস্টার্ট এন্ট্রি নিবন্ধন করে যাতে লগইনে aMule চালু হয়। আপনি যদি aMule বাইনারি সরান, তাহলে এন্ট্রি রিফ্রেশ করতে পরে একবার ম্যানুয়ালি aMule চালু করুন।"
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "বন্ধ"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "ইতিমধ্যে ডাউনলোড হচ্ছে"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule চলছে"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "ed2k:// লিংকের জন্য aMule-কে ডিফল্ট হ্যান্ডলার করে তোলে যাতে আপনার ব্রাউজার বা ফাইল ম্যানেজারে একটি ক্লিক করলে তা এখানে খোলে।"
@@ -5749,10 +5772,6 @@ msgstr "আপলোড সারির আকার: 5000 ক্লায়ে
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "সার্ভার সংযোগ রিফ্রেশ ব্যবধান: নিষ্ক্রিয়"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "কম্পিউটারের সময়সূচীযুক্ত স্ট্যান্ডবাই মোড নিষ্ক্রিয় করুন"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10589,6 +10608,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "কম্পিউটারের সময়সূচীযুক্ত স্ট্যান্ডবাই মোড নিষ্ক্রিয় করুন"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"
