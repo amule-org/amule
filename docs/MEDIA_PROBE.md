@@ -13,11 +13,12 @@ enable/refresh controls remain.
 
 The parent enforces a wall-clock deadline, cancellation and a 64 KiB output
 limit while the child runs. It rejects malformed framing and numeric values
-outside the helper protocol. Windows uses a Job object and an explicit inherited
-handle list. POSIX builds limit CPU, memory, core dumps and file size (256 KiB:
-stdout is a file the core reads, so 0 would block the reply). Bundle library
-search paths are preserved. This is process isolation and resource limiting, not
-an operating system sandbox.
+outside the helper protocol. Windows uses a restricted primary token, nested Job objects and an explicit
+inherited handle list. POSIX builds limit CPU, descriptors (256), core dumps and file size (256 KiB:
+stdout is a file the core reads, so 0 would block the reply); Linux also caps the
+helper address space at 1 GiB. Bundle library search paths are preserved during
+trusted runtime initialization. Before reading media, the helper installs the
+[operating system restrictions](#operating-system-restrictions) below.
 
 `MediaMetadata/FFProbePath` is obsolete: a nonempty old setting is logged once
 and the key is removed from `amule.conf`. The EC tag stays reserved and the
@@ -65,8 +66,100 @@ therefore best effort and subject to the following conditions.
 6. **Operating system restrictions.** On Linux, macOS and Windows the helper
    must be confined by the operating system to reading the file it receives,
    with no network access, no writes and no new processes. This is a
-   requirement of the feature and is delivered in a separate change; until
-   then, process isolation and resource limits are the only protection.
+   requirement of the feature. The implementations, verification and remaining
+   platform limits are described below.
+
+## Operating system restrictions
+
+The threat is a hostile media file, including a parser exploit. Trusted helper,
+loader and C++ runtime initialization precede confinement; **no media parsing starts
+before confinement**. The input is an inherited read-only regular file;
+the only permitted application writes are the metadata reply and diagnostics on
+the two inherited output handles. They do not grant permission to open output
+paths. No media paths or directory trees are added to a sandbox allow list. The parser
+also receives a minimal runtime environment, without unrelated parent variables
+that might contain credentials. Runtime library paths are preserved for bundle
+and build-tree compatibility, including Windows `SystemRoot` and `PATH`. These
+paths do not grant file access after confinement.
+
+If setup fails, the helper refuses to parse and returns exit 12, without a
+protocol header or metadata. The core discards every failed, incomplete or
+malformed reply. An infrastructure failure never becomes a persistent bad-file
+marker. Existing metadata is updated only after a complete validated success.
+The main application remains alive when a helper crashes, times out, exhausts
+its budget or produces excessive output; metadata extraction may yield nothing.
+No user-space sandbox can guarantee safety against operating-system/kernel
+vulnerabilities or a system already compromised outside aMule.
+
+- **Linux (x86-64 and arm64):** close all unrelated inherited descriptors, disable
+  core-dump/ptrace exposure, set `no_new_privs`, and install a default-deny seccomp
+  filter. Reads/seeks are limited to stdin and writes to stdout/stderr, including
+  the vectored I/O used by musl's standard library in static builds. New file
+  opens, sockets (including Unix sockets), process creation, execution, tracing,
+  descriptor acquisition and io_uring are denied. Allocations remain available,
+  but new executable mappings are denied. The filter checks the syscall ABI.
+  Unsupported ABIs, unavailable seccomp and blocked setup return no metadata.
+  Older kernels use `/proc/self/fd` to close descriptors when `close_range` is
+  unavailable; an inaccessible descriptor directory also fails closed.
+- **macOS:** close unrelated descriptors through `/dev/fd`, then apply a
+  default-deny Seatbelt profile. Only inherited file handles remain available;
+  unused socket descriptors may be created, but connections/listening are denied;
+  the profile grants read-only system configuration queries for the runtime,
+  and grants no file paths, network, Mach services or child processes.
+  **Compatibility limit:** `sandbox_init` is deprecated and the custom profile
+  language is not supported by Apple for third-party use. A rejected profile
+  disables extraction rather than relaxing restrictions. App Sandbox is not a
+  drop-in replacement for a standalone helper. The macOS 27 Endpoint Security
+  descendant API requires a separate entitlement and does not cover older
+  systems. macOS does not have the Linux address-space guarantee here: parser
+  allocation/read limits and the parent deadline remain in effect, but this
+  implementation does not claim a hard macOS RSS cap.
+- **Windows:** a trusted outer helper starts the parser suspended with a
+  restricted primary token (NULL restricting SID, other groups/user deny-only,
+  privileges removed). Trusted loader/runtime startup uses low integrity and
+  a restricted impersonation token retaining only the caller's existing access.
+  Startup uses a separate, noninteractive window station and low-integrity
+  desktop; the restricted token receives no access to the interactive desktop.
+  Both stages start detached, using inherited standard handles without creating
+  a console whose initialization would require additional permissions.
+  The parser's output handles are pipes. The trusted launcher relays at most
+  64 KiB of metadata and 8 KiB of diagnostics. It kills a parser that exceeds
+  either bound; the parser cannot resize or preallocate the core's temporary
+  output files, even between parent polling checks.
+  Before parsing, the helper lowers its primary integrity to untrusted and drops
+  the startup token. A failure at either step returns no metadata.
+  Reverting again cannot restore privileges because its primary token is already
+  restricted. Only the three standard handles are inherited. A nested Job
+  requires a single parser process, caps memory at 1 GiB, restricts UI access and
+  kills the parser when its launcher exits. The core's outer Job owns both the
+  launcher and parser. Any token, Job, inheritance or startup failure returns no
+  metadata. **Filesystem limit:** restricted-token access checks depend on
+  securable resources with valid ACLs; FAT/exFAT or null-DACL resources do not
+  provide the same guarantee as normally secured NTFS. This is not a claim of
+  confinement against misconfigured/nonsecurable resources. The core supplies
+  the read-only input handle. The launcher validates that it is a regular file
+  and gives the parser a duplicate with read access only, including when an
+  outside caller supplies a writable handle. Pipes and directories are refused.
+
+Failure logs include the exit status or signal and a reason (setup, input I/O,
+unsupported/malformed data, exhausted read budget, timeout, cancellation, output
+limit or invalid framing). stderr is separate from the metadata protocol. The
+core caps diagnostics at 8 KiB, logs at most 2 KiB, and replaces control and
+non-ASCII bytes before logging. Bulk operations retain their existing limit on
+naming individual files; reasons remain logged after that limit.
+
+`MediaProbeStartup` first checks one known-good WAV. If initialization fails,
+the dependent parser/denial suites are skipped with an explicit setup failure,
+rather than repeating a broken launch for every hostile input.
+`MediaProbeSandbox` tests actual denials and successful inherited-file I/O on
+native runners. `MediaProbeHelper` and `MediaProbeHostile` verify useful extraction
+and malformed-input handling under the production restrictions. Core
+`MediaProbeEnvTest` verifies crash, timeout, setup-error, partial-reply and output
+failure containment, with no failed result published. The dedicated **Media
+probe restrictions** workflow runs the standalone checks on Linux x86-64/arm64,
+macOS arm64/Intel and Windows. A scheduled or queued job is not verification;
+consult its completed results for the exact revision. Packaged-runtime checks
+remain necessary because installed loaders, outer sandboxes and signing differ.
 
 ## Supported formats
 
@@ -146,6 +239,46 @@ cmake -S src/mediaprobe -B /tmp/fuzz -DCMAKE_CXX_COMPILER=clang++ -DMEDIA_PROBE_
 cmake --build /tmp/fuzz --target amule-media-probe-fuzz
 /tmp/fuzz/amule-media-probe-fuzz /tmp/fuzz-corpus -max_len=262144
 ```
+
+### Pre-release fuzzing and saved corpus
+
+Run **Media probe pre-release fuzzing** manually before a release and after
+parser changes. Its default is 600 seconds with Clang, libFuzzer, ASan and UBSan.
+Before this workflow reaches the default branch, select `fuzz_only` when
+manually running **Media probe restrictions** on the review branch. It calls
+the same fuzz workflow.
+
+Two workers run in parallel with per-input timeout, memory and length bounds;
+worker failures fail the job. The workflow always attempts to retain logs,
+source/toolchain/corpus provenance, updated inputs and crash reproducers.
+Sanitizer fuzzing intentionally calls the in-memory parser harness without the
+production sandbox: it does not verify helper startup or OS containment.
+
+`src/mediaprobe/fuzz-corpus.tar.gz` is the durable seed in Git. It contains only
+synthetic test media and fuzz mutations, not personal media. Archive entries are
+regular files named by SHA-256; imports reject links, traversal, checksum errors
+and excessive sizes/counts. CI artifacts retain each run's additions for 90 days;
+they are not the durable source of truth. After a run, replay/minimize its inputs
+and commit an updated archive before those artifacts expire. Preserve crash
+inputs separately and add a focused regression test for each confirmed defect.
+
+To recreate initial seeds from generated fixtures (ffmpeg extends the seeds when
+installed), then minimize and archive a completed run:
+
+```sh
+python3 src/mediaprobe/corpus.py seed build/src/amule-media-probe /tmp/probe-corpus
+# Stop all fuzz workers before minimizing or archiving their corpus.
+mkdir /tmp/probe-minimized
+build-fuzz/amule-media-probe-fuzz -merge=1 /tmp/probe-minimized /tmp/probe-corpus
+python3 src/mediaprobe/corpus.py pack /tmp/probe-minimized src/mediaprobe/fuzz-corpus.tar.gz
+# Import into a fresh destination:
+python3 src/mediaprobe/corpus.py unpack src/mediaprobe/fuzz-corpus.tar.gz /tmp/probe-restored
+```
+
+A high line-coverage percentage is not proof of safety. Keep the larger-file,
+long-loop and truncation regression tests; the 256 KiB fuzz input bound cannot
+exercise every production file size or offset. The archive's provenance and
+actual verification results are recorded in `docs/MEDIA_PROBE_VALIDATION.md`.
 
 Durations can differ from FFmpeg's by a fraction of a second where containers
 count encoder padding differently.
