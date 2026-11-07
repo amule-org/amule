@@ -70,7 +70,8 @@ void TestFields()
 	auto *duration = dynamic_cast<wxSpinCtrl *>(wxWindow::FindWindowByName(_("Minimum duration"), panel));
 	auto *bitrate =
 		dynamic_cast<wxSpinCtrl *>(wxWindow::FindWindowByName(_("Minimum bitrate (kbps)"), panel));
-	Check(duration && bitrate, "Missing numeric metadata controls");
+	auto *unit = dynamic_cast<wxChoice *>(wxWindow::FindWindowByName(_("Duration unit"), panel));
+	Check(duration && bitrate && unit, "Missing numeric metadata controls or duration unit");
 	duration->SetValue(62);
 	bitrate->SetValue(320);
 	panel->Read(value);
@@ -99,13 +100,19 @@ void TestFields()
 	panel->SetSupported(false);
 	panel->Read(restored);
 	Check(!panel->HasValues() && restored.minLength == 0 && restored.minBitrateKbps == 0 &&
-			!duration->IsEnabled() && !bitrate->IsEnabled(),
+			!duration->IsEnabled() && !bitrate->IsEnabled() && !unit->IsEnabled(),
 		"An older daemon retained unsupported metadata filters");
+	for (const auto &name : { _("Artist"), _("Album"), _("Title"), _("Codec") })
+		Check(!Input(*panel, name)->IsEnabled(), "Unsupported text filter remained editable");
 	panel->SetSupported(true);
 	duration->SetValue(62);
 	panel->Read(restored);
 	Check(restored.minLength == 3720 && duration->IsEnabled() && bitrate->IsEnabled(),
 		"Reconnect did not restore the default minutes editor");
+	Check(unit->IsEnabled() && unit->GetSelection() == 0,
+		"Reconnect did not enable the default duration unit");
+	for (const auto &name : { _("Artist"), _("Album"), _("Title"), _("Codec") })
+		Check(Input(*panel, name)->IsEnabled(), "Reconnect left a text filter disabled");
 	panel->Reset();
 	panel->Read(value);
 	Check(!panel->HasValues() && value.minBitrateKbps == 0 && value.minLength == 0 &&
@@ -113,12 +120,75 @@ void TestFields()
 			value.codec.empty(),
 		"Reset did not clear all six fields");
 }
+
+void TestDurationBoundariesAndUnitChanges()
+{
+	wxDialog dialog(nullptr, wxID_ANY, "Recorded media duration");
+	CSearchMetadataPanel panel(&dialog);
+	auto *duration =
+		dynamic_cast<wxSpinCtrl *>(wxWindow::FindWindowByName(_("Minimum duration"), &panel));
+	auto *unit = dynamic_cast<wxChoice *>(wxWindow::FindWindowByName(_("Duration unit"), &panel));
+	Check(duration && unit, "Missing duration controls");
+	struct Case
+	{
+		uint32_t seconds;
+		int number;
+		int unit;
+	};
+	const Case cases[] = { { 0, 0, 0 },
+		{ 1, 1, 1 },
+		{ 59, 59, 1 },
+		{ 60, 1, 0 },
+		{ 61, 61, 1 },
+		{ 3599, 3599, 1 },
+		{ 3600, 60, 0 },
+		{ 86399, 86399, 1 },
+		{ 86400, 1440, 0 } };
+	for (const auto &test : cases) {
+		CSearchList::CSearchParams recorded;
+		recorded.minLength = test.seconds;
+		recorded.minBitrateKbps = 1000000;
+		panel.Set(recorded);
+		CSearchList::CSearchParams restored;
+		panel.Read(restored);
+		Check(restored.minLength == test.seconds && restored.minBitrateKbps == 1000000,
+			"A boundary duration or bitrate changed during restoration");
+		Check(duration->GetValue() == test.number && unit->GetSelection() == test.unit,
+			"Restored duration uses the wrong number or unit");
+		Check(duration->GetMax() == (test.unit == 0 ? 1440 : 86400),
+			"Duration range does not match its selected unit");
+	}
+	panel.Reset();
+	const auto selectUnit = [&unit](int selection) {
+		unit->SetSelection(selection);
+		wxCommandEvent changed(wxEVT_CHOICE, unit->GetId());
+		changed.SetEventObject(unit);
+		changed.SetInt(selection);
+		unit->GetEventHandler()->ProcessEvent(changed);
+	};
+	selectUnit(1);
+	Check(duration->GetMax() == 86400, "Choosing seconds did not expand the duration range");
+	duration->SetValue(61);
+	CSearchList::CSearchParams restored;
+	panel.Read(restored);
+	Check(restored.minLength == 61, "The seconds editor still interpreted input as minutes");
+	selectUnit(0);
+	Check(duration->GetMax() == 1440, "Choosing minutes did not restore the duration range");
+	panel.Read(restored);
+	Check(restored.minLength == 3660, "The minutes editor still interpreted input as seconds");
+	selectUnit(1);
+	panel.Reset();
+	Check(unit->GetSelection() == 0 && duration->GetMax() == 1440 && !panel.HasValues(),
+		"Reset retained seconds mode or a previous filter");
+}
 } // namespace
 
 int main(int argc, char **argv)
 {
 	return RunGuiTest(argc, argv, nullptr, [] {
 		TestFields();
-		std::cout << "PASS: metadata fields and reset\n";
+		TestDurationBoundariesAndUnitChanges();
+		std::cout << "PASS: metadata fields, duration boundaries, unit changes, capability changes "
+			     "and reset\n";
 	});
 }
