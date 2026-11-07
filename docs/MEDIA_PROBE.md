@@ -38,27 +38,81 @@ prints its `AMMP 1` header before it parses the file, so a crash after the heade
 is this file's doing and writes marker `2`. Missing helpers, crashes before the
 header, malformed output and cancellation never become file verdicts.
 
+## Scope and conditions
+
+The helper publishes six fields: duration, bitrate, codec, artist, album and
+title. They help users recognise fake files; no download, sharing or network
+function depends on them. eMule, the most common client on the network,
+publishes them only for MP3, AVI, WAV, RealMedia and, on Windows, ASF. Support is
+therefore best effort and subject to the following conditions.
+
+1. **Closed list.** Only the formats listed under [Supported formats](#supported-formats)
+   are read. Any other format, or an unusual layout of a supported one, leaves
+   the fields empty and records failure marker 2. This is expected behaviour,
+   not a defect.
+2. **New formats.** A format is added only with evidence that it is widely
+   used for sharing files on the Internet, not because another media library
+   reads it.
+3. **Correctness.** A wrong value for a supported format is a defect. A value
+   that cannot be established, including a duration cut short by a scan limit,
+   is left empty; partial values are never published. In files with video, the
+   duration and codec are those of the video stream, as in eMule.
+4. **Security.** Any crash, hang or out-of-bounds read on any input is a defect.
+   Every parser change keeps `test_hostile.py` passing and is fuzzed with the
+   libFuzzer harness. Security fixes are not optional.
+5. **Isolation.** The helper runs in a separate process under the limits
+   described above and the read budget described under [Parsers](#parsers).
+6. **Operating system restrictions.** On Linux, macOS and Windows the helper
+   must be confined by the operating system to reading the file it receives,
+   with no network access, no writes and no new processes. This is a
+   requirement of the feature and is delivered in a separate change; until
+   then, process isolation and resource limits are the only protection.
+
+## Supported formats
+
+Formats in current use for sharing audio and video:
+
+| Container | Extensions | Codecs | Parser |
+|---|---|---|---|
+| Matroska, WebM | `.mkv` `.mka` `.webm` | H.264, HEVC, AV1, VP8, VP9, MPEG-1/2/4 video, VC-1; AAC, AC-3, E-AC-3, TrueHD, DTS (including DTS-HD), FLAC, Opus, Vorbis, MP3, MP2, ALAC, PCM | `matroska.cpp` |
+| MP4, QuickTime, including fragmented MP4 | `.mp4` `.m4a` `.m4v` `.mov` `.3gp` | H.264, HEVC, AV1, VP9, MPEG-2/4 video; AAC, AC-3, E-AC-3, TrueHD, DTS, ALAC, FLAC, Opus, MP3, PCM | `isobmff.cpp` |
+| MPEG transport stream | `.ts` `.m2ts` `.mts` | H.264, HEVC, MPEG-1/2/4 video, VC-1; AAC, MP2, AC-3, E-AC-3, TrueHD, DTS (including DTS-HD), LPCM | `legacy.cpp` |
+| MPEG program stream | `.mpg` `.mpeg` `.vob` | MPEG-1/2 video; MP2, AC-3, DTS, LPCM | `legacy.cpp` |
+| AVI, including OpenDML | `.avi` | MPEG-4 Part 2 (Xvid, DivX), H.264, HEVC, MPEG-1/2 video; MP3, AC-3, DTS, AAC, PCM | `riff.cpp` |
+| Ogg | `.ogg` `.oga` `.opus` | Vorbis, Opus, FLAC | `ogg.cpp` |
+| FLAC, MP3 | `.flac` `.mp3` | FLAC; MP3, MP2 | `audio.cpp` |
+| WAV | `.wav` | PCM | `riff.cpp` |
+
+Older formats, kept because eMule publishes metadata for them or because they
+remain on the network:
+
+| Container | Extensions | Codecs | Parser |
+|---|---|---|---|
+| ASF | `.wma` `.wmv` `.asf` | WMA, WMV, VC-1 | `legacy.cpp` |
+| RealMedia | `.rm` `.rmvb` | RealVideo; Cook, ATRAC3, AAC, RealAudio | `legacy.cpp` |
+| FLV | `.flv` | Sorenson H.263, VP6, H.264, HEVC; MP3, AAC, Speex | `legacy.cpp` |
+| Ogg, legacy streams | `.ogv` `.ogm` `.spx` | Theora, OGM video; Speex | `ogg.cpp` |
+| AIFF, AIFF-C | `.aif` `.aiff` | PCM, IMA ADPCM, A-law, mu-law | `riff.cpp` |
+| Raw audio streams | `.aac` `.mp2` `.tta` `.wv` `.amr` | ADTS AAC, MP1/MP2, TTA, WavPack, AMR | `audio.cpp` |
+
+Tags are read from ID3v1, ID3v2, APEv2, Vorbis comments, Matroska Tags, ASF,
+RealMedia, FLV and the iTunes, QuickTime and 3GPP atoms (`tags.cpp`). Codec
+names follow FFmpeg's vocabulary; an identifier missing from the parser tables
+leaves the codec empty.
+
+Out of scope: disc images and structures (ISO, `VIDEO_TS`, `BDMV`), archives,
+subtitle and HDR metadata, and codecs not yet widely used for sharing, such as
+VVC and AV2. Raw H.264 and HEVC streams have no timeline, so only their codec is
+published.
+
 ## Parsers
-
-Each container family has its own parser in `src/mediaprobe/`. They read headers and
-indexes only, never audio or video data:
-
-| File | Formats |
-|---|---|
-| `riff.cpp` | WAV (RIFF, RIFX, RF64), AVI including OpenDML, AIFF and AIFF-C |
-| `isobmff.cpp` | MP4, M4A, M4V, MOV, 3GP (iTunes, QuickTime and 3GPP tags) |
-| `matroska.cpp` | MKV, MKA, WebM (Info, Tracks and global Tags, through SeekHead) |
-| `audio.cpp` | MP1/MP2/MP3 (Xing, VBRI or a bounded frame count), ADTS AAC, FLAC, TTA, WavPack, AMR |
-| `ogg.cpp` | Vorbis, Opus, FLAC, Speex, Theora and OGM streams in Ogg |
-| `legacy.cpp` | ASF (WMA, WMV), FLV, MPEG program and transport streams, RealMedia (RM, RMVB) |
-| `tags.cpp` | ID3v2, ID3v1, APEv2 and Vorbis comments |
-| `codecs.cpp` | FourCC, WAVE format tags and Matroska CodecIDs to FFmpeg codec names |
 
 All reads go through `Reader` (`probe.cpp`), which checks every range against the file
 size and charges a fixed budget of reads and bytes. Malformed structure, an
 out-of-range read or an exhausted budget is a file verdict (exit 11). Loops have
 iteration caps and recursion has a fixed depth, so no input can make a parser spin
-or exhaust the stack. Files in other formats publish no metadata.
+or exhaust the stack. A file may use at most 640 MiB of reads and 8 Mi read
+calls; the MP3 and ADTS frame count stops at 512 MiB.
 
 ## Build and tests
 
@@ -102,10 +156,6 @@ ffprobe -v quiet -show_format -show_streams -of json /tmp/probe.wav
 
 ffprobe agreement measures compatibility, not correctness. Durations can differ
 by a fraction of a second where containers count encoder padding differently.
-Raw H.264 and HEVC streams have no timeline, so the helper publishes their codec
-but leaves duration and derived bitrate unknown. MP3 files without a Xing or VBRI
-header and raw ADTS AAC get a frame count up to 512 MiB, bounded by the read
-budget and the parent's watchdog.
 
 ## Packaging
 
@@ -129,22 +179,3 @@ build job. Flatpak clones the exact local HEAD commit rather than upstream
 master. Final PR validation uses one full workflow dispatch with no `only`
 filter, so every build and runtime check covers the same commit. For the
 Universal2 dmg, both slices are exercised on macOS (Intel via Rosetta).
-
-## Compatibility scope and remaining gaps
-
-The helper replaces the six fields aMule used from ffprobe: duration, bitrate,
-codec, artist, album and title. It does not reproduce ffprobe's complete stream,
-chapter, attachment or technical-field output. Codec names are translated
-explicitly; an unknown codec identifier stays empty instead of publishing a
-misleading name. Formats outside the parser table are reported as unreadable
-and get failure marker 2.
-
-These fields are a best-effort aid for spotting fakes, not a core feature, so
-the scope is deliberately closed:
-
-- A format outside the parser table, or an unusual layout of a supported one,
-  leaves the fields empty. That is expected behaviour, not a bug.
-- A new format is added only with evidence that it is shared on ed2k, not
-  because another media library reads it.
-- A wrong value for a supported format is a bug, and so is any crash, hang or
-  out-of-bounds read on any input.

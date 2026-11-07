@@ -314,9 +314,14 @@ std::string streamTypeCodec(unsigned type)
 		return "h264";
 	case 0x24:
 		return "hevc";
+	case 0xEA:
+		return "vc1";
+	case 0x80:
+		return "pcm_bluray";
 	case 0x81:
 		return "ac3";
-	case 0x87:
+	case 0x84: // Blu-ray
+	case 0x87: // ATSC
 		return "eac3";
 	case 0x82:
 	case 0x85:
@@ -331,7 +336,7 @@ std::string streamTypeCodec(unsigned type)
 
 bool isVideoType(unsigned type)
 {
-	return type == 0x01 || type == 0x02 || type == 0x10 || type == 0x1B || type == 0x24;
+	return type == 0x01 || type == 0x02 || type == 0x10 || type == 0x1B || type == 0x24 || type == 0xEA;
 }
 
 // 33-bit MPEG timestamp in 90 kHz units from a PES optional header field.
@@ -488,11 +493,15 @@ void parseMpegPs(Reader &r, Result &res)
 				}
 				if (isVideo && !video && start)
 					video = true;
-				if (start && isAudio && audio.empty() && r.has(payload, 1))
-					audio = id == 0xBD ? ((r.u8(payload) & 0xF8) == 0x80          ? "ac3"
-								     : (r.u8(payload) & 0xF8) == 0x88 ? "dts"
-												      : "")
-							   : "mp2";
+				if (start && isAudio && audio.empty() && r.has(payload, 1)) {
+					// Private stream 1: the substream ID gives AC-3, DTS or LPCM.
+					const unsigned sub = r.u8(payload) & 0xF8;
+					audio = id != 0xBD    ? "mp2"
+						: sub == 0x80 ? "ac3"
+						: sub == 0x88 ? "dts"
+						: sub == 0xA0 ? "pcm_dvd"
+							      : "";
+				}
 				if (ts >= 0 && (isVideo || !video)) {
 					if (start && first < 0)
 						first = ts;
