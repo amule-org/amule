@@ -120,8 +120,12 @@ inline bool CanFSHandleLargeFiles(const CPath &path)
 #define PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE 0
 #endif
 
+// On Linux these requests are asynchronous; shutdown must cancel and join them.
 void PreventSleepMode();
 void AllowSleepMode();
+// Cancel outstanding inhibition work, release resources and join the Linux worker
+// before application teardown. No further inhibition requests are accepted afterwards.
+void ShutdownSleepInhibition();
 
 }; /* namespace PlatformSpecific */
 

@@ -15,7 +15,7 @@ from AllSearchIntegrationTest import C, free_ports, integer, retry_port_collisio
 from DaemonConfig import daemon_env, write_amule_conf
 
 
-def run(binary, new_mode, legacy, expected):
+def run(binary, new_mode, legacy, expected, scenario):
     with tempfile.TemporaryDirectory(prefix='amule-sleep-mode-') as temporary:
         root = Path(temporary)
         ports = free_ports(3, udp_indices=(2,), peer_index=1)
@@ -27,6 +27,7 @@ def run(binary, new_mode, legacy, expected):
         # Inherits the isolated bus from the C++ parent, never the user's desktop bus.
         env = daemon_env(root)
         for _ in range(2):
+            started = time.monotonic()
             with running_daemon(binary, root, ports, env=env) as (_, ec):
                 deadline = time.monotonic() + 15
                 while True:
@@ -37,6 +38,8 @@ def run(binary, new_mode, legacy, expected):
                         break
                     assert time.monotonic() < deadline, 'core timer did not run'
                     time.sleep(0.05)
+            if scenario == 'held':
+                assert time.monotonic() - started < 3, 'desktop inhibition stalled the core or shutdown'
             config = configparser.ConfigParser(interpolation=None)
             config.optionxform = str
             config.read(root / 'amule.conf')
@@ -47,4 +50,4 @@ def run(binary, new_mode, legacy, expected):
 
 if __name__ == '__main__':
     retry_port_collisions(lambda: run(str(Path(sys.argv[1]).resolve()),
-                                    sys.argv[2], sys.argv[3], int(sys.argv[4])))
+                                    sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5]))

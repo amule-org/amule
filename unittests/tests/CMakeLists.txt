@@ -83,7 +83,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
 	add_test (NAME SleepInhibitionNoBusTest COMMAND SleepInhibitionTest --no-bus)
 	add_test (NAME SleepInhibitionBusRestartTest COMMAND SleepInhibitionTest --restart-bus)
 	set_tests_properties (SleepInhibitionTest SleepInhibitionNoBusTest SleepInhibitionBusRestartTest PROPERTIES
-		SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 180)
+		SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 240)
 endif ()
 
 # Shared application anchors for headless tests that link production core code.
