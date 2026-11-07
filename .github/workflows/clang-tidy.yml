@@ -240,21 +240,33 @@ jobs:
       - uses: ./.github/actions/ngtcp2
       - name: determine diff base
         id: base
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_EVENT_NAME: ${{ github.event_name }}
+          CI_REPOSITORY: ${{ github.repository }}
+          CI_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          CI_IS_FORK: ${{ github.event.repository.fork }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$CI_EVENT_NAME" = "pull_request" ]; then
             # The event base can predate the target of the checked merge.
             base="$(git rev-parse HEAD^1)"
           else
-            def="${{ github.event.repository.default_branch }}"
-            git fetch --no-tags origin "+refs/heads/$def:refs/remotes/origin/$def" || true
-            base="$(git merge-base HEAD "origin/$def" 2>/dev/null || true)"
+            def="$CI_DEFAULT_BRANCH"
+            remote=origin
+            if [ "$CI_IS_FORK" = "true" ]; then
+              # A fork's default branch may be stale or carry fork-only commits.
+              # Compare contributions with its upstream parent, as a PR would.
+              parent="$(gh api "repos/$CI_REPOSITORY" --jq '.parent.full_name')"
+              test -n "$parent" && test "$parent" != null
+              def="$(gh api "repos/$parent" --jq '.default_branch')"
+              test -n "$def" && test "$def" != null
+              remote="$GITHUB_SERVER_URL/$parent.git"
+            fi
+            # A failed fetch must fail the check, not silently narrow its scope.
+            git fetch --no-tags "$remote" "+refs/heads/$def:refs/remotes/ci-base/target"
+            base="$(git merge-base HEAD refs/remotes/ci-base/target)"
           fi
-          # A branch cut straight from the default tip (or a missing ref) leaves
-          # base empty; fall back to the previous commit so the diff is never
-          # the whole tree.
-          if [ -z "$base" ]; then
-            base="$(git rev-parse HEAD^ 2>/dev/null || git rev-parse HEAD)"
-          fi
+          test -n "$base"
           echo "Using diff base: $base"
           echo "sha=$base" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/tidy-sources
