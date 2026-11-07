@@ -345,6 +345,7 @@ bool CMuleUDPSocket::QueuePacket(CPacket *packet,
 	newpending.bChargedToStream = bChargedToStream;
 	newpending.bKad = bKad;
 	newpending.nReceiverVerifyKey = nReceiverVerifyKey;
+	newpending.keyIP = (newpending.bEncrypt && !bKad) ? ClientCryptKeyIP(IP) : 0;
 	if (newpending.bEncrypt && pachTargetClientHashORKadID != NULL) {
 		md4cpy(newpending.pachTargetClientHashORKadID, pachTargetClientHashORKadID);
 	} else {
@@ -358,6 +359,11 @@ bool CMuleUDPSocket::QueuePacket(CPacket *packet,
 
 	theApp->uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 	return true;
+}
+
+uint32 CMuleUDPSocket::ClientCryptKeyIP(uint32)
+{
+	return 0;
 }
 
 bool CMuleUDPSocket::Ok()
@@ -394,7 +400,8 @@ SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, u
 					item.pachTargetClientHashORKadID,
 					item.bKad,
 					item.nReceiverVerifyKey,
-					(item.bKad ? Kademlia::CPrefs::GetUDPVerifyKey(item.IP) : 0));
+					(item.bKad ? Kademlia::CPrefs::GetUDPVerifyKey(item.IP) : 0),
+					item.keyIP);
 			}
 
 			if (SendTo(sendbuffer, len, item.IP, item.port)) {

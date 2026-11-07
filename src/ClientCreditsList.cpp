@@ -431,7 +431,8 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 	const uint8_t *pachSignature,
 	uint8 nInputSize,
 	const CNetworkAddress &address,
-	uint8 byChaIPKind)
+	uint8 byChaIPKind,
+	uint32 ownIPAsSeen)
 {
 	wxASSERT(pTarget);
 	wxASSERT(pachSignature);
@@ -470,7 +471,10 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 				break;
 			case CRYPT_CIP_REMOTECLIENT:
 				// Ignore local ip...
-				if (!theApp->GetPublicIP(true)) {
+				if (ownIPAsSeen != 0) {
+					// The peer signed the address it sees us at.
+					ChallengeIP = ownIPAsSeen;
+				} else if (!theApp->GetPublicIP(true)) {
 					if (::IsLowID(theApp->GetED2KID())) {
 						AddDebugLogLineN(logCredits,
 							"Warning: Maybe SecureHash Ident fails because "

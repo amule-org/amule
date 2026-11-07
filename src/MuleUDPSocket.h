@@ -92,6 +92,8 @@ public:
 	virtual void OnReceiveError(int errorCode, uint32 ip, uint16 port);
 	/** This function is called when the socket is lost (see comments in func.) */
 	virtual void OnDisconnected(int errorCode);
+	/** The IPv4 @a ip sees us at, when it differs from our public IP; else 0. */
+	virtual uint32 ClientCryptKeyIP(uint32 ip);
 
 	/**
 	 * Queues a packet for sending, taking ownership of it.
@@ -231,6 +233,8 @@ private:
 		bool bKad;
 		// The verification key for RC4 encryption.
 		uint32 nReceiverVerifyKey;
+		// The IPv4 the target sees us at, for the ed2k key; 0 for our public IP.
+		uint32 keyIP;
 		// Client hash or kad ID.
 		uint8 pachTargetClientHashORKadID[16];
 	};

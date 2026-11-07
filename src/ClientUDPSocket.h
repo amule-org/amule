@@ -54,6 +54,8 @@ class CServer;
 #endif
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 #include "NatKeyFrame.h"
+#include "NatSourceEcho.h"
+#include <mutex>
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicContext.h"
@@ -127,6 +129,12 @@ public:
 	//! server-vouched hash is authoritative.
 	void ExpectNatTPeer(
 		uint32_t ip, uint16_t udpPort, const std::array<uint8_t, 16> *vouchedHash = nullptr);
+	//! The server saw our UDP at @a ip (a 36-byte 0x61): the key IP toward peers punched in this
+	//! login. 0 forgets it.
+	void NoteServerSeenUdpIP(uint32_t ip) { m_serverSeenUdpIP = ip; }
+	//! The IPv4 @a peerIp sees our UDP at, when it differs from our public IP; else 0.
+	uint32_t NatKeyIPFor(uint32_t peerIp);
+	uint32 ClientCryptKeyIP(uint32 ip) override { return NatKeyIPFor(ip); }
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	//! Queues @a packet encrypted the server way, from this socket so the server sees the UDP port
@@ -210,6 +218,16 @@ private:
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 	//! Our key frame, obfuscated with @a key; false when the packet was not queued.
 	bool SendNatKeyFrame(uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key);
+	//! A datagram from a punched endpoint that no key decoded: tell it the source we saw.
+	void MaybeSendSourceEcho(uint32_t ip, uint16_t port);
+	void HandleSourceEcho(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
+	//! Endpoints punched in the last 30 s, with the hash a rendezvous vouched for.
+	NatKeyFrame::CExpectedPeers m_sourceEchoPeers{ 256, NatKeyFrame::kExpectedPeerTtlMs };
+	NatKeyFrame::CSendGate m_sourceEchoGate{ 256, NatSourceEcho::kEchoIntervalMs };
+	// Read when a datagram is queued, which is not always on the main thread.
+	std::mutex m_natKeyIPsMutex;
+	NatSourceEcho::CKeyIps m_natKeyIPs{ NatSourceEcho::kMaxKeyIps, NatSourceEcho::kKeyIpIdleMs };
+	uint32_t m_serverSeenUdpIP = 0;
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 	NatKeyFrame::Callbacks KeyFrameCallbacks();

@@ -842,6 +842,9 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_lowIdHolePunchExpectedEndpoints = NatServerHolePunch::ExpectedEndpointRegistry();
 #ifdef AMULE_UTP_TRANSPORT
 	m_lowIdHolePunchSchedules = NatServerHolePunch::PunchScheduleSet();
+	if (theApp->clientudp != nullptr) {
+		theApp->clientudp->NoteServerSeenUdpIP(0);
+	}
 #endif
 	m_holePunchExtensionWakes =
 		NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback>();

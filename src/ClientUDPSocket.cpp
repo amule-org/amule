@@ -132,6 +132,58 @@ void CClientUDPSocket::ExpectNatTPeer(
 #ifdef AMULE_QUIC_TRANSPORT
 	m_keyFrames.ExpectPeer(ip, udpPort, now, hash);
 #endif
+	m_sourceEchoPeers.Expect(ip, udpPort, now, hash);
+	if (m_serverSeenUdpIP != 0) {
+		std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
+		m_natKeyIPs.Set(ip, m_serverSeenUdpIP, theApp->GetPublicIP(), NatSourceEcho::CKeyIps::From::Server, now);
+	}
+}
+
+uint32_t CClientUDPSocket::NatKeyIPFor(uint32_t peerIp)
+{
+	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
+	return m_natKeyIPs.Lookup(peerIp, ::GetTickCount64()).value_or(0);
+}
+
+void CClientUDPSocket::MaybeSendSourceEcho(uint32_t ip, uint16_t port)
+{
+	const std::uint64_t now = ::GetTickCount64();
+	if (!NatTObfuscationAvailable() || !m_sourceEchoPeers.IsExpected(ip, port, now)) {
+		return;
+	}
+	// Obfuscated, so it is no fixed plain signature. The split side can decode it: only its own
+	// key is wrong.
+	const std::optional<NatKeyFrame::Hash> hash = m_sourceEchoPeers.VouchedHash(ip, port, now);
+	if (!hash || !m_sourceEchoGate.TryAcquire(ip, port, now)) {
+		return;
+	}
+	const auto payload = NatSourceEcho::BuildPayload({ ip, port });
+	CPacket *packet = new CPacket(OP_NATT_SOURCE_ECHO, static_cast<uint32>(payload.size()), OP_EMULEPROT);
+	packet->CopyToDataBuffer(0, payload.data(), static_cast<unsigned int>(payload.size()));
+	theStats::AddUpOverheadOther(packet->GetPacketSize());
+	if (TrySendObfuscatedPacket(packet, ip, port, hash->data())) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("NAT-T source echo to %s: its datagram failed every key") %
+				Uint32_16toStringIP_Port(ip, port));
+	} else {
+		m_sourceEchoGate.Forget(ip, port);
+	}
+}
+
+void CClientUDPSocket::HandleSourceEcho(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
+{
+	const std::uint64_t now = ::GetTickCount64();
+	const std::optional<NatSourceEcho::Source> seen = NatSourceEcho::ParsePayload(payload, length);
+	if (!seen || !m_sourceEchoPeers.IsExpected(ip, port, now) || !IsGoodIP(seen->ip, true)) {
+		return;
+	}
+	{
+		std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
+		m_natKeyIPs.Set(ip, seen->ip, theApp->GetPublicIP(), NatSourceEcho::CKeyIps::From::Peer, now);
+	}
+	AddDebugLogLineN(logClientUDP,
+		CFormat("NAT-T source echo from %s: it sees our UDP at %s") %
+			Uint32_16toStringIP_Port(ip, port) % Uint32_16toStringIP_Port(seen->ip, seen->port));
 }
 #endif
 
@@ -649,6 +701,13 @@ void CClientUDPSocket::OnPacketReceived(
 				break;
 
 			default:
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+				// An obfuscated datagram never starts with a protocol byte, so this one failed
+				// every key.
+				if (decryptedBuffer == buffer && length > NatSourceEcho::kCryptHeaderBytes) {
+					MaybeSendSourceEcho(ip, port);
+				}
+#endif
 				AddDebugLogLineN(logClientUDP,
 					CFormat("Unknown opcode on received packet: 0x%x") % protocol);
 			}
@@ -1400,6 +1459,12 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port)
 {
 	switch (opcode) {
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+	case OP_NATT_SOURCE_ECHO:
+		theStats::AddDownOverheadOther(size);
+		HandleSourceEcho(packet, size, host, port);
+		break;
+#endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	case OP_HOLEPUNCH:
 		theStats::AddDownOverheadOther(size);

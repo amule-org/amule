@@ -95,6 +95,10 @@ void HandleLowIdHolePunchInfo(
 			       serverconnect->LowIdHolePunchPendingRequests().Take(*info.peerId, now);
 	theApp->clientudp->NoteRendezvousAttempt(
 		NatServerHolePunch::RendezvousPath::ServerPunch, peerIP, &info.userHash);
+	if (info.ownUdpIP) {
+		const uint32 seen = PeekUInt32(info.ownUdpIP->data());
+		theApp->clientudp->NoteServerSeenUdpIP(IsGoodIP(seen, true) ? seen : 0);
+	}
 	const NatServerHolePunch::VouchedPeer peer{ info.userHash, info.peerCrypt };
 	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now, peer);
 	theApp->clientudp->ExpectNatTPeer(peerIP, info.udpPort, &info.userHash);

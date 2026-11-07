@@ -63,6 +63,9 @@ struct Info
 	std::optional<std::uint32_t> peerId;
 	// The peer's crypt-layer options, (CT_SERVER_FLAGS >> 9) & 7, only in a frame of 30 bytes or more.
 	std::optional<std::uint8_t> peerCrypt;
+	// Our own UDP endpoint as the server saw it, only in a frame of 36 bytes or more.
+	std::optional<IPv4> ownUdpIP;
+	std::uint16_t ownUdpPort = 0;
 };
 struct Failure
 {
@@ -148,6 +151,12 @@ inline std::optional<Info> ParseInfo(const std::uint8_t *data, std::size_t size)
 	}
 	if (size >= 30) {
 		info.peerCrypt = data[29];
+	}
+	if (size >= 36) {
+		IPv4 own{};
+		std::copy_n(data + 30, 4, own.begin());
+		info.ownUdpIP = own;
+		info.ownUdpPort = static_cast<std::uint16_t>(Detail::ReadLE(data + 34, 2));
 	}
 	return info;
 }

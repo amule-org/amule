@@ -3256,9 +3256,18 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 		return;
 	}
 
+	uint32 ownIPAsSeen = 0;
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+	// Over uTP or QUIC the peer saw our UDP address, which a TCP/UDP split NAT makes differ.
+	uint32 peerIPv4 = 0;
+	if (m_socket != nullptr && m_socket->HasTransport() && theApp->clientudp != nullptr &&
+		GetUserAddress().ToIPv4NetworkOrder(peerIPv4)) {
+		ownIPAsSeen = theApp->clientudp->NatKeyIPFor(peerIPv4);
+	}
+#endif
 	// cppcheck-suppress duplicateBranch
 	if (theApp->clientcredits->VerifyIdent(
-		    credits, pachPacket + 1, pachPacket[0], GetUserAddress(), byChaIPKind)) {
+		    credits, pachPacket + 1, pachPacket[0], GetUserAddress(), byChaIPKind, ownIPAsSeen)) {
 		// result is saved in function above
 		AddDebugLogLineN(logClient,
 			CFormat("'%s' has passed the secure identification, V2 State: %i") % GetUserName() %
