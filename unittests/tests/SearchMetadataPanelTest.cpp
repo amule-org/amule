@@ -67,8 +67,7 @@ void TestFields()
 	Input(*panel, _("Album"))->SetValue("Test Album");
 	Input(*panel, _("Title"))->SetValue("OR AND NOT");
 	Input(*panel, _("Codec"))->SetValue("FLAC");
-	auto *duration = dynamic_cast<wxSpinCtrl *>(
-		wxWindow::FindWindowByName(_("Minimum duration (minutes)"), panel));
+	auto *duration = dynamic_cast<wxSpinCtrl *>(wxWindow::FindWindowByName(_("Minimum duration"), panel));
 	auto *bitrate =
 		dynamic_cast<wxSpinCtrl *>(wxWindow::FindWindowByName(_("Minimum bitrate (kbps)"), panel));
 	Check(duration && bitrate, "Missing numeric metadata controls");
@@ -80,6 +79,33 @@ void TestFields()
 			value.title == "OR AND NOT" && value.codec == "FLAC",
 		"Fields did not reach search parameters");
 	Check(panel->HasValues(), "Entered fields do not enable Reset");
+	value.minLength = 61;
+	panel->Set(value);
+	CSearchList::CSearchParams restored;
+	panel->Read(restored);
+	Check(restored.minLength == 61 && restored.artist == value.artist && restored.title == value.title &&
+			restored.album == value.album && restored.codec == value.codec &&
+			restored.minBitrateKbps == value.minBitrateKbps,
+		"Loading a recorded form lost seconds or media filters");
+	value.minLength = 86400;
+	panel->Set(value);
+	panel->Read(restored);
+	Check(restored.minLength == 86400, "Maximum duration was truncated");
+	panel->Set(CSearchList::CSearchParams());
+	Check(!panel->HasValues(), "Loading defaults retained the previous media filters");
+	value.minLength = 61;
+	value.minBitrateKbps = 320;
+	panel->Set(value);
+	panel->SetSupported(false);
+	panel->Read(restored);
+	Check(!panel->HasValues() && restored.minLength == 0 && restored.minBitrateKbps == 0 &&
+			!duration->IsEnabled() && !bitrate->IsEnabled(),
+		"An older daemon retained unsupported metadata filters");
+	panel->SetSupported(true);
+	duration->SetValue(62);
+	panel->Read(restored);
+	Check(restored.minLength == 3720 && duration->IsEnabled() && bitrate->IsEnabled(),
+		"Reconnect did not restore the default minutes editor");
 	panel->Reset();
 	panel->Read(value);
 	Check(!panel->HasValues() && value.minBitrateKbps == 0 && value.minLength == 0 &&

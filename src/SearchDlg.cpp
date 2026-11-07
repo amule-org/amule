@@ -31,7 +31,8 @@
 #include <wx/combobox.h> // Needed for the IDC_SEARCHNAME history dropdown
 #include <wx/config.h>   // Needed to persist the default search type
 #include <wx/dataobj.h>  // Needed for wxTextDataObject (clipboard content check)
-#include <wx/menu.h>     // Needed for the search-history context menu
+#include <wx/weakref.h>
+#include <wx/menu.h> // Needed for the search-history context menu
 
 #include <wx/gauge.h> // Do_not_auto_remove (win32)
 
@@ -55,6 +56,7 @@
 #include "SearchList.h"   // Needed for CSearchList
 #include "updownclient.h" // Needed for EBrowseStatus (browse tab lifecycle)
 #include <common/Format.h>
+#include <common/MenuIDs.h>
 #include <common/TextFile.h> // Needed for CTextFile (searchhistory.dat)
 #include "Logger.h"
 
@@ -94,6 +96,12 @@ wxBEGIN_EVENT_TABLE(CSearchDlg, wxPanel)
 	// Event handlers for the parameter fields getting changed
 	EVT_CUSTOM(wxEVT_TEXT, IDC_SEARCHNAME, CSearchDlg::OnFieldChanged)
 	EVT_CUSTOM(wxEVT_TEXT, IDC_EDITSEARCHEXTENSION, CSearchDlg::OnFieldChanged)
+	EVT_CUSTOM(wxEVT_TEXT, IDC_SPINSEARCHMIN, CSearchDlg::OnFieldChanged)
+	EVT_CUSTOM(wxEVT_TEXT, IDC_SPINSEARCHMAX, CSearchDlg::OnFieldChanged)
+	EVT_CUSTOM(wxEVT_TEXT, IDC_SPINSEARCHAVAILABILITY, CSearchDlg::OnFieldChanged)
+	EVT_TEXT_ENTER(IDC_SPINSEARCHMIN, CSearchDlg::OnBnClickedStart)
+	EVT_TEXT_ENTER(IDC_SPINSEARCHMAX, CSearchDlg::OnBnClickedStart)
+	EVT_TEXT_ENTER(IDC_SPINSEARCHAVAILABILITY, CSearchDlg::OnBnClickedStart)
 	EVT_CUSTOM(wxEVT_SPINCTRL, wxID_ANY, CSearchDlg::OnFieldChanged)
 	EVT_CUSTOM(wxEVT_CHOICE, wxID_ANY, CSearchDlg::OnFieldChanged)
 
@@ -130,6 +138,8 @@ CSearchDlg::CSearchDlg(wxWindow *pParent)
 	m_progressbar->SetRange(100);
 
 	m_notebook = CastChild(ID_NOTEBOOK, CMuleNotebook);
+	m_notebook->SetPopupHandler(this);
+	Bind(wxEVT_RIGHT_DOWN, &CSearchDlg::OnSearchTabMenu, this);
 
 	m_notebook->SetCloseIconWidth(SearchModeCloseWidth(m_notebook));
 	m_notebook->AssignImageList(CreateSearchModeImages(m_notebook).release());
@@ -508,6 +518,128 @@ void CSearchDlg::OnSearchNameContextMenu(wxContextMenuEvent &WXUNUSED(evt))
 		clearItem->GetId());
 
 	PopupMenu(&menu);
+}
+
+std::optional<CSearchForm> CSearchDlg::GetSearchForm(wxUIntPtr id) const
+{
+#ifdef CLIENT_GUI
+	const CSearchForm *form = theApp->searchlist->GetSearchForm(id);
+	return form ? std::optional<CSearchForm>(*form) : std::nullopt;
+#else
+	const auto *params = theApp->searchlist->GetSearchParams(static_cast<uint32_t>(id));
+	if (!params)
+		return std::nullopt;
+	return CSearchForm{ *params, theApp->searchlist->GetSearchLifecycleKindById(id) };
+#endif
+}
+
+bool CSearchDlg::CanLoadSearchForm(const CSearchForm &form) const
+{
+	const auto &types = SearchFormFileTypes();
+	const auto &params = form.params;
+	if (std::find(m_searchTypeChoices.begin(), m_searchTypeChoices.end(), form.type) ==
+			m_searchTypeChoices.end() ||
+		std::find(types.begin(), types.end(), params.typeText) == types.end() ||
+		params.searchString.StartsWith("related::") ||
+		params.minLength > SEARCH_MAX_MIN_DURATION_SECONDS ||
+		params.minBitrateKbps > SEARCH_MAX_MIN_BITRATE_KBPS)
+		return false;
+#ifdef CLIENT_GUI
+	const bool hasMetadata = params.minLength || params.minBitrateKbps || !params.artist.empty() ||
+				 !params.album.empty() || !params.title.empty() || !params.codec.empty();
+	if (hasMetadata && !theApp->m_connect->ServerSupportsSearchMetadata())
+		return false;
+#endif
+	return true;
+}
+
+void CSearchDlg::OnSearchTabMenu(wxMouseEvent &event)
+{
+	if (event.GetEventObject() != m_notebook) {
+		event.Skip();
+		return;
+	}
+	const int selected = m_notebook->GetSelection();
+	if (selected == wxNOT_FOUND)
+		return;
+	auto *page = dynamic_cast<CSearchListCtrl *>(m_notebook->GetPage(selected));
+	if (!page)
+		return;
+	const wxUIntPtr id = page->GetSearchId();
+	wxMenu menu;
+	if (id && !page->IsBrowse() && !page->GetSearchTabLabel().StartsWith("related::")) {
+		const auto form = GetSearchForm(id);
+		auto *load = menu.Append(wxID_ANY, _("Load into search form"));
+		load->Enable(form && CanLoadSearchForm(*form));
+		const wxWeakRef<CSearchListCtrl> target(page);
+#ifdef CLIENT_GUI
+		const uint64_t session = theApp->searchlist->GetSearchFormSession();
+#else
+		const uint64_t session = 0;
+#endif
+		menu.Bind(
+			wxEVT_MENU,
+			[this, id, target, form, session](wxCommandEvent &) {
+				if (!target || GetSearchList(id) != target.get() || !form)
+					return;
+#ifdef CLIENT_GUI
+				if (session != theApp->searchlist->GetSearchFormSession())
+					return;
+#else
+				(void)session;
+#endif
+				LoadSearchForm(id, *form);
+			},
+			load->GetId());
+		menu.AppendSeparator();
+	}
+	menu.Append(MP_CLOSE_TAB, _("Close tab"));
+	menu.Append(MP_CLOSE_ALL_TABS, _("Close all tabs"));
+	menu.Append(MP_CLOSE_OTHER_TABS, _("Close other tabs"));
+	// Keep close-command routing and the synchronous native popup handling in the notebook.
+	m_notebook->PopupMenu(&menu);
+}
+
+void CSearchDlg::LoadSearchForm(wxUIntPtr id, const CSearchForm &expected)
+{
+	// EC replies can close a tab or replace its cached data while the popup is open.
+	if (!GetSearchList(id))
+		return;
+	const auto form = GetSearchForm(id);
+	if (!form || !SameSearchForm(*form, expected) || !CanLoadSearchForm(*form))
+		return;
+	const auto &params = form->params;
+	const auto &types = SearchFormFileTypes();
+	CastChild(IDC_SEARCHNAME, wxTextEntry)->ChangeValue(params.searchString);
+	CastChild(IDC_EDITSEARCHEXTENSION, wxTextCtrl)->ChangeValue(params.extension);
+	const auto setSize = [this](int numberId, int unitId, uint64_t bytes) {
+		const auto size = FormatSearchFormSize(bytes);
+		CastChild(numberId, wxTextCtrl)->ChangeValue(size.number);
+		CastChild(unitId, wxChoice)->SetSelection(size.unit);
+	};
+	setSize(IDC_SPINSEARCHMIN, IDC_SEARCHMINSIZE, params.minSize);
+	setSize(IDC_SPINSEARCHMAX, IDC_SEARCHMAXSIZE, params.maxSize);
+	CastChild(IDC_SPINSEARCHAVAILABILITY, wxTextCtrl)
+		->ChangeValue(wxString::Format("%u", params.availability));
+	CastChild(IDC_TypeSearch, wxChoice)
+		->SetSelection(static_cast<int>(
+			std::find(types.begin(), types.end(), params.typeText) - types.begin()));
+	auto *searchType = CastChild(ID_SEARCHTYPE, wxBitmapComboBox);
+	searchType->SetSelection(static_cast<int>(
+		std::find(m_searchTypeChoices.begin(), m_searchTypeChoices.end(), form->type) -
+		m_searchTypeChoices.begin()));
+	searchType->SetToolTip(SearchModeHelp(form->type));
+#ifdef CLIENT_GUI
+	m_metadataFields->SetSupported(theApp->m_connect->ServerSupportsSearchMetadata());
+#endif
+	m_metadataFields->Set(params);
+	const bool extended = SearchFormHasFilters(params);
+	CastChild(IDC_EXTENDEDSEARCHCHECK, wxCheckBox)->SetValue(extended);
+	s_search_sizer->Show(s_extended_sizer, extended);
+	Layout();
+	wxCommandEvent changed;
+	OnFieldChanged(changed);
+	FindWindow(IDC_SEARCHNAME)->SetFocus();
 }
 
 void CSearchDlg::FixSearchTypes()
@@ -984,9 +1116,12 @@ void CSearchDlg::OnBnClickedStart(wxCommandEvent &WXUNUSED(evt))
 	if ((now - m_last_search_time) > 500) {
 		m_last_search_time = now;
 		const auto params = ReadSearchParams(false);
-		if (params.searchString.IsEmpty() || TryReuseSearch(params)) {
+		if (params.searchString.IsEmpty()) {
+			ReadSearchParams(true);
 			return;
 		}
+		if (TryReuseSearch(params))
+			return;
 
 		// Starting a second ed2k search finalises the one in flight (see HasRunningEd2kSearch for
 		// why the protocol forces that), and until now it happened silently: the first tab's
@@ -1081,10 +1216,11 @@ void CSearchDlg::OnFieldChanged(wxEvent &WXUNUSED(evt))
 	// searched for, so choosing one is no reason to offer to reset the search fields (issue
 	// #979).
 
-	// These are the IDs of the search-fields
-	int spinfields[] = { IDC_SPINSEARCHMIN, IDC_SPINSEARCHMAX, IDC_SPINSEARCHAVAILABILITY };
-	for (int spinfield : spinfields) {
-		enable |= (CastChild(spinfield, wxSpinCtrl)->GetValue() > 0);
+	// These fields accept unsigned values beyond a native spin control's int range.
+	const int numberfields[] = { IDC_SPINSEARCHMIN, IDC_SPINSEARCHMAX, IDC_SPINSEARCHAVAILABILITY };
+	for (int field : numberfields) {
+		const wxString text = CastChild(field, wxTextCtrl)->GetValue();
+		enable |= !text.empty() && text != "0";
 	}
 
 	// Enable the "Reset" button if any fields contain text
@@ -1458,16 +1594,25 @@ CSearchList::CSearchParams CSearchDlg::ReadSearchParams(bool showWarning)
 
 		params.extension = CastChild(IDC_EDITSEARCHEXTENSION, wxTextCtrl)->GetValue();
 
-		uint32 sizemin = GetTypeSize((uint8)CastChild(IDC_SEARCHMINSIZE, wxChoice)->GetSelection());
-		uint32 sizemax = GetTypeSize((uint8)CastChild(IDC_SEARCHMAXSIZE, wxChoice)->GetSelection());
-
-		// Parameter Minimum Size
-		params.minSize =
-			(uint64_t)(CastChild(IDC_SPINSEARCHMIN, wxSpinCtrl)->GetValue()) * (uint64_t)sizemin;
-
-		// Parameter Maximum Size
-		params.maxSize =
-			(uint64_t)(CastChild(IDC_SPINSEARCHMAX, wxSpinCtrl)->GetValue()) * (uint64_t)sizemax;
+		uint64_t availability = 0;
+		if (!ParseSearchFormSize(CastChild(IDC_SPINSEARCHMIN, wxTextCtrl)->GetValue(),
+			    CastChild(IDC_SEARCHMINSIZE, wxChoice)->GetSelection(),
+			    params.minSize) ||
+			!ParseSearchFormSize(CastChild(IDC_SPINSEARCHMAX, wxTextCtrl)->GetValue(),
+				CastChild(IDC_SEARCHMAXSIZE, wxChoice)->GetSelection(),
+				params.maxSize) ||
+			!ParseSearchFormNumber(CastChild(IDC_SPINSEARCHAVAILABILITY, wxTextCtrl)->GetValue(),
+				std::numeric_limits<uint32_t>::max(),
+				availability)) {
+			if (showWarning)
+				wxMessageBox(_("Enter whole, non-negative sizes and availability within the "
+					       "supported range."),
+					_("Search warning"),
+					wxOK | wxCENTRE | wxICON_INFORMATION,
+					this);
+			return CSearchList::CSearchParams();
+		}
+		params.availability = static_cast<uint32_t>(availability);
 
 		if ((params.maxSize < params.minSize) && (params.maxSize)) {
 			if (showWarning) {
@@ -1481,39 +1626,10 @@ CSearchList::CSearchParams CSearchDlg::ReadSearchParams(bool showWarning)
 			params.maxSize = 0;
 		}
 
-		// Parameter Availability
-		params.availability = CastChild(IDC_SPINSEARCHAVAILABILITY, wxSpinCtrl)->GetValue();
-
-		switch (CastChild(IDC_TypeSearch, wxChoice)->GetSelection()) {
-		case 0:
-			params.typeText.Clear();
-			break;
-		case 1:
-			params.typeText = ED2KFTSTR_ARCHIVE;
-			break;
-		case 2:
-			params.typeText = ED2KFTSTR_AUDIO;
-			break;
-		case 3:
-			params.typeText = ED2KFTSTR_CDIMAGE;
-			break;
-		case 4:
-			params.typeText = ED2KFTSTR_IMAGE;
-			break;
-		case 5:
-			params.typeText = ED2KFTSTR_PROGRAM;
-			break;
-		case 6:
-			params.typeText = ED2KFTSTR_DOCUMENT;
-			break;
-		case 7:
-			params.typeText = ED2KFTSTR_VIDEO;
-			break;
-		default:
-			AddDebugLogLineC(logGeneral,
-				CFormat("Warning! Unknown search-category (%s) selected!") % params.typeText);
-			break;
-		}
+		const int fileType = CastChild(IDC_TypeSearch, wxChoice)->GetSelection();
+		const auto &types = SearchFormFileTypes();
+		if (fileType >= 0 && static_cast<size_t>(fileType) < types.size())
+			params.typeText = types[fileType];
 	}
 
 	return params;
@@ -1648,11 +1764,11 @@ void CSearchDlg::OnBnClickedReset(wxCommandEvent &WXUNUSED(evt))
 	CastChild(IDC_SEARCHNAME, wxTextEntry)->SetValue(wxEmptyString);
 	CastChild(IDC_EDITSEARCHEXTENSION, wxTextCtrl)->Clear();
 	m_metadataFields->Reset();
-	CastChild(IDC_SPINSEARCHMIN, wxSpinCtrl)->SetValue(0);
+	CastChild(IDC_SPINSEARCHMIN, wxTextCtrl)->ChangeValue("0");
 	CastChild(IDC_SEARCHMINSIZE, wxChoice)->SetSelection(2);
-	CastChild(IDC_SPINSEARCHMAX, wxSpinCtrl)->SetValue(0);
+	CastChild(IDC_SPINSEARCHMAX, wxTextCtrl)->ChangeValue("0");
 	CastChild(IDC_SEARCHMAXSIZE, wxChoice)->SetSelection(2);
-	CastChild(IDC_SPINSEARCHAVAILABILITY, wxSpinCtrl)->SetValue(0);
+	CastChild(IDC_SPINSEARCHAVAILABILITY, wxTextCtrl)->ChangeValue("0");
 	CastChild(IDC_TypeSearch, wxChoice)->SetSelection(0);
 	// The download category is not reset here. "Reset Fields" is the counterpart of "Reset
 	// Filters" and clears search parameters; quietly redirecting the next download somewhere

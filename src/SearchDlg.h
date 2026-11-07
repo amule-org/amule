@@ -32,6 +32,7 @@
 
 class wxStaticLine;
 
+#include "SearchForm.h"
 #include "SearchList.h" // Needed for CSearchParams
 
 #include "Types.h" // Needed for uint16 and uint32
@@ -227,6 +228,10 @@ public:
 
 private:
 	CSearchList::CSearchParams ReadSearchParams(bool showWarning);
+	std::optional<CSearchForm> GetSearchForm(wxUIntPtr id) const;
+	bool CanLoadSearchForm(const CSearchForm &form) const;
+	void LoadSearchForm(wxUIntPtr id, const CSearchForm &expected);
+	void OnSearchTabMenu(wxMouseEvent &event);
 	CSearchMetadataPanel *m_metadataFields = nullptr;
 	bool TryReuseSearch(const CSearchList::CSearchParams &params);
 	void ClearSearchRequests();
