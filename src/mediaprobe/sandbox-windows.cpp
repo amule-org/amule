@@ -448,12 +448,13 @@ int launch()
 				return failure("relay final bounded parser output");
 			break;
 		}
-		if (waited == WAIT_FAILED || GetTickCount64() - started >= 30000) {
+		if (waited == WAIT_FAILED || GetTickCount64() - started >= kTimeoutMs) {
 			if (waited == WAIT_FAILED)
 				failure("wait for restricted parser");
 			else
-				std::fprintf(
-					stderr, "media-probe sandbox: parser exceeded 30 second deadline\n");
+				std::fprintf(stderr,
+					"media-probe sandbox: parser exceeded %u ms deadline\n",
+					kTimeoutMs);
 			TerminateJobObject(job.value, 12);
 			WaitForSingleObject(process.value, 5000);
 			return 12;

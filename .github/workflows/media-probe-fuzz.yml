@@ -8,11 +8,6 @@ on:
         type: number
         default: 600
         required: true
-  workflow_call:
-    inputs:
-      seconds:
-        type: number
-        default: 600
 
 permissions:
   contents: read
@@ -31,29 +26,52 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$FUZZ_SECONDS" =~ ^[0-9]+$ ]] && (( FUZZ_SECONDS >= 30 && FUZZ_SECONDS <= 1800 ))
+          if ! [[ "$FUZZ_SECONDS" =~ ^[0-9]{1,4}$ ]] ||
+             (( 10#$FUZZ_SECONDS < 30 || 10#$FUZZ_SECONDS > 1800 )); then
+            echo 'Fuzz duration must be an integer between 30 and 1800 seconds.' >&2
+            exit 1
+          fi
           mkdir -p fuzz-results/crashes
           {
             git rev-parse HEAD
             uname -m
             cat /etc/os-release
             clang++ --version
-            sha256sum src/mediaprobe/fuzz-corpus.tar.gz
             echo "seconds=$FUZZ_SECONDS"
           } > fuzz-results/provenance.txt
       - name: Build with libFuzzer, ASan and UBSan
         run: |
           cmake -S src/mediaprobe -B build-fuzz -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=RelWithDebInfo -DMEDIA_PROBE_FUZZ=ON
-          cmake --build build-fuzz --target amule-media-probe-fuzz --parallel 2
-      - name: Restore the versioned seed corpus
-        run: python3 src/mediaprobe/corpus.py unpack src/mediaprobe/fuzz-corpus.tar.gz fuzz-results/corpus
+          cmake --build build-fuzz --target amule-media-probe amule-media-probe-fuzz --parallel 2
+      - name: Generate seeds from regression fixtures
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          python3 src/mediaprobe/corpus.py seed build-fuzz/src/amule-media-probe fuzz-results/seeds
+          python3 src/mediaprobe/corpus.py pack fuzz-results/seeds fuzz-results/seeds.tar.gz
+          sha256sum fuzz-results/seeds.tar.gz >> fuzz-results/provenance.txt
+      - uses: actions/cache/restore@v6
+        id: restore
+        with:
+          path: fuzz-results/cached-corpus.tar.gz
+          key: media-probe-corpus-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: media-probe-corpus-v1-
+      - name: Validate the restored corpus
+        env:
+          CORPUS_CACHE_KEY: ${{ steps.restore.outputs.cache-matched-key }}
+        run: |
+          echo "restored-cache=$CORPUS_CACHE_KEY" >> fuzz-results/provenance.txt
+          mkdir -p fuzz-results/corpus
+          if test -f fuzz-results/cached-corpus.tar.gz; then
+            python3 src/mediaprobe/corpus.py unpack fuzz-results/cached-corpus.tar.gz fuzz-results/corpus
+          fi
       - name: Fuzz the parsers
         shell: bash
         run: |
           set -euo pipefail
           # Per-worker limits: two workers fit on the smallest hosted runner.
           # Both jobs run for the requested duration; crashes fail the step.
-          build-fuzz/amule-media-probe-fuzz fuzz-results/corpus \
+          build-fuzz/amule-media-probe-fuzz fuzz-results/corpus fuzz-results/seeds \
             -jobs=2 -workers=2 -max_total_time="$FUZZ_SECONDS" \
             -max_len=262144 -timeout=10 -rss_limit_mb=1024 \
             -artifact_prefix=fuzz-results/crashes/ -print_final_stats=1 \
@@ -73,9 +91,15 @@ jobs:
             # archiving so repeated runs do not accumulate redundant files.
             timeout 180 build-fuzz/amule-media-probe-fuzz -merge=1 \
               -timeout=10 -rss_limit_mb=2048 \
-              fuzz-results/minimized fuzz-results/corpus > fuzz-results/merge.log 2>&1
+              fuzz-results/minimized fuzz-results/corpus fuzz-results/seeds > fuzz-results/merge.log 2>&1
             python3 src/mediaprobe/corpus.py pack fuzz-results/minimized fuzz-results/updated-corpus.tar.gz
+            cp fuzz-results/updated-corpus.tar.gz fuzz-results/cached-corpus.tar.gz
           fi
+      - uses: actions/cache/save@v6
+        if: always() && steps.corpus.outcome == 'success'
+        with:
+          path: fuzz-results/cached-corpus.tar.gz
+          key: media-probe-corpus-v1-${{ github.run_id }}-${{ github.run_attempt }}
       - uses: actions/upload-artifact@v7
         if: always()
         with:

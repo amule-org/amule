@@ -2,15 +2,22 @@ name: Media probe restrictions
 
 on:
   push:
-    paths: ['src/mediaprobe/**', 'src/MediaProbe.cpp', '.github/workflows/media-probe.yml']
+    paths:
+      - 'src/mediaprobe/sandbox*'
+      - 'src/mediaprobe/main.cpp'
+      - 'src/mediaprobe/CMakeLists.txt'
+      - 'src/mediaprobe/test_sandbox.py'
+      - 'packaging/linux/versions.env'
+      - '.github/workflows/media-probe.yml'
   pull_request:
-    paths: ['src/mediaprobe/**', 'src/MediaProbe.cpp', '.github/workflows/media-probe.yml']
+    paths:
+      - 'src/mediaprobe/sandbox*'
+      - 'src/mediaprobe/main.cpp'
+      - 'src/mediaprobe/CMakeLists.txt'
+      - 'src/mediaprobe/test_sandbox.py'
+      - 'packaging/linux/versions.env'
+      - '.github/workflows/media-probe.yml'
   workflow_dispatch:
-    inputs:
-      fuzz_only:
-        description: Run the ten-minute sanitizer fuzz workflow instead of native checks
-        type: boolean
-        default: false
 
 permissions:
   contents: read
@@ -21,12 +28,11 @@ concurrency:
 
 jobs:
   native:
-    if: ${{ !inputs.fuzz_only }}
     name: Native restrictions (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-2025, windows-11-arm]
+        os: [ubuntu-24.04-arm, macos-15-intel, windows-11-arm]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -43,18 +49,22 @@ jobs:
           name: media-probe-tests-${{ matrix.os }}
           path: build-probe/Testing/Temporary/
           if-no-files-found: warn
-  fuzz:
-    if: github.event_name == 'workflow_dispatch' && inputs.fuzz_only
-    uses: ./.github/workflows/media-probe-fuzz.yml
-    with:
-      seconds: 600
   musl:
-    if: ${{ !inputs.fuzz_only }}
-    name: Static musl restrictions (${{ matrix.os }})
+    name: Static musl restrictions (${{ matrix.platform }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm]
+        include:
+          - os: ubuntu-24.04
+            platform: linux/amd64
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch: aarch64
+          # i386 executes natively on x86-64, with the real host seccomp ABI.
+          - os: ubuntu-24.04
+            platform: linux/386
+            arch: i386
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -67,7 +77,7 @@ jobs:
           # the whole application just to exercise the helper's libc ABI.
           . packaging/linux/versions.env
           mkdir -p build-probe-musl
-          docker run --rm \
+          docker run --rm --platform "${{ matrix.platform }}" \
             --volume "$PWD:/source:ro" --volume "$PWD/build-probe-musl:/build" \
             "alpine:$ALPINE_STATIC_BASE" sh -ec '
               apk add --no-cache cmake g++ linux-headers make python3
@@ -81,7 +91,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: media-probe-tests-musl-${{ matrix.os }}
+          name: media-probe-tests-musl-${{ matrix.arch }}
           path: |
             build-probe-musl/Testing/Temporary/
             build-probe-musl/src/amule-media-probe

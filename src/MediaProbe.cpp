@@ -69,6 +69,9 @@ namespace
 constexpr int kSpawnFailed = -1; // unavailable helper, abnormal exit, malformed or oversized reply
 constexpr int kKilled = -2;      // overran timeoutMs, or keepRunning went false
 constexpr int kCrashed = -3;     // died abnormally after printing its header
+// A policy unavailable on this machine cannot be fixed by trying another file.
+// Keep the user's saved preference, but disable extraction until the next start.
+std::atomic<bool> restrictionsAvailable{ true };
 
 // Runs `exe` with `input` as stdin, capturing stdout to a temp file, bounded by `timeoutMs`
 // wall-clock. The wait loop also polls `keepRunning`, so worker shutdown kills the child at once.
@@ -550,6 +553,8 @@ wxString AutoDetectPath()
 
 wxString DetectedPath(bool redetect)
 {
+	if (!restrictionsAvailable)
+		return wxString();
 	static std::mutex mutex;
 	static bool done = false;
 	static wxString cached;
@@ -676,12 +681,22 @@ ProbeOutcome Probe(const wxString &helperPath,
 	bool bulk,
 	bool logFailure)
 {
+	if (!restrictionsAvailable)
+		return ProbeOutcome::Unavailable;
+	const auto logFailureReason = [&](const wxString &reason) {
+		const wxString message =
+			CFormat(_("Media metadata: no result for %s: %s")) % file.GetPrintable() % reason;
+		if (logFailure)
+			AddLogLineN(message);
+		else
+			AddDebugLogLineN(logMediaProbe, message);
+	};
 	if (!keepRunning || !timeoutMs) {
-		AddLogLineN(wxT("Media metadata: no result: cancelled before launch"));
+		logFailureReason(wxT("cancelled before launch"));
 		return ProbeOutcome::Cancelled;
 	}
 	if (helperPath.empty()) {
-		AddLogLineN(wxT("Media metadata: no result: helper unavailable"));
+		logFailureReason(wxT("helper unavailable"));
 		return ProbeOutcome::Unavailable;
 	}
 	if (!file.FileExists()) {
@@ -701,7 +716,7 @@ ProbeOutcome Probe(const wxString &helperPath,
 	wxString reason;
 	const int rc = RunBoundedHelper(helperPath, timeoutMs, keepRunning, lines, file, reason);
 	if (!keepRunning || rc == kKilled) {
-		AddLogLineN(CFormat(wxT("Media metadata: no result: %s")) % reason);
+		logFailureReason(reason);
 		return ProbeOutcome::Cancelled;
 	}
 	if (rc == 0 && ParseHelperOutput(lines, result)) {
@@ -710,13 +725,13 @@ ProbeOutcome Probe(const wxString &helperPath,
 	}
 	if (rc == 0)
 		reason = wxT("invalid or incomplete metadata reply; discarding all fields");
-	AddDebugLogLineN(logMediaProbe,
-		CFormat(wxT("MediaProbe: no result for %s: %s")) % file.GetPrintable() % reason);
-	if (logFailure)
-		AddLogLineN(
-			CFormat(_("Media metadata: no result for %s: %s")) % file.GetPrintable() % reason);
-	else
-		AddLogLineN(CFormat(_("Media metadata: no result: %s")) % reason);
+	if (rc == probe::sandbox::kSetupFailed) {
+		if (restrictionsAvailable.exchange(false))
+			AddLogLineN(
+				CFormat(_("Media metadata extraction disabled until restart: %s")) % reason);
+	} else {
+		logFailureReason(reason);
+	}
 	// Only documented parser rejections and a crash while parsing describe the file.
 	// Loader failures, protocol errors and other exits must not poison known.met entries.
 	if (rc == 10)

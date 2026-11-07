@@ -198,6 +198,18 @@ int main(int argc, char **argv)
 		if (!blocked)
 			close(static_cast<int>(fd));
 #endif
+	} else if (action == "map-file" || action == "map-executable") {
+#ifdef __linux__
+		void *memory = mmap(nullptr,
+			4096,
+			action == "map-executable" ? PROT_READ | PROT_EXEC : PROT_READ,
+			action == "map-executable" ? MAP_PRIVATE | MAP_ANONYMOUS : MAP_PRIVATE,
+			STDIN_FILENO,
+			0);
+		blocked = memory == MAP_FAILED && errno == EPERM;
+		if (memory != MAP_FAILED)
+			munmap(memory, 4096);
+#endif
 	} else if (action == "allocate") {
 		// Catch a filter that accidentally prevents ordinary parser allocations.
 		std::string memory(4 * 1024 * 1024, 'x');

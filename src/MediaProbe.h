@@ -65,7 +65,8 @@ wxString AutoDetectPath();
 // AutoDetectPath() memoised for the life of the process, and the entry point everything but the
 // detection itself should use.
 //
-// Logs missing helper once. redetect refreshes the cached sibling path.
+// Logs missing helper once. redetect refreshes the cached sibling path, but never
+// re-enables extraction after failed OS confinement in this session.
 wxString DetectedPath(bool redetect = false);
 
 // Probe a single file, populating `out` only for Extracted. Other outcomes describe
@@ -108,7 +109,7 @@ inline bool IsFileVerdict(ProbeOutcome outcome)
 //! \param logFailure whether a failure may name its file. Failures are worth naming even in bulk,
 //! since a count alone is not actionable, but a broken helper fails EVERY file, so the caller caps
 //! how many it names.
-//! A bounded diagnostic reason is still logged when the file name is suppressed.
+//! Further bounded diagnostics go to the debug log once the naming budget is spent.
 ProbeOutcome Probe(const wxString &helperPath,
 	const CPath &file,
 	MediaMetadata &out,

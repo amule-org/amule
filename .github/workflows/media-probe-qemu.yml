@@ -1,0 +1,90 @@
+name: Media probe Linux CPU validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kernel:
+    name: Full-system Linux (${{ matrix.arch }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: armel
+            compiler: arm-linux-gnueabi
+            kernel_arch: armhf
+            kernel: armmp
+            emulator: arm
+            machine: virt
+            cpu: cortex-a15
+            console: ttyAMA0
+          - arch: armhf
+            compiler: arm-linux-gnueabihf
+            kernel_arch: armhf
+            kernel: armmp
+            emulator: arm
+            machine: virt
+            cpu: cortex-a15
+            console: ttyAMA0
+          - arch: ppc64el
+            compiler: powerpc64le-linux-gnu
+            kernel_arch: ppc64el
+            kernel: powerpc64le
+            emulator: ppc64
+            machine: pseries
+            cpu: power9
+            console: hvc0
+          - arch: riscv64
+            compiler: riscv64-linux-gnu
+            kernel_arch: riscv64
+            kernel: riscv64
+            emulator: riscv64
+            machine: virt
+            cpu: rv64
+            console: ttyS0
+          - arch: s390x
+            compiler: s390x-linux-gnu
+            kernel_arch: s390x
+            kernel: s390x
+            emulator: s390x
+            machine: s390-ccw-virtio
+            cpu: max
+            console: ttysclp0
+    steps:
+      - uses: actions/checkout@v7
+      # User emulation is used only to provision the guest filesystem. Every
+      # restriction test runs after booting a separate, full Linux kernel.
+      - uses: docker/setup-qemu-action@v3
+      - name: Install cross-build and VM tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap debian-archive-keyring cpio \
+            g++-${{ matrix.compiler }} qemu-system-arm qemu-system-ppc \
+            qemu-system-misc opensbi
+      - name: Build, boot and verify restrictions under a real kernel
+        env:
+          ARCH: ${{ matrix.arch }}
+          CROSS: ${{ matrix.compiler }}
+          KERNEL_ARCH: ${{ matrix.kernel_arch }}
+          KERNEL: ${{ matrix.kernel }}
+          EMULATOR: ${{ matrix.emulator }}
+          MACHINE: ${{ matrix.machine }}
+          CPU: ${{ matrix.cpu }}
+          CONSOLE: ${{ matrix.console }}
+        run: bash .github/scripts/media-probe-qemu.sh
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: media-probe-kernel-${{ matrix.arch }}
+          path: |
+            build-probe/Testing/Temporary/
+            media-probe-vm/*.log
+            media-probe-vm/provenance.txt
+          retention-days: 90
+          if-no-files-found: warn

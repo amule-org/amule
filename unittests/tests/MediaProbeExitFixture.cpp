@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <chrono>
 #include <thread>
+#include "mediaprobe/sandbox.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <fcntl.h>
@@ -22,6 +23,10 @@ int main()
 	setrlimit(RLIMIT_CORE, &noCore);
 #endif
 	const int mode = std::getchar();
+	if (mode == 'r') {
+		std::fputs("media-probe sandbox: seccomp installation denied (fixture)\n", stderr);
+		return probe::sandbox::kSetupFailed;
+	}
 	if (mode == 'f') {
 		std::fputs("media-probe sandbox: setup failed (fixture)\n", stderr);
 		return 12;

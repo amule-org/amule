@@ -18,6 +18,9 @@
 #include <linux/audit.h>
 #include <linux/filter.h>
 #include <linux/seccomp.h>
+#if defined(__s390x__) && defined(__GLIBC__)
+#include <malloc.h>
+#endif
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
@@ -77,11 +80,38 @@ bool filterSyscalls()
 	constexpr uint32_t arch = AUDIT_ARCH_X86_64;
 #elif defined(__aarch64__)
 	constexpr uint32_t arch = AUDIT_ARCH_AARCH64;
+#elif defined(__i386__)
+	constexpr uint32_t arch = AUDIT_ARCH_I386;
+#elif defined(__arm__) && defined(__ARM_EABI__)
+#ifdef __ARMEB__
+	constexpr uint32_t arch = AUDIT_ARCH_ARMEB;
+#else
+	constexpr uint32_t arch = AUDIT_ARCH_ARM;
+#endif
+#elif defined(__powerpc64__)
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+	constexpr uint32_t arch = AUDIT_ARCH_PPC64LE;
+#else
+	constexpr uint32_t arch = AUDIT_ARCH_PPC64;
+#endif
+#elif defined(__riscv) && __riscv_xlen == 64
+	constexpr uint32_t arch = AUDIT_ARCH_RISCV64;
+#elif defined(__s390x__)
+	constexpr uint32_t arch = AUDIT_ARCH_S390X;
 #else
 	std::fprintf(stderr, "media-probe sandbox: unsupported Linux syscall ABI\n");
 	return false;
 #endif
-#if (defined(__x86_64__) && !defined(__ILP32__)) || defined(__aarch64__)
+#if (defined(__x86_64__) && !defined(__ILP32__)) || defined(__aarch64__) || defined(__i386__) || \
+	(defined(__arm__) && defined(__ARM_EABI__)) || defined(__powerpc64__) || \
+	(defined(__riscv) && __riscv_xlen == 64) || defined(__s390x__)
+	// seccomp arguments are 64-bit even on 32-bit ABIs. BPF word loads must
+	// inspect the low word on both byte orders (not the zero high word on s390x).
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+	constexpr uint32_t lowWord = 4;
+#else
+	constexpr uint32_t lowWord = 0;
+#endif
 	std::vector<sock_filter> code;
 	const auto statement = [&](uint16_t op, uint32_t value) { code.push_back(BPF_STMT(op, value)); };
 	const auto jump = [&](uint32_t value, uint8_t yes, uint8_t no) {
@@ -93,7 +123,7 @@ bool filterSyscalls()
 	};
 	const auto allowFd = [&](uint32_t nr, uint32_t fd) {
 		jump(nr, 0, 4);
-		statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[0]));
+		statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[0]) + lowWord);
 		jump(fd, 0, 1);
 		statement(BPF_RET | BPF_K, SECCOMP_RET_ALLOW);
 		statement(BPF_RET | BPF_K, SECCOMP_RET_ERRNO | EPERM);
@@ -115,7 +145,7 @@ bool filterSyscalls()
 	// sendfile, splice, descriptor duplication and acquisition remain denied.
 	for (const auto nr : { __NR_write, __NR_writev }) {
 		jump(nr, 0, 5);
-		statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[0]));
+		statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[0]) + lowWord);
 		jump(STDOUT_FILENO, 2, 0);
 		jump(STDERR_FILENO, 1, 0);
 		statement(BPF_RET | BPF_K, SECCOMP_RET_ERRNO | EPERM);
@@ -123,14 +153,22 @@ bool filterSyscalls()
 	}
 	// Allocations are anonymous and cannot introduce executable memory or map
 	// another inherited file. Executable mappings already loaded by the runtime stay.
-#ifdef __NR_mmap
-	jump(__NR_mmap, 0, 6);
-	statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[3]));
-	code.push_back(BPF_JUMP(BPF_JMP | BPF_JSET | BPF_K, MAP_ANONYMOUS, 0, 3));
-	statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[2]));
-	code.push_back(BPF_JUMP(BPF_JMP | BPF_JSET | BPF_K, PROT_EXEC, 1, 0));
-	statement(BPF_RET | BPF_K, SECCOMP_RET_ALLOW);
-	statement(BPF_RET | BPF_K, SECCOMP_RET_ERRNO | EPERM);
+	const auto allowAnonymousMap = [&](uint32_t nr) {
+		jump(nr, 0, 6);
+		statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[3]) + lowWord);
+		code.push_back(BPF_JUMP(BPF_JMP | BPF_JSET | BPF_K, MAP_ANONYMOUS, 0, 3));
+		statement(BPF_LD | BPF_W | BPF_ABS, offsetof(seccomp_data, args[2]) + lowWord);
+		code.push_back(BPF_JUMP(BPF_JMP | BPF_JSET | BPF_K, PROT_EXEC, 1, 0));
+		statement(BPF_RET | BPF_K, SECCOMP_RET_ALLOW);
+		statement(BPF_RET | BPF_K, SECCOMP_RET_ERRNO | EPERM);
+	};
+	// Old mmap on i386/ARM/s390 passes a pointer to its arguments. Seccomp
+	// cannot inspect that memory; never treat those calls as the six-argument ABI.
+#if defined(__NR_mmap) && !defined(__i386__) && !defined(__arm__) && !defined(__s390x__)
+	allowAnonymousMap(__NR_mmap);
+#endif
+#if defined(__NR_mmap2) && !defined(__s390x__)
+	allowAnonymousMap(__NR_mmap2);
 #endif
 	// These operate on this process or its already-open descriptors. All path
 	// opens, networking (including Unix sockets), process creation, exec, ptrace,
@@ -141,20 +179,30 @@ bool filterSyscalls()
 		     __NR_madvise,
 		     __NR_futex,
 		     __NR_close,
-		     __NR_fstat,
 		     __NR_exit,
 		     __NR_exit_group,
 		     __NR_rt_sigaction,
 		     __NR_rt_sigprocmask,
 		     __NR_rt_sigreturn,
 		     __NR_sigaltstack,
-		     __NR_clock_gettime,
 		     __NR_getpid,
 		     __NR_gettid,
 		     __NR_sched_yield })
 		allow(nr);
+#ifdef __NR_fstat
+	allow(__NR_fstat);
+#endif
 #ifdef __NR_fstat64
 	allow(__NR_fstat64);
+#endif
+#ifdef __NR_clock_gettime
+	allow(__NR_clock_gettime);
+#endif
+#ifdef __NR_clock_gettime64
+	allow(__NR_clock_gettime64);
+#endif
+#ifdef __NR_futex_time64
+	allow(__NR_futex_time64);
 #endif
 #ifdef __NR_getrandom
 	allow(__NR_getrandom);
@@ -185,6 +233,14 @@ bool enter()
 		return false;
 	}
 #ifdef __linux__
+	// s390x has only pointer-argument mmap. Keep it denied and have glibc
+	// allocate from its brk heap instead; the same address-space cap still holds.
+#if defined(__s390x__) && defined(__GLIBC__)
+	if (mallopt(M_MMAP_MAX, 0) == 0) {
+		std::fprintf(stderr, "media-probe sandbox: cannot configure bounded brk allocations\n");
+		return false;
+	}
+#endif
 	// Do not let another same-user process trace the confined helper for its data.
 	if (prctl(PR_SET_DUMPABLE, 0) != 0)
 		return false;

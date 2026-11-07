@@ -82,7 +82,7 @@ that might contain credentials. Runtime library paths are preserved for bundle
 and build-tree compatibility, including Windows `SystemRoot` and `PATH`. These
 paths do not grant file access after confinement.
 
-If setup fails, the helper refuses to parse and returns exit 12, without a
+If OS confinement fails, the helper refuses to parse and returns exit 13, without a
 protocol header or metadata. The core discards every failed, incomplete or
 malformed reply. An infrastructure failure never becomes a persistent bad-file
 marker. Existing metadata is updated only after a complete validated success.
@@ -91,7 +91,7 @@ its budget or produces excessive output; metadata extraction may yield nothing.
 No user-space sandbox can guarantee safety against operating-system/kernel
 vulnerabilities or a system already compromised outside aMule.
 
-- **Linux (x86-64 and arm64):** close all unrelated inherited descriptors, disable
+- **Linux (x86-64, i386, arm64, armel/armhf, ppc64, riscv64 and s390x):** close all unrelated inherited descriptors, disable
   core-dump/ptrace exposure, set `no_new_privs`, and install a default-deny seccomp
   filter. Reads/seeks are limited to stdin and writes to stdout/stderr, including
   the vectored I/O used by musl's standard library in static builds. New file
@@ -99,6 +99,11 @@ vulnerabilities or a system already compromised outside aMule.
   descriptor acquisition and io_uring are denied. Allocations remain available,
   but new executable mappings are denied. The filter checks the syscall ABI.
   Unsupported ABIs, unavailable seccomp and blocked setup return no metadata.
+  A failed confinement setup is reported once and disables extraction until
+  restart, without marking any media file as unprobeable. On s390x, the kernel's
+  pointer-argument `mmap` cannot be inspected safely; it remains denied. glibc
+  allocations use the bounded `brk` heap instead. Other allocators that require
+  that syscall may fail to allocate, which also returns no metadata.
   Older kernels use `/proc/self/fd` to close descriptors when `close_range` is
   unavailable; an inaccessible descriptor directory also fails closed.
 - **macOS:** close unrelated descriptors through `/dev/fd`, then apply a
@@ -146,7 +151,7 @@ unsupported/malformed data, exhausted read budget, timeout, cancellation, output
 limit or invalid framing). stderr is separate from the metadata protocol. The
 core caps diagnostics at 8 KiB, logs at most 2 KiB, and replaces control and
 non-ASCII bytes before logging. Bulk operations retain their existing limit on
-naming individual files; reasons remain logged after that limit.
+naming individual files; further reasons go to the debug log after that limit.
 
 `MediaProbeStartup` first checks one known-good WAV. If initialization fails,
 the dependent parser/denial suites are skipped with an explicit setup failure,
@@ -157,7 +162,13 @@ and malformed-input handling under the production restrictions. Core
 `MediaProbeEnvTest` verifies crash, timeout, setup-error, partial-reply and output
 failure containment, with no failed result published. The dedicated **Media
 probe restrictions** workflow runs the standalone checks on Linux x86-64/arm64,
-macOS arm64/Intel and Windows. A scheduled or queued job is not verification;
+macOS Intel and Windows ARM64, with static musl on x86-64, ARM64 and native
+i386. Build CI covers Linux x86-64, macOS ARM64 and Windows x64. The manual
+**Media probe Linux CPU validation** workflow cross-builds static helpers and
+boots full Debian kernels for armel, armhf, ppc64el, riscv64 and s390x. Guest
+provisioning uses user emulation; restriction tests run only inside the full VM,
+without host shares or network access. These jobs explicitly report optional
+FFmpeg fixtures as skipped. A scheduled or queued job is not verification;
 consult its completed results for the exact revision. Packaged-runtime checks
 remain necessary because installed loaders, outer sandboxes and signing differ.
 
@@ -244,9 +255,6 @@ cmake --build /tmp/fuzz --target amule-media-probe-fuzz
 
 Run **Media probe pre-release fuzzing** manually before a release and after
 parser changes. Its default is 600 seconds with Clang, libFuzzer, ASan and UBSan.
-Before this workflow reaches the default branch, select `fuzz_only` when
-manually running **Media probe restrictions** on the review branch. It calls
-the same fuzz workflow.
 
 Two workers run in parallel with per-input timeout, memory and length bounds;
 worker failures fail the job. The workflow always attempts to retain logs,
@@ -254,13 +262,14 @@ source/toolchain/corpus provenance, updated inputs and crash reproducers.
 Sanitizer fuzzing intentionally calls the in-memory parser harness without the
 production sandbox: it does not verify helper startup or OS containment.
 
-`src/mediaprobe/fuzz-corpus.tar.gz` is the durable seed in Git. It contains only
-synthetic test media and fuzz mutations, not personal media. Archive entries are
-regular files named by SHA-256; imports reject links, traversal, checksum errors
-and excessive sizes/counts. CI artifacts retain each run's additions for 90 days;
-they are not the durable source of truth. After a run, replay/minimize its inputs
-and commit an updated archive before those artifacts expire. Preserve crash
-inputs separately and add a focused regression test for each confirmed defect.
+Each run generates synthetic seeds from the helper and hostile-input fixtures.
+The evolving corpus is restored from an Actions cache and saved under a new key
+after minimization. Cache expiry is harmless: generated seeds remain available
+from source. Downloaded corpus archives contain regular SHA-256-named files;
+imports reject links, traversal, checksum errors and excessive sizes/counts.
+Logs, updated archives and crash reproducers are also retained as artifacts for
+90 days. Preserve confirmed crash inputs as small, focused regression fixtures;
+do not commit the evolving corpus to Git.
 
 To recreate initial seeds from generated fixtures (ffmpeg extends the seeds when
 installed), then minimize and archive a completed run:
@@ -270,15 +279,15 @@ python3 src/mediaprobe/corpus.py seed build/src/amule-media-probe /tmp/probe-cor
 # Stop all fuzz workers before minimizing or archiving their corpus.
 mkdir /tmp/probe-minimized
 build-fuzz/amule-media-probe-fuzz -merge=1 /tmp/probe-minimized /tmp/probe-corpus
-python3 src/mediaprobe/corpus.py pack /tmp/probe-minimized src/mediaprobe/fuzz-corpus.tar.gz
+python3 src/mediaprobe/corpus.py pack /tmp/probe-minimized /tmp/probe-corpus.tar.gz
 # Import into a fresh destination:
-python3 src/mediaprobe/corpus.py unpack src/mediaprobe/fuzz-corpus.tar.gz /tmp/probe-restored
+python3 src/mediaprobe/corpus.py unpack /tmp/probe-corpus.tar.gz /tmp/probe-restored
 ```
 
 A high line-coverage percentage is not proof of safety. Keep the larger-file,
 long-loop and truncation regression tests; the 256 KiB fuzz input bound cannot
-exercise every production file size or offset. The archive's provenance and
-actual verification results are recorded in `docs/MEDIA_PROBE_VALIDATION.md`.
+exercise every production file size or offset. Each workflow artifact records
+the tested source, toolchain, seed checksum and restored cache key.
 
 Durations can differ from FFmpeg's by a fraction of a second where containers
 count encoder padding differently.

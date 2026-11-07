@@ -86,7 +86,7 @@ uint32_t clamp32(double value)
 
 int failed(const char *reason, int code = 12)
 {
-	if (code == 12)
+	if (code == 12 || code == probe::sandbox::kSetupFailed)
 		std::fprintf(stderr, "media-probe: %s (exit %d, errno %d)\n", reason, code, errno);
 	else
 		std::fprintf(stderr, "media-probe: %s (exit %d)\n", reason, code);
@@ -118,7 +118,8 @@ int main(int argc, char **argv)
 	if (!limit(RLIMIT_CORE, 0) || !limit(RLIMIT_CPU, 25) || !limit(RLIMIT_NOFILE, 256) ||
 		!limit(RLIMIT_FSIZE, probe::sandbox::kOutputFileLimitBytes))
 		return failed(
-			"cannot establish CPU, descriptor, output and core-dump limits; refusing to parse");
+			"cannot establish CPU, descriptor, output and core-dump limits; refusing to parse",
+			probe::sandbox::kSetupFailed);
 #ifdef __linux__
 	// The in-memory fuzz target uses sanitizers without this address-space cap.
 	// Also preserve support for explicitly instrumented helper test builds.
@@ -131,7 +132,8 @@ int main(int argc, char **argv)
 		false;
 #endif
 	if (!addressSanitized && !limit(RLIMIT_AS, probe::sandbox::kMemoryLimitBytes))
-		return failed("cannot establish address-space limit; refusing to parse");
+		return failed("cannot establish address-space limit; refusing to parse",
+			probe::sandbox::kSetupFailed);
 #endif
 #endif
 	bool json = false;
@@ -160,7 +162,8 @@ int main(int argc, char **argv)
 	if (size < 0 || seek(0, SEEK_SET))
 		return failed("cannot determine input size or rewind input");
 	if (!probe::sandbox::enter())
-		return failed("cannot establish OS restrictions; refusing to parse");
+		return failed(
+			"cannot establish OS restrictions; refusing to parse", probe::sandbox::kSetupFailed);
 	if (!json) {
 		// Before parsing: a crash after this line is the file's doing, not a broken install.
 		std::cout << "AMMP 1\n" << std::flush;

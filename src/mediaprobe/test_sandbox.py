@@ -104,6 +104,11 @@ class SandboxTests(unittest.TestCase):
     def test_openat_cannot_bypass_the_policy(self):
         self.run_action('openat')
 
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux mapping argument checks')
+    def test_file_and_executable_mappings_are_denied(self):
+        self.run_action('map-file')
+        self.run_action('map-executable')
+
     def test_nonseekable_input_returns_no_metadata_with_a_reason(self):
         result = subprocess.run([HELPER], input=b'not a regular file', capture_output=True, timeout=35)
         self.assertEqual(result.returncode, 12)
@@ -114,7 +119,7 @@ class SandboxTests(unittest.TestCase):
     def test_writable_input_is_rejected_before_protocol_header(self):
         with self.media.open('r+b') as source:
             result = subprocess.run([HELPER], stdin=source, capture_output=True, timeout=35)
-        self.assertEqual(result.returncode, 12)
+        self.assertEqual(result.returncode, 13)
         self.assertEqual(result.stdout, b'')
         self.assertIn(b'refusing to parse', result.stderr)
 
