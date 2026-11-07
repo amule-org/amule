@@ -30,7 +30,8 @@ checked, or one proved in the last 24 h, but it cannot start the process.
  and no address is ever sent to a server that does not announce the
 probe. A server that does announce it receives the chosen local address through `OP_IPV6_UPDATE`,
 once per real change: it needs the address to test it, and it does not publish anything it has not
-reached. The server allows four such updates per session.
+reached. The server caps dial-back attempts, not updates: four per session, the login's own address
+included.
 
 ## Login: advertising our IPv6 address
 

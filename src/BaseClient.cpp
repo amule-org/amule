@@ -421,7 +421,19 @@ bool CUpDownClient::ProcessHelloPacket(const uint8_t *pachPacket, uint32 nSize)
 	// eMule 0.42: reset all client properties; a client may not send a particular emule tag any longer
 	ClearHelloProperties();
 
-	return ProcessHelloTypePacket(data);
+	const bool isMuleHello = ProcessHelloTypePacket(data);
+#ifdef ENABLE_IPV6
+	// Only an inbound OP_HELLO reaches this function: a HELLOANSWER from our own dial goes
+	// straight to ProcessHelloTypePacket(), so our outgoing connections cannot prove us.
+	const CNetworkAddress localIPv6 = SelectedLocalIPv6().value_or(CNetworkAddress::Absent());
+	const CNetworkAddress peerAddress = m_socket->GetPeerAddress();
+	if (localIPv6.IsIPv6() && peerAddress.IsIPv6() &&
+		peerAddress.TruncatedToPrefix(48) != localIPv6.TruncatedToPrefix(48)) {
+		IPv6ReachabilityProof().NoteHello(::GetTickCount64());
+	}
+#endif
+
+	return isMuleHello;
 }
 
 void CUpDownClient::Safe_Delete()
@@ -806,16 +818,6 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 		if (!m_preserveIdentityOnHello) {
 			SetUserAddress(m_socket->GetPeerAddress());
 		}
-#ifdef ENABLE_IPV6
-		// ProcessHelloTypePacket is reached only after a complete inbound OP_HELLO was parsed.
-		// Count it only when the actual route reached our chosen address from another /48.
-		const CNetworkAddress localIPv6 = SelectedLocalIPv6().value_or(CNetworkAddress::Absent());
-		const CNetworkAddress peerAddress = m_socket->GetPeerAddress();
-		if (localIPv6.IsIPv6() && peerAddress.IsIPv6() &&
-			peerAddress.TruncatedToPrefix(48) != localIPv6.TruncatedToPrefix(48)) {
-			IPv6ReachabilityProof().NoteHello(::GetTickCount64());
-		}
-#endif
 	} else {
 		throw wxString("Huh, socket failure. Avoided crash this time.");
 	}
