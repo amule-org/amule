@@ -2077,8 +2077,14 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 	// another /48. A failed probe withdraws the address even when the hello proved it, because the
 	// server tests what peers actually reach.
 	CServer *const server = theApp->serverconnect ? theApp->serverconnect->GetCurrentServer() : nullptr;
-	facts.serverVerified = server != nullptr && server->GetIPv6Verdict() == EServerIPv6Verdict::Verified;
-	facts.serverProbeFailed = server != nullptr && server->GetIPv6Verdict() == EServerIPv6Verdict::Failed;
+	// A verdict is about one address, so a change to another one has not been probed and the old
+	// answer must not speak for it.
+	const bool verdictIsAboutChoice = server != nullptr && facts.choice.has_value() &&
+					  server->GetIPv6VerdictAddress() == *facts.choice;
+	facts.serverVerified =
+		verdictIsAboutChoice && server->GetIPv6Verdict() == EServerIPv6Verdict::Verified;
+	facts.serverProbeFailed =
+		verdictIsAboutChoice && server->GetIPv6Verdict() == EServerIPv6Verdict::Failed;
 	facts.provedByInboundHello = IPv6ReachabilityProof().IsProven(::GetTickCount64());
 	facts.ipv6Built = true;
 	facts.familyPermitted = AddressFamilyPolicy::PermitsIPv6();

@@ -649,7 +649,8 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					}
 #ifdef ENABLE_IPV6
 					else if (tag.GetNameID() == ST_IPV6_STATUS && tag.IsInt()) {
-						const long rawStatus = tag.GetInt();
+						const std::uint64_t rawStatus =
+							static_cast<std::uint64_t>(tag.GetInt());
 						cur_server->SetIPv6Verdict(
 							ParseServerIPv6Verdict(
 								rawStatus >= 0 && rawStatus <= 0xFF
