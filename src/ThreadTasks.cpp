@@ -975,7 +975,7 @@ wxDEFINE_EVENT(MULE_EVT_VERIFY_LOCAL_DATA, wxEvent);
 wxDEFINE_EVENT(MULE_EVT_HASHING_DRAINED, wxThreadEvent);
 
 CMediaProbeEvent::CMediaProbeEvent(
-	const CMD4Hash &hash, const MediaInfo &info, bool succeeded, bool markUnprobeable)
+	const CMD4Hash &hash, const MediaMetadata &info, bool succeeded, bool markUnprobeable)
 : wxEvent(-1, MULE_EVT_MEDIA_PROBE)
 , m_hash(hash)
 , m_succeeded(succeeded)

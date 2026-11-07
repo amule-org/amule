@@ -51,7 +51,7 @@ TEST(MediaProbeEnv, NativeHelperFailuresRespectHeaderAndOutputBudget)
 		ASSERT_TRUE(input.IsOpened());
 		ASSERT_EQUALS(size_t(1), input.Write(&mode, 1));
 		input.Close();
-		MediaInfo info;
+		MediaMetadata info;
 		const auto outcome = MediaProbe::Probe(wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE),
 			CPath(path),
 			info,
@@ -84,11 +84,10 @@ const wxString kBundle = wxT("/tmp/amule-test-appdir");
 const wxString kBundleLib = kBundle + wxT("/usr/lib");
 const wxString kHostLib = wxT("/usr/lib");
 
-// A shell script standing in for ffprobe: it ignores its arguments and prints two -of flat lines,
-// one of them carrying its own LD_LIBRARY_PATH.
-wxString WriteFakeFfprobe()
+// A stand-in helper whose reply carries its own LD_LIBRARY_PATH as the title.
+wxString WriteFakeHelper()
 {
-	const wxString path = wxFileName::CreateTempFileName(wxT("amule-fake-ffprobe"));
+	const wxString path = wxFileName::CreateTempFileName(wxT("amule-fake-helper"));
 	wxFFile f(path, wxT("w"));
 	const wxString script = wxT("#!/bin/sh\n") wxT(
 		"printf 'AMMP "
@@ -113,7 +112,7 @@ wxString WriteDummyMedia()
 
 wxString ProbeTitleWith(const wxString &appdir, const wxString &ldPath)
 {
-	const wxString ffprobe = WriteFakeFfprobe();
+	const wxString helper = WriteFakeHelper();
 	const wxString media = WriteDummyMedia();
 	wxString originalAppdir, originalLdPath;
 	const bool hadAppdir = wxGetEnv(wxT("APPDIR"), &originalAppdir);
@@ -126,9 +125,9 @@ wxString ProbeTitleWith(const wxString &appdir, const wxString &ldPath)
 	}
 	wxSetEnv(wxT("LD_LIBRARY_PATH"), ldPath);
 
-	MediaInfo info;
+	MediaMetadata info;
 	const std::atomic<bool> keepRunning(true);
-	MediaProbe::Probe(ffprobe, CPath(media), info, 10000, keepRunning, false, false);
+	MediaProbe::Probe(helper, CPath(media), info, 10000, keepRunning, false, false);
 
 	if (hadAppdir)
 		wxSetEnv(wxT("APPDIR"), originalAppdir);
@@ -138,7 +137,7 @@ wxString ProbeTitleWith(const wxString &appdir, const wxString &ldPath)
 		wxSetEnv(wxT("LD_LIBRARY_PATH"), originalLdPath);
 	else
 		wxUnsetEnv(wxT("LD_LIBRARY_PATH"));
-	wxRemoveFile(ffprobe);
+	wxRemoveFile(helper);
 	wxRemoveFile(media);
 	return info.title;
 }
@@ -161,7 +160,7 @@ TEST(MediaProbeEnv, WithoutAppdirTheEnvironmentIsUnchanged)
 
 namespace
 {
-MediaInfo RunPolicyScript(const wxString &primary,
+MediaMetadata RunPolicyScript(const wxString &primary,
 	unsigned timeout = 2000,
 	MediaProbe::ProbeOutcome *outcome = nullptr,
 	const std::atomic<bool> *keepRunning = nullptr)
@@ -172,7 +171,7 @@ MediaInfo RunPolicyScript(const wxString &primary,
 	script.Write(wxT("#!/bin/sh\n") + primary + wxT("\n"));
 	script.Close();
 	wxChmod(path, 0700);
-	MediaInfo info;
+	MediaMetadata info;
 	const std::atomic<bool> running(true);
 	const auto result = MediaProbe::Probe(
 		path, CPath(media), info, timeout, keepRunning ? *keepRunning : running, true, false);
@@ -182,24 +181,16 @@ MediaInfo RunPolicyScript(const wxString &primary,
 	wxRemoveFile(media);
 	return info;
 }
-wxString Reply(unsigned duration, const wxString &title)
-{
-	return wxString::Format(
-		wxT("printf 'AMMP "
-		    "1\\nformat.duration=%u\\nformat.bit_rate=1000\\nstreams.stream.0.codec_type="
-		    "\"audio\"\\nstreams.stream.0.codec_name=\"mp3\"\\nformat.tags.artist=\"\"\\nformat.tags."
-		    "album=\"\"\\nformat.tags.title=\"%s\"\\nEND\\n'"),
-		duration,
-		title);
-}
+// A shell command printing a valid reply titled "primary".
+const wxString kReply =
+	wxT("printf 'AMMP "
+	    "1\\nformat.duration=3\\nformat.bit_rate=1000\\nstreams.stream.0.codec_type="
+	    "\"audio\"\\nstreams.stream.0.codec_name=\"mp3\"\\nformat.tags.artist=\"\"\\nformat.tags."
+	    "album=\"\"\\nformat.tags.title=\"primary\"\\nEND\\n'");
 } // namespace
 TEST(MediaProbeEnv, CompleteResultIsPublished)
 {
-	ASSERT_EQUALS(wxString(wxT("primary")), RunPolicyScript(Reply(3, wxT("primary"))).title);
-}
-TEST(MediaProbeEnv, CodecOnlyResultIsPublished)
-{
-	ASSERT_EQUALS(wxString(wxT("primary")), RunPolicyScript(Reply(0, wxT("primary"))).title);
+	ASSERT_EQUALS(wxString(wxT("primary")), RunPolicyScript(kReply).title);
 }
 TEST(MediaProbeEnv, TimeoutIsCancelled)
 {
@@ -237,8 +228,7 @@ TEST(MediaProbeEnv, CancelledProbeDoesNotLaunchHelper)
 	wxRemoveFile(marker);
 	const std::atomic<bool> running(false);
 	MediaProbe::ProbeOutcome outcome;
-	RunPolicyScript(
-		wxT("touch '") + marker + wxT("'\n") + Reply(3, wxT("primary")), 2000, &outcome, &running);
+	RunPolicyScript(wxT("touch '") + marker + wxT("'\n") + kReply, 2000, &outcome, &running);
 	const bool launched = wxFileExists(marker);
 	if (wxFileExists(marker))
 		wxRemoveFile(marker);
@@ -246,34 +236,15 @@ TEST(MediaProbeEnv, CancelledProbeDoesNotLaunchHelper)
 	ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::Cancelled);
 }
 
-TEST(MediaProbeEnv, MalformedProtocolFieldsAreUnavailable)
+// Field values are covered by MediaProbeParseTest; this is the line framing.
+TEST(MediaProbeEnv, MalformedProtocolFramingIsUnavailable)
 {
-	const wxString valid = Reply(3, wxT("primary"));
-	for (const auto &change :
-		std::vector<std::pair<wxString, wxString>>{ { wxT("AMMP 1"), wxT("AMMP 2") },
-			{ wxT("duration=3"), wxT("duration=NaN") },
-			{ wxT("codec_type=\"audio\""), wxT("codec_type=\"video\"") },
-			{ wxT("title=\"primary\""), wxT("title=primary") },
-			{ wxT("title=\"primary\""), wxT("title=\"broken\"quote\"") } }) {
-		wxString malformed = valid;
-		ASSERT_TRUE(malformed.Replace(change.first, change.second) > 0);
-		MediaProbe::ProbeOutcome outcome;
-		RunPolicyScript(malformed, 2000, &outcome);
-		ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::Unavailable);
-	}
-}
-
-TEST(MediaProbeEnv, MalformedProtocolFramingAndRangesAreUnavailable)
-{
-	const wxString valid = Reply(3, wxT("primary"));
+	const wxString valid = kReply;
 	std::vector<wxString> malformed = {
 		wxT("printf '\\n'; ") + valid,
 		valid + wxT("; printf '\\n'"),
 	};
 	for (const auto &change : std::vector<std::pair<wxString, wxString>>{
-		     { wxT("duration=3"), wxT("duration=4294967296") },
-		     { wxT("bit_rate=1000"), wxT("bit_rate=4294967296000") },
-		     { wxT("bit_rate=1000"), wxT("bit_rate=1001") },
 		     { wxT("\\nformat.duration"), wxT("\\n\\nformat.duration") },
 		     { wxT("\\nformat.duration"), wxT("\\r\\nformat.duration") },
 		     { wxT("END\\n"), wxT("END") },
@@ -290,18 +261,6 @@ TEST(MediaProbeEnv, MalformedProtocolFramingAndRangesAreUnavailable)
 	}
 }
 
-TEST(MediaProbeEnv, ProtocolBoundaryValuesAreAccepted)
-{
-	wxString reply = Reply(0xffffffffu, wxT("maximum"));
-	reply.Replace(wxT("bit_rate=1000"), wxT("bit_rate=4294967295000"));
-	MediaProbe::ProbeOutcome outcome;
-	const auto info = RunPolicyScript(reply, 2000, &outcome);
-	ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::Extracted);
-	ASSERT_EQUALS(uint32(0xffffffffu), info.length_seconds);
-	ASSERT_EQUALS(uint32(0xffffffffu), info.bitrate_kbps);
-	ASSERT_FALSE(MediaProbe::IsFileVerdict(MediaProbe::ProbeOutcome::OutputTooLarge));
-}
-
 TEST(MediaProbeEnv, PipeInputCannotBlockBeforeTheWatchdog)
 {
 	const wxString path = wxFileName::CreateTempFileName(wxT("amule-pipe-input"));
@@ -315,7 +274,7 @@ TEST(MediaProbeEnv, PipeInputCannotBlockBeforeTheWatchdog)
 		if (fd >= 0)
 			close(fd);
 	});
-	MediaInfo info;
+	MediaMetadata info;
 	const std::atomic<bool> running(true);
 	const auto start = std::chrono::steady_clock::now();
 	const auto outcome = MediaProbe::Probe(wxT("/bin/true"), CPath(path), info, 50, running, true, false);
@@ -352,8 +311,7 @@ TEST(MediaProbeEnv, CancellationDiscardsResult)
 		running = false;
 	});
 	MediaProbe::ProbeOutcome outcome;
-	const MediaInfo info =
-		RunPolicyScript(wxT("sleep 30\n") + Reply(3, wxT("primary")), 2000, &outcome, &running);
+	const MediaMetadata info = RunPolicyScript(wxT("sleep 30\n") + kReply, 2000, &outcome, &running);
 	cancel.join();
 	ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::Cancelled);
 	ASSERT_TRUE(info.title.empty());
@@ -397,7 +355,7 @@ TEST(MediaProbeEnv, RealHelperReadsInheritedSeekableFile)
 	wxFFile file(path, wxT("wb"));
 	file.Write(bytes.data(), bytes.size());
 	file.Close();
-	MediaInfo info;
+	MediaMetadata info;
 	const std::atomic<bool> running(true);
 	const auto result = MediaProbe::Probe(
 		wxString::FromUTF8(AMULE_MEDIA_HELPER_TEST), CPath(path), info, 5000, running, true, false);

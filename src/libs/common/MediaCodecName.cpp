@@ -37,8 +37,8 @@ struct CodecEntry
 	const char *display;
 };
 
-// Keys are what reaches us: ffprobe codec_name for local files, and for remote ones whatever the
-// peer put in FT_MEDIA_CODEC -- eMule's video FOURCC or WAVE_FORMAT define (MediaInfo.cpp), plus
+// Keys are what reaches us: FFmpeg codec names from the helper and from aMule peers, and whatever
+// other peers put in FT_MEDIA_CODEC -- eMule's video FOURCC or WAVE_FORMAT define (MediaInfo.cpp), plus
 // VORB, WMA1 and WMA2, kept from aMule's earlier table in case a peer still sends them.
 // Labels name the format, not the encoder: x264 is H.264, Xvid and DivX 4/5 are MPEG-4 Part 2.
 const CodecEntry kCodecMap[] = {
@@ -169,7 +169,7 @@ const CodecEntry kCodecMap[] = {
 	{ "DVI_ADPCM", "ADPCM" },
 };
 
-// ffprobe splits PCM and ADPCM per variant (pcm_s16le, adpcm_ima_wav...).
+// FFmpeg splits PCM and ADPCM per variant (pcm_s16le, adpcm_ima_wav...).
 const CodecEntry kCodecPrefixMap[] = {
 	{ "PCM_", "PCM" },
 	{ "ADPCM_", "ADPCM" },

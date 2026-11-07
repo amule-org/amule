@@ -28,7 +28,7 @@
 #include <string>
 
 /**
- * Codec id (ffprobe codec_name or an eMule FOURCC / audio format define) to the label the
+ * Codec id (FFmpeg codec name or an eMule FOURCC / audio format define) to the label the
  * interface shows, e.g. "h264" or "X264" to "H.264".
  *
  * One table for every surface: the desktop reaches it through FormatMediaCodec() (OtherFunctions.h)

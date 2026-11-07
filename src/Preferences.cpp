@@ -1747,7 +1747,7 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 		const wxString oldPath = cfg->Read("/MediaMetadata/FFProbePath", wxEmptyString);
 		if (!oldPath.empty()) {
 			AddLogLineN(_("Media metadata: FFProbePath is obsolete; aMule now uses its bundled "
-				      "MediaInfo parser. Removing the old setting."));
+				      "media parser. Removing the old setting."));
 		}
 		cfg->DeleteEntry("/MediaMetadata/FFProbePath");
 		cfg->Flush();

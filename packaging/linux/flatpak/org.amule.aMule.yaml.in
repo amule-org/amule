@@ -355,26 +355,6 @@ modules:
         url: ${WX_TARBALL_URL}
         sha256: ${WX_SHA256}
 
-  - name: media-zenlib
-    buildsystem: cmake-ninja
-    subdir: Project/CMake
-    config-opts: [-DCMAKE_CXX_STANDARD=17, -DBUILD_SHARED_LIBS=ON, -DCMAKE_INSTALL_LIBDIR=lib, -DCMAKE_POLICY_VERSION_MINIMUM=3.10]
-    sources:
-      - type: archive
-        url: ${ZENLIB_TARBALL_URL}
-        dest-filename: ZenLib-${ZENLIB_VERSION}.tar.gz
-        sha256: ${ZENLIB_SHA256}
-
-  - name: media-mediainfo
-    buildsystem: cmake-ninja
-    subdir: Project/CMake
-    config-opts: [-DCMAKE_CXX_STANDARD=17, -DBUILD_SHARED_LIBS=ON, -DBUILD_ZENLIB=OFF, -DBUILD_ZLIB=OFF, -DCMAKE_DISABLE_FIND_PACKAGE_TinyXML=ON, -DCMAKE_DISABLE_FIND_PACKAGE_CURL=ON, '-DCMAKE_CXX_FLAGS=-DMEDIAINFO_LIBCURL_NO -DMEDIAINFO_LIBMMS_NO']
-    sources:
-      - type: archive
-        url: ${MEDIAINFO_TARBALL_URL}
-        dest-filename: MediaInfoLib-${MEDIAINFO_VERSION}.tar.gz
-        sha256: ${MEDIAINFO_SHA256}
-
   - name: amule
     buildsystem: cmake-ninja
     config-opts:
