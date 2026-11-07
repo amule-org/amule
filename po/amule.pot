@@ -4123,7 +4123,12 @@ msgstr ""
 
 #: src/MediaProbe.cpp
 #, c-format
-msgid "Media metadata: parser failed for %s"
+msgid "Media metadata: no result for %s: %s"
+msgstr ""
+
+#: src/MediaProbe.cpp
+#, c-format
+msgid "Media metadata: no result: %s"
 msgstr ""
 
 #: src/MediaProbeThread.cpp
