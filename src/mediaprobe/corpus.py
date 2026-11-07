@@ -17,6 +17,9 @@ import tarfile
 MAX_INPUT = 262144
 MAX_TOTAL = 128 * 1024 * 1024
 MAX_FILES = 10000
+# Include tar headers, per-file padding and the final record. Bound decompression
+# before tarfile interprets GNU/PAX headers, which can themselves request memory.
+MAX_TAR_BYTES = MAX_TOTAL + MAX_FILES * 1024 + 10240
 
 
 def save(data):
@@ -59,7 +62,13 @@ def pack(directory, archive):
 def unpack(archive, directory):
     total = 0
     entries = {}
-    with tarfile.open(archive, mode='r|gz') as tar:
+    if archive.stat().st_size > MAX_TAR_BYTES * 2:
+        raise ValueError('compressed corpus archive exceeds size limit')
+    with gzip.open(archive, 'rb') as compressed:
+        contents = compressed.read(MAX_TAR_BYTES + 1)
+    if len(contents) > MAX_TAR_BYTES:
+        raise ValueError('decompressed corpus archive exceeds size limit')
+    with tarfile.open(fileobj=io.BytesIO(contents), mode='r:') as tar:
         for member in tar:
             if (not member.isfile() or len(member.name) != 64 or
                     any(c not in '0123456789abcdef' for c in member.name) or

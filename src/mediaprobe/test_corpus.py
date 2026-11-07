@@ -1,16 +1,28 @@
 #!/usr/bin/env python3
 """Archive validation matters because fuzz inputs are deliberately untrusted."""
 import hashlib
+import gzip
 import io
 from pathlib import Path
 import tarfile
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import corpus
 
 
 class CorpusTests(unittest.TestCase):
+    def test_rejects_excessive_decompression_before_interpreting_tar_headers(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / 'bomb.tar.gz'
+            archive.write_bytes(gzip.compress(b'\0' * 2048))
+            with patch.object(corpus, 'MAX_TAR_BYTES', 1024):
+                with self.assertRaisesRegex(ValueError, 'decompressed'):
+                    corpus.unpack(archive, root / 'output')
+            self.assertFalse((root / 'output').exists())
+
     def test_round_trip_is_reproducible_and_preserves_input_bytes(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
