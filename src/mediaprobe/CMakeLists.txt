@@ -37,7 +37,13 @@ if(MEDIA_PROBE_FUZZ)
   target_link_options(amule-media-probe-fuzz PRIVATE -fsanitize=fuzzer,address,undefined)
 endif()
 find_package(Python3 COMPONENTS Interpreter)
-if(Python3_Interpreter_FOUND)
+if(BUILD_TESTING AND Python3_Interpreter_FOUND)
+  # A broken loader/sandbox cannot exercise parser cases. Fail once with its
+  # diagnostic instead of repeating the same infrastructure error 1,000 times.
+  add_test(NAME MediaProbeStartup COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_helper.py $<TARGET_FILE:amule-media-probe>
+    HelperTests.test_extracts_wav)
+  set_tests_properties(MediaProbeStartup PROPERTIES FIXTURES_SETUP MediaProbeReady TIMEOUT 15)
   add_executable(media-probe-sandbox-test sandbox-test.cpp)
   target_compile_features(media-probe-sandbox-test PRIVATE cxx_std_17)
   target_link_libraries(media-probe-sandbox-test PRIVATE media-probe-sandbox)
@@ -54,4 +60,6 @@ if(Python3_Interpreter_FOUND)
     ${CMAKE_CURRENT_SOURCE_DIR}/test_hostile.py $<TARGET_FILE:amule-media-probe>)
   # Each case starts the helper; on Windows runners that can exceed the 10 s fast lane.
   set_tests_properties(MediaProbeHelper MediaProbeHostile PROPERTIES LABELS "slow")
+  set_tests_properties(MediaProbeSandbox MediaProbeHelper MediaProbeHostile
+    PROPERTIES FIXTURES_REQUIRED MediaProbeReady)
 endif()

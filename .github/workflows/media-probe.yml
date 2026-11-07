@@ -15,6 +15,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: media-probe-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 jobs:
   native:
     if: ${{ !inputs.fuzz_only }}

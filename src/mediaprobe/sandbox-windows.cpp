@@ -45,7 +45,9 @@ int failure(const char *stage)
 
 int launch()
 {
-	Handle original, lockdown, startup, job;
+	Handle original, lockdown, startupPrimary, startup, job;
+	// An internal helper must never leave a loader/crash dialog blocking a probe.
+	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 	// CreateRestrictedToken preserves this handle's access mask. The resulting
 	// primary token needs integrity adjustment and assignment rights at launch.
 	if (!OpenProcessToken(GetCurrentProcess(),
@@ -83,15 +85,38 @@ int launch()
 		return failure("create lockdown token");
 	unsigned char integritySid[SECURITY_MAX_SID_SIZE];
 	DWORD integritySize = sizeof(integritySid);
-	if (!CreateWellKnownSid(WinUntrustedLabelSid, nullptr, integritySid, &integritySize))
-		return failure("create untrusted integrity label");
+	// Windows startup needs low integrity; enter() lowers the primary token to
+	// untrusted before parsing. Both stages already use the NULL restricting SID.
+	if (!CreateWellKnownSid(WinLowLabelSid, nullptr, integritySid, &integritySize))
+		return failure("create startup integrity label");
 	TOKEN_MANDATORY_LABEL label{ { integritySid, SE_GROUP_INTEGRITY } };
 	if (!SetTokenInformation(lockdown.value,
 		    TokenIntegrityLevel,
 		    &label,
 		    static_cast<DWORD>(sizeof(label)) + GetLengthSid(integritySid)))
-		return failure("set untrusted integrity label");
-	if (!DuplicateTokenEx(original.value,
+		return failure("set startup integrity label");
+	// The startup impersonation token must itself be restricted when the primary
+	// token is restricted. Restrict it to the caller's existing enabled SIDs, so
+	// trusted loader initialization retains its normal access without adding any.
+	std::vector<SID_AND_ATTRIBUTES> startupSids{
+		{ reinterpret_cast<const TOKEN_USER *>(userBuffer.data())->User.Sid, 0 }
+	};
+	for (DWORD i = 0; i < groups->GroupCount; ++i) {
+		if ((groups->Groups[i].Attributes & SE_GROUP_ENABLED) &&
+			!(groups->Groups[i].Attributes & (SE_GROUP_INTEGRITY | SE_GROUP_USE_FOR_DENY_ONLY)))
+			startupSids.push_back({ groups->Groups[i].Sid, 0 });
+	}
+	if (!CreateRestrictedToken(original.value,
+		    0,
+		    0,
+		    nullptr,
+		    0,
+		    nullptr,
+		    static_cast<DWORD>(startupSids.size()),
+		    startupSids.data(),
+		    &startupPrimary.value))
+		return failure("create restricted startup token");
+	if (!DuplicateTokenEx(startupPrimary.value,
 		    TOKEN_IMPERSONATE | TOKEN_QUERY,
 		    nullptr,
 		    SecurityImpersonation,
@@ -205,6 +230,8 @@ int launch()
 	DWORD code = 12;
 	if (!GetExitCodeProcess(process.value, &code))
 		return failure("read parser exit status");
+	if (code != 0)
+		std::fprintf(stderr, "media-probe sandbox: child exited with Windows status 0x%08lx\n", code);
 	return static_cast<int>(code);
 }
 
@@ -212,9 +239,23 @@ bool enter()
 {
 	Handle token;
 	std::vector<unsigned char> restricted;
-	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token.value) ||
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_DEFAULT, &token.value) ||
 		!tokenInfo(token.value, TokenRestrictedSids, restricted)) {
 		failure("inspect parser primary token");
+		return false;
+	}
+	unsigned char integritySid[SECURITY_MAX_SID_SIZE];
+	DWORD integritySize = sizeof(integritySid);
+	if (!CreateWellKnownSid(WinUntrustedLabelSid, nullptr, integritySid, &integritySize)) {
+		failure("create parser integrity label");
+		return false;
+	}
+	TOKEN_MANDATORY_LABEL label{ { integritySid, SE_GROUP_INTEGRITY } };
+	if (!SetTokenInformation(token.value,
+		    TokenIntegrityLevel,
+		    &label,
+		    static_cast<DWORD>(sizeof(label)) + GetLengthSid(integritySid))) {
+		failure("lower parser integrity label");
 		return false;
 	}
 	const auto *groups = reinterpret_cast<const TOKEN_GROUPS *>(restricted.data());

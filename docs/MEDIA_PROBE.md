@@ -113,8 +113,10 @@ vulnerabilities or a system already compromised outside aMule.
   implementation does not claim a hard macOS RSS cap.
 - **Windows:** a trusted outer helper starts the parser suspended with a
   restricted primary token (NULL restricting SID, other groups/user deny-only,
-  privileges removed, untrusted integrity). A temporary impersonation token
-  allows loader/runtime startup; the parser drops it before reading input.
+  privileges removed). Trusted loader/runtime startup uses low integrity and
+  a restricted impersonation token retaining only the caller's existing access.
+  Before parsing, the helper lowers its primary integrity to untrusted and drops
+  the startup token. A failure at either step returns no metadata.
   Reverting again cannot restore privileges because its primary token is already
   restricted. Only the three standard handles are inherited. A nested Job
   requires a single parser process, caps memory at 1 GiB, restricts UI access and
@@ -133,6 +135,9 @@ core caps diagnostics at 8 KiB, logs at most 2 KiB, and replaces control and
 non-ASCII bytes before logging. Bulk operations retain their existing limit on
 naming individual files; reasons remain logged after that limit.
 
+`MediaProbeStartup` first checks one known-good WAV. If initialization fails,
+the dependent parser/denial suites are skipped with an explicit setup failure,
+rather than repeating a broken launch for every hostile input.
 `MediaProbeSandbox` tests actual denials and successful inherited-file I/O on
 native runners. `MediaProbeHelper` and `MediaProbeHostile` verify useful extraction
 and malformed-input handling under the production restrictions. Core
