@@ -220,7 +220,8 @@ TEST(SearchForm, FullListingRefreshesExistingAndDropsMissingForms)
 	cache.Replace(refreshed);
 	ASSERT_TRUE(cache.Get(42) != nullptr);
 	ASSERT_EQUALS(wxString("flac"), cache.Get(42)->params.extension);
-	ASSERT_TRUE(!SameSearchForm(before, *cache.Get(42)));
+	ASSERT_TRUE(!CSearchRequest(before.type, before.params)
+			     .SameRequest(CSearchRequest(cache.Get(42)->type, cache.Get(42)->params)));
 	ASSERT_EQUALS(session, cache.GetSession());
 	// A legacy form for the same ID must remove, rather than retain, old filters.
 	CECTag legacy(EC_TAG_SEARCH_ID, uint32_t(42));
@@ -251,35 +252,9 @@ TEST(SearchForm, ClosingAndReconnectInvalidateRecordedForms)
 	ASSERT_TRUE(cache.GetSession() != oldSession);
 	cache.Replace(listing);
 	// Identical IDs and fields in a new daemon session still invalidate an open menu.
-	ASSERT_TRUE(SameSearchForm(captured, *cache.Get(42)));
+	ASSERT_TRUE(CSearchRequest(captured.type, captured.params)
+			    .SameRequest(CSearchRequest(cache.Get(42)->type, cache.Get(42)->params)));
 	ASSERT_TRUE(cache.GetSession() != oldSession);
-}
-
-TEST(SearchForm, FormIdentityIncludesEveryEditableFilter)
-{
-	CSearchForm expected;
-	expected.params.searchString = "query";
-	ASSERT_TRUE(SameSearchForm(expected, expected));
-	const auto different = [&expected](auto change) {
-		CSearchForm altered = expected;
-		change(altered.params);
-		return !SameSearchForm(expected, altered);
-	};
-	ASSERT_TRUE(different([](auto &p) { p.searchString = "other"; }));
-	ASSERT_TRUE(different([](auto &p) { p.typeText = "Audio"; }));
-	ASSERT_TRUE(different([](auto &p) { p.extension = "flac"; }));
-	ASSERT_TRUE(different([](auto &p) { p.minSize = 1; }));
-	ASSERT_TRUE(different([](auto &p) { p.maxSize = 1; }));
-	ASSERT_TRUE(different([](auto &p) { p.availability = 1; }));
-	ASSERT_TRUE(different([](auto &p) { p.minLength = 1; }));
-	ASSERT_TRUE(different([](auto &p) { p.minBitrateKbps = 1; }));
-	ASSERT_TRUE(different([](auto &p) { p.artist = "artist"; }));
-	ASSERT_TRUE(different([](auto &p) { p.album = "album"; }));
-	ASSERT_TRUE(different([](auto &p) { p.title = "title"; }));
-	ASSERT_TRUE(different([](auto &p) { p.codec = "codec"; }));
-	auto anotherKind = expected;
-	anotherKind.type = AllSearch;
-	ASSERT_TRUE(!SameSearchForm(expected, anotherKind));
 }
 
 TEST(SearchForm, SizeUnitBoundariesRemainExact)
@@ -420,15 +395,6 @@ TEST(SearchForm, EachFilterOpensExtendedParametersButQueryAndKeywordDoNot)
 	ASSERT_TRUE(hasFilter([](auto &p) { p.codec = "codec"; }));
 }
 
-TEST(SearchForm, DerivedKadKeywordDoesNotInvalidateTheRecordedForm)
-{
-	CSearchForm expected;
-	expected.params.searchString = "artist AND title";
-	auto derived = expected;
-	derived.params.strKeyword = "artist";
-	ASSERT_TRUE(SameSearchForm(expected, derived));
-}
-
 TEST(SearchForm, FileTypesUseProtocolValuesInTheDesktopChoiceOrder)
 {
 	const std::array<wxString, 8> expected = {
@@ -488,4 +454,42 @@ TEST(SearchForm, RefreshAndCloseOnlyInvalidateTheirOwnSearch)
 	ASSERT_TRUE(cache.Get(42) == nullptr);
 	ASSERT_TRUE(cache.Get(43) != nullptr);
 	ASSERT_EQUALS(session, cache.GetSession());
+}
+
+TEST(SearchForm, MediaCapabilityChecksIgnoreOrdinaryFilters)
+{
+	CSearchList::CSearchParams params;
+	params.searchString = "query";
+	params.typeText = "Audio";
+	params.extension = "flac";
+	params.minSize = 1;
+	params.maxSize = 2;
+	params.availability = 3;
+	ASSERT_TRUE(SearchFormHasFilters(params));
+	ASSERT_TRUE(!SearchFormHasMediaFilters(params));
+	const auto hasMedia = [&params](auto change) {
+		auto altered = params;
+		change(altered);
+		return SearchFormHasMediaFilters(altered) && SearchFormHasFilters(altered);
+	};
+	ASSERT_TRUE(hasMedia([](auto &p) { p.minLength = 1; }));
+	ASSERT_TRUE(hasMedia([](auto &p) { p.minBitrateKbps = 1; }));
+	ASSERT_TRUE(hasMedia([](auto &p) { p.artist = "artist"; }));
+	ASSERT_TRUE(hasMedia([](auto &p) { p.album = "album"; }));
+	ASSERT_TRUE(hasMedia([](auto &p) { p.title = "title"; }));
+	ASSERT_TRUE(hasMedia([](auto &p) { p.codec = "codec"; }));
+}
+
+TEST(SearchForm, ChoiceIndicesFollowAvailableValuesRatherThanProtocolNumbers)
+{
+	const std::vector<SearchType> types = { KadSearch, AllSearch, LocalSearch };
+	ASSERT_EQUALS(0, FindSearchFormChoice(types, KadSearch));
+	ASSERT_EQUALS(1, FindSearchFormChoice(types, AllSearch));
+	ASSERT_EQUALS(2, FindSearchFormChoice(types, LocalSearch));
+	ASSERT_EQUALS(wxNOT_FOUND, FindSearchFormChoice(types, GlobalSearch));
+	ASSERT_EQUALS(wxNOT_FOUND, FindSearchFormChoice(std::vector<SearchType>(), KadSearch));
+	ASSERT_EQUALS(0, FindSearchFormChoice(SearchFormFileTypes(), wxString()));
+	ASSERT_EQUALS(2, FindSearchFormChoice(SearchFormFileTypes(), wxString("Audio")));
+	ASSERT_EQUALS(7, FindSearchFormChoice(SearchFormFileTypes(), wxString("Video")));
+	ASSERT_EQUALS(wxNOT_FOUND, FindSearchFormChoice(SearchFormFileTypes(), wxString("unknown")));
 }

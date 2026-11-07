@@ -31,8 +31,8 @@
 #include <wx/combobox.h> // Needed for the IDC_SEARCHNAME history dropdown
 #include <wx/config.h>   // Needed to persist the default search type
 #include <wx/dataobj.h>  // Needed for wxTextDataObject (clipboard content check)
-#include <wx/weakref.h>
-#include <wx/menu.h> // Needed for the search-history context menu
+#include <wx/weakref.h>  // Needed for the context menu's search-tab lifetime guard
+#include <wx/menu.h>     // Needed for the search-history context menu
 
 #include <wx/gauge.h> // Do_not_auto_remove (win32)
 
@@ -529,28 +529,42 @@ std::optional<CSearchForm> CSearchDlg::GetSearchForm(wxUIntPtr id) const
 	const auto *params = theApp->searchlist->GetSearchParams(static_cast<uint32_t>(id));
 	if (!params)
 		return std::nullopt;
-	return CSearchForm{ *params, theApp->searchlist->GetSearchLifecycleKindById(id) };
+	CSearchForm form{ *params, theApp->searchlist->GetSearchLifecycleKindById(id) };
+	// Restored searches keep their query separately from the recorded filters.
+	form.params.searchString = theApp->searchlist->GetSearchStringById(static_cast<uint32_t>(id));
+	return form;
 #endif
+}
+
+std::optional<CSearchDlg::SearchFormChoices> CSearchDlg::GetSearchFormChoices(const CSearchForm &form) const
+{
+	const auto &params = form.params;
+	const SearchFormChoices choices{ FindSearchFormChoice(SearchFormFileTypes(), params.typeText),
+		FindSearchFormChoice(m_searchTypeChoices, form.type) };
+	if (choices.fileType == wxNOT_FOUND || choices.searchType == wxNOT_FOUND ||
+		IsRelatedSearchQuery(params.searchString) ||
+		params.minLength > SEARCH_MAX_MIN_DURATION_SECONDS ||
+		params.minBitrateKbps > SEARCH_MAX_MIN_BITRATE_KBPS)
+		return std::nullopt;
+#ifdef CLIENT_GUI
+	if (SearchFormHasMediaFilters(params) && !theApp->m_connect->ServerSupportsSearchMetadata())
+		return std::nullopt;
+#endif
+	return choices;
 }
 
 bool CSearchDlg::CanLoadSearchForm(const CSearchForm &form) const
 {
-	const auto &types = SearchFormFileTypes();
-	const auto &params = form.params;
-	if (std::find(m_searchTypeChoices.begin(), m_searchTypeChoices.end(), form.type) ==
-			m_searchTypeChoices.end() ||
-		std::find(types.begin(), types.end(), params.typeText) == types.end() ||
-		params.searchString.StartsWith("related::") ||
-		params.minLength > SEARCH_MAX_MIN_DURATION_SECONDS ||
-		params.minBitrateKbps > SEARCH_MAX_MIN_BITRATE_KBPS)
-		return false;
+	return GetSearchFormChoices(form).has_value();
+}
+
+uint64_t CSearchDlg::GetSearchFormSession() const
+{
 #ifdef CLIENT_GUI
-	const bool hasMetadata = params.minLength || params.minBitrateKbps || !params.artist.empty() ||
-				 !params.album.empty() || !params.title.empty() || !params.codec.empty();
-	if (hasMetadata && !theApp->m_connect->ServerSupportsSearchMetadata())
-		return false;
+	return theApp->searchlist->GetSearchFormSession();
+#else
+	return 0;
 #endif
-	return true;
 }
 
 void CSearchDlg::OnSearchTabMenu(wxMouseEvent &event)
@@ -567,27 +581,19 @@ void CSearchDlg::OnSearchTabMenu(wxMouseEvent &event)
 		return;
 	const wxUIntPtr id = page->GetSearchId();
 	wxMenu menu;
-	if (id && !page->IsBrowse() && !page->GetSearchTabLabel().StartsWith("related::")) {
+	if (id && !page->IsBrowse() && !IsRelatedSearchQuery(page->GetSearchTabLabel())) {
 		const auto form = GetSearchForm(id);
 		auto *load = menu.Append(wxID_ANY, _("Load into search form"));
 		load->Enable(form && CanLoadSearchForm(*form));
 		const wxWeakRef<CSearchListCtrl> target(page);
-#ifdef CLIENT_GUI
-		const uint64_t session = theApp->searchlist->GetSearchFormSession();
-#else
-		const uint64_t session = 0;
-#endif
+		const uint64_t session = GetSearchFormSession();
 		menu.Bind(
 			wxEVT_MENU,
 			[this, id, target, form, session](wxCommandEvent &) {
 				if (!target || GetSearchList(id) != target.get() || !form)
 					return;
-#ifdef CLIENT_GUI
-				if (session != theApp->searchlist->GetSearchFormSession())
+				if (session != GetSearchFormSession())
 					return;
-#else
-				(void)session;
-#endif
 				LoadSearchForm(id, *form);
 			},
 			load->GetId());
@@ -606,10 +612,13 @@ void CSearchDlg::LoadSearchForm(wxUIntPtr id, const CSearchForm &expected)
 	if (!GetSearchList(id))
 		return;
 	const auto form = GetSearchForm(id);
-	if (!form || !SameSearchForm(*form, expected) || !CanLoadSearchForm(*form))
+	if (!form || !CSearchRequest(form->type, form->params)
+			      .SameRequest(CSearchRequest(expected.type, expected.params)))
+		return;
+	const auto choices = GetSearchFormChoices(*form);
+	if (!choices)
 		return;
 	const auto &params = form->params;
-	const auto &types = SearchFormFileTypes();
 	CastChild(IDC_SEARCHNAME, wxTextEntry)->ChangeValue(params.searchString);
 	CastChild(IDC_EDITSEARCHEXTENSION, wxTextCtrl)->ChangeValue(params.extension);
 	const auto setSize = [this](int numberId, int unitId, uint64_t bytes) {
@@ -621,13 +630,9 @@ void CSearchDlg::LoadSearchForm(wxUIntPtr id, const CSearchForm &expected)
 	setSize(IDC_SPINSEARCHMAX, IDC_SEARCHMAXSIZE, params.maxSize);
 	CastChild(IDC_SPINSEARCHAVAILABILITY, wxTextCtrl)
 		->ChangeValue(wxString::Format("%u", params.availability));
-	CastChild(IDC_TypeSearch, wxChoice)
-		->SetSelection(static_cast<int>(
-			std::find(types.begin(), types.end(), params.typeText) - types.begin()));
+	CastChild(IDC_TypeSearch, wxChoice)->SetSelection(choices->fileType);
 	auto *searchType = CastChild(ID_SEARCHTYPE, wxBitmapComboBox);
-	searchType->SetSelection(static_cast<int>(
-		std::find(m_searchTypeChoices.begin(), m_searchTypeChoices.end(), form->type) -
-		m_searchTypeChoices.begin()));
+	searchType->SetSelection(choices->searchType);
 	searchType->SetToolTip(SearchModeHelp(form->type));
 #ifdef CLIENT_GUI
 	m_metadataFields->SetSupported(theApp->m_connect->ServerSupportsSearchMetadata());

@@ -27,13 +27,14 @@
 #define SEARCHFORM_H
 
 #include "SearchList.h"
+#include "SearchRequest.h"
 #include <ec/cpp/ECSpecialTags.h>
 #include <tags/FileTags.h>
 #include <array>
 #include <limits>
 #include <optional>
 #include <map>
-#include <tuple>
+#include <algorithm>
 
 // Recorded form data is independent of a tab's running/reusable request.
 struct CSearchForm
@@ -42,26 +43,11 @@ struct CSearchForm
 	SearchType type = LocalSearch;
 };
 
-// Ignore the derived Kad keyword: it is rebuilt when submitting the form.
-inline bool SameSearchForm(const CSearchForm &left, const CSearchForm &right)
+template <typename Choices, typename Value>
+inline int FindSearchFormChoice(const Choices &choices, const Value &value)
 {
-	const auto fields = [](const CSearchForm &form) {
-		const auto &p = form.params;
-		return std::tie(form.type,
-			p.searchString,
-			p.typeText,
-			p.extension,
-			p.minSize,
-			p.maxSize,
-			p.availability,
-			p.minBitrateKbps,
-			p.minLength,
-			p.codec,
-			p.title,
-			p.album,
-			p.artist);
-	};
-	return fields(left) == fields(right);
+	const auto found = std::find(choices.begin(), choices.end(), value);
+	return found == choices.end() ? wxNOT_FOUND : static_cast<int>(found - choices.begin());
 }
 
 inline const std::array<wxString, 8> &SearchFormFileTypes()
@@ -123,12 +109,16 @@ inline CSearchFormSize FormatSearchFormSize(uint64_t bytes)
 	return {};
 }
 
+inline bool SearchFormHasMediaFilters(const CSearchList::CSearchParams &params)
+{
+	return params.minBitrateKbps != 0 || params.minLength != 0 || !params.codec.empty() ||
+	       !params.title.empty() || !params.album.empty() || !params.artist.empty();
+}
+
 inline bool SearchFormHasFilters(const CSearchList::CSearchParams &params)
 {
 	return !params.typeText.empty() || !params.extension.empty() || params.minSize != 0 ||
-	       params.maxSize != 0 || params.availability != 0 || params.minBitrateKbps != 0 ||
-	       params.minLength != 0 || !params.codec.empty() || !params.title.empty() ||
-	       !params.album.empty() || !params.artist.empty();
+	       params.maxSize != 0 || params.availability != 0 || SearchFormHasMediaFilters(params);
 }
 
 // Numeric tags are always sent for a recorded form, even with all-default filters.
@@ -146,7 +136,7 @@ inline std::optional<CSearchForm> DecodeSearchForm(const CECTag &entry)
 		return std::nullopt;
 	form.type = static_cast<SearchType>(type);
 	form.params.searchString = name->GetStringData();
-	if (form.params.searchString.StartsWith("related::"))
+	if (IsRelatedSearchQuery(form.params.searchString))
 		return std::nullopt;
 	const auto readNumber =
 		[&entry](ec_tagname_t tagName, uint64_t limit, uint64_t &value, bool required) {

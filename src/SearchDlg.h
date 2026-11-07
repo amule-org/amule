@@ -227,8 +227,15 @@ public:
 	int GetSelectedSearchTypeCanonical();
 
 private:
+	struct SearchFormChoices
+	{
+		int fileType;
+		int searchType;
+	};
 	CSearchList::CSearchParams ReadSearchParams(bool showWarning);
 	std::optional<CSearchForm> GetSearchForm(wxUIntPtr id) const;
+	std::optional<SearchFormChoices> GetSearchFormChoices(const CSearchForm &form) const;
+	uint64_t GetSearchFormSession() const;
 	bool CanLoadSearchForm(const CSearchForm &form) const;
 	void LoadSearchForm(wxUIntPtr id, const CSearchForm &expected);
 	void OnSearchTabMenu(wxMouseEvent &event);

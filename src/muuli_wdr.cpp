@@ -299,7 +299,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item13->Add( item22, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxBoxSizer *item23 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxTextCtrl *item24 = new wxTextCtrl( item2, IDC_SPINSEARCHMIN, "0", wxDefaultPosition, wxSize(100,-1), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_DIGITS) );
+    wxTextCtrl *item24 = new wxTextCtrl( item2, IDC_SPINSEARCHMIN, "0", wxDefaultPosition, item2->FromDIP(wxSize(100, -1)), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_DIGITS) );
     item23->Add( item24, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     wxString strs25[] = 
     {
@@ -318,7 +318,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item13->Add( item27, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxBoxSizer *item28 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxTextCtrl *item29 = new wxTextCtrl( item2, IDC_SPINSEARCHMAX, "0", wxDefaultPosition, wxSize(100,-1), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_DIGITS) );
+    wxTextCtrl *item29 = new wxTextCtrl( item2, IDC_SPINSEARCHMAX, "0", wxDefaultPosition, item2->FromDIP(wxSize(100, -1)), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_DIGITS) );
     item28->Add( item29, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     wxString strs30[] = 
     {
@@ -335,7 +335,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item13->Add( item31, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticText *item32 = new wxStaticText( item2, -1, _("Availability"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item32, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
-    wxTextCtrl *item33 = new wxTextCtrl( item2, IDC_SPINSEARCHAVAILABILITY, "0", wxDefaultPosition, wxSize(100,-1), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_DIGITS) );
+    wxTextCtrl *item33 = new wxTextCtrl( item2, IDC_SPINSEARCHAVAILABILITY, "0", wxDefaultPosition, item2->FromDIP(wxSize(100, -1)), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_DIGITS) );
     item13->Add( item33, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     item1->Add( advancedSizer, wxSizerFlags().Expand() );
 

@@ -46,6 +46,7 @@ public:
 	void SetSupported(bool supported);
 
 private:
+	void SetLengthUnit(bool minutes);
 	enum Field
 	{
 		Artist,

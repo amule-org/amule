@@ -72,9 +72,7 @@ CSearchMetadataPanel::CSearchMetadataPanel(wxWindow *parent)
 			m_lengthUnit->SetSelection(0);
 			row->Add(m_lengthUnit, wxSizerFlags().CenterVertical().Border(wxLEFT, FromDIP(6)));
 			m_lengthUnit->Bind(wxEVT_CHOICE, [this](wxCommandEvent &event) {
-				m_length->SetRange(0,
-					static_cast<int>(SEARCH_MAX_MIN_DURATION_SECONDS /
-							 (m_lengthUnit->GetSelection() == 0 ? 60 : 1)));
+				SetLengthUnit(m_lengthUnit->GetSelection() == 0);
 				event.Skip();
 			});
 		}
@@ -109,8 +107,7 @@ void CSearchMetadataPanel::Set(const CSearchList::CSearchParams &params)
 	m_fields[Codec]->ChangeValue(params.codec);
 	// REST and EC clients can record durations that are not whole minutes.
 	const bool minutes = params.minLength % 60 == 0;
-	m_lengthUnit->SetSelection(minutes ? 0 : 1);
-	m_length->SetRange(0, static_cast<int>(SEARCH_MAX_MIN_DURATION_SECONDS / (minutes ? 60 : 1)));
+	SetLengthUnit(minutes);
 	m_length->SetValue(static_cast<int>(params.minLength / (minutes ? 60 : 1)));
 	m_bitrate->SetValue(static_cast<int>(params.minBitrateKbps));
 }
@@ -128,9 +125,14 @@ void CSearchMetadataPanel::Reset()
 	for (wxTextCtrl *field : m_fields)
 		field->Clear();
 	m_length->SetValue(0);
-	m_lengthUnit->SetSelection(0);
-	m_length->SetRange(0, SEARCH_MAX_MIN_DURATION_SECONDS / 60);
+	SetLengthUnit(true);
 	m_bitrate->SetValue(0);
+}
+
+void CSearchMetadataPanel::SetLengthUnit(bool minutes)
+{
+	m_lengthUnit->SetSelection(minutes ? 0 : 1);
+	m_length->SetRange(0, static_cast<int>(SEARCH_MAX_MIN_DURATION_SECONDS / (minutes ? 60 : 1)));
 }
 
 void CSearchMetadataPanel::SetSupported(bool supported)

@@ -30,6 +30,13 @@
 #include <optional>
 #include <vector>
 
+inline constexpr char RELATED_SEARCH_PREFIX[] = "related::";
+
+inline bool IsRelatedSearchQuery(const wxString &query)
+{
+	return query.StartsWith(RELATED_SEARCH_PREFIX);
+}
+
 inline bool IsRunningSearchStatus(uint32_t status)
 {
 	return status != 0xffff && status != 0xfffe;
@@ -61,16 +68,21 @@ public:
 
 	int GetType() const { return m_type; }
 
-	bool CanReuse(const CSearchRequest &other, uint32_t progress) const
+	// Compare editable fields only; the Kad keyword is derived from the query.
+	bool SameRequest(const CSearchRequest &other) const
 	{
-		// The eD2k/Kad terminal sentinels must allow a fresh request.
-		return IsRunningSearchStatus(progress) && m_type == other.m_type &&
-		       m_query == other.m_query && m_fileType == other.m_fileType &&
+		return m_type == other.m_type && m_query == other.m_query && m_fileType == other.m_fileType &&
 		       m_extension == other.m_extension && m_minSize == other.m_minSize &&
 		       m_maxSize == other.m_maxSize && m_availability == other.m_availability &&
 		       m_minBitrateKbps == other.m_minBitrateKbps && m_minLength == other.m_minLength &&
 		       m_codec == other.m_codec && m_title == other.m_title && m_album == other.m_album &&
 		       m_artist == other.m_artist;
+	}
+
+	bool CanReuse(const CSearchRequest &other, uint32_t progress) const
+	{
+		// The eD2k/Kad terminal sentinels must allow a fresh request.
+		return IsRunningSearchStatus(progress) && SameRequest(other);
 	}
 
 private:

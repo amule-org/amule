@@ -234,3 +234,55 @@ TEST(SearchRequest, MetadataFiltersDistinguishRequests)
 		ASSERT_TRUE(!request.CanReuse(CSearchRequest(KadSearch, changed), 25));
 	}
 }
+
+TEST(SearchRequest, SameRequestIncludesEveryEditableFilter)
+{
+	CSearchList::CSearchParams params;
+	params.searchString = "query";
+	const CSearchRequest expected(LocalSearch, params);
+	ASSERT_TRUE(expected.SameRequest(expected));
+	const auto different = [&expected, &params](auto change) {
+		auto altered = params;
+		change(altered);
+		return !expected.SameRequest(CSearchRequest(LocalSearch, altered));
+	};
+	ASSERT_TRUE(different([](auto &p) { p.searchString = "other"; }));
+	ASSERT_TRUE(different([](auto &p) { p.typeText = "Audio"; }));
+	ASSERT_TRUE(different([](auto &p) { p.extension = "flac"; }));
+	ASSERT_TRUE(different([](auto &p) { p.minSize = 1; }));
+	ASSERT_TRUE(different([](auto &p) { p.maxSize = 1; }));
+	ASSERT_TRUE(different([](auto &p) { p.availability = 1; }));
+	ASSERT_TRUE(different([](auto &p) { p.minLength = 1; }));
+	ASSERT_TRUE(different([](auto &p) { p.minBitrateKbps = 1; }));
+	ASSERT_TRUE(different([](auto &p) { p.artist = "artist"; }));
+	ASSERT_TRUE(different([](auto &p) { p.album = "album"; }));
+	ASSERT_TRUE(different([](auto &p) { p.title = "title"; }));
+	ASSERT_TRUE(different([](auto &p) { p.codec = "codec"; }));
+	ASSERT_TRUE(!expected.SameRequest(CSearchRequest(AllSearch, params)));
+}
+
+TEST(SearchRequest, IdentityDoesNotDependOnProgressOrDerivedKeyword)
+{
+	CSearchList::CSearchParams params;
+	params.searchString = "artist AND title";
+	const CSearchRequest expected(KadSearch, params);
+	params.strKeyword = "artist";
+	const CSearchRequest derived(KadSearch, params);
+	ASSERT_TRUE(expected.SameRequest(derived));
+	ASSERT_TRUE(expected.CanReuse(derived, 0));
+	ASSERT_TRUE(!expected.CanReuse(derived, 0xffff));
+	ASSERT_TRUE(!expected.CanReuse(derived, 0xfffe));
+	ASSERT_TRUE(expected.SameRequest(derived));
+}
+
+TEST(SearchRequest, RelatedQueriesUseTheSharedPrefixWithoutMatchingOrdinaryText)
+{
+	ASSERT_TRUE(IsRelatedSearchQuery(wxString(RELATED_SEARCH_PREFIX) + "0123456789ABCDEF"));
+	ASSERT_TRUE(IsRelatedSearchQuery("related::first::second"));
+	ASSERT_TRUE(!IsRelatedSearchQuery("related"));
+	ASSERT_TRUE(!IsRelatedSearchQuery("related:"));
+	ASSERT_TRUE(!IsRelatedSearchQuery("unrelated::hash"));
+	ASSERT_TRUE(!IsRelatedSearchQuery("title related::hash"));
+	ASSERT_TRUE(!IsRelatedSearchQuery("Related::hash"));
+	ASSERT_TRUE(!IsRelatedSearchQuery(""));
+}
