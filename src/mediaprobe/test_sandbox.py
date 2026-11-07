@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Exercise actual OS denials; no external network or user files are needed."""
+from pathlib import Path
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+import wave
+
+FIXTURE, HELPER = (str(Path(arg).resolve()) for arg in sys.argv[1:3])
+del sys.argv[1:3]
+
+
+class SandboxTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.path = Path(self.tmp.name)
+        self.media = self.path / 'input.wav'
+        with wave.open(str(self.media), 'wb') as media:
+            media.setparams((1, 2, 8000, 0, 'NONE', 'not compressed'))
+            media.writeframes(bytes(16000))
+        self.secret = self.path / 'must-not-read.txt'
+        self.secret.write_bytes(b'private fixture, not media')
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def run_action(self, action, argument=None, **kwargs):
+        with self.media.open('rb') as source:
+            result = subprocess.run([FIXTURE, action, str(argument or self.secret)],
+                                    stdin=source, capture_output=True, timeout=35, **kwargs)
+        self.assertEqual(result.returncode, 0, (action, result.stdout, result.stderr))
+        return result
+
+    def test_input_read_and_seek_still_work(self):
+        self.run_action('read-input')
+        self.run_action('allocate')
+
+    def test_other_files_cannot_be_read(self):
+        self.assertEqual(self.run_action('read-file').stdout, b'blocked\n')
+
+    def test_files_cannot_be_created_or_changed(self):
+        self.run_action('write-file')
+        self.assertEqual(self.secret.read_bytes(), b'private fixture, not media')
+        created = self.path / 'must-not-create.txt'
+        self.run_action('write-file', created)
+        self.assertFalse(created.exists())
+
+    def test_network_and_new_processes_are_denied(self):
+        self.run_action('network')
+        self.run_action('process', FIXTURE)
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX descriptor and exec checks')
+    def test_exec_unix_sockets_and_inherited_files_are_denied(self):
+        self.run_action('exec', FIXTURE)
+        self.run_action('unix-network')
+        with self.secret.open('rb') as secret:
+            self.run_action('inherited', secret.fileno(), pass_fds=(secret.fileno(),))
+
+    @unittest.skipUnless(sys.platform.startswith('linux'), 'Linux syscall alternative')
+    def test_openat_cannot_bypass_the_policy(self):
+        self.run_action('openat')
+
+    def test_nonseekable_input_returns_no_metadata_with_a_reason(self):
+        result = subprocess.run([HELPER], input=b'not a regular file', capture_output=True, timeout=35)
+        self.assertEqual(result.returncode, 12)
+        self.assertEqual(result.stdout, b'')
+        self.assertIn(b'input', result.stderr)
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX input access mode check')
+    def test_writable_input_is_rejected_before_protocol_header(self):
+        with self.media.open('r+b') as source:
+            result = subprocess.run([HELPER], stdin=source, capture_output=True, timeout=35)
+        self.assertEqual(result.returncode, 12)
+        self.assertEqual(result.stdout, b'')
+        self.assertIn(b'refusing to parse', result.stderr)
+
+
+if __name__ == '__main__':
+    unittest.main()

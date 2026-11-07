@@ -17,6 +17,7 @@ namespace probe
 // Malformed structure, an out-of-range read or an exhausted read budget.
 struct Malformed
 {
+	const char *reason = "malformed container structure";
 };
 
 struct Result
@@ -24,6 +25,7 @@ struct Result
 	double seconds = 0;     // Exact duration; 0 means unknown.
 	bool rawStream = false; // Elementary stream without a timeline: publish no duration.
 	std::string codec, artist, album, title;
+	const char *failure = nullptr; // Fixed diagnostic text, never bytes from the media file.
 };
 
 class Source

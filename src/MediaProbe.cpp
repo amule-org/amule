@@ -19,10 +19,12 @@
 //
 
 #include "MediaProbe.h"
+#include "mediaprobe/sandbox.h"
 
 #include "config.h" // Needed for AMULE_MEDIA_PROBE, AMULE_MEDIA_PROBE_RELPATH
 
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <mutex>
 #include <string>
@@ -55,12 +57,6 @@
 #include <spawn.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#ifdef __APPLE__
-#include <crt_externs.h>
-#define environ (*_NSGetEnviron())
-#else
-extern char **environ;
-#endif
 #endif
 
 namespace MediaProbe
@@ -80,20 +76,59 @@ int RunBoundedHelper(const wxString &exe,
 	unsigned timeoutMs,
 	const std::atomic<bool> &keepRunning,
 	wxArrayString &stdoutLines,
-	const CPath &input)
+	const CPath &input,
+	wxString &failureReason)
 {
-	if (!keepRunning || !timeoutMs)
+	failureReason = wxT("helper setup failed");
+	if (!keepRunning || !timeoutMs) {
+		failureReason = wxT("cancelled before launch");
 		return kKilled;
+	}
+#ifndef __WXMSW__
+	// A kernel I/O stall can delay even SIGKILL. Never block shutdown indefinitely
+	// in waitpid, or accumulate more helpers while a previous one cannot be reaped.
+	static std::mutex runnerMutex;
+	static pid_t pendingChild = 0;
+	const std::lock_guard<std::mutex> runnerLock(runnerMutex);
+	if (pendingChild != 0) {
+		const pid_t result = waitpid(pendingChild, nullptr, WNOHANG);
+		if (result == 0 || (result < 0 && errno == EINTR)) {
+			failureReason = wxT("previous helper is still terminating; refusing another probe");
+			return kSpawnFailed;
+		}
+		pendingChild = 0;
+	}
+#endif
 	const wxString tmpPath = wxFileName::CreateTempFileName(wxT("amule-mediaprobe"));
 	if (tmpPath.IsEmpty()) {
 		return kSpawnFailed;
 	}
 
+	// Diagnostics are separate from the strict metadata protocol. The file is
+	// bounded while the child runs, and only sanitized text reaches the logger.
+	struct Diagnostics
+	{
+		wxString path = wxFileName::CreateTempFileName(wxT("amule-mediaprobe-errors"));
+		~Diagnostics()
+		{
+			if (!path.empty())
+				wxRemoveFile(path);
+		}
+	} diagnostics;
+	if (diagnostics.path.empty()) {
+		wxRemoveFile(tmpPath);
+		failureReason = wxT("cannot create diagnostic capture");
+		return kSpawnFailed;
+	}
 	int exitCode = kSpawnFailed;
-	const wxFileOffset kMaxProbeOutputBytes = 64 * 1024;
 	const auto outputTooLarge = [&] {
 		wxFFile output(tmpPath, wxT("rb"));
-		return output.IsOpened() && output.Length() > kMaxProbeOutputBytes;
+		wxFFile errors(diagnostics.path, wxT("rb"));
+		return (output.IsOpened() && output.Length() > static_cast<wxFileOffset>(
+								       probe::sandbox::kReplyLimitBytes)) ||
+		       (errors.IsOpened() &&
+			       errors.Length() >
+				       static_cast<wxFileOffset>(probe::sandbox::kDiagnosticLimitBytes));
 	};
 
 #ifdef __WXMSW__
@@ -113,7 +148,8 @@ int RunBoundedHelper(const wxString &exe,
 		return kSpawnFailed;
 	}
 
-	// Kill-on-close job: one process, 1 GiB of memory.
+	// Outer job owns the trusted launcher and its single restricted parser.
+	// The launcher puts the parser in a nested job with a one-process limit.
 	HANDLE hJob = ::CreateJobObjectW(nullptr, nullptr);
 	if (hJob != nullptr) {
 		JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
@@ -121,8 +157,8 @@ int RunBoundedHelper(const wxString &exe,
 		jeli.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE |
 							JOB_OBJECT_LIMIT_ACTIVE_PROCESS |
 							JOB_OBJECT_LIMIT_PROCESS_MEMORY;
-		jeli.BasicLimitInformation.ActiveProcessLimit = 1;
-		jeli.ProcessMemoryLimit = size_t(1024) * 1024 * 1024;
+		jeli.BasicLimitInformation.ActiveProcessLimit = 2;
+		jeli.ProcessMemoryLimit = probe::sandbox::kMemoryLimitBytes;
 		if (!::SetInformationJobObject(
 			    hJob, JobObjectExtendedLimitInformation, &jeli, sizeof(jeli))) {
 			::CloseHandle(hJob);
@@ -140,8 +176,13 @@ int RunBoundedHelper(const wxString &exe,
 		OPEN_EXISTING,
 		0,
 		nullptr);
-	HANDLE hErr = ::CreateFileW(
-		L"NUL", GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, OPEN_EXISTING, 0, nullptr);
+	HANDLE hErr = ::CreateFileW(diagnostics.path.wc_str(),
+		GENERIC_WRITE,
+		FILE_SHARE_READ,
+		&sa,
+		CREATE_ALWAYS,
+		FILE_ATTRIBUTE_TEMPORARY,
+		nullptr);
 	if (hIn == INVALID_HANDLE_VALUE || hErr == INVALID_HANDLE_VALUE) {
 		if (hIn != INVALID_HANDLE_VALUE)
 			::CloseHandle(hIn);
@@ -208,11 +249,13 @@ int RunBoundedHelper(const wxString &exe,
 		nullptr,
 		&si,
 		&pi);
+	const DWORD spawnError = ok ? ERROR_SUCCESS : ::GetLastError();
 	::DeleteProcThreadAttributeList(extended.lpAttributeList);
 	::CloseHandle(hIn);
 	::CloseHandle(hErr);
 	::CloseHandle(hOut);
 	if (!ok) {
+		failureReason = CFormat(wxT("CreateProcess failed (Windows error %u)")) % spawnError;
 		if (hJob != nullptr) {
 			::CloseHandle(hJob);
 		}
@@ -236,6 +279,7 @@ int RunBoundedHelper(const wxString &exe,
 				// set. Ordinary, undocumented error exits must remain retryable, just
 				// as on POSIX, even if the helper already printed its header.
 				exitCode = code >= 0x80000000UL ? kCrashed : static_cast<int>(code);
+				failureReason = CFormat(wxT("helper exited with Windows status %u")) % code;
 			}
 			break;
 		}
@@ -246,7 +290,10 @@ int RunBoundedHelper(const wxString &exe,
 			} else {
 				::TerminateProcess(pi.hProcess, 1);
 			}
-			::WaitForSingleObject(pi.hProcess, INFINITE);
+			::WaitForSingleObject(pi.hProcess, 5000);
+			failureReason = oversized ? wxT("metadata or diagnostics exceeded output limit")
+						  : (!keepRunning ? wxT("cancelled while helper was running")
+								  : wxT("helper deadline exceeded"));
 			exitCode = oversized ? kSpawnFailed : kKilled;
 			break;
 		}
@@ -260,44 +307,82 @@ int RunBoundedHelper(const wxString &exe,
 	const std::string exeNative(exe.fn_str());
 	char *const cargv[] = { const_cast<char *>(exeNative.c_str()), nullptr };
 
-	// Bundled helper must inherit the bundle library environment.
-	char **envp = environ;
+	// Preserve bundle loader paths without copying unrelated secrets from the
+	// core's environment into a process that will parse attacker-controlled data.
+	std::vector<std::string> environment{ "LC_ALL=C", "PATH=/usr/bin:/bin" };
+	for (const char *name : { "LD_LIBRARY_PATH",
+		     "DYLD_LIBRARY_PATH",
+		     "DYLD_FALLBACK_LIBRARY_PATH",
+		     "APPDIR",
+		     "APPIMAGE" }) {
+		if (const char *value = std::getenv(name))
+			environment.emplace_back(std::string(name) + '=' + value);
+	}
+	std::vector<char *> envp;
+	for (auto &value : environment)
+		envp.push_back(value.data());
+	envp.push_back(nullptr);
 
 	const std::string tmpNative(tmpPath.fn_str());
 
 	posix_spawn_file_actions_t fa;
-	posix_spawn_file_actions_init(&fa);
+	const int actionsError = posix_spawn_file_actions_init(&fa);
+	if (actionsError != 0) {
+		failureReason = CFormat(wxT("cannot initialize file actions (error %d)")) % actionsError;
+		wxRemoveFile(tmpPath);
+		return kSpawnFailed;
+	}
 	const int inputFd = open(input.GetRaw().fn_str(), O_RDONLY | O_CLOEXEC | O_NONBLOCK);
 	struct stat inputStat;
 	if (inputFd < 0 || fstat(inputFd, &inputStat) != 0 || !S_ISREG(inputStat.st_mode)) {
+		failureReason = CFormat(wxT("cannot open a regular input file (errno %d)")) % errno;
 		if (inputFd >= 0)
 			close(inputFd);
 		posix_spawn_file_actions_destroy(&fa);
 		wxRemoveFile(tmpPath);
 		return kSpawnFailed;
 	}
-	posix_spawn_file_actions_adddup2(&fa, inputFd, STDIN_FILENO);
+	int setupError = posix_spawn_file_actions_adddup2(&fa, inputFd, STDIN_FILENO);
+	const auto rememberError = [&](int error) {
+		if (setupError == 0)
+			setupError = error;
+	};
 	if (inputFd != STDIN_FILENO)
-		posix_spawn_file_actions_addclose(&fa, inputFd);
-	else
-		fcntl(inputFd, F_SETFD, 0);
-	// stdout -> temp file, stderr -> /dev/null (we parse stdout only).
-	posix_spawn_file_actions_addopen(
-		&fa, STDOUT_FILENO, tmpNative.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
-	posix_spawn_file_actions_addopen(&fa, STDERR_FILENO, "/dev/null", O_WRONLY, 0);
+		rememberError(posix_spawn_file_actions_addclose(&fa, inputFd));
+	else if (fcntl(inputFd, F_SETFD, 0) != 0)
+		rememberError(errno);
+	// Capture stdout and diagnostics separately; only stdout is parsed as metadata.
+	rememberError(posix_spawn_file_actions_addopen(
+		&fa, STDOUT_FILENO, tmpNative.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600));
+	rememberError(posix_spawn_file_actions_addopen(
+		&fa, STDERR_FILENO, diagnostics.path.fn_str(), O_WRONLY | O_TRUNC, 0600));
 
 	// Own process group, so the kill below (-pid) also takes any child it started.
 	posix_spawnattr_t attr;
-	posix_spawnattr_init(&attr);
-	posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP);
-	posix_spawnattr_setpgroup(&attr, 0);
+	const int attrError = posix_spawnattr_init(&attr);
+	rememberError(attrError);
+	if (attrError == 0) {
+		rememberError(posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP));
+		rememberError(posix_spawnattr_setpgroup(&attr, 0));
+	}
+	if (setupError != 0) {
+		failureReason =
+			CFormat(wxT("cannot configure confined helper launch (error %d)")) % setupError;
+		close(inputFd);
+		if (attrError == 0)
+			posix_spawnattr_destroy(&attr);
+		posix_spawn_file_actions_destroy(&fa);
+		wxRemoveFile(tmpPath);
+		return kSpawnFailed;
+	}
 
 	pid_t pid = 0;
-	const int rc = posix_spawn(&pid, cargv[0], &fa, &attr, cargv, envp);
+	const int rc = posix_spawn(&pid, cargv[0], &fa, &attr, cargv, envp.data());
 	close(inputFd);
 	posix_spawnattr_destroy(&attr);
 	posix_spawn_file_actions_destroy(&fa);
 	if (rc != 0) {
+		failureReason = CFormat(wxT("posix_spawn failed (error %d)")) % rc;
 		wxRemoveFile(tmpPath);
 		return kSpawnFailed;
 	}
@@ -308,21 +393,40 @@ int RunBoundedHelper(const wxString &exe,
 		const pid_t r = waitpid(pid, &status, WNOHANG);
 		if (r == pid) {
 			exitCode = WIFEXITED(status) ? WEXITSTATUS(status) : kCrashed;
+			failureReason =
+				WIFSIGNALED(status)
+					? CFormat(wxT("helper terminated by signal %d")) % WTERMSIG(status)
+					: CFormat(wxT("helper exited with status %d")) % exitCode;
 			break;
 		}
 		if (r == -1 && errno == EINTR) {
 			continue;
 		}
 		if (r == -1) { // vanished / already reaped
+			failureReason = CFormat(wxT("waitpid failed (errno %d)")) % errno;
 			exitCode = kSpawnFailed;
 			break;
 		}
 		const bool oversized = outputTooLarge();
 		if (!keepRunning || static_cast<unsigned>(sw.Time()) >= timeoutMs || oversized) {
 			kill(-pid, SIGKILL);
-			while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {
-			} // reap the leader; init reaps the rest
+			bool reaped = false;
+			for (unsigned attempt = 0; attempt < 100; ++attempt) {
+				const pid_t result = waitpid(pid, &status, WNOHANG);
+				if (result == pid || (result < 0 && errno == ECHILD)) {
+					reaped = true;
+					break;
+				}
+				wxMilliSleep(10);
+			}
+			if (!reaped)
+				pendingChild = pid;
+			failureReason = oversized ? wxT("metadata or diagnostics exceeded output limit")
+						  : (!keepRunning ? wxT("cancelled while helper was running")
+								  : wxT("helper deadline exceeded"));
 			exitCode = oversized ? kSpawnFailed : kKilled;
+			if (!reaped)
+				failureReason += wxT("; termination pending; further probes suspended");
 			break;
 		}
 		wxMilliSleep(25);
@@ -332,8 +436,10 @@ int RunBoundedHelper(const wxString &exe,
 	// A legitimate reply is a few hundred bytes; past 64 KiB it is a failed probe. A fast exit
 	// can beat the polling check, so check again before reading any exit as a verdict.
 	if (outputTooLarge()) {
-		AddDebugLogLineN(logMediaProbe, wxT("MediaProbe: helper output over 64 KiB, ignoring"));
+		AddDebugLogLineN(logMediaProbe,
+			wxT("MediaProbe: metadata or diagnostics output limit exceeded, ignoring"));
 		exitCode = kSpawnFailed;
+		failureReason = wxT("metadata or diagnostics exceeded output limit");
 	}
 	// A crash before the header is a broken install; after it, the file caused it.
 	if (exitCode == kCrashed) {
@@ -342,6 +448,7 @@ int RunBoundedHelper(const wxString &exe,
 		if (!f.IsOpened() || f.Read(header, sizeof(header)) != sizeof(header) ||
 			std::memcmp(header, "AMMP 1\n", sizeof(header)) != 0) {
 			exitCode = kSpawnFailed;
+			failureReason += wxT("; failed before parser header");
 		}
 	}
 	if (exitCode == 0) {
@@ -354,6 +461,7 @@ int RunBoundedHelper(const wxString &exe,
 				content.find(wxT('\r')) != wxString::npos ||
 				content.find(wxT('\0')) != wxString::npos) {
 				exitCode = kSpawnFailed;
+				failureReason = wxT("invalid metadata protocol framing");
 			} else {
 				content.RemoveLast();
 				wxStringTokenizer tok(content, wxT("\n"), wxTOKEN_RET_EMPTY_ALL);
@@ -361,6 +469,23 @@ int RunBoundedHelper(const wxString &exe,
 					stdoutLines.Add(tok.GetNextToken());
 				}
 			}
+		} else {
+			exitCode = kSpawnFailed;
+			failureReason = wxT("cannot read helper reply as UTF-8");
+		}
+	}
+	if (exitCode != 0) {
+		wxFFile errors(diagnostics.path, wxT("rb"));
+		if (errors.IsOpened()) {
+			char raw[probe::sandbox::kLoggedDiagnosticLimitBytes];
+			const size_t count = errors.Read(raw, sizeof(raw));
+			wxString safe;
+			for (size_t i = 0; i < count; ++i) {
+				const unsigned char c = static_cast<unsigned char>(raw[i]);
+				safe += c >= 32 && c < 127 ? wxChar(c) : wxChar(' ');
+			}
+			if (!safe.empty())
+				failureReason += wxT("; diagnostic: ") + safe;
 		}
 	}
 	wxRemoveFile(tmpPath);
@@ -528,10 +653,14 @@ ProbeOutcome Probe(const wxString &helperPath,
 	bool bulk,
 	bool logFailure)
 {
-	if (!keepRunning || !timeoutMs)
+	if (!keepRunning || !timeoutMs) {
+		AddLogLineN(wxT("Media metadata: no result: cancelled before launch"));
 		return ProbeOutcome::Cancelled;
-	if (helperPath.empty())
+	}
+	if (helperPath.empty()) {
+		AddLogLineN(wxT("Media metadata: no result: helper unavailable"));
 		return ProbeOutcome::Unavailable;
+	}
 	if (!file.FileExists()) {
 		AddDebugLogLineN(logMediaProbe,
 			CFormat(wxT("MediaProbe: %s vanished before probing, skipping")) %
@@ -546,15 +675,25 @@ ProbeOutcome Probe(const wxString &helperPath,
 		AddLogLineN(CFormat(_("Extracting media metadata: %s")) % file.GetPrintable());
 	wxArrayString lines;
 	MediaMetadata result;
-	const int rc = RunBoundedHelper(helperPath, timeoutMs, keepRunning, lines, file);
-	if (!keepRunning || rc == kKilled)
+	wxString reason;
+	const int rc = RunBoundedHelper(helperPath, timeoutMs, keepRunning, lines, file, reason);
+	if (!keepRunning || rc == kKilled) {
+		AddLogLineN(CFormat(wxT("Media metadata: no result: %s")) % reason);
 		return ProbeOutcome::Cancelled;
+	}
 	if (rc == 0 && ParseHelperOutput(lines, result)) {
 		out = result;
 		return ProbeOutcome::Extracted;
 	}
+	if (rc == 0)
+		reason = wxT("invalid or incomplete metadata reply; discarding all fields");
+	AddDebugLogLineN(logMediaProbe,
+		CFormat(wxT("MediaProbe: no result for %s: %s")) % file.GetPrintable() % reason);
 	if (logFailure)
-		AddLogLineN(CFormat(_("Media metadata: parser failed for %s")) % file.GetPrintable());
+		AddLogLineN(
+			CFormat(_("Media metadata: no result for %s: %s")) % file.GetPrintable() % reason);
+	else
+		AddLogLineN(CFormat(_("Media metadata: no result: %s")) % reason);
 	// Only documented parser rejections and a crash while parsing describe the file.
 	// Loader failures, protocol errors and other exits must not poison known.met entries.
 	if (rc == 10)

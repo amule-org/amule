@@ -1,0 +1,35 @@
+name: Media probe restrictions
+
+on:
+  push:
+    paths: ['src/mediaprobe/**', 'src/MediaProbe.cpp', '.github/workflows/media-probe.yml']
+  pull_request:
+    paths: ['src/mediaprobe/**', 'src/MediaProbe.cpp', '.github/workflows/media-probe.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Native restrictions (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel, windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure the standalone helper
+        run: cmake -S src/mediaprobe -B build-probe -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build-probe --config Release --parallel 2
+      - name: Verify extraction, hostile inputs and OS denials
+        run: ctest --test-dir build-probe -C Release --output-on-failure
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: media-probe-tests-${{ matrix.os }}
+          path: build-probe/Testing/Temporary/
+          if-no-files-found: warn

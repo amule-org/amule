@@ -34,13 +34,17 @@ Reader::Reader(Source &source)
 
 void Reader::read(int64_t offset, void *buffer, size_t n)
 {
-	if (!has(offset, n) || ++m_reads > kMaxReads)
-		throw Malformed{};
+	if (!has(offset, n))
+		throw Malformed{ "read outside the input file" };
+	if (++m_reads > kMaxReads)
+		throw Malformed{ "read-call budget exhausted" };
 	auto *out = static_cast<uint8_t *>(buffer);
 	if (n > kCacheSize) {
 		m_bytes += n;
-		if (m_bytes > kMaxBytes || m_source.readAt(offset, out, n) != n)
-			throw Malformed{};
+		if (m_bytes > kMaxBytes)
+			throw Malformed{ "read-byte budget exhausted" };
+		if (m_source.readAt(offset, out, n) != n)
+			throw Malformed{ "short read from the input file" };
 		return;
 	}
 	if (m_cacheStart < 0 || offset < m_cacheStart ||
@@ -48,11 +52,11 @@ void Reader::read(int64_t offset, void *buffer, size_t n)
 		const size_t want = static_cast<size_t>(std::min<int64_t>(kCacheSize, m_size - offset));
 		m_bytes += want;
 		if (m_bytes > kMaxBytes)
-			throw Malformed{};
+			throw Malformed{ "read-byte budget exhausted" };
 		m_cacheStart = offset;
 		m_cacheLen = m_source.readAt(offset, m_cache.data(), want);
 		if (m_cacheLen < n)
-			throw Malformed{};
+			throw Malformed{ "short read from the input file" };
 	}
 	std::memcpy(out, m_cache.data() + (offset - m_cacheStart), n);
 }
@@ -238,7 +242,7 @@ void dispatch(Reader &r, Result &res)
 		return parseAdts(r, 0, res);
 	if (isMpegAudioSync(r, 0))
 		return parseMpegAudio(r, 0, res);
-	throw Malformed{};
+	throw Malformed{ "unsupported container signature" };
 }
 } // namespace
 
@@ -246,16 +250,23 @@ int probe(Source &source, Result &res)
 {
 	Reader r(source);
 	try {
-		if (r.size() < 4)
+		if (r.size() < 4) {
+			res = Result{};
+			res.failure = "input is too short to identify a container";
 			return 11;
+		}
 		dispatch(r, res);
-	} catch (const Malformed &) {
+	} catch (const Malformed &error) {
 		res = Result{};
+		res.failure = error.reason;
 		return 11;
 	}
 	if (res.rawStream)
 		res.seconds = 0;
-	return res.seconds > 0 || !res.codec.empty() ? 0 : 10;
+	if (res.seconds > 0 || !res.codec.empty())
+		return 0;
+	res.failure = "container has no usable duration or codec";
+	return 10;
 }
 
 } // namespace probe

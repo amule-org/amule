@@ -77,7 +77,7 @@ wxString DetectedPath(bool redetect = false);
 // worker.
 //
 // Callers MUST run this off the main thread: it blocks for the duration of the child, typically
-// 30-100 ms and at most `timeoutMs`.
+// 30-100 ms, with a bounded cleanup grace period after `timeoutMs` expires.
 
 //! Why a probe produced no metadata. The distinction matters because one of these is a statement
 //! about the FILE and the rest about the environment: only the first justifies recording "this file
@@ -108,6 +108,7 @@ inline bool IsFileVerdict(ProbeOutcome outcome)
 //! \param logFailure whether a failure may name its file. Failures are worth naming even in bulk,
 //! since a count alone is not actionable, but a broken helper fails EVERY file, so the caller caps
 //! how many it names.
+//! A bounded diagnostic reason is still logged when the file name is suppressed.
 ProbeOutcome Probe(const wxString &helperPath,
 	const CPath &file,
 	MediaMetadata &out,
