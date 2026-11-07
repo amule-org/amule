@@ -511,13 +511,14 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				!thePrefs::GetProxyData()->m_proxyEnable &&
 				AddressFamilyPolicy::PermitsIPv6() && theApp->listensocket &&
 				theApp->listensocket->BoundHost() == "[::]";
-			if (probeRequested && mayExpose) {
-				if (cur_server->SupportsIPv6Updates()) {
-					AddDebugLogLineN(
-						logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
-					// The address may have changed between the login and this IDCHANGE.
-					serverconnect->UpdateAdvertisedIPv6(SelectedLocalIPv6());
-				}
+			if (cur_server->SupportsIPv6Updates()) {
+				// A probing server needs the address it is about to test; every other server
+				// keeps what it received before, so an address change between the login and
+				// this IDCHANGE still reaches it.
+				AddDebugLogLineN(logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
+				serverconnect->UpdateAdvertisedIPv6(probeRequested && mayExpose
+									    ? SelectedLocalIPv6()
+									    : AdvertisedIPv6ForPeers());
 			}
 #endif
 

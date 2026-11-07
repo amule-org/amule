@@ -23,7 +23,11 @@ probe is still running, and `0x03` is an address the server published on trust, 
 nothing. aMule reads the tag from every `OP_SERVERIDENT`, because a later one carries it.
 
 With `AdvertiseIPv6Mode` set to `0` (when verified), the login carries no address until a probe or
-an inbound hello has proved it, and no address is ever sent to a server that does not announce the
+an inbound hello has proved it. In practice the probe is what can prove it: a peer can only dial
+this address after learning it from our hello, Kad or a source list, and all of those wait for the
+same decision, so the inbound hello can confirm an address that a probing server has already
+checked, or one proved in the last 24 h, but it cannot start the process.
+ and no address is ever sent to a server that does not announce the
 probe. A server that does announce it receives the chosen local address through `OP_IPV6_UPDATE`,
 once per real change: it needs the address to test it, and it does not publish anything it has not
 reached. The server allows four such updates per session.
