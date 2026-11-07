@@ -46,7 +46,11 @@ int failure(const char *stage)
 int launch()
 {
 	Handle original, lockdown, startup, job;
-	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_DUPLICATE, &original.value))
+	// CreateRestrictedToken preserves this handle's access mask. The resulting
+	// primary token needs integrity adjustment and assignment rights at launch.
+	if (!OpenProcessToken(GetCurrentProcess(),
+		    TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_ADJUST_DEFAULT,
+		    &original.value))
 		return failure("open startup token");
 	std::vector<unsigned char> groupsBuffer, userBuffer, privilegesBuffer;
 	if (!tokenInfo(original.value, TokenGroups, groupsBuffer) ||
@@ -85,14 +89,15 @@ int launch()
 	if (!SetTokenInformation(lockdown.value,
 		    TokenIntegrityLevel,
 		    &label,
-		    sizeof(label) + GetLengthSid(integritySid)) ||
-		!DuplicateTokenEx(original.value,
-			TOKEN_IMPERSONATE | TOKEN_QUERY,
-			nullptr,
-			SecurityImpersonation,
-			TokenImpersonation,
-			&startup.value))
-		return failure("prepare startup token");
+		    static_cast<DWORD>(sizeof(label)) + GetLengthSid(integritySid)))
+		return failure("set untrusted integrity label");
+	if (!DuplicateTokenEx(original.value,
+		    TOKEN_IMPERSONATE | TOKEN_QUERY,
+		    nullptr,
+		    SecurityImpersonation,
+		    TokenImpersonation,
+		    &startup.value))
+		return failure("duplicate startup impersonation token");
 
 	job.value = CreateJobObjectW(nullptr, nullptr);
 	JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{};

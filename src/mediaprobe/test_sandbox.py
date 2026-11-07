@@ -3,6 +3,7 @@
 from pathlib import Path
 import os
 import subprocess
+import socket
 import sys
 import tempfile
 import unittest
@@ -48,13 +49,29 @@ class SandboxTests(unittest.TestCase):
         self.assertFalse(created.exists())
 
     def test_network_and_new_processes_are_denied(self):
-        self.run_action('network')
+        with socket.socket() as listener:
+            listener.bind(('127.0.0.1', 0))
+            listener.listen()
+            self.run_action('network', listener.getsockname()[1])
+            listener.settimeout(0.05)
+            with self.assertRaises(socket.timeout):
+                listener.accept()
+        self.run_action('network-listen', '0')
         self.run_action('process', FIXTURE)
 
     @unittest.skipIf(os.name == 'nt', 'POSIX descriptor and exec checks')
     def test_exec_unix_sockets_and_inherited_files_are_denied(self):
         self.run_action('exec', FIXTURE)
-        self.run_action('unix-network')
+        # macOS temporary paths can exceed sockaddr_un's path limit.
+        with tempfile.TemporaryDirectory(prefix='ammp-', dir='/tmp') as temporary:
+            endpoint = str(Path(temporary) / 'listener')
+            with socket.socket(socket.AF_UNIX) as listener:
+                listener.bind(endpoint)
+                listener.listen()
+                self.run_action('unix-network', endpoint)
+                listener.settimeout(0.05)
+                with self.assertRaises(socket.timeout):
+                    listener.accept()
         with self.secret.open('rb') as secret:
             self.run_action('inherited', secret.fileno(), pass_fds=(secret.fileno(),))
 

@@ -14,6 +14,8 @@
 #else
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <netinet/in.h>
+#include <sys/un.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -30,6 +32,12 @@ int main(int argc, char **argv)
 	WSADATA data;
 	if (WSAStartup(MAKEWORD(2, 2), &data) != 0)
 		return 12;
+	// Load the provider while startup permissions are still available. Denial
+	// must hold even when socket code is already resident, not just fail to load.
+	const SOCKET warm = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (warm == INVALID_SOCKET)
+		return 12;
+	closesocket(warm);
 	const bool child = argc > 1 && std::string(argv[argc - 1]) == "--sandbox-child";
 	if (child)
 		--argc;
@@ -56,18 +64,39 @@ int main(int argc, char **argv)
 		blocked = file == nullptr;
 		if (file != nullptr)
 			std::fclose(file);
-	} else if (action == "network") {
+	} else if (action == "network" || action == "network-listen") {
+		const auto fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 #ifdef _WIN32
-		const SOCKET socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		blocked = socket == INVALID_SOCKET;
-		if (!blocked)
-			closesocket(socket);
+		blocked = fd == INVALID_SOCKET;
+		const bool opened = !blocked;
 #else
-		const int fd = socket(AF_INET, SOCK_STREAM, 0);
-		blocked = fd < 0;
-		if (!blocked)
+		blocked = fd < 0 && (errno == EPERM || errno == EACCES);
+		const bool opened = fd >= 0;
+#endif
+		if (opened) {
+			sockaddr_in address{};
+			address.sin_family = AF_INET;
+			address.sin_port = htons(static_cast<unsigned short>(std::atoi(path.c_str())));
+			address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+#ifdef __APPLE__
+			address.sin_len = static_cast<unsigned char>(sizeof(address));
+#endif
+			int rc;
+			if (action == "network-listen") {
+				rc = bind(fd, reinterpret_cast<sockaddr *>(&address), sizeof(address));
+				if (rc == 0)
+					rc = listen(fd, 1);
+			} else {
+				rc = connect(fd, reinterpret_cast<sockaddr *>(&address), sizeof(address));
+			}
+#ifdef _WIN32
+			blocked = rc == SOCKET_ERROR && WSAGetLastError() == WSAEACCES;
+			closesocket(fd);
+#else
+			blocked = rc < 0 && (errno == EPERM || errno == EACCES);
 			close(fd);
 #endif
+		}
 	} else if (action == "process") {
 #ifdef _WIN32
 		STARTUPINFOA info{};
@@ -107,9 +136,20 @@ int main(int argc, char **argv)
 	} else if (action == "unix-network") {
 #ifndef _WIN32
 		const int fd = socket(AF_UNIX, SOCK_STREAM, 0);
-		blocked = fd < 0;
-		if (!blocked)
+		blocked = fd < 0 && (errno == EPERM || errno == EACCES);
+		if (fd >= 0) {
+			sockaddr_un address{};
+			address.sun_family = AF_UNIX;
+			if (path.size() >= sizeof(address.sun_path))
+				return 12;
+			std::memcpy(address.sun_path, path.c_str(), path.size() + 1);
+#ifdef __APPLE__
+			address.sun_len = static_cast<unsigned char>(sizeof(address));
+#endif
+			blocked = connect(fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0 &&
+				  (errno == EPERM || errno == EACCES);
 			close(fd);
+		}
 #endif
 	} else if (action == "openat") {
 #ifdef __linux__

@@ -14,7 +14,7 @@ enable/refresh controls remain.
 The parent enforces a wall-clock deadline, cancellation and a 64 KiB output
 limit while the child runs. It rejects malformed framing and numeric values
 outside the helper protocol. Windows uses a restricted primary token, nested Job objects and an explicit
-inherited handle list. POSIX builds limit CPU, core dumps and file size (256 KiB:
+inherited handle list. POSIX builds limit CPU, descriptors (256), core dumps and file size (256 KiB:
 stdout is a file the core reads, so 0 would block the reply); Linux also caps the
 helper address space at 1 GiB. Bundle library search paths are preserved during
 trusted runtime initialization. Before reading media, the helper installs the
@@ -72,8 +72,8 @@ therefore best effort and subject to the following conditions.
 ## Operating system restrictions
 
 The threat is a hostile media file, including a parser exploit. Trusted helper,
-loader and C++ runtime initialization precede confinement; **no media bytes are
-read before confinement**. The input is an inherited read-only regular file;
+loader and C++ runtime initialization precede confinement; **no media parsing starts
+before confinement**. The input is an inherited read-only regular file;
 the only permitted application writes are the metadata reply and diagnostics on
 the two inherited output handles. They do not grant permission to open output
 paths. No media paths or directory trees are added to a sandbox allow list. The parser
@@ -100,6 +100,7 @@ vulnerabilities or a system already compromised outside aMule.
   unavailable; an inaccessible descriptor directory also fails closed.
 - **macOS:** close unrelated descriptors through `/dev/fd`, then apply a
   default-deny Seatbelt profile. Only inherited file handles remain available;
+  unused socket descriptors may be created, but connections/listening are denied;
   the profile grants read-only system configuration queries for the runtime,
   and grants no file paths, network, Mach services or child processes.
   **Compatibility limit:** `sandbox_init` is deprecated and the custom profile
@@ -225,6 +226,10 @@ cmake --build /tmp/fuzz --target amule-media-probe-fuzz
 
 Run **Media probe pre-release fuzzing** manually before a release and after
 parser changes. Its default is 600 seconds with Clang, libFuzzer, ASan and UBSan.
+Before this workflow reaches the default branch, select `fuzz_only` when
+manually running **Media probe restrictions** on the review branch. It calls
+the same fuzz workflow.
+
 Two workers run in parallel with per-input timeout, memory and length bounds;
 worker failures fail the job. The workflow always attempts to retain logs,
 source/toolchain/corpus provenance, updated inputs and crash reproducers.

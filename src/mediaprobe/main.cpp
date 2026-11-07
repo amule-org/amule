@@ -115,9 +115,10 @@ int main(int argc, char **argv)
 #else
 	// stdout is a regular file the core reads, so 0 would block the reply. Four times the
 	// core's 64 KiB reply cap still leaves no room for any real file write.
-	if (!limit(RLIMIT_CORE, 0) || !limit(RLIMIT_CPU, 25) ||
+	if (!limit(RLIMIT_CORE, 0) || !limit(RLIMIT_CPU, 25) || !limit(RLIMIT_NOFILE, 256) ||
 		!limit(RLIMIT_FSIZE, probe::sandbox::kOutputFileLimitBytes))
-		return failed("cannot establish CPU, output and core-dump limits; refusing to parse");
+		return failed(
+			"cannot establish CPU, descriptor, output and core-dump limits; refusing to parse");
 #ifdef __linux__
 	// The in-memory fuzz target uses sanitizers without this address-space cap.
 	// Also preserve support for explicitly instrumented helper test builds.

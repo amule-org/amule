@@ -8,6 +8,11 @@ on:
         type: number
         default: 600
         required: true
+  workflow_call:
+    inputs:
+      seconds:
+        type: number
+        default: 600
 
 permissions:
   contents: read

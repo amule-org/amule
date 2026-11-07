@@ -6,12 +6,18 @@ on:
   pull_request:
     paths: ['src/mediaprobe/**', 'src/MediaProbe.cpp', '.github/workflows/media-probe.yml']
   workflow_dispatch:
+    inputs:
+      fuzz_only:
+        description: Run the ten-minute sanitizer fuzz workflow instead of native checks
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   native:
+    if: ${{ !inputs.fuzz_only }}
     name: Native restrictions (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -33,3 +39,8 @@ jobs:
           name: media-probe-tests-${{ matrix.os }}
           path: build-probe/Testing/Temporary/
           if-no-files-found: warn
+  fuzz:
+    if: github.event_name == 'workflow_dispatch' && inputs.fuzz_only
+    uses: ./.github/workflows/media-probe-fuzz.yml
+    with:
+      seconds: 600
