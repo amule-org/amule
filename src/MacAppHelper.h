@@ -32,6 +32,14 @@ void mac_set_accessory_mode(bool accessory);
 // nothing if the handle is not backed by a table view, or below macOS 11.
 void mac_set_table_view_flush(void *windowHandle);
 
+// Centre a bitmap-only NSButton image in the button's bounds. wxOSX leaves
+// NSButton's default NSImageLeft position unchanged for NSSmallSquareBezelStyle.
+void mac_set_button_image_only(void *buttonHandle);
+
+// Report whether the NSButton's current image rect is horizontally centred.
+// Used by the clear-button GUI test to guard the Cocoa layout workaround.
+bool mac_button_image_is_centered(void *buttonHandle);
+
 // Returns the vertical centre of the tab buttons of the NSTabView backing the passed wxWindow
 // handle, in the coordinates of the tab view's superview (top-left origin, points). Negative if
 // the handle is not a tab view or it has no tab buttons.

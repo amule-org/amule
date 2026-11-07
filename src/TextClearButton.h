@@ -31,6 +31,9 @@
 #include <wx/bmpbuttn.h>
 #include <wx/sizer.h>
 #include <wx/textentry.h>
+#if defined(__WXOSX__)
+#include "MacAppHelper.h"
+#endif
 
 // Keep the original text control (including the search-history dropdown) and
 // its text events. The clear button stays visible even when the field is empty.
@@ -58,6 +61,10 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 			"menu_x_lg", wxSize(16, 16), wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT)));
 		clear->SetBitmapDisabled(CamuleArtProvider::GetMenuBitmapBundle(
 			"menu_x_lg", wxSize(16, 16), wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT)));
+#if defined(__WXOSX__)
+		// SetBitmap() resets Cocoa's image position to NSImageLeft.
+		mac_set_button_image_only(clear->GetHandle());
+#endif
 	};
 	updateArtwork();
 	clear->Bind(wxEVT_SYS_COLOUR_CHANGED, [updateArtwork](wxSysColourChangedEvent &event) {

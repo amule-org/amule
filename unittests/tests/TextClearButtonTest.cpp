@@ -7,10 +7,12 @@
 #include <wx/evtloop.h>
 
 #include "TextClearButton.h"
+#if defined(__WXOSX__)
+#include "MacAppHelper.h"
+#endif
 
 #include <iostream>
 #include <stdexcept>
-#include <algorithm>
 #include <cmath>
 
 class ClearButtonTestApp : public wxApp
@@ -121,6 +123,8 @@ void CheckRow(wxWindow *field, wxSizer *outer)
 #if defined(__WXOSX__)
 	Require((clear->GetWindowStyleFlag() & wxBORDER_MASK) == wxBORDER_SIMPLE,
 		"macOS clear button must use the compact square bezel");
+	Require(mac_button_image_is_centered(clear->GetHandle()),
+		"macOS clear button bitmap must be centered in the native button");
 #else
 	Require((clear->GetWindowStyleFlag() & wxBORDER_MASK) != wxBORDER_NONE,
 		"Clear button must look like a button");

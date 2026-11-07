@@ -13,6 +13,8 @@
 
 #include "MacAppHelper.h"
 
+#include <cmath>
+
 extern "C" void mac_set_table_view_flush(void *windowHandle)
 {
 	if (!windowHandle) {
@@ -41,6 +43,26 @@ extern "C" void mac_set_table_view_flush(void *windowHandle)
 		table.style = NSTableViewStyleFullWidth;
 	}
 #endif
+}
+
+extern "C" void mac_set_button_image_only(void *buttonHandle)
+{
+	NSView *view = (NSView *)buttonHandle;
+	if (![view isKindOfClass:[NSButton class]]) {
+		return;
+	}
+	[(NSButton *)view setImagePosition:NSImageOnly];
+}
+
+extern "C" bool mac_button_image_is_centered(void *buttonHandle)
+{
+	NSView *view = (NSView *)buttonHandle;
+	if (![view isKindOfClass:[NSButton class]]) {
+		return false;
+	}
+	NSButton *button = (NSButton *)view;
+	NSRect imageRect = [[button cell] imageRectForBounds:button.bounds];
+	return std::fabs(NSMidX(imageRect) - NSMidX(button.bounds)) < 0.5;
 }
 
 extern "C" double mac_tab_view_buttons_mid_y(void *windowHandle)
