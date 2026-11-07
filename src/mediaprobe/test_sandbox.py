@@ -38,6 +38,16 @@ class SandboxTests(unittest.TestCase):
         self.run_action('read-input')
         self.run_action('allocate')
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows input handle access reduction')
+    def test_writable_input_handle_cannot_modify_the_input(self):
+        original = self.media.read_bytes()
+        with self.media.open('r+b') as source:
+            result = subprocess.run([FIXTURE, 'write-input', str(self.secret)],
+                                    stdin=source, capture_output=True, timeout=35)
+        self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+        self.assertEqual(result.stdout, b'blocked\n')
+        self.assertEqual(self.media.read_bytes(), original)
+
     def test_other_files_cannot_be_read(self):
         self.assertEqual(self.run_action('read-file').stdout, b'blocked\n')
 

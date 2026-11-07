@@ -78,7 +78,9 @@ the only permitted application writes are the metadata reply and diagnostics on
 the two inherited output handles. They do not grant permission to open output
 paths. No media paths or directory trees are added to a sandbox allow list. The parser
 also receives a minimal runtime environment, without unrelated parent variables
-that might contain credentials.
+that might contain credentials. Runtime library paths are preserved for bundle
+and build-tree compatibility, including Windows `SystemRoot` and `PATH`. These
+paths do not grant file access after confinement.
 
 If setup fails, the helper refuses to parse and returns exit 12, without a
 protocol header or metadata. The core discards every failed, incomplete or
@@ -130,7 +132,9 @@ vulnerabilities or a system already compromised outside aMule.
   securable resources with valid ACLs; FAT/exFAT or null-DACL resources do not
   provide the same guarantee as normally secured NTFS. This is not a claim of
   confinement against misconfigured/nonsecurable resources. The core supplies
-  the read-only input handle; outside callers must do likewise.
+  the read-only input handle. The launcher validates that it is a regular file
+  and gives the parser a duplicate with read access only, including when an
+  outside caller supplies a writable handle. Pipes and directories are refused.
 
 Failure logs include the exit status or signal and a reason (setup, input I/O,
 unsupported/malformed data, exhausted read budget, timeout, cancellation, output

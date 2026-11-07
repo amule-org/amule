@@ -102,13 +102,42 @@ int failure(const char *stage)
 	std::fprintf(stderr, "media-probe sandbox: %s failed (Windows error %lu)\n", stage, GetLastError());
 	return 12;
 }
+
+bool regularInput(HANDLE input)
+{
+	if (input == nullptr || input == INVALID_HANDLE_VALUE || GetFileType(input) != FILE_TYPE_DISK) {
+		SetLastError(ERROR_INVALID_HANDLE);
+		return false;
+	}
+	BY_HANDLE_FILE_INFORMATION info{};
+	if (!GetFileInformationByHandle(input, &info))
+		return false;
+	if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+		SetLastError(ERROR_DIRECTORY);
+		return false;
+	}
+	return true;
+}
 } // namespace
 
 int launch()
 {
-	Handle original, lockdown, startupPrimary, startup, job;
+	Handle original, lockdown, startupPrimary, startup, job, input;
 	// An internal helper must never leave a loader/crash dialog blocking a probe.
 	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+	const auto source = GetStdHandle(STD_INPUT_HANDLE);
+	if (!regularInput(source))
+		return failure("validate regular stdin input file");
+	// Even an outside caller's writable input handle must not give the parser
+	// write access. The original handle stays in this trusted launcher only.
+	if (!DuplicateHandle(GetCurrentProcess(),
+		    source,
+		    GetCurrentProcess(),
+		    &input.value,
+		    FILE_GENERIC_READ,
+		    TRUE,
+		    0))
+		return failure("restrict stdin input to read-only");
 	// CreateRestrictedToken preserves this handle's access mask. The resulting
 	// primary token needs integrity adjustment and assignment rights at launch.
 	if (!OpenProcessToken(GetCurrentProcess(),
@@ -219,9 +248,7 @@ int launch()
 		!SetInformationJobObject(job.value, JobObjectBasicUIRestrictions, &ui, sizeof(ui)))
 		return failure("configure parser job");
 
-	HANDLE inherited[] = { GetStdHandle(STD_INPUT_HANDLE),
-		GetStdHandle(STD_OUTPUT_HANDLE),
-		GetStdHandle(STD_ERROR_HANDLE) };
+	HANDLE inherited[] = { input.value, GetStdHandle(STD_OUTPUT_HANDLE), GetStdHandle(STD_ERROR_HANDLE) };
 	for (const auto handle : inherited) {
 		if (handle == nullptr || handle == INVALID_HANDLE_VALUE ||
 			!SetHandleInformation(handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT))
@@ -257,18 +284,35 @@ int launch()
 	command += L" --sandbox-child";
 	std::vector<wchar_t> commandBuffer(command.begin(), command.end());
 	commandBuffer.push_back(L'\0');
-	// The parser needs the Windows runtime location, not the launcher's entire
-	// environment (which may include credentials). No other values cross over.
-	std::vector<wchar_t> systemRoot(32768);
-	const DWORD rootLength = GetEnvironmentVariableW(
-		L"SystemRoot", systemRoot.data(), static_cast<DWORD>(systemRoot.size()));
-	if (!rootLength || rootLength >= systemRoot.size()) {
+	// Preserve only runtime locations, including PATH for unbundled MinGW DLLs.
+	// The final token still denies opening files after trusted initialization.
+	std::wstring environment;
+	const auto runtimeVariable = [&](const wchar_t *name, bool required) {
+		std::vector<wchar_t> value(32768);
+		SetLastError(ERROR_SUCCESS);
+		const DWORD length =
+			GetEnvironmentVariableW(name, value.data(), static_cast<DWORD>(value.size()));
+		if (length >= value.size()) {
+			SetLastError(ERROR_BUFFER_OVERFLOW);
+			return false;
+		}
+		if (!length) {
+			if (required) {
+				SetLastError(ERROR_ENVVAR_NOT_FOUND);
+				return false;
+			}
+			return GetLastError() == ERROR_SUCCESS || GetLastError() == ERROR_ENVVAR_NOT_FOUND;
+		}
+		environment.append(name);
+		environment += L'=';
+		environment.append(value.data(), length);
+		environment.push_back(L'\0');
+		return true;
+	};
+	if (!runtimeVariable(L"SystemRoot", true) || !runtimeVariable(L"PATH", false)) {
 		DeleteProcThreadAttributeList(info.lpAttributeList);
-		return failure("read Windows runtime location");
+		return failure("read Windows runtime environment");
 	}
-	std::wstring environment = L"SystemRoot=";
-	environment.append(systemRoot.data(), rootLength);
-	environment.push_back(L'\0');
 	environment.push_back(L'\0');
 	PROCESS_INFORMATION child{};
 	// CREATE_NO_WINDOW still allocates a console, whose KERNELBASE startup
@@ -339,6 +383,10 @@ int launch()
 
 bool enter()
 {
+	if (!regularInput(GetStdHandle(STD_INPUT_HANDLE))) {
+		failure("validate parser stdin input file");
+		return false;
+	}
 	Handle token;
 	std::vector<unsigned char> restricted;
 	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_DEFAULT, &token.value) ||

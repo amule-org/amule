@@ -59,7 +59,13 @@ int main(int argc, char **argv)
 			       ? 0
 			       : 1;
 	}
-	if (action == "read-file" || action == "write-file") {
+	if (action == "write-input") {
+#ifdef _WIN32
+		DWORD written = 0;
+		blocked = !WriteFile(GetStdHandle(STD_INPUT_HANDLE), "X", 1, &written, nullptr) &&
+			  GetLastError() == ERROR_ACCESS_DENIED;
+#endif
+	} else if (action == "read-file" || action == "write-file") {
 		FILE *file = std::fopen(path.c_str(), action == "read-file" ? "rb" : "wb");
 		blocked = file == nullptr;
 		if (file != nullptr)
