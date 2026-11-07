@@ -511,6 +511,12 @@ target_compile_features (NatKeyFrameTest PRIVATE cxx_std_17)
 target_link_libraries (NatKeyFrameTest muleunit mulecommon)
 add_test (NAME NatKeyFrameTest COMMAND NatKeyFrameTest)
 
+add_executable (NatSourceEchoTest NatSourceEchoTest.cpp)
+target_include_directories (NatSourceEchoTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
+target_compile_features (NatSourceEchoTest PRIVATE cxx_std_17)
+target_link_libraries (NatSourceEchoTest muleunit mulecommon)
+add_test (NAME NatSourceEchoTest COMMAND NatSourceEchoTest)
+
 add_executable (UdpObfuscationPolicyTest UdpObfuscationPolicyTest.cpp)
 target_include_directories (UdpObfuscationPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
 target_compile_features (UdpObfuscationPolicyTest PRIVATE cxx_std_17)

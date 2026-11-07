@@ -67,6 +67,20 @@ inline Version SignatureVersion(unsigned peerVersions, bool hasPeerIPv4)
 	}
 	return (hasPeerIPv4 && (peerVersions & V2)) ? V2 : Unavailable;
 }
+//! The v2 ChallengeIP a CRYPT_CIP_REMOTECLIENT signer used: our IPv4 as it sees us. @a ownIPAsSeen
+//! is that address when known and not our public IP (a TCP/UDP split NAT), else 0. Without a
+//! verified public IP, a HighID falls back to its ID and a LowID to whatever public IP it has.
+inline uint32_t RemoteClientChallengeIP(
+	uint32_t ownIPAsSeen, uint32_t verifiedPublicIP, uint32_t publicIP, bool lowID, uint32_t ed2kID)
+{
+	if (ownIPAsSeen != 0) {
+		return ownIPAsSeen;
+	}
+	if (verifiedPublicIP == 0) {
+		return lowID ? publicIP : ed2kID;
+	}
+	return publicIP;
+}
 } // namespace SecIdent
 
 #endif // SECIDENTPOLICY_H

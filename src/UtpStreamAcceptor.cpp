@@ -25,6 +25,8 @@
 #include "UtpStreamAcceptor.h"
 
 #include "ClientTCPSocket.h"
+#include "ClientUDPSocket.h" // Needed for NatKeyIPFor
+#include "NatSourceEcho.h"   // Needed for LocalUdpIP
 #include "Logger.h"
 #include "ClientList.h"
 #include "IPFilter.h"
@@ -70,8 +72,13 @@ SUtpIncomingSynDecision CUtpStreamAcceptor::DecideIncomingSyn(
 	if (!CanRejectIncomingUtpSynForSimultaneousOpen(externalUdpPort)) {
 		return { EUtpIncomingSynDisposition::AcceptKeepIncoming, candidate.clientToken };
 	}
-	const std::optional<SUtpEndpoint> localEndpoint = MakeLocalUtpEndpoint(
-		theApp->GetPublicIP(true), externalUdpPort, thePrefs::GetUDPPort(), thePrefs::GetPort());
+	// The peer orders by our SYN's source address, which is our UDP address, not our login one.
+	const uint32_t localIp = NatSourceEcho::LocalUdpIP(
+		theApp->clientudp != nullptr ? theApp->clientudp->NatKeyIPFor(ip) : 0,
+		wxUINT32_SWAP_ALWAYS(Kademlia::CKademlia::GetIPAddress()),
+		theApp->GetPublicIP(true));
+	const std::optional<SUtpEndpoint> localEndpoint =
+		MakeLocalUtpEndpoint(localIp, externalUdpPort, thePrefs::GetUDPPort(), thePrefs::GetPort());
 	const std::optional<SUtpEndpoint> remoteEndpoint = MakeUtpEndpointFromNetworkOrder(ip, port);
 
 	const uint8_t *localHash = thePrefs::GetUserHash().GetHash();

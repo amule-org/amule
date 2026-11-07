@@ -261,6 +261,21 @@ TEST(NatKeyFrame, AnExpectedPeerIsRemembered)
 	ASSERT_FALSE(expected.IsExpected(1, 2, 999));
 }
 
+TEST(NatKeyFrame, AMovedPortMatchesOnlyWhenItsIpHasOneExpectation)
+{
+	CExpectedPeers expected(8, 1000);
+	expected.Expect(1, 1, 0, MakeHash(5));
+	// Exact matching stays exact.
+	ASSERT_FALSE(expected.IsExpected(1, 2, 1));
+	ASSERT_TRUE(expected.IsExpectedAllowingMovedPort(1, 2, 1));
+	ASSERT_TRUE(*expected.VouchedHashAllowingMovedPort(1, 2, 1) == MakeHash(5));
+	ASSERT_FALSE(expected.IsExpectedAllowingMovedPort(2, 1, 1));
+	expected.Expect(1, 3, 2);
+	ASSERT_FALSE(expected.IsExpectedAllowingMovedPort(1, 2, 3));
+	ASSERT_TRUE(expected.IsExpectedAllowingMovedPort(1, 3, 3));
+	ASSERT_FALSE(expected.IsExpectedAllowingMovedPort(1, 3, 1002));
+}
+
 TEST(NatKeyFrame, AnExpectationLapses)
 {
 	CExpectedPeers expected(8, 1000);

@@ -238,12 +238,14 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(uint8_t *bufIn,
 //   clientHashOrKadID != NULL                                 -> clientHashOrKadID
 //   clientHashOrKadID == NULL && kad && receiverVerifyKey != 0 -> receiverVerifyKey
 //   otherwise                                                  -> ASSERT
+// An ed2k key mixes in keyIP, the IPv4 the receiver sees us at, or our public IP when 0.
 int CEncryptedDatagramSocket::EncryptSendClient(uint8_t **buf,
 	int bufLen,
 	const uint8_t *clientHashOrKadID,
 	bool kad,
 	uint32_t receiverVerifyKey,
-	uint32_t senderVerifyKey)
+	uint32_t senderVerifyKey,
+	uint32_t keyIP)
 {
 	wxASSERT(theApp->GetPublicIP() != 0 || kad);
 	wxASSERT(thePrefs::IsClientCryptLayerSupported());
@@ -280,7 +282,7 @@ int CEncryptedDatagramSocket::EncryptSendClient(uint8_t **buf,
 	} else {
 		uint8_t keyData[23];
 		md4cpy(keyData, clientHashOrKadID);
-		PokeUInt32(keyData + 16, theApp->GetPublicIP());
+		PokeUInt32(keyData + 16, keyIP != 0 ? keyIP : theApp->GetPublicIP());
 		PokeUInt16(keyData + 21, randomKeyPart);
 		keyData[20] = MAGICVALUE_UDP;
 		md5.Calculate(keyData, sizeof(keyData));

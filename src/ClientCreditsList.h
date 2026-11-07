@@ -48,11 +48,13 @@ public:
 		uint32 ChallengeIP,
 		uint8 byChaIPKind,
 		void *sigkey = NULL);
+	//! @a ownIPAsSeen: the IPv4 this peer sees us at, when not our public IP; else 0.
 	bool VerifyIdent(CClientCredits *pTarget,
 		const uint8_t *pachSignature,
 		uint8 nInputSize,
 		const CNetworkAddress &address,
-		uint8 byChaIPKind);
+		uint8 byChaIPKind,
+		uint32 ownIPAsSeen = 0);
 
 	CClientCredits *GetCredit(const CMD4Hash &key);
 

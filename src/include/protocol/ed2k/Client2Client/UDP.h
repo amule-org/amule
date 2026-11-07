@@ -39,6 +39,10 @@ enum ED2KExtendedClientUDP
 	// Distinct from the raw UDP protocol byte NatPeerUdp::OP_NATT_HOLEPUNCH (0xB3).
 	OP_HOLEPUNCH = 0xA1, // (null)
 #endif
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+	// To a punched peer whose datagram no key decoded: the source we saw it from.
+	OP_NATT_SOURCE_ECHO = 0xAB, // <IP 4><PORT 2>
+#endif
 	OP_PORTTEST = 0xFE // Connection Test
 };
 

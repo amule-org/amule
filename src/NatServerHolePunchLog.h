@@ -42,10 +42,14 @@ inline void LogInfo(DebugType logType, const Info &info)
 {
 	const uint32 ip = PeekUInt32(info.peerIP.data());
 	AddDebugLogLineN(logType,
-		CFormat("OP_LOWID_HOLEPUNCH_INFO: peer %s, TCP %u, UDP %u, role %u, peer ID %s") %
+		CFormat("OP_LOWID_HOLEPUNCH_INFO: peer %s, TCP %u, UDP %u, role %u, peer ID %s, our UDP %s") %
 			Uint32toStringIP(ip) % info.tcpPort % info.udpPort % info.role %
 			(info.peerId.has_value() ? (CFormat("%u") % *info.peerId).GetString()
-						 : wxString("none")));
+						 : wxString("none")) %
+			(info.ownUdpIP.has_value()
+					? Uint32_16toStringIP_Port(
+						  PeekUInt32(info.ownUdpIP->data()), info.ownUdpPort)
+					: wxString("not sent")));
 }
 
 inline void LogFailure(DebugType logType, const Failure &failure)

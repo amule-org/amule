@@ -294,6 +294,35 @@ TEST(NatServerHolePunch, ReadsThePeerCryptOptionsOnlyFromAnInfoOf30BytesOrMore)
 	ASSERT_FALSE(ParseInfo(bytes.data(), 25)->peerCrypt.has_value());
 }
 
+TEST(NatServerHolePunch, ReadsOurOwnUdpEndpointOnlyFromAnInfoOf36BytesOrMore)
+{
+	// ed2k-server's own test vector: own_ip 9.8.7.6, own_udp_port 0x1234.
+	std::array<std::uint8_t, 37> bytes{};
+	const Info info{ { { 192, 0, 2, 1 } }, 3, 4, {}, 0 };
+	const auto base = BuildInfo(info);
+	std::copy(base.begin(), base.end(), bytes.begin());
+	bytes[29] = 0x03;
+	bytes[30] = 9;
+	bytes[31] = 8;
+	bytes[32] = 7;
+	bytes[33] = 6;
+	bytes[34] = 0x34;
+	bytes[35] = 0x12;
+
+	const auto withOwn = ParseInfo(bytes.data(), 36);
+	ASSERT_TRUE(withOwn.has_value());
+	ASSERT_TRUE(withOwn->ownUdpIP.has_value());
+	const NatServerHolePunch::IPv4 expected{ { 9, 8, 7, 6 } };
+	ASSERT_TRUE(*withOwn->ownUdpIP == expected);
+	ASSERT_EQUALS(0x1234, static_cast<int>(withOwn->ownUdpPort));
+	ASSERT_EQUALS(0x03, static_cast<int>(*withOwn->peerCrypt));
+	ASSERT_TRUE(ParseInfo(bytes.data(), bytes.size())->ownUdpIP.has_value());
+
+	// No accepted 0x9F at the server: 30 bytes, and up to 35 is still no endpoint.
+	ASSERT_FALSE(ParseInfo(bytes.data(), 30)->ownUdpIP.has_value());
+	ASSERT_FALSE(ParseInfo(bytes.data(), 35)->ownUdpIP.has_value());
+}
+
 TEST(NatServerHolePunch, SeveralRequestsCanBePendingAndEachIsTakenOnce)
 {
 	PendingRequestSet requests;

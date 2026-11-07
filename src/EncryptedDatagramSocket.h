@@ -50,7 +50,8 @@ public:
 		const uint8_t *clientHashOrKadID,
 		bool kad,
 		uint32_t receiverVerifyKey,
-		uint32_t senderVerifyKey);
+		uint32_t senderVerifyKey,
+		uint32_t keyIP = 0);
 
 	static int DecryptReceivedServer(
 		uint8_t *pbyBufIn, int nBufLen, uint8_t **ppbyBufOut, uint32_t dwBaseKey, uint32_t dbgIP);

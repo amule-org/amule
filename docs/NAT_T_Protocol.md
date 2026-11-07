@@ -20,15 +20,16 @@ with its field.
 
 | Value | Name | Field or transport | Use |
 | --- | --- | --- | --- |
-| `0xC5` | `OP_EMULEPROT` | Client UDP protocol byte | Carries `OP_HOLEPUNCH` |
+| `0xC5` | `OP_EMULEPROT` | Client UDP protocol byte | Carries `OP_HOLEPUNCH` and `OP_NATT_SOURCE_ECHO` |
 | `0xA1` | `OP_HOLEPUNCH` | Client UDP opcode under `0xC5` | Empty peer punch ([Punch schedule](#punch-schedule-and-port-sweep)) |
+| `0xAB` | `OP_NATT_SOURCE_ECHO` | Client UDP opcode under `0xC5` | The source a punched peer's undecodable datagram came from ([Split TCP and UDP exit](#split-tcp-and-udp-exit)) |
 | `0xB2` | `OP_UDPRESERVEDPROT2` | Client UDP protocol byte | NAT-T frames; the next byte is the frame type ([Datagram envelope](#datagram-envelope)) |
 | `0x01` | `OP_NATT_FRAME_QUIC` | Frame type after `0xB2` | QUIC datagram |
 | `0x02` | `OP_NATT_FRAME_CAPS` | Frame type after `0xB2` | Capability request |
 | `0x03` | `OP_NATT_FRAME_CAPS_ACK` | Frame type after `0xB2` | Capability answer |
 | `0xFF` | `OP_NATT_FRAME_KEY` | Frame type after `0xB2` | Key frame ([Key frame](#key-frame-quic-and-utp-datagram-obfuscation)) |
 | `0x60` | `OP_LOWID_HOLEPUNCH_REQUEST` | Server TCP, client to server | Ask for a punch to a LowID ([ed2k-server LowID hole punch](#ed2k-server-lowid-hole-punch)) |
-| `0x61` | `OP_LOWID_HOLEPUNCH_INFO` | Server TCP, server to client | The other side's endpoint; 25, 29 or 30 bytes |
+| `0x61` | `OP_LOWID_HOLEPUNCH_INFO` | Server TCP, server to client | The other side's endpoint; 25, 29, 30 or 36 bytes |
 | `0x62` | `OP_LOWID_HOLEPUNCH_FAIL` | Server TCP, server to client | The server can't punch |
 | `0x9F` | `OP_NATT_KEEPALIVE` | Server UDP, client UDP socket to server | Tells the server our UDP endpoint; user hash alone or proof |
 | `0x37` | `OP_NAT_CALLBACKREQUESTED` | Server TCP, server to client | Callback or wake ([Lugdunum NAT callback](#lugdunum-nat-callback-eserver-1715)) |
@@ -387,7 +388,9 @@ none of `0xF9` (`CT_EMULE_UDPPORTS`), `0x9F` or `0x60` and cannot act on `0x61`:
   `QuicNatT` is off. Any other `0x61`, including a 25-byte one, leaves this side the **target**: it
   punches and waits. A 30-byte `0x61` ends with `peer_crypt`, the peer's
   `(CT_SERVER_FLAGS >> 9) & 7`. ed2k-server 0.9.85 sent it only between two clients using the
-  hole-punch extension; since 0.9.86 every `0x61` is 30 bytes. Every dial a `0x61` leads to, the
+  hole-punch extension; since 0.9.86 every `0x61` is 30 bytes. From 0.9.88 a 36-byte `0x61` then
+  carries `<own_ip 4><own_udp_port 2 LE>`, our own UDP endpoint as the server saw it in our last
+  accepted `0x9F` (see [Split TCP and UDP exit](#split-tcp-and-udp-exit)). Every dial a `0x61` leads to, the
   requester's at once and the target's when the punch arrives, carries its hash and, when present,
   these crypt options (`CUpDownClient::SetConnectOptions()`), so a peer that requires obfuscation
   accepts it and the uTP dial is obfuscated from its SYN. Never write the `0x61` hash or address
@@ -603,6 +606,41 @@ NatT-capable LowID source is only handed to a NatT-capable LowID requester, matc
 The requester's `OP_NAT_CALLBACKREQUEST` then reached the sharer: the forwarded callback arrived
 as **`0x37` (`OP_NAT_CALLBACKREQUESTED`) over the TCP link**, not `0xA7` over UDP. This historical
 observation confirms the relay delivery path; it does not validate the current uTP implementation.
+
+## Split TCP and UDP exit
+
+The ed2k client UDP key is MD5 over the receiver's user hash, a 32-bit IPv4, `MAGICVALUE_UDP` and
+two random bytes. The sender puts in its own public IPv4, which aMule takes from the server login;
+the receiver puts in the datagram's source. Behind a NAT that sends UDP from another public IPv4
+than TCP, the two differ, so the peer cannot decode our obfuscated datagrams, while ours from it
+still decode. Secure ident has the same problem: a LowID peer signs the IPv4 it sees us at, which on
+a uTP or QUIC stream is our UDP address.
+
+aMule keeps a **key IP** per peer IPv4: the address that peer sees our UDP at, kept only when it
+differs from our login address (`NatSourceEcho::CKeyIps`, at most 256, each until an hour without
+use, or until our login address changes). `CClientUDPSocket::ClientCryptKeyIP()` gives it to every
+ed2k-keyed datagram queued to that peer, punches, uTP and QUIC alike. `VerifyIdent()` checks a
+`CRYPT_CIP_REMOTECLIENT` signature on a uTP or QUIC stream against it, and the uTP simultaneous-open
+tie-break orders by it, else by Kad's view of our address. Two sources fill it:
+
+- **The server field.** The `own_ip` of a 36-byte `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) is the key IP
+  toward every peer punched in that login (`ExpectNatTPeer()`). A shorter `0x61` means the server
+  has no fresh view, so it clears the value, and so does a new login. It covers
+  both peers split, where neither can decode the other's echo, and a peer that never sends an echo.
+- **The source echo.** When a datagram from an endpoint punched in the last 30 s fails every key,
+  the receiver answers once per 30 s per source with `0xAB` (`OP_NATT_SOURCE_ECHO`) under `0xC5`, payload
+  `<ip 4><port 2 LE>`: the source it saw, the IPv4 in the byte order of `0x61`. The echo is
+  obfuscated with the hash the rendezvous vouched for, and is not sent without one. The split side
+  takes it only from an endpoint it punched in the last 30 s, and only a public IPv4, as the key IP
+  toward that peer alone, never as its own public IP. An echo wins over the server field, as it
+  names the address this peer sees. It covers punches without the field: other servers, older
+  ed2k-server and Lugdunum's callback.
+
+Both sides match a source against the punched endpoints by IP and port, or by IP alone when that
+IP has only one live punch, since a NAT may move the source port (`NatSourceEcho::CPunchedPeers`).
+A client that does not know `0xAB` drops it, so a mixed pair works as before. A NAT that gives each
+destination another public IPv4 is not covered: the punch is matched by IP, so it fails before
+obfuscation matters.
 
 ## Missing server UDP key
 
