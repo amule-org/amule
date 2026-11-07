@@ -202,7 +202,13 @@ public:
 #endif
 #ifdef ENABLE_IPV6
 	EServerIPv6Verdict GetIPv6Verdict() const { return m_ipv6Verdict; }
-	void SetIPv6Verdict(EServerIPv6Verdict verdict) { m_ipv6Verdict = verdict; }
+	//! The address the verdict is about: a new address has not been probed yet.
+	CNetworkAddress GetIPv6VerdictAddress() const { return m_ipv6VerdictAddress; }
+	void SetIPv6Verdict(EServerIPv6Verdict verdict, const CNetworkAddress &address)
+	{
+		m_ipv6Verdict = verdict;
+		m_ipv6VerdictAddress = address;
+	}
 	bool SupportsIPv6Sources() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6) != 0; }
 	// Whether this connection may receive OP_IPV6_UPDATE: set together with SRV_TCPFLG_IPV6.
 	bool SupportsIPv6Updates() const { return ServerAcceptsIPv6Updates(GetTCPFlags()); }
@@ -263,6 +269,7 @@ private:
 	uint16 m_nObfuscationPortUDP;
 #ifdef ENABLE_IPV6
 	EServerIPv6Verdict m_ipv6Verdict = EServerIPv6Verdict::Unknown;
+	CNetworkAddress m_ipv6VerdictAddress;
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	uint16 m_nSeenTcpPort = 0;

@@ -183,7 +183,8 @@ inline bool IsIPv6DeclaredReachable(const SAdvertisedIPv6Facts &facts)
  * source lists or source exchange, all of which wait for this decision. So in practice
  * `When verified` means "advertise once a server that probes has checked us", with two ways out: a
  * proof carried over from a probing server for 24 h, and an address the server itself asks for.
- */ * / inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6Facts &facts)
+ */
+inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6Facts &facts)
 {
 	const bool reachable = IsIPv6DeclaredReachable(facts) && !facts.contradicted;
 	const bool permitted = facts.ipv6Built && facts.familyPermitted && !facts.proxyEnabled;

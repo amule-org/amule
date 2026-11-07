@@ -650,12 +650,15 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 #ifdef ENABLE_IPV6
 					else if (tag.GetNameID() == ST_IPV6_STATUS && tag.IsInt()) {
 						const long rawStatus = tag.GetInt();
-						cur_server->SetIPv6Verdict(ParseServerIPv6Verdict(
-							rawStatus >= 0 && rawStatus <= 0xFF
-								? std::optional<std::uint8_t>(
-									  static_cast<std::uint8_t>(
-										  rawStatus))
-								: std::nullopt));
+						cur_server->SetIPv6Verdict(
+							ParseServerIPv6Verdict(
+								rawStatus >= 0 && rawStatus <= 0xFF
+									? std::optional<std::uint8_t>(
+										  static_cast<std::uint8_t>(
+											  rawStatus))
+									: std::nullopt),
+							SelectedLocalIPv6().value_or(
+								CNetworkAddress::Absent()));
 					}
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
