@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 		if (arg == "--json")
 			json = true;
 		else if (arg == "--version") {
-			std::cout << "amule-media-probe 1; native\n";
+			std::cout << "amule-media-probe 1\n";
 			return 0;
 		} else
 			return 12;
@@ -147,9 +147,7 @@ int main(int argc, char **argv)
 	const uint32_t length = clamp32(std::floor(r.seconds + 0.5));
 	const uint32_t bitrate = r.seconds > 0 ? clamp32(double(size) * 8 / r.seconds / 1000) : 0;
 	if (json) {
-		std::cout << "{\"backend\":";
-		quoted("native");
-		std::cout << ",\"length_seconds\":" << length << ",\"bitrate_kbps\":" << bitrate;
+		std::cout << "{\"length_seconds\":" << length << ",\"bitrate_kbps\":" << bitrate;
 		for (const auto &item : { std::make_pair("codec", r.codec),
 			     { "artist", r.artist },
 			     { "album", r.album },
@@ -159,7 +157,6 @@ int main(int argc, char **argv)
 		}
 		std::cout << "}\n";
 	} else {
-		// Versioned, fixed flat vocabulary reuses the core's tested escaping parser.
 		std::cout << "format.duration=" << length << "\nformat.bit_rate=" << uint64_t(bitrate) * 1000
 			  << '\n';
 		std::cout << "streams.stream.0.codec_type=\"audio\"\nstreams.stream.0.codec_name=";

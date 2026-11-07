@@ -118,7 +118,7 @@ enum DebugType
 	logHTTP,
 	//! Warnings/Errors related to Boost Asio networking
 	logAsio,
-	//! Media-metadata probing (ffprobe) subsystem.
+	//! Media-metadata probing subsystem.
 	logMediaProbe,
 	//! Warnings/Errors related to Verify Local Data subsystem
 	logVerifyLocalData,

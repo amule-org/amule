@@ -258,8 +258,7 @@ private:
 
 EED2KFileType GetED2KFileTypeID(const CPath &fileName);
 
-//! True when a file's name marks it as something ffprobe could extract media metadata from -- audio
-//! or video by extension.
+//! True when a file's name marks it as audio or video the media helper may read.
 //!
 //! Lives in muleappcommon because the core and the GUI must agree on it: the scheduler uses it to
 //! decide what to probe, and the shared-files view to decide whether to offer the action at all.

@@ -19,8 +19,6 @@ DOTTED = r"(\d+(?:\.\d+)+)"
 # versions.env prefix -> GitHub repository and the tag format of its releases.
 PINS = {
     "WX": ("wxWidgets/wxWidgets", "v" + DOTTED),
-    "ZENLIB": ("MediaArea/ZenLib", "v" + DOTTED),
-    "MEDIAINFO": ("MediaArea/MediaInfoLib", "v" + DOTTED),
     "CRYPTOPP": ("weidai11/cryptopp", r"CRYPTOPP_(\d+(?:_\d+)+)"),
     "LIBUPNP": ("pupnp/pupnp", "release-" + DOTTED),
     "APPINDICATOR": ("AyatanaIndicators/libayatana-appindicator", DOTTED),

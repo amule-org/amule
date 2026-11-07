@@ -303,7 +303,7 @@ CPartFile::CPartFile(CSearchFile *searchresult)
 			}
 			// Media metadata advertised by the source, so a download carries FT_MEDIA_*
 			// immediately -- visible while downloading and persisted on completion -- without
-			// needing a local ffprobe. All six, and through the same helper as the string-named
+			// probing it locally. All six, and through the same helper as the string-named
 			// branch above, so both encodings converge on one set of rules.
 			static const uint8 _aMediaIDs[] = { FT_MEDIA_LENGTH,
 				FT_MEDIA_BITRATE,

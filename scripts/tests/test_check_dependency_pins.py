@@ -22,7 +22,7 @@ class ReadPinsTest(unittest.TestCase):
             pins_check.read_pins(text + "NEWLIB_VERSION=1.0\nNEWLIB_TARBALL_URL=https://x\n")
 
     def test_missing_pin_fails(self):
-        with self.assertRaisesRegex(ValueError, "MEDIAINFO"):
+        with self.assertRaisesRegex(ValueError, "CRYPTOPP"):
             pins_check.read_pins("WX_VERSION=3.2.12\n")
 
 
@@ -34,8 +34,6 @@ class NewestReleaseTest(unittest.TestCase):
     def test_every_tag_format(self):
         samples = {
             "WX": "v3.2.12",
-            "ZENLIB": "v0.4.41",
-            "MEDIAINFO": "v26.10",
             "CRYPTOPP": "CRYPTOPP_8_9_0",
             "LIBUPNP": "release-22.0.4",
             "APPINDICATOR": "0.6.0",
@@ -51,27 +49,24 @@ class NewestReleaseTest(unittest.TestCase):
 
 class CheckTest(unittest.TestCase):
     def test_reports_only_newer_releases(self):
-        tags = {"MediaArea/MediaInfoLib": ["v26.05", "v26.10"], "MediaArea/ZenLib": ["v0.4.41"]}
-        newer, errors = pins_check.check({"MEDIAINFO": "26.05", "ZENLIB": "0.4.41"}, tags.__getitem__)
+        tags = {"libgd/libgd": ["gd-2.3.3", "gd-2.3.4"], "boostorg/boost": ["boost-1.87.0"]}
+        newer, errors = pins_check.check({"LIBGD": "2.3.3", "BOOST": "1.87.0"}, tags.__getitem__)
         self.assertEqual(errors, [])
-        self.assertEqual(
-            newer,
-            [("MEDIAINFO", "26.05", "26.10", "https://github.com/MediaArea/MediaInfoLib/releases")],
-        )
+        self.assertEqual(newer, [("LIBGD", "2.3.3", "2.3.4", "https://github.com/libgd/libgd/releases")])
 
     def test_failed_lookup_keeps_checking_the_rest(self):
         def fetch(repo):
-            if repo == "MediaArea/ZenLib":
+            if repo == "boostorg/boost":
                 raise subprocess.TimeoutExpired("git", 120)
-            return ["v26.10"]
+            return ["gd-2.3.4"]
 
-        newer, errors = pins_check.check({"ZENLIB": "0.4.41", "MEDIAINFO": "26.05"}, fetch)
-        self.assertEqual([row[0] for row in newer], ["MEDIAINFO"])
+        newer, errors = pins_check.check({"BOOST": "1.87.0", "LIBGD": "2.3.3"}, fetch)
+        self.assertEqual([row[0] for row in newer], ["LIBGD"])
         self.assertEqual(len(errors), 1)
-        self.assertIn("ZENLIB", errors[0])
+        self.assertIn("BOOST", errors[0])
 
     def test_no_matching_tags_is_an_error(self):
-        newer, errors = pins_check.check({"ZENLIB": "0.4.41"}, lambda repo: ["junk"])
+        newer, errors = pins_check.check({"BOOST": "1.87.0"}, lambda repo: ["junk"])
         self.assertEqual(newer, [])
         self.assertIn("no release tags", errors[0])
 

@@ -462,7 +462,7 @@
   "shared_verify_started_selected_many": "Verificación iniciada para {n} archivos. Los resultados aparecerán en el registro de aMule.",
   "shared_verify_started_selected_other": "Verificación iniciada para {n} archivos. Los resultados aparecerán en el registro de aMule.",
   "shared_media_refresh": "Volver a extraer metadatos",
-  "shared_media_refresh_tip": "Vuelve a analizar este archivo con ffprobe y reemplaza su duración, tasa de bits, códec y etiquetas. El resultado aparece en el registro de aMule.",
+  "shared_media_refresh_tip": "Vuelve a analizar este archivo con el analizador multimedia incluido y reemplaza su duración, tasa de bits, códec y etiquetas. El resultado aparece en el registro de aMule.",
   "shared_media_refresh_tip_partfile": "No disponible mientras el archivo se está descargando.",
   "shared_media_refresh_started": "Reextracción de metadatos iniciada. Los valores se actualizarán cuando termine el análisis.",
   "shared_media_refresh_all": "Reextraer metadatos",

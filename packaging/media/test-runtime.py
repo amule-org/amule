@@ -119,8 +119,7 @@ def run(args, root):
     version = subprocess.run(helper + ['--version'], env=child_env, capture_output=True,
                              text=True, timeout=30)
     assert version.returncode == 0, (version.returncode, version.stdout, version.stderr)
-    assert 'amule-media-probe 1;' in version.stdout, version.stdout + version.stderr
-    assert 'native' in version.stdout, 'package did not use the native parsers: ' + version.stdout
+    assert version.stdout == 'amule-media-probe 1\n', version.stdout + version.stderr
     print('PASS packaged helper version:', version.stdout.strip(), flush=True)
     incoming = root / 'Incoming'
     incoming.mkdir()
@@ -143,7 +142,6 @@ def run(args, root):
     assert b'\r' not in reply.stdout and reply.stdout.endswith(b'END\n'), reply.stdout
     print('PASS packaged helper: duration, codec, tags, Unicode and exact framing', flush=True)
     broken = incoming / 'broken.wav'
-    broken.write_bytes(b'not a media file')
     for payload in (b'', b'not a media file'):
         broken.write_bytes(payload)
         with broken.open('rb') as source:

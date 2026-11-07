@@ -145,7 +145,7 @@ void aviResult(const Avi &avi, Result &res)
 		res.codec = video->codec;
 		// strh counts the whole stream, including OpenDML extension RIFFs. avih counts only
 		// the first RIFF, and some muxers fill OpenDML dmlh with every chunk of every
-		// stream, so dmlh is ignored, as FFmpeg and MediaInfo do.
+		// stream, so dmlh is ignored, as FFmpeg does.
 		if (video->rate && video->scale && video->length)
 			res.seconds = double(video->length) * video->scale / video->rate;
 		else if (avi.usPerFrame)

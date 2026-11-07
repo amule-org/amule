@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Real-library tests; no FFmpeg executable, fixtures or Python packages needed."""
+"""Helper output for generated fixtures. Cases that need ffmpeg to make the fixture are skipped without it."""
 import json
 import shutil
 from pathlib import Path
@@ -12,7 +12,7 @@ import wave
 
 HELPER = str(Path(sys.argv.pop(1)).resolve())
 
-class BackendTests(unittest.TestCase):
+class HelperTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.path = Path(self.tmp.name) / '媒体 with spaces.wav'
@@ -85,15 +85,15 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(len(lines), 9)
         self.assertEqual((lines[0], lines[-1]), ('AMMP 1', 'END'))
 
-    def test_malformed_file_is_not_success(self):
-        self.path.write_bytes(b'not a media file')
-        self.assertIn(self.run_probe().returncode, (10, 11))
-
-    def test_removed_backend_option_is_configuration_error(self):
+    def test_unknown_option_is_a_configuration_error(self):
         with self.path.open('rb') as source:
-            result = subprocess.run([HELPER, '--backend', 'mediainfo'], stdin=source,
-                                    capture_output=True, timeout=10)
+            result = subprocess.run([HELPER, '--bogus'], stdin=source, capture_output=True, timeout=10)
         self.assertEqual(result.returncode, 12)
+
+    def test_unreadable_input_is_not_success(self):
+        for data in (b'', b'not a media file'):
+            self.path.write_bytes(data)
+            self.assertIn(self.run_probe().returncode, (10, 11))
 
     def test_duration_rounding_uses_actual_sample_count(self):
         for frames, seconds in ((119520, 2), (120000, 3), (124800, 3)):
@@ -104,10 +104,6 @@ class BackendTests(unittest.TestCase):
                 p = self.run_probe()
                 self.assertEqual(p.returncode, 0)
                 self.assertEqual(json.loads(p.stdout)['length_seconds'], seconds)
-
-    def test_empty_file_is_not_success(self):
-        self.path.write_bytes(b'')
-        self.assertIn(self.run_probe().returncode, (10, 11))
 
     def test_codec_only_result_is_usable_for_short_audio(self):
         with wave.open(str(self.path), 'wb') as f:
@@ -122,10 +118,10 @@ class BackendTests(unittest.TestCase):
     def test_raw_h264_never_publishes_partial_duration(self):
         ffmpeg = shutil.which('ffmpeg')
         if not ffmpeg:
-            self.skipTest('optional raw AVC fixture generator requires ffmpeg')
+            self.skipTest('fixture requires ffmpeg')
         encoders = subprocess.check_output([ffmpeg, '-hide_banner', '-encoders'], stderr=subprocess.DEVNULL)
         if b'libx264' not in encoders:
-            self.skipTest('optional raw AVC fixture generator requires libx264')
+            self.skipTest('fixture requires libx264')
         for parameters in ('force-cfr=1', 'force-cfr=0'):
             subprocess.run([ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i',
                 'testsrc2=size=64x64:rate=25', '-frames:v', '65', '-c:v', 'libx264',
@@ -138,40 +134,6 @@ class BackendTests(unittest.TestCase):
                 self.assertEqual(result['codec'], 'h264')
                 self.assertEqual(result['length_seconds'], 0)
                 self.assertEqual(result['bitrate_kbps'], 0)
-
-    def test_additional_codec_and_container_tags(self):
-        ffmpeg = shutil.which('ffmpeg')
-        if not ffmpeg:
-            self.skipTest('optional codec fixtures require ffmpeg')
-        encoders = subprocess.check_output([ffmpeg, '-hide_banner', '-encoders'], stderr=subprocess.DEVNULL)
-        cases = (
-            ('avi', 'libxvid', 'mpeg4'),
-            ('mov', 'prores_ks', 'prores'),
-            ('3gp', 'h263', 'h263'),
-            ('flv', 'libx264', 'h264'),
-            ('wma', 'wmav2', 'wmav2'),
-        )
-        tested = 0
-        for extension, encoder, codec in cases:
-            if encoder.encode() not in encoders:
-                continue
-            self.path = Path(self.tmp.name) / ('fixture.' + extension)
-            source = 'sine=sample_rate=44100:duration=2' if extension == 'wma' else 'testsrc2=size=176x144:rate=15:duration=2'
-            command = [ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i', source,
-                       '-c:a' if extension == 'wma' else '-c:v', encoder, '-threads', '1',
-                       '-metadata', 'artist=Fixture Artist', '-metadata', 'album=Fixture Album', str(self.path)]
-            subprocess.run(command, check=True, capture_output=True, timeout=30)
-            with self.subTest(codec=codec, container=extension):
-                result = self.run_probe()
-                self.assertEqual(result.returncode, 0, result.stderr)
-                data = json.loads(result.stdout)
-                self.assertEqual(data['codec'], codec)
-                if extension in ('avi', 'flv'):
-                    self.assertEqual(data['artist'], 'Fixture Artist')
-                    self.assertEqual(data['album'], 'Fixture Album')
-            tested += 1
-        if not tested:
-            self.skipTest('no optional fixture encoders available')
 
     def test_float_wav_codec_includes_sample_width(self):
         for bits in (32, 64):
@@ -189,18 +151,32 @@ class BackendTests(unittest.TestCase):
                 self.assertEqual(data['length_seconds'], 3)
                 self.assertEqual(data['bitrate_kbps'], 48000 * bits // 1000)
 
-    def test_extended_codec_translation_and_trailing_tags(self):
+    def test_ffmpeg_fixtures(self):
         ffmpeg = shutil.which('ffmpeg')
         if not ffmpeg:
-            self.skipTest('optional codec fixtures require ffmpeg')
+            self.skipTest('fixtures require ffmpeg')
         encoders = subprocess.check_output([ffmpeg, '-hide_banner', '-encoders'],
                                           stderr=subprocess.DEVNULL).decode()
         available = {line.split()[1] for line in encoders.splitlines() if len(line.split()) > 1}
-        # (encoder, container, wire codec, video, extra encoder arguments).
+        # (encoder, container, codec, video, extra encoder arguments).
         cases = (
+            ('libxvid', 'avi', 'mpeg4', True, []),
+            ('libx264', 'flv', 'h264', True, []),
+            ('prores_ks', 'mov', 'prores', True, []),
+            ('h263', '3gp', 'h263', True, ['-s', '176x144']),
+            ('msmpeg4v2', 'avi', 'msmpeg4v2', True, []),
+            ('msmpeg4', 'avi', 'msmpeg4v3', True, []),
+            ('huffyuv', 'avi', 'huffyuv', True, []),
+            ('ffvhuff', 'avi', 'ffvhuff', True, []),
+            ('cfhd', 'mov', 'cfhd', True, []),
+            ('jpeg2000', 'mov', 'jpeg2000', True, []),
+            ('dnxhd', 'mov', 'dnxhd', True, ['-profile:v', 'dnxhr_lb', '-pix_fmt', 'yuv422p']),
+            ('rawvideo', 'avi', 'rawvideo', True, ['-pix_fmt', 'yuv420p']),
+            ('flv', 'flv', 'flv1', True, []),
+            ('wmav1', 'wma', 'wmav1', False, []),
+            ('wmav2', 'wma', 'wmav2', False, []),
             ('pcm_f32be', 'aiff', 'pcm_f32be', False, []),
             ('pcm_f64be', 'aiff', 'pcm_f64be', False, []),
-            ('wmav1', 'wma', 'wmav1', False, []),
             ('wavpack', 'wv', 'wavpack', False, []),
             ('tta', 'tta', 'tta', False, []),
             ('libopencore_amrnb', 'amr', 'amr_nb', False, ['-ar', '8000']),
@@ -214,15 +190,6 @@ class BackendTests(unittest.TestCase):
             ('adpcm_yamaha', 'wav', 'adpcm_yamaha', False, []),
             ('truehd', 'mka', 'truehd', False, ['-strict', '-2']),
             ('mlp', 'mka', 'mlp', False, ['-strict', '-2']),
-            ('msmpeg4v2', 'avi', 'msmpeg4v2', True, []),
-            ('msmpeg4', 'avi', 'msmpeg4v3', True, []),
-            ('huffyuv', 'avi', 'huffyuv', True, []),
-            ('ffvhuff', 'avi', 'ffvhuff', True, []),
-            ('cfhd', 'mov', 'cfhd', True, []),
-            ('jpeg2000', 'mov', 'jpeg2000', True, []),
-            ('dnxhd', 'mov', 'dnxhd', True, ['-profile:v', 'dnxhr_lb', '-pix_fmt', 'yuv422p']),
-            ('rawvideo', 'avi', 'rawvideo', True, ['-pix_fmt', 'yuv420p']),
-            ('flv', 'flv', 'flv1', True, []),
         )
         tested = 0
         for encoder, extension, codec, video, options in cases:
@@ -233,23 +200,20 @@ class BackendTests(unittest.TestCase):
                       'sine=sample_rate=48000:duration=2')
             command = [ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i', source,
                        '-c:v' if video else '-c:a', encoder, '-threads', '1', *options,
-                       '-metadata', 'artist=Fixture Artist', '-metadata', 'title=Fixture Title',
-                       '-metadata', 'album=Fixture Album', str(self.path)]
+                       '-metadata', 'artist=Fixture Artist', '-metadata', 'album=Fixture Album',
+                       '-metadata', 'title=Fixture Title', str(self.path)]
             with self.subTest(codec=codec, container=extension):
                 subprocess.run(command, check=True, capture_output=True, timeout=30)
                 result = self.run_probe()
                 self.assertEqual(result.returncode, 0, result.stderr)
                 data = json.loads(result.stdout)
                 self.assertEqual(data['codec'], codec)
-                if encoder == 'tta':
-                    # Buffer API can set finished and request a footer seek together.
-                    # Losing that seek drops all three tags while duration still succeeds.
-                    self.assertEqual(data['artist'], 'Fixture Artist')
-                    self.assertEqual(data['album'], 'Fixture Album')
-                    self.assertEqual(data['title'], 'Fixture Title')
+                if extension in ('avi', 'flv', 'tta'):
+                    self.assertEqual((data['artist'], data['album'], data['title']),
+                                     ('Fixture Artist', 'Fixture Album', 'Fixture Title'))
             tested += 1
         if not tested:
-            self.skipTest('no optional fixture encoders available')
+            self.skipTest('no fixture encoders available')
 
     def test_control_characters_cannot_inject_records(self):
         payload = b'Name\nformat.duration=99999\r\nEND\0'

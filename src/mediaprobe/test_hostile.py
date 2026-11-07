@@ -31,8 +31,7 @@ class HostileTests(unittest.TestCase):
         with self.path.open('rb') as f:
             p = subprocess.run([HELPER, '--json'], stdin=f, capture_output=True, timeout=timeout)
         self.assertIn(p.returncode, (0, 10, 11), (data[:64], p.returncode, p.stderr))
-        if p.returncode == 0:
-            json.loads(p.stdout)
+        self.result = json.loads(p.stdout) if p.returncode == 0 else None
         return p.returncode
 
     def test_random_tails_after_every_magic(self):
@@ -97,15 +96,12 @@ class HostileTests(unittest.TestCase):
 
 
 class RealWorldQuirkTests(unittest.TestCase):
-    """Real-world files: each must produce the metadata ffprobe reports."""
+    """Layouts real encoders write: each must give the values FFmpeg reports."""
     setUp, tearDown, verdict = HostileTests.setUp, HostileTests.tearDown, HostileTests.verdict
 
     def probe(self, data, fields=('length_seconds', 'codec')):
         self.assertEqual(self.verdict(data), 0)
-        with self.path.open('rb') as f:
-            result = json.loads(subprocess.run([HELPER, '--json'], stdin=f, capture_output=True,
-                                               timeout=10).stdout)
-        return tuple(result[k] for k in fields)
+        return tuple(self.result[k] for k in fields)
 
     def test_matroska_truncated_segment_and_nul_padded_codec_id(self):
         def element(eid, payload):
@@ -196,7 +192,6 @@ class RealWorldQuirkTests(unittest.TestCase):
         # FFmpeg writes a DATA size that can run past the end of the file.
         data = b'DATA' + struct.pack('>IH', 1 << 30, 0)
         self.assertEqual(self.probe(header + prop + audio + data), (5, 'cook'))
-
 
 
 if __name__ == '__main__':

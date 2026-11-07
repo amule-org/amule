@@ -187,7 +187,7 @@ CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos,
 	// when the config has something saved.
 	ApplySorting(COLUMN_SHARED_NAME, 0);
 
-	// The media columns are only filled for files ffprobe has run over, so a share that has
+	// The media columns are only filled for probed files, so a share that has
 	// never been probed would gain three empty columns for everyone. Listed in the header menu,
 	// hidden until asked for -- the widths above are what they get when enabled. Set before
 	// LoadColumnSettings() so anything the user saved wins.

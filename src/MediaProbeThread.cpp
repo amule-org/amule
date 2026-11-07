@@ -27,7 +27,7 @@
 #include <wx/app.h> // Needed for wxTheApp / wxQueueEvent
 
 #include "Logger.h"
-#include "MediaProbe.h"  // Needed for MediaProbe::Probe / MediaInfo
+#include "MediaProbe.h"  // Needed for MediaProbe::Probe / MediaMetadata
 #include "ThreadTasks.h" // Needed for CMediaProbeEvent
 
 namespace
@@ -146,7 +146,7 @@ void *CMediaProbeThread::Entry()
 			// reason the user can see.
 			const bool jobBulk = job.bulk || bulkProbed > 0;
 			const bool mayName = !jobBulk || bulkNamed < kMaxNamedFailures;
-			MediaInfo info;
+			MediaMetadata info;
 			const MediaProbe::ProbeOutcome outcome = MediaProbe::Probe(
 				exe, job.path, info, kProbeTimeoutMs, m_bRun, jobBulk, mayName);
 			// A file that was gone before the helper ran is not an extraction that failed
@@ -193,7 +193,7 @@ void *CMediaProbeThread::Entry()
 				// timeout or a vanished file says nothing about it, and marking on
 				// those would let one broken installation brand a whole library
 				// permanently.
-				MediaInfo empty;
+				MediaMetadata empty;
 				CMediaProbeEvent evt(job.hash,
 					empty,
 					/*succeeded=*/false,

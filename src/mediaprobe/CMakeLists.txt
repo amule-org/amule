@@ -29,10 +29,10 @@ if(MEDIA_PROBE_FUZZ)
 endif()
 find_package(Python3 COMPONENTS Interpreter)
 if(Python3_Interpreter_FOUND)
-  add_test(NAME MediaProbeBackends COMMAND ${Python3_EXECUTABLE}
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_backends.py $<TARGET_FILE:amule-media-probe>)
+  add_test(NAME MediaProbeHelper COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_helper.py $<TARGET_FILE:amule-media-probe>)
   add_test(NAME MediaProbeHostile COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/test_hostile.py $<TARGET_FILE:amule-media-probe>)
   # Each case starts the helper; on Windows runners that can exceed the 10 s fast lane.
-  set_tests_properties(MediaProbeBackends MediaProbeHostile PROPERTIES LABELS "slow")
+  set_tests_properties(MediaProbeHelper MediaProbeHostile PROPERTIES LABELS "slow")
 endif()
