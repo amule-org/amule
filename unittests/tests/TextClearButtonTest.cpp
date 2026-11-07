@@ -56,37 +56,14 @@ public:
 	}
 };
 
-#if defined(__WXOSX__)
-double VisibleCenterX(const wxBitmap &bitmap)
-{
-	const wxImage image = bitmap.ConvertToImage();
-	double weightedX = 0;
-	double totalWeight = 0;
-	for (int y = 0; y < image.GetHeight(); ++y) {
-		for (int x = 0; x < image.GetWidth(); ++x) {
-			const int alpha = image.HasAlpha() ? image.GetAlpha(x, y) : 255;
-			weightedX += x * alpha;
-			totalWeight += alpha;
-		}
-	}
-	return weightedX / totalWeight;
-}
-#endif
-
-void CheckArtwork(const wxBitmap &bitmap, wxSystemColour colourId, wxWindow *window)
+void CheckArtwork(const wxBitmap &bitmap, wxSystemColour colourId)
 {
 	Require(bitmap.IsOk(), "Clear artwork must be available");
-	auto bundle = CamuleArtProvider::GetMenuBitmapBundle(
+	const auto bundle = CamuleArtProvider::GetMenuBitmapBundle(
 		"menu_x_lg", wxSize(16, 16), wxSystemSettings::GetColour(colourId));
-	const wxBitmap original = bundle.GetBitmapFor(window);
-	bundle = CenterClearButtonArtwork(bundle, window);
 	const auto expected = bundle.GetBitmap(bitmap.GetSize()).ConvertToImage();
 	const auto actual = bitmap.ConvertToImage();
 	Require(actual.HasAlpha() && expected.HasAlpha(), "SVG artwork must retain transparency");
-#if defined(__WXOSX__)
-	Require(VisibleCenterX(bitmap) < VisibleCenterX(original) - 1.0,
-		"Clear X must be shifted left within the macOS bitmap to center in its bezel");
-#endif
 	int visiblePixels = 0;
 	for (int y = 0; y < actual.GetHeight(); ++y) {
 		for (int x = 0; x < actual.GetWidth(); ++x) {
@@ -154,8 +131,8 @@ void CheckRow(wxWindow *field, wxSizer *outer)
 		"Clear button must not increase the row height");
 	Require(clear->GetBitmap().GetLogicalSize() == clear->FromDIP(wxSize(16, 16)),
 		"Clear icon must remain 16 DIP at every scale");
-	CheckArtwork(clear->GetBitmap(), wxSYS_COLOUR_BTNTEXT, clear);
-	CheckArtwork(clear->GetBitmapDisabled(), wxSYS_COLOUR_GRAYTEXT, clear);
+	CheckArtwork(clear->GetBitmap(), wxSYS_COLOUR_BTNTEXT);
+	CheckArtwork(clear->GetBitmapDisabled(), wxSYS_COLOUR_GRAYTEXT);
 
 	// Seed stale colours, then simulate a theme switch. Both states must be rebuilt.
 	const auto stale =
@@ -164,8 +141,8 @@ void CheckRow(wxWindow *field, wxSizer *outer)
 	clear->SetBitmapDisabled(stale);
 	wxSysColourChangedEvent themeChanged;
 	clear->GetEventHandler()->ProcessEvent(themeChanged);
-	CheckArtwork(clear->GetBitmap(), wxSYS_COLOUR_BTNTEXT, clear);
-	CheckArtwork(clear->GetBitmapDisabled(), wxSYS_COLOUR_GRAYTEXT, clear);
+	CheckArtwork(clear->GetBitmap(), wxSYS_COLOUR_BTNTEXT);
+	CheckArtwork(clear->GetBitmapDisabled(), wxSYS_COLOUR_GRAYTEXT);
 	Require(row->GetMinSize().y == field->GetBestSize().y,
 		"Theme updates must preserve the field-height row");
 

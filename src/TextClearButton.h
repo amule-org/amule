@@ -33,46 +33,6 @@
 #include <wx/textentry.h>
 #include <algorithm>
 
-// Cocoa's bitmap-only button positions this 16 DIP image too far right inside
-// the small clear-button bezel. Shift the artwork within its bitmap so the X
-// is centered; leave the button and its spacing unchanged.
-inline wxBitmapBundle CenterClearButtonArtwork(wxBitmapBundle artwork, wxWindow *window)
-{
-#if defined(__WXOSX__)
-	const wxBitmap source = artwork.GetBitmapFor(window);
-	if (!source.IsOk()) {
-		return artwork;
-	}
-	const wxImage original = source.ConvertToImage();
-	const int offset = wxRound(window->FromDIP(3) * source.GetScaleFactor());
-	if (offset <= 0 || offset >= original.GetWidth()) {
-		return artwork;
-	}
-
-	wxImage shifted(original.GetWidth(), original.GetHeight());
-	shifted.InitAlpha();
-	const size_t pixelCount = size_t(original.GetWidth()) * original.GetHeight();
-	std::fill_n(shifted.GetData(), pixelCount * 3, 0);
-	std::fill_n(shifted.GetAlpha(), pixelCount, 0);
-	const unsigned char *sourceData = original.GetData();
-	const unsigned char *sourceAlpha = original.GetAlpha();
-	unsigned char *shiftedData = shifted.GetData();
-	unsigned char *shiftedAlpha = shifted.GetAlpha();
-	for (int y = 0; y < original.GetHeight(); ++y) {
-		for (int x = 0; x < original.GetWidth() - offset; ++x) {
-			const size_t sourcePixel = size_t(y) * original.GetWidth() + x + offset;
-			const size_t targetPixel = size_t(y) * original.GetWidth() + x;
-			std::copy_n(sourceData + sourcePixel * 3, 3, shiftedData + targetPixel * 3);
-			shiftedAlpha[targetPixel] = sourceAlpha ? sourceAlpha[sourcePixel] : 255;
-		}
-	}
-	return wxBitmapBundle::FromBitmap(wxBitmap(shifted, wxBITMAP_SCREEN_DEPTH, source.GetScaleFactor()));
-#else
-	(void)window;
-	return artwork;
-#endif
-}
-
 // Keep the original text control (including the search-history dropdown) and
 // its text events. The clear button stays visible even when the field is empty.
 inline wxSizer *WithTextClearButton(wxWindow *input)
@@ -99,16 +59,10 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 	clear->SetMaxSize(wxSize(side, input->GetBestSize().y));
 	const auto updateArtwork = [clear]() {
 		// Bundles take a size at 100% DPI and rasterize the SVG at each scale.
-		clear->SetBitmap(
-			CenterClearButtonArtwork(CamuleArtProvider::GetMenuBitmapBundle("menu_x_lg",
-							 wxSize(16, 16),
-							 wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT)),
-				clear));
-		clear->SetBitmapDisabled(
-			CenterClearButtonArtwork(CamuleArtProvider::GetMenuBitmapBundle("menu_x_lg",
-							 wxSize(16, 16),
-							 wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT)),
-				clear));
+		clear->SetBitmap(CamuleArtProvider::GetMenuBitmapBundle(
+			"menu_x_lg", wxSize(16, 16), wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT)));
+		clear->SetBitmapDisabled(CamuleArtProvider::GetMenuBitmapBundle(
+			"menu_x_lg", wxSize(16, 16), wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT)));
 	};
 	updateArtwork();
 	clear->Bind(wxEVT_SYS_COLOUR_CHANGED, [updateArtwork](wxSysColourChangedEvent &event) {
