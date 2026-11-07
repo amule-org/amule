@@ -44,7 +44,7 @@ inline wxBitmapBundle CenterClearButtonArtwork(wxBitmapBundle artwork, wxWindow 
 		return artwork;
 	}
 	const wxImage original = source.ConvertToImage();
-	const int offset = window->FromDIP(3);
+	const int offset = wxRound(window->FromDIP(3) * source.GetScaleFactor());
 	if (offset <= 0 || offset >= original.GetWidth()) {
 		return artwork;
 	}
