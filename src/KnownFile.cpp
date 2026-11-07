@@ -1033,7 +1033,7 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 	const BitVector &rcvstatus = forClient->GetUpPartStatus();
 	bool SupportsUploadChunksState = !rcvstatus.empty();
 	// wxASSERT(rcvstatus.size() == GetPartCount()); // Obviously!
-	if (rcvstatus.size() != GetPartCount()) {
+	if (SupportsUploadChunksState && rcvstatus.size() != GetPartCount()) {
 		// Yuck. Same file but different part count? Seriously fucked up.
 		AddDebugLogLineN(logKnownFiles,
 			CFormat("Impossible situation: different partcounts for the same known file: %i "

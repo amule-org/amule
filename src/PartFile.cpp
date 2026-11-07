@@ -3168,12 +3168,12 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 	const CUpDownClient *forClient, uint8 byRequestedVersion, uint16 nRequestedOptions)
 {
 
-	if (m_SrcList.empty()) {
-		return NULL;
-	}
-
 	if (!IsPartFile()) {
 		return CKnownFile::CreateSrcInfoPacket(forClient, byRequestedVersion, nRequestedOptions);
+	}
+
+	if (m_SrcList.empty()) {
+		return nullptr;
 	}
 
 	if (((forClient->GetRequestFile() != this) && (forClient->GetUploadFile() != this)) ||
@@ -3197,7 +3197,9 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 		return NULL;
 	}
 
-	const BitVector &reqstatus = forClient->GetPartStatus();
+	// The requester is downloading from us. Its upload-side bitmap belongs to this file;
+	// its download-side bitmap can describe an entirely different file we request from it.
+	const BitVector &reqstatus = forClient->GetUpPartStatus();
 	bool KnowNeededParts = !reqstatus.empty();
 	// wxASSERT(rcvstatus.size() == GetPartCount()); // Obviously!
 	if (KnowNeededParts && (reqstatus.size() != GetPartCount())) {
@@ -3262,7 +3264,7 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 		}
 		if (bNeeded) {
 			uint32 dwID;
-			if (forClient->GetSourceExchange1Version() > 2) {
+			if (packet.GetVersion() >= 3) {
 				dwID = cur_src->GetUserIDHybrid();
 			} else {
 				dwID = wxUINT32_SWAP_ALWAYS(cur_src->GetUserIDHybrid());
