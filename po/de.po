@@ -5184,6 +5184,29 @@ msgstr "Wenn dies aktiviert ist, wird aMule beim Start überprüfen, ob eine neu
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Registriert einen Autostart pro Nutzer. Wenn du das Programm verschiebst musst du aMule manuell starten um den Eintrag zu aktualisieren."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "aus"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Wird bereits heruntergeladen"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule läuft"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Macht aMule zum Standardprogramm für ed2k://-Verweise, sodass diese beim Anklicken in deinem Browser oder Dateimanager in aMule geöffnet werden."
@@ -5851,10 +5874,6 @@ msgstr "Upload-Warteschlangengröße: 5000 Clients"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Server-Wiederverbindungsintervall: Aus"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Zeitgesteuerten Bereitschaftsmodus des Computers deaktivieren"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10752,6 +10771,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Zeitgesteuerten Bereitschaftsmodus des Computers deaktivieren"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

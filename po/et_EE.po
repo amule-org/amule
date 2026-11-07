@@ -5139,6 +5139,29 @@ msgstr "Selle lubamine paneb aMule kontrollima uut versiooni käivitumisel ning 
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Registreerib operatsioonisüsteemis kasutajapõhise automaatkäivituse kirje, et aMule käivituks sisselogimisel. Kui liigutad aMule binaarfaili, käivita aMule pärast seda korra käsitsi, et kirjet värskendada."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "väljas"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Juba tõmbad"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule töötab"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Muudab aMule ed2k:// linkide vaikimisi käsitlejaks, nii et sellisele lingile klõpsamine brauseris või failihalduris avab selle siin."
@@ -5791,10 +5814,6 @@ msgstr "Saatmise saba suurus: 5000 klienti"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Serveriühenduse värskenadamise intervall: Ei kasuta"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Keela arvuti ajastatud uinumine"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10651,6 +10670,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Keela arvuti ajastatud uinumine"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

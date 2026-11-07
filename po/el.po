@@ -5142,6 +5142,29 @@ msgstr "Η ενεργοποίηση αυτού θα κάνει το aMule να �
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Καταχωρεί μια καταχώρηση αυτόματης εκκίνησης ανά χρήστη στο λειτουργικό σύστημα, ώστε το aMule να εκκινείται κατά τη σύνδεση. Αν μετακινήσετε το δυαδικό αρχείο του aMule, εκκινήστε το aMule χειροκίνητα μία φορά μετά για να ανανεωθεί η καταχώρηση."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "κλειστό"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Ήδη κατεβαίνει"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "Το aMule τρέχει"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Κάνει το aMule τον προεπιλεγμένο χειριστή για συνδέσμους ed2k://, ώστε κάνοντας κλικ σε έναν στον περιηγητή ή τον διαχειριστή αρχείων να ανοίγει εδώ."
@@ -5792,10 +5815,6 @@ msgstr "Λίστα αναμονής ανεβάσματος: 5000 πελάτες"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Διάστημα ανανέωσης της σύνδεσης σε διακομιστή: Απενεργοποίηση"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Απενεργοποίηση χρονομετρημένης αναστολής λειτουργίας του υπολογιστή"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10667,6 +10686,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Απενεργοποίηση χρονομετρημένης αναστολής λειτουργίας του υπολογιστή"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

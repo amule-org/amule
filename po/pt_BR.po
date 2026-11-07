@@ -18,7 +18,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-06 12:27+0000\n"
+"PO-Revision-Date: 2026-11-07 10:50+0000\n"
 "Last-Translator: Marcelo Roberto Jimenez <mrjimenez@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/amule/amule-application/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -5104,6 +5104,29 @@ msgstr "Ativar isto faz com que o aMule verifique por nova versão ao iniciar e 
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Registra no sistema operacional uma entrada de início automático por usuário, para que o aMule seja iniciado no login. Se você mover o binário do aMule, rode-o uma vez manualmente depois para atualizar a entrada."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "desligado"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Já baixando"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule está rodando"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Torna o aMule o manipulador padrão de links ed2k://, de modo que clicar em um deles no navegador ou no gerenciador de arquivos o abra aqui."
@@ -5759,10 +5782,6 @@ msgstr "Tamanho da fila de upload: 5000 clientes"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Intervalo de renovação da conexão com o servidor: desativado"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Desabilitar o modo de espera programado do computador"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -7016,34 +7035,34 @@ msgstr "Porta padrão será utilizada (%d)"
 #: src/Preferences.cpp
 #, c-format
 msgid "Moved the shared folders from %s to shareddir-explicit.dat"
-msgstr ""
+msgstr "As pastas compartilhadas foram movidas de %s para shareddir-explicit.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Could not read %s. It is left in place and ignored."
-msgstr ""
+msgstr "Não foi possível ler %s. O arquivo foi deixado onde está e será ignorado."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Removing %s: its folders are already in shareddir-explicit.dat and shareddir-recursive.dat"
-msgstr ""
+msgstr "Removendo %s: suas pastas já estão em shareddir-explicit.dat e shareddir-recursive.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
-msgstr ""
+msgstr "Ignorando %s: as pastas compartilhadas ficam em shareddir-explicit.dat e shareddir-recursive.dat. O arquivo será removido."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "%u folder listed only there is not shared:%s"
 msgid_plural "%u folders listed only there are not shared:%s"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u pasta listada apenas nele não está compartilhada:%s"
+msgstr[1] "%u pastas listadas apenas nele não estão compartilhadas:%s"
 
 #: src/Preferences.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove %s"
-msgstr "Não foi possível mover arquivo baixado para %s"
+msgstr "Não foi possível remover %s"
 
 #: src/Preferences.cpp
 #, c-format
@@ -10599,6 +10618,9 @@ msgstr "Não foi possível comparar o ECPassword legado com o ECPasswordVerifier
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrando um ECPassword legado alterado após um downgrade; o verificador anterior não autentica mais esta sessão."
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Desabilitar o modo de espera programado do computador"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

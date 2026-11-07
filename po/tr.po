@@ -5122,6 +5122,29 @@ msgstr "Bunu etkinleştirmek, aMule'nin yeni sürümleri başlangıçta ve çal�
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Oturum açıldığında aMule'ün çalıştırılması için işletim sistemine kullanıcı başı bir otomatik başlatma unsuru kaydeder. Eğer aMule ikilisini taşırsanız, sonrasında onu bir kere el ile başlatın ki bu unsur güncellensin."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "bağlı değil"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Zaten aktarılıyor"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule çalışıyor"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "aMule'ü ed2k:// bağlantıları için varsayılan yönetici yapar, yani böyle bir bağlantıya tarayıcınızda veya dosya yöneticinizde tıklamanız onu burada açar."
@@ -5774,10 +5797,6 @@ msgstr "Gönderme Sıra Boyutu: 5000 kullanıcı"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Sunucu bağlantısı yenileme sıklığı: devre dışı"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Bilgisayarın devre dışı kalma kipini etkisiz hale getir"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10626,6 +10645,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Bilgisayarın devre dışı kalma kipini etkisiz hale getir"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

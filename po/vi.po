@@ -5079,6 +5079,29 @@ msgstr "Bật tùy chọn này sẽ làm aMule kiểm tra phiên bản mới khi
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Đăng ký một mục tự khởi động cho từng người dùng với hệ điều hành để aMule khởi chạy khi đăng nhập. Nếu bạn di chuyển tệp thực thi aMule, hãy khởi chạy aMule thủ công một lần sau đó để làm mới mục này."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "tắt"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Đang tải xuống rồi"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule đang chạy"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Làm cho aMule trở thành trình xử lý mặc định cho liên kết ed2k:// để khi nhấp vào một liên kết trong trình duyệt hoặc trình quản lý tệp sẽ mở nó ở đây."
@@ -5727,10 +5750,6 @@ msgstr "Kích thước hàng đợi tải lên: 5000 client"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Khoảng thời gian làm mới kết nối máy chủ: Tắt"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Vô hiệu hóa chế độ chờ theo giờ của máy tính"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10537,6 +10556,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Vô hiệu hóa chế độ chờ theo giờ của máy tính"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

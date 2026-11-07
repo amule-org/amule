@@ -5118,6 +5118,29 @@ msgstr "Povolením této volby bude aMule kontrolovat novou verzi při spuštěn
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Zaregistruje u operačního systému záznam automatického spouštění pro uživatele, aby se aMule spouštěl při přihlášení. Pokud přesunete binární soubor aMule, spusťte poté aMule jednou ručně, aby se záznam obnovil."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "vypnuto"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Stahování již probíhá"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule běží"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Nastaví aMule jako výchozí obslužný program pro odkazy ed2k://, takže kliknutím na takový odkaz v prohlížeči nebo správci souborů se otevře zde."
@@ -5774,10 +5797,6 @@ msgstr "Velikost fronty odesílání: 5000 klientů"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Interval obnovení připojení k serveru: zakázáno"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Zakázat časovaný úsporný režim počítače"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10644,6 +10663,9 @@ msgstr "Nelze porovnat zastaralé ECPassword s ECPasswordVerifier; odmítám ext
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrace změněného zastaralého ECPassword po přechodu na starší verzi; předchozí ověřovač již tuto relaci neověřuje."
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Zakázat časovaný úsporný režim počítače"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

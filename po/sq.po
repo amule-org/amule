@@ -5140,6 +5140,29 @@ msgstr "Aktivizimi i kësaj do të bëjë që aMule të kontrollojë për një v
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Regjistron një hyrje autostart për përdoruesin në OS që aMule të niset gjatë hyrjes. Nëse e zhvendosni binarin e aMule, niseni atë një herë manualisht më pas për të rifreskuar hyrjen."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "Fikur"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Jam duke e shkarkuar"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule eshte duke punuar"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "E bën aMule trajtuesin e parazgjedhur për lidhjet ed2k:// që klikimi i njërës në shfletuesin tuaj ose menaxherin e skedarëve ta hapë këtu."
@@ -5790,10 +5813,6 @@ msgstr "Madhesia e Radhes ne Ngarkim: 5000 klienta"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Interval i azhornimit te lidhjes se serverit: C'aktivizuar"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Çaktivizo modalitetin e gatishmërisë të kompjuterit"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10656,6 +10675,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Çaktivizo modalitetin e gatishmërisë të kompjuterit"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

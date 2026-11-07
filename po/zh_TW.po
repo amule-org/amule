@@ -5126,6 +5126,29 @@ msgstr "啟用此選項將使 aMule 在啟動時以及執行期間每天檢查�
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "向作業系統註冊每位使用者的自動啟動項目，讓 aMule 在登入時啟動。若您移動了 aMule 執行檔，之後請手動啟動一次 aMule 以更新該項目。"
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "關閉"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "已在下載清單中"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule 正在執行"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "將 aMule 設為 ed2k:// 連結的預設處理程式，讓您在瀏覽器或檔案管理員中點選連結時開啟 aMule。"
@@ -5778,10 +5801,6 @@ msgstr "上傳等候區大小：5000 "
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "伺服器連線更新間隔時間：停用"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "停用電腦的自動進入待命模式功能"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10616,6 +10635,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "停用電腦的自動進入待命模式功能"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

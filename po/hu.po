@@ -5118,6 +5118,29 @@ msgstr "Ha engedélyezed, az aMule induláskor és futás közben naponta egysze
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Felhasználónkénti automatikus indítási bejegyzést regisztrál, hogy az aMule bejelentkezéskor elinduljon. Ha áthelyezi az aMule bináris fájlt, indítsa el az aMule-t manuálisan a bejegyzés frissítéséhez."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "nincs"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Letöltés alatt"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule fut"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Az aMule-t teszi az ed2k:// hivatkozások alapértelmezett kezelőjévé, így ha rákattintasz egyre a böngésződben vagy a fájlkezelőben, itt nyílik meg."
@@ -5769,10 +5792,6 @@ msgstr "Feltöltők várólistájának nagysága: 5000 kliens"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Kiszolgáló kapcsolat frissítési gyakorisága: Tiltva"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Számítógép időzített készenléti állapotának hatástalanítása"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10608,6 +10627,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Számítógép időzített készenléti állapotának hatástalanítása"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

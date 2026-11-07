@@ -5159,6 +5159,29 @@ msgstr "Включването на тази опция ще накара aMule 
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Регистрира запис за автоматично стартиране за текущия потребител в операционната система, така че aMule да се стартира при влизане. Ако преместите изпълнимия файл на aMule, стартирайте aMule веднъж ръчно след това, за да обновите записа."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "изключен"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Вече се изтегля"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule работи"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Прави aMule стандартния обработчик за връзки ed2k://, така че щракването върху такава връзка в браузъра или файловия мениджър да я отваря тук."
@@ -5808,10 +5831,6 @@ msgstr "Размер на опашката за качване: 5000 клиен�
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Интервал на обновяване на връзката със сървъра: Изключено"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Забраняване на автоматичния режим на готовност на компютъра"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10657,6 +10676,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Забраняване на автоматичния режим на готовност на компютъра"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

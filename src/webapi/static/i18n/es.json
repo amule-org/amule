@@ -462,7 +462,7 @@
   "shared_verify_started_selected_many": "Verificación iniciada para {n} archivos. Los resultados aparecerán en el registro de aMule.",
   "shared_verify_started_selected_other": "Verificación iniciada para {n} archivos. Los resultados aparecerán en el registro de aMule.",
   "shared_media_refresh": "Volver a extraer metadatos",
-  "shared_media_refresh_tip": "Vuelve a analizar este archivo con ffprobe y reemplaza su duración, tasa de bits, códec y etiquetas. El resultado aparece en el registro de aMule.",
+  "shared_media_refresh_tip": "Vuelve a analizar este archivo con el analizador multimedia incluido y sustituye su duración, tasa de bits, códec y etiquetas. Se reporta en el registro de aMule.",
   "shared_media_refresh_tip_partfile": "No disponible mientras el archivo se está descargando.",
   "shared_media_refresh_started": "Reextracción de metadatos iniciada. Los valores se actualizarán cuando termine el análisis.",
   "shared_media_refresh_all": "Reextraer metadatos",
@@ -1055,5 +1055,18 @@
   "prefs_group_kad_repair_hashes": "Hashes de reparación de archivos a través de Kad",
   "prefs_field_message_filter_advanced_spam_filter": "Activar el filtro avanzado de spam",
   "prefs_field_message_filter_use_captchas": "Solicitar un CAPTCHA para los primeros mensajes de personas que no sean amigos",
-  "prefs_field_message_filter_use_captchas_help": "Los mensajes permanecen ocultos hasta que el remitente resuelva el reto. Los usuarios que no dispongan de compatibilidad con CAPTCHA no pueden iniciar un chat."
+  "prefs_field_message_filter_use_captchas_help": "Los mensajes permanecen ocultos hasta que el remitente resuelva el reto. Los usuarios que no dispongan de compatibilidad con CAPTCHA no pueden iniciar un chat.",
+  "prefs_allowed_roots_hint": "Los cambios en las carpetas remotas (carpetas de entrada, temporales, compartidas y de categorías) se limitan a estas rutas principales. Si la lista está vacía, el demonio rechaza cualquier cambio en las carpetas remotas. Se configuran en el demonio, en el archivo allowed-remote-dirs.dat, y no se pueden modificar a través de la API.",
+  "about_country_data": "Datos de IP-to-country",
+  "prefs_field_directories_allowed_remote_roots": "Raíces configuradas",
+  "prefs_field_advanced_write_buffer_limit_mebibytes": "Límite del búfer de escritura de descargas (MiB)",
+  "stats_tree_nat_traversal": "NAT Traversal (sesión)",
+  "stats_tree_natt_lugdunum_callback_attempts": "Respuestas de Lugdunum: %s",
+  "stats_tree_natt_lugdunum_callback_successes": "Respuestas de Lugdunum exitosas: %s",
+  "prefs_group_debug_logging": "Registros de depuración",
+  "stats_tree_natt_server_punch_attempts": "Perforaciones de NAT del servidor: %s",
+  "stats_tree_natt_server_punch_successes": "Perforaciones de NAT del servidor exitosas: %s",
+  "stats_tree_natt_utp_stream_moves": "Los flujos uTP se han movido a un nuevo puerto: %s",
+  "prefs_debugging_warning": "Los registros de depuración pueden contener direcciones IP de otros pares, hashes de usuario y nombres de archivo. Los invitados pueden leer el registro, a menos que los mensajes de depuración vayan solo al archivo de registro. Esa opción se aplica solo a las líneas nuevas: las líneas anteriores siguen siendo legibles hasta que se borre el registro, y al borrarlo también se vacía el archivo de registro del demonio.",
+  "prefs_field_advanced_verbose_logging_logfile_only": "Sólo al archivo de registro"
 }

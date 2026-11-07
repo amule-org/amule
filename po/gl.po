@@ -5156,6 +5156,29 @@ msgstr "Ao activar isto, aMule comprobará se hai unha nova versión ao inicio e
 msgid "Registers a per-user autostart entry with the OS so aMule launches at login. If you move the aMule binary, launch aMule once manually afterwards to refresh the entry."
 msgstr "Crea unha configuración de usuario para que o sistema operativo inicie aMule ao entrar. Se polo que sexa móvese o programa aMule, execúteo unha primeira vez a man para actualizar a configuración."
 
+#: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "apagado"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Xa se está descargando"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule está iniciado"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
 msgstr "Fai de aMule o manexador predeterminado das ligazóns ed2k:// para que ao premer nunha no seu navegador ou xestor de ficheiros se abra aquí."
@@ -5807,10 +5830,6 @@ msgstr "Tamaño cola de espera: 5000 clientes"
 #: src/muuli_wdr.cpp
 msgid "Server connection refresh interval: Disable"
 msgstr "Intervalo de actualización de conexión ao servidor: Desactivado"
-
-#: src/muuli_wdr.cpp
-msgid "Disable computer's timed standby mode"
-msgstr "Impedir que o ordenador entre en modo espera"
 
 #: src/muuli_wdr.cpp
 msgid "Appearance: "
@@ -10674,6 +10693,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Disable computer's timed standby mode"
+#~ msgstr "Impedir que o ordenador entre en modo espera"
 
 #, fuzzy
 #~ msgid "Core Message Categories:"

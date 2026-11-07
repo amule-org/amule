@@ -4,19 +4,21 @@
 # Automatically generated, 2010.
 #
 # Mad-Soft <mad.soft@gmail.com>, 2010
+# thorin <thorin@users.noreply.hosted.weblate.org>, 2026.
+# Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
 "POT-Creation-Date: 2026-10-29 11:58+0100\n"
-"PO-Revision-Date: 2026-10-25 09:58+0000\n"
-"Last-Translator: Mad-Soft <mad.soft@gmail.com>\n"
-"Language-Team: Spanish <es_ES@li.org>\n"
+"PO-Revision-Date: 2026-11-07 10:50+0000\n"
+"Last-Translator: Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Spanish <https://hosted.weblate.org/projects/amule/application-man-pages/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.4.2\n"
+"X-Generator: Weblate 2026.11.2.dev0\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
 #. type: TH
@@ -928,13 +930,13 @@ msgstr "I<~/.aMule/remote.conf>"
 #. type: Plain text
 #: amuled.1.in
 msgid "The folders a remote EC or amuleapi client may point the incoming, temporary, shared or category download folders at, one absolute path per line. Empty or absent (the default) means every such remote folder change is refused. On a daemon-only install, such as a container or the Android port with no monolithic aMule to edit the list in its GUI, create or edit this file and restart B<amuled> to allow remote folder changes; relative lines are ignored."
-msgstr ""
+msgstr "Las carpetas a las que un EC remoto o un cliente amuleapi puede dirigir las carpetas de descarga entrantes, temporales, compartidas o por categorías; una ruta absoluta por línea. Si está vacío o no aparece (valor por defecto), se rechazará cualquier cambio en dichas carpetas remotas. En una instalación sólo de demonio, como un contenedor o la versión para Android sin un aMule monolítico para editar la lista en su interfaz gráfica, crea o edita este archivo y reinicia B<amuled> para permitir los cambios en las carpetas remotas; las líneas relativas se ignoran."
 
 #. type: SH
 #: amuled.1.in
 #, no-wrap
 msgid "MEDIA METADATA"
-msgstr ""
+msgstr "METADATOS MULTIMEDIA"
 
 #. type: Plain text
 #: amuled.1.in
