@@ -2916,6 +2916,18 @@ target_include_directories (SearchMetadataTest PRIVATE
 )
 target_link_libraries (SearchMetadataTest muleunit ec mulecommon mulesocket)
 
+# Recorded desktop forms: exact numeric conversion and EC compatibility.
+add_executable (SearchFormTest
+	SearchFormTest.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME SearchFormTest COMMAND SearchFormTest)
+target_include_directories (SearchFormTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+	${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs/ec/cpp)
+target_link_libraries (SearchFormTest muleunit ec mulecommon)
+
 # Duplicate-search identity and lifecycle eligibility, without a GUI or network.
 add_executable (SearchRequestTest SearchRequestTest.cpp)
 add_test (NAME SearchRequestTest COMMAND SearchRequestTest)

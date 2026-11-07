@@ -271,41 +271,6 @@ wxString GetRateString(uint16 rate)
 	}
 }
 
-/**
- * The size in bytes the given size-type represents. @param type 0 = Byte, 1 = KB, 2 = MB, 3 = GB.
- * Values over GB are not handled, since 1 TB in bytes exceeds uint32.
- */
-uint32 GetTypeSize(uint8 type)
-{
-	enum
-	{
-		Bytes,
-		KB,
-		MB,
-		GB
-	};
-	int size;
-
-	switch (type) {
-	case Bytes:
-		size = 1;
-		break;
-	case KB:
-		size = 1024;
-		break;
-	case MB:
-		size = 1048576;
-		break;
-	case GB:
-		size = 1073741824;
-		break;
-	default:
-		size = -1;
-		break;
-	}
-	return size;
-}
-
 // Base16 chars for encode an decode functions
 static wxChar base16Chars[17] = L"0123456789ABCDEF";
 static wxChar base32Chars[33] = L"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";

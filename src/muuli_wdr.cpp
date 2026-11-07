@@ -49,6 +49,7 @@
 
 #include <wx/artprov.h> // Needed for the "amule:" art ids (status bar + transfer window icons)
 #include <wx/intl.h>
+#include <wx/valtext.h>
 #include <wx/bmpcbox.h>
 #include <wx/wrapsizer.h> // Needed for the responsive statistics legends
 
@@ -298,7 +299,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item13->Add( item22, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxBoxSizer *item23 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxSpinCtrl *item24 = new wxSpinCtrl( item2, IDC_SPINSEARCHMIN, "0", wxDefaultPosition, wxDefaultSize, 0, 0, 4096, 0 );
+    wxTextCtrl *item24 = new wxTextCtrl( item2, IDC_SPINSEARCHMIN, "0", wxDefaultPosition, item2->FromDIP(wxSize(100, -1)), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_DIGITS) );
     item23->Add( item24, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     wxString strs25[] = 
     {
@@ -317,7 +318,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item13->Add( item27, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
     wxBoxSizer *item28 = new wxBoxSizer( wxHORIZONTAL );
 
-    wxSpinCtrl *item29 = new wxSpinCtrl( item2, IDC_SPINSEARCHMAX, "0", wxDefaultPosition, wxDefaultSize, 0, 0, 4096, 0 );
+    wxTextCtrl *item29 = new wxTextCtrl( item2, IDC_SPINSEARCHMAX, "0", wxDefaultPosition, item2->FromDIP(wxSize(100, -1)), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_DIGITS) );
     item28->Add( item29, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     wxString strs30[] = 
     {
@@ -334,7 +335,7 @@ wxSizer *searchDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item13->Add( item31, wxSizerFlags().Center().Border(wxALL, 5) );
     wxStaticText *item32 = new wxStaticText( item2, -1, _("Availability"), wxDefaultPosition, wxDefaultSize, 0 );
     item13->Add( item32, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
-    wxSpinCtrl *item33 = new wxSpinCtrl( item2, IDC_SPINSEARCHAVAILABILITY, "0", wxDefaultPosition, wxDefaultSize, 0, 0, 1000, 0 );
+    wxTextCtrl *item33 = new wxTextCtrl( item2, IDC_SPINSEARCHAVAILABILITY, "0", wxDefaultPosition, item2->FromDIP(wxSize(100, -1)), wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_DIGITS) );
     item13->Add( item33, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 5) );
     item1->Add( advancedSizer, wxSizerFlags().Expand() );
 

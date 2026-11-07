@@ -1013,14 +1013,17 @@ void CSearchListCtrl::OnRelatedSearch(wxCommandEvent &WXUNUSED(event))
 		return;
 	}
 
-	if (thePrefs::GetNetworkED2K() && theApp->serverconnect->GetCurrentServer() != NULL &&
+	if (thePrefs::GetNetworkED2K() && theApp->serverconnect->GetCurrentServer() != nullptr &&
 		theApp->serverconnect->GetCurrentServer()->GetRelatedSearchSupport()) {
 
 		theApp->amuledlg->m_searchwnd->ResetControls();
-		wxString keyword("related");
+		wxString keyword;
 		for (const CSearchFile *file : files) {
-			keyword << "::" << file->GetFileHash().Encode();
+			if (!keyword.empty())
+				keyword << "::";
+			keyword << file->GetFileHash().Encode();
 		}
+		keyword.Prepend(RELATED_SEARCH_PREFIX);
 		CastByID(IDC_SEARCHNAME, theApp->amuledlg->m_searchwnd, wxTextEntry)->SetValue(keyword);
 		wxBitmapComboBox *searchtype =
 			CastByID(ID_SEARCHTYPE, theApp->amuledlg->m_searchwnd, wxBitmapComboBox);

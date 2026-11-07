@@ -3998,6 +3998,7 @@ CSearchListRem::CSearchListRem(CRemoteConnect *conn)
 
 void CSearchListRem::AbortPendingRequest()
 {
+	m_searchForms.Clear();
 	CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>::AbortPendingRequest();
 	const auto pending = m_pendingSearchStarts.PendingIds();
 	m_pendingSearchStarts.Reset();
@@ -4165,6 +4166,9 @@ bool CSearchListRem::RequestMoreResults(uint32_t searchID)
 
 void CSearchListRem::RemapSearch(uint32 localID, uint32 daemonID, bool ed2kActive)
 {
+	// START replies do not carry the recorded filters. Refresh the listing even
+	// though this search already has a tab by the time that listing arrives.
+	m_needSearchListRequery = true;
 	// Consume only this request's token. Search and browse starts share the
 	// correlation space; neither may release discovery for another pending request.
 	const auto pending = m_pendingSearchStarts.Take(localID);
@@ -4448,7 +4452,13 @@ void CSearchListRem::HandlePacket(const CECPacket *packet)
 		if (m_pendingSearchStarts.DiscoveryBlocked()) {
 			m_needSearchListRequery = true;
 		} else if (theApp->amuledlg && theApp->amuledlg->m_searchwnd) {
+			// This is a complete listing. Replace the snapshot before skipping existing
+			// tabs, so reconnects and searches started here also receive their form data.
+			m_searchForms.Replace(*packet);
 			for (const CECTag &entry : *packet) {
+				if (entry.GetTagName() != EC_TAG_SEARCH_ID || !entry.IsInt() ||
+					entry.GetInt() > std::numeric_limits<uint32>::max())
+					continue;
 				uint32 sid = static_cast<uint32>(entry.GetInt());
 				if (sid == 0 || theApp->amuledlg->m_searchwnd->GetSearchList(sid)) {
 					continue;
@@ -4690,6 +4700,7 @@ bool CSearchListRem::Phase1Done(const CECPacket *WXUNUSED(reply))
 
 void CSearchListRem::RemoveResults(wxUIntPtr nSearchID)
 {
+	m_searchForms.Erase(static_cast<uint32>(nSearchID));
 	// The index only borrows: the CRemoteContainer owns these results and frees them
 	// through DeleteItem(), so dropping the index is all that is needed -- deleting would
 	// double-free.

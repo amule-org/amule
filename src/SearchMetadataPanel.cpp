@@ -26,6 +26,7 @@
 
 #include <ec/cpp/ECSpecialTags.h>
 #include <wx/sizer.h>
+#include <wx/choice.h>
 #include <wx/spinctrl.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
@@ -49,7 +50,7 @@ CSearchMetadataPanel::CSearchMetadataPanel(wxWindow *parent)
 		m_fields[i]->SetName(labels[i]);
 		grid->Add(m_fields[i], wxSizerFlags(1).Expand());
 	}
-	const auto addNumber = [this, grid](const wxString &label, int maximum) {
+	const auto addNumber = [this, grid](const wxString &label, int maximum, bool duration) {
 		grid->Add(new wxStaticText(this, wxID_ANY, label), wxSizerFlags().CenterVertical());
 		auto *field = new wxSpinCtrl(this,
 			wxID_ANY,
@@ -61,11 +62,25 @@ CSearchMetadataPanel::CSearchMetadataPanel(wxWindow *parent)
 			maximum,
 			0);
 		field->SetName(label);
-		grid->Add(field, wxSizerFlags(1).Expand());
+		auto *row = new wxBoxSizer(wxHORIZONTAL);
+		row->Add(field, wxSizerFlags(1).Expand());
+		if (duration) {
+			const wxString units[] = { _("minutes"), _("seconds") };
+			m_lengthUnit =
+				new wxChoice(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 2, units);
+			m_lengthUnit->SetName(_("Duration unit"));
+			m_lengthUnit->SetSelection(0);
+			row->Add(m_lengthUnit, wxSizerFlags().CenterVertical().Border(wxLEFT, FromDIP(6)));
+			m_lengthUnit->Bind(wxEVT_CHOICE, [this](wxCommandEvent &event) {
+				SetLengthUnit(m_lengthUnit->GetSelection() == 0);
+				event.Skip();
+			});
+		}
+		grid->Add(row, wxSizerFlags(1).Expand());
 		return field;
 	};
-	m_length = addNumber(_("Minimum duration (minutes)"), SEARCH_MAX_MIN_DURATION_SECONDS / 60);
-	m_bitrate = addNumber(_("Minimum bitrate (kbps)"), SEARCH_MAX_MIN_BITRATE_KBPS);
+	m_length = addNumber(_("Minimum duration"), SEARCH_MAX_MIN_DURATION_SECONDS / 60, true);
+	m_bitrate = addNumber(_("Minimum bitrate (kbps)"), SEARCH_MAX_MIN_BITRATE_KBPS, false);
 	m_help = new wxStaticText(this, wxID_ANY, wxEmptyString);
 	auto *layout = new wxBoxSizer(wxVERTICAL);
 	layout->Add(grid, wxSizerFlags().Expand());
@@ -80,8 +95,21 @@ void CSearchMetadataPanel::Read(CSearchList::CSearchParams &params) const
 	params.album = m_fields[Album]->GetValue();
 	params.title = m_fields[Title]->GetValue();
 	params.codec = m_fields[Codec]->GetValue();
-	params.minLength = m_length->GetValue() * 60;
+	params.minLength = m_length->GetValue() * (m_lengthUnit->GetSelection() == 0 ? 60 : 1);
 	params.minBitrateKbps = m_bitrate->GetValue();
+}
+
+void CSearchMetadataPanel::Set(const CSearchList::CSearchParams &params)
+{
+	m_fields[Artist]->ChangeValue(params.artist);
+	m_fields[Album]->ChangeValue(params.album);
+	m_fields[Title]->ChangeValue(params.title);
+	m_fields[Codec]->ChangeValue(params.codec);
+	// REST and EC clients can record durations that are not whole minutes.
+	const bool minutes = params.minLength % 60 == 0;
+	SetLengthUnit(minutes);
+	m_length->SetValue(static_cast<int>(params.minLength / (minutes ? 60 : 1)));
+	m_bitrate->SetValue(static_cast<int>(params.minBitrateKbps));
 }
 
 bool CSearchMetadataPanel::HasValues() const
@@ -97,7 +125,14 @@ void CSearchMetadataPanel::Reset()
 	for (wxTextCtrl *field : m_fields)
 		field->Clear();
 	m_length->SetValue(0);
+	SetLengthUnit(true);
 	m_bitrate->SetValue(0);
+}
+
+void CSearchMetadataPanel::SetLengthUnit(bool minutes)
+{
+	m_lengthUnit->SetSelection(minutes ? 0 : 1);
+	m_length->SetRange(0, static_cast<int>(SEARCH_MAX_MIN_DURATION_SECONDS / (minutes ? 60 : 1)));
 }
 
 void CSearchMetadataPanel::SetSupported(bool supported)
@@ -108,6 +143,7 @@ void CSearchMetadataPanel::SetSupported(bool supported)
 	for (wxTextCtrl *field : m_fields)
 		field->Enable(supported);
 	m_length->Enable(supported);
+	m_lengthUnit->Enable(supported);
 	m_bitrate->Enable(supported);
 	m_help->SetLabel(
 		supported ? _("Kad applies these filters; eD2k servers may ignore them")

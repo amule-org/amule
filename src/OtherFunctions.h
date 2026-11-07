@@ -204,8 +204,6 @@ wxString FormatLocalDate(const wxDateTime &when);
 //! Codec id to its display label, e.g. "h264" to "H.264". Thin wrapper over
 //! MediaCodecLabel() (common/MediaCodecName.h), which amuleapi calls directly.
 wxString FormatMediaCodec(const wxString &raw);
-// Returns the amount of Bytes the provided size-type represents
-uint32 GetTypeSize(uint8 type);
 // Returns the string associated with a file-rating value.
 wxString GetRateString(uint16 rate);
 

@@ -40,7 +40,8 @@
 #include "Preferences.h"
 #include "Statistics.h"
 #include "RLE.h"
-#include "ChatSessionStore.h"       // Needed for CChatPeer
+#include "ChatSessionStore.h" // Needed for CChatPeer
+#include "SearchForm.h"
 #include "SearchList.h"             // Needed for CSearchFile
 #include "kademlia/utils/UInt128.h" // Needed for CUInt128
 
@@ -659,6 +660,19 @@ class CSearchListRem : public CRemoteContainer<CSearchFile, uint32, CEC_SearchFi
 public:
 	CSearchListRem(CRemoteConnect *);
 
+	// Forms come only from the daemon, never from the reusable/running request cache.
+	const CSearchForm *GetSearchForm(wxUIntPtr id) const
+	{
+		return m_searchForms.Get(static_cast<uint32>(id));
+	}
+	uint64_t GetSearchFormSession() const { return m_searchForms.GetSession(); }
+	void ResetForNewSession()
+	{
+		m_searchForms.Clear();
+		m_needSearchListRequery = true;
+		CRemoteContainer<CSearchFile, uint32, CEC_SearchFile_Tag>::ResetForNewSession();
+	}
+
 	// Reachability fix (#641): true when OnPollTimer should ask amuled what searches it
 	// currently holds (EC_OP_SEARCH_LIST) on its next poll. Starts true so a freshly
 	// (re)connected client discovers every search once up front; CreateItem sets it again
@@ -694,6 +708,7 @@ public:
 	};
 	CloseReplyHandler m_closeReplyHandler{ *this };
 	CSearchEd2kSlot m_ed2kSlot;
+	CSearchFormCache m_searchForms;
 
 	// Most-recently-started search ID (0 = none). uint32 so it correctly holds a
 	// daemon-allocated Kad ID (top half of the range); as a signed int those wrapped negative
