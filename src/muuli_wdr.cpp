@@ -1408,7 +1408,7 @@ wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer 
     item0->Add( itemAutostart, 0, wxALIGN_CENTER_VERTICAL, 0 );
 
     auto *sleepRow = new wxBoxSizer(wxHORIZONTAL);
-    sleepRow->Add(new wxStaticText(parent, wxID_ANY, _("Prevent automatic sleep: ")),
+    sleepRow->Add(new wxStaticText(parent, IDC_PREVENT_SLEEP_LABEL, _("Prevent automatic sleep: ")),
         wxSizerFlags().CenterVertical());
     auto *sleepMode = new wxChoice(parent, IDC_PREVENT_SLEEP);
     sleepMode->Append(_("Off"));

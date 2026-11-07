@@ -69,6 +69,7 @@ template <typename Predicate> void WaitFor(Predicate predicate, const char *mess
 	Check(false, message);
 }
 
+constexpr unsigned retryIntervalSeconds = 1;
 constexpr const char *requestPath = "/org/freedesktop/portal/desktop/request/test/inhibitor";
 constexpr const char *xml = R"(<node>
 <interface name="org.gnome.SessionManager">
@@ -93,6 +94,7 @@ struct State
 	unsigned directCalls = 0;
 	unsigned portalCalls = 0;
 	unsigned releases = 0;
+	std::string reason;
 	guint cookie = 0;
 	// Server resources are owned by the caller's unique connection name.
 	std::map<std::string, bool> direct;
@@ -284,12 +286,18 @@ private:
 				Check(g_variant_n_children(options) == 1 &&
 						g_variant_lookup(options, "reason", "&s", &reason),
 					"wrong portal options");
-				Check(std::string(reason) == "aMule is running", "wrong portal reason");
+				Check(std::string(reason) == "Transferring files" ||
+						std::string(reason) == "aMule is running",
+					"wrong portal reason");
+				s.reason = reason;
 				g_variant_unref(options);
 			}
 			Check(flags == 4, "must inhibit suspend, not screen blanking/idle");
 			if (direct) {
-				Check(std::string(reason) == "aMule is running", "wrong direct reason");
+				s.reason = reason;
+				Check(std::string(reason) == "Transferring files" ||
+						std::string(reason) == "aMule is running",
+					"wrong direct reason");
 			}
 			if (direct ? s.denyDirect : s.denyPortal) {
 				g_dbus_method_invocation_return_dbus_error(invocation,
@@ -358,7 +366,7 @@ private:
 
 void WaitForRecovery(Service &service, bool portal)
 {
-	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(40);
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(12);
 	while (std::chrono::steady_clock::now() < deadline) {
 		PlatformSpecific::PreventSleepMode();
 		PumpLogs();
@@ -452,33 +460,54 @@ int DaemonModes(Service &service, char **argv)
 		Check(after.directCalls == before.directCalls + expected &&
 				after.releases == before.releases && after.portalCalls == before.portalCalls,
 			"empty daemon did not follow its configured sleep mode or release on shutdown");
+		if (expected != 0) {
+			Check(after.reason == "aMule is running",
+				"daemon used the wrong running-mode reason");
+		}
 	}
 	return 0;
 }
 
-void Cycle(Service &service, bool portal)
+void Cycle(Service &service, bool portal, bool whileRunning = false)
 {
 	const State before = service.Read();
-	PlatformSpecific::PreventSleepMode();
+	PlatformSpecific::PreventSleepMode(whileRunning);
 	WaitFor([&] { return (portal ? service.Read().portal : service.Read().direct).size() == 1; },
 		"no inhibitor retained");
 	State acquired = service.Read();
 	Check((portal ? acquired.portal : acquired.direct).size() == 1, "no inhibitor retained");
+	Check(acquired.reason == (whileRunning ? "aMule is running" : "Transferring files"),
+		"wrong reason for sleep mode");
 	Check(acquired.portalCalls == before.portalCalls + (portal ? 1 : 0), "wrong fallback order");
-	PlatformSpecific::PreventSleepMode();
+	PlatformSpecific::PreventSleepMode(whileRunning);
 	State repeated = service.Read();
 	Check(repeated.directCalls == acquired.directCalls && repeated.portalCalls == acquired.portalCalls,
 		"repeated prevent reacquired inhibitor");
+	PlatformSpecific::PreventSleepMode(!whileRunning);
+	WaitFor(
+		[&] {
+			const auto state = service.Read();
+			const auto &leases = portal ? state.portal : state.direct;
+			const auto &previous = portal ? acquired.portal : acquired.direct;
+			return state.reason == (!whileRunning ? "aMule is running" : "Transferring files") &&
+			       leases.size() == 1 && leases.begin()->first != previous.begin()->first;
+		},
+		"retained inhibitor reason did not follow mode change");
 	PlatformSpecific::AllowSleepMode();
 	service.WaitReleased();
-	Check(service.Read().releases == before.releases + 1, "missing release call");
+	// The service can allocate a lease before the worker receives its reply.
+	// Off may then cancel acquisition and clean up by disconnecting instead of
+	// sending Uninhibit/Close. Both paths must release every server resource.
+	const auto releaseCalls = service.Read().releases;
+	Check(releaseCalls <= before.releases + 2, "released more leases than acquired");
 	PlatformSpecific::AllowSleepMode();
-	Check(service.Read().releases == before.releases + 1, "repeated allow released twice");
+	Check(service.Read().releases == releaseCalls, "repeated allow released twice");
 }
 } // namespace
 
 int main(int argc, char **argv)
 {
+	PlatformSpecific::SetSleepInhibitionRetryIntervalForTesting(retryIntervalSeconds);
 	wxInitializer init;
 	Check(init.IsOk(), "wx initialization failed");
 	theLogger.SetVerbose(true);
@@ -552,11 +581,13 @@ int main(int argc, char **argv)
 			GDBusConnection *shared = g_bus_get_sync(G_BUS_TYPE_SESSION, nullptr, nullptr);
 			Check(shared != nullptr, "shared connection failed");
 			Cycle(service, false);
-			Cycle(service, false); // release/re-enable
+			Cycle(service, false, true); // running reason
+			Cycle(service, false);       // release/re-enable
 			service.Configure(false, false, true);
 			Cycle(service, false); // Uninhibit failure cleans up on disconnect
 			service.Configure(true);
-			Cycle(service, true); // permission refusal falls back
+			Cycle(service, true, true); // running reason through portal
+			Cycle(service, true);       // permission refusal falls back
 			service.Configure(true, false, true);
 			Cycle(service, true); // Close failure cleans up despite shared caller
 			service.Configure();
@@ -615,7 +646,7 @@ int main(int argc, char **argv)
 			WaitFor([&] { return service.Read().direct.size() == 1; },
 				"healthy acquisition failed");
 			const State healthy = service.Read();
-			std::this_thread::sleep_for(std::chrono::seconds(31));
+			std::this_thread::sleep_for(std::chrono::seconds(retryIntervalSeconds + 1));
 			PlatformSpecific::PreventSleepMode();
 			Check(service.Read().directCalls == healthy.directCalls &&
 					service.Read().releases == healthy.releases,
@@ -636,11 +667,24 @@ int main(int argc, char **argv)
 			service.Configure(false, false, false, true, true);
 			const auto calls = service.Read().directCalls;
 			auto started = std::chrono::steady_clock::now();
-			PlatformSpecific::PreventSleepMode();
+			PlatformSpecific::PreventSleepMode(true);
 			Check(std::chrono::steady_clock::now() - started < std::chrono::milliseconds(500),
 				"sleep acquisition blocked the core thread");
 			WaitFor([&] { return service.Read().directCalls > calls; },
 				"held request was not sent");
+			const auto modeChangeCalls = service.Read().directCalls;
+			started = std::chrono::steady_clock::now();
+			PlatformSpecific::PreventSleepMode(false);
+			Check(std::chrono::steady_clock::now() - started < std::chrono::milliseconds(500),
+				"mode change blocked the core thread");
+			WaitFor(
+				[&] {
+					const auto state = service.Read();
+					return state.directCalls > modeChangeCalls &&
+					       state.direct.size() == 1 &&
+					       state.reason == "Transferring files";
+				},
+				"mode change did not cancel and replace a pending acquisition");
 			started = std::chrono::steady_clock::now();
 			PlatformSpecific::AllowSleepMode();
 			Check(std::chrono::steady_clock::now() - started < std::chrono::milliseconds(500),
@@ -649,12 +693,16 @@ int main(int argc, char **argv)
 			service.Configure();
 			// Rapid changes must converge to the final desired state.
 			for (unsigned i = 0; i < 50; ++i) {
-				PlatformSpecific::PreventSleepMode();
+				PlatformSpecific::PreventSleepMode(i % 2 == 0);
 				PlatformSpecific::AllowSleepMode();
 			}
-			PlatformSpecific::PreventSleepMode();
-			WaitFor([&] { return service.Read().direct.size() == 1; },
-				"rapid changes did not converge");
+			PlatformSpecific::PreventSleepMode(true);
+			WaitFor(
+				[&] {
+					const auto state = service.Read();
+					return state.direct.size() == 1 && state.reason == "aMule is running";
+				},
+				"rapid changes did not converge to the final mode and reason");
 			std::this_thread::sleep_for(std::chrono::milliseconds(200));
 			Check(service.Read().direct.size() == 1,
 				"rapid changes left the final inhibitor cancelled");

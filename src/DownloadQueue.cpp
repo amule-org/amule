@@ -509,7 +509,8 @@ void CDownloadQueue::Process()
 				    mustPreventSleep,
 				    theStats::GetSessionSentBytes(),
 				    theStats::GetSessionReceivedBytes())) {
-				PlatformSpecific::PreventSleepMode();
+				PlatformSpecific::PreventSleepMode(
+					thePrefs::GetSleepMode() == PowerManagement::SleepMode::WhileRunning);
 			} else {
 				// Also release immediately after a preference or queue-state change.
 				PlatformSpecific::AllowSleepMode();

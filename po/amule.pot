@@ -6968,14 +6968,6 @@ msgid "Debugging"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "This setting belongs to the computer running amuled. Set PreventSleep in its amule.conf [PowerManagement] section: 0 = Off, 1 = While downloading, 2 = While aMule is running."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "Sleep inhibition is not available in this build."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
 msgid ""
 "The following variables will be substituted:\n"
 "    %PARTFILE - full path to the file\n"

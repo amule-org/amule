@@ -353,14 +353,15 @@ public:
 
 	~LinuxSleepInhibitor() { Stop(); }
 
-	void SetDesired(bool desired)
+	void SetDesired(bool desired, bool whileRunning = false)
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
 		if (m_stopping) {
 			return;
 		}
-		if (m_desired != desired) {
+		if (m_desired != desired || m_whileRunning != whileRunning) {
 			m_desired = desired;
+			m_whileRunning = whileRunning;
 			++m_generation;
 			if (m_cancellable != nullptr) {
 				g_cancellable_cancel(m_cancellable);
@@ -371,13 +372,21 @@ public:
 			try {
 				m_worker = std::thread(&LinuxSleepInhibitor::Run, this);
 			} catch (const std::system_error &error) {
-				m_startRetry = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+				m_startRetry = std::chrono::steady_clock::now() + m_retryInterval;
 				AddDebugLogLineN(logGeneral,
 					CFormat("Cannot start sleep inhibition worker: %s") %
 						wxString::FromUTF8(error.what()));
 			}
 		}
 	}
+
+#if defined(AMULE_SLEEP_INHIBITION_TEST)
+	void SetRetryIntervalForTesting(unsigned seconds)
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_retryInterval = std::chrono::seconds(seconds);
+	}
+#endif
 
 	void Stop()
 	{
@@ -411,13 +420,14 @@ private:
 			const bool stopping = m_stopping;
 			const bool prevent = m_desired && !stopping;
 			const auto generation = m_generation;
+			const bool whileRunning = m_whileRunning;
 			m_cancellable = g_cancellable_new();
 			if (stopping) {
 				g_cancellable_cancel(m_cancellable);
 			}
 			lock.unlock();
 			if (prevent) {
-				Refresh(m_cancellable);
+				Refresh(whileRunning, m_cancellable);
 			} else {
 				Release(m_cancellable);
 			}
@@ -428,7 +438,7 @@ private:
 				break;
 			}
 			if (generation == m_generation && m_desired) {
-				m_changed.wait_for(lock, std::chrono::seconds(30), [this, generation] {
+				m_changed.wait_for(lock, m_retryInterval, [this, generation] {
 					return m_stopping || generation != m_generation;
 				});
 			}
@@ -560,15 +570,16 @@ private:
 		return result;
 	}
 
-	void Refresh(GCancellable *cancellable)
+	void Refresh(bool whileRunning, GCancellable *cancellable)
 	{
-		if (IsRetained(cancellable)) {
+		if (IsRetained(cancellable) && m_inhibitedWhileRunning == whileRunning) {
 			return;
 		}
 		Release(cancellable);
 		if (g_cancellable_is_cancelled(cancellable)) {
 			return;
 		}
+		const char *reason = whileRunning ? "aMule is running" : "Transferring files";
 		GError *error = nullptr;
 		gchar *address = g_dbus_address_get_for_bus_sync(G_BUS_TYPE_SESSION, cancellable, &error);
 		GDBusConnection *bus = nullptr;
@@ -589,7 +600,7 @@ private:
 				"org.gnome.SessionManager",
 				"/org/gnome/SessionManager",
 				"org.gnome.SessionManager",
-				g_variant_new("(susu)", "org.amule.aMule", 0u, "aMule is running", 4u),
+				g_variant_new("(susu)", "org.amule.aMule", 0u, reason, 4u),
 				G_VARIANT_TYPE("(u)"),
 				&owner,
 				cancellable,
@@ -598,6 +609,7 @@ private:
 				g_variant_get(reply, "(u)", &m_cookie);
 				m_bus = bus;
 				m_owner = owner;
+				m_inhibitedWhileRunning = whileRunning;
 				g_variant_unref(reply);
 				return;
 			}
@@ -609,7 +621,7 @@ private:
 				GVariantBuilder options;
 				g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
 				g_variant_builder_add(
-					&options, "{sv}", "reason", g_variant_new_string("aMule is running"));
+					&options, "{sv}", "reason", g_variant_new_string(reason));
 				// Suspend only; leave screen blanking and idle detection alone.
 				reply = Inhibit(bus,
 					"org.freedesktop.portal.Desktop",
@@ -624,6 +636,7 @@ private:
 					g_variant_get(reply, "(o)", &m_request);
 					m_bus = bus;
 					m_owner = owner;
+					m_inhibitedWhileRunning = whileRunning;
 					g_variant_unref(reply);
 					return;
 				}
@@ -675,11 +688,14 @@ private:
 	std::condition_variable m_changed;
 	std::thread m_worker;
 	std::chrono::steady_clock::time_point m_startRetry{};
+	std::chrono::seconds m_retryInterval{ 30 };
 	std::uint64_t m_generation = 0;
 	bool m_desired = false;
+	bool m_whileRunning = false;
 	bool m_stopping = false;
 	GCancellable *m_cancellable = nullptr; // protected by m_mutex
 	// The fields below are accessed only by the worker.
+	bool m_inhibitedWhileRunning = false;
 	GDBusConnection *m_bus = nullptr;
 	gchar *m_owner = nullptr;
 	gchar *m_request = nullptr;
@@ -692,6 +708,7 @@ private:
 
 #if !defined(__linux__) || !defined(HAVE_GIO)
 static bool m_preventingSleepMode = false;
+static bool m_preventingWhileRunning = false;
 #endif
 
 #if defined(__WXMAC__) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1050 // 10.5 only
@@ -699,12 +716,18 @@ static bool m_preventingSleepMode = false;
 static IOPMAssertionID assertionID;
 #endif
 
-void PlatformSpecific::PreventSleepMode()
+void PlatformSpecific::PreventSleepMode(bool whileRunning)
 {
 #if defined(__linux__) && defined(HAVE_GIO)
-	LinuxSleepInhibitor::Get().SetDesired(true);
+	LinuxSleepInhibitor::Get().SetDesired(true, whileRunning);
 #else
 
+	if (m_preventingSleepMode && m_preventingWhileRunning != whileRunning) {
+		AllowSleepMode();
+		if (m_preventingSleepMode) {
+			return; // Retry the mode change if releasing the previous assertion failed.
+		}
+	}
 	if (!m_preventingSleepMode) {
 #ifdef __WINDOWS__
 		m_preventingSleepMode = SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED) != 0;
@@ -713,7 +736,8 @@ void PlatformSpecific::PreventSleepMode()
 // http://developer.apple.com/library/mac/#qa/qa1340/_index.html and
 // http://www.cimgf.com/2009/10/14/the-journey-to-disabling-sleep-with-iokit/
 #elif defined(__WXMAC__) && __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060 // 10.6 only
-		CFStringRef reasonForActivity = CFSTR("aMule is transferring files");
+		CFStringRef reasonForActivity =
+			whileRunning ? CFSTR("aMule is running") : CFSTR("aMule is transferring files");
 		IOReturn success = IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleSystemSleep,
 			kIOPMAssertionLevelOn,
 			reasonForActivity,
@@ -739,6 +763,9 @@ void PlatformSpecific::PreventSleepMode()
 		// #warning Power event vetoing not implemented.
 		//  Not implemented
 #endif
+	}
+	if (m_preventingSleepMode) {
+		m_preventingWhileRunning = whileRunning;
 	}
 #endif
 }
@@ -779,3 +806,10 @@ void PlatformSpecific::ShutdownSleepInhibition()
 	AllowSleepMode();
 #endif
 }
+
+#if defined(AMULE_SLEEP_INHIBITION_TEST)
+void PlatformSpecific::SetSleepInhibitionRetryIntervalForTesting(unsigned seconds)
+{
+	LinuxSleepInhibitor::Get().SetRetryIntervalForTesting(seconds);
+}
+#endif

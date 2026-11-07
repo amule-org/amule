@@ -427,6 +427,7 @@ wxSizer *PreferencesStatisticsTab(wxWindow *parent, bool call_fit = TRUE, bool s
 #define IDC_SERVERKEEPALIVE_LABEL 10196
 #define IDC_SERVERKEEPALIVE 10197
 #define IDC_PREVENT_SLEEP 10198
+#define IDC_PREVENT_SLEEP_LABEL 10544
 // At 10430+ to clear both the 10420-10429 media-metadata cushion (IDC_MEDIAMETA_*, plus IDC_ENDGAME
 // at 10424) and any future wxDesigner regeneration.
 #define IDC_KADMAXSEARCHES 10430

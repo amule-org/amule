@@ -72,7 +72,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
 		${CMAKE_SOURCE_DIR}/src/PlatformSpecific.cpp
 		${CMAKE_SOURCE_DIR}/src/Logger.cpp
 	)
-	target_compile_definitions (SleepInhibitionTest PRIVATE HAVE_GIO AMULE_DAEMON wxUSE_GUI=0)
+	target_compile_definitions (SleepInhibitionTest PRIVATE HAVE_GIO AMULE_DAEMON wxUSE_GUI=0 AMULE_SLEEP_INHIBITION_TEST)
 	target_include_directories (SleepInhibitionTest PRIVATE
 		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
 		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
