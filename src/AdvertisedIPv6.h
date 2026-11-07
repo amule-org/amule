@@ -177,6 +177,12 @@ inline bool IsIPv6DeclaredReachable(const SAdvertisedIPv6Facts &facts)
  * Peer corroboration is a veto, not a precondition. Requiring it first deadlocks: votes arrive only
  * over IPv6 connections, which peers open only to an address we advertise. Behind IPv6 NAT, the case
  * it guards against, peers report a /64 we do not hold, and that contradiction withdraws the address.
+ *
+ * The inbound-hello proof has the same shape as a peer vote, which is worth naming: a peer can only
+ * dial our IPv6 once it has learned the address, and it learns it from our hello, Kad, the server's
+ * source lists or source exchange, all of which wait for this decision. So in practice
+ * `When verified` means "advertise once a server that probes has checked us", with two ways out: a
+ * proof carried over from a probing server for 24 h, and an address the server itself asks for.
  */
 inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6Facts &facts)
 {

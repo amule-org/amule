@@ -23,7 +23,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ServerSocket.h" // Interface declarations
+#include "AddressFamilyPolicy.h" // Needed for PermitsIPv6
+#include "ListenSocket.h"        // Needed for CListenSocket::BoundHost
+#include "ServerSocket.h"        // Interface declarations
 
 #include <protocol/Protocols.h>
 #include <common/EventIDs.h>
@@ -504,10 +506,26 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			// SetConnectionState(CS_CONNECTED) above is what makes serverconnect's
 			// connectedsocket (and so GetCurrentServer()) point at this connection;
 			// UpdateAdvertisedIPv6() needs it.
+			// Verified mode withholds the address from peers until it is proven, so the server
+			// could never receive what it has to probe. It gets the local address itself, and
+			// only when it announced the probe: a server without it publishes on trust.
+			// The address the server has to test still has to be one we are willing to expose:
+			// Never, an IPv4-only policy, a proxy and a listener that does not accept IPv6 all
+			// rule it out, exactly as they rule out advertising.
+			const bool probeRequested = cur_server->SupportsIPv6Probe();
+			const bool mayExpose =
+				thePrefs::GetAdvertiseIPv6Mode() != EIPv6AdvertisingMode::Never &&
+				!thePrefs::GetProxyData()->m_proxyEnable &&
+				AddressFamilyPolicy::PermitsIPv6() && theApp->listensocket &&
+				theApp->listensocket->BoundHost() == "[::]";
 			if (cur_server->SupportsIPv6Updates()) {
+				// A probing server needs the address it is about to test; every other server
+				// keeps what it received before, so an address change between the login and
+				// this IDCHANGE still reaches it.
 				AddDebugLogLineN(logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
-				// The address may have changed between the login and this IDCHANGE.
-				serverconnect->UpdateAdvertisedIPv6(AdvertisedIPv6ForPeers());
+				serverconnect->UpdateAdvertisedIPv6(probeRequested && mayExpose
+									    ? SelectedLocalIPv6()
+									    : AdvertisedIPv6ForPeers());
 			}
 #endif
 
@@ -620,6 +638,14 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 				bool nattKeepaliveChanged = false;
 #endif
+#ifdef ENABLE_IPV6
+				// A server that omits the tag has no verdict for us; the previous answer must
+				// not survive into this ident.
+				if (cur_server) {
+					cur_server->SetIPv6Verdict(
+						EServerIPv6Verdict::Unknown, CNetworkAddress::Absent());
+				}
+#endif
 				for (uint32 i = 0; i < nTags; i++) {
 					// Force Unicode=true rather than relying on the server's
 					// SRV_TCPFLG_UNICODE bit: many real-world servers ship
@@ -636,6 +662,21 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					} else if (update && tag.GetNameID() == ST_DESCRIPTION) {
 						update->SetDescription(tag.GetStr());
 					}
+#ifdef ENABLE_IPV6
+					else if (tag.GetNameID() == ST_IPV6_STATUS && tag.IsInt()) {
+						const std::uint64_t rawStatus =
+							static_cast<std::uint64_t>(tag.GetInt());
+						cur_server->SetIPv6Verdict(
+							ParseServerIPv6Verdict(
+								rawStatus >= 0 && rawStatus <= 0xFF
+									? std::optional<std::uint8_t>(
+										  static_cast<std::uint8_t>(
+											  rawStatus))
+									: std::nullopt),
+							SelectedLocalIPv6().value_or(
+								CNetworkAddress::Absent()));
+					}
+#endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 					else if (tag.GetNameID() == ST_NATT_TOKEN && tag.IsHash()) {
 						NatServerHolePunch::Hash token{};
