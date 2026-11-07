@@ -206,6 +206,15 @@ if (BUILD_AMULECMD)
 		)
 	endif()
 
+	if (APPLE)
+		# amulecmd is bundled in aMule.app but has no UI; prevent wx from registering it as a
+		# foreground Dock application when it starts.
+		target_sources (amulecmd PRIVATE ${SRC_DIR}/MacBackgroundOnly_mac.mm)
+		target_link_libraries (amulecmd
+			PRIVATE "-framework ApplicationServices"
+		)
+	endif()
+
 	install (TARGETS amulecmd
 		RUNTIME DESTINATION bin
 	)
@@ -357,6 +366,8 @@ if (BUILD_DAEMON)
 			PRIVATE "-framework ApplicationServices"
 			PRIVATE "-framework Foundation"
 		)
+		# amuled is also bundled beside the GUI, but has no UI of its own.
+		target_sources (amuled PRIVATE ${SRC_DIR}/MacBackgroundOnly_mac.mm)
 	endif()
 
 	install (TARGETS amuled

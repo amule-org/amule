@@ -92,6 +92,11 @@ if (WITH_LIBPNG)
 endif()
 
 if (APPLE)
+	# Mark this helper process background-only before wx starts.
+	target_sources (amuleweb
+		PRIVATE ${CMAKE_SOURCE_DIR}/src/MacBackgroundOnly_mac.mm
+	)
+
 	target_link_libraries (amuleweb
 		PRIVATE "-framework CoreServices"
 		PRIVATE "-framework ApplicationServices"

@@ -126,6 +126,11 @@ if (HAVE_LIBREADLINE)
 endif()
 
 if (APPLE)
+	# Mark this helper process background-only before wx starts.
+	target_sources (amuleapi
+		PRIVATE ${SRC_DIR}/MacBackgroundOnly_mac.mm
+	)
+
 	# CoreServices / ApplicationServices — same set amuleweb links, used
 	# by wxStandardPaths::GetUserDataDir() on a .app bundle to look up
 	# Application Support/ correctly.
