@@ -70,7 +70,7 @@ jobs:
           docker run --rm \
             --volume "$PWD:/source:ro" --volume "$PWD/build-probe-musl:/build" \
             "alpine:$ALPINE_STATIC_BASE" sh -ec '
-              apk add --no-cache cmake g++ make python3
+              apk add --no-cache cmake g++ linux-headers make python3
               cat /etc/os-release
               c++ --version
               cmake -S /source/src/mediaprobe -B /build \
