@@ -101,6 +101,7 @@ int RunBoundedHelper(const wxString &exe,
 #endif
 	const wxString tmpPath = wxFileName::CreateTempFileName(wxT("amule-mediaprobe"));
 	if (tmpPath.IsEmpty()) {
+		failureReason = wxT("cannot create metadata capture file");
 		return kSpawnFailed;
 	}
 
@@ -132,6 +133,9 @@ int RunBoundedHelper(const wxString &exe,
 	};
 
 #ifdef __WXMSW__
+	const auto windowsFailure = [&](const wxString &stage, DWORD error) {
+		failureReason = CFormat(wxT("%s failed (Windows error %u)")) % stage % error;
+	};
 	SECURITY_ATTRIBUTES sa;
 	sa.nLength = sizeof(sa);
 	sa.bInheritHandle = TRUE;
@@ -144,6 +148,7 @@ int RunBoundedHelper(const wxString &exe,
 		FILE_ATTRIBUTE_TEMPORARY,
 		nullptr);
 	if (hOut == INVALID_HANDLE_VALUE) {
+		windowsFailure(wxT("open metadata capture"), ::GetLastError());
 		wxRemoveFile(tmpPath);
 		return kSpawnFailed;
 	}
@@ -151,6 +156,7 @@ int RunBoundedHelper(const wxString &exe,
 	// Outer job owns the trusted launcher and its single restricted parser.
 	// The launcher puts the parser in a nested job with a one-process limit.
 	HANDLE hJob = ::CreateJobObjectW(nullptr, nullptr);
+	DWORD jobError = hJob == nullptr ? ::GetLastError() : ERROR_SUCCESS;
 	if (hJob != nullptr) {
 		JOBOBJECT_EXTENDED_LIMIT_INFORMATION jeli;
 		::ZeroMemory(&jeli, sizeof(jeli));
@@ -161,9 +167,16 @@ int RunBoundedHelper(const wxString &exe,
 		jeli.ProcessMemoryLimit = probe::sandbox::kMemoryLimitBytes;
 		if (!::SetInformationJobObject(
 			    hJob, JobObjectExtendedLimitInformation, &jeli, sizeof(jeli))) {
+			jobError = ::GetLastError();
 			::CloseHandle(hJob);
 			hJob = nullptr;
 		}
+	}
+	if (hJob == nullptr) {
+		windowsFailure(wxT("configure helper Job limits"), jobError);
+		::CloseHandle(hOut);
+		wxRemoveFile(tmpPath);
+		return kSpawnFailed;
 	}
 
 	const wxString cmdLine = wxT("\"") + exe + wxT("\"");
@@ -176,6 +189,7 @@ int RunBoundedHelper(const wxString &exe,
 		OPEN_EXISTING,
 		0,
 		nullptr);
+	const DWORD inputError = hIn == INVALID_HANDLE_VALUE ? ::GetLastError() : ERROR_SUCCESS;
 	HANDLE hErr = ::CreateFileW(diagnostics.path.wc_str(),
 		GENERIC_WRITE,
 		FILE_SHARE_READ,
@@ -184,13 +198,15 @@ int RunBoundedHelper(const wxString &exe,
 		FILE_ATTRIBUTE_TEMPORARY,
 		nullptr);
 	if (hIn == INVALID_HANDLE_VALUE || hErr == INVALID_HANDLE_VALUE) {
+		windowsFailure(
+			hIn == INVALID_HANDLE_VALUE ? wxT("open input file") : wxT("open diagnostic capture"),
+			hIn == INVALID_HANDLE_VALUE ? inputError : ::GetLastError());
 		if (hIn != INVALID_HANDLE_VALUE)
 			::CloseHandle(hIn);
 		if (hErr != INVALID_HANDLE_VALUE)
 			::CloseHandle(hErr);
 		::CloseHandle(hOut);
-		if (hJob)
-			::CloseHandle(hJob);
+		::CloseHandle(hJob);
 		wxRemoveFile(tmpPath);
 		return kSpawnFailed;
 	}
@@ -209,11 +225,11 @@ int RunBoundedHelper(const wxString &exe,
 	extended.lpAttributeList = reinterpret_cast<LPPROC_THREAD_ATTRIBUTE_LIST>(attributes.data());
 	HANDLE inherited[] = { hIn, hOut, hErr };
 	if (!::InitializeProcThreadAttributeList(extended.lpAttributeList, 1, 0, &bytes)) {
+		windowsFailure(wxT("initialize inherited handle list"), ::GetLastError());
 		::CloseHandle(hIn);
 		::CloseHandle(hErr);
 		::CloseHandle(hOut);
-		if (hJob)
-			::CloseHandle(hJob);
+		::CloseHandle(hJob);
 		wxRemoveFile(tmpPath);
 		return kSpawnFailed;
 	}
@@ -224,12 +240,12 @@ int RunBoundedHelper(const wxString &exe,
 		    sizeof(inherited),
 		    nullptr,
 		    nullptr)) {
+		windowsFailure(wxT("restrict inherited handles"), ::GetLastError());
 		::DeleteProcThreadAttributeList(extended.lpAttributeList);
 		::CloseHandle(hIn);
 		::CloseHandle(hErr);
 		::CloseHandle(hOut);
-		if (hJob)
-			::CloseHandle(hJob);
+		::CloseHandle(hJob);
 		wxRemoveFile(tmpPath);
 		return kSpawnFailed;
 	}
@@ -244,7 +260,7 @@ int RunBoundedHelper(const wxString &exe,
 		nullptr,
 		nullptr,
 		TRUE,
-		CREATE_NO_WINDOW | CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT,
+		DETACHED_PROCESS | CREATE_SUSPENDED | EXTENDED_STARTUPINFO_PRESENT,
 		nullptr,
 		nullptr,
 		&si,
@@ -256,23 +272,34 @@ int RunBoundedHelper(const wxString &exe,
 	::CloseHandle(hOut);
 	if (!ok) {
 		failureReason = CFormat(wxT("CreateProcess failed (Windows error %u)")) % spawnError;
-		if (hJob != nullptr) {
-			::CloseHandle(hJob);
-		}
+		::CloseHandle(hJob);
 		wxRemoveFile(tmpPath);
 		return kSpawnFailed;
 	}
-	if (hJob != nullptr && !::AssignProcessToJobObject(hJob, pi.hProcess)) {
-		// An outer job may reject assignment. Timeout must then terminate the
-		// process directly rather than waiting forever after killing an empty job.
+	// Reject the suspended launcher if either boundary cannot be established.
+	// Running without the outer Job would weaken cancellation and resource limits.
+	if (!::AssignProcessToJobObject(hJob, pi.hProcess) ||
+		::ResumeThread(pi.hThread) == static_cast<DWORD>(-1)) {
+		windowsFailure(wxT("confine or resume suspended helper"), ::GetLastError());
+		::TerminateProcess(pi.hProcess, 1);
+		::WaitForSingleObject(pi.hProcess, 5000);
+		::CloseHandle(pi.hProcess);
+		::CloseHandle(pi.hThread);
 		::CloseHandle(hJob);
-		hJob = nullptr;
+		wxRemoveFile(tmpPath);
+		return kSpawnFailed;
 	}
-	::ResumeThread(pi.hThread);
 
 	wxStopWatch sw;
 	for (;;) {
-		if (::WaitForSingleObject(pi.hProcess, 25) == WAIT_OBJECT_0) {
+		const DWORD waitResult = ::WaitForSingleObject(pi.hProcess, 25);
+		if (waitResult == WAIT_FAILED) {
+			windowsFailure(wxT("wait for helper"), ::GetLastError());
+			::TerminateJobObject(hJob, 1);
+			::WaitForSingleObject(pi.hProcess, 5000);
+			break;
+		}
+		if (waitResult == WAIT_OBJECT_0) {
 			DWORD code = 0;
 			if (::GetExitCodeProcess(pi.hProcess, &code)) {
 				// Unhandled Windows exceptions use NTSTATUS codes with the high bit
@@ -280,16 +307,14 @@ int RunBoundedHelper(const wxString &exe,
 				// as on POSIX, even if the helper already printed its header.
 				exitCode = code >= 0x80000000UL ? kCrashed : static_cast<int>(code);
 				failureReason = CFormat(wxT("helper exited with Windows status %u")) % code;
+			} else {
+				windowsFailure(wxT("read helper exit status"), ::GetLastError());
 			}
 			break;
 		}
 		const bool oversized = outputTooLarge();
 		if (!keepRunning || static_cast<unsigned>(sw.Time()) >= timeoutMs || oversized) {
-			if (hJob != nullptr) {
-				::TerminateJobObject(hJob, 1);
-			} else {
-				::TerminateProcess(pi.hProcess, 1);
-			}
+			::TerminateJobObject(hJob, 1);
 			::WaitForSingleObject(pi.hProcess, 5000);
 			failureReason = oversized ? wxT("metadata or diagnostics exceeded output limit")
 						  : (!keepRunning ? wxT("cancelled while helper was running")
@@ -300,9 +325,7 @@ int RunBoundedHelper(const wxString &exe,
 	}
 	::CloseHandle(pi.hProcess);
 	::CloseHandle(pi.hThread);
-	if (hJob != nullptr) {
-		::CloseHandle(hJob);
-	}
+	::CloseHandle(hJob);
 #else
 	const std::string exeNative(exe.fn_str());
 	char *const cargv[] = { const_cast<char *>(exeNative.c_str()), nullptr };

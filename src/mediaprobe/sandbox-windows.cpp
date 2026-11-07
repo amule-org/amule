@@ -271,6 +271,9 @@ int launch()
 	environment.push_back(L'\0');
 	environment.push_back(L'\0');
 	PROCESS_INFORMATION child{};
+	// CREATE_NO_WINDOW still allocates a console, whose KERNELBASE startup
+	// requires access the primary token deliberately lacks. No console is needed:
+	// inherited standard handles work in a detached process too.
 	const BOOL created = length && length < executable.size() &&
 			     CreateProcessAsUserW(lockdown.value,
 				     executable.data(),
@@ -278,7 +281,7 @@ int launch()
 				     nullptr,
 				     nullptr,
 				     TRUE,
-				     CREATE_SUSPENDED | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT |
+				     CREATE_SUSPENDED | DETACHED_PROCESS | EXTENDED_STARTUPINFO_PRESENT |
 					     CREATE_UNICODE_ENVIRONMENT,
 				     environment.data(),
 				     nullptr,

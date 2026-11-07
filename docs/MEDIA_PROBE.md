@@ -117,6 +117,8 @@ vulnerabilities or a system already compromised outside aMule.
   a restricted impersonation token retaining only the caller's existing access.
   Startup uses a separate, noninteractive window station and low-integrity
   desktop; the restricted token receives no access to the interactive desktop.
+  Both stages start detached, using inherited standard handles without creating
+  a console whose initialization would require additional permissions.
   Before parsing, the helper lowers its primary integrity to untrusted and drops
   the startup token. A failure at either step returns no metadata.
   Reverting again cannot restore privileges because its primary token is already
