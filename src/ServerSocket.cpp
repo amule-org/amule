@@ -23,7 +23,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ServerSocket.h" // Interface declarations
+#include "AddressFamilyPolicy.h" // Needed for PermitsIPv6
+#include "ListenSocket.h"        // Needed for CListenSocket::BoundHost
+#include "ServerSocket.h"        // Interface declarations
 
 #include <protocol/Protocols.h>
 #include <common/EventIDs.h>
@@ -500,16 +502,21 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			// Verified mode withholds the address from peers until it is proven, so the server
 			// could never receive what it has to probe. It gets the local address itself, and
 			// only when it announced the probe: a server without it publishes on trust.
+			// The address the server has to test still has to be one we are willing to expose:
+			// Never, an IPv4-only policy, a proxy and a listener that does not accept IPv6 all
+			// rule it out, exactly as they rule out advertising.
 			const bool probeRequested = cur_server->SupportsIPv6Probe();
-			if (probeRequested ||
-				thePrefs::GetAdvertiseIPv6Mode() != EIPv6AdvertisingMode::Verified) {
+			const bool mayExpose =
+				thePrefs::GetAdvertiseIPv6Mode() != EIPv6AdvertisingMode::Never &&
+				!thePrefs::GetProxyData()->m_proxyEnable &&
+				AddressFamilyPolicy::PermitsIPv6() && theApp->listensocket &&
+				theApp->listensocket->BoundHost() == "[::]";
+			if (probeRequested && mayExpose) {
 				if (cur_server->SupportsIPv6Updates()) {
 					AddDebugLogLineN(
 						logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
 					// The address may have changed between the login and this IDCHANGE.
-					serverconnect->UpdateAdvertisedIPv6(
-						probeRequested ? SelectedLocalIPv6()
-							       : AdvertisedIPv6ForPeers());
+					serverconnect->UpdateAdvertisedIPv6(SelectedLocalIPv6());
 				}
 			}
 #endif
@@ -641,8 +648,13 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					}
 #ifdef ENABLE_IPV6
 					else if (tag.GetNameID() == ST_IPV6_STATUS && tag.IsInt()) {
+						const long rawStatus = tag.GetInt();
 						cur_server->SetIPv6Verdict(ParseServerIPv6Verdict(
-							static_cast<std::uint8_t>(tag.GetInt())));
+							rawStatus >= 0 && rawStatus <= 0xFF
+								? std::optional<std::uint8_t>(
+									  static_cast<std::uint8_t>(
+										  rawStatus))
+								: std::nullopt));
 					}
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
