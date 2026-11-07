@@ -118,6 +118,16 @@ bool CClientUDPSocket::SendNatKeyFrame(uint32_t ip, uint16_t port, const NatKeyF
 	return TrySendObfuscatedPacket(packet, ip, port, key.data());
 }
 
+namespace
+{
+//! Our login address, or 0 between server logins, where GetPublicIP() falls back to Kad's view
+//! or the LAN address and would drop every key IP.
+uint32_t LoginIP()
+{
+	return theApp->IsConnectedED2K() ? theApp->GetPublicIP(true) : 0;
+}
+} // namespace
+
 void CClientUDPSocket::ExpectNatTPeer(
 	uint32_t ip, uint16_t udpPort, const std::array<uint8_t, 16> *vouchedHash)
 {
@@ -135,18 +145,14 @@ void CClientUDPSocket::ExpectNatTPeer(
 	m_punchedPeers.Punched(ip, udpPort, hash, now);
 	if (m_serverSeenUdpIP != 0) {
 		std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
-		m_natKeyIPs.Set(ip,
-			m_serverSeenUdpIP,
-			theApp->GetPublicIP(),
-			NatSourceEcho::CKeyIps::From::Server,
-			now);
+		m_natKeyIPs.Set(ip, m_serverSeenUdpIP, LoginIP(), NatSourceEcho::CKeyIps::From::Server, now);
 	}
 }
 
 uint32_t CClientUDPSocket::NatKeyIPFor(uint32_t peerIp)
 {
 	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
-	return m_natKeyIPs.Lookup(peerIp, theApp->GetPublicIP(), ::GetTickCount64()).value_or(0);
+	return m_natKeyIPs.Lookup(peerIp, LoginIP(), ::GetTickCount64()).value_or(0);
 }
 
 void CClientUDPSocket::MaybeSendSourceEcho(
@@ -185,7 +191,7 @@ void CClientUDPSocket::HandleSourceEcho(const uint8_t *payload, size_t length, u
 	}
 	{
 		std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
-		m_natKeyIPs.Set(ip, seen->ip, theApp->GetPublicIP(), NatSourceEcho::CKeyIps::From::Peer, now);
+		m_natKeyIPs.Set(ip, seen->ip, LoginIP(), NatSourceEcho::CKeyIps::From::Peer, now);
 	}
 	AddDebugLogLineN(logClientUDP,
 		CFormat("NAT-T source echo from %s: it sees our UDP at %s") %

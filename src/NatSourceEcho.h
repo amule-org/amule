@@ -115,7 +115,7 @@ class CPunchedPeers
 {
 public:
 	explicit CPunchedPeers(std::size_t capacity)
-	: m_capacity(capacity)
+	: m_expected(capacity, kWindowMs)
 	, m_echoGate(capacity, kWindowMs)
 	{
 	}
@@ -124,28 +124,12 @@ public:
 	void Punched(
 		std::uint32_t ip, std::uint16_t port, const std::optional<Hash> &hash, std::uint64_t nowMs)
 	{
-		if (m_capacity == 0) {
-			return;
-		}
-		const std::uint64_t key = NatKeyFrame::Detail::EndpointKey(ip, port);
-		auto existing = m_entries.find(key);
-		if (existing == m_entries.end()) {
-			NatKeyFrame::Detail::MakeRoom(m_entries, m_capacity, nowMs, kWindowMs);
-			m_entries[key] = Entry{ nowMs, hash, false };
-			return;
-		}
-		Entry &entry = existing->second;
-		const bool live = !NatKeyFrame::Detail::Elapsed(nowMs, entry.stamp, kWindowMs);
-		if (live && (entry.conflicted || (entry.hash && hash && *entry.hash != *hash))) {
-			entry = Entry{ nowMs, std::nullopt, true };
-			return;
-		}
-		entry = Entry{ nowMs, (live && !hash) ? entry.hash : hash, false };
+		m_expected.Expect(ip, port, nowMs, hash);
 	}
 
 	bool IsPunched(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
 	{
-		return Find(ip, port, nowMs) != nullptr;
+		return m_expected.IsExpectedAllowingMovedPort(ip, port, nowMs);
 	}
 
 	//! The hash to obfuscate an echo to this source with, when one is due now.
@@ -159,49 +143,18 @@ public:
 		if (!FailedEveryKey(firstByte, length, decrypted)) {
 			return std::nullopt;
 		}
-		const Entry *entry = Find(ip, port, nowMs);
-		if (entry == nullptr || !entry->hash || !m_echoGate.TryAcquire(ip, port, nowMs)) {
+		const std::optional<Hash> hash = m_expected.VouchedHashAllowingMovedPort(ip, port, nowMs);
+		if (!hash || !m_echoGate.TryAcquire(ip, port, nowMs)) {
 			return std::nullopt;
 		}
-		return entry->hash;
+		return hash;
 	}
 
 	//! The echo was not sent after all, so the next failed datagram may try again.
 	void EchoNotSent(std::uint32_t ip, std::uint16_t port) { m_echoGate.Forget(ip, port); }
 
 private:
-	struct Entry
-	{
-		std::uint64_t stamp;
-		std::optional<Hash> hash;
-		bool conflicted;
-	};
-
-	const Entry *Find(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
-	{
-		const auto live = [nowMs](const Entry &entry) {
-			return !NatKeyFrame::Detail::Elapsed(nowMs, entry.stamp, kWindowMs);
-		};
-		const auto exact = m_entries.find(NatKeyFrame::Detail::EndpointKey(ip, port));
-		if (exact != m_entries.end()) {
-			return live(exact->second) ? &exact->second : nullptr;
-		}
-		const Entry *only = nullptr;
-		for (auto it = m_entries.lower_bound(NatKeyFrame::Detail::EndpointKey(ip, 0));
-			it != m_entries.end() && (it->first >> 16) == ip;
-			++it) {
-			if (live(it->second)) {
-				if (only != nullptr) {
-					return nullptr;
-				}
-				only = &it->second;
-			}
-		}
-		return only;
-	}
-
-	std::size_t m_capacity;
-	std::map<std::uint64_t, Entry> m_entries;
+	NatKeyFrame::CExpectedPeers m_expected;
 	NatKeyFrame::CSendGate m_echoGate;
 };
 
@@ -232,6 +185,7 @@ public:
 	}
 
 	//! A key IP equal to our login address, or 0, removes the entry: the default key is right.
+	//! Between server logins (login address 0) nothing changes.
 	void
 	Set(std::uint32_t peerIp, std::uint32_t keyIp, std::uint32_t loginIp, From from, std::uint64_t nowMs)
 	{
@@ -241,7 +195,10 @@ public:
 			!NatKeyFrame::Detail::Elapsed(nowMs, existing->second.stamp, m_idleMs)) {
 			return;
 		}
-		if (keyIp == 0 || loginIp == 0 || keyIp == loginIp) {
+		if (loginIp == 0) {
+			return;
+		}
+		if (keyIp == 0 || keyIp == loginIp) {
 			if (existing != m_entries.end()) {
 				m_entries.erase(existing);
 			}

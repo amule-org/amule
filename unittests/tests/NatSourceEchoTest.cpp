@@ -180,8 +180,9 @@ TEST(NatSourceEcho, AKeyIpEndsWhenOurLoginAddressChanges)
 	CKeyIps keys(4, 1000);
 	const std::uint32_t newLogin = Ip(203, 0, 113, 9);
 	keys.Set(kPeer, kUdp, kLogin, CKeyIps::From::Peer, 0);
-	// An unknown login address hides the entry but keeps it.
+	// Between server logins (0) the entry is hidden but kept, and a new value changes nothing.
 	ASSERT_FALSE(keys.Lookup(kPeer, 0, 1).has_value());
+	keys.Set(kPeer, Ip(203, 0, 113, 11), 0, CKeyIps::From::Peer, 1);
 	ASSERT_EQUALS(kUdp, *keys.Lookup(kPeer, kLogin, 2));
 	ASSERT_FALSE(keys.Lookup(kPeer, newLogin, 3).has_value());
 	ASSERT_EQUALS(0, static_cast<int>(keys.Size()));

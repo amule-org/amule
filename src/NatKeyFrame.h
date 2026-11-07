@@ -331,6 +331,21 @@ public:
 		       !Detail::Elapsed(nowMs, found->second.stamp, m_ttlMs);
 	}
 
+	//! As IsExpected(), but a NAT may move the source port: another port of the IP matches when the
+	//! IP has only one live entry.
+	bool IsExpectedAllowingMovedPort(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		return FindAllowingMovedPort(ip, port, nowMs) != nullptr;
+	}
+
+	//! As VouchedHash(), with the port matched as in IsExpectedAllowingMovedPort().
+	std::optional<Hash> VouchedHashAllowingMovedPort(
+		std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		const Entry *entry = FindAllowingMovedPort(ip, port, nowMs);
+		return entry != nullptr ? entry->vouchedHash : std::nullopt;
+	}
+
 	std::size_t Size() const { return m_entries.size(); }
 
 private:
@@ -340,6 +355,28 @@ private:
 		std::optional<Hash> vouchedHash;
 		bool conflicted;
 	};
+
+	const Entry *FindAllowingMovedPort(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		const auto exact = m_entries.find(Detail::EndpointKey(ip, port));
+		if (exact != m_entries.end()) {
+			return Detail::Elapsed(nowMs, exact->second.stamp, m_ttlMs) ? nullptr
+										    : &exact->second;
+		}
+		const Entry *only = nullptr;
+		for (auto it = m_entries.lower_bound(Detail::EndpointKey(ip, 0));
+			it != m_entries.end() && (it->first >> 16) == ip;
+			++it) {
+			if (Detail::Elapsed(nowMs, it->second.stamp, m_ttlMs)) {
+				continue;
+			}
+			if (only != nullptr) {
+				return nullptr;
+			}
+			only = &it->second;
+		}
+		return only;
+	}
 
 	std::size_t m_capacity;
 	std::uint64_t m_ttlMs;
