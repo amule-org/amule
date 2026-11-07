@@ -190,6 +190,9 @@ class HelperTests(unittest.TestCase):
             ('adpcm_yamaha', 'wav', 'adpcm_yamaha', False, []),
             ('truehd', 'mka', 'truehd', False, ['-strict', '-2']),
             ('mlp', 'mka', 'mlp', False, ['-strict', '-2']),
+            ('pcm_bluray', 'm2ts', 'pcm_bluray', False, []),
+            ('eac3', 'm2ts', 'eac3', False, []),
+            ('pcm_dvd', 'vob', 'pcm_dvd', False, []),
         )
         tested = 0
         for encoder, extension, codec, video, options in cases:
@@ -214,6 +217,28 @@ class HelperTests(unittest.TestCase):
             tested += 1
         if not tested:
             self.skipTest('no fixture encoders available')
+
+    def test_bluray_stream_types_need_hdmv_registration(self):
+        ffmpeg = shutil.which('ffmpeg')
+        if not ffmpeg:
+            self.skipTest('fixture requires ffmpeg')
+        self.path = Path(self.tmp.name) / 'dcii.ts'
+        subprocess.run([ffmpeg, '-v', 'error', '-nostdin', '-y', '-f', 'lavfi', '-i',
+                        'testsrc2=size=320x240:rate=25:duration=2', '-f', 'lavfi', '-i',
+                        'sine=sample_rate=48000:duration=2', '-c:v', 'mpeg2video', '-c:a', 'mp2',
+                        str(self.path)], check=True, capture_output=True, timeout=30)
+        # DigiCipher II gives MPEG-2 video type 0x80, which is LPCM only in HDMV streams.
+        data = bytearray(self.path.read_bytes())
+        for p in range(0, len(data) - 188, 188):
+            q = p + 5 + data[p + 4]
+            if data[p + 1] == 0x50 and data[p + 2] == 0x00 and data[q] == 0x02:  # FFmpeg's PMT
+                entry = q + 12 + ((data[q + 10] & 0x0F) << 8 | data[q + 11])
+                if data[entry] == 0x02:
+                    data[entry] = 0x80
+        self.path.write_bytes(data)
+        result = self.run_probe()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)['codec'], 'mp2')
 
     def test_control_characters_cannot_inject_records(self):
         payload = b'Name\nformat.duration=99999\r\nEND\0'

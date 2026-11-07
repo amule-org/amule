@@ -391,10 +391,17 @@ void parseMpegTs(Reader &r, int64_t packet, Result &res)
 				}
 		} else if (static_cast<int>(pid) == pmtPid && table == 0x02 && q + 12 <= sectionEnd) {
 			int64_t e = q + 12 + (r.be16(q + 10) & 0x0FFF);
+			// Blu-ray stream types count only with an HDMV registration, as in FFmpeg.
+			bool hdmv = false;
+			for (int64_t d = q + 12; d + 6 <= e && d + 6 <= sectionEnd; d += 2 + r.u8(d + 1))
+				if (r.u8(d) == 0x05 &&
+					(r.match(d + 2, "HDMV", 4) || r.match(d + 2, "HDPR", 4)))
+					hdmv = true;
 			while (e + 5 <= sectionEnd) {
 				const unsigned type = r.u8(e), esPid = r.be16(e + 1) & 0x1FFF,
 					       info = r.be16(e + 3) & 0x0FFF;
-				unsigned effective = type;
+				const bool bluray = type == 0x80 || (type >= 0x82 && type <= 0x86);
+				unsigned effective = bluray && !hdmv ? 0 : type;
 				if (type == 0x06) { // Private data: AC-3/E-AC-3/DTS descriptors.
 					for (int64_t d = e + 5; d + 2 <= e + 5 + info && d + 2 <= sectionEnd;
 						d += 2 + r.u8(d + 1)) {
