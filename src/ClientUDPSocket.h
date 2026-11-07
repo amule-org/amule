@@ -219,11 +219,10 @@ private:
 	//! Our key frame, obfuscated with @a key; false when the packet was not queued.
 	bool SendNatKeyFrame(uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key);
 	//! A datagram from a punched endpoint that no key decoded: tell it the source we saw.
-	void MaybeSendSourceEcho(uint32_t ip, uint16_t port);
+	void MaybeSendSourceEcho(
+		uint32_t ip, uint16_t port, uint8_t firstByte, size_t length, bool decrypted);
 	void HandleSourceEcho(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
-	//! Endpoints punched in the last 30 s, with the hash a rendezvous vouched for.
-	NatKeyFrame::CExpectedPeers m_sourceEchoPeers{ 256, NatKeyFrame::kExpectedPeerTtlMs };
-	NatKeyFrame::CSendGate m_sourceEchoGate{ 256, NatSourceEcho::kEchoIntervalMs };
+	NatSourceEcho::CPunchedPeers m_punchedPeers{ NatSourceEcho::kMaxPunchedPeers };
 	// Read when a datagram is queued, which is not always on the main thread.
 	std::mutex m_natKeyIPsMutex;
 	NatSourceEcho::CKeyIps m_natKeyIPs{ NatSourceEcho::kMaxKeyIps, NatSourceEcho::kKeyIpIdleMs };

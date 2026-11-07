@@ -618,15 +618,17 @@ a uTP or QUIC stream is our UDP address.
 
 aMule keeps a **key IP** per peer IPv4: the address that peer sees our UDP at, kept only when it
 differs from our login address (`NatSourceEcho::CKeyIps`, at most 256, each until an hour without
-use). `CClientUDPSocket::ClientCryptKeyIP()` gives it to every ed2k-keyed datagram queued to that
-peer, punches, uTP and QUIC alike, and `VerifyIdent()` checks a `CRYPT_CIP_REMOTECLIENT` signature
-on a uTP or QUIC stream against it. Two sources fill it:
+use, or until our login address changes). `CClientUDPSocket::ClientCryptKeyIP()` gives it to every
+ed2k-keyed datagram queued to that peer, punches, uTP and QUIC alike. `VerifyIdent()` checks a
+`CRYPT_CIP_REMOTECLIENT` signature on a uTP or QUIC stream against it, and the uTP simultaneous-open
+tie-break orders by it, else by Kad's view of our address. Two sources fill it:
 
 - **The server field.** The `own_ip` of a 36-byte `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) is the key IP
-  toward every peer punched in that login (`ExpectNatTPeer()`); a new login forgets it. It covers
+  toward every peer punched in that login (`ExpectNatTPeer()`). A shorter `0x61` means the server
+  has no fresh view, so it clears the value, and so does a new login. It covers
   both peers split, where neither can decode the other's echo, and a peer that never sends an echo.
 - **The source echo.** When a datagram from an endpoint punched in the last 30 s fails every key,
-  the receiver answers once per 30 s with `0xAB` (`OP_NATT_SOURCE_ECHO`) under `0xC5`, payload
+  the receiver answers once per 30 s per source with `0xAB` (`OP_NATT_SOURCE_ECHO`) under `0xC5`, payload
   `<ip 4><port 2 LE>`: the source it saw, the IPv4 in the byte order of `0x61`. The echo is
   obfuscated with the hash the rendezvous vouched for, and is not sent without one. The split side
   takes it only from an endpoint it punched in the last 30 s, and only a public IPv4, as the key IP
@@ -634,6 +636,8 @@ on a uTP or QUIC stream against it. Two sources fill it:
   names the address this peer sees. It covers punches without the field: other servers, older
   ed2k-server and Lugdunum's callback.
 
+Both sides match a source against the punched endpoints by IP and port, or by IP alone when that
+IP has only one live punch, since a NAT may move the source port (`NatSourceEcho::CPunchedPeers`).
 A client that does not know `0xAB` drops it, so a mixed pair works as before. A NAT that gives each
 destination another public IPv4 is not covered: the punch is matched by IP, so it fails before
 obfuscation matters.

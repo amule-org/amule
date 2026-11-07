@@ -469,25 +469,20 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget,
 					return false;
 				}
 				break;
-			case CRYPT_CIP_REMOTECLIENT:
-				// Ignore local ip...
-				if (ownIPAsSeen != 0) {
-					// The peer signed the address it sees us at.
-					ChallengeIP = ownIPAsSeen;
-				} else if (!theApp->GetPublicIP(true)) {
-					if (::IsLowID(theApp->GetED2KID())) {
-						AddDebugLogLineN(logCredits,
-							"Warning: Maybe SecureHash Ident fails because "
-							"LocalIP is unknown");
-						// Fallback to local ip...
-						ChallengeIP = theApp->GetPublicIP();
-					} else {
-						ChallengeIP = theApp->GetED2KID();
-					}
-				} else {
-					ChallengeIP = theApp->GetPublicIP();
+			case CRYPT_CIP_REMOTECLIENT: {
+				const bool lowID = ::IsLowID(theApp->GetED2KID());
+				if (ownIPAsSeen == 0 && !theApp->GetPublicIP(true) && lowID) {
+					AddDebugLogLineN(logCredits,
+						"Warning: Maybe SecureHash Ident fails because LocalIP is "
+						"unknown");
 				}
+				ChallengeIP = SecIdent::RemoteClientChallengeIP(ownIPAsSeen,
+					theApp->GetPublicIP(true),
+					theApp->GetPublicIP(),
+					lowID,
+					theApp->GetED2KID());
 				break;
+			}
 			case CRYPT_CIP_NONECLIENT: // maybe not supported in future versions
 				ChallengeIP = 0;
 				break;

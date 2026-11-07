@@ -24,7 +24,8 @@
 #ifndef AMULE_NAT_SOURCE_ECHO_H
 #define AMULE_NAT_SOURCE_ECHO_H
 
-#include "NatKeyFrame.h" // Needed for the bounded-map helpers
+#include "NatKeyFrame.h"                // Needed for the bounded-map helpers and CSendGate
+#include "include/protocol/Protocols.h" // Needed for the protocol bytes
 
 #include <array>
 #include <cstddef>
@@ -48,8 +49,11 @@ constexpr std::size_t kCryptHeaderBytes = 8;
 //! A transfer over a punched path can run for hours, so a key IP ends only after an idle hour.
 constexpr std::uint64_t kKeyIpIdleMs = 3600000;
 constexpr std::size_t kMaxKeyIps = 256;
-//! One echo per punched endpoint per punch window.
-constexpr std::uint64_t kEchoIntervalMs = NatKeyFrame::kExpectedPeerTtlMs;
+//! The punch window, and one echo per source within it.
+constexpr std::uint64_t kWindowMs = NatKeyFrame::kExpectedPeerTtlMs;
+constexpr std::size_t kMaxPunchedPeers = 256;
+
+using Hash = NatKeyFrame::Hash;
 
 struct Source
 {
@@ -82,7 +86,136 @@ inline std::optional<Source> ParsePayload(const std::uint8_t *payload, std::size
 	return Source{ ip, port };
 }
 
-//! Key IPs by peer IPv4. Only addresses that differ from our login address are kept.
+//! Whether CEncryptedDatagramSocket::DecryptReceivedClient() tried every key on a datagram and none
+//! fitted: it leaves the buffer as it was, and passes the plain protocol bytes through untried.
+inline bool FailedEveryKey(std::uint8_t firstByte, std::size_t length, bool decrypted)
+{
+	if (decrypted || length <= kCryptHeaderBytes) {
+		return false;
+	}
+	switch (firstByte) {
+	case OP_EMULEPROT:
+	case OP_KADEMLIAPACKEDPROT:
+	case OP_KADEMLIAHEADER:
+	case OP_UDPRESERVEDPROT1:
+	case OP_UDPRESERVEDPROT2:
+	case OP_PACKEDPROT:
+		return false;
+	default:
+		return true;
+	}
+}
+
+/**
+ * Endpoints a rendezvous had us punch in the last 30 s, with the hash it vouched for. A NAT may move
+ * the source port, so a source with another port still matches when it is the only one of its IP.
+ * At most one echo per source per window.
+ */
+class CPunchedPeers
+{
+public:
+	explicit CPunchedPeers(std::size_t capacity)
+	: m_capacity(capacity)
+	, m_echoGate(capacity, kWindowMs)
+	{
+	}
+
+	//! Two different hashes vouched for one endpoint leave it with none.
+	void Punched(
+		std::uint32_t ip, std::uint16_t port, const std::optional<Hash> &hash, std::uint64_t nowMs)
+	{
+		if (m_capacity == 0) {
+			return;
+		}
+		const std::uint64_t key = NatKeyFrame::Detail::EndpointKey(ip, port);
+		auto existing = m_entries.find(key);
+		if (existing == m_entries.end()) {
+			NatKeyFrame::Detail::MakeRoom(m_entries, m_capacity, nowMs, kWindowMs);
+			m_entries[key] = Entry{ nowMs, hash, false };
+			return;
+		}
+		Entry &entry = existing->second;
+		const bool live = !NatKeyFrame::Detail::Elapsed(nowMs, entry.stamp, kWindowMs);
+		if (live && (entry.conflicted || (entry.hash && hash && *entry.hash != *hash))) {
+			entry = Entry{ nowMs, std::nullopt, true };
+			return;
+		}
+		entry = Entry{ nowMs, (live && !hash) ? entry.hash : hash, false };
+	}
+
+	bool IsPunched(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		return Find(ip, port, nowMs) != nullptr;
+	}
+
+	//! The hash to obfuscate an echo to this source with, when one is due now.
+	std::optional<Hash> TakeEcho(std::uint32_t ip,
+		std::uint16_t port,
+		std::uint8_t firstByte,
+		std::size_t length,
+		bool decrypted,
+		std::uint64_t nowMs)
+	{
+		if (!FailedEveryKey(firstByte, length, decrypted)) {
+			return std::nullopt;
+		}
+		const Entry *entry = Find(ip, port, nowMs);
+		if (entry == nullptr || !entry->hash || !m_echoGate.TryAcquire(ip, port, nowMs)) {
+			return std::nullopt;
+		}
+		return entry->hash;
+	}
+
+	//! The echo was not sent after all, so the next failed datagram may try again.
+	void EchoNotSent(std::uint32_t ip, std::uint16_t port) { m_echoGate.Forget(ip, port); }
+
+private:
+	struct Entry
+	{
+		std::uint64_t stamp;
+		std::optional<Hash> hash;
+		bool conflicted;
+	};
+
+	const Entry *Find(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		const auto live = [nowMs](const Entry &entry) {
+			return !NatKeyFrame::Detail::Elapsed(nowMs, entry.stamp, kWindowMs);
+		};
+		const auto exact = m_entries.find(NatKeyFrame::Detail::EndpointKey(ip, port));
+		if (exact != m_entries.end()) {
+			return live(exact->second) ? &exact->second : nullptr;
+		}
+		const Entry *only = nullptr;
+		for (auto it = m_entries.lower_bound(NatKeyFrame::Detail::EndpointKey(ip, 0));
+			it != m_entries.end() && (it->first >> 16) == ip;
+			++it) {
+			if (live(it->second)) {
+				if (only != nullptr) {
+					return nullptr;
+				}
+				only = &it->second;
+			}
+		}
+		return only;
+	}
+
+	std::size_t m_capacity;
+	std::map<std::uint64_t, Entry> m_entries;
+	NatKeyFrame::CSendGate m_echoGate;
+};
+
+//! Whether an echo from this source may set our key IP toward it.
+inline bool AcceptsEcho(const CPunchedPeers &punched,
+	std::uint32_t ip,
+	std::uint16_t port,
+	bool seenIsPublic,
+	std::uint64_t nowMs)
+{
+	return seenIsPublic && punched.IsPunched(ip, port, nowMs);
+}
+
+//! Key IPs by peer IPv4, each for the login address it was learned under.
 class CKeyIps
 {
 public:
@@ -99,18 +232,16 @@ public:
 	}
 
 	//! A key IP equal to our login address, or 0, removes the entry: the default key is right.
-	void Set(std::uint32_t peerIp,
-		std::uint32_t keyIp,
-		std::uint32_t loginIp,
-		From from,
-		std::uint64_t nowMs)
+	void
+	Set(std::uint32_t peerIp, std::uint32_t keyIp, std::uint32_t loginIp, From from, std::uint64_t nowMs)
 	{
 		auto existing = m_entries.find(peerIp);
-		if (existing != m_entries.end() && from == From::Server && existing->second.from == From::Peer &&
+		if (existing != m_entries.end() && from == From::Server &&
+			existing->second.from == From::Peer && existing->second.loginIp == loginIp &&
 			!NatKeyFrame::Detail::Elapsed(nowMs, existing->second.stamp, m_idleMs)) {
 			return;
 		}
-		if (keyIp == 0 || keyIp == loginIp) {
+		if (keyIp == 0 || loginIp == 0 || keyIp == loginIp) {
 			if (existing != m_entries.end()) {
 				m_entries.erase(existing);
 			}
@@ -122,17 +253,19 @@ public:
 		if (existing == m_entries.end()) {
 			NatKeyFrame::Detail::MakeRoom(m_entries, m_capacity, nowMs, m_idleMs);
 		}
-		m_entries[peerIp] = Entry{ keyIp, nowMs, from };
+		m_entries[peerIp] = Entry{ keyIp, loginIp, nowMs, from };
 	}
 
-	//! A hit counts as use and extends the entry's life.
-	std::optional<std::uint32_t> Lookup(std::uint32_t peerIp, std::uint64_t nowMs)
+	//! A hit counts as use and extends the entry's life. An entry learned under another login
+	//! address is dropped: our public IP changed, so what the peer sees may have too.
+	std::optional<std::uint32_t> Lookup(std::uint32_t peerIp, std::uint32_t loginIp, std::uint64_t nowMs)
 	{
 		auto found = m_entries.find(peerIp);
-		if (found == m_entries.end()) {
+		if (found == m_entries.end() || loginIp == 0) {
 			return std::nullopt;
 		}
-		if (NatKeyFrame::Detail::Elapsed(nowMs, found->second.stamp, m_idleMs)) {
+		if (found->second.loginIp != loginIp ||
+			NatKeyFrame::Detail::Elapsed(nowMs, found->second.stamp, m_idleMs)) {
 			m_entries.erase(found);
 			return std::nullopt;
 		}
@@ -146,6 +279,7 @@ private:
 	struct Entry
 	{
 		std::uint32_t keyIp;
+		std::uint32_t loginIp;
 		std::uint64_t stamp;
 		From from;
 	};
@@ -154,6 +288,13 @@ private:
 	std::uint64_t m_idleMs;
 	std::map<std::uint32_t, Entry> m_entries;
 };
+
+//! Our address in the uTP simultaneous-open order, as the peer sees our SYN's source: the key IP
+//! toward it, else Kad's view, which the external Kad port comes from, else our public IP.
+inline std::uint32_t LocalUdpIP(std::uint32_t keyIp, std::uint32_t kadIp, std::uint32_t publicIp)
+{
+	return keyIp != 0 ? keyIp : (kadIp != 0 ? kadIp : publicIp);
+}
 } // namespace NatSourceEcho
 
 #endif // AMULE_NAT_SOURCE_ECHO_H

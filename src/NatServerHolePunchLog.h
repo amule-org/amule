@@ -47,7 +47,8 @@ inline void LogInfo(DebugType logType, const Info &info)
 			(info.peerId.has_value() ? (CFormat("%u") % *info.peerId).GetString()
 						 : wxString("none")) %
 			(info.ownUdpIP.has_value()
-					? Uint32_16toStringIP_Port(PeekUInt32(info.ownUdpIP->data()), info.ownUdpPort)
+					? Uint32_16toStringIP_Port(
+						  PeekUInt32(info.ownUdpIP->data()), info.ownUdpPort)
 					: wxString("not sent")));
 }
 

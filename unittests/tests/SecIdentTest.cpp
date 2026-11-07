@@ -102,4 +102,17 @@ TEST(SecIdent, VerifyIdentV2DerivesIdenticalMappedAndPlainChallengeIP)
 	ASSERT_EQUALS(plain, mapped);
 }
 
+TEST(SecIdent, RemoteClientChallengeIPIsTheAddressThePeerSeesUsAt)
+{
+	const uint32_t login = 0x010071cb;  // 203.113.0.1
+	const uint32_t udp = 0x020071cb;    // 203.113.0.2
+	const uint32_t highId = 0x0a0071cb; // a HighID is our IPv4
+	// Over a split NAT the peer saw our UDP address.
+	ASSERT_EQUALS(udp, SecIdent::RemoteClientChallengeIP(udp, login, login, true, 5));
+	// Otherwise the historical choice, unchanged.
+	ASSERT_EQUALS(login, SecIdent::RemoteClientChallengeIP(0, login, login, true, 5));
+	ASSERT_EQUALS(login, SecIdent::RemoteClientChallengeIP(0, 0, login, true, 5));
+	ASSERT_EQUALS(highId, SecIdent::RemoteClientChallengeIP(0, 0, login, false, highId));
+}
+
 // File_checked_for_headers
