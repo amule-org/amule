@@ -150,6 +150,38 @@ def run(binary):
                         assert payload == first_row(body, key), (event, payload, first_row(body, key))
                     print('PASS: client/server events match the production REST list-item bytes')
 
+                    # A late rejection can follow a changed STAT_REQ and empty collection
+                    # replies. Publish each changed dashboard while still disconnected, but
+                    # preserve the successful collection baseline through an unchanged recovery.
+                    cursor = len(stream.seen)
+                    core.fail_opcode = C['EC_OP_GET_PREFERENCES']
+                    core.populated = False
+                    stream.wait(lambda _: any(not json.loads(data)['ec_connected'] and
+                                               json.loads(data)['ed2k']['state'] == 'disconnected'
+                                               for data in status_payloads(stream, cursor)))
+                    code, headers, body = request(base, '/api/v1/status', token)
+                    assert code == 200 and body == status_payloads(stream, cursor)[-1]
+                    assert request(base, '/api/v1/status', token,
+                                   headers={'If-None-Match': headers['ETag']})[0] == 304
+                    changed_cursor = len(stream.seen)
+                    core.populated = True
+                    stream.wait(lambda _: any(not json.loads(data)['ec_connected'] and
+                                               json.loads(data)['ed2k']['state'] == 'connected'
+                                               for data in status_payloads(stream, changed_cursor)))
+                    changed = status_payloads(stream, changed_cursor)[-1]
+                    code, _, body = request(base, '/api/v1/status', token,
+                                             headers={'If-None-Match': headers['ETag']})
+                    assert code == 200 and body == changed
+                    stream.collect(1.2)
+                    assert len(status_payloads(stream, changed_cursor)) == 1, stream.seen[changed_cursor:]
+                    core.fail_opcode = None
+                    stream.wait(lambda _: any(json.loads(data)['ec_connected']
+                                               for data in status_payloads(stream, changed_cursor)))
+                    stream.collect(1.2)
+                    assert not any(name.endswith(('_added', '_updated', '_removed'))
+                                   for name, _ in stream.seen[cursor:]), stream.seen[cursor:]
+                    print('PASS: partial dashboards notify while failed; conditional REST and collection recovery agree')
+
                     code, headers, body = request(base, '/api/v1/status', token)
                     assert code == 200
                     code, _, empty = request(base, '/api/v1/status', token,
@@ -169,9 +201,22 @@ def run(binary):
                            == 'disconnected')
                 ticks = core.ops.count(C['EC_OP_STAT_REQ'])
                 eventually(lambda: core.ops.count(C['EC_OP_STAT_REQ']) >= ticks + 8, seconds=12)
+                # Subscribe during a blackout. A failed tick must publish freshness without
+                # consuming the pending idle resync or publishing empty collection deltas.
+                core.fail_opcode = C['EC_OP_STAT_REQ']
+                eventually(lambda: not json.loads(request(base, '/api/v1/status', token)[2])['ec_connected'])
                 with events(base, token) as stream:
+                    stream.wait(lambda _: any(not json.loads(data)['ec_connected']
+                                               for data in status_payloads(stream)))
+                    cursor = len(stream.seen)
+                    stream.collect(1.2)
+                    assert not stream.seen[cursor:], stream.seen[cursor:]
+                    assert not any(name == 'resync' and json.loads(data)['reason'] == 'idle'
+                                   for name, data in stream.seen), stream.seen
+                    core.fail_opcode = None
                     stream.wait(lambda seen: any(name == 'resync' and json.loads(data)['reason'] == 'idle'
                                                  for name, data in seen))
+                    assert json.loads(request(base, '/api/v1/status', token)[2])['ec_connected']
                     cursor = len(stream.seen)
                     stream.collect(1.2)
                     assert not stream.seen[cursor:], stream.seen[cursor:]
@@ -181,7 +226,7 @@ def run(binary):
                     core.fail_opcode = None
                     stream.wait(lambda _: any(json.loads(data)['ec_connected']
                                                for data in status_payloads(stream, cursor)))
-                print('PASS: idle resync primes the baseline and preserves later failure/recovery events')
+                print('PASS: failure preserves pending idle resync; recovery primes once and later failures still notify')
         finally:
             core.fail_opcode = None
             core.release.set()

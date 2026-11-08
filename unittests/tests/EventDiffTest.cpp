@@ -458,6 +458,56 @@ TEST(EventDiff, StatusOnlyFailurePreservesCollectionBaselines)
 	}
 }
 
+// A later rejected tick can carry new dashboard data while collections remain unpublished.
+// Recovery must compare those collections with the last complete tick, not the partial cache.
+TEST(EventDiff, StatusOnlyChangesAndRecoveryKeepIndependentBaselines)
+{
+	CState state;
+	state.MutateServers([](std::map<std::uint32_t, ServerSnapshot> &servers) {
+		ServerSnapshot server;
+		server.ecid = 7;
+		server.name = "before failure";
+		servers.emplace(server.ecid, server);
+	});
+	state.MarkTickSuccess();
+	const auto snapshot_at = state.SnapshotAt();
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	state.ResetLists();
+	state.MarkTickFailure();
+	EmitStatusDiffAndUpdate(bus, prev, state.Dashboard());
+	const auto failed_cursor = bus.NewestId();
+
+	StatusSnapshot partial = state.Status();
+	partial.ed2k_state = "connecting";
+	state.WriteStatus(partial);
+	state.MarkTickFailure();
+	EmitStatusDiffAndUpdate(bus, prev, state.Dashboard());
+	EmitStatusDiffAndUpdate(bus, prev, state.Dashboard());
+	const auto changed = DrainSince(bus, failed_cursor);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), changed.size());
+	ASSERT_EQUALS(std::string("status_changed"), changed.front().name);
+	ASSERT_TRUE(changed.front().data.find("\"ec_connected\":false") != std::string::npos);
+	ASSERT_TRUE(changed.front().data.find("\"state\":\"connecting\"") != std::string::npos);
+	ASSERT_EQUALS(snapshot_at, state.SnapshotAt());
+	ASSERT_EQUALS(std::string("before failure"), prev.servers.at(7).name);
+
+	const auto recovery_cursor = bus.NewestId();
+	state.MarkTickSuccess();
+	EmitDiffsAndUpdate(bus, prev, state);
+	const auto recovered = DrainSince(bus, recovery_cursor);
+	ASSERT_EQUALS(static_cast<std::size_t>(2), recovered.size());
+	ASSERT_EQUALS(std::string("server_removed"), recovered[0].name);
+	ASSERT_EQUALS(std::string("{\"ecid\":7}"), recovered[0].data);
+	ASSERT_EQUALS(std::string("status_changed"), recovered[1].name);
+	ASSERT_TRUE(recovered[1].data.find("\"ec_connected\":true") != std::string::npos);
+	ASSERT_TRUE(prev.servers.empty());
+	const auto unchanged_cursor = bus.NewestId();
+	EmitDiffsAndUpdate(bus, prev, state);
+	ASSERT_TRUE(DrainSince(bus, unchanged_cursor).empty());
+}
+
 namespace
 {
 class GroupedNumbers : public std::numpunct<char>
