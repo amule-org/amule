@@ -28,6 +28,7 @@
 #include "EventDiff.h"
 
 #include "EventBus.h"
+#include "SnapshotJson.h"
 #include "SearchJson.h"      // WriteSearchResultFields, shared with GET /search/{id}/results
 #include "ServerFlagNames.h" // Shared server capability-bit tables, decoded to JSON
 
@@ -49,12 +50,8 @@ namespace webapi
 namespace
 {
 
-// Minimal JSON string escaper. CJsonWriter (libwebcommon) is the canonical formatter for response
-// bodies, but the event payloads here are a few KB at most, and keeping the diff path off
-// CJsonWriter keeps wxString out of the bus path. (`search_result_added` is the exception: it is
-// documented as carrying exactly a results-list entry, so it goes through the shared writer in
-// SearchJson.h.) Escapes only what JSON disallows: backslash, double-quote and the C0 controls.
-// Tab/CR/LF are spelled out because amule log lines contain them.
+// Escaper for the remaining hand-built event payloads. Search results and dashboard status
+// use shared CJsonWriter serializers to preserve their REST contracts.
 std::string EscJson(const std::string &s)
 {
 	std::string out;
@@ -100,20 +97,11 @@ std::string EscJson(const std::string &s)
 // see the moved counters". The Equal functions below compare every field included here, so any
 // movement fires `_updated`.
 
-// `null` when the string was never populated, matching WriteStringOrNull on the REST side. Same
-// (known, value) shape as JsonNumOrNull; the caller decides what "known" means, since some fields
-// key on a sibling.
+// `null` when the string was never populated, matching WriteStringOrNull on the REST side.
+// The caller decides what "known" means, since some fields key on a sibling.
 std::string JsonStrOrNull(bool known, const std::string &v)
 {
 	return known ? "\"" + EscJson(v) + "\"" : std::string("null");
-}
-
-// `null` when the value was never measured, matching WriteIntOrNull / WriteBoolOrNull on the REST
-// side. The comparators below must treat null<->value as a change, or the event stops firing on the
-// edge that flips it.
-std::string JsonNumOrNull(bool known, std::uint64_t v)
-{
-	return known ? std::to_string(v) : std::string("null");
 }
 
 // The protocol extensions as the API's token array, from the table the daemon and the desktop GUI
@@ -365,59 +353,13 @@ std::string ToJson(const ClientSnapshot &c)
 	return o.str();
 }
 
-// A free-space figure renders as a JSON number, or null when the daemon has none (-1). Kept beside
-// the REST handler's identical rule so the two cannot drift apart.
-std::string JsonFreeSpace(std::int64_t v)
-{
-	return v < 0 ? std::string("null") : std::to_string(v);
-}
-
-// Mirrors HandleStatus key for key -- EVENTS.md promises this payload is identical to the REST
-// /status envelope, and 22-sse-diff-emission.sh asserts it. Takes a triple because that nesting
-// groups StatusSnapshot AND KadSnapshot AND the dashboard's ec_connected bit, all read in one
-// shared_lock by state.Dashboard() at the call site. Both connected_since_at values are 0 while not
-// connected: gate on state, not on the timestamp.
+// Both transports use the same writer, so status_changed is byte-identical to /status for
+// the same dashboard snapshot, including escaping, integer ranges and unknown values.
 std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
 {
-	std::ostringstream o;
-	o << "{"
-	  << "\"ec_connected\":" << (ec_connected ? "true" : "false")
-	  << ",\"search_all_supported\":" << (s.search_all_supported ? "true" : "false") << ",\"ed2k\":{"
-	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
-	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"user_id\":"
-	  << s.ed2k_user_id
-	  // null, not "", for the addresses; server_port nulls with its address.
-	  << ",\"public_ip\":"
-	  << (s.ed2k_public_ip.empty() ? std::string("null") : "\"" + EscJson(s.ed2k_public_ip) + "\"")
-	  << ",\"connected_since_at\":" << s.ed2k_connected_since
-	  << ",\"server_name\":" << JsonStrOrNull(!s.server_ip.empty(), s.server_name) << ",\"server_ip\":"
-	  << (s.server_ip.empty() ? std::string("null") : "\"" + EscJson(s.server_ip) + "\"")
-	  << ",\"server_port\":"
-	  << (s.server_ip.empty() ? std::string("null") : std::to_string(s.server_port)) << ",\"network\":{"
-	  << "\"user_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_users)
-	  << ",\"file_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_files) << "}}"
-	  << ",\"kad\":{"
-	  << "\"state\":\"" << EscJson(s.kad_state) << "\""
-	  << ",\"firewalled_tcp\":" << JsonBoolOrNull(s.has_kad_firewalled_tcp, s.kad_firewalled_tcp)
-	  << ",\"connected_since_at\":" << s.kad_connected_since << ",\"network\":{"
-	  << "\"user_count\":" << JsonNumOrNull(k.has_network, k.users)
-	  << ",\"file_count\":" << JsonNumOrNull(k.has_network, k.files)
-	  << ",\"node_count\":" << JsonNumOrNull(k.has_network, k.nodes) << "}"
-	  << "}"
-	  << ",\"speeds\":{"
-	  << "\"download_speed_bytes_per_second\":" << s.download_bytes_per_second
-	  << ",\"upload_speed_bytes_per_second\":" << s.upload_bytes_per_second
-	  << ",\"download_overhead_bytes_per_second\":" << s.download_overhead_bytes_per_second
-	  << ",\"upload_overhead_bytes_per_second\":" << s.upload_overhead_bytes_per_second << "}"
-	  << ",\"disk\":{"
-	  // null, not the -1 sentinel and not 0 -- same reasoning as the REST body.
-	  << "\"temp_free_bytes\":" << JsonFreeSpace(s.temp_free_bytes)
-	  << ",\"incoming_free_bytes\":" << JsonFreeSpace(s.incoming_free_bytes) << "}"
-	  << ",\"queue\":{"
-	  << "\"waiting_upload_client_count\":" << s.ul_queue_len
-	  << ",\"download_source_count\":" << s.total_src_count << "}"
-	  << "}";
-	return o.str();
+	CJsonWriter w;
+	WriteStatusObject(w, s, k, ec_connected);
+	return w.TakeBuffer();
 }
 
 // Equal compares every field the matching ToJson emits, and any movement fires `_updated` with the

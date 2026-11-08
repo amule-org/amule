@@ -2294,7 +2294,7 @@ target_link_libraries (LogTeeTest
 
 # Tests for EmitDiffsAndUpdate's log_appended path and cold-start
 # gating. Pulls EventBus + State along with EventDiff itself — no EC,
-# and the only wx dependency is the shared search-result writer below.
+# and the wx dependency comes from the shared JSON writers below.
 add_executable (EventDiffTest
 	EventDiffTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/EventBus.cpp
@@ -2304,6 +2304,7 @@ add_executable (EventDiffTest
 	# uses instead of a second hand-rolled copy. That writer speaks
 	# CJsonWriter, which is what brings webcommon (and wx base) in here.
 	${CMAKE_SOURCE_DIR}/src/webapi/SearchJson.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/SnapshotJson.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/State.cpp
 )
 target_include_directories (EventDiffTest
@@ -2324,6 +2325,15 @@ target_link_libraries (EventDiffTest
 if (LIBATOMIC)
 	target_link_libraries (EventDiffTest ${LIBATOMIC})
 endif()
+
+# Dashboard wire contract, also exercising the nullable helpers used by other REST handlers.
+add_executable (SnapshotJsonTest
+	SnapshotJsonTest.cpp
+	${CMAKE_SOURCE_DIR}/src/webapi/SnapshotJson.cpp
+)
+target_include_directories (SnapshotJsonTest PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi)
+add_test (NAME SnapshotJsonTest COMMAND SnapshotJsonTest)
+target_link_libraries (SnapshotJsonTest muleunit webcommon wxWidgets::BASE)
 
 # amuleapi-specific: tests CAmuleApiConfig's file-IO + mode-bit
 # enforcement. AmuleApiConfig.cpp is statically linked into the test

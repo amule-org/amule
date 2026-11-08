@@ -28,10 +28,15 @@
 #include "EventDiff.h"
 #include "ServerFlagNames.h"
 #include "State.h"
+#include "SnapshotJson.h"
+
+#include <JsonWriter.h>
 
 #include <chrono>
 #include <cstdint>
 #include <map>
+#include <functional>
+#include <locale>
 #include <string>
 #include <vector>
 
@@ -232,6 +237,141 @@ std::string EmitStatusAndGetPayload(const StatusSnapshot &next)
 	return payload;
 }
 } // namespace
+
+// Each visible field must trigger an update by itself. The same snapshot must give the
+// HTTP writer and the event path identical bytes; another unchanged tick must stay silent.
+TEST(EventDiff, StatusFieldsTriggerExactlyOneMatchingEvent)
+{
+	using Change = std::function<void(StatusSnapshot &, KadSnapshot &)>;
+	const std::vector<Change> changes = {
+		[](StatusSnapshot &s, KadSnapshot &) { s.search_all_supported = true; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_state = "connecting"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_high_id = true; },
+		[](StatusSnapshot &s, KadSnapshot &) {
+			s.ed2k_user_id = 0x04030201;
+			s.ed2k_public_ip = "1.2.3.4"; // Refresher derives the address from this id.
+		},
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_connected_since = 1700000001; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_name = "changed"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_ip = "5.6.7.9"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_port = 4662; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.has_ed2k_network = false; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_users = 1; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_files = 2; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.kad_state = "connecting"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.has_kad_firewalled_tcp = false; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.kad_firewalled_tcp = true; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.kad_connected_since = 1700000002; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.has_network = false; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.users = 3; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.files = 4; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.nodes = 5; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.download_bytes_per_second = 1234; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.upload_bytes_per_second = 5678; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.download_overhead_bytes_per_second = 123; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.upload_overhead_bytes_per_second = 456; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.temp_free_bytes = 0; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.incoming_free_bytes = 9876543210LL; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ul_queue_len = 42; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.total_src_count = 43; },
+	};
+	for (const auto &change : changes) {
+		CState state;
+		StatusSnapshot s;
+		s.server_ip = "5.6.7.8";
+		s.server_port = 4661;
+		s.has_ed2k_network = true;
+		s.has_kad_firewalled_tcp = true;
+		KadSnapshot k;
+		k.has_network = true;
+		state.WriteStatus(s);
+		state.WriteKad(k);
+		CEventBus bus;
+		LastSeenState prev;
+		EmitDiffsAndUpdate(bus, prev, state);
+		const auto cursor = bus.NewestId();
+		change(s, k);
+		state.WriteStatus(s);
+		state.WriteKad(k);
+		EmitDiffsAndUpdate(bus, prev, state);
+		CJsonWriter expected;
+		WriteStatusObject(expected, s, k, false);
+		int count = 0;
+		for (const auto &event : DrainSince(bus, cursor)) {
+			if (event.name == "status_changed") {
+				++count;
+				ASSERT_EQUALS(expected.GetBuffer(), event.data);
+			}
+		}
+		ASSERT_EQUALS(1, count);
+		const auto unchanged = bus.NewestId();
+		EmitDiffsAndUpdate(bus, prev, state);
+		ASSERT_TRUE(DrainSince(bus, unchanged).empty());
+	}
+}
+
+TEST(EventDiff, StatusColdStartAndEcReconnectKeepDashboardContract)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	for (int tick = 0; tick < 3; ++tick) {
+		if (tick == 1)
+			state.MarkTickSuccess();
+		if (tick == 2)
+			state.MarkTickFailure();
+		const auto cursor = bus.NewestId();
+		EmitDiffsAndUpdate(bus, prev, state);
+		const auto d = state.Dashboard();
+		CJsonWriter expected;
+		WriteStatusObject(expected, d.status, d.kad, d.ec_connected);
+		int count = 0;
+		for (const auto &event : DrainSince(bus, cursor)) {
+			if (event.name == "status_changed") {
+				++count;
+				ASSERT_EQUALS(expected.GetBuffer(), event.data);
+			}
+		}
+		ASSERT_EQUALS(1, count);
+	}
+}
+
+namespace
+{
+class GroupedNumbers : public std::numpunct<char>
+{
+	char do_thousands_sep() const override { return ','; }
+	std::string do_grouping() const override { return "\3"; }
+};
+
+class ScopedGroupedLocale
+{
+public:
+	ScopedGroupedLocale()
+	: m_previous(std::locale())
+	{
+		std::locale::global(std::locale(m_previous, new GroupedNumbers));
+	}
+	~ScopedGroupedLocale() { std::locale::global(m_previous); }
+
+private:
+	std::locale m_previous;
+};
+} // namespace
+
+// The old stream-based event writer inherited numeric grouping from the global locale and
+// could output an invalid JSON integer such as 1,234 while the HTTP body still said 1234.
+TEST(EventDiff, StatusIntegerFormattingIgnoresGlobalLocale)
+{
+	ScopedGroupedLocale locale;
+	StatusSnapshot s;
+	s.download_bytes_per_second = 1234567;
+	s.server_name = "\"服务器\"\n\\\t";
+	s.server_ip = "5.6.7.8";
+	const std::string payload = EmitStatusAndGetPayload(s);
+	ASSERT_TRUE(payload.find("\"download_speed_bytes_per_second\":1234567") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"server_name\":\"\\\"服务器\\\"\\n\\\\\\t\"") != std::string::npos);
+}
 
 // The free-space sentinel must reach the SSE payload as JSON null, never as a number. amuled's
 // FREE_SPACE_UNKNOWN is -1 and its EC serializer casts it to uint64, so the wire carries
