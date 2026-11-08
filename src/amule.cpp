@@ -2066,7 +2066,7 @@ std::optional<CNetworkAddress> SelectedLocalIPv6()
 	return s_advertisedIPv6Choice;
 }
 
-std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
+SAdvertisedIPv6Facts CurrentAdvertisedIPv6Facts()
 {
 	SAdvertisedIPv6Facts facts;
 	facts.choice = s_advertisedIPv6Choice;
@@ -2093,6 +2093,12 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 	// listener is down; a concrete IPv6 bind (a configured /eMule/Address) accepts on that one
 	// address only, which need not be the one chosen from the interfaces.
 	facts.listenerAcceptsIPv6 = theApp->listensocket && theApp->listensocket->BoundHost() == "[::]";
+	return facts;
+}
+
+std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
+{
+	const SAdvertisedIPv6Facts facts = CurrentAdvertisedIPv6Facts();
 
 	// Always ignores a failed probe by design: the user asserted the port is reachable. It must
 	// not pass silently, but this runs on every refresh, so only the transition is logged.
@@ -2130,25 +2136,19 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 		}
 		SetSocketAdvertisedIPv6(advertised.value_or(CNetworkAddress::Absent()));
 		s_lastAdvertisedIPv6 = advertised;
-		if (theApp->serverconnect) {
-			theApp->serverconnect->UpdateAdvertisedIPv6(advertised);
-		}
 	}
 
+	if (theApp->serverconnect) {
 #ifdef ENABLE_IPV6
-	// A probing server needs the address it is about to test, and the peers-facing decision drops
-	// an address as soon as the proof or the verdict stops covering it. Without this a renumbered
-	// prefix withdraws the address and the server never probes the new one until the next login.
-	// UpdateAdvertisedIPv6() sends only when the address changed.
-	CServer *const probeServer =
-		theApp->serverconnect ? theApp->serverconnect->GetCurrentServer() : nullptr;
-	const bool mayExposeProbeAddress = facts.mode != EIPv6AdvertisingMode::Never && !facts.proxyEnabled &&
-					   facts.familyPermitted && facts.listenerAcceptsIPv6 &&
-					   !facts.contradicted;
-	if (probeServer != nullptr && probeServer->SupportsIPv6Probe() && mayExposeProbeAddress) {
-		theApp->serverconnect->UpdateAdvertisedIPv6(SelectedLocalIPv6());
-	}
+		// One send per refresh: the address a probing server has to test, or what the peers
+		// decision allows. UpdateAdvertisedIPv6() sends only when the address changed.
+		CServer *const server = theApp->serverconnect->GetCurrentServer();
+		theApp->serverconnect->UpdateAdvertisedIPv6(
+			ServerAddressToSend(facts, server != nullptr && server->SupportsIPv6Probe()));
+#else
+		theApp->serverconnect->UpdateAdvertisedIPv6(advertised);
 #endif
+	}
 	return advertised;
 }
 #endif

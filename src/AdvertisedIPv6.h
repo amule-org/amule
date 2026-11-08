@@ -216,6 +216,30 @@ inline bool ShouldRepublishKadSources(
  */
 std::optional<CNetworkAddress> AdvertisedIPv6ForPeers();
 
+//! The facts the decision is made from, defined beside the interface refresh.
+SAdvertisedIPv6Facts CurrentAdvertisedIPv6Facts();
+
+/**
+ * The address to send a server: the one it will test, or what the peers decision allows.
+ *
+ * A server that probes needs an address it has not published yet, so reachability is not required
+ * here; everything else that protects the address is. Any other server receives exactly what peers
+ * would, which may be nothing until the address is proved.
+ */
+inline std::optional<CNetworkAddress> ServerAddressToSend(
+	const SAdvertisedIPv6Facts &facts, bool serverProbes)
+{
+	if (!serverProbes) {
+		return DecideAdvertisedIPv6(facts);
+	}
+	const bool permitted = facts.ipv6Built && facts.familyPermitted && !facts.proxyEnabled;
+	if (!facts.choice || !permitted || !facts.listenerAcceptsIPv6 || facts.contradicted ||
+		facts.mode == EIPv6AdvertisingMode::Never) {
+		return std::nullopt;
+	}
+	return facts.choice;
+}
+
 /**
  * The stable globally routable local IPv6 selected from the current interfaces, or none.
  *

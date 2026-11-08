@@ -23,6 +23,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include "AdvertisedIPv6.h"      // Needed for ServerAddressToSend
 #include "AddressFamilyPolicy.h" // Needed for PermitsIPv6
 #include "ListenSocket.h"        // Needed for CListenSocket::BoundHost
 #include "ServerSocket.h"        // Interface declarations
@@ -505,20 +506,12 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			// The address the server has to test still has to be one we are willing to expose:
 			// Never, an IPv4-only policy, a proxy and a listener that does not accept IPv6 all
 			// rule it out, exactly as they rule out advertising.
-			const bool probeRequested = cur_server->SupportsIPv6Probe();
-			const bool mayExpose =
-				thePrefs::GetAdvertiseIPv6Mode() != EIPv6AdvertisingMode::Never &&
-				!thePrefs::GetProxyData()->m_proxyEnable &&
-				AddressFamilyPolicy::PermitsIPv6() && theApp->listensocket &&
-				theApp->listensocket->BoundHost() == "[::]";
 			if (cur_server->SupportsIPv6Updates()) {
-				// A probing server needs the address it is about to test; every other server
-				// keeps what it received before, so an address change between the login and
-				// this IDCHANGE still reaches it.
 				AddDebugLogLineN(logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
-				serverconnect->UpdateAdvertisedIPv6(probeRequested && mayExpose
-									    ? SelectedLocalIPv6()
-									    : AdvertisedIPv6ForPeers());
+				// One rule for the login, this update and the periodic refresh: the address a
+				// probing server has to test, or what peers would be told.
+				serverconnect->UpdateAdvertisedIPv6(ServerAddressToSend(
+					CurrentAdvertisedIPv6Facts(), cur_server->SupportsIPv6Probe()));
 			}
 #endif
 
