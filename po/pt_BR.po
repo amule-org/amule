@@ -1570,15 +1570,15 @@ msgstr "*** Sua resposta ao captcha estava errada e sua mensagem foi ignorada. V
 msgid "Chat"
 msgstr "Chat"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close tab"
 msgstr "Fechar aba"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close all tabs"
 msgstr "Fechar todas as abas"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close other tabs"
 msgstr "Fechar outras abas"
 
@@ -2749,9 +2749,9 @@ msgstr "Sessão de chat inexistente"
 msgid "Media metadata extraction is disabled in preferences"
 msgstr "A extração de metadados de mídia está desativada nas preferências"
 
-#: src/ExternalConn.cpp
-msgid "This aMule has no media helper (amule-media-probe)"
-msgstr "Este aMule não tem o auxiliar de mídia (amule-media-probe)"
+#: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -4232,6 +4232,11 @@ msgid "Media metadata: bundled amule-media-probe helper is unavailable."
 msgstr "Metadados de mídia: o auxiliar embutido amule-media-probe não está disponível."
 
 #: src/MediaProbe.cpp
+#, fuzzy, c-format
+msgid "Media metadata: no result for %s: %s"
+msgstr "Metadados de mídia: o analisador falhou para %s"
+
+#: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
 msgstr "Metadados de mídia: %s sumiu, nada a extrair"
@@ -4242,9 +4247,9 @@ msgid "Extracting media metadata: %s"
 msgstr "Extraindo os metadados da mídia: %s"
 
 #: src/MediaProbe.cpp
-#, c-format
-msgid "Media metadata: parser failed for %s"
-msgstr "Metadados de mídia: o analisador falhou para %s"
+#, fuzzy, c-format
+msgid "Media metadata extraction disabled until restart: %s"
+msgstr "A extração de metadados de mídia está desativada nas preferências"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5195,7 +5200,7 @@ msgstr "Mantém uma lista suspensa dos seus termos de busca anteriores no campo 
 msgid "Tooltip delay time: "
 msgstr "Tempo de espera das dicas: "
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
 msgstr "segundos"
 
@@ -5544,7 +5549,8 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "Extrair duração / taxa de bits / codec dos arquivos de áudio e vídeo compartilhados"
 
 #: src/muuli_wdr.cpp
-msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
+#, fuzzy
+msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
 msgstr "Quando habilitado, o aMule usa seu analisador MediaInfo embutido para extrair metadados dos arquivos de mídia compartilhados."
 
 #: src/muuli_wdr.cpp
@@ -7012,7 +7018,8 @@ msgid "no options available"
 msgstr "nenhuma opção disponível"
 
 #: src/Preferences.cpp
-msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
+#, fuzzy
+msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr "Metadados de mídia: FFProbePath está obsoleto; o aMule agora usa seu analisador MediaInfo embutido. Removendo a configuração antiga."
 
 #: src/Preferences.cpp
@@ -7173,10 +7180,6 @@ msgstr "Falha ao conectar Cfg ao widget com o ID %d e a chave %s"
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Falha ao transferir dados de Cfg para o widget com o ID %d e a chave %s"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
-msgstr "Este aMule não tem o auxiliar de mídia (amule-media-probe), portanto não pode extrair metadados de mídia."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -7657,6 +7660,10 @@ msgid "Clear the saved search history? This cannot be undone."
 msgstr "Limpar o histórico de busca salvo? Isto não poderá ser desfeito."
 
 #: src/SearchDlg.cpp
+msgid "Load into search form"
+msgstr ""
+
+#: src/SearchDlg.cpp
 msgid "Search warning"
 msgstr "Aviso da busca"
 
@@ -7687,6 +7694,10 @@ msgid "Search in progress"
 msgstr "Busca em andamento"
 
 #: src/SearchDlg.cpp
+msgid "Enter whole, non-negative sizes and availability within the supported range."
+msgstr ""
+
+#: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "O tamanho mínimo deve ser menor que o máximo. Tamanho máximo ignorado."
 
@@ -7695,7 +7706,16 @@ msgid "Main"
 msgstr "Principal"
 
 #: src/SearchMetadataPanel.cpp
-msgid "Minimum duration (minutes)"
+msgid "minutes"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Duration unit"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+#, fuzzy
+msgid "Minimum duration"
 msgstr "Duração mínima (minutos)"
 
 #: src/SearchMetadataPanel.cpp
@@ -8482,10 +8502,6 @@ msgstr "Diretório compartilhado está ilegível, pulando: %s"
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
 msgstr "Extração de metadados da mídia está desabilitada nas preferências, assim, não há nada para re-extrair."
-
-#: src/SharedFileList.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
-msgstr "Este aMule não tem o auxiliar de mídia (amule-media-probe), portanto não pode extrair novamente os metadados de mídia."
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -10618,6 +10634,15 @@ msgstr "Não foi possível comparar o ECPassword legado com o ECPasswordVerifier
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrando um ECPassword legado alterado após um downgrade; o verificador anterior não autentica mais esta sessão."
+
+#~ msgid "This aMule has no media helper (amule-media-probe)"
+#~ msgstr "Este aMule não tem o auxiliar de mídia (amule-media-probe)"
+
+#~ msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
+#~ msgstr "Este aMule não tem o auxiliar de mídia (amule-media-probe), portanto não pode extrair metadados de mídia."
+
+#~ msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
+#~ msgstr "Este aMule não tem o auxiliar de mídia (amule-media-probe), portanto não pode extrair novamente os metadados de mídia."
 
 #~ msgid "Disable computer's timed standby mode"
 #~ msgstr "Desabilitar o modo de espera programado do computador"

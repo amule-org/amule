@@ -1065,7 +1065,7 @@
   "prefs_field_servers_accelerated_publication_enabled_help": "Следовать темпу публикации, который объявляет сервер. Остальные серверы получают стандартный темп. Применяется со следующего подключения к серверу.",
   "prefs_field_servers_accelerated_publication_enabled": "Публиковать общие файлы быстрее на серверах, которые это позволяют",
   "shared_media_refresh_tip_disabled": "Извлечение метаданных медиафайлов отключено в настройках.",
-  "shared_media_refresh_tip_unavailable": "В этом aMule нет помощника для работы с медиа (amule-media-probe), поэтому он не может извлекать метаданные медиафайлов.",
+  "shared_media_refresh_tip_unavailable": "Извлечение метаданных медиафайлов недоступно: вспомогательная программа отсутствует или не прошла ограничения ОС. Подробности см. в журнале ядра.",
   "stats_tree_upload_lowid_to_lowid_data": "Данные LowID–LowID, отдача (за сеанс): %s",
   "stats_tree_upload_ipv6_data": "Данные IPv6, отдача (за сеанс): %s",
   "stats_tree_download_lowid_to_lowid_data": "Данные LowID–LowID, загрузка (за сеанс): %s",

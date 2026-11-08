@@ -1557,15 +1557,15 @@ msgstr "*** Përgjigjja juaj ndaj captcha-s ishte e gabuar dhe mesazhi juaj u in
 msgid "Chat"
 msgstr "Bisedë"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close tab"
 msgstr "Mbyll tabelen"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close all tabs"
 msgstr "Mbylli te gjitha tabelat"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close other tabs"
 msgstr "Mbyll tabelat e tjera"
 
@@ -2757,8 +2757,8 @@ msgstr "Mbylle kete sesion chati."
 msgid "Media metadata extraction is disabled in preferences"
 msgstr "Kad-i eshte c'aktivizuar tek Preferencat."
 
-#: src/ExternalConn.cpp
-msgid "This aMule has no media helper (amule-media-probe)"
+#: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -4258,6 +4258,11 @@ msgid "Media metadata: bundled amule-media-probe helper is unavailable."
 msgstr ""
 
 #: src/MediaProbe.cpp
+#, fuzzy, c-format
+msgid "Media metadata: no result for %s: %s"
+msgstr "Nxjerrja e metadhënave të mediave"
+
+#: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
 msgstr ""
@@ -4269,8 +4274,8 @@ msgstr ""
 
 #: src/MediaProbe.cpp
 #, fuzzy, c-format
-msgid "Media metadata: parser failed for %s"
-msgstr "Nxjerrja e metadhënave të mediave"
+msgid "Media metadata extraction disabled until restart: %s"
+msgstr "Kad-i eshte c'aktivizuar tek Preferencat."
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5231,7 +5236,7 @@ msgstr "Mban një listë rënëse me termat tuaj të mëparshëm të kërkimit n
 msgid "Tooltip delay time: "
 msgstr "Koha e vonesës së tooltip-it: "
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
 msgstr "sekonda"
 
@@ -5573,7 +5578,7 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "Nxirr gjatësinë / bitrate-in / kodekun nga skedarët audio dhe video të ndarë"
 
 #: src/muuli_wdr.cpp
-msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
+msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -7053,7 +7058,7 @@ msgid "no options available"
 msgstr "nuk ka opsione të disponueshme"
 
 #: src/Preferences.cpp
-msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
+msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
 #: src/Preferences.cpp
@@ -7214,10 +7219,6 @@ msgstr "Dështoi lidhja e Cfg me widget-in me ID %d dhe çelësin %s"
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Dështoi transferimi i të dhënave nga Cfg te Widget me ID %d dhe çelësin %s"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
-msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -7704,6 +7705,10 @@ msgid "Clear the saved search history? This cannot be undone."
 msgstr ""
 
 #: src/SearchDlg.cpp
+msgid "Load into search form"
+msgstr ""
+
+#: src/SearchDlg.cpp
 msgid "Search warning"
 msgstr "PoParalajmerim per kerkim"
 
@@ -7730,6 +7735,10 @@ msgid "Search in progress"
 msgstr "Ne vazhdim"
 
 #: src/SearchDlg.cpp
+msgid "Enter whole, non-negative sizes and availability within the supported range."
+msgstr ""
+
+#: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "Masa minimale duhet te jete me e vogel se masa maksimale.Po injoroj Masen Maksimale.."
 
@@ -7738,7 +7747,15 @@ msgid "Main"
 msgstr "Kryesore"
 
 #: src/SearchMetadataPanel.cpp
-msgid "Minimum duration (minutes)"
+msgid "minutes"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Duration unit"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration"
 msgstr ""
 
 #: src/SearchMetadataPanel.cpp
@@ -8541,10 +8558,6 @@ msgstr "Serveri nuk u gjend: %s"
 
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
-msgstr ""
-
-#: src/SharedFileList.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
 msgstr ""
 
 #: src/SharedFileList.cpp

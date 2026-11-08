@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-07 10:50+0000\n"
+"PO-Revision-Date: 2026-11-08 11:22+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -1574,15 +1574,15 @@ msgstr "*** Код введен неверно. Ваше сообщение пр
 msgid "Chat"
 msgstr "Чат"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close tab"
 msgstr "Закрыть вкладку"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close all tabs"
 msgstr "Закрыть все вкладки"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close other tabs"
 msgstr "Закрыть остальные вкладки"
 
@@ -2768,9 +2768,9 @@ msgstr "Такой беседы нет"
 msgid "Media metadata extraction is disabled in preferences"
 msgstr "Извлечение метаданных медиафайлов отключено в настройках"
 
-#: src/ExternalConn.cpp
-msgid "This aMule has no media helper (amule-media-probe)"
-msgstr "В этом aMule нет помощника для работы с медиа (amule-media-probe)"
+#: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
+msgstr "Извлечение метаданных медиафайлов недоступно: вспомогательная программа отсутствует или не прошла ограничения ОС. Подробности см. в журнале ядра."
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -4258,6 +4258,11 @@ msgstr "Метаданные медиафайла: встроенный помо
 
 #: src/MediaProbe.cpp
 #, c-format
+msgid "Media metadata: no result for %s: %s"
+msgstr "Метаданные медиафайлов: нет результата для %s: %s"
+
+#: src/MediaProbe.cpp
+#, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
 msgstr "Метаданные медиафайла: %s отсутствует, извлекать нечего"
 
@@ -4268,8 +4273,8 @@ msgstr "Извлечение метаданных медиафайла: %s"
 
 #: src/MediaProbe.cpp
 #, c-format
-msgid "Media metadata: parser failed for %s"
-msgstr "Метаданные медиафайла: парсер завершился с ошибкой для %s"
+msgid "Media metadata extraction disabled until restart: %s"
+msgstr "Извлечение метаданных медиафайлов отключено до перезапуска: %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5141,26 +5146,23 @@ msgstr "Регистрирует запись автозапуска для те
 
 #: src/muuli_wdr.cpp
 msgid "Prevent automatic sleep: "
-msgstr ""
+msgstr "Предотвращать автоматический сон: "
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Off"
-msgstr "отключён"
+msgstr "Отключено"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While downloading"
-msgstr "Уже загружается"
+msgstr "Во время скачивания"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While aMule is running"
-msgstr "aMule запущен"
+msgstr "Пока aMule работает"
 
 #: src/muuli_wdr.cpp
 msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgstr "«Во время скачивания»: не давать системе засыпать, пока есть скачивание в очереди, не приостановленное, не остановленное и без ошибки, либо пока отданное за сеанс не сравняется со скачанным. «Пока aMule работает»: не давать системе засыпать, даже если программа простаивает, отключена от сети или свёрнута в трей. Экран при этом может отключаться."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5230,7 +5232,7 @@ msgstr "Сохраняет раскрывающийся список ваших 
 msgid "Tooltip delay time: "
 msgstr "Время задержки подсказок: "
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
 msgstr "секунд"
 
@@ -5580,8 +5582,8 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "Извлекать длительность, битрейт и кодек из общих файлов аудио и видео"
 
 #: src/muuli_wdr.cpp
-msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
-msgstr "Если включено, aMule использует встроенный парсер MediaInfo для извлечения метаданных из общих медиафайлов."
+msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
+msgstr "Если включено, aMule использует встроенный парсер медиафайлов для извлечения метаданных из публикуемых медиафайлов."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -7060,8 +7062,8 @@ msgid "no options available"
 msgstr "нет доступных опций"
 
 #: src/Preferences.cpp
-msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
-msgstr "Метаданные медиафайла: параметр FFProbePath устарел; теперь aMule использует встроенный парсер MediaInfo. Удаление устаревшего параметра."
+msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
+msgstr "Метаданные медиафайлов: параметр FFProbePath устарел; теперь aMule использует встроенный парсер медиафайлов. Удаление устаревшего параметра."
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -7222,10 +7224,6 @@ msgstr "Не удалось подключить Cfg к widget с ID %d и кл�
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Не удалось передать данные из Cfg к Widget с ID %d и ключом %s"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
-msgstr "В этом aMule нет помощника для работы с медиа (amule-media-probe), поэтому он не может извлекать метаданные медиафайлов."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -7714,6 +7712,10 @@ msgid "Clear the saved search history? This cannot be undone."
 msgstr "Очистить сохранённую историю поиска? Это действие невозможно отменить."
 
 #: src/SearchDlg.cpp
+msgid "Load into search form"
+msgstr "Загрузить в форму поиска"
+
+#: src/SearchDlg.cpp
 msgid "Search warning"
 msgstr "Предупреждение поиска"
 
@@ -7744,6 +7746,10 @@ msgid "Search in progress"
 msgstr "Поиск выполняется"
 
 #: src/SearchDlg.cpp
+msgid "Enter whole, non-negative sizes and availability within the supported range."
+msgstr "Введите целые неотрицательные размеры и доступность в пределах поддерживаемого диапазона."
+
+#: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "Мин. размер должен быть меньше макс. размера. Игнорирую макс. размер."
 
@@ -7753,7 +7759,15 @@ msgid "Main"
 msgstr "Общая"
 
 #: src/SearchMetadataPanel.cpp
-msgid "Minimum duration (minutes)"
+msgid "minutes"
+msgstr "минуты"
+
+#: src/SearchMetadataPanel.cpp
+msgid "Duration unit"
+msgstr "Единица длительности"
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration"
 msgstr "Минимальная длительность (минуты)"
 
 #: src/SearchMetadataPanel.cpp
@@ -8550,10 +8564,6 @@ msgstr "Общий каталог недоступен для чтения, пр
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
 msgstr "Извлечение метаданных медиафайлов отключено в настройках, поэтому нечего извлекать заново."
-
-#: src/SharedFileList.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
-msgstr "В этом aMule нет помощника для работы с медиа (amule-media-probe), поэтому он не может повторно извлекать метаданные медиафайлов."
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -10703,6 +10713,15 @@ msgstr "Не удалось сравнить устаревший ECPassword с 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Выполняется миграция изменённого устаревшего ECPassword после отката версии; предыдущий верификатор больше не действует в этом запуске."
+
+#~ msgid "This aMule has no media helper (amule-media-probe)"
+#~ msgstr "В этом aMule нет помощника для работы с медиа (amule-media-probe)"
+
+#~ msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
+#~ msgstr "В этом aMule нет помощника для работы с медиа (amule-media-probe), поэтому он не может извлекать метаданные медиафайлов."
+
+#~ msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
+#~ msgstr "В этом aMule нет помощника для работы с медиа (amule-media-probe), поэтому он не может повторно извлекать метаданные медиафайлов."
 
 #~ msgid "Disable computer's timed standby mode"
 #~ msgstr "Отключить таймер перехода компьютера в режим ожидания"

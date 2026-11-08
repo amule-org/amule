@@ -1559,15 +1559,15 @@ msgstr "*** 캡차 응답이 올바르지 않아 메시지가 무시되었습니
 msgid "Chat"
 msgstr "채팅"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close tab"
 msgstr "탭 닫기"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close all tabs"
 msgstr "모든 탭 닫기"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close other tabs"
 msgstr "다른 탭 닫기"
 
@@ -2759,8 +2759,8 @@ msgstr "이 채팅세션을 닫습니다."
 msgid "Media metadata extraction is disabled in preferences"
 msgstr "Kad는 환경설정에서 비활성화되어 있습니다."
 
-#: src/ExternalConn.cpp
-msgid "This aMule has no media helper (amule-media-probe)"
+#: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
 msgstr ""
 
 #: src/ExternalConn.cpp
@@ -4262,6 +4262,11 @@ msgid "Media metadata: bundled amule-media-probe helper is unavailable."
 msgstr ""
 
 #: src/MediaProbe.cpp
+#, fuzzy, c-format
+msgid "Media metadata: no result for %s: %s"
+msgstr "미디어 메타데이터 추출"
+
+#: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
 msgstr ""
@@ -4273,8 +4278,8 @@ msgstr ""
 
 #: src/MediaProbe.cpp
 #, fuzzy, c-format
-msgid "Media metadata: parser failed for %s"
-msgstr "미디어 메타데이터 추출"
+msgid "Media metadata extraction disabled until restart: %s"
+msgstr "Kad는 환경설정에서 비활성화되어 있습니다."
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5233,7 +5238,7 @@ msgstr "검색 탭의 이름 필드에 이전 검색어의 드롭다운 목록�
 msgid "Tooltip delay time: "
 msgstr "툴팁 지연 시간: "
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
 msgstr "초"
 
@@ -5575,7 +5580,7 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "공유된 오디오 및 비디오 파일에서 길이 / 비트레이트 / 코덱을 추출합니다"
 
 #: src/muuli_wdr.cpp
-msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
+msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -7051,7 +7056,7 @@ msgid "no options available"
 msgstr "사용 가능한 옵션 없음"
 
 #: src/Preferences.cpp
-msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
+msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
 #: src/Preferences.cpp
@@ -7212,10 +7217,6 @@ msgstr "ID %d, 키 %s인 위젯에 Cfg를 연결하지 못했습니다"
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "ID %d, 키 %s인 위젯으로 Cfg에서 데이터를 전송하지 못했습니다"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
-msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -7702,6 +7703,10 @@ msgid "Clear the saved search history? This cannot be undone."
 msgstr ""
 
 #: src/SearchDlg.cpp
+msgid "Load into search form"
+msgstr ""
+
+#: src/SearchDlg.cpp
 msgid "Search warning"
 msgstr "검색 경고"
 
@@ -7728,6 +7733,10 @@ msgid "Search in progress"
 msgstr "진행중"
 
 #: src/SearchDlg.cpp
+msgid "Enter whole, non-negative sizes and availability within the supported range."
+msgstr ""
+
+#: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "최소 크기가 최대 크기보다 작아야 합니다. 최대 크기는 무시됩니다.."
 
@@ -7736,7 +7745,15 @@ msgid "Main"
 msgstr "주"
 
 #: src/SearchMetadataPanel.cpp
-msgid "Minimum duration (minutes)"
+msgid "minutes"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Duration unit"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration"
 msgstr ""
 
 #: src/SearchMetadataPanel.cpp
@@ -8539,10 +8556,6 @@ msgstr "서버가 발견되지 않음: %s"
 
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
-msgstr ""
-
-#: src/SharedFileList.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
 msgstr ""
 
 #: src/SharedFileList.cpp
