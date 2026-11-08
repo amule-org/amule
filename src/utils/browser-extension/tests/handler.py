@@ -21,18 +21,20 @@
 
 """Log native protocol delivery, optionally forwarding it to isolated aMule."""
 import json
-import os
 from pathlib import Path
 import subprocess
 import sys
 
-state = Path(os.environ['ED2K_TEST_STATE'])
+# This executable is snapshotted under state/bin. Desktop launchers need not
+# preserve arbitrary fixture environment variables.
+state = Path(__file__).resolve().parents[1]
+settings = json.loads((state / 'runtime.json').read_text())
 with (state / 'handler.jsonl').open('a') as stream:
     stream.write(json.dumps(sys.argv[1:]) + '\n')
-if os.environ.get('AMULE_BINARY'):
+if settings['binary']:
     with (state / 'amule-stdout.log').open('ab') as stream:
         process = subprocess.Popen(
-            [os.environ['AMULE_BINARY'], '-c', str(state / 'amule'), '-o', *sys.argv[1:]],
+            [settings['binary'], '-c', str(state / 'amule'), '-o', *sys.argv[1:]],
             stdin=subprocess.DEVNULL, stdout=stream, stderr=stream,
             start_new_session=True)
     with (state / 'pids').open('a') as stream:

@@ -21,11 +21,38 @@
 
 """Accept only Chrome's first-use prompt for the isolated test handler."""
 import sys
+import ctypes
 import time
 import gi
 
 gi.require_version('Atspi', '2.0')
 from gi.repository import Atspi, GLib
+
+def click_native_button(node):
+    # A successful AT-SPI DoAction can acknowledge dispatch without activating
+    # the native dialog. Use actual X input at the discovered button's center.
+    rect = node.get_component_iface().get_extents(Atspi.CoordType.SCREEN)
+    assert rect.width > 0 and rect.height > 0 and rect.x >= 0 and rect.y >= 0, rect
+    x11 = ctypes.CDLL('libX11.so.6')
+    xtst = ctypes.CDLL('libXtst.so.6')
+    x11.XOpenDisplay.argtypes = [ctypes.c_char_p]
+    x11.XOpenDisplay.restype = ctypes.c_void_p
+    x11.XSync.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    x11.XCloseDisplay.argtypes = [ctypes.c_void_p]
+    xtst.XTestFakeMotionEvent.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_ulong]
+    xtst.XTestFakeButtonEvent.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_int, ctypes.c_ulong]
+    display = x11.XOpenDisplay(None)
+    assert display, 'Cannot open the isolated X display'
+    try:
+        x = rect.x + rect.width // 2
+        y = rect.y + rect.height // 2
+        assert xtst.XTestFakeMotionEvent(display, -1, x, y, 0)
+        assert xtst.XTestFakeButtonEvent(display, 1, 1, 0)
+        assert xtst.XTestFakeButtonEvent(display, 1, 0, 0)
+        x11.XSync(display, False)
+    finally:
+        x11.XCloseDisplay(display)
+
 
 Atspi.set_timeout(1000, 3000)
 origin = sys.argv[1]
@@ -44,9 +71,8 @@ while time.monotonic() < end:
             if (node.get_role() == Atspi.Role.PUSH_BUTTON
                     and name in {'Open aMule Link Test', 'Open xdg-open'}
                     and any(origin in label for label in seen)):
-                if not node.get_action_iface().do_action(0):
-                    raise RuntimeError('Native prompt button rejected activation')
-                print('Accepted native Chrome button for ' + origin + ': ' + name)
+                click_native_button(node)
+                print('Clicked native Chrome button for ' + origin + ': ' + name)
                 sys.exit(0)
             pending.extend(node.get_child_at_index(i) for i in range(node.get_child_count()))
         except GLib.Error:

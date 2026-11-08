@@ -70,7 +70,7 @@ The browser must support CDP's unpacked-extension loading for the smoke test.
 On Debian/Ubuntu, install the Linux smoke-test prerequisites:
 
 ```sh
-sudo apt-get install xvfb xauth dbus-x11 desktop-file-utils python3-gi gir1.2-atspi-2.0 at-spi2-core
+sudo apt-get install xvfb xauth dbus-x11 desktop-file-utils python3-gi gir1.2-atspi-2.0 at-spi2-core libxtst6 xdg-utils
 npm run test:smoke
 ```
 

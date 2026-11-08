@@ -22,10 +22,10 @@
 set -eu
 TASK_TESTS=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 # Preflight before starting an X server, desktop services or browser.
-for tool in node python3 xvfb-run xauth dbus-run-session update-desktop-database; do
+for tool in node python3 xvfb-run xauth dbus-run-session update-desktop-database xdg-open xdg-mime; do
     command -v "$tool" >/dev/null || { echo "Missing smoke-test prerequisite: $tool" >&2; exit 77; }
 done
-python3 -c 'import gi; gi.require_version("Atspi", "2.0"); from gi.repository import Atspi' || exit 77
+python3 -c 'import ctypes, gi; ctypes.CDLL("libX11.so.6"); ctypes.CDLL("libXtst.so.6"); gi.require_version("Atspi", "2.0"); from gi.repository import Atspi' || exit 77
 if [ -n "${AMULE_BINARY:-}" ]; then
     AMULE_BINARY=$(command -v "$AMULE_BINARY") || exit 77
     export AMULE_BINARY
@@ -33,7 +33,7 @@ if [ -n "${AMULE_BINARY:-}" ]; then
 fi
 node --input-type=module -e 'import {chromium} from "playwright-core"; import fs from "node:fs"; fs.accessSync(process.env.AMULE_BROWSER_EXECUTABLE || chromium.executablePath(), fs.constants.X_OK)' || exit 77
 python3 "$TASK_TESTS/../tools/package.py"
-TASK_RUN=$(mktemp -d "${TMPDIR:-/tmp}/amule-ed2k-smoke.XXXXXX")
+TASK_RUN=$(mktemp -d /tmp/amule-ed2k-smoke.XXXXXX)
 export ED2K_TEST_STATE="$TASK_RUN/state"
 echo "Smoke evidence: $TASK_RUN"
 python3 "$TASK_TESTS/setup.py"

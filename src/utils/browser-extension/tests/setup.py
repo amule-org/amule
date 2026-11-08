@@ -22,6 +22,7 @@
 """Prepare a private desktop handler and unpack the exact release under test."""
 from pathlib import Path
 import os
+import json
 import shutil
 import socket
 import sys
@@ -38,15 +39,17 @@ for directory in ['bin', 'config', 'data/applications', 'amule/Temp', 'amule/Inc
 
 
 # xdg-open's generic launcher does not parse a quoted Exec command like GIO
-# does. A named executable on the private PATH works through both launchers,
-# including when the checkout's path contains spaces. Snapshot the script so
-# later source edits cannot alter a handler belonging to an active run.
+# does. Unquoted absolute interpreter/script paths work through both launchers
+# when the snapshot is in a private no-space directory, even if the checkout
+# contains spaces. Invoke Python explicitly to allow noexec temporary mounts.
+# Snapshot the script so later source edits cannot alter an active run.
 handler = state / 'bin/amule-ed2k-test-handler'
 shutil.copyfile(root / 'handler.py', handler)
 handler.chmod(0o755)
+(state / 'runtime.json').write_text(json.dumps({'binary': os.environ.get('AMULE_BINARY')}))
 (state / 'data/applications/org.amule.aMule.desktop').write_text(
     '[Desktop Entry]\nName=aMule Link Test\nType=Application\n'
-    'Exec=amule-ed2k-test-handler %u\n'
+    f'Exec={sys.executable} {handler} %u\n'
     'MimeType=x-scheme-handler/ed2k;\n')
 (state / 'config/mimeapps.list').write_text(
     '[Default Applications]\nx-scheme-handler/ed2k=org.amule.aMule.desktop\n')

@@ -39,10 +39,13 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright-core install --with-deps chromium
           sudo apt-get update
-          sudo apt-get install -y xvfb xauth dbus-x11 desktop-file-utils python3-gi gir1.2-atspi-2.0 at-spi2-core
+          sudo apt-get install -y xvfb xauth dbus-x11 desktop-file-utils python3-gi gir1.2-atspi-2.0 at-spi2-core libxtst6 xdg-utils
       - name: Test content script in real browser DOMs
         run: npm test
       - name: Test packaged extension, native consent and desktop handoff
+        env:
+          DEBUG: pw:browser
+          XDG_UTILS_DEBUG_LEVEL: "2"
         run: npm run test:smoke
       - uses: actions/upload-artifact@v7
         if: always()
