@@ -4,7 +4,7 @@
 #include <wx/ffile.h>
 #include <wx/filefn.h>
 #include <wx/filename.h>
-#ifdef __WXMSW__
+#if defined(__WXMSW__) && defined(AMULE_MEDIA_HELPER_TEST)
 #include <windows.h>
 #endif
 #include "MediaProbe.h"
@@ -18,35 +18,31 @@ TEST(MediaProbeDisable, FailedRestrictionsDisableFurtherProbesWithoutFileVerdict
 {
 	const wxString path = wxFileName::CreateTempFileName(wxT("amule-restriction-failure"));
 	const std::atomic<bool> running(true);
-#ifdef __WXMSW__
-	// A process in a Job with UI limits cannot join the parent's nested Job.
-	// Fail the real parent confinement step before the crash fixture can run.
+#if defined(__WXMSW__) && defined(AMULE_MEDIA_HELPER_TEST)
+	// Prevent the production launcher's private desktop from being created.
+	// Verify that the real restriction failure reaches the core unchanged.
 	const HANDLE job = CreateJobObjectW(nullptr, nullptr);
 	ASSERT_TRUE(job != nullptr);
 	ASSERT_TRUE(AssignProcessToJobObject(job, GetCurrentProcess()) != FALSE);
 	JOBOBJECT_BASIC_UI_RESTRICTIONS ui{ JOB_OBJECT_UILIMIT_DESKTOP };
 	ASSERT_TRUE(SetInformationJobObject(job, JobObjectBasicUIRestrictions, &ui, sizeof(ui)) != FALSE);
-	const char firstMode = 'c';
-#else
-	const char firstMode = 'r';
 #endif
 	// 'c' crashes after the header and normally produces a file verdict. Once
 	// restrictions fail, subsequent fixtures must never be launched again.
-	for (const char mode : { firstMode, 'c', 'c' }) {
+	for (const char mode : { 'r', 'c', 'c' }) {
 		wxFFile input(path, wxT("wb"));
 		ASSERT_TRUE(input.IsOpened());
 		ASSERT_EQUALS(size_t(1), input.Write(&mode, 1));
 		input.Close();
 		MediaMetadata info;
 		info.title = wxT("unchanged");
-		const auto outcome = MediaProbe::Probe(wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE),
-			CPath(path),
-			info,
-			5000,
-			running,
-			true,
-			false);
-#ifdef __WXMSW__
+		wxString helper = wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE);
+#if defined(__WXMSW__) && defined(AMULE_MEDIA_HELPER_TEST)
+		if (mode == 'r')
+			helper = wxString::FromUTF8(AMULE_MEDIA_HELPER_TEST);
+#endif
+		const auto outcome = MediaProbe::Probe(helper, CPath(path), info, 5000, running, true, false);
+#if defined(__WXMSW__) && defined(AMULE_MEDIA_HELPER_TEST)
 		// Remove the injected outer restriction. Subsequent probes must still
 		// remain disabled, even though their confinement would now succeed.
 		ui.UIRestrictionsClass = 0;
@@ -58,7 +54,7 @@ TEST(MediaProbeDisable, FailedRestrictionsDisableFurtherProbesWithoutFileVerdict
 		ASSERT_EQUALS(wxString(wxT("unchanged")), info.title);
 		ASSERT_TRUE(MediaProbe::DetectedPath(true).empty());
 	}
-#ifdef __WXMSW__
+#if defined(__WXMSW__) && defined(AMULE_MEDIA_HELPER_TEST)
 	CloseHandle(job);
 #endif
 	wxRemoveFile(path);
