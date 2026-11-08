@@ -397,7 +397,7 @@ wxString CServerListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) con
 // file includes but ServerListCtrl.h does not, so gating it there would compile the declaration out
 // from under this definition.
 #ifdef GEOIP_GUI
-const wxIcon &CServerListCtrl::FlagIcon(const wxString &code) const
+const wxBitmapBundle &CServerListCtrl::FlagIcon(const wxString &code) const
 {
 	const wxSize size = FromDIP(wxSize(16, 12));
 	const double scale = GetContentScaleFactor();
@@ -411,15 +411,19 @@ const wxIcon &CServerListCtrl::FlagIcon(const wxString &code) const
 		return found->second;
 	}
 	const wxBitmap flag = theApp->GetCountryFlags()->GetFlag(code, size, scale);
-	wxIcon icon;
+	wxBitmapBundle icon;
 	if (flag.IsOk()) {
-		icon.CopyFromBitmap(flag);
+		// A bundle takes a bitmap's scale factor as its DPI scale, but wxMSW sizes the
+		// flag in pixels with a content scale of one.
+		wxBitmap scaled(flag.ConvertToImage());
+		scaled.SetScaleFactor(GetDPIScaleFactor());
+		icon = wxBitmapBundle::FromBitmap(scaled);
 	}
 	return m_flagIcons.emplace(code, icon).first->second;
 }
 #endif // GEOIP_GUI
 
-bool CServerListCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const
+bool CServerListCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxBitmapBundle &icon) const
 {
 	if (column != COLUMN_SERVER_NAME) {
 		return false;
@@ -432,7 +436,7 @@ bool CServerListCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon)
 	if (GetDisplayCountryCode(
 		    server->IsCountryFromCore(), server->GetCountryCode(), server->GetIP(), code) &&
 		!code.IsEmpty()) {
-		const wxIcon &flag = FlagIcon(code);
+		const wxBitmapBundle &flag = FlagIcon(code);
 		if (flag.IsOk()) {
 			icon = flag;
 			return true;
@@ -542,7 +546,7 @@ void CServerListCtrl::FitColumnsToContent()
 			wxCoord textWidth = 0;
 			dc.GetTextExtent(GetItemColumnText(data, col), &textWidth, nullptr);
 			int cellWidth = textWidth;
-			wxIcon icon;
+			wxBitmapBundle icon;
 			if (GetItemIcon(data, col, icon)) {
 				cellWidth += flagWidth + imageMargin;
 			}

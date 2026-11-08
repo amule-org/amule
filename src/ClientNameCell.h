@@ -25,6 +25,11 @@
 #ifndef CLIENTNAMECELL_H
 #define CLIENTNAMECELL_H
 
+#include <map>
+#include <tuple>
+#include <vector>
+
+#include <wx/bmpbndl.h>
 #include <wx/gdicmn.h> // Needed for wxRect
 #include <wx/string.h>
 
@@ -32,8 +37,34 @@
 
 class CUpDownClient;
 class wxDC;
-class wxImageList;
 class wxBitmap;
+
+//! The client status icons, indexed by ClientSkinEnum.
+class CClientImages
+{
+public:
+	void Add(const wxBitmapBundle &bundle) { m_bundles.push_back(bundle); }
+	void Clear()
+	{
+		m_bundles.clear();
+		m_bitmaps.clear();
+	}
+	const std::vector<wxBitmapBundle> &GetBundles() const { return m_bundles; }
+	wxBitmapBundle GetBundle(size_t index) const
+	{
+		return index < m_bundles.size() ? m_bundles[index] : wxBitmapBundle();
+	}
+
+	/**
+	 * The icon as drawn on a DC: logicalSize in its drawing coordinates, contentScale its
+	 * backing scale. Cached, because setting a bitmap's scale factor may copy its pixels.
+	 */
+	wxBitmap GetBitmap(size_t index, const wxSize &logicalSize, double contentScale) const;
+
+private:
+	std::vector<wxBitmapBundle> m_bundles;
+	mutable std::map<std::tuple<size_t, int, int, double>, wxBitmap> m_bitmaps;
+};
 
 /**
  * Everything the User Name cell draws, as values.
@@ -111,9 +142,12 @@ void DrawClientNameCell(const ClientNameCell &cell, const wxRect &rect, wxDC *dc
 // Resource-explicit forms share the production layout and drawing without
 // needing a running application or live client. Flag is already DPI-scaled.
 int MeasureClientNameCell(
-	const ClientNameCell &cell, wxDC &dc, const wxImageList &images, const wxBitmap &flag);
-void DrawClientNameCell(
-	const ClientNameCell &cell, const wxRect &rect, wxDC &dc, wxImageList &images, const wxBitmap &flag);
+	const ClientNameCell &cell, wxDC &dc, const CClientImages &images, const wxBitmap &flag);
+void DrawClientNameCell(const ClientNameCell &cell,
+	const wxRect &rect,
+	wxDC &dc,
+	const CClientImages &images,
+	const wxBitmap &flag);
 
 #endif // CLIENTNAMECELL_H
 // File_checked_for_headers

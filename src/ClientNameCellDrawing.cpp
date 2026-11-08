@@ -25,17 +25,34 @@
 #include "ClientNameCell.h"
 
 #include <wx/dc.h>
-#include <wx/imaglist.h>
 #include <protocol/ed2k/ClientSoftware.h>
 #include "Constants.h"
 #include "amuleDlg.h" // ClientSkinEnum
+
+wxBitmap CClientImages::GetBitmap(size_t index, const wxSize &logicalSize, double contentScale) const
+{
+	if (index >= m_bundles.size()) {
+		return wxNullBitmap;
+	}
+	const auto key = std::make_tuple(index, logicalSize.x, logicalSize.y, contentScale);
+	const auto cached = m_bitmaps.find(key);
+	if (cached != m_bitmaps.end()) {
+		return cached->second;
+	}
+	wxBitmap bitmap = m_bundles[index].GetBitmap(
+		wxSize(wxRound(logicalSize.x * contentScale), wxRound(logicalSize.y * contentScale)));
+	if (bitmap.IsOk()) {
+		bitmap.SetScaleFactor(contentScale);
+	}
+	return m_bitmaps.emplace(key, bitmap).first->second;
+}
 
 namespace
 {
 struct ClientNameLayout
 {
 	bool valid = false;
-	int imageHeight = 0;
+	wxSize imageSize;
 	int clientX = 0;
 	int flagX = 0;
 	int textX = 0;
@@ -43,12 +60,12 @@ struct ClientNameLayout
 };
 
 ClientNameLayout LayoutClientNameCell(
-	const ClientNameCell &cell, wxDC &dc, const wxImageList &images, const wxBitmap &flag)
+	const ClientNameCell &cell, wxDC &dc, const CClientImages &images, const wxBitmap &flag)
 {
 	ClientNameLayout layout;
-	int imageWidth = 0;
-	layout.valid = images.GetSize(0, imageWidth, layout.imageHeight);
-	const int slot = imageWidth + 2;
+	layout.valid = !images.GetBundles().empty();
+	layout.imageSize = dc.FromDIP(wxSize(16, 16));
+	const int slot = layout.imageSize.x + dc.FromDIP(2);
 	layout.clientX = cell.showState ? slot : 0;
 	layout.flagX = layout.clientX + slot;
 	layout.textX = layout.flagX;
@@ -61,7 +78,7 @@ ClientNameLayout LayoutClientNameCell(
 } // namespace
 
 int MeasureClientNameCell(
-	const ClientNameCell &cell, wxDC &dc, const wxImageList &images, const wxBitmap &flag)
+	const ClientNameCell &cell, wxDC &dc, const CClientImages &images, const wxBitmap &flag)
 {
 	const ClientNameLayout layout = LayoutClientNameCell(cell, dc, images, flag);
 	return layout.valid ? layout.textX + dc.GetTextExtent(layout.text).x : 0;
@@ -70,7 +87,7 @@ int MeasureClientNameCell(
 void DrawClientNameCell(const ClientNameCell &cell,
 	const wxRect &rect,
 	wxDC &context,
-	wxImageList &imageList,
+	const CClientImages &images,
 	const wxBitmap &flag)
 {
 	if (rect.GetWidth() <= 0 || rect.GetHeight() <= 0) {
@@ -79,11 +96,18 @@ void DrawClientNameCell(const ClientNameCell &cell,
 
 	wxDC *dc = &context;
 	wxDCClipper clipper(*dc, rect);
-	const ClientNameLayout layout = LayoutClientNameCell(cell, *dc, imageList, flag);
+	const ClientNameLayout layout = LayoutClientNameCell(cell, *dc, images, flag);
 	if (!layout.valid) {
 		return;
 	}
-	const int imageYOffset = ((rect.GetHeight() - layout.imageHeight) / 2) + 1;
+	const auto draw = [&](size_t index, int x, int y) {
+		const wxBitmap bitmap =
+			images.GetBitmap(index, layout.imageSize, dc->GetContentScaleFactor());
+		if (bitmap.IsOk()) {
+			dc->DrawBitmap(bitmap, x, y, true);
+		}
+	};
+	const int imageYOffset = ((rect.GetHeight() - layout.imageSize.y) / 2) + 1;
 	wxPoint point(rect.GetX(), rect.GetY());
 
 	if (cell.showState) {
@@ -112,7 +136,7 @@ void DrawClientNameCell(const ClientNameCell &cell,
 			}
 		} // else: default (Client_Grey_Smiley)
 
-		imageList.Draw(image, *dc, point.x, point.y + imageYOffset, wxIMAGELIST_DRAW_TRANSPARENT);
+		draw(image, point.x, point.y + imageYOffset);
 	}
 	point.x = rect.GetX() + layout.clientX;
 
@@ -157,24 +181,22 @@ void DrawClientNameCell(const ClientNameCell &cell,
 	}
 
 	const int realY = point.y + imageYOffset;
-	imageList.Draw(clientImage, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
+	draw(clientImage, point.x, realY);
 
 	if (cell.highCredits) {
-		imageList.Draw(
-			Client_CreditsYellow_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
+		draw(Client_CreditsYellow_Smiley, point.x, realY);
 	} else if (!cell.extProtocol) {
-		imageList.Draw(
-			Client_ExtendedProtocol_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
+		draw(Client_ExtendedProtocol_Smiley, point.x, realY);
 	}
 
 	if (cell.identified) {
-		imageList.Draw(Client_SecIdent_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
+		draw(Client_SecIdent_Smiley, point.x, realY);
 	} else if (cell.identWarning) {
-		imageList.Draw(Client_BadGuy_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
+		draw(Client_BadGuy_Smiley, point.x, realY);
 	}
 
 	if (cell.obfuscation == OBST_ENABLED) {
-		imageList.Draw(Client_Encryption_Smiley, *dc, point.x, realY, wxIMAGELIST_DRAW_TRANSPARENT);
+		draw(Client_Encryption_Smiley, point.x, realY);
 	}
 
 	if (flag.IsOk()) {

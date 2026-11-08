@@ -170,7 +170,7 @@ protected:
 	 * alone.
 	 */
 	virtual bool GetItemIcon(
-		wxUIntPtr WXUNUSED(data), unsigned WXUNUSED(column), wxIcon &WXUNUSED(icon)) const
+		wxUIntPtr WXUNUSED(data), unsigned WXUNUSED(column), wxBitmapBundle &WXUNUSED(icon)) const
 	{
 		return false;
 	}

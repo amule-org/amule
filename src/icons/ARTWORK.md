@@ -1,4 +1,4 @@
-# Menu icons and country flags
+# Menu icons, country flags and client icons
 
 Prefer SVG for new artwork and use icons wherever they help users recognize an
 action. Keep text labels, reuse the same symbol for the same action, and respect
@@ -108,6 +108,47 @@ highlighted/disabled rows and high contrast, and physical mixed-DPI transitions.
 Inspect macOS menus in light/dark mode and flags on Retina/non-Retina displays.
 Check live OS appearance changes while the application runs. Simulated sizes
 and Linux tests do not replace those native desktop sessions.
+
+## Client icons
+
+The client lists mark each peer's software with that program's own icon. Each
+comes from the program's GPL-2.0-or-later source release: `vendor/manifest.json`
+pins the release and checksums, and `docs/THIRDPARTY.md` carries the notices.
+
+| Icon | Source | 1x | 2x | 3x |
+|------|--------|----|----|----|
+| `client_emule` | eMule 0.50a `Mule.ico` | 16px frame | 32px frame | none |
+| `client_lphant` | lphant 1.01 `App.ico` | 16px frame | 1x, pixels repeated | 1x, pixels repeated |
+| `client_shareaza` | Shareaza SVN r9110 `Shareaza.ico` | 16px frame | 32px frame | 48px frame |
+| `client_mldonkey` | MLDonkey `splash_screen.svg` | drawn by hand | camel head | camel head |
+
+`regenerate_artwork.py` decodes the `.ico` frames itself and writes them
+without loss, and `test_regenerate_artwork.py` checks each PNG against its
+vendored frame. eMule's 48px frame shows its full-body mascot, not the head, so
+it has no 3x PNG. Lphant's 32px frame is a different drawing on an opaque
+background, so its larger densities repeat the 16px pixels. The camel is the
+splash screen's `g793` group, cropped to viewBox `99 87 94 94` and rendered with
+librsvg at 32 and 48px. A 16px render loses its eye, so `client_mldonkey.png` is
+drawn by hand from that render and is the editable original. None of these
+icons has an SVG twin, which would replace every PNG density.
+
+`client_amule.svg` and `client_xmule.svg` are adem4ik's artwork contributed in
+[aMule issue #1666](https://github.com/amule-org/amule/issues/1666), from
+`client_icons.zip` (SHA-256
+`23ba6ce63f9077cd40cba776d31200ce13a5ca354ff874f52ca553be79ab8c81`), files
+`svg/aMule.svg` and `svg/xMule.svg`, unchanged. Both are drawn on a 16px grid
+with flat fills and no stylesheet rules or filters. Their 16px PNG twins are
+rendered with librsvg. `client_edonkeyhybrid` remains a generic pictogram: the
+eDonkey2000 client was closed source, so no freely licensed version of its logo
+exists.
+
+The lists draw client icons from `wxBitmapBundle`s at their own DPI, and the
+file lists' rating icons use the same bundles. A PNG-only icon serves the
+smallest embedded density covering the requested size, resampled with
+`wxIMAGE_QUALITY_HIGH` when none matches: the same selection country flags
+use. An active skin replaces the icons with its 16px PNGs plus a smooth 2x
+upscale. `IconArtworkTest` checks that every native density comes back
+unchanged and that sizes in between are exact.
 
 ## Tray artwork
 

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="16"
+   height="16"
+   version="1.1"
+   id="svg117"
+   sodipodi:docname="xMule.svg"
+   inkscape:export-filename="xMule.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview117"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     showgrid="true"
+     inkscape:zoom="16"
+     inkscape:cx="0.28125"
+     inkscape:cy="2.75"
+     inkscape:window-width="2048"
+     inkscape:window-height="1084"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg117">
+    <inkscape:grid
+       id="grid117"
+       units="px"
+       originx="0"
+       originy="0"
+       spacingx="1"
+       spacingy="1"
+       empcolor="#0099e5"
+       empopacity="0.30196078"
+       color="#0099e5"
+       opacity="0.14901961"
+       empspacing="5"
+       enabled="true"
+       visible="true" />
+  </sodipodi:namedview>
+  <defs
+     id="defs46" />
+  <path
+     id="path89-2-5"
+     style="fill:#cac8ca;fill-opacity:1;stroke-width:0.0982096"
+     inkscape:label="морда"
+     d="M 4.2441406,9.8808594 C 4.0346714,10.833915 2.9869358,11.289783 3.0175781,13.039062 c 0.093816,1.313928 0.6470214,2.166656 2.9492188,2.669922 0.927809,0.01649 1.3485504,0.02158 2.0252524,0.02226 0.6767021,6.83e-4 1.1698015,-0.0086 2.0489667,-0.02421 2.302197,-0.503266 2.855398,-1.355995 2.949218,-2.669922 C 13.020874,11.28783 11.973142,10.831962 11.763672,9.8789062 10.57787,9.5995959 9.3992457,9.4731688 8.0034182,9.4681792 6.6075906,9.4631897 5.4308789,9.6013284 4.2441406,9.8808594 Z"
+     sodipodi:nodetypes="ccccccccc" />
+  <path
+     fill="#5e5d5e"
+     d="m 6.0085862,14.611152 c 0.330483,-2.063252 -0.411911,-3.256882 -1.00547,-3.615059 -1.7343022,1.601685 -0.02435,1.596233 1.00547,3.615059 z"
+     id="path93-6"
+     style="display:inline;fill:#000000;fill-opacity:1;stroke-width:0.0982096"
+     sodipodi:nodetypes="ccc"
+     inkscape:label="левая ноздря" />
+  <path
+     id="path48"
+     style="baseline-shift:baseline;display:inline;overflow:visible;vector-effect:none;fill:#767676;stroke-width:0.808942;enable-background:accumulate;stop-color:#141414;fill-opacity:1"
+     inkscape:label="верх"
+     d="m 0,0 v 1.2695312 c 0.7403722,0.8980251 2.264108,2.208939 2.9609375,2.7636719 0.481325,0.4213203 1.4867519,0.2787237 1.5136719,1.34375 -0.315412,1.7202201 -0.1691919,3.0253242 -0.2636719,4.6289059 3.509062,-0.012117 0.7345423,0.07422 3.7929687,0.07422 3.0584268,0 0.283907,-0.086333 3.7929688,-0.07422 -0.09448,-1.6035813 0.05174,-2.9086858 -0.263672,-4.6289059 0.02692,-1.0650258 1.032347,-0.9224297 1.513672,-1.34375 C 13.742481,3.4794453 15.258188,2.1732804 16,1.2753906 V 0 C 15.322917,1.3903003e-5 14.649739,0 13.972656,0 12.435032,0.69058628 10.225249,1.8888629 10,2.0566406 9.0270309,2.7189096 8.9750963,3.1598659 8.7460938,4.4550781 8.562862,4.4044288 8.3586063,4.3789065 8.0039062,4.3789062 7.6492064,4.378906 7.4449503,4.4044285 7.2617188,4.4550781 7.0327168,3.159866 6.9807815,2.7189096 6.0078125,2.0566406 5.7821386,1.8885461 3.5653215,0.68996393 2.0273438,0 1.3515641,0.00128348 0.6757616,0.00152719 0,0 Z"
+     sodipodi:nodetypes="cccccsccccccccscccc" />
+  <path
+     fill="#5e5d5e"
+     d="m 9.9831634,14.614697 c -0.3304829,-2.063252 0.4119106,-3.256882 1.0054696,-3.615059 1.734303,1.601685 0.02435,1.596233 -1.0054696,3.615059 z"
+     id="path93-6-6"
+     style="display:inline;fill:#000000;fill-opacity:1;stroke-width:0.0982096"
+     sodipodi:nodetypes="ccc"
+     inkscape:label="правая ноздря" />
+  <path
+     id="path78"
+     style="display:inline;fill:#7f7e7f;fill-opacity:1;stroke-width:0.0834917"
+     d="m 4.9941406,11 c 0.556549,0.66487 1.0686383,1.231398 1.0078125,2.992188 -0.017102,0.495065 0.012306,1.521977 -0.015625,1.730468 0.5748699,0.207417 1.1855395,0.25507 2.0086846,0.251046 0.8231452,-0.004 1.4377789,-0.04037 2.0108463,-0.24714 -0.027931,-0.208491 0.0015,-1.235402 -0.015625,-1.730468 -0.060825,-1.760789 0.451264,-2.327318 1.007813,-2.992188 C 10.384797,10.666019 9.1159467,10.110746 7.9960941,10.108794 6.8762416,10.106842 5.6073884,10.662114 4.9941406,11 Z"
+     inkscape:label="нос"
+     sodipodi:nodetypes="cscccsccc" />
+  <path
+     fill="#ffffff"
+     d="M 6.3816172,6.3412048 C 6.9521644,6.3739758 8.1177459,8.6284607 7.5142097,9.7149528 7.4371295,10.060432 6.1791786,10.224313 5.3192512,9.7772739 5.1359894,8.6866376 5.3309394,7.8841801 5.4530699,7.2260176 5.6534461,6.8618237 5.9527345,6.394279 6.3816172,6.3412048 Z"
+     id="path84"
+     style="display:inline;stroke-width:0.105588"
+     sodipodi:nodetypes="ccccc"
+     inkscape:label="eye_right" />
+  <path
+     fill="#ffffff"
+     d="M 9.6325217,6.342398 C 9.0619746,6.375169 7.8963931,8.6296539 8.4999292,9.716146 8.5770092,10.061625 9.8349603,10.225507 10.694888,9.778467 10.87815,8.6878308 10.6832,7.8853733 10.561069,7.2272108 10.360693,6.8630169 10.061405,6.3954722 9.6325217,6.342398 Z"
+     id="path84-9"
+     style="display:inline;stroke-width:0.105588"
+     sodipodi:nodetypes="ccccc"
+     inkscape:label="eye_right" />
+  <path
+     style="display:inline;stroke-width:0.151006"
+     d="M 6.3592034,7.8662541 A 0.64237608,0.65688443 89.942735 1 1 6.6273004,9.1239594 0.64237608,0.65688443 89.942735 0 1 6.3592034,7.8662541"
+     id="path113"
+     inkscape:label="левый зрачок" />
+  <path
+     style="display:inline;stroke-width:0.150765"
+     d="M 9.3571205,7.8890417 A 0.64134693,0.65583204 89.942735 1 1 9.6247884,9.1447309 0.64134693,0.65583204 89.942735 0 1 9.3571205,7.8890417"
+     id="path2"
+     inkscape:label="правый зрачок" />
+</svg>

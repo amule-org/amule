@@ -1019,7 +1019,7 @@ wxString CDownloadListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) c
 	}
 }
 
-bool CDownloadListCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const
+bool CDownloadListCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxBitmapBundle &icon) const
 {
 	if (column != COLUMN_DL_NAME) {
 		return false;
@@ -1034,7 +1034,7 @@ bool CDownloadListCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &ico
 	}
 	wxASSERT(image >= Client_InvalidRating_Smiley);
 	wxASSERT(image <= Client_CommentOnly_Smiley);
-	icon = theApp->amuledlg->m_imagelist.GetIcon(image);
+	icon = theApp->amuledlg->m_clientImages.GetBundle(image);
 	return true;
 }
 

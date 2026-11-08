@@ -178,7 +178,6 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 , m_kademliawnd(NULL)
 , m_prefsDialog(NULL)
 , m_srv_split_pos(0)
-, m_imagelist(16, 16)
 , m_prefsVisible(false)
 , m_wndToolbar(NULL)
 , m_wndTaskbarNotifier(NULL)
@@ -2069,7 +2068,22 @@ bool CamuleDlg::Check_and_Init_Skin()
 	return ret;
 }
 
-void CamuleDlg::Add_Skin_Icon(const wxString &iconName, const wxBitmap &stdIcon, bool useSkins)
+namespace
+{
+// Skin art has one size: add a smooth 2x upscale for hi-DPI screens. A mask becomes alpha first,
+// because high-quality scaling of a masked image smears the mask colour into the icon edges.
+wxBitmapBundle SkinBundle(const wxImage &image)
+{
+	wxImage smooth = image.Copy();
+	if (!smooth.HasAlpha()) {
+		smooth.InitAlpha();
+	}
+	return wxBitmapBundle::FromBitmaps(wxBitmap(image),
+		wxBitmap(smooth.Scale(image.GetWidth() * 2, image.GetHeight() * 2, wxIMAGE_QUALITY_HIGH)));
+}
+} // namespace
+
+void CamuleDlg::Add_Skin_Icon(const wxString &iconName, const wxBitmapBundle &stdIcon, bool useSkins)
 {
 	wxImage new_image;
 	if (useSkins) {
@@ -2089,9 +2103,8 @@ void CamuleDlg::Add_Skin_Icon(const wxString &iconName, const wxBitmap &stdIcon,
 		}
 	}
 
-	wxBitmap bmp(useSkins ? new_image : stdIcon);
 	if (iconName.StartsWith("Client_")) {
-		m_imagelist.Add(bmp);
+		m_clientImages.Add(useSkins ? SkinBundle(new_image) : stdIcon);
 	} else if (iconName.StartsWith("Toolbar_")) {
 		if (!useSkins) {
 			// The built-in toolbar art ships as an SVG twin through CamuleArtProvider
@@ -2119,22 +2132,7 @@ void CamuleDlg::Add_Skin_Icon(const wxString &iconName, const wxBitmap &stdIcon,
 			m_tblist.push_back(art);
 			return;
 		}
-		// The toolbar art only exists at one (32x32) size. Store it as a wxBitmapBundle with a
-		// smooth 2x upscale so DPI-aware toolbars pick a correctly sized bitmap on hi-DPI
-		// screens instead of drawing the 1x art at a tiny physical size. The mask is turned into
-		// an alpha channel first, because high-quality scaling of a masked image smears the mask
-		// colour into the icon edges.
-		wxImage img = bmp.ConvertToImage();
-		if (img.IsOk()) {
-			if (!img.HasAlpha()) {
-				img.InitAlpha();
-			}
-			m_tblist.push_back(wxBitmapBundle::FromBitmaps(bmp,
-				wxBitmap(img.Scale(
-					img.GetWidth() * 2, img.GetHeight() * 2, wxIMAGE_QUALITY_HIGH))));
-		} else {
-			m_tblist.emplace_back(bmp);
-		}
+		m_tblist.push_back(SkinBundle(new_image));
 	}
 }
 
@@ -2142,10 +2140,7 @@ void CamuleDlg::Apply_Clients_Skin()
 {
 	bool useSkins = Check_and_Init_Skin();
 
-	// Clear the client image list
-	m_imagelist.RemoveAll();
-
-	// Add the images to the image list
+	m_clientImages.Clear();
 	for (int i = 0; i < CLIENT_SKIN_SIZE; ++i) {
 		Add_Skin_Icon("Client_" + m_clientSkinNames[i], clientImages(i), useSkins);
 	}

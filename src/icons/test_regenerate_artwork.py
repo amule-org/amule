@@ -7,12 +7,29 @@ import hashlib
 import json
 import unittest
 import struct
+import zlib
 
 from lxml import etree
 from picosvg.svg_types import SVGPath
 
 from embed_icons import collect_icons, emit, count_packed_arc_flags
-from regenerate_artwork import ROOT, normalize_svg
+from regenerate_artwork import ROOT, CLIENT_ICONS, client_icon_pixels, mldonkey_camel, normalize_svg
+
+
+def png_rgba(path):
+    """Size and pixels of an 8-bit RGBA PNG written by write_png()."""
+    data = path.read_bytes()
+    width, height, depth, colour = struct.unpack('>IIBB', data[16:26])
+    assert (depth, colour) == (8, 6), path.name
+    idat, offset = b'', 8
+    while offset < len(data):
+        length = struct.unpack_from('>I', data, offset)[0]
+        if data[offset + 4:offset + 8] == b'IDAT':
+            idat += data[offset + 8:offset + 8 + length]
+        offset += length + 12
+    raw, stride = zlib.decompress(idat), width * 4 + 1
+    assert all(raw[y * stride] == 0 for y in range(height)), path.name
+    return width, height, b''.join(raw[y * stride + 1:(y + 1) * stride] for y in range(height))
 
 
 class ArtworkConversionTest(unittest.TestCase):
@@ -98,6 +115,34 @@ class ArtworkConversionTest(unittest.TestCase):
             self.assertNotIn(b'zlib', output.read_bytes())
             self.assertIn(b'icon_flag_us_png2x', output.read_bytes())
             self.assertIn(b'icon_flag_us_png3x', output.read_bytes())
+
+    def test_client_icons_are_the_vendored_frames(self):
+        for art_id in CLIENT_ICONS:
+            for suffix, size, expected in client_icon_pixels(art_id):
+                with self.subTest(icon=art_id + suffix):
+                    self.assertEqual(png_rgba(ROOT / f'{art_id}{suffix}.png'), (size, size, expected))
+
+    def test_mldonkey_camel_crop_is_square(self):
+        root = mldonkey_camel().getroot()
+        _, _, width, height = root.get('viewBox').split()
+        self.assertEqual(width, height)
+        self.assertEqual(root.get('width'), root.get('height'))
+        self.assertEqual([g.get('id') for g in root.xpath("//*[@id='g1038']/*")], ['g793'])
+
+    def test_client_icon_densities_and_twins(self):
+        entries = {entry[0]: entry for entry in collect_icons(ROOT)}
+        # An SVG twin wins over every PNG density, so raster mascots must not have one.
+        for art_id, densities, vector in (('client_amule', 1, True), ('client_xmule', 1, True),
+                                          ('client_edonkeyhybrid', 1, True), ('client_emule', 2, False),
+                                          ('client_lphant', 3, False), ('client_shareaza', 3, False),
+                                          ('client_mldonkey', 3, False)):
+            with self.subTest(icon=art_id):
+                self.assertEqual(entries[art_id][3] is not None, vector)
+                for scale in (1, 2, 3):
+                    path = ROOT / (art_id + ('' if scale == 1 else f'@{scale}x') + '.png')
+                    self.assertEqual(path.is_file(), scale <= densities)
+                    if path.is_file():
+                        self.assertEqual(struct.unpack('>II', path.read_bytes()[16:24]), (16 * scale, 16 * scale))
 
     def test_flag_raster_payload_and_originals(self):
         self.assertFalse(list((ROOT / 'flags').glob('*.svg')))

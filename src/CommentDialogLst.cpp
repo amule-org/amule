@@ -28,9 +28,11 @@
 #include "PartFile.h"         // Needed for CAbstractFile / CPartFile
 #include <common/Format.h>    // Needed for CFormat
 #include "amule.h"            // Needed for theApp
-#include "amuleDlg.h"         // Needed for CamuleDlg::m_imagelist and the Client_*_Smiley ids
+#include "amuleDlg.h"         // Needed for CamuleDlg::m_clientImages and the Client_*_Smiley ids
 
 #include <set>
+
+#include <wx/imaglist.h> // Needed for wxImageList before wx 3.3
 
 // Timer id for the Kad-notes auto-refresh (routed to this dialog only).
 static const int ID_KADREFRESH_TIMER = wxID_HIGHEST + 501;
@@ -73,9 +75,21 @@ CCommentDialogLst::CCommentDialogLst(wxWindow *parent, CAbstractFile *file)
 
 	m_list = CastChild(IDC_LST, wxListCtrl);
 
-	// Borrowed, not owned: SetImageList() leaves the app's shared list alone,
-	// where AssignImageList() would delete it when this modal closes.
-	m_list->SetImageList(&theApp->amuledlg->m_imagelist, wxIMAGE_LIST_SMALL);
+	const auto &bundles = theApp->amuledlg->m_clientImages.GetBundles();
+#if wxCHECK_VERSION(3, 3, 0)
+	wxVector<wxBitmapBundle> images;
+	for (const auto &bundle : bundles) {
+		images.push_back(bundle);
+	}
+	m_list->SetSmallImages(images);
+#else
+	const wxSize size = FromDIP(wxSize(16, 16));
+	auto *images = new wxImageList(size.x, size.y);
+	for (const auto &bundle : bundles) {
+		images->Add(bundle.GetBitmap(size));
+	}
+	m_list->AssignImageList(images, wxIMAGE_LIST_SMALL);
+#endif
 
 	m_list->InsertColumn(0, _("Username"), wxLIST_FORMAT_LEFT, 130);
 	m_list->InsertColumn(1, _("File Name"), wxLIST_FORMAT_LEFT, 130);

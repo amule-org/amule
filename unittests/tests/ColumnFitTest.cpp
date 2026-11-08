@@ -28,7 +28,6 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include <wx/imaglist.h>
 #include <wx/dcmemory.h>
 #include "SearchColumnFit.h"
 #include "ClientNameCell.h"
@@ -220,7 +219,7 @@ void TestSearchSampling(wxWindow *parent)
 void TestClientDrawing()
 {
 	for (const int scale : { 1, 2 }) {
-		wxImageList images(16, 16);
+		CClientImages images;
 		wxBitmap icon(16, 16);
 		{
 			wxMemoryDC iconDC(icon);
@@ -228,7 +227,7 @@ void TestClientDrawing()
 			iconDC.Clear();
 		}
 		for (unsigned i = 0; i < 64; ++i) {
-			images.Add(icon);
+			images.Add(wxBitmapBundle(icon));
 		}
 		wxBitmap flag;
 		flag.CreateWithDIPSize(wxSize(16, 12), scale);
@@ -255,8 +254,9 @@ void TestClientDrawing()
 					dc.SetTextForeground(*wxRED);
 					const wxBitmap usedFlag = withFlag ? flag : wxBitmap();
 					const wxString text = name.empty() ? wxString("?") : name;
+					const int slot = dc.FromDIP(16) + dc.FromDIP(2);
 					const int textX =
-						(state ? 36 : 18) +
+						(state ? 2 * slot : slot) +
 						(withFlag ? flag.GetLogicalSize().x + dc.FromDIP(2) : 0);
 					Check(MeasureClientNameCell(cell, dc, images, usedFlag) ==
 							textX + dc.GetTextExtent(text).x,

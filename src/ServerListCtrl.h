@@ -116,7 +116,7 @@ protected:
 	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
 
 	/// Host-country flag on the Server Name column, nothing elsewhere.
-	bool GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const override;
+	bool GetItemIcon(wxUIntPtr item, unsigned column, wxBitmapBundle &icon) const override;
 
 	/// Bold for the server we are connected to, default for the rest.
 	bool GetItemAttr(wxUIntPtr item, unsigned column, wxDataViewItemAttr &attr) const override;
@@ -155,14 +155,14 @@ private:
 	bool OnListKey(wxKeyEvent &event) override;
 
 	/// Render at this window's current DPI; unknown codes use the shared placeholder.
-	const wxIcon &FlagIcon(const wxString &code) const;
+	const wxBitmapBundle &FlagIcon(const wxString &code) const;
 
 	//! Used to keep track of the last high-lighted item.
 	const CServer *m_connected;
 
 	// Avoid recreating native icon handles on every paint, but invalidate the raster
 	// cache when this window moves to a monitor with a different display scale.
-	mutable std::map<wxString, wxIcon> m_flagIcons;
+	mutable std::map<wxString, wxBitmapBundle> m_flagIcons;
 	mutable wxSize m_flagIconSize;
 	mutable double m_flagIconScale = 0;
 
