@@ -24,8 +24,6 @@
 
 #include "SnapshotJson.h"
 
-#include "State.h"
-
 #include <JsonWriter.h>
 
 namespace webapi
@@ -97,15 +95,17 @@ void WriteKadNetworkObject(CJsonWriter &w, const KadSnapshot &k)
 	w.EndObject();
 }
 
-void WriteStatusObject(CJsonWriter &w, const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
+void WriteStatusObject(CJsonWriter &w, const CState::DashboardSnapshot &dashboard)
 {
+	const StatusSnapshot &s = dashboard.status;
+	const KadSnapshot &k = dashboard.kad;
 	w.BeginObject();
 	// No snapshot timestamp in the envelope: a value that moves every tick changes the
 	// body bytes and defeats the ETag, so list endpoints would never see a cache hit.
 	// `ec_connected` is the staleness signal, and the HTTP Date header carries
 	// wall-clock for anyone who needs it.
 	w.Key("ec_connected");
-	w.ValueBool(ec_connected);
+	w.ValueBool(dashboard.ec_connected);
 	w.Key("search_all_supported");
 	w.ValueBool(s.search_all_supported);
 

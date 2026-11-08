@@ -355,10 +355,10 @@ std::string ToJson(const ClientSnapshot &c)
 
 // Both transports use the same writer, so status_changed is byte-identical to /status for
 // the same dashboard snapshot, including escaping, integer ranges and unknown values.
-std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
+std::string ToJsonStatusEvent(const CState::DashboardSnapshot &dashboard)
 {
 	CJsonWriter w;
-	WriteStatusObject(w, s, k, ec_connected);
+	WriteStatusObject(w, dashboard);
 	return w.TakeBuffer();
 }
 
@@ -881,12 +881,10 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	// OR Kad network rollup OR ec_connected). Cold start is its own branch, gated on
 	// `status_initialised`, so the comparison below never runs against an empty prev and
 	// mistakes every field for a change.
-	if (!prev.status_initialised) {
-		bus.Publish("status_changed", ToJsonStatusEvent(new_status, new_kad, new_ec));
+	if (!prev.status_initialised || !Equal(prev.status, new_status) || !Equal(prev.kad, new_kad) ||
+		prev.ec_connected != new_ec) {
+		bus.Publish("status_changed", ToJsonStatusEvent(new_dashboard));
 		prev.status_initialised = true;
-	} else if (!Equal(prev.status, new_status) || !Equal(prev.kad, new_kad) ||
-		   prev.ec_connected != new_ec) {
-		bus.Publish("status_changed", ToJsonStatusEvent(new_status, new_kad, new_ec));
 	}
 
 	// Snapshot the new state for next tick's diff baseline.

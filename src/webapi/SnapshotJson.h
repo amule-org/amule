@@ -25,6 +25,8 @@
 #ifndef WEBAPI_SNAPSHOTJSON_H
 #define WEBAPI_SNAPSHOTJSON_H
 
+#include "State.h"
+
 #include <cstdint>
 #include <string>
 
@@ -32,9 +34,6 @@ class CJsonWriter;
 
 namespace webapi
 {
-
-struct StatusSnapshot;
-struct KadSnapshot;
 
 // Callers supply the presence predicate: zero, false and an empty string can be known values.
 void WriteIntOrNull(CJsonWriter &w, const char *key, bool known, std::int64_t value);
@@ -46,9 +45,9 @@ void WriteStringOrNull(CJsonWriter &w, const char *key, bool known, const std::s
 // Includes the "network" key and its object, shared by /kad and /status.
 void WriteKadNetworkObject(CJsonWriter &w, const KadSnapshot &k);
 
-// The complete /status and status_changed object. Callers take a coherent dashboard snapshot;
-// transport concerns (authentication, HTTP caching and event triggering) remain with them.
-void WriteStatusObject(CJsonWriter &w, const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected);
+// The complete /status and status_changed object from one coherent dashboard read.
+// The refresh timestamp is deliberately excluded so it cannot invalidate HTTP caches.
+void WriteStatusObject(CJsonWriter &w, const CState::DashboardSnapshot &dashboard);
 
 } // namespace webapi
 

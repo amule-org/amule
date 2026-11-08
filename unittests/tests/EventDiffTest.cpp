@@ -295,7 +295,7 @@ TEST(EventDiff, StatusFieldsTriggerExactlyOneMatchingEvent)
 		state.WriteKad(k);
 		EmitDiffsAndUpdate(bus, prev, state);
 		CJsonWriter expected;
-		WriteStatusObject(expected, s, k, false);
+		WriteStatusObject(expected, state.Dashboard());
 		int count = 0;
 		for (const auto &event : DrainSince(bus, cursor)) {
 			if (event.name == "status_changed") {
@@ -324,7 +324,7 @@ TEST(EventDiff, StatusColdStartAndEcReconnectKeepDashboardContract)
 		EmitDiffsAndUpdate(bus, prev, state);
 		const auto d = state.Dashboard();
 		CJsonWriter expected;
-		WriteStatusObject(expected, d.status, d.kad, d.ec_connected);
+		WriteStatusObject(expected, d);
 		int count = 0;
 		for (const auto &event : DrainSince(bus, cursor)) {
 			if (event.name == "status_changed") {

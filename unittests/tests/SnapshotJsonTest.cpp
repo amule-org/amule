@@ -40,7 +40,7 @@ DECLARE_SIMPLE(SnapshotJson)
 TEST(SnapshotJson, DisconnectedDashboardContract)
 {
 	CJsonWriter w;
-	WriteStatusObject(w, StatusSnapshot{}, KadSnapshot{}, false);
+	WriteStatusObject(w, CState::DashboardSnapshot{});
 	ASSERT_EQUALS(
 		std::string(
 			"{\"ec_connected\":false,\"search_all_supported\":false,"
@@ -60,7 +60,8 @@ TEST(SnapshotJson, DisconnectedDashboardContract)
 
 TEST(SnapshotJson, ConnectedDashboardContract)
 {
-	StatusSnapshot s;
+	CState::DashboardSnapshot dashboard;
+	StatusSnapshot &s = dashboard.status;
 	s.search_all_supported = true;
 	s.ed2k_state = "connected";
 	s.ed2k_high_id = true;
@@ -85,13 +86,14 @@ TEST(SnapshotJson, ConnectedDashboardContract)
 	s.incoming_free_bytes = 48318382080LL;
 	s.ul_queue_len = 42;
 	s.total_src_count = 43;
-	KadSnapshot k;
+	KadSnapshot &k = dashboard.kad;
 	k.has_network = true;
 	k.users = 303;
 	k.files = 404;
 	k.nodes = 505;
+	dashboard.ec_connected = true;
 	CJsonWriter w;
-	WriteStatusObject(w, s, k, true);
+	WriteStatusObject(w, dashboard);
 	ASSERT_EQUALS(
 		std::string(
 			"{\"ec_connected\":true,\"search_all_supported\":true,"
@@ -113,26 +115,28 @@ TEST(SnapshotJson, ConnectedDashboardContract)
 
 TEST(SnapshotJson, UnknownFlagsHideStaleMeasurements)
 {
-	StatusSnapshot s;
+	CState::DashboardSnapshot dashboard;
+	StatusSnapshot &s = dashboard.status;
 	s.server_name = "stale server";
 	s.server_port = 4661;
 	s.ed2k_users = 123;
 	s.ed2k_files = 456;
 	s.kad_firewalled_tcp = true;
-	KadSnapshot k;
+	KadSnapshot &k = dashboard.kad;
 	k.users = 789;
 	k.files = 999;
 	k.nodes = 2;
 	CJsonWriter stale;
-	WriteStatusObject(stale, s, k, false);
+	WriteStatusObject(stale, dashboard);
 	CJsonWriter empty;
-	WriteStatusObject(empty, StatusSnapshot{}, KadSnapshot{}, false);
+	WriteStatusObject(empty, CState::DashboardSnapshot{});
 	ASSERT_EQUALS(empty.GetBuffer(), stale.GetBuffer());
 }
 
 TEST(SnapshotJson, UnsignedStatusCountersKeepTheirFullRange)
 {
-	StatusSnapshot s;
+	CState::DashboardSnapshot dashboard;
+	StatusSnapshot &s = dashboard.status;
 	const auto max = std::numeric_limits<std::uint64_t>::max();
 	s.ed2k_connected_since = max;
 	s.kad_connected_since = max;
@@ -140,8 +144,9 @@ TEST(SnapshotJson, UnsignedStatusCountersKeepTheirFullRange)
 	s.upload_bytes_per_second = max;
 	s.download_overhead_bytes_per_second = max;
 	s.upload_overhead_bytes_per_second = max;
+	dashboard.ec_connected = true;
 	CJsonWriter w;
-	WriteStatusObject(w, s, KadSnapshot{}, true);
+	WriteStatusObject(w, dashboard);
 	const std::string &body = w.GetBuffer();
 	for (const char *key : { "connected_since_at",
 		     "download_speed_bytes_per_second",
@@ -156,6 +161,20 @@ TEST(SnapshotJson, UnsignedStatusCountersKeepTheirFullRange)
 	ASSERT_TRUE(first != std::string::npos);
 	ASSERT_TRUE(body.find(timestamp, first + timestamp.size()) != std::string::npos);
 	ASSERT_TRUE(body.find(":-1") == std::string::npos);
+}
+
+// Dashboard() also carries a per-tick timestamp. It must not change an otherwise
+// identical status body, or every refresh would invalidate its HTTP ETag.
+TEST(SnapshotJson, RefreshTimestampDoesNotChangeStatusBody)
+{
+	CState::DashboardSnapshot dashboard;
+	dashboard.snapshot_at = 1700000001;
+	CJsonWriter first;
+	WriteStatusObject(first, dashboard);
+	dashboard.snapshot_at = 1700000002;
+	CJsonWriter next;
+	WriteStatusObject(next, dashboard);
+	ASSERT_EQUALS(first.GetBuffer(), next.GetBuffer());
 }
 
 TEST(SnapshotJson, KadNetworkCanBeEmbeddedInItsEndpointObject)

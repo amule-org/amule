@@ -2392,7 +2392,7 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	r.content_type = "application/json";
 
 	CJsonWriter w;
-	webapi::WriteStatusObject(w, d.status, d.kad, d.ec_connected);
+	webapi::WriteStatusObject(w, d);
 
 	FinalizeJsonBody(w, r);
 	return r;
