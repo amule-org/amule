@@ -690,8 +690,8 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 			was_failed = false;
 			ec_consecutive_failures = 0;
 			ec_warn_logged = false;
-			// Sole writer of m_last_seen. SSE-event publication runs here, NOT inside
-			// RefresherTick, so mutation handlers calling RefresherTick inline from the
+			// Collection diffs are published here, not inside RefresherTick, so
+			// mutation handlers calling RefresherTick inline from the
 			// HTTP thread do not race this loop's diff walk. Skipped once nothing has
 			// been subscribed for a while; the first tick back re-baselines silently
 			// and then announces, instead of emitting one event per record.
@@ -713,6 +713,7 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 			}
 		} else {
 			m_state.MarkTickFailure();
+			webapi::EmitStatusForEventBus(*this, m_state);
 			was_failed = true;
 			++ec_consecutive_failures;
 			if (!ec_warn_logged && ec_consecutive_failures >= kEcFailWarnAfter) {

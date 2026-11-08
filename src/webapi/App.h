@@ -123,9 +123,9 @@ public:
 	// honoured.
 	webapi::CEventBus &EventBus() { return *m_event_bus; }
 
-	// Prior-tick snapshot used to compute event deltas. Owned by the App, mutated AFTER each
-	// successful refresher tick by EmitDiffsAndUpdate. Exposed so RefresherTick can reach it
-	// without re-routing through CState.
+	// Event baselines owned by the App and mutated only by the wxApp refresher loop.
+	// Collections advance after successful ticks; status also advances after failed refreshes.
+	// Exposed so the RefresherTick publication helpers can reach them without CState.
 	webapi::LastSeenState &LastSeenForEvents() { return m_last_seen; }
 
 private:

@@ -1003,8 +1003,9 @@ void CState::MarkTickFailure()
 	// lie.
 	//
 	// On failure CState may hold partial mutations from earlier in the tick. The "tick =
-	// transaction" model is atomic for events but NOT for state -- there is no rollback. CState
-	// is a best-effort cache; LastSeenState is the authoritative event baseline.
+	// transaction" model is atomic for collection deltas but NOT for state -- there is no rollback.
+	// CState is a best-effort cache; status events expose its freshness just as REST does.
+	// LastSeenState keeps collection baselines at the last successful tick.
 	m_ec_connected = false;
 	m_metrics.ec_connected = false;
 }
