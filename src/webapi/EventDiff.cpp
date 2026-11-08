@@ -40,6 +40,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
+#include <locale>
 #include <sstream>
 #include <thread>
 #include <type_traits>
@@ -50,46 +51,14 @@ namespace webapi
 namespace
 {
 
-// Escaper for the remaining hand-built event payloads. Search results and dashboard status
-// use shared CJsonWriter serializers to preserve their REST contracts.
+// All event strings follow CJsonWriter's REST escaping, including DEL and supplementary
+// Unicode characters. The hand-built payloads add their own surrounding quotes.
 std::string EscJson(const std::string &s)
 {
-	std::string out;
-	out.reserve(s.size() + 8);
-	for (unsigned char c : s) {
-		switch (c) {
-		case '\\':
-			out += "\\\\";
-			break;
-		case '"':
-			out += "\\\"";
-			break;
-		case '\b':
-			out += "\\b";
-			break;
-		case '\f':
-			out += "\\f";
-			break;
-		case '\n':
-			out += "\\n";
-			break;
-		case '\r':
-			out += "\\r";
-			break;
-		case '\t':
-			out += "\\t";
-			break;
-		default:
-			if (c < 0x20) {
-				char buf[8];
-				std::snprintf(buf, sizeof(buf), "\\u%04x", c);
-				out += buf;
-			} else {
-				out += static_cast<char>(c);
-			}
-		}
-	}
-	return out;
+	CJsonWriter w;
+	w.ValueString(wxString::FromUTF8(s.data(), s.size()));
+	const std::string &quoted = w.GetBuffer();
+	return quoted.substr(1, quoted.size() - 2);
 }
 
 // Each ToJson emits the SAME shape as the matching REST list-item writer in Api.cpp. The contract
@@ -136,6 +105,7 @@ std::string JsonBoolOrNull(bool known, bool v)
 std::string ToJsonDownloadEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
@@ -173,6 +143,7 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 std::string ToJsonCommentsEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"kad_comment_lookup_running\":" << (f.download.kad_comment_searching ? "true" : "false")
 	  << ",\"total\":" << f.download.source_comments.size() << ",\"comments\":[";
@@ -194,6 +165,7 @@ std::string ToJsonCommentsEvent(const FileSnapshot &f)
 std::string ToJsonSharedEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
@@ -252,6 +224,7 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 std::string ToJson(const ServerSnapshot &s)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"ecid\":" << s.ecid << ",\"name\":\"" << EscJson(s.name) << "\""
 	  << ",\"description\":\"" << EscJson(s.description) << "\""
@@ -277,6 +250,7 @@ std::string ToJson(const ServerSnapshot &s)
 std::string ToJson(const FriendSnapshot &f)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"ecid\":" << f.ecid << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(f.user_hash)
@@ -295,6 +269,7 @@ std::string ToJson(const FriendSnapshot &f)
 std::string ToJson(const ClientSnapshot &c)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"ecid\":" << c.ecid << ",\"name\":" << JsonStrOrNull(!c.client_name.empty(), c.client_name)
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash)
@@ -491,35 +466,6 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       // holds.
 	       a.part_progress_percent == b.part_progress_percent;
 }
-bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
-{
-	// public_ip is derived from ed2k_user_id, so comparing the id covers it.
-	return a.search_all_supported == b.search_all_supported && a.ed2k_state == b.ed2k_state &&
-	       a.kad_state == b.kad_state && a.ed2k_high_id == b.ed2k_high_id &&
-	       a.ed2k_user_id == b.ed2k_user_id && a.ed2k_connected_since == b.ed2k_connected_since &&
-	       a.kad_connected_since == b.kad_connected_since &&
-	       a.kad_firewalled_tcp == b.kad_firewalled_tcp && a.server_name == b.server_name &&
-	       a.server_ip == b.server_ip && a.server_port == b.server_port &&
-	       a.download_bytes_per_second == b.download_bytes_per_second &&
-	       a.upload_bytes_per_second == b.upload_bytes_per_second &&
-	       a.download_overhead_bytes_per_second == b.download_overhead_bytes_per_second &&
-	       a.upload_overhead_bytes_per_second == b.upload_overhead_bytes_per_second &&
-	       a.temp_free_bytes == b.temp_free_bytes && a.incoming_free_bytes == b.incoming_free_bytes &&
-	       a.ul_queue_len == b.ul_queue_len && a.total_src_count == b.total_src_count &&
-	       // The has_ flags are compared, not just the values: a disconnect flips these to null
-	       // while the underlying ints keep their last reading, so comparing the ints alone would
-	       // miss the edge.
-	       a.has_ed2k_network == b.has_ed2k_network && a.ed2k_users == b.ed2k_users &&
-	       a.ed2k_files == b.ed2k_files && a.has_kad_firewalled_tcp == b.has_kad_firewalled_tcp;
-}
-bool Equal(const KadSnapshot &a, const KadSnapshot &b)
-{
-	// The SEPARATE gate for the kad half of status_changed -- the status comparator above does
-	// not cover these. has_network is compared first because it is what changes on a
-	// connect/disconnect edge.
-	return a.has_network == b.has_network && a.users == b.users && a.files == b.files &&
-	       a.nodes == b.nodes;
-}
 
 // Generic map-diff helper. Walks both old and new, emitting:
 //  - `<base>_removed` for keys in old missing from new (identity-only)
@@ -574,6 +520,7 @@ template <class Snapshot> std::string RemovedEcidPayload(const Snapshot &item)
 	static_assert(!std::is_same<Snapshot, FileSnapshot>::value,
 		"file collections are hash-keyed -- use RemovedHashPayload");
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{\"ecid\":" << item.ecid << "}";
 	return o.str();
 }
@@ -726,9 +673,6 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	// the State lock once for all three, so kad.network cannot be from tick N+1 while ed2k.* is
 	// from tick N.
 	auto new_dashboard = state.Dashboard();
-	const StatusSnapshot &new_status = new_dashboard.status;
-	const KadSnapshot &new_kad = new_dashboard.kad;
-	const bool new_ec = new_dashboard.ec_connected;
 
 	// Files: role-flag-aware diff, run against the live map rather than a copy. download_*
 	// fires on is_downloading transitions, shared_* on is_shared, and a single tick can fire
@@ -877,23 +821,16 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		return RemovedEcidPayload(f);
 	});
 
-	// /status: one event when anything in the dashboard envelope changes (StatusSnapshot fields
-	// OR Kad network rollup OR ec_connected). Cold start is its own branch, gated on
-	// `status_initialised`, so the comparison below never runs against an empty prev and
-	// mistakes every field for a change.
-	if (!prev.status_initialised || !Equal(prev.status, new_status) || !Equal(prev.kad, new_kad) ||
-		prev.ec_connected != new_ec) {
-		bus.Publish("status_changed", ToJsonStatusEvent(new_dashboard));
-		prev.status_initialised = true;
+	std::string status_payload = ToJsonStatusEvent(new_dashboard);
+	if (status_payload != prev.status_payload) {
+		bus.Publish("status_changed", status_payload);
+		prev.status_payload = std::move(status_payload);
 	}
 
 	// Snapshot the new state for next tick's diff baseline.
 	prev.servers = std::move(new_servers);
 	prev.clients = std::move(new_clients);
 	prev.friends = std::move(new_friends);
-	prev.status = new_status;
-	prev.kad = new_kad;
-	prev.ec_connected = new_ec;
 
 	// The stable-but-mutable field set for `search_result_updated`. A hit's identity fields
 	// never change for a given ECID, and its source counts churn every tick while the search
@@ -952,6 +889,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				if (search_now.find(kv.first) != search_now.end())
 					continue;
 				std::ostringstream removed;
+				removed.imbue(std::locale::classic());
 				removed << "{\"search_id\":" << sid << ",\"hash\":\""
 					<< EscJson(kv.second.hash) << "\"}";
 				bus.Publish("search_result_removed", removed.str());
@@ -990,6 +928,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			if (generation_bumped || finished_edge || percent_moved ||
 				progress_now.kad_active != pstate.kad_active) {
 				std::ostringstream payload;
+				payload.imbue(std::locale::classic());
 				payload << "{\"search_id\":" << sid << ",\"state\":\""
 					<< (progress_now.complete ? "finished" : "running") << "\""
 					<< ",\"percent\":"
@@ -1021,6 +960,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		for (auto it = prev.searches.begin(); it != prev.searches.end();) {
 			if (std::find(ids.begin(), ids.end(), it->first) == ids.end()) {
 				std::ostringstream payload;
+				payload.imbue(std::locale::classic());
 				payload << "{\"search_id\":" << it->first << "}";
 				bus.Publish("search_closed", payload.str());
 				it = prev.searches.erase(it);
@@ -1064,6 +1004,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		prev.amule_log_count = log_size;
 	} else if (!tail.empty()) {
 		std::ostringstream payload;
+		payload.imbue(std::locale::classic());
 		payload << "{\"lines\":[";
 		bool first = true;
 		for (const std::string &line : tail) {

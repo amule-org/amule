@@ -29,6 +29,7 @@
 #include "Refresher.h"
 
 #include <map>
+#include <string>
 #include <cstdint>
 
 namespace webapi
@@ -52,13 +53,9 @@ struct LastSeenState
 	std::map<std::uint32_t, ServerSnapshot> servers;
 	std::map<std::uint32_t, ClientSnapshot> clients;
 	std::map<std::uint32_t, FriendSnapshot> friends;
-	// The status event payload mirrors the REST /status envelope, which pulls from THREE
-	// sources (StatusSnapshot + KadSnapshot + ec_connected). All three must be diffed against
-	// the prior tick to decide on `status_changed`.
-	StatusSnapshot status;
-	KadSnapshot kad;
-	bool ec_connected = false;
-	bool status_initialised = false;
+	// Compare the published representation so changes hidden by nullable fields stay silent.
+	// An empty baseline ensures the first tick publishes the complete dashboard.
+	std::string status_payload;
 
 	// Log-tail tracking for `log_appended`. `amule_log_count` is how many lines the previous
 	// tick accounted for, and is what the next passes to CState::AmuleLogFrom() as its cursor.

@@ -27,20 +27,10 @@
 
 #include "State.h"
 
-#include <cstdint>
-#include <string>
-
 class CJsonWriter;
 
 namespace webapi
 {
-
-// Callers supply the presence predicate: zero, false and an empty string can be known values.
-void WriteIntOrNull(CJsonWriter &w, const char *key, bool known, std::int64_t value);
-void WriteUIntOrNull(CJsonWriter &w, const char *key, bool known, std::uint64_t value);
-void WriteDoubleOrNull(CJsonWriter &w, const char *key, bool known, double value);
-void WriteBoolOrNull(CJsonWriter &w, const char *key, bool known, bool value);
-void WriteStringOrNull(CJsonWriter &w, const char *key, bool known, const std::string &value);
 
 // Includes the "network" key and its object, shared by /kad and /status.
 void WriteKadNetworkObject(CJsonWriter &w, const KadSnapshot &k);

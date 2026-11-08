@@ -310,6 +310,61 @@ TEST(EventDiff, StatusFieldsTriggerExactlyOneMatchingEvent)
 	}
 }
 
+// Hidden measurements may keep changing after disconnect. Only a change to the published
+// representation should notify subscribers; making those values visible must still notify once.
+TEST(EventDiff, HiddenStatusChangesStaySilentUntilVisible)
+{
+	using Change = std::function<void(StatusSnapshot &, KadSnapshot &)>;
+	const std::vector<Change> changes = {
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_users = 11; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_files = 12; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_name = "hidden"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_port = 4661; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.kad_firewalled_tcp = true; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.users = 21; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.files = 22; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.nodes = 23; },
+	};
+	for (const auto &change : changes) {
+		CState state;
+		StatusSnapshot s;
+		KadSnapshot k;
+		CEventBus bus;
+		LastSeenState prev;
+		EmitDiffsAndUpdate(bus, prev, state);
+		const auto cursor = bus.NewestId();
+		CJsonWriter baseline;
+		WriteStatusObject(baseline, state.Dashboard());
+
+		change(s, k);
+		state.WriteStatus(s);
+		state.WriteKad(k);
+		CJsonWriter hidden;
+		WriteStatusObject(hidden, state.Dashboard());
+		ASSERT_EQUALS(baseline.GetBuffer(), hidden.GetBuffer());
+		EmitDiffsAndUpdate(bus, prev, state);
+		EmitDiffsAndUpdate(bus, prev, state);
+		ASSERT_TRUE(DrainSince(bus, cursor).empty());
+
+		s.has_ed2k_network = true;
+		s.server_ip = "5.6.7.8";
+		s.has_kad_firewalled_tcp = true;
+		k.has_network = true;
+		state.WriteStatus(s);
+		state.WriteKad(k);
+		CJsonWriter visible;
+		WriteStatusObject(visible, state.Dashboard());
+		EmitDiffsAndUpdate(bus, prev, state);
+		const auto events = DrainSince(bus, cursor);
+		ASSERT_EQUALS(static_cast<std::size_t>(1), events.size());
+		ASSERT_EQUALS(std::string("status_changed"), events.front().name);
+		ASSERT_EQUALS(visible.GetBuffer(), events.front().data);
+		const auto visible_cursor = bus.NewestId();
+		EmitDiffsAndUpdate(bus, prev, state);
+		ASSERT_TRUE(DrainSince(bus, visible_cursor).empty());
+	}
+}
+
 TEST(EventDiff, StatusColdStartAndEcReconnectKeepDashboardContract)
 {
 	CState state;
@@ -373,6 +428,58 @@ TEST(EventDiff, StatusIntegerFormattingIgnoresGlobalLocale)
 	ASSERT_TRUE(payload.find("\"server_name\":\"\\\"服务器\\\"\\n\\\\\\t\"") != std::string::npos);
 }
 
+TEST(EventDiff, CollectionIntegerFormattingIgnoresGlobalLocale)
+{
+	ScopedGroupedLocale locale;
+	CState state;
+	ClientSnapshot client;
+	client.ecid = 1234567;
+	state.MutateClients(
+		[&](std::map<std::uint32_t, ClientSnapshot> &clients) { clients[client.ecid] = client; });
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	std::string payload;
+	for (const auto &event : DrainAll(bus)) {
+		if (event.name == "client_added")
+			payload = event.data;
+	}
+	ASSERT_TRUE(payload.find("\"ecid\":1234567,") != std::string::npos);
+	const auto cursor = bus.NewestId();
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) { clients.clear(); });
+	EmitDiffsAndUpdate(bus, prev, state);
+	const auto events = DrainSince(bus, cursor);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), events.size());
+	ASSERT_EQUALS(std::string("client_removed"), events.front().name);
+	ASSERT_EQUALS(std::string("{\"ecid\":1234567}"), events.front().data);
+}
+
+TEST(EventDiff, CollectionStringsUseRestEscapes)
+{
+	CState state;
+	ClientSnapshot client;
+	client.ecid = 1;
+	client.client_name = "服务器 😀\x7f\"\\\n\b\f\r\t\x01";
+	state.MutateClients(
+		[&](std::map<std::uint32_t, ClientSnapshot> &clients) { clients[client.ecid] = client; });
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	std::string payload;
+	for (const auto &event : DrainAll(bus)) {
+		if (event.name == "client_added")
+			payload = event.data;
+	}
+	CJsonWriter rest;
+	rest.BeginObject();
+	rest.Key("name");
+	rest.ValueString(wxString::FromUTF8(client.client_name.c_str()));
+	rest.EndObject();
+	const std::string field = rest.GetBuffer().substr(1, rest.GetBuffer().size() - 2);
+	ASSERT_TRUE(payload.find(field) != std::string::npos);
+	ASSERT_TRUE(payload.find("\\ud83d\\ude00\\u007f") != std::string::npos);
+}
+
 // The free-space sentinel must reach the SSE payload as JSON null, never as a number. amuled's
 // FREE_SPACE_UNKNOWN is -1 and its EC serializer casts it to uint64, so the wire carries
 // 0xFFFFFFFFFFFFFFFF; emitting that unsigned would tell a consumer 17 exabytes are free, and 0
@@ -415,11 +522,7 @@ TEST(EventDiff, StatusEventCarriesIdentityFields)
 	ASSERT_TRUE(payload.find("\"id\":") == std::string::npos);
 }
 
-// The Kad firewall verdict is the field on this payload a subscriber is most likely watching for,
-// and Equal(StatusSnapshot) is what decides whether the event is published at all. Drop it from
-// that comparator and a firewall flip stops reaching subscribers entirely -- silently, since the
-// REST body keeps reporting the new value. Pinned so a future edit to the comparator cannot quietly
-// lose it.
+// A measured Kad firewall verdict must reach subscribers when it changes.
 TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
 {
 	StatusSnapshot s;
@@ -437,10 +540,8 @@ TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
 	ASSERT_TRUE(payload.find("\"firewalled\":") == std::string::npos);
 }
 
-// The disconnect edge is the one this whole gate exists for, and the one a value-only comparator
-// misses: the bool underneath keeps its last reading, so only the has_ flag moves. If
-// Equal(StatusSnapshot) ignores that flag the event never fires and a subscriber keeps rendering a
-// firewall verdict for a network the daemon has left.
+// On disconnect, the bool keeps its last reading but becomes unknown in the payload.
+// Subscribers must receive that transition to null.
 TEST(EventDiff, StatusEventFiresWhenTheKadFirewallVerdictBecomesUnknown)
 {
 	CState state;

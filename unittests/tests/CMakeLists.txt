@@ -2326,7 +2326,7 @@ if (LIBATOMIC)
 	target_link_libraries (EventDiffTest ${LIBATOMIC})
 endif()
 
-# Dashboard wire contract, also exercising the nullable helpers used by other REST handlers.
+# Dashboard wire contract shared by REST and status_changed events.
 add_executable (SnapshotJsonTest
 	SnapshotJsonTest.cpp
 	${CMAKE_SOURCE_DIR}/src/webapi/SnapshotJson.cpp

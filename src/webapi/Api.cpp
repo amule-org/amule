@@ -122,12 +122,7 @@ void SplitPathAndQuery(const std::string &target, std::string &path, std::string
 	}
 }
 
-using webapi::WriteBoolOrNull;
-using webapi::WriteDoubleOrNull;
-using webapi::WriteIntOrNull;
 using webapi::WriteKadNetworkObject;
-using webapi::WriteStringOrNull;
-using webapi::WriteUIntOrNull;
 
 void FinalizeJsonBody(CJsonWriter &w, CHttpServer::Response &r)
 {
@@ -7181,7 +7176,7 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	WriteBoolOrNull(w, "firewalled_tcp", k.has_firewalled_tcp, k.firewalled_tcp);
 	WriteBoolOrNull(w, "firewalled_udp", k.has_firewalled_udp, k.firewalled_udp);
 	WriteBoolOrNull(w, "lan_mode", k.has_lan_mode, k.lan_mode);
-	// Same value GET /status reports as kad.connected_since; 0 when
+	// Same value GET /status reports as kad.connected_since_at; 0 when
 	// not connected, so gate on `state` rather than on a nonzero.
 	w.Key("connected_since_at");
 	w.ValueUInt(d.status.kad_connected_since);
