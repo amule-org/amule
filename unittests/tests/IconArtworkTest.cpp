@@ -534,6 +534,11 @@ int main(int argc, char **argv)
 							expected.GetData(),
 							pixels.x * pixels.y * 3) == 0,
 					"client icon resampled a native density");
+				require(actual.HasAlpha() == expected.HasAlpha() &&
+						(!expected.HasAlpha() || std::memcmp(actual.GetAlpha(),
+										 expected.GetAlpha(),
+										 pixels.x * pixels.y) == 0),
+					"client icon changed alpha");
 			}
 			for (double scale : { 1.5, 4.0 }) {
 				const wxSize pixels(wxRound(16 * scale), wxRound(16 * scale));

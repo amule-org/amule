@@ -160,7 +160,7 @@ private:
 	//! Used to keep track of the last high-lighted item.
 	const CServer *m_connected;
 
-	// Avoid recreating native icon handles on every paint, but invalidate the raster
+	// Avoid converting the flag on every paint, but invalidate the raster
 	// cache when this window moves to a monitor with a different display scale.
 	mutable std::map<wxString, wxBitmapBundle> m_flagIcons;
 	mutable wxSize m_flagIconSize;
