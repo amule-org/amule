@@ -44,6 +44,10 @@ Site access is required to find links across websites. All processing happens in
 the browser: no analytics, storage, external requests or native helper. Site access
 can be restricted in Chrome's extension details.
 
+A minimal Linux session with an older generic `xdg-open` can report that the
+eD2k URL is a missing file even when the handler is registered. Update those
+desktop utilities or use a working desktop/GIO integration for the handler.
+
 Linux is the validated OS. Windows and macOS require their own working OS handler
 and have not been tested. Other Chromium-based browsers have not been validated
 with this packaged version.
@@ -70,7 +74,7 @@ The browser must support CDP's unpacked-extension loading for the smoke test.
 On Debian/Ubuntu, install the Linux smoke-test prerequisites:
 
 ```sh
-sudo apt-get install xvfb xauth dbus-x11 desktop-file-utils python3-gi gir1.2-atspi-2.0 at-spi2-core libxtst6 xdg-utils
+sudo apt-get install xvfb xauth dbus-x11 desktop-file-utils python3-gi gir1.2-atspi-2.0 at-spi2-core libxtst6 xdg-utils libglib2.0-bin
 npm run test:smoke
 ```
 
@@ -80,6 +84,10 @@ folders. It checks the blocked control, native first-use permission prompt,
 handler delivery, dynamic links, frames, site cancellation and recovery, page
 click handlers, filename escapes, activation methods and bundled help.
 The default smoke test establishes OS handoff; it does not require aMule.
+CI declares a GNOME/GIO desktop route. Older generic `xdg-open` releases
+misclassify digit-containing schemes such as `ed2k:` as file paths; the
+[legacy scheme check](https://sources.debian.org/src/xdg-utils/1.1.3-4.1/scripts/xdg-open.in/)
+shows that limitation. A modern generic launcher can also run the smoke test.
 The optional application test also queries the actual EC queue and compares exact
 filenames, file hashes and sizes, including the absence of cancelled transfers.
 

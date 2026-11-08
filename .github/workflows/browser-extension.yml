@@ -39,13 +39,16 @@ jobs:
           npm ci --no-audit --no-fund
           npx playwright-core install --with-deps chromium
           sudo apt-get update
-          sudo apt-get install -y xvfb xauth dbus-x11 desktop-file-utils python3-gi gir1.2-atspi-2.0 at-spi2-core libxtst6 xdg-utils
+          sudo apt-get install -y xvfb xauth dbus-x11 desktop-file-utils python3-gi gir1.2-atspi-2.0 at-spi2-core libxtst6 xdg-utils libglib2.0-bin
       - name: Test content script in real browser DOMs
         run: npm test
       - name: Test packaged extension, native consent and desktop handoff
         env:
           DEBUG: pw:browser
           XDG_UTILS_DEBUG_LEVEL: "2"
+          # Ubuntu 24.04's legacy generic xdg-open mistakes digit-containing
+          # schemes such as ed2k: for paths. Exercise its real GIO desktop route.
+          XDG_CURRENT_DESKTOP: GNOME
         run: npm run test:smoke
       - uses: actions/upload-artifact@v7
         if: always()

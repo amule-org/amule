@@ -22,7 +22,7 @@
 set -eu
 TASK_TESTS=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 # Preflight before starting an X server, desktop services or browser.
-for tool in node python3 xvfb-run xauth dbus-run-session update-desktop-database xdg-open xdg-mime; do
+for tool in node python3 xvfb-run xauth dbus-run-session update-desktop-database xdg-open xdg-mime gio; do
     command -v "$tool" >/dev/null || { echo "Missing smoke-test prerequisite: $tool" >&2; exit 77; }
 done
 python3 -c 'import ctypes, gi; ctypes.CDLL("libX11.so.6"); ctypes.CDLL("libXtst.so.6"); gi.require_version("Atspi", "2.0"); from gi.repository import Atspi' || exit 77
