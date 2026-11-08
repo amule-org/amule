@@ -28,34 +28,15 @@
 
 #include <common/Format.h> // Needed for CFormat
 
-#include "amule.h"           // Needed for theApp
-#include "ClientList.h"      // Needed for CClientList::GetClientsByHash
-#include "DataToText.h"      // Needed for GetSoftName, OriginToText
-#include "MuleBarRenderer.h" // Needed for CMuleBarRenderer
-#include "OtherFunctions.h"  // Needed for CastItoXBytes, Uint32toStringIP
+#include "amule.h"          // Needed for theApp
+#include "ClientList.h"     // Needed for CClientList::GetClientsByHash
+#include "DataToText.h"     // Needed for GetSoftName, OriginToText
+#include "OtherFunctions.h" // Needed for CastItoXBytes, Uint32toStringIP
 #ifdef CLIENT_GUI
 #include "UpDownClientEC.h"
 #else
 #include "updownclient.h"
 #endif
-
-namespace
-{
-//! Same renderer the active list uses; see CClientRowListCtrl::GetItemBarFill.
-class CHistoryNameRenderer : public CMuleBarRenderer
-{
-public:
-	bool Render(wxRect cell, wxDC *dc, int WXUNUSED(state)) override
-	{
-		const ClientNameCell *data =
-			reinterpret_cast<const ClientNameCell *>(GetSpec().GetIdentity());
-		if (data != nullptr) {
-			DrawClientNameCell(*data, cell, dc);
-		}
-		return true;
-	}
-};
-} // namespace
 
 CClientHistoryListCtrl::CClientHistoryListCtrl(
 	wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags)
@@ -63,7 +44,7 @@ CClientHistoryListCtrl::CClientHistoryListCtrl(
 , m_loaded(false)
 {
 	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
-	AddBarColumn(_("Name"), COLUMN_HISTORY_NAME, "N", 200, colFlags, new CHistoryNameRenderer());
+	AddNameColumn(_("Name"), COLUMN_HISTORY_NAME, "N", 230, colFlags);
 	AddTextColumn(_("Software"), COLUMN_HISTORY_SOFTWARE, "S", 110, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Version"), COLUMN_HISTORY_VERSION, "V", 90, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("IP Address"), COLUMN_HISTORY_ADDRESS, "I", 140, wxALIGN_LEFT, colFlags);
@@ -293,10 +274,13 @@ bool CClientHistoryListCtrl::IsLiveSortColumn() const
 	}
 }
 
-const ClientNameCell *CClientHistoryListCtrl::NameCellFor(wxUIntPtr item) const
+std::optional<ClientNameCell> CClientHistoryListCtrl::NameCellOf(wxUIntPtr item) const
 {
 	const ClientHistoryRow *row = RowFor(item);
-	return row != nullptr ? &row->nameCell : nullptr;
+	if (row == nullptr) {
+		return std::nullopt;
+	}
+	return row->nameCell;
 }
 
 namespace

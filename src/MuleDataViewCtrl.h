@@ -110,6 +110,9 @@ protected:
 	//! Content width for composite cells, or -1 to use variant/default measurement.
 	virtual int GetCustomFitWidth(const wxDataViewItem &, unsigned, wxDC &) const { return -1; }
 
+	//! Tooltip for a cell under the pointer, or empty for none. Asked only after EnableCellToolTips().
+	virtual wxString GetCellToolTip(const wxDataViewItem &, unsigned) const { return wxString(); }
+
 	//! Text a row is matched against when the user types to select.
 	virtual wxString GetRowLabel(const wxDataViewItem &item) const = 0;
 
@@ -159,6 +162,9 @@ protected:
 	virtual void OnSortingChanged() {}
 
 	// --- services for subclasses ------------------------------------------
+
+	//! Shows GetCellToolTip() for the cell under the pointer.
+	void EnableCellToolTips();
 
 	//! Full chain comparison: primary column first, then the tie-breakers.
 	int CompareItems(const wxDataViewItem &item1, const wxDataViewItem &item2) const;

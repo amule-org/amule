@@ -286,6 +286,36 @@ void CMuleDataViewCtrl::UpdateExpanderColumn()
 	}
 }
 
+void CMuleDataViewCtrl::EnableCellToolTips()
+{
+	// Generic data views receive mouse events on their inner client window.
+	wxWindow *body = GetMainWindow();
+	body->Bind(wxEVT_MOTION, [this, body](wxMouseEvent &event) {
+		wxDataViewItem item;
+		wxDataViewColumn *column = nullptr;
+		HitTest(ScreenToClient(body->ClientToScreen(event.GetPosition())), item, column);
+		const wxString tip = item.IsOk() && column != nullptr
+					     ? GetCellToolTip(item, column->GetModelColumn())
+					     : wxString();
+		if (tip != body->GetToolTipText()) {
+			if (tip.empty()) {
+				body->UnsetToolTip();
+			} else {
+				body->SetToolTip(tip);
+			}
+		}
+		event.Skip();
+	});
+	body->Bind(wxEVT_LEAVE_WINDOW, [body](wxMouseEvent &event) {
+		body->UnsetToolTip();
+		event.Skip();
+	});
+	body->Bind(wxEVT_MOUSEWHEEL, [body](wxMouseEvent &event) {
+		body->UnsetToolTip();
+		event.Skip();
+	});
+}
+
 int CMuleDataViewCtrl::CompareItems(const wxDataViewItem &item1, const wxDataViewItem &item2) const
 {
 	for (const CColPair &entry : m_sort_orders) {

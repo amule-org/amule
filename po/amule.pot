@@ -321,8 +321,9 @@ msgstr ""
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr ""
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCell.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr ""
 
@@ -1624,7 +1625,7 @@ msgstr ""
 msgid "HighID"
 msgstr ""
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCell.cpp
 msgid "Enabled"
 msgstr ""
 
@@ -1706,16 +1707,32 @@ msgstr ""
 msgid "Online now"
 msgstr ""
 
+#: src/ClientNameCell.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr ""
+
+#: src/ClientNameCell.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr ""
+
+#: src/ClientNameCell.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr ""
+
+#: src/ClientNameCell.cpp
+msgid "Credits: this peer moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCell.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
 msgid "Not complete"
 msgstr ""
 
 #: src/ClientRef.cpp
 msgid "Bad Guy"
-msgstr ""
-
-#: src/ClientRef.cpp
-msgid "Verified - OK"
 msgstr ""
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
@@ -4896,10 +4913,6 @@ msgid "Server name"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr ""
 
@@ -4937,10 +4950,6 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Scores"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
 msgstr ""
 
 #: src/muuli_wdr.cpp

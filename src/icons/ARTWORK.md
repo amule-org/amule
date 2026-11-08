@@ -142,12 +142,18 @@ rendered with librsvg. `client_edonkeyhybrid` remains a generic pictogram: the
 eDonkey2000 client was closed source, so no freely licensed version of its logo
 exists.
 
+The badges drawn beside the client icon are aMule's own artwork, drawn on a
+10px grid for this purpose: `client_secident` (green check), `client_badguy`
+(red X), `client_encryption` (lock) and `client_creditsyellow` (star). Their
+10px PNG twins are rendered with librsvg. The lock is drawn in `#212529` and
+recoloured at runtime to the row's text colour.
+
 The lists draw client icons from `wxBitmapBundle`s at their own DPI, and the
 file lists' rating icons use the same bundles. A PNG-only icon serves the
 smallest embedded density covering the requested size, resampled with
 `wxIMAGE_QUALITY_HIGH` when none matches: the same selection country flags
-use. An active skin replaces the icons with its 16px PNGs plus a smooth 2x
-upscale. `IconArtworkTest` checks that every native density comes back
+use. An active skin replaces the icons, except the badges, with its 16px PNGs
+plus a smooth 2x upscale. `IconArtworkTest` checks that every native density comes back
 unchanged and that sizes in between are exact.
 
 ## Tray artwork

@@ -27,16 +27,16 @@
 
 #include <vector>
 
-#include "ClientNameCell.h" // Needed for ClientNameCell
-#include "PeerIdentity.h"   // Needed for PeerIdentity
-#include "MuleVirtualDataViewCtrl.h"
+#include "ClientNameListCtrl.h" // Needed for CClientNameListCtrl
+#include "PeerIdentity.h"       // Needed for PeerIdentity
 
 /**
  * A list whose rows describe peers, with the behaviour that implies.
  *
  * The Clients page shows two such lists -- who we are talking to now, and everyone we have ever
- * talked to -- and they want the same things: the Name cell drawn with its badge icons, the details
- * dialog on double-click or Enter, and the peer context menu on right-click. What differs is only
+ * talked to -- and they want the same things: the Name cell drawn with its badge icons (by
+ * CClientNameListCtrl, which the per-file client lists share), the details dialog on double-click
+ * or Enter, and the peer context menu on right-click. What differs is only
  * how a row names its peer: the active list keeps an ECID, the history keeps a user hash, because
  * an ECID means nothing once the daemon that issued it has restarted.
  *
@@ -49,18 +49,12 @@
  * every peer it ever showed alive; the peer is resolved only when something is actually done to it,
  * and a row whose peer has since gone still names it well enough to act on from the record alone.
  */
-class CClientRowListCtrl : public CMuleVirtualDataViewCtrl
+class CClientRowListCtrl : public CClientNameListCtrl
 {
 public:
 	CClientRowListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags);
 
 protected:
-	//! The Name cell for a row, or nullptr if the row has none.
-	virtual const ClientNameCell *NameCellFor(wxUIntPtr item) const = 0;
-
-	//! Which model column the Name occupies, so the bar fill goes to the right one.
-	virtual unsigned NameColumn() const = 0;
-
 	/**
 	 * The peer behind one row, or false when the row names none usable.
 	 *
@@ -84,10 +78,6 @@ protected:
 
 	//! The peers behind the current selection, in display order.
 	std::vector<PeerIdentity> SelectedPeers() const;
-
-	int GetCustomFitWidth(const wxDataViewItem &item, unsigned column, wxDC &dc) const override;
-
-	void GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const override;
 
 	wxDECLARE_EVENT_TABLE();
 

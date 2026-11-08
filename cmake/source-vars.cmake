@@ -114,6 +114,7 @@ if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 		ClientListSplitter.cpp
 		ClientNameCell.cpp
 		ClientNameCellDrawing.cpp
+		ClientNameListCtrl.cpp
 		ClientRowListCtrl.cpp
 		ClientContextActions.cpp
 		ClientsListCtrl.cpp

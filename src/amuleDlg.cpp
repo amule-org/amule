@@ -2142,7 +2142,11 @@ void CamuleDlg::Apply_Clients_Skin()
 
 	m_clientImages.Clear();
 	for (int i = 0; i < CLIENT_SKIN_SIZE; ++i) {
-		Add_Skin_Icon("Client_" + m_clientSkinNames[i], clientImages(i), useSkins);
+		// Skins have these only as 16 px overlays for the client icon. The name cell draws
+		// them as 10 px badges beside it, so they always use the built-in art.
+		const bool badge = i == Client_SecIdent_Smiley || i == Client_BadGuy_Smiley ||
+				   i == Client_CreditsYellow_Smiley || i == Client_Encryption_Smiley;
+		Add_Skin_Icon("Client_" + m_clientSkinNames[i], clientImages(i), useSkins && !badge);
 	}
 }
 

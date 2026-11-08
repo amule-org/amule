@@ -25,6 +25,7 @@
 #include "ClientNameCell.h"
 
 #include <wx/dc.h>
+#include <wx/image.h>
 #include <protocol/ed2k/ClientSoftware.h>
 #include "Constants.h"
 #include "amuleDlg.h" // ClientSkinEnum
@@ -47,13 +48,39 @@ wxBitmap CClientImages::GetBitmap(size_t index, const wxSize &logicalSize, doubl
 	return m_bitmaps.emplace(key, bitmap).first->second;
 }
 
+wxBitmap CClientImages::GetTintedBitmap(
+	size_t index, const wxSize &logicalSize, double contentScale, const wxColour &tint) const
+{
+	if (!tint.IsOk()) {
+		return GetBitmap(index, logicalSize, contentScale);
+	}
+	const auto key = std::make_tuple(index, logicalSize.x, logicalSize.y, contentScale, tint.GetRGB());
+	const auto cached = m_tinted.find(key);
+	if (cached != m_tinted.end()) {
+		return cached->second;
+	}
+	wxBitmap bitmap = GetBitmap(index, logicalSize, contentScale);
+	if (bitmap.IsOk()) {
+		wxImage image = bitmap.ConvertToImage();
+		image.SetRGB(wxRect(image.GetSize()), tint.Red(), tint.Green(), tint.Blue());
+		bitmap = wxBitmap(image);
+		bitmap.SetScaleFactor(contentScale);
+	}
+	return m_tinted.emplace(key, bitmap).first->second;
+}
+
 namespace
 {
+const int BADGE_POSITIONS = 3;
+
 struct ClientNameLayout
 {
 	bool valid = false;
 	wxSize imageSize;
+	wxSize badgeSize;
 	int clientX = 0;
+	int badgeX = 0;
+	int badgeStep = 0;
 	int flagX = 0;
 	int textX = 0;
 	wxString text;
@@ -65,9 +92,13 @@ ClientNameLayout LayoutClientNameCell(
 	ClientNameLayout layout;
 	layout.valid = !images.GetBundles().empty();
 	layout.imageSize = dc.FromDIP(wxSize(16, 16));
+	layout.badgeSize = dc.FromDIP(wxSize(10, 10));
 	const int slot = layout.imageSize.x + dc.FromDIP(2);
+	const int badgeGap = dc.FromDIP(1);
+	layout.badgeStep = layout.badgeSize.x + badgeGap;
 	layout.clientX = cell.showState ? slot : 0;
-	layout.flagX = layout.clientX + slot;
+	layout.badgeX = layout.clientX + slot;
+	layout.flagX = layout.badgeX + BADGE_POSITIONS * layout.badgeStep - badgeGap + dc.FromDIP(2);
 	layout.textX = layout.flagX;
 	if (flag.IsOk()) {
 		layout.textX += flag.GetLogicalSize().x + dc.FromDIP(2);
@@ -188,20 +219,30 @@ void DrawClientNameCell(const ClientNameCell &cell,
 	const int realY = point.y + imageYOffset;
 	draw(clientImage, point.x, realY);
 
-	if (cell.highCredits) {
-		draw(Client_CreditsYellow_Smiley, point.x, realY);
-	} else if (!cell.extProtocol) {
-		draw(Client_ExtendedProtocol_Smiley, point.x, realY);
-	}
-
+	const int badgeY = realY + (layout.imageSize.y - layout.badgeSize.y) / 2;
+	const auto badge = [&](const wxBitmap &bitmap, int position) {
+		if (bitmap.IsOk()) {
+			dc->DrawBitmap(bitmap,
+				rect.GetX() + layout.badgeX + position * layout.badgeStep,
+				badgeY,
+				true);
+		}
+	};
 	if (cell.identified) {
-		draw(Client_SecIdent_Smiley, point.x, realY);
+		badge(images.GetBitmap(Client_SecIdent_Smiley, layout.badgeSize, contentScale), 0);
 	} else if (cell.identWarning) {
-		draw(Client_BadGuy_Smiley, point.x, realY);
+		badge(images.GetBitmap(Client_BadGuy_Smiley, layout.badgeSize, contentScale), 0);
 	}
-
 	if (cell.obfuscation == OBST_ENABLED) {
-		draw(Client_Encryption_Smiley, point.x, realY);
+		// In the name's colour, so it shows on every row background, the selection included.
+		badge(images.GetTintedBitmap(Client_Encryption_Smiley,
+			      layout.badgeSize,
+			      contentScale,
+			      dc->GetTextForeground()),
+			1);
+	}
+	if (cell.highCredits) {
+		badge(images.GetBitmap(Client_CreditsYellow_Smiley, layout.badgeSize, contentScale), 2);
 	}
 
 	if (flag.IsOk()) {

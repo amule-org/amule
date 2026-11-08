@@ -28,12 +28,12 @@
 #include <map>    // Needed for std::multimap
 #include <vector> // Needed for std::vector
 
-#include "Types.h"                   // Needed for uint8
-#include "Constants.h"               // Needed for DownloadItemType
-#include "ClientRef.h"               // Needed for CClientRef (stored by value below)
-#include "MuleVirtualDataViewCtrl.h" // Needed for CMuleVirtualDataViewCtrl
-#include "PartBarLegend.h"           // Needed for GenericColumnEnum, partbar::BarLegendKind
-#include "amuleDlg.h"                // Needed for CamuleDlg::DialogType
+#include "Types.h"              // Needed for uint8
+#include "Constants.h"          // Needed for DownloadItemType
+#include "ClientRef.h"          // Needed for CClientRef (stored by value below)
+#include "ClientNameListCtrl.h" // Needed for CClientNameListCtrl
+#include "PartBarLegend.h"      // Needed for GenericColumnEnum, partbar::BarLegendKind
+#include "amuleDlg.h"           // Needed for CamuleDlg::DialogType
 
 class CPartFile;
 class CMuleBarRenderer;
@@ -101,7 +101,7 @@ typedef std::vector<CKnownFile *> CKnownFileVector;
  * or peer of more than one file at once, so each row needs the client together with its owner file
  * and A4AF/available type, not just the CClientRef alone.
  */
-class CGenericClientListCtrl : public CMuleVirtualDataViewCtrl
+class CGenericClientListCtrl : public CClientNameListCtrl
 {
 public:
 	CGenericClientListCtrl(const wxString &tablename,
@@ -160,10 +160,10 @@ protected:
 	/// filename-mismatch colour cues DrawClientItem used to set on the wxDC.
 	bool GetItemAttr(wxUIntPtr item, unsigned column, wxDataViewItemAttr &attr) const override;
 
-	int GetCustomFitWidth(const wxDataViewItem &item, unsigned column, wxDC &dc) const override;
+	std::optional<ClientNameCell> NameCellOf(wxUIntPtr item) const override;
 
-	/// Fill data for the Name column's composite icon+text renderer (see
-	/// CClientNameRenderer) and for a leaf's own bar column.
+	/// Fill data for the Name column (see CClientNameListCtrl) and for a leaf's own bar
+	/// column.
 	void GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillSpec &out) const override;
 
 	/// Single-column comparison for the base's sort chain, after the
