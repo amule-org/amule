@@ -369,10 +369,12 @@ void TestPixelSizing(SignatureFixture &fixture)
 	const wxString narrow('i', wide.length());
 	WriteSignature(fixture.path, 1, 2, 3600, 1, 101, narrow);
 	frame.UpdateAll();
-	const int narrowWidth = frame.GetClientSize().x;
 	WriteSignature(fixture.path, 1, 2, 3600, 1, 101, wide);
 	frame.UpdateAll();
-	Check(frame.GetClientSize().x > narrowWidth, "Equal-length wider text was clipped");
+	// Check for clipping, not growth: a monospace UI font draws both names at
+	// the same width, so the frame has no reason to grow.
+	auto *panel = ResetButtons(frame).front()->GetParent();
+	Check(panel->GetSize().x >= panel->GetSizer()->GetMinSize().x, "Equal-length wider text was clipped");
 
 	// New records may be the longest labels in locales with verbose dates.
 	WriteSignature(fixture.path, 0, 0, 3600, 999, 101, wide);
