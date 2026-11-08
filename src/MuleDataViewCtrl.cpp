@@ -290,30 +290,44 @@ void CMuleDataViewCtrl::EnableCellToolTips()
 {
 	// Generic data views receive mouse events on their inner client window.
 	wxWindow *body = GetMainWindow();
-	body->Bind(wxEVT_MOTION, [this, body](wxMouseEvent &event) {
-		wxDataViewItem item;
-		wxDataViewColumn *column = nullptr;
-		HitTest(ScreenToClient(body->ClientToScreen(event.GetPosition())), item, column);
-		const wxString tip = item.IsOk() && column != nullptr
-					     ? GetCellToolTip(item, column->GetModelColumn())
-					     : wxString();
-		if (tip != body->GetToolTipText()) {
-			if (tip.empty()) {
-				body->UnsetToolTip();
-			} else {
-				body->SetToolTip(tip);
-			}
+	body->Bind(wxEVT_MOTION, [this](wxMouseEvent &event) {
+		m_toolTipPos = event.GetPosition();
+		UpdateCellToolTip(event.GetPosition());
+		event.Skip();
+	});
+	const auto hide = [this, body](wxMouseEvent &event) {
+		m_toolTipPos.reset();
+		body->UnsetToolTip();
+		event.Skip();
+	};
+	body->Bind(wxEVT_LEAVE_WINDOW, hide);
+	body->Bind(wxEVT_MOUSEWHEEL, hide);
+}
+
+void CMuleDataViewCtrl::RecheckCellToolTip()
+{
+	// Only a tooltip already set can be wrong; a cell without one gets one on the next move.
+	// The same text for the new row leaves the shown tooltip alone.
+	if (m_toolTipPos && GetMainWindow()->GetToolTip() != nullptr) {
+		UpdateCellToolTip(*m_toolTipPos);
+	}
+}
+
+void CMuleDataViewCtrl::UpdateCellToolTip(const wxPoint &pos)
+{
+	wxWindow *body = GetMainWindow();
+	wxDataViewItem item;
+	wxDataViewColumn *column = nullptr;
+	HitTest(ScreenToClient(body->ClientToScreen(pos)), item, column);
+	const wxString tip = item.IsOk() && column != nullptr ? GetCellToolTip(item, column->GetModelColumn())
+							      : wxString();
+	if (tip != body->GetToolTipText()) {
+		if (tip.empty()) {
+			body->UnsetToolTip();
+		} else {
+			body->SetToolTip(tip);
 		}
-		event.Skip();
-	});
-	body->Bind(wxEVT_LEAVE_WINDOW, [body](wxMouseEvent &event) {
-		body->UnsetToolTip();
-		event.Skip();
-	});
-	body->Bind(wxEVT_MOUSEWHEEL, [body](wxMouseEvent &event) {
-		body->UnsetToolTip();
-		event.Skip();
-	});
+	}
 }
 
 int CMuleDataViewCtrl::CompareItems(const wxDataViewItem &item1, const wxDataViewItem &item2) const
@@ -781,6 +795,7 @@ void CMuleDataViewCtrl::OnIdle(wxIdleEvent &event)
 		OnColumnWidthsChanged();
 	}
 
+	RecheckCellToolTip();
 	OnIdleHook();
 }
 

@@ -82,7 +82,6 @@ enum ClientSkinEnum
 	Client_Yellow_Smiley,
 	Client_Grey_Smiley,
 	Client_White_Smiley,
-	Client_ExtendedProtocol_Smiley,
 	Client_SecIdent_Smiley,
 	Client_BadGuy_Smiley,
 	Client_CreditsGrey_Smiley,

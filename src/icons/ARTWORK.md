@@ -153,8 +153,8 @@ file lists' rating icons use the same bundles. A PNG-only icon serves the
 smallest embedded density covering the requested size, resampled with
 `wxIMAGE_QUALITY_HIGH` when none matches: the same selection country flags
 use. An active skin replaces the icons, except the badges, with its 16px PNGs
-plus a smooth 2x upscale. `IconArtworkTest` checks that every native density comes back
-unchanged and that sizes in between are exact.
+plus a smooth 2x upscale. `IconArtworkTest` checks that every native density
+comes back unchanged and that sizes in between are exact.
 
 ## Tray artwork
 

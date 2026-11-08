@@ -24,11 +24,13 @@
 
 #include "ClientNameCell.h"
 
+#include <wx/arrstr.h>
 #include <wx/dc.h>
 #include <wx/image.h>
 #include <protocol/ed2k/ClientSoftware.h>
 #include "Constants.h"
-#include "amuleDlg.h" // ClientSkinEnum
+#include "OtherFunctions.h" // Needed for LabelWithColon
+#include "amuleDlg.h"       // ClientSkinEnum
 
 wxBitmap CClientImages::GetBitmap(size_t index, const wxSize &logicalSize, double contentScale) const
 {
@@ -230,7 +232,7 @@ void DrawClientNameCell(const ClientNameCell &cell,
 	};
 	if (cell.identified) {
 		badge(images.GetBitmap(Client_SecIdent_Smiley, layout.badgeSize, contentScale), 0);
-	} else if (cell.identWarning) {
+	} else if (cell.identFailed || cell.badGuy) {
 		badge(images.GetBitmap(Client_BadGuy_Smiley, layout.badgeSize, contentScale), 0);
 	}
 	if (cell.obfuscation == OBST_ENABLED) {
@@ -252,5 +254,28 @@ void DrawClientNameCell(const ClientNameCell &cell,
 
 	const int textOffset = ((rect.GetHeight() - dc->GetCharHeight()) / 2) + 1 /* Fixes rounding */;
 	dc->DrawText(layout.text, rect.GetX() + layout.textX, rect.GetY() + textOffset);
+}
+
+wxString ClientNameCellToolTip(const ClientNameCell &cell)
+{
+	wxArrayString lines;
+	// The Client Details dialog's words for the same states.
+	if (cell.identified || cell.identFailed || cell.badGuy) {
+		const wxString state = cell.identified    ? _("Verified - OK")
+				       : cell.identFailed ? _("Failed")
+							  : _("Bad Guy");
+		lines.Add(LabelWithColon(_("Secure ident")) + " " + state);
+	}
+	if (cell.obfuscation == OBST_ENABLED) {
+		lines.Add(LabelWithColon(_("Obfuscation")) + " " + _("Enabled"));
+	}
+	if (cell.highCredits) {
+		/* TRANSLATORS: the upload credit a peer has earned by sending us data. */
+		lines.Add(LabelWithColon(_("Credits")) + " " + _("Moves up faster in our upload queue"));
+	}
+	if (!cell.extProtocol) {
+		lines.Add(_("Does not support the eMule extended protocol"));
+	}
+	return wxJoin(lines, '\n', 0);
 }
 // File_checked_for_headers

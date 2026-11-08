@@ -196,7 +196,6 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 	m_clientSkinNames[Client_Yellow_Smiley] = "OnQueue";
 	m_clientSkinNames[Client_Grey_Smiley] = "A4AFNoNeededPartsQueueFull";
 	m_clientSkinNames[Client_White_Smiley] = "StatusUnknown";
-	m_clientSkinNames[Client_ExtendedProtocol_Smiley] = "ExtendedProtocol";
 	m_clientSkinNames[Client_SecIdent_Smiley] = "SecIdent";
 	m_clientSkinNames[Client_BadGuy_Smiley] = "BadGuy";
 	m_clientSkinNames[Client_CreditsGrey_Smiley] = "CreditsGrey";

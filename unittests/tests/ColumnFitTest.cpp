@@ -57,6 +57,7 @@ public:
 		SetSize(1000, 400);
 	}
 	using CMuleDataViewCtrl::FitColumnWidths;
+	using CMuleDataViewCtrl::RecheckCellToolTip;
 	using CMuleVirtualDataViewCtrl::GetColumnFitRows;
 	mutable unsigned measurements = 0;
 
@@ -286,6 +287,28 @@ void CheckClientCell(const ClientNameCell &cell, const CClientImages &images, co
 	}
 }
 
+void TestClientToolTip()
+{
+	ClientNameCell cell;
+	Check(ClientNameCellToolTip(cell).empty(), "A cell without badges has a tooltip");
+	cell.identFailed = true;
+	cell.badGuy = true;
+	Check(ClientNameCellToolTip(cell) == "Secure ident: Failed",
+		"Failed secure ident not named as in Client Details");
+	cell.identFailed = false;
+	Check(ClientNameCellToolTip(cell) == "Secure ident: Bad Guy",
+		"Bad guy not named as in Client Details");
+	cell.badGuy = false;
+	cell.identified = true;
+	cell.obfuscation = OBST_ENABLED;
+	cell.highCredits = true;
+	cell.extProtocol = false;
+	Check(ClientNameCellToolTip(cell) == "Secure ident: Verified - OK\nObfuscation: Enabled\n"
+					     "Credits: Moves up faster in our upload queue\n"
+					     "Does not support the eMule extended protocol",
+		"Tooltip does not list every badge");
+}
+
 void TestClientDrawing()
 {
 	for (const int scale : { 1, 2 }) {
@@ -331,6 +354,7 @@ void RunTests()
 {
 	wxFrame frame(nullptr, wxID_ANY, "Column fitting test");
 	TestSearchSampling(&frame);
+	TestClientToolTip();
 	TestClientDrawing();
 	auto *list = new TestList(&frame);
 	for (wxUIntPtr i = 1; i <= 4096; ++i) {
@@ -344,10 +368,24 @@ void RunTests()
 	frame.Show();
 	wxTheApp->Yield(true);
 	const wxDataViewItem first = static_cast<wxDataViewVirtualListModel *>(list->GetModel())->GetItem(0);
+	wxWindow *body = list->GetMainWindow();
 	list->MoveTo(list->GetItemRect(first, list->GetColumn(1)).GetPosition() + wxPoint(5, 2));
-	Check(list->GetMainWindow()->GetToolTipText() == "tip 1", "Cell tooltip not shown");
+	Check(body->GetToolTipText() == "tip 1", "Cell tooltip not shown");
+	// Rows change under a still pointer. A row moving elsewhere keeps the shown tooltip as it
+	// is; a row moving away replaces it.
+	const wxToolTip *shown = body->GetToolTip();
+	list->RemoveItemData(2);
+	list->RecheckCellToolTip();
+	Check(body->GetToolTip() == shown, "Cell tooltip replaced while its row stayed");
+	list->RemoveItemData(1);
+	list->RecheckCellToolTip();
+	Check(body->GetToolTipText() == "tip 3", "Cell tooltip kept a row that moved away");
+	list->AddItemData(1);
+	list->AddItemData(2);
 	list->MoveTo(list->GetItemRect(first, list->GetColumn(0)).GetPosition() + wxPoint(5, 2));
-	Check(list->GetMainWindow()->GetToolTipText().empty(), "Cell tooltip outlived its cell");
+	Check(body->GetToolTip() == nullptr, "Cell tooltip outlived its cell");
+	list->RecheckCellToolTip();
+	Check(body->GetToolTip() == nullptr, "Recheck added a tooltip the pointer never asked for");
 	wxDataViewItemArray sample;
 	list->GetColumnFitRows(sample, 512);
 	Check(sample.size() == 512, "Fit sample is not bounded");

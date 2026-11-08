@@ -24,13 +24,10 @@
 
 #include "ClientNameCell.h" // Interface declarations
 
-#include <wx/arrstr.h>
 #include <wx/dc.h>
 
-#include "amule.h"          // Needed for theApp
-#include "amuleDlg.h"       // Needed for CamuleDlg::m_clientImages
-#include "Constants.h"      // Needed for OBST_ENABLED
-#include "OtherFunctions.h" // Needed for LabelWithColon
+#include "amule.h"    // Needed for theApp
+#include "amuleDlg.h" // Needed for CamuleDlg::m_clientImages
 #ifdef GEOIP_GUI
 #include "CountryFlags.h"   // Needed for CCountryFlags (flag bitmaps)
 #include "CountryDisplay.h" // Needed for GetDisplayCountryCode
@@ -59,7 +56,8 @@ ClientNameCell MakeClientNameCell(const CUpDownClient *client, bool a4af)
 	cell.remoteQueueFull = client->IsRemoteQueueFull();
 	cell.isFriend = client->IsFriend();
 	cell.identified = client->IsIdentified();
-	cell.identWarning = client->IsBadGuy() || client->SUIFailed();
+	cell.identFailed = client->SUIFailed();
+	cell.badGuy = client->IsBadGuy();
 	cell.extProtocol = client->ExtProtocolAvailable();
 	cell.highCredits = client->GetCreditRatio() > 1;
 
@@ -76,25 +74,6 @@ ClientNameCell MakeClientNameCell(const CUpDownClient *client, bool a4af)
 #endif
 
 	return cell;
-}
-
-wxString ClientNameCellToolTip(const ClientNameCell &cell)
-{
-	wxArrayString lines;
-	if (cell.identified || cell.identWarning) {
-		lines.Add(LabelWithColon(_("Secure ident")) + " " +
-			  (cell.identified ? _("Verified - OK") : _("Failed")));
-	}
-	if (cell.obfuscation == OBST_ENABLED) {
-		lines.Add(LabelWithColon(_("Obfuscation")) + " " + _("Enabled"));
-	}
-	if (cell.highCredits) {
-		lines.Add(_("Credits: this peer moves up faster in our upload queue"));
-	}
-	if (!cell.extProtocol) {
-		lines.Add(_("Does not support the eMule extended protocol"));
-	}
-	return wxJoin(lines, '\n', 0);
 }
 
 namespace

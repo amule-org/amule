@@ -31,6 +31,7 @@
 #include "Types.h"           // Needed for uint64
 
 #include <list>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -165,6 +166,9 @@ protected:
 
 	//! Shows GetCellToolTip() for the cell under the pointer.
 	void EnableCellToolTips();
+
+	//! Re-reads a shown cell tooltip, since rows move under a still pointer. Run on idle.
+	void RecheckCellToolTip();
 
 	//! Full chain comparison: primary column first, then the tie-breakers.
 	int CompareItems(const wxDataViewItem &item1, const wxDataViewItem &item2) const;
@@ -363,6 +367,12 @@ private:
 	std::vector<bool> m_defaultColumnHidden;
 	//! Use requested restore widths while notifying and saving, before native layout catches up.
 	bool m_useCachedColumnWidths = false;
+
+	//! Sets the tooltip for the cell at `pos`, in GetMainWindow() coordinates.
+	void UpdateCellToolTip(const wxPoint &pos);
+
+	//! Where the pointer last moved inside GetMainWindow(), while cell tooltips are on.
+	std::optional<wxPoint> m_toolTipPos;
 
 	//! Last-seen widths, for detecting a drag-resize (no portable event).
 	std::vector<int> m_lastKnownWidths;
