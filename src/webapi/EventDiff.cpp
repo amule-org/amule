@@ -274,13 +274,12 @@ std::string ToJson(const ClientSnapshot &c)
 	  << "\"ecid\":" << c.ecid << ",\"name\":" << JsonStrOrNull(!c.client_name.empty(), c.client_name)
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash)
 	  << "\""
-	  // Same guard as country_code below and as WriteKnownClientObject's
-	  // has_addr, which nulls ip/port/kad_port together.
+	  // An absent address nulls ip/port together, matching WriteClientBaseFields.
 	  << ",\"ip\":" << JsonStrOrNull(!c.ip.empty(), c.ip)
+	  << ",\"port\":" << (c.ip.empty() ? std::string("null") : std::to_string(c.port))
 	  << ",\"country_code\":"
 	  // null, not "", when the lookup has not resolved.
 	  << JsonStrOrNull(!c.country_code.empty(), c.country_code)
-	  << ",\"port\":" << (c.ip.empty() ? std::string("null") : std::to_string(c.port))
 	  << ",\"software\":" << JsonStrOrNull(!c.software.empty(), c.software)
 	  << ",\"software_version\":" << JsonStrOrNull(!c.software_version.empty(), c.software_version)
 	  << ",\"reported_os\":"
@@ -593,8 +592,9 @@ std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 			std::to_string(msg.captcha_status);
 	}
 	return "{\"id\":" + std::to_string(msg.id) + ",\"direction\":\"" + (msg.outgoing ? "out" : "in") +
-	       "\",\"text\":\"" + EscJson(msg.text) + "\",\"sent_at\":" +
-	       (msg.timestamp != 0 ? std::to_string(msg.timestamp) : std::string("null")) + extra + "}";
+	       "\",\"text\":\"" + EscJson(msg.text) + "\"" + extra +
+	       ",\"sent_at\":" + (msg.timestamp != 0 ? std::to_string(msg.timestamp) : std::string("null")) +
+	       "}";
 }
 
 void PublishChatEvents(CEventBus &bus,
@@ -648,6 +648,16 @@ void PublishChatEvents(CEventBus &bus,
 			"{\"address\":\"" + EscJson(session.address) + "\",\"hash\":" + hash + "}");
 	}
 	bus.PublishBatch(batch);
+}
+
+void EmitStatusDiffAndUpdate(CEventBus &bus, LastSeenState &prev, const CState::DashboardSnapshot &dashboard)
+{
+	EnforceSinglePublisher();
+	std::string payload = ToJsonStatusEvent(dashboard);
+	if (payload != prev.status_payload) {
+		bus.Publish("status_changed", payload);
+		prev.status_payload = std::move(payload);
+	}
 }
 
 void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state)
@@ -821,11 +831,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		return RemovedEcidPayload(f);
 	});
 
-	std::string status_payload = ToJsonStatusEvent(new_dashboard);
-	if (status_payload != prev.status_payload) {
-		bus.Publish("status_changed", status_payload);
-		prev.status_payload = std::move(status_payload);
-	}
+	EmitStatusDiffAndUpdate(bus, prev, new_dashboard);
 
 	// Snapshot the new state for next tick's diff baseline.
 	prev.servers = std::move(new_servers);

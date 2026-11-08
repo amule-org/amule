@@ -32,6 +32,7 @@
 
 #include <JsonWriter.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <map>
@@ -2514,4 +2515,159 @@ TEST(EventDiff, SharedCompletenessUpdatesWithoutUploadChanges)
 		}
 	}
 	ASSERT_EQUALS(1, updated);
+}
+
+TEST(EventDiff, ClientAddressFieldsFollowRestOrder)
+{
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 1;
+		c.ip = "1.2.3.4";
+		c.port = 4662;
+		c.country_code = "us";
+		clients.emplace(c.ecid, c);
+	});
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	for (const auto &event : DrainAll(bus)) {
+		if (event.name == "client_added") {
+			ASSERT_TRUE(
+				event.data.find("\"ip\":\"1.2.3.4\",\"port\":4662,\"country_code\":\"us\"") !=
+				std::string::npos);
+			return;
+		}
+	}
+	ASSERT_TRUE(false);
+}
+
+TEST(EventDiff, CaptchaMessageFieldsFollowRestOrder)
+{
+	ChatSessionSnapshot session;
+	session.ip = "1.2.3.4";
+	session.port = 4662;
+	ChatMessageSnapshot msg;
+	msg.id = 1;
+	msg.text = "test";
+	msg.timestamp = 1234567;
+	msg.kind = 1;
+	msg.captcha_image = "Qk0=";
+	session.messages.push_back(msg);
+	msg.id = 2;
+	msg.kind = 2;
+	msg.captcha_status = 1;
+	session.messages.push_back(msg);
+	CEventBus bus;
+	PublishChatEvents(bus, { session }, {});
+	const auto events = DrainAll(bus);
+	ASSERT_EQUALS(static_cast<std::size_t>(2), events.size());
+	ASSERT_TRUE(
+		events[0].data.find(
+			"\"message\":{\"id\":1,\"direction\":\"in\",\"text\":\"test\",\"type\":\"captcha_"
+			"challenge\",\"captcha_image\":\"Qk0=\",\"sent_at\":1234567}") != std::string::npos);
+	ASSERT_TRUE(events[1].data.find(
+			    "\"message\":{\"id\":2,\"direction\":\"in\",\"text\":\"test\",\"type\":\"captcha_"
+			    "result\",\"captcha_status\":1,\"sent_at\":1234567}") != std::string::npos);
+}
+
+// Exercise every caller of the common event escaper, on creation and later updates.
+// Numeric grouping must not leak into payloads built with streams either.
+TEST(EventDiff, EventFamiliesKeepRestEscapingAndLocaleOnUpdates)
+{
+	ScopedGroupedLocale locale;
+	CState state;
+	const std::uint32_t id = 1234567;
+	state.MarkSearchStarted(id, "browse", "peer");
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	for (bool update : { false, true }) {
+		const std::string text =
+			std::string("quoted\"\\\t\n\x01\x7f服务器😀") + (update ? " changed" : "");
+		const auto cursor = bus.NewestId();
+		state.MutateDownloads([&](FileMap &files) {
+			FileSnapshot f;
+			f.ecid = id;
+			f.hash = "8b54a3c28b54a3c28b54a3c28b54a3c2";
+			f.name = text;
+			f.size = id;
+			f.is_downloading = f.is_shared = true;
+			f.download.source_comments.push_back({ text, text, 1, text });
+			const auto existing = files.find(id);
+			if (existing != files.end())
+				files.erase(existing);
+			files.emplace(id, f);
+		});
+		state.MutateClients([&](std::map<std::uint32_t, ClientSnapshot> &clients) {
+			ClientSnapshot c;
+			c.ecid = id;
+			c.client_name = text;
+			clients[id] = c;
+		});
+		state.MutateServers([&](std::map<std::uint32_t, ServerSnapshot> &servers) {
+			ServerSnapshot s;
+			s.ecid = id;
+			s.name = text;
+			servers[id] = s;
+		});
+		state.MutateFriends([&](std::map<std::uint32_t, FriendSnapshot> &friends) {
+			FriendSnapshot f;
+			f.ecid = id;
+			f.name = text;
+			friends[id] = f;
+		});
+		state.MutateSearch(id, [&](std::map<std::uint32_t, SearchResult> &results) {
+			SearchResult r;
+			r.ecid = id;
+			r.name = text;
+			r.status = update ? "downloading" : "new";
+			results[id] = r;
+		});
+		state.AppendAmuleLog({ text });
+		EmitDiffsAndUpdate(bus, prev, state);
+		ChatSessionSnapshot session;
+		session.name = text;
+		ChatMessageSnapshot message;
+		message.id = id;
+		message.text = text;
+		session.messages.push_back(message);
+		PublishChatEvents(bus, { session }, {});
+		const auto events = DrainSince(bus, cursor);
+		const std::string suffix = update ? "_updated" : "_added";
+		for (const std::string &name : { "download" + suffix,
+			     "shared" + suffix,
+			     "client" + suffix,
+			     "server" + suffix,
+			     "friend" + suffix,
+			     "search_result" + suffix,
+			     std::string("comments_updated"),
+			     std::string("log_appended"),
+			     std::string("chat_message") }) {
+			const auto event = std::find_if(
+				events.begin(), events.end(), [&](const Event &e) { return e.name == name; });
+			ASSERT_TRUE(event != events.end());
+			ASSERT_TRUE(
+				event->data.find("quoted\\\"\\\\\\t\\n\\u0001\\u007f服务器\\ud83d\\ude00") !=
+				std::string::npos);
+			ASSERT_TRUE(event->data.find("1,234,567") == std::string::npos);
+		}
+	}
+	// The remaining streamed numeric payloads are search progress, result removal and closure.
+	auto cursor = bus.NewestId();
+	SearchProgressSnapshot progress;
+	progress.percent = 42;
+	state.WriteSearchProgress(id, progress);
+	state.MutateSearch(id, [](std::map<std::uint32_t, SearchResult> &results) { results.clear(); });
+	EmitDiffsAndUpdate(bus, prev, state);
+	state.CloseSearch(id);
+	EmitDiffsAndUpdate(bus, prev, state);
+	std::map<std::string, std::string> payloads;
+	for (const auto &event : DrainSince(bus, cursor))
+		payloads[event.name] = event.data;
+	for (const char *name : { "search_progress", "search_result_removed", "search_closed" }) {
+		ASSERT_TRUE(payloads.count(name) == 1);
+		ASSERT_TRUE(payloads[name].find("\"search_id\":1234567") != std::string::npos);
+		ASSERT_TRUE(payloads[name].find("1,234") == std::string::npos);
+	}
 }

@@ -2335,6 +2335,14 @@ target_include_directories (SnapshotJsonTest PRIVATE ${CMAKE_SOURCE_DIR}/src/web
 add_test (NAME SnapshotJsonTest COMMAND SnapshotJsonTest)
 target_link_libraries (SnapshotJsonTest muleunit webcommon wxWidgets::BASE)
 
+# Real refresher failure/recovery and REST/SSE wire compatibility; reuses the EC fixture.
+if (ENABLE_INTEGRATION_TESTS AND BUILD_AMULEAPI AND Python3_Interpreter_FOUND AND UNIX)
+	add_test (NAME StatusEventsIntegrationTest
+		COMMAND ${Python3_EXECUTABLE} -u ${CMAKE_CURRENT_SOURCE_DIR}/StatusEventsIntegrationTest.py
+			$<TARGET_FILE:amuleapi>)
+	set_tests_properties (StatusEventsIntegrationTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
+endif ()
+
 # amuleapi-specific: tests CAmuleApiConfig's file-IO + mode-bit
 # enforcement. AmuleApiConfig.cpp is statically linked into the test
 # binary (rather than a webapi-side static lib) — it's a single TU and

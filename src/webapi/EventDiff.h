@@ -94,6 +94,11 @@ struct LastSeenState
 // REST /status envelope, from state.Dashboard() so all three pieces stay consistent.
 void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state);
 
+// Status-only publication for failed refreshes. Collection baselines stay at the last
+// successful tick; the dashboard reports the same best-effort state as REST. Like the
+// complete diff, this must run only on the wxApp publisher thread.
+void EmitStatusDiffAndUpdate(CEventBus &bus, LastSeenState &prev, const CState::DashboardSnapshot &dashboard);
+
 // Chat events, published straight from the refresher's chat roundtrip rather than by diffing a
 // prior snapshot: the walker already knows what is new (only messages past the cursor come back)
 // and which sessions vanished.

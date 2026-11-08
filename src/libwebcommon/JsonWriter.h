@@ -32,12 +32,10 @@
 // One JSON number formatting for doubles, shared by CJsonWriter::ValueDouble and by the
 // hand-rolled ostringstream payload builders in the SSE layer.
 //
-// Two things it gets right that `ostream << double` does not: %.17g, the shortest
-// round-trippable form for an IEEE 754 double (the stream default is 6 significant digits, so
-// the same value reads differently on SSE and REST), and a C-locale decimal point. JSON numbers
-// are always '.'-separated, but ostream and snprintf both honour LC_NUMERIC -- which amuleapi
-// inherits from --locale -- so on an it/de/fr locale an unnormalised double emits "33,3333" and
-// the whole frame stops being valid JSON.
+// Two things it gets right that `ostream << double` does not: %.17g retains enough digits
+// to round-trip an IEEE 754 double (the stream default is 6 significant digits), and the
+// decimal point is always '.'. A caller that installs a non-C LC_NUMERIC must still emit
+// valid JSON. amuleapi currently leaves the process locale at its default.
 //
 // NaN and the infinities become `null`; JSON has no spelling for them.
 std::string JsonDoubleToString(double v);
