@@ -28,6 +28,11 @@
     const href = element.getAttribute("href");
     // Leave filename escapes, other protocols and already encoded links intact.
     if (href && /^\s*ed2k:\/\//i.test(href) && href.includes("|")) {
+      // Existing %7C filename escapes become indistinguishable from newly
+      // encoded separators. aMule can then reject the link or read filename
+      // text as its size/hash. Keep the original for copy/paste instead.
+      const fileName = href.match(/^\s*ed2k:\/\/\|file\|([^|]*)\|/i)?.[1];
+      if (fileName && /%7c/i.test(fileName)) return;
       element.setAttribute("href", href.replace(/\|/g, "%7C"));
     }
   }
@@ -42,28 +47,46 @@
   function beforeActivation(event) {
     for (const element of event.composedPath()) {
       if (element instanceof Element && element.matches(selector)) {
+        // A site's click handler may replace a shadow link's href after this
+        // capture listener. Observe that root before the handler runs so the
+        // replacement is repaired before the browser's default activation.
+        const root = element.getRootNode();
+        if (root instanceof ShadowRoot) observe(root);
         repair(element);
         break;
       }
     }
   }
 
-  for (const event of [
-    "pointerdown",
-    "click",
-    "auxclick",
-    "contextmenu",
-    "keydown",
-  ]) {
-    document.addEventListener(event, beforeActivation, {
-      capture: true,
-      passive: true,
-    });
+  function installActivationListeners() {
+    for (const event of [
+      "pointerdown",
+      "click",
+      "auxclick",
+      "contextmenu",
+      "keydown",
+    ]) {
+      document.addEventListener(event, beforeActivation, {
+        capture: true,
+        passive: true,
+      });
+    }
   }
+  installActivationListeners();
 
   // Initial links and later page updates also need fixing before context menus
   // and keyboard navigation. This does not add listeners to individual links.
   const observer = new MutationObserver((records) => {
+    // document.open() removes document listeners but leaves this observer.
+    // Reinstall when the document's children change; addEventListener ignores
+    // duplicate registrations with the same callback and capture setting.
+    if (
+      records.some(
+        (record) => record.type === "childList" && record.target === document,
+      )
+    ) {
+      installActivationListeners();
+    }
     for (const record of records) {
       if (record.type === "attributes") {
         repair(record.target);
@@ -72,11 +95,17 @@
       }
     }
   });
-  observer.observe(document, {
-    subtree: true,
-    childList: true,
-    attributes: true,
-    attributeFilter: ["href"],
-  });
+  const observedRoots = new WeakSet();
+  function observe(root) {
+    if (observedRoots.has(root)) return;
+    observedRoots.add(root);
+    observer.observe(root, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["href"],
+    });
+  }
+  observe(document);
   scan(document);
 })();

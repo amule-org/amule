@@ -29,6 +29,7 @@ python3 -c 'import gi; gi.require_version("Atspi", "2.0"); from gi.repository im
 if [ -n "${AMULE_BINARY:-}" ]; then
     AMULE_BINARY=$(command -v "$AMULE_BINARY") || exit 77
     export AMULE_BINARY
+    python3 -c 'import cryptography' || exit 77
 fi
 node --input-type=module -e 'import {chromium} from "playwright-core"; import fs from "node:fs"; fs.accessSync(process.env.AMULE_BROWSER_EXECUTABLE || chromium.executablePath(), fs.constants.X_OK)' || exit 77
 python3 "$TASK_TESTS/../tools/package.py"
@@ -44,5 +45,5 @@ update-desktop-database "$ED2K_TEST_STATE/data/applications"
 # See ui/accessibility/platform/atk_util_auralinux.cc in Chromium.
 exec env -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u http_proxy -u https_proxy -u all_proxy -u LD_PRELOAD \
     XDG_CONFIG_HOME="$ED2K_TEST_STATE/config" XDG_DATA_HOME="$ED2K_TEST_STATE/data" \
-    ED2K_PRIVATE_TEST_BUS=1 ACCESSIBILITY_ENABLED=1 xvfb-run -a -s '-screen 0 1280x900x24' \
+    PATH="$ED2K_TEST_STATE/bin:$PATH" ED2K_PRIVATE_TEST_BUS=1 ACCESSIBILITY_ENABLED=1 xvfb-run -a -s '-screen 0 1280x900x24' \
     dbus-run-session -- node "$TASK_TESTS/smoke.mjs"

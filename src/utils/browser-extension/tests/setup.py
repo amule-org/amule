@@ -33,17 +33,20 @@ state.mkdir()
 with zipfile.ZipFile(root.parent / 'dist/ed2k-link-fixer.zip') as archive:
     assert archive.testzip() is None
     archive.extractall(state / 'release')
-for directory in ['config', 'data/applications', 'amule/Temp', 'amule/Incoming']:
+for directory in ['bin', 'config', 'data/applications', 'amule/Temp', 'amule/Incoming']:
     (state / directory).mkdir(parents=True, exist_ok=True)
 
 
-def desktop_arg(value):
-    return '"' + str(value).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace('%', '%%') + '"'
-
-
+# xdg-open's generic launcher does not parse a quoted Exec command like GIO
+# does. A named executable on the private PATH works through both launchers,
+# including when the checkout's path contains spaces. Snapshot the script so
+# later source edits cannot alter a handler belonging to an active run.
+handler = state / 'bin/amule-ed2k-test-handler'
+shutil.copyfile(root / 'handler.py', handler)
+handler.chmod(0o755)
 (state / 'data/applications/org.amule.aMule.desktop').write_text(
     '[Desktop Entry]\nName=aMule Link Test\nType=Application\n'
-    f'Exec={desktop_arg(sys.executable)} {desktop_arg(root / "handler.py")} %u\n'
+    'Exec=amule-ed2k-test-handler %u\n'
     'MimeType=x-scheme-handler/ed2k;\n')
 (state / 'config/mimeapps.list').write_text(
     '[Default Applications]\nx-scheme-handler/ed2k=org.amule.aMule.desktop\n')
@@ -77,4 +80,11 @@ for attempt in range(50):
 (state / 'amule/lastversion').write_text('GIT\n3.0.1\n3.2.0\n')
 if os.environ.get('AMULE_BINARY'):
     assert shutil.which(os.environ['AMULE_BINARY']), 'AMULE_BINARY is not executable'
+    # Reuse the project's offline application fixture. In particular amuled
+    # exits unless EC is configured, even when only CLI link delivery is used.
+    sys.path.insert(0, str(root.parents[3] / 'unittests/tests'))
+    from DaemonConfig import write_amule_conf
+    write_amule_conf(state / 'amule', port + 1, Port=port, UDPEnable=0,
+                     Autoconnect=0, GeoIPAutoUpdate=0)
+
 print(state)

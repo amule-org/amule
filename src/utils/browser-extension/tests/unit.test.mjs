@@ -59,6 +59,16 @@ async function fixture(run) {
 }
 const cases = [
   [
+    "uppercase encoded filename pipe stays original",
+    "ED2K://|FILE|a%7cb.bin|1|00112233445566778899aabbccddeeff|/",
+    "ED2K://|FILE|a%7cb.bin|1|00112233445566778899aabbccddeeff|/",
+  ],
+  [
+    "literal percent pipe text is safe to transport",
+    "ed2k://|file|a%257Cb.bin|1|00112233445566778899aabbccddeeff|/",
+    "ed2k://%7Cfile%7Ca%257Cb.bin%7C1%7C00112233445566778899aabbccddeeff%7C/",
+  ],
+  [
     "file delimiters",
     "ed2k://|file|sample.bin|123|0123456789abcdef0123456789abcdef|/",
     "ed2k://%7Cfile%7Csample.bin%7C123%7C0123456789abcdef0123456789abcdef%7C/",
@@ -76,9 +86,9 @@ const cases = [
   ["uppercase scheme", "ED2K://|file|x|/", "ED2K://%7Cfile%7Cx%7C/"],
   ["leading whitespace", " \tED2K://|file|x|/", " \tED2K://%7Cfile%7Cx%7C/"],
   [
-    "encoded filename pipe and space",
+    "ambiguous encoded filename pipe is left unchanged",
     "ed2k://|file|a%7Cb%20c.bin|/",
-    "ed2k://%7Cfile%7Ca%7Cb%20c.bin%7C/",
+    "ed2k://|file|a%7Cb%20c.bin|/",
   ],
   [
     "unicode filename",
@@ -261,4 +271,142 @@ test("rewriting stabilizes without repeated href writes", () =>
       return n;
     });
     assert.equal(writes, 1);
+  }));
+
+test("shadow click handlers can replace the URL before normal activation", () =>
+  fixture(async (page) => {
+    await page.addScriptTag({ content: source });
+    const href = await page.evaluate(async () => {
+      const host = document.createElement("div");
+      document.body.append(host);
+      const shadow = host.attachShadow({ mode: "open" });
+      shadow.innerHTML = '<a href="ed2k://|file|old|/">Open</a>';
+      const anchor = shadow.querySelector("a");
+      anchor.addEventListener("click", () => {
+        anchor.setAttribute("href", "ed2k://|file|replacement|/");
+      });
+      anchor.dispatchEvent(
+        new Event("click", { bubbles: true, composed: true }),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return anchor.getAttribute("href");
+    });
+    assert.equal(href, "ed2k://%7Cfile%7Creplacement%7C/");
+  }));
+
+test("a page can cancel activation without losing its event or target", () =>
+  fixture(async (page) => {
+    await page.setContent(
+      '<a id="link" target="_blank" download="file.bin" href="ed2k://|file|x|/"><span>Open</span></a>',
+    );
+    await page.addScriptTag({ content: source });
+    const result = await page.evaluate(() => {
+      const link = document.querySelector("a");
+      let calls = 0;
+      link.addEventListener("click", (event) => {
+        calls++;
+        event.preventDefault();
+      });
+      const event = new Event("click", {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+      });
+      const allowed = link.querySelector("span").dispatchEvent(event);
+      return {
+        calls,
+        allowed,
+        cancelled: event.defaultPrevented,
+        target: link.target,
+        download: link.download,
+      };
+    });
+    assert.deepEqual(result, {
+      calls: 1,
+      allowed: false,
+      cancelled: true,
+      target: "_blank",
+      download: "file.bin",
+    });
+  }));
+
+test("document replacement retains activation handling for new shadow roots", () =>
+  fixture(async (page) => {
+    await page.addScriptTag({ content: source });
+    await page.evaluate(() => {
+      document.open();
+      document.write('<main id="replacement">New document</main>');
+      document.close();
+    });
+    const href = await page.evaluate(() => {
+      const host = document.createElement("div");
+      document.querySelector("main").append(host);
+      const shadow = host.attachShadow({ mode: "open" });
+      shadow.innerHTML = '<a href="ed2k://|file|new-document|/">Open</a>';
+      shadow
+        .querySelector("a")
+        .dispatchEvent(
+          new Event("contextmenu", { bubbles: true, composed: true }),
+        );
+      return shadow.querySelector("a").getAttribute("href");
+    });
+    assert.equal(href, "ed2k://%7Cfile%7Cnew-document%7C/");
+  }));
+
+test("moving a link between shadow roots repairs later handler updates", () =>
+  fixture(async (page) => {
+    await page.addScriptTag({ content: source });
+    const href = await page.evaluate(async () => {
+      const first = document.createElement("div");
+      const second = document.createElement("div");
+      document.body.append(first, second);
+      const a = first.attachShadow({ mode: "open" });
+      const b = second.attachShadow({ mode: "open" });
+      a.innerHTML = '<a href="ed2k://|file|old-root|/">Open</a>';
+      const link = a.querySelector("a");
+      link.dispatchEvent(
+        new Event("pointerdown", { bubbles: true, composed: true }),
+      );
+      b.append(link);
+      first.remove();
+      link.addEventListener("click", () =>
+        link.setAttribute("href", "ed2k://|file|new-root|/"),
+      );
+      link.dispatchEvent(new Event("click", { bubbles: true, composed: true }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return link.getAttribute("href");
+    });
+    assert.equal(href, "ed2k://%7Cfile%7Cnew-root%7C/");
+  }));
+
+test("activation preserves an ambiguous filename and original copyable URL", () =>
+  fixture(async (page) => {
+    const original =
+      "ed2k://|file|a%7c1024%7c00112233445566778899aabbccddeeff%7ctail.bin|42|ffeeddccbbaa99887766554433221100|/";
+    await page.evaluate((href) => {
+      const a = document.createElement("a");
+      a.id = "subject";
+      a.href = href;
+      document.body.append(a);
+    }, original);
+    await page.addScriptTag({ content: source });
+    for (const type of [
+      "pointerdown",
+      "click",
+      "auxclick",
+      "contextmenu",
+      "keydown",
+    ]) {
+      await page
+        .locator("#subject")
+        .evaluate(
+          (a, type) =>
+            a.dispatchEvent(new Event(type, { bubbles: true, composed: true })),
+          type,
+        );
+      assert.equal(
+        await page.locator("#subject").getAttribute("href"),
+        original,
+      );
+    }
   }));

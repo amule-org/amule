@@ -26,12 +26,19 @@ The toolbar button opens help and privacy information.
 
 Links on HTTP/HTTPS pages, matching frames and links added or changed after page
 load are repaired. Normal clicks, keyboard activation and middle clicks keep the
-browser's normal behavior. Open shadow-root links are also repaired on activation.
+browser's normal behavior. Open shadow-root links are also repaired on activation, including href changes
+made by page click handlers. Activation support survives `document.open()` and
+links moving between open shadow roots.
 The extension does not synthesize navigation or bypass browser permission prompts.
 
 Restricted browser pages and local files are outside its scope. Plain-text URLs,
 closed shadow roots and controls that construct their own URLs in JavaScript may
 need to be copied into aMule. Bulk queuing is not provided.
+
+A canonical file link whose filename contains `%7C` or `%7c` is left unchanged.
+Encoding its separators would make those filename escapes indistinguishable from
+separators at the receiving application. Copy that original link into aMule;
+preserving it avoids rejection or interpreting filename text as transfer metadata.
 
 Site access is required to find links across websites. All processing happens in
 the browser: no analytics, storage, external requests or native helper. Site access
@@ -70,17 +77,23 @@ npm run test:smoke
 The smoke test builds and extracts the ZIP, runs a headed browser under a private
 X server and D-Bus session, and registers a logging handler in private XDG
 folders. It checks the blocked control, native first-use permission prompt,
-handler delivery, dynamic links, frames, activation methods and bundled help.
+handler delivery, dynamic links, frames, site cancellation and recovery, page
+click handlers, filename escapes, activation methods and bundled help.
 The default smoke test establishes OS handoff; it does not require aMule.
+The optional application test also queries the actual EC queue and compares exact
+filenames, file hashes and sizes, including the absence of cancelled transfers.
 
 To additionally verify actual download-queue acceptance in an isolated aMule:
 
 ```sh
-AMULE_BINARY=/path/to/amule npm run test:smoke
+AMULE_BINARY=/path/to/current/amule-or-amuled npm run test:smoke
 ```
 
-Use a source build or installed binary compatible with the documented eD2k
-command line. Autoconnection, Kad and UPnP are disabled in its private config.
+The optional application test also requires Python cryptography
+(`sudo apt-get install python3-cryptography`). Use a current source build
+compatible with the documented eD2k command line and maintained EC test peer.
+Older installed versions can fail escaped-filename checks because of their own
+decoding behavior; do not weaken those assertions to accept a changed filename. Autoconnection, Kad and UPnP are disabled in its private config.
 The fixture seeds `lastversion` for GIT, 3.0.1 and 3.2.0 to avoid the first-run
 version notice. Add the tested version there when testing another release.
 Smoke tests retain their evidence in the printed temporary directory. Missing

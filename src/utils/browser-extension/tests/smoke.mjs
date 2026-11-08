@@ -39,7 +39,17 @@ const record = (name) => {
   console.log("PASS", name);
 };
 const hash = (name) => createHash("md5").update(name).digest("hex");
-const link = (name) => `ed2k://|file|${name}.bin|1024|${hash(name)}|/`;
+const expectedTransfers = [
+  { name: "first-use.bin", hash: hash("first-use"), size: 1024 },
+];
+const filenames = {
+  "package-escaped-space": "space%20name",
+  "package-escaped-percent": "percent%2520name",
+  "package-protected-name": "pipe%7Cname",
+  "package-literal-pipe-text": "literal%257Cname",
+};
+const link = (name) =>
+  `ed2k://|file|${filenames[name] || name}.bin|1024|${hash(name)}|/`;
 const deliveries = () =>
   fs.existsSync(state + "/handler.jsonl")
     ? fs
@@ -208,17 +218,20 @@ try {
   );
   record("web-page frame links repaired");
 
-  async function accepted(name, activate) {
+  async function accepted(name, activate, expectedName = name + ".bin") {
     await page.goto(origin + "/?name=" + name);
     await page.waitForFunction(() =>
       document.querySelector("#link").getAttribute("href").includes("%7C"),
     );
     const count = deliveries().length;
+    const expectedUrl = link(name).replaceAll("|", "%7C");
     await activate();
     await waitFor(
       () =>
         deliveries().length > count &&
-        deliveries().some((args) => args[0].includes(name)),
+        deliveries().some(
+          (args) => args.length === 1 && args[0] === expectedUrl,
+        ),
       name + " did not reach OS handler",
     );
     if (process.env.AMULE_BINARY) {
@@ -227,10 +240,15 @@ try {
           fs.existsSync(state + "/amule/logfile") &&
           fs
             .readFileSync(state + "/amule/logfile", "utf8")
-            .includes("Downloading " + name + ".bin"),
+            .includes("Downloading " + expectedName),
         name + " did not reach aMule queue",
       );
     }
+    expectedTransfers.push({
+      name: expectedName,
+      hash: hash(name),
+      size: 1024,
+    });
     record(
       name +
         " reached " +
@@ -255,8 +273,142 @@ try {
       host.attachShadow({ mode: "open" }).innerHTML =
         `<a href="${url}">Shadow link</a>`;
     }, link("package-shadow"));
+    await page.locator("#shadow a").evaluate((a, url) => {
+      a.addEventListener("click", () => a.setAttribute("href", url));
+    }, link("package-shadow"));
     await page.locator("#shadow a").click();
   });
+  await accepted("package-cancelled-recovery", async () => {
+    const before = deliveries().length;
+    await page.locator("#link").evaluate((a) =>
+      a.addEventListener("click", (event) => event.preventDefault(), {
+        once: true,
+      }),
+    );
+    await page.locator("#link").click();
+    await delay(500);
+    assert.equal(
+      deliveries().length,
+      before,
+      "A cancelled click invoked the OS handler",
+    );
+    record(
+      "site cancellation prevents dispatch and the next click can recover",
+    );
+    await page.locator("#link").click();
+  });
+  await accepted("package-site-handler", async () => {
+    await page.locator("#link").evaluate(
+      (a, url) =>
+        a.addEventListener("click", () => {
+          a.setAttribute("href", url);
+        }),
+      link("package-site-handler"),
+    );
+    await page.locator("#link").click();
+  });
+  await accepted(
+    "package-escaped-space",
+    () => page.locator("#link").click(),
+    "space name.bin",
+  );
+  await accepted(
+    "package-escaped-percent",
+    () => page.locator("#link").click(),
+    "percent%20name.bin",
+  );
+  await accepted(
+    "package-literal-pipe-text",
+    () => page.locator("#link").click(),
+    "literal%7Cname.bin",
+  );
+  await accepted("package-frame", async () => {
+    const ready = page.waitForEvent("framenavigated", {
+      predicate: (frame) => frame.parentFrame() !== null,
+    });
+    await page.evaluate((url) => {
+      const frame = document.createElement("iframe");
+      frame.src = url;
+      document.body.append(frame);
+    }, origin + "/?name=package-frame");
+    const frame = await ready;
+    await frame.locator("#link").click();
+  });
+  await accepted("package-replaced-document", async () => {
+    await page.evaluate(() => {
+      document.open();
+      document.write('<main id="new-document"></main>');
+      document.close();
+    });
+    await page.evaluate((url) => {
+      const host = document.createElement("div");
+      host.id = "new-shadow";
+      document.querySelector("main").append(host);
+      host.attachShadow({ mode: "open" }).innerHTML =
+        `<a href="${url}">Open new document link</a>`;
+    }, link("package-replaced-document"));
+    await page.locator("#new-shadow a").click();
+  });
+  await accepted("package-image-map", async () => {
+    await page.evaluate((url) => {
+      const image = document.createElement("img");
+      image.id = "mapped-image";
+      image.src =
+        "data:image/svg+xml," +
+        encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="teal"/></svg>',
+        );
+      image.setAttribute("usemap", "#links");
+      const map = document.createElement("map");
+      map.name = "links";
+      const area = document.createElement("area");
+      area.id = "mapped-area";
+      area.shape = "rect";
+      area.coords = "0,0,100,100";
+      area.href = url;
+      map.append(area);
+      document.body.append(image, map);
+    }, link("package-image-map"));
+    await page.waitForFunction(
+      () =>
+        !document
+          .querySelector("#mapped-area")
+          .getAttribute("href")
+          .includes("|"),
+    );
+    await page.locator("#mapped-image").click({ position: { x: 50, y: 50 } });
+  });
+  await page.goto(origin + "/?name=package-protected-name");
+  const protectedUrl = link("package-protected-name");
+  assert.equal(await page.locator("#link").getAttribute("href"), protectedUrl);
+  const protectedCount = deliveries().length;
+  await page.locator("#link").click();
+  await waitFor(
+    () => page.url() === "about:blank#blocked",
+    "Ambiguous filename was rewritten and dispatched",
+  );
+  assert.equal(deliveries().length, protectedCount);
+  record(
+    "ambiguous encoded filename stays copyable and is not dispatched as different metadata",
+  );
+  if (process.env.AMULE_BINARY) {
+    fs.writeFileSync(
+      state + "/expected-transfers.json",
+      JSON.stringify(expectedTransfers),
+    );
+    const verified = spawnSync("python3", [root + "/verify-queue.py"], {
+      encoding: "utf8",
+      timeout: 15000,
+    });
+    fs.writeFileSync(
+      state + "/queue-verification.log",
+      verified.stdout + verified.stderr,
+    );
+    assert.equal(verified.status, 0, verified.stdout + verified.stderr);
+    record(
+      "queue names, hashes and sizes match exactly with no cancelled or extra transfers",
+    );
+  }
   const help = await context.newPage();
   await help.goto(`chrome-extension://${context.extensionId}/help.html`);
   assert.equal(
