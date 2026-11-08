@@ -27,7 +27,11 @@ runs:
           latest) url=$NGTCP2_LATEST_TARBALL_URL; sha=$NGTCP2_LATEST_SHA256 ;;
           *) echo "unknown ngtcp2 release: $NGTCP2_RELEASE" >&2; exit 1 ;;
         esac
-        curl -fsSL -o "$RUNNER_TEMP/ngtcp2.tar.xz" "$url"
+        # Release downloads can fail with transient HTTP errors or dropped connections.
+        # Bound both each transfer and the retry window; verify bytes before extraction.
+        curl -fsSL --retry 4 --retry-all-errors --retry-delay 2 \
+          --connect-timeout 15 --max-time 120 --retry-max-time 180 \
+          -o "$RUNNER_TEMP/ngtcp2.tar.xz" "$url"
         echo "$sha  $RUNNER_TEMP/ngtcp2.tar.xz" | sha256sum -c -
         mkdir -p "$RUNNER_TEMP/ngtcp2"
         tar -xf "$RUNNER_TEMP/ngtcp2.tar.xz" -C "$RUNNER_TEMP/ngtcp2" --strip-components=1

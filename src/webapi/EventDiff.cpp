@@ -28,6 +28,7 @@
 #include "EventDiff.h"
 
 #include "EventBus.h"
+#include "SnapshotJson.h"
 #include "SearchJson.h"      // WriteSearchResultFields, shared with GET /search/{id}/results
 #include "ServerFlagNames.h" // Shared server capability-bit tables, decoded to JSON
 
@@ -39,6 +40,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
+#include <locale>
 #include <sstream>
 #include <thread>
 #include <type_traits>
@@ -49,50 +51,14 @@ namespace webapi
 namespace
 {
 
-// Minimal JSON string escaper. CJsonWriter (libwebcommon) is the canonical formatter for response
-// bodies, but the event payloads here are a few KB at most, and keeping the diff path off
-// CJsonWriter keeps wxString out of the bus path. (`search_result_added` is the exception: it is
-// documented as carrying exactly a results-list entry, so it goes through the shared writer in
-// SearchJson.h.) Escapes only what JSON disallows: backslash, double-quote and the C0 controls.
-// Tab/CR/LF are spelled out because amule log lines contain them.
+// All event strings follow CJsonWriter's REST escaping, including DEL and supplementary
+// Unicode characters. The hand-built payloads add their own surrounding quotes.
 std::string EscJson(const std::string &s)
 {
-	std::string out;
-	out.reserve(s.size() + 8);
-	for (unsigned char c : s) {
-		switch (c) {
-		case '\\':
-			out += "\\\\";
-			break;
-		case '"':
-			out += "\\\"";
-			break;
-		case '\b':
-			out += "\\b";
-			break;
-		case '\f':
-			out += "\\f";
-			break;
-		case '\n':
-			out += "\\n";
-			break;
-		case '\r':
-			out += "\\r";
-			break;
-		case '\t':
-			out += "\\t";
-			break;
-		default:
-			if (c < 0x20) {
-				char buf[8];
-				std::snprintf(buf, sizeof(buf), "\\u%04x", c);
-				out += buf;
-			} else {
-				out += static_cast<char>(c);
-			}
-		}
-	}
-	return out;
+	CJsonWriter w;
+	w.ValueString(wxString::FromUTF8(s.data(), s.size()));
+	const std::string &quoted = w.GetBuffer();
+	return quoted.substr(1, quoted.size() - 2);
 }
 
 // Each ToJson emits the SAME shape as the matching REST list-item writer in Api.cpp. The contract
@@ -100,20 +66,11 @@ std::string EscJson(const std::string &s)
 // see the moved counters". The Equal functions below compare every field included here, so any
 // movement fires `_updated`.
 
-// `null` when the string was never populated, matching WriteStringOrNull on the REST side. Same
-// (known, value) shape as JsonNumOrNull; the caller decides what "known" means, since some fields
-// key on a sibling.
+// `null` when the string was never populated, matching WriteStringOrNull on the REST side.
+// The caller decides what "known" means, since some fields key on a sibling.
 std::string JsonStrOrNull(bool known, const std::string &v)
 {
 	return known ? "\"" + EscJson(v) + "\"" : std::string("null");
-}
-
-// `null` when the value was never measured, matching WriteIntOrNull / WriteBoolOrNull on the REST
-// side. The comparators below must treat null<->value as a change, or the event stops firing on the
-// edge that flips it.
-std::string JsonNumOrNull(bool known, std::uint64_t v)
-{
-	return known ? std::to_string(v) : std::string("null");
 }
 
 // The protocol extensions as the API's token array, from the table the daemon and the desktop GUI
@@ -148,6 +105,7 @@ std::string JsonBoolOrNull(bool known, bool v)
 std::string ToJsonDownloadEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
@@ -185,6 +143,7 @@ std::string ToJsonDownloadEvent(const FileSnapshot &f)
 std::string ToJsonCommentsEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"kad_comment_lookup_running\":" << (f.download.kad_comment_searching ? "true" : "false")
 	  << ",\"total\":" << f.download.source_comments.size() << ",\"comments\":[";
@@ -206,6 +165,7 @@ std::string ToJsonCommentsEvent(const FileSnapshot &f)
 std::string ToJsonSharedEvent(const FileSnapshot &f)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"hash\":\"" << EscJson(f.hash) << "\""
 	  << ",\"name\":\"" << EscJson(f.name) << "\""
@@ -264,6 +224,7 @@ std::string ToJsonSharedEvent(const FileSnapshot &f)
 std::string ToJson(const ServerSnapshot &s)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"ecid\":" << s.ecid << ",\"name\":\"" << EscJson(s.name) << "\""
 	  << ",\"description\":\"" << EscJson(s.description) << "\""
@@ -289,6 +250,7 @@ std::string ToJson(const ServerSnapshot &s)
 std::string ToJson(const FriendSnapshot &f)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"ecid\":" << f.ecid << ",\"name\":\"" << EscJson(f.name) << "\""
 	  << ",\"user_hash\":\"" << EscJson(f.user_hash)
@@ -307,17 +269,17 @@ std::string ToJson(const FriendSnapshot &f)
 std::string ToJson(const ClientSnapshot &c)
 {
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{"
 	  << "\"ecid\":" << c.ecid << ",\"name\":" << JsonStrOrNull(!c.client_name.empty(), c.client_name)
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash)
 	  << "\""
-	  // Same guard as country_code below and as WriteKnownClientObject's
-	  // has_addr, which nulls ip/port/kad_port together.
+	  // An absent address nulls ip/port together, matching WriteClientBaseFields.
 	  << ",\"ip\":" << JsonStrOrNull(!c.ip.empty(), c.ip)
+	  << ",\"port\":" << (c.ip.empty() ? std::string("null") : std::to_string(c.port))
 	  << ",\"country_code\":"
 	  // null, not "", when the lookup has not resolved.
 	  << JsonStrOrNull(!c.country_code.empty(), c.country_code)
-	  << ",\"port\":" << (c.ip.empty() ? std::string("null") : std::to_string(c.port))
 	  << ",\"software\":" << JsonStrOrNull(!c.software.empty(), c.software)
 	  << ",\"software_version\":" << JsonStrOrNull(!c.software_version.empty(), c.software_version)
 	  << ",\"reported_os\":"
@@ -365,59 +327,13 @@ std::string ToJson(const ClientSnapshot &c)
 	return o.str();
 }
 
-// A free-space figure renders as a JSON number, or null when the daemon has none (-1). Kept beside
-// the REST handler's identical rule so the two cannot drift apart.
-std::string JsonFreeSpace(std::int64_t v)
+// Both transports use the same writer, so status_changed is byte-identical to /status for
+// the same dashboard snapshot, including escaping, integer ranges and unknown values.
+std::string ToJsonStatusEvent(const CState::DashboardSnapshot &dashboard)
 {
-	return v < 0 ? std::string("null") : std::to_string(v);
-}
-
-// Mirrors HandleStatus key for key -- EVENTS.md promises this payload is identical to the REST
-// /status envelope, and 22-sse-diff-emission.sh asserts it. Takes a triple because that nesting
-// groups StatusSnapshot AND KadSnapshot AND the dashboard's ec_connected bit, all read in one
-// shared_lock by state.Dashboard() at the call site. Both connected_since_at values are 0 while not
-// connected: gate on state, not on the timestamp.
-std::string ToJsonStatusEvent(const StatusSnapshot &s, const KadSnapshot &k, bool ec_connected)
-{
-	std::ostringstream o;
-	o << "{"
-	  << "\"ec_connected\":" << (ec_connected ? "true" : "false")
-	  << ",\"search_all_supported\":" << (s.search_all_supported ? "true" : "false") << ",\"ed2k\":{"
-	  << "\"state\":\"" << EscJson(s.ed2k_state) << "\""
-	  << ",\"high_id\":" << (s.ed2k_high_id ? "true" : "false") << ",\"user_id\":"
-	  << s.ed2k_user_id
-	  // null, not "", for the addresses; server_port nulls with its address.
-	  << ",\"public_ip\":"
-	  << (s.ed2k_public_ip.empty() ? std::string("null") : "\"" + EscJson(s.ed2k_public_ip) + "\"")
-	  << ",\"connected_since_at\":" << s.ed2k_connected_since
-	  << ",\"server_name\":" << JsonStrOrNull(!s.server_ip.empty(), s.server_name) << ",\"server_ip\":"
-	  << (s.server_ip.empty() ? std::string("null") : "\"" + EscJson(s.server_ip) + "\"")
-	  << ",\"server_port\":"
-	  << (s.server_ip.empty() ? std::string("null") : std::to_string(s.server_port)) << ",\"network\":{"
-	  << "\"user_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_users)
-	  << ",\"file_count\":" << JsonNumOrNull(s.has_ed2k_network, s.ed2k_files) << "}}"
-	  << ",\"kad\":{"
-	  << "\"state\":\"" << EscJson(s.kad_state) << "\""
-	  << ",\"firewalled_tcp\":" << JsonBoolOrNull(s.has_kad_firewalled_tcp, s.kad_firewalled_tcp)
-	  << ",\"connected_since_at\":" << s.kad_connected_since << ",\"network\":{"
-	  << "\"user_count\":" << JsonNumOrNull(k.has_network, k.users)
-	  << ",\"file_count\":" << JsonNumOrNull(k.has_network, k.files)
-	  << ",\"node_count\":" << JsonNumOrNull(k.has_network, k.nodes) << "}"
-	  << "}"
-	  << ",\"speeds\":{"
-	  << "\"download_speed_bytes_per_second\":" << s.download_bytes_per_second
-	  << ",\"upload_speed_bytes_per_second\":" << s.upload_bytes_per_second
-	  << ",\"download_overhead_bytes_per_second\":" << s.download_overhead_bytes_per_second
-	  << ",\"upload_overhead_bytes_per_second\":" << s.upload_overhead_bytes_per_second << "}"
-	  << ",\"disk\":{"
-	  // null, not the -1 sentinel and not 0 -- same reasoning as the REST body.
-	  << "\"temp_free_bytes\":" << JsonFreeSpace(s.temp_free_bytes)
-	  << ",\"incoming_free_bytes\":" << JsonFreeSpace(s.incoming_free_bytes) << "}"
-	  << ",\"queue\":{"
-	  << "\"waiting_upload_client_count\":" << s.ul_queue_len
-	  << ",\"download_source_count\":" << s.total_src_count << "}"
-	  << "}";
-	return o.str();
+	CJsonWriter w;
+	WriteStatusObject(w, dashboard);
+	return w.TakeBuffer();
 }
 
 // Equal compares every field the matching ToJson emits, and any movement fires `_updated` with the
@@ -549,35 +465,6 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       // holds.
 	       a.part_progress_percent == b.part_progress_percent;
 }
-bool Equal(const StatusSnapshot &a, const StatusSnapshot &b)
-{
-	// public_ip is derived from ed2k_user_id, so comparing the id covers it.
-	return a.search_all_supported == b.search_all_supported && a.ed2k_state == b.ed2k_state &&
-	       a.kad_state == b.kad_state && a.ed2k_high_id == b.ed2k_high_id &&
-	       a.ed2k_user_id == b.ed2k_user_id && a.ed2k_connected_since == b.ed2k_connected_since &&
-	       a.kad_connected_since == b.kad_connected_since &&
-	       a.kad_firewalled_tcp == b.kad_firewalled_tcp && a.server_name == b.server_name &&
-	       a.server_ip == b.server_ip && a.server_port == b.server_port &&
-	       a.download_bytes_per_second == b.download_bytes_per_second &&
-	       a.upload_bytes_per_second == b.upload_bytes_per_second &&
-	       a.download_overhead_bytes_per_second == b.download_overhead_bytes_per_second &&
-	       a.upload_overhead_bytes_per_second == b.upload_overhead_bytes_per_second &&
-	       a.temp_free_bytes == b.temp_free_bytes && a.incoming_free_bytes == b.incoming_free_bytes &&
-	       a.ul_queue_len == b.ul_queue_len && a.total_src_count == b.total_src_count &&
-	       // The has_ flags are compared, not just the values: a disconnect flips these to null
-	       // while the underlying ints keep their last reading, so comparing the ints alone would
-	       // miss the edge.
-	       a.has_ed2k_network == b.has_ed2k_network && a.ed2k_users == b.ed2k_users &&
-	       a.ed2k_files == b.ed2k_files && a.has_kad_firewalled_tcp == b.has_kad_firewalled_tcp;
-}
-bool Equal(const KadSnapshot &a, const KadSnapshot &b)
-{
-	// The SEPARATE gate for the kad half of status_changed -- the status comparator above does
-	// not cover these. has_network is compared first because it is what changes on a
-	// connect/disconnect edge.
-	return a.has_network == b.has_network && a.users == b.users && a.files == b.files &&
-	       a.nodes == b.nodes;
-}
 
 // Generic map-diff helper. Walks both old and new, emitting:
 //  - `<base>_removed` for keys in old missing from new (identity-only)
@@ -632,6 +519,7 @@ template <class Snapshot> std::string RemovedEcidPayload(const Snapshot &item)
 	static_assert(!std::is_same<Snapshot, FileSnapshot>::value,
 		"file collections are hash-keyed -- use RemovedHashPayload");
 	std::ostringstream o;
+	o.imbue(std::locale::classic());
 	o << "{\"ecid\":" << item.ecid << "}";
 	return o.str();
 }
@@ -704,8 +592,9 @@ std::string ChatMessageJson(const ChatMessageSnapshot &msg)
 			std::to_string(msg.captcha_status);
 	}
 	return "{\"id\":" + std::to_string(msg.id) + ",\"direction\":\"" + (msg.outgoing ? "out" : "in") +
-	       "\",\"text\":\"" + EscJson(msg.text) + "\",\"sent_at\":" +
-	       (msg.timestamp != 0 ? std::to_string(msg.timestamp) : std::string("null")) + extra + "}";
+	       "\",\"text\":\"" + EscJson(msg.text) + "\"" + extra +
+	       ",\"sent_at\":" + (msg.timestamp != 0 ? std::to_string(msg.timestamp) : std::string("null")) +
+	       "}";
 }
 
 void PublishChatEvents(CEventBus &bus,
@@ -784,9 +673,6 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 	// the State lock once for all three, so kad.network cannot be from tick N+1 while ed2k.* is
 	// from tick N.
 	auto new_dashboard = state.Dashboard();
-	const StatusSnapshot &new_status = new_dashboard.status;
-	const KadSnapshot &new_kad = new_dashboard.kad;
-	const bool new_ec = new_dashboard.ec_connected;
 
 	// Files: role-flag-aware diff, run against the live map rather than a copy. download_*
 	// fires on is_downloading transitions, shared_* on is_shared, and a single tick can fire
@@ -935,25 +821,16 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		return RemovedEcidPayload(f);
 	});
 
-	// /status: one event when anything in the dashboard envelope changes (StatusSnapshot fields
-	// OR Kad network rollup OR ec_connected). Cold start is its own branch, gated on
-	// `status_initialised`, so the comparison below never runs against an empty prev and
-	// mistakes every field for a change.
-	if (!prev.status_initialised) {
-		bus.Publish("status_changed", ToJsonStatusEvent(new_status, new_kad, new_ec));
-		prev.status_initialised = true;
-	} else if (!Equal(prev.status, new_status) || !Equal(prev.kad, new_kad) ||
-		   prev.ec_connected != new_ec) {
-		bus.Publish("status_changed", ToJsonStatusEvent(new_status, new_kad, new_ec));
+	std::string status_payload = ToJsonStatusEvent(new_dashboard);
+	if (status_payload != prev.status_payload) {
+		bus.Publish("status_changed", status_payload);
+		prev.status_payload = std::move(status_payload);
 	}
 
 	// Snapshot the new state for next tick's diff baseline.
 	prev.servers = std::move(new_servers);
 	prev.clients = std::move(new_clients);
 	prev.friends = std::move(new_friends);
-	prev.status = new_status;
-	prev.kad = new_kad;
-	prev.ec_connected = new_ec;
 
 	// The stable-but-mutable field set for `search_result_updated`. A hit's identity fields
 	// never change for a given ECID, and its source counts churn every tick while the search
@@ -1012,6 +889,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 				if (search_now.find(kv.first) != search_now.end())
 					continue;
 				std::ostringstream removed;
+				removed.imbue(std::locale::classic());
 				removed << "{\"search_id\":" << sid << ",\"hash\":\""
 					<< EscJson(kv.second.hash) << "\"}";
 				bus.Publish("search_result_removed", removed.str());
@@ -1050,6 +928,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 			if (generation_bumped || finished_edge || percent_moved ||
 				progress_now.kad_active != pstate.kad_active) {
 				std::ostringstream payload;
+				payload.imbue(std::locale::classic());
 				payload << "{\"search_id\":" << sid << ",\"state\":\""
 					<< (progress_now.complete ? "finished" : "running") << "\""
 					<< ",\"percent\":"
@@ -1081,6 +960,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		for (auto it = prev.searches.begin(); it != prev.searches.end();) {
 			if (std::find(ids.begin(), ids.end(), it->first) == ids.end()) {
 				std::ostringstream payload;
+				payload.imbue(std::locale::classic());
 				payload << "{\"search_id\":" << it->first << "}";
 				bus.Publish("search_closed", payload.str());
 				it = prev.searches.erase(it);
@@ -1124,6 +1004,7 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		prev.amule_log_count = log_size;
 	} else if (!tail.empty()) {
 		std::ostringstream payload;
+		payload.imbue(std::locale::classic());
 		payload << "{\"lines\":[";
 		bool first = true;
 		for (const std::string &line : tail) {

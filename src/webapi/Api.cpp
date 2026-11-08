@@ -54,6 +54,7 @@
 #include <map>
 
 #include "PrefsSchema.h"
+#include "SnapshotJson.h"
 #include "SearchJson.h" // WriteSearchResultFields, shared with the SSE payload
 #include "State.h"
 
@@ -121,55 +122,7 @@ void SplitPathAndQuery(const std::string &target, std::string &path, std::string
 	}
 }
 
-// Emit `key` as a number, or null when the value is not known. The rule lives in
-// REFERENCE.md under `Unknown values`; this is the one implementation, so a new
-// nullable field cannot quietly pick -1 or 0 instead.
-void WriteIntOrNull(CJsonWriter &w, const char *key, bool known, std::int64_t value)
-{
-	w.Key(key);
-	if (known)
-		w.ValueInt(value);
-	else
-		w.ValueNull();
-}
-
-void WriteUIntOrNull(CJsonWriter &w, const char *key, bool known, std::uint64_t value)
-{
-	w.Key(key);
-	if (known)
-		w.ValueUInt(value);
-	else
-		w.ValueNull();
-}
-
-void WriteDoubleOrNull(CJsonWriter &w, const char *key, bool known, double value)
-{
-	w.Key(key);
-	if (known)
-		w.ValueDouble(value);
-	else
-		w.ValueNull();
-}
-
-// Callers pass the predicate rather than letting this guess: `false` and "not
-// measured" are different answers for a firewall verdict.
-void WriteBoolOrNull(CJsonWriter &w, const char *key, bool known, bool value)
-{
-	w.Key(key);
-	if (known)
-		w.ValueBool(value);
-	else
-		w.ValueNull();
-}
-
-void WriteStringOrNull(CJsonWriter &w, const char *key, bool known, const std::string &value)
-{
-	w.Key(key);
-	if (known)
-		w.ValueString(wxString::FromUTF8(value.c_str()));
-	else
-		w.ValueNull();
-}
+using webapi::WriteKadNetworkObject;
 
 void FinalizeJsonBody(CJsonWriter &w, CHttpServer::Response &r)
 {
@@ -682,22 +635,6 @@ void ApplyCorsHeaders(
 	// What a client may read from `fetch().headers.get(...)`: the Fetch spec exposes
 	// only the CORS-safelisted response headers, and clients need ETag to validate.
 	headers["Access-Control-Expose-Headers"] = "ETag, Allow, Retry-After";
-}
-
-// The Kad `network` rollup, byte-identical under `kad` on GET /status and on
-// GET /kad: both read the same KadSnapshot from one Dashboard() acquisition.
-void WriteKadNetworkObject(CJsonWriter &w, const webapi::KadSnapshot &k)
-{
-	w.Key("network");
-	w.BeginObject();
-	// null unless Kad is connected. user_count/file_count are the last estimate and
-	// survive into `connecting`; node_count is our own routing-table size, measured at
-	// 2 with Kad fully stopped, so not even the terminal state reaches 0. A number
-	// here would claim knowledge of a network we are not on.
-	WriteIntOrNull(w, "user_count", k.has_network, static_cast<int64_t>(k.users));
-	WriteIntOrNull(w, "file_count", k.has_network, static_cast<int64_t>(k.files));
-	WriteIntOrNull(w, "node_count", k.has_network, static_cast<int64_t>(k.nodes));
-	w.EndObject();
 }
 
 // The {id} segment of every search-scoped route: a non-zero decimal fitting a
@@ -2444,116 +2381,13 @@ CHttpServer::Response CApiDispatcher::HandleStatus(const CHttpServer::Request &r
 	// land between sub-snapshots and produce an inconsistent rollup (kad.network from
 	// tick N+1 beside ed2k.* from tick N).
 	const webapi::CState::DashboardSnapshot d = m_state.Dashboard();
-	const webapi::StatusSnapshot &s = d.status;
-	const webapi::KadSnapshot &k = d.kad;
-	const std::time_t ts = d.snapshot_at;
-	const bool ec = d.ec_connected;
 
 	CHttpServer::Response r;
 	r.status = 200;
 	r.content_type = "application/json";
 
 	CJsonWriter w;
-	w.BeginObject();
-	// No snapshot timestamp in the envelope: a value that moves every tick changes the
-	// body bytes and defeats the ETag, so list endpoints would never see a cache hit.
-	// `ec_connected` is the staleness signal, and the HTTP Date header carries
-	// wall-clock for anyone who needs it.
-	w.Key("ec_connected");
-	w.ValueBool(ec);
-	w.Key("search_all_supported");
-	w.ValueBool(s.search_all_supported);
-	(void)ts;
-
-	w.Key("ed2k");
-	w.BeginObject();
-	w.Key("state");
-	w.ValueString(wxString::FromUTF8(s.ed2k_state.c_str()));
-	// Positive sense, matching the peer-side high_id on /clients/{ecid}. False for
-	// a LowID and while disconnected alike, so read it with `state`.
-	w.Key("high_id");
-	w.ValueBool(s.ed2k_high_id);
-	// Our server-assigned id; a HighID (>= 16777216) is our public address packed
-	// LSB-first, which is where public_ip comes from. NOT the same encoding as the
-	// peer-side ed2k_user_id on /clients/{ecid}, which byte-swaps a HighID, so the two
-	// must not be fed through each other's decoder.
-	w.Key("user_id");
-	w.ValueInt(static_cast<int64_t>(s.ed2k_user_id));
-	WriteStringOrNull(w, "public_ip", !s.ed2k_public_ip.empty(), s.ed2k_public_ip);
-	// 0 when not connected -- gate on ed2k.state, not on this being nonzero.
-	w.Key("connected_since_at");
-	w.ValueInt(static_cast<int64_t>(s.ed2k_connected_since));
-	// Null when not connected: ed2k.state already says whether there is a server, so
-	// "" only ever meant "not connected", and a port on its own describes nothing.
-	const bool has_server = !s.server_ip.empty();
-	WriteStringOrNull(w, "server_name", has_server, s.server_name);
-	WriteStringOrNull(w, "server_ip", has_server, s.server_ip);
-	WriteIntOrNull(w, "server_port", has_server, static_cast<int64_t>(s.server_port));
-	// Aggregate user and file counts across all connected ed2k servers, from the
-	// same EC_OP_STAT_REQ response the kad counters ride on.
-	w.Key("network");
-	w.BeginObject();
-	// null unless eD2k is connected: these sum the whole known server list, not
-	// the server we are attached to, and nothing zeroes them on disconnect.
-	WriteIntOrNull(w, "user_count", s.has_ed2k_network, static_cast<int64_t>(s.ed2k_users));
-	WriteIntOrNull(w, "file_count", s.has_ed2k_network, static_cast<int64_t>(s.ed2k_files));
-	w.EndObject();
-	w.EndObject();
-
-	w.Key("kad");
-	w.BeginObject();
-	w.Key("state");
-	w.ValueString(wxString::FromUTF8(s.kad_state.c_str()));
-	// Named for the transport because GET /kad reports it beside firewalled_udp,
-	// a separate measurement rather than a refinement of this one.
-	WriteBoolOrNull(w, "firewalled_tcp", s.has_kad_firewalled_tcp, s.kad_firewalled_tcp);
-	// 0 when not connected -- gate on kad.state, not on this being nonzero.
-	w.Key("connected_since_at");
-	w.ValueInt(static_cast<int64_t>(s.kad_connected_since));
-	// The same numbers GET /kad serves under `network`, through the same helper so the
-	// two cannot drift. `k` was snapshotted in the same lock batch as `s`, so these
-	// counters describe the same refresher tick as ed2k.* above.
-	WriteKadNetworkObject(w, k);
-	w.EndObject();
-
-	w.Key("speeds");
-	w.BeginObject();
-	// `download_speed_bytes_per_second`, not `download_bytes_per_second`: the `speeds`
-	// wrapper does not rename the quantity, and the short form reads close enough to
-	// the cumulative `downloaded_bytes_total` to be misread as one.
-	w.Key("download_speed_bytes_per_second");
-	w.ValueInt(static_cast<int64_t>(s.download_bytes_per_second));
-	w.Key("upload_speed_bytes_per_second");
-	w.ValueInt(static_cast<int64_t>(s.upload_bytes_per_second));
-	// Additive to the two above, not a subset: amuled counts protocol
-	// overhead separately from payload.
-	w.Key("download_overhead_bytes_per_second");
-	w.ValueInt(static_cast<int64_t>(s.download_overhead_bytes_per_second));
-	w.Key("upload_overhead_bytes_per_second");
-	w.ValueInt(static_cast<int64_t>(s.upload_overhead_bytes_per_second));
-	w.EndObject();
-
-	// null rather than a number when the daemon has no figure: the -1 sentinel as
-	// an unsigned value would read as 17 exabytes free, and 0 as a full disk.
-	w.Key("disk");
-	w.BeginObject();
-	WriteIntOrNull(
-		w, "temp_free_bytes", s.temp_free_bytes >= 0, static_cast<std::int64_t>(s.temp_free_bytes));
-	WriteIntOrNull(w,
-		"incoming_free_bytes",
-		s.incoming_free_bytes >= 0,
-		static_cast<std::int64_t>(s.incoming_free_bytes));
-	w.EndObject();
-
-	w.Key("queue");
-	w.BeginObject();
-	w.Key("waiting_upload_client_count");
-	w.ValueInt(static_cast<int64_t>(s.ul_queue_len));
-	w.Key("download_source_count");
-	w.ValueInt(static_cast<int64_t>(s.total_src_count));
-	w.EndObject();
-	// Nickname is a /preferences field, not a /status one.
-	w.EndObject();
+	webapi::WriteStatusObject(w, d);
 
 	FinalizeJsonBody(w, r);
 	return r;
@@ -7342,10 +7176,10 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	WriteBoolOrNull(w, "firewalled_tcp", k.has_firewalled_tcp, k.firewalled_tcp);
 	WriteBoolOrNull(w, "firewalled_udp", k.has_firewalled_udp, k.firewalled_udp);
 	WriteBoolOrNull(w, "lan_mode", k.has_lan_mode, k.lan_mode);
-	// Same value GET /status reports as kad.connected_since; 0 when
+	// Same value GET /status reports as kad.connected_since_at; 0 when
 	// not connected, so gate on `state` rather than on a nonzero.
 	w.Key("connected_since_at");
-	w.ValueInt(static_cast<int64_t>(d.status.kad_connected_since));
+	w.ValueUInt(d.status.kad_connected_since);
 	// Ours, as opposed to `buddy.ip` below -- which is why it is not plain `ip`.
 	WriteStringOrNull(w, "public_ip", !k.public_ip.empty(), k.public_ip);
 	WriteKadNetworkObject(w, k);

@@ -263,3 +263,51 @@ void CJsonWriter::WriteEscapedString(const wxString &s)
 	}
 	*m_buf += "\"";
 }
+
+// Emit `key` as a number, or null when the value is not known.
+void WriteIntOrNull(CJsonWriter &w, const char *key, bool known, std::int64_t value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueInt(value);
+	else
+		w.ValueNull();
+}
+
+void WriteUIntOrNull(CJsonWriter &w, const char *key, bool known, std::uint64_t value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueUInt(value);
+	else
+		w.ValueNull();
+}
+
+void WriteDoubleOrNull(CJsonWriter &w, const char *key, bool known, double value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueDouble(value);
+	else
+		w.ValueNull();
+}
+
+// Callers pass the predicate rather than letting this guess: `false` and "not
+// measured" are different answers for a firewall verdict.
+void WriteBoolOrNull(CJsonWriter &w, const char *key, bool known, bool value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueBool(value);
+	else
+		w.ValueNull();
+}
+
+void WriteStringOrNull(CJsonWriter &w, const char *key, bool known, const std::string &value)
+{
+	w.Key(key);
+	if (known)
+		w.ValueString(wxString::FromUTF8(value.c_str()));
+	else
+		w.ValueNull();
+}

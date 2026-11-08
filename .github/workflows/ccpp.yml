@@ -735,7 +735,9 @@ jobs:
         run: |
           set -euo pipefail
           . packaging/linux/versions.env
-          curl -L -o /tmp/libupnp.tar.gz "$LIBUPNP_TARBALL_URL"
+          curl -fsSL --retry 4 --retry-all-errors --retry-delay 2 \
+            --connect-timeout 15 --max-time 120 --retry-max-time 180 \
+            -o /tmp/libupnp.tar.gz "$LIBUPNP_TARBALL_URL"
           echo "$LIBUPNP_SHA256  /tmp/libupnp.tar.gz" | sha256sum -c -
           mkdir -p /tmp/libupnp
           tar -xf /tmp/libupnp.tar.gz -C /tmp/libupnp --strip-components=1

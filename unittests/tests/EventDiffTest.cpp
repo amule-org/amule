@@ -28,10 +28,16 @@
 #include "EventDiff.h"
 #include "ServerFlagNames.h"
 #include "State.h"
+#include "SnapshotJson.h"
 
+#include <JsonWriter.h>
+
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <map>
+#include <functional>
+#include <locale>
 #include <string>
 #include <vector>
 
@@ -233,6 +239,248 @@ std::string EmitStatusAndGetPayload(const StatusSnapshot &next)
 }
 } // namespace
 
+// Each visible field must trigger an update by itself. The same snapshot must give the
+// HTTP writer and the event path identical bytes; another unchanged tick must stay silent.
+TEST(EventDiff, StatusFieldsTriggerExactlyOneMatchingEvent)
+{
+	using Change = std::function<void(StatusSnapshot &, KadSnapshot &)>;
+	const std::vector<Change> changes = {
+		[](StatusSnapshot &s, KadSnapshot &) { s.search_all_supported = true; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_state = "connecting"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_high_id = true; },
+		[](StatusSnapshot &s, KadSnapshot &) {
+			s.ed2k_user_id = 0x04030201;
+			s.ed2k_public_ip = "1.2.3.4"; // Refresher derives the address from this id.
+		},
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_connected_since = 1700000001; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_name = "changed"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_ip = "5.6.7.9"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_port = 4662; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.has_ed2k_network = false; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_users = 1; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_files = 2; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.kad_state = "connecting"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.has_kad_firewalled_tcp = false; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.kad_firewalled_tcp = true; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.kad_connected_since = 1700000002; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.has_network = false; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.users = 3; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.files = 4; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.nodes = 5; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.download_bytes_per_second = 1234; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.upload_bytes_per_second = 5678; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.download_overhead_bytes_per_second = 123; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.upload_overhead_bytes_per_second = 456; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.temp_free_bytes = 0; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.incoming_free_bytes = 9876543210LL; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ul_queue_len = 42; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.total_src_count = 43; },
+	};
+	for (const auto &change : changes) {
+		CState state;
+		StatusSnapshot s;
+		s.server_ip = "5.6.7.8";
+		s.server_port = 4661;
+		s.has_ed2k_network = true;
+		s.has_kad_firewalled_tcp = true;
+		KadSnapshot k;
+		k.has_network = true;
+		state.WriteStatus(s);
+		state.WriteKad(k);
+		CEventBus bus;
+		LastSeenState prev;
+		EmitDiffsAndUpdate(bus, prev, state);
+		const auto cursor = bus.NewestId();
+		change(s, k);
+		state.WriteStatus(s);
+		state.WriteKad(k);
+		EmitDiffsAndUpdate(bus, prev, state);
+		CJsonWriter expected;
+		WriteStatusObject(expected, state.Dashboard());
+		int count = 0;
+		for (const auto &event : DrainSince(bus, cursor)) {
+			if (event.name == "status_changed") {
+				++count;
+				ASSERT_EQUALS(expected.GetBuffer(), event.data);
+			}
+		}
+		ASSERT_EQUALS(1, count);
+		const auto unchanged = bus.NewestId();
+		EmitDiffsAndUpdate(bus, prev, state);
+		ASSERT_TRUE(DrainSince(bus, unchanged).empty());
+	}
+}
+
+// Hidden measurements may keep changing after disconnect. Only a change to the published
+// representation should notify subscribers; making those values visible must still notify once.
+TEST(EventDiff, HiddenStatusChangesStaySilentUntilVisible)
+{
+	using Change = std::function<void(StatusSnapshot &, KadSnapshot &)>;
+	const std::vector<Change> changes = {
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_users = 11; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.ed2k_files = 12; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_name = "hidden"; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.server_port = 4661; },
+		[](StatusSnapshot &s, KadSnapshot &) { s.kad_firewalled_tcp = true; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.users = 21; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.files = 22; },
+		[](StatusSnapshot &, KadSnapshot &k) { k.nodes = 23; },
+	};
+	for (const auto &change : changes) {
+		CState state;
+		StatusSnapshot s;
+		KadSnapshot k;
+		CEventBus bus;
+		LastSeenState prev;
+		EmitDiffsAndUpdate(bus, prev, state);
+		const auto cursor = bus.NewestId();
+		CJsonWriter baseline;
+		WriteStatusObject(baseline, state.Dashboard());
+
+		change(s, k);
+		state.WriteStatus(s);
+		state.WriteKad(k);
+		CJsonWriter hidden;
+		WriteStatusObject(hidden, state.Dashboard());
+		ASSERT_EQUALS(baseline.GetBuffer(), hidden.GetBuffer());
+		EmitDiffsAndUpdate(bus, prev, state);
+		EmitDiffsAndUpdate(bus, prev, state);
+		ASSERT_TRUE(DrainSince(bus, cursor).empty());
+
+		s.has_ed2k_network = true;
+		s.server_ip = "5.6.7.8";
+		s.has_kad_firewalled_tcp = true;
+		k.has_network = true;
+		state.WriteStatus(s);
+		state.WriteKad(k);
+		CJsonWriter visible;
+		WriteStatusObject(visible, state.Dashboard());
+		EmitDiffsAndUpdate(bus, prev, state);
+		const auto events = DrainSince(bus, cursor);
+		ASSERT_EQUALS(static_cast<std::size_t>(1), events.size());
+		ASSERT_EQUALS(std::string("status_changed"), events.front().name);
+		ASSERT_EQUALS(visible.GetBuffer(), events.front().data);
+		const auto visible_cursor = bus.NewestId();
+		EmitDiffsAndUpdate(bus, prev, state);
+		ASSERT_TRUE(DrainSince(bus, visible_cursor).empty());
+	}
+}
+
+TEST(EventDiff, StatusColdStartAndEcReconnectKeepDashboardContract)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	for (int tick = 0; tick < 3; ++tick) {
+		if (tick == 1)
+			state.MarkTickSuccess();
+		if (tick == 2)
+			state.MarkTickFailure();
+		const auto cursor = bus.NewestId();
+		EmitDiffsAndUpdate(bus, prev, state);
+		const auto d = state.Dashboard();
+		CJsonWriter expected;
+		WriteStatusObject(expected, d);
+		int count = 0;
+		for (const auto &event : DrainSince(bus, cursor)) {
+			if (event.name == "status_changed") {
+				++count;
+				ASSERT_EQUALS(expected.GetBuffer(), event.data);
+			}
+		}
+		ASSERT_EQUALS(1, count);
+	}
+}
+
+namespace
+{
+class GroupedNumbers : public std::numpunct<char>
+{
+	char do_thousands_sep() const override { return ','; }
+	std::string do_grouping() const override { return "\3"; }
+};
+
+class ScopedGroupedLocale
+{
+public:
+	ScopedGroupedLocale()
+	: m_previous(std::locale())
+	{
+		std::locale::global(std::locale(m_previous, new GroupedNumbers));
+	}
+	~ScopedGroupedLocale() { std::locale::global(m_previous); }
+
+private:
+	std::locale m_previous;
+};
+} // namespace
+
+// The old stream-based event writer inherited numeric grouping from the global locale and
+// could output an invalid JSON integer such as 1,234 while the HTTP body still said 1234.
+TEST(EventDiff, StatusIntegerFormattingIgnoresGlobalLocale)
+{
+	ScopedGroupedLocale locale;
+	StatusSnapshot s;
+	s.download_bytes_per_second = 1234567;
+	s.server_name = "\"服务器\"\n\\\t";
+	s.server_ip = "5.6.7.8";
+	const std::string payload = EmitStatusAndGetPayload(s);
+	ASSERT_TRUE(payload.find("\"download_speed_bytes_per_second\":1234567") != std::string::npos);
+	ASSERT_TRUE(payload.find("\"server_name\":\"\\\"服务器\\\"\\n\\\\\\t\"") != std::string::npos);
+}
+
+TEST(EventDiff, CollectionIntegerFormattingIgnoresGlobalLocale)
+{
+	ScopedGroupedLocale locale;
+	CState state;
+	ClientSnapshot client;
+	client.ecid = 1234567;
+	state.MutateClients(
+		[&](std::map<std::uint32_t, ClientSnapshot> &clients) { clients[client.ecid] = client; });
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	std::string payload;
+	for (const auto &event : DrainAll(bus)) {
+		if (event.name == "client_added")
+			payload = event.data;
+	}
+	ASSERT_TRUE(payload.find("\"ecid\":1234567,") != std::string::npos);
+	const auto cursor = bus.NewestId();
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) { clients.clear(); });
+	EmitDiffsAndUpdate(bus, prev, state);
+	const auto events = DrainSince(bus, cursor);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), events.size());
+	ASSERT_EQUALS(std::string("client_removed"), events.front().name);
+	ASSERT_EQUALS(std::string("{\"ecid\":1234567}"), events.front().data);
+}
+
+TEST(EventDiff, CollectionStringsUseRestEscapes)
+{
+	CState state;
+	ClientSnapshot client;
+	client.ecid = 1;
+	client.client_name = "服务器 😀\x7f\"\\\n\b\f\r\t\x01";
+	state.MutateClients(
+		[&](std::map<std::uint32_t, ClientSnapshot> &clients) { clients[client.ecid] = client; });
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	std::string payload;
+	for (const auto &event : DrainAll(bus)) {
+		if (event.name == "client_added")
+			payload = event.data;
+	}
+	CJsonWriter rest;
+	rest.BeginObject();
+	rest.Key("name");
+	rest.ValueString(wxString::FromUTF8(client.client_name.c_str()));
+	rest.EndObject();
+	const std::string field = rest.GetBuffer().substr(1, rest.GetBuffer().size() - 2);
+	ASSERT_TRUE(payload.find(field) != std::string::npos);
+	ASSERT_TRUE(payload.find("\\ud83d\\ude00\\u007f") != std::string::npos);
+}
+
 // The free-space sentinel must reach the SSE payload as JSON null, never as a number. amuled's
 // FREE_SPACE_UNKNOWN is -1 and its EC serializer casts it to uint64, so the wire carries
 // 0xFFFFFFFFFFFFFFFF; emitting that unsigned would tell a consumer 17 exabytes are free, and 0
@@ -275,11 +523,7 @@ TEST(EventDiff, StatusEventCarriesIdentityFields)
 	ASSERT_TRUE(payload.find("\"id\":") == std::string::npos);
 }
 
-// The Kad firewall verdict is the field on this payload a subscriber is most likely watching for,
-// and Equal(StatusSnapshot) is what decides whether the event is published at all. Drop it from
-// that comparator and a firewall flip stops reaching subscribers entirely -- silently, since the
-// REST body keeps reporting the new value. Pinned so a future edit to the comparator cannot quietly
-// lose it.
+// A measured Kad firewall verdict must reach subscribers when it changes.
 TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
 {
 	StatusSnapshot s;
@@ -297,10 +541,8 @@ TEST(EventDiff, StatusEventFiresWhenOnlyKadFirewalledTcpMoved)
 	ASSERT_TRUE(payload.find("\"firewalled\":") == std::string::npos);
 }
 
-// The disconnect edge is the one this whole gate exists for, and the one a value-only comparator
-// misses: the bool underneath keeps its last reading, so only the has_ flag moves. If
-// Equal(StatusSnapshot) ignores that flag the event never fires and a subscriber keeps rendering a
-// firewall verdict for a network the daemon has left.
+// On disconnect, the bool keeps its last reading but becomes unknown in the payload.
+// Subscribers must receive that transition to null.
 TEST(EventDiff, StatusEventFiresWhenTheKadFirewallVerdictBecomesUnknown)
 {
 	CState state;
@@ -333,9 +575,8 @@ TEST(EventDiff, StatusEventFiresWhenTheKadFirewallVerdictBecomesUnknown)
 	ASSERT_TRUE(payload.find("\"firewalled_tcp\":null") != std::string::npos);
 }
 
-// The same edge, the kad half. status_changed fires on !Equal(status) || !Equal(kad), and
-// kad.network.* is gated by the SECOND comparator -- a fix applied only to Equal(StatusSnapshot)
-// leaves this silent.
+// The same edge for the Kad network figures: the counts keep their last reading but become
+// null in the payload. Subscribers must receive that transition.
 TEST(EventDiff, StatusEventFiresWhenTheKadNetworkFiguresBecomeUnknown)
 {
 	CState state;
@@ -2274,4 +2515,159 @@ TEST(EventDiff, SharedCompletenessUpdatesWithoutUploadChanges)
 		}
 	}
 	ASSERT_EQUALS(1, updated);
+}
+
+TEST(EventDiff, ClientAddressFieldsFollowRestOrder)
+{
+	CState state;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 1;
+		c.ip = "1.2.3.4";
+		c.port = 4662;
+		c.country_code = "us";
+		clients.emplace(c.ecid, c);
+	});
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	for (const auto &event : DrainAll(bus)) {
+		if (event.name == "client_added") {
+			ASSERT_TRUE(
+				event.data.find("\"ip\":\"1.2.3.4\",\"port\":4662,\"country_code\":\"us\"") !=
+				std::string::npos);
+			return;
+		}
+	}
+	ASSERT_TRUE(false);
+}
+
+TEST(EventDiff, CaptchaMessageFieldsFollowRestOrder)
+{
+	ChatSessionSnapshot session;
+	session.ip = "1.2.3.4";
+	session.port = 4662;
+	ChatMessageSnapshot msg;
+	msg.id = 1;
+	msg.text = "test";
+	msg.timestamp = 1234567;
+	msg.kind = 1;
+	msg.captcha_image = "Qk0=";
+	session.messages.push_back(msg);
+	msg.id = 2;
+	msg.kind = 2;
+	msg.captcha_status = 1;
+	session.messages.push_back(msg);
+	CEventBus bus;
+	PublishChatEvents(bus, { session }, {});
+	const auto events = DrainAll(bus);
+	ASSERT_EQUALS(static_cast<std::size_t>(2), events.size());
+	ASSERT_TRUE(
+		events[0].data.find(
+			"\"message\":{\"id\":1,\"direction\":\"in\",\"text\":\"test\",\"type\":\"captcha_"
+			"challenge\",\"captcha_image\":\"Qk0=\",\"sent_at\":1234567}") != std::string::npos);
+	ASSERT_TRUE(events[1].data.find(
+			    "\"message\":{\"id\":2,\"direction\":\"in\",\"text\":\"test\",\"type\":\"captcha_"
+			    "result\",\"captcha_status\":1,\"sent_at\":1234567}") != std::string::npos);
+}
+
+// Exercise every caller of the common event escaper, on creation and later updates.
+// Numeric grouping must not leak into payloads built with streams either.
+TEST(EventDiff, EventFamiliesKeepRestEscapingAndLocaleOnUpdates)
+{
+	ScopedGroupedLocale locale;
+	CState state;
+	const std::uint32_t id = 1234567;
+	state.MarkSearchStarted(id, "browse", "peer");
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+	for (bool update : { false, true }) {
+		const std::string text =
+			std::string("quoted\"\\\t\n\x01\x7f服务器😀") + (update ? " changed" : "");
+		const auto cursor = bus.NewestId();
+		state.MutateDownloads([&](FileMap &files) {
+			FileSnapshot f;
+			f.ecid = id;
+			f.hash = "8b54a3c28b54a3c28b54a3c28b54a3c2";
+			f.name = text;
+			f.size = id;
+			f.is_downloading = f.is_shared = true;
+			f.download.source_comments.push_back({ text, text, 1, text });
+			const auto existing = files.find(id);
+			if (existing != files.end())
+				files.erase(existing);
+			files.emplace(id, f);
+		});
+		state.MutateClients([&](std::map<std::uint32_t, ClientSnapshot> &clients) {
+			ClientSnapshot c;
+			c.ecid = id;
+			c.client_name = text;
+			clients[id] = c;
+		});
+		state.MutateServers([&](std::map<std::uint32_t, ServerSnapshot> &servers) {
+			ServerSnapshot s;
+			s.ecid = id;
+			s.name = text;
+			servers[id] = s;
+		});
+		state.MutateFriends([&](std::map<std::uint32_t, FriendSnapshot> &friends) {
+			FriendSnapshot f;
+			f.ecid = id;
+			f.name = text;
+			friends[id] = f;
+		});
+		state.MutateSearch(id, [&](std::map<std::uint32_t, SearchResult> &results) {
+			SearchResult r;
+			r.ecid = id;
+			r.name = text;
+			r.status = update ? "downloading" : "new";
+			results[id] = r;
+		});
+		state.AppendAmuleLog({ text });
+		EmitDiffsAndUpdate(bus, prev, state);
+		ChatSessionSnapshot session;
+		session.name = text;
+		ChatMessageSnapshot message;
+		message.id = id;
+		message.text = text;
+		session.messages.push_back(message);
+		PublishChatEvents(bus, { session }, {});
+		const auto events = DrainSince(bus, cursor);
+		const std::string suffix = update ? "_updated" : "_added";
+		for (const std::string &name : { "download" + suffix,
+			     "shared" + suffix,
+			     "client" + suffix,
+			     "server" + suffix,
+			     "friend" + suffix,
+			     "search_result" + suffix,
+			     std::string("comments_updated"),
+			     std::string("log_appended"),
+			     std::string("chat_message") }) {
+			const auto event = std::find_if(
+				events.begin(), events.end(), [&](const Event &e) { return e.name == name; });
+			ASSERT_TRUE(event != events.end());
+			ASSERT_TRUE(
+				event->data.find("quoted\\\"\\\\\\t\\n\\u0001\\u007f服务器\\ud83d\\ude00") !=
+				std::string::npos);
+			ASSERT_TRUE(event->data.find("1,234,567") == std::string::npos);
+		}
+	}
+	// The remaining streamed numeric payloads are search progress, result removal and closure.
+	auto cursor = bus.NewestId();
+	SearchProgressSnapshot progress;
+	progress.percent = 42;
+	state.WriteSearchProgress(id, progress);
+	state.MutateSearch(id, [](std::map<std::uint32_t, SearchResult> &results) { results.clear(); });
+	EmitDiffsAndUpdate(bus, prev, state);
+	state.CloseSearch(id);
+	EmitDiffsAndUpdate(bus, prev, state);
+	std::map<std::string, std::string> payloads;
+	for (const auto &event : DrainSince(bus, cursor))
+		payloads[event.name] = event.data;
+	for (const char *name : { "search_progress", "search_result_removed", "search_closed" }) {
+		ASSERT_TRUE(payloads.count(name) == 1);
+		ASSERT_TRUE(payloads[name].find("\"search_id\":1234567") != std::string::npos);
+		ASSERT_TRUE(payloads[name].find("1,234") == std::string::npos);
+	}
 }

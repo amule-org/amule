@@ -319,3 +319,32 @@ TEST(JsonWriter, DoubleToStringSpellsNonFiniteAsNull)
 	ASSERT_EQUALS(std::string("null"), JsonDoubleToString(std::nan("")));
 	ASSERT_EQUALS(std::string("null"), JsonDoubleToString(std::numeric_limits<double>::infinity()));
 }
+
+TEST(JsonWriter, NullableFieldsPreserveKnownZeroFalseAndEmpty)
+{
+	CJsonWriter w;
+	w.BeginObject();
+	WriteIntOrNull(w, "int", true, 0);
+	WriteUIntOrNull(w, "uint", true, 0);
+	WriteDoubleOrNull(w, "double", true, 0.0);
+	WriteBoolOrNull(w, "bool", true, false);
+	WriteStringOrNull(w, "string", true, "");
+	w.EndObject();
+	ASSERT_EQUALS(std::string("{\"int\":0,\"uint\":0,\"double\":0,\"bool\":false,\"string\":\"\"}"),
+		w.GetBuffer());
+}
+
+TEST(JsonWriter, NullableFieldsHideUnknownValues)
+{
+	CJsonWriter w;
+	w.BeginObject();
+	WriteIntOrNull(w, "int", false, -12);
+	WriteUIntOrNull(w, "uint", false, std::numeric_limits<std::uint64_t>::max());
+	WriteDoubleOrNull(w, "double", false, 12.5);
+	WriteBoolOrNull(w, "bool", false, true);
+	WriteStringOrNull(w, "string", false, "stale");
+	w.EndObject();
+	ASSERT_EQUALS(
+		std::string("{\"int\":null,\"uint\":null,\"double\":null,\"bool\":null,\"string\":null}"),
+		w.GetBuffer());
+}
