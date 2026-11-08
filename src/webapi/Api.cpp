@@ -174,9 +174,8 @@ void WriteStringOrNull(CJsonWriter &w, const char *key, bool known, const std::s
 void FinalizeJsonBody(CJsonWriter &w, CHttpServer::Response &r)
 {
 	// The writer already holds UTF-8, so this is a move. Never route it through
-	// wxString: amuleapi calls neither setlocale nor wxLocale, so it runs in the "C"
-	// locale and wxString's std::string ctor decodes with the locale, emptying any
-	// body with a non-ASCII byte.
+	// wxString: its std::string ctor decodes with the libc locale (from the environment
+	// or --locale), which may not be UTF-8 and can lose non-ASCII bytes.
 	r.body = w.TakeBuffer();
 }
 
