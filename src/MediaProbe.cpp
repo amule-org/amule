@@ -179,7 +179,7 @@ int RunBoundedHelper(const wxString &exe,
 		windowsFailure(wxT("configure helper Job limits"), jobError);
 		::CloseHandle(hOut);
 		wxRemoveFile(tmpPath);
-		return kSpawnFailed;
+		return probe::sandbox::kSetupFailed;
 	}
 
 	const wxString cmdLine = wxT("\"") + exe + wxT("\"");
@@ -281,16 +281,17 @@ int RunBoundedHelper(const wxString &exe,
 	}
 	// Reject the suspended launcher if either boundary cannot be established.
 	// Running without the outer Job would weaken cancellation and resource limits.
-	if (!::AssignProcessToJobObject(hJob, pi.hProcess) ||
-		::ResumeThread(pi.hThread) == static_cast<DWORD>(-1)) {
-		windowsFailure(wxT("confine or resume suspended helper"), ::GetLastError());
+	const bool confined = ::AssignProcessToJobObject(hJob, pi.hProcess) != FALSE;
+	if (!confined || ::ResumeThread(pi.hThread) == static_cast<DWORD>(-1)) {
+		windowsFailure(confined ? wxT("resume confined helper") : wxT("confine suspended helper"),
+			::GetLastError());
 		::TerminateProcess(pi.hProcess, 1);
 		::WaitForSingleObject(pi.hProcess, 5000);
 		::CloseHandle(pi.hProcess);
 		::CloseHandle(pi.hThread);
 		::CloseHandle(hJob);
 		wxRemoveFile(tmpPath);
-		return kSpawnFailed;
+		return confined ? kSpawnFailed : probe::sandbox::kSetupFailed;
 	}
 
 	wxStopWatch sw;

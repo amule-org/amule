@@ -100,10 +100,10 @@ bool tokenInfo(HANDLE token, TOKEN_INFORMATION_CLASS type, std::vector<unsigned 
 	return GetTokenInformation(token, type, buffer.data(), size, &size) != 0;
 }
 
-int failure(const char *stage)
+int failure(const char *stage, int code = 12)
 {
 	std::fprintf(stderr, "media-probe sandbox: %s failed (Windows error %lu)\n", stage, GetLastError());
-	return 12;
+	return code;
 }
 
 bool regularInput(HANDLE input)
@@ -184,12 +184,12 @@ int launch()
 	if (!OpenProcessToken(GetCurrentProcess(),
 		    TOKEN_QUERY | TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_ADJUST_DEFAULT,
 		    &original.value))
-		return failure("open startup token");
+		return failure("open startup token", kSetupFailed);
 	std::vector<unsigned char> groupsBuffer, userBuffer, privilegesBuffer;
 	if (!tokenInfo(original.value, TokenGroups, groupsBuffer) ||
 		!tokenInfo(original.value, TokenUser, userBuffer) ||
 		!tokenInfo(original.value, TokenPrivileges, privilegesBuffer))
-		return failure("inspect startup token");
+		return failure("inspect startup token", kSetupFailed);
 	const auto *groups = reinterpret_cast<const TOKEN_GROUPS *>(groupsBuffer.data());
 	std::vector<SID_AND_ATTRIBUTES> disabled;
 	for (DWORD i = 0; i < groups->GroupCount; ++i) {
@@ -201,7 +201,7 @@ int launch()
 	unsigned char nullSid[SECURITY_MAX_SID_SIZE];
 	DWORD nullSize = sizeof(nullSid);
 	if (!CreateWellKnownSid(WinNullSid, nullptr, nullSid, &nullSize))
-		return failure("create restricting SID");
+		return failure("create restricting SID", kSetupFailed);
 	SID_AND_ATTRIBUTES restricting{ nullSid, 0 };
 	auto *privileges = reinterpret_cast<TOKEN_PRIVILEGES *>(privilegesBuffer.data());
 	if (!CreateRestrictedToken(original.value,
@@ -213,19 +213,19 @@ int launch()
 		    1,
 		    &restricting,
 		    &lockdown.value))
-		return failure("create lockdown token");
+		return failure("create lockdown token", kSetupFailed);
 	unsigned char integritySid[SECURITY_MAX_SID_SIZE];
 	DWORD integritySize = sizeof(integritySid);
 	// Windows startup needs low integrity; enter() lowers the primary token to
 	// untrusted before parsing. Both stages already use the NULL restricting SID.
 	if (!CreateWellKnownSid(WinLowLabelSid, nullptr, integritySid, &integritySize))
-		return failure("create startup integrity label");
+		return failure("create startup integrity label", kSetupFailed);
 	TOKEN_MANDATORY_LABEL label{ { integritySid, SE_GROUP_INTEGRITY } };
 	if (!SetTokenInformation(lockdown.value,
 		    TokenIntegrityLevel,
 		    &label,
 		    static_cast<DWORD>(sizeof(label)) + GetLengthSid(integritySid)))
-		return failure("set startup integrity label");
+		return failure("set startup integrity label", kSetupFailed);
 	// The startup impersonation token must itself be restricted when the primary
 	// token is restricted. Restrict it to the caller's existing enabled SIDs, so
 	// trusted loader initialization retains its normal access without adding any.
@@ -246,21 +246,21 @@ int launch()
 		    static_cast<DWORD>(startupSids.size()),
 		    startupSids.data(),
 		    &startupPrimary.value))
-		return failure("create restricted startup token");
+		return failure("create restricted startup token", kSetupFailed);
 	// A higher-integrity impersonation token can be downgraded to identification
 	// when assigned to this low-integrity process. Match the primary token here.
 	if (!SetTokenInformation(startupPrimary.value,
 		    TokenIntegrityLevel,
 		    &label,
 		    static_cast<DWORD>(sizeof(label)) + GetLengthSid(integritySid)))
-		return failure("set startup impersonation integrity");
+		return failure("set startup impersonation integrity", kSetupFailed);
 	if (!DuplicateTokenEx(startupPrimary.value,
 		    TOKEN_IMPERSONATE | TOKEN_QUERY,
 		    nullptr,
 		    SecurityImpersonation,
 		    TokenImpersonation,
 		    &startup.value))
-		return failure("duplicate startup impersonation token");
+		return failure("duplicate startup impersonation token", kSetupFailed);
 	PSID logon = nullptr;
 	for (DWORD i = 0; i < groups->GroupCount; ++i) {
 		if ((groups->Groups[i].Attributes & SE_GROUP_LOGON_ID) == SE_GROUP_LOGON_ID)
@@ -269,10 +269,10 @@ int launch()
 	PrivateDesktop desktop;
 	if (logon == nullptr) {
 		SetLastError(ERROR_NO_SUCH_LOGON_SESSION);
-		return failure("find parser logon SID");
+		return failure("find parser logon SID", kSetupFailed);
 	}
 	if (!desktop.create(reinterpret_cast<const TOKEN_USER *>(userBuffer.data())->User.Sid, logon))
-		return failure("create private parser desktop");
+		return failure("create private parser desktop", kSetupFailed);
 
 	job.value = CreateJobObjectW(nullptr, nullptr);
 	JOBOBJECT_EXTENDED_LIMIT_INFORMATION limits{};
@@ -287,7 +287,7 @@ int launch()
 		!SetInformationJobObject(
 			job.value, JobObjectExtendedLimitInformation, &limits, sizeof(limits)) ||
 		!SetInformationJobObject(job.value, JobObjectBasicUIRestrictions, &ui, sizeof(ui)))
-		return failure("configure parser job");
+		return failure("configure parser job", kSetupFailed);
 
 	// The parser receives pipe write ends, never writable file handles that it
 	// could resize/preallocate to exhaust disk space between parent polling ticks.
@@ -409,7 +409,7 @@ int launch()
 		confined = false;
 	}
 	if (!confined) {
-		const int rc = failure("confine suspended parser");
+		const int rc = failure("confine suspended parser", kSetupFailed);
 		TerminateProcess(process.value, 12);
 		WaitForSingleObject(process.value, 5000);
 		return rc;

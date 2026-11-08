@@ -263,10 +263,10 @@ Sanitizer fuzzing intentionally calls the in-memory parser harness without the
 production sandbox: it does not verify helper startup or OS containment.
 
 Each run generates synthetic seeds from the helper and hostile-input fixtures.
-The evolving corpus is restored from an Actions cache and saved under a new key
-after minimization. Cache expiry is harmless: generated seeds remain available
-from source. Downloaded corpus archives contain regular SHA-256-named files;
-imports reject links, traversal, checksum errors and excessive sizes/counts.
+Fuzzing starts from fresh seeds each time. After minimization, the evolving
+corpus is archived with the run artifacts. Downloaded archives contain regular
+SHA-256-named files; imports reject links, traversal, checksum errors and
+excessive sizes/counts.
 Logs, updated archives and crash reproducers are also retained as artifacts for
 90 days. Preserve confirmed crash inputs as small, focused regression fixtures;
 do not commit the evolving corpus to Git.
@@ -287,7 +287,7 @@ python3 src/mediaprobe/corpus.py unpack /tmp/probe-corpus.tar.gz /tmp/probe-rest
 A high line-coverage percentage is not proof of safety. Keep the larger-file,
 long-loop and truncation regression tests; the 256 KiB fuzz input bound cannot
 exercise every production file size or offset. Each workflow artifact records
-the tested source, toolchain, seed checksum and restored cache key.
+the tested source, toolchain and seed checksum.
 
 Durations can differ from FFmpeg's by a fraction of a second where containers
 count encoder padding differently.

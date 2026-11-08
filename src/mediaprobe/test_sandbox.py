@@ -50,6 +50,16 @@ class SandboxTests(unittest.TestCase):
         self.assertEqual(result.stdout, b'blocked\n')
         self.assertEqual(self.media.read_bytes(), original)
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows launcher confinement setup')
+    def test_failed_launcher_confinement_returns_session_failure_without_metadata(self):
+        with self.media.open('rb') as source:
+            result = subprocess.run([FIXTURE, 'launcher-setup-failure', str(self.secret)],
+                                    stdin=source, capture_output=True, timeout=35)
+        self.assertEqual(result.returncode, 13, result.stderr)
+        self.assertEqual(result.stdout, b'')
+        self.assertIn(b'create private parser desktop failed', result.stderr)
+        self.assertIn(b'Windows error', result.stderr)
+
     @unittest.skipUnless(os.name == 'nt', 'Windows output pipe containment')
     def test_output_handles_cannot_resize_files_and_output_is_bounded(self):
         self.run_action('resize-output')

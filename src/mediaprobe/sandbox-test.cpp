@@ -42,7 +42,25 @@ int main(int argc, char **argv)
 	const bool child = argc > 1 && std::string(argv[argc - 1]) == "--sandbox-child";
 	if (child)
 		--argc;
-	else
+	else if (argc == 3 && std::string(argv[1]) == "launcher-setup-failure") {
+		// Add an outer restriction that prevents the trusted launcher from
+		// creating its private desktop. Exercise a real setup failure without
+		// changing the production policy or allowing the parser to start.
+		const HANDLE job = CreateJobObjectW(nullptr, nullptr);
+		JOBOBJECT_BASIC_UI_RESTRICTIONS ui{ JOB_OBJECT_UILIMIT_DESKTOP };
+		if (job == nullptr || !AssignProcessToJobObject(job, GetCurrentProcess()) ||
+			!SetInformationJobObject(job, JobObjectBasicUIRestrictions, &ui, sizeof(ui))) {
+			std::fprintf(stderr,
+				"sandbox test: cannot constrain launcher desktop (Windows error %lu)\n",
+				GetLastError());
+			if (job != nullptr)
+				CloseHandle(job);
+			return 99;
+		}
+		const int rc = probe::sandbox::launch();
+		CloseHandle(job);
+		return rc;
+	} else
 		return probe::sandbox::launch();
 #endif
 	if (argc != 3)
