@@ -100,9 +100,14 @@ void DrawClientNameCell(const ClientNameCell &cell,
 	if (!layout.valid) {
 		return;
 	}
+#ifdef wxHAS_DPI_INDEPENDENT_PIXELS
+	const double contentScale = dc->GetContentScaleFactor();
+#else
+	// Drawing coordinates are already physical pixels, even on a DC whose bitmap has a scale.
+	const double contentScale = 1.0;
+#endif
 	const auto draw = [&](size_t index, int x, int y) {
-		const wxBitmap bitmap =
-			images.GetBitmap(index, layout.imageSize, dc->GetContentScaleFactor());
+		const wxBitmap bitmap = images.GetBitmap(index, layout.imageSize, contentScale);
 		if (bitmap.IsOk()) {
 			dc->DrawBitmap(bitmap, x, y, true);
 		}
