@@ -39,6 +39,7 @@
 #include <wx/wx.h>
 #endif
 
+#include <wx/bmpbndl.h>
 #include <wx/image.h>
 #include <wx/statline.h>
 #include <wx/spinbutt.h>
@@ -686,7 +687,7 @@ wxSizer *messagePageMessages(wxWindow *parent, bool call_fit = TRUE, bool set_si
 
 // Declare bitmap functions
 
-wxBitmap clientImages(size_t index);
+wxBitmapBundle clientImages(size_t index);
 
 wxBitmap amuleSpecial(size_t index);
 

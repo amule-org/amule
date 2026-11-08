@@ -283,5 +283,47 @@
     },
     "tag": "v7.5.0",
     "tag_object": "50a8bff005239b0d2d661254094dedb9c75dbef3"
+  },
+  "emule": {
+    "version": "0.50a",
+    "url": "https://sourceforge.net/projects/emule/files/eMule/0.50a/eMule0.50a-Sources.zip",
+    "archive_sha256": "1d3356caa2dbcbef5514c8a016c47376353659514bdcc9b76c4382d28fde89cd",
+    "source_directory": "eMule0.50a-Sources/srchybrid/res",
+    "license": "GPL-2.0-or-later",
+    "files": {
+      "LICENSE": "8dcb28d227e9a331ca56fd188a646b91521d75ec6379da9033eae0e057d43ec5",
+      "Mule.ico": "1fe556446fb3f5be4c32d46b600aa08d1b4c2f9a018f0091efb87bf77c536621"
+    }
+  },
+  "lphant": {
+    "version": "1.01",
+    "url": "https://sourceforge.net/projects/lphant/files/OldFiles/lphant-v1.01-src.zip",
+    "archive_sha256": "f996ba48411dbfac577af5bfa63b98401c062f83c29a1c67908ccc1ef09bc7d1",
+    "source_directory": "Source/Client/Client",
+    "license": "GPL-2.0-or-later",
+    "files": {
+      "App.ico": "5298775f93a0d0bb278c4a449312a63883b7b4bc154c6ac54c12a0823db3b647",
+      "LICENSE": "7b6e644ea448f56f3996b28520bc77a605d7bf10e73d7ba839944f76c51eff7d"
+    }
+  },
+  "mldonkey": {
+    "commit": "4e1fd69176640e2ce71ce1d1fe3db50275ca5277",
+    "url": "https://github.com/ygrek/mldonkey",
+    "source_directory": "icons/rsvg",
+    "license": "GPL-2.0-or-later",
+    "files": {
+      "LICENSE": "2c83f3a8ca1da6e8c84b96f0ffa95f23899133774a42023c88d16c553cafe8a3",
+      "splash_screen.svg": "9043177c3d73b0c87afb2d4ceb2fa6d08a8b5c6f9483758d0357574832ac4de4"
+    }
+  },
+  "shareaza": {
+    "revision": "r9110",
+    "url": "https://sourceforge.net/p/shareaza/code/9110/tree/trunk/shareaza/Res/",
+    "source_directory": "trunk/shareaza/Res",
+    "license": "GPL-2.0-or-later",
+    "files": {
+      "LICENSE": "2bafa026c3842398b0612a7dd4ee33ea6a1d359c98feebb6f4b6966156fb8aa7",
+      "Shareaza.ico": "87f1d69ddc9134241d4694be59359c5e192adf0f45fa65efc933e2c4687ccae4"
+    }
   }
 }

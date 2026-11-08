@@ -237,6 +237,85 @@ The retained legacy `an.png` and `unknown.png` flags are FamFamFam artwork by
 Mark James (http://www.famfamfam.com/lab/icons/flags/), distributed as public
 domain; attribution appreciated but not required, per the original notice.
 
+## Client icons - eMule, Lphant, MLDonkey, Shareaza
+
+The client lists show which program a peer runs with that program's own icon.
+Each comes from the program's GPL-2.0-or-later source release. The names and
+logos remain their owners' marks and only identify the peer's software. The
+original files, their checksums and the regeneration script are in
+`src/icons/vendor/` and `src/icons/ARTWORK.md`.
+
+| Client | Source | Used as |
+|--------|--------|---------|
+| eMule | `srchybrid/res/Mule.ico` from the eMule 0.50a source (<https://sourceforge.net/projects/emule/files/eMule/0.50a/>) | its 16 and 32 px frames |
+| Lphant | `Source/Client/Client/App.ico` from the lphant 1.01 source (<https://sourceforge.net/projects/lphant/files/OldFiles/>) | its 16 px frame |
+| MLDonkey | the camel in `icons/rsvg/splash_screen.svg`, commit `4e1fd69176640e2ce71ce1d1fe3db50275ca5277` (<https://github.com/ygrek/mldonkey>) | its head, rendered at 32 and 48 px and redrawn at 16 px |
+| Shareaza | `trunk/shareaza/Res/Shareaza.ico`, SVN r9110 (<https://sourceforge.net/p/shareaza/code/>) | its 16, 32 and 48 px frames |
+
+eMule:
+
+```text
+Copyright (C)2002-2008 Merkur ( http://www.emule-project.net )
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+```
+
+Lphant:
+
+```text
+lphant Copyright (C)2003 Juanjo ( http://lphant.sourceforge.net )
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+```
+
+MLDonkey:
+
+```text
+Copyright 2001, 2002 b8_bavard, b8_fee_carabine, INRIA
+
+mldonkey is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+mldonkey is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+```
+
+Shareaza:
+
+```text
+Copyright (c) Shareaza Development Team, 2002-2017.
+
+Shareaza is free software; you can redistribute it
+and/or modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2 of
+the License, or (at your option) any later version.
+
+Shareaza is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+```
+
 ## Web UI libraries - Preact and htm
 
 The Web UI that amuleapi serves loads these from

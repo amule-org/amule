@@ -741,7 +741,7 @@ wxString CSharedFilesCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 	}
 }
 
-bool CSharedFilesCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const
+bool CSharedFilesCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxBitmapBundle &icon) const
 {
 	if (column != COLUMN_SHARED_NAME) {
 		return false;
@@ -758,7 +758,7 @@ bool CSharedFilesCtrl::GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon
 	wxASSERT(image >= Client_InvalidRating_Smiley);
 	wxASSERT(image <= Client_CommentOnly_Smiley);
 
-	icon = theApp->amuledlg->m_imagelist.GetIcon(image);
+	icon = theApp->amuledlg->m_clientImages.GetBundle(image);
 	return true;
 }
 

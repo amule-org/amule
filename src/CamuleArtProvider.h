@@ -38,8 +38,8 @@ public:
 protected:
 	wxBitmap CreateBitmap(const wxArtID &id, const wxArtClient &client, const wxSize &size) override;
 
-	// Bundle-aware lookup behind wxArtProvider::GetBitmapBundle(). PNG-only icons get the PNG
-	// plus a smooth 2x upscale.
+	// Bundle-aware lookup behind wxArtProvider::GetBitmapBundle(). PNG-only icons serve their
+	// embedded 1x/2x/3x PNGs, resampled with high quality for sizes in between.
 	wxBitmapBundle CreateBitmapBundle(
 		const wxArtID &id, const wxArtClient &client, const wxSize &size) override;
 };

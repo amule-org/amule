@@ -87,7 +87,7 @@ public:
 			// Out of range, or the trailing spacer column, which is always
 			// empty by construction.
 			if (iconText) {
-				variant << wxDataViewIconText(wxEmptyString, wxIcon());
+				variant << wxDataViewIconText();
 			} else if (barFill) {
 				variant << CBarFillSpec();
 			} else {
@@ -109,7 +109,7 @@ public:
 			variant = text;
 			return;
 		}
-		wxIcon icon;
+		wxBitmapBundle icon;
 		m_owner->GetItemIcon(data, col, icon);
 		variant << wxDataViewIconText(text, icon);
 	}

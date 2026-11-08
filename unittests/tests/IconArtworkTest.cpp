@@ -505,6 +505,55 @@ int main(int argc, char **argv)
 									 pixels.x * pixels.y) == 0),
 				"resampling changed alpha");
 		}
+		Phase("client icon densities");
+		for (const char *name :
+			{ "client_emule", "client_lphant", "client_shareaza", "client_mldonkey" }) {
+			const auto entry = amule_find_icon(name);
+			require(entry && entry->png2x_data && !entry->svg_data,
+				"client icon densities missing");
+			const auto bundle = wxArtProvider::GetBitmapBundle(
+				wxString("amule:") + name, wxART_OTHER, wxSize(16, 16));
+			require(bundle.IsOk() && bundle.GetDefaultSize() == wxSize(16, 16),
+				"client bundle invalid");
+			const unsigned char *data[] = {
+				entry->png_data, entry->png2x_data, entry->png3x_data
+			};
+			const unsigned int lengths[] = { entry->png_len, entry->png2x_len, entry->png3x_len };
+			for (int scale : { 1, 2, 3 }) {
+				if (!data[scale - 1]) {
+					continue;
+				}
+				wxMemoryInputStream stream(data[scale - 1], lengths[scale - 1]);
+				const wxImage expected =
+					wxBitmap(wxImage(stream, wxBITMAP_TYPE_PNG)).ConvertToImage();
+				const wxSize pixels(16 * scale, 16 * scale);
+				const wxImage actual = bundle.GetBitmap(pixels).ConvertToImage();
+				require(actual.IsOk() && actual.GetSize() == pixels &&
+						expected.GetSize() == pixels &&
+						std::memcmp(actual.GetData(),
+							expected.GetData(),
+							pixels.x * pixels.y * 3) == 0,
+					"client icon resampled a native density");
+				require(actual.HasAlpha() == expected.HasAlpha() &&
+						(!expected.HasAlpha() || std::memcmp(actual.GetAlpha(),
+										 expected.GetAlpha(),
+										 pixels.x * pixels.y) == 0),
+					"client icon changed alpha");
+			}
+			for (double scale : { 1.5, 4.0 }) {
+				const wxSize pixels(wxRound(16 * scale), wxRound(16 * scale));
+				require(bundle.GetBitmap(pixels).GetSize() == pixels,
+					"client icon wrong size between densities");
+			}
+		}
+		for (const char *name : { "client_amule", "client_xmule" }) {
+			const auto entry = amule_find_icon(name);
+			require(entry && entry->svg_data, "client SVG missing");
+			const auto bundle = wxArtProvider::GetBitmapBundle(
+				wxString("amule:") + name, wxART_OTHER, wxSize(16, 16));
+			require(bundle.GetBitmap(wxSize(48, 48)).GetSize() == wxSize(48, 48),
+				"client SVG not rendered at 3x");
+		}
 		Phase("flag cache and DPI transition");
 		const auto cached = cache.GetFlag("us", wxSize(16, 12), 2);
 		const auto cachedAgain = cache.GetFlag("us", wxSize(16, 12), 2);
@@ -560,7 +609,7 @@ int main(int argc, char **argv)
 	if (!status)
 		std::cout << "PASS: " << flags << " flags and " << menus
 			  << " menu icons at 1x/1.5x/2x/3x/4x; three tray states at 16-100px; fallback, "
-			     "bitmap cache, DPI transition, menu "
+			     "client icon densities, bitmap cache, DPI transition, menu "
 			     "semantics and live theme "
 			     "colour\n";
 	return status;

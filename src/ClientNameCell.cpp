@@ -25,10 +25,9 @@
 #include "ClientNameCell.h" // Interface declarations
 
 #include <wx/dc.h>
-#include <wx/imaglist.h>
 
 #include "amule.h"    // Needed for theApp
-#include "amuleDlg.h" // Needed for CamuleDlg::m_imagelist
+#include "amuleDlg.h" // Needed for CamuleDlg::m_clientImages
 #ifdef GEOIP_GUI
 #include "CountryFlags.h"   // Needed for CCountryFlags (flag bitmaps)
 #include "CountryDisplay.h" // Needed for GetDisplayCountryCode
@@ -95,7 +94,7 @@ wxBitmap GetClientFlag(const ClientNameCell &cell, wxDC &dc)
 
 int MeasureClientNameCell(const ClientNameCell &cell, wxDC &dc)
 {
-	return MeasureClientNameCell(cell, dc, theApp->amuledlg->m_imagelist, GetClientFlag(cell, dc));
+	return MeasureClientNameCell(cell, dc, theApp->amuledlg->m_clientImages, GetClientFlag(cell, dc));
 }
 
 void DrawClientNameCell(const ClientNameCell &cell, const wxRect &rect, wxDC *dc)
@@ -103,6 +102,6 @@ void DrawClientNameCell(const ClientNameCell &cell, const wxRect &rect, wxDC *dc
 	if (rect.GetWidth() <= 0 || rect.GetHeight() <= 0) {
 		return;
 	}
-	DrawClientNameCell(cell, rect, *dc, theApp->amuledlg->m_imagelist, GetClientFlag(cell, *dc));
+	DrawClientNameCell(cell, rect, *dc, theApp->amuledlg->m_clientImages, GetClientFlag(cell, *dc));
 }
 // File_checked_for_headers

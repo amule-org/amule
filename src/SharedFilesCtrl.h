@@ -170,7 +170,7 @@ protected:
 	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
 
 	/// Rating/comment smiley on the Name column, nothing elsewhere.
-	bool GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const override;
+	bool GetItemIcon(wxUIntPtr item, unsigned column, wxBitmapBundle &icon) const override;
 
 	/// Availability-bar spans for the Obtained Parts column.
 	void GetItemBarFill(wxUIntPtr item, unsigned column, CBarFillSpec &out) const override;

@@ -34,14 +34,14 @@
 #include <wx/bmpbndl.h>
 #include <wx/filename.h>
 #include <wx/frame.h> // Needed for wxFrame
-#include <wx/imaglist.h>
 #include <wx/timer.h>
 #include <wx/wfstream.h>
 #include <wx/zipstrm.h>
 
 #include <vector>
 
-#include "Types.h" // Needed for uint32
+#include "ClientNameCell.h" // Needed for CClientImages
+#include "Types.h"          // Needed for uint32
 #include "StatisticsDlg.h"
 
 class wxTimerEvent;
@@ -300,7 +300,7 @@ public:
 
 	CWindowGeometry m_windowGeometry;
 
-	wxImageList m_imagelist;
+	CClientImages m_clientImages;
 	// Toolbar icons as resolution-aware bundles (the 32x32 art plus a smooth 2x upscale). The
 	// executable is per-monitor-DPI aware, so a plain 32px wxBitmap would be drawn at 32
 	// PHYSICAL pixels -- tiny and blurry on hi-DPI screens.
@@ -405,7 +405,7 @@ private:
 	void Apply_Clients_Skin();
 	void Apply_Toolbar_Skin(wxToolBar *wndToolbar);
 	bool Check_and_Init_Skin();
-	void Add_Skin_Icon(const wxString &iconName, const wxBitmap &stdIcon, bool useSkins);
+	void Add_Skin_Icon(const wxString &iconName, const wxBitmapBundle &stdIcon, bool useSkins);
 	void SetMessagesTool();
 	void OnKeyPressed(wxKeyEvent &evt);
 

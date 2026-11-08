@@ -141,7 +141,7 @@ protected:
 	wxString GetItemColumnText(wxUIntPtr item, unsigned column) const override;
 
 	/// Rating/comment smiley on the File Name column, nothing elsewhere.
-	bool GetItemIcon(wxUIntPtr item, unsigned column, wxIcon &icon) const override;
+	bool GetItemIcon(wxUIntPtr item, unsigned column, wxBitmapBundle &icon) const override;
 
 	/// Paints a row in its category's colour, the behaviour the pre-wxDataView list had in
 	/// OnDrawItem() and the port dropped (issue #1346). Whole row rather than one column, so

@@ -1,12 +1,15 @@
 // CamuleArtProvider -- see CamuleArtProvider.h for the contract.
 
 #include "CamuleArtProvider.h"
+#include "IconDensities.h"
 #include "TrayIconBundle.h"
 
 #include "icons/icon_data.h"
 
+#include <array>
+
 #include <wx/bitmap.h>
-#include <wx/bmpbndl.h> // Needed for wxBitmapBundle::FromSVG / FromBitmaps
+#include <wx/bmpbndl.h> // Needed for wxBitmapBundle::FromSVG / FromImpl
 #include <wx/image.h>
 #include <wx/mstream.h>
 #include <wx/settings.h>
@@ -24,18 +27,43 @@ const struct AMuleIconEntry *FindIcon(const wxArtID &id)
 	return amule_find_icon(id.Mid(CamuleArtProvider::PREFIX.length()).utf8_str().data());
 }
 
-bool LoadPng(const struct AMuleIconEntry *entry, wxImage &image, const wxColour *colour = nullptr)
+bool LoadPng(const struct AMuleIconEntry *entry, wxImage &image)
 {
 	wxMemoryInputStream stream(entry->png_data, entry->png_len);
-	if (!image.LoadFile(stream, wxBITMAP_TYPE_PNG)) {
-		return false;
-	}
-	if (colour) {
-		// Monochrome PNG fallbacks retain their alpha, including antialiased edges.
-		image.SetRGB(wxRect(image.GetSize()), colour->Red(), colour->Green(), colour->Blue());
-	}
-	return true;
+	return image.LoadFile(stream, wxBITMAP_TYPE_PNG);
 }
+
+// The embedded PNG densities, resampled with high quality for sizes in between.
+class PngDensityBundle : public wxBitmapBundleImpl
+{
+public:
+	PngDensityBundle(const std::array<wxImage, 3> &images, const wxSize &size)
+	: m_images(images)
+	, m_size(size)
+	{
+	}
+
+	wxSize GetDefaultSize() const override { return m_size; }
+
+	wxSize GetPreferredBitmapSizeAtScale(double scale) const override
+	{
+		return wxSize(wxRound(m_size.x * scale), wxRound(m_size.y * scale));
+	}
+
+	wxBitmap GetBitmap(const wxSize &size) override
+	{
+		if (!m_last.IsOk() || m_last.GetSize() != size) {
+			const wxImage image = ScaleIconDensity(m_images, size);
+			m_last = image.IsOk() ? wxBitmap(image) : wxBitmap();
+		}
+		return m_last;
+	}
+
+private:
+	const std::array<wxImage, 3> m_images;
+	const wxSize m_size;
+	wxBitmap m_last;
+};
 
 // The icon's SVG twin as a bundle, or an invalid bundle when there is none or it does not parse.
 // wxDefaultSize takes the PNG twin's natural size, which FromSVG needs as its default.
@@ -78,30 +106,27 @@ wxBitmapBundle IconBundle(const struct AMuleIconEntry *entry,
 		return svg;
 	}
 
-	// No SVG twin (or wx built without NanoSVG support): serve the PNG at the requested logical
-	// size plus a smooth 2x upscale, so DPI-aware widgets still get something better than
-	// stretched 1x art. The mask is turned into an alpha channel first, because high-quality
-	// scaling of a masked image smears the mask colour into the icon edges.
-	wxImage image;
-	if (!LoadPng(entry, image, colour)) {
+	// No SVG twin (or wx built without NanoSVG support): serve the PNG densities.
+	auto images = LoadIconDensities(*entry);
+	if (!images[0].IsOk()) {
 		return wxBitmapBundle();
 	}
-	if (!image.HasAlpha()) {
-		image.InitAlpha();
+	if (colour) {
+		// Monochrome PNG fallbacks retain their alpha, including antialiased edges.
+		for (auto &image : images) {
+			if (image.IsOk()) {
+				image.SetRGB(wxRect(image.GetSize()),
+					colour->Red(),
+					colour->Green(),
+					colour->Blue());
+			}
+		}
 	}
 	if (wxString::FromUTF8(entry->name).StartsWith("tray_")) {
-		return MuleTray::MakeArtworkFallback(image, size);
+		return MuleTray::MakeArtworkFallback(images[0], size);
 	}
-	// Target logical size: the caller's request, or the PNG's natural size when it does not
-	// care. Derive both the 1x and 2x renditions from the original image so each is a single
-	// high-quality resample -- building the 2x from an already rescaled 1x would resample
-	// twice.
-	const wxSize target = (size == wxDefaultSize) ? wxSize(image.GetWidth(), image.GetHeight()) : size;
-	wxImage image1x = (target.GetWidth() == image.GetWidth() && target.GetHeight() == image.GetHeight())
-				  ? image
-				  : image.Scale(target.GetWidth(), target.GetHeight(), wxIMAGE_QUALITY_HIGH);
-	wxImage image2x = image.Scale(target.GetWidth() * 2, target.GetHeight() * 2, wxIMAGE_QUALITY_HIGH);
-	return wxBitmapBundle::FromBitmaps(wxBitmap(image1x), wxBitmap(image2x));
+	return wxBitmapBundle::FromImpl(
+		new PngDensityBundle(images, size == wxDefaultSize ? images[0].GetSize() : size));
 }
 } // namespace
 
@@ -120,22 +145,13 @@ wxBitmap CamuleArtProvider::CreateBitmap(
 		return svg.GetBitmap(size == wxDefaultSize ? svg.GetDefaultSize() : size);
 	}
 
-	// Decode the embedded PNG bytes. wxImage::LoadFile via a wxMemoryInputStream wins over
-	// wxBitmap::NewFromPNGData here because we may need to rescale below, and Scale() is on
-	// wxImage, not wxBitmap.
-	wxImage image;
-	if (!LoadPng(entry, image)) {
+	// GetBitmap() passes wxDefaultSize when the caller does not care: the 1x PNG's size wins.
+	const auto images = LoadIconDensities(*entry);
+	if (!images[0].IsOk()) {
 		return wxNullBitmap;
 	}
-
-	// Honour an explicit size request from the caller. GetBitmap() passes wxDefaultSize when
-	// the caller does not care; then the natural size from the PNG header wins.
-	if (size != wxDefaultSize &&
-		(size.GetWidth() != image.GetWidth() || size.GetHeight() != image.GetHeight())) {
-		image = image.Scale(size.GetWidth(), size.GetHeight(), wxIMAGE_QUALITY_HIGH);
-	}
-
-	return wxBitmap(image);
+	const wxImage image = ScaleIconDensity(images, size == wxDefaultSize ? images[0].GetSize() : size);
+	return image.IsOk() ? wxBitmap(image) : wxNullBitmap;
 }
 
 wxBitmapBundle CamuleArtProvider::CreateBitmapBundle(

@@ -264,11 +264,11 @@ void CSearchListModel::GetValue(wxVariant &variant, const wxDataViewItem &item, 
 
 	case COL_RATING: {
 		wxString label;
-		wxIcon icon;
+		wxBitmapBundle icon;
 		if (file->HasRating()) {
 			label = GetRateString(file->UserRating());
 			const int image = Client_InvalidRating_Smiley + file->UserRating() - 1;
-			icon = theApp->amuledlg->m_imagelist.GetIcon(image);
+			icon = theApp->amuledlg->m_clientImages.GetBundle(image);
 		}
 		variant << wxDataViewIconText(label, icon);
 		break;

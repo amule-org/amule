@@ -24,10 +24,19 @@
 
 #include "MuleIconTextRenderer.h" // Interface declarations
 
-#include <wx/dc.h>   // Needed for wxDC (not pulled in by dataview.h on GTK)
-#include <wx/icon.h> // Needed for wxIcon
+#include <wx/dc.h>      // Needed for wxDC (not pulled in by dataview.h on GTK)
+#include <wx/bmpbndl.h> // Needed for wxBitmapBundle
 
 #include <algorithm> // Needed for std::max
+
+namespace
+{
+// The icon at the view's DPI. GetView() is null until the column joins a control.
+wxBitmap IconBitmap(const wxBitmapBundle &icon, const wxWindow *view)
+{
+	return view ? icon.GetBitmapFor(view) : icon.GetBitmap(wxDefaultSize);
+}
+} // namespace
 
 CMuleIconTextRenderer::CMuleIconTextRenderer()
 : wxDataViewCustomRenderer("wxDataViewIconText", wxDATAVIEW_CELL_INERT, wxALIGN_LEFT)
@@ -50,23 +59,14 @@ bool CMuleIconTextRenderer::Render(wxRect cell, wxDC *dc, int state)
 {
 	int xoffset = 0;
 
-	const wxIcon &icon = m_value.GetIcon();
+	const wxBitmapBundle &icon = m_value.GetBitmapBundle();
 	if (icon.IsOk()) {
-#ifdef __WXMSW__
-		// HICON is already native: avoid converting it to a bitmap per cell.
-		const wxSize size = icon.GetSize();
-#else
-		const wxBitmap bitmap(icon);
+		const wxBitmap bitmap = IconBitmap(icon, GetView());
 		const wxSize size = bitmap.GetLogicalSize();
-#endif
 		// Centred vertically: the icon is a fixed size while the row height
 		// follows the font, so the two rarely match.
 		const int y = cell.y + std::max(0, (cell.height - size.y) / 2);
-#ifdef __WXMSW__
-		dc->DrawIcon(icon, cell.x, y);
-#else
 		dc->DrawBitmap(bitmap, cell.x, y, true);
-#endif
 		xoffset = size.x + kIconTextGap;
 	}
 
@@ -83,13 +83,9 @@ wxSize CMuleIconTextRenderer::GetSize() const
 	const wxString &text = m_value.GetText();
 	wxSize size = GetTextExtent(text.IsEmpty() ? wxString("Xg") : text);
 
-	const wxIcon &icon = m_value.GetIcon();
+	const wxBitmapBundle &icon = m_value.GetBitmapBundle();
 	if (icon.IsOk()) {
-#ifdef __WXMSW__
-		const wxSize iconSize = icon.GetSize();
-#else
-		const wxSize iconSize = wxBitmap(icon).GetLogicalSize();
-#endif
+		const wxSize iconSize = IconBitmap(icon, GetView()).GetLogicalSize();
 		size.x += iconSize.x + kIconTextGap;
 		size.y = std::max(size.y, iconSize.y);
 	}

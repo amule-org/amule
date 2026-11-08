@@ -20,9 +20,9 @@
 
 // Country-code resolution stays in the core; this cache is shared by both GUIs.
 #include "CountryFlags.h"
+#include "IconDensities.h"
 #include "icons/icon_data.h"
 
-#include <wx/mstream.h>
 #include <cmath>
 #include <cstring>
 
@@ -63,19 +63,7 @@ wxBitmap CCountryFlags::GetFlag(const wxString &code, const wxSize &logicalSize,
 	auto it = m_flags.find(key);
 	if (it == m_flags.end()) {
 		FlagArtwork artwork;
-		const unsigned char *data[] = { entry->png_data, entry->png2x_data, entry->png3x_data };
-		const unsigned int lengths[] = { entry->png_len, entry->png2x_len, entry->png3x_len };
-		for (size_t i = 0; i < artwork.images.size(); ++i) {
-			if (!data[i] || !lengths[i]) {
-				continue;
-			}
-			wxMemoryInputStream stream(data[i], lengths[i]);
-			auto &image = artwork.images[i];
-			image.LoadFile(stream, wxBITMAP_TYPE_PNG);
-			if (image.IsOk() && !image.HasAlpha()) {
-				image.InitAlpha();
-			}
-		}
+		artwork.images = LoadIconDensities(*entry);
 		it = m_flags.emplace(key, artwork).first;
 	}
 	auto &artwork = it->second;
@@ -88,22 +76,10 @@ wxBitmap CCountryFlags::GetFlag(const wxString &code, const wxSize &logicalSize,
 	if (pixels.x <= 0 || pixels.y <= 0) {
 		return wxNullBitmap;
 	}
-	const wxImage *source = nullptr;
-	for (const auto &image : artwork.images) {
-		if (!image.IsOk()) {
-			continue;
-		}
-		source = &image;
-		if (image.GetWidth() >= pixels.x && image.GetHeight() >= pixels.y) {
-			break;
-		}
-	}
-	if (!source) {
+	const wxImage image = ScaleIconDensity(artwork.images, pixels);
+	if (!image.IsOk()) {
 		return wxNullBitmap;
 	}
-	const wxImage image = source->GetSize() == pixels
-				      ? *source
-				      : source->Scale(pixels.x, pixels.y, wxIMAGE_QUALITY_HIGH);
 	wxBitmap bitmap(image);
 	if (bitmap.IsOk()) {
 		// SetScaleFactor may copy pixel data. Do it only for a new scale, then

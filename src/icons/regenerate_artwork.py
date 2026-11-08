@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate vendored menu icons and country flags; not needed for normal builds.
+"""Regenerate vendored menu icons, country flags and client icons; not needed for normal builds.
 
 Requires picosvg==0.23.0 and rsvg-convert (librsvg). Source SVGs and licenses
 live in vendor/. See ARTWORK.md for provenance and the pinned upstream revisions.
@@ -130,6 +130,116 @@ def optimize_png(path):
     path.write_bytes(output)
 
 
+def write_png(path, width, height, rgba):
+    """Write 8-bit RGBA pixels with filter type 0, as the maintenance test reads them."""
+    stride = width * 4
+    raw = b"".join(b"\0" + rgba[y * stride:(y + 1) * stride] for y in range(height))
+
+    def chunk(kind, payload):
+        return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
+
+    path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0))
+                     + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+
+
+def read_ico_frame(path, size, bpp):
+    """Decode the size x size BMP frame of an .ico with the given bit depth to RGBA."""
+    data = path.read_bytes()
+    _, kind, count = struct.unpack_from("<HHH", data)
+    assert kind == 1
+    for index in range(count):
+        offset = struct.unpack_from("<I", data, 6 + 16 * index + 12)[0]
+        if data[offset:offset + 4] == b"\x89PNG":
+            continue
+        header, width, height, _, depth, compression, _, _, _, used = struct.unpack_from("<IiiHHIIiiI", data, offset)
+        if (width, height, depth) != (size, 2 * size, bpp):
+            continue
+        assert compression == 0
+        palette = offset + header
+        pixels = palette + (4 * (used or 1 << depth) if depth <= 8 else 0)
+        stride = (size * depth + 31) // 32 * 4
+        mask = pixels + stride * size
+        mask_stride = (size + 31) // 32 * 4
+        rgba = bytearray()
+        # BMP rows run bottom-up; a set AND-mask bit is transparent.
+        for y in range(size - 1, -1, -1):
+            row = pixels + y * stride
+            for x in range(size):
+                hidden = data[mask + y * mask_stride + x // 8] >> (7 - x % 8) & 1
+                if depth == 32:
+                    b, g, r, a = data[row + 4 * x:row + 4 * x + 4]
+                elif depth == 8:
+                    b, g, r = data[palette + 4 * data[row + x]:palette + 4 * data[row + x] + 3]
+                    a = 0 if hidden else 255
+                else:
+                    raise ValueError(f"unsupported bit depth {depth}")
+                rgba += bytes((r, g, b, a))
+        return bytes(rgba)
+    raise ValueError(f"{path.name} has no {size}px {bpp}-bit frame")
+
+
+def replicate(rgba, size, factor):
+    """Enlarge pixel art by repeating each pixel, keeping its hard edges."""
+    out = bytearray()
+    for y in range(size * factor):
+        for x in range(size * factor):
+            start = ((y // factor) * size + x // factor) * 4
+            out += rgba[start:start + 4]
+    return bytes(out)
+
+
+# Client mascots taken from each client's own icon: the frame size per density,
+# or None to enlarge the 16px frame where the icon has no matching drawing.
+CLIENT_ICONS = {
+    "client_emule": ("emule/Mule.ico", 32, (16, 32)),
+    "client_lphant": ("lphant/App.ico", 8, (16, None, None)),
+    "client_shareaza": ("shareaza/Shareaza.ico", 32, (16, 32, 48)),
+}
+
+
+def client_icon_pixels(art_id):
+    """Yield (suffix, size, RGBA) for each density of a client icon."""
+    source, bpp, frames = CLIENT_ICONS[art_id]
+    base = read_ico_frame(ROOT / "vendor" / source, 16, bpp)
+    for scale, frame in enumerate(frames, 1):
+        suffix = "" if scale == 1 else f"@{scale}x"
+        if frame is None:
+            yield suffix, 16 * scale, replicate(base, 16, scale)
+        else:
+            yield suffix, frame, read_ico_frame(ROOT / "vendor" / source, frame, bpp)
+
+
+def mldonkey_camel():
+    """MLDonkey's splash screen cropped to its camel's head, as a 16px SVG."""
+    tree = etree.parse(str(ROOT / "vendor/mldonkey/splash_screen.svg"))
+    root = tree.getroot()
+    scene = root.xpath("//*[@id='g1038']")[0]
+    for child in list(scene):
+        if child.get("id") != "g793":
+            scene.remove(child)
+    # The splash screen's 688x400 viewport would stretch the square crop.
+    root.set("viewBox", "99 87 94 94")
+    root.set("width", "16")
+    root.set("height", "16")
+    return tree
+
+
+def generate_client_icons():
+    for art_id in CLIENT_ICONS:
+        for suffix, size, rgba in client_icon_pixels(art_id):
+            write_png(ROOT / f"{art_id}{suffix}.png", size, size, rgba)
+    # The 1x camel is drawn by hand, because a 16px render loses the eye.
+    from tempfile import TemporaryDirectory
+    with TemporaryDirectory() as directory:
+        camel = Path(directory) / "camel.svg"
+        mldonkey_camel().write(str(camel))
+        for scale in (2, 3):
+            destination = ROOT / f"client_mldonkey@{scale}x.png"
+            subprocess.run(["rsvg-convert", "--width", str(16 * scale), "--height", str(16 * scale),
+                            "--output", str(destination), str(camel)], check=True)
+            optimize_png(destination)
+
+
 def generate_flag(source, code):
     for scale in (1, 2, 3):
         suffix = "" if scale == 1 else f"@{scale}x"
@@ -160,6 +270,7 @@ def main():
             source.write_bytes(original)
     for obsolete in (ROOT / "flags").glob("*.svg"):
         obsolete.unlink()
+    generate_client_icons()
 
 
 if __name__ == "__main__":
