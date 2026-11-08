@@ -491,9 +491,17 @@ bool RefresherTick(CamuleapiApp &app, CState &state, MetricsSnapshot *metrics)
 
 void EmitDiffsForEventBus(CamuleapiApp &app, const CState &state)
 {
-	// Sole writer of `app.LastSeenForEvents()`. ONLY the wxApp refresher loop
-	// calls this; the HTTP-server inline RefresherTick call sites do NOT.
+	// This helper, EmitStatusForEventBus and PrimeDiffBaseline write LastSeenForEvents()
+	// only from the wxApp refresher loop. Inline HTTP RefresherTick calls do not publish diffs.
 	EmitDiffsAndUpdate(app.EventBus(), app.LastSeenForEvents(), state);
+}
+
+void EmitStatusForEventBus(CamuleapiApp &app, const CState &state)
+{
+	// Match REST's 503 gate: a failed first load must not publish a default dashboard.
+	if (state.HasFirstSnapshot()) {
+		EmitStatusDiffAndUpdate(app.EventBus(), app.LastSeenForEvents(), state.Dashboard());
+	}
 }
 
 void PrimeDiffBaseline(CamuleapiApp &app, const CState &state)

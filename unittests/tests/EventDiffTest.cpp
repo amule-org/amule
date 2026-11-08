@@ -392,6 +392,72 @@ TEST(EventDiff, StatusColdStartAndEcReconnectKeepDashboardContract)
 	}
 }
 
+TEST(EventDiff, StatusOnlyFailurePreservesCollectionBaselines)
+{
+	CState state;
+	state.MutateDownloads([](FileMap &files) {
+		FileSnapshot f;
+		f.ecid = 1;
+		f.hash = "8b54a3c28b54a3c28b54a3c28b54a3c2";
+		f.name = "cached file";
+		f.is_downloading = true;
+		files.emplace(f.ecid, f);
+	});
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		ClientSnapshot c;
+		c.ecid = 2;
+		c.client_name = "cached client";
+		clients.emplace(c.ecid, c);
+	});
+	state.MutateServers([](std::map<std::uint32_t, ServerSnapshot> &servers) {
+		ServerSnapshot s;
+		s.ecid = 3;
+		s.name = "cached server";
+		servers.emplace(s.ecid, s);
+	});
+	state.MutateFriends([](std::map<std::uint32_t, FriendSnapshot> &friends) {
+		FriendSnapshot f;
+		f.ecid = 4;
+		f.name = "cached friend";
+		friends.emplace(f.ecid, f);
+	});
+	state.MarkTickSuccess();
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	// A failed retry may clear lists or apply some changes before a later EC operation fails.
+	// Those partial collection changes must not advance the subscriber's baseline.
+	state.ResetLists();
+	state.MutateFriends([](std::map<std::uint32_t, FriendSnapshot> &friends) {
+		friends.at(4).name = "partially refreshed friend";
+	});
+	state.MarkTickFailure();
+	CJsonWriter expected;
+	WriteStatusObject(expected, state.Dashboard());
+	ASSERT_TRUE(expected.GetBuffer().find("\"ec_connected\":false") != std::string::npos);
+	for (int attempt = 0; attempt < 2; ++attempt) {
+		const auto cursor = bus.NewestId();
+		EmitStatusDiffAndUpdate(bus, prev, state.Dashboard());
+		const auto events = DrainSince(bus, cursor);
+		if (attempt == 0) {
+			ASSERT_EQUALS(static_cast<std::size_t>(1), events.size());
+			ASSERT_EQUALS(std::string("status_changed"), events.front().name);
+			ASSERT_EQUALS(expected.GetBuffer(), events.front().data);
+		} else {
+			ASSERT_TRUE(events.empty());
+		}
+		ASSERT_EQUALS(static_cast<std::size_t>(1), prev.files.size());
+		ASSERT_EQUALS(std::string("cached file"), prev.files.at(1).name);
+		ASSERT_EQUALS(static_cast<std::size_t>(1), prev.clients.size());
+		ASSERT_EQUALS(std::string("cached client"), prev.clients.at(2).client_name);
+		ASSERT_EQUALS(static_cast<std::size_t>(1), prev.servers.size());
+		ASSERT_EQUALS(std::string("cached server"), prev.servers.at(3).name);
+		ASSERT_EQUALS(static_cast<std::size_t>(1), prev.friends.size());
+		ASSERT_EQUALS(std::string("cached friend"), prev.friends.at(4).name);
+	}
+}
+
 namespace
 {
 class GroupedNumbers : public std::numpunct<char>

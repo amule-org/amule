@@ -37,9 +37,9 @@ namespace webapi
 
 class CEventBus;
 
-// One "last seen" snapshot of every substruct we publish events for. Owned by CamuleapiApp; mutated
-// AFTER each successful tick by `EmitDiffsAndUpdate`. The first tick fires `_added` for every alive
-// entry (cold start); later ticks fire only the deltas.
+// Event baselines owned by CamuleapiApp and updated only by the wxApp publisher thread.
+// Complete ticks update collections; rejected ticks can update status alone. The first complete
+// tick fires `_added` for every alive entry (cold start); later ticks fire only the deltas.
 struct LastSeenState
 {
 	// `files` is a comparison baseline against CState::m_files, not a mirror of it: an entry is
@@ -94,9 +94,9 @@ struct LastSeenState
 // REST /status envelope, from state.Dashboard() so all three pieces stay consistent.
 void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state);
 
-// Status-only publication for failed refreshes. Collection baselines stay at the last
-// successful tick; the dashboard reports the same best-effort state as REST. Like the
-// complete diff, this must run only on the wxApp publisher thread.
+// Publish a changed dashboard without advancing collection baselines. Shared by successful
+// full diffs and status-only failed refreshes; the dashboard matches REST's best-effort state.
+// Like the complete diff, this must run only on the wxApp publisher thread.
 void EmitStatusDiffAndUpdate(CEventBus &bus, LastSeenState &prev, const CState::DashboardSnapshot &dashboard);
 
 // Chat events, published straight from the refresher's chat roundtrip rather than by diffing a

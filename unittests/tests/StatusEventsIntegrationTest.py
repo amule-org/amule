@@ -28,11 +28,16 @@ import json
 import os
 from pathlib import Path
 import select
+import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 import time
+
+if shutil.which('curl') is None:
+    print('SKIP: status event integration requires curl')
+    sys.exit(77)
 
 from AllSearchIntegrationTest import C
 from MetricsIntegrationTest import Core, CoreHandler, api_fixture, eventually, request

@@ -81,6 +81,10 @@ SearchFetchOutcome FetchOneSearchFull(
 // sites deliberately skip it -- SSE subscribers see the post-mutation diff on the next tick.
 void EmitDiffsForEventBus(CamuleapiApp &app, const CState &state);
 
+// Status-only publication after a rejected refresh, gated on the same first snapshot as REST.
+// Called only from the wxApp refresher loop, like the full diff and baseline helpers.
+void EmitStatusForEventBus(CamuleapiApp &app, const CState &state);
+
 // Bring the diff baseline up to the current state without publishing. Used on the first tick after
 // diffs were skipped, which would otherwise emit one event per record; whoever subscribed during
 // the gap gets `resync` instead.
