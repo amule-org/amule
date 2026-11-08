@@ -574,9 +574,8 @@ TEST(EventDiff, StatusEventFiresWhenTheKadFirewallVerdictBecomesUnknown)
 	ASSERT_TRUE(payload.find("\"firewalled_tcp\":null") != std::string::npos);
 }
 
-// The same edge, the kad half. status_changed fires on !Equal(status) || !Equal(kad), and
-// kad.network.* is gated by the SECOND comparator -- a fix applied only to Equal(StatusSnapshot)
-// leaves this silent.
+// The same edge for the Kad network figures: the counts keep their last reading but become
+// null in the payload. Subscribers must receive that transition.
 TEST(EventDiff, StatusEventFiresWhenTheKadNetworkFiguresBecomeUnknown)
 {
 	CState state;
