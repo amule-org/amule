@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Help — eD2k Link Fixer</title>
+  <link rel="stylesheet" href="style.css" />
+  <body class="help">
+    <main>
+      <img src="icons/48.png" alt="" width="48" height="48" />
+      <h1>Open eD2k links with a click</h1>
+      <p>
+        eD2k Link Fixer changes <code>|</code> to <code>%7C</code> in eD2k links
+        on web pages. Both spellings mean the same thing to compatible eD2k
+        apps; the encoded spelling lets Chrome pass the link to your computer.
+      </p>
+      <h2>Get started</h2>
+      <ol>
+        <li>
+          Install aMule or another compatible eD2k app and register it as your
+          computer’s handler for eD2k links. In recent aMule builds, look for
+          the eD2k link-handler option in Preferences → General. Older
+          installations may require OS-specific setup.
+        </li>
+        <li>
+          Refresh any web pages that were open when you installed the extension.
+        </li>
+        <li>
+          Click an eD2k link. Accept Chrome’s request to open your app if
+          prompted.
+        </li>
+      </ol>
+      <h2>If a link does not open</h2>
+      <ul>
+        <li>
+          Open the app yourself and confirm it is configured to handle eD2k
+          links. This extension does not install or register the app.
+        </li>
+        <li>
+          In Chrome’s extension details, check that this extension has site
+          access to the page. Then refresh it.
+        </li>
+        <li>
+          If you previously refused Chrome’s external-app prompt, try clicking
+          the link again and allow the app to open.
+        </li>
+        <li>
+          This extension handles actual links on HTTP and HTTPS pages, including
+          matching frames. It cannot run on Chrome’s settings pages, the Chrome
+          Web Store or other restricted pages. Local files are outside its
+          scope.
+        </li>
+        <li>
+          Plain text, links constructed entirely by a website’s JavaScript, and
+          some custom link controls may need to be copied into your app instead.
+        </li>
+      </ul>
+      <h2>Privacy &amp; permissions</h2>
+      <p>
+        All processing happens in your browser. The extension makes no network
+        requests, collects no analytics, stores no browsing data and has no
+        background service or native helper.
+      </p>
+      <p>
+        Chrome requests access to HTTP and HTTPS sites because eD2k links can
+        appear on any website. The script reads link addresses and only rewrites
+        pipe characters in eD2k links. You can restrict its site access in
+        Chrome’s extension details.
+      </p>
+      <h2>Coverage</h2>
+      <p>
+        Linux is the validated operating system. Windows and macOS require a
+        working OS handler and have not been tested. The extension preserves
+        Chrome’s user-gesture and permission requirements and does not queue
+        bulk downloads.
+      </p>
+      <h2>Remove or update</h2>
+      <p>
+        Remove it from Chrome’s Extensions page. For a manual update, replace
+        the extracted extension files, press Reload on that page and refresh
+        your web pages. Keep the extension folder in a permanent location while
+        using it.
+      </p>
+    </main>
+  </body>
+</html>

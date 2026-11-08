@@ -61,6 +61,8 @@ generally adopted into aMule shortly after.
 * `amuleweb` — HTTP interface to a running `amuled`.
 * `amulecmd` — interactive CLI for a running `amuled`.
 * `amuleapi` — REST API for a running `amuled`.
+* [eD2k Link Fixer](src/utils/browser-extension/README.md) — optional Chrome
+  extension for opening eD2k web links in the registered application.
 
 ## Installation
 

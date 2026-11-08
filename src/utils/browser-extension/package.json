@@ -1,0 +1,18 @@
+{
+  "name": "amule-ed2k-link-fixer",
+  "version": "1.0.0",
+  "private": true,
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test --test-timeout=15000 tests/unit.test.mjs",
+    "package": "python3 tools/package.py",
+    "test:smoke": "bash tests/smoke.sh"
+  },
+  "devDependencies": {
+    "playwright-core": "1.65.0"
+  }
+}

@@ -1,0 +1,60 @@
+:root {
+  color-scheme: light dark;
+  font:
+    14px/1.55 system-ui,
+    sans-serif;
+}
+body {
+  margin: 0;
+  background: light-dark(#f7fafb, #172126);
+  color: light-dark(#172126, #e7eff1);
+}
+main {
+  width: 310px;
+  padding: 22px;
+}
+h1 {
+  font-size: 21px;
+  margin: 10px 0;
+  letter-spacing: -0.4px;
+}
+h2 {
+  font-size: 17px;
+  margin-top: 28px;
+}
+p {
+  margin: 12px 0;
+}
+.muted {
+  color: light-dark(#53656d, #a5bac3);
+}
+a {
+  color: light-dark(#006b70, #79dadd);
+}
+.button {
+  display: block;
+  margin-top: 20px;
+  padding: 10px 12px;
+  background: light-dark(#006b70, #79dadd);
+  color: light-dark(white, #122225);
+  border-radius: 8px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: 600;
+}
+a:focus-visible {
+  outline: 3px solid #e19a23;
+  outline-offset: 4px;
+}
+body.help main {
+  width: auto;
+  max-width: 640px;
+  margin: auto;
+  padding: 36px 24px;
+}
+li {
+  margin: 9px 0;
+}
+code {
+  overflow-wrap: anywhere;
+}

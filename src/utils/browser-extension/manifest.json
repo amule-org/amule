@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "eD2k Link Fixer",
+  "version": "1.0.0",
+  "description": "Open eD2k web links in your installed handler by safely encoding their pipe characters.",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_title": "eD2k Link Fixer — help",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/16.png", "32": "icons/32.png" }
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["rewrite.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ]
+}

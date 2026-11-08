@@ -1,0 +1,61 @@
+name: Browser extension CI
+
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - 'src/utils/browser-extension/**'
+      - '.github/workflows/browser-extension.yml'
+  pull_request:
+    branches: [ "**" ]
+    paths:
+      - 'src/utils/browser-extension/**'
+      - '.github/workflows/browser-extension.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.ref == 'refs/heads/master' && github.sha || '' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  extension-tests:
+    name: eD2k extension tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: src/utils/browser-extension
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: src/utils/browser-extension/package-lock.json
+      - name: Install pinned browser and desktop test dependencies
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright-core install --with-deps chromium
+          sudo apt-get update
+          sudo apt-get install -y xvfb xauth dbus-x11 desktop-file-utils python3-gi gir1.2-atspi-2.0 at-spi2-core
+      - name: Test content script in real browser DOMs
+        run: npm test
+      - name: Test packaged extension, native consent and desktop handoff
+        run: npm run test:smoke
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ed2k-extension-test-evidence
+          path: |
+            /tmp/amule-ed2k-smoke.*/state/results.json
+            /tmp/amule-ed2k-smoke.*/state/native-prompt.log
+            /tmp/amule-ed2k-smoke.*/state/handler.jsonl
+            /tmp/amule-ed2k-smoke.*/state/popup.png
+            /tmp/amule-ed2k-smoke.*/state/help.png
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ed2k-link-fixer
+          path: src/utils/browser-extension/dist/ed2k-link-fixer.zip
