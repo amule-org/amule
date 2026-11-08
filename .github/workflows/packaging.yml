@@ -100,8 +100,8 @@ env:
 #                               raises that floor and strands users.
 #   linux-static  ubuntu-22.04  builds inside Alpine, host barely matters.
 #   flatpak       ubuntu-24.04  needs appstream 1.0+ for appstream-compose, absent on 22.04.
-#   macos-build   macos-15      the SDK the shipped .app is built against, and the
-#                               Intel leg needs Rosetta on the runner.
+#   macos-build   macos-15 / macos-15-intel
+#                               native SDK/toolchain for each shipped architecture.
 #   windows       windows-2025 / windows-11-arm
 #
 # release.yml's own jobs are a different matter: they ship nothing that links against
@@ -354,27 +354,20 @@ jobs:
       github.event_name != 'workflow_dispatch' ||
       inputs.only == '' ||
       contains(inputs.only, 'macos')
-    # Both arches build on macos-15 (Apple Silicon) — the legacy
-    # macos-13 (Intel) runner is being retired by GitHub and has been
-    # flaky for months. The x86_64 build uses Rosetta: a parallel Intel
-    # Homebrew install at /usr/local supplies x86_64 dep bottles, and
-    # every command that produces x86_64 output is wrapped in
-    # `arch -x86_64`. CMake honours MACOS_ARCHITECTURES from the env
-    # (handled in packaging/macos/build.sh) so clang emits the right
-    # slice. End result is identical to a native Intel build, with the
-    # benefit of running on a much beefier ARM host.
+    # Build each slice natively. Compiling Intel Homebrew dependencies under
+    # Rosetta can exhaust the job deadline before application compilation.
     strategy:
       fail-fast: false
       max-parallel: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && 1 || 10 }}
       matrix:
         include:
           - arch: arm64
-            archcmd: ''
+            os: macos-15
             brew_prefix: /opt/homebrew
           - arch: x86_64
-            archcmd: 'arch -x86_64'
+            os: macos-15-intel
             brew_prefix: /usr/local
-    runs-on: macos-15
+    runs-on: ${{ matrix.os }}
     env:
       # What the .app build needs from Homebrew. On x86_64 the keg cache is
       # limited to these and their dependency closure.
@@ -384,23 +377,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Bootstrap x86_64 Homebrew (Rosetta)
-        if: matrix.arch == 'x86_64'
-        run: |
-          # Apple Silicon runners ship Rosetta preinstalled. Install
-          # x86_64 Homebrew at /usr/local so we can fetch x86_64 bottles
-          # for our deps. The native /opt/homebrew install is left alone.
-          #
-          # Pinned rather than HEAD: as of 2026-09-11 install.sh aborts
-          # with "Homebrew on macOS is only supported on Apple Silicon
-          # processors!" before it creates the prefix, so HEAD cannot
-          # bootstrap this leg at all. df3c2556 is the last commit that
-          # still installs to /usr/local. A pinned ref also removes a
-          # fetch-HEAD-and-pipe-to-bash hazard.
-          REF=df3c2556141c012eaba0453ede7a1bd4f05b824c
-          arch -x86_64 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/$REF/install.sh)"
       - name: Update Homebrew
-        run: ${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew update
+        run: ${{ matrix.brew_prefix }}/bin/brew update
       # Homebrew is retiring Intel macOS, and a formula loses its Intel
       # bottle the moment it is next revised, publishing arm64_* macOS
       # tags only (plus x86_64_linux, a Linuxbrew ELF build unusable on
@@ -451,7 +429,7 @@ jobs:
           BREW=${{ matrix.brew_prefix }}/bin/brew
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
               kegs() {
-                  ${{ matrix.archcmd }} $BREW info --json=v2 --installed |
+                  $BREW info --json=v2 --installed |
                       python3 packaging/macos/source-kegs.py "$@"
               }
               # Several of these build against a Homebrew python, whose bin names
@@ -465,9 +443,9 @@ jobs:
               # than pinned, so a python bump does not quietly bring this back. The
               # install may fail on the very conflict being settled, so the link is
               # what is checked.
-              for p in $(${{ matrix.archcmd }} $BREW deps --union --include-build $BREW_DEPS | grep '^python@' || true); do
-                  ${{ matrix.archcmd }} $BREW install "$p" || true
-                  ${{ matrix.archcmd }} $BREW link --overwrite "$p"
+              for p in $($BREW deps --union --include-build $BREW_DEPS | grep '^python@' || true); do
+                  $BREW install "$p" || true
+                  $BREW link --overwrite "$p"
               done
               # A restored keg has no /usr/local/{lib,include} symlinks and no
               # alias opt links -- only the Cellar and opt paths are cached --
@@ -476,7 +454,7 @@ jobs:
               relink() {
                   for f in $(kegs linkable); do
                       [ "$f" = "openssl@3" ] && continue
-                      ${{ matrix.archcmd }} $BREW link --overwrite "$f"
+                      $BREW link --overwrite "$f"
                   done
               }
               # Before the install as well: configure reaches pkgconf through the
@@ -486,27 +464,25 @@ jobs:
               # is what keeps the cache current; the install below would only
               # touch those a newly installed formula depends on.
               BUILT=$(kegs built)
-              OUTDATED=$( [ -z "$BUILT" ] || ${{ matrix.archcmd }} $BREW outdated --formula --quiet $BUILT || true)
+              OUTDATED=$( [ -z "$BUILT" ] || $BREW outdated --formula --quiet $BUILT || true)
               if [ -n "$OUTDATED" ]; then
                   echo "Outdated restored kegs: $OUTDATED"
-                  ${{ matrix.archcmd }} $BREW upgrade $OUTDATED
+                  $BREW upgrade $OUTDATED
               fi
           fi
           # NOT --quiet: when the next formula loses its Intel bottle,
           # the reason has to be in the log.
-          ${{ matrix.archcmd }} $BREW install $BREW_DEPS
+          $BREW install $BREW_DEPS
           # A restored x86_64 keg can link a bottled formula that the cache does
           # not carry (libtiff links zstd); install it unless something else
           # pulled it in.
-          ${{ matrix.archcmd }} $BREW install $(${{ matrix.archcmd }} $BREW deps --union $BREW_DEPS)
-          # Native on both legs: ccache 4.14.1 has no Intel bottle and builds with gcc, which has
-          # none either. It only launches the compiler, so an arm64 ccache serves the x86_64 build.
-          /opt/homebrew/bin/brew install ccache
+          $BREW install $($BREW deps --union $BREW_DEPS)
+          $BREW install ccache
           if [ "${{ matrix.arch }}" = "x86_64" ]; then
               relink
               # An upgrade leaves the old version beside the new one in Cellar;
               # drop it so the saved cache does not grow with every bump.
-              ${{ matrix.archcmd }} $BREW cleanup $(kegs built)
+              $BREW cleanup $(kegs built)
           fi
           # Prepend the matrix-selected brew prefix to PATH so every
           # `brew --prefix` / `cmake` / `pkg-config` invocation in the
@@ -523,7 +499,7 @@ jobs:
           always() && matrix.arch == 'x86_64' &&
           contains(fromJSON('["success", "failure", "cancelled"]'), steps.brewdeps.outcome)
         run: |
-          BREW="${{ matrix.archcmd }} ${{ matrix.brew_prefix }}/bin/brew"
+          BREW="${{ matrix.brew_prefix }}/bin/brew"
           # The formula a timeout cut off can leave a keg with no install receipt.
           # Drop it: cached, it would come back as a broken keg brew counts as done.
           shopt -s nullglob
@@ -645,26 +621,25 @@ jobs:
           mkdir -p "$SRC"
           tar -xf "$RUNNER_TEMP/libgd.tar.xz" -C "$SRC" --strip-components=1
           # An absolute install name, so dylibbundler can follow it from cas.
-          ${{ matrix.archcmd }} cmake -S "$SRC" -B "$SRC/build" -DCMAKE_BUILD_TYPE=Release \
+          cmake -S "$SRC" -B "$SRC/build" -DCMAKE_BUILD_TYPE=Release \
             -DENABLE_PNG=ON -DENABLE_JPEG=ON -DENABLE_FREETYPE=ON \
             -DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
             -DCMAKE_OSX_DEPLOYMENT_TARGET="$MACOS_DEPLOYMENT_TARGET" \
             -DCMAKE_PREFIX_PATH=${{ matrix.brew_prefix }} \
             -DCMAKE_MACOSX_RPATH=OFF -DCMAKE_INSTALL_NAME_DIR="$PREFIX/lib" \
             -DCMAKE_INSTALL_PREFIX="$PREFIX"
-          ${{ matrix.archcmd }} cmake --build "$SRC/build" -j"$(sysctl -n hw.ncpu)"
-          ${{ matrix.archcmd }} cmake --install "$SRC/build"
+          cmake --build "$SRC/build" -j"$(sysctl -n hw.ncpu)"
+          cmake --install "$SRC/build"
           mkdir -p "$PREFIX/share/licenses/libgd"
           cp "$SRC/COPYING" "$PREFIX/share/licenses/libgd/"
           echo "LIBGD_PREFIX=$PREFIX" >> "$GITHUB_ENV"
       - name: Build native-arch .app
         # dylibbundler asks on stdin for a library it cannot find and loops on
         # an empty answer, so a missing dylib would otherwise hold the runner.
-        # Two hours: an x86_64 build under Rosetta can need more than one.
         timeout-minutes: 120
         env:
           MACOS_ARCHITECTURES: ${{ matrix.arch }}
-        run: ${{ matrix.archcmd }} packaging/macos/build.sh
+        run: packaging/macos/build.sh
       - name: Smoke-test amuled --version
         run: |
           # Mount the produced .dmg at a fixed path. The volume name
@@ -675,14 +650,12 @@ jobs:
           MNT=/tmp/amulemnt
           mkdir -p "${MNT}"
           hdiutil attach -nobrowse -mountpoint "${MNT}" "${DMG}"
-          # x86_64 binaries on Apple Silicon run via Rosetta automatically
-          # (no explicit arch prefix needed for execution), but be
-          # consistent. amuled --version exits 255 (wxApp::OnInit returns
+          # amuled --version exits 255 (wxApp::OnInit returns
           # false after printing version → wxEntry returns -1). Check the
           # banner via grep instead of relying on exit code. Pattern
           # accepts the dev placeholder ("aMuleD GIT ...") and any
           # tagged-release banner ("aMuleD 3.0.0 ...", etc.).
-          ${{ matrix.archcmd }} "${MNT}/aMule.app/Contents/MacOS/amuled" --version 2>&1 | grep -q '^aMuleD '
+          "${MNT}/aMule.app/Contents/MacOS/amuled" --version 2>&1 | grep -q '^aMuleD '
           # Sanity-check that aMuleGUI.app (the remote-GUI client) is
           # also at the dmg root — packaging/macos/build.sh stages it
           # next to aMule.app via make_dmg, so its absence would mean
@@ -701,7 +674,7 @@ jobs:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.os }}-macos-${{ matrix.arch }}-ccache-${{ github.run_id }}
       - name: ccache stats
-        if: always()
+        if: always() && steps.brewdeps.outcome == 'success'
         run: ccache --show-stats
       - uses: actions/upload-artifact@v7
         with:
