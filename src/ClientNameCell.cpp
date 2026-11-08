@@ -56,7 +56,8 @@ ClientNameCell MakeClientNameCell(const CUpDownClient *client, bool a4af)
 	cell.remoteQueueFull = client->IsRemoteQueueFull();
 	cell.isFriend = client->IsFriend();
 	cell.identified = client->IsIdentified();
-	cell.identWarning = client->IsBadGuy() || client->SUIFailed();
+	cell.identFailed = client->SUIFailed();
+	cell.badGuy = client->IsBadGuy();
 	cell.extProtocol = client->ExtProtocolAvailable();
 	cell.highCredits = client->GetCreditRatio() > 1;
 

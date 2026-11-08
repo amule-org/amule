@@ -194,6 +194,7 @@ protected:
 	void GetDisplayOrder(wxDataViewItemArray &ordered) const override;
 	void GetColumnFitRows(wxDataViewItemArray &rows, size_t limit) const override;
 	wxString GetRowLabel(const wxDataViewItem &item) const override;
+	wxString GetCellToolTip(const wxDataViewItem &item, unsigned column) const override;
 	wxString GetOldColumnOrder() const override;
 	void OnIdleHook() override;
 	void OnColumnWidthsChanged() override;

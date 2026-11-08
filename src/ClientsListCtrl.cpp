@@ -34,43 +34,16 @@
 #include "ClientList.h"         // Needed for CClientList::FindClientByECID
 #include "ClientRef.h"          // Needed for CClientRef
 #include "DataToText.h"         // Needed for GetSoftName, OriginToText
-#include "MuleBarRenderer.h"    // Needed for CBarFillSpec, CMuleBarRenderer
 #include "OtherFunctions.h"     // Needed for CastItoXBytes, CastItoSpeed
 #include "muuli_wdr.h"          // Needed for ID_CLIENTSLIST
-
-namespace
-{
-/**
- * Renders the Name column.
- *
- * Same extension point the per-file client lists use (see CGenericClientListCtrl's renderer of the
- * same name): CMuleBarRenderer is borrowed for its identity-carrying CBarFillSpec, not to draw a
- * bar. The identity here is the row's own snapshot rather than a client, since that is what this
- * list holds, and the drawing is DrawClientNameCell() either way.
- */
-class CClientsNameRenderer : public CMuleBarRenderer
-{
-public:
-	bool Render(wxRect cell, wxDC *dc, int WXUNUSED(state)) override
-	{
-		const ClientNameCell *data =
-			reinterpret_cast<const ClientNameCell *>(GetSpec().GetIdentity());
-		if (data != nullptr) {
-			DrawClientNameCell(*data, cell, dc);
-		}
-		return true;
-	}
-};
-} // namespace
 
 CClientsListCtrl::CClientsListCtrl(
 	wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags, const wxString &tableName)
 : CClientRowListCtrl(parent, id, pos, size, flags)
 {
 	const int colFlags = wxDATAVIEW_COL_RESIZABLE | wxDATAVIEW_COL_SORTABLE;
-	// Owns its drawing so the badge icons match the per-file client lists;
-	// still sorts and compares on the plain name text.
-	AddBarColumn(_("Name"), COLUMN_CLIENTS_NAME, "N", 200, colFlags, new CClientsNameRenderer());
+	// Sorts and compares on the plain name text.
+	AddNameColumn(_("Name"), COLUMN_CLIENTS_NAME, "N", 230, colFlags);
 	AddTextColumn(_("Software"), COLUMN_CLIENTS_SOFTWARE, "S", 110, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("Version"), COLUMN_CLIENTS_VERSION, "V", 90, wxALIGN_LEFT, colFlags);
 	AddTextColumn(_("IP Address"), COLUMN_CLIENTS_ADDRESS, "I", 140, wxALIGN_LEFT, colFlags);
@@ -175,10 +148,13 @@ void CClientsListCtrl::SetClients(std::vector<Row> &&rows)
 	SetSelectedItemData(selected);
 }
 
-const ClientNameCell *CClientsListCtrl::NameCellFor(wxUIntPtr item) const
+std::optional<ClientNameCell> CClientsListCtrl::NameCellOf(wxUIntPtr item) const
 {
 	const Row *row = RowFor(item);
-	return row != nullptr ? &row->nameCell : nullptr;
+	if (row == nullptr) {
+		return std::nullopt;
+	}
+	return row->nameCell;
 }
 
 bool CClientsListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) const

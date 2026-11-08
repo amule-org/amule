@@ -2693,7 +2693,11 @@ if (TARGET wxWidgets::CORE)
     add_native_list_test (ColumnFitTest
         ${CMAKE_SOURCE_DIR}/src/SearchColumnFit.cpp
         ${CMAKE_SOURCE_DIR}/src/ClientNameCellDrawing.cpp
+        # LabelWithColon(), for the Name cell tooltip.
+        ${CMAKE_SOURCE_DIR}/src/OtherFunctions.cpp
+        ${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
     )
+    target_link_libraries (ColumnFitTest PRIVATE CRYPTOPP::CRYPTOPP)
 endif()
 
 # CListColumnStore maps a column id to its persistence key and default width.

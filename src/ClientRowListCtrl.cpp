@@ -32,9 +32,8 @@
 
 #include "ClientContextActions.h" // Needed for BuildClientContextMenu, ClientAction*
 #include "Logger.h"               // Needed for AddLogLineC
-#include "MuleBarRenderer.h"      // Needed for CBarFillSpec
 
-wxBEGIN_EVENT_TABLE(CClientRowListCtrl, CMuleVirtualDataViewCtrl)
+wxBEGIN_EVENT_TABLE(CClientRowListCtrl, CClientNameListCtrl)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CClientRowListCtrl::OnItemActivated)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CClientRowListCtrl::OnItemRightClicked)
 
@@ -46,31 +45,8 @@ wxBEGIN_EVENT_TABLE(CClientRowListCtrl, CMuleVirtualDataViewCtrl)
 wxEND_EVENT_TABLE()
 
 CClientRowListCtrl::CClientRowListCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags)
-: CMuleVirtualDataViewCtrl(parent, id, pos, size, flags)
+: CClientNameListCtrl(parent, id, pos, size, flags)
 {
-}
-
-int CClientRowListCtrl::GetCustomFitWidth(const wxDataViewItem &item, unsigned column, wxDC &dc) const
-{
-	if (column != NameColumn()) {
-		return -1;
-	}
-	const ClientNameCell *cell = NameCellFor(ItemAt(GetModelRow(item)));
-	return cell ? MeasureClientNameCell(*cell, dc) : -1;
-}
-
-void CClientRowListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const
-{
-	if (column != NameColumn()) {
-		return;
-	}
-	const ClientNameCell *cell = NameCellFor(data);
-	if (cell == nullptr) {
-		return;
-	}
-	// The renderer needs the snapshot, not spans. Safe to hand out its address: the rows are
-	// only ever replaced wholesale, on the main thread, between paints.
-	out = CBarFillSpec(reinterpret_cast<wxUIntPtr>(cell), 0, {});
 }
 
 bool CClientRowListCtrl::MenuPeer(PeerIdentity &out) const

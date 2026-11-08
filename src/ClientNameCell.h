@@ -38,6 +38,7 @@
 class CUpDownClient;
 class wxDC;
 class wxBitmap;
+class wxColour;
 
 //! The client status icons, indexed by ClientSkinEnum.
 class CClientImages
@@ -48,6 +49,7 @@ public:
 	{
 		m_bundles.clear();
 		m_bitmaps.clear();
+		m_tinted.clear();
 	}
 	const std::vector<wxBitmapBundle> &GetBundles() const { return m_bundles; }
 	wxBitmapBundle GetBundle(size_t index) const
@@ -60,10 +62,14 @@ public:
 	 * backing scale. Cached, because setting a bitmap's scale factor may copy its pixels.
 	 */
 	wxBitmap GetBitmap(size_t index, const wxSize &logicalSize, double contentScale) const;
+	//! The same, every pixel recoloured to `tint` with its alpha kept: for one-colour glyphs.
+	wxBitmap GetTintedBitmap(
+		size_t index, const wxSize &logicalSize, double contentScale, const wxColour &tint) const;
 
 private:
 	std::vector<wxBitmapBundle> m_bundles;
 	mutable std::map<std::tuple<size_t, int, int, double>, wxBitmap> m_bitmaps;
+	mutable std::map<std::tuple<size_t, int, int, double, wxUint32>, wxBitmap> m_tinted;
 };
 
 /**
@@ -97,8 +103,10 @@ struct ClientNameCell
 	bool remoteQueueFull = false;
 	bool isFriend = false;
 	bool identified = false;
-	//! Failed signature verification or an identity bound to a different peer address.
-	bool identWarning = false;
+	//! Failed signature verification.
+	bool identFailed = false;
+	//! Identity bound to a different peer address.
+	bool badGuy = false;
 	bool extProtocol = true;
 	//! Score ratio above 1, i.e. we owe this peer.
 	bool highCredits = false;
@@ -118,8 +126,9 @@ struct ClientNameCell
 		       obfuscation == other.obfuscation && a4af == other.a4af &&
 		       showState == other.showState && knownSoftware == other.knownSoftware &&
 		       remoteQueueFull == other.remoteQueueFull && isFriend == other.isFriend &&
-		       identified == other.identified && identWarning == other.identWarning &&
-		       extProtocol == other.extProtocol && highCredits == other.highCredits;
+		       identified == other.identified && identFailed == other.identFailed &&
+		       badGuy == other.badGuy && extProtocol == other.extProtocol &&
+		       highCredits == other.highCredits;
 	}
 	bool operator!=(const ClientNameCell &other) const { return !(*this == other); }
 };
@@ -133,11 +142,15 @@ int MeasureClientNameCell(const ClientNameCell &cell, wxDC &dc);
 /**
  * Draw the badge cluster, the optional country flag and the name.
  *
- * Several badges deliberately stack at the same x: the download-state smiley advances, then
- * software/credentials/encryption all overprint one slot, which is what the pre-wxDataView
- * DrawClientItem() did and what the column widths are still sized for.
+ * Left to right: the download-state icon, the client icon, three badge positions (secure
+ * identification, obfuscation, credits), the flag and the name. Empty badge positions stay
+ * reserved, so names line up and each badge kind keeps its own column. "No extended protocol"
+ * has no badge: only ClientNameCellToolTip() reports it.
  */
 void DrawClientNameCell(const ClientNameCell &cell, const wxRect &rect, wxDC *dc);
+
+//! The cell's badges in words, one per line; empty when it shows none.
+wxString ClientNameCellToolTip(const ClientNameCell &cell);
 
 // Resource-explicit forms share the production layout and drawing without
 // needing a running application or live client. Flag is already DPI-scaled.

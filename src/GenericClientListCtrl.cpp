@@ -34,7 +34,7 @@
 #include "BitVector.h"
 #include "ClientDetailDialog.h"   // Needed for CClientDetailDialog
 #include "ClientContextActions.h" // Needed for BuildClientContextMenu, ClientAction*
-#include "ClientNameCell.h"       // Needed for MakeClientNameCell, DrawClientNameCell
+#include "ClientNameCell.h"       // Needed for MakeClientNameCell
 #include "ChatWnd.h"              // Needed for CChatWnd
 #include "CommentDialogLst.h"     // Needed for CCommentDialogLst
 #include "DataToText.h"           // Needed for PriorityToStr
@@ -62,42 +62,7 @@
 #endif
 #include "FriendList.h"
 
-namespace
-{
-/**
- * Renders the User Name column.
- *
- * Not a literal bar -- this reuses CMuleBarRenderer's identity-carrying
- * CBarFillSpec/GetItemBarFill() extension point (see CBarFillSpec::GetIdentity()) to reach the
- * row's ClientCtrlItem_Struct, the same way CDownloadBarRenderer reaches its CPartFile*. Registered
- * via AddBarColumn() rather than growing a new column-registration entry point for a single, list-
- * local column.
- *
- * The drawing itself lives in DrawClientNameCell(), shared with the global clients list so the two
- * cannot drift apart.
- */
-class CClientNameRenderer : public CMuleBarRenderer
-{
-public:
-	bool Render(wxRect cell, wxDC *dc, int WXUNUSED(state)) override
-	{
-		ClientCtrlItem_Struct *item =
-			reinterpret_cast<ClientCtrlItem_Struct *>(GetSpec().GetIdentity());
-		if (item == nullptr) {
-			return true;
-		}
-		// Read straight off the live CClientRef: this list holds an owning reference to
-		// every peer it shows, so the client is alive for as long as the row is.
-		DrawClientNameCell(
-			MakeClientNameCell(item->GetSource().GetClient(), item->GetType() == A4AF_SOURCE),
-			cell,
-			dc);
-		return true;
-	}
-};
-} // namespace
-
-wxBEGIN_EVENT_TABLE(CGenericClientListCtrl, CMuleVirtualDataViewCtrl)
+wxBEGIN_EVENT_TABLE(CGenericClientListCtrl, CClientNameListCtrl)
 	EVT_DATAVIEW_ITEM_ACTIVATED(wxID_ANY, CGenericClientListCtrl::OnItemActivated)
 	EVT_DATAVIEW_ITEM_CONTEXT_MENU(wxID_ANY, CGenericClientListCtrl::OnItemRightClicked)
 	EVT_MIDDLE_DOWN(CGenericClientListCtrl::OnMouseMiddleClick)
@@ -118,7 +83,7 @@ CGenericClientListCtrl::CGenericClientListCtrl(const wxString &tablename,
 	const wxSize &size,
 	long style,
 	const wxString &name)
-: CMuleVirtualDataViewCtrl(parent, winid, pos, size, style, name)
+: CClientNameListCtrl(parent, winid, pos, size, style, name)
 , m_columndata(0, nullptr)
 , m_menu(nullptr)
 , m_clientcount(0)
@@ -226,9 +191,7 @@ void CGenericClientListCtrl::InitColumnData()
 
 		switch (cid) {
 		case ColumnUserName:
-			// See CClientNameRenderer: a composite icon-cluster + text cell,
-			// not a literal bar.
-			AddBarColumn(title, i, key, width, baseFlags, new CClientNameRenderer());
+			AddNameColumn(title, i, key, width, baseFlags);
 			break;
 		case ColumnUserProgress:
 			AddBarColumn(title, i, key, width, baseFlags, CreateProgressBarRenderer());
@@ -729,7 +692,7 @@ wxString CGenericClientListCtrl::GetItemColumnText(wxUIntPtr data, unsigned colu
 
 	switch (m_columndata.columns[column].cid) {
 	case ColumnUserName:
-		// Not drawn through this path (see CClientNameRenderer), but still
+		// Not drawn through this path (see CClientNameListCtrl), but still
 		// answered for type-ahead / accessible row label (#180).
 		return client.GetUserName().IsEmpty() ? wxString("?") : client.GetUserName();
 
@@ -888,17 +851,15 @@ bool CGenericClientListCtrl::GetItemAttr(wxUIntPtr data, unsigned column, wxData
 	}
 }
 
-int CGenericClientListCtrl::GetCustomFitWidth(const wxDataViewItem &item, unsigned column, wxDC &dc) const
+std::optional<ClientNameCell> CGenericClientListCtrl::NameCellOf(wxUIntPtr item) const
 {
-	if (column >= static_cast<unsigned>(m_columndata.n_columns) ||
-		m_columndata.columns[column].cid != ColumnUserName) {
-		return -1;
+	const auto *source = reinterpret_cast<const ClientCtrlItem_Struct *>(item);
+	if (source == nullptr) {
+		return std::nullopt;
 	}
-	const auto *source = reinterpret_cast<const ClientCtrlItem_Struct *>(ItemAt(GetModelRow(item)));
-	return source ? MeasureClientNameCell(MakeClientNameCell(source->GetSource().GetClient(),
-						      source->GetType() == A4AF_SOURCE),
-				dc)
-		      : -1;
+	// Read straight off the live CClientRef: this list holds an owning reference to every peer
+	// it shows, so the client is alive for as long as the row is.
+	return MakeClientNameCell(source->GetSource().GetClient(), source->GetType() == A4AF_SOURCE);
 }
 
 void CGenericClientListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBarFillSpec &out) const
@@ -910,9 +871,7 @@ void CGenericClientListCtrl::GetItemBarFill(wxUIntPtr data, unsigned column, CBa
 
 	switch (m_columndata.columns[column].cid) {
 	case ColumnUserName:
-		// CClientNameRenderer only needs the identity; it draws straight
-		// off the live CClientRef, not off spans.
-		out = CBarFillSpec(data, 0, {});
+		CClientNameListCtrl::GetItemBarFill(data, column, out);
 		return;
 
 	case ColumnUserProgress: {

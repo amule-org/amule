@@ -219,44 +219,7 @@ CSearchListCtrl::CSearchListCtrl(
 	}
 
 	InitColumnState();
-
-	// Generic data views receive mouse events on their inner client window.
-	auto *body = GetMainWindow();
-	body->Bind(wxEVT_MOTION, [this, body](wxMouseEvent &event) {
-		wxDataViewItem item;
-		wxDataViewColumn *column = nullptr;
-		HitTest(ScreenToClient(body->ClientToScreen(event.GetPosition())), item, column);
-		wxString tip;
-		if (item.IsOk() && column && column->GetModelColumn() == CSearchListModel::COL_SOURCES &&
-			!m_model->IsFolder(item)) {
-			const auto *file = CSearchListModel::ToFile(item);
-			tip = FormatSearchSourcesTooltip(file->GetSourceCount(),
-				file->GetCompleteSourceCount(),
-#ifdef CLIENT_GUI
-				// EC does not send the daemon's complete endpoint list/count.
-				std::nullopt,
-#else
-				file->GetClientsCount(),
-#endif
-				file->GetNetworkSourceCounts());
-		}
-		if (tip != body->GetToolTipText()) {
-			if (tip.empty()) {
-				body->UnsetToolTip();
-			} else {
-				body->SetToolTip(tip);
-			}
-		}
-		event.Skip();
-	});
-	body->Bind(wxEVT_LEAVE_WINDOW, [body](wxMouseEvent &event) {
-		body->UnsetToolTip();
-		event.Skip();
-	});
-	body->Bind(wxEVT_MOUSEWHEEL, [body](wxMouseEvent &event) {
-		body->UnsetToolTip();
-		event.Skip();
-	});
+	EnableCellToolTips();
 
 	s_lists.push_back(this);
 }
@@ -653,6 +616,23 @@ wxString CSearchListCtrl::GetRowLabel(const wxDataViewItem &item) const
 		return name.GetString();
 	}
 	return CSearchListModel::ToFile(item)->GetFileName().GetPrintable();
+}
+
+wxString CSearchListCtrl::GetCellToolTip(const wxDataViewItem &item, unsigned column) const
+{
+	if (column != CSearchListModel::COL_SOURCES || m_model->IsFolder(item)) {
+		return wxString();
+	}
+	const auto *file = CSearchListModel::ToFile(item);
+	return FormatSearchSourcesTooltip(file->GetSourceCount(),
+		file->GetCompleteSourceCount(),
+#ifdef CLIENT_GUI
+		// EC does not send the daemon's complete endpoint list/count.
+		std::nullopt,
+#else
+		file->GetClientsCount(),
+#endif
+		file->GetNetworkSourceCounts());
 }
 
 wxString CSearchListCtrl::GetOldColumnOrder() const

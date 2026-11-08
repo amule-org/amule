@@ -53,11 +53,23 @@ public:
 		AssociateVirtualModel();
 		ApplySorting(0, 0);
 		InitColumnState();
+		EnableCellToolTips();
 		SetSize(1000, 400);
 	}
 	using CMuleDataViewCtrl::FitColumnWidths;
+	using CMuleDataViewCtrl::RecheckCellToolTip;
 	using CMuleVirtualDataViewCtrl::GetColumnFitRows;
 	mutable unsigned measurements = 0;
+
+	//! Moves the pointer to `point` in the control's client coordinates.
+	void MoveTo(const wxPoint &point)
+	{
+		wxWindow *body = GetMainWindow();
+		wxMouseEvent motion(wxEVT_MOTION);
+		motion.SetEventObject(body);
+		motion.SetPosition(body->ScreenToClient(ClientToScreen(point)));
+		body->GetEventHandler()->ProcessEvent(motion);
+	}
 
 protected:
 	void GetDisplayOrder(wxDataViewItemArray &) const override
@@ -76,6 +88,11 @@ protected:
 	int CompareItemData(wxUIntPtr a, wxUIntPtr b, unsigned, bool, int) const override
 	{
 		return (a > b) - (a < b);
+	}
+	wxString GetCellToolTip(const wxDataViewItem &item, unsigned column) const override
+	{
+		return column == 1 ? wxString::Format("tip %u", unsigned(ItemAt(GetModelRow(item))))
+				   : wxString();
 	}
 };
 // The native model exposes only shown rows, just like CSearchListModel and
@@ -216,6 +233,82 @@ void TestSearchSampling(wxWindow *parent)
 		"Expanded groups consumed the root sample budget");
 }
 
+// Draws one cell and compares its text-coloured pixels with the expected layout.
+void CheckClientCell(const ClientNameCell &cell, const CClientImages &images, const wxBitmap &flag, int scale)
+{
+	wxBitmap actual;
+	actual.CreateWithDIPSize(wxSize(500, 40), scale);
+	wxMemoryDC dc(actual);
+	dc.SetBackground(*wxWHITE_BRUSH);
+	dc.Clear();
+	dc.SetFont(*wxNORMAL_FONT);
+	dc.SetTextForeground(*wxRED);
+	const wxString text = cell.name.empty() ? wxString("?") : cell.name;
+	const int slot = dc.FromDIP(16) + dc.FromDIP(2);
+	const int badgeX = cell.showState ? 2 * slot : slot;
+	const wxSize badgeSize = dc.FromDIP(wxSize(10, 10));
+	const int badgeStep = badgeSize.x + dc.FromDIP(1);
+	const int textX = badgeX + 3 * badgeStep - dc.FromDIP(1) + dc.FromDIP(2) +
+			  (flag.IsOk() ? flag.GetLogicalSize().x + dc.FromDIP(2) : 0);
+	Check(MeasureClientNameCell(cell, dc, images, flag) == textX + dc.GetTextExtent(text).x,
+		"Client measurement differs from resource sizes");
+	DrawClientNameCell(cell, wxRect(0, 0, 500, 40), dc, images, flag);
+	wxBitmap expected;
+	expected.CreateWithDIPSize(wxSize(500, 40), scale);
+	wxMemoryDC expectedDC(expected);
+	expectedDC.SetBackground(*wxWHITE_BRUSH);
+	expectedDC.Clear();
+	expectedDC.SetFont(*wxNORMAL_FONT);
+	expectedDC.SetTextForeground(*wxRED);
+	expectedDC.DrawText(text, textX, (40 - expectedDC.GetCharHeight()) / 2 + 1);
+	if (cell.obfuscation == OBST_ENABLED) {
+		// The test icons are solid squares, so the lock is one too.
+		const int iconY = (40 - dc.FromDIP(16)) / 2 + 1;
+		expectedDC.SetPen(*wxTRANSPARENT_PEN);
+		expectedDC.SetBrush(*wxRED_BRUSH);
+		expectedDC.DrawRectangle(
+			wxPoint(badgeX + badgeStep, iconY + (dc.FromDIP(16) - badgeSize.y) / 2), badgeSize);
+	}
+	dc.SelectObject(wxNullBitmap);
+	expectedDC.SelectObject(wxNullBitmap);
+	const wxImage drawn = actual.ConvertToImage();
+	const wxImage reference = expected.ConvertToImage();
+	// Compare only text-coloured pixels: the name, which icons, flags and empty badge
+	// positions must not shift, and the lock, which takes the text colour.
+	for (int y = 0; y < drawn.GetHeight(); ++y) {
+		for (int x = 0; x < drawn.GetWidth(); ++x) {
+			const auto red = [&](const wxImage &image) {
+				return image.GetRed(x, y) > image.GetGreen(x, y) &&
+				       image.GetGreen(x, y) == image.GetBlue(x, y);
+			};
+			Check(red(drawn) == red(reference),
+				"Drawn client text disagrees with measured layout");
+		}
+	}
+}
+
+void TestClientToolTip()
+{
+	ClientNameCell cell;
+	Check(ClientNameCellToolTip(cell).empty(), "A cell without badges has a tooltip");
+	cell.identFailed = true;
+	cell.badGuy = true;
+	Check(ClientNameCellToolTip(cell) == "Secure ident: Failed",
+		"Failed secure ident not named as in Client Details");
+	cell.identFailed = false;
+	Check(ClientNameCellToolTip(cell) == "Secure ident: Bad Guy",
+		"Bad guy not named as in Client Details");
+	cell.badGuy = false;
+	cell.identified = true;
+	cell.obfuscation = OBST_ENABLED;
+	cell.highCredits = true;
+	cell.extProtocol = false;
+	Check(ClientNameCellToolTip(cell) == "Secure ident: Verified - OK\nObfuscation: Enabled\n"
+					     "Credits: Moves up faster in our upload queue\n"
+					     "Does not support the eMule extended protocol",
+		"Tooltip does not list every badge");
+}
+
 void TestClientDrawing()
 {
 	for (const int scale : { 1, 2 }) {
@@ -238,57 +331,16 @@ void TestClientDrawing()
 		}
 		for (const bool state : { false, true }) {
 			for (const bool withFlag : { false, true }) {
-				for (const wxString &name : { wxString(), wxString("Wide client name") }) {
-					ClientNameCell cell;
-					cell.name = name;
-					cell.showState = state;
-					cell.highCredits = true;
-					cell.identified = true;
-					cell.obfuscation = OBST_ENABLED;
-					wxBitmap actual;
-					actual.CreateWithDIPSize(wxSize(500, 40), scale);
-					wxMemoryDC dc(actual);
-					dc.SetBackground(*wxWHITE_BRUSH);
-					dc.Clear();
-					dc.SetFont(*wxNORMAL_FONT);
-					dc.SetTextForeground(*wxRED);
-					const wxBitmap usedFlag = withFlag ? flag : wxBitmap();
-					const wxString text = name.empty() ? wxString("?") : name;
-					const int slot = dc.FromDIP(16) + dc.FromDIP(2);
-					const int textX =
-						(state ? 2 * slot : slot) +
-						(withFlag ? flag.GetLogicalSize().x + dc.FromDIP(2) : 0);
-					Check(MeasureClientNameCell(cell, dc, images, usedFlag) ==
-							textX + dc.GetTextExtent(text).x,
-						"Client measurement differs from resource sizes");
-					DrawClientNameCell(cell, wxRect(0, 0, 500, 40), dc, images, usedFlag);
-					wxBitmap expected;
-					expected.CreateWithDIPSize(wxSize(500, 40), scale);
-					wxMemoryDC expectedDC(expected);
-					expectedDC.SetBackground(*wxWHITE_BRUSH);
-					expectedDC.Clear();
-					expectedDC.SetFont(*wxNORMAL_FONT);
-					expectedDC.SetTextForeground(*wxRED);
-					expectedDC.DrawText(
-						text, textX, (40 - expectedDC.GetCharHeight()) / 2 + 1);
-					dc.SelectObject(wxNullBitmap);
-					expectedDC.SelectObject(wxNullBitmap);
-					const wxImage drawn = actual.ConvertToImage();
-					const wxImage reference = expected.ConvertToImage();
-					// Compare only text-colored pixels: icons and flags must not
-					// shift the text, and overlay badges must not reserve extra slots.
-					for (int y = 0; y < drawn.GetHeight(); ++y) {
-						for (int x = 0; x < drawn.GetWidth(); ++x) {
-							const auto red = [&](const wxImage &image) {
-								return image.GetRed(x, y) >
-									       image.GetGreen(x, y) &&
-								       image.GetGreen(x, y) ==
-									       image.GetBlue(x, y);
-							};
-							Check(red(drawn) == red(reference),
-								"Drawn client text disagrees with measured "
-								"layout");
-						}
+				for (const bool badges : { false, true }) {
+					for (const wxString &name : { wxString(), wxString("Wide name") }) {
+						ClientNameCell cell;
+						cell.name = name;
+						cell.showState = state;
+						cell.highCredits = badges;
+						cell.identified = badges;
+						cell.obfuscation = badges ? OBST_ENABLED : OBST_UNDEFINED;
+						CheckClientCell(
+							cell, images, withFlag ? flag : wxBitmap(), scale);
 					}
 				}
 			}
@@ -302,6 +354,7 @@ void RunTests()
 {
 	wxFrame frame(nullptr, wxID_ANY, "Column fitting test");
 	TestSearchSampling(&frame);
+	TestClientToolTip();
 	TestClientDrawing();
 	auto *list = new TestList(&frame);
 	for (wxUIntPtr i = 1; i <= 4096; ++i) {
@@ -314,6 +367,25 @@ void RunTests()
 	frame.SetSize(1000, 500);
 	frame.Show();
 	wxTheApp->Yield(true);
+	const wxDataViewItem first = static_cast<wxDataViewVirtualListModel *>(list->GetModel())->GetItem(0);
+	wxWindow *body = list->GetMainWindow();
+	list->MoveTo(list->GetItemRect(first, list->GetColumn(1)).GetPosition() + wxPoint(5, 2));
+	Check(body->GetToolTipText() == "tip 1", "Cell tooltip not shown");
+	// Rows change under a still pointer. A row moving elsewhere keeps the shown tooltip as it
+	// is; a row moving away replaces it.
+	const wxToolTip *shown = body->GetToolTip();
+	list->RemoveItemData(2);
+	list->RecheckCellToolTip();
+	Check(body->GetToolTip() == shown, "Cell tooltip replaced while its row stayed");
+	list->RemoveItemData(1);
+	list->RecheckCellToolTip();
+	Check(body->GetToolTipText() == "tip 3", "Cell tooltip kept a row that moved away");
+	list->AddItemData(1);
+	list->AddItemData(2);
+	list->MoveTo(list->GetItemRect(first, list->GetColumn(0)).GetPosition() + wxPoint(5, 2));
+	Check(body->GetToolTip() == nullptr, "Cell tooltip outlived its cell");
+	list->RecheckCellToolTip();
+	Check(body->GetToolTip() == nullptr, "Recheck added a tooltip the pointer never asked for");
 	wxDataViewItemArray sample;
 	list->GetColumnFitRows(sample, 512);
 	Check(sample.size() == 512, "Fit sample is not bounded");
