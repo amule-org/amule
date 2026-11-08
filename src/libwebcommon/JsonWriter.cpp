@@ -124,12 +124,13 @@ std::string JsonDoubleToString(double v)
 		// JSON has no spelling for these.
 		return "null";
 	}
-	// %.17g retains enough significant digits to round-trip IEEE 754 doubles.
+	// %.17g is the shortest round-trippable form for IEEE 754 doubles.
 	char buf[64];
 	std::snprintf(buf, sizeof(buf), "%.17g", v);
 	// JSON numbers are always C-locale, with a '.' decimal point, but snprintf honours
-	// LC_NUMERIC. %g never emits digit grouping, so the only possible locale artifact is the
-	// decimal separator; normalise it to '.' so the output is valid JSON whatever the process locale.
+	// LC_NUMERIC, which amuleapi/amuleweb inherit from --locale. %g never emits digit grouping,
+	// so the only possible locale artifact is the decimal separator; normalise it to '.' so the
+	// output is valid JSON whatever the process locale.
 	const char decimal_point = *std::localeconv()->decimal_point;
 	if (decimal_point != '.') {
 		for (char *p = buf; *p; ++p) {

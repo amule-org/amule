@@ -713,13 +713,6 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 			}
 		} else {
 			m_state.MarkTickFailure();
-			// Report loss of freshness even when no complete diff can be published.
-			// Before the first successful tick REST still returns 503, so do not
-			// present the default dashboard as a usable snapshot on SSE either.
-			const auto dashboard = m_state.Dashboard();
-			if (dashboard.snapshot_at != 0) {
-				webapi::EmitStatusDiffAndUpdate(*m_event_bus, m_last_seen, dashboard);
-			}
 			was_failed = true;
 			++ec_consecutive_failures;
 			if (!ec_warn_logged && ec_consecutive_failures >= kEcFailWarnAfter) {

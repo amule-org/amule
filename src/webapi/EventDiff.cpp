@@ -650,16 +650,6 @@ void PublishChatEvents(CEventBus &bus,
 	bus.PublishBatch(batch);
 }
 
-void EmitStatusDiffAndUpdate(CEventBus &bus, LastSeenState &prev, const CState::DashboardSnapshot &dashboard)
-{
-	EnforceSinglePublisher();
-	std::string payload = ToJsonStatusEvent(dashboard);
-	if (payload != prev.status_payload) {
-		bus.Publish("status_changed", payload);
-		prev.status_payload = std::move(payload);
-	}
-}
-
 void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state)
 {
 	EnforceSinglePublisher();
@@ -831,7 +821,11 @@ void EmitDiffsAndUpdate(CEventBus &bus, LastSeenState &prev, const CState &state
 		return RemovedEcidPayload(f);
 	});
 
-	EmitStatusDiffAndUpdate(bus, prev, new_dashboard);
+	std::string status_payload = ToJsonStatusEvent(new_dashboard);
+	if (status_payload != prev.status_payload) {
+		bus.Publish("status_changed", status_payload);
+		prev.status_payload = std::move(status_payload);
+	}
 
 	// Snapshot the new state for next tick's diff baseline.
 	prev.servers = std::move(new_servers);

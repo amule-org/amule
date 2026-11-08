@@ -558,8 +558,6 @@ It never carries a `parts` bitmap — those are opt-in on the per-file client ro
 
 Identical to the REST [`/api/v1/status`](REFERENCE.md#get-apiv1status) envelope, including the `null` rule on the two disk figures. The payload is the post-change snapshot, not a diff. Fires when any field anywhere in the envelope changes — ed2k state and identity, Kad state, Kad network counters, headline speeds, the overhead rates, the free-space figures, the queue counters, or `ec_connected`.
 
-Changes to measurements hidden as `null` do not fire an event. Before the first successful refresh, `/status` returns 503 and no status event is published. After a usable snapshot exists, a rejected EC refresh publishes `ec_connected=false` with the same best-effort dashboard REST exposes. Repeated failures with unchanged payloads stay silent, and a successful refresh publishes `ec_connected=true` again. Collection deltas remain based on successful refreshes, so a failed tick does not announce partial list changes.
-
 Rate impact is small: the overhead rates move about as often as the speeds already in that comparison, so they add no wakeups, and the disk figures are resampled only every 10 s by the daemon, so at worst they add one event per 10 s and only when the number actually moved. An idle daemon still emits nothing.
 
 ```json
