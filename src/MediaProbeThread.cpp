@@ -27,16 +27,9 @@
 #include <wx/app.h> // Needed for wxTheApp / wxQueueEvent
 
 #include "Logger.h"
-#include "MediaProbe.h"  // Needed for MediaProbe::Probe / MediaMetadata
+#include "MediaProbe.h" // Needed for MediaProbe::Probe / MediaMetadata
+#include "mediaprobe/sandbox.h"
 #include "ThreadTasks.h" // Needed for CMediaProbeEvent
-
-namespace
-{
-// Wall-clock ceiling for a single helper run. A local media file probes in tens of milliseconds;
-// anything approaching this is a hung invocation the worker kills rather than blocking on. It also
-// bounds how long a shutdown can wait on an in-flight probe.
-constexpr unsigned kProbeTimeoutMs = 30000;
-} // namespace
 
 CMediaProbeThread::CMediaProbeThread()
 : wxThread(wxTHREAD_JOINABLE)
@@ -148,7 +141,7 @@ void *CMediaProbeThread::Entry()
 			const bool mayName = !jobBulk || bulkNamed < kMaxNamedFailures;
 			MediaMetadata info;
 			const MediaProbe::ProbeOutcome outcome = MediaProbe::Probe(
-				exe, job.path, info, kProbeTimeoutMs, m_bRun, jobBulk, mayName);
+				exe, job.path, info, probe::sandbox::kTimeoutMs, m_bRun, jobBulk, mayName);
 			// A file that was gone before the helper ran is not an extraction that failed
 			// -- nothing was extracted from and no verdict was reached -- so it is
 			// counted in neither total. It still names itself above. Counting it as a

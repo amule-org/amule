@@ -1,0 +1,100 @@
+name: Media probe pre-release fuzzing
+
+on:
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Fuzz duration in seconds (30–1800; normally 600)
+        type: number
+        default: 600
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      FUZZ_SECONDS: ${{ inputs.seconds }}
+      ASAN_OPTIONS: detect_leaks=1:abort_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - uses: actions/checkout@v7
+      - name: Validate duration and record provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! [[ "$FUZZ_SECONDS" =~ ^[0-9]{1,4}$ ]] ||
+             (( 10#$FUZZ_SECONDS < 30 || 10#$FUZZ_SECONDS > 1800 )); then
+            echo 'Fuzz duration must be an integer between 30 and 1800 seconds.' >&2
+            exit 1
+          fi
+          mkdir -p fuzz-results/crashes
+          {
+            git rev-parse HEAD
+            uname -m
+            cat /etc/os-release
+            clang++ --version
+            echo "seconds=$FUZZ_SECONDS"
+          } > fuzz-results/provenance.txt
+      - name: Build with libFuzzer, ASan and UBSan
+        run: |
+          cmake -S src/mediaprobe -B build-fuzz -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=RelWithDebInfo -DMEDIA_PROBE_FUZZ=ON
+          cmake --build build-fuzz --target amule-media-probe amule-media-probe-fuzz --parallel 2
+      - name: Generate seeds from regression fixtures
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+          python3 src/mediaprobe/corpus.py seed build-fuzz/src/amule-media-probe fuzz-results/seeds
+          python3 src/mediaprobe/corpus.py pack fuzz-results/seeds fuzz-results/seeds.tar.gz
+          sha256sum fuzz-results/seeds.tar.gz >> fuzz-results/provenance.txt
+      - name: Fuzz the parsers
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p fuzz-results/corpus
+          # Per-worker limits: two workers fit on the smallest hosted runner.
+          # Both jobs run for the requested duration; crashes fail the step.
+          build-fuzz/amule-media-probe-fuzz fuzz-results/corpus fuzz-results/seeds \
+            -jobs=2 -workers=2 -max_total_time="$FUZZ_SECONDS" \
+            -max_len=262144 -timeout=10 -rss_limit_mb=1024 \
+            -artifact_prefix=fuzz-results/crashes/ -print_final_stats=1 \
+            2>&1 | tee fuzz-results/fuzzer.log
+      - name: Preserve worker logs and archive the updated corpus
+        id: corpus
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p fuzz-results
+          for log in fuzz-*.log; do
+            if test -f "$log"; then mv "$log" fuzz-results/; fi
+          done
+          if test -d fuzz-results/corpus; then
+            mkdir -p fuzz-results/minimized
+            # Shared workers leave superseded inputs on disk. Merge them before
+            # archiving so each artifact contains only the minimized inputs.
+            timeout 180 build-fuzz/amule-media-probe-fuzz -merge=1 \
+              -timeout=10 -rss_limit_mb=2048 \
+              fuzz-results/minimized fuzz-results/corpus fuzz-results/seeds > fuzz-results/merge.log 2>&1
+            python3 src/mediaprobe/corpus.py pack fuzz-results/minimized fuzz-results/updated-corpus.tar.gz
+          fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: media-probe-fuzz-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            fuzz-results/*.log
+            fuzz-results/*.txt
+            fuzz-results/*.tar.gz
+            fuzz-results/crashes/
+          retention-days: 90
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: always() && steps.corpus.outcome == 'failure'
+        with:
+          name: media-probe-unminimized-${{ github.sha }}-${{ github.run_id }}
+          path: fuzz-results/corpus/
+          retention-days: 90
+          if-no-files-found: warn

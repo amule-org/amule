@@ -1,0 +1,98 @@
+name: Media probe restrictions
+
+on:
+  push:
+    paths:
+      - 'src/mediaprobe/sandbox*'
+      - 'src/mediaprobe/main.cpp'
+      - 'src/mediaprobe/CMakeLists.txt'
+      - 'src/mediaprobe/test_sandbox.py'
+      - 'packaging/linux/versions.env'
+      - '.github/workflows/media-probe.yml'
+  pull_request:
+    paths:
+      - 'src/mediaprobe/sandbox*'
+      - 'src/mediaprobe/main.cpp'
+      - 'src/mediaprobe/CMakeLists.txt'
+      - 'src/mediaprobe/test_sandbox.py'
+      - 'packaging/linux/versions.env'
+      - '.github/workflows/media-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: media-probe-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: Native restrictions (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04-arm, macos-15-intel, windows-11-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure the standalone helper
+        run: cmake -S src/mediaprobe -B build-probe -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build-probe --config Release --parallel 2
+      - name: Verify extraction, hostile inputs and OS denials
+        run: ctest --test-dir build-probe -C Release --output-on-failure
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: media-probe-tests-${{ matrix.os }}
+          path: build-probe/Testing/Temporary/
+          if-no-files-found: warn
+  musl:
+    name: Static musl restrictions (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            platform: linux/amd64
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            platform: linux/arm64
+            arch: aarch64
+          # i386 executes natively on x86-64, with the real host seccomp ABI.
+          - os: ubuntu-24.04
+            platform: linux/386
+            arch: i386
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build and test the static helper with the packaging C library
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Match the static package's pinned Alpine release without building
+          # the whole application just to exercise the helper's libc ABI.
+          . packaging/linux/versions.env
+          mkdir -p build-probe-musl
+          docker run --rm --platform "${{ matrix.platform }}" \
+            --volume "$PWD:/source:ro" --volume "$PWD/build-probe-musl:/build" \
+            "alpine:$ALPINE_STATIC_BASE" sh -ec '
+              apk add --no-cache cmake g++ linux-headers make python3
+              cat /etc/os-release
+              c++ --version
+              cmake -S /source/src/mediaprobe -B /build \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS=-static
+              cmake --build /build --parallel 2
+              ctest --test-dir /build --output-on-failure
+            '
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: media-probe-tests-musl-${{ matrix.arch }}
+          path: |
+            build-probe-musl/Testing/Temporary/
+            build-probe-musl/src/amule-media-probe
+          if-no-files-found: warn

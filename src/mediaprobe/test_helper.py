@@ -10,6 +10,8 @@ import tempfile
 import unittest
 import wave
 
+from corpus import save
+
 HELPER = str(Path(sys.argv.pop(1)).resolve())
 
 class HelperTests(unittest.TestCase):
@@ -24,6 +26,7 @@ class HelperTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def run_probe(self, json_output=True):
+        save(self.path.read_bytes())
         with self.path.open('rb') as f:
             return subprocess.run([HELPER] + (['--json'] if json_output else []),
                                   stdin=f, capture_output=True, timeout=10)

@@ -65,7 +65,8 @@ wxString AutoDetectPath();
 // AutoDetectPath() memoised for the life of the process, and the entry point everything but the
 // detection itself should use.
 //
-// Logs missing helper once. redetect refreshes the cached sibling path.
+// Logs missing helper once. redetect refreshes the cached sibling path, but never
+// re-enables extraction after failed OS confinement in this session.
 wxString DetectedPath(bool redetect = false);
 
 // Probe a single file, populating `out` only for Extracted. Other outcomes describe
@@ -77,7 +78,7 @@ wxString DetectedPath(bool redetect = false);
 // worker.
 //
 // Callers MUST run this off the main thread: it blocks for the duration of the child, typically
-// 30-100 ms and at most `timeoutMs`.
+// 30-100 ms, with a bounded cleanup grace period after `timeoutMs` expires.
 
 //! Why a probe produced no metadata. The distinction matters because one of these is a statement
 //! about the FILE and the rest about the environment: only the first justifies recording "this file
@@ -108,6 +109,7 @@ inline bool IsFileVerdict(ProbeOutcome outcome)
 //! \param logFailure whether a failure may name its file. Failures are worth naming even in bulk,
 //! since a count alone is not actionable, but a broken helper fails EVERY file, so the caller caps
 //! how many it names.
+//! Further bounded diagnostics go to the debug log once the naming budget is spent.
 ProbeOutcome Probe(const wxString &helperPath,
 	const CPath &file,
 	MediaMetadata &out,

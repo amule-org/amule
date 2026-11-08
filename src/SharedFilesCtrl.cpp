@@ -66,7 +66,7 @@ namespace
 enum class MediaRefreshEligibility
 {
 	Eligible,
-	FeatureDisabled, //!< switched off in preferences, or the core has no media helper
+	FeatureDisabled, //!< switched off in preferences, or the core cannot safely run its media helper
 	Incomplete,      //!< an in-progress download has no complete file to read
 	NotMedia,        //!< nothing for the helper to extract
 };

@@ -12,7 +12,8 @@ from AllSearchIntegrationTest import (C, free_ports, integer, log_snapshot, new_
 from DaemonConfig import daemon_env, write_amule_conf
 
 UNAVAILABLE_LOG = 'Media metadata: bundled amule-media-probe helper is unavailable.'
-UNAVAILABLE_EC = b'This aMule has no media helper (amule-media-probe)'
+UNAVAILABLE_EC = (b'Media metadata extraction is unavailable: the helper is missing or its OS '
+                  b'restrictions failed. See the core log for details.')
 
 
 def refusal(tags):

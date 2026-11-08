@@ -9,6 +9,8 @@ import sys
 import tempfile
 import unittest
 
+from corpus import save
+
 HELPER = str(Path(sys.argv.pop(1)).resolve())
 
 MAGICS = (b'RIFF\xff\xff\xff\x7fWAVE', b'RIFF\xff\xff\xff\x7fAVI ', b'FORM\xff\xff\xff\x7fAIFF',
@@ -75,6 +77,7 @@ class HostileTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def verdict(self, data, timeout=10):
+        save(data)
         self.path.write_bytes(data)
         with self.path.open('rb') as f:
             p = subprocess.run([HELPER, '--json'], stdin=f, capture_output=True, timeout=timeout)

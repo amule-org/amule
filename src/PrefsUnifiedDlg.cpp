@@ -818,8 +818,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		const bool available = thePrefs::IsMediaMetadataAvailable();
 		media->Enable(available);
 		if (!available) {
-			media->SetToolTip(_("This aMule has no media helper (amule-media-probe), so it "
-					    "cannot extract media metadata."));
+			media->SetToolTip(_("Media metadata extraction is unavailable: the helper is missing "
+					    "or its OS restrictions failed. See the core log for details."));
 		}
 	}
 

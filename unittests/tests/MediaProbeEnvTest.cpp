@@ -46,12 +46,14 @@ TEST(MediaProbeEnv, NativeHelperFailuresRespectHeaderAndOutputBudget)
 {
 	const wxString path = wxFileName::CreateTempFileName(wxT("amule-native-exit"));
 	const std::atomic<bool> running(true);
-	for (const char mode : { 's', 'e', 'c', 'o' }) {
+	for (const char mode : { 's', 'e', 'c', 'o', 'd', 'f', 'p' }) {
 		wxFFile input(path, wxT("wb"));
 		ASSERT_TRUE(input.IsOpened());
 		ASSERT_EQUALS(size_t(1), input.Write(&mode, 1));
 		input.Close();
 		MediaMetadata info;
+		info.length_seconds = 99;
+		info.codec = wxT("unchanged");
 		const auto outcome = MediaProbe::Probe(wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE),
 			CPath(path),
 			info,
@@ -66,8 +68,28 @@ TEST(MediaProbeEnv, NativeHelperFailuresRespectHeaderAndOutputBudget)
 			ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::Unavailable);
 			ASSERT_FALSE(MediaProbe::IsFileVerdict(outcome));
 		}
+		ASSERT_EQUALS(uint32(99), info.length_seconds);
+		ASSERT_EQUALS(wxString(wxT("unchanged")), info.codec);
 	}
 	wxRemoveFile(path);
+}
+
+TEST(MediaProbeEnv, NativeHelperHangIsStoppedWithoutPublishingMetadata)
+{
+	const wxString path = wxFileName::CreateTempFileName(wxT("amule-native-timeout"));
+	wxFFile input(path, wxT("wb"));
+	input.Write("t", 1);
+	input.Close();
+	const std::atomic<bool> running(true);
+	MediaMetadata info;
+	info.length_seconds = 99;
+	const auto start = std::chrono::steady_clock::now();
+	const auto result = MediaProbe::Probe(
+		wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE), CPath(path), info, 100, running, true, false);
+	wxRemoveFile(path);
+	ASSERT_TRUE(result == MediaProbe::ProbeOutcome::Cancelled);
+	ASSERT_EQUALS(uint32(99), info.length_seconds);
+	ASSERT_TRUE(std::chrono::steady_clock::now() - start < std::chrono::seconds(5));
 }
 
 // The bundled helper inherits AppImage library paths. The stand-in returns
@@ -85,7 +107,7 @@ const wxString kBundleLib = kBundle + wxT("/usr/lib");
 const wxString kHostLib = wxT("/usr/lib");
 
 // A stand-in helper whose reply carries its own LD_LIBRARY_PATH as the title.
-wxString WriteFakeHelper()
+wxString WriteFakeHelper(const wxString &variable = wxT("LD_LIBRARY_PATH"))
 {
 	const wxString path = wxFileName::CreateTempFileName(wxT("amule-fake-helper"));
 	wxFFile f(path, wxT("w"));
@@ -94,7 +116,9 @@ wxString WriteFakeHelper()
 		"1\\nformat.duration=1\\nformat.bit_rate=1000\\nstreams.stream.0.codec_type="
 		"\"audio\"\\nstreams.stream.0.codec_name=\"mp3\"\\nformat.tags.artist=\"\"\\nformat.tags."
 		"album=\"\"\\n'\n") wxT("printf 'format.tags.title=\"%s\"\\nEND\\n' \"$LD_LIBRARY_PATH\"\n");
-	f.Write(script);
+	wxString selected = script;
+	selected.Replace(wxT("$LD_LIBRARY_PATH"), wxT("$") + variable);
+	f.Write(selected);
 	f.Close();
 	wxExecute(wxT("chmod +x ") + path, wxEXEC_SYNC);
 	return path;
@@ -110,9 +134,10 @@ wxString WriteDummyMedia()
 	return path;
 }
 
-wxString ProbeTitleWith(const wxString &appdir, const wxString &ldPath)
+wxString ProbeTitleWith(
+	const wxString &appdir, const wxString &ldPath, const wxString &variable = wxT("LD_LIBRARY_PATH"))
 {
-	const wxString helper = WriteFakeHelper();
+	const wxString helper = WriteFakeHelper(variable);
 	const wxString media = WriteDummyMedia();
 	wxString originalAppdir, originalLdPath;
 	const bool hadAppdir = wxGetEnv(wxT("APPDIR"), &originalAppdir);
@@ -127,7 +152,7 @@ wxString ProbeTitleWith(const wxString &appdir, const wxString &ldPath)
 
 	MediaMetadata info;
 	const std::atomic<bool> keepRunning(true);
-	MediaProbe::Probe(helper, CPath(media), info, 10000, keepRunning, false, false);
+	const auto outcome = MediaProbe::Probe(helper, CPath(media), info, 10000, keepRunning, false, false);
 
 	if (hadAppdir)
 		wxSetEnv(wxT("APPDIR"), originalAppdir);
@@ -139,6 +164,7 @@ wxString ProbeTitleWith(const wxString &appdir, const wxString &ldPath)
 		wxUnsetEnv(wxT("LD_LIBRARY_PATH"));
 	wxRemoveFile(helper);
 	wxRemoveFile(media);
+	ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::Extracted);
 	return info.title;
 }
 
@@ -152,7 +178,21 @@ TEST(MediaProbeEnv, BundlePathsArePreservedForTheBundledHelper)
 }
 
 // The control: with no $APPDIR there is no bundle, so the environment passes through untouched.
-TEST(MediaProbeEnv, WithoutAppdirTheEnvironmentIsUnchanged)
+TEST(MediaProbeEnv, UnrelatedEnvironmentSecretsAreNotInherited)
+{
+	const wxString key = wxT("AMULE_MEDIA_PROBE_TEST_SECRET");
+	wxString previous;
+	const bool existed = wxGetEnv(key, &previous);
+	wxSetEnv(key, wxT("must-not-reach-the-parser"));
+	const wxString result = ProbeTitleWith(wxEmptyString, kHostLib, key);
+	if (existed)
+		wxSetEnv(key, previous);
+	else
+		wxUnsetEnv(key);
+	ASSERT_TRUE(result.empty());
+}
+
+TEST(MediaProbeEnv, WithoutAppdirTheLibraryPathIsPreserved)
 {
 	const wxString ldPath = kBundleLib + wxT(":") + kHostLib;
 	ASSERT_EQUALS(ldPath, ProbeTitleWith(wxEmptyString, ldPath));
