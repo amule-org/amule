@@ -39,7 +39,10 @@ python3 "$TASK_TESTS/setup.py"
 update-desktop-database "$ED2K_TEST_STATE/data/applications"
 # An existing desktop portal can ignore a child's XDG directories. Isolate the
 # session bus as well as the display and browser profile before clicking a URI.
+# A bare runner has no desktop setting enabling Chromium's native ATK bridge.
+# --force-renderer-accessibility alone only establishes renderer accessibility.
+# See ui/accessibility/platform/atk_util_auralinux.cc in Chromium.
 exec env -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY -u http_proxy -u https_proxy -u all_proxy -u LD_PRELOAD \
     XDG_CONFIG_HOME="$ED2K_TEST_STATE/config" XDG_DATA_HOME="$ED2K_TEST_STATE/data" \
-    ED2K_PRIVATE_TEST_BUS=1 xvfb-run -a -s '-screen 0 1280x900x24' \
+    ED2K_PRIVATE_TEST_BUS=1 ACCESSIBILITY_ENABLED=1 xvfb-run -a -s '-screen 0 1280x900x24' \
     dbus-run-session -- node "$TASK_TESTS/smoke.mjs"
