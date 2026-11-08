@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-07 10:50+0000\n"
+"PO-Revision-Date: 2026-11-08 11:22+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -1565,15 +1565,15 @@ msgstr "*** 您输入了错误的 captcha 信息，您的信息已经被忽略�
 msgid "Chat"
 msgstr "聊天"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close tab"
 msgstr "关闭分页"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close all tabs"
 msgstr "关闭所有分页"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close other tabs"
 msgstr "关闭其它分页"
 
@@ -2744,9 +2744,9 @@ msgstr "没有这样的聊天会话"
 msgid "Media metadata extraction is disabled in preferences"
 msgstr "首选项中禁用了媒体元数据提取"
 
-#: src/ExternalConn.cpp
-msgid "This aMule has no media helper (amule-media-probe)"
-msgstr "这个 aMule 没有多媒体助手 (amule-media-probe)"
+#: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
+msgstr "媒体元数据提取不可用：助手程序缺失或其操作系统限制失败。详情见核心日志。"
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -4228,6 +4228,11 @@ msgstr "媒体元数据：捆绑的 amule-media-probe 助手程序不可用。"
 
 #: src/MediaProbe.cpp
 #, c-format
+msgid "Media metadata: no result for %s: %s"
+msgstr "媒体元数据：没有 %s 的结果：%s"
+
+#: src/MediaProbe.cpp
+#, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
 msgstr "媒体元数据：缺少 %s，没有可提取的信息"
 
@@ -4238,8 +4243,8 @@ msgstr "正提取媒体元数据：%s"
 
 #: src/MediaProbe.cpp
 #, c-format
-msgid "Media metadata: parser failed for %s"
-msgstr "媒体元数据：解析器因 %s 失败"
+msgid "Media metadata extraction disabled until restart: %s"
+msgstr "媒体元数据提取在重启前禁用：%s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5101,26 +5106,23 @@ msgstr "在操作系统中注册一个按用户自动启动的条目，以便在
 
 #: src/muuli_wdr.cpp
 msgid "Prevent automatic sleep: "
-msgstr ""
+msgstr "阻止自动睡眠 "
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Off"
 msgstr "关闭"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While downloading"
-msgstr "已经在下载"
+msgstr "下载时"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While aMule is running"
-msgstr "aMule 正在运行"
+msgstr "aMule 正在运行时"
 
 #: src/muuli_wdr.cpp
 msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgstr "下载时：当下载加入队列且未暂停、停止、或处于错误状态时保持设备唤醒，或者在会话上传匹配会话下载前保持设备唤醒。运行时：即使在空闲、连接断开或最小化到托盘时也保持设备唤醒。仍可关闭屏幕。"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5190,7 +5192,7 @@ msgstr "在搜索标签页的名称字段中保留过往搜索词的下拉列表
 msgid "Tooltip delay time: "
 msgstr "工具提示延迟时间: "
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
 msgstr "秒"
 
@@ -5539,8 +5541,8 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "从共享的音视频文件提取长度/比特率/编解码器信息"
 
 #: src/muuli_wdr.cpp
-msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
-msgstr "启用后，aMule 使用捆绑的 MediaInfo 解析器从贡献的媒体文件提取元数据。"
+msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
+msgstr "启用后，aMule 使用捆绑的媒体解析器从共享的媒体文件提取元数据。"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -7007,8 +7009,8 @@ msgid "no options available"
 msgstr "选项不可用"
 
 #: src/Preferences.cpp
-msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
-msgstr "媒体元数据：FFProbePath 无效; aMule 现在使用其捆绑的 MediaInfo 解析器。正删除旧设置。"
+msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
+msgstr "媒体元数据：FFProbePath 无效; aMule 现在使用其捆绑的媒体解析器。正删除旧设置。"
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -7168,10 +7170,6 @@ msgstr "使用ID %d和密匙%s连接Cfg到小插件失败"
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "通过ID %d和密匙%s把数据从Cfg转移到小插件失败"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
-msgstr "这个 aMule 没有媒体助手程序 (amule-media-probe)，因此无法提取媒体元数据。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -7652,6 +7650,10 @@ msgid "Clear the saved search history? This cannot be undone."
 msgstr "清除保存的搜索历史？这无法撤销。"
 
 #: src/SearchDlg.cpp
+msgid "Load into search form"
+msgstr "加载进搜索表单"
+
+#: src/SearchDlg.cpp
 msgid "Search warning"
 msgstr "搜索警告"
 
@@ -7682,6 +7684,10 @@ msgid "Search in progress"
 msgstr "搜索中"
 
 #: src/SearchDlg.cpp
+msgid "Enter whole, non-negative sizes and availability within the supported range."
+msgstr "输入整数、非负的大小和支持区间内的可用性。"
+
+#: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "最小值必须小于最大值，最大值已被忽略。"
 
@@ -7690,8 +7696,16 @@ msgid "Main"
 msgstr "主要"
 
 #: src/SearchMetadataPanel.cpp
-msgid "Minimum duration (minutes)"
-msgstr "最短持续时间（分钟）"
+msgid "minutes"
+msgstr "分钟"
+
+#: src/SearchMetadataPanel.cpp
+msgid "Duration unit"
+msgstr "时长单位"
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration"
+msgstr "最短时长"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
@@ -8477,10 +8491,6 @@ msgstr "无法读取共享目录，跳过：%s"
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
 msgstr "首选项中禁用了媒体元数据提取，因此没有要重新提取的信息。"
-
-#: src/SharedFileList.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
-msgstr "这个 aMule 没有媒体助手程序 (amule-media-probe)，因此无法重新提取媒体元数据。"
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -10610,6 +10620,15 @@ msgstr "无法将旧的 ECPassword 和 ECPasswordVerifier 进行比较；拒绝�
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再对本次运行进行身份认证。"
+
+#~ msgid "This aMule has no media helper (amule-media-probe)"
+#~ msgstr "这个 aMule 没有多媒体助手 (amule-media-probe)"
+
+#~ msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
+#~ msgstr "这个 aMule 没有媒体助手程序 (amule-media-probe)，因此无法提取媒体元数据。"
+
+#~ msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
+#~ msgstr "这个 aMule 没有媒体助手程序 (amule-media-probe)，因此无法重新提取媒体元数据。"
 
 #~ msgid "Disable computer's timed standby mode"
 #~ msgstr "停用电脑自动进入待命模式功能"

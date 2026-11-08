@@ -1575,15 +1575,15 @@ msgstr "*** La tua risposta al captcha era errata ed il tuo messaggio è stato i
 msgid "Chat"
 msgstr "Chat"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close tab"
 msgstr "Chiudi scheda"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close all tabs"
 msgstr "Chiudi tutte le schede"
 
-#: src/ChatWnd.cpp src/MuleNotebook.cpp
+#: src/ChatWnd.cpp src/MuleNotebook.cpp src/SearchDlg.cpp
 msgid "Close other tabs"
 msgstr "Chiudi le altre schede"
 
@@ -2754,9 +2754,9 @@ msgstr "Sessione di chat inesistente"
 msgid "Media metadata extraction is disabled in preferences"
 msgstr "L'estrazione dei metadati multimediali è disabilitata nelle preferenze"
 
-#: src/ExternalConn.cpp
-msgid "This aMule has no media helper (amule-media-probe)"
-msgstr "Questo aMule non dispone di un helper multimediale (amule-media-probe)"
+#: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
+msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
+msgstr ""
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -4237,6 +4237,11 @@ msgid "Media metadata: bundled amule-media-probe helper is unavailable."
 msgstr "Metadati multimediali: l'helper integrato amule-media-probe non è disponibile."
 
 #: src/MediaProbe.cpp
+#, fuzzy, c-format
+msgid "Media metadata: no result for %s: %s"
+msgstr "Metadati multimediali: parser fallito per %s"
+
+#: src/MediaProbe.cpp
 #, c-format
 msgid "Media metadata: %s is gone, nothing to extract"
 msgstr "Metadati multimediali: %s non esiste più, nulla da estrarre"
@@ -4247,9 +4252,9 @@ msgid "Extracting media metadata: %s"
 msgstr "Estrazione dei metadati multimediali: %s"
 
 #: src/MediaProbe.cpp
-#, c-format
-msgid "Media metadata: parser failed for %s"
-msgstr "Metadati multimediali: parser fallito per %s"
+#, fuzzy, c-format
+msgid "Media metadata extraction disabled until restart: %s"
+msgstr "L'estrazione dei metadati multimediali è disabilitata nelle preferenze"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5200,7 +5205,7 @@ msgstr "Mantiene un elenco a discesa dei termini di ricerca usati in precedenza 
 msgid "Tooltip delay time: "
 msgstr "Ritardo dei suggerimenti: "
 
-#: src/muuli_wdr.cpp
+#: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
 msgstr "secondi"
 
@@ -5549,7 +5554,8 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "Estrai durata / bitrate / codec dai file audio e video condivisi"
 
 #: src/muuli_wdr.cpp
-msgid "When enabled, aMule uses its bundled MediaInfo parser to extract metadata from shared media files."
+#, fuzzy
+msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
 msgstr "Quando abilitato, aMule utilizza il suo analizzatore integrato MediaInfo per estrarre metadata dai file multimediali condivisi."
 
 #: src/muuli_wdr.cpp
@@ -7013,7 +7019,7 @@ msgid "no options available"
 msgstr "nessuna opzione disponibile"
 
 #: src/Preferences.cpp
-msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled MediaInfo parser. Removing the old setting."
+msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
 #: src/Preferences.cpp
@@ -7174,10 +7180,6 @@ msgstr "Insuccesso nel collegare Cfg al widget con ID %d e chiave %s"
 #, c-format
 msgid "Failed to transfer data from Cfg to Widget with the ID %d and key %s"
 msgstr "Insuccesso nel trasferire dati da Cfg al Widget con ID %d e chiave %s"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot extract media metadata."
-msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "The type of proxy you are connecting to"
@@ -7660,6 +7662,10 @@ msgid "Clear the saved search history? This cannot be undone."
 msgstr "Cancellare la cronologia delle ricerche salvata? L'operazione non può essere annullata."
 
 #: src/SearchDlg.cpp
+msgid "Load into search form"
+msgstr ""
+
+#: src/SearchDlg.cpp
 msgid "Search warning"
 msgstr "Avviso di ricerca"
 
@@ -7690,6 +7696,10 @@ msgid "Search in progress"
 msgstr "Ricerca in corso"
 
 #: src/SearchDlg.cpp
+msgid "Enter whole, non-negative sizes and availability within the supported range."
+msgstr ""
+
+#: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
 msgstr "Min size deve essere più piccola di max size. Ignoro max size."
 
@@ -7698,7 +7708,15 @@ msgid "Main"
 msgstr "Principale"
 
 #: src/SearchMetadataPanel.cpp
-msgid "Minimum duration (minutes)"
+msgid "minutes"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Duration unit"
+msgstr ""
+
+#: src/SearchMetadataPanel.cpp
+msgid "Minimum duration"
 msgstr ""
 
 #: src/SearchMetadataPanel.cpp
@@ -8487,10 +8505,6 @@ msgstr "Cartella condivisa non leggibile, ignoro: %s"
 #: src/SharedFileList.cpp
 msgid "Media metadata extraction is disabled in preferences, so there is nothing to re-extract."
 msgstr "L'estrazione dei metadati multimediali è disabilitata nelle preferenze, quindi non c'è nulla da riestrarre."
-
-#: src/SharedFileList.cpp
-msgid "This aMule has no media helper (amule-media-probe), so it cannot re-extract media metadata."
-msgstr ""
 
 #: src/SharedFileList.cpp
 #, c-format
@@ -10625,6 +10639,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "This aMule has no media helper (amule-media-probe)"
+#~ msgstr "Questo aMule non dispone di un helper multimediale (amule-media-probe)"
 
 #~ msgid "Disable computer's timed standby mode"
 #~ msgstr "Disabilita la modalità standby a tempo"
