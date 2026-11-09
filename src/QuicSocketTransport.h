@@ -78,6 +78,7 @@ public:
 	void SetEvents(IStreamTransportEvents *) override;
 	bool IsOk() const override;
 	uint32_t Read(void *, uint32_t) override;
+	bool HasReadableBytes() const override;
 	uint32_t Write(const void *, uint32_t) override;
 	void Close() override;
 	void Flush() override;
@@ -102,6 +103,8 @@ public:
 
 private:
 	void RequestFlushLocked(IStreamTransportEvents *&);
+	//! Raises a flush request to the sink, unless it was detached since @a event was read.
+	void RaiseFlushRequest(IStreamTransportEvents *event);
 	void ClearWriteLocked();
 	//! Called with m_mutex held, only once m_closed is set and no flush is in flight: decides
 	//! whether the close can finish now (nothing left queued) or must keep draining
@@ -119,6 +122,8 @@ private:
 	const std::function<uint64_t()> m_clock;
 	IQuicStreamOperations &m_operations;
 	mutable std::mutex m_mutex;
+	//! Held across a flush request and by SetEvents(): Write() raises from the upload thread.
+	std::recursive_mutex m_raiseMutex;
 	IQuicStreamOperations::Handle m_handle;
 	const CNetworkAddress m_peer;
 	const uint16_t m_port;

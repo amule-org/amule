@@ -36,7 +36,10 @@
 #include <UtpSocketTransport.h>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <functional>
+#include <future>
 #include <stdexcept>
 #include <thread>
 
@@ -976,4 +979,57 @@ TEST(UtpSocketTransport, AReadOverrunReportsTheStreamLostOnce)
 	ASSERT_EQUALS(0, events.readable);
 	transport.OnPayload(payload.data(), 1);
 	ASSERT_EQUALS(1, events.lost);
+}
+
+TEST(UtpSocketTransport, DetachingWaitsForAFlushRequestBeingRaised)
+{
+	// Write() raises from the upload thread after dropping the lock. The owner detaching meanwhile
+	// must not return, and delete the sink, while that raise is still inside it.
+	FakeOperations ops;
+	FakeEvents events;
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
+	std::promise<void> entered;
+	std::promise<void> release;
+	std::shared_future<void> released = release.get_future().share();
+	events.onFlushRequested = [&]() {
+		entered.set_value();
+		released.wait();
+	};
+	const auto payload = Pattern(16);
+	std::thread writer([&]() { transport.Write(payload.data(), static_cast<uint32_t>(payload.size())); });
+	entered.get_future().wait();
+	std::atomic<bool> detached{ false };
+	std::thread owner([&]() {
+		transport.SetEvents(nullptr);
+		detached = true;
+	});
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	// Asserted after the joins: a throw with the threads joinable would terminate the run.
+	const bool detachedEarly = detached.load();
+	release.set_value();
+	writer.join();
+	owner.join();
+	ASSERT_FALSE(detachedEarly);
+	ASSERT_TRUE(detached.load());
+
+	// Nothing reaches a detached sink.
+	events.onFlushRequested = nullptr;
+	transport.Flush();
+	const int before = events.flushRequests;
+	transport.Write(payload.data(), static_cast<uint32_t>(payload.size()));
+	ASSERT_EQUALS(before, events.flushRequests);
+}
+
+TEST(UtpSocketTransport, BytesStayReadableAfterTheStreamEnds)
+{
+	FakeOperations ops;
+	CUtpSocketTransport transport = MakeTransport(ops);
+	ASSERT_FALSE(transport.HasReadableBytes());
+	const auto payload = Pattern(8);
+	transport.OnPayload(payload.data(), payload.size());
+	transport.OnEnded(EUtpTransportFailure::Eof);
+	ASSERT_TRUE(transport.HasReadableBytes());
+	uint8_t out[8] = { 0 };
+	ASSERT_EQUALS(8u, transport.Read(out, sizeof(out)));
+	ASSERT_FALSE(transport.HasReadableBytes());
 }

@@ -466,10 +466,19 @@ public:
 
 	//! After construction: the receiving socket does not exist until admission
 	//! has decided, and admission needs the transport first.
+	//! Waits for a flush request another thread is raising to the old sink: after this returns
+	//! with nullptr, nothing reaches it again.
 	void SetEvents(IStreamTransportEvents *events) override
 	{
+		std::lock_guard<std::recursive_mutex> raising(m_raiseMutex);
 		std::lock_guard<std::mutex> lock(m_mutex);
 		m_events = events;
+	}
+
+	bool HasReadableBytes() const override
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_stream.ReadBufferSize() != 0;
 	}
 
 	//! How the stream ended, for a caller that needs more than IsOk().
@@ -590,6 +599,18 @@ private:
 		if (events == nullptr) {
 			return;
 		}
+		// Write() raises from the upload thread after dropping m_mutex, so the sink it read may
+		// have been detached meanwhile, and the socket behind it deleted. Held across the call,
+		// and taken by SetEvents(); recursive, as a sink may flush from inside it.
+		std::lock_guard<std::recursive_mutex> raising(m_raiseMutex);
+		{
+			std::lock_guard<std::mutex> lock(m_mutex);
+			if (m_events == nullptr) {
+				m_flushPending = false;
+				return;
+			}
+			events = m_events;
+		}
 		try {
 			events->OnFlushRequested();
 		} catch (...) {
@@ -631,6 +652,7 @@ private:
 	IStreamTransportEvents *m_events;
 	CUtpStream m_stream;
 	bool m_connected = false;
+	std::recursive_mutex m_raiseMutex;
 	bool m_flushPending = false;
 	bool m_flushInProgress = false;
 	bool m_flushAgain = false;

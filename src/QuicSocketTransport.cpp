@@ -86,8 +86,31 @@ size_t CQuicSocketTransport::PendingWriteBytes() const
 
 void CQuicSocketTransport::SetEvents(IStreamTransportEvents *events)
 {
+	std::lock_guard<std::recursive_mutex> raising(m_raiseMutex);
 	std::lock_guard<std::mutex> l(m_mutex);
 	m_events = events;
+}
+
+bool CQuicSocketTransport::HasReadableBytes() const
+{
+	std::lock_guard<std::mutex> l(m_mutex);
+	return !m_read.empty();
+}
+
+void CQuicSocketTransport::RaiseFlushRequest(IStreamTransportEvents *event)
+{
+	if (!event)
+		return;
+	std::lock_guard<std::recursive_mutex> raising(m_raiseMutex);
+	{
+		std::lock_guard<std::mutex> l(m_mutex);
+		if (!m_events) {
+			m_flushPending = false;
+			return;
+		}
+		event = m_events;
+	}
+	event->OnFlushRequested();
 }
 
 uint32_t CQuicSocketTransport::Read(void *buffer, uint32_t length)
@@ -135,8 +158,7 @@ uint32_t CQuicSocketTransport::Write(const void *buffer, uint32_t length)
 		m_blocksWrite = m_writeQueued >= kWriteBound;
 		RequestFlushLocked(event);
 	}
-	if (event)
-		event->OnFlushRequested();
+	RaiseFlushRequest(event);
 	return taken;
 }
 
@@ -240,8 +262,7 @@ void CQuicSocketTransport::Flush()
 		m_operations.CloseStream(finishedHandle, nowMs);
 	if (writable)
 		writable->OnStreamWritable();
-	if (again)
-		again->OnFlushRequested();
+	RaiseFlushRequest(again);
 	if (lost)
 		lost->OnStreamLost();
 }

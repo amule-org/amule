@@ -69,6 +69,13 @@ std::atomic<bool> s_deliverDirectly{ false };
 std::mutex s_notificationMutex;
 bool s_captureNotifications = false;
 std::vector<std::unique_ptr<MuleNotify::CMuleNotiferBase>> s_notifications;
+
+//! Delivers notifications in the calling thread for its lifetime.
+struct CDirectNotifications
+{
+	CDirectNotifications() { s_deliverDirectly.store(true); }
+	~CDirectNotifications() { s_deliverDirectly.store(false); }
+};
 } // namespace
 
 namespace MuleNotify
@@ -220,8 +227,9 @@ public:
 	bool ObfuscatesStream() const override { return false; }
 	bool IsOk() const override { return ok; }
 	bool BlocksRead() const override { return blocksRead; }
+	bool HasReadableBytes() const override { return readable; }
 	bool BlocksWrite() const override { return true; }
-	int LastError() const override { return 0x7501; }
+	int LastError() const override { return lastError; }
 	CNetworkAddress GetPeerAddress() const override { return peer; }
 	uint16_t GetPeerPort() const override { return 4662; }
 
@@ -244,6 +252,8 @@ public:
 
 	bool ok = true;
 	bool blocksRead = true;
+	bool readable = false;
+	int lastError = 0x7501;
 	std::vector<uint8_t> written;
 	int closeCalls = 0;
 	int flushCalls = 0;
@@ -279,11 +289,7 @@ TEST(LibSocketTransport, ContextPoolReleasesCrossContextAcceptsBeforeDestroyingS
 
 TEST(LibSocketTransport, ListenerSpreadsBurstAndIdleAcceptsAcrossAllWorkers)
 {
-	struct CDirectNotifications
-	{
-		CDirectNotifications() { s_deliverDirectly.store(true); }
-		~CDirectNotifications() { s_deliverDirectly.store(false); }
-	} directNotifications;
+	CDirectNotifications directNotifications;
 	class CReadProbe : public CLibSocket
 	{
 	public:
@@ -997,5 +1003,60 @@ TEST(LibSocketTransport, RawSocketBindUsesTheOptionOfItsFamily)
 	}
 }
 #endif
+
+namespace
+{
+class CEndProbe : public CLibSocket
+{
+public:
+	void OnReceive(int) override { ++reads; }
+	void OnLost(int) override { ++lost; }
+	int reads = 0;
+	int lost = 0;
+};
+} // namespace
+
+TEST(LibSocketTransport, ACleanEndWaitsForItsUnreadBytes)
+{
+	// One packet per read event: an end reported at once would overtake the read events still
+	// owed for bytes already received, and those bytes would be lost with the socket.
+	CDirectNotifications directNotifications;
+	CEndProbe socket;
+	CFakeTransport *fake = Attach(socket);
+	fake->lastError = 0;
+	fake->readable = true;
+	socket.OnStreamLost();
+	ASSERT_EQUALS(0, socket.lost);
+	ASSERT_EQUALS(1, socket.reads);
+
+	char out[4];
+	fake->blocksRead = false;
+	socket.EventProcessed();
+	socket.Read(out, sizeof(out));
+	ASSERT_EQUALS(0, socket.lost);
+
+	// The read that empties the transport is the end.
+	fake->readable = false;
+	socket.Read(out, sizeof(out));
+	ASSERT_EQUALS(1, socket.lost);
+
+	// With nothing unread, the end is reported at once.
+	CEndProbe drained;
+	Attach(drained);
+	drained.OnStreamLost();
+	ASSERT_EQUALS(1, drained.lost);
+}
+
+TEST(LibSocketTransport, AFailedEndIsReportedAtOnce)
+{
+	// CEMSocket drops every read once LastError() is set, so waiting would only delay the end.
+	CDirectNotifications directNotifications;
+	CEndProbe socket;
+	CFakeTransport *fake = Attach(socket);
+	fake->readable = true;
+	socket.OnStreamLost();
+	ASSERT_EQUALS(1, socket.lost);
+	ASSERT_EQUALS(0, socket.reads);
+}
 
 // File_checked_for_headers
