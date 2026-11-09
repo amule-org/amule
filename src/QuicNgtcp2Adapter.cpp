@@ -1206,7 +1206,10 @@ public:
 			InitZeroPath(path);
 			ngtcp2_pkt_info pi = {};
 			ngtcp2_ccerr ccerr;
-			if (closeError != 0) {
+			if (closeError == NGTCP2_ERR_CRYPTO) {
+				ngtcp2_ccerr_set_tls_alert(
+					&ccerr, ngtcp2_conn_get_tls_alert(it->second.conn), nullptr, 0);
+			} else if (closeError != 0) {
 				ngtcp2_ccerr_set_liberr(&ccerr, closeError, nullptr, 0);
 			} else {
 				ngtcp2_ccerr_default(&ccerr);
