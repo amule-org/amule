@@ -584,9 +584,11 @@ public:
 		std::uint64_t now,
 		const VouchedPeer &peer = {})
 	{
+		// The TCP port tells two peers behind one address apart; a newer punch from the same peer,
+		// whatever its UDP port, replaces its dial-back.
 		const auto same = std::find_if(
-			m_entries.begin(), m_entries.end(), [&peerIP, udpPort](const Entry &entry) {
-				return entry.peerIP == peerIP && entry.udpPort == udpPort;
+			m_entries.begin(), m_entries.end(), [&peerIP, tcpPort](const Entry &entry) {
+				return entry.peerIP == peerIP && entry.tcpPort == tcpPort;
 			});
 		if (same != m_entries.end()) {
 			m_entries.erase(same);

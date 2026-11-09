@@ -1309,13 +1309,13 @@ TEST(NatServerHolePunch, AMovedPortMeetsALoneExpectedEndpoint)
 	ASSERT_TRUE(endpoints.Take(peer, 4'000, 4).kind == PunchAction::None);
 }
 
-TEST(NatServerHolePunch, DialBacksToTwoPortsOfOneAddressAreKeptApart)
+TEST(NatServerHolePunch, DialBacksToTwoPeersOfOneAddressAreKeptApart)
 {
 	DialBackSchedule dialBacks;
 	const IPv4 shared{ { 192, 0, 2, 9 } };
 	dialBacks.Schedule(shared, 4'661, 4'000, 0);
 	dialBacks.Schedule(shared, 4'662, 5'000, 0);
-	// Rescheduling one endpoint replaces only its own entry.
+	// Rescheduling one peer replaces only its own entry.
 	dialBacks.Schedule(shared, 4'662, 5'000, 1);
 	const auto due = dialBacks.TakeDue(1 + kDialBackDelayMs);
 	ASSERT_EQUALS((std::size_t)2, due.size());
