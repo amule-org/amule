@@ -496,11 +496,13 @@ bool CRoutingZone::AddUnfiltered(const CUInt128 &id,
 		// MAX_CONTACTS_IP Kad ID per address plus MAX_CONTACTS_SUBNET per /24, and
 		// duplicating that here would be a second, weaker copy of the same rule.
 		//
-		// Only the node's own claim is tracked, and only its own proof counts: ipVerified is
+		// Only the node's own claim is tracked. Anything else is a mention, checked against
+		// what has been proved but never recorded, and its ipVerified is never trusted: it is
 		// also assumed while bootstrapping and read back from nodes.dat, where nobody proved it.
 		const bool ownClaim = fromHello || selfReported;
-		if (safeKad.IsBadNode(
-			    ip, port, id, version, ownClaim && ipVerified, false, time(nullptr), ownClaim)) {
+		const time_t now = time(nullptr);
+		if (ownClaim ? safeKad.IsBadNode(ip, port, id, version, ipVerified, false, now)
+			     : safeKad.ContradictsProvedIdentity(ip, port, id, now)) {
 			AddDebugLogLineN(logKadRouting,
 				"Ignored kad contact (IP=" + KadIPPortToString(ip, port) +
 					") - rejected by the Kad identity protections");

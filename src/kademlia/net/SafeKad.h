@@ -148,13 +148,15 @@ private:
 // fixed amount of memory. All entry points take `now`, so the whole ladder is testable without
 // waiting on a real clock.
 //
-// Seven deliberate divergences from eMuleAI, listed so they read as decisions rather than
-// transcription slips (emule-qt agrees with eMuleAI on all seven):
+// Deliberate divergences from eMuleAI, listed so they read as decisions rather than transcription
+// slips (emule-qt agrees with eMuleAI on the first seven; the eighth is not checked against it):
 //
 //  - eMuleAI bans on the FIRST verified sub-hour identity change; this needs two inside 300 s. Bans
 //    are per address while tracking is per (address, port), so under CGNAT a carrier reusing one
 //    external port for different subscribers legitimately shows different Kad IDs, and eMuleAI's
-//    rule would take out every aMule user behind that address for four hours.
+//    rule would take out every aMule user behind that address for four hours. Kad's proofs cover
+//    the IP, not the port, so a neighbour behind that address can still make a verified claim for
+//    another user's port; two inside 300 s ban the shared address, as they always could.
 //  - eMuleAI gates banning on a user preference. The compile switch stands in for it while this is
 //    experimental; a runtime equivalent is a precondition for ever defaulting the switch ON.
 //  - TrackNode() returns whether it accepted, and IsBadNode() refuses on a rejected rotation.
@@ -169,9 +171,10 @@ private:
 //  - The verified flag is also upgraded on a matching-ID sighting in IsBadNode(), not only inside
 //    TrackNode(). It moves one way only, and only a node's own claim, with its own valid key, may
 //    pass it, so a peer cannot drive the upgrade for somebody else.
-//  - A mention (`ownClaim` false) is checked against the table but never recorded, and a proof
-//    replaces an identity nobody proved instead of counting as a rotation. Otherwise one response
-//    listing an honest node under a made-up ID gets that node banned by its next two answers.
+//  - A mention (ContradictsProvedIdentity()) is checked against the table but never recorded, and a
+//    proof replaces an identity nobody proved instead of counting as a rotation. Otherwise one
+//    response listing an honest node under a made-up ID gets that node banned by its next two
+//    answers.
 //  - The last-reference time is not refreshed on the refused path. eMuleAI refreshes on every
 //    lookup, letting an attacker's own traffic decide which entries survive eviction; here such an
 //    entry ages out instead, which also means forgetting a rotator gives it a clean slate.
@@ -211,9 +214,11 @@ public:
 
 	CSafeKad();
 
-	// Records the identity `id` at this address. A changed ID inside MIN_ID_CHANGE_INTERVAL
-	// marks the address problematic (and bans it if it was problematic already) and leaves the
-	// tracked ID untouched. Returns false if the identity change was rejected.
+	// Records the identity `id` the node at this address claims for itself. A verified claim
+	// replaces an unverified record at once. Otherwise a changed ID inside MIN_ID_CHANGE_INTERVAL
+	// is refused and leaves the tracked ID untouched; between two verified identities it also marks
+	// the address problematic, and bans it if it was problematic already. Returns false if the
+	// change was refused.
 	//
 	// `newlyBanned`, when given, reports whether the rejection escalated as far as a ban that
 	// was not already in force. This class deliberately links against nothing, so it cannot log
@@ -239,25 +244,27 @@ public:
 	// calls -- the drift CBanRecord was extracted to stop on the client-side list.
 	bool BanAddress(uint32_t ip, time_t now);
 
-	// The one call the Kad packet paths need: true when this contact must not be used or
-	// inserted into the routing table.
+	// For a node's own claim (its hello, or a bootstrap responder speaking for itself): true when
+	// this contact must not be used or inserted into the routing table. Records the claim.
 	//
 	// `onlyOneNodePerIP` rejects a second port on an address that already has a tracked node --
 	// a real client uses one Kad port. It is gated on `kadVersion` by the caller's choice
 	// because the pre-0x08 handshake could not prove which port a node really listens on.
-	//
-	// `ownClaim` is false for a mention: a Kad response, a bootstrap list, nodes.dat, or a contact
-	// we already hold. A mention is refused when it contradicts what we track, but never recorded:
-	// a peer answering one search could otherwise fill the table, evicting proved entries, and
-	// plant the identity a node's own later proof is then refused against.
 	bool IsBadNode(uint32_t ip,
 		uint16_t port,
 		const CUInt128 &id,
 		uint8_t kadVersion,
 		bool idVerified,
 		bool onlyOneNodePerIP,
-		time_t now,
-		bool ownClaim = true);
+		time_t now);
+
+	// For a mention: a Kad response, a bootstrap list, nodes.dat, or a contact we already hold.
+	// True when the address is banned or a verified record there holds another ID. Never records:
+	// a peer answering one search could otherwise fill the table, evicting proved entries, and
+	// plant the identity a node's own later proof is then refused against. A matching verified
+	// record is refreshed, though: we re-hello a known contact only every 90 to 120 min, longer
+	// than NODE_MAX_REFERENCE_AGE, and without the mentions that record would lapse in between.
+	bool ContradictsProvedIdentity(uint32_t ip, uint16_t port, const CUInt128 &id, time_t now);
 
 	bool IsBanned(uint32_t ip, time_t now);
 	bool IsProblematic(uint32_t ip, uint16_t port, time_t now);
