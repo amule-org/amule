@@ -141,8 +141,8 @@ private:
 // problematic list cover those two gaps.
 //
 // The escalation ladder mirrors CPacketTracking's drop-then-ban shape: a first identity rotation
-// marks the address problematic (300 s), a rotation while already problematic bans it (4 h). The
-// ban is Kad-routing-local, separate from CClientList's eD2k-wide ban.
+// marks the address problematic, which arms the ban for 300 s; a rotation while still problematic
+// bans it (4 h). The ban is Kad-routing-local, separate from CClientList's eD2k-wide ban.
 //
 // Every table is bounded and evicts by last-reference age, so sustained inbound traffic costs a
 // fixed amount of memory. All entry points take `now`, so the whole ladder is testable without
@@ -167,8 +167,11 @@ private:
 //  - BanAddress() drops the banned address's tracked ports, which eMuleAI leaves behind as
 //    unreachable state.
 //  - The verified flag is also upgraded on a matching-ID sighting in IsBadNode(), not only inside
-//    TrackNode(). It moves one way only, and the one caller hardcoding verified=false is
-//    AddUnfiltered(), so a peer cannot drive the upgrade for somebody else.
+//    TrackNode(). It moves one way only, and only a node's own claim, with its own valid key, may
+//    pass it, so a peer cannot drive the upgrade for somebody else.
+//  - A mention (`ownClaim` false) is checked against the table but never recorded, and a proof
+//    replaces an identity nobody proved instead of counting as a rotation. Otherwise one response
+//    listing an honest node under a made-up ID gets that node banned by its next two answers.
 //  - The last-reference time is not refreshed on the refused path. eMuleAI refreshes on every
 //    lookup, letting an attacker's own traffic decide which entries survive eviction; here such an
 //    entry ages out instead, which also means forgetting a rotator gives it a clean slate.
@@ -185,7 +188,7 @@ public:
 	// A ban lapses after four hours; past that the address is judged on its
 	// current behaviour alone.
 	static const time_t MAX_BAN_TIME = 4 * 3600;
-	// A problematic address is ignored for 300 s.
+	// A problematic address arms the ban for 300 s; nothing else reads it.
 	static const time_t MAX_PROBLEMATIC_TIME = 300;
 
 	// Lowest advertised Kad version whose three-way handshake can prove which UDP port a node
@@ -242,13 +245,19 @@ public:
 	// `onlyOneNodePerIP` rejects a second port on an address that already has a tracked node --
 	// a real client uses one Kad port. It is gated on `kadVersion` by the caller's choice
 	// because the pre-0x08 handshake could not prove which port a node really listens on.
+	//
+	// `ownClaim` is false for a mention: a Kad response, a bootstrap list, nodes.dat, or a contact
+	// we already hold. A mention is refused when it contradicts what we track, but never recorded:
+	// a peer answering one search could otherwise fill the table, evicting proved entries, and
+	// plant the identity a node's own later proof is then refused against.
 	bool IsBadNode(uint32_t ip,
 		uint16_t port,
 		const CUInt128 &id,
 		uint8_t kadVersion,
 		bool idVerified,
 		bool onlyOneNodePerIP,
-		time_t now);
+		time_t now,
+		bool ownClaim = true);
 
 	bool IsBanned(uint32_t ip, time_t now);
 	bool IsProblematic(uint32_t ip, uint16_t port, time_t now);

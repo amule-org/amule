@@ -443,13 +443,15 @@ void CSearch::ProcessResponse(
 		// escalation and not the refusal, so a bad node is still refused here; and the
 		// three-way handshake in CRoutingZone already records the address as verified,
 		// where the proof is real. That is the only caller that should ever pass true.
+		// A lookup: the identity is the one we hold, not one this answer claims.
 		if (safeKad.IsBadNode(fromIP,
 			    fromPort,
 			    fromContact->GetClientID(),
 			    fromContact->GetVersion(),
 			    false,
 			    false,
-			    time(nullptr))) {
+			    time(nullptr),
+			    false)) {
 			AddDebugLogLineN(logKadSearch,
 				"Ignoring search response from a node judged bad by the Kad identity "
 				"protections: " +

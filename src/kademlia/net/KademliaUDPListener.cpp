@@ -604,8 +604,9 @@ void CKademliaUDPListener::Process2BootstrapResponse(const uint8_t *packetData,
 	bool assumeVerified = CKademlia::GetRoutingZone()->GetNumContacts() == 0;
 
 	if (CKademlia::s_bootstrapList.empty()) {
+		// The responder speaks for itself; the contacts it lists are mentions.
 		routingZone->Add(
-			contactID, ip, port, tport, version, senderKey, validReceiverKey, true, false);
+			contactID, ip, port, tport, version, senderKey, validReceiverKey, true, false, true);
 	}
 
 	while (numContacts) {

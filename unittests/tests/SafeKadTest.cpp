@@ -575,3 +575,39 @@ TEST(SafeKad, ARefusedChangePastTheIntervalIsNotEscalated)
 	// The verified identity we hold is untouched and still usable.
 	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, true, false, later));
 }
+
+// A mention is a third party's word: a Kad response, a bootstrap list or nodes.dat. One answer may
+// list 255 of them, so recording each would fill the table and evict proved entries.
+TEST(SafeKad, AMentionIsNeverRecorded)
+{
+	CSafeKad safe;
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, false, false, T0, false));
+	ASSERT_EQUALS(0u, (unsigned)safe.GetTrackedNodeCount());
+}
+
+TEST(SafeKad, AMentionOfAnotherIdentityIsRefusedButCountsForNothing)
+{
+	CSafeKad safe;
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), false, T0));
+	ASSERT_TRUE(
+		safe.IsBadNode(IP_A, PORT_A, Id(2), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 5, false));
+	ASSERT_FALSE(safe.IsProblematic(IP_A, PORT_A, T0 + 5));
+	// The identity we track is untouched, and a mention of it is fine.
+	ASSERT_FALSE(
+		safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 6, false));
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 7));
+}
+
+// A record nobody proved may hold an identity a third party made up for the address. The node's
+// own proof replaces it at once, and two such proofs inside the interval are not two rotations.
+TEST(SafeKad, AProofReplacesAnIdentityNobodyProved)
+{
+	CSafeKad safe;
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(66), false, T0));
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, true, false, T0 + 60));
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, true, false, T0 + 180));
+	ASSERT_FALSE(safe.IsProblematic(IP_A, PORT_A, T0 + 180));
+	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 180));
+	// Now proved, it is protected like any verified identity.
+	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(66), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 200));
+}

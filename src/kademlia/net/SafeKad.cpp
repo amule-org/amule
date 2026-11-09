@@ -81,6 +81,11 @@ bool CSafeKad::TrackNode(
 		// proved who it is.
 		if (tracked.m_idVerified && !idVerified) {
 			accepted = false;
+		} else if (!tracked.m_idVerified && idVerified) {
+			// A proof outranks an identity nobody proved, which anyone could have claimed for
+			// this address first. Not a rotation: only the node itself can make this claim.
+			tracked.m_lastID = id;
+			tracked.m_lastIDChange = now;
 		} else if (now - tracked.m_lastIDChange < MIN_ID_CHANGE_INTERVAL) {
 			// Rotating identity faster than once an hour. Mark the address problematic,
 			// and escalate to a ban if it was problematic already -- one rejected
@@ -271,7 +276,8 @@ bool CSafeKad::IsBadNode(uint32_t ip,
 	uint8_t kadVersion,
 	bool idVerified,
 	bool onlyOneNodePerIP,
-	time_t now)
+	time_t now,
+	bool ownClaim)
 {
 	if (now - m_lastCleanup > CLEANUP_INTERVAL) {
 		Cleanup(now);
@@ -284,6 +290,12 @@ bool CSafeKad::IsBadNode(uint32_t ip,
 
 	const SKadNodeAddress address(ip, port);
 	CKadAgedMap<SKadNodeAddress, sTracked>::iterator it = m_trackedNodes.Find(address);
+	if (!ownClaim) {
+		if (it != m_trackedNodes.End()) {
+			return it->second.m_lastID != id;
+		}
+		return onlyOneNodePerIP && HasOtherTrackedPort(ip, port);
+	}
 	if (it != m_trackedNodes.End()) {
 		if (it->second.m_lastID == id) {
 			// Same identity as before: just refresh the reference.
