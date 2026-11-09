@@ -374,20 +374,24 @@ constexpr std::size_t kMaxTrackedDuplicates = 256;
 class DuplicateInfoSuppressor
 {
 public:
-	// True the first time @p peerHash is seen inside the window; false for a repeat.
-	bool ShouldProcess(const Hash &peerHash, std::uint64_t now)
+	// Split from Record() so a 0x61 the action cap refuses is not recorded: the server's resend
+	// must still be handled.
+	bool Seen(const Hash &peerHash, std::uint64_t now)
 	{
 		Evict(now);
-		for (const Entry &entry : m_seen) {
-			if (entry.peerHash == peerHash) {
-				return false;
-			}
+		return std::any_of(m_seen.begin(), m_seen.end(), [&peerHash](const Entry &entry) {
+			return entry.peerHash == peerHash;
+		});
+	}
+	void Record(const Hash &peerHash, std::uint64_t now)
+	{
+		if (Seen(peerHash, now)) {
+			return;
 		}
 		if (m_seen.size() >= kMaxTrackedDuplicates) {
 			m_seen.erase(m_seen.begin());
 		}
 		m_seen.push_back({ peerHash, now });
-		return true;
 	}
 
 private:
@@ -464,25 +468,38 @@ struct PunchAction
 
 // A server-announced endpoint may trigger one dial back when its UDP punch arrives. The TCP
 // port is kept only for a temporary client; OP_HELLO establishes the peer's actual identity.
+//
+// Matched by address and UDP port, since a carrier NAT can put two peers behind one address. A
+// punch from another port is the peer's NAT remapping it, which only an address with a single
+// entry can be credited with.
 class ExpectedEndpointRegistry
 {
 public:
-	void Register(
-		const IPv4 &peerIP, std::uint16_t tcpPort, std::uint64_t now, const VouchedPeer &peer = {})
+	void Register(const IPv4 &peerIP,
+		std::uint16_t udpPort,
+		std::uint16_t tcpPort,
+		std::uint64_t now,
+		const VouchedPeer &peer = {})
 	{
 		Evict(now);
 		if (tcpPort == 0) {
 			return;
 		}
-		m_expected.push_back({ peerIP, tcpPort, now, std::nullopt, peer });
+		m_expected.erase(std::remove_if(m_expected.begin(),
+					 m_expected.end(),
+					 [&peerIP, udpPort](const Entry &entry) {
+						 return entry.peerIP == peerIP && entry.udpPort == udpPort;
+					 }),
+			m_expected.end());
+		m_expected.push_back({ peerIP, udpPort, tcpPort, now, false, peer });
 	}
-	// Records the UDP port of a dial already started for this endpoint, so the punch that
-	// follows from that same port does not start a second one.
+	// A dial already started for this endpoint, so the punch that follows from its port does not
+	// start a second one.
 	void NoteDialled(const IPv4 &peerIP, std::uint16_t udpPort)
 	{
-		const auto match = Find(peerIP);
+		const auto match = FindExact(peerIP, udpPort);
 		if (match != m_expected.end()) {
-			match->dialledUdpPort = udpPort;
+			match->dialled = true;
 		}
 	}
 	// A punch from an endpoint we dialled needs nothing more from that port and a dial now
@@ -490,16 +507,16 @@ public:
 	PunchAction Take(const IPv4 &sourceIP, std::uint16_t sourcePort, std::uint64_t now)
 	{
 		Evict(now);
-		const auto match = Find(sourceIP);
+		const auto match = Find(sourceIP, sourcePort);
 		if (match == m_expected.end()) {
 			return {};
 		}
 		const Entry entry = *match;
 		m_expected.erase(match);
-		if (!entry.dialledUdpPort.has_value()) {
+		if (!entry.dialled) {
 			return { PunchAction::DialLater, entry.tcpPort, entry.peer };
 		}
-		if (*entry.dialledUdpPort == sourcePort) {
+		if (entry.udpPort == sourcePort) {
 			return {};
 		}
 		return { PunchAction::DialNow, entry.tcpPort, entry.peer };
@@ -509,16 +526,29 @@ private:
 	struct Entry
 	{
 		IPv4 peerIP;
+		std::uint16_t udpPort;
 		std::uint16_t tcpPort;
 		std::uint64_t registeredAt;
-		std::optional<std::uint16_t> dialledUdpPort;
+		bool dialled;
 		VouchedPeer peer;
 	};
-	std::vector<Entry>::iterator Find(const IPv4 &peerIP)
+	std::vector<Entry>::iterator FindExact(const IPv4 &peerIP, std::uint16_t udpPort)
 	{
-		return std::find_if(m_expected.begin(), m_expected.end(), [&peerIP](const Entry &entry) {
-			return entry.peerIP == peerIP;
+		return std::find_if(m_expected.begin(), m_expected.end(), [&](const Entry &entry) {
+			return entry.peerIP == peerIP && entry.udpPort == udpPort;
 		});
+	}
+	std::vector<Entry>::iterator Find(const IPv4 &peerIP, std::uint16_t udpPort)
+	{
+		const auto exact = FindExact(peerIP, udpPort);
+		if (exact != m_expected.end()) {
+			return exact;
+		}
+		const auto sameIP = [&peerIP](const Entry &entry) { return entry.peerIP == peerIP; };
+		if (std::count_if(m_expected.begin(), m_expected.end(), sameIP) != 1) {
+			return m_expected.end();
+		}
+		return std::find_if(m_expected.begin(), m_expected.end(), sameIP);
 	}
 	void Evict(std::uint64_t now)
 	{
@@ -554,9 +584,12 @@ public:
 		std::uint64_t now,
 		const VouchedPeer &peer = {})
 	{
-		const auto same = std::find_if(m_entries.begin(),
-			m_entries.end(),
-			[&peerIP](const Entry &entry) { return entry.peerIP == peerIP; });
+		// The TCP port tells two peers behind one address apart; a newer punch from the same peer,
+		// whatever its UDP port, replaces its dial-back.
+		const auto same = std::find_if(
+			m_entries.begin(), m_entries.end(), [&peerIP, tcpPort](const Entry &entry) {
+				return entry.peerIP == peerIP && entry.tcpPort == tcpPort;
+			});
 		if (same != m_entries.end()) {
 			m_entries.erase(same);
 		} else if (m_entries.size() >= kMaxDialBacks) {
@@ -624,8 +657,8 @@ struct PunchDue
 };
 
 // The punches owed to each peer endpoint. One schedule per address and port, restarted by a second
-// 0x61 for it. A punch or a hello from the address drops all of its schedules, and each one
-// expires with its expected endpoint.
+// 0x61 for it. A punch or a hello from the peer drops its schedule, and each one expires with its
+// expected endpoint.
 class PunchScheduleSet
 {
 public:
@@ -650,12 +683,24 @@ public:
 		entry.due.push_back({ now + kPortSweepOffsetMs, PunchDue::Sweep });
 		m_entries.push_back(std::move(entry));
 	}
-	void Cancel(const IPv4 &peerIP)
+	// From the schedule's own port, or with no port (a hello), the peer is known. From any other
+	// port it may be a neighbour behind the same address, so only a lone schedule there ends.
+	void Cancel(const IPv4 &peerIP, std::optional<std::uint16_t> udpPort)
 	{
-		m_entries.erase(std::remove_if(m_entries.begin(),
-					m_entries.end(),
-					[&peerIP](const Entry &entry) { return entry.peerIP == peerIP; }),
-			m_entries.end());
+		if (udpPort) {
+			const auto exact =
+				std::find_if(m_entries.begin(), m_entries.end(), [&](const Entry &entry) {
+					return entry.peerIP == peerIP && entry.udpPort == *udpPort;
+				});
+			if (exact != m_entries.end()) {
+				m_entries.erase(exact);
+				return;
+			}
+		}
+		const auto sameIP = [&peerIP](const Entry &entry) { return entry.peerIP == peerIP; };
+		if (std::count_if(m_entries.begin(), m_entries.end(), sameIP) == 1) {
+			m_entries.erase(std::find_if(m_entries.begin(), m_entries.end(), sameIP));
+		}
 	}
 	// Everything due now, the endpoint's own punches before the sweep they share a moment with; each
 	// is returned once.
@@ -858,6 +903,12 @@ public:
 			m_pending.pop_front();
 		}
 		m_pending.push_back({ requesterId, std::move(wake), now });
+	}
+	bool Contains(std::uint32_t requesterId) const
+	{
+		return std::any_of(m_pending.begin(), m_pending.end(), [requesterId](const Entry &entry) {
+			return entry.requesterId == requesterId;
+		});
 	}
 	bool Resolve(std::uint32_t requesterId)
 	{

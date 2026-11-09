@@ -178,15 +178,17 @@ void CClientUDPSocket::MaybeSendSourceEcho(
 			CFormat("NAT-T source echo to %s: its datagram failed every key") %
 				Uint32_16toStringIP_Port(ip, port));
 	} else {
-		m_punchedPeers.EchoNotSent(ip, port);
+		m_punchedPeers.EchoNotSent(ip);
 	}
 }
 
-void CClientUDPSocket::HandleSourceEcho(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
+void CClientUDPSocket::HandleSourceEcho(
+	const uint8_t *payload, size_t length, uint32_t ip, uint16_t port, bool obfuscated)
 {
 	const std::uint64_t now = ::GetTickCount64();
 	const std::optional<NatSourceEcho::Source> seen = NatSourceEcho::ParsePayload(payload, length);
-	if (!seen || !NatSourceEcho::AcceptsEcho(m_punchedPeers, ip, port, IsGoodIP(seen->ip, true), now)) {
+	if (!seen || !NatSourceEcho::AcceptsEcho(
+			     m_punchedPeers, ip, port, IsGoodIP(seen->ip, true), obfuscated, now)) {
 		return;
 	}
 	{
@@ -630,7 +632,12 @@ void CClientUDPSocket::OnPacketReceived(
 				// Needs protocol + opcode before any payload; a 1-byte packet would
 				// make packetLen - 2 underflow to a huge length.
 				if (packetLen >= 2) {
-					ProcessPacket(decryptedBuffer + 2, packetLen - 2, opcode, ip, port);
+					ProcessPacket(decryptedBuffer + 2,
+						packetLen - 2,
+						opcode,
+						ip,
+						port,
+						decryptedBuffer != buffer);
 				} else {
 					throw wxString("eMule UDP packet too short");
 				}
@@ -740,16 +747,17 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 	if (server == nullptr) {
 		return false;
 	}
-	// The server UDP fields are updated on the server-list entry, not on cur_server's snapshot.
-	CServer *serverListEntry =
-		theApp->serverlist->GetServerByAddress(server->GetAddress(), server->GetPort());
-	if (serverListEntry == nullptr) {
-		return false;
-	}
+	// Before the server-list lookup, which scans the list: this runs for every client datagram.
 	const LugdunumNatTraversal::ServerWayDatagramFacts facts{
 		ip, server->GetIP(), server->IsLugdunumNatCallbackActive()
 	};
 	if (!LugdunumNatTraversal::IsServerWayDatagramFromOurServer(facts)) {
+		return false;
+	}
+	// The server UDP fields are updated on the server-list entry, not on cur_server's snapshot.
+	CServer *serverListEntry =
+		theApp->serverlist->GetServerByAddress(server->GetAddress(), server->GetPort());
+	if (serverListEntry == nullptr) {
 		return false;
 	}
 
@@ -1042,6 +1050,12 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 }
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+bool CClientUDPSocket::IsRendezvousPeerAllowed(uint32 ip)
+{
+	return IsGoodIP(ip, thePrefs::FilterLanIPs()) && !theApp->ipfilter->IsFiltered(ip) &&
+	       !theApp->clientlist->IsBannedClient(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip));
+}
+
 uint32 CClientUDPSocket::SendServerWayObfuscated(
 	CPacket *packet, uint32 serverIp, uint16 port, uint32 serverKeyUdp)
 {
@@ -1067,9 +1081,7 @@ uint32 CClientUDPSocket::SendServerWayObfuscated(
 bool CClientUDPSocket::DialLowIdHolePunchPeer(
 	uint32 ip, uint16 tcpPort, uint16 udpPort, const NatServerHolePunch::VouchedPeer &peer)
 {
-	if (tcpPort == 0 || udpPort == 0 || !Ok() || !m_utp.IsAvailable() ||
-		!IsGoodIP(ip, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(ip) ||
-		theApp->clientlist->IsBannedClient(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip)) ||
+	if (tcpPort == 0 || udpPort == 0 || !Ok() || !m_utp.IsAvailable() || !IsRendezvousPeerAllowed(ip) ||
 		theApp->listensocket->TooManySockets()) {
 		return false;
 	}
@@ -1212,6 +1224,14 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 				Uint32toStringIP(ip));
 		return true;
 	}
+	// The pending request stays: a foreign server names the target, and we punch only a target
+	// we would contact anyway.
+	if (!IsRendezvousPeerAllowed(answer->targetIp)) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Ignored a cross-server 0xA7 from %s: target %s is not allowed") %
+				Uint32toStringIP(ip) % Uint32toStringIP(answer->targetIp));
+		return true;
+	}
 	// Checked before the answer is taken: a refusal here leaves the request for the server's resend.
 	CServerConnect *connect = theApp->serverconnect;
 	if (connect == nullptr || !connect->LowIdHolePunchActionLimiter().Admit(now)) {
@@ -1242,7 +1262,7 @@ bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint
 	if (theApp->serverconnect != nullptr) {
 		NatServerHolePunch::IPv4 peer{};
 		PokeUInt32(peer.data(), ip);
-		theApp->serverconnect->LowIdHolePunchSchedules().Cancel(peer);
+		theApp->serverconnect->LowIdHolePunchSchedules().Cancel(peer, std::nullopt);
 	}
 	const std::optional<NatServerHolePunch::RendezvousPath> path =
 		m_rendezvousOutcomes.TakeSuccess(ip, peerHash, ::GetTickCount64());
@@ -1325,11 +1345,13 @@ bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::
 		!LugdunumNatTraversal::ShouldDialForwardedCallback(callback,
 			server->IsLugdunumNatCallbackActive(),
 			thePrefs::IsLugdunumNatCallbackEnabled()) ||
-		!Ok() || !m_utp.IsAvailable() || !IsGoodIP(callback.seenIp, thePrefs::FilterLanIPs()) ||
-		theApp->ipfilter->IsFiltered(callback.seenIp) ||
-		theApp->clientlist->IsBannedClient(
-			CNetworkAddress::FromIPv4NetworkOrderOrAbsent(callback.seenIp))) {
+		!Ok() || !m_utp.IsAvailable() || !IsRendezvousPeerAllowed(callback.seenIp)) {
 		return false;
+	}
+	// A wake already waiting for this requester's 0x61 needs no second punch, and must not spend
+	// the action budget the other rendezvous share.
+	if (callback.requesterId != 0 && connect->HolePunchExtensionWakes().Contains(callback.requesterId)) {
+		return true;
 	}
 	const std::uint64_t now = ::GetTickCount64();
 	if (!connect->LowIdHolePunchActionLimiter().Admit(now)) {
@@ -1368,10 +1390,7 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 	if (!LugdunumNatTraversal::ShouldDialForwardedCallback(callback,
 		    server->IsLugdunumNatCallbackActive(),
 		    thePrefs::IsLugdunumNatCallbackEnabled()) ||
-		!Ok() || !m_utp.IsAvailable() || !IsGoodIP(callback.seenIp, thePrefs::FilterLanIPs()) ||
-		theApp->ipfilter->IsFiltered(callback.seenIp) ||
-		theApp->clientlist->IsBannedClient(
-			CNetworkAddress::FromIPv4NetworkOrderOrAbsent(callback.seenIp)) ||
+		!Ok() || !m_utp.IsAvailable() || !IsRendezvousPeerAllowed(callback.seenIp) ||
 		theApp->listensocket->TooManySockets()) {
 		return false;
 	}
@@ -1436,15 +1455,14 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 	if (connect == nullptr) {
 		return;
 	}
-	// Whatever port it came from, a punch from that address is what its schedule was for.
-	connect->LowIdHolePunchSchedules().Cancel(source);
+	// A punch from the peer is what its schedule was for.
+	connect->LowIdHolePunchSchedules().Cancel(source, port);
 	if (!connect->IsConnected() || !thePrefs::IsLowIdHolePunchEnabled() ||
 		thePrefs::GetEffectiveUDPPort() == 0) {
 		return;
 	}
 	CServer *server = connect->GetCurrentServer();
-	if (server == nullptr || !server->SupportsLowIdHolePunch() ||
-		!IsGoodIP(host, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(host)) {
+	if (server == nullptr || !server->SupportsLowIdHolePunch() || !IsRendezvousPeerAllowed(host)) {
 		return;
 	}
 	const std::uint64_t now = ::GetTickCount64();
@@ -1464,13 +1482,14 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 }
 #endif
 
-void CClientUDPSocket::ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port)
+void CClientUDPSocket::ProcessPacket(
+	uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port, [[maybe_unused]] bool obfuscated)
 {
 	switch (opcode) {
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 	case OP_NATT_SOURCE_ECHO:
 		theStats::AddDownOverheadOther(size);
-		HandleSourceEcho(packet, size, host, port);
+		HandleSourceEcho(packet, size, host, port, obfuscated);
 		break;
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)

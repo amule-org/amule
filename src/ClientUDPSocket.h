@@ -137,6 +137,9 @@ public:
 	uint32 ClientCryptKeyIP(uint32 ip) override { return NatKeyIPFor(ip); }
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+	//! Whether a rendezvous may punch or dial this IPv4: what a server or peer names is checked
+	//! like any contact, against the LAN, the IP filter and our bans.
+	static bool IsRendezvousPeerAllowed(uint32 ip);
 	//! Queues @a packet encrypted the server way, from this socket so the server sees the UDP port
 	//! peers must punch. Takes ownership; returns the bytes queued, for the caller's statistics.
 	uint32 SendServerWayObfuscated(CPacket *packet, uint32 serverIp, uint16 port, uint32 serverKeyUdp);
@@ -221,7 +224,8 @@ private:
 	//! A datagram from a punched endpoint that no key decoded: tell it the source we saw.
 	void MaybeSendSourceEcho(
 		uint32_t ip, uint16_t port, uint8_t firstByte, size_t length, bool decrypted);
-	void HandleSourceEcho(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
+	void HandleSourceEcho(
+		const uint8_t *payload, size_t length, uint32_t ip, uint16_t port, bool obfuscated);
 	NatSourceEcho::CPunchedPeers m_punchedPeers{ NatSourceEcho::kMaxPunchedPeers };
 	// Read when a datagram is queued, which is not always on the main thread.
 	std::mutex m_natKeyIPsMutex;
@@ -234,7 +238,8 @@ private:
 #endif
 	void OnPacketReceived(
 		const CNetworkAddress &address, uint16 port, uint8_t *buffer, size_t length) override;
-	void ProcessPacket(uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port);
+	void ProcessPacket(
+		uint8_t *packet, int16 size, int8 opcode, uint32 host, uint16 port, bool obfuscated);
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	//! Lugdunum's forwarded NAT callback (0xA7), server-way encrypted on this client socket
 	//! (S6.4). Returns true -- and has already logged -- only once the datagram actually

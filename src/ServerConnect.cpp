@@ -932,7 +932,8 @@ void CServerConnect::ProcessLowIdHolePunchDialBacks()
 void CServerConnect::StartLowIdHolePunchSchedule(
 	const NatServerHolePunch::IPv4 &peerIP, uint16 udpPort, uint64 now)
 {
-	if (udpPort == 0) {
+	// Every path checks its target first; this is the backstop for the next one.
+	if (udpPort == 0 || !CClientUDPSocket::IsRendezvousPeerAllowed(PeekUInt32(peerIP.data()))) {
 		return;
 	}
 	m_lowIdHolePunchSchedules.Start(peerIP, udpPort, now);

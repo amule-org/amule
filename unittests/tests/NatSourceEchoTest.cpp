@@ -96,12 +96,12 @@ TEST(NatSourceEcho, EchoesOncePerWindowToAPunchedSourceWithAHash)
 	ASSERT_TRUE(*hash == MakeHash(1));
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 20).has_value());
 	// A plain datagram or one that decoded never triggers one.
-	punched.EchoNotSent(kSplit, 4672);
+	punched.EchoNotSent(kSplit);
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0xC5, 20, false, 30).has_value());
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, true, 30).has_value());
 	ASSERT_TRUE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 30).has_value());
 	// The window closes 30 s after the punch.
-	punched.EchoNotSent(kSplit, 4672);
+	punched.EchoNotSent(kSplit);
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, kWindowMs).has_value());
 }
 
@@ -117,27 +117,53 @@ TEST(NatSourceEcho, NoEchoWithoutAVouchedHash)
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4673, 0x01, 20, false, 2).has_value());
 }
 
-TEST(NatSourceEcho, AMovedPortMatchesOnlyTheOnePunchOfItsIp)
+TEST(NatSourceEcho, AMovedPortEarnsAnEchoOnlyForTheOnePunchOfItsIp)
 {
 	CPunchedPeers punched(8);
 	punched.Punched(kSplit, 4672, MakeHash(1), 0);
 	ASSERT_TRUE(punched.TakeEcho(kSplit, 50001, 0x01, 20, false, 1).has_value());
-	ASSERT_TRUE(AcceptsEcho(punched, kSplit, 50001, true, 1));
 	// Two punches to one IP: a third port cannot be told apart.
 	punched.Punched(kSplit, 4673, MakeHash(1), 2);
+	punched.EchoNotSent(kSplit);
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 50002, 0x01, 20, false, 3).has_value());
-	ASSERT_FALSE(AcceptsEcho(punched, kSplit, 50002, true, 3));
-	ASSERT_TRUE(AcceptsEcho(punched, kSplit, 4673, true, 3));
+}
+
+TEST(NatSourceEcho, OneEchoPerIpPerWindowWhateverThePort)
+{
+	// A moved port matches every port of the IP, so spoofed junk from each one must not each
+	// earn an echo back to that IP.
+	CPunchedPeers punched(8);
+	punched.Punched(kSplit, 4672, MakeHash(1), 0);
+	ASSERT_TRUE(punched.TakeEcho(kSplit, 50001, 0x01, 20, false, 1).has_value());
+	ASSERT_FALSE(punched.TakeEcho(kSplit, 50002, 0x01, 20, false, 2).has_value());
+	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 3).has_value());
+}
+
+TEST(NatSourceEcho, TakesAnEchoOnlyFromTheExactPunchedEndpoint)
+{
+	// The echo sets the key IP toward the whole IP, so a neighbour behind the same carrier NAT,
+	// on another port, must not be able to send it.
+	CPunchedPeers punched(8);
+	punched.Punched(kSplit, 4672, MakeHash(1), 0);
+	ASSERT_TRUE(AcceptsEcho(punched, kSplit, 4672, true, true, 1));
+	ASSERT_FALSE(AcceptsEcho(punched, kSplit, 50001, true, true, 1));
+}
+
+TEST(NatSourceEcho, APlainEchoIsNotThePeers)
+{
+	CPunchedPeers punched(8);
+	punched.Punched(kPeer, 4672, MakeHash(1), 0);
+	ASSERT_FALSE(AcceptsEcho(punched, kPeer, 4672, true, false, 1));
 }
 
 TEST(NatSourceEcho, TakesAnEchoOnlyFromAPunchedSourceAndOnlyAPublicAddress)
 {
 	CPunchedPeers punched(8);
-	ASSERT_FALSE(AcceptsEcho(punched, kPeer, 4672, true, 0));
+	ASSERT_FALSE(AcceptsEcho(punched, kPeer, 4672, true, true, 0));
 	punched.Punched(kPeer, 4672, MakeHash(1), 0);
-	ASSERT_TRUE(AcceptsEcho(punched, kPeer, 4672, true, 1));
-	ASSERT_FALSE(AcceptsEcho(punched, kPeer, 4672, false, 1));
-	ASSERT_FALSE(AcceptsEcho(punched, kPeer, 4672, true, kWindowMs));
+	ASSERT_TRUE(AcceptsEcho(punched, kPeer, 4672, true, true, 1));
+	ASSERT_FALSE(AcceptsEcho(punched, kPeer, 4672, false, true, 1));
+	ASSERT_FALSE(AcceptsEcho(punched, kPeer, 4672, true, true, kWindowMs));
 }
 
 TEST(NatSourceEcho, KeepsOnlyAKeyIpThatDiffersFromTheLoginAddress)

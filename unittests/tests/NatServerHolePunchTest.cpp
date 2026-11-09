@@ -366,13 +366,13 @@ TEST(NatServerHolePunch, AnExpectedEndpointHandsItsVouchedPeerToTheDial)
 	vouched.userHash.fill(0x11);
 	vouched.cryptOptions = 0x03;
 
-	endpoints.Register(peer, 4662, 1, vouched);
+	endpoints.Register(peer, 5000, 4662, 1, vouched);
 	const PunchAction later = endpoints.Take(peer, 5000, 2);
 	ASSERT_TRUE(later.kind == PunchAction::DialLater);
 	ASSERT_TRUE(later.peer.userHash == vouched.userHash);
 	ASSERT_TRUE(later.peer.cryptOptions == vouched.cryptOptions);
 
-	endpoints.Register(peer, 4662, 3, vouched);
+	endpoints.Register(peer, 5000, 4662, 3, vouched);
 	endpoints.NoteDialled(peer, 5000);
 	const PunchAction now = endpoints.Take(peer, 5001, 4);
 	ASSERT_TRUE(now.kind == PunchAction::DialNow);
@@ -380,7 +380,7 @@ TEST(NatServerHolePunch, AnExpectedEndpointHandsItsVouchedPeerToTheDial)
 	ASSERT_TRUE(now.peer.cryptOptions == vouched.cryptOptions);
 
 	// Without a vouched peer the dial stays as before: no hash, no crypt options.
-	endpoints.Register(peer, 4662, 5);
+	endpoints.Register(peer, 5000, 4662, 5);
 	const PunchAction bare = endpoints.Take(peer, 5000, 6);
 	ASSERT_TRUE(bare.peer.userHash == Hash{});
 	ASSERT_FALSE(bare.peer.cryptOptions.has_value());
@@ -404,9 +404,12 @@ TEST(NatServerHolePunch, DuplicateInfoAndActionCapBoundServerDirectedTraffic)
 {
 	DuplicateInfoSuppressor duplicates;
 	const Hash hash{ { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 } };
-	ASSERT_TRUE(duplicates.ShouldProcess(hash, 0));
-	ASSERT_FALSE(duplicates.ShouldProcess(hash, kDuplicateInfoWindowMs - 1));
-	ASSERT_TRUE(duplicates.ShouldProcess(hash, kDuplicateInfoWindowMs));
+	ASSERT_FALSE(duplicates.Seen(hash, 0));
+	// Not recorded yet, as when the action cap refused it: the resend is still new.
+	ASSERT_FALSE(duplicates.Seen(hash, 1));
+	duplicates.Record(hash, 1);
+	ASSERT_TRUE(duplicates.Seen(hash, kDuplicateInfoWindowMs));
+	ASSERT_FALSE(duplicates.Seen(hash, 1 + kDuplicateInfoWindowMs));
 	ActionRateLimiter actions;
 	for (std::size_t i = 0; i < kMaxActionsPerWindow; ++i) {
 		ASSERT_TRUE(actions.Admit(0));
@@ -421,15 +424,15 @@ TEST(NatServerHolePunch, ExpectsOnlyRegisteredPunchAddressesWithinTtl)
 	const IPv4 peer{ { 192, 0, 2, 1 } };
 	const IPv4 other{ { 192, 0, 2, 2 } };
 	ASSERT_TRUE(endpoints.Take(peer, 5000, 0).kind == PunchAction::None);
-	endpoints.Register(peer, 4662, 1);
+	endpoints.Register(peer, 5000, 4662, 1);
 	ASSERT_TRUE(endpoints.Take(other, 5000, 1).kind == PunchAction::None);
 	const PunchAction first = endpoints.Take(peer, 5000, 1);
 	ASSERT_TRUE(first.kind == PunchAction::DialLater);
 	ASSERT_EQUALS((std::uint16_t)4662, first.tcpPort);
 	ASSERT_TRUE(endpoints.Take(peer, 5000, 1).kind == PunchAction::None);
-	endpoints.Register(peer, 4662, 2);
+	endpoints.Register(peer, 5000, 4662, 2);
 	ASSERT_TRUE(endpoints.Take(peer, 5000, 2 + kExpectedEndpointTtlMs).kind == PunchAction::None);
-	endpoints.Register(peer, 0, 3 + kExpectedEndpointTtlMs);
+	endpoints.Register(peer, 5000, 0, 3 + kExpectedEndpointTtlMs);
 	ASSERT_TRUE(endpoints.Take(peer, 5000, 3 + kExpectedEndpointTtlMs).kind == PunchAction::None);
 }
 
@@ -437,21 +440,21 @@ TEST(NatServerHolePunch, ADialInFlightToThePunchSourceIsNotRepeated)
 {
 	ExpectedEndpointRegistry endpoints;
 	const IPv4 peer{ { 192, 0, 2, 1 } };
-	endpoints.Register(peer, 4662, 1);
+	endpoints.Register(peer, 5000, 4662, 1);
 	endpoints.NoteDialled(peer, 5000);
 	ASSERT_TRUE(endpoints.Take(peer, 5000, 2).kind == PunchAction::None);
 	// The punch consumed the entry: a later one from the same address is unexpected.
 	ASSERT_TRUE(endpoints.Take(peer, 5001, 2).kind == PunchAction::None);
 
 	// A punch from another port is a different NAT mapping, so it earns its own dial now.
-	endpoints.Register(peer, 4662, 3);
+	endpoints.Register(peer, 5000, 4662, 3);
 	endpoints.NoteDialled(peer, 5000);
 	const PunchAction other = endpoints.Take(peer, 5001, 4);
 	ASSERT_TRUE(other.kind == PunchAction::DialNow);
 	ASSERT_EQUALS((std::uint16_t)4662, other.tcpPort);
 
 	// An endpoint nobody dialled waits for a stream from the peer before dialling back.
-	endpoints.Register(peer, 4662, 5);
+	endpoints.Register(peer, 5000, 4662, 5);
 	ASSERT_TRUE(endpoints.Take(peer, 5000, 6).kind == PunchAction::DialLater);
 
 	// Noting a dial for an address that was never registered changes nothing.
@@ -1256,9 +1259,82 @@ TEST(NatServerHolePunch, TwoPeersBehindOneAddressKeepTheirOwnSchedules)
 	ASSERT_EQUALS((std::size_t)1, restarted.size());
 	ASSERT_TRUE(restarted[0].udpPort == 4'000);
 
-	// A punch cannot say which peer sent it, so it ends both.
-	schedules.Cancel(shared);
+	// A punch from one peer's port ends only that peer's schedule; from a third port it could be
+	// either peer, or a neighbour, so it ends neither.
+	schedules.Cancel(shared, 6'000);
+	ASSERT_EQUALS((std::size_t)2, schedules.Size());
+	schedules.Cancel(shared, 4'000);
+	ASSERT_EQUALS((std::size_t)1, schedules.Size());
+	// The lone schedule left is the peer's whatever port it punches from.
+	schedules.Cancel(shared, 6'000);
 	ASSERT_EQUALS((std::size_t)0, schedules.Size());
+}
+
+TEST(NatServerHolePunch, TwoPeersBehindOneAddressKeepTheirOwnExpectedEndpoints)
+{
+	// P is the target and Q, on the same carrier NAT address, the peer we dialled. Each punch must
+	// meet its own entry, with its own TCP port and vouched hash.
+	ExpectedEndpointRegistry endpoints;
+	const IPv4 shared{ { 192, 0, 2, 9 } };
+	VouchedPeer p;
+	p.userHash.fill(0x01);
+	VouchedPeer q;
+	q.userHash.fill(0x02);
+	endpoints.Register(shared, 4'000, 4'661, 1, p);
+	endpoints.Register(shared, 5'000, 4'662, 1, q);
+	endpoints.NoteDialled(shared, 5'000);
+
+	// A third port could be either of them.
+	ASSERT_TRUE(endpoints.Take(shared, 6'000, 2).kind == PunchAction::None);
+	ASSERT_TRUE(endpoints.Take(shared, 5'000, 2).kind == PunchAction::None);
+	const PunchAction fromP = endpoints.Take(shared, 4'000, 2);
+	ASSERT_TRUE(fromP.kind == PunchAction::DialLater);
+	ASSERT_EQUALS((std::uint16_t)4'661, fromP.tcpPort);
+	ASSERT_TRUE(fromP.peer.userHash == p.userHash);
+}
+
+TEST(NatServerHolePunch, AMovedPortMeetsALoneExpectedEndpoint)
+{
+	ExpectedEndpointRegistry endpoints;
+	const IPv4 peer{ { 192, 0, 2, 1 } };
+	endpoints.Register(peer, 4'000, 4'662, 1);
+	const PunchAction moved = endpoints.Take(peer, 4'100, 2);
+	ASSERT_TRUE(moved.kind == PunchAction::DialLater);
+	ASSERT_EQUALS((std::uint16_t)4'662, moved.tcpPort);
+	// A second 0x61 for one endpoint replaces its entry rather than adding one.
+	endpoints.Register(peer, 4'000, 4'662, 3);
+	endpoints.Register(peer, 4'000, 4'663, 3);
+	const PunchAction replaced = endpoints.Take(peer, 4'100, 4);
+	ASSERT_EQUALS((std::uint16_t)4'663, replaced.tcpPort);
+	ASSERT_TRUE(endpoints.Take(peer, 4'000, 4).kind == PunchAction::None);
+}
+
+TEST(NatServerHolePunch, DialBacksToTwoPeersOfOneAddressAreKeptApart)
+{
+	DialBackSchedule dialBacks;
+	const IPv4 shared{ { 192, 0, 2, 9 } };
+	dialBacks.Schedule(shared, 4'661, 4'000, 0);
+	dialBacks.Schedule(shared, 4'662, 5'000, 0);
+	// Rescheduling one peer replaces only its own entry.
+	dialBacks.Schedule(shared, 4'662, 5'000, 1);
+	const auto due = dialBacks.TakeDue(1 + kDialBackDelayMs);
+	ASSERT_EQUALS((std::size_t)2, due.size());
+	ASSERT_TRUE(due[0].udpPort == 4'000 && due[0].tcpPort == 4'661);
+	ASSERT_TRUE(due[1].udpPort == 5'000 && due[1].tcpPort == 4'662);
+}
+
+TEST(NatServerHolePunch, APendingWakeIsFoundByItsRequester)
+{
+	PendingWakeSet<int> wakes;
+	ASSERT_FALSE(wakes.Contains(7));
+	wakes.Add(7, 1, 0);
+	ASSERT_TRUE(wakes.Contains(7));
+	ASSERT_FALSE(wakes.Contains(8));
+	// Requester 0 is never held, so it is never found.
+	wakes.Add(0, 2, 0);
+	ASSERT_FALSE(wakes.Contains(0));
+	ASSERT_TRUE(wakes.Resolve(7));
+	ASSERT_FALSE(wakes.Contains(7));
 }
 
 TEST(NatServerHolePunch, APunchOrADialFromThePeerEndsItsSchedule)
@@ -1272,15 +1348,15 @@ TEST(NatServerHolePunch, APunchOrADialFromThePeerEndsItsSchedule)
 	schedules.Start(peer, 4'662, 0);
 	ASSERT_EQUALS((std::size_t)2, schedules.Size());
 
-	schedules.Cancel(peer);
+	schedules.Cancel(peer, std::nullopt);
 	ASSERT_EQUALS((std::size_t)1, schedules.Size());
 	const std::vector<PunchDue> owed = schedules.TakeDue(10'000);
 	ASSERT_EQUALS((std::size_t)5, owed.size());
 	ASSERT_TRUE(owed[0].peerIP == other);
 
 	// Cancelling an address nobody scheduled, or twice, is not an error.
-	schedules.Cancel(other);
-	schedules.Cancel(peer);
+	schedules.Cancel(other, std::nullopt);
+	schedules.Cancel(peer, std::nullopt);
 	ASSERT_EQUALS((std::size_t)0, schedules.Size());
 }
 
