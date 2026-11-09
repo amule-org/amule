@@ -70,7 +70,8 @@
 // CClientTCPSocket
 //------------------------------------------------------------------------------
 
-CClientTCPSocket::CClientTCPSocket(CUpDownClient *in_client, const CProxyData *ProxyData)
+CClientTCPSocket::CClientTCPSocket(
+	CUpDownClient *in_client, const CProxyData *ProxyData, ConnectionCount count)
 : CEMSocket(ProxyData)
 {
 	SetClient(in_client);
@@ -103,7 +104,11 @@ CClientTCPSocket::CClientTCPSocket(CUpDownClient *in_client, const CProxyData *P
 	Notify(true);
 
 	theApp->listensocket->AddSocket(this);
-	theApp->listensocket->AddConnection();
+	if (count == ConnectionCount::AtCreation) {
+		theApp->listensocket->AddConnection();
+	} else {
+		m_connectionCountPending = true;
+	}
 }
 
 CClientTCPSocket::~CClientTCPSocket()
@@ -2284,6 +2289,11 @@ void CClientTCPSocket::OnSend(int nErrorCode)
 void CClientTCPSocket::OnReceive(int nErrorCode)
 {
 	ResetTimeOutTimer();
+	if (m_connectionCountPending) {
+		// The first read event of a deferred socket follows its peer's first data.
+		m_connectionCountPending = false;
+		theApp->listensocket->AddConnection();
+	}
 	// We might have updated ipfilter
 	wxASSERT(m_remoteAddress.IsPresent());
 
