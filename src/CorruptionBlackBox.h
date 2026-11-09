@@ -28,6 +28,7 @@
 #ifndef CORRUPTIONBLACKBOX_H
 #define CORRUPTIONBLACKBOX_H
 
+#include "NetworkAddress.h"
 #include "Types.h"
 #include <list>
 #include <map>
@@ -36,7 +37,8 @@ class CCorruptionBlackBox
 {
 public:
 	void Free();
-	void TransferredData(uint64 nStartPos, uint64 nEndPos, uint32 senderIP);
+	//! @a sender is the address the data came from; an IPv6 sender has no 32-bit form.
+	void TransferredData(uint64 nStartPos, uint64 nEndPos, const CNetworkAddress &sender);
 	void VerifiedData(bool ok, uint16 nPart, uint32 nRelStartPos, uint32 nRelEndPos);
 	void EvaluateData();
 	void SetPartFileInfo(const wxString &name, const wxString &nr)
@@ -51,14 +53,13 @@ private:
 	class CCBBRecord
 	{
 	public:
-		CCBBRecord(uint32 nStartPos, uint32 nEndPos, uint32 dwIP);
-		bool Merge(uint32 nStartPos, uint32 nEndPos, uint32 dwIP);
+		CCBBRecord(uint32 nStartPos, uint32 nEndPos, const CNetworkAddress &sender);
+		bool Merge(uint32 nStartPos, uint32 nEndPos, const CNetworkAddress &sender);
 
 		// Startpos / Endpos relative to part
-		uint32 m_nStartPos;
-		uint32 m_nEndPos;
-		// IP of client
-		uint32 m_dwIP;
+		uint32 m_nStartPos = 0;
+		uint32 m_nEndPos = 0;
+		CNetworkAddress m_sender;
 	};
 	typedef std::list<CCBBRecord> CRecordList;
 	std::map<uint16, CRecordList> m_Records;
@@ -70,7 +71,7 @@ private:
 		CCBBClient() { m_downloaded = 0; }
 		uint64 m_downloaded;
 	};
-	typedef std::map<uint32, CCBBClient> CCBBClientMap;
+	typedef std::map<CNetworkAddress, CCBBClient> CCBBClientMap;
 	CCBBClientMap m_goodClients, m_badClients;
 
 	// for debug prints

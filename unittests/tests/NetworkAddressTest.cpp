@@ -594,11 +594,17 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 			"5f00:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
 			"5f01::" },
 	};
+	// A neighbour is routable only inside 2000::/3, the global unicast block.
+	const auto inGlobalUnicast = [](const char *text) {
+		return (CNetworkAddress::FromString(text).GetOctets()[0] & 0xE0) == 0x20;
+	};
 	for (const auto &range : excludedRanges) {
-		ASSERT_TRUE(CNetworkAddress::FromString(range.before).IsGloballyRoutableIPv6());
+		ASSERT_EQUALS(inGlobalUnicast(range.before),
+			CNetworkAddress::FromString(range.before).IsGloballyRoutableIPv6());
 		ASSERT_FALSE(CNetworkAddress::FromString(range.first).IsGloballyRoutableIPv6());
 		ASSERT_FALSE(CNetworkAddress::FromString(range.last).IsGloballyRoutableIPv6());
-		ASSERT_TRUE(CNetworkAddress::FromString(range.after).IsGloballyRoutableIPv6());
+		ASSERT_EQUALS(inGlobalUnicast(range.after),
+			CNetworkAddress::FromString(range.after).IsGloballyRoutableIPv6());
 	}
 	ASSERT_TRUE(CNetworkAddress::FromString("2606:4700::1111").IsGloballyRoutableIPv6());
 
@@ -657,11 +663,16 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 	// ff00::/8, multicast.
 	ASSERT_FALSE(CNetworkAddress::FromString("ff02::1").IsGloballyRoutableIPv6());
 
-	// And the addresses immediately outside those prefixes stay routable, so
-	// the tests above are pinning a prefix and not a whole leading byte.
-	ASSERT_TRUE(CNetworkAddress::FromString("fbff:ffff::1").IsGloballyRoutableIPv6());
-	ASSERT_TRUE(CNetworkAddress::FromString("fe00::1").IsGloballyRoutableIPv6());
-	ASSERT_TRUE(CNetworkAddress::FromString("fe7f:ffff::1").IsGloballyRoutableIPv6());
+	// The addresses immediately outside those prefixes match none of the entries, so the tests
+	// above pin a prefix and not a whole leading byte. They are still not routable: they lie
+	// outside 2000::/3.
+	for (const char *neighbour : { "fbff:ffff::1", "fe00::1", "fe7f:ffff::1" }) {
+		const CNetworkAddress address = CNetworkAddress::FromString(neighbour);
+		for (const auto &prefix : NetworkAddressPolicy::kIPv6ExcludedPrefixes) {
+			ASSERT_FALSE(NetworkAddressPolicy::MatchesPrefix(address.GetOctets(), prefix));
+		}
+		ASSERT_FALSE(address.IsGloballyRoutableIPv6());
+	}
 }
 
 // The octets are the storage now, so what GetOctets() hands out is what every bit-arithmetic caller
@@ -799,3 +810,31 @@ TEST(NetworkAddress, AsioBridgeRoundTripsWithoutLosingAnything)
 }
 
 // File_checked_for_headers
+
+TEST(NetworkAddress, OnlyTheGlobalUnicastBlockIsGloballyRoutable)
+{
+	// Outside 2000::/3 nothing is assigned as global unicast, whatever the exclusion table lists.
+	ASSERT_FALSE(CNetworkAddress::FromString("4000::1").IsGloballyRoutableIPv6());
+	ASSERT_FALSE(CNetworkAddress::FromString("100:0:0:1::1").IsGloballyRoutableIPv6());
+	// SIIT, ::ffff:0:0/96: an IPv4 host on the LAN behind a translator.
+	ASSERT_FALSE(CNetworkAddress::FromString("::ffff:0:a00:1").IsGloballyRoutableIPv6());
+	ASSERT_FALSE(CNetworkAddress::FromString("1fff:ffff::1").IsGloballyRoutableIPv6());
+	ASSERT_TRUE(CNetworkAddress::FromString("2000::1").IsGloballyRoutableIPv6());
+	ASSERT_TRUE(CNetworkAddress::FromString("3fff:ffff::1").IsGloballyRoutableIPv6());
+}
+
+TEST(NetworkAddress, ATunnelAddressCarriesItsIPv4Host)
+{
+	uint32_t ipv4 = 0;
+	// 6to4: 2002:c000:0201::/48 is 192.0.2.1.
+	ASSERT_TRUE(CNetworkAddress::FromString("2002:c000:201::1").TunnelledIPv4NetworkOrder(ipv4));
+	ASSERT_EQUALS(CNetworkAddress::FromString("192.0.2.1").ToIPv4NetworkOrderOrZero(), ipv4);
+	// Teredo keeps the client inverted in the last four bytes: ~3fff:fdd2 is 192.0.2.45.
+	ASSERT_TRUE(CNetworkAddress::FromString("2001:0:4136:e378:8000:63bf:3fff:fdd2")
+			    .TunnelledIPv4NetworkOrder(ipv4));
+	ASSERT_EQUALS(CNetworkAddress::FromString("192.0.2.45").ToIPv4NetworkOrderOrZero(), ipv4);
+	// Anything else carries none.
+	ASSERT_FALSE(CNetworkAddress::FromString("2001:1::1").TunnelledIPv4NetworkOrder(ipv4));
+	ASSERT_FALSE(CNetworkAddress::FromString("2a00:1450::1").TunnelledIPv4NetworkOrder(ipv4));
+	ASSERT_FALSE(CNetworkAddress::FromString("192.0.2.1").TunnelledIPv4NetworkOrder(ipv4));
+}

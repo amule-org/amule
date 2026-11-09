@@ -502,6 +502,15 @@ inline CNetworkAddress OutboundIPv6Source(
 	return advertised;
 }
 
+//! Whether one address is IPv4 (or mapped) and the other native IPv6.
+inline bool IsOtherFamily(const CNetworkAddress &a, const CNetworkAddress &b) noexcept
+{
+	const auto native = [](const CNetworkAddress &address) {
+		return address.IsIPv6() && !address.IsIPv4Mapped();
+	};
+	return a.IsPresent() && b.IsPresent() && native(a) != native(b);
+}
+
 /**
  * Whether @a other, the address a second connection carrying a known user hash came from, belongs to
  * the host already known at @a known: the IPv6 it advertised, or another address in the /64 of a

@@ -879,3 +879,15 @@ TEST(PeerAddressing, ATemporaryAddressBesideTheAdvertisedOneIsTheSameHost)
 }
 
 // File_checked_for_headers
+
+TEST(PeerAddressing, AnIPv4AndANativeIPv6AreOfOtherFamilies)
+{
+	const auto v4 = CNetworkAddress::FromString("192.0.2.1");
+	const auto mapped = CNetworkAddress::FromString("::ffff:192.0.2.9");
+	const auto v6 = CNetworkAddress::FromString("2a07:1:2:3::bd1");
+	ASSERT_TRUE(IsOtherFamily(v4, v6));
+	ASSERT_TRUE(IsOtherFamily(v6, mapped));
+	ASSERT_FALSE(IsOtherFamily(v4, mapped));
+	ASSERT_FALSE(IsOtherFamily(v6, CNetworkAddress::FromString("2a07:9::1")));
+	ASSERT_FALSE(IsOtherFamily(v4, CNetworkAddress::Absent()));
+}

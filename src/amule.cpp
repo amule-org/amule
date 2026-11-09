@@ -1727,10 +1727,12 @@ void CamuleApp::OnAmuleApiTerminated(int pid, int status)
 static amuleIPV4Address GetServerUDPAddress()
 {
 	amuleIPV4Address address;
+	SetListenerWidening(true);
 	if (thePrefs::GetAddress().IsEmpty()) {
 		address.AnyAddress();
 	} else if (!address.Hostname(thePrefs::GetAddress())) {
 		address.AnyAddress();
+		SetListenerWidening(false);
 		AddLogLineC(CFormat(_("Could not bind ports to the specified address: %s")) %
 			    thePrefs::GetAddress());
 	}
@@ -1904,10 +1906,12 @@ bool CamuleApp::RebindP2PSockets(bool tcpPortChanged, bool udpPortChanged, uint1
 	const bool resumeServerConnection = tcpPortChanged && serverconnect &&
 					    (serverconnect->IsConnected() || serverconnect->IsConnecting());
 	amuleIPV4Address p2pAddress;
+	SetListenerWidening(true);
 	if (thePrefs::GetAddress().IsEmpty()) {
 		p2pAddress.AnyAddress();
 	} else if (!p2pAddress.Hostname(thePrefs::GetAddress())) {
 		p2pAddress.AnyAddress();
+		SetListenerWidening(false);
 		AddLogLineC(CFormat(_("Could not bind ports to the specified address: %s")) %
 			    thePrefs::GetAddress());
 	}

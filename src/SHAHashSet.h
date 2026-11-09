@@ -80,6 +80,7 @@ CAICHHashSet::CreatePartRecoveryData
 
 #include "Types.h"
 #include "ClientRef.h"
+#include "NetworkAddress.h" // Needed for SigningKey
 
 #define HASHSIZE 20
 #define KNOWN2_MET_FILENAME "known2_64.met"
@@ -230,7 +231,31 @@ public:
 	}
 	// Addresses are in peer byte order, as opposed to Kad wire order.
 	static constexpr uint32 SigningSubnet(uint32 ip) { return ip & 0x00F0FFFF; }
-	bool AddSigningIP(uint32 dwIP, bool testOnly = false);
+	//! Set in every IPv6 key. SigningSubnet() clears the top byte, so no IPv4 key has it.
+	static constexpr uint32 kIPv6KeyBit = 0x80000000u;
+	/**
+	 * The signing key for a source of any family. IPv4 signs per /20, as above; an IPv6 source
+	 * per /48, a site, folded into a key with kIPv6KeyBit set, so the two cannot meet. Without
+	 * this every IPv6 source shared key 0. A key is stored as given: masked again as a /20, an
+	 * IPv6 key would lose that bit and land on some IPv4 subnet's key.
+	 */
+	static uint32 SigningKey(const CNetworkAddress &address)
+	{
+		uint32 ipv4 = 0;
+		if (address.ToIPv4NetworkOrder(ipv4)) {
+			return SigningSubnet(ipv4);
+		}
+		if (!address.IsIPv6()) {
+			return 0;
+		}
+		uint32 hash = 2166136261u; // FNV-1a over the /48
+		for (unsigned i = 0; i < 6; ++i) {
+			hash = (hash ^ address.GetOctets()[i]) * 16777619u;
+		}
+		return hash | kIPv6KeyBit;
+	}
+	//! @a key is a SigningKey() or a SigningSubnet().
+	bool AddSigningKey(uint32 key, bool testOnly = false);
 
 	CAICHHash m_Hash;
 	std::set<uint32> m_adwIpsSigning;
@@ -273,7 +298,8 @@ private:
 	EAICHStatus m_eStatus;
 	deque<CAICHUntrustedHash> m_aUntrustedHashs;
 
-	void HashReceived(const CAICHHash &Hash, uint32 dwFromIP, bool fromKad);
+	//! @a key is a signing key, stored as given.
+	void HashReceived(const CAICHHash &Hash, uint32 key, bool fromKad);
 
 public:
 	static CAICHRequestedDataList m_liRequestedData;
@@ -289,12 +315,16 @@ public:
 	// A root reported by a download source, or an eD2k server root that Kad evidence disputes.
 	void UntrustedHashReceived(const CAICHHash &Hash, uint32 dwFromIP)
 	{
-		HashReceived(Hash, dwFromIP, false);
+		HashReceived(Hash, CAICHUntrustedHash::SigningSubnet(dwFromIP), false);
+	}
+	void UntrustedHashReceived(const CAICHHash &Hash, const CNetworkAddress &from)
+	{
+		HashReceived(Hash, CAICHUntrustedHash::SigningKey(from), false);
 	}
 	// A root replayed from a Kad search result, attributed to its responder's /20.
 	void KadHashReceived(const CAICHHash &hash, uint32 responderSubnet)
 	{
-		HashReceived(hash, responderSubnet, true);
+		HashReceived(hash, CAICHUntrustedHash::SigningSubnet(responderSubnet), true);
 	}
 	bool IsPartDataAvailable(uint64 nPartStartPos);
 	void SetStatus(EAICHStatus bNewValue) { m_eStatus = bNewValue; }
