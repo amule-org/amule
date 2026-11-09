@@ -213,6 +213,7 @@ public:
 		m_peerStreams.clear();
 		m_socketsAtEndpoint.clear();
 		m_sentTo.clear();
+		m_acceptedAtMs.clear();
 		m_context = nullptr;
 		m_acceptor = nullptr;
 		if (s_self == this) {
@@ -497,6 +498,17 @@ private:
 			bytes[i] = static_cast<uint8_t>(ip >> (8 * i));
 		}
 		return address;
+	}
+
+	//! MakeAddress() in reverse.
+	static uint32_t IpOf(const sockaddr_in &address)
+	{
+		const auto *bytes = reinterpret_cast<const uint8_t *>(&address.sin_addr.s_addr);
+		uint32_t ip = 0;
+		for (unsigned i = 0; i < 4; ++i) {
+			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
+		}
+		return ip;
 	}
 
 	void AddRemapCandidate(utp_socket *socket,
@@ -841,11 +853,7 @@ private:
 			return 0;
 		}
 		const auto *address = reinterpret_cast<const sockaddr_in *>(args->address);
-		const auto *bytes = reinterpret_cast<const uint8_t *>(&address->sin_addr.s_addr);
-		uint32_t ip = 0;
-		for (unsigned i = 0; i < 4; ++i) {
-			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
-		}
+		uint32_t ip = IpOf(*address);
 		uint16_t port = ntohs(address->sin_port);
 		if (s_self != nullptr) {
 			const auto translation = s_self->m_remapOutputs.find({ ip, port });
@@ -919,15 +927,28 @@ private:
 		return static_cast<CUtpSocketTransport *>(utp_get_userdata(socket));
 	}
 
-	//! Inbound streams whose peer has not sent data yet: all a forged source can hold open.
-	std::size_t HalfOpenInboundStreams() const
+	/**
+	 * Inbound streams whose peer has not sent data yet: all a forged source can hold open. One that
+	 * waited kUtpHalfOpenLimitMs is ended instead of counted. Only a SYN reads the budget, so the
+	 * SYN's own clock is the one that matters.
+	 */
+	std::size_t ExpireAndCountHalfOpen(std::uint64_t nowMs)
 	{
 		std::size_t count = 0;
-		for (const auto &entry : m_endpoints) {
-			const CUtpSocketTransport *transport = TransportOf(entry.first);
-			if (transport != nullptr && transport->IsInbound() && !transport->IsConnected()) {
-				++count;
+		for (auto it = m_acceptedAtMs.begin(); it != m_acceptedAtMs.end();) {
+			CUtpSocketTransport *transport = TransportOf(it->first);
+			if (transport == nullptr || !transport->IsHalfOpen()) {
+				it = m_acceptedAtMs.erase(it);
+				continue;
 			}
+			if (IsUtpHalfOpenExpired(it->second, nowMs)) {
+				// Reported lost, so its socket closes it from the main thread.
+				transport->OnEnded(EUtpTransportFailure::TimedOut);
+				it = m_acceptedAtMs.erase(it);
+				continue;
+			}
+			++count;
+			++it;
 		}
 		return count;
 	}
@@ -940,13 +961,9 @@ private:
 			return 1;
 		}
 		const auto *address = reinterpret_cast<const sockaddr_in *>(args->address);
-		const auto *bytes = reinterpret_cast<const uint8_t *>(&address->sin_addr.s_addr);
-		uint32_t ip = 0;
-		for (unsigned i = 0; i < 4; ++i) {
-			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
-		}
-		return s_self->m_acceptor->AdmitsSyn(
-			       ip, ntohs(address->sin_port), s_self->HalfOpenInboundStreams())
+		return s_self->m_acceptor->AdmitsSyn(IpOf(*address),
+			       ntohs(address->sin_port),
+			       s_self->ExpireAndCountHalfOpen(s_self->m_nowMs))
 			       ? 0
 			       : 1;
 	}
@@ -962,11 +979,7 @@ private:
 			return 0;
 		}
 		const auto *address = reinterpret_cast<const sockaddr_in *>(args->address);
-		const auto *bytes = reinterpret_cast<const uint8_t *>(&address->sin_addr.s_addr);
-		uint32_t ip = 0;
-		for (unsigned i = 0; i < 4; ++i) {
-			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
-		}
+		const uint32_t ip = IpOf(*address);
 		const uint16_t port = ntohs(address->sin_port);
 		const SUtpSynCandidateMatch candidateMatch =
 			FindUniqueUtpSynCandidate(s_self->m_remapCandidates, ip, port, s_self->m_nowMs);
@@ -1025,6 +1038,7 @@ private:
 			s_self->m_refusedStreams.push_back(std::move(transport));
 			return 0;
 		}
+		s_self->m_acceptedAtMs[args->socket] = s_self->m_nowMs;
 		return 0;
 	}
 
@@ -1056,8 +1070,8 @@ private:
 			transport->OnEnded(EUtpTransportFailure::Destroying);
 			break;
 		case UTP_STATE_CONNECT:
-			// The transport notifies its attached socket after the state transition;
-			// outbound and inbound streams use the same connection-completion path.
+			// Only a dial gets this. An accepted stream is connected by its peer's
+			// first data, in CUtpSocketTransport::OnPayload().
 			transport->MarkConnected();
 			break;
 		default:
@@ -1157,6 +1171,7 @@ private:
 			m_sending = nullptr;
 		}
 		m_closingCrypt.erase(socket);
+		m_acceptedAtMs.erase(socket);
 		m_peerStreams.erase(socket);
 		RemoveRemapCandidate(socket);
 		RemovePortRemap(socket);
@@ -1211,6 +1226,8 @@ private:
 	static constexpr size_t kUserHashBytes = 16;
 	// Crypt parameters of closed sockets that libutp still sends on.
 	std::map<utp_socket *, std::array<uint8_t, kUserHashBytes>> m_closingCrypt;
+	//! When each accepted stream that may still be half-open was accepted, in the datagram clock.
+	std::map<utp_socket *, std::uint64_t> m_acceptedAtMs;
 	// Refused streams, destroyed at the same point. Destruction is the close.
 	std::vector<std::unique_ptr<IStreamTransport>> m_refusedStreams;
 	// libutp's callbacks carry only the context's user pointer, which already

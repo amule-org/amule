@@ -1753,3 +1753,49 @@ TEST(UtpLibraryAdapter, AFrameAboveTheMtuNeverReachesLibutp)
 	ASSERT_TRUE(ClassifyUtpFrame(syn.data(), syn.size()) == EUtpFrameKind::Syn);
 	Teardown(loop);
 }
+
+TEST(UtpLibraryAdapter, AHalfOpenStreamIsEndedAtTheFirstSynAfterItsLimit)
+{
+	// A forged SYN holds a budget slot only as long as an honest dialer needs to speak.
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	Pump(loop);
+	const std::unique_ptr<IStreamTransport> honest = std::move(acceptor.accepted);
+	ASSERT_TRUE(honest != nullptr);
+	uint8_t payload = 0x5A;
+	utp_iovec vector{ &payload, 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	Pump(loop);
+	ASSERT_TRUE(honest->IsConnected());
+
+	// Its SYN-ACK goes nowhere, so its peer never speaks.
+	sink.dropOldPort = true;
+	const std::vector<uint8_t> forged = UtpFrame(kUtpTypeSyn, 0x4242, 1, 0);
+	loop.server->ProcessDatagram(forged.data(), forged.size(), kPeerIp, kPeerPort + 7, loop.nowMs);
+	const std::unique_ptr<IStreamTransport> stale = std::move(acceptor.accepted);
+	ASSERT_TRUE(stale != nullptr);
+
+	const std::vector<uint8_t> early = UtpFrame(kUtpTypeSyn, 0x4343, 1, 0);
+	loop.server->ProcessDatagram(
+		early.data(), early.size(), kPeerIp, kPeerPort + 8, loop.nowMs + kUtpHalfOpenLimitMs - 1);
+	ASSERT_EQUALS(1, (int)acceptor.lastHalfOpen);
+	ASSERT_TRUE(stale->IsOk());
+	const std::unique_ptr<IStreamTransport> fresh = std::move(acceptor.accepted);
+
+	const std::vector<uint8_t> late = UtpFrame(kUtpTypeSyn, 0x4444, 1, 0);
+	loop.server->ProcessDatagram(
+		late.data(), late.size(), kPeerIp, kPeerPort + 9, loop.nowMs + kUtpHalfOpenLimitMs);
+	// The stale stream is ended and not counted. The fresh one still waits, and the honest one
+	// spoke, so it was never at risk.
+	ASSERT_EQUALS(1, (int)acceptor.lastHalfOpen);
+	ASSERT_FALSE(stale->IsOk());
+	ASSERT_TRUE(fresh->IsOk());
+	ASSERT_TRUE(honest->IsConnected());
+	Teardown(loop);
+}
