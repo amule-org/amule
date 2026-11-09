@@ -45,7 +45,7 @@
  * - WriteToSocket() is what UTP_STATE_WRITABLE exists to invite, so it is
  *   correct from there. From UTP_ON_ACCEPT it achieves nothing, since the
  *   socket is still CS_SYN_RECV, and from UTP_ON_READ it re-enters
- *   utp_process_incoming. Both of those request a flush instead.
+ *   utp_process_incoming. Code in those callbacks requests a flush instead.
  * - NotifyReadDrained() is safe from anywhere, including inside UTP_ON_READ:
  *   utp_read_drained() only recomputes the receive window and sends or
  *   schedules an ACK, and never re-enters the incoming path.
@@ -145,9 +145,8 @@ public:
 	// loop while the main thread's callbacks write them, so they take the lock
 	// like everything else that touches the stream.
 	/**
-	 * True once accepted, which is not libutp being ready to send: the acceptor
-	 * marks it at CS_SYN_RECV, and CS_CONNECTED arrives silently on the peer's
-	 * first ST_DATA. Answers "is there a stream", not "will a write leave now".
+	 * A dial is connected at UTP_STATE_CONNECT. An accepted stream is connected
+	 * only when its peer's first data arrives, since a SYN proves no address.
 	 */
 	bool IsConnected() const override
 	{
@@ -155,6 +154,12 @@ public:
 		return m_connected && m_stream.IsOk();
 	}
 	bool IsInbound() const override { return m_inbound; }
+	//! An accepted stream still waiting for its peer's first data.
+	bool IsHalfOpen() const
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		return m_inbound && !m_connected && m_socket != nullptr && m_stream.IsOk();
+	}
 
 	//! An inbound stream has no crypt parameters until its hello is read, so until then the SYN's
 	//! obfuscation answers.
@@ -371,8 +376,8 @@ public:
 
 	// -- libutp callbacks, translated ---------------------------------
 
-	// Adapter transition, not a libutp callback: the future acceptor MUST call
-	// this from UTP_ON_ACCEPT. Only outgoing sockets get UTP_STATE_CONNECT.
+	// UTP_STATE_CONNECT, which only a dial gets. An accepted stream is marked
+	// in OnPayload() instead.
 	void MarkConnected()
 	{
 		IStreamTransportEvents *flushEvents = nullptr;
@@ -384,9 +389,8 @@ public:
 			m_connected = true;
 			flushEvents = RequestFlushLocked();
 		}
-		// Requested, not flushed: this runs inside UTP_ON_ACCEPT, where the
-		// socket is still CS_SYN_RECV, so utp_writev would refuse every byte
-		// at its state guard and the peek would be copied for nothing.
+		// Requested, not flushed: this runs inside a libutp callback, which a
+		// write would re-enter.
 		RaiseFlushRequest(flushEvents);
 		NotifyEvents(&IStreamTransportEvents::OnStreamConnected);
 		NotifyEvents(&IStreamTransportEvents::OnStreamWritable);
