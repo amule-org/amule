@@ -488,6 +488,11 @@ bool CIPFilter::IsFiltered(const CNetworkAddress &address, bool isServer)
 	if ((!thePrefs::IsFilteringClients() && !isServer) || (!thePrefs::IsFilteringServers() && isServer)) {
 		return false;
 	}
+	// Before the lock: the IPv4 check takes it too.
+	uint32 tunnelled = 0;
+	if (address.TunnelledIPv4NetworkOrder(tunnelled) && IsFiltered(tunnelled, isServer)) {
+		return true;
+	}
 	wxMutexLocker lock(m_mutex);
 	// An address we cannot read counts as filtered: a security check that cannot run must refuse.
 	if (address.IsAbsent() || !m_ready || m_ipv6Ranges.IsFiltered(address, m_ipv6AccessLevel)) {

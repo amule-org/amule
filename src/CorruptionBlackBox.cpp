@@ -31,16 +31,15 @@
 #include "Logger.h"
 #include "amule.h" // needed for theApp
 #include "ClientList.h"
-#include "NetworkFunctions.h" // needed for Uint32toStringIP
-#include "OtherFunctions.h"   // needed for CastItoXBytes
-#include <common/Format.h>    // needed for CFormat
+#include "OtherFunctions.h" // needed for CastItoXBytes
+#include <common/Format.h>  // needed for CFormat
 #include <common/Macros.h>
 
 #define CBB_BANTHRESHOLD 32 //% max corrupted data
 
 // Record to store information which piece of data was downloaded from which client
 
-CCorruptionBlackBox::CCBBRecord::CCBBRecord(uint32 nStartPos, uint32 nEndPos, uint32 dwIP)
+CCorruptionBlackBox::CCBBRecord::CCBBRecord(uint32 nStartPos, uint32 nEndPos, const CNetworkAddress &sender)
 {
 	if (nStartPos > nEndPos) {
 		wxFAIL;
@@ -48,13 +47,13 @@ CCorruptionBlackBox::CCBBRecord::CCBBRecord(uint32 nStartPos, uint32 nEndPos, ui
 	}
 	m_nStartPos = nStartPos;
 	m_nEndPos = nEndPos;
-	m_dwIP = dwIP;
+	m_sender = sender;
 }
 
 // Try to merge new data to an existing record
-bool CCorruptionBlackBox::CCBBRecord::Merge(uint32 nStartPos, uint32 nEndPos, uint32 dwIP)
+bool CCorruptionBlackBox::CCBBRecord::Merge(uint32 nStartPos, uint32 nEndPos, const CNetworkAddress &sender)
 {
-	if (m_dwIP == dwIP) {
+	if (m_sender == sender) {
 		if (nStartPos == m_nEndPos + 1) {
 			m_nEndPos = nEndPos;
 			return true;
@@ -76,7 +75,7 @@ void CCorruptionBlackBox::Free()
 
 // Store a piece of received data (don't know if it's good or bad yet).
 // Data is stored in a list for the chunk in belongs to.
-void CCorruptionBlackBox::TransferredData(uint64 nStartPos, uint64 nEndPos, uint32 senderIP)
+void CCorruptionBlackBox::TransferredData(uint64 nStartPos, uint64 nEndPos, const CNetworkAddress &senderIP)
 {
 	if (nStartPos > nEndPos) {
 		wxFAIL;
@@ -105,8 +104,7 @@ void CCorruptionBlackBox::TransferredData(uint64 nStartPos, uint64 nEndPos, uint
 		list.push_back(CCBBRecord(nRelStartPos, nRelEndPos, senderIP));
 		AddDebugLogLineN(logPartFile,
 			CFormat("CorruptionBlackBox(%s): transferred: new record for part %d (%d - %d, %s)") %
-				m_partNumber % nPart % nRelStartPos % nRelEndPos %
-				Uint32toStringIP(senderIP));
+				m_partNumber % nPart % nRelStartPos % nRelEndPos % senderIP.ToWxString());
 	}
 }
 
@@ -129,7 +127,7 @@ void CCorruptionBlackBox::VerifiedData(bool ok, uint16 nPart, uint32 nRelStartPo
 		CRecordList::iterator it = it1++;
 		uint32 &curStart = it->m_nStartPos;
 		uint32 &curEnd = it->m_nEndPos;
-		uint32 ip = it->m_dwIP;
+		const CNetworkAddress ip = it->m_sender;
 		uint32 data = 0;
 		if (curStart >= nRelStartPos && curStart <= nRelEndPos) {
 			// [arg
@@ -195,7 +193,7 @@ void CCorruptionBlackBox::EvaluateData()
 {
 	CCBBClientMap::iterator it = m_badClients.begin();
 	for (; it != m_badClients.end(); ++it) {
-		uint32 ip = it->first;
+		const CNetworkAddress &ip = it->first;
 		uint64 bad = it->second.m_downloaded;
 		if (!bad) {
 			wxFAIL; // this should not happen
@@ -227,7 +225,7 @@ void CCorruptionBlackBox::EvaluateData()
 					pEvilClient->Safe_Delete();
 				}
 			} else {
-				clientName = Uint32toStringIP(ip);
+				clientName = ip.ToWxString();
 				theApp->clientlist->AddBannedClient(ip);
 			}
 			AddLogLineN(CFormat(_("Banned client %s for sending %s corrupt data of %s total for "
@@ -248,7 +246,7 @@ void CCorruptionBlackBox::EvaluateData()
 					CFormat("CorruptionBlackBox(%s): Reporting: Found client which "
 						"probably sent %d of %d corrupted data, but it is within the "
 						"acceptable limit, %s") %
-						m_partNumber % bad % (good + bad) % Uint32toStringIP(ip));
+						m_partNumber % bad % (good + bad) % ip.ToWxString());
 			}
 		}
 	}
@@ -265,8 +263,8 @@ void CCorruptionBlackBox::DumpAll()
 		CRecordList &list = it->second;
 		for (CRecordList::iterator it2 = list.begin(); it2 != list.end(); ++it2) {
 			AddDebugLogLineN(logPartFile,
-				CFormat("CBBD %6d %.16s %10d - %10d") % block %
-					Uint32toStringIP(it2->m_dwIP) % it2->m_nStartPos % it2->m_nEndPos);
+				CFormat("CBBD %6d %s %10d - %10d") % block % it2->m_sender.ToWxString() %
+					it2->m_nStartPos % it2->m_nEndPos);
 		}
 	}
 	if (!m_goodClients.empty()) {
@@ -274,7 +272,7 @@ void CCorruptionBlackBox::DumpAll()
 		CCBBClientMap::iterator it3 = m_goodClients.begin();
 		for (; it3 != m_goodClients.end(); ++it3) {
 			AddDebugLogLineN(logPartFile,
-				CFormat("CBBD %.16s good %10d") % Uint32toStringIP(it3->first) %
+				CFormat("CBBD %s good %10d") % it3->first.ToWxString() %
 					it3->second.m_downloaded);
 		}
 	}
@@ -283,7 +281,7 @@ void CCorruptionBlackBox::DumpAll()
 		CCBBClientMap::iterator it3 = m_badClients.begin();
 		for (; it3 != m_badClients.end(); ++it3) {
 			AddDebugLogLineN(logPartFile,
-				CFormat("CBBD %.16s bad %10d") % Uint32toStringIP(it3->first) %
+				CFormat("CBBD %s bad %10d") % it3->first.ToWxString() %
 					it3->second.m_downloaded);
 		}
 	}

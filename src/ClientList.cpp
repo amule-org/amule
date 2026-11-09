@@ -473,11 +473,15 @@ bool CClientList::AttachToAlreadyKnown(
 							? CNetworkAddress::FromIPv6Bytes(
 								  found_client->GetModIPv6())
 							: CNetworkAddress::Absent();
+					// A dual-stack peer reaches us over either family, and its IPv4 and
+					// IPv6 cannot be matched to one host: refused below, but no ban.
 					if (found_client->IsIdentified() &&
 						!PeerAddressing::IsSameHostAddress(
 							found_client->GetUserAddress(),
 							tocheck->GetUserAddress(),
-							advertisedIPv6)) {
+							advertisedIPv6) &&
+						!PeerAddressing::IsOtherFamily(found_client->GetUserAddress(),
+							tocheck->GetUserAddress())) {
 						AddDebugLogLineN(logClient,
 							"Client: " + tocheck->GetUserName() + "(" +
 								tocheck->GetFullIP() +

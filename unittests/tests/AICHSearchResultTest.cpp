@@ -1049,3 +1049,20 @@ TEST(AICHHashTree, LargeFileRecoveryDataIsAccepted)
 		ASSERT_TRUE(receiver.IsPartDataAvailable(start));
 	}
 }
+
+TEST(AICHSearchResult, EachIPv6SiteSignsWithItsOwnKey)
+{
+	// Without its own key every IPv6 source signed as 0, so the first one spoke for all of them.
+	const uint32_t v4 = CAICHUntrustedHash::SigningKey(CNetworkAddress::FromString("198.51.100.77"));
+	ASSERT_EQUALS(CAICHUntrustedHash::SigningSubnet(
+			      CNetworkAddress::FromString("198.51.100.77").ToIPv4NetworkOrderOrZero()),
+		v4);
+	const uint32_t site = CAICHUntrustedHash::SigningKey(CNetworkAddress::FromString("2a07:1:2:3::bd1"));
+	ASSERT_EQUALS(site, CAICHUntrustedHash::SigningKey(CNetworkAddress::FromString("2a07:1:2:ffff::9")));
+	ASSERT_TRUE(site != CAICHUntrustedHash::SigningKey(CNetworkAddress::FromString("2a07:1:3::1")));
+	// Never an IPv4 key, and never the absent one.
+	ASSERT_TRUE((site & 0xFF000000u) != 0);
+	ASSERT_EQUALS(0u, v4 & 0xFF000000u);
+	ASSERT_TRUE(site != 0);
+	ASSERT_EQUALS(0u, CAICHUntrustedHash::SigningKey(CNetworkAddress::Absent()));
+}

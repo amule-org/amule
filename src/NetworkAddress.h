@@ -481,6 +481,33 @@ public:
 	 * @return False for an absent or IPv4 address. An IPv4-mapped one is written as the
 	 *         mapped IPv6 address it is: that is what the peer asked for.
 	 */
+	/**
+	 * The IPv4 host a 6to4 (2002::/16) or Teredo (2001::/32) address carries, in network order.
+	 * A peer reaching us through such a relay is that IPv4 host, so the IPv4 filter must see it.
+	 */
+	bool TunnelledIPv4NetworkOrder(std::uint32_t &out) const noexcept
+	{
+		if (!IsIPv6() || m_octets[0] != 0x20) {
+			return false;
+		}
+		std::array<std::uint8_t, 4> host{};
+		if (m_octets[1] == 0x02) {
+			host = { m_octets[2], m_octets[3], m_octets[4], m_octets[5] };
+		} else if (m_octets[1] == 0x01 && m_octets[2] == 0 && m_octets[3] == 0) {
+			// Teredo stores the client's address inverted (RFC 4380 4).
+			host = { static_cast<std::uint8_t>(~m_octets[12]),
+				static_cast<std::uint8_t>(~m_octets[13]),
+				static_cast<std::uint8_t>(~m_octets[14]),
+				static_cast<std::uint8_t>(~m_octets[15]) };
+		} else {
+			return false;
+		}
+		out = static_cast<std::uint32_t>(host[0]) | (static_cast<std::uint32_t>(host[1]) << 8) |
+		      (static_cast<std::uint32_t>(host[2]) << 16) |
+		      (static_cast<std::uint32_t>(host[3]) << 24);
+		return true;
+	}
+
 	bool ToIPv6Bytes(std::uint8_t *out) const noexcept
 	{
 		if (out == nullptr || !IsIPv6()) {
@@ -581,7 +608,8 @@ public:
 	 */
 	bool IsGloballyRoutableIPv6() const noexcept
 	{
-		if (!IsIPv6()) {
+		// Global unicast is 2000::/3 (RFC 4291 2.4); the table is the carve-outs in and around it.
+		if (!IsIPv6() || (m_octets[0] & 0xE0) != 0x20) {
 			return false;
 		}
 		for (const auto &prefix : NetworkAddressPolicy::kIPv6ExcludedPrefixes) {

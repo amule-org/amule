@@ -3581,7 +3581,7 @@ uint32 CPartFile::WriteToBuffer(uint32 transize,
 		m_nTotalBufferData += bytes;
 		buffered += bytes;
 		// Attribute only the bytes actually retained, not overlapping duplicates.
-		m_CorruptionBlackBox->TransferredData(fragment.start, fragment.end, client->GetIP());
+		m_CorruptionBlackBox->TransferredData(fragment.start, fragment.end, client->GetUserAddress());
 		FillGap(fragment.start, fragment.end);
 	}
 	block->transferred += buffered;

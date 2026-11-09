@@ -360,6 +360,13 @@ public:
 	//! How many local addresses the filter is currently gating on.
 	std::size_t LocalAddressCount() const { return m_local.size(); }
 
+	//! One of our own global addresses, or an address in a /64 we hold: a host on our LAN, which
+	//! "Filter LAN IPs" keeps a peer from pointing us at. IPv6 LAN hosts have global addresses.
+	bool IsOnLocalNetwork(const Address &value) const
+	{
+		return IsLocallyAssigned(value) || HoldsAddressIn(PrefixOf(value));
+	}
+
 	//! Forget every claim. The local address set survives: it comes from this machine, not from
 	//! peers, and clearing it would disable the filter until the next refresh.
 	void Reset()

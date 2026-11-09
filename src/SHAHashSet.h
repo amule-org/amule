@@ -80,6 +80,7 @@ CAICHHashSet::CreatePartRecoveryData
 
 #include "Types.h"
 #include "ClientRef.h"
+#include "NetworkAddress.h" // Needed for SigningKey
 
 #define HASHSIZE 20
 #define KNOWN2_MET_FILENAME "known2_64.met"
@@ -230,6 +231,26 @@ public:
 	}
 	// Addresses are in peer byte order, as opposed to Kad wire order.
 	static constexpr uint32 SigningSubnet(uint32 ip) { return ip & 0x00F0FFFF; }
+	/**
+	 * The signing key for a source of any family. IPv4 signs per /20, as above; an IPv6 source
+	 * per /48, a site, folded into a key with the top bit set. An IPv4 key never has its top byte
+	 * set, so the two cannot meet, and without this every IPv6 source shared key 0.
+	 */
+	static uint32 SigningKey(const CNetworkAddress &address)
+	{
+		uint32 ipv4 = 0;
+		if (address.ToIPv4NetworkOrder(ipv4)) {
+			return SigningSubnet(ipv4);
+		}
+		if (!address.IsIPv6()) {
+			return 0;
+		}
+		uint32 hash = 2166136261u; // FNV-1a over the /48
+		for (unsigned i = 0; i < 6; ++i) {
+			hash = (hash ^ address.GetOctets()[i]) * 16777619u;
+		}
+		return hash | 0x80000000u;
+	}
 	bool AddSigningIP(uint32 dwIP, bool testOnly = false);
 
 	CAICHHash m_Hash;

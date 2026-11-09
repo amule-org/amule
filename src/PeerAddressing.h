@@ -510,6 +510,15 @@ inline CNetworkAddress OutboundIPv6Source(
  * overlapping ours can carry a correct hash from such an address; that is not a forged hash. The
  * advertised /64 matters for a peer known by IPv4 (#1872), whose identity has no /64 to compare.
  */
+//! Whether one address is IPv4 (or mapped) and the other native IPv6.
+inline bool IsOtherFamily(const CNetworkAddress &a, const CNetworkAddress &b) noexcept
+{
+	const auto native = [](const CNetworkAddress &address) {
+		return address.IsIPv6() && !address.IsIPv4Mapped();
+	};
+	return a.IsPresent() && b.IsPresent() && native(a) != native(b);
+}
+
 inline bool IsSameHostAddress(const CNetworkAddress &known,
 	const CNetworkAddress &other,
 	const CNetworkAddress &advertisedIPv6) noexcept

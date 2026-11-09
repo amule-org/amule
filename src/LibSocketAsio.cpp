@@ -156,6 +156,13 @@ void SetSocketBindInterface(const wxString &iface)
 	s_bindToInterface = iface;
 }
 
+static std::atomic<bool> s_listenerWidening{ true };
+
+void SetListenerWidening(bool allowed)
+{
+	s_listenerWidening = allowed;
+}
+
 #ifdef ENABLE_IPV6
 static CNetworkAddress s_advertisedIPv6 = CNetworkAddress::Absent();
 
@@ -1865,7 +1872,8 @@ private:
 	// IPv6 socket could not be set up.
 	bool OpenAndBindIPv6FromPolicy()
 	{
-		if (m_families != ListenerFamilies::FromPolicy) {
+		if (m_families != ListenerFamilies::FromPolicy ||
+			(!s_listenerWidening && m_address.GetEndpoint().address().is_unspecified())) {
 			return false;
 		}
 		const AddressFamilyPolicy::ListenerBind plan = AddressFamilyPolicy::ListenerBindFor(
