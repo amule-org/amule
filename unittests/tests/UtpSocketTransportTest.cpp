@@ -946,3 +946,34 @@ TEST(UtpSocketTransport, ADialedStreamIgnoresTheSynOrigin)
 }
 
 // File_checked_for_headers
+
+TEST(UtpSocketTransport, AnInboundStreamIsHalfOpenUntilItsPeerSendsData)
+{
+	// A SYN proves no source address; the peer's first data acknowledges our SYN-ACK.
+	FakeOperations ops;
+	FakeEvents events;
+	CUtpSocketTransport transport(
+		ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, &events, true);
+	ASSERT_FALSE(transport.IsConnected());
+	const auto payload = Pattern(6);
+	transport.OnPayload(payload.data(), payload.size());
+	ASSERT_TRUE(transport.IsConnected());
+	// Proven silently: an inbound socket has no connect to report.
+	ASSERT_EQUALS(1, events.readable);
+}
+
+TEST(UtpSocketTransport, AReadOverrunReportsTheStreamLostOnce)
+{
+	FakeOperations ops;
+	FakeEvents events;
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
+	const auto payload = Pattern(CUtpStream::kReadOverrunFactor * CUtpStream::kDefaultReadBound +
+				     CUtpStream::kReadOverrunSlackBytes + 1);
+	transport.OnPayload(payload.data(), payload.size());
+	ASSERT_FALSE(transport.IsOk());
+	ASSERT_FALSE(transport.IsConnected());
+	ASSERT_EQUALS(1, events.lost);
+	ASSERT_EQUALS(0, events.readable);
+	transport.OnPayload(payload.data(), 1);
+	ASSERT_EQUALS(1, events.lost);
+}

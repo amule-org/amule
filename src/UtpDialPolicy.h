@@ -693,6 +693,20 @@ enum class EUtpMoveVerdict
  * recovers a bulk transfer after its port changes. What keeps a replay from dragging a stream back to
  * a port it left is the abandoned-port refusal and the ten-second move limit, not this window.
  */
+//! How far behind our last sent number a reset's ack may be: more packets than any send window holds.
+constexpr std::uint16_t kUtpResetAckSpan = 1024;
+
+/**
+ * Whether a reset answers a packet we sent. libutp sends one only for a non-SYN frame it cannot
+ * match, echoing that frame's seq_nr as its ack_nr (utp_internal.cpp:2941), and acts on any reset
+ * from its connection id alone (:2866-2887). Checking the ack makes a blind forgery guess our send
+ * position as well.
+ */
+inline bool IsPlausibleUtpReset(const SUtpMoveHeader &header, bool hasSent, std::uint16_t lastSent)
+{
+	return hasSent && static_cast<std::uint16_t>(lastSent - header.acknowledgeNumber) < kUtpResetAckSpan;
+}
+
 inline EUtpMoveVerdict DecideUtpMove(const SUtpMoveHeader &header, const SUtpPeerStreamFacts &facts)
 {
 	// A reset is acted on from its connection id alone (utp_internal.cpp:2866-2887 through

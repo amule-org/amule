@@ -453,3 +453,24 @@ TEST(UtpStream, BufferedBytesSurviveTheEnd)
 }
 
 // File_checked_for_headers
+
+TEST(UtpStream, APeerIgnoringTheWindowEndsTheStream)
+{
+	// libutp delivers in-order data whatever window it advertised. Past twice the bound and a
+	// reorder release, the peer is ignoring it, and the buffer must not keep growing.
+	CUtpStream stream(CUtpStream::kDefaultWriteBound, 8);
+	const size_t limit = CUtpStream::kReadOverrunFactor * 8 + CUtpStream::kReadOverrunSlackBytes;
+	const std::vector<uint8_t> upToTheLimit = Pattern(limit);
+	stream.OnPayload(upToTheLimit.data(), upToTheLimit.size());
+	ASSERT_TRUE(stream.IsOk());
+	ASSERT_EQUALS(limit, stream.ReadBufferSize());
+
+	const std::vector<uint8_t> past = Pattern(1);
+	stream.OnPayload(past.data(), past.size());
+	ASSERT_TRUE(stream.Failure() == EUtpTransportFailure::Overrun);
+	ASSERT_TRUE(IsUtpFailure(stream.Failure()));
+	ASSERT_EQUALS(limit, stream.ReadBufferSize());
+	// Nothing more is taken once it ended.
+	stream.OnPayload(past.data(), past.size());
+	ASSERT_EQUALS(limit, stream.ReadBufferSize());
+}

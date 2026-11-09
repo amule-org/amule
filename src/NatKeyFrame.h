@@ -479,7 +479,9 @@ inline UtpSynPlan PlanUtpSyn(CExpectedPeers &expected,
 
 /**
  * The key a uTP key frame switches a plain dial to. A live server-vouched hash outranks the announced
- * one, which alone is held for the endpoint's next SYN. Conflicting vouchers key nothing.
+ * one, which alone is held for the endpoint's next SYN. Conflicting vouchers key nothing. Only an
+ * endpoint a rendezvous announced may switch a dial: nothing authenticates the frame, and the switch
+ * exists for the server punch, where both dials start plain.
  */
 inline std::optional<Hash> AcceptUtpKeyFrame(CExpectedPeers &expected,
 	CHeldKeys &held,
@@ -495,6 +497,9 @@ inline std::optional<Hash> AcceptUtpKeyFrame(CExpectedPeers &expected,
 		return vouched;
 	}
 	held.Hold(ip, port, announced, nowMs);
+	if (!expected.IsExpected(ip, port, nowMs)) {
+		return std::nullopt;
+	}
 	return announced;
 }
 

@@ -615,3 +615,21 @@ TEST(UtpDialPolicy, MoveRefusesResetAndSynWhileTheOwnTupleIsNeverAStepCompetitor
 	ASSERT_FALSE(IsUtpPortRepointOf(4672, 4672));
 	ASSERT_FALSE(FindUniqueUtpRepointCandidate(streams, ip, 4672).has_value());
 }
+
+TEST(UtpDialPolicy, AResetMustAnswerAPacketWeSent)
+{
+	SUtpMoveHeader reset;
+	reset.type = kUtpTypeReset;
+	// libutp echoes the seq_nr of the frame it could not match.
+	reset.acknowledgeNumber = 500;
+	ASSERT_TRUE(IsPlausibleUtpReset(reset, true, 500));
+	ASSERT_TRUE(IsPlausibleUtpReset(reset, true, static_cast<uint16_t>(500 + kUtpResetAckSpan - 1)));
+	ASSERT_FALSE(IsPlausibleUtpReset(reset, true, static_cast<uint16_t>(500 + kUtpResetAckSpan)));
+	// Ahead of anything we sent.
+	ASSERT_FALSE(IsPlausibleUtpReset(reset, true, 499));
+	// Modular across the wrap.
+	reset.acknowledgeNumber = 65530;
+	ASSERT_TRUE(IsPlausibleUtpReset(reset, true, 10));
+	// Nothing sent to that endpoint: nothing to answer.
+	ASSERT_FALSE(IsPlausibleUtpReset(reset, false, 65530));
+}

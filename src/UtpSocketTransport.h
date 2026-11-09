@@ -395,21 +395,44 @@ public:
 	void OnPayload(const uint8_t *data, size_t length)
 	{
 		IStreamTransportEvents *flushEvents = nullptr;
+		bool overrun = false;
 		{
 			std::lock_guard<std::mutex> lock(m_mutex);
+			if (m_stream.IsTerminal()) {
+				// Already reported; libutp delivers until the socket is closed.
+				return;
+			}
 			m_stream.OnPayload(data, length);
+			overrun = m_stream.Failure() == EUtpTransportFailure::Overrun;
+			if (overrun) {
+				// Reported as lost, so the socket closes it from the main thread: utp_close()
+				// cannot run inside this callback.
+				m_connected = false;
+			}
 			// This ST_DATA is what completes an inbound handshake, and
 			// libutp makes that transition silently: CS_SYN_RECV becomes
-			// CS_CONNECTED with no callback at all. Until it happens
-			// utp_writev refuses everything without arming a writable edge,
-			// so a reply queued at accept has been waiting for this moment.
+			// CS_CONNECTED with no callback at all. It acknowledges our
+			// SYN-ACK, so the peer's address is now proven and the stream
+			// leaves the half-open budget. No connect event: an inbound
+			// socket never had a connect to report.
+			if (!overrun && m_inbound && m_socket != nullptr) {
+				m_connected = true;
+			}
+			// Until now utp_writev refused everything without arming a
+			// writable edge, so a reply queued at accept has been waiting.
 			// Requested rather than flushed here, because this runs inside
 			// UTP_ON_READ, which would re-enter utp_process_incoming.
 			//
 			// A peer that connects and then says nothing never reaches this,
 			// and so never gets its reply -- unreachable for eD2k, where the
 			// side that opened the connection always speaks first.
-			flushEvents = RequestFlushLocked();
+			if (!overrun) {
+				flushEvents = RequestFlushLocked();
+			}
+		}
+		if (overrun) {
+			NotifyEvents(&IStreamTransportEvents::OnStreamLost);
+			return;
 		}
 		RaiseFlushRequest(flushEvents);
 		NotifyEvents(&IStreamTransportEvents::OnStreamReadable);

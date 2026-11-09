@@ -31,7 +31,6 @@
 #include "ClientList.h"
 #include "IPFilter.h"
 #include "ListenSocket.h"
-#include "ServerConnect.h"
 #include "Statistics.h"
 #include "StreamTransport.h"
 #include "amule.h"
@@ -43,6 +42,35 @@
 #include <algorithm>
 
 #ifdef AMULE_UTP_TRANSPORT
+
+namespace
+{
+EUtpAdmission Admission(uint32_t ip, uint16_t port, std::size_t halfOpen)
+{
+	// A SYN we asked a server or peer for is not one a flood of forged SYNs may crowd out.
+	const bool rendezvous =
+		theApp->clientudp != nullptr && theApp->clientudp->IsExpectedUtpPeer(ip, port);
+	return DecideUtpAdmission(theApp->IsRunning(),
+		theApp->listensocket->TooManySockets(rendezvous),
+		rendezvous ? 0 : halfOpen,
+		ip,
+		ip != 0 && theApp->ipfilter->IsFiltered(ip),
+		ip != 0 && theApp->clientlist->IsBannedClient(ip));
+}
+} // namespace
+
+bool CUtpStreamAcceptor::AdmitsSyn(uint32_t ip, uint16_t port, std::size_t halfOpen)
+{
+	const EUtpAdmission decision = Admission(ip, port, halfOpen);
+	if (decision == EUtpAdmission::TooManyHalfOpen) {
+		AddDebugLogLineN(logClient,
+			CFormat("Refused uTP SYN from %s:%u: %u streams already wait for their peer's data") %
+				Uint32toStringIP(ip) % port % halfOpen);
+	}
+	// Every other refusal is logged where the stream is offered, which a refused SYN no longer
+	// reaches; the reason is the same.
+	return decision == EUtpAdmission::Admit;
+}
 
 SUtpIncomingSynDecision CUtpStreamAcceptor::DecideIncomingSyn(
 	uint32_t ip, uint16_t port, const SUtpSynCandidateInfo &candidate)
@@ -108,17 +136,14 @@ bool CUtpStreamAcceptor::AcceptStream(std::unique_ptr<IStreamTransport> &transpo
 {
 	// Refusals come before ownership moves: destroying a transport closes its
 	// socket, and the adapter closes a refused one too.
-	const EUtpAdmission decision = DecideUtpAdmission(theApp->IsRunning(),
-		theApp->serverconnect->IsConnecting(),
-		theApp->listensocket->TooManySockets(),
-		ip,
-		ip != 0 && theApp->ipfilter->IsFiltered(ip),
-		ip != 0 && theApp->clientlist->IsBannedClient(ip));
+	// The half-open budget was spent at the SYN, which counted this stream.
+	const EUtpAdmission decision = Admission(ip, port, 0);
 
 	switch (decision) {
 	case EUtpAdmission::Admit:
 		break;
 	case EUtpAdmission::TooManySockets:
+	case EUtpAdmission::TooManyHalfOpen:
 		// Per stream: a uTP SYN arrives alone, with no accept burst to fold.
 		theStats::AddMaxConnectionLimitReached();
 		return false;

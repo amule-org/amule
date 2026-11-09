@@ -676,6 +676,15 @@ TEST(NatKeyFrame, AnAnnouncedKeyWithoutAVoucherIsHeldAndSwitches)
 	ASSERT_TRUE(rig.held.Take(1, 1, 20) == MakeHash(6));
 }
 
+TEST(NatKeyFrame, AKeyFrameFromAnEndpointNoRendezvousAnnouncedIsHeldButSwitchesNothing)
+{
+	// Nothing authenticates the frame, so a forged one must not re-key a dial; its next SYN may
+	// still use it.
+	SynRig rig;
+	ASSERT_FALSE(AcceptUtpKeyFrame(rig.expected, rig.held, 1, 1, MakeHash(6), 10).has_value());
+	ASSERT_TRUE(rig.held.Take(1, 1, 20) == MakeHash(6));
+}
+
 TEST(NatKeyFrame, ConflictingVouchersSwitchNothing)
 {
 	SynRig rig;
