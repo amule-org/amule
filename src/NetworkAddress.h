@@ -473,15 +473,6 @@ public:
 	}
 
 	/**
-	 * Writes an IPv6 address out as sixteen big-endian bytes -- the form the
-	 * @c CT_MOD_IP_V6 hello tag and the Kad @c "ip6" tag carry.
-	 *
-	 * @param out Sixteen bytes, written only on success, so a caller that ignores the
-	 *            result cannot emit a half-filled address.
-	 * @return False for an absent or IPv4 address. An IPv4-mapped one is written as the
-	 *         mapped IPv6 address it is: that is what the peer asked for.
-	 */
-	/**
 	 * The IPv4 host a 6to4 (2002::/16) or Teredo (2001::/32) address carries, in network order.
 	 * A peer reaching us through such a relay is that IPv4 host, so the IPv4 filter must see it.
 	 */
@@ -508,6 +499,15 @@ public:
 		return true;
 	}
 
+	/**
+	 * Writes an IPv6 address out as sixteen big-endian bytes -- the form the
+	 * @c CT_MOD_IP_V6 hello tag and the Kad @c "ip6" tag carry.
+	 *
+	 * @param out Sixteen bytes, written only on success, so a caller that ignores the
+	 *            result cannot emit a half-filled address.
+	 * @return False for an absent or IPv4 address. An IPv4-mapped one is written as the
+	 *         mapped IPv6 address it is: that is what the peer asked for.
+	 */
 	bool ToIPv6Bytes(std::uint8_t *out) const noexcept
 	{
 		if (out == nullptr || !IsIPv6()) {

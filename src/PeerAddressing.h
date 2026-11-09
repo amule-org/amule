@@ -502,14 +502,6 @@ inline CNetworkAddress OutboundIPv6Source(
 	return advertised;
 }
 
-/**
- * Whether @a other, the address a second connection carrying a known user hash came from, belongs to
- * the host already known at @a known: the IPv6 it advertised, or another address in the /64 of a
- * native IPv6 identity or of that advertised IPv6. Windows dials out from a temporary address that
- * differs from the stable one the peer advertises and from any earlier temporary one, so a connection
- * overlapping ours can carry a correct hash from such an address; that is not a forged hash. The
- * advertised /64 matters for a peer known by IPv4 (#1872), whose identity has no /64 to compare.
- */
 //! Whether one address is IPv4 (or mapped) and the other native IPv6.
 inline bool IsOtherFamily(const CNetworkAddress &a, const CNetworkAddress &b) noexcept
 {
@@ -519,6 +511,14 @@ inline bool IsOtherFamily(const CNetworkAddress &a, const CNetworkAddress &b) no
 	return a.IsPresent() && b.IsPresent() && native(a) != native(b);
 }
 
+/**
+ * Whether @a other, the address a second connection carrying a known user hash came from, belongs to
+ * the host already known at @a known: the IPv6 it advertised, or another address in the /64 of a
+ * native IPv6 identity or of that advertised IPv6. Windows dials out from a temporary address that
+ * differs from the stable one the peer advertises and from any earlier temporary one, so a connection
+ * overlapping ours can carry a correct hash from such an address; that is not a forged hash. The
+ * advertised /64 matters for a peer known by IPv4 (#1872), whose identity has no /64 to compare.
+ */
 inline bool IsSameHostAddress(const CNetworkAddress &known,
 	const CNetworkAddress &other,
 	const CNetworkAddress &advertisedIPv6) noexcept

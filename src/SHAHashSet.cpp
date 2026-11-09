@@ -499,13 +499,24 @@ bool CAICHHashTree::SetHash(CFileDataIO *fileInput, uint32 wHashIdent, sint8 nLe
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /// CAICHUntrustedHash
-bool CAICHUntrustedHash::AddSigningIP(uint32 dwIP, bool testOnly)
+namespace
 {
-	dwIP = SigningSubnet(dwIP);
-	if (testOnly) {
-		return m_adwIpsSigning.count(dwIP) == 0;
+//! An IPv4 key is a /20; an IPv6 key is only a hash of its /48.
+wxString SigningKeyText(uint32 key)
+{
+	if (key & CAICHUntrustedHash::kIPv6KeyBit) {
+		return CFormat("IPv6 /48 key %08x") % key;
 	}
-	return m_adwIpsSigning.insert(dwIP).second;
+	return CFormat("IP/20 %s") % Uint32toStringIP(key);
+}
+} // namespace
+
+bool CAICHUntrustedHash::AddSigningKey(uint32 key, bool testOnly)
+{
+	if (testOnly) {
+		return m_adwIpsSigning.count(key) == 0;
+	}
+	return m_adwIpsSigning.insert(key).second;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -1047,7 +1058,7 @@ void CAICHHashSet::SetFileSize(uint64 nSize)
 	m_pHashTree.m_nBaseSize = (nSize <= PARTSIZE) ? EMBLOCKSIZE : PARTSIZE;
 }
 
-void CAICHHashSet::HashReceived(const CAICHHash &Hash, uint32 dwFromIP, bool fromKad)
+void CAICHHashSet::HashReceived(const CAICHHash &Hash, uint32 key, bool fromKad)
 {
 	switch (GetStatus()) {
 	case AICH_EMPTY:
@@ -1057,27 +1068,26 @@ void CAICHHashSet::HashReceived(const CAICHHash &Hash, uint32 dwFromIP, bool fro
 	default:
 		return;
 	}
-	const uint32 subnet = CAICHUntrustedHash::SigningSubnet(dwFromIP);
-	// One /20 may sign only one root for this file, so a contradiction cannot inflate the
-	// consensus denominator. Kad search results are replayed before any download source
-	// reports, so without the exception below a Kad responder would speak for its whole
-	// /20: a source there takes over a slot that only Kad evidence holds.
+	// One key, an IPv4 /20 or an IPv6 /48, may sign only one root for this file, so a
+	// contradiction cannot inflate the consensus denominator. Kad search results are replayed
+	// before any download source reports, so without the exception below a Kad responder would
+	// speak for its whole /20: a source there takes over a slot that only Kad evidence holds.
 	auto held = std::find_if(
 		m_aUntrustedHashs.begin(), m_aUntrustedHashs.end(), [&](CAICHUntrustedHash &entry) {
-			return entry.m_Hash != Hash && !entry.AddSigningIP(subnet, true);
+			return entry.m_Hash != Hash && !entry.AddSigningKey(key, true);
 		});
 	if (held != m_aUntrustedHashs.end()) {
-		if (fromKad || held->m_kadSigning.count(subnet) == 0) {
+		if (fromKad || held->m_kadSigning.count(key) == 0) {
 			if (m_pOwner) {
 				AddDebugLogLineN(logSHAHashSet,
-					CFormat("Received different AICH hashes for file %s from IP/20 %s, "
+					CFormat("Received different AICH hashes for file %s from %s, "
 						"ignored") %
-						m_pOwner->GetFileName() % Uint32toStringIP(dwFromIP));
+						m_pOwner->GetFileName() % SigningKeyText(key));
 			}
 			return;
 		}
-		held->m_adwIpsSigning.erase(subnet);
-		held->m_kadSigning.erase(subnet);
+		held->m_adwIpsSigning.erase(key);
+		held->m_kadSigning.erase(key);
 		if (held->m_adwIpsSigning.empty()) {
 			m_aUntrustedHashs.erase(held);
 		}
@@ -1086,11 +1096,11 @@ void CAICHHashSet::HashReceived(const CAICHHash &Hash, uint32 dwFromIP, bool fro
 	bool bAdded = false;
 	for (auto &entry : m_aUntrustedHashs) {
 		if (entry.m_Hash == Hash) {
-			bAdded = entry.AddSigningIP(subnet);
+			bAdded = entry.AddSigningKey(key);
 			if (!fromKad) {
-				entry.m_kadSigning.erase(subnet); // a source now backs this slot
+				entry.m_kadSigning.erase(key); // a source now backs this slot
 			} else if (bAdded) {
-				entry.m_kadSigning.insert(subnet);
+				entry.m_kadSigning.insert(key);
 			}
 			bFound = true;
 			break;
@@ -1100,9 +1110,9 @@ void CAICHHashSet::HashReceived(const CAICHHash &Hash, uint32 dwFromIP, bool fro
 		bAdded = true;
 		CAICHUntrustedHash uhToAdd;
 		uhToAdd.m_Hash = Hash;
-		uhToAdd.AddSigningIP(subnet);
+		uhToAdd.AddSigningKey(key);
 		if (fromKad) {
-			uhToAdd.m_kadSigning.insert(subnet);
+			uhToAdd.m_kadSigning.insert(key);
 		}
 		m_aUntrustedHashs.push_back(uhToAdd);
 	}
