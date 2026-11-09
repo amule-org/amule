@@ -589,9 +589,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macOS runners have a lower concurrency limit than Linux ones. PRs build Debug only,
-        # which also runs the asserts; master builds both.
-        build_type: ${{ github.event_name == 'pull_request' && fromJSON('["Debug"]') || fromJSON('["Debug", "Release"]') }}
+        # Debug only, which also runs the asserts. macOS runners are scarce, and packaging.yml
+        # builds the Release .app when master's sources change. A one-entry matrix keeps the
+        # check name that branch protection requires.
+        build_type: [Debug]
     steps:
       - uses: actions/checkout@v7
       - name: restore ccache
