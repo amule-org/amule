@@ -1661,6 +1661,8 @@ TEST(UtpLibraryAdapter, AnAcceptedStreamIsHalfOpenUntilItsPeerSendsData)
 	ASSERT_TRUE(acceptor.accepted != nullptr);
 	ASSERT_EQUALS(0, (int)acceptor.lastHalfOpen);
 	ASSERT_FALSE(acceptor.accepted->IsConnected());
+	// The fake acceptor holds only the latest stream.
+	const std::unique_ptr<IStreamTransport> first = std::move(acceptor.accepted);
 
 	// A second SYN while the first waits counts it. Its SYN-ACK goes nowhere.
 	sink.dropOldPort = true;
@@ -1672,7 +1674,8 @@ TEST(UtpLibraryAdapter, AnAcceptedStreamIsHalfOpenUntilItsPeerSendsData)
 	utp_iovec vector{ &payload, 1 };
 	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
 	Pump(loop);
-	ASSERT_TRUE(acceptor.accepted->IsConnected());
+	ASSERT_TRUE(first->IsConnected());
+	ASSERT_FALSE(acceptor.accepted->IsConnected());
 	Teardown(loop);
 }
 
