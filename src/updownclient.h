@@ -827,6 +827,9 @@ public:
 	/* Port */
 	void SetBuddyPort(uint16 val) { m_nBuddyPort = val; }
 	uint16 GetBuddyPort() const { return m_nBuddyPort; }
+	/* Role: we serve this buddy, or it serves us */
+	void SetServedBuddy(bool served) { m_bServedBuddy = served; }
+	bool IsServedBuddy() const { return m_bServedBuddy; }
 
 	// KadIPCheck
 	bool IsBuddyPingDue() const { return m_buddyLiveness.PingDue(::GetTickCount64()); }
@@ -1196,6 +1199,7 @@ private:
 	bool m_bBuddyIdUseAmuleLayout = false;
 	// A KADEMLIA_CALLBACK_REQ was sent and the source has not called back since.
 	bool m_bBuddyCallbackUnanswered = false;
+	bool m_bServedBuddy = false;
 	uint32 m_nBuddyIP;
 	uint16 m_nBuddyPort;
 

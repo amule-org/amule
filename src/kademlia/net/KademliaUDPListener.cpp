@@ -297,8 +297,17 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 	const uint8_t *packetData = data + 2;
 	uint32_t lenPacket = lenData - 2;
 
+	Kademlia::CBuddyStats::Serving &buddyServing = theApp->clientlist->GetBuddyStats().serving;
+	if (opcode == KADEMLIA_CALLBACK_REQ) {
+		buddyServing.callbackRequestsPerClient.Add(ip, 1, ::GetTickCount64());
+	}
 	const IncomingPacket admission = InTrackListIsAllowedPacket(ip, opcode, validReceiverKey);
 	if (admission != IncomingPacket::Allowed) {
+		if (opcode == KADEMLIA_FINDBUDDY_REQ) {
+			++buddyServing.requestsRateLimited;
+		} else if (opcode == KADEMLIA_CALLBACK_REQ) {
+			++buddyServing.relays.callbacksRateLimited;
+		}
 		// Only keyed packets reach MassiveFlood, so spoofing cannot get an honest peer banned.
 		if (admission == IncomingPacket::MassiveFlood) {
 			theApp->clientlist->AddBannedClient(wxUINT32_SWAP_ALWAYS(ip));
@@ -1648,12 +1657,21 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 	// Verify packet is expected size
 	CHECK_PACKET_MIN_SIZE(34);
 
+	Kademlia::CBuddyStats::Serving &stats = theApp->clientlist->GetBuddyStats().serving;
+	++stats.requestsReceived;
 	if (CKademlia::GetPrefs()->GetFirewalled() || CUDPFirewallTester::IsFirewalledUDP(true) ||
 		!CUDPFirewallTester::IsVerified()) {
 		// We are firewalled but somehow we still got this packet.. Don't send a response..
+		++stats.requestsRefusedFirewalled;
+		AddDebugLogLineN(logKadBuddy,
+			"Buddy request from " + KadIPPortToString(ip, port) + " refused: we are firewalled");
 		return;
 	} else if (theApp->clientlist->GetBuddyStatus() == Connected) {
 		// we already have a buddy
+		++stats.requestsRefusedFull;
+		AddDebugLogLineN(logKadBuddy,
+			"Buddy request from " + KadIPPortToString(ip, port) +
+				" refused: we already serve a buddy");
 		return;
 	}
 
@@ -1665,7 +1683,12 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 	CUInt128 zero;
 	CContact contact(userID, ip, port, tcpport, 0, 0, false, zero);
 	if (!theApp->clientlist->IncomingBuddy(&contact, &BuddyID)) {
-		return; // cancelled for some reason, don't send a response
+		// cancelled for some reason, don't send a response
+		++stats.requestsRefusedConflict;
+		AddDebugLogLineN(logKadBuddy,
+			"Buddy request from " + KadIPPortToString(ip, port) +
+				" refused: we already know that client, or it is us");
+		return;
 	}
 
 	CMemFile packetdata(34);
@@ -1679,6 +1702,8 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 
 	DebugSend(KadFindBuddyRes, ip, port);
 	SendPacket(packetdata, KADEMLIA_FINDBUDDY_RES, ip, port, senderKey, NULL);
+	++stats.requestsOffered;
+	AddDebugLogLineN(logKadBuddy, "Buddy offer sent to " + KadIPPortToString(ip, port));
 }
 
 // KADEMLIA_FINDBUDDY_RES
@@ -1706,6 +1731,8 @@ void CKademliaUDPListener::ProcessFindBuddyResponse(const uint8_t *packetData,
 			connectOptions = bio.ReadUInt8();
 		}
 
+		++theApp->clientlist->GetBuddyStats().own.offersReceived;
+		AddDebugLogLineN(logKadBuddy, "Buddy offer from " + KadIPPortToString(ip, port));
 		CUInt128 zero;
 		CContact contact(userID, ip, port, tcpport, 0, 0, false, zero);
 		theApp->clientlist->RequestBuddy(&contact, connectOptions);
@@ -1724,18 +1751,23 @@ void CKademliaUDPListener::ProcessCallbackRequest(const uint8_t *packetData,
 	CHECK_PACKET_MIN_SIZE(34);
 
 	CUpDownClient *buddy = theApp->clientlist->GetBuddy();
-	if (buddy != NULL) {
+	if (buddy == nullptr) {
+		++theApp->clientlist->GetBuddyStats().serving.relays.callbacksNoBuddy;
+	} else {
 		CMemFile bio(packetData, lenPacket);
 		CMemFile packetdata(lenPacket + 6);
 		if (!BuildBuddyCallback(bio, CUInt128(buddy->GetBuddyID()), ip, packetdata)) {
+			++theApp->clientlist->GetBuddyStats().serving.relays.callbacksMismatched;
 			return;
 		}
 
 		if (buddy->GetSocket()) {
 			CPacket *packet = new CPacket(packetdata, OP_EMULEPROT, OP_CALLBACK);
 			AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACK to " + KadIPToString(ip));
+			const uint32 packetSize = packet->GetPacketSize();
 			buddy->GetSocket()->SendPacket(packet);
-			theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
+			theStats::AddUpOverheadFileRequest(packetSize);
+			theApp->clientlist->RecordBuddyRelay(true, packetSize);
 		} else {
 			throw wxString::FromAscii(__FUNCTION__) + ": Buddy has no valid socket";
 		}

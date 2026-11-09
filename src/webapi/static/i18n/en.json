@@ -139,6 +139,8 @@
   "networks_kad_buddy_none": "No buddy",
   "networks_kad_buddy_not_needed_tcp": "No buddy required - TCP port open",
   "networks_kad_buddy_not_needed_udp": "No buddy required - UDP port open",
+  "networks_kad_served_buddies": "Served buddies",
+  "networks_kad_served_buddies_value": "{count} of {limit}",
   "networks_kad_connected_since": "Connected since",
   "networks_kad_contacts_nodes": "Contacts (nodes)",
   "networks_kad_error": "Error",

@@ -1192,6 +1192,8 @@ public:
 	uint8 GetBuddyStatus() const { return theStats::GetBuddyStatus(); }
 	uint32 GetBuddyIP() const { return theStats::GetBuddyIP(); }
 	uint32 GetBuddyPort() const { return theStats::GetBuddyPort(); }
+	uint32 GetServedBuddyCount() const { return theStats::GetServedBuddyCount(); }
+	uint32 GetServedBuddyLimit() const { return theStats::GetServedBuddyLimit(); }
 
 	void StartKad();
 	void StopKad();

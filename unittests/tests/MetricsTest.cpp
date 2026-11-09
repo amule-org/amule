@@ -145,6 +145,37 @@ TEST(Metrics, DisabledCollectionDoesNotPublish)
 	ASSERT_EQUALS(static_cast<std::time_t>(0), state.Metrics().snapshot_at);
 }
 
+TEST(Metrics, KadBuddyCountersNeedTheirSnapshotFlags)
+{
+	MetricsSnapshot s;
+	s.ec_connected = true;
+	s.snapshot_at = 1;
+	auto text = SerializeMetrics(s, "test");
+	ASSERT_TRUE(text.find("amule_kad_buddies_served") == std::string::npos);
+	ASSERT_TRUE(text.find("amule_kad_buddy_") == std::string::npos);
+
+	s.kad.has_served = true;
+	s.kad.served_count = 1;
+	s.kad.served_limit = 1;
+	s.kad.has_buddy_counters = true;
+	s.kad.buddy_serving.requests.refused_full = 7;
+	s.kad.buddy_serving.reasks.malformed = 2;
+	s.kad.buddy_serving.peak_relayed_bytes_per_minute = 4500;
+	s.kad.buddy_own.missing_seconds = 30;
+	text = SerializeMetrics(s, "test");
+	ASSERT_TRUE(text.find("amule_kad_buddies_served 1\n") != std::string::npos);
+	ASSERT_TRUE(text.find("amule_kad_buddies_served_limit 1\n") != std::string::npos);
+	ASSERT_TRUE(text.find("# TYPE amule_kad_buddy_requests_total counter\n") != std::string::npos);
+	ASSERT_TRUE(text.find("amule_kad_buddy_requests_total{result=\"refused_full\"} 7\n") !=
+		    std::string::npos);
+	ASSERT_TRUE(text.find("amule_kad_buddy_requests_total{result=\"offered\"} 0\n") != std::string::npos);
+	ASSERT_TRUE(text.find("amule_kad_buddy_relay_drops_total{kind=\"reask\",reason=\"malformed\"} 2\n") !=
+		    std::string::npos);
+	ASSERT_TRUE(text.find("amule_kad_buddy_peak_relayed_bytes_per_minute 4500\n") != std::string::npos);
+	ASSERT_TRUE(
+		text.find("amule_kad_buddy_own_seconds_total{state=\"missing\"} 30\n") != std::string::npos);
+}
+
 TEST(Metrics, ConnectedNetworkGatesExposeRealZeroValues)
 {
 	MetricsSnapshot s;

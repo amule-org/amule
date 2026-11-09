@@ -30,6 +30,7 @@
 #include "BanRecord.h" // Needed for CBanRecord // Needed for CDeadSourceList
 #include "ClientRef.h"
 #include "KadBuddyRetry.h"
+#include "KadBuddyStats.h"
 #include "ChatSessionStore.h"
 #include "CanonicalPeerIndex.h"
 #include "TrackedClientRecord.h"
@@ -280,6 +281,18 @@ public:
 	bool CanRequestBuddy(uint32_t ip) const;
 	void RecordBuddyFailure(uint32_t ip);
 	bool IncomingBuddy(Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID);
+
+	// Stock eMule serves one buddy at a time, and so do we.
+	static constexpr uint32 MaxServedBuddies = 1;
+	Kademlia::CBuddyStats &GetBuddyStats() { return m_buddyStats; }
+	const Kademlia::CBuddyStats &GetBuddyStats() const { return m_buddyStats; }
+	uint32 GetServedBuddyCount() const;
+	//! Buddy requests we answered whose node has not connected yet.
+	uint32 GetPendingBuddyCount() const;
+	//! How long the current buddy has been linked, 0 without one.
+	uint64 GetBuddyLinkedMs() const;
+	void RecordBuddyRelay(bool callback, uint32 bytes);
+	void RecordBuddyTimeout(const CUpDownClient *client);
 	void RemoveFromKadList(CUpDownClient *torem);
 	void AddToKadList(CUpDownClient *toadd);
 	bool DoRequestFirewallCheckUDP(const Kademlia::CContact &contact);
@@ -368,6 +381,17 @@ private:
 	CClientRef m_pBuddy;
 	uint8 m_nBuddyStatus;
 	Kademlia::CBuddyRetry m_buddyRetry;
+	Kademlia::CBuddyStats m_buddyStats;
+	uint64 m_buddyLinkedAt = 0;
+	uint64 m_lastBuddyAccounting = 0;
+	uint64 m_nextBuddySummary = 0;
+	Kademlia::CBuddyRelayCounts m_loggedRelays;
+	uint64 m_loggedCallbacksReceived = 0;
+	uint64 m_loggedReasksReceived = 0;
+
+	void ReleaseBuddy();
+	void AccountBuddyTime(uint64 now);
+	void LogBuddySummary(uint64 now);
 
 	Kademlia::CFirewallCheckRequests m_firewallCheckRequests;
 

@@ -369,6 +369,12 @@ void CServerWnd::UpdateKadInfo()
 					break;
 				}
 				InfoSetValue(KadInfoList, next_row++, BuddyState);
+			} else if (theApp->GetServedBuddyLimit() != 0) {
+				InfoInsertRow(KadInfoList, next_row, _("Served buddies:"));
+				InfoSetValue(KadInfoList,
+					next_row++,
+					CFormat(_("%u of %u")) % theApp->GetServedBuddyCount() %
+						theApp->GetServedBuddyLimit());
 			}
 
 			InfoInsertRow(KadInfoList, next_row, _("IP address:"));

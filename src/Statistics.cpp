@@ -1430,6 +1430,8 @@ void CStatistics::UpdateStats(const CECPacket *stats, bool distributionRequested
 	s_statData[sdBuddyStatus] = stats->GetTagByNameSafe(EC_TAG_STATS_BUDDY_STATUS)->GetInt();
 	s_statData[sdBuddyIP] = stats->GetTagByNameSafe(EC_TAG_STATS_BUDDY_IP)->GetInt();
 	s_statData[sdBuddyPort] = stats->GetTagByNameSafe(EC_TAG_STATS_BUDDY_PORT)->GetInt();
+	s_statData[sdBuddyServed] = stats->GetTagByNameSafe(EC_TAG_STATS_BUDDY_SERVED)->GetInt();
+	s_statData[sdBuddyServedLimit] = stats->GetTagByNameSafe(EC_TAG_STATS_BUDDY_SERVED_LIMIT)->GetInt();
 	s_statData[sdKadInLanMode] = stats->GetTagByNameSafe(EC_TAG_STATS_KAD_IN_LAN_MODE)->GetInt();
 	s_statData[sdTotalSentBytes] = stats->GetTagByNameSafe(EC_TAG_STATS_TOTAL_SENT_BYTES)->GetInt();
 	s_statData[sdTotalReceivedBytes] =

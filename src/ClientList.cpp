@@ -37,6 +37,7 @@
 #include "amule.h"            // Needed for theApp
 #include "ChatSessionStore.h" // Needed for CChatSessionStore
 #include "ClientTCPSocket.h"  // Needed for CClientTCPSocket
+#include <algorithm>
 #include <cstring>
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 #include "ClientUDPSocket.h"      // Needed to clear callback failure after verified HELLO
@@ -738,7 +739,17 @@ void CClientList::Process()
 			// A firewalled client wants us to be his buddy. If we already have a buddy
 			// or it took too long to connect, set Kad state to KS_NONE and it is removed
 			// next cycle; if not, this client changes to KS_CONNECTED_BUDDY when it connects.
-			if (m_nBuddyStatus == Connected || cur_client->HasBuddyRequestExpired()) {
+			if (m_nBuddyStatus == Connected) {
+				++m_buddyStats.serving.offersSuperseded;
+				AddDebugLogLineN(logKadBuddy,
+					"Buddy offer to " + cur_client->GetFullIP() +
+						" withdrawn: another buddy connected first");
+				cur_client->SetKadState(KS_NONE);
+			} else if (cur_client->HasBuddyRequestExpired()) {
+				++m_buddyStats.serving.offersExpired;
+				AddDebugLogLineN(logKadBuddy,
+					"Buddy offer to " + cur_client->GetFullIP() +
+						" expired: the node did not connect in time");
 				cur_client->SetKadState(KS_NONE);
 			}
 			break;
@@ -751,6 +762,9 @@ void CClientList::Process()
 			if (m_nBuddyStatus == Disconnected) {
 				buddy = Connecting;
 				m_nBuddyStatus = Connecting;
+				++m_buddyStats.own.connectAttempts;
+				AddDebugLogLineN(
+					logKadBuddy, "Connecting to buddy " + cur_client->GetFullIP());
 				cur_client->SetKadState(KS_CONNECTING_BUDDY);
 				cur_client->TryToConnect(true);
 				Notify_ServerUpdateED2KInfo();
@@ -780,6 +794,12 @@ void CClientList::Process()
 			if (m_nBuddyStatus == Connected && m_pBuddy.IsLinked() &&
 				m_pBuddy.GetClient() != cur_client &&
 				m_pBuddy.GetClient()->GetKadState() == KS_CONNECTED_BUDDY) {
+				if (cur_client->IsServedBuddy()) {
+					++m_buddyStats.serving.releasedExtra;
+				}
+				AddDebugLogLineN(logKadBuddy,
+					"Released extra buddy " + cur_client->GetFullIP() + ": " +
+						m_pBuddy.GetClient()->GetFullIP() + " is already linked");
 				cur_client->SetKadState(KS_NONE);
 				break;
 			}
@@ -793,6 +813,16 @@ void CClientList::Process()
 				m_pBuddy.Link(cur_client CLIENT_DEBUGSTRING(
 					"CClientList::Process KS_CONNECTED_BUDDY m_pBuddy.Link"));
 				m_nBuddyStatus = Connected;
+				m_buddyLinkedAt = cur_tick;
+				if (cur_client->IsServedBuddy()) {
+					++m_buddyStats.serving.started;
+					AddDebugLogLineN(
+						logKadBuddy, "Serving buddy " + cur_client->GetFullIP());
+				} else {
+					++m_buddyStats.own.connected;
+					AddDebugLogLineN(
+						logKadBuddy, "Connected to buddy " + cur_client->GetFullIP());
+				}
 				Notify_ServerUpdateED2KInfo();
 			}
 			if (m_pBuddy.GetClient() == cur_client && theApp->IsFirewalled() &&
@@ -818,11 +848,12 @@ void CClientList::Process()
 				// Go ahead and instantly try to find a new buddy.
 				Kademlia::CKademlia::GetPrefs()->SetFindBuddy();
 			}
-			m_pBuddy.Unlink();
-			m_nBuddyStatus = Disconnected;
-			Notify_ServerUpdateED2KInfo();
+			ReleaseBuddy();
 		}
 	}
+
+	AccountBuddyTime(cur_tick);
+	LogBuddySummary(cur_tick);
 
 	if (Kademlia::CKademlia::IsConnected()) {
 		const bool udpFirewalled = Kademlia::CUDPFirewallTester::IsFirewalledUDP(true);
@@ -836,7 +867,8 @@ void CClientList::Process()
 			if (m_nBuddyStatus == Disconnected &&
 				Kademlia::CKademlia::GetPrefs()->GetFindBuddy() &&
 				!thePrefs::IsClientCryptLayerRequired()) {
-				AddDebugLogLineN(logKadMain, "Starting BuddySearch");
+				++m_buddyStats.own.searches;
+				AddDebugLogLineN(logKadBuddy, "Starting buddy search");
 				// We are a firewalled client with no buddy. We have also waited a set time
 				// to try to avoid a false firewalled status.. So lets look for a buddy..
 				if (!Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::FINDBUDDY,
@@ -1159,6 +1191,117 @@ bool CClientList::CanRequestBuddy(uint32_t ip) const
 void CClientList::RecordBuddyFailure(uint32_t ip)
 {
 	m_buddyRetry.RecordFailure(ip, ::GetTickCount64());
+	++m_buddyStats.own.connectFailures;
+	AddDebugLogLineN(logKadBuddy,
+		"Buddy connection to " + Uint32toStringIP(ip) + " failed; it is not asked again for an hour");
+}
+
+uint32 CClientList::GetServedBuddyCount() const
+{
+	const CUpDownClient *buddy = m_pBuddy.GetClient();
+	return buddy != nullptr && buddy->IsServedBuddy() ? 1 : 0;
+}
+
+uint32 CClientList::GetPendingBuddyCount() const
+{
+	return static_cast<uint32>(std::count_if(m_KadSources.begin(),
+		m_KadSources.end(),
+		[](const CClientRef &ref) { return ref.GetClient()->GetKadState() == KS_INCOMING_BUDDY; }));
+}
+
+uint64 CClientList::GetBuddyLinkedMs() const
+{
+	return m_pBuddy.IsLinked() ? ::GetTickCount64() - m_buddyLinkedAt : 0;
+}
+
+void CClientList::RecordBuddyRelay(bool callback, uint32 bytes)
+{
+	Kademlia::CBuddyStats::Serving &serving = m_buddyStats.serving;
+	if (callback) {
+		++serving.relays.callbacks;
+		serving.relays.callbackBytes += bytes;
+	} else {
+		++serving.relays.reasks;
+		serving.relays.reaskBytes += bytes;
+	}
+	if (const CUpDownClient *buddy = m_pBuddy.GetClient()) {
+		serving.relayBytesPerBuddy.Add(buddy->GetIP(), bytes, ::GetTickCount64());
+	}
+}
+
+void CClientList::RecordBuddyTimeout(const CUpDownClient *client)
+{
+	if (client->IsServedBuddy()) {
+		++m_buddyStats.serving.timedOut;
+	} else {
+		++m_buddyStats.own.timedOut;
+	}
+	AddDebugLogLineN(logKadBuddy, "Buddy " + client->GetFullIP() + " timed out: it sent nothing");
+}
+
+void CClientList::ReleaseBuddy()
+{
+	if (const CUpDownClient *buddy = m_pBuddy.GetClient()) {
+		const uint64 linkedMs = ::GetTickCount64() - m_buddyLinkedAt;
+		const unsigned minutes = static_cast<unsigned>(linkedMs / 60000);
+		if (buddy->IsServedBuddy()) {
+			++m_buddyStats.serving.ended;
+			m_buddyStats.serving.endedMs += linkedMs;
+			AddDebugLogLineN(logKadBuddy,
+				CFormat("Stopped serving buddy %s after %u minutes") % buddy->GetFullIP() %
+					minutes);
+		} else {
+			++m_buddyStats.own.ended;
+			m_buddyStats.own.endedMs += linkedMs;
+			AddDebugLogLineN(logKadBuddy,
+				CFormat("Lost buddy %s after %u minutes") % buddy->GetFullIP() % minutes);
+		}
+	}
+	m_pBuddy.Unlink();
+	m_nBuddyStatus = Disconnected;
+	Notify_ServerUpdateED2KInfo();
+}
+
+void CClientList::AccountBuddyTime(uint64 now)
+{
+	const uint64 elapsed = m_lastBuddyAccounting != 0 ? now - m_lastBuddyAccounting : 0;
+	m_lastBuddyAccounting = now;
+	if (Kademlia::CKademlia::IsConnected() && Kademlia::NeedsBuddy(Kademlia::CKademlia::IsFirewalled(),
+							  Kademlia::CUDPFirewallTester::IsFirewalledUDP(true),
+							  Kademlia::CUDPFirewallTester::IsVerified())) {
+		m_buddyStats.own.neededMs += elapsed;
+		if (m_nBuddyStatus != Connected) {
+			m_buddyStats.own.withoutBuddyMs += elapsed;
+		}
+	}
+}
+
+void CClientList::LogBuddySummary(uint64 now)
+{
+	if (now < m_nextBuddySummary) {
+		return;
+	}
+	m_nextBuddySummary = now + Kademlia::CMinutePeak::WindowMs;
+	// The baselines move even with the category off, so turning it on reports one minute.
+	const Kademlia::CBuddyStats::Own &own = m_buddyStats.own;
+	if (theLogger.IsEnabled(logKadBuddy)) {
+		const std::string relays =
+			Kademlia::FormatBuddyRelaySummary(m_buddyStats.serving.relays, m_loggedRelays);
+		if (!relays.empty()) {
+			AddDebugLogLineN(logKadBuddy, wxString::FromUTF8(relays.c_str()));
+		}
+		const uint64 callbacks = own.callbacksReceived - m_loggedCallbacksReceived;
+		const uint64 reasks = own.reasksReceived - m_loggedReasksReceived;
+		if (callbacks != 0 || reasks != 0) {
+			AddDebugLogLineN(logKadBuddy,
+				CFormat("Received from our buddy in the last minute: callbacks %u, reasks "
+					"%u") %
+					static_cast<unsigned>(callbacks) % static_cast<unsigned>(reasks));
+		}
+	}
+	m_loggedRelays = m_buddyStats.serving.relays;
+	m_loggedCallbacksReceived = own.callbacksReceived;
+	m_loggedReasksReceived = own.reasksReceived;
 }
 
 void CClientList::RequestBuddy(Kademlia::CContact *contact, uint8_t connectOptions)
@@ -1183,6 +1326,7 @@ void CClientList::RequestBuddy(Kademlia::CContact *contact, uint8_t connectOptio
 	}
 
 	pNewClient->SetKadPort(contact->GetUDPPort());
+	pNewClient->SetServedBuddy(false);
 	pNewClient->SetKadState(KS_QUEUED_BUDDY);
 	uint8_t ID[16];
 	contact->GetClientID().ToByteArray(ID);
@@ -1213,6 +1357,7 @@ bool CClientList::IncomingBuddy(Kademlia::CContact *contact, Kademlia::CUInt128 
 	CUpDownClient *pNewClient =
 		new CUpDownClient(contact->GetTCPPort(), contact->GetIPAddress(), 0, 0, NULL, false, true);
 	pNewClient->SetKadPort(contact->GetUDPPort());
+	pNewClient->SetServedBuddy(true);
 	pNewClient->SetKadState(KS_INCOMING_BUDDY);
 	uint8_t ID[16];
 	contact->GetClientID().ToByteArray(ID);
@@ -1238,9 +1383,7 @@ void CClientList::RemoveFromKadList(CUpDownClient *torem)
 					Kademlia::CUDPFirewallTester::IsVerified())) {
 				Kademlia::CKademlia::GetPrefs()->SetFindBuddy();
 			}
-			m_pBuddy.Unlink();
-			m_nBuddyStatus = Disconnected;
-			Notify_ServerUpdateED2KInfo();
+			ReleaseBuddy();
 		}
 	}
 }

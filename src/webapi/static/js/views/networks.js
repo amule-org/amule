@@ -459,6 +459,12 @@ function indexCount(connected, n) { return connected && n != null ? formatInt(n)
 
 function yesno(b) { return html`<span class=${"status-chip " + (b ? "warn" : "ok")}>${b ? t("networks_kad_yes") : t("networks_kad_no")}</span>`; }
 
+// Mirrors amuleGUI's "Served buddies:" row: only an open node serves buddies.
+function servedBuddiesText(connected, buddy, firewalled_tcp, firewalled_udp) {
+  if (!connected || firewalled_tcp || firewalled_udp || buddy.served_limit == null) return "—";
+  return t("networks_kad_served_buddies_value", { count: buddy.served_count, limit: buddy.served_limit });
+}
+
 // Mirrors amuleGUI's "Firewalled state:" row (CServerWnd::UpdateKadInfo): with a
 // buddy, its address; without one, why none is needed. The daemon only reports
 // buddy state while Kad is connected -- /kad then falls back to `no_buddy`, the
@@ -466,6 +472,8 @@ function yesno(b) { return html`<span class=${"status-chip " + (b ? "warn" : "ok
 // with are stale, so the row goes blank instead (the desktop hides it outright).
 function buddyText(kad_state, buddy, firewalled_tcp, firewalled_udp) {
   if (kad_state !== "connected") return "—";
+  // An open node's buddy is one it serves; the served row shows that.
+  if (!firewalled_tcp && !firewalled_udp) return t("networks_kad_buddy_not_needed_tcp");
   switch (buddy.state) {
     case "connected": return t("networks_kad_buddy_at", { addr: buddy.ip + ":" + buddy.port });
     case "connecting": return t("networks_kad_buddy_connecting");
@@ -584,6 +592,7 @@ function KadInfoPanel() {
         statRow("networks_kad_node_id", d.node_id || "—"),
         statRow("networks_kad_your_ip", d.public_ip || "—"),
         statRow("networks_kad_buddy", buddyText(kad.state, buddy, kad.firewalled_tcp, d.firewalled_udp)),
+        statRow("networks_kad_served_buddies", servedBuddiesText(connected, buddy, kad.firewalled_tcp, d.firewalled_udp)),
       ], "networks_kad_group_identity")}
       ${Section([
         statRow("networks_kad_users", connected ? formatInt(net.user_count) : "—"),

@@ -694,6 +694,8 @@ enum StatDataIndex
 	sdBuddyStatus,
 	sdBuddyIP,
 	sdBuddyPort,
+	sdBuddyServed,
+	sdBuddyServedLimit,
 	sdKadInLanMode,
 	sdTotalSentBytes,
 	sdTotalReceivedBytes,
@@ -800,6 +802,9 @@ public:
 	static uint8 GetBuddyStatus() { return s_statData[sdBuddyStatus]; }
 	static uint32 GetBuddyIP() { return s_statData[sdBuddyIP]; }
 	static uint32 GetBuddyPort() { return s_statData[sdBuddyPort]; }
+	static uint32 GetServedBuddyCount() { return static_cast<uint32>(s_statData[sdBuddyServed]); }
+	// 0 from a core that does not report it.
+	static uint32 GetServedBuddyLimit() { return static_cast<uint32>(s_statData[sdBuddyServedLimit]); }
 	static bool IsKadRunningInLanMode() { return s_statData[sdKadInLanMode] != 0; }
 	static uint32 GetKadNodes() { return s_statData[sdKadNodes]; }
 	static Kademlia::ContactDistributionState GetKadContactDistribution(

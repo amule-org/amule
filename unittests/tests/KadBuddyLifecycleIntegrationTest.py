@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""An open node keeps one buddy: extra ones lose their connection, and late requests are not promoted."""
+"""An open node keeps one buddy: extra ones lose their connection, and late requests are not promoted.
+
+The buddy counters the daemon reports over EC follow each step."""
 import os
 import select
 import socket
@@ -11,7 +13,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from AllSearchIntegrationTest import retry_port_collisions, wait_for
+from AllSearchIntegrationTest import C, retry_port_collisions, tag, wait_for
 from DownloadDisplayRatesIntegrationTest import hello
 from KadLanModeIntegrationTest import (KADEMLIA2_HELLO_REQ, LAN_MODE_TIMEOUT, kad2_hello, stat, wait_stat,
                                        write_private_contacts)
@@ -31,6 +33,19 @@ REQUEST_TIMEOUT = 120
 IDLE_TIMEOUT = 40
 # The client list runs about once a second.
 MARGIN = 5
+
+
+def buddy_counters(ec):
+    """The children of EC_TAG_KAD_BUDDY, by name without the tag prefix."""
+    prefix = 'EC_TAG_KAD_BUDDY_'
+    reply = ec.call(C['EC_OP_STAT_REQ'], [tag(C['EC_TAG_KAD_BUDDY'])])[1]
+    names = {code: name[len(prefix):] for name, code in C.items() if name.startswith(prefix)}
+    return {names[code]: value for code, (value, _) in reply[C['EC_TAG_KAD_BUDDY']][1].items()}
+
+
+def wait_counter(proc, ec, name, expected):
+    wait_for(proc, f'buddy counter {name} to become {expected}',
+             lambda: buddy_counters(ec)[name] == expected, MARGIN)
 
 
 def kad_peer(address, udp_port):
@@ -106,6 +121,15 @@ def check_extra_buddy_is_dropped(proc, ec, udp_port, peer_port):
     first.wait_hello_answer()
     second.wait_hello_answer()
     wait_stat(proc, ec, 'EC_TAG_STATS_BUDDY_STATUS', BUDDY_CONNECTED, MARGIN)
+    assert stat(ec, 'EC_TAG_STATS_BUDDY_SERVED') == 1, 'served buddy count'
+    assert stat(ec, 'EC_TAG_STATS_BUDDY_SERVED_LIMIT') == 1, 'served buddy limit'
+    counters = buddy_counters(ec)
+    assert counters['SERVING_REQUESTS'] == 2 and counters['SERVING_OFFERED'] == 2, counters
+    assert counters['SERVING_STARTED'] == 1, counters
+    # The other offer ends one of two ways, depending on whether its hello came first.
+    wait_for(proc, 'the other offer to end',
+             lambda: sum(buddy_counters(ec)[name] for name in ('SERVING_RELEASED_EXTRA', 'SERVING_OFFERS_SUPERSEDED')) == 1,
+             MARGIN)
 
     wait_for(proc, 'the extra buddy to lose its idle connection',
              lambda: first.closed() or second.closed(), IDLE_TIMEOUT + MARGIN)
@@ -119,14 +143,20 @@ def check_extra_buddy_is_dropped(proc, ec, udp_port, peer_port):
     first.sock.close()
     second.sock.close()
     wait_stat(proc, ec, 'EC_TAG_STATS_BUDDY_STATUS', BUDDY_DISCONNECTED, MARGIN)
+    wait_counter(proc, ec, 'SERVING_ENDED', 1)
+    assert stat(ec, 'EC_TAG_STATS_BUDDY_SERVED') == 0, 'served buddy count after the buddy left'
 
 
-def check_late_request_is_not_promoted(ec, udp_port, peer_port):
+def check_late_request_is_not_promoted(proc, ec, udp_port, peer_port):
     late = Requester('127.0.0.6', udp_port, peer_port)
+    wait_counter(proc, ec, 'PENDING', 1)
     time.sleep(REQUEST_TIMEOUT + MARGIN)
+    counters = buddy_counters(ec)
+    assert counters['PENDING'] == 0 and counters['SERVING_OFFERS_EXPIRED'] == 1, counters
     late.connect()
     time.sleep(MARGIN)
     assert stat(ec, 'EC_TAG_STATS_BUDDY_STATUS') == BUDDY_DISCONNECTED, 'an expired request became the buddy'
+    assert buddy_counters(ec)['SERVING_STARTED'] == 1, 'an expired request counted as a served buddy'
     late.sock.close()
 
 
@@ -141,8 +171,8 @@ def run(binary):
             wait_stat(proc, ec, 'EC_TAG_STATS_KAD_IN_LAN_MODE', 1, LAN_MODE_TIMEOUT)
 
             check_extra_buddy_is_dropped(proc, ec, udp_port, peer_port)
-            check_late_request_is_not_promoted(ec, udp_port, peer_port)
-    print('PASS: one buddy kept, the extra one dropped, and an expired request not promoted')
+            check_late_request_is_not_promoted(proc, ec, udp_port, peer_port)
+    print('PASS: one buddy kept, the extra one dropped, an expired request not promoted, and each counted')
 
 
 if __name__ == '__main__':

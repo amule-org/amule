@@ -220,6 +220,105 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 		w.Sample("kad_indexed", k.indexed_notes, "{type=\"notes\"}");
 		w.Gauge("kad_index_load", "Kad index load reported by the daemon.", k.indexed_load);
 	}
+	if (k.has_served) {
+		w.Gauge("kad_buddies_served",
+			"Firewalled nodes this node serves as their Kad buddy.",
+			k.served_count);
+		w.Gauge("kad_buddies_served_limit",
+			"Most firewalled nodes this node serves at once.",
+			k.served_limit);
+	}
+	if (k.has_buddy_counters) {
+		const auto &b = k.buddy_serving;
+		w.Gauge("kad_buddy_pending_offers",
+			"Buddy offers whose node has not connected yet.",
+			b.pending_count);
+		w.Family("kad_buddy_requests_total",
+			"Buddy requests from firewalled nodes, by result.",
+			"counter");
+		w.Sample("kad_buddy_requests_total", b.requests.offered, "{result=\"offered\"}");
+		w.Sample("kad_buddy_requests_total",
+			b.requests.refused_firewalled,
+			"{result=\"refused_firewalled\"}");
+		w.Sample("kad_buddy_requests_total", b.requests.refused_full, "{result=\"refused_full\"}");
+		w.Sample("kad_buddy_requests_total",
+			b.requests.refused_conflict,
+			"{result=\"refused_conflict\"}");
+		w.Sample("kad_buddy_requests_total", b.requests.rate_limited, "{result=\"rate_limited\"}");
+		w.Family("kad_buddy_offers_unused_total",
+			"Buddy offers whose node did not become our buddy.",
+			"counter");
+		w.Sample("kad_buddy_offers_unused_total", b.requests.expired, "{reason=\"expired\"}");
+		w.Sample("kad_buddy_offers_unused_total", b.requests.superseded, "{reason=\"superseded\"}");
+		w.Family("kad_buddy_served_events_total",
+			"Changes to the buddies this node serves.",
+			"counter");
+		w.Sample("kad_buddy_served_events_total", b.buddies.started, "{event=\"started\"}");
+		w.Sample("kad_buddy_served_events_total",
+			b.buddies.released_extra,
+			"{event=\"released_extra\"}");
+		w.Sample("kad_buddy_served_events_total", b.buddies.ended, "{event=\"ended\"}");
+		w.Sample("kad_buddy_served_events_total", b.buddies.timed_out, "{event=\"timed_out\"}");
+		w.Family("kad_buddy_served_seconds_total", "Time spent serving a buddy.", "counter");
+		w.Sample("kad_buddy_served_seconds_total", b.served_seconds);
+		w.Family("kad_buddy_relays_total", "Packets relayed to the served buddy.", "counter");
+		w.Sample("kad_buddy_relays_total", b.callbacks.relayed, "{kind=\"callback\"}");
+		w.Sample("kad_buddy_relays_total", b.reasks.relayed, "{kind=\"reask\"}");
+		w.Family("kad_buddy_relayed_bytes_total", "Bytes relayed to the served buddy.", "counter");
+		w.Sample("kad_buddy_relayed_bytes_total", b.callbacks.relayed_bytes, "{kind=\"callback\"}");
+		w.Sample("kad_buddy_relayed_bytes_total", b.reasks.relayed_bytes, "{kind=\"reask\"}");
+		w.Family("kad_buddy_relay_drops_total",
+			"Packets for a served buddy that were not relayed.",
+			"counter");
+		w.Sample("kad_buddy_relay_drops_total",
+			b.callbacks.no_buddy,
+			"{kind=\"callback\",reason=\"no_buddy\"}");
+		w.Sample("kad_buddy_relay_drops_total",
+			b.callbacks.mismatched,
+			"{kind=\"callback\",reason=\"mismatched\"}");
+		w.Sample("kad_buddy_relay_drops_total",
+			b.callbacks.rate_limited,
+			"{kind=\"callback\",reason=\"rate_limited\"}");
+		w.Sample("kad_buddy_relay_drops_total",
+			b.reasks.no_buddy,
+			"{kind=\"reask\",reason=\"no_buddy\"}");
+		w.Sample("kad_buddy_relay_drops_total",
+			b.reasks.mismatched,
+			"{kind=\"reask\",reason=\"mismatched\"}");
+		w.Sample("kad_buddy_relay_drops_total",
+			b.reasks.malformed,
+			"{kind=\"reask\",reason=\"malformed\"}");
+		w.Gauge("kad_buddy_peak_relayed_bytes_per_minute",
+			"Most bytes relayed to one served buddy in one minute.",
+			b.peak_relayed_bytes_per_minute);
+		w.Gauge("kad_buddy_peak_callback_requests_per_minute",
+			"Most callback requests from one client in one minute.",
+			b.callbacks.peak_requests_per_minute);
+		const auto &o = k.buddy_own;
+		w.Family("kad_buddy_searches_total", "Searches for a buddy of our own.", "counter");
+		w.Sample("kad_buddy_searches_total", o.search_count);
+		w.Family("kad_buddy_own_requests_total", "Buddy requests for a buddy of our own.", "counter");
+		w.Sample("kad_buddy_own_requests_total", o.requests.sent, "{result=\"sent\"}");
+		w.Sample("kad_buddy_own_requests_total", o.requests.skipped, "{result=\"skipped\"}");
+		w.Sample("kad_buddy_own_requests_total", o.requests.offered, "{result=\"offered\"}");
+		w.Family("kad_buddy_own_connections_total", "Connections to an offered buddy.", "counter");
+		w.Sample(
+			"kad_buddy_own_connections_total", o.connections.attempted, "{result=\"attempted\"}");
+		w.Sample("kad_buddy_own_connections_total", o.connections.failed, "{result=\"failed\"}");
+		w.Family("kad_buddy_own_events_total", "Changes to our own buddy.", "counter");
+		w.Sample("kad_buddy_own_events_total", o.buddies.started, "{event=\"started\"}");
+		w.Sample("kad_buddy_own_events_total", o.buddies.ended, "{event=\"ended\"}");
+		w.Sample("kad_buddy_own_events_total", o.buddies.timed_out, "{event=\"timed_out\"}");
+		w.Family("kad_buddy_own_received_total", "Packets our buddy relayed to us.", "counter");
+		w.Sample("kad_buddy_own_received_total", o.received_callback_count, "{kind=\"callback\"}");
+		w.Sample("kad_buddy_own_received_total", o.received_reask_count, "{kind=\"reask\"}");
+		w.Family("kad_buddy_own_seconds_total",
+			"Time a buddy was needed, missing while needed, or connected.",
+			"counter");
+		w.Sample("kad_buddy_own_seconds_total", o.needed_seconds, "{state=\"needed\"}");
+		w.Sample("kad_buddy_own_seconds_total", o.missing_seconds, "{state=\"missing\"}");
+		w.Sample("kad_buddy_own_seconds_total", o.connected_seconds, "{state=\"connected\"}");
+	}
 	return w.out.str();
 }
 } // namespace webapi

@@ -290,6 +290,12 @@ add_test (NAME KadBuddyRetryTest COMMAND KadBuddyRetryTest)
 target_include_directories (KadBuddyRetryTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (KadBuddyRetryTest muleunit mulecommon)
 
+# Buddy counter peaks and the relay log summary.
+add_executable (KadBuddyStatsTest KadBuddyStatsTest.cpp)
+add_test (NAME KadBuddyStatsTest COMMAND KadBuddyStatsTest)
+target_include_directories (KadBuddyStatsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (KadBuddyStatsTest muleunit mulecommon)
+
 # The Kad firewall state across an hourly recheck, with the clock passed in.
 add_executable (KadFirewallRecheckTest KadFirewallRecheckTest.cpp)
 add_test (NAME KadFirewallRecheckTest COMMAND KadFirewallRecheckTest)

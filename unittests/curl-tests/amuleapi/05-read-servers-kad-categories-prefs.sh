@@ -171,6 +171,21 @@ _assert_json_eq '(.state != "connected") or ((.buddy.ip | type) == "string")' \
 	true '/kad.buddy.ip survives the ip rename'
 _assert_json_eq '(.state != "connected") or (.buddy.state | test("^(no_buddy|connecting|connected|unknown)$"))' \
 	true '/kad.buddy.state is a known enum value while Kad is connected'
+for F in buddy.served_count buddy.served_limit; do
+	_assert_json_eq "(.state == \"connected\") or (.$F == null)" true \
+		"/kad.$F is null while Kad is not connected"
+	_assert_json_eq "(.state != \"connected\") or ((.$F | type) == \"number\")" true \
+		"/kad.$F is numeric while Kad is connected"
+done
+# Counters since the daemon started, reported whatever the Kad state.
+_assert_json_eq '[.buddy.serving | paths(scalars) | join(".")] | join(" ")' \
+	'pending_count served_seconds requests.received requests.offered requests.refused_firewalled requests.refused_full requests.refused_conflict requests.rate_limited requests.expired requests.superseded buddies.started buddies.released_extra buddies.ended buddies.timed_out callbacks.relayed callbacks.relayed_bytes callbacks.no_buddy callbacks.mismatched callbacks.rate_limited callbacks.peak_requests_per_minute reasks.relayed reasks.relayed_bytes reasks.no_buddy reasks.mismatched reasks.malformed peak_relayed_bytes_per_minute' \
+	'/kad.buddy.serving has every counter'
+_assert_json_eq '[.buddy.own | paths(scalars) | join(".")] | join(" ")' \
+	'search_count needed_seconds missing_seconds connected_seconds requests.sent requests.skipped requests.offered connections.attempted connections.failed buddies.started buddies.ended buddies.timed_out received_callback_count received_reask_count' \
+	'/kad.buddy.own has every counter'
+_assert_json_eq '[.buddy.serving, .buddy.own | .. | scalars | type] | unique | join(",")' number \
+	'/kad.buddy counters are numbers'
 
 # --- 3. /categories -----------------------------------------------
 _curl "$API/categories"

@@ -1525,11 +1525,20 @@ void CClientUDPSocket::ProcessPacket(
 		AddDebugLogLineN(logClientUDP, "Client UDP socket; OP_REASKCALLBACKUDP");
 		theStats::AddDownOverheadOther(size);
 		CUpDownClient *buddy = theApp->clientlist->GetBuddy();
-		if (buddy) {
-			if (size < 17 || buddy->GetSocket() == NULL) {
+		Kademlia::CBuddyRelayCounts &relays = theApp->clientlist->GetBuddyStats().serving.relays;
+		if (buddy == nullptr) {
+			++relays.reasksNoBuddy;
+		} else {
+			if (size < 17) {
+				++relays.reasksMalformed;
 				break;
 			}
-			if (Kademlia::MatchesBuddyIdEitherLayout(packet, buddy->GetBuddyID())) {
+			if (buddy->GetSocket() == nullptr) {
+				break;
+			}
+			if (!Kademlia::MatchesBuddyIdEitherLayout(packet, buddy->GetBuddyID())) {
+				++relays.reasksMismatched;
+			} else {
 				/* The packet starts with a 16-byte key for the buddy. It is currently
 				   unused, so the transformation discards the first 10 bytes below and
 				   overwrites the other 6 with ip/port. */
@@ -1541,8 +1550,10 @@ void CClientUDPSocket::ProcessPacket(
 				CPacket *response =
 					new CPacket(mem_packet, OP_EMULEPROT, OP_REASKCALLBACKTCP);
 				AddDebugLogLineN(logClientUDP, "Client UDP socket: send OP_REASKCALLBACKTCP");
-				theStats::AddUpOverheadFileRequest(response->GetPacketSize());
+				const uint32 responseSize = response->GetPacketSize();
+				theStats::AddUpOverheadFileRequest(responseSize);
 				buddy->GetSocket()->SendPacket(response);
+				theApp->clientlist->RecordBuddyRelay(false, responseSize);
 			}
 		}
 		break;

@@ -3660,6 +3660,16 @@ uint32 CamuleApp::GetBuddyPort() const
 	return clientlist->GetBuddyPort();
 }
 
+uint32 CamuleApp::GetServedBuddyCount() const
+{
+	return clientlist->GetServedBuddyCount();
+}
+
+uint32 CamuleApp::GetServedBuddyLimit() const
+{
+	return CClientList::MaxServedBuddies;
+}
+
 const Kademlia::CUInt128 &CamuleApp::GetKadID() const
 {
 	return Kademlia::CKademlia::GetKadID();

@@ -1579,6 +1579,61 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_BUDDY_PORT)) {
 		out.buddy_port = static_cast<std::uint16_t>(t->GetInt());
 	}
+	if (const CECTag *t = resp->GetTagByName(EC_TAG_STATS_BUDDY_SERVED_LIMIT)) {
+		out.served_limit = static_cast<std::uint32_t>(t->GetInt());
+		out.served_count = static_cast<std::uint32_t>(
+			resp->GetTagByNameSafe(EC_TAG_STATS_BUDDY_SERVED)->GetInt());
+		out.has_served = true;
+	}
+	if (const CECTag *buddy = resp->GetTagByName(EC_TAG_KAD_BUDDY)) {
+		const auto get = [buddy](ec_tagname_t name) -> std::uint64_t {
+			return buddy->GetTagByNameSafe(name)->GetInt();
+		};
+		KadBuddyServingSnapshot &serving = out.buddy_serving;
+		serving.pending_count = get(EC_TAG_KAD_BUDDY_PENDING);
+		serving.served_seconds = get(EC_TAG_KAD_BUDDY_SERVING_SECONDS);
+		serving.requests.received = get(EC_TAG_KAD_BUDDY_SERVING_REQUESTS);
+		serving.requests.offered = get(EC_TAG_KAD_BUDDY_SERVING_OFFERED);
+		serving.requests.refused_firewalled = get(EC_TAG_KAD_BUDDY_SERVING_REFUSED_FIREWALLED);
+		serving.requests.refused_full = get(EC_TAG_KAD_BUDDY_SERVING_REFUSED_FULL);
+		serving.requests.refused_conflict = get(EC_TAG_KAD_BUDDY_SERVING_REFUSED_CONFLICT);
+		serving.requests.rate_limited = get(EC_TAG_KAD_BUDDY_SERVING_RATE_LIMITED);
+		serving.requests.expired = get(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EXPIRED);
+		serving.requests.superseded = get(EC_TAG_KAD_BUDDY_SERVING_OFFERS_SUPERSEDED);
+		serving.buddies.started = get(EC_TAG_KAD_BUDDY_SERVING_STARTED);
+		serving.buddies.released_extra = get(EC_TAG_KAD_BUDDY_SERVING_RELEASED_EXTRA);
+		serving.buddies.ended = get(EC_TAG_KAD_BUDDY_SERVING_ENDED);
+		serving.buddies.timed_out = get(EC_TAG_KAD_BUDDY_SERVING_TIMED_OUT);
+		serving.callbacks.relayed = get(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS);
+		serving.callbacks.relayed_bytes = get(EC_TAG_KAD_BUDDY_SERVING_CALLBACK_BYTES);
+		serving.callbacks.no_buddy = get(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_NO_BUDDY);
+		serving.callbacks.mismatched = get(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_MISMATCHED);
+		serving.callbacks.rate_limited = get(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_RATE_LIMITED);
+		serving.callbacks.peak_requests_per_minute =
+			get(EC_TAG_KAD_BUDDY_SERVING_CALLBACK_REQUESTS_PEAK);
+		serving.reasks.relayed = get(EC_TAG_KAD_BUDDY_SERVING_REASKS);
+		serving.reasks.relayed_bytes = get(EC_TAG_KAD_BUDDY_SERVING_REASK_BYTES);
+		serving.reasks.no_buddy = get(EC_TAG_KAD_BUDDY_SERVING_REASKS_NO_BUDDY);
+		serving.reasks.mismatched = get(EC_TAG_KAD_BUDDY_SERVING_REASKS_MISMATCHED);
+		serving.reasks.malformed = get(EC_TAG_KAD_BUDDY_SERVING_REASKS_MALFORMED);
+		serving.peak_relayed_bytes_per_minute = get(EC_TAG_KAD_BUDDY_SERVING_RELAY_BYTES_PEAK);
+		KadBuddyOwnSnapshot &own = out.buddy_own;
+		own.search_count = get(EC_TAG_KAD_BUDDY_OWN_SEARCHES);
+		own.needed_seconds = get(EC_TAG_KAD_BUDDY_OWN_NEEDED_SECONDS);
+		own.missing_seconds = get(EC_TAG_KAD_BUDDY_OWN_MISSING_SECONDS);
+		own.connected_seconds = get(EC_TAG_KAD_BUDDY_OWN_SECONDS);
+		own.requests.sent = get(EC_TAG_KAD_BUDDY_OWN_REQUESTS);
+		own.requests.skipped = get(EC_TAG_KAD_BUDDY_OWN_REQUESTS_SKIPPED);
+		own.requests.offered = get(EC_TAG_KAD_BUDDY_OWN_OFFERS);
+		own.connections.attempted = get(EC_TAG_KAD_BUDDY_OWN_CONNECT_ATTEMPTS);
+		own.connections.failed = get(EC_TAG_KAD_BUDDY_OWN_CONNECT_FAILURES);
+		own.buddies.started = get(EC_TAG_KAD_BUDDY_OWN_CONNECTED);
+		own.buddies.ended = get(EC_TAG_KAD_BUDDY_OWN_ENDED);
+		own.buddies.timed_out = get(EC_TAG_KAD_BUDDY_OWN_TIMED_OUT);
+		own.received_callback_count = get(EC_TAG_KAD_BUDDY_OWN_CALLBACKS);
+		own.received_reask_count = get(EC_TAG_KAD_BUDDY_OWN_REASKS);
+		out.has_buddy_counters = true;
+	}
 }
 
 // --- /logs/amule (incremental, piggybacks on STAT_REQ) -----------------

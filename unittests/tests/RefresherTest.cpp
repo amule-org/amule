@@ -3480,6 +3480,53 @@ TEST(Refresher, KadPublicIpIsOursAndBuddyIpIsSeparate)
 	ASSERT_EQUALS(std::string("203.0.113.9"), out.buddy_ip);
 }
 
+TEST(Refresher, KadBuddyCountersAreParsedFromTheirContainer)
+{
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0x04 | 0x10));
+	resp.AddTag(CECTag(EC_TAG_STATS_BUDDY_SERVED, static_cast<std::uint32_t>(1)));
+	resp.AddTag(CECTag(EC_TAG_STATS_BUDDY_SERVED_LIMIT, static_cast<std::uint32_t>(1)));
+	CECEmptyTag buddy(EC_TAG_KAD_BUDDY);
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_PENDING, static_cast<std::uint32_t>(2)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REQUESTS, static_cast<std::uint32_t>(40)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EXPIRED, static_cast<std::uint32_t>(3)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASK_BYTES, static_cast<std::uint64_t>(5000000000ULL)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACK_REQUESTS_PEAK, static_cast<std::uint32_t>(4)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CONNECTED, static_cast<std::uint32_t>(5)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_MISSING_SECONDS, static_cast<std::uint32_t>(60)));
+	resp.AddTag(buddy);
+
+	KadSnapshot out;
+	ParseKadFromPacket(&resp, out);
+
+	ASSERT_TRUE(out.has_served);
+	ASSERT_EQUALS(1u, out.served_count);
+	ASSERT_EQUALS(1u, out.served_limit);
+	ASSERT_TRUE(out.has_buddy_counters);
+	ASSERT_EQUALS(std::uint64_t(2), out.buddy_serving.pending_count);
+	ASSERT_EQUALS(std::uint64_t(40), out.buddy_serving.requests.received);
+	ASSERT_EQUALS(std::uint64_t(3), out.buddy_serving.requests.expired);
+	ASSERT_EQUALS(std::uint64_t(5000000000ULL), out.buddy_serving.reasks.relayed_bytes);
+	ASSERT_EQUALS(std::uint64_t(4), out.buddy_serving.callbacks.peak_requests_per_minute);
+	ASSERT_EQUALS(std::uint64_t(5), out.buddy_own.buddies.started);
+	ASSERT_EQUALS(std::uint64_t(60), out.buddy_own.missing_seconds);
+	// A counter the daemon did not send reads as zero, not as garbage.
+	ASSERT_EQUALS(std::uint64_t(0), out.buddy_own.search_count);
+}
+
+TEST(Refresher, KadBuddyCountersAreAbsentFromAnOlderDaemon)
+{
+	CECPacket resp(EC_OP_STATS);
+	resp.AddTag(MakeConnState(0x04 | 0x10));
+	resp.AddTag(CECTag(EC_TAG_STATS_BUDDY_STATUS, static_cast<std::uint8_t>(0)));
+
+	KadSnapshot out;
+	ParseKadFromPacket(&resp, out);
+
+	ASSERT_FALSE(out.has_served);
+	ASSERT_FALSE(out.has_buddy_counters);
+}
+
 TEST(Refresher, KadBuddyStatusIsNoBuddyWhenTagAbsent)
 {
 	// amuled ships EC_TAG_STATS_BUDDY_STATUS only while Kad is connected. Absent, the field
