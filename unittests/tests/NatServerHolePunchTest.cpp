@@ -1311,16 +1311,30 @@ TEST(NatServerHolePunch, AMovedPortMeetsALoneExpectedEndpoint)
 
 TEST(NatServerHolePunch, DialBacksToTwoPeersOfOneAddressAreKeptApart)
 {
+	// Both peers behind the carrier NAT may listen on the default port: their hashes tell them apart.
 	DialBackSchedule dialBacks;
 	const IPv4 shared{ { 192, 0, 2, 9 } };
-	dialBacks.Schedule(shared, 4'661, 4'000, 0);
-	dialBacks.Schedule(shared, 4'662, 5'000, 0);
-	// Rescheduling one peer replaces only its own entry.
-	dialBacks.Schedule(shared, 4'662, 5'000, 1);
+	VouchedPeer p;
+	p.userHash.fill(0x01);
+	VouchedPeer q;
+	q.userHash.fill(0x02);
+	dialBacks.Schedule(shared, 4'662, 4'000, 0, p);
+	dialBacks.Schedule(shared, 4'662, 5'000, 0, q);
+	// A newer punch from Q, from a moved port, replaces only Q's dial-back.
+	dialBacks.Schedule(shared, 4'662, 5'001, 1, q);
 	const auto due = dialBacks.TakeDue(1 + kDialBackDelayMs);
 	ASSERT_EQUALS((std::size_t)2, due.size());
-	ASSERT_TRUE(due[0].udpPort == 4'000 && due[0].tcpPort == 4'661);
-	ASSERT_TRUE(due[1].udpPort == 5'000 && due[1].tcpPort == 4'662);
+	ASSERT_TRUE(due[0].udpPort == 4'000 && due[0].peer.userHash == p.userHash);
+	ASSERT_TRUE(due[1].udpPort == 5'001 && due[1].peer.userHash == q.userHash);
+
+	// Without a vouched hash only the TCP port can.
+	dialBacks.Schedule(shared, 4'661, 4'000, 2);
+	dialBacks.Schedule(shared, 4'662, 5'000, 2);
+	dialBacks.Schedule(shared, 4'662, 5'001, 3);
+	const auto bare = dialBacks.TakeDue(3 + kDialBackDelayMs);
+	ASSERT_EQUALS((std::size_t)2, bare.size());
+	ASSERT_TRUE(bare[0].udpPort == 4'000 && bare[0].tcpPort == 4'661);
+	ASSERT_TRUE(bare[1].udpPort == 5'001 && bare[1].tcpPort == 4'662);
 }
 
 TEST(NatServerHolePunch, APendingWakeIsFoundByItsRequester)
@@ -1337,26 +1351,57 @@ TEST(NatServerHolePunch, APendingWakeIsFoundByItsRequester)
 	ASSERT_FALSE(wakes.Contains(7));
 }
 
-TEST(NatServerHolePunch, APunchOrADialFromThePeerEndsItsSchedule)
+TEST(NatServerHolePunch, APunchOrAHelloFromThePeerEndsItsSchedule)
 {
 	PunchScheduleSet schedules;
 	const IPv4 peer{ { 192, 0, 2, 1 } };
 	const IPv4 other{ { 192, 0, 2, 2 } };
+	Hash anyone{};
+	anyone.fill(0x05);
 	schedules.Start(peer, 4'662, 0);
 	schedules.Start(other, 4'662, 0);
 	// A second 0x61 for the same peer restarts its schedule; it never runs two.
 	schedules.Start(peer, 4'662, 0);
 	ASSERT_EQUALS((std::size_t)2, schedules.Size());
 
-	schedules.Cancel(peer, std::nullopt);
+	schedules.Cancel(peer, 4'662);
 	ASSERT_EQUALS((std::size_t)1, schedules.Size());
-	const std::vector<PunchDue> owed = schedules.TakeDue(10'000);
-	ASSERT_EQUALS((std::size_t)5, owed.size());
+	const std::vector<PunchDue> owed = schedules.TakeDue(0);
+	ASSERT_EQUALS((std::size_t)1, owed.size());
 	ASSERT_TRUE(owed[0].peerIP == other);
+	// A lone schedule that vouched for no hash ends with any hello from its address.
+	schedules.CancelPeer(other, anyone);
+	ASSERT_EQUALS((std::size_t)0, schedules.Size());
 
 	// Cancelling an address nobody scheduled, or twice, is not an error.
-	schedules.Cancel(other, std::nullopt);
-	schedules.Cancel(peer, std::nullopt);
+	schedules.Cancel(peer, 4'662);
+	schedules.CancelPeer(other, anyone);
+	ASSERT_EQUALS((std::size_t)0, schedules.Size());
+}
+
+TEST(NatServerHolePunch, AHelloEndsOnlyItsOwnPeersSchedule)
+{
+	// P and Q share one carrier NAT address, and each schedule keeps the hash its 0x61 vouched for.
+	PunchScheduleSet schedules;
+	const IPv4 shared{ { 192, 0, 2, 9 } };
+	Hash p{};
+	p.fill(0x01);
+	Hash q{};
+	q.fill(0x02);
+	Hash stranger{};
+	stranger.fill(0x03);
+	schedules.Start(shared, 4'000, 0, p);
+	schedules.Start(shared, 5'000, 0, q);
+
+	schedules.CancelPeer(shared, q);
+	ASSERT_EQUALS((std::size_t)1, schedules.Size());
+	const std::vector<PunchDue> owed = schedules.TakeDue(0);
+	ASSERT_EQUALS((std::size_t)1, owed.size());
+	ASSERT_TRUE(owed[0].udpPort == 4'000);
+	// The schedule left names P, so a hello from anyone else does not end it, even alone.
+	schedules.CancelPeer(shared, stranger);
+	ASSERT_EQUALS((std::size_t)1, schedules.Size());
+	schedules.CancelPeer(shared, p);
 	ASSERT_EQUALS((std::size_t)0, schedules.Size());
 }
 

@@ -163,8 +163,9 @@ void CClientUDPSocket::MaybeSendSourceEcho(
 	}
 	// Sent obfuscated, so it has no fixed plain signature. The split side can decode it: only its
 	// own key is wrong.
+	const std::uint64_t now = ::GetTickCount64();
 	const std::optional<NatKeyFrame::Hash> hash =
-		m_punchedPeers.TakeEcho(ip, port, firstByte, length, decrypted, ::GetTickCount64());
+		m_punchedPeers.TakeEcho(ip, port, firstByte, length, decrypted, now);
 	if (!hash) {
 		return;
 	}
@@ -178,7 +179,7 @@ void CClientUDPSocket::MaybeSendSourceEcho(
 			CFormat("NAT-T source echo to %s: its datagram failed every key") %
 				Uint32_16toStringIP_Port(ip, port));
 	} else {
-		m_punchedPeers.EchoNotSent(ip);
+		m_punchedPeers.EchoNotSent(ip, port, now);
 	}
 }
 
@@ -1254,7 +1255,7 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 	ExpectNatTPeer(answer->targetIp, answer->targetUdpPort, &answer->targetHash);
 	NatServerHolePunch::IPv4 targetIP{};
 	PokeUInt32(targetIP.data(), answer->targetIp);
-	connect->StartLowIdHolePunchSchedule(targetIP, answer->targetUdpPort, now);
+	connect->StartLowIdHolePunchSchedule(targetIP, answer->targetUdpPort, now, answer->targetHash);
 	const NatServerHolePunch::VouchedPeer peer{ answer->targetHash,
 		static_cast<std::uint8_t>(answer->crypt & 0x07) };
 	DialLowIdHolePunchPeer(answer->targetIp, pending->sourceTcpPort, answer->targetUdpPort, peer);
@@ -1263,11 +1264,11 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 
 bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash)
 {
-	// Our own dial to that address connected, so its punches have nothing left to reach.
+	// The peer is connected, so its punches have nothing left to reach.
 	if (theApp->serverconnect != nullptr) {
 		NatServerHolePunch::IPv4 peer{};
 		PokeUInt32(peer.data(), ip);
-		theApp->serverconnect->LowIdHolePunchSchedules().Cancel(peer, std::nullopt);
+		theApp->serverconnect->LowIdHolePunchSchedules().CancelPeer(peer, peerHash);
 	}
 	const std::optional<NatServerHolePunch::RendezvousPath> path =
 		m_rendezvousOutcomes.TakeSuccess(ip, peerHash, ::GetTickCount64());
@@ -1353,9 +1354,11 @@ bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::
 		!Ok() || !m_utp.IsAvailable() || !IsRendezvousPeerAllowed(callback.seenIp)) {
 		return false;
 	}
-	// A wake already waiting for this requester's 0x61 needs no second punch, and must not spend
-	// the action budget the other rendezvous share.
-	if (callback.requesterId != 0 && connect->HolePunchExtensionWakes().Contains(callback.requesterId)) {
+	// A wake already waiting for this requester's 0x61 gets its 0x9F burst again, since the 0x9F is
+	// what releases the 0x61, but no second punch: that would spend the action budget the other
+	// rendezvous share.
+	if (connect->HolePunchExtensionWakes().Contains(callback.requesterId)) {
+		connect->StartHolePunchExtensionKeepalives();
 		return true;
 	}
 	const std::uint64_t now = ::GetTickCount64();
@@ -1377,7 +1380,11 @@ bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::
 	connect->StartHolePunchExtensionKeepalives();
 	NatServerHolePunch::IPv4 targetIP{};
 	PokeUInt32(targetIP.data(), target.ip);
-	connect->StartLowIdHolePunchSchedule(targetIP, target.udpPort, now);
+	std::optional<NatServerHolePunch::Hash> vouched;
+	if (callback.hasObfuscation) {
+		vouched = callback.userHash;
+	}
+	connect->StartLowIdHolePunchSchedule(targetIP, target.udpPort, now, vouched);
 	AddDebugLogLineN(logClientUDP,
 		CFormat("Hole-punch extension wake from requester %u: OP_HOLEPUNCH at 0, 0.5, 1 "
 			"and 2 s to %s") %

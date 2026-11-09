@@ -175,8 +175,12 @@ public:
 	void ProcessHolePunchExtension();
 	//! Starts the punch schedule for one peer and sends what is already due: the punch to the
 	//! endpoint a 0x61, a cross-server 0xA7 answer or an extension wake named, then its repeats at
-	//! 0.5, 1 and 2 s, with the port sweep at 0.5 s.
-	void StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP, uint16 udpPort, uint64 now);
+	//! 0.5, 1 and 2 s, with the port sweep at 0.5 s. @a peerHash, when the rendezvous vouched for
+	//! one, lets the peer's hello end the schedule.
+	void StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP,
+		uint16 udpPort,
+		uint64 now,
+		const std::optional<NatServerHolePunch::Hash> &peerHash);
 	//! Sends the punches and sweeps that have come due. Called from every OnCoreTimer tick.
 	void SendDueLowIdHolePunches(uint64 now);
 	//! The punches owed to each peer address, cancelled by a punch from it or by our dial

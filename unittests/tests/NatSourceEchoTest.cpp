@@ -96,12 +96,12 @@ TEST(NatSourceEcho, EchoesOncePerWindowToAPunchedSourceWithAHash)
 	ASSERT_TRUE(*hash == MakeHash(1));
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 20).has_value());
 	// A plain datagram or one that decoded never triggers one.
-	punched.EchoNotSent(kSplit);
+	punched.EchoNotSent(kSplit, 4672, 20);
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0xC5, 20, false, 30).has_value());
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, true, 30).has_value());
 	ASSERT_TRUE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 30).has_value());
 	// The window closes 30 s after the punch.
-	punched.EchoNotSent(kSplit);
+	punched.EchoNotSent(kSplit, 4672, 30);
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, kWindowMs).has_value());
 }
 
@@ -124,19 +124,36 @@ TEST(NatSourceEcho, AMovedPortEarnsAnEchoOnlyForTheOnePunchOfItsIp)
 	ASSERT_TRUE(punched.TakeEcho(kSplit, 50001, 0x01, 20, false, 1).has_value());
 	// Two punches to one IP: a third port cannot be told apart.
 	punched.Punched(kSplit, 4673, MakeHash(1), 2);
-	punched.EchoNotSent(kSplit);
+	punched.EchoNotSent(kSplit, 50001, 2);
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 50002, 0x01, 20, false, 3).has_value());
 }
 
-TEST(NatSourceEcho, OneEchoPerIpPerWindowWhateverThePort)
+TEST(NatSourceEcho, MovedPortsShareOneEchoPerWindow)
 {
 	// A moved port matches every port of the IP, so spoofed junk from each one must not each
-	// earn an echo back to that IP.
+	// earn an echo back to that IP. The punched endpoint keeps its own.
 	CPunchedPeers punched(8);
 	punched.Punched(kSplit, 4672, MakeHash(1), 0);
 	ASSERT_TRUE(punched.TakeEcho(kSplit, 50001, 0x01, 20, false, 1).has_value());
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 50002, 0x01, 20, false, 2).has_value());
-	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 3).has_value());
+	ASSERT_TRUE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 3).has_value());
+	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 4).has_value());
+}
+
+TEST(NatSourceEcho, TwoPeersBehindOneIpEachEarnAnEcho)
+{
+	CPunchedPeers punched(8);
+	punched.Punched(kSplit, 4672, MakeHash(1), 0);
+	punched.Punched(kSplit, 4673, MakeHash(2), 0);
+	const auto first = punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 1);
+	ASSERT_TRUE(first.has_value() && *first == MakeHash(1));
+	const auto second = punched.TakeEcho(kSplit, 4673, 0x01, 20, false, 2);
+	ASSERT_TRUE(second.has_value() && *second == MakeHash(2));
+	ASSERT_FALSE(punched.TakeEcho(kSplit, 4673, 0x01, 20, false, 3).has_value());
+	// An echo not sent frees only its own endpoint.
+	punched.EchoNotSent(kSplit, 4672, 4);
+	ASSERT_TRUE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 5).has_value());
+	ASSERT_FALSE(punched.TakeEcho(kSplit, 4673, 0x01, 20, false, 5).has_value());
 }
 
 TEST(NatSourceEcho, TakesAnEchoOnlyFromTheExactPunchedEndpoint)
