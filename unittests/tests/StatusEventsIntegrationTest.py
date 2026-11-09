@@ -72,6 +72,15 @@ class Events:
             assert time.monotonic() < deadline, self.seen
             self.collect(.1)
 
+    def wait_closed(self):
+        deadline = time.monotonic() + 6
+        while select.select([self.proc.stdout], [], [], max(0, deadline - time.monotonic()))[0]:
+            if not os.read(self.proc.stdout.fileno(), 65536):
+                # Exit 0: the server ended the chunked body, not just the connection.
+                assert self.proc.wait(5) == 0, self.proc.stderr.read()
+                return
+        raise AssertionError('SSE stream still open')
+
     def close(self):
         self.proc.terminate()
         self.proc.communicate(timeout=5)
@@ -105,11 +114,13 @@ def run(binary):
         threading.Thread(target=core.serve_forever, daemon=True).start()
         try:
             with api_fixture(binary, Path(directory) / 'api', core.server_address[1]) as (base, _):
-                code, _, text = request(base, '/api/v1/auth/login?include_token=true', method='POST',
-                                        body={'password': 'adminpass'})
-                assert code == 200, text
-                token = json.loads(text)['token']
-                with events(base, token) as stream:
+                def login():
+                    code, _, text = request(base, '/api/v1/auth/login?include_token=true', method='POST',
+                                            body={'password': 'adminpass'})
+                    assert code == 200, text
+                    return json.loads(text)['token']
+                token, stream_token = login(), login()
+                with events(base, stream_token) as stream:
                     stream.collect(1.2)
                     assert not status_payloads(stream), stream.seen
                     assert request(base, '/api/v1/status', token)[0] == 503
@@ -192,11 +203,16 @@ def run(binary):
                     assert int(head['Content-Length']) == len(body.encode())
                     print('PASS: status HEAD/ETag/304 remain consistent after recovery')
 
+                    # A worker sees a closed client only when a write fails, and the first
+                    # write after the client's FIN succeeds. Revoke the token instead, then
+                    # empty the lists to wake the worker: it drops its subscription and ends
+                    # the stream.
+                    assert request(base, '/api/v1/auth/logout', stream_token, method='POST')[0] == 204
+                    core.populated = False
+                    stream.wait_closed()
+
                 # The app suspends full diffs after five unsubscribed ticks. Resuming
                 # primes through a scratch bus, then asks the subscriber to re-read.
-                # Wake the old worker so it observes the closed socket instead of
-                # retaining its subscription until the 15-second heartbeat.
-                core.populated = False
                 eventually(lambda: json.loads(request(base, '/api/v1/status', token)[2])['ed2k']['state']
                            == 'disconnected')
                 ticks = core.ops.count(C['EC_OP_STAT_REQ'])
