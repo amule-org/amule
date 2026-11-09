@@ -215,7 +215,8 @@ public:
 	CSafeKad();
 
 	// Records the identity `id` the node at this address claims for itself. A verified claim
-	// replaces an unverified record at once. Otherwise a changed ID inside MIN_ID_CHANGE_INTERVAL
+	// replaces an unverified record at once, and an unverified claim never replaces a verified
+	// record, at any age. Otherwise a changed ID inside MIN_ID_CHANGE_INTERVAL
 	// is refused and leaves the tracked ID untouched; between two verified identities it also marks
 	// the address problematic, and bans it if it was problematic already. Returns false if the
 	// change was refused.

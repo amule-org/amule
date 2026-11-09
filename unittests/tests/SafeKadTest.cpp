@@ -299,10 +299,13 @@ TEST(SafeKad, ARefusedRotationLeavesTheRecordAsItWas)
 	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(2), true, T0 + 10));
 	ASSERT_TRUE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
 
-	// The record still holds Id(1), and it is still verified: an unverified Id(1) passes, an
-	// unverified Id(2) is refused outright.
+	// The record still holds Id(1): an unverified Id(1) passes.
 	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 20));
-	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(2), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 30));
+	// And it is still verified. Past the interval only a verified record refuses an unverified
+	// Id(2), so keep it referenced until then (through TrackNode, which runs no Cleanup()).
+	const time_t later = T0 + CSafeKad::MIN_ID_CHANGE_INTERVAL + 10;
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), false, later - 60));
+	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(2), false, later));
 
 	// Two unverified claims: the second is refused and the record is not marked verified.
 	CSafeKad other;
