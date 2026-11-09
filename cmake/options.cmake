@@ -287,18 +287,18 @@ if (NEED_LIB_MULEAPPCOMMON OR BUILD_WEBSERVER)
 	option (ENABLE_UPNP "enable UPnP support in aMule" ON)
 endif()
 
-# Experimental IPv4 uTP in amule/amuled only: datagram framing, inbound stream
-# acceptance, and dialing a peer that advertised the capability. No capability
-# advertisement of our own.
+# Experimental IPv4 uTP in amule/amuled only: datagram framing, inbound streams
+# and outbound dials, and the transport NAT traversal connects over.
 option (ENABLE_UTP "enable experimental uTP: datagram framing, inbound streams and outbound dialing" OFF)
 
 # IPv6 TCP admission is intentionally separate from listener activation and the
 # remaining IPv6 identity work. Keep it off until those consumers are migrated.
 option (ENABLE_IPV6 "enable experimental native IPv6 TCP admission (IPv6 identity migration remains incomplete)" OFF)
 
-# Server-coordinated NAT-T wire codecs only: no login advertisement, dispatch or
-# network traffic yet.
-option (ENABLE_NATT_SERVER_COORDINATION "enable experimental server-coordinated NAT-T wire codecs" OFF)
+# Server-coordinated NAT-T: the login flags, keepalives, punches and callbacks
+# that let two LowID peers connect over uTP. Each path also has a runtime
+# setting. Needs ENABLE_UTP.
+option (ENABLE_NATT_SERVER_COORDINATION "enable experimental server-coordinated NAT traversal (needs ENABLE_UTP)" OFF)
 
 # Master switch for the in-app "check for a new aMule version" feature: the
 # startup notification, the "Check for new version at startup" preference, and
@@ -388,6 +388,15 @@ foreach (experimental_option IN LISTS AMULE_EXPERIMENTAL_OPTIONS)
 		add_compile_definitions (${experimental_option})
 	endif()
 endforeach()
+
+# Every server-coordinated rendezvous ends in a uTP dial, so without uTP the
+# login would announce NAT traversal that no path can serve.
+if (ENABLE_NATT_SERVER_COORDINATION AND NOT ENABLE_UTP)
+	message (FATAL_ERROR
+		"ENABLE_NATT_SERVER_COORDINATION=YES needs ENABLE_UTP=YES, because every "
+		"NAT traversal path connects over uTP. Turn ENABLE_UTP on, or set "
+		"ENABLE_NATT_SERVER_COORDINATION=NO.")
+endif()
 
 option(ENABLE_MEDIA_PROBE "Build the bundled media metadata helper" ON)
 # The helper is internal, not a command: installs keep it out of PATH in libexec, and the core

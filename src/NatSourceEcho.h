@@ -108,8 +108,8 @@ inline bool FailedEveryKey(std::uint8_t firstByte, std::size_t length, bool decr
 
 /**
  * Endpoints a rendezvous had us punch in the last 30 s, with the hash it vouched for. A NAT may move
- * the source port, so a source with another port still matches when it is the only one of its IP.
- * At most one echo per source per window.
+ * the source port, so a datagram from another port still earns an echo when its IP has one punch.
+ * At most one echo per IP per window: matching on a moved port accepts every port of the IP.
  */
 class CPunchedPeers
 {
@@ -127,9 +127,11 @@ public:
 		m_expected.Expect(ip, port, nowMs, hash);
 	}
 
+	//! Exact endpoint only: an echo sets the key IP for the whole IP, so a neighbour behind the
+	//! same carrier NAT must not be able to send it.
 	bool IsPunched(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
 	{
-		return m_expected.IsExpectedAllowingMovedPort(ip, port, nowMs);
+		return m_expected.IsExpected(ip, port, nowMs);
 	}
 
 	//! The hash to obfuscate an echo to this source with, when one is due now.
@@ -144,28 +146,30 @@ public:
 			return std::nullopt;
 		}
 		const std::optional<Hash> hash = m_expected.VouchedHashAllowingMovedPort(ip, port, nowMs);
-		if (!hash || !m_echoGate.TryAcquire(ip, port, nowMs)) {
+		if (!hash || !m_echoGate.TryAcquire(ip, 0, nowMs)) {
 			return std::nullopt;
 		}
 		return hash;
 	}
 
 	//! The echo was not sent after all, so the next failed datagram may try again.
-	void EchoNotSent(std::uint32_t ip, std::uint16_t port) { m_echoGate.Forget(ip, port); }
+	void EchoNotSent(std::uint32_t ip) { m_echoGate.Forget(ip, 0); }
 
 private:
 	NatKeyFrame::CExpectedPeers m_expected;
 	NatKeyFrame::CSendGate m_echoGate;
 };
 
-//! Whether an echo from this source may set our key IP toward it.
+//! Whether an echo from this source may set our key IP toward it. The echo is always sent
+//! obfuscated, so a plain one is not the peer's.
 inline bool AcceptsEcho(const CPunchedPeers &punched,
 	std::uint32_t ip,
 	std::uint16_t port,
 	bool seenIsPublic,
+	bool obfuscated,
 	std::uint64_t nowMs)
 {
-	return seenIsPublic && punched.IsPunched(ip, port, nowMs);
+	return obfuscated && seenIsPublic && punched.IsPunched(ip, port, nowMs);
 }
 
 //! Key IPs by peer IPv4, each for the login address it was learned under.

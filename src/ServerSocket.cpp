@@ -79,16 +79,16 @@ void HandleLowIdHolePunchInfo(
 		serverconnect->HolePunchExtensionWakes().Resolve(*info.peerId);
 	}
 	const uint32 peerIP = PeekUInt32(info.peerIP.data());
-	if (!IsGoodIP(peerIP, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(peerIP) ||
-		theApp->clientlist->IsBannedClient(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(peerIP))) {
+	if (!CClientUDPSocket::IsRendezvousPeerAllowed(peerIP)) {
 		AddDebugLogLineN(logServer,
 			CFormat("Ignored OP_LOWID_HOLEPUNCH_INFO endpoint %s") % Uint32toStringIP(peerIP));
 		return;
 	}
-	if (!serverconnect->LowIdHolePunchDuplicates().ShouldProcess(info.userHash, now) ||
+	if (serverconnect->LowIdHolePunchDuplicates().Seen(info.userHash, now) ||
 		!serverconnect->LowIdHolePunchActionLimiter().Admit(now)) {
 		return;
 	}
+	serverconnect->LowIdHolePunchDuplicates().Record(info.userHash, now);
 	// Only a 0x61 naming a peer we asked about makes us its requester; any other, including a
 	// 25-byte one, leaves us the target, who punches and waits for the peer's stream.
 	const bool requester = info.peerId.has_value() &&
@@ -103,7 +103,8 @@ void HandleLowIdHolePunchInfo(
 	}
 	theApp->clientudp->NoteServerSeenUdpIP(ownUdpIP);
 	const NatServerHolePunch::VouchedPeer peer{ info.userHash, info.peerCrypt };
-	serverconnect->LowIdHolePunchExpectedEndpoints().Register(info.peerIP, info.tcpPort, now, peer);
+	serverconnect->LowIdHolePunchExpectedEndpoints().Register(
+		info.peerIP, info.udpPort, info.tcpPort, now, peer);
 	theApp->clientudp->ExpectNatTPeer(peerIP, info.udpPort, &info.userHash);
 	// The four punches, with the port sweep at 0.5 s, are driven from the core timer.
 	serverconnect->StartLowIdHolePunchSchedule(info.peerIP, info.udpPort, now);
