@@ -198,6 +198,7 @@ void DrawClientNameCell(const ClientNameCell &cell,
 			clientImage = Client_eDonkeyHybrid_Smiley;
 			break;
 		case SO_EMULE:
+		case SO_EMULEPLUS: // An eMule fork with its own client ID.
 			clientImage = Client_eMule_Smiley;
 			break;
 		case SO_LPHANT:
@@ -212,7 +213,7 @@ void DrawClientNameCell(const ClientNameCell &cell,
 			clientImage = Client_xMule_Smiley;
 			break;
 		default:
-			// cDonkey, Compatible, Unknown: no icon for those yet;
+			// cDonkey, Hydranode, Compatible, Unknown: no icon for those yet;
 			// falls back to Client_Unknown.
 			break;
 		}
