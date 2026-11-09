@@ -124,8 +124,9 @@ For CAPS, the receiver:
 1. requires the exact 54-byte payload length;
 2. validates the `EAQC` magic and version `1`;
 3. accepts an all-zero expected peer hash or requires an exact recipient-hash match;
-4. rate-limits an otherwise valid response by the observed source-address scope;
-5. sends one 54-byte CAPS_ACK when admitted.
+4. requires the source to be a peer that a rendezvous announced in the last 30 seconds (a NAT may have moved its port), and not blocked by the IP filter, because the ACK carries aMule's user hash;
+5. rate-limits an otherwise valid response by the observed source-address scope;
+6. sends one 54-byte CAPS_ACK when admitted.
 
 The response limiter uses a three-second window and tracks at most 256 scopes.
 A no-QUIC build logs and drops CAPS without sending an unsupported response.

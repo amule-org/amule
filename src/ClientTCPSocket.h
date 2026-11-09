@@ -69,7 +69,10 @@ public:
 #ifdef AMULE_UTP_TRANSPORT
 	//! Hands this peer's obfuscation preference and hash to an attached stream.
 	void ApplyUtpCryptParameters();
+	bool HasUtpTransport() const { return HasTransport() && GetTransport()->IsUtp(); }
 	bool IsUtpInbound() const;
+	//! uTP or QUIC.
+	bool IsTransportInbound() const { return HasTransport() && GetTransport()->IsInbound(); }
 	void SetUtpIncomingSynWinner(uint32_t peerToken) { m_utpIncomingSynWinner.Select(peerToken); }
 	bool ConsumeUtpIncomingSynWinner(uint32_t peerToken)
 	{

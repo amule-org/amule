@@ -347,6 +347,8 @@ public:
 	}
 
 	bool HandshakeConfirmed() const { return m_handshakeConfirmed; }
+	//! True once a CONNECTION_CLOSE from the server has been read.
+	bool Draining() const { return ngtcp2_conn_in_draining_period(m_conn) != 0; }
 	const std::vector<uint8_t> &Received() const { return m_received; }
 	void ClearReceived() { m_received.clear(); }
 	//! The real-world equivalent of an application finishing a Read() and reopening that much
@@ -1100,4 +1102,86 @@ TEST(QuicNgtcp2Handshake, RealClientDialsARealServerAndCompletesTheHandoff)
 	ASSERT_TRUE(std::vector<uint8_t>(buf2, buf2 + readBytes2) == serverToClient);
 
 	QuicClientRefTestForget(owner);
+}
+
+// A refused or failed connection must tell the peer at once, so a dialler falls back to uTP
+// instead of waiting out its idle timeout.
+TEST(QuicNgtcp2Handshake, ClosingAnOpenConnectionTellsThePeer)
+{
+	CQuicEphemeralCredentials credentials;
+	CQuicTlsPolicy policy{ &credentials };
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+
+	connection->Close();
+	ASSERT_TRUE(!sink->sent.empty());
+	for (const auto &datagram : sink->sent) {
+		client.Receive(datagram, nowMs);
+	}
+	ASSERT_TRUE(client.Draining());
+	acceptor.accepted.reset();
+}
+
+TEST(QuicNgtcp2Handshake, ShutdownEndsAConnectionWithoutSending)
+{
+	CQuicEphemeralCredentials credentials;
+	CQuicTlsPolicy policy{ &credentials };
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+
+	connection->CloseForShutdown();
+	ASSERT_TRUE(connection->IsClosed());
+	ASSERT_TRUE(sink->sent.empty());
+}
+
+// The client completes the handshake but never opens a stream: its slot is freed at the
+// offer deadline, not after the idle timeout, and it is told.
+TEST(QuicNgtcp2Handshake, AHandshakeThatNeverOpensAStreamIsReclaimed)
+{
+	CQuicEphemeralCredentials credentials;
+	CQuicTlsPolicy policy{ &credentials };
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity);
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+	std::unique_ptr<IQuicConnection> connection;
+	uint64_t nowMs = 0;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+
+	for (; nowMs < 20000; nowMs += 1000) {
+		for (const auto &datagram : client.Pump(nowMs)) {
+			connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs);
+		}
+		connection->Tick(nowMs);
+		ASSERT_TRUE(!connection->IsClosed());
+		for (const auto &datagram : sink->sent) {
+			client.Receive(datagram, nowMs);
+		}
+		sink->sent.clear();
+	}
+	connection->Tick(nowMs);
+	ASSERT_TRUE(connection->IsClosed());
+	ASSERT_TRUE(acceptor.accepted == nullptr);
+	for (const auto &datagram : sink->sent) {
+		client.Receive(datagram, nowMs);
+	}
+	ASSERT_TRUE(client.Draining());
 }

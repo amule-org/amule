@@ -155,6 +155,7 @@ public:
 		return m_connected && m_stream.IsOk();
 	}
 	bool IsInbound() const override { return m_inbound; }
+	bool IsUtp() const override { return true; }
 
 	//! An inbound stream has no crypt parameters until its hello is read, so until then the SYN's
 	//! obfuscation answers.

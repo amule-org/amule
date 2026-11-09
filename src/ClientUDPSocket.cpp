@@ -928,6 +928,9 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 #ifdef AMULE_QUIC_TRANSPORT
 		if (!QuicNatTEnabled())
 			break;
+		// Here, not at the stream: a filtered host must not get a TLS handshake first.
+		if (theApp->ipfilter->IsFiltered(ip))
+			break;
 		if (m_quic.ProcessDatagram(classified.payload,
 			    classified.payloadLength,
 			    CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip),
@@ -966,6 +969,10 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		}
 		const auto address = CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip);
 		const auto now = ::GetTickCount64();
+		// The ACK carries our user hash: only a peer a rendezvous announced may learn it.
+		if (!m_keyFrames.IsExpectedPeer(ip, port, now) || theApp->ipfilter->IsFiltered(ip)) {
+			break;
+		}
 		if (!m_capsAckLimiter.Admit(address, now)) {
 			break;
 		}

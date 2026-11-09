@@ -508,11 +508,11 @@ bool CClientList::AttachToAlreadyKnown(
 				CClientTCPSocket *foundSocket = found_client->GetSocket();
 #ifdef AMULE_UTP_TRANSPORT
 				if (foundSocket->HasTransport() && sender->HasTransport() &&
-					foundSocket->IsUtpInbound() != sender->IsUtpInbound()) {
+					foundSocket->IsTransportInbound() != sender->IsTransportInbound()) {
 					const SUtpHelloAttachmentResult attachment =
 						AttachUtpSocketAfterVerifiedHello(
 							incomingSynWinner,
-							foundSocket->IsUtpInbound(),
+							foundSocket->IsTransportInbound(),
 							found_client->HasValidHash() &&
 								tocheck->HasValidHash(),
 							thePrefs::GetUserHash().GetHash(),
