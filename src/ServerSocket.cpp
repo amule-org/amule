@@ -23,10 +23,7 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "AdvertisedIPv6.h"      // Needed for ServerAddressToSend
-#include "AddressFamilyPolicy.h" // Needed for PermitsIPv6
-#include "ListenSocket.h"        // Needed for CListenSocket::BoundHost
-#include "ServerSocket.h"        // Interface declarations
+#include "ServerSocket.h" // Interface declarations
 
 #include <protocol/Protocols.h>
 #include <common/EventIDs.h>
