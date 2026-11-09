@@ -533,6 +533,11 @@ void CClientUDPSocket::SendUtpKeyFrame(uint32_t ip, uint16_t port, const uint8_t
 	}
 }
 
+bool CClientUDPSocket::IsExpectedUtpPeer(uint32_t ip, uint16_t port) const
+{
+	return m_utpExpectedPeers.IsExpectedAllowingMovedPort(ip, port, ::GetTickCount64());
+}
+
 void CClientUDPSocket::OnUtpStreamMoved()
 {
 	theStats::AddUtpStreamMove();

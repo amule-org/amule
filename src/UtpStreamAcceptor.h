@@ -41,16 +41,17 @@ enum class EUtpAdmission
 
 /**
  * Inbound streams whose peer has sent no data yet. A SYN proves no source address, so this budget is
- * all a spoofer can hold, like a TCP listen backlog; the connection limit counts proven streams.
+ * all a spoofer can hold, like a TCP listen backlog. A peer a rendezvous announced is not held to it.
  */
-constexpr std::size_t kMaxHalfOpenUtpStreams = 16;
+constexpr std::size_t kMaxHalfOpenUtpStreams = 8;
 
 /**
  * The admission decision, separated from gathering the facts it needs.
  *
  * What CListenSocket::OnAccept and CClientTCPSocket::InitNetworkData ask for TCP, without the
  * listener's exception while connecting to a server: that exists for the server's TCP callback test,
- * and uTP has none.
+ * and uTP has none. Its counterpart here is a rendezvous peer, whose caller passes no half-open
+ * count and a limit without the five-second interval.
  */
 constexpr EUtpAdmission DecideUtpAdmission(
 	bool running, bool tooManySockets, std::size_t halfOpen, uint32_t ip, bool filtered, bool banned)

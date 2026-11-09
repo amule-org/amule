@@ -45,11 +45,14 @@
 
 namespace
 {
-EUtpAdmission Admission(uint32_t ip, std::size_t halfOpen)
+EUtpAdmission Admission(uint32_t ip, uint16_t port, std::size_t halfOpen)
 {
+	// A SYN we asked a server or peer for is not one a flood of forged SYNs may crowd out.
+	const bool rendezvous =
+		theApp->clientudp != nullptr && theApp->clientudp->IsExpectedUtpPeer(ip, port);
 	return DecideUtpAdmission(theApp->IsRunning(),
-		theApp->listensocket->TooManySockets(),
-		halfOpen,
+		theApp->listensocket->TooManySockets(rendezvous),
+		rendezvous ? 0 : halfOpen,
 		ip,
 		ip != 0 && theApp->ipfilter->IsFiltered(ip),
 		ip != 0 && theApp->clientlist->IsBannedClient(ip));
@@ -58,7 +61,7 @@ EUtpAdmission Admission(uint32_t ip, std::size_t halfOpen)
 
 bool CUtpStreamAcceptor::AdmitsSyn(uint32_t ip, uint16_t port, std::size_t halfOpen)
 {
-	const EUtpAdmission decision = Admission(ip, halfOpen);
+	const EUtpAdmission decision = Admission(ip, port, halfOpen);
 	if (decision == EUtpAdmission::TooManyHalfOpen) {
 		AddDebugLogLineN(logClient,
 			CFormat("Refused uTP SYN from %s:%u: %u streams already wait for their peer's data") %
@@ -134,7 +137,7 @@ bool CUtpStreamAcceptor::AcceptStream(std::unique_ptr<IStreamTransport> &transpo
 	// Refusals come before ownership moves: destroying a transport closes its
 	// socket, and the adapter closes a refused one too.
 	// The half-open budget was spent at the SYN, which counted this stream.
-	const EUtpAdmission decision = Admission(ip, 0);
+	const EUtpAdmission decision = Admission(ip, port, 0);
 
 	switch (decision) {
 	case EUtpAdmission::Admit:
