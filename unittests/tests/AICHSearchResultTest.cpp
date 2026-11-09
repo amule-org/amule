@@ -294,13 +294,14 @@ TEST(AICHSearchResult, ContradictingSubnetCannotInflateConsensusDenominator)
 TEST(AICHSearchResult, SubnetMaskUsesPeerOrderAndProbeDoesNotInsert)
 {
 	// Peer-order 1.2.3.4 and 1.2.15.255 share a /20; 1.2.16.4 does not.
+	const auto key = [](uint32_t ip) { return CAICHUntrustedHash::SigningSubnet(ip); };
 	CAICHUntrustedHash entry;
-	ASSERT_TRUE(entry.AddSigningIP(0x04030201, true));
+	ASSERT_TRUE(entry.AddSigningKey(key(0x04030201), true));
 	ASSERT_TRUE(entry.m_adwIpsSigning.empty());
-	ASSERT_TRUE(entry.AddSigningIP(0x04030201));
-	ASSERT_FALSE(entry.AddSigningIP(0xFF0F0201, true));
-	ASSERT_FALSE(entry.AddSigningIP(0xFF0F0201));
-	ASSERT_TRUE(entry.AddSigningIP(0x04100201));
+	ASSERT_TRUE(entry.AddSigningKey(key(0x04030201)));
+	ASSERT_FALSE(entry.AddSigningKey(key(0xFF0F0201), true));
+	ASSERT_FALSE(entry.AddSigningKey(key(0xFF0F0201)));
+	ASSERT_TRUE(entry.AddSigningKey(key(0x04100201)));
 	ASSERT_EQUALS(size_t(2), entry.m_adwIpsSigning.size());
 	CKadAICHVotes votes;
 	votes.Add(0x04030201, MakeRoot(1));
@@ -1048,4 +1049,54 @@ TEST(AICHHashTree, LargeFileRecoveryDataIsAccepted)
 		ASSERT_TRUE(receiver.ReadRecoveryData(start, &packet));
 		ASSERT_TRUE(receiver.IsPartDataAvailable(start));
 	}
+}
+
+//! 2a07:<third>:<sixth>::<last>. Built from octets: this test links no NetworkAddress.cpp.
+static CNetworkAddress IPv6Site(uint8_t third, uint8_t sixth, uint8_t last)
+{
+	CNetworkAddress::Octets octets{};
+	octets[0] = 0x2a;
+	octets[1] = 0x07;
+	octets[3] = third;
+	octets[5] = sixth;
+	octets[15] = last;
+	return CNetworkAddress::IPv6FromOctets(octets);
+}
+
+TEST(AICHSearchResult, EachIPv6SiteSignsWithItsOwnKey)
+{
+	// Without its own key every IPv6 source signed as 0, so the first one spoke for all of them.
+	const auto v6 = IPv6Site;
+	const uint32_t ip = 0x4D6433C6; // 198.51.100.77, first octet in the low byte
+	const uint32_t v4 = CAICHUntrustedHash::SigningKey(CNetworkAddress::FromIPv4NetworkOrder(ip));
+	ASSERT_EQUALS(CAICHUntrustedHash::SigningSubnet(ip), v4);
+	const uint32_t site = CAICHUntrustedHash::SigningKey(v6(1, 2, 0x01));
+	// The same /48: only bits past the sixth byte differ.
+	ASSERT_EQUALS(site, CAICHUntrustedHash::SigningKey(v6(1, 2, 0x99)));
+	ASSERT_TRUE(site != CAICHUntrustedHash::SigningKey(v6(1, 3, 0x01)));
+	// Never an IPv4 key, and never the absent one.
+	ASSERT_TRUE((site & 0xFF000000u) != 0);
+	ASSERT_EQUALS(0u, v4 & 0xFF000000u);
+	ASSERT_TRUE(site != 0);
+	ASSERT_EQUALS(0u, CAICHUntrustedHash::SigningKey(CNetworkAddress::Absent()));
+}
+
+TEST(AICHSearchResult, AnIPv6SiteAndAnIPv4SubnetSignApart)
+{
+	// Masked again as a /20, the key of 2a07:1:2::/48 was the key of 83.15.128.0/20, so the
+	// two counted as one source.
+	const CNetworkAddress site = IPv6Site(1, 2, 0x01);
+	const uint32_t subnetHost = 0x01800F53; // 83.15.128.1, first octet in the low byte
+	ASSERT_EQUALS(CAICHUntrustedHash::SigningSubnet(subnetHost),
+		CAICHUntrustedHash::SigningSubnet(CAICHUntrustedHash::SigningKey(site)));
+	const auto root = MakeRoot(0xAB);
+	CAICHHashSet hashes(nullptr);
+	hashes.UntrustedHashReceived(root, site);
+	hashes.UntrustedHashReceived(root, subnetHost);
+	for (uint32_t i = 2; i <= 9; ++i) {
+		hashes.UntrustedHashReceived(root, 0x04030200 | i);
+	}
+	// Ten distinct sources: the trust threshold.
+	ASSERT_EQUALS(AICH_TRUSTED, hashes.GetStatus());
+	ASSERT_TRUE(hashes.GetMasterHash() == root);
 }

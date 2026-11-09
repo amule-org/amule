@@ -60,7 +60,17 @@ public:
 		QUIC
 	};
 
-	CClientTCPSocket(CUpDownClient *in_client = NULL, const CProxyData *ProxyData = NULL);
+	//! When the socket counts against the connections-per-five-seconds limit.
+	enum class ConnectionCount
+	{
+		AtCreation,
+		//! An accepted uTP stream: a SYN proves no address, so only its peer's first data counts.
+		AtFirstData
+	};
+
+	CClientTCPSocket(CUpDownClient *in_client = nullptr,
+		const CProxyData *ProxyData = nullptr,
+		ConnectionCount count = ConnectionCount::AtCreation);
 	virtual ~CClientTCPSocket();
 
 	void Disconnect(const wxString &strReason);
@@ -125,6 +135,7 @@ protected:
 
 private:
 	CUpDownClient *m_client;
+	bool m_connectionCountPending = false;
 #ifdef AMULE_SESSION_TRAFFIC_STATS
 	//! A hello was processed: classify the session's traffic and complete a rendezvous with it.
 	void NoteHelloForStatistics();

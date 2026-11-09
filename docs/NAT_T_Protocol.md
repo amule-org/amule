@@ -327,8 +327,8 @@ sets it.
 
 aMule implements this only when both `ENABLE_NATT_SERVER_COORDINATION` and `ENABLE_UTP`
 are built (**experimental**, off by default; default and `ENABLE_IPV6` builds are unaffected)
-and the runtime setting below is also on. With NAT-T compiled but uTP absent, aMule sends
-none of `0xF9` (`CT_EMULE_UDPPORTS`), `0x9F` or `0x60` and cannot act on `0x61`:
+and the runtime setting below is also on. Configure refuses `ENABLE_NATT_SERVER_COORDINATION`
+without `ENABLE_UTP`, since every rendezvous ends in a uTP dial:
 
 - runtime opt-in: `thePrefs::IsLowIdHolePunchEnabled()` (`amule.conf` key `/eMule/LowIdHolePunch`,
   default **off**, no widget, no EC tag). It gates the `0xF9` login tag, the `0x9F` keepalive,
@@ -400,11 +400,15 @@ none of `0xF9` (`CT_EMULE_UDPPORTS`), `0x9F` or `0x60` and cannot act on `0x61`:
   establishes identity, and the existing client-list matching attaches the stream to the LowID
   source. Repeated `0x61` for the same hash are ignored for 10 s and server-directed actions are
   limited to 20 per minute;
-- receiving `OP_HOLEPUNCH` from a recently expected IP: accept it only once. A peer we already
-  dialled needs nothing more when the punch comes from the port we dialled, and a dial to its
-  **source** UDP port when it comes from another, which is the NAT's real mapping. A peer we
-  did not dial is dialled back after 3 s, only if that peer (its IP and TCP port) has not
-  connected by then, which normally leaves a single connection. The ordinary uTP connection
+- receiving `OP_HOLEPUNCH` from a recently expected endpoint: accept it only once. The punch is
+  matched by IP and UDP port, since a carrier NAT can put two peers behind one IP. A punch from
+  another port is the peer's NAT moving the port, and matches only an IP with one expected
+  endpoint. A peer we already dialled needs nothing more when the punch comes from the port we
+  dialled, and a dial to its **source** UDP port when it comes from another, which is the NAT's
+  real mapping. A peer we did not dial is dialled back after 3 s, only if that peer has not
+  connected by then, which normally leaves a single connection. The dial-back and that check go
+  by the hash the `0x61` vouched for, since two peers behind one IP can also share a TCP port, so
+  a newer punch from the same peer replaces its dial-back. The ordinary uTP connection
   and `OP_HELLO` perform the rest; `ShouldKeepFoundUtp()` remains the collision backstop, and when it swaps
   the stream under a source that had already sent its file request, the request is sent again
   on the kept stream. No TCP fallback is available between two LowID peers;
@@ -426,11 +430,14 @@ rest), so no thread is added.
   3 s for 60 s), on a Lugdunum server and on an ed2k-server that runs Lugdunum's callback. The two
   never overlap for one peer: a contact sends either `0x60` or a Lugdunum request, and the extension
   wake falls back to the Lugdunum dial only after 5 s, when its last punch, at 2 s, has gone;
-- stop early: an address's schedule is dropped when a punch arrives from it
-  (`CClientUDPSocket::HandleLowIdHolePunch()`, from any port), when our own dial to it connects
-  (`NoteRendezvousHello()`), and when the expected endpoint it was derived from expires 30 s after
-  the `0x61` (`NatServerHolePunch::kExpectedEndpointTtlMs`). Dropping it changes nothing about
-  what the peer may make us do: a punch from another port still redials there, as above;
+- stop early: a schedule is dropped when a punch arrives from its address and port, or from any
+  port of an address that has only this schedule (`CClientUDPSocket::HandleLowIdHolePunch()`).
+  It is also dropped when the peer's hello arrives on a uTP or QUIC stream
+  (`NoteRendezvousHello()`), which ends the schedules that vouched for the hello's hash, or else a
+  lone schedule of that address that vouched for none. Last, it expires with the expected endpoint
+  it was derived from, 30 s after the `0x61` (`NatServerHolePunch::kExpectedEndpointTtlMs`).
+  Dropping it changes nothing about what the peer may make us do: a punch from another port still
+  redials there, as above;
 - sweep: at 0.5 s, with nothing yet arrived from that address, one punch to each port in
   `given - 16` to `given + 16` without the given one, which the schedule already punches, clipped
   to 1024-65535
@@ -442,8 +449,8 @@ rest), so no thread is added.
   refused sweep spends neither budget. The four punches to the given endpoint stay under the
   existing 20-per-minute `ActionRateLimiter`, so one sweep is at most 32 datagrams and the whole
   feature stays bounded whatever the server says;
-- with `ENABLE_NATT_SERVER_COORDINATION` off, uTP not built, or `LowIdHolePunch` off, none of this
-  runs and every path behaves exactly as it did before.
+- with `ENABLE_NATT_SERVER_COORDINATION` or `LowIdHolePunch` off, none of this runs and every path
+  behaves exactly as it did before.
 
 ### Hole-punch extension (ed2k-server 0.9.85)
 
@@ -474,7 +481,9 @@ its `OP_IDCHANGE` TCP flags; every other pair gets the punch above unchanged.
   `0x61` follows: if none names the requester within 5 s (the server waits 3 s, then resends at
   +1.2 s and +3 s), aMule dials the Lugdunum way, as it would on any Lugdunum server. Any `0x61` that
   names the requester answers the wake, even one the action limit or the duplicate window keeps us
-  from acting on. At most 16 wakes wait at once (`NatServerHolePunch::PendingWakeSet`). A UDP `0xA7`
+  from acting on. At most 16 wakes wait at once (`NatServerHolePunch::PendingWakeSet`). A second
+  wake for a requester whose wake still waits sends the `0x9F` burst again, since the `0x9F`
+  releases the `0x61`, but no punch, so it uses nothing from the action limit. A UDP `0xA7`
   (`OP_NAT_CALLBACKREQUESTED_UDP`) from our own server answers a Lugdunum `0xA6` of ours and is
   dialled at once, except a cross-server wake (requester ID 0, below), which the server sends by UDP
   when we asked for a callback ourselves less than 20 s before.
@@ -507,8 +516,11 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
   server's IP, decrypted with its key, exactly 27 bytes (`<target_ip 4><target_udp_port 2><target_id
   4><crypt 1><hash 16>`), for a pending target, and with the hash source exchange gave us for the
   source when it did. Only the first copy is used; the server resends it at +1.2 s and +3 s. The
-  requester punches (on the [schedule above](#punch-schedule-and-port-sweep)) and dials, as on the
-  server punch: QUIC first, uTP as the fallback, keyed with the target's hash and crypt options;
+  target endpoint is a foreign server's word, so it is checked against the LAN, IP-filter and ban
+  policies first: a target that fails them gets no punch and no dial, and its request expires
+  unanswered. The requester punches (on the [schedule above](#punch-schedule-and-port-sweep)) and
+  dials, as on the server punch: QUIC first, uTP as the fallback, keyed with the target's hash and
+  crypt options;
 - target: on a `0x100000` server, a `0x37` (`OP_NAT_CALLBACKREQUESTED`) with requester ID 0, or a
   `0xA7` with requester ID 0 when we sent an `0xA6` ourselves less than 20 s before, comes from a
   client logged in elsewhere. No `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) follows it: the target punches
@@ -556,9 +568,9 @@ and eNode uses that bit for meta search; aMule does not define it.
 For a LowID, "your port" is our TCP port as the server sees it, after any NAT.
 
 The Lugdunum callback relay remains gated by `ENABLE_NATT_SERVER_COORDINATION` (**experimental**, off by
-default; default and `ENABLE_IPV6` builds are unaffected) and the runtime setting below. Acting on a
-forwarded callback by dialing additionally requires `ENABLE_UTP` (`AMULE_UTP_TRANSPORT`) in the
-`amule` or `amuled` target:
+default; default and `ENABLE_IPV6` builds are unaffected), which needs `ENABLE_UTP`
+(`AMULE_UTP_TRANSPORT` in the `amule` and `amuled` targets) to dial a forwarded callback, and the
+runtime setting below:
 
 - runtime opt-in: `thePrefs::IsLugdunumNatCallbackEnabled()` (`amule.conf` key
   `/eMule/LugdunumNatCallback`, default **off**, no widget, no EC tag). It gates the login opt-in,
@@ -630,17 +642,22 @@ tie-break orders by it, else by Kad's view of our address. Two sources fill it:
   has no fresh view, so it clears the value, and so does a new login. It covers
   both peers split, where neither can decode the other's echo, and a peer that never sends an echo.
 - **The source echo.** When a datagram from an endpoint punched in the last 30 s fails every key,
-  the receiver answers once per 30 s per source with `0xAB` (`OP_NATT_SOURCE_ECHO`) under `0xC5`, payload
+  the receiver answers with `0xAB` (`OP_NATT_SOURCE_ECHO`) under `0xC5`, payload
   `<ip 4><port 2 LE>`: the source it saw, the IPv4 in the byte order of `0x61`. The echo is
   obfuscated with the hash the rendezvous vouched for, and is not sent without one. The split side
-  takes it only from an endpoint it punched in the last 30 s, and only a public IPv4, as the key IP
-  toward that peer alone, never as its own public IP. An echo wins over the server field, as it
-  names the address this peer sees. It covers punches without the field: other servers, older
-  ed2k-server and Lugdunum's callback.
+  takes it only obfuscated, only from the exact endpoint it punched in the last 30 s, and only a
+  public IPv4, as the key IP toward that peer alone, never as its own public IP. An echo wins over
+  the server field, as it names the address this peer sees. It covers punches without the field:
+  other servers, older ed2k-server and Lugdunum's callback.
 
-Both sides match a source against the punched endpoints by IP and port, or by IP alone when that
-IP has only one live punch, since a NAT may move the source port (`NatSourceEcho::CPunchedPeers`).
-A client that does not know `0xAB` drops it, so a mixed pair works as before. A NAT that gives each
+The receiver matches a failed datagram against the punched endpoints by IP and port, or by IP alone
+when that IP has only one live punch, since a NAT may move the source port
+(`NatSourceEcho::CPunchedPeers`). It echoes at most once per 30 s to each punched endpoint, and once
+for all the other ports of its IP, which a moved port matches. The split side takes no echo from a
+moved port: the echo sets the key IP for the whole IP, which a neighbour behind the same carrier NAT
+must not be able to do. So when the echoing side's NAT moves its port, the echo is lost and only
+the server field can help. A client that does not know `0xAB` drops it, so a mixed pair works as
+before. A NAT that gives each
 destination another public IPv4 is not covered: the punch is matched by IP, so it fails before
 obfuscation matters.
 

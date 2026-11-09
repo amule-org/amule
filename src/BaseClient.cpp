@@ -1695,6 +1695,20 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon)
 	return result != EContactResult::ClientDeleted && result != EContactResult::ConnectNotStarted;
 }
 
+#ifdef ENABLE_IPV6
+namespace
+{
+//! An IPv6 host on our own network. IPv6 LAN hosts have global addresses, so "Filter LAN IPs"
+//! needs our own prefixes to keep a peer, Kad or a server from pointing a dial there.
+bool IsOwnNetworkIPv6(const CNetworkAddress &address)
+{
+	CPublicIPv6Corroboration::Address bytes{};
+	return thePrefs::FilterLanIPs() && !address.IsIPv4Mapped() && address.ToIPv6Bytes(bytes.data()) &&
+	       ObservedPublicIPv6().IsOnLocalNetwork(bytes);
+}
+} // namespace
+#endif
+
 CNetworkAddress CUpDownClient::GetDialAddress() const
 {
 	if (m_preparedDialAddress.IsPresent()) {
@@ -1744,6 +1758,11 @@ bool CUpDownClient::IsRedialAllowed() const
 		// route: Connect() would aim at the zero address.
 		return false;
 	}
+#ifdef ENABLE_IPV6
+	if (IsOwnNetworkIPv6(contactAddress)) {
+		return false;
+	}
+#endif
 	return !theApp->ipfilter->IsFiltered(contactAddress) &&
 	       !theApp->clientlist->IsBannedClient(contactAddress) &&
 	       PeerAddressing::CanOpenConnection(contactAddress, IsConnected());
@@ -1815,6 +1834,24 @@ EContactResult CUpDownClient::CheckContactPreconditions()
 	// the ip filter list may have been updated since.
 	const std::vector<CNetworkAddress> checkedAddresses =
 		ContactSecurityAddresses(contactAddress, GetConnectAddress());
+#ifdef ENABLE_IPV6
+	// Only before a dial: like "Filter LAN IPs" for IPv4, this governs where we connect, not a
+	// socket that is already open.
+	if (!IsConnected()) {
+		for (const CNetworkAddress &address : checkedAddresses) {
+			if (IsOwnNetworkIPv6(address)) {
+				AddDebugLogLineN(logClient,
+					"Refused to connect to " + address.ToWxString() +
+						": it is on our own network");
+				if (Disconnected("IPv6 address on our own network")) {
+					Safe_Delete();
+					return EContactResult::ClientDeleted;
+				}
+				return EContactResult::Declined;
+			}
+		}
+	}
+#endif
 	for (const CNetworkAddress &address : checkedAddresses) {
 		if (theApp->ipfilter->IsFiltered(address)) {
 			AddDebugLogLineN(
@@ -2583,8 +2620,10 @@ void CUpDownClient::ConnectionEstablished()
 #endif
 
 	// Check if we should use this client to retrieve our public IP
-	// Ignore local ip on GetPublicIP (could be wrong)
-	if (theApp->GetPublicIP(true) == 0 && theApp->IsConnectedED2K()) {
+	// Ignore local ip on GetPublicIP (could be wrong). Only a peer on IPv4 sees our IPv4.
+	uint32 socketIPv4 = 0;
+	if (theApp->GetPublicIP(true) == 0 && theApp->IsConnectedED2K() && m_socket != nullptr &&
+		m_socket->GetPeerAddress().ToIPv4NetworkOrder(socketIPv4)) {
 		SendPublicIPRequest();
 	}
 

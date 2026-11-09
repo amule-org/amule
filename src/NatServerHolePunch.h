@@ -466,6 +466,23 @@ struct PunchAction
 	VouchedPeer peer;
 };
 
+// The one entry for this address, or end() when it has none or several. A NAT may move a peer's
+// source port, but with two entries at the address another port could be either peer.
+template <typename Entries> auto FindOnlyAtAddress(Entries &entries, const IPv4 &peerIP)
+{
+	auto only = entries.end();
+	for (auto it = entries.begin(); it != entries.end(); ++it) {
+		if (it->peerIP != peerIP) {
+			continue;
+		}
+		if (only != entries.end()) {
+			return entries.end();
+		}
+		only = it;
+	}
+	return only;
+}
+
 // A server-announced endpoint may trigger one dial back when its UDP punch arrives. The TCP
 // port is kept only for a temporary client; OP_HELLO establishes the peer's actual identity.
 //
@@ -541,14 +558,7 @@ private:
 	std::vector<Entry>::iterator Find(const IPv4 &peerIP, std::uint16_t udpPort)
 	{
 		const auto exact = FindExact(peerIP, udpPort);
-		if (exact != m_expected.end()) {
-			return exact;
-		}
-		const auto sameIP = [&peerIP](const Entry &entry) { return entry.peerIP == peerIP; };
-		if (std::count_if(m_expected.begin(), m_expected.end(), sameIP) != 1) {
-			return m_expected.end();
-		}
-		return std::find_if(m_expected.begin(), m_expected.end(), sameIP);
+		return exact != m_expected.end() ? exact : FindOnlyAtAddress(m_expected, peerIP);
 	}
 	void Evict(std::uint64_t now)
 	{
@@ -584,12 +594,14 @@ public:
 		std::uint64_t now,
 		const VouchedPeer &peer = {})
 	{
-		// The TCP port tells two peers behind one address apart; a newer punch from the same peer,
-		// whatever its UDP port, replaces its dial-back.
-		const auto same = std::find_if(
-			m_entries.begin(), m_entries.end(), [&peerIP, tcpPort](const Entry &entry) {
-				return entry.peerIP == peerIP && entry.tcpPort == tcpPort;
-			});
+		// The vouched hash tells two peers behind one address apart, even on one listen port, and a
+		// newer punch from the same peer, whatever its UDP port, replaces its dial-back. Without a
+		// hash only the TCP port can.
+		const bool hashed = peer.userHash != Hash{};
+		const auto same = std::find_if(m_entries.begin(), m_entries.end(), [&](const Entry &entry) {
+			return entry.peerIP == peerIP &&
+			       (hashed ? entry.peer.userHash == peer.userHash : entry.tcpPort == tcpPort);
+		});
 		if (same != m_entries.end()) {
 			m_entries.erase(same);
 		} else if (m_entries.size() >= kMaxDialBacks) {
@@ -663,8 +675,12 @@ class PunchScheduleSet
 {
 public:
 	// Keyed by address and port: two LowID peers can share one public address behind a carrier NAT,
-	// and restarting one must not drop the other's remaining punches.
-	void Start(const IPv4 &peerIP, std::uint16_t udpPort, std::uint64_t now)
+	// and restarting one must not drop the other's remaining punches. The hash the rendezvous
+	// vouched for lets the peer's hello find its schedule.
+	void Start(const IPv4 &peerIP,
+		std::uint16_t udpPort,
+		std::uint64_t now,
+		const std::optional<Hash> &peerHash = std::nullopt)
 	{
 		Evict(now);
 		m_entries.erase(std::remove_if(m_entries.begin(),
@@ -676,30 +692,44 @@ public:
 		if (m_entries.size() >= kMaxPunchSchedules) {
 			m_entries.erase(m_entries.begin());
 		}
-		Entry entry{ peerIP, udpPort, now, {} };
+		// An all-zero hash names no peer, as in DialBackSchedule: no hello could match it.
+		const bool named = peerHash && *peerHash != Hash{};
+		Entry entry{ peerIP, udpPort, now, named ? peerHash : std::nullopt, {} };
 		for (const std::uint64_t offset : kServerPunchOffsetsMs) {
 			entry.due.push_back({ now + offset, PunchDue::Endpoint });
 		}
 		entry.due.push_back({ now + kPortSweepOffsetMs, PunchDue::Sweep });
 		m_entries.push_back(std::move(entry));
 	}
-	// From the schedule's own port, or with no port (a hello), the peer is known. From any other
-	// port it may be a neighbour behind the same address, so only a lone schedule there ends.
-	void Cancel(const IPv4 &peerIP, std::optional<std::uint16_t> udpPort)
+	// A punch from the schedule's own port is the peer's. From any other port it may be a neighbour
+	// behind the same address, so only a lone schedule there ends.
+	void Cancel(const IPv4 &peerIP, std::uint16_t udpPort)
 	{
-		if (udpPort) {
-			const auto exact =
-				std::find_if(m_entries.begin(), m_entries.end(), [&](const Entry &entry) {
-					return entry.peerIP == peerIP && entry.udpPort == *udpPort;
-				});
-			if (exact != m_entries.end()) {
-				m_entries.erase(exact);
-				return;
-			}
+		auto match = std::find_if(m_entries.begin(), m_entries.end(), [&](const Entry &entry) {
+			return entry.peerIP == peerIP && entry.udpPort == udpPort;
+		});
+		if (match == m_entries.end()) {
+			match = FindOnlyAtAddress(m_entries, peerIP);
 		}
-		const auto sameIP = [&peerIP](const Entry &entry) { return entry.peerIP == peerIP; };
-		if (std::count_if(m_entries.begin(), m_entries.end(), sameIP) == 1) {
-			m_entries.erase(std::find_if(m_entries.begin(), m_entries.end(), sameIP));
+		if (match != m_entries.end()) {
+			m_entries.erase(match);
+		}
+	}
+	// A hello names its peer, so it ends that peer's schedules at the address. Without one that
+	// carries its hash, it ends only a lone schedule that vouched for no hash.
+	void CancelPeer(const IPv4 &peerIP, const Hash &peerHash)
+	{
+		const auto named =
+			std::remove_if(m_entries.begin(), m_entries.end(), [&](const Entry &entry) {
+				return entry.peerIP == peerIP && entry.peerHash == peerHash;
+			});
+		if (named != m_entries.end()) {
+			m_entries.erase(named, m_entries.end());
+			return;
+		}
+		const auto lone = FindOnlyAtAddress(m_entries, peerIP);
+		if (lone != m_entries.end() && !lone->peerHash) {
+			m_entries.erase(lone);
 		}
 	}
 	// Everything due now, the endpoint's own punches before the sweep they share a moment with; each
@@ -736,6 +766,7 @@ private:
 		IPv4 peerIP;
 		std::uint16_t udpPort;
 		std::uint64_t startedAt;
+		std::optional<Hash> peerHash;
 		std::vector<Item> due;
 	};
 	void Evict(std::uint64_t now)

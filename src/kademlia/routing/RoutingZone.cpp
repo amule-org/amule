@@ -445,13 +445,22 @@ bool CRoutingZone::Add(const CUInt128 &id,
 	const CKadUDPKey &key,
 	bool &ipVerified,
 	bool update,
-	bool fromHello)
+	bool fromHello,
+	bool selfReported)
 {
 	if (IsGoodIPPort(wxUINT32_SWAP_ALWAYS(ip), port, thePrefs::FilterLanIPs())) {
 		if (!theApp->ipfilter->IsFiltered(wxUINT32_SWAP_ALWAYS(ip)) &&
 			!(port == 53 && version <= 5) /*No DNS Port without encryption*/) {
-			return AddUnfiltered(
-				id, ip, port, tport, version, key, ipVerified, update, fromHello);
+			return AddUnfiltered(id,
+				ip,
+				port,
+				tport,
+				version,
+				key,
+				ipVerified,
+				update,
+				fromHello,
+				selfReported);
 		}
 	}
 	return false;
@@ -466,7 +475,8 @@ bool CRoutingZone::AddUnfiltered(const CUInt128 &id,
 	const CKadUDPKey &key,
 	bool &ipVerified,
 	bool update,
-	bool fromHello)
+	bool fromHello,
+	bool selfReported)
 {
 	if (id != me) {
 #ifdef ENABLE_KAD_NODE_PROTECTION
@@ -485,7 +495,14 @@ bool CRoutingZone::AddUnfiltered(const CUInt128 &id,
 		// onlyOneNodePerIP is deliberately off: CRoutingBin already caps the table at
 		// MAX_CONTACTS_IP Kad ID per address plus MAX_CONTACTS_SUBNET per /24, and
 		// duplicating that here would be a second, weaker copy of the same rule.
-		if (safeKad.IsBadNode(ip, port, id, version, ipVerified, false, time(nullptr))) {
+		//
+		// Only the node's own claim is tracked. Anything else is a mention, checked against
+		// what has been proved but never recorded, and its ipVerified is never trusted: it is
+		// also assumed while bootstrapping and read back from nodes.dat, where nobody proved it.
+		const bool ownClaim = fromHello || selfReported;
+		const time_t now = time(nullptr);
+		if (ownClaim ? safeKad.IsBadNode(ip, port, id, version, ipVerified, false, now)
+			     : safeKad.ContradictsProvedIdentity(ip, port, id, now)) {
 			AddDebugLogLineN(logKadRouting,
 				"Ignored kad contact (IP=" + KadIPPortToString(ip, port) +
 					") - rejected by the Kad identity protections");

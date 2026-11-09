@@ -857,3 +857,21 @@ TEST(PublicIPv6Corroboration, ObserversThatCannotSeeUsDoNotContradict)
 	ASSERT_EQUALS(0u, (unsigned)tracker.ContradictionCount());
 	ASSERT_FALSE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), START_MS));
 }
+
+TEST(PublicIPv6Corroboration, OurOwnAddressesAndOurSixtyFoursAreOurNetwork)
+{
+	// IPv6 LAN hosts have global addresses: a router or a NAS in our /64 is a LAN host.
+	CPublicIPv6Corroboration tracker;
+	const Address ours = Stable();
+	tracker.SetLocalAddresses(Held(ours), START_MS);
+	ASSERT_TRUE(tracker.IsOnLocalNetwork(ours));
+	Address neighbour = ours;
+	neighbour[15] ^= 0x5a;
+	ASSERT_TRUE(tracker.IsOnLocalNetwork(neighbour));
+	Address elsewhere = ours;
+	elsewhere[7] ^= 0x01;
+	ASSERT_FALSE(tracker.IsOnLocalNetwork(elsewhere));
+	// Nothing held, nothing local.
+	tracker.SetLocalAddresses({}, START_MS);
+	ASSERT_FALSE(tracker.IsOnLocalNetwork(ours));
+}

@@ -633,3 +633,11 @@ TEST(UtpDialPolicy, AResetMustAnswerAPacketWeSent)
 	// Nothing sent to that endpoint: nothing to answer.
 	ASSERT_FALSE(IsPlausibleUtpReset(reset, false, 65530));
 }
+
+TEST(UtpDialPolicy, AHalfOpenStreamExpiresAtItsLimit)
+{
+	ASSERT_FALSE(IsUtpHalfOpenExpired(1000, 1000 + kUtpHalfOpenLimitMs - 1));
+	ASSERT_TRUE(IsUtpHalfOpenExpired(1000, 1000 + kUtpHalfOpenLimitMs));
+	// A clock behind the accept expires nothing.
+	ASSERT_FALSE(IsUtpHalfOpenExpired(1000, 999));
+}

@@ -160,7 +160,8 @@ bool CUtpStreamAcceptor::AcceptStream(std::unique_ptr<IStreamTransport> &transpo
 		return false;
 	}
 
-	auto *socket = new CClientTCPSocket();
+	// Forged SYNs must not spend the connection interval that TCP and our own dials share.
+	auto *socket = new CClientTCPSocket(nullptr, nullptr, CClientTCPSocket::ConnectionCount::AtFirstData);
 	if (synDecision.disposition == EUtpIncomingSynDisposition::AcceptKeepIncoming) {
 		socket->SetUtpIncomingSynWinner(synDecision.candidateToken);
 	}

@@ -81,6 +81,12 @@ bool CSafeKad::TrackNode(
 		// proved who it is.
 		if (tracked.m_idVerified && !idVerified) {
 			accepted = false;
+		} else if (!tracked.m_idVerified && idVerified) {
+			// A proof outranks an identity nobody proved, which a spoofed source could have
+			// claimed first, so it is not a rotation. The proof covers the IP only: behind a
+			// carrier NAT a neighbour can make this claim too (see the header).
+			tracked.m_lastID = id;
+			tracked.m_lastIDChange = now;
 		} else if (now - tracked.m_lastIDChange < MIN_ID_CHANGE_INTERVAL) {
 			// Rotating identity faster than once an hour. Mark the address problematic,
 			// and escalate to a ban if it was problematic already -- one rejected
@@ -114,14 +120,9 @@ bool CSafeKad::TrackNode(
 	if (accepted || tracked.m_idVerified) {
 		tracked.m_lastReferenced = now;
 	}
-	// Verification is sticky: a node that once proved its identity is not downgraded by a
-	// later unverified packet. Only on the accepted path, though: promoting here after a
-	// refusal would raise the flag for a claim we just rejected, while m_lastID still holds
-	// the previous one, marking an unproven ID verified and unlocking the escalation ladder
-	// against whoever actually holds the address.
-	if (accepted && !tracked.m_idVerified) {
-		tracked.m_idVerified = idVerified;
-	}
+	// Sticky. A refusal happens only against a verified record or between two unverified
+	// claims, so this never certifies a claim we rejected.
+	tracked.m_idVerified = tracked.m_idVerified || idVerified;
 	// The ban above may have dropped this entry, so only write it back if
 	// the address is still trackable.
 	if (!IsBanned(ip, now)) {
@@ -299,15 +300,9 @@ bool CSafeKad::IsBadNode(uint32_t ip,
 		// so an unverified identity change from one is refused outright rather than rate-
 		// limited.
 		if ((it->second.m_idVerified || kadVersion < MIN_PORT_VERIFIABLE_VERSION) && !idVerified) {
-			// Refused, and deliberately not escalated. This branch's own condition ends
-			// in !idVerified, so everything reaching it is an unverified claim -- and
-			// an unverified claim is exactly what a third party can fabricate about
-			// somebody else. ProcessKademlia2Response() calls AddUnfiltered() with
-			// verified hardcoded to false, and the peer answering our request picks the
-			// (IP, port, ID) triples it lists, so banning here would let one peer get
-			// an honest node banned by mentioning it twice. m_lastIDChange is stamped
-			// when an entry is created, so the sub-hour window covers every freshly-
-			// learned contact rather than only ones that really did just change ID.
+			// Refused, and deliberately not escalated. Everything reaching this branch is
+			// an unverified claim, which anyone able to spoof a source address can make for
+			// somebody else, so banning here would let them ban an honest node.
 			//
 			// Both references decline for this reason; emule-qt states it outright: the
 			// ban requires verification by design, and unverified flips are recorded
@@ -326,6 +321,26 @@ bool CSafeKad::IsBadNode(uint32_t ip,
 		return true;
 	}
 	TrackNode(ip, port, id, idVerified, now);
+	return false;
+}
+
+bool CSafeKad::ContradictsProvedIdentity(uint32_t ip, uint16_t port, const CUInt128 &id, time_t now)
+{
+	if (IsBanned(ip, now)) {
+		return true;
+	}
+	const SKadNodeAddress address(ip, port);
+	CKadAgedMap<SKadNodeAddress, sTracked>::iterator it = m_trackedNodes.Find(address);
+	if (it == m_trackedNodes.End() || !it->second.m_idVerified) {
+		// An unproved record may itself be a spoofer's: it must not decide for the node.
+		return false;
+	}
+	if (it->second.m_lastID != id) {
+		return true;
+	}
+	sTracked tracked = it->second;
+	tracked.m_lastReferenced = now;
+	m_trackedNodes.Set(address, tracked);
 	return false;
 }
 

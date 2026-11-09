@@ -677,6 +677,33 @@ enum class EUtpMoveVerdict
 	Refuse
 };
 
+//! How far behind our last sent number a reset's ack may be: more packets than any send window holds.
+constexpr std::uint16_t kUtpResetAckSpan = 1024;
+
+/**
+ * Whether a reset answers a packet we sent. libutp sends one only for a non-SYN frame it cannot
+ * match, echoing that frame's seq_nr as its ack_nr (utp_internal.cpp:2941), and acts on any reset
+ * from its connection id alone (:2866-2887). Checking the ack makes a blind forgery guess our send
+ * position as well.
+ */
+inline bool IsPlausibleUtpReset(const SUtpMoveHeader &header, bool hasSent, std::uint16_t lastSent)
+{
+	return hasSent && static_cast<std::uint16_t>(lastSent - header.acknowledgeNumber) < kUtpResetAckSpan;
+}
+
+/**
+ * How long an accepted stream may wait for its peer's first data. An honest dialer sends its hello
+ * one round trip after our SYN-ACK. libutp arms no timer for a socket in CS_SYN_RECV
+ * (utp_internal.cpp:2593, :1181) and never resends the SYN-ACK, since a repeated SYN is dropped
+ * (:2951-2957). Waiting longer only lets forged SYNs hold the half-open budget.
+ */
+constexpr std::uint64_t kUtpHalfOpenLimitMs = 5'000;
+
+inline bool IsUtpHalfOpenExpired(std::uint64_t acceptedAtMs, std::uint64_t nowMs)
+{
+	return nowMs >= acceptedAtMs && nowMs - acceptedAtMs >= kUtpHalfOpenLimitMs;
+}
+
 /**
  * Whether a frame from a new source port can be the same stream. utp_process_udp() returns 1 for
  * every non-SYN frame it is given -- processed, stale or unmatched alike (utp_internal.cpp:2909,
@@ -693,20 +720,6 @@ enum class EUtpMoveVerdict
  * recovers a bulk transfer after its port changes. What keeps a replay from dragging a stream back to
  * a port it left is the abandoned-port refusal and the ten-second move limit, not this window.
  */
-//! How far behind our last sent number a reset's ack may be: more packets than any send window holds.
-constexpr std::uint16_t kUtpResetAckSpan = 1024;
-
-/**
- * Whether a reset answers a packet we sent. libutp sends one only for a non-SYN frame it cannot
- * match, echoing that frame's seq_nr as its ack_nr (utp_internal.cpp:2941), and acts on any reset
- * from its connection id alone (:2866-2887). Checking the ack makes a blind forgery guess our send
- * position as well.
- */
-inline bool IsPlausibleUtpReset(const SUtpMoveHeader &header, bool hasSent, std::uint16_t lastSent)
-{
-	return hasSent && static_cast<std::uint16_t>(lastSent - header.acknowledgeNumber) < kUtpResetAckSpan;
-}
-
 inline EUtpMoveVerdict DecideUtpMove(const SUtpMoveHeader &header, const SUtpPeerStreamFacts &facts)
 {
 	// A reset is acted on from its connection id alone (utp_internal.cpp:2866-2887 through

@@ -326,6 +326,11 @@ private:
 // CPreferences. Takes effect for sockets opened after the call.
 void SetSocketBindInterface(const wxString &iface);
 
+// Whether a listener that follows the address-family policy may widen the IPv4 wildcard to IPv6.
+// The core turns it off when a configured bind address did not parse and the wildcard is only the
+// fallback: binding every IPv6 address would be wider than the user asked.
+void SetListenerWidening(bool allowed);
+
 #ifdef ENABLE_IPV6
 // Set the IPv6 address we advertise to peers (absent = none), which outbound IPv6 connections then
 // leave from; see PeerAddressing::OutboundIPv6Source(). Pushed in by the core for the same reason as
