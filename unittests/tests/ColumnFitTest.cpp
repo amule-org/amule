@@ -377,9 +377,7 @@ void RunTests()
 	// Under an X11 window manager, wxGTK maps the frame only once the manager reports its
 	// decoration size, up to 1 s later, and GTK sizes the columns after that. GetItemRect()
 	// needs the mapped list.
-	const auto laidOut = [&] {
-		return mapped && list->GetItemRect(first, list->GetColumn(1)).width > 0;
-	};
+	const auto laidOut = [&] { return mapped && list->GetItemRect(first, list->GetColumn(1)).width > 0; };
 	for (int attempt = 0; attempt < 300 && !laidOut(); ++attempt) {
 		wxMilliSleep(10);
 		wxTheApp->Yield(true);
