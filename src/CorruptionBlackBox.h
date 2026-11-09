@@ -57,8 +57,8 @@ private:
 		bool Merge(uint32 nStartPos, uint32 nEndPos, const CNetworkAddress &sender);
 
 		// Startpos / Endpos relative to part
-		uint32 m_nStartPos;
-		uint32 m_nEndPos;
+		uint32 m_nStartPos = 0;
+		uint32 m_nEndPos = 0;
 		CNetworkAddress m_sender;
 	};
 	typedef std::list<CCBBRecord> CRecordList;
