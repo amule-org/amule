@@ -1653,9 +1653,10 @@ void CLibSocket::OnStreamWritable()
 
 void CLibSocket::OnStreamLost()
 {
-	// A packet reader takes one packet per read event, and the end would overtake the read
-	// events still owed for bytes already received. TCP reports EOF only once they are read.
-	if (m_transport && m_transport->HasReadableBytes()) {
+	// A packet reader takes one packet per read event, so a clean end would overtake the read
+	// events still owed for bytes already received; TCP reports EOF only once they are read.
+	// A failure is reported at once: CEMSocket drops every read once LastError() is set.
+	if (m_transport && m_transport->LastError() == 0 && m_transport->HasReadableBytes()) {
 		m_transportLostDeferred = true;
 		PostTransportReadEvent();
 		return;

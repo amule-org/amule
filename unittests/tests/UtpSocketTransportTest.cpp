@@ -1004,10 +1004,12 @@ TEST(UtpSocketTransport, DetachingWaitsForAFlushRequestBeingRaised)
 		detached = true;
 	});
 	std::this_thread::sleep_for(std::chrono::milliseconds(50));
-	ASSERT_FALSE(detached.load());
+	// Asserted after the joins: a throw with the threads joinable would terminate the run.
+	const bool detachedEarly = detached.load();
 	release.set_value();
 	writer.join();
 	owner.join();
+	ASSERT_FALSE(detachedEarly);
 	ASSERT_TRUE(detached.load());
 
 	// Nothing reaches a detached sink.

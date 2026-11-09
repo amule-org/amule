@@ -23,7 +23,11 @@
 
 #include <muleunit/test.h>
 #include <QuicSocketTransport.h>
+#include <atomic>
+#include <chrono>
 #include <functional>
+#include <future>
+#include <thread>
 #include <vector>
 using namespace muleunit;
 DECLARE_SIMPLE(QuicTransportLifecycle)
@@ -67,11 +71,17 @@ struct Ops : IQuicStreamOperations
 struct Events : IStreamTransportEvents
 {
 	int connected = 0, readable = 0, writable = 0, lost = 0, flush = 0;
+	std::function<void()> onFlush;
 	void OnStreamConnected() override { ++connected; }
 	void OnStreamReadable() override { ++readable; }
 	void OnStreamWritable() override { ++writable; }
 	void OnStreamLost() override { ++lost; }
-	void OnFlushRequested() override { ++flush; }
+	void OnFlushRequested() override
+	{
+		++flush;
+		if (onFlush)
+			onFlush();
+	}
 };
 IQuicStreamOperations::Handle H()
 {
@@ -357,4 +367,36 @@ TEST(QuicTransportLifecycle, ADetachedSinkGetsNoFlushRequest)
 	const uint8_t payload[3] = { 1, 2, 3 };
 	t.Write(payload, sizeof(payload));
 	ASSERT_EQUALS(0, e.flush);
+}
+
+TEST(QuicTransportLifecycle, DetachingWaitsForAFlushRequestBeingRaised)
+{
+	// Write() raises from the upload thread after dropping the lock. The owner detaching meanwhile
+	// must not return, and delete the sink, while that raise is still inside it.
+	Ops o;
+	Events e;
+	CQuicSocketTransport t(o, H(), CNetworkAddress::FromString("192.0.2.1"), 1, &e, false);
+	std::promise<void> entered;
+	std::promise<void> release;
+	std::shared_future<void> released = release.get_future().share();
+	e.onFlush = [&]() {
+		entered.set_value();
+		released.wait();
+	};
+	const uint8_t payload[3] = { 1, 2, 3 };
+	std::thread writer([&]() { t.Write(payload, sizeof(payload)); });
+	entered.get_future().wait();
+	std::atomic<bool> detached{ false };
+	std::thread owner([&]() {
+		t.SetEvents(nullptr);
+		detached = true;
+	});
+	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	// Asserted after the joins: a throw with the threads joinable would terminate the run.
+	const bool detachedEarly = detached.load();
+	release.set_value();
+	writer.join();
+	owner.join();
+	ASSERT_FALSE(detachedEarly);
+	ASSERT_TRUE(detached.load());
 }

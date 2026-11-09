@@ -215,7 +215,7 @@ private:
 	// itself, once at a time, as the asio socket does.
 	void PostTransportReadEvent();
 	std::atomic<bool> m_transportReadEventPending{ false };
-	//! The transport ended with bytes still unread; the reader learns of the end after them.
+	//! The transport ended cleanly with bytes still unread; the reader learns of the end after them.
 	std::atomic<bool> m_transportLostDeferred{ false };
 
 	// shared_ptr so the asio impl can outlive this wrapper for as long as any in-flight async

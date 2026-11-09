@@ -84,8 +84,8 @@ public:
 	//! Bytes moved into @a buffer. 0 with BlocksRead() means "not yet", not "never".
 	virtual uint32_t Read(void *buffer, uint32_t length) = 0;
 
-	//! Whether received bytes still wait for Read(), even after the stream ended: the end is
-	//! reported to the reader only after them.
+	//! Whether received bytes still wait for Read(), even after the stream ended: a clean end
+	//! is reported to the reader only after them.
 	virtual bool HasReadableBytes() const = 0;
 
 	//! Bytes accepted from @a buffer. 0 with BlocksWrite() means "not yet", not "never".
