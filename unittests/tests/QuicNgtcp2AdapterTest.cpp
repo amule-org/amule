@@ -72,6 +72,7 @@ struct Engine : IQuicNgtcp2Engine
 	bool create = true;
 	bool read = true;
 	bool flush = true;
+	unsigned flushes = 0;
 	unsigned created = 0;
 	unsigned destroyed = 0;
 	unsigned reads = 0;
@@ -122,6 +123,7 @@ struct Engine : IQuicNgtcp2Engine
 		}
 		lastAddress = address;
 		lastPort = port;
+		++flushes;
 		uint8_t p = 9;
 		return flush && sink.SendDatagram(&p, 1, address, port);
 	}
@@ -224,8 +226,10 @@ struct Engine : IQuicNgtcp2Engine
 	void EndConnection(
 		Handle handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t) override
 	{
+		// The real engine destroys the handle here too.
 		if (handle != nullptr) {
 			++endConnectionCalls;
+			++destroyed;
 		}
 	}
 	unsigned notifyWritableCalls = 0;
@@ -260,6 +264,16 @@ struct StubAcceptor : IQuicStreamAcceptor
 	{
 		accepted = std::move(transport);
 		return true;
+	}
+};
+
+struct RefusingAcceptor : IQuicStreamAcceptor
+{
+	unsigned offers = 0;
+	bool AcceptStream(std::unique_ptr<IStreamTransport> &, const CNetworkAddress &, uint16_t) override
+	{
+		++offers;
+		return false;
 	}
 };
 
@@ -941,4 +955,203 @@ TEST(QuicNgtcp2Adapter, ZeroByteProofWriteIsRetriedNotClosed)
 	// m_operations (this connection) to send a graceful FIN, which would otherwise run on a
 	// dangling reference once connection's own destructor has already run.
 	acceptor.accepted.reset();
+}
+
+namespace
+{
+//! An inbound connection whose stream is open and whose peer proof is already buffered.
+std::unique_ptr<IQuicConnection> InboundWithProof(CQuicNgtcp2Factory &factory, Engine &engine)
+{
+	const auto p = Initial();
+	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0);
+	engine.hasOpenStream = true;
+	const auto proof = QuicNatt::BuildEaqn1Proof(kTestPeerIdentity, &kTestIdentity);
+	engine.streamData.assign(proof.begin(), proof.end());
+	return connection;
+}
+} // namespace
+
+TEST(QuicNgtcp2Adapter, ARefusedInboundStreamClosesTheConnection)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+	RefusingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+	auto connection = InboundWithProof(factory, *engine);
+	ASSERT_TRUE(connection != nullptr);
+
+	const auto p = Initial();
+	connection->ProcessDatagram(p.data(), p.size(), 0);
+	ASSERT_TRUE(connection->IsClosed());
+	ASSERT_EQUALS(1u, acceptor.offers);
+	ASSERT_EQUALS(1u, engine->endConnectionCalls);
+	connection->Tick(1);
+	ASSERT_EQUALS(1u, acceptor.offers);
+}
+
+TEST(QuicNgtcp2Adapter, AnInboundStreamIsMarkedInboundAndADialledOneIsNot)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+	StubAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+	const auto p = Initial();
+
+	auto inbound = InboundWithProof(factory, *engine);
+	ASSERT_TRUE(inbound->ProcessDatagram(p.data(), p.size(), 0));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(acceptor.accepted->IsInbound());
+	ASSERT_FALSE(acceptor.accepted->IsUtp());
+	acceptor.accepted.reset();
+
+	engine->hasOpenStream = false;
+	auto outbound = factory.CreateOutbound(kPeer, 4672, kTestPeerIdentity, 0);
+	const auto proof = QuicNatt::BuildEaqn1Proof(kTestPeerIdentity, &kTestIdentity);
+	engine->streamData.assign(proof.begin(), proof.end());
+	engine->hasOpenStream = true;
+	ASSERT_TRUE(outbound->ProcessDatagram(p.data(), p.size(), 0));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_FALSE(acceptor.accepted->IsInbound());
+	acceptor.accepted.reset();
+}
+
+TEST(QuicNgtcp2Adapter, AStreamEndedBeforeTheHandoffReportsTheDialAsFailed)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	unsigned failures = 0;
+	CQuicNgtcp2Factory factory(Policy(s, c, v),
+		sink,
+		engine,
+		kTestIdentity,
+		nullptr,
+		nullptr,
+		[&](CUpDownClient *, const std::array<uint8_t, 16> &) { ++failures; });
+	auto *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
+	auto connection = factory.CreateOutboundForClient(kPeer, 4672, kTestPeerIdentity, 0, owner);
+	ASSERT_TRUE(connection != nullptr);
+	engine->streamEnded = true;
+
+	const auto p = Initial();
+	ASSERT_TRUE(connection->ProcessDatagram(p.data(), p.size(), 0));
+	ASSERT_TRUE(connection->IsClosed());
+	ASSERT_EQUALS(1u, failures);
+	ASSERT_EQUALS(1u, engine->endConnectionCalls);
+	QuicClientRefTestForget(owner);
+}
+
+TEST(QuicNgtcp2Adapter, AReopenedReadWindowIsFlushedOnTheNextTick)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+	const auto p = Initial();
+	auto connection = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0);
+	ASSERT_TRUE(connection->ProcessDatagram(p.data(), p.size(), 0));
+	engine->flushes = 0;
+
+	connection->Tick(1);
+	ASSERT_EQUALS(0u, engine->flushes);
+	connection->ExtendStreamReadWindow(100);
+	connection->Tick(2);
+	ASSERT_EQUALS(1u, engine->flushes);
+	connection->Tick(3);
+	ASSERT_EQUALS(1u, engine->flushes);
+}
+
+TEST(QuicNgtcp2Adapter, CloseTellsThePeerButShutdownAndDestructionDoNot)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+	const auto p = Initial();
+
+	auto closed = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0);
+	closed->Close();
+	ASSERT_EQUALS(1u, engine->endConnectionCalls);
+	ASSERT_EQUALS(1u, engine->destroyed);
+
+	auto shutDown = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0);
+	shutDown->CloseForShutdown();
+	ASSERT_EQUALS(1u, engine->endConnectionCalls);
+	ASSERT_EQUALS(2u, engine->destroyed);
+
+	auto destroyed = factory.CreateInbound(p.data(), p.size(), kPeer, 2, kDcid, 0);
+	destroyed.reset();
+	ASSERT_EQUALS(1u, engine->endConnectionCalls);
+	ASSERT_EQUALS(3u, engine->destroyed);
+}
+
+// Peer PINGs keep the idle timer alive, so only these deadlines free the slot.
+TEST(QuicNgtcp2Adapter, ADialWithNoProvenStreamIsClosedAtTheDeadlineAndFails)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	unsigned failures = 0;
+	CQuicNgtcp2Factory factory(Policy(s, c, v),
+		sink,
+		engine,
+		kTestIdentity,
+		nullptr,
+		nullptr,
+		[&](CUpDownClient *, const std::array<uint8_t, 16> &) { ++failures; });
+	auto *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
+	auto connection = factory.CreateOutboundForClient(kPeer, 4672, kTestPeerIdentity, 0, owner);
+	const auto p = Initial();
+	ASSERT_TRUE(connection->ProcessDatagram(p.data(), p.size(), 1000));
+
+	connection->Tick(1000 + 19999);
+	ASSERT_FALSE(connection->IsClosed());
+	connection->Tick(1000 + 20000);
+	ASSERT_TRUE(connection->IsClosed());
+	ASSERT_EQUALS(1u, engine->endConnectionCalls);
+	ASSERT_EQUALS(1u, failures);
+	QuicClientRefTestForget(owner);
+}
+
+TEST(QuicNgtcp2Adapter, AClosedStreamFreesItsConnectionAfterTheLinger)
+{
+	Session s;
+	Credentials c;
+	Verifier v;
+	auto sink = std::make_shared<Sink>();
+	auto engine = std::make_shared<Engine>();
+	CQuicNgtcp2Factory factory(Policy(s, c, v), sink, engine, kTestIdentity);
+	StubAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+	auto connection = InboundWithProof(factory, *engine);
+	const auto p = Initial();
+	ASSERT_TRUE(connection->ProcessDatagram(p.data(), p.size(), 1000));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	// Open past the offer deadline: the stream was proven in time.
+	connection->Tick(30000);
+	ASSERT_FALSE(connection->IsClosed());
+	acceptor.accepted.reset();
+	ASSERT_EQUALS(1u, engine->closeStreamGracefullyCalls);
+	connection->Tick(30000 + 9999);
+	ASSERT_FALSE(connection->IsClosed());
+	connection->Tick(30000 + 10000);
+	ASSERT_TRUE(connection->IsClosed());
+	ASSERT_EQUALS(1u, engine->endConnectionCalls);
 }

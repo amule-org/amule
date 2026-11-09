@@ -66,6 +66,9 @@
 #include "QuicCapsRequestLedger.h"
 #include "QuicCapabilityCache.h"
 #endif
+#if defined(AMULE_QUIC_TRANSPORT) || defined(ENABLE_NATT_SERVER_COORDINATION)
+#include "IPFilter.h" // Needed for IsFiltered
+#endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h"   // Needed for IsServerWayDatagramFromOurServer, ParseForwardedCallback
 #include "LugdunumNatCallbackLog.h" // Needed for LogForwardedCallback
@@ -73,7 +76,6 @@
 #include "Server.h"                 // Needed for CServer, and transitively OP_NAT_CALLBACKREQUESTED_UDP
 #include "ServerList.h"             // Needed for theApp->serverlist->GetServerByAddress
 #include "NatServerHolePunch.h"     // Needed for expected punch endpoints
-#include "IPFilter.h"               // Needed for IsFiltered
 #include "NetworkFunctions.h"       // Needed for IsGoodIP
 #include "ClientRef.h"              // Needed for a safe temporary dial client
 #include "ListenSocket.h"           // Needed for TooManySockets
@@ -929,6 +931,9 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 #ifdef AMULE_QUIC_TRANSPORT
 		if (!QuicNatTEnabled())
 			break;
+		// Here, not at the stream: a filtered host must not get a TLS handshake first.
+		if (theApp->ipfilter->IsFiltered(ip))
+			break;
 		if (m_quic.ProcessDatagram(classified.payload,
 			    classified.payloadLength,
 			    CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip),
@@ -967,6 +972,10 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		}
 		const auto address = CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip);
 		const auto now = ::GetTickCount64();
+		// The ACK carries our user hash: only a peer a rendezvous announced may learn it.
+		if (!m_keyFrames.IsExpectedPeer(ip, port, now) || theApp->ipfilter->IsFiltered(ip)) {
+			break;
+		}
 		if (!m_capsAckLimiter.Admit(address, now)) {
 			break;
 		}

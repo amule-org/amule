@@ -591,6 +591,12 @@ public:
 		}
 	}
 
+	//! A rendezvous announced this endpoint; a NAT may have moved its port.
+	bool IsExpectedPeer(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		return m_expected.IsExpectedAllowingMovedPort(ip, port, nowMs);
+	}
+
 	//! We are dialling this identity. It is authoritative unless a live server-vouched key exists.
 	void NoteDialled(std::uint32_t ip, std::uint16_t port, const Hash &hash, std::uint64_t nowMs)
 	{

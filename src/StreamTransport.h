@@ -64,6 +64,9 @@ public:
 
 	virtual bool IsInbound() const = 0;
 
+	//! Whether this is a uTP stream, for the paths that only make sense over uTP.
+	virtual bool IsUtp() const { return false; }
+
 	/**
 	 * Whether this transport obfuscates the bytes it carries.
 	 *

@@ -693,3 +693,15 @@ TEST(NatKeyFrame, ConflictingVouchersSwitchNothing)
 	ASSERT_FALSE(AcceptUtpKeyFrame(rig.expected, rig.held, 1, 1, MakeHash(6), 10).has_value());
 	ASSERT_EQUALS(0, static_cast<int>(rig.held.Size()));
 }
+
+// Gates the CAPS answer, which carries our user hash.
+TEST(NatKeyFrame, OnlyAnAnnouncedPeerIsExpectedAndItsPortMayMove)
+{
+	Rig rig;
+	ASSERT_FALSE(rig.service.IsExpectedPeer(1, 4672, 0));
+	rig.service.ExpectPeer(1, 4672, 0);
+	ASSERT_TRUE(rig.service.IsExpectedPeer(1, 4672, 1));
+	ASSERT_TRUE(rig.service.IsExpectedPeer(1, 5000, 1));
+	ASSERT_FALSE(rig.service.IsExpectedPeer(2, 4672, 1));
+	ASSERT_FALSE(rig.service.IsExpectedPeer(1, 4672, kExpectedPeerTtlMs + 1));
+}

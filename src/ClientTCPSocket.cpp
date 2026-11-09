@@ -152,7 +152,7 @@ void CClientTCPSocket::NoteHelloForStatistics()
 #ifdef AMULE_UTP_TRANSPORT
 void CClientTCPSocket::ApplyUtpCryptParameters()
 {
-	if (!HasTransport() || m_client == nullptr) {
+	if (!HasUtpTransport() || m_client == nullptr) {
 		return;
 	}
 	const bool encrypt = m_client->ShouldReceiveCryptUDPPackets() && m_client->HasValidHash();
@@ -166,7 +166,7 @@ void CClientTCPSocket::ApplyUtpCryptParameters()
 
 bool CClientTCPSocket::IsUtpInbound() const
 {
-	return HasTransport() && GetTransport()->IsInbound();
+	return HasUtpTransport() && GetTransport()->IsInbound();
 }
 #endif
 
@@ -284,7 +284,7 @@ void CClientTCPSocket::SetClient(CUpDownClient *pClient)
 #ifdef AMULE_UTP_TRANSPORT
 bool CClientTCPSocket::TryUtpTcpFallback()
 {
-	if (m_client == nullptr || !HasTransport()) {
+	if (m_client == nullptr || !HasUtpTransport()) {
 		return false;
 	}
 	if (m_client->GetDownloadState() != DS_CONNECTING && m_client->GetUploadState() != US_CONNECTING) {

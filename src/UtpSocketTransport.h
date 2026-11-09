@@ -154,6 +154,7 @@ public:
 		return m_connected && m_stream.IsOk();
 	}
 	bool IsInbound() const override { return m_inbound; }
+	bool IsUtp() const override { return true; }
 	//! An accepted stream still waiting for its peer's first data.
 	bool IsHalfOpen() const
 	{

@@ -39,6 +39,7 @@
 #include <map>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <random>
 #include <utility>
 #include <vector>
@@ -69,6 +70,26 @@ constexpr int kMaxFlushPacketsPerCall = 16;
 // could fill every admission slot permanently.
 constexpr uint64_t kHandshakeTimeoutMs = 10000; // 10s: generous even over a slow real path.
 constexpr uint64_t kIdleTimeoutMs = 60000;      // 60s of silence after that is a dead peer.
+// Peer PINGs reset the idle timer, so it alone cannot reclaim a slot.
+constexpr uint64_t kStreamOfferTimeoutMs = 20000; // From the first datagram to the proven stream.
+constexpr uint64_t kClosedStreamLingerMs = 10000; // From our FIN or reset to the peer's.
+
+//! ngtcp2 errors after which no CONNECTION_CLOSE may, or need, be sent.
+bool IsSilentClose(int liberr)
+{
+	switch (liberr) {
+	case NGTCP2_ERR_DRAINING:
+	case NGTCP2_ERR_CLOSING:
+	case NGTCP2_ERR_DROP_CONN:
+	case NGTCP2_ERR_IDLE_CLOSE:
+	case NGTCP2_ERR_HANDSHAKE_TIMEOUT:
+	case NGTCP2_ERR_RETRY:
+	case NGTCP2_ERR_RECV_VERSION_NEGOTIATION:
+		return true;
+	default:
+		return false;
+	}
+}
 
 ngtcp2_tstamp NanosecondsFromMs(uint64_t nowMs)
 {
@@ -235,19 +256,20 @@ public:
 	{
 	}
 
-	~CQuicNgtcp2Connection() override { Close(); }
+	// Silent: the sink's socket may already be partly destroyed.
+	~CQuicNgtcp2Connection() override { Finish(false); }
 
 	void CloseForShutdown() override
 	{
 		m_suppressDialFailure = true;
-		Close();
+		Finish(false);
 	}
 
 	bool ProcessDatagram(const uint8_t *data, size_t length, uint64_t nowMs) override
 	{
 		if (m_closed || data == nullptr || length == 0)
 			return false;
-		m_lastNowMs = nowMs;
+		NoteTime(nowMs);
 		if (!m_engine->Read(m_handle, data, length, nowMs)) {
 			Close();
 			return false;
@@ -256,8 +278,9 @@ public:
 			Close();
 			return false;
 		}
+		m_flushOwed = false;
 		OfferStreamIfJustOpened();
-		EndConnectionIfStreamEnded(nowMs);
+		EndConnectionIfStreamEnded();
 		if (!m_closed) {
 			m_engine->NotifyWritable(m_handle);
 		}
@@ -282,6 +305,9 @@ public:
 	{
 		if (!m_closed) {
 			m_engine->ExtendStreamReadWindow(m_handle, bytes);
+			// The engine's Tick() writes nothing while no timer is due, and a sender blocked
+			// on this window has nothing to send that would make us answer.
+			m_flushOwed = true;
 		}
 	}
 
@@ -290,17 +316,28 @@ public:
 		if (m_closed) {
 			return;
 		}
-		m_lastNowMs = nowMs;
+		NoteTime(nowMs);
+		if (DeadlinePassed(nowMs)) {
+			Close();
+			return;
+		}
 		if (!m_engine->Tick(m_handle, *m_sink, m_address, m_port, nowMs)) {
 			Close();
 			return;
+		}
+		if (m_flushOwed) {
+			m_flushOwed = false;
+			if (!m_engine->Flush(m_handle, *m_sink, m_address, m_port, nowMs)) {
+				Close();
+				return;
+			}
 		}
 		// A pending proof write deferred by pacing/congestion (TryExchangeEaqn1Proof()) has no
 		// transport yet for IQuicNgtcp2Engine::NotifyWritable() to reach -- this tick, the same
 		// moment that congestion easing or a loss-detection retransmit would otherwise be
 		// noticed, is this connection's own equivalent retry point.
 		OfferStreamIfJustOpened();
-		EndConnectionIfStreamEnded(nowMs);
+		EndConnectionIfStreamEnded();
 		if (!m_closed) {
 			m_engine->NotifyWritable(m_handle);
 		}
@@ -330,6 +367,7 @@ public:
 			// delivered to a transport that just asked to stop hearing from this connection.
 			m_engine->AttachTransport(m_handle, nullptr);
 			m_attachedTransport = nullptr;
+			NoteStreamClosing();
 			// Graceful, not ShutdownStream()'s reset: a transport-initiated close is always a
 			// voluntary one (CQuicSocketTransport::Close(), itself already having had its own
 			// chance to flush anything queued) -- there is nothing here that justifies discarding
@@ -346,6 +384,7 @@ public:
 			// graceful FIN.
 			m_engine->AttachTransport(m_handle, nullptr);
 			m_attachedTransport = nullptr;
+			NoteStreamClosing();
 			m_engine->ShutdownStream(m_handle);
 		}
 	}
@@ -355,7 +394,12 @@ public:
 		ExtendStreamReadWindow(bytes);
 	}
 
-	void Close() override
+	void Close() override { Finish(true); }
+
+private:
+	//! @p notifyPeer sends CONNECTION_CLOSE, unless the engine's own error forbids it, so a
+	//! refused dial falls back at once rather than after the peer's idle timeout.
+	void Finish(bool notifyPeer)
 	{
 		if (m_closed)
 			return;
@@ -372,7 +416,11 @@ public:
 			m_engine->AttachTransport(m_handle, nullptr);
 			m_attachedTransport = nullptr;
 		}
-		m_engine->Destroy(m_handle);
+		if (notifyPeer) {
+			m_engine->EndConnection(m_handle, *m_sink, m_address, m_port, m_lastNowMs);
+		} else {
+			m_engine->Destroy(m_handle);
+		}
 		m_handle = nullptr;
 		CUpDownClient *owner = m_ownerRef.GetClientChecked();
 		if (!m_suppressDialFailure && owner != nullptr && !m_streamOffered &&
@@ -380,7 +428,29 @@ public:
 			m_dialFailure(owner, m_expectedPeerIdentity);
 	}
 
-private:
+	void NoteTime(uint64_t nowMs)
+	{
+		m_lastNowMs = nowMs;
+		if (!m_firstSeenMs) {
+			m_firstSeenMs = nowMs;
+		}
+	}
+
+	void NoteStreamClosing()
+	{
+		if (!m_streamClosingSinceMs) {
+			m_streamClosingSinceMs = m_lastNowMs;
+		}
+	}
+
+	bool DeadlinePassed(uint64_t nowMs) const
+	{
+		if (!m_streamOffered) {
+			return m_firstSeenMs && nowMs - *m_firstSeenMs >= kStreamOfferTimeoutMs;
+		}
+		return m_streamClosingSinceMs && nowMs - *m_streamClosingSinceMs >= kClosedStreamLingerMs;
+	}
+
 	// The point a connection has something worth handing to the rest of aMule: either side's
 	// one stream has opened (QuicSocketTransport.h) -- the peer's, for an inbound connection, or
 	// this side's own, for an outbound dial, once OnExtendMaxLocalStreamsBidi() lets it open.
@@ -396,8 +466,13 @@ private:
 		if (!m_proofExchanged && !TryExchangeEaqn1Proof()) {
 			return;
 		}
-		auto owned = std::make_unique<CQuicSocketTransport>(
-			*this, m_handle, m_address, m_port, nullptr, false, m_transportClock);
+		auto owned = std::make_unique<CQuicSocketTransport>(*this,
+			m_handle,
+			m_address,
+			m_port,
+			nullptr,
+			!m_hasExpectedPeerIdentity,
+			m_transportClock);
 		CQuicSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
 		if (owner != nullptr) {
@@ -414,7 +489,9 @@ private:
 			}
 		} else if (!m_acceptor->AcceptStream(transport, m_address, m_port)) {
 			// Refused: the transport the acceptor declined is still ours to destroy, exactly as
-			// CUtpLibraryAdapter does for a refused uTP stream.
+			// CUtpLibraryAdapter does for a refused uTP stream. Kept open, the connection would
+			// be offered again on every tick.
+			Close();
 			return;
 		}
 		m_streamOffered = true;
@@ -544,13 +621,12 @@ private:
 	//! nothing left to use this connection for. Without this, a connection whose stream ended
 	//! stays alive doing nothing until CQuicContext::kIdleTimeoutMs finally reclaims it: every
 	//! finished eD2k session would hold one of CQuicContext::kMaxConnectionsPerScope's slots for
-	//! up to a minute after it had nothing left to do.
-	void EndConnectionIfStreamEnded(uint64_t nowMs)
+	//! up to a minute after it had nothing left to do. Through Close(), so a stream that ends
+	//! before it is offered still reports the dial as failed.
+	void EndConnectionIfStreamEnded()
 	{
 		if (!m_closed && m_engine->IsStreamEnded(m_handle)) {
-			m_engine->EndConnection(m_handle, *m_sink, m_address, m_port, nowMs);
-			m_closed = true;
-			m_handle = nullptr;
+			Close();
 		}
 	}
 
@@ -584,6 +660,9 @@ private:
 	bool m_outboundProofInitiated = false;
 	bool m_proofExchanged = false;
 	uint64_t m_lastNowMs = 0;
+	std::optional<uint64_t> m_firstSeenMs;
+	std::optional<uint64_t> m_streamClosingSinceMs;
+	bool m_flushOwed = false;
 	bool m_streamOffered = false;
 	bool m_closed = false;
 	bool m_suppressDialFailure = false;
@@ -901,7 +980,11 @@ public:
 		// never observes a path change and never attempts connection migration. The actual
 		// peer address this connection talks to is CQuicNgtcp2Connection's own m_address/m_port,
 		// used when flushing output -- not anything ngtcp2 derives from this path.
-		return ngtcp2_conn_read_pkt(it->second.conn, &path.path, nullptr, data, length, ts) == 0;
+		const int rv = ngtcp2_conn_read_pkt(it->second.conn, &path.path, nullptr, data, length, ts);
+		if (rv != 0) {
+			it->second.closeError = rv;
+		}
+		return rv == 0;
 	}
 
 	bool Flush(Handle handle,
@@ -940,7 +1023,9 @@ public:
 		// Fatal here means the timer handling itself concluded the connection is over (RFC 9000
 		// section 10.1: the idle timeout elapsed) -- not that a send failed, which FlushConnection()
 		// below still reports on its own.
-		if (ngtcp2_conn_handle_expiry(it->second.conn, ts) != 0) {
+		const int rv = ngtcp2_conn_handle_expiry(it->second.conn, ts);
+		if (rv != 0) {
+			it->second.closeError = rv;
 			return false;
 		}
 		return FlushConnection(it->second, sink, address, port, ts);
@@ -1114,20 +1199,30 @@ public:
 		if (it == m_connections.end()) {
 			return;
 		}
-		uint8_t buf[kMaxUdpPayload];
-		ngtcp2_path_storage path;
-		InitZeroPath(path);
-		ngtcp2_pkt_info pi = {};
-		ngtcp2_ccerr ccerr;
-		ngtcp2_ccerr_default(&ccerr);
-		const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
-		CloseBurstBefore(it->second, ts);
-		// A best-effort courtesy, not a requirement for correctness on this side: Destroy() below
-		// reclaims the slot either way, whether or not the peer ever sees this.
-		const ngtcp2_ssize written = ngtcp2_conn_write_connection_close(
-			it->second.conn, &path.path, &pi, buf, sizeof(buf), &ccerr, ts);
-		if (written > 0) {
-			sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
+		const int closeError = it->second.closeError;
+		if (!IsSilentClose(closeError)) {
+			uint8_t buf[kMaxUdpPayload];
+			ngtcp2_path_storage path;
+			InitZeroPath(path);
+			ngtcp2_pkt_info pi = {};
+			ngtcp2_ccerr ccerr;
+			if (closeError == NGTCP2_ERR_CRYPTO) {
+				ngtcp2_ccerr_set_tls_alert(
+					&ccerr, ngtcp2_conn_get_tls_alert(it->second.conn), nullptr, 0);
+			} else if (closeError != 0) {
+				ngtcp2_ccerr_set_liberr(&ccerr, closeError, nullptr, 0);
+			} else {
+				ngtcp2_ccerr_default(&ccerr);
+			}
+			const ngtcp2_tstamp ts = NanosecondsFromMs(nowMs);
+			CloseBurstBefore(it->second, ts);
+			// A best-effort courtesy, not a requirement for correctness on this side: Destroy()
+			// below reclaims the slot either way, whether or not the peer ever sees this.
+			const ngtcp2_ssize written = ngtcp2_conn_write_connection_close(
+				it->second.conn, &path.path, &pi, buf, sizeof(buf), &ccerr, ts);
+			if (written > 0) {
+				sink.SendDatagram(buf, static_cast<size_t>(written), address, port);
+			}
 		}
 		Destroy(handle);
 	}
@@ -1188,6 +1283,8 @@ private:
 		//! Set by OnRecvStreamData()'s FIN flag, OnStreamClose(), or OnStreamReset() -- whichever
 		//! notices first that the one stream this connection will ever have is done.
 		bool streamEnded = false;
+		//! The fatal ngtcp2 error from Read() or Tick(), or 0; EndConnection() reports it.
+		int closeError = 0;
 		//! CloseStreamGracefully() asked for a FIN that writev_stream() could not fit into a
 		//! packet right then (pacing/congestion: ngtcp2 does not record the FIN internally unless
 		//! the frame actually got serialized, so a blocked attempt is not retried on its own).
