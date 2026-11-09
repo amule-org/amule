@@ -33,26 +33,36 @@ enum class EUtpAdmission
 	Admit,
 	ShuttingDown,
 	TooManySockets,
+	TooManyHalfOpen,
 	NoAddress,
 	Filtered,
 	Banned
 };
 
 /**
+ * Inbound streams whose peer has sent no data yet. A SYN proves no source address, so this budget is
+ * all a spoofer can hold, like a TCP listen backlog; the connection limit counts proven streams.
+ */
+constexpr std::size_t kMaxHalfOpenUtpStreams = 16;
+
+/**
  * The admission decision, separated from gathering the facts it needs.
  *
- * What CListenSocket::OnAccept and CClientTCPSocket::InitNetworkData ask for
- * TCP. @a connectingToServer is the listener's exception: refusing then is what
- * produces a LowID on every server.
+ * What CListenSocket::OnAccept and CClientTCPSocket::InitNetworkData ask for TCP, without the
+ * listener's exception while connecting to a server: that exists for the server's TCP callback test,
+ * and uTP has none.
  */
 constexpr EUtpAdmission DecideUtpAdmission(
-	bool running, bool connectingToServer, bool tooManySockets, uint32_t ip, bool filtered, bool banned)
+	bool running, bool tooManySockets, std::size_t halfOpen, uint32_t ip, bool filtered, bool banned)
 {
 	if (!running) {
 		return EUtpAdmission::ShuttingDown;
 	}
-	if (!connectingToServer && tooManySockets) {
+	if (tooManySockets) {
 		return EUtpAdmission::TooManySockets;
+	}
+	if (halfOpen >= kMaxHalfOpenUtpStreams) {
+		return EUtpAdmission::TooManyHalfOpen;
 	}
 	if (ip == 0) {
 		return EUtpAdmission::NoAddress;
@@ -70,6 +80,7 @@ constexpr EUtpAdmission DecideUtpAdmission(
 class CUtpStreamAcceptor : public IUtpStreamAcceptor
 {
 public:
+	bool AdmitsSyn(uint32_t ip, uint16_t port, std::size_t halfOpen) override;
 	SUtpIncomingSynDecision DecideIncomingSyn(
 		uint32_t ip, uint16_t port, const SUtpSynCandidateInfo &candidate) override;
 	bool AcceptStream(std::unique_ptr<IStreamTransport> &transport, uint32_t ip, uint16_t port) override;

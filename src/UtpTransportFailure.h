@@ -48,6 +48,8 @@ enum class EUtpTransportFailure
 	TimedOut,
 	//! The connection existed and the peer tore it down.
 	Reset,
+	//! The peer sent far past the receive window we advertised, so we ended it.
+	Overrun,
 	//! The peer finished sending. Not an error.
 	Eof,
 	//! We closed it. Not an error, and distinct from a FIN we never saw.
@@ -59,7 +61,7 @@ enum class EUtpTransportFailure
 inline bool IsUtpFailure(EUtpTransportFailure failure) noexcept
 {
 	return failure == EUtpTransportFailure::Refused || failure == EUtpTransportFailure::TimedOut ||
-	       failure == EUtpTransportFailure::Reset;
+	       failure == EUtpTransportFailure::Reset || failure == EUtpTransportFailure::Overrun;
 }
 
 inline bool IsUtpTerminal(EUtpTransportFailure failure) noexcept

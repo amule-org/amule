@@ -478,6 +478,17 @@ bool CClientList::AttachToAlreadyKnown(
 							found_client->GetUserAddress(),
 							tocheck->GetUserAddress(),
 							advertisedIPv6)) {
+#ifdef AMULE_UTP_TRANSPORT
+						// A uTP stream we accepted proves its source only as far as a
+						// guessable 16-bit ack does: refuse it, but ban no address.
+						if (sender != nullptr && sender->IsUtpInbound()) {
+							AddDebugLogLineN(logClient,
+								"Client: " + tocheck->GetUserName() + "(" +
+									tocheck->GetFullIP() +
+									"), refused: uTP, hash in use");
+							return false;
+						}
+#endif
 						AddDebugLogLineN(logClient,
 							"Client: " + tocheck->GetUserName() + "(" +
 								tocheck->GetFullIP() +

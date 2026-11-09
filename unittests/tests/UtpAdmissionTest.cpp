@@ -44,6 +44,8 @@ const char *Name(EUtpAdmission value)
 		return "ShuttingDown";
 	case EUtpAdmission::TooManySockets:
 		return "TooManySockets";
+	case EUtpAdmission::TooManyHalfOpen:
+		return "TooManyHalfOpen";
 	case EUtpAdmission::NoAddress:
 		return "NoAddress";
 	case EUtpAdmission::Filtered:
@@ -61,70 +63,75 @@ TEST(UtpAdmission, DecisionTable)
 	{
 		const char *label;
 		bool running;
-		bool connectingToServer;
 		bool tooManySockets;
+		std::size_t halfOpen;
 		uint32_t ip;
 		bool filtered;
 		bool banned;
 		EUtpAdmission expected;
 	} cases[] = {
-		{ "healthy peer", true, false, false, kPeer, false, false, EUtpAdmission::Admit },
-		{ "shutting down", false, false, false, kPeer, false, false, EUtpAdmission::ShuttingDown },
+		{ "healthy peer", true, false, 0, kPeer, false, false, EUtpAdmission::Admit },
+		{ "shutting down", false, false, 0, kPeer, false, false, EUtpAdmission::ShuttingDown },
 		{ "shutdown outranks every other reason",
 			false,
-			false,
 			true,
+			kMaxHalfOpenUtpStreams,
 			0,
 			true,
 			true,
 			EUtpAdmission::ShuttingDown },
 		{ "at the connection limit",
 			true,
-			false,
 			true,
+			0,
 			kPeer,
 			false,
 			false,
 			EUtpAdmission::TooManySockets },
-		// The listener's own exception: refusing here is what produces a LowID
-		// on every server, so the limit is allowed to be exceeded meanwhile.
-		{ "limit ignored while connecting to a server",
+		// No exception while connecting to a server: that is the TCP listener's, for the server's
+		// TCP callback test.
+		{ "half-open streams below the budget",
 			true,
-			true,
-			true,
+			false,
+			kMaxHalfOpenUtpStreams - 1,
 			kPeer,
 			false,
 			false,
 			EUtpAdmission::Admit },
-		{ "no address", true, false, false, 0, false, false, EUtpAdmission::NoAddress },
-		{ "filtered", true, false, false, kPeer, true, false, EUtpAdmission::Filtered },
-		{ "banned", true, false, false, kPeer, false, true, EUtpAdmission::Banned },
+		{ "half-open budget spent",
+			true,
+			false,
+			kMaxHalfOpenUtpStreams,
+			kPeer,
+			false,
+			false,
+			EUtpAdmission::TooManyHalfOpen },
+		{ "the connection limit outranks the half-open budget",
+			true,
+			true,
+			kMaxHalfOpenUtpStreams,
+			kPeer,
+			false,
+			false,
+			EUtpAdmission::TooManySockets },
+		{ "no address", true, false, 0, 0, false, false, EUtpAdmission::NoAddress },
+		{ "filtered", true, false, 0, kPeer, true, false, EUtpAdmission::Filtered },
+		{ "banned", true, false, 0, kPeer, false, true, EUtpAdmission::Banned },
 		// Ordering is observable through the reason, and the reason is what
 		// reaches the log and the statistics.
-		{ "filtered outranks banned",
-			true,
-			false,
-			false,
-			kPeer,
-			true,
-			true,
-			EUtpAdmission::Filtered },
+		{ "filtered outranks banned", true, false, 0, kPeer, true, true, EUtpAdmission::Filtered },
 		{ "the limit outranks a filtered address",
 			true,
-			false,
 			true,
+			0,
 			kPeer,
 			true,
 			false,
 			EUtpAdmission::TooManySockets },
 	};
 	for (const auto &row : cases) {
-		const EUtpAdmission actual = DecideUtpAdmission(row.running,
-			row.connectingToServer,
-			row.tooManySockets,
-			row.ip,
-			row.filtered,
-			row.banned);
+		const EUtpAdmission actual = DecideUtpAdmission(
+			row.running, row.tooManySockets, row.halfOpen, row.ip, row.filtered, row.banned);
 		CFormat format("%s: expected %s, got %s");
 		const wxString message = format % row.label % Name(row.expected) % Name(actual);
 		ASSERT_TRUE_M(actual == row.expected, message);
@@ -135,12 +142,12 @@ TEST(UtpAdmission, OnlyOneOutcomeAdmits)
 {
 	// A stream is taken for one reason and refused for several. Anything that
 	// admits by falling through a new case would show up here.
-	ASSERT_TRUE(DecideUtpAdmission(true, false, false, kPeer, false, false) == EUtpAdmission::Admit);
-	ASSERT_FALSE(DecideUtpAdmission(false, false, false, kPeer, false, false) == EUtpAdmission::Admit);
-	ASSERT_FALSE(DecideUtpAdmission(true, false, true, kPeer, false, false) == EUtpAdmission::Admit);
-	ASSERT_FALSE(DecideUtpAdmission(true, false, false, 0, false, false) == EUtpAdmission::Admit);
-	ASSERT_FALSE(DecideUtpAdmission(true, false, false, kPeer, true, false) == EUtpAdmission::Admit);
-	ASSERT_FALSE(DecideUtpAdmission(true, false, false, kPeer, false, true) == EUtpAdmission::Admit);
+	ASSERT_TRUE(DecideUtpAdmission(true, false, 0, kPeer, false, false) == EUtpAdmission::Admit);
+	ASSERT_FALSE(DecideUtpAdmission(false, false, 0, kPeer, false, false) == EUtpAdmission::Admit);
+	ASSERT_FALSE(DecideUtpAdmission(true, true, 0, kPeer, false, false) == EUtpAdmission::Admit);
+	ASSERT_FALSE(DecideUtpAdmission(true, false, 0, 0, false, false) == EUtpAdmission::Admit);
+	ASSERT_FALSE(DecideUtpAdmission(true, false, 0, kPeer, true, false) == EUtpAdmission::Admit);
+	ASSERT_FALSE(DecideUtpAdmission(true, false, 0, kPeer, false, true) == EUtpAdmission::Admit);
 }
 
 // File_checked_for_headers

@@ -150,8 +150,13 @@ void CClientTCPSocket::ApplyUtpCryptParameters()
 	if (!HasTransport() || m_client == nullptr) {
 		return;
 	}
-	GetTransport()->SetCryptParameters(m_client->ShouldReceiveCryptUDPPackets(),
-		m_client->HasValidHash() ? m_client->GetUserHash().GetHash() : nullptr);
+	const bool encrypt = m_client->ShouldReceiveCryptUDPPackets() && m_client->HasValidHash();
+	// As the RC4 layer does on TCP, "require" holds for the whole stream: an obfuscated SYN must not
+	// be followed by plain frames once the hello is read.
+	if (!encrypt && thePrefs::IsClientCryptLayerRequired()) {
+		throw wxString("uTP stream would continue unobfuscated, and obfuscation is required");
+	}
+	GetTransport()->SetCryptParameters(encrypt, encrypt ? m_client->GetUserHash().GetHash() : nullptr);
 }
 
 bool CClientTCPSocket::IsUtpInbound() const

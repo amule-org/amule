@@ -28,6 +28,7 @@
 #include "ReservedProtocolFrames.h"
 #include "UtpDialPolicy.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -194,6 +195,13 @@ class IUtpStreamAcceptor
 {
 public:
 	virtual ~IUtpStreamAcceptor() = default;
+
+	/**
+	 * Whether a SYN may open a stream at all, asked before libutp creates a socket or sends the
+	 * SYN-ACK, so a refusal sends nothing back to a source that may be forged. @a halfOpen counts the
+	 * inbound streams still waiting for their peer's first data.
+	 */
+	virtual bool AdmitsSyn(uint32_t, uint16_t, std::size_t) { return true; }
 
 	//! Selects the simultaneous-open disposition before a transport is transferred.
 	virtual SUtpIncomingSynDecision DecideIncomingSyn(uint32_t, uint16_t, const SUtpSynCandidateInfo &)
@@ -438,11 +446,15 @@ constexpr size_t kUtpWireHeaderBytes = 20;
 constexpr uint8_t kUtpVersion = 1;
 constexpr uint8_t kStNumStates = 5;
 
+//! The largest UDP payload on a 1500-byte IPv4 link. No uTP stack sends a frame above its MTU, and
+//! libutp would hold a larger one in its 1023-slot reorder buffer all the same.
+constexpr size_t kMaxUtpFrameBytes = 1472;
+
 //! Mirrors libutp's validity test (UTP_Version): type < ST_NUM_STATES,
-//! extension < 3, version 1.
+//! extension < 3, version 1. A frame above kMaxUtpFrameBytes is malformed too.
 inline EUtpFrameKind ClassifyUtpFrame(const uint8_t *payload, size_t length)
 {
-	if (payload == nullptr || length < kUtpWireHeaderBytes) {
+	if (payload == nullptr || length < kUtpWireHeaderBytes || length > kMaxUtpFrameBytes) {
 		return EUtpFrameKind::Malformed;
 	}
 	const uint8_t type = static_cast<uint8_t>(payload[0] >> 4);
