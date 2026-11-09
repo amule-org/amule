@@ -366,8 +366,9 @@ msgstr "S'està aturant el procés amuleweb amb pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Aturant el procés amuleweb amb pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Fallades"
 
@@ -1693,7 +1694,7 @@ msgstr "ID Baixa"
 msgid "HighID"
 msgstr "ID Alta"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Habilitada"
 
@@ -1775,17 +1776,38 @@ msgstr "Modificador PU/BA"
 msgid "Online now"
 msgstr "En línia ara"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Sense completar"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Verificat - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Dolent"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Identificació segura"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Ofuscació"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Verificat - OK"
+msgid "Not complete"
+msgstr "Sense completar"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5013,10 +5035,6 @@ msgid "Server name"
 msgstr "Nom del servidor"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Ofuscació"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "Extensions del protocol"
 
@@ -5055,10 +5073,6 @@ msgstr "Baixat (total)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Puntuacions"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Identificació segura"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

@@ -3,20 +3,22 @@
 # Copyright (c) 2003-2020 aMule Team
 # This file is distributed under the same license as the aMule package.
 #
+# Marcell Balla <marcell@users.noreply.hosted.weblate.org>, 2026.
+# Got3nks <got3nks@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-10-07 16:26+0000\n"
-"Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
-"Language-Team: Hungarian <hu@li.org>\n"
+"PO-Revision-Date: 2026-11-09 11:53+0000\n"
+"Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Hungarian <https://hosted.weblate.org/projects/amule/amule-application/hu/>\n"
 "Language: hu\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 2.0.6\n"
+"X-Generator: Weblate 2026.11.2.dev0\n"
 "X-Poedit-Basepath: .\n"
 
 #: src/AboutDialog.cpp
@@ -81,21 +83,20 @@ msgstr "Kattints ide egy újabb verzió kereséséhez."
 
 #: src/AboutDialog.cpp
 msgid "Check for updates"
-msgstr ""
+msgstr "Frissítések keresése"
 
 #: src/AboutDialog.cpp
-#, fuzzy
 msgid "Checking for updates..."
-msgstr "Kapcsolódás a Kad-hoz..."
+msgstr "Frissítések keresése folyamatban..."
 
 #: src/AboutDialog.cpp
 msgid "You are running the latest version."
 msgstr "A legújabb verziót használod."
 
 #: src/AboutDialog.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "A new version (%s) is available:"
-msgstr "Nem elérhető"
+msgstr "Az új verzió (%s) elérhető"
 
 #: src/AboutDialog.cpp
 msgid "Could not check for updates. Please try again later."
@@ -198,16 +199,15 @@ msgstr "Később"
 
 #: src/GuiEvents.cpp src/ExternalConn.cpp
 msgid "The selected download has changed. Refresh and try again."
-msgstr ""
+msgstr "A kiválasztott letöltés megváltozott. Frissítsen és próbálja újra."
 
 #: src/GuiEvents.cpp src/amule-remote-gui.cpp
 msgid "The connected core does not support deleting complete files from disk."
-msgstr ""
+msgstr "A csatlakozott mag nem támotagja a letöltött fájlok törlését a lemezről."
 
 #: src/GuiEvents.cpp src/amule-remote-gui.cpp
-#, fuzzy
 msgid "Delete from disk"
-msgstr "Lekérés a Kad-ról"
+msgstr "Törlés a lemezről"
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -218,11 +218,16 @@ msgid ""
 "\n"
 "The file is deleted and no longer shared. This cannot be undone."
 msgstr ""
+"Biztos benne, hogy törölni akarja '%s'-t a lemezről?\n"
+"\n"
+"Fájl: %s\n"
+"\n"
+"A fájl törlődik és már nem lesz megosztva. Ezt nem lehet visszacsinálni."
 
 #: src/GuiEvents.cpp
 #, c-format
 msgid "... and %i more"
-msgstr ""
+msgstr "... és még %i"
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -232,6 +237,10 @@ msgid ""
 "%s\n"
 "The files are deleted and no longer shared. This cannot be undone."
 msgstr ""
+"Biztosan törölni akarja a kiválasztott %i fájlt a lemezről?\n"
+"\n"
+"%s\n"
+"A fájlok törlődnek és már nem lesznek megosztva. Ezt nem lehet visszacsinálni."
 
 #: src/GuiEvents.cpp
 #, c-format
@@ -244,6 +253,13 @@ msgid ""
 "Yes: stop sharing and remove the list entries. A later share scan may share the files again.\n"
 "No: keep the files shared and listed."
 msgstr ""
+"A fájlokat nem lehetett törölni a lemezről:\n"
+"\n"
+"%s\n"
+"Mégis el legyenek távolítva a megosztásból és a befejezett átvitelek listájáról?\n"
+"\n"
+"Igen: vége a megosztásnak és a lista bejegyzések törlődnek. Egy későbbi scan újra megoszthatja a fájlokat.\n"
+"Nem: a fájlok megosztva és bejegyezve maradnak."
 
 #: src/amuleAppCommon.cpp
 msgid "Failed to open ED2KLinks file."
@@ -262,6 +278,11 @@ msgid ""
 "\n"
 "That is not a running copy of aMule, so there is nothing to bring to the front. Close the other program, or delete the lock file while aMule is not running."
 msgstr ""
+"Egy másik program fogva tartja az aMule zárolási fájlját:\n"
+"\n"
+"%s\n"
+"\n"
+"Ez nem egy futó aMule másolat, ezért nincs mit előtérbe hozni. Zárja be a másik programot, vagy törölje a zárolási fájlt amikor az aMule nem fut."
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -272,29 +293,28 @@ msgid ""
 msgstr ""
 
 #: src/amuleAppCommon.cpp
-#, fuzzy
 msgid "aMule cannot start"
-msgstr "aMule telepítve"
+msgstr "aMule nem tud elindulni"
 
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Restricted permissions on %s to owner-only."
-msgstr ""
+msgstr "A %s jogosultságai a tulajdonosra korlátozva lett."
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Collection file not found: %s"
-msgstr "Index fájl nem található: "
+msgstr "Kollekciós fájl nem található: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid or empty collection file: %s"
-msgstr "Megosztott fájlok lehozatala sikertelen a(z) '%s' felhasználótól"
+msgstr "Érvénytelen vagy üres kollekciós fájl: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "No usable links in collection: %s"
-msgstr "Nincsen megosztott fájl ebben a könyvtárban: %s"
+msgstr "Nincs használható link a kollekcióban: %s"
 
 #: src/amuleAppCommon.cpp
 #, c-format
@@ -308,9 +328,9 @@ msgid "Cannot convert magnet link to eD2k: %s"
 msgstr "A magnet hivatkozás nem konvertálható eD2k-ra: %s"
 
 #: src/amuleAppCommon.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Invalid eD2k link \"%s\" - ERROR: %s"
-msgstr "Érvénytelen eD2k hivatkozás! HIBA: %s"
+msgstr "Érvénytelen eD2k link \"%s\" - HIBA: %s"
 
 #: src/amule.cpp
 msgid "Now, exiting main app..."
@@ -318,19 +338,15 @@ msgstr "Kilépés a fő alkalmazásból..."
 
 #: src/amule.cpp
 msgid "Saving window settings..."
-msgstr ""
+msgstr "Ablak beállítások mentése..."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Saving client credits..."
-msgstr ""
-"\n"
-"Kliens létrehozása...\n"
+msgstr "Kliens egyenlegek mentése..."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Stopping helper applications..."
-msgstr "Kilép az alkalmazásból."
+msgstr "Segítő alkalmazások megállítása..."
 
 #: src/amule.cpp
 #, c-format
@@ -342,8 +358,9 @@ msgstr "Az amuleweb instancia - melynek a pid-je '%d' - bezárása ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Az amuleweb instancia - melynek a pid-je '%d' - kivégzése ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Sikertelen"
 
@@ -362,19 +379,16 @@ msgid "aMule OnExit: Terminating core."
 msgstr "aMule OnExit: Mag leállítása."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Saving search results..."
-msgstr "Keresés eredménye"
+msgstr "Keresési eredmények mentése..."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Saving downloads and shared files..."
-msgstr "Megosztott fájlok újratöltése..."
+msgstr "Letöltések és megosztott fájlok mentése..."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Flushing download buffers..."
-msgstr "Fájl törlése: %s"
+msgstr "Letöltései pufferek ürítése..."
 
 #: src/amule.cpp
 msgid "aMule shutdown completed."
@@ -386,7 +400,7 @@ msgstr "Memória debug eredmények az aMule bezárásáról:"
 
 #: src/amule.cpp
 msgid "Finishing shutdown..."
-msgstr ""
+msgstr "Leállítás befejezése..."
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -431,7 +445,7 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
+msgstr "Nem lehetett AcceptExternalConnections-t menteni az amule.conf-ba."
 
 #: src/amule.cpp
 msgid "Password set and external connections enabled."
@@ -442,53 +456,47 @@ msgid "WARNING"
 msgstr "FIGYELEM"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading known files"
-msgstr "Temp fájlok betöltése %s-ról."
+msgstr "Ismert fájlok betöltése"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading known files (%u of %u)"
-msgstr "Temp fájlok betöltése %s-ról."
+msgstr "Ismert fájlok betöltése (%u / %u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading credits"
-msgstr "Megosztott fájlok frissítése"
+msgstr "Stáblista betöltése"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading IP filter"
-msgstr "Temp fájlok betöltése %s-ról."
+msgstr "IP filter betöltése"
 
 #: src/amule.cpp
 msgid "Initializing network"
-msgstr ""
+msgstr "Hálózat inicializálása"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading temp files"
-msgstr "Temp fájlok betöltése %s-ról."
+msgstr "Temp fájlok betöltése"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading temp files (%u of %u)"
-msgstr "Temp fájlok betöltése %s-ról."
+msgstr "Temp fájlok betöltése (%u / %u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Loading shared files"
-msgstr "Megosztott fájlok frissítése"
+msgstr "Megosztott fájlok betöltése"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Loading shared files (%u)"
-msgstr "Megosztott fájlok frissítése"
+msgstr "Megosztott fájlok betöltése (%u)"
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Starting up"
-msgstr "Indít"
+msgstr "Elindítás"
 
 #: src/amule.cpp
 msgid "Network bootstrap"
@@ -513,11 +521,11 @@ msgstr "Kad bootstrap csomópontok (nodes.dat)"
 #: src/amule.cpp
 #, c-format
 msgid "Not starting %s: it is neither next to aMule nor on PATH."
-msgstr ""
+msgstr "Nem indul el %s: nincs az aMule közelében és nem a PATH része."
 
 #: src/amule.cpp
 msgid "An exception occurred while launching amuleweb."
-msgstr ""
+msgstr "Kivétel történt az amuleweb indítása közben."
 
 #: src/amule.cpp
 #, c-format
@@ -526,7 +534,7 @@ msgstr "web kiszolgáló fut, pid=%d"
 
 #: src/amule.cpp
 msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
+msgstr "Nem lehett előkészíteni az amuleweb tokent. A web szerver nem lett elindítva."
 
 #: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
 #: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
@@ -544,7 +552,7 @@ msgstr ""
 
 #: src/amule.cpp
 msgid "An exception occurred while launching amuleapi."
-msgstr ""
+msgstr "Kivétel történt az amuleapi indításakor."
 
 #: src/amule.cpp
 #, c-format
@@ -553,31 +561,30 @@ msgstr "amuleapi fut a(z) %d pid-en"
 
 #: src/amule.cpp
 msgid "Could not launch amuleapi during automatic restart."
-msgstr ""
+msgstr "Nem lehetet indítani az amuleapi-t az automatikus újraindítás alatt."
 
 #: src/amule.cpp
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Az amuleapi indítását kérted induláskor, de az amuleapi futtatható fájl nem futtatható. Telepítsd az aMule REST API szerverét tartalmazó csomagot, vagy fordítsd le az aMule-t forrásból a -DBUILD_AMULEAPI=YES kapcsolóval, és telepítsd."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Could not prepare the amuleweb EC token."
-msgstr "Nem sikerült elmenteni az amuleapi jelszót: %s"
+msgstr "Nem lehetett előkészíteni az amuleweb EC tokenjét."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Nem sikerült elmenteni az amuleapi jelszót: %s"
+msgstr "Nem lehetett törölni az amuleweb EC token fájlt: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove the amuleapi EC token file: %s"
-msgstr "Nem sikerült elmenteni az amuleapi jelszót: %s"
+msgstr "Nem lehetett törölni az amuleapi EC token fájlt: %s"
 
 #: src/amule.cpp
 #, c-format
 msgid "amuleapi will restart in %u seconds."
-msgstr ""
+msgstr "amuleapi %u másodperc múlva újraindul."
 
 #: src/amule.cpp
 #, c-format
@@ -730,7 +737,7 @@ msgstr "Lemezterület helyfoglalás a '%s' fájl számára sikertelen: %s"
 
 #: src/amule.cpp
 msgid "Stopping network services..."
-msgstr ""
+msgstr "Hálózati szolgáltatások leállítása..."
 
 #: src/amule.cpp
 #, fuzzy
@@ -739,16 +746,15 @@ msgstr "Mentett források"
 
 #: src/amule.cpp
 msgid "Stopping background downloads and workers..."
-msgstr ""
+msgstr "Háttérben futó letöltések és folyamatok leállítása..."
 
 #: src/amule.cpp
-#, fuzzy
 msgid "Closing connections..."
-msgstr " kapcsolódás folyamatban ..."
+msgstr "Kapcsolatok bezárása..."
 
 #: src/amule.cpp
 msgid "Saving known files and statistics..."
-msgstr ""
+msgstr "Ismert fájlok és statisztikák mentése..."
 
 #: src/amule.cpp
 msgid "ERROR: can't open logfile"
@@ -768,9 +774,9 @@ msgid "ServerMessage: %s"
 msgstr "KiszolgálóÜzenet: %s"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to replace nodes.dat: %s"
-msgstr "A(z) %s (%s) megnyitása sikertelen"
+msgstr "Nem sikerült a nodes.dat kicserélése: %s"
 
 #: src/amule.cpp src/IP2Country.cpp src/IPFilter.cpp src/ServerList.cpp
 #, c-format
@@ -889,7 +895,7 @@ msgstr "HIBA: az aMule démon nem használható, ha a külső kapcsolatok le van
 
 #: src/amuled.cpp
 msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
-msgstr ""
+msgstr "HIBA: Egy EC jelszó kötelező. Állítsa be az amuled --ec-config paranccsal."
 
 #: src/amuled.cpp
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
@@ -1678,7 +1684,7 @@ msgstr "LowID"
 msgid "HighID"
 msgstr "HighID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Engedélyezve"
 
@@ -1765,17 +1771,38 @@ msgstr "Le/Fel módosító"
 msgid "Online now"
 msgstr "Online aláírás"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Befejezetlen"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Hitelesítés - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Rossz fiú"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Biztonsági azonosító"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Zavarás"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Hitelesítés - OK"
+msgid "Not complete"
+msgstr "Befejezetlen"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5031,10 +5058,6 @@ msgid "Server name"
 msgstr "Kiszolgáló neve"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Zavarás"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "Protokoll zavarás"
@@ -5074,10 +5097,6 @@ msgstr "Letöltve (összesen)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Eredmények"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Biztonsági azonosító"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

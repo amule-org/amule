@@ -342,8 +342,9 @@ msgstr "Po ndërpritet instanca e amuleweb me pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Po vritet instanca e amuleweb me pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "E Deshtuar"
 
@@ -1686,7 +1687,7 @@ msgstr "ID i ulet"
 msgid "HighID"
 msgstr "ID i larte"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "I aktivizuar"
 
@@ -1773,17 +1774,39 @@ msgstr "Modifikuesi DL/UP"
 msgid "Online now"
 msgstr "Firma online"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Nuk eshte e kompletuar"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "E verifikuar - Ne rregull"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Djale i keq"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Identifikim i sigurte"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+#, fuzzy
+msgid "Obfuscation"
+msgstr "Protokolli i Turbullimit"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "E verifikuar - Ne rregull"
+msgid "Not complete"
+msgstr "Nuk eshte e kompletuar"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5052,11 +5075,6 @@ msgstr "Emri i Serverit"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Obfuscation"
-msgstr "Protokolli i Turbullimit"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Protocol extensions"
 msgstr "Protokolli i Turbullimit"
 
@@ -5095,10 +5113,6 @@ msgstr "Shkarkimet (total)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Piket"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Identifikim i sigurte"
 
 #: src/muuli_wdr.cpp
 #, fuzzy

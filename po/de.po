@@ -362,8 +362,9 @@ msgstr "Beende amuleweb-Instanz mit pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Erzwinge Beenden der amuleweb-Instanz mit pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
@@ -1709,7 +1710,7 @@ msgstr "Niedrige ID"
 msgid "HighID"
 msgstr "Hohe ID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Aktiviert"
 
@@ -1796,17 +1797,38 @@ msgstr "DL/UP-Modifikator"
 msgid "Online now"
 msgstr "Onlinesignatur"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Nicht vollständig"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Verifiziert - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Böser Bube"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Sichere Erkennung"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Verschleierung"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Verifiziert - OK"
+msgid "Not complete"
+msgstr "Nicht vollständig"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5095,10 +5117,6 @@ msgid "Server name"
 msgstr "Servername"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Verschleierung"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "Protokollverschleierung"
@@ -5138,10 +5156,6 @@ msgstr "Heruntergeladen (Gesamt)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Punkte"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Sichere Erkennung"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

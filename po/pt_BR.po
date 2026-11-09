@@ -370,8 +370,9 @@ msgstr "Terminando a instância do amuleweb com o pid '%d'... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Matando a instância do amuleweb com o pid '%d'... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Falha"
 
@@ -1698,7 +1699,7 @@ msgstr "LowID"
 msgid "HighID"
 msgstr "HighID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Habilitado"
 
@@ -1780,17 +1781,38 @@ msgstr "Modificador DL/UP"
 msgid "Online now"
 msgstr "Online agora"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Incompleto"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Verificado - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Malicioso"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Identificação segura"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Ofuscação"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Verificado - OK"
+msgid "Not complete"
+msgstr "Incompleto"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5018,10 +5040,6 @@ msgid "Server name"
 msgstr "Nome do servidor"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Ofuscação"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "Extensões de protocolo"
 
@@ -5060,10 +5078,6 @@ msgstr "Download (total)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Pontuação"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Identificação segura"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

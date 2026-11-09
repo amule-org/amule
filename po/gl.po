@@ -359,8 +359,9 @@ msgstr "Rematando o proceso de amuleweb co pid «%d» ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Obrigando ao proceso de amuleweb con pid «%d» a pecharse ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Erro"
 
@@ -1703,7 +1704,7 @@ msgstr "IDBaixa"
 msgid "HighID"
 msgstr "IDAlta"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Habilitado"
 
@@ -1790,17 +1791,38 @@ msgstr "Modificador DE/EV"
 msgid "Online now"
 msgstr "Sinatura En liña"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Incompleto"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Verificado - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Rapaz malo"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Identidade segura"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Ofuscación"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Verificado - OK"
+msgid "Not complete"
+msgstr "Incompleto"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5069,10 +5091,6 @@ msgid "Server name"
 msgstr "Nome do servidor"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Ofuscación"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "Ofuscación do protocolo"
@@ -5112,10 +5130,6 @@ msgstr "Descargado (total)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Resultados"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Identidade segura"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

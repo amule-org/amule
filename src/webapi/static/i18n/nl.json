@@ -1055,7 +1055,7 @@
   "prefs_field_directories_allowed_remote_roots": "Ingestelde wortelmappen",
   "prefs_field_servers_accelerated_publication_enabled": "Publiceer gedeelde bestanden sneller op servers die het toestaan",
   "shared_media_refresh_tip_disabled": "Media-metadata uitlezen is uitgeschakeld in Voorkeuren.",
-  "shared_media_refresh_tip_unavailable": "Deze aMule heeft geen mediahelper (amule-media-probe) waardoor het geen media-metadata kan uitlezen.",
+  "shared_media_refresh_tip_unavailable": "Media-metadata uitlezen is niet beschikbaar: de helper ontbreekt of de OS-beperkingen zijn mislukt. Zie de kernlogbestanden voor details.",
   "stats_tree_upload_lowid_to_lowid_data": "LaagID naar LaagID Gegevens (Sessie): %s",
   "stats_tree_download_lowid_to_lowid_data": "LaagID naar LaagID Gegevens (Sessie): %s",
   "stats_tree_upload_ipv6_data": "IPv6 Gegevens (Sessie): %s",

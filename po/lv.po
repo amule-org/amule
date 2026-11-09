@@ -341,8 +341,9 @@ msgstr "Pārtrauc amuleweb procesu ar pid '%d' … "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Iznīcina amuleweb procesu ar pid '%d' … "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Neizdevās"
 
@@ -1688,7 +1689,7 @@ msgstr "Zems ID"
 msgid "HighID"
 msgstr "Augsts ID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Iespējots"
 
@@ -1771,17 +1772,39 @@ msgstr ""
 msgid "Online now"
 msgstr "Tiešsaistes paraksts"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Nav pabeigts"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Pārbaudīts - labi"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Sliktais čalis"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+#, fuzzy
+msgid "Secure ident"
+msgstr "Drošība"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr ""
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Pārbaudīts - labi"
+msgid "Not complete"
+msgstr "Nav pabeigts"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5058,10 +5081,6 @@ msgid "Server name"
 msgstr "Servera nosaukums"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr ""
 
@@ -5101,11 +5120,6 @@ msgstr "↓ Lejupielādēti (pavisam kopā)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Rezultāti"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Secure ident"
-msgstr "Drošība"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

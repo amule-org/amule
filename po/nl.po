@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-06 14:04+0000\n"
+"PO-Revision-Date: 2026-11-09 08:48+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -364,8 +364,9 @@ msgstr "Amuleweb-instantie met pid '%d' wordt afgesloten ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Amuleweb-instantie met pid '%d' wordt geforceerd beëindigd... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Mislukt"
 
@@ -1691,7 +1692,7 @@ msgstr "Laag-ID"
 msgid "HighID"
 msgstr "Hoog ID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Ingeschakeld"
 
@@ -1773,17 +1774,38 @@ msgstr "DL/UP modifier"
 msgid "Online now"
 msgstr "Nu online"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Niet compleet"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Gecontroleerd - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Slechterik"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Veilige identiteit"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Verduistering"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr "Credits"
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr "Gaat sneller naar voren in onze uploadwachtrij"
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr "Ondersteunt het uitgebreide eMule-protocol niet"
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Gecontroleerd - OK"
+msgid "Not complete"
+msgstr "Niet compleet"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -2745,7 +2767,7 @@ msgstr "Uitlezen van media-metadata is uitgeschakeld in voorkeuren"
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
 msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
-msgstr ""
+msgstr "Media-metadata uitlezen is niet beschikbaar: de helper ontbreekt of de OS-beperkingen zijn mislukt. Zie de kernlogbestanden voor details."
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -4226,9 +4248,9 @@ msgid "Media metadata: bundled amule-media-probe helper is unavailable."
 msgstr "Media-metadata: bijgevoegde amule-media-probe helper is niet beschikbaar."
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: no result for %s: %s"
-msgstr "Media-metadata: parser mislukt voor %s"
+msgstr "Media-metadata: geen resultaat voor %s: %s"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -4241,9 +4263,9 @@ msgid "Extracting media metadata: %s"
 msgstr "Media-metadata wordt uitgelezen: %s"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata extraction disabled until restart: %s"
-msgstr "Uitlezen van media-metadata is uitgeschakeld in voorkeuren"
+msgstr "Uitlezen van media-metadata is uitgeschakeld tot de volgende herstart: %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5013,10 +5035,6 @@ msgid "Server name"
 msgstr "Servernaam"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Verduistering"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "Protocoluitbreidingen"
 
@@ -5055,10 +5073,6 @@ msgstr "Gedownload (totaal)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Scores"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Veilige identiteit"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
@@ -5106,26 +5120,23 @@ msgstr "Registreert een autostart-item per gebruiker bij het besturingssysteem, 
 
 #: src/muuli_wdr.cpp
 msgid "Prevent automatic sleep: "
-msgstr ""
+msgstr "Voorkom automatisch slapen: "
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Off"
-msgstr "uit"
+msgstr "Uit"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While downloading"
-msgstr "Wordt al gedownload"
+msgstr "Tijdens het downloaden"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While aMule is running"
-msgstr "aMule draait"
+msgstr "Tijdens het uitvoeren van aMule"
 
 #: src/muuli_wdr.cpp
 msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgstr "Tijdens het downloaden: blijf wakker terwijl een download in de wachtrij staat en niet is gepauzeerd, gestopt of in fout staat, of tot de sessie-uploads overeenkomen met de sessie-downloads. Tijdens het uitvoeren: blijf zelfs wakker tijdens inactiviteit, bij verbroken verbinding of als geminimalizeerd naar het systeemvak. Het scherm kan nog wel uitschakelen."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5544,9 +5555,8 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "Precieze lengte/bitwaarde/codec uitlezen uit gedeelde audio- en videobestanden"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
-msgstr "Wanneer ingeschakeld gebruikt aMule de bijgevoegde MediaInfo parser om metadata van gedeelde mediabestanden uit te lezen."
+msgstr "Wanneer ingeschakeld gebruikt aMule de bijgevoegde mediaparser om metadata van gedeelde mediabestanden uit te lezen."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6618,7 +6628,7 @@ msgstr "seconden"
 
 #: src/OtherFunctions.cpp
 msgid "mins"
-msgstr "minuten"
+msgstr "min."
 
 #: src/OtherFunctions.cpp
 msgid "hours"
@@ -7013,9 +7023,8 @@ msgid "no options available"
 msgstr "geen opties beschikbaar"
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
-msgstr "Media-metadata: FFProbePath is verouderd. aMule gebruikt nu de bijgevoegde MediaInfo parser. De oude instelling wordt verwijderd."
+msgstr "Media-metadata: FFProbePath is verouderd. aMule gebruikt nu de bijgevoegde mediaparser. De oude instelling wordt verwijderd."
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -7656,7 +7665,7 @@ msgstr "De opgeslagen zoekgeschiedenis legen? Dit kan niet ongedaan worden gemaa
 
 #: src/SearchDlg.cpp
 msgid "Load into search form"
-msgstr ""
+msgstr "Laad naar de zoekopdracht vanuit"
 
 #: src/SearchDlg.cpp
 msgid "Search warning"
@@ -7690,7 +7699,7 @@ msgstr "Zoekopdracht in uitvoering"
 
 #: src/SearchDlg.cpp
 msgid "Enter whole, non-negative sizes and availability within the supported range."
-msgstr ""
+msgstr "Voer hele, niet-negatieve grottes en beschikbaarheid binnen het ondersteunde bereik in."
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -7702,16 +7711,15 @@ msgstr "Hoofdcategorie"
 
 #: src/SearchMetadataPanel.cpp
 msgid "minutes"
-msgstr ""
+msgstr "minuten"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Duration unit"
-msgstr ""
+msgstr "Eenheid van tijdsduur"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "Minimum duration"
-msgstr "Minimumduur (minuten)"
+msgstr "Minimumduur"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"

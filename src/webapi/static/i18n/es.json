@@ -565,7 +565,7 @@
   "stats_statistics_tree": "Árbol de estadísticas",
   "stats_upload_speed": "Velocidad de subida",
   "stats_secs": "s",
-  "stats_mins": "min",
+  "stats_mins": "min.",
   "stats_hours": "horas",
   "stats_days": "días",
   "stats_tree_statistics": "Estadísticas",
@@ -1068,5 +1068,6 @@
   "stats_tree_natt_server_punch_successes": "Perforaciones de NAT del servidor exitosas: %s",
   "stats_tree_natt_utp_stream_moves": "Los flujos uTP se han movido a un nuevo puerto: %s",
   "prefs_debugging_warning": "Los registros de depuración pueden contener direcciones IP de otros pares, hashes de usuario y nombres de archivo. Los invitados pueden leer el registro, a menos que los mensajes de depuración vayan solo al archivo de registro. Esa opción se aplica solo a las líneas nuevas: las líneas anteriores siguen siendo legibles hasta que se borre el registro, y al borrarlo también se vacía el archivo de registro del demonio.",
-  "prefs_field_advanced_verbose_logging_logfile_only": "Sólo al archivo de registro"
+  "prefs_field_advanced_verbose_logging_logfile_only": "Sólo al archivo de registro",
+  "shared_media_refresh_tip_unavailable": "La extracción de metadatos multimedia no está disponible: falta el proceso auxiliar o fallaron sus restricciones del SO. Consulta el registro del núcleo para más detalles."
 }

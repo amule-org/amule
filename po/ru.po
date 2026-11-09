@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-08 11:22+0000\n"
+"PO-Revision-Date: 2026-11-09 08:48+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -369,8 +369,9 @@ msgstr "Завершение экземпляра amuleweb с pid «%d»… "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Убивается экземпляр amuleweb с pid «%d»… "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Сбой"
 
@@ -1708,7 +1709,7 @@ msgstr "Низкий ИД"
 msgid "HighID"
 msgstr "Высокий ИД"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Разрешено"
 
@@ -1792,17 +1793,38 @@ msgstr "Баланс приёма/отдачи"
 msgid "Online now"
 msgstr "Сейчас в сети"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Не завершён"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Проверено — хорошо"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Нарушитель"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Безопасный ИД"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Маскировка"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr "Кредиты"
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr "Быстрее продвигается вверх в нашей очереди загрузки"
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr "Не поддерживает расширенный протокол eMule"
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Проверено — хорошо"
+msgid "Not complete"
+msgstr "Не завершён"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5053,10 +5075,6 @@ msgid "Server name"
 msgstr "Имя сервера"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Маскировка"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "Расширения протокола"
 
@@ -5095,10 +5113,6 @@ msgstr "Загружено (всего)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Счёт"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Безопасный ИД"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
@@ -7768,7 +7782,7 @@ msgstr "Единица длительности"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum duration"
-msgstr "Минимальная длительность (минуты)"
+msgstr "Минимальная длительность"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"

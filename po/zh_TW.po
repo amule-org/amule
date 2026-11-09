@@ -348,8 +348,9 @@ msgstr "正在終止 pid %d 的 amuleweb 執行緒... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "正在強行終止 pid %d 的 amuleweb 執行緒... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "失敗"
 
@@ -1685,7 +1686,7 @@ msgstr "LowID"
 msgid "HighID"
 msgstr "HighID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "已啟用"
 
@@ -1773,17 +1774,38 @@ msgstr "下載/上傳 比率"
 msgid "Online now"
 msgstr "線上簽名識別"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "未完成"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "驗證通過"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "壞蛋"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "安全驗證"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "模糊協定"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "驗證通過"
+msgid "Not complete"
+msgstr "未完成"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5039,10 +5061,6 @@ msgid "Server name"
 msgstr "伺服器名稱"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "模糊協定"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "模糊協定"
@@ -5082,10 +5100,6 @@ msgstr "總計下載"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "分數"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "安全驗證"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

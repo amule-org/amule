@@ -343,8 +343,9 @@ msgstr "מסיים מופע amuleweb עם pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "הורג מופע amuleweb עם pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "נכשל"
 
@@ -1688,7 +1689,7 @@ msgstr "מ\"ז נמוך (LowID)"
 msgid "HighID"
 msgstr "מ\"ז גבוה (HighID)"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "מופעל"
 
@@ -1776,17 +1777,39 @@ msgstr ""
 msgid "Online now"
 msgstr "חתימה מקוונת"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "לא שלם"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "מאומת - תקין"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr ""
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+#, fuzzy
+msgid "Secure ident"
+msgstr "אבטחה"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr ""
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "מאומת - תקין"
+msgid "Not complete"
+msgstr "לא שלם"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5053,10 +5076,6 @@ msgid "Server name"
 msgstr "שם שרת"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr ""
 
@@ -5095,11 +5114,6 @@ msgstr "ירד (סה\"כ)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "ציונים"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "Secure ident"
-msgstr "אבטחה"
 
 #: src/muuli_wdr.cpp
 #, fuzzy

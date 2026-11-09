@@ -364,8 +364,9 @@ msgstr "Ukončování instance amuleweb s PID '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Vynucuje se ukončení instance amuleweb s PID '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Nezdařilo se"
 
@@ -1699,7 +1700,7 @@ msgstr "LowID"
 msgid "HighID"
 msgstr "HighID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Povoleno"
 
@@ -1781,17 +1782,38 @@ msgstr "DL/UP modifikátor"
 msgid "Online now"
 msgstr "Nyní online"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Neúplné"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Ověřeno - v pořádku"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Škodlivý klient"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Secure ident"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Zamaskování"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Ověřeno - v pořádku"
+msgid "Not complete"
+msgstr "Neúplné"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5032,10 +5054,6 @@ msgid "Server name"
 msgstr "Název serveru"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Zamaskování"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "Rozšíření protokolu"
 
@@ -5074,10 +5092,6 @@ msgstr "Staženo (celkem)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Skóre"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Secure ident"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
