@@ -119,7 +119,7 @@ void CCorruptionBlackBox::VerifiedData(bool ok, uint16 nPart, uint32 nRelStartPo
 
 	CRecordList &list = m_Records[nPart];
 #ifdef __DEBUG__
-	std::map<uint32, bool> mapDebug;
+	std::map<CNetworkAddress, bool> mapDebug;
 	uint32 nDbgVerifiedBytes = 0;
 	size_t listsize1 = list.size();
 #endif
