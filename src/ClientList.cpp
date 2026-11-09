@@ -867,8 +867,6 @@ void CClientList::Process()
 			if (m_nBuddyStatus == Disconnected &&
 				Kademlia::CKademlia::GetPrefs()->GetFindBuddy() &&
 				!thePrefs::IsClientCryptLayerRequired()) {
-				++m_buddyStats.own.searches;
-				AddDebugLogLineN(logKadBuddy, "Starting buddy search");
 				// We are a firewalled client with no buddy. We have also waited a set time
 				// to try to avoid a false firewalled status.. So lets look for a buddy..
 				if (!Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::FINDBUDDY,
@@ -879,6 +877,9 @@ void CClientList::Process()
 					// found and lost a buddy quickly and the last search has
 					// not been removed yet. Set it to happen again next time.
 					Kademlia::CKademlia::GetPrefs()->SetFindBuddy();
+				} else {
+					++m_buddyStats.own.searches;
+					AddDebugLogLineN(logKadBuddy, "Started a buddy search");
 				}
 			}
 		} else {
