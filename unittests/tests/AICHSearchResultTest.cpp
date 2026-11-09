@@ -1053,13 +1053,23 @@ TEST(AICHHashTree, LargeFileRecoveryDataIsAccepted)
 TEST(AICHSearchResult, EachIPv6SiteSignsWithItsOwnKey)
 {
 	// Without its own key every IPv6 source signed as 0, so the first one spoke for all of them.
-	const uint32_t v4 = CAICHUntrustedHash::SigningKey(CNetworkAddress::FromString("198.51.100.77"));
-	ASSERT_EQUALS(CAICHUntrustedHash::SigningSubnet(
-			      CNetworkAddress::FromString("198.51.100.77").ToIPv4NetworkOrderOrZero()),
-		v4);
-	const uint32_t site = CAICHUntrustedHash::SigningKey(CNetworkAddress::FromString("2a07:1:2:3::bd1"));
-	ASSERT_EQUALS(site, CAICHUntrustedHash::SigningKey(CNetworkAddress::FromString("2a07:1:2:ffff::9")));
-	ASSERT_TRUE(site != CAICHUntrustedHash::SigningKey(CNetworkAddress::FromString("2a07:1:3::1")));
+	// Built from octets: this test links no NetworkAddress.cpp.
+	const auto v6 = [](uint8_t third, uint8_t sixth, uint8_t last) {
+		CNetworkAddress::Octets octets{};
+		octets[0] = 0x2a;
+		octets[1] = 0x07;
+		octets[3] = third;
+		octets[5] = sixth;
+		octets[15] = last;
+		return CNetworkAddress::IPv6FromOctets(octets);
+	};
+	const uint32_t ip = 0x4D6433C6; // 198.51.100.77, first octet in the low byte
+	const uint32_t v4 = CAICHUntrustedHash::SigningKey(CNetworkAddress::FromIPv4NetworkOrder(ip));
+	ASSERT_EQUALS(CAICHUntrustedHash::SigningSubnet(ip), v4);
+	const uint32_t site = CAICHUntrustedHash::SigningKey(v6(1, 2, 0x01));
+	// The same /48: only bits past the sixth byte differ.
+	ASSERT_EQUALS(site, CAICHUntrustedHash::SigningKey(v6(1, 2, 0x99)));
+	ASSERT_TRUE(site != CAICHUntrustedHash::SigningKey(v6(1, 3, 0x01)));
 	// Never an IPv4 key, and never the absent one.
 	ASSERT_TRUE((site & 0xFF000000u) != 0);
 	ASSERT_EQUALS(0u, v4 & 0xFF000000u);

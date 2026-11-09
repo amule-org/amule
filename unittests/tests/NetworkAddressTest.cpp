@@ -663,11 +663,16 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 	// ff00::/8, multicast.
 	ASSERT_FALSE(CNetworkAddress::FromString("ff02::1").IsGloballyRoutableIPv6());
 
-	// And the addresses immediately outside those prefixes stay routable, so
-	// the tests above are pinning a prefix and not a whole leading byte.
-	ASSERT_TRUE(CNetworkAddress::FromString("fbff:ffff::1").IsGloballyRoutableIPv6());
-	ASSERT_TRUE(CNetworkAddress::FromString("fe00::1").IsGloballyRoutableIPv6());
-	ASSERT_TRUE(CNetworkAddress::FromString("fe7f:ffff::1").IsGloballyRoutableIPv6());
+	// The addresses immediately outside those prefixes match none of the entries, so the tests
+	// above pin a prefix and not a whole leading byte. They are still not routable: they lie
+	// outside 2000::/3.
+	for (const char *neighbour : { "fbff:ffff::1", "fe00::1", "fe7f:ffff::1" }) {
+		const CNetworkAddress address = CNetworkAddress::FromString(neighbour);
+		for (const auto &prefix : NetworkAddressPolicy::kIPv6ExcludedPrefixes) {
+			ASSERT_FALSE(NetworkAddressPolicy::MatchesPrefix(address.GetOctets(), prefix));
+		}
+		ASSERT_FALSE(address.IsGloballyRoutableIPv6());
+	}
 }
 
 // The octets are the storage now, so what GetOctets() hands out is what every bit-arithmetic caller
