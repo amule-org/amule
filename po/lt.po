@@ -344,8 +344,9 @@ msgstr "Stabdomas amuleweb procesas su pid „%d“ ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Priverstinai stabdomas amuleweb procesas su pid „%d“ ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Nepavyko"
 
@@ -1697,7 +1698,7 @@ msgstr "Žemas ID"
 msgid "HighID"
 msgstr "Aukštas ID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Įjungta"
 
@@ -1786,17 +1787,38 @@ msgstr "Ats./išs. indeksas"
 msgid "Online now"
 msgstr "Keičiamas parašas"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Neužbaigta"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Praėjo patikrinimą"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Kenkėjas"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Saugus identifikatorius"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Slėpimas"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Praėjo patikrinimą"
+msgid "Not complete"
+msgstr "Neužbaigta"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5078,10 +5100,6 @@ msgid "Server name"
 msgstr "Serverio pavadinimas"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Slėpimas"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "Protokolo slėpimas"
@@ -5121,10 +5139,6 @@ msgstr "Atsiųsta (iš viso)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Reitingas"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Saugus identifikatorius"
 
 #: src/muuli_wdr.cpp
 #, fuzzy

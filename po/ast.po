@@ -344,8 +344,9 @@ msgstr "Finando la instancia d'amuleweb col pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Matando la instancia d'amuleweb col pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Falló"
 
@@ -1688,7 +1689,7 @@ msgstr "ID-Baxa"
 msgid "HighID"
 msgstr "ID-Alta"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Habilitáu"
 
@@ -1775,17 +1776,38 @@ msgstr "Modificador DE/XU"
 msgid "Online now"
 msgstr "Robla online"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Non completáu"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Verificáu - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Veceru sospechosu"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Ident Segura"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Ofuscación"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Verificáu - OK"
+msgid "Not complete"
+msgstr "Non completáu"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5055,10 +5077,6 @@ msgid "Server name"
 msgstr "Nome sirvidor"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Ofuscación"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "Ofuscación de protocolu"
@@ -5098,10 +5116,6 @@ msgstr "Descargáu (total)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Resultaos"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Ident Segura"
 
 #: src/muuli_wdr.cpp
 #, fuzzy

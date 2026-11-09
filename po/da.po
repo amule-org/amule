@@ -342,8 +342,9 @@ msgstr "Afslutter amuleweb-instans med pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Dræber amuleweb-instans med pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Fejlede"
 
@@ -1687,7 +1688,7 @@ msgstr "Lavt ID"
 msgid "HighID"
 msgstr "HøjtID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Aktiveret"
 
@@ -1774,17 +1775,38 @@ msgstr ""
 msgid "Online now"
 msgstr ""
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Ikke færdig"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Verificeret - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Slem fyr"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr ""
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Verificeret - OK"
+msgid "Not complete"
+msgstr "Ikke færdig"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5054,10 +5076,6 @@ msgid "Server name"
 msgstr "Servernavn"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr ""
 
@@ -5102,10 +5120,6 @@ msgstr "Downloads (%i)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Point:"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr ""
 
 #: src/muuli_wdr.cpp
 #, fuzzy

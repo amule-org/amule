@@ -347,8 +347,9 @@ msgstr "Končanje izvoda amuleweb s PID »%d« ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Ubijanje izvoda amuleweb s PID »%d« ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Neuspeh"
 
@@ -1707,7 +1708,7 @@ msgstr "Nizek ID"
 msgid "HighID"
 msgstr "Visok ID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Omogočeno"
 
@@ -1794,17 +1795,38 @@ msgstr "Količnik dol/gor"
 msgid "Online now"
 msgstr "Spletni podpis"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Nezaključeno"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Preverjeno – v redu"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Baraba"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Varna identifikacija"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Maskiranje"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Preverjeno – v redu"
+msgid "Not complete"
+msgstr "Nezaključeno"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5100,10 +5122,6 @@ msgid "Server name"
 msgstr "Ime strežnika"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Maskiranje"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "Maskiranje protokola"
@@ -5143,10 +5161,6 @@ msgstr "Prejeto (skupno)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Točke"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Varna identifikacija"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

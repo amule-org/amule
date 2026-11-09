@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-08 11:22+0000\n"
+"PO-Revision-Date: 2026-11-09 08:48+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -366,8 +366,9 @@ msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "失败"
 
@@ -1693,7 +1694,7 @@ msgstr "Low ID"
 msgid "HighID"
 msgstr "High ID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "已启用"
 
@@ -1775,17 +1776,38 @@ msgstr "下载/上传比率"
 msgid "Online now"
 msgstr "当前在线"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "未完成"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "验证 - 通过"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "坏蛋"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "安全身份认证"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "模糊协议"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr "积分"
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr "在我们的上传队列中上移地更快"
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr "不支持 eMule 扩展协议"
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "验证 - 通过"
+msgid "Not complete"
+msgstr "未完成"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5013,10 +5035,6 @@ msgid "Server name"
 msgstr "服务器名称"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "模糊协议"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "协议扩展"
 
@@ -5055,10 +5073,6 @@ msgstr "下载 (总共)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "得分"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "安全身份认证"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

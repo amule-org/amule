@@ -350,8 +350,9 @@ msgstr "Avslutar amuleweb-instansen med pid '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Dödar amuleweb-instansen med pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Misslyckades"
 
@@ -1689,7 +1690,7 @@ msgstr "LowID"
 msgid "HighID"
 msgstr "HighID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Aktiverad"
 
@@ -1771,17 +1772,38 @@ msgstr "DL/UP-modifierare"
 msgid "Online now"
 msgstr "Uppkopplad nu"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Inte färdig"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Verifierad - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Bad Guy"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Säker ident"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Fördunkling"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Verifierad - OK"
+msgid "Not complete"
+msgstr "Inte färdig"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5036,10 +5058,6 @@ msgid "Server name"
 msgstr "Servernamn"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Fördunkling"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "Protokolltillägg"
 
@@ -5078,10 +5096,6 @@ msgstr "Hämtat (totalt)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Poäng"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Säker ident"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

@@ -372,8 +372,9 @@ msgstr "Interruption de l'instance amuleweb avec le pid '%d' … "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Mise à mort de l'instance amuleweb avec le pid '%d' … "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Échec"
 
@@ -1710,7 +1711,7 @@ msgstr "LowID"
 msgid "HighID"
 msgstr "HighID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Activé"
 
@@ -1792,17 +1793,38 @@ msgstr "Modificateur R/É"
 msgid "Online now"
 msgstr "En ligne actuellement"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Incomplet"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Vérification - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Mauvais garçon"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Identification sécurisée"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Brouillage"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Vérification - OK"
+msgid "Not complete"
+msgstr "Incomplet"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5044,10 +5066,6 @@ msgid "Server name"
 msgstr "Nom du serveur"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Brouillage"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "Extensions de protocole"
 
@@ -5086,10 +5104,6 @@ msgstr "Reçu (total)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Scores"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Identification sécurisée"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

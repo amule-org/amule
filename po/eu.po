@@ -345,8 +345,9 @@ msgstr "'%d' pid-a duen amuleweb instantzia amaitzen ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "'%d' pid-a duen amuleweb instantzia hiltzen ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Huts egin du"
 
@@ -1689,7 +1690,7 @@ msgstr "IDBaxua"
 msgid "HighID"
 msgstr "IDAltua"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Gaitua"
 
@@ -1776,17 +1777,38 @@ msgstr "DE/IG aldagaia"
 msgid "Online now"
 msgstr "Sinadura linean"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Ez osorik"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Egiaztaturik: Ondo"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Tipo gaiztoa"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Identitate ziurra"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Nahasmena"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Egiaztaturik: Ondo"
+msgid "Not complete"
+msgstr "Ez osorik"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5055,10 +5077,6 @@ msgid "Server name"
 msgstr "Zerbitzari izena"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Nahasmena"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "Protokolo nahastea"
@@ -5098,10 +5116,6 @@ msgstr "Deskargatua (denera)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Puntuak"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Identitate ziurra"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

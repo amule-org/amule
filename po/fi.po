@@ -360,8 +360,9 @@ msgstr "Lopetetaan amulewebin instanssi prosessinumerolla '%d' ... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Tuhotaan amulewebin instanssi prosessinumerolla '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Epäonnistunut"
 
@@ -1699,7 +1700,7 @@ msgstr "LowID"
 msgid "HighID"
 msgstr "HighID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Käytössä"
 
@@ -1785,17 +1786,38 @@ msgstr "Vastaanotto/lähetys-määre"
 msgid "Online now"
 msgstr "Online-Signeeraus"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Ei vielä valmis"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Vahvistettu - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Pahis"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Turvattu tunnistus"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Kätkeminen"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Vahvistettu - OK"
+msgid "Not complete"
+msgstr "Ei vielä valmis"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5059,10 +5081,6 @@ msgid "Server name"
 msgstr "Palvelimen nimi"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Kätkeminen"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "Protokollan kätkeminen"
@@ -5102,10 +5120,6 @@ msgstr "Ladattu (yhteensä)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Pisteet"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Turvattu tunnistus"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"

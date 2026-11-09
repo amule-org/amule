@@ -13,12 +13,13 @@
 # Kyra Synth <synthkyra@users.noreply.hosted.weblate.org>, 2026.
 # thorin <thorin@users.noreply.hosted.weblate.org>, 2026.
 # Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>, 2026.
+# San Vi <sanvi684@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-07 10:50+0000\n"
+"PO-Revision-Date: 2026-11-08 22:12+0000\n"
 "Last-Translator: Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -371,8 +372,9 @@ msgstr "Cerrando la instancia de amuleweb con pid '%d'... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Matando la instancia de amuleweb con pid '%d'... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Falló"
 
@@ -1698,7 +1700,7 @@ msgstr "Id Baja"
 msgid "HighID"
 msgstr "Id Alta"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Habilitada"
 
@@ -1780,17 +1782,38 @@ msgstr "Modificador desc./sub."
 msgid "Online now"
 msgstr "Ahora en linea"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "No completado"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Verificado - Correcto"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Cliente sospechoso"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Identificación segura"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Ofuscación"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Verificado - Correcto"
+msgid "Not complete"
+msgstr "No completado"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -2751,7 +2774,7 @@ msgstr "La extracción de metadatos multimedia está desactivado en preferencias
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
 msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
-msgstr ""
+msgstr "La extracción de metadatos multimedia no está disponible: falta el proceso auxiliar o fallaron sus restricciones del SO. Consulta el registro del núcleo para más detalles."
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -3595,7 +3618,7 @@ msgstr "Error actualizando %s"
 #: src/IP2Country.cpp src/IPFilter.cpp
 #, c-format
 msgid "Successfully updated %s"
-msgstr "Se ha actualizado %s con éxito"
+msgstr "Se ha actualizado %s saltisfactoriamente"
 
 #: src/IP2Country.cpp
 msgid "DB-IP download failed for the current month - retrying with the previous month's URL."
@@ -4236,9 +4259,9 @@ msgid "Media metadata: bundled amule-media-probe helper is unavailable."
 msgstr "Metadatos multimedia: el asistente integrado amule-media-probe no está disponible."
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: no result for %s: %s"
-msgstr "Metadatos multimedia: error en el análisis de %s"
+msgstr "Metadatos multimedia: No hay resultados para %s: %s"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -4251,9 +4274,9 @@ msgid "Extracting media metadata: %s"
 msgstr "Extracción de metadatos multimedia: %s"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata extraction disabled until restart: %s"
-msgstr "La extracción de metadatos multimedia está desactivado en preferencias"
+msgstr "Extracción de metadatos multimedia desactivada hasta reiniciar: %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -5022,10 +5045,6 @@ msgid "Server name"
 msgstr "Nombre del servidor"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Ofuscación"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "Extensiones del protocolo"
 
@@ -5064,10 +5083,6 @@ msgstr "Descargado (total)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Resultados"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Identificación segura"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
@@ -5115,26 +5130,23 @@ msgstr "Registra una entrada en el SO por usuario para arrancar automáticamente
 
 #: src/muuli_wdr.cpp
 msgid "Prevent automatic sleep: "
-msgstr ""
+msgstr "Evitar la suspensión automática: "
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Off"
-msgstr "apagado"
+msgstr "Apagado"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While downloading"
-msgstr "Ya se está descargando"
+msgstr "Mientras se descarga"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While aMule is running"
-msgstr "aMule ya está ejecutándose"
+msgstr "Mientras aMule se esté ejecutando"
 
 #: src/muuli_wdr.cpp
 msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgstr "Al descargar: mantenerse activo mientras haya una descarga en cola y no esté pausada, detenida o con errores, o hasta que las subidas de la sesión igualen a las descargas de la sesión. Al ejecutarse: mantenerse activo incluso si está inactivo, desconectado o minimizado en la bandeja del sistema. La pantalla aún puede apagarse."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5553,9 +5565,8 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "Extraer la duración, el bitrate y el códec de los archivos multimedia compartidos"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
-msgstr "Cuando está activada, aMule utiliza su analizador MediaInfo integrado para extraer metadatos de los archivos multimedia compartidos."
+msgstr "Cuando está activado, aMule utiliza su analizador multimedia integrado para extraer metadatos de los archivos multimedia compartidos."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6627,7 +6638,7 @@ msgstr "s"
 
 #: src/OtherFunctions.cpp
 msgid "mins"
-msgstr "minutos"
+msgstr "min."
 
 #: src/OtherFunctions.cpp
 msgid "hours"
@@ -7022,9 +7033,8 @@ msgid "no options available"
 msgstr "no hay opciones disponibles"
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
-msgstr "Metadatos multimedia: FFProbePath ha quedado obsoleto; aMule utiliza ahora su analizador MediaInfo integrado. Se elimina la configuración anterior."
+msgstr "Metadatos multimedia: FFProbePath está obsoleto; aMule ahora utiliza su analizador multimedia integrado. Eliminando la configuración antigua."
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -7665,7 +7675,7 @@ msgstr "¿Borrar el historial de búsqueda guardado? Esto no se puede deshacer."
 
 #: src/SearchDlg.cpp
 msgid "Load into search form"
-msgstr ""
+msgstr "Cargar en el formulario de búsqueda"
 
 #: src/SearchDlg.cpp
 msgid "Search warning"
@@ -7699,7 +7709,7 @@ msgstr "Búsqueda en curso"
 
 #: src/SearchDlg.cpp
 msgid "Enter whole, non-negative sizes and availability within the supported range."
-msgstr ""
+msgstr "Introduce tamaños enteros y no negativos, y una disponibilidad dentro del rango admitido."
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -7711,16 +7721,15 @@ msgstr "Principal"
 
 #: src/SearchMetadataPanel.cpp
 msgid "minutes"
-msgstr ""
+msgstr "minutos"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Duration unit"
-msgstr ""
+msgstr "Unidad de duración"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "Minimum duration"
-msgstr "Duración mínima (minutos)"
+msgstr "Duración mínima"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
@@ -8562,7 +8571,7 @@ msgstr[1] "Descubiertos %u nuevos archivos compartidos"
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Refused to rename '%s' to '%s': the new name must be a plain file name, not a path."
-msgstr ""
+msgstr "Se rechazó renombrar «%s» a «%s»: el nuevo nombre debe ser solo el nombre del archivo, no una ruta."
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8804,14 +8813,14 @@ msgid "Crypt overhead (UDP): %s"
 msgstr "Tráfico adicional por el cifrado (UDP): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "LowID to LowID Data (Session): %s"
-msgstr "Datos descargados (sesión (total)): %s"
+msgstr "Datos de LowID a LowID (sesión): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IPv6 Data (Session): %s"
-msgstr "Datos subidos (sesión (total)): %s"
+msgstr "Datos IPv6 (sesión): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8914,29 +8923,28 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Pico de conexiones (estimado): %i"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "NAT Traversal (Session)"
-msgstr "Superación de NAT (uTP)"
+msgstr "NAT Traversal (sesión)"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Server Hole Punches: %s"
-msgstr "Tráfico adicional del servidor (paquetes): %s"
+msgstr "Perforaciones de NAT del servidor: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Successful Server Hole Punches: %s"
-msgstr ""
+msgstr "Perforaciones de NAT del servidor exitosas: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Lugdunum Callbacks: %s"
-msgstr ""
+msgstr "Respuestas de Lugdunum: %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Successful Lugdunum Callbacks: %s"
-msgstr "Se ha actualizado %s con éxito"
+msgstr "Llamadas a Lugdunum exitosas: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -10588,9 +10596,9 @@ msgid "Kad could not read %s. It was renamed to %s.bad, and a new index will be 
 msgstr "Kad no pudo leer %s. Fue renombrado a %s.bad, y un índice nuevo será guardado al apagar."
 
 #: src/kademlia/kademlia/Indexed.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Kad could not preserve the unreadable index %s as %s.bad: %s. Its original file will not be overwritten."
-msgstr "Kad no pudo preservar el índice ilegible %s como %s.bad. Su archivo original no será sobrescrito."
+msgstr "Kad no ha podido conservar el índice ilegible %s como %s.bad: %s. El archivo original no se sobrescribirá."
 
 #: src/kademlia/kademlia/Indexed.cpp
 msgid "Kad could not load its saved index. Existing index files were preserved."
@@ -10602,44 +10610,43 @@ msgstr "Kad no pudo guardar un índice. La copia previa de ese fichero fue prese
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not remove legacy ECPassword; cleanup will be retried on restart."
-msgstr ""
+msgstr "No se ha podido eliminar la contraseña ECPassword heredada; se reintentará la limpieza al reiniciar."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not persist ECPasswordVerifier; using the legacy ECPassword in memory for this run. Migration will be retried on restart."
-msgstr ""
+msgstr "No se ha podido guardar ECPasswordVerifier; se utilizará la ECPassword heredada en memoria para esta ejecución. Se reintentará la migración al reiniciar."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "Could not generate ECPasswordVerifier; external connections are disabled."
-msgstr "Contraseña fijada y conexiones externas habilitadas."
+msgstr "No se ha podido generar ECPasswordVerifier; las conexiones externas están desactivadas."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not generate ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Se ha rechazado el cambio de contraseña de EC: no se ha podido generar ECPasswordVerifier. La credencial activa no ha cambiado."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not persist ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Se ha rechazado el cambio de contraseña de EC: no se ha podido guardar ECPasswordVerifier. La credencial activa no ha cambiado."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not store ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Se ha rechazado el cambio de contraseña de EC: no se ha podido guardar ECPasswordVerifier. La credencial activa no ha cambiado."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
-msgstr ""
+msgstr "ECPassword contiene un resumen no válido o correspondiente a una contraseña vacía. Ejecuta «amuled --ec-config» para establecer una nueva contraseña EC."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "ECPasswordVerifier no válido o no compatible; rechazando las conexiones externas."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not compare legacy ECPassword with ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "No se ha podido comparar la contraseña ECPassword heredada con ECPasswordVerifier; rechazando las conexiones externas."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
-msgstr ""
+msgstr "Migrando la clave heredada ECPassword modificada tras degradar la versión; el verificador anterior ya no se utilizará para autenticar esta sesión."
 
 #~ msgid "This aMule has no media helper (amule-media-probe)"
 #~ msgstr "Este aMule no dispone de asistente multimedia (amule-media-probe)"

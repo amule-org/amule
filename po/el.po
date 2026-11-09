@@ -343,8 +343,9 @@ msgstr "Τερματισμός στιγμιότυπου amuleweb με pid '%d' .
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "Βίαιος τερματισμός στιγμιότυπου amuleweb με pid '%d' ... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Απέτυχε"
 
@@ -1687,7 +1688,7 @@ msgstr "Κακή ποιότητα σύνδεσης (LowID)"
 msgid "HighID"
 msgstr "Καλή ποιότητα σύνδεσης (HighID)"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Ενεργό"
 
@@ -1776,17 +1777,38 @@ msgstr "Τροποποιητής Ανεβοκατεβάσματος"
 msgid "Online now"
 msgstr "Διασυνδεδεμένη υπογραφή"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Δεν ολοκληρώθηκε"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "Επιβεβαιώθηκε - OK"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Κακό παιδί"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Ασφαλής ταυτότητα"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Συσκότιση"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "Επιβεβαιώθηκε - OK"
+msgid "Not complete"
+msgstr "Δεν ολοκληρώθηκε"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5054,10 +5076,6 @@ msgid "Server name"
 msgstr "Όνομα διακομιστή"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Συσκότιση"
-
-#: src/muuli_wdr.cpp
 #, fuzzy
 msgid "Protocol extensions"
 msgstr "Συσκότιση πρωτοκόλλου"
@@ -5097,10 +5115,6 @@ msgstr "Κατέβηκαν (συνολικά)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Σκορ"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Ασφαλής ταυτότητα"
 
 #: src/muuli_wdr.cpp
 #, fuzzy

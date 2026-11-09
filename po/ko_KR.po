@@ -344,8 +344,9 @@ msgstr "pid '%d'인 amuleweb 인스턴스를 종료하는 중... "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "pid '%d'인 amuleweb 인스턴스를 강제 종료하는 중... "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "실패"
 
@@ -1688,7 +1689,7 @@ msgstr "낮은아이디"
 msgid "HighID"
 msgstr "높은아이디"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "활성화됨"
 
@@ -1775,17 +1776,39 @@ msgstr "내려받기/올려주기 변경자"
 msgid "Online now"
 msgstr "온라인 서명"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "완료되지 않음"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "인증됨"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "나쁜 사람"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "안전한 인증"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+#, fuzzy
+msgid "Obfuscation"
+msgstr "프로토콜 난독화"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "인증됨"
+msgid "Not complete"
+msgstr "완료되지 않음"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5054,11 +5077,6 @@ msgstr "서버 이름"
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Obfuscation"
-msgstr "프로토콜 난독화"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Protocol extensions"
 msgstr "프로토콜 난독화"
 
@@ -5097,10 +5115,6 @@ msgstr "내려받기 (전체)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "점수"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "안전한 인증"
 
 #: src/muuli_wdr.cpp
 #, fuzzy

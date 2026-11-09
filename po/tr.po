@@ -350,8 +350,9 @@ msgstr "Amuleweb oturumu pid `%d' ile sonlandırılıyor… "
 msgid "Killing amuleweb instance with pid '%d' ... "
 msgstr "pid `%d' ile ilişkili amuleweb oturumu öldürülüyor… "
 
-#: src/amule.cpp src/ClientRef.cpp src/FileDetailDialog.cpp src/SearchDlg.cpp
-#: src/ServerListCtrl.cpp src/SharedFilesCtrl.cpp
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
 msgid "Failed"
 msgstr "Başarısız"
 
@@ -1689,7 +1690,7 @@ msgstr "DüşükID"
 msgid "HighID"
 msgstr "YüksekID"
 
-#: src/ClientDetailDialog.cpp
+#: src/ClientDetailDialog.cpp src/ClientNameCellDrawing.cpp
 msgid "Enabled"
 msgstr "Etkinleştirildi"
 
@@ -1771,17 +1772,38 @@ msgstr "İND./GÖN. niteleyici"
 msgid "Online now"
 msgstr "Şimdi çevrimiçi"
 
-#: src/ClientRef.cpp
-msgid "Not complete"
-msgstr "Eksik"
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+msgid "Verified - OK"
+msgstr "İncelendi - Tamam"
 
-#: src/ClientRef.cpp
+#: src/ClientNameCellDrawing.cpp src/ClientRef.cpp
 msgid "Bad Guy"
 msgstr "Kötü Çocuk"
 
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Secure ident"
+msgstr "Güvenli kimlik"
+
+#: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
+msgid "Obfuscation"
+msgstr "Gizleme"
+
+#. TRANSLATORS: the upload credit a peer has earned by sending us data.
+#: src/ClientNameCellDrawing.cpp
+msgid "Credits"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Moves up faster in our upload queue"
+msgstr ""
+
+#: src/ClientNameCellDrawing.cpp
+msgid "Does not support the eMule extended protocol"
+msgstr ""
+
 #: src/ClientRef.cpp
-msgid "Verified - OK"
-msgstr "İncelendi - Tamam"
+msgid "Not complete"
+msgstr "Eksik"
 
 #: src/ClientRef.cpp src/FileDetailDialog.cpp src/muuli_wdr.cpp
 msgid "N/A"
@@ -5036,10 +5058,6 @@ msgid "Server name"
 msgstr "Sunucu ismi"
 
 #: src/muuli_wdr.cpp
-msgid "Obfuscation"
-msgstr "Gizleme"
-
-#: src/muuli_wdr.cpp
 msgid "Protocol extensions"
 msgstr "Protokol uzantıları"
 
@@ -5078,10 +5096,6 @@ msgstr "İndirilen (toplam)"
 #: src/muuli_wdr.cpp
 msgid "Scores"
 msgstr "Skor"
-
-#: src/muuli_wdr.cpp
-msgid "Secure ident"
-msgstr "Güvenli kimlik"
 
 #: src/muuli_wdr.cpp
 msgid "Queue rank"
