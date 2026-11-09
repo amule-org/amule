@@ -940,6 +940,12 @@ void CMuleDataViewCtrl::OnKeyDown(wxKeyEvent &evt)
 		RaiseItemContextMenu();
 		return;
 	}
+	// Control+M too: easier to find by touch than F10. The physical Control key, since wx's
+	// "Ctrl" is Command here and Command+M minimizes; no Option, which VoiceOver's VO+M uses.
+	if (evt.GetModifiers() == wxMOD_RAW_CONTROL && evt.GetKeyCode() == 'M') {
+		RaiseItemContextMenu();
+		return;
+	}
 
 	// NSOutlineView scrolls the view for these keys without touching the selection or the
 	// cursor, so on this platform they are ours to implement -- shifted, where GTK and MSW
