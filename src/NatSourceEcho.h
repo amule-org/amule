@@ -109,7 +109,8 @@ inline bool FailedEveryKey(std::uint8_t firstByte, std::size_t length, bool decr
 /**
  * Endpoints a rendezvous had us punch in the last 30 s, with the hash it vouched for. A NAT may move
  * the source port, so a datagram from another port still earns an echo when its IP has one punch.
- * At most one echo per IP per window: matching on a moved port accepts every port of the IP.
+ * At most one echo per window to each punched endpoint, and one for all the other ports of its IP:
+ * matching on a moved port accepts every one of them.
  */
 class CPunchedPeers
 {
@@ -146,16 +147,25 @@ public:
 			return std::nullopt;
 		}
 		const std::optional<Hash> hash = m_expected.VouchedHashAllowingMovedPort(ip, port, nowMs);
-		if (!hash || !m_echoGate.TryAcquire(ip, 0, nowMs)) {
+		if (!hash || !m_echoGate.TryAcquire(ip, GatePort(ip, port, nowMs), nowMs)) {
 			return std::nullopt;
 		}
 		return hash;
 	}
 
 	//! The echo was not sent after all, so the next failed datagram may try again.
-	void EchoNotSent(std::uint32_t ip) { m_echoGate.Forget(ip, 0); }
+	void EchoNotSent(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs)
+	{
+		m_echoGate.Forget(ip, GatePort(ip, port, nowMs));
+	}
 
 private:
+	//! A punched endpoint has its own gate; port 0 stands for every moved port of the IP.
+	std::uint16_t GatePort(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
+	{
+		return m_expected.IsExpected(ip, port, nowMs) ? port : 0;
+	}
+
 	NatKeyFrame::CExpectedPeers m_expected;
 	NatKeyFrame::CSendGate m_echoGate;
 };

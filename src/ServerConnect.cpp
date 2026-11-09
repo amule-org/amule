@@ -58,9 +58,9 @@
 #include "NatServerKeepaliveProof.h"         // Needed for BuildKeepaliveProof
 #include "NetworkFunctions.h"                // Needed for Uint32_16toStringIP_Port
 #include "ClientUDPSocket.h"                 // Needed for the complete type behind theApp->clientudp
-#include "ClientList.h"                      // Needed for theApp->clientlist->FindClientByIP
+#include "ClientList.h"                      // Needed for FindClientByIP, GetClientsByHash
 #include "updownclient.h"                    // Needed for CUpDownClient::IsConnected
-#include <algorithm>                         // Needed for std::copy_n
+#include <algorithm>                         // Needed for std::copy_n, std::any_of
 #include <protocol/ed2k/Client2Client/UDP.h> // Needed for OP_HOLEPUNCH
 #endif
 
@@ -912,15 +912,31 @@ void CServerConnect::ProcessHolePunchExtension()
 	}
 }
 
+namespace
+{
+// By the vouched hash when there is one: two peers behind one NAT can share an IP and a listen port.
+bool DialBackPeerConnected(uint32 ip, const NatServerHolePunch::DialBackSchedule::Entry &due)
+{
+	if (due.peer.userHash == NatServerHolePunch::Hash{}) {
+		const CUpDownClient *arrived = theApp->clientlist->FindClientByIP(ip, due.tcpPort);
+		return arrived != nullptr && arrived->IsConnected();
+	}
+	const CClientList::SourceList clients =
+		theApp->clientlist->GetClientsByHash(CMD4Hash(due.peer.userHash.data()));
+	return std::any_of(clients.begin(), clients.end(), [ip](const CClientRef &ref) {
+		const CUpDownClient *client = ref.GetClient();
+		return client != nullptr && client->GetIP() == ip && client->IsConnected();
+	});
+}
+} // namespace
+
 void CServerConnect::ProcessLowIdHolePunchDialBacks()
 {
 	const std::uint64_t now = ::GetTickCount64();
 	for (const NatServerHolePunch::DialBackSchedule::Entry &due :
 		m_lowIdHolePunchDialBacks.TakeDue(now)) {
 		const uint32 ip = PeekUInt32(due.peerIP.data());
-		// IP and listen port: several clients can share one IP behind a NAT.
-		CUpDownClient *arrived = theApp->clientlist->FindClientByIP(ip, due.tcpPort);
-		if (arrived != nullptr && arrived->IsConnected()) {
+		if (DialBackPeerConnected(ip, due)) {
 			continue;
 		}
 		if (m_lowIdHolePunchActionLimiter.Admit(now)) {
@@ -929,14 +945,16 @@ void CServerConnect::ProcessLowIdHolePunchDialBacks()
 	}
 }
 
-void CServerConnect::StartLowIdHolePunchSchedule(
-	const NatServerHolePunch::IPv4 &peerIP, uint16 udpPort, uint64 now)
+void CServerConnect::StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP,
+	uint16 udpPort,
+	uint64 now,
+	const std::optional<NatServerHolePunch::Hash> &peerHash)
 {
 	// Every path checks its target first; this is the backstop for the next one.
 	if (udpPort == 0 || !CClientUDPSocket::IsRendezvousPeerAllowed(PeekUInt32(peerIP.data()))) {
 		return;
 	}
-	m_lowIdHolePunchSchedules.Start(peerIP, udpPort, now);
+	m_lowIdHolePunchSchedules.Start(peerIP, udpPort, now, peerHash);
 	// The first punch is due now, so it leaves with this tick rather than the next one.
 	SendDueLowIdHolePunches(now);
 }
