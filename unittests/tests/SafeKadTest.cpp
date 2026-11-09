@@ -287,22 +287,31 @@ TEST(SafeKad, CleanupReclaimsEntriesPastTheirReferenceHorizon)
 	ASSERT_EQUALS(0u, (unsigned)safe.GetBannedAddressCount());
 }
 
-// A refused claim must not be what marks an address verified. The flag gates the escalation
-// ladder, and m_lastID still holds the previous claim at that point, so promoting on a refusal
-// certifies an identity nobody proved.
-TEST(SafeKad, ARefusedRotationDoesNotConferVerification)
+// A refused claim must not change what we hold. The remaining refusals are an unverified claim
+// against a verified record and a rotation between two verified identities; a verified claim over
+// an unproved record is accepted, so promoting on a refusal cannot certify an unproven ID.
+TEST(SafeKad, ARefusedRotationLeavesTheRecordAsItWas)
 {
 	CSafeKad safe;
-	// An unverified first claim: whoever spoke first, not necessarily the real node.
-	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), false, T0));
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), true, T0));
 
-	// A verified claim of a different ID, inside the interval, so it is refused.
+	// Verified over verified inside the interval: refused, and escalated one step.
 	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(2), true, T0 + 10));
+	ASSERT_TRUE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
 
-	// Nothing was ever verified at this address, so well past the interval an unverified
-	// claim is ordinary rotation and is accepted. It would be refused if the rejected claim
-	// above had been allowed to set the verified flag.
-	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(3), false, T0 + CSafeKad::MIN_ID_CHANGE_INTERVAL * 2));
+	// The record still holds Id(1): an unverified Id(1) passes.
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 20));
+	// And it is still verified. Past the interval only a verified record refuses an unverified
+	// Id(2), so keep it referenced until then (through TrackNode, which runs no Cleanup()).
+	const time_t later = T0 + CSafeKad::MIN_ID_CHANGE_INTERVAL + 10;
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), false, later - 60));
+	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(2), false, later));
+
+	// Two unverified claims: the second is refused and the record is not marked verified.
+	CSafeKad other;
+	ASSERT_TRUE(other.TrackNode(IP_B, PORT_A, Id(1), false, T0));
+	ASSERT_FALSE(other.TrackNode(IP_B, PORT_A, Id(2), false, T0 + 10));
+	ASSERT_TRUE(other.TrackNode(IP_B, PORT_A, Id(3), false, T0 + CSafeKad::MIN_ID_CHANGE_INTERVAL * 2));
 }
 
 // An entry holding an unproven ID must not be kept alive by the traffic it is refusing, or an
@@ -372,9 +381,8 @@ TEST(SafeKad, ClearEmptiesEveryTable)
 //
 // The refusal is what protects the entry: the identity we verified is still the one we hold, and
 // the claim gets nothing. Escalating on top of it would be the mistake, because nothing about an
-// unverified claim ties it to the address it names. A peer answering one of our Kad requests picks
-// the (IP, port, ID) triples it lists, so the ladder would climb on somebody else's say-so and ban
-// the node that did nothing.
+// unverified claim ties it to the address it names: a spoofed source address can make it, so the
+// ladder would climb on somebody else's say-so and ban the node that did nothing.
 TEST(SafeKad, AnUnverifiedIdentityChangeAgainstAVerifiedEntryIsRefusedNotEscalated)
 {
 	CSafeKad safe;
@@ -442,32 +450,43 @@ TEST(SafeKad, OneRejectedRotationEscalatesExactlyOneStep)
 }
 
 // The attack the verification requirement exists to stop, written out as a test because the code
-// reads reasonable without it.
-//
-// ProcessKademlia2Response() calls AddUnfiltered() with verified hardcoded to false, and the peer
-// answering our request chooses the (IP, port, ID) triples it lists. m_lastIDChange is stamped when
-// an entry is created, so every freshly learned contact sits inside the sub-hour window. Two
-// fabricated mentions of an honest node would therefore have marked it problematic and then banned
-// it for four hours, without that node ever sending us anything.
-TEST(SafeKad, FabricatedUnverifiedMentionsCannotBanAnHonestNode)
+// reads reasonable without it. A spoofed source address lets anyone make an unverified claim for
+// somebody else's address, and m_lastIDChange is stamped when an entry is created, so every freshly
+// learned node sits inside the sub-hour window. Two spoofed claims would have marked an honest node
+// problematic and then banned it for four hours, without that node ever sending us anything.
+TEST(SafeKad, SpoofedUnverifiedClaimsCannotBanAnHonestNode)
 {
 	CSafeKad safe;
 
-	// An honest node we have just learned about, exactly as a response
-	// listing it would: unverified, and stamped now.
+	// An honest node, unverified, and stamped now.
 	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, false, false, T0));
 
-	// A hostile peer names the same address twice with identities it made
-	// up, well inside the rotation window.
+	// Somebody claims the same address twice with identities it made up, well inside the
+	// rotation window.
 	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(2), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 5));
 	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(3), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 10));
 
-	// Neither mention counted for anything.
+	// Neither claim counted for anything.
 	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 10));
 	ASSERT_FALSE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
 
 	// And the honest node is still usable under the identity we hold.
 	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 15));
+}
+
+// The same attack through a Kad response: the peer answering our request picks the (IP, port, ID)
+// triples it lists. A mention records nothing, so it cannot climb the ladder at all.
+TEST(SafeKad, FabricatedMentionsCannotBanAnHonestNode)
+{
+	CSafeKad safe;
+	ASSERT_FALSE(safe.ContradictsProvedIdentity(IP_A, PORT_A, Id(1), T0));
+	ASSERT_FALSE(safe.ContradictsProvedIdentity(IP_A, PORT_A, Id(2), T0 + 5));
+	ASSERT_FALSE(safe.ContradictsProvedIdentity(IP_A, PORT_A, Id(3), T0 + 10));
+	ASSERT_EQUALS(0u, (unsigned)safe.GetTrackedNodeCount());
+	ASSERT_FALSE(safe.IsProblematic(IP_A, PORT_A, T0 + 10));
+	// The node's own proof then starts its record cleanly.
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, true, false, T0 + 15));
+	ASSERT_FALSE(safe.IsProblematic(IP_A, PORT_A, T0 + 15));
 }
 
 // The other half: a peer that has proved which port it listens on and then cycles identities faster
@@ -574,4 +593,78 @@ TEST(SafeKad, ARefusedChangePastTheIntervalIsNotEscalated)
 	ASSERT_FALSE(safe.IsBanned(IP_A, later));
 	// The verified identity we hold is untouched and still usable.
 	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, true, false, later));
+}
+
+// A mention is a third party's word: a Kad response, a bootstrap list or nodes.dat. One answer may
+// list 255 of them, so recording each would fill the table and evict proved entries.
+TEST(SafeKad, AMentionIsNeverRecorded)
+{
+	CSafeKad safe;
+	ASSERT_FALSE(safe.ContradictsProvedIdentity(IP_A, PORT_A, Id(1), T0));
+	ASSERT_EQUALS(0u, (unsigned)safe.GetTrackedNodeCount());
+}
+
+TEST(SafeKad, OnlyAVerifiedRecordRefusesAMention)
+{
+	CSafeKad safe;
+	// An unproved record may be a spoofer's, so a mention of another identity is not refused.
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), false, T0));
+	ASSERT_FALSE(safe.ContradictsProvedIdentity(IP_A, PORT_A, Id(2), T0 + 5));
+	// A verified one refuses it, and counts nothing against the address.
+	ASSERT_TRUE(safe.TrackNode(IP_B, PORT_A, Id(1), true, T0));
+	ASSERT_TRUE(safe.ContradictsProvedIdentity(IP_B, PORT_A, Id(2), T0 + 5));
+	ASSERT_FALSE(safe.ContradictsProvedIdentity(IP_B, PORT_A, Id(1), T0 + 6));
+	ASSERT_FALSE(safe.IsProblematic(IP_B, PORT_A, T0 + 6));
+	// A banned address refuses every mention.
+	safe.BanAddress(IP_A, T0 + 7);
+	ASSERT_TRUE(safe.ContradictsProvedIdentity(IP_A, PORT_A, Id(1), T0 + 8));
+}
+
+// We re-hello a long-known contact every 90 to 120 min, longer than a record's reference horizon.
+// Mentions keep a verified record alive in between; otherwise it lapses, and a spoofed unverified
+// claim then plants the identity the node's real one is refused against.
+TEST(SafeKad, AMentionKeepsOnlyAVerifiedRecordAlive)
+{
+	CSafeKad safe;
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), true, T0));
+	ASSERT_TRUE(safe.TrackNode(IP_B, PORT_A, Id(1), false, T0));
+	const time_t mentioned = T0 + CSafeKad::NODE_MAX_REFERENCE_AGE - 60;
+	ASSERT_FALSE(safe.ContradictsProvedIdentity(IP_A, PORT_A, Id(1), mentioned));
+	ASSERT_FALSE(safe.ContradictsProvedIdentity(IP_B, PORT_A, Id(1), mentioned));
+	safe.Cleanup(T0 + CSafeKad::NODE_MAX_REFERENCE_AGE + 60);
+	ASSERT_EQUALS(1u, (unsigned)safe.GetTrackedNodeCount());
+	// The verified record survived, so a spoofed claim of another identity is still refused.
+	ASSERT_TRUE(safe.IsBadNode(IP_A,
+		PORT_A,
+		Id(9),
+		KADEMLIA_VERSION_DEFAULT,
+		false,
+		false,
+		T0 + CSafeKad::NODE_MAX_REFERENCE_AGE + 90));
+}
+
+// A mention never makes a record verified, even when the caller thought its contact was: that flag
+// is assumed while bootstrapping and read back from nodes.dat.
+TEST(SafeKad, AMentionNeverUpgradesARecord)
+{
+	CSafeKad safe;
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), false, T0));
+	ASSERT_FALSE(safe.ContradictsProvedIdentity(IP_A, PORT_A, Id(1), T0 + 5));
+	// Still unproved: past the interval an unverified rotation is accepted, which a verified
+	// record would refuse.
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(2), false, T0 + CSafeKad::MIN_ID_CHANGE_INTERVAL + 10));
+}
+
+// A record nobody proved may hold an identity a third party made up for the address. The node's
+// own proof replaces it at once, and two such proofs inside the interval are not two rotations.
+TEST(SafeKad, AProofReplacesAnIdentityNobodyProved)
+{
+	CSafeKad safe;
+	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(66), false, T0));
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, true, false, T0 + 60));
+	ASSERT_FALSE(safe.IsBadNode(IP_A, PORT_A, Id(1), KADEMLIA_VERSION_DEFAULT, true, false, T0 + 180));
+	ASSERT_FALSE(safe.IsProblematic(IP_A, PORT_A, T0 + 180));
+	ASSERT_FALSE(safe.IsBanned(IP_A, T0 + 180));
+	// Now proved, it is protected like any verified identity.
+	ASSERT_TRUE(safe.IsBadNode(IP_A, PORT_A, Id(66), KADEMLIA_VERSION_DEFAULT, false, false, T0 + 200));
 }

@@ -78,7 +78,8 @@ public:
 		const CKadUDPKey &key,
 		bool &ipVerified,
 		bool update,
-		bool fromHello);
+		bool fromHello,
+		bool selfReported = false);
 	bool AddUnfiltered(const CUInt128 &id,
 		uint32_t ip,
 		uint16_t port,
@@ -87,7 +88,8 @@ public:
 		const CKadUDPKey &key,
 		bool &ipVerified,
 		bool update,
-		bool fromHello);
+		bool fromHello,
+		bool selfReported = false);
 	bool Add(CContact *contact, bool &update, bool &outIpVerified);
 
 	void ReadFile(const wxString &specialNodesdat = "");
