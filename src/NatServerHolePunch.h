@@ -692,7 +692,9 @@ public:
 		if (m_entries.size() >= kMaxPunchSchedules) {
 			m_entries.erase(m_entries.begin());
 		}
-		Entry entry{ peerIP, udpPort, now, peerHash, {} };
+		// An all-zero hash names no peer, as in DialBackSchedule: no hello could match it.
+		const bool named = peerHash && *peerHash != Hash{};
+		Entry entry{ peerIP, udpPort, now, named ? peerHash : std::nullopt, {} };
 		for (const std::uint64_t offset : kServerPunchOffsetsMs) {
 			entry.due.push_back({ now + offset, PunchDue::Endpoint });
 		}

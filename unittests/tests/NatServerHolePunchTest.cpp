@@ -1403,6 +1403,11 @@ TEST(NatServerHolePunch, AHelloEndsOnlyItsOwnPeersSchedule)
 	ASSERT_EQUALS((std::size_t)1, schedules.Size());
 	schedules.CancelPeer(shared, p);
 	ASSERT_EQUALS((std::size_t)0, schedules.Size());
+
+	// A server that vouched for an all-zero hash named no peer, so any hello ends a lone schedule.
+	schedules.Start(shared, 6'000, 1, Hash{});
+	schedules.CancelPeer(shared, stranger);
+	ASSERT_EQUALS((std::size_t)0, schedules.Size());
 }
 
 TEST(NatServerHolePunch, AScheduleExpiresWithTheExpectedEndpoint)
