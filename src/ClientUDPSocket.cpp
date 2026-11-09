@@ -535,6 +535,11 @@ void CClientUDPSocket::SendUtpKeyFrame(uint32_t ip, uint16_t port, const uint8_t
 	}
 }
 
+bool CClientUDPSocket::IsExpectedUtpPeer(uint32_t ip, uint16_t port) const
+{
+	return m_utpExpectedPeers.IsExpectedAllowingMovedPort(ip, port, ::GetTickCount64());
+}
+
 void CClientUDPSocket::OnUtpStreamMoved()
 {
 	theStats::AddUtpStreamMove();
@@ -868,8 +873,8 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		// one connected stream on that address is within the remap window. Non-SYN only, because a
 		// SYN asks for a new connection and must never be handed a live stream's tuple. The answer is
 		// a predicate, so it grants no attempt and spends none of the adapter's move budget.
-		const bool fromRepointedPeer =
-			kind == EUtpFrameKind::Existing && m_utp.HasRepointCandidate(ip, port);
+		const bool fromRepointedPeer = kind == EUtpFrameKind::Existing && !fromKnownPeer &&
+					       m_utp.HasRepointCandidate(ip, port);
 		if (kind != EUtpFrameKind::Malformed &&
 			(kind == EUtpFrameKind::Syn || fromKnownPeer || fromExpectedHandshakePeer ||
 				fromRepointedPeer)) {

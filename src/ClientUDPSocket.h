@@ -90,6 +90,8 @@ public:
 	void Close() override;
 	void TickUtp();
 	IUtpContext *GetUtpContext() { return &m_utp; }
+	//! Whether a rendezvous announced this endpoint in the last 30 s, so its SYN is one we asked for.
+	bool IsExpectedUtpPeer(uint32_t ip, uint16_t port) const;
 	UtpDialFailureMemory &UtpDialFailures() { return m_utpDialFailures; }
 #if defined(ENABLE_NATT_SERVER_COORDINATION)
 	bool DialLowIdHolePunchPeer(

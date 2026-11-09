@@ -104,6 +104,7 @@ public:
 		utp_set_callback(m_context, UTP_ON_OVERHEAD_STATISTICS, OnOverheadStatistics);
 		utp_set_callback(m_context, UTP_GET_UDP_MTU, GetUdpMtu);
 		utp_set_callback(m_context, UTP_GET_UDP_OVERHEAD, GetUdpOverhead);
+		utp_set_callback(m_context, UTP_ON_FIREWALL, OnFirewall);
 		utp_set_callback(m_context, UTP_ON_ACCEPT, OnAccept);
 		utp_set_callback(m_context, UTP_ON_STATE_CHANGE, OnStateChange);
 		utp_set_callback(m_context, UTP_ON_ERROR, OnError);
@@ -181,6 +182,9 @@ public:
 	//! itself, and its budget, belong to ProcessDatagram().
 	bool HasRepointCandidate(uint32_t ip, uint16_t port) const override
 	{
+		if (m_socketsAtEndpoint.count({ ip, port }) != 0) {
+			return false;
+		}
 		return FindRepointCandidate(ip, port).has_value();
 	}
 	void Destroy() override
@@ -244,6 +248,9 @@ public:
 		bool obfuscated,
 		const uint8_t *preHelloKey) override
 	{
+		if (length > kMaxUtpFrameBytes) {
+			return false;
+		}
 		m_nowMs = nowMs;
 		// OnAccept() is a bare libutp callback with no datagram argument, so the origin of the SYN
 		// it is about to admit travels here for exactly the span of this call.
@@ -260,10 +267,19 @@ public:
 		// itself is dropped rather than handed over: libutp answers an unmatched non-SYN with an RST
 		// to that source (:2925-2940), which is the reflection the ingress gate exists to prevent.
 		bool unproven = false;
+		// A frame from an endpoint that already owns a socket is that socket's. Offering it to a
+		// handshake or a stream on a nearby port would let one forged SYN from that port claim it.
+		const bool fromRegisteredEndpoint = m_socketsAtEndpoint.count(observed) != 0;
+		if (header.has_value() && header->type == kUtpTypeReset) {
+			const auto sent = m_sentTo.find(observed);
+			unproven = sent == m_sentTo.end() ||
+				   !IsPlausibleUtpReset(
+					   *header, sent->second.hasSent, sent->second.lastSequenceNumber);
+		}
 		const auto translation = m_remapInputs.find(observed);
 		if (translation != m_remapInputs.end()) {
 			expected = translation->second;
-		} else {
+		} else if (!fromRegisteredEndpoint && !unproven) {
 			const auto candidateIndex =
 				FindUniqueUtpPortRemapCandidate(m_remapCandidates, ip, port, nowMs);
 			if (candidateIndex.has_value()) {
@@ -300,7 +316,8 @@ public:
 		utp_socket *repointedSocket = nullptr;
 		Endpoint repointedFrom{ 0, 0 };
 		std::optional<std::pair<Endpoint, Endpoint>> repointedPrevious;
-		if (!unproven && translation == m_remapInputs.end() && remappedSocket == nullptr) {
+		if (!unproven && !fromRegisteredEndpoint && translation == m_remapInputs.end() &&
+			remappedSocket == nullptr) {
 			const std::optional<SRepointCandidate> candidate = FindRepointCandidate(ip, port);
 			if (candidate.has_value()) {
 				// A move never goes back to the port this stream has just left, for as long
@@ -556,17 +573,20 @@ private:
 			if (entry.second.first != ip || transport == nullptr || !transport->IsConnected()) {
 				continue;
 			}
+			// A stream we have seen no frame of has no facts a move could be checked against, so
+			// it must not make another stream on the address ambiguous either.
+			const auto state = m_peerStreams.find(entry.first);
+			if (state == m_peerStreams.end() || !state->second.known) {
+				continue;
+			}
 			SRepointCandidate candidate;
 			candidate.ip = entry.second.first;
 			candidate.port = entry.second.second;
 			candidate.connected = true;
 			candidate.socket = entry.first;
 			candidate.libutpEndpoint = LibutpEndpointOf(entry.first);
-			const auto state = m_peerStreams.find(entry.first);
-			if (state != m_peerStreams.end()) {
-				candidate.abandonedPort = state->second.abandonedPort;
-				candidate.abandonedAtMs = state->second.abandonedAtMs;
-			}
+			candidate.abandonedPort = state->second.abandonedPort;
+			candidate.abandonedAtMs = state->second.abandonedAtMs;
 			streams.push_back(candidate);
 		}
 		return streams;
@@ -899,6 +919,38 @@ private:
 		return static_cast<CUtpSocketTransport *>(utp_get_userdata(socket));
 	}
 
+	//! Inbound streams whose peer has not sent data yet: all a forged source can hold open.
+	std::size_t HalfOpenInboundStreams() const
+	{
+		std::size_t count = 0;
+		for (const auto &entry : m_endpoints) {
+			const CUtpSocketTransport *transport = TransportOf(entry.first);
+			if (transport != nullptr && transport->IsInbound() && !transport->IsConnected()) {
+				++count;
+			}
+		}
+		return count;
+	}
+
+	//! libutp's question before it creates a socket for a SYN or sends the SYN-ACK: nonzero refuses.
+	static uint64 OnFirewall(utp_callback_arguments *args)
+	{
+		if (s_self == nullptr || s_self->m_acceptor == nullptr || args->address == nullptr ||
+			args->address->sa_family != AF_INET) {
+			return 1;
+		}
+		const auto *address = reinterpret_cast<const sockaddr_in *>(args->address);
+		const auto *bytes = reinterpret_cast<const uint8_t *>(&address->sin_addr.s_addr);
+		uint32_t ip = 0;
+		for (unsigned i = 0; i < 4; ++i) {
+			ip |= static_cast<uint32_t>(bytes[i]) << (8 * i);
+		}
+		return s_self->m_acceptor->AdmitsSyn(
+			       ip, ntohs(address->sin_port), s_self->HalfOpenInboundStreams())
+			       ? 0
+			       : 1;
+	}
+
 	static uint64 OnAccept(utp_callback_arguments *args)
 	{
 		if (s_self == nullptr || s_self->m_acceptor == nullptr || args->address == nullptr ||
@@ -948,8 +1000,7 @@ private:
 		utp_set_userdata(args->socket, raw);
 		// Until this runs, libutp's 1 MiB default is the receive bound.
 		raw->ApplyReceiveBound();
-		// libutp reaches CS_CONNECTED on the peer's first ST_DATA, silently.
-		raw->MarkConnected();
+		// Not connected yet: a SYN proves no address. The peer's first data marks it.
 		raw->MarkSynObfuscated(s_self->m_datagramObfuscated);
 		if (s_self->m_ingressKey != nullptr) {
 			raw->SetPreHelloKey(s_self->m_ingressKey);

@@ -72,6 +72,8 @@ public:
 	 * peer already paid to send. It is the number UTP_GET_READ_BUFFER_SIZE reports, which is
 	 * how libutp decides to stop advertising receive window -- so the bound is applied by the
 	 * peer slowing down, one round trip later, rather than by this class refusing anything.
+	 * libutp itself delivers in-order data whatever window it advertised, so a peer that ignores
+	 * the window is stopped by kReadOverrunFactor and kReadOverrunSlackBytes instead.
 	 *
 	 * Inert until the acceptor wires that callback. It is decided here so the acceptor inherits
 	 * a value rather than inventing one, and so both directions are bounded: an unbounded read
@@ -89,6 +91,11 @@ public:
 	 */
 	static constexpr size_t kDefaultReadBound = 256 * 1024;
 
+	//! An honest peer overshoots the bound by at most the window in flight when it shrank, plus
+	//! what libutp releases at once from its reorder buffer when a gap fills.
+	static constexpr size_t kReadOverrunFactor = 2;
+	static constexpr size_t kReadOverrunSlackBytes = 64 * 1024;
+
 	explicit CUtpStream(size_t writeBound = kDefaultWriteBound, size_t readBound = kDefaultReadBound)
 	: m_writeBound(writeBound)
 	, m_readBound(readBound)
@@ -97,10 +104,16 @@ public:
 
 	// -- inbound ------------------------------------------------------
 
-	//! Bytes arrived from the peer. Called from libutp's read callback.
+	//! Bytes arrived from the peer. Called from libutp's read callback. Far past the bound the
+	//! peer is ignoring our window, and the stream ends rather than grow without limit.
 	void OnPayload(const uint8_t *data, size_t length)
 	{
-		if (data == nullptr || length == 0) {
+		if (data == nullptr || length == 0 || IsTerminal()) {
+			return;
+		}
+		if (m_readBuffer.size() + length >
+			kReadOverrunFactor * m_readBound + kReadOverrunSlackBytes) {
+			OnFailure(EUtpTransportFailure::Overrun);
 			return;
 		}
 		m_readBuffer.insert(m_readBuffer.end(), data, data + length);

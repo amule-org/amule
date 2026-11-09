@@ -126,6 +126,13 @@ public:
 class CFakeAcceptor : public IUtpStreamAcceptor
 {
 public:
+	bool AdmitsSyn(uint32_t, uint16_t, std::size_t halfOpen) override
+	{
+		++synChecks;
+		lastHalfOpen = halfOpen;
+		return admitSyn;
+	}
+
 	SUtpIncomingSynDecision DecideIncomingSyn(
 		uint32_t, uint16_t, const SUtpSynCandidateInfo &candidate) override
 	{
@@ -161,6 +168,9 @@ public:
 	}
 
 	bool admit = true;
+	bool admitSyn = true;
+	int synChecks = 0;
+	std::size_t lastHalfOpen = 0;
 	int offers = 0;
 	int synDecisions = 0;
 	uint32_t lastIp = 0;
@@ -1613,3 +1623,133 @@ TEST(UtpLibraryAdapter, AnAnnouncedKeyNeverReplacesTheKeyWeDialledWith)
 }
 
 // File_checked_for_headers
+
+TEST(UtpLibraryAdapter, ARefusedSynGetsNoSynAckAndNoSocket)
+{
+	// Asked before libutp creates a socket or answers, so a forged source learns nothing.
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	acceptor.admitSyn = false;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	Pump(loop);
+
+	ASSERT_EQUALS(1, acceptor.synChecks);
+	ASSERT_EQUALS(0, acceptor.synDecisions);
+	ASSERT_EQUALS(0, acceptor.offers);
+	ASSERT_EQUALS(0u, sink.datagrams);
+	ASSERT_FALSE(loop.clientConnected);
+	ASSERT_FALSE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AnAcceptedStreamIsHalfOpenUntilItsPeerSendsData)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	Pump(loop);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_EQUALS(0, (int)acceptor.lastHalfOpen);
+	ASSERT_FALSE(acceptor.accepted->IsConnected());
+	// The fake acceptor holds only the latest stream.
+	const std::unique_ptr<IStreamTransport> first = std::move(acceptor.accepted);
+
+	// A second SYN while the first waits counts it. Its SYN-ACK goes nowhere.
+	sink.dropOldPort = true;
+	const std::vector<uint8_t> syn = UtpFrame(kUtpTypeSyn, 0x4242, 1, 0);
+	loop.server->ProcessDatagram(syn.data(), syn.size(), kPeerIp, kPeerPort + 7, loop.nowMs);
+	ASSERT_EQUALS(1, (int)acceptor.lastHalfOpen);
+
+	uint8_t payload = 0x5A;
+	utp_iovec vector{ &payload, 1 };
+	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
+	Pump(loop);
+	ASSERT_TRUE(first->IsConnected());
+	ASSERT_FALSE(acceptor.accepted->IsConnected());
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AForgedSynNextToALiveStreamLeavesItsFramesAlone)
+{
+	// One forged SYN from a port beside a live stream must neither make its own frames look like
+	// a move nor make a real move ambiguous.
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	std::unique_ptr<IStreamTransport> transport;
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
+	loop.server->SetAcceptor(&acceptor);
+	ExchangeOneFrameEachWay(loop, *transport, 0x11);
+
+	std::array<uint8_t, 4> received{};
+	ASSERT_EQUALS(1, (int)ReadUntilData(loop, *transport, received));
+
+	// The forged SYN's SYN-ACK goes nowhere.
+	sink.dropOldPort = true;
+	const std::vector<uint8_t> syn = UtpFrame(kUtpTypeSyn, 0x4242, 1, 0);
+	loop.server->ProcessDatagram(syn.data(), syn.size(), kPeerIp, heldPort + 1, loop.nowMs);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_FALSE(loop.server->HasRepointCandidate(kPeerIp, heldPort));
+	ASSERT_TRUE(loop.server->HasRepointCandidate(kPeerIp, heldPort + 100));
+
+	loop.clientRead.clear();
+	ExchangeOneFrameEachWay(loop, *transport, 0x22);
+	ASSERT_TRUE(!loop.clientRead.empty());
+	ASSERT_EQUALS(1, (int)ReadUntilData(loop, *transport, received));
+	ASSERT_EQUALS(0x22, (int)received[0]);
+	ASSERT_EQUALS(0, (int)sink.streamMoves);
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, OnlyAResetThatAnswersOurLastSendEndsTheStream)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	std::unique_ptr<IStreamTransport> transport;
+	const uint16_t heldPort = DialRemapped(loop, sink, transport);
+	ExchangeOneFrameEachWay(loop, *transport, 0x33);
+	const SFrameNumbers ours = FrameNumbers(sink.lastPayload);
+	const SFrameNumbers theirs = FrameNumbers(loop.lastClientDatagram);
+
+	// The right connection id, but an ack far from anything we sent.
+	const std::vector<uint8_t> forged = UtpFrame(
+		kUtpTypeReset, theirs.connectionId, 1, static_cast<uint16_t>(ours.seqNr + kUtpResetAckSpan));
+	loop.server->ProcessDatagram(forged.data(), forged.size(), kPeerIp, heldPort, loop.nowMs);
+	ASSERT_TRUE(transport->IsConnected());
+
+	const std::vector<uint8_t> genuine = UtpFrame(kUtpTypeReset, theirs.connectionId, 1, ours.seqNr);
+	loop.server->ProcessDatagram(genuine.data(), genuine.size(), kPeerIp, heldPort, loop.nowMs);
+	ASSERT_FALSE(transport->IsConnected());
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AFrameAboveTheMtuNeverReachesLibutp)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	std::vector<uint8_t> syn = UtpFrame(kUtpTypeSyn, 0x4242, 1, 0);
+	syn.resize(kMaxUtpFrameBytes + 1);
+	ASSERT_FALSE(loop.server->ProcessDatagram(syn.data(), syn.size(), kPeerIp, kPeerPort, loop.nowMs));
+	ASSERT_EQUALS(0, acceptor.synChecks);
+	ASSERT_TRUE(ClassifyUtpFrame(syn.data(), syn.size()) == EUtpFrameKind::Malformed);
+	syn.resize(kMaxUtpFrameBytes);
+	ASSERT_TRUE(ClassifyUtpFrame(syn.data(), syn.size()) == EUtpFrameKind::Syn);
+	Teardown(loop);
+}
