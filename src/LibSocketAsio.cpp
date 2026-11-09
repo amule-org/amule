@@ -1504,8 +1504,10 @@ uint32 CLibSocket::GetPeerInt()
 void CLibSocket::Destroy()
 {
 	// First: closing can produce callbacks, which must not land on a
-	// half-destroyed wrapper.
+	// half-destroyed wrapper. Detaching waits for a flush request the upload
+	// thread is raising, which could otherwise queue behind this socket's delete.
 	if (m_transport) {
+		m_transport->SetEvents(nullptr);
 		m_transport->Close();
 	}
 	m_aSocket->Destroy();
@@ -1536,6 +1538,11 @@ uint32 CLibSocket::Read(void *buffer, uint32 nbytes)
 		return m_aSocket->Read((char *)buffer, nbytes);
 	}
 	const uint32 count = m_transport->Read(buffer, nbytes);
+	if (m_transportLostDeferred && !m_transport->HasReadableBytes()) {
+		m_transportLostDeferred = false;
+		CoreNotify_LibSocketLost(this);
+		return count;
+	}
 	// A packet reader takes one packet per event, so bytes left behind would wait for the next
 	// payload to arrive and the last packet of a burst would never be read.
 	if (!m_transport->BlocksRead()) {
@@ -1646,6 +1653,13 @@ void CLibSocket::OnStreamWritable()
 
 void CLibSocket::OnStreamLost()
 {
+	// A packet reader takes one packet per read event, and the end would overtake the read
+	// events still owed for bytes already received. TCP reports EOF only once they are read.
+	if (m_transport && m_transport->HasReadableBytes()) {
+		m_transportLostDeferred = true;
+		PostTransportReadEvent();
+		return;
+	}
 	CoreNotify_LibSocketLost(this);
 }
 

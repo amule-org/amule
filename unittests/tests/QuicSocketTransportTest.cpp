@@ -332,3 +332,29 @@ TEST(QuicTransportLifecycle, DestructionAbortsStreamWithDiscardedBytes)
 	ASSERT_EQUALS(0, o.closes);
 	ASSERT_EQUALS(1, o.aborts);
 }
+
+TEST(QuicTransportLifecycle, BytesStayReadableAfterTheStreamEnds)
+{
+	Ops o;
+	Events e;
+	CQuicSocketTransport t(o, H(), CNetworkAddress::FromString("192.0.2.1"), 1, &e, false);
+	ASSERT_TRUE(!t.HasReadableBytes());
+	const uint8_t payload[3] = { 1, 2, 3 };
+	t.OnPayload(payload, sizeof(payload));
+	t.OnEnded(0);
+	ASSERT_TRUE(t.HasReadableBytes());
+	uint8_t out[4] = { 0 };
+	ASSERT_EQUALS(3u, t.Read(out, sizeof(out)));
+	ASSERT_TRUE(!t.HasReadableBytes());
+}
+
+TEST(QuicTransportLifecycle, ADetachedSinkGetsNoFlushRequest)
+{
+	Ops o;
+	Events e;
+	CQuicSocketTransport t(o, H(), CNetworkAddress::FromString("192.0.2.1"), 1, &e, false);
+	t.SetEvents(nullptr);
+	const uint8_t payload[3] = { 1, 2, 3 };
+	t.Write(payload, sizeof(payload));
+	ASSERT_EQUALS(0, e.flush);
+}

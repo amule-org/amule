@@ -220,6 +220,7 @@ public:
 	bool ObfuscatesStream() const override { return false; }
 	bool IsOk() const override { return ok; }
 	bool BlocksRead() const override { return blocksRead; }
+	bool HasReadableBytes() const override { return readable; }
 	bool BlocksWrite() const override { return true; }
 	int LastError() const override { return 0x7501; }
 	CNetworkAddress GetPeerAddress() const override { return peer; }
@@ -244,6 +245,7 @@ public:
 
 	bool ok = true;
 	bool blocksRead = true;
+	bool readable = false;
 	std::vector<uint8_t> written;
 	int closeCalls = 0;
 	int flushCalls = 0;
@@ -999,3 +1001,45 @@ TEST(LibSocketTransport, RawSocketBindUsesTheOptionOfItsFamily)
 #endif
 
 // File_checked_for_headers
+
+TEST(LibSocketTransport, TheEndOfAStreamWaitsForItsUnreadBytes)
+{
+	// One packet per read event: an end reported at once would overtake the read events still
+	// owed for bytes already received, and those bytes would be lost with the socket.
+	struct CDirectNotifications
+	{
+		CDirectNotifications() { s_deliverDirectly.store(true); }
+		~CDirectNotifications() { s_deliverDirectly.store(false); }
+	} directNotifications;
+	class CEndProbe : public CLibSocket
+	{
+	public:
+		void OnReceive(int) override { ++reads; }
+		void OnLost(int) override { ++lost; }
+		int reads = 0;
+		int lost = 0;
+	};
+	CEndProbe socket;
+	CFakeTransport *fake = Attach(socket);
+	fake->readable = true;
+	socket.OnStreamLost();
+	ASSERT_EQUALS(0, socket.lost);
+	ASSERT_EQUALS(1, socket.reads);
+
+	char out[4];
+	fake->blocksRead = false;
+	socket.EventProcessed();
+	socket.Read(out, sizeof(out));
+	ASSERT_EQUALS(0, socket.lost);
+
+	// The read that empties the transport is the end.
+	fake->readable = false;
+	socket.Read(out, sizeof(out));
+	ASSERT_EQUALS(1, socket.lost);
+
+	// With nothing unread, the end is reported at once.
+	CEndProbe drained;
+	Attach(drained);
+	drained.OnStreamLost();
+	ASSERT_EQUALS(1, drained.lost);
+}
