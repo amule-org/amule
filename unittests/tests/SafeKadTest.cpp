@@ -288,21 +288,27 @@ TEST(SafeKad, CleanupReclaimsEntriesPastTheirReferenceHorizon)
 }
 
 // A refused claim must not be what marks an address verified. The flag gates the escalation
-// ladder, and m_lastID still holds the previous claim at that point, so promoting on a refusal
-// certifies an identity nobody proved.
+// ladder, so promoting on a refusal would certify an identity nobody proved. A proof is no
+// longer refused against an unproved record (it replaces it), so the refusal left to check is an
+// unverified rotation inside the interval.
 TEST(SafeKad, ARefusedRotationDoesNotConferVerification)
 {
 	CSafeKad safe;
 	// An unverified first claim: whoever spoke first, not necessarily the real node.
 	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(1), false, T0));
 
-	// A verified claim of a different ID, inside the interval, so it is refused.
-	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(2), true, T0 + 10));
+	// Another unverified claim inside the interval is refused.
+	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(2), false, T0 + 10));
 
 	// Nothing was ever verified at this address, so well past the interval an unverified
-	// claim is ordinary rotation and is accepted. It would be refused if the rejected claim
-	// above had been allowed to set the verified flag.
+	// claim is ordinary rotation and is accepted.
 	ASSERT_TRUE(safe.TrackNode(IP_A, PORT_A, Id(3), false, T0 + CSafeKad::MIN_ID_CHANGE_INTERVAL * 2));
+
+	// A proof replaces the unproved record at once instead of being refused, and only then is
+	// the address verified.
+	ASSERT_TRUE(
+		safe.TrackNode(IP_A, PORT_A, Id(4), true, T0 + CSafeKad::MIN_ID_CHANGE_INTERVAL * 2 + 10));
+	ASSERT_FALSE(safe.TrackNode(IP_A, PORT_A, Id(5), false, T0 + CSafeKad::MIN_ID_CHANGE_INTERVAL * 5));
 }
 
 // An entry holding an unproven ID must not be kept alive by the traffic it is refusing, or an
