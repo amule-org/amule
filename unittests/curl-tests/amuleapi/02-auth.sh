@@ -88,6 +88,57 @@ _assert_json_eq '.error.code' unauthorized \
 _curl -H "Authorization: Bearer not.a.real.jwt" "$API/auth/session"
 _assert_status 401 "GET /auth/session (bogus bearer) → 401"
 
+# Both authentication and logout must select the same credential. A nonempty
+# bearer wins even when it fails JWT verification; only an absent/empty bearer
+# falls back to the cookie. Successful requests also reset the token limiter.
+for endpoint in session logout; do
+	method=GET
+	[ "$endpoint" = logout ] && method=POST
+	_curl -X "$method" "$API/auth/$endpoint"
+	_assert_status 401 "$endpoint rejects missing credentials"
+	_assert_json_eq '.error.message' 'missing bearer token or session cookie' \
+		"$endpoint reports missing credentials"
+	_curl -X "$method" -H 'aUtHoRiZaTiOn: Bearer not.a.real.jwt' \
+		-H "cOoKiE: amuleapi_token=$TOKEN" "$API/auth/$endpoint"
+	_assert_status 401 "$endpoint does not fall back from an invalid nonempty bearer"
+	_assert_json_eq '.error.message' 'invalid or expired token' \
+		"$endpoint reports an invalid token"
+	_curl -b "amuleapi_token=$TOKEN" "$API/auth/session"
+	_assert_status 200 "rejected $endpoint leaves the cookie token usable"
+done
+
+for credential in bearer cookie basic empty; do
+	# A separate token lets us observe which credential logout actually revoked.
+	_curl -X POST -H 'Content-Type: application/json' \
+		-d "{\"password\":\"$ADMIN_PASS\"}" "$API/auth/login?include_token=true"
+	_assert_status 200 "login for $credential credential selection"
+	SELECTED_TOKEN=$(printf '%s' "$CURL_BODY" | jq -r .token)
+	SELECTED_SESSION=$(printf '%s' "$CURL_BODY" | jq -r .session_id)
+	case "$credential" in
+		bearer) HEADERS=(-H "aUtHoRiZaTiOn: bEaReR   $SELECTED_TOKEN"
+			-H "cOoKiE: amuleapi_token=$TOKEN") ;;
+		cookie) HEADERS=(-H "cOoKiE: other=ignored; amuleapi_token=$SELECTED_TOKEN") ;;
+		basic) HEADERS=(-H 'authorization: Basic ignored'
+			-H "cookie: amuleapi_token=$SELECTED_TOKEN") ;;
+		empty) HEADERS=(-H 'authorization: Bearer '
+			-H "cookie: amuleapi_token=$SELECTED_TOKEN") ;;
+	esac
+	_curl "${HEADERS[@]}" "$API/auth/session"
+	_assert_status 200 "$credential selects a session"
+	_assert_json_eq '.session_id' "$SELECTED_SESSION" "$credential selects the expected token"
+	_curl -X POST "${HEADERS[@]}" "$API/auth/logout"
+	_assert_status 204 "$credential logs out the selected session"
+	_assert_body_empty "$credential logout sends no body"
+	_assert_header_contains 'set-cookie: amuleapi_token=;' "$credential logout clears the cookie"
+	_curl -X POST "${HEADERS[@]}" "$API/auth/logout"
+	_assert_status 204 "$credential repeated logout remains idempotent"
+	_curl -H "Authorization: Bearer $SELECTED_TOKEN" "$API/auth/session"
+	_assert_status 401 "$credential logout revoked the selected token"
+	_assert_json_eq '.error.message' 'token has been revoked' "$credential reports revocation"
+	_curl -b "amuleapi_token=$TOKEN" "$API/auth/session"
+	_assert_status 200 "$credential logout preserves the other session"
+done
+
 # --- 7. /auth/logout (bearer) → 204 + clearing Set-Cookie. ---------
 # 204, not 200: the clearing Set-Cookie is the only thing the caller needs,
 # so there is no body.

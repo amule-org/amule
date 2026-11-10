@@ -160,6 +160,37 @@ CHttpServer::Response MethodNotAllowed(const char *allow, const char *message)
 	return r;
 }
 
+// Beast preserves the wire-form casing the client sent, so a literal find
+// misses lowercased headers. Walks the map once on a miss.
+std::string FindHeaderCaseInsensitive(
+	const std::map<std::string, std::string> &headers, const std::string &name)
+{
+	auto it = headers.find(name);
+	if (it != headers.end())
+		return it->second;
+	for (const auto &h : headers) {
+		if (h.first.size() == name.size() &&
+			strncasecmp(h.first.c_str(), name.c_str(), name.size()) == 0) {
+			return h.second;
+		}
+	}
+	return std::string();
+}
+
+// Authentication and logout select credentials identically, but apply different
+// revocation rules. A nonempty bearer takes precedence even if verification later
+// fails; an absent or empty bearer falls back to the named session cookie.
+std::string ExtractSessionToken(const CHttpServer::Request &req, const std::string &cookie_name)
+{
+	std::string token =
+		webapi::ExtractBearerToken(FindHeaderCaseInsensitive(req.headers, "Authorization"));
+	if (token.empty()) {
+		token = webapi::ExtractCookieValue(
+			FindHeaderCaseInsensitive(req.headers, "Cookie"), cookie_name);
+	}
+	return token;
+}
+
 // Pulls the JWT from the Authorization header or the session cookie, verifies it
 // and rejects revoked tokens. The header wins when both are present: an explicit
 // bearer header signals intent over an implicit cookie.
@@ -172,35 +203,7 @@ AuthOutcome AuthenticateRequest(const CHttpServer::Request &req,
 {
 	AuthOutcome out;
 
-	std::string token;
-	auto auth_it = req.headers.find("Authorization");
-	if (auth_it == req.headers.end()) {
-		// Header names are case-insensitive but Beast preserves what the client
-		// sent, so a lowercase `authorization:` slips past the literal find.
-		for (const auto &h : req.headers) {
-			if (h.first.size() == 13 && strncasecmp(h.first.c_str(), "Authorization", 13) == 0) {
-				auth_it = req.headers.find(h.first);
-				break;
-			}
-		}
-	}
-	if (auth_it != req.headers.end()) {
-		token = webapi::ExtractBearerToken(auth_it->second);
-	}
-	if (token.empty()) {
-		auto ck_it = req.headers.find("Cookie");
-		if (ck_it == req.headers.end()) {
-			for (const auto &h : req.headers) {
-				if (h.first.size() == 6 && strncasecmp(h.first.c_str(), "Cookie", 6) == 0) {
-					ck_it = req.headers.find(h.first);
-					break;
-				}
-			}
-		}
-		if (ck_it != req.headers.end()) {
-			token = webapi::ExtractCookieValue(ck_it->second, cookie_name);
-		}
-	}
+	const std::string token = ExtractSessionToken(req, cookie_name);
 	if (token.empty()) {
 		out.rejection = ErrorResponse(401, "unauthorized", "missing bearer token or session cookie");
 		return out;
@@ -567,23 +570,6 @@ m_authRateLimiter(webapi::CRateLimiter::Config{ config.AuthCfg().token_failure_w
 
 namespace
 {
-
-// Beast preserves the wire-form casing the client sent, so a literal find
-// misses lowercased headers. Walks the map once on a miss.
-std::string FindHeaderCaseInsensitive(
-	const std::map<std::string, std::string> &headers, const std::string &name)
-{
-	auto it = headers.find(name);
-	if (it != headers.end())
-		return it->second;
-	for (const auto &h : headers) {
-		if (h.first.size() == name.size() &&
-			strncasecmp(h.first.c_str(), name.c_str(), name.size()) == 0) {
-			return h.second;
-		}
-	}
-	return std::string();
-}
 
 // Resolve the CORS Origin echo: the verbatim Origin for
 // `Access-Control-Allow-Origin` plus whether the allowlist named it. Empty when
@@ -2078,33 +2064,7 @@ CHttpServer::Response CApiDispatcher::HandleLogout(const CHttpServer::Request &r
 	// what it asked for has already happened. Otherwise a tab that fires logout twice
 	// sees a 401 and renders a spurious "session expired". Softer than
 	// AuthenticateRequest: reject only bad-sig, expired or missing; revoked is a noop.
-	std::string token;
-	auto auth_it = req.headers.find("Authorization");
-	if (auth_it == req.headers.end()) {
-		for (const auto &h : req.headers) {
-			if (h.first.size() == 13 && strncasecmp(h.first.c_str(), "Authorization", 13) == 0) {
-				auth_it = req.headers.find(h.first);
-				break;
-			}
-		}
-	}
-	if (auth_it != req.headers.end()) {
-		token = webapi::ExtractBearerToken(auth_it->second);
-	}
-	if (token.empty()) {
-		auto ck_it = req.headers.find("Cookie");
-		if (ck_it == req.headers.end()) {
-			for (const auto &h : req.headers) {
-				if (h.first.size() == 6 && strncasecmp(h.first.c_str(), "Cookie", 6) == 0) {
-					ck_it = req.headers.find(h.first);
-					break;
-				}
-			}
-		}
-		if (ck_it != req.headers.end()) {
-			token = webapi::ExtractCookieValue(ck_it->second, kSessionCookieName);
-		}
-	}
+	const std::string token = ExtractSessionToken(req, kSessionCookieName);
 	if (token.empty()) {
 		m_authRateLimiter.NoteFailure(ip);
 		return ErrorResponse(401, "unauthorized", "missing bearer token or session cookie");
