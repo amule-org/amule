@@ -25,11 +25,13 @@ cleanup() {
 }
 _on_exit cleanup
 
-# Opens a stream in the background as `$1` (token), body to $WORK/$2.
+# Opens a stream in the background, body to $WORK/$1, with the remaining curl arguments.
 # Sets STREAM_PID.
 _open_stream() {
-	curl -s -N -m 90 -o "$WORK/$2" -D "$WORK/$2.head" \
-		-H "Authorization: Bearer $1" "$API/events" 2>/dev/null &
+	local name=$1
+	shift
+	curl -s -N -m 90 -o "$WORK/$name" -D "$WORK/$name.head" \
+		"$@" "$API/events" 2>/dev/null &
 	STREAM_PID=$!
 	PIDS+=("$STREAM_PID")
 }
@@ -62,13 +64,22 @@ echo "amuleapi 46-sse-session-end smoke @ $HOST"
 ADMIN_TOKEN=$(_login "$ADMIN_PASS")
 [ -n "$ADMIN_TOKEN" ] || _die "admin login failed"
 
-_open_stream "$ADMIN_TOKEN" logout
+OTHER_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$OTHER_TOKEN" ] || _die "second admin login failed"
+# A revoked nonempty bearer must not fall back to the still-valid cookie on a wake.
+_open_stream logout -H "aUtHoRiZaTiOn: Bearer $ADMIN_TOKEN" -H "cookie: amuleapi_token=$OTHER_TOKEN"
 LOGOUT_PID=$STREAM_PID
 _wait_connected logout 5 || _die "admin stream did not open"
+_open_stream cookie-logout -H 'authorization: Basic ignored' -H "cOoKiE: amuleapi_token=$ADMIN_TOKEN"
+COOKIE_PID=$STREAM_PID
+_wait_connected cookie-logout 5 || _die "cookie stream did not open"
+_curl -H 'authorization: Bearer invalid' -H "cookie: amuleapi_token=$OTHER_TOKEN" "$API/events"
+_assert_status 401 'stream admission does not fall back from an invalid bearer'
 CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
 	-H "Authorization: Bearer $ADMIN_TOKEN" "$API/auth/logout")
 [ "$CODE" = "204" ] || _die "logout returned $CODE"
 AT_LOGOUT=$(wc -c < "$WORK/logout")
+AT_COOKIE_LOGOUT=$(wc -c < "$WORK/cookie-logout")
 
 # The stream notices at its next wake, the heartbeat at the latest.
 if _wait_exit "$LOGOUT_PID" 20; then
@@ -82,6 +93,19 @@ else
 	_pass "no event after logout"
 fi
 
+if _wait_exit "$COOKIE_PID" 20; then
+	_pass "logout closes the cookie-authenticated stream"
+else
+	_fail "logout closes the cookie-authenticated stream" "stream still open after logout"
+fi
+if tail -c +$((AT_COOKIE_LOGOUT + 1)) "$WORK/cookie-logout" | grep -q '^event:'; then
+	_fail "no cookie-stream event after logout"
+else
+	_pass "no cookie-stream event after logout"
+fi
+_curl -H "cookie: amuleapi_token=$OTHER_TOKEN" "$API/status"
+_assert_status 200 'stream re-authentication preserves the unrelated session'
+
 # --- 2. Guests cannot take the admin's reserved slots. --------------
 GUEST_TOKEN=$(_login "$GUEST_PASS")
 [ -n "$GUEST_TOKEN" ] || _die "guest login failed"
@@ -90,7 +114,7 @@ ADMIN_TOKEN=$(_login "$ADMIN_PASS")
 
 GUEST_PIDS=()
 for n in $(seq 1 28); do
-	_open_stream "$GUEST_TOKEN" "guest$n"
+	_open_stream "guest$n" -H "Authorization: Bearer $GUEST_TOKEN"
 	GUEST_PIDS+=("$STREAM_PID")
 done
 OPEN=0
@@ -111,7 +135,7 @@ else
 	_fail "29th guest stream → 503 too_many_streams" "got HTTP $CODE: $(head -c 200 "$WORK/guest29")"
 fi
 
-_open_stream "$ADMIN_TOKEN" admin
+_open_stream admin -H "Cookie: amuleapi_token=$ADMIN_TOKEN"
 ADMIN_PID=$STREAM_PID
 if _wait_connected admin 5; then
 	_pass "admin stream opens while guests hold 28 slots"

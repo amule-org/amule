@@ -126,6 +126,15 @@ for credential in bearer cookie basic empty; do
 	_curl "${HEADERS[@]}" "$API/auth/session"
 	_assert_status 200 "$credential selects a session"
 	_assert_json_eq '.session_id' "$SELECTED_SESSION" "$credential selects the expected token"
+	# Exercise callers through the rate-limited wrapper and the optional-auth gate.
+	for path in status auth/passwords version; do
+		_curl "${HEADERS[@]}" "$API/$path"
+		_assert_status 200 "$credential authenticates $path"
+		_assert_header_contains 'Cache-Control: private' "$credential $path stays private"
+		if [ "$path" = version ]; then
+			_assert_json_eq 'has("update")' true "$credential exposes authenticated version details"
+		fi
+	done
 	_curl -X POST "${HEADERS[@]}" "$API/auth/logout"
 	_assert_status 204 "$credential logs out the selected session"
 	_assert_body_empty "$credential logout sends no body"
@@ -308,6 +317,10 @@ _assert_status 200 "ADMIN_PASS restored for the rest of the suite → 200"
 _curl -X POST "$API/auth/passwords"
 _assert_status 405 "POST /auth/passwords → 405 method_not_allowed"
 
+# Keep a valid session to test the separate token limiter after the login lockout.
+RATE_TOKEN=$(_login "$ADMIN_PASS")
+[ -n "$RATE_TOKEN" ] || _die "login for the token limiter failed"
+
 # --- 12. Rate-limit: 5 wrong passwords (default threshold) → 429 ---
 # Defaults from amuleapi.conf: LoginFailureWindowSeconds=60,
 # LoginFailureThreshold=5, LoginLockoutSeconds=300.
@@ -352,6 +365,25 @@ _assert_json_eq '.error.code' rate_limited \
 	'lockout carries error.code=rate_limited'
 _assert_header_contains 'retry-after:' \
 	'lockout carries Retry-After header'
+
+# --- 13. Token failures share a bucket across authentication and logout. ---
+_curl -H "Authorization: Bearer $RATE_TOKEN" "$API/status"
+_assert_status 200 'login lockout does not block an existing session'
+for i in $(seq 1 30); do
+	if [ $((i % 2)) -eq 0 ]; then
+		_curl -X POST -H 'authorization: Bearer invalid' "$API/auth/logout"
+	else
+		_curl -H 'authorization: Bearer invalid' "$API/status"
+	fi
+	_assert_status 401 "token failure $i counts without locking out early"
+done
+for path in status auth/logout; do
+	method=GET
+	[ "$path" = auth/logout ] && method=POST
+	_curl -X "$method" -H "cookie: amuleapi_token=$RATE_TOKEN" "$API/$path"
+	_assert_status 429 "$path observes the shared token lockout even with valid credentials"
+	_assert_header_contains 'Retry-After:' "$path lockout has retry guidance"
+done
 
 # --- Summary. -----------------------------------------------------
 _summary

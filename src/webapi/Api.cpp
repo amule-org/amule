@@ -648,9 +648,9 @@ bool ParseJsonObjectBody(const std::string &body, picojson::value &out, std::str
 
 } // namespace
 
-// Did the caller present credentials at all? Mirrors what Authenticate() accepts,
-// without verifying them: an invalid or expired credential still means the
-// response was computed for a specific caller and must not be shared.
+// Credential presence is broader than ExtractSessionToken: even an unsupported
+// Authorization scheme marks the response private and counts as an attempted
+// credential on optional-auth routes. Do not reduce this to token extraction.
 bool RequestCarriesCredentials(const CHttpServer::Request &req, const std::string &cookie_name)
 {
 	if (!FindHeaderCaseInsensitive(req.headers, "Authorization").empty()) {
@@ -690,7 +690,8 @@ CHttpServer::Response CApiDispatcher::Dispatch(const CHttpServer::Request &req)
 	}
 
 	// A browser attaches the session cookie by itself, never a bearer token, so only
-	// requests without one can be forged from another origin.
+	// requests without one can be forged from another origin. Keep this bearer-only:
+	// ExtractSessionToken would let an ambient cookie bypass the origin check.
 	if (webapi::ExtractBearerToken(FindHeaderCaseInsensitive(req.headers, "Authorization")).empty() &&
 		webapi::IsCrossOriginBrowserWrite(req.method,
 			FindHeaderCaseInsensitive(req.headers, "Sec-Fetch-Site"),
@@ -1794,6 +1795,7 @@ CHttpServer::Response CApiDispatcher::HandleMetrics(const CHttpServer::Request &
 		response.headers["Cache-Control"] = "no-store";
 		return response;
 	}
+	// Metrics uses its own bearer secret, never the JWT/session-cookie fallback.
 	const auto token =
 		webapi::ExtractBearerToken(FindHeaderCaseInsensitive(req.headers, "Authorization"));
 	if (token.empty() || !webcommon::ConstantTimeEquals(token, config.token)) {

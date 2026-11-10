@@ -154,6 +154,29 @@ _assert_json_eq '.logout_url' null "password session has logout_url null"
 _curl -H "Authorization: Bearer $TOKEN" "$P/auth/passwords"
 _assert_status 200 "password token needs no proxy header"
 
+# The proxy session path bypasses the normal rate-limited wrapper, but must
+# select credentials the same way. A password bearer wins over a proxy cookie.
+SELECTED_PASSWORD=$(_login "$ADMIN_PASS" "$P")
+[ -n "$SELECTED_PASSWORD" ] || _die "password login for precedence failed"
+_curl -H "aUtHoRiZaTiOn: Bearer $SELECTED_PASSWORD" \
+	-H "cOoKiE: amuleapi_token=$ALICE" -H 'Remote-User: alice' "$P/auth/session"
+_assert_status 200 "password bearer wins over proxy cookie"
+_assert_json_eq '.user' null "selected password session retains its identity"
+_curl -H 'authorization: Basic ignored' -H "cOoKiE: amuleapi_token=$ALICE" \
+	-H 'Remote-User: alice' "$P/auth/session"
+_assert_status 200 "non-bearer header falls back to proxy cookie"
+_assert_json_eq '.session_id' "$ALICE_SID" "fallback keeps the existing proxy session"
+_curl -H 'authorization: Bearer invalid' -H "cookie: amuleapi_token=$ALICE" \
+	-H 'Remote-User: alice' "$P/auth/passwords"
+_assert_status 401 "invalid bearer does not fall back to proxy cookie on a protected route"
+_curl -X POST -H "authorization: Bearer $SELECTED_PASSWORD" \
+	-H "cookie: amuleapi_token=$ALICE" -H 'Remote-User: alice' "$P/auth/logout"
+_assert_status 204 "logout selects password bearer ahead of proxy cookie"
+_curl -H "authorization: Bearer $SELECTED_PASSWORD" "$P/auth/passwords"
+_assert_status 401 "selected password token was revoked"
+_curl -H "cookie: amuleapi_token=$ALICE" -H 'Remote-User: alice' "$P/auth/passwords"
+_assert_status 200 "logout preserved the other proxy session"
+
 # A credential change ends password sessions, not proxy ones. The cutoff is
 # whole seconds, so let the proxy session's iat fall behind it.
 sleep 1.1
