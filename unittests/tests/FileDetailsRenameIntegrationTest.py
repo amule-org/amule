@@ -83,11 +83,11 @@ def run(gui_binary, daemon_binary, root, Atspi, local_mode=False):
                 desktop = Atspi.get_desktop(0)
                 app = eventually(lambda: next((child for child in descendants(desktop)
                                  if child.get_process_id() == gui.pid and
-                                 child.get_role_name() == 'application'), None),
+                                 child.get_role() == Atspi.Role.APPLICATION), None),
                                  'Remote GUI was not exposed through accessibility')
                 find(app, 'Downloads').get_action_iface().do_action(0)
                 cell = eventually(lambda: next((child for child in descendants(app)
-                                  if child.get_role_name() == 'table cell'), None),
+                                  if child.get_role() == Atspi.Role.TABLE_CELL), None),
                                   'Download row did not arrive')
                 # Activating through AT-SPI's synchronous action blocks in ShowModal;
                 # a native double-click lets the accessibility connection keep serving.
@@ -95,7 +95,7 @@ def run(gui_binary, daemon_binary, root, Atspi, local_mode=False):
                 Atspi.generate_mouse_event(rect.x + 20, rect.y + 10, 'b1d')
                 dialog = eventually(lambda: find(app, 'File Details'), 'File Details did not open')
                 edit = next(child for child in descendants(dialog)
-                            if child.get_role_name() == 'text' and
+                            if child.get_role() == Atspi.Role.TEXT and
                             Atspi.Text.get_text(child, 0, -1) == 'original.bin')
                 apply_button = find(dialog, 'Apply')
                 assert not apply_button.get_state_set().contains(Atspi.StateType.ENABLED)
@@ -141,7 +141,7 @@ def run(gui_binary, daemon_binary, root, Atspi, local_mode=False):
                     Atspi.generate_mouse_event(rect.x + 20, rect.y + 10, 'b1d')
                     details = eventually(lambda: find(app, 'File Details'), 'Details did not reopen')
                     field = next(child for child in descendants(details)
-                                 if child.get_role_name() == 'text' and
+                                 if child.get_role() == Atspi.Role.TEXT and
                                  Atspi.Text.get_text(child, 0, -1) == expected)
                     return details, field, find(details, 'Apply')
 
@@ -175,9 +175,13 @@ def run(gui_binary, daemon_binary, root, Atspi, local_mode=False):
                 # Wait for the model update, then navigate in both directions. Even with
                 # one file, both handlers must reset an unsubmitted edit and its dirty bit.
                 time.sleep(5.5)
+                # Role names vary across AT-SPI releases ("push button" / "button").
+                # The protocol role enum is stable.
                 arrows = [child for child in descendants(dialog)
-                          if child.get_role_name() == 'button' and child.get_name() == '']
-                assert len(arrows) == 2, 'Missing file navigation buttons'
+                          if child.get_role() == Atspi.Role.PUSH_BUTTON and child.get_name() == '']
+                assert len(arrows) == 2, ('Missing file navigation buttons; accessible controls: ' +
+                                          repr([(child.get_role_name(), child.get_name())
+                                                for child in descendants(dialog)]))
                 for arrow in arrows:
                     edit.get_editable_text_iface().set_text_contents('discard-on-navigation.bin')
                     arrow.get_action_iface().do_action(0)
