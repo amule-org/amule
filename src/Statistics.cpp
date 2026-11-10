@@ -1016,7 +1016,9 @@ void CStatistics::InitStatsTree()
 		CStatTreeItemBase *const keys =
 			s_statTree->AddChild((new CStatTreeItemBase(wxTRANSLATE("Kad receiver keys")))
 						     ->SetKey("kad_receiver_keys"));
-		static const char *const handlerNames[] = {
+		// wxString rather than a char pointer: on a wxChar-is-wchar_t build the translated literal
+		// is wide, and a char array would not compile there.
+		const wxString handlerNames[] = {
 			wxTRANSLATE("Source publish"),
 			wxTRANSLATE("Keyword publish"),
 			wxTRANSLATE("Notes publish"),
