@@ -1342,6 +1342,12 @@ add_test (NAME ServerIPv6UpdateTest COMMAND ServerIPv6UpdateTest)
 target_include_directories (ServerIPv6UpdateTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (ServerIPv6UpdateTest muleunit mulecommon)
 
+# What a Kad request without a receiver key means, without the listener or the application.
+add_executable (KadReceiverKeyPolicyTest KadReceiverKeyPolicyTest.cpp)
+add_test (NAME KadReceiverKeyPolicyTest COMMAND KadReceiverKeyPolicyTest)
+target_include_directories (KadReceiverKeyPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (KadReceiverKeyPolicyTest muleunit mulecommon)
+
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp

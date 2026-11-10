@@ -44,6 +44,7 @@
 #include "ListenSocket.h" // (tree, GetAverageConnections)
 #include "ServerList.h"   // Needed for CServerList (tree)
 #include <cmath>          // Needed for std::floor
+#include <type_traits>    // Needed for std::extent_v
 #include "updownclient.h" // Needed for CUpDownClient
 #else
 #include "GetTickCount.h"         // Needed for GetTickCount64()
@@ -205,6 +206,11 @@ CStatTreeItemNativeCounter *CStatistics::s_hasSocket;
 #endif
 CStatTreeItemNativeCounter *CStatistics::s_filtered;
 CStatTreeItemNativeCounter *CStatistics::s_banned;
+CKadReceiverKeyCounts CStatistics::s_kadReceiverKeyCounts;
+CStatTreeItemNativeCounter
+	*CStatistics::s_kadReceiverKeyValid[static_cast<std::size_t>(EKadReceiverKeyHandler::Count)];
+CStatTreeItemNativeCounter
+	*CStatistics::s_kadReceiverKeyMissing[static_cast<std::size_t>(EKadReceiverKeyHandler::Count)];
 #ifdef ENABLE_KAD_NODE_PROTECTION
 CStatTreeItemNativeCounter *CStatistics::s_kadBanned;
 #endif
@@ -386,6 +392,23 @@ CStatistics::~CStatistics()
 
 	delete s_upOverheadRate;
 	delete s_downOverheadRate;
+}
+
+void CStatistics::AddKadReceiverKeyObservation(EKadReceiverKeyHandler handler, bool validReceiverKey)
+{
+	const std::size_t index = static_cast<std::size_t>(handler);
+	if (index >= static_cast<std::size_t>(EKadReceiverKeyHandler::Count)) {
+		return;
+	}
+	s_kadReceiverKeyCounts.Record(handler, validReceiverKey);
+	if (s_kadReceiverKeyValid[index] != nullptr) {
+		s_kadReceiverKeyValid[index]->SetValue(
+			static_cast<uint32>(s_kadReceiverKeyCounts.GetValid(handler)));
+	}
+	if (s_kadReceiverKeyMissing[index] != nullptr) {
+		s_kadReceiverKeyMissing[index]->SetValue(
+			static_cast<uint32>(s_kadReceiverKeyCounts.GetMissing(handler)));
+	}
 }
 
 void CStatistics::Load()
@@ -1070,6 +1093,61 @@ void CStatistics::InitStatsTree()
 	s_kadBanned = static_cast<CStatTreeItemNativeCounter *>(s_clients->AddChild(
 		new CStatTreeItemNativeCounter(wxTRANSLATE("Kad banned addresses: %s")), 1));
 #endif
+
+	{
+		// What each Kad request handler learned about receiver keys, per handler rather than as one
+		// total: only the publishes can ever carry a key reliably, so a single figure would hide the
+		// handlers that never can and say nothing about the ones that can.
+		CStatTreeItemBase *const keys =
+			s_statTree->AddChild((new CStatTreeItemBase(wxTRANSLATE("Kad receiver keys")))
+						     ->SetKey("kad_receiver_keys"));
+		// In EKadReceiverKeyHandler order. wxString, not a char pointer: on a wxChar-is-wchar_t
+		// build the translated literal is wide.
+		struct HandlerItem
+		{
+			wxString name;
+			const char *validKey;
+			const char *missingKey;
+		};
+		const HandlerItem handlers[] = {
+			{ wxTRANSLATE("Keyword publish"),
+				"kad_recv_key_keyword_publish_valid",
+				"kad_recv_key_keyword_publish_missing" },
+			{ wxTRANSLATE("Source publish"),
+				"kad_recv_key_source_publish_valid",
+				"kad_recv_key_source_publish_missing" },
+			{ wxTRANSLATE("Notes publish"),
+				"kad_recv_key_notes_publish_valid",
+				"kad_recv_key_notes_publish_missing" },
+			{ wxTRANSLATE("Firewall check"),
+				"kad_recv_key_firewall_check_valid",
+				"kad_recv_key_firewall_check_missing" },
+			{ wxTRANSLATE("Firewall check 2"),
+				"kad_recv_key_firewall_check2_valid",
+				"kad_recv_key_firewall_check2_missing" },
+			{ wxTRANSLATE("Find buddy"),
+				"kad_recv_key_find_buddy_valid",
+				"kad_recv_key_find_buddy_missing" },
+			{ wxTRANSLATE("Callback"),
+				"kad_recv_key_callback_valid",
+				"kad_recv_key_callback_missing" },
+		};
+		static_assert(std::extent_v<decltype(handlers)> ==
+				      static_cast<std::size_t>(EKadReceiverKeyHandler::Count),
+			"one stats item per receiver key handler");
+		for (std::size_t i = 0; i < static_cast<std::size_t>(EKadReceiverKeyHandler::Count); ++i) {
+			CStatTreeItemBase *const handler =
+				keys->AddChild(new CStatTreeItemBase(handlers[i].name));
+			s_kadReceiverKeyValid[i] =
+				static_cast<CStatTreeItemNativeCounter *>(handler->AddChild(
+					new CStatTreeItemNativeCounter(wxTRANSLATE("Keys valid: %s")), 1));
+			s_kadReceiverKeyValid[i]->SetKey(wxString::FromAscii(handlers[i].validKey));
+			s_kadReceiverKeyMissing[i] =
+				static_cast<CStatTreeItemNativeCounter *>(handler->AddChild(
+					new CStatTreeItemNativeCounter(wxTRANSLATE("Keys missing: %s")), 1));
+			s_kadReceiverKeyMissing[i]->SetKey(wxString::FromAscii(handlers[i].missingKey));
+		}
+	}
 	s_clients->AddChild(
 		(new CStatTreeItemTotalClients(wxTRANSLATE("Total: %i Known: %i"), s_clients, s_unknown))
 			->SetKey("clients_total"),
