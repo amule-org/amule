@@ -701,6 +701,7 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 					}
 				}
 
+				it->GetClient()->AdoptKadBuddy(*source);
 				source->Safe_Delete();
 				return;
 			}
