@@ -109,6 +109,69 @@ bool CPacketTracking::IsOnOutTrackList(uint32_t ip, uint8_t opcode, bool dontRem
 	return false;
 }
 
+// Limits come from the estimated maximum frequency of each request in normal operation, plus a
+// buffer: they are flood detection, not a guide to normal usage.
+uint32_t CPacketTracking::InTrackListAllowedPerMinute(uint8_t opcode) noexcept
+{
+	switch (opcode) {
+	case KADEMLIA2_BOOTSTRAP_REQ:
+		return 2;
+	case KADEMLIA2_HELLO_REQ:
+		return 3;
+	case KADEMLIA2_REQ:
+		return 10;
+	case KADEMLIA2_SEARCH_NOTES_REQ:
+		return 3;
+	case KADEMLIA2_SEARCH_KEY_REQ:
+		return 3;
+	case KADEMLIA2_SEARCH_SOURCE_REQ:
+		return 3;
+	case KADEMLIA2_PUBLISH_KEY_REQ:
+		return 3;
+	case KADEMLIA2_PUBLISH_SOURCE_REQ:
+		return 2;
+	case KADEMLIA2_PUBLISH_NOTES_REQ:
+		return 2;
+	case KADEMLIA_FIREWALLED2_REQ:
+	case KADEMLIA_FIREWALLED_REQ:
+		return 2;
+	case KADEMLIA_FINDBUDDY_REQ:
+		return 2;
+	case KADEMLIA_CALLBACK_REQ:
+		return 1;
+	case KADEMLIA2_PING:
+		return 2;
+	default:
+		// not any request packets, so it's a response packet - no further checks on this point
+		return 0;
+	}
+}
+
+uint8_t CPacketTracking::TrackedInOpcode(uint8_t opcode) noexcept
+{
+	return opcode == KADEMLIA_FIREWALLED2_REQ ? KADEMLIA_FIREWALLED_REQ : opcode;
+}
+
+uint32_t CPacketTracking::InTrackListCount(uint32_t ip, uint8_t opcode) const
+{
+	const uint32_t allowed = InTrackListAllowedPerMinute(opcode);
+	const auto entry = m_mapTrackPacketsIn.find(ip);
+	if (allowed == 0 || entry == m_mapTrackPacketsIn.end()) {
+		return 0;
+	}
+	opcode = TrackedInOpcode(opcode);
+	const uint32_t intervalMs = 60000 / allowed;
+	for (const TrackPacketsIn_Struct::TrackedRequestIn_Struct &request :
+		entry->second->m_trackedRequests) {
+		if (request.m_opcode == opcode) {
+			const uint64_t drained = (::GetTickCount64() - request.m_firstAdded) / intervalMs;
+			return drained >= request.m_count ? 0
+							  : request.m_count - static_cast<uint32_t>(drained);
+		}
+	}
+	return 0;
+}
+
 CPacketTracking::IncomingPacket CPacketTracking::InTrackListIsAllowedPacket(
 	uint32_t ip, uint8_t opcode, bool validReceiverKey)
 {
@@ -117,60 +180,12 @@ CPacketTracking::IncomingPacket CPacketTracking::InTrackListIsAllowedPacket(
 	// processing-time DOS attacks, and slows other possible attacks such as scanning indexed
 	// files or fake publish floods.
 
-	// First figure out whether this is a request packet to be tracked, and its time limits. The
-	// limits come from the estimated maximum frequency of such packets in normal operation,
-	// plus a buffer -- they are flood detection, not a guide to normal usage.
-
-	uint32_t allowedPacketsPerMinute;
 	DEBUG_ONLY(const uint8_t dbgOrgOpcode = opcode;)
-
-	switch (opcode) {
-	case KADEMLIA2_BOOTSTRAP_REQ:
-		allowedPacketsPerMinute = 2;
-		break;
-	case KADEMLIA2_HELLO_REQ:
-		allowedPacketsPerMinute = 3;
-		break;
-	case KADEMLIA2_REQ:
-		allowedPacketsPerMinute = 10;
-		break;
-	case KADEMLIA2_SEARCH_NOTES_REQ:
-		allowedPacketsPerMinute = 3;
-		break;
-	case KADEMLIA2_SEARCH_KEY_REQ:
-		allowedPacketsPerMinute = 3;
-		break;
-	case KADEMLIA2_SEARCH_SOURCE_REQ:
-		allowedPacketsPerMinute = 3;
-		break;
-	case KADEMLIA2_PUBLISH_KEY_REQ:
-		allowedPacketsPerMinute = 3;
-		break;
-	case KADEMLIA2_PUBLISH_SOURCE_REQ:
-		allowedPacketsPerMinute = 2;
-		break;
-	case KADEMLIA2_PUBLISH_NOTES_REQ:
-		allowedPacketsPerMinute = 2;
-		break;
-	case KADEMLIA_FIREWALLED2_REQ:
-		opcode = KADEMLIA_FIREWALLED_REQ;
-	/* fall through */
-	case KADEMLIA_FIREWALLED_REQ:
-		allowedPacketsPerMinute = 2;
-		break;
-	case KADEMLIA_FINDBUDDY_REQ:
-		allowedPacketsPerMinute = 2;
-		break;
-	case KADEMLIA_CALLBACK_REQ:
-		allowedPacketsPerMinute = 1;
-		break;
-	case KADEMLIA2_PING:
-		allowedPacketsPerMinute = 2;
-		break;
-	default:
-		// not any request packets, so it's a response packet - no further checks on this point
+	const uint32_t allowedPacketsPerMinute = InTrackListAllowedPerMinute(opcode);
+	if (allowedPacketsPerMinute == 0) {
 		return IncomingPacket::Allowed;
 	}
+	opcode = TrackedInOpcode(opcode);
 
 	const uint32_t intervalMs = 60000 / allowedPacketsPerMinute;
 	const uint32_t floodThreshold = allowedPacketsPerMinute * 5;

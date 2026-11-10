@@ -1417,6 +1417,60 @@ static void AddLoggerTag(CECPacket *response, CLoggerAccess &LoggerAccess)
 	}
 }
 
+static CECEmptyTag MakeKadBuddyTag()
+{
+	const CClientList &clients = *theApp->clientlist;
+	const Kademlia::CBuddyStats::Serving &serving = clients.GetBuddyStats().serving;
+	const Kademlia::CBuddyStats::Own &own = clients.GetBuddyStats().own;
+	CECEmptyTag tag(EC_TAG_KAD_BUDDY);
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_PENDING, clients.GetPendingBuddyCount()));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REQUESTS, serving.requestsReceived));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERED, serving.requestsOffered));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REFUSED_FIREWALLED, serving.requestsRefusedFirewalled));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REFUSED_FULL, serving.requestsRefusedFull));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REFUSED_CONFLICT, serving.requestsRefusedConflict));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_RATE_LIMITED, serving.requestsRateLimited));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EXPIRED, serving.offersExpired));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_SUPERSEDED, serving.offersSuperseded));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_DUPLICATE, serving.offersDuplicate));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_STARTED, serving.started));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_RELEASED_EXTRA, serving.releasedExtra));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_ENDED, serving.ended));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_TIMED_OUT, serving.timedOut));
+	tag.AddTag(CECTag(
+		EC_TAG_KAD_BUDDY_SERVING_SECONDS, (serving.endedMs + clients.GetServedLinkedMs()) / 1000));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS, serving.relays.callbacks));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACK_BYTES, serving.relays.callbackBytes));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_NO_BUDDY, serving.relays.callbacksNoBuddy));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_MISMATCHED, serving.relays.callbacksMismatched));
+	tag.AddTag(
+		CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_RATE_LIMITED, serving.relays.callbacksRateLimited));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS, serving.relays.reasks));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASK_BYTES, serving.relays.reaskBytes));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_NO_BUDDY, serving.relays.reasksNoBuddy));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_MISMATCHED, serving.relays.reasksMismatched));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_MALFORMED, serving.relays.reasksMalformed));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_RELAY_BYTES_PEAK, serving.peakRelayBytesPerMinute));
+	tag.AddTag(CECTag(
+		EC_TAG_KAD_BUDDY_SERVING_CALLBACK_REQUESTS_PEAK, serving.callbackRequestsPerClient.Peak()));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_SEARCHES, own.searches));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REQUESTS, own.requestsSent));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REQUESTS_SKIPPED, own.requestsSkipped));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_OFFERS, own.offersReceived));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CONNECT_ATTEMPTS, own.connectAttempts));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CONNECT_FAILURES, own.connectFailures));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CONNECTED, own.connected));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_ENDED, own.ended));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_TIMED_OUT, own.timedOut));
+	tag.AddTag(
+		CECTag(EC_TAG_KAD_BUDDY_OWN_SECONDS, (own.endedMs + clients.GetOwnBuddyLinkedMs()) / 1000));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CALLBACKS, own.callbacksReceived));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REASKS, own.reasksReceived));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_NEEDED_SECONDS, own.neededMs / 1000));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_MISSING_SECONDS, own.withoutBuddyMs / 1000));
+	return tag;
+}
+
 static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerAccess &LoggerAccess)
 {
 	CECPacket *response = new CECPacket(EC_OP_STATS);
@@ -1506,6 +1560,9 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 			const auto wire = distribution.Encode();
 			response->AddTag(CECTag(EC_TAG_STATS_KAD_DISTRIBUTION, wire.size(), wire.data()));
 		}
+		if (request->GetTagByName(EC_TAG_KAD_BUDDY)) {
+			response->AddTag(MakeKadBuddyTag());
+		}
 		// The counts are local, so they ship before bootstrap, but only once the saved
 		// index is adopted: a 0 before that is not a real count.
 		if (theApp->IsKadIndexReady()) {
@@ -1536,6 +1593,10 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 			}
 			response->AddTag(CECTag(EC_TAG_STATS_BUDDY_IP, BuddyIP));
 			response->AddTag(CECTag(EC_TAG_STATS_BUDDY_PORT, BuddyPort));
+			response->AddTag(
+				CECTag(EC_TAG_STATS_BUDDY_SERVED, theApp->clientlist->GetServedBuddyCount()));
+			response->AddTag(
+				CECTag(EC_TAG_STATS_BUDDY_SERVED_LIMIT, CClientList::MaxServedBuddies));
 		}
 	case EC_DETAIL_UPDATE:
 		break;

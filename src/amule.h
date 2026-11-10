@@ -423,6 +423,8 @@ public:
 	uint8 GetBuddyStatus() const;
 	uint32 GetBuddyIP() const;
 	uint32 GetBuddyPort() const;
+	uint32 GetServedBuddyCount() const;
+	uint32 GetServedBuddyLimit() const;
 	const Kademlia::CUInt128 &GetKadID() const;
 
 	// Check if we should callback this client

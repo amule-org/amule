@@ -2718,7 +2718,26 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
   "public_ip": "203.0.113.5",
   "network": { "user_count": 5400000, "file_count": 1400000000, "node_count": 2400 },
   "indexed": { "sources": 12000, "keywords": 8500, "notes": 0, "load_percent": 14 },
-  "buddy": { "state": "connected", "ip": "203.0.113.9", "port": 4672 }
+  "buddy": {
+    "state": "connected", "ip": "203.0.113.9", "port": 4672,
+    "served_count": 1, "served_limit": 1,
+    "serving": {
+      "pending_count": 0,
+      "served_seconds": 5400,
+      "requests": { "received": 40, "offered": 3, "refused_firewalled": 0, "refused_full": 35, "refused_conflict": 2, "rate_limited": 0, "expired": 1, "superseded": 0, "duplicate": 0 },
+      "buddies": { "started": 2, "released_extra": 0, "ended": 1, "timed_out": 0 },
+      "callbacks": { "relayed": 10, "relayed_bytes": 960, "no_buddy": 0, "mismatched": 1, "rate_limited": 0, "peak_requests_per_minute": 1 },
+      "reasks": { "relayed": 300, "relayed_bytes": 27900, "no_buddy": 3, "mismatched": 0, "malformed": 0 },
+      "peak_relayed_bytes_per_minute": 4500
+    },
+    "own": {
+      "search_count": 0, "needed_seconds": 0, "missing_seconds": 0, "connected_seconds": 0,
+      "requests": { "sent": 0, "skipped": 0, "offered": 0 },
+      "connections": { "attempted": 0, "failed": 0 },
+      "buddies": { "started": 0, "ended": 0, "timed_out": 0 },
+      "received_callback_count": 0, "received_reask_count": 0
+    }
+  }
 }
 ```
 
@@ -2735,7 +2754,23 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
 | `network.node_count` | int \| null | **This node's own routing table size** - how many Kad contacts it currently holds - *not* a network-wide figure like the two above. Saturates at 65535 (the daemon counts it in a `uint16`). **`null` unless `state` is `connected`**: routing contacts outlive the disconnect, so a non-zero count on a fully stopped Kad is not surfaced. |
 | `indexed.sources` / `.keywords` / `.notes` | int \| null | Kad-store counters: how many entries this node is holding for the network as a DHT participant. `null` unless `state` is `connected`, and also `null` while the daemon is still loading its saved index after Kad starts - a `0` would be a real count, indistinguishable from an idle but connected node. |
 | `indexed.load_percent` | int \| null | **A count, not a percentage**, despite its name: how many keywords have a recorded publish delay, because the nodes that store them reported a high load. A delay that has run out stays counted until that keyword is published again. The desktop panel shows it as *Indexed load*. `null` on the same gate as the three counters above. |
-| `buddy.state` | string \| null | LowID-buddy state for NAT-traversal clients: `no_buddy` / `connecting` / `connected` (`unknown` only if the daemon ever ships a value outside its own enum). **`null` unless `state` is `connected`**, along with `buddy.ip` / `buddy.port`; a `no_buddy` there would be a real state rather than the absence of one. While connected with no buddy, `ip` / `port` are `0.0.0.0` / `0`. |
+| `buddy.state` | string \| null | LowID-buddy state for NAT-traversal clients: `no_buddy` / `connecting` / `connected` (`unknown` only if the daemon ever ships a value outside its own enum). **`null` unless `state` is `connected`**, along with `buddy.ip` / `buddy.port`; a `no_buddy` there would be a real state rather than the absence of one. While connected with no buddy, `ip` / `port` are `0.0.0.0` / `0`. On an open node the buddy, if any, is the firewalled node this node serves. |
+| `buddy.served_count` / `.served_limit` | int \| null | How many firewalled nodes this node serves as their buddy now, and the most it serves at once. A node serves only while it is open on TCP and UDP. `null` unless `state` is `connected`, and from a daemon too old to report them. |
+| `buddy.serving` | object \| null | Counts since the daemon started, for this node as the buddy of a firewalled node. `null` from a daemon too old to report them. The fields are below. |
+| `buddy.serving.pending_count` | int | Buddy requests this node answered with an offer whose node has not connected yet. |
+| `buddy.serving.served_seconds` | int | Total time this node served a buddy, the current one included. |
+| `buddy.serving.requests` | object | Buddy requests from firewalled nodes. `received` counts the ones the daemon handled, which end as `offered` or as one of the three refusals: `refused_firewalled` (this node is not open), `refused_full` (it serves `served_limit` buddies already) or `refused_conflict` (the daemon already knows that client, or it is this node). `rate_limited` counts requests dropped before handling, by the per-client limit, and is not part of `received`. `expired`, `superseded` and `duplicate` count offers that did not become a buddy: the node did not connect in time, another buddy connected first, or the same node linked through another offer. |
+| `buddy.serving.buddies` | object | `started` counts the nodes that became a served buddy, and `ended` the ones that stopped, for any reason. `timed_out` is the part of `ended` that sent nothing within the receive timeout. `released_extra` counts nodes that connected while another buddy was already served, and were released. |
+| `buddy.serving.callbacks` | object | Callback requests for the served buddy. `relayed` and `relayed_bytes` count the callbacks passed on to it, with their size on the wire. Dropped: `no_buddy` (no buddy served), `mismatched` (the request names another buddy) and `rate_limited` (over the per-client limit). `peak_requests_per_minute` is the most requests one client sent in one minute, dropped ones included. |
+| `buddy.serving.reasks` | object | Reasks for the served buddy, counted like `callbacks`. `malformed` counts reasks too short to carry the buddy's id. |
+| `buddy.serving.peak_relayed_bytes_per_minute` | int | The most bytes relayed to one served buddy in one minute. |
+| `buddy.own` | object \| null | Counts since the daemon started, for this node as a firewalled node with a buddy of its own. `null` from a daemon too old to report them. The fields are below. |
+| `buddy.own.search_count` | int | Kad searches for a buddy. |
+| `buddy.own.needed_seconds` / `.missing_seconds` / `.connected_seconds` | int | Time Kad was connected and this node needed a buddy; the part of it without one; and the total time with a buddy, the current one included. |
+| `buddy.own.requests` | object | `sent` counts buddy requests sent to open nodes, and `skipped` the ones not sent because the connection to that node failed within the last hour. `offered` counts the offers received. |
+| `buddy.own.connections` | object | Connections to an offered buddy: `attempted`, and `failed`, which puts that node on the one-hour cooldown. |
+| `buddy.own.buddies` | object | `started`, `ended` and `timed_out`, as under `serving.buddies`, for this node's own buddy. |
+| `buddy.own.received_callback_count` / `.received_reask_count` | int | Callbacks and reasks this node's buddy relayed to it. |
 
 ---
 
@@ -2898,7 +2933,7 @@ The ed2k server-info log buffer. Unlike `/logs/amule`, amuled ships this one as 
 
 **Query parameters:** `max_client_versions=N` (`0`–`255`, default `0` = unlimited) — caps how many per-software **version** rows the daemon serializes. Only the version lists are affected; the OS breakdown and the fixed skeleton nodes are always complete. A long-lived node accumulates hundreds of version rows, so a dashboard showing a top-10 should pass this rather than discard the rest client-side.
 
-A tree mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, downloads). Cached with a 1 s TTL.
+A tree mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, shared files, Kad buddies). Cached with a 1 s TTL. The `kad_buddies` node holds a summary of the buddy counters in [`GET /kad`](#get-apiv1kad), split into `kad_buddies_serving` and `kad_buddies_own`.
 
 The envelope is `{ "nodes": [...] }`. Each node is `{ "key": "<id>", "label_value": "<value>", "label": "<template>", "values": [...], "children": [...] }`. A leaf is a node whose `children` array is empty. `key` is optional; `label_value` is always present, `null` unless the node's `label` is itself data (see below).
 
@@ -3634,6 +3669,24 @@ Each scrape reads a compact snapshot that amuleapi publishes after a successful 
 | `amule_kad_network_nodes` | gauge | Local routing-table size, only while connected |
 | `amule_kad_indexed` | gauge, `type="sources\|keywords\|notes"` | Locally indexed item counts |
 | `amule_kad_index_load` | gauge | Daemon-reported index load, separate from item counts |
+| `amule_kad_buddies_served`, `amule_kad_buddies_served_limit` | gauge | Firewalled nodes this node serves as their buddy, and the most it serves at once; only while Kad is connected |
+| `amule_kad_buddy_pending_offers` | gauge | Buddy offers whose node has not connected yet |
+| `amule_kad_buddy_requests_total` | counter, `result="offered\|refused_firewalled\|refused_full\|refused_conflict\|rate_limited"` | Buddy requests from firewalled nodes, by result |
+| `amule_kad_buddy_offers_unused_total` | counter, `reason="expired\|superseded\|duplicate"` | Offers whose node did not become the buddy |
+| `amule_kad_buddy_served_events_total` | counter, `event="started\|released_extra\|ended\|timed_out"` | Changes to the served buddy; `timed_out` is part of `ended` |
+| `amule_kad_buddy_served_seconds_total` | counter | Time spent serving a buddy |
+| `amule_kad_buddy_relays_total`, `amule_kad_buddy_relayed_bytes_total` | counter, `kind="callback\|reask"` | Packets and bytes relayed to the served buddy |
+| `amule_kad_buddy_relay_drops_total` | counter, `kind`, `reason="no_buddy\|mismatched\|rate_limited\|malformed"` | Packets for a served buddy that were not relayed; callbacks have no `malformed`, reasks no `rate_limited` |
+| `amule_kad_buddy_peak_relayed_bytes_per_minute` | gauge | Most bytes relayed to one served buddy in one minute, since start |
+| `amule_kad_buddy_peak_callback_requests_per_minute` | gauge | Most callback requests from one client in one minute, since start |
+| `amule_kad_buddy_searches_total` | counter | Searches for a buddy of this node's own |
+| `amule_kad_buddy_own_requests_total` | counter, `result="sent\|skipped\|offered"` | Buddy requests sent, skipped for the one-hour cooldown, and offers received |
+| `amule_kad_buddy_own_connections_total` | counter, `result="attempted\|failed"` | Connections to an offered buddy |
+| `amule_kad_buddy_own_events_total` | counter, `event="started\|ended\|timed_out"` | Changes to this node's own buddy |
+| `amule_kad_buddy_own_received_total` | counter, `kind="callback\|reask"` | Packets this node's buddy relayed to it |
+| `amule_kad_buddy_own_seconds_total` | counter, `state="needed\|missing\|connected"` | Time a buddy was needed, the part of it without one, and the time with one |
+
+The `kad_buddy` counters come from the daemon whatever the Kad state, and reset when it restarts. They describe both roles: an open node serves firewalled nodes, and a firewalled node needs a buddy of its own, so on a given node one side usually stays at zero.
 
 Download status labels are `downloading`, `waiting`, `hashing`, `erroneous`, `insufficient_disk`, `paused`, `allocating`, `stopped`, `completing`, `completed` and `unknown`. Every status appears, also with a zero count; a status amuleapi does not know counts as `unknown`. An older daemon that does not send a value gets no series for it, while a real zero stays zero. Lifetime counters can go down after a statistics reset or a profile change; `rate()` handles such resets.
 

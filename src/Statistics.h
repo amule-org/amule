@@ -36,6 +36,7 @@
 
 #include <atomic> // Needed for std::atomic (free-space figures)
 #include <deque>  // Needed for std::deque
+#include <vector> // Needed for std::vector
 
 typedef struct UpdateInfo
 {
@@ -617,6 +618,9 @@ private:
 	static CStatTreeItemNativeCounter *s_kadBanned;
 #endif
 
+	// Kad buddies, in the order of the row table in Statistics.cpp
+	static std::vector<CStatTreeItemSimple *> s_kadBuddyRows;
+
 	// NAT traversal and IPv6 traffic
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	static CStatTreeItemCounter *s_lowIdToLowIdUpload;
@@ -694,6 +698,8 @@ enum StatDataIndex
 	sdBuddyStatus,
 	sdBuddyIP,
 	sdBuddyPort,
+	sdBuddyServed,
+	sdBuddyServedLimit,
 	sdKadInLanMode,
 	sdTotalSentBytes,
 	sdTotalReceivedBytes,
@@ -800,6 +806,9 @@ public:
 	static uint8 GetBuddyStatus() { return s_statData[sdBuddyStatus]; }
 	static uint32 GetBuddyIP() { return s_statData[sdBuddyIP]; }
 	static uint32 GetBuddyPort() { return s_statData[sdBuddyPort]; }
+	static uint32 GetServedBuddyCount() { return static_cast<uint32>(s_statData[sdBuddyServed]); }
+	// 0 from a core that does not report it.
+	static uint32 GetServedBuddyLimit() { return static_cast<uint32>(s_statData[sdBuddyServedLimit]); }
 	static bool IsKadRunningInLanMode() { return s_statData[sdKadInLanMode] != 0; }
 	static uint32 GetKadNodes() { return s_statData[sdKadNodes]; }
 	static Kademlia::ContactDistributionState GetKadContactDistribution(

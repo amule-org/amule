@@ -991,6 +991,11 @@ void CSearch::StorePacket()
 	case FINDBUDDY: {
 		// Use the same network-order IP as GetConnectIP(), independent of peer ports.
 		if (!theApp->clientlist->CanRequestBuddy(wxUINT32_SWAP_ALWAYS(from->GetIPAddress()))) {
+			++theApp->clientlist->GetBuddyStats().own.requestsSkipped;
+			AddDebugLogLineN(logKadBuddy,
+				"Buddy request to " +
+					KadIPPortToString(from->GetIPAddress(), from->GetUDPPort()) +
+					" skipped: its connection failed within the last hour");
 			break;
 		}
 		AddDebugLogLineN(logKadSearch, "Search request type: FindBuddy");
@@ -1027,6 +1032,10 @@ void CSearch::StorePacket()
 			wxASSERT(from->GetUDPKey() == CKadUDPKey(0));
 		}
 		m_answers++;
+		++theApp->clientlist->GetBuddyStats().own.requestsSent;
+		AddDebugLogLineN(logKadBuddy,
+			"Buddy request sent to " +
+				KadIPPortToString(from->GetIPAddress(), from->GetUDPPort()));
 		break;
 	}
 	case FINDSOURCE: {

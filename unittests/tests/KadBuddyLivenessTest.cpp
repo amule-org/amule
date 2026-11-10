@@ -30,6 +30,22 @@ using Kademlia::CBuddyLiveness;
 
 DECLARE_SIMPLE(KadBuddyLiveness)
 
+TEST(KadBuddyLiveness, CountsPingsAndPongsUntilReset)
+{
+	CBuddyLiveness buddy;
+	buddy.Reset(0);
+	buddy.PingReceived(1000);
+	buddy.PongReceived(2000);
+	buddy.PongReceived(3000);
+	ASSERT_EQUALS(1u, buddy.PingsReceived());
+	ASSERT_EQUALS(2u, buddy.PongsReceived());
+	ASSERT_EQUALS(7000u, buddy.SinceReceived(10000));
+	ASSERT_EQUALS(0u, buddy.SinceReceived(2000));
+	buddy.Reset(20000);
+	ASSERT_EQUALS(0u, buddy.PingsReceived());
+	ASSERT_EQUALS(0u, buddy.PongsReceived());
+}
+
 TEST(KadBuddyLiveness, SilentBuddyExpiresAtTheReceiveTimeout)
 {
 	CBuddyLiveness buddy;

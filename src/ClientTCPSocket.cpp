@@ -247,6 +247,7 @@ bool CClientTCPSocket::CheckTimeOut()
 			// Outgoing pings and relayed callbacks reset the ordinary socket timer.
 			// Only received packets prove a buddy is still responding.
 			if (m_client->HasBuddyTimedOut()) {
+				theApp->clientlist->RecordBuddyTimeout(m_client);
 				Disconnect("Buddy receive timeout");
 				return true;
 			}
@@ -1998,6 +1999,7 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		if (!Kademlia::MatchesBuddyIdEitherLayout(receivedBytes, expectedBytes)) {
 			break;
 		}
+		++theApp->clientlist->GetBuddyStats().own.callbacksReceived;
 		CUInt128 fileid = data.ReadUInt128();
 		uint8_t fileid2[16];
 		fileid.ToByteArray(fileid2);
@@ -2065,6 +2067,7 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		}
 		AddDebugLogLineN(
 			logRemoteClient, "Remote Client: OP_REASKCALLBACKTCP from " + m_client->GetFullIP());
+		++theApp->clientlist->GetBuddyStats().own.reasksReceived;
 		CMemFile data_in(buffer, size);
 		uint32 destip = data_in.ReadUInt32();
 		if (destip == 0xFFFFFFFF) {

@@ -96,6 +96,11 @@ protected:
 	void AddTrackedOutPacket(uint32_t ip, uint8_t opcode);
 	bool IsOnOutTrackList(uint32_t ip, uint8_t opcode, bool dontRemove = false);
 	IncomingPacket InTrackListIsAllowedPacket(uint32_t ip, uint8_t opcode, bool validReceiverKey);
+	//! Requests the limiter counts for `ip` and `opcode` now, 0 when it tracks none of them.
+	//! For a packet it just dropped, 0 means the table of senders was full.
+	uint32_t InTrackListCount(uint32_t ip, uint8_t opcode) const;
+	//! The requests a minute the limiter allows for `opcode`, 0 for a response.
+	static uint32_t InTrackListAllowedPerMinute(uint8_t opcode) noexcept;
 	void InTrackListCleanup();
 	void AddLegacyChallenge(
 		const CUInt128 &contactID, const CUInt128 &challengeID, uint32_t ip, uint8_t opcode);
@@ -104,6 +109,7 @@ protected:
 
 private:
 	static bool IsTrackedOutListRequestPacket(uint8_t opcode) noexcept;
+	static uint8_t TrackedInOpcode(uint8_t opcode) noexcept;
 	typedef std::list<TrackPackets_Struct> TrackedPacketList;
 	typedef std::list<TrackChallenge_Struct> TrackChallengeList;
 	typedef std::map<uint32_t, TrackPacketsIn_Struct *> TrackedPacketInMap;

@@ -7101,6 +7101,98 @@ CHttpServer::Response CApiDispatcher::HandleCategories(const CHttpServer::Reques
 	return ListResponse(m_state, "categories", cats, WriteCategoryObject, params, CategoryComparators());
 }
 
+namespace
+{
+
+// Counters since the daemon started; both objects are null from a daemon that does not send them.
+void WriteKadBuddyCounters(CJsonWriter &w, const webapi::KadSnapshot &k)
+{
+	const auto count = [&w](const char *key, std::uint64_t value) {
+		w.Key(key);
+		w.ValueUInt(value);
+	};
+	w.Key("serving");
+	if (!k.has_buddy_counters) {
+		w.ValueNull();
+	} else {
+		const webapi::KadBuddyServingSnapshot &s = k.buddy_serving;
+		w.BeginObject();
+		count("pending_count", s.pending_count);
+		count("served_seconds", s.served_seconds);
+		w.Key("requests");
+		w.BeginObject();
+		count("received", s.requests.received);
+		count("offered", s.requests.offered);
+		count("refused_firewalled", s.requests.refused_firewalled);
+		count("refused_full", s.requests.refused_full);
+		count("refused_conflict", s.requests.refused_conflict);
+		count("rate_limited", s.requests.rate_limited);
+		count("expired", s.requests.expired);
+		count("superseded", s.requests.superseded);
+		count("duplicate", s.requests.duplicate);
+		w.EndObject();
+		w.Key("buddies");
+		w.BeginObject();
+		count("started", s.buddies.started);
+		count("released_extra", s.buddies.released_extra);
+		count("ended", s.buddies.ended);
+		count("timed_out", s.buddies.timed_out);
+		w.EndObject();
+		w.Key("callbacks");
+		w.BeginObject();
+		count("relayed", s.callbacks.relayed);
+		count("relayed_bytes", s.callbacks.relayed_bytes);
+		count("no_buddy", s.callbacks.no_buddy);
+		count("mismatched", s.callbacks.mismatched);
+		count("rate_limited", s.callbacks.rate_limited);
+		count("peak_requests_per_minute", s.callbacks.peak_requests_per_minute);
+		w.EndObject();
+		w.Key("reasks");
+		w.BeginObject();
+		count("relayed", s.reasks.relayed);
+		count("relayed_bytes", s.reasks.relayed_bytes);
+		count("no_buddy", s.reasks.no_buddy);
+		count("mismatched", s.reasks.mismatched);
+		count("malformed", s.reasks.malformed);
+		w.EndObject();
+		count("peak_relayed_bytes_per_minute", s.peak_relayed_bytes_per_minute);
+		w.EndObject();
+	}
+	w.Key("own");
+	if (!k.has_buddy_counters) {
+		w.ValueNull();
+	} else {
+		const webapi::KadBuddyOwnSnapshot &o = k.buddy_own;
+		w.BeginObject();
+		count("search_count", o.search_count);
+		count("needed_seconds", o.needed_seconds);
+		count("missing_seconds", o.missing_seconds);
+		count("connected_seconds", o.connected_seconds);
+		w.Key("requests");
+		w.BeginObject();
+		count("sent", o.requests.sent);
+		count("skipped", o.requests.skipped);
+		count("offered", o.requests.offered);
+		w.EndObject();
+		w.Key("connections");
+		w.BeginObject();
+		count("attempted", o.connections.attempted);
+		count("failed", o.connections.failed);
+		w.EndObject();
+		w.Key("buddies");
+		w.BeginObject();
+		count("started", o.buddies.started);
+		count("ended", o.buddies.ended);
+		count("timed_out", o.buddies.timed_out);
+		w.EndObject();
+		count("received_callback_count", o.received_callback_count);
+		count("received_reask_count", o.received_reask_count);
+		w.EndObject();
+	}
+}
+
+} // namespace
+
 CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 {
 	auto a = Authenticate(req);
@@ -7155,6 +7247,9 @@ CHttpServer::Response CApiDispatcher::HandleKad(const CHttpServer::Request &req)
 	WriteStringOrNull(w, "state", k.has_buddy, k.buddy_status);
 	WriteStringOrNull(w, "ip", k.has_buddy, k.buddy_ip);
 	WriteIntOrNull(w, "port", k.has_buddy, static_cast<int64_t>(k.buddy_port));
+	WriteUIntOrNull(w, "served_count", k.has_served, k.served_count);
+	WriteUIntOrNull(w, "served_limit", k.has_served, k.served_limit);
+	WriteKadBuddyCounters(w, k);
 	w.EndObject();
 	w.EndObject();
 	FinalizeJsonBody(w, r);

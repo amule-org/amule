@@ -1516,7 +1516,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 			wxUINT32_SWAP_ALWAYS(GetConnectIP()),
 			0); // inform the tester that this test has failed
 	} else if (GetKadState() == KS_CONNECTED_BUDDY) {
-		AddDebugLogLineN(logClient, "Buddy client disconnected - " + strReason);
+		theApp->clientlist->LogBuddyDisconnect(this, strReason);
 	}
 
 	// Local filtering, settings refusals and cleanup do not mark the IP as failed.

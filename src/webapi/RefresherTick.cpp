@@ -152,6 +152,7 @@ bool RefresherTick(CamuleapiApp &app, CState &state, MetricsSnapshot *metrics)
 	// to CMD would silently empty those fields too.
 	{
 		std::unique_ptr<CECPacket> req(new CECPacket(EC_OP_STAT_REQ, EC_DETAIL_FULL));
+		req->AddTag(CECEmptyTag(EC_TAG_KAD_BUDDY));
 		const CECPacket *resp = app.SendRecvSerialized(req.get());
 		// A protocol error is a failed refresh even when the socket is still alive.
 		if (!resp || resp->GetOpCode() == EC_OP_FAILED) {

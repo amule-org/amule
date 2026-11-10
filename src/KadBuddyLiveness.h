@@ -40,6 +40,8 @@ public:
 		m_nextPing = now + PingInterval;
 		m_lastIncomingPing = 0;
 		m_hasIncomingPing = false;
+		m_pingsReceived = 0;
+		m_pongsReceived = 0;
 	}
 
 	void ReceivedPacket(uint64_t now) { m_lastReceived = now; }
@@ -47,8 +49,8 @@ public:
 	void PingSent(uint64_t now) { m_nextPing = now + PingInterval; }
 	void PongReceived(uint64_t now)
 	{
-		ReceivedPacket(now);
-		m_nextPing = now + PingInterval;
+		++m_pongsReceived;
+		Renew(now);
 	}
 	bool AllowIncomingPing(uint64_t now) const
 	{
@@ -58,8 +60,12 @@ public:
 	{
 		m_lastIncomingPing = now;
 		m_hasIncomingPing = true;
-		PongReceived(now);
+		++m_pingsReceived;
+		Renew(now);
 	}
+	uint64_t SinceReceived(uint64_t now) const { return now > m_lastReceived ? now - m_lastReceived : 0; }
+	uint32_t PingsReceived() const { return m_pingsReceived; }
+	uint32_t PongsReceived() const { return m_pongsReceived; }
 	bool Expired(uint64_t now) const { return now - m_lastReceived >= ReceiveTimeout; }
 	// Counted from Reset(): a request that has not connected receives nothing to renew it.
 	bool RequestExpired(uint64_t now) const { return now - m_lastReceived >= RequestTimeout; }
@@ -73,10 +79,18 @@ public:
 	static constexpr uint64_t ReceiveTimeout = 25 * 60 * 1000;
 
 private:
+	void Renew(uint64_t now)
+	{
+		ReceivedPacket(now);
+		m_nextPing = now + PingInterval;
+	}
+
 	uint64_t m_lastReceived = 0;
 	uint64_t m_nextPing = 0;
 	uint64_t m_lastIncomingPing = 0;
 	bool m_hasIncomingPing = false;
+	uint32_t m_pingsReceived = 0;
+	uint32_t m_pongsReceived = 0;
 };
 
 } // namespace Kademlia
