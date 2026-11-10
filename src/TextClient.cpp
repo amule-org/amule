@@ -173,26 +173,23 @@ static bool ParseSearchNumber(const wxString &text, uint64 maximum, uint64 &valu
 	return true;
 }
 
-// Only filter values consume quotes; leave the query's boolean-expression syntax intact.
+// Consume a quoted media value from the original text, without normalizing its whitespace.
 static bool ReadSearchText(wxStringTokenizer &tokens, wxString &value)
 {
-	if (!tokens.HasMoreTokens()) {
+	wxString tail = tokens.GetString();
+	tail.Trim(false);
+	if (tail.empty() || tail.StartsWith("--")) {
 		return false;
 	}
-	value = tokens.GetNextToken();
-	if (value.StartsWith("--")) {
-		return false;
-	}
-	if (value.StartsWith("\"") || value.StartsWith("'")) {
-		const wxString quote = value.Left(1);
-		value.Remove(0, 1);
-		while (!value.EndsWith(quote)) {
-			if (!tokens.HasMoreTokens()) {
-				return false;
-			}
-			value += " " + tokens.GetNextToken();
+	if (tail.StartsWith("\"") || tail.StartsWith("'")) {
+		const size_t end = tail.find(tail[0], 1);
+		if (end == wxString::npos || (end + 1 < tail.size() && !wxIsspace(tail[end + 1]))) {
+			return false;
 		}
-		value.RemoveLast();
+		value = tail.Mid(1, end - 1);
+		tokens.SetString(tail.Mid(end + 1), " \t\r\n");
+	} else {
+		value = tokens.GetNextToken();
 	}
 	return true;
 }
@@ -217,9 +214,22 @@ static bool ParseSearchFilters(wxString &args,
 	metadata = CSearchMetadata();
 
 	wxString remaining;
-	wxStringTokenizer tok(args, wxT(" \t"));
+	wxStringTokenizer tok(args, wxT(" \t\r\n"));
+	bool inPhrase = false;
 	while (tok.HasMoreTokens()) {
 		wxString t = tok.GetNextToken();
+		// The search-expression parser owns double-quoted phrases, including phrases
+		// inside parentheses. Their words cannot become command-line filter flags.
+		if (inPhrase || t.Find('"') != wxNOT_FOUND) {
+			for (const wxUniChar ch : t) {
+				if (ch == '"')
+					inPhrase = !inPhrase;
+			}
+			if (!remaining.empty())
+				remaining += ' ';
+			remaining += t;
+			continue;
+		}
 		if (t == wxT("--type")) {
 			if (!tok.HasMoreTokens())
 				return false;
@@ -739,7 +749,7 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 			search_type = EC_SEARCH_LOCAL;
 		}
 		if (!args.IsEmpty()) {
-			wxString search = args;
+			wxString search = GetRawCmdArgs();
 			wxString type;
 			wxString extension;
 			uint32 avail = 0;

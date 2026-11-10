@@ -75,6 +75,13 @@ def run(daemon, client):
             assert ec.progress(other)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1
             assert sid in search_list(ec)
             command(f'search more {sid}', 'No further results')
+            command(f'search stop {sid}', 'retained results were not removed')
+            command('search stop 4294967295', 'retained results were not removed')
+            command('search more 4294967295', 'No further results')
+            assert ec.progress(other)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 1
+            command('search kad invalid --min-bitrate 1000001', 'Invalid search filter syntax')
+            assert set(search_list(ec)) == {123, sid, other}
+
             command('search stop 123', 'retained results were not removed')
             assert ec.call_list(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], 123)]) == before
             print('PASS: real daemon records all media filters; stop retains results and leaves other searches active')
@@ -84,6 +91,23 @@ def run(daemon, client):
                 if path.exists():
                     print(path.read_text(errors='replace'), file=sys.stderr)
             raise
+        finally:
+            ec.sock.close()
+            stop_daemon(proc, check=sys.exc_info()[0] is None)
+
+        # Restart the same configuration: the command client's recorded form and the
+        # pre-existing retained result must survive, not only its immediate EC reply.
+        (proc, ec), ports = boot(daemon, root)
+        try:
+            command('search list', str(sid) + '\tcmdmetadata')
+            fields = search_list(ec)[sid]
+            assert int.from_bytes(fields[C['EC_TAG_SEARCH_MIN_LENGTH']], 'big') == 3723
+            assert int.from_bytes(fields[C['EC_TAG_SEARCH_MIN_BITRATE']], 'big') == 320
+            for name, expected in {'CODEC': 'FLAC', 'ARTIST': 'Test Artist',
+                                   'ALBUM': 'Test Album', 'TITLE': '曲 Title'}.items():
+                assert fields[C['EC_TAG_SEARCH_' + name]].rstrip(b'\0').decode() == expected
+            results = ec.call_list(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], 123)])
+            assert results[1], results
         finally:
             ec.sock.close()
             stop_daemon(proc, check=sys.exc_info()[0] is None)

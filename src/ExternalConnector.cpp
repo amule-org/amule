@@ -347,6 +347,12 @@ bool CaMuleExternalConnector::Parse_Command(const wxString &buffer)
 		return false;
 	}
 	int cmd_ID = GetIDFromString(cmd);
+	wxStringTokenizer rawTokens(buffer);
+	const size_t commandWords = wxStringTokenizer(GetLastCmdStr()).CountTokens();
+	for (size_t word = 0; word < commandWords && rawTokens.HasMoreTokens(); ++word) {
+		rawTokens.GetNextToken();
+	}
+	m_rawcmdargs = rawTokens.GetString();
 	if (cmd_ID >= 0) {
 		cmd_ID = ProcessCommand(cmd_ID);
 	}
