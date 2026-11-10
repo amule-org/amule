@@ -98,22 +98,6 @@ public:
 	 */
 	void SetStartupDrainMode(bool on);
 
-	// Bracket a reconnect resync (issue #444) so the list repaints once (Freeze) and sorts once
-	// at the end rather than per updated/added row.
-	// Routine remote polls keep row invalidations; bulk rebuilds freeze painting.
-	void BeginBatchUpdate(bool freezePainting = true);
-	void EndBatchUpdate(bool doSort = true);
-
-	/**
-	 * Ends the repaint freeze without ending the batch.
-	 *
-	 * Startup keeps appending long after the window is worth showing: the scan finishes in
-	 * seconds, but the files it queued for hashing arrive over the following minutes, and each
-	 * has to stay an O(1) append rather than a sorted insert (#853). Thawing separately lets
-	 * those rows be seen as they land while the batch runs on.
-	 */
-	void ThawForDisplay();
-
 	/// Number of files still queued for hashing, shown next to the count. Zero clears it. Only
 	/// startup sets it, and only until its hash queue drains.
 	void SetHashingCount(size_t remaining);
@@ -291,22 +275,10 @@ private:
 	//! responsible for issuing a single Refresh() at end-of-bulk.
 	bool m_inBulkUpdate;
 
-	//! True between BeginBatchUpdate()/EndBatchUpdate(): ShowFile() appends
-	//! the row without sorting; EndBatchUpdate() does the single SortList().
-	bool m_batchUpdate;
-
-	//! Whether the batch's Freeze() is still outstanding. Tracked apart from m_batchUpdate
-	//! because ThawForDisplay() ends one without the other, and wx counts Freeze/Thaw -- an
-	//! unbalanced Thaw() asserts.
-	bool m_batchFrozen;
-
 	//! Files still queued for hashing, appended to the count label while
 	//! non-zero. See SetHashingCount().
 	size_t m_hashingRemaining;
 
-	//! Rows appended since the last SortIfRowsAppended(). The batch appends
-	//! without sorting, so this is what makes a later sort worth running.
-	bool m_batchRowsAppended;
 	bool m_startupDrain = false;
 
 	//! Combined size of the displayed files (drives the "Total size:" label)

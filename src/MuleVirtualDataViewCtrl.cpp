@@ -312,10 +312,69 @@ void CMuleVirtualDataViewCtrl::AddItemData(wxUIntPtr data)
 	}
 }
 
+void CMuleVirtualDataViewCtrl::BeginBatchUpdate(bool freezePainting)
+{
+	m_batchUpdate = true;
+	m_batchRowsAppended = false;
+	m_batchFrozen = freezePainting;
+	if (m_batchFrozen) {
+		Freeze();
+	}
+	// Leave the sort caret alone until an insertion actually needs suspension.
+	// Unsetting/restoring it on an unchanged poll can itself redraw the native view.
+}
+
+void CMuleVirtualDataViewCtrl::EndBatchUpdate(bool doSort)
+{
+	m_batchUpdate = false;
+	// A status/filter transition can reveal an existing file even when the remote
+	// caller reports no new files. Such appends still need their final sort.
+	const bool flushed = FlushBatchRows();
+	if (doSort && !flushed) {
+		SortList();
+	}
+	if (doSort || flushed) {
+		m_resortPending = false;
+	}
+	RestoreHeaderSort();
+	ThawForDisplay();
+	if (m_resortPending) {
+		ScheduleResort();
+	}
+}
+
+bool CMuleVirtualDataViewCtrl::FlushBatchRows()
+{
+	if (!m_batchRowsAppended) {
+		return false;
+	}
+	// Startup appends silently; a sort alone cannot tell the native view about
+	// these rows. Decide from the published count, not a caller's drain-mode flag.
+	if (m_virtualModel->GetCount() != m_items.size()) {
+		FinishBulkLoad();
+	} else {
+		SortList();
+	}
+	return true;
+}
+
+void CMuleVirtualDataViewCtrl::ThawForDisplay()
+{
+	if (m_batchFrozen) {
+		m_batchFrozen = false;
+		Thaw();
+	}
+}
+
 void CMuleVirtualDataViewCtrl::AppendItemData(wxUIntPtr data)
 {
 	if (!data || HasItemData(data)) {
 		return;
+	}
+	if (m_batchUpdate) {
+		// macOS otherwise re-compares the entire list on each inserted row.
+		SuspendHeaderSort();
+		m_batchRowsAppended = true;
 	}
 	m_items.push_back(data);
 	m_rowOf[data] = static_cast<long>(m_items.size()) - 1;
@@ -325,6 +384,11 @@ void CMuleVirtualDataViewCtrl::AppendItemDataNow(wxUIntPtr data)
 {
 	if (!data || HasItemData(data)) {
 		return;
+	}
+	if (m_batchUpdate) {
+		// macOS otherwise re-compares the entire list on each inserted row.
+		SuspendHeaderSort();
+		m_batchRowsAppended = true;
 	}
 	m_items.push_back(data);
 	m_rowOf[data] = static_cast<long>(m_items.size()) - 1;
@@ -383,6 +447,7 @@ void CMuleVirtualDataViewCtrl::FinishBulkLoad()
 	m_bulkAnchor = 0;
 
 	SortItems();
+	m_batchRowsAppended = false;
 
 	// Reset() here, unlike SortList(): AppendItemData() adds rows without telling the control,
 	// which is what makes a bulk load cheap, so this is the only notification that the rows
@@ -523,6 +588,7 @@ void CMuleVirtualDataViewCtrl::SortList()
 	// Keep item identities, not references into the vector that SortItems mutates.
 	const std::vector<wxUIntPtr> previousOrder = m_items;
 	SortItems();
+	m_batchRowsAppended = false;
 	if (m_items == previousOrder) {
 		return;
 	}
@@ -646,8 +712,13 @@ void CMuleVirtualDataViewCtrl::MaybeResortNow()
 	if (!m_resortPending) {
 		return;
 	}
-	// The user may have switched to a static column since this was scheduled.
-	if (!IsLiveSortColumn()) {
+	// Startup may have appended rows which are not yet published to the model.
+	// Its bulk flush owns sorting until the batch ends.
+	if (m_batchUpdate) {
+		return;
+	}
+	// The preference or selected column may have changed while this was deferred.
+	if (!thePrefs::LiveListSort() || !IsLiveSortColumn()) {
 		m_resortPending = false;
 		return;
 	}

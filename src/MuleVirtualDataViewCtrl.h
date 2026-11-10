@@ -86,6 +86,16 @@ public:
 	//! Repaints just this row, re-sorting only if it moved under the sort.
 	void RefreshItemData(wxUIntPtr data);
 	void ClearItemData();
+
+	//! Batch insertions into one sort. Routine remote polls pass false to retain
+	//! row invalidations; startup and reconnect snapshots freeze painting.
+	void BeginBatchUpdate(bool freezePainting = true);
+	//! Sort if requested or if rows were appended, then restore the header and painting.
+	void EndBatchUpdate(bool doSort = true);
+	//! End only the paint freeze: startup hashing may keep appending afterwards.
+	void ThawForDisplay();
+	//! Publish and sort pending appended rows; return whether a flush was needed.
+	bool FlushBatchRows();
 	//! Name-compatible with the wxListCtrl API the ported lists were written
 	//! against, so their callers don't have to change.
 	bool DeleteAllItems()
@@ -227,6 +237,8 @@ protected:
 	//! Associates the internal model; call once the columns are appended.
 	void AssociateVirtualModel();
 
+	bool m_batchUpdate = false;
+
 private:
 	class VirtualModel;
 	friend class VirtualModel;
@@ -258,6 +270,9 @@ private:
 
 	bool IsInteracting() const;
 
+	//! Rows appended since the last sort/bulk load (also drives startup drain ticks).
+	bool m_batchRowsAppended = false;
+	bool m_batchFrozen = false;
 	VirtualModel *m_virtualModel;
 
 	wxString m_filterText;
