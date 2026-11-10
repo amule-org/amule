@@ -1314,7 +1314,7 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_KADSTRICTAICHPUBLISHERS,
 		(new Cfg_Bool("/eMule/KadStrictAichPublishers", s_KadStrictAichPublishers, false)));
 	NewCfgItem(IDC_KADRECEIVERKEYENFORCEMENT,
-		(new Cfg_Bool("/Kad/EnforceReceiverKey", s_KadReceiverKeyEnforcement, false)));
+		(new Cfg_Bool("/eMule/KadEnforceReceiverKey", s_KadReceiverKeyEnforcement, false)));
 
 	/** Files */
 	NewCfgItem(IDC_TEMPFILES, (new Cfg_Path("/eMule/TempDir", s_tempdir, appdir + "Temp", true)));
