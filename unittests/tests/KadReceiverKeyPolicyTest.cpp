@@ -1,0 +1,55 @@
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// Any parts of this program derived from the xMule, lMule or eMule project,
+// or contributed by third-party developers are copyrighted by their
+// respective authors.
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
+//
+
+#include <muleunit/test.h>
+
+#include "kademlia/net/KadReceiverKeyPolicy.h"
+
+using namespace muleunit;
+
+DECLARE_SIMPLE(KadReceiverKeyPolicy)
+
+TEST(KadReceiverKeyPolicy, CountsValidAndMissingKeysSeparatelyPerHandler)
+{
+	CKadReceiverKeyCounts counts;
+	counts.Record(EKadReceiverKeyHandler::KeywordPublish, true);
+	counts.Record(EKadReceiverKeyHandler::KeywordPublish, false);
+
+	ASSERT_EQUALS(1, counts.GetValid(EKadReceiverKeyHandler::KeywordPublish));
+	ASSERT_EQUALS(1, counts.GetMissing(EKadReceiverKeyHandler::KeywordPublish));
+	ASSERT_EQUALS(0, counts.GetValid(EKadReceiverKeyHandler::SourcePublish));
+	ASSERT_EQUALS(0, counts.GetMissing(EKadReceiverKeyHandler::SourcePublish));
+}
+
+TEST(KadReceiverKeyPolicy, HandlersDoNotShareBuckets)
+{
+	CKadReceiverKeyCounts counts;
+	counts.Record(EKadReceiverKeyHandler::KeywordPublish, true);
+	counts.Record(EKadReceiverKeyHandler::SourcePublish, false);
+
+	ASSERT_EQUALS(1, counts.GetValid(EKadReceiverKeyHandler::KeywordPublish));
+	ASSERT_EQUALS(0, counts.GetMissing(EKadReceiverKeyHandler::KeywordPublish));
+	ASSERT_EQUALS(0, counts.GetValid(EKadReceiverKeyHandler::SourcePublish));
+	ASSERT_EQUALS(1, counts.GetMissing(EKadReceiverKeyHandler::SourcePublish));
+}

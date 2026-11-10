@@ -36,6 +36,7 @@ there client on the eMule forum..
 #include <wx/wx.h>
 
 #include "KademliaUDPListener.h"
+#include "KadReceiverKeyPolicy.h" // Needed for CKadReceiverKeyCounts
 #include "SearchExpression.h"
 
 #include <protocol/Protocols.h>
@@ -117,7 +118,7 @@ void CheckTagRecords(CMemFile &bio, uint16_t count)
 	bio.Seek(static_cast<sint64>(start), wxFromStart);
 }
 
-// A valid key proves the sender receives at this IP. Measured only: nothing rejects a request without one.
+// Log the key result already computed by ClientUDPSocket.cpp; the same value is counted below.
 void LogReceiverKey(const char *request, uint32_t ip, uint16_t port, bool validReceiverKey)
 {
 	AddDebugLogLineN(logClientKadUDP,
@@ -392,17 +393,17 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 	case KADEMLIA2_PUBLISH_NOTES_REQ:
 		DebugRecv(Kad2PublishNotesReq, ip, port);
 		LogReceiverKey("Kad2 notes publish", ip, port, validReceiverKey);
-		Process2PublishNotesRequest(packetData, lenPacket, ip, port, senderKey);
+		Process2PublishNotesRequest(packetData, lenPacket, ip, port, senderKey, validReceiverKey);
 		break;
 	case KADEMLIA2_PUBLISH_KEY_REQ:
 		DebugRecv(Kad2PublishKeyReq, ip, port);
 		LogReceiverKey("Kad2 keyword publish", ip, port, validReceiverKey);
-		Process2PublishKeyRequest(packetData, lenPacket, ip, port, senderKey);
+		Process2PublishKeyRequest(packetData, lenPacket, ip, port, senderKey, validReceiverKey);
 		break;
 	case KADEMLIA2_PUBLISH_SOURCE_REQ:
 		DebugRecv(Kad2PublishSourceReq, ip, port);
 		LogReceiverKey("Kad2 source publish", ip, port, validReceiverKey);
-		Process2PublishSourceRequest(packetData, lenPacket, ip, port, senderKey);
+		Process2PublishSourceRequest(packetData, lenPacket, ip, port, senderKey, validReceiverKey);
 		break;
 	case KADEMLIA_PUBLISH_RES:
 		DebugRecv(KadPublishRes, ip, port);
@@ -415,12 +416,12 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 	case KADEMLIA_FIREWALLED_REQ:
 		DebugRecv(KadFirewalledReq, ip, port);
 		LogReceiverKey("Kad firewall check", ip, port, validReceiverKey);
-		ProcessFirewalledRequest(packetData, lenPacket, ip, port, senderKey);
+		ProcessFirewalledRequest(packetData, lenPacket, ip, port, senderKey, validReceiverKey);
 		break;
 	case KADEMLIA_FIREWALLED2_REQ:
 		DebugRecv(KadFirewalled2Req, ip, port);
 		LogReceiverKey("Kad firewall2 check", ip, port, validReceiverKey);
-		ProcessFirewalled2Request(packetData, lenPacket, ip, port, senderKey);
+		ProcessFirewalled2Request(packetData, lenPacket, ip, port, senderKey, validReceiverKey);
 		break;
 	case KADEMLIA_FIREWALLED_RES:
 		DebugRecv(KadFirewalledRes, ip, port);
@@ -433,7 +434,7 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 	case KADEMLIA_FINDBUDDY_REQ:
 		DebugRecv(KadFindBuddyReq, ip, port);
 		LogReceiverKey("Kad find buddy request", ip, port, validReceiverKey);
-		ProcessFindBuddyRequest(packetData, lenPacket, ip, port, senderKey);
+		ProcessFindBuddyRequest(packetData, lenPacket, ip, port, senderKey, validReceiverKey);
 		break;
 	case KADEMLIA_FINDBUDDY_RES:
 		DebugRecv(KadFindBuddyRes, ip, port);
@@ -442,7 +443,7 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 	case KADEMLIA_CALLBACK_REQ:
 		DebugRecv(KadCallbackReq, ip, port);
 		LogReceiverKey("Kad callback request", ip, port, validReceiverKey);
-		ProcessCallbackRequest(packetData, lenPacket, ip, port, senderKey);
+		ProcessCallbackRequest(packetData, lenPacket, ip, port, senderKey, validReceiverKey);
 		break;
 	case KADEMLIA2_PING:
 		DebugRecv(Kad2Ping, ip, port);
@@ -1085,8 +1086,10 @@ void CKademliaUDPListener::Process2PublishKeyRequest(const uint8_t *packetData,
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &senderKey)
+	const CKadUDPKey &senderKey,
+	bool validReceiverKey)
 {
+	theStats::AddKadReceiverKeyObservation(EKadReceiverKeyHandler::KeywordPublish, validReceiverKey);
 	if (!CKademlia::GetIndexed()->IsReady()) {
 		return;
 	}
@@ -1252,8 +1255,10 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &senderKey)
+	const CKadUDPKey &senderKey,
+	bool validReceiverKey)
 {
+	theStats::AddKadReceiverKeyObservation(EKadReceiverKeyHandler::SourcePublish, validReceiverKey);
 	if (!CKademlia::GetIndexed()->IsReady()) {
 		return;
 	}
@@ -1481,8 +1486,10 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &senderKey)
+	const CKadUDPKey &senderKey,
+	bool validReceiverKey)
 {
+	theStats::AddKadReceiverKeyObservation(EKadReceiverKeyHandler::NotesPublish, validReceiverKey);
 	if (!CKademlia::GetIndexed()->IsReady()) {
 		return;
 	}
@@ -1569,8 +1576,10 @@ void CKademliaUDPListener::ProcessFirewalledRequest(const uint8_t *packetData,
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &senderKey)
+	const CKadUDPKey &senderKey,
+	bool validReceiverKey)
 {
+	theStats::AddKadReceiverKeyObservation(EKadReceiverKeyHandler::FirewallCheck, validReceiverKey);
 	CHECK_PACKET_EXACT_SIZE(2);
 
 	CMemFile bio(packetData, lenPacket);
@@ -1594,8 +1603,10 @@ void CKademliaUDPListener::ProcessFirewalled2Request(const uint8_t *packetData,
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &senderKey)
+	const CKadUDPKey &senderKey,
+	bool validReceiverKey)
 {
+	theStats::AddKadReceiverKeyObservation(EKadReceiverKeyHandler::Firewall2Check, validReceiverKey);
 	CHECK_PACKET_MIN_SIZE(19);
 
 	CMemFile bio(packetData, lenPacket);
@@ -1669,8 +1680,10 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &senderKey)
+	const CKadUDPKey &senderKey,
+	bool validReceiverKey)
 {
+	theStats::AddKadReceiverKeyObservation(EKadReceiverKeyHandler::FindBuddy, validReceiverKey);
 	// Verify packet is expected size
 	CHECK_PACKET_MIN_SIZE(34);
 
@@ -1774,8 +1787,10 @@ void CKademliaUDPListener::ProcessCallbackRequest(const uint8_t *packetData,
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &WXUNUSED(senderKey))
+	const CKadUDPKey &WXUNUSED(senderKey),
+	bool validReceiverKey)
 {
+	theStats::AddKadReceiverKeyObservation(EKadReceiverKeyHandler::Callback, validReceiverKey);
 	// Verify packet is expected size
 	CHECK_PACKET_MIN_SIZE(34);
 

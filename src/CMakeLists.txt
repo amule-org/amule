@@ -1142,6 +1142,12 @@ IF (NEED_LIB_MULESOCKET)
 		PRIVATE ${Boost_LIBRARIES}
 		PUBLIC wxWidgets::BASE
 	)
+	# CAsioSocketImpl's 64-bit atomics need libatomic on 32-bit targets without a
+	# hardware 8-byte CAS. PUBLIC, so amulecmd and amuleweb, which do not link
+	# muleappcore, get it too.
+	if (LIBATOMIC)
+		target_link_libraries (mulesocket PUBLIC ${LIBATOMIC})
+	endif()
 	if (WIN32)
 		# GetAdaptersAddresses() in NetworkInterfaces.cpp enumerates the
 		# adapters that LibSocketAsio.cpp resolves a Windows FriendlyName
