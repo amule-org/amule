@@ -25,30 +25,45 @@
 #ifndef KADRECEIVERKEYPOLICY_H
 #define KADRECEIVERKEYPOLICY_H
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 
-/**
- * What to do with a Kad request whose receiver key does not prove the sender's address.
- *
- * A valid key proves the sender receives at the IP it claims, so a request carrying one is always
- * processed. Without one there are two honest outcomes and the choice is the user's: count it while
- * enforcement is off, because eMule official sends no key and dropping those requests would cost
- * legitimate sources, or reject it once the user has decided the sources are worth the risk.
- */
-enum class EKadReceiverKeyDecision
+//! Kad request handlers whose receiver-key observations are tracked.
+enum class EKadReceiverKeyHandler : std::size_t
 {
-	Process,         //!< The key is valid; nothing to count and nothing to reject.
-	ProcessAndCount, //!< No key and enforcement is off: process, and record that we would have rejected.
-	Reject,          //!< No key and enforcement is on: do not act on the packet's source address.
+	KeywordPublish,
+	SourcePublish,
+	NotesPublish,
+	FirewallCheck,
+	Firewall2Check,
+	FindBuddy,
+	Callback,
+	Count
 };
 
-//! The decision for one request, given only the key result and the preference.
-inline EKadReceiverKeyDecision DecideKadReceiverKeyRequest(bool validReceiverKey, bool enforce)
+//! Valid and missing receiver keys observed by each handler.
+class CKadReceiverKeyCounts
 {
-	if (validReceiverKey) {
-		return EKadReceiverKeyDecision::Process;
+public:
+	void Record(EKadReceiverKeyHandler handler, bool validReceiverKey)
+	{
+		++(validReceiverKey ? m_valid : m_missing)[static_cast<std::size_t>(handler)];
 	}
-	return enforce ? EKadReceiverKeyDecision::Reject : EKadReceiverKeyDecision::ProcessAndCount;
-}
+
+	uint64_t GetValid(EKadReceiverKeyHandler handler) const
+	{
+		return m_valid[static_cast<std::size_t>(handler)];
+	}
+
+	uint64_t GetMissing(EKadReceiverKeyHandler handler) const
+	{
+		return m_missing[static_cast<std::size_t>(handler)];
+	}
+
+private:
+	std::array<uint64_t, static_cast<std::size_t>(EKadReceiverKeyHandler::Count)> m_valid{};
+	std::array<uint64_t, static_cast<std::size_t>(EKadReceiverKeyHandler::Count)> m_missing{};
+};
 
 #endif // KADRECEIVERKEYPOLICY_H

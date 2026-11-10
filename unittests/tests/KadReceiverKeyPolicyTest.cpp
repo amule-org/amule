@@ -30,26 +30,26 @@ using namespace muleunit;
 
 DECLARE_SIMPLE(KadReceiverKeyPolicy)
 
-TEST(KadReceiverKeyPolicy, AValidKeyIsProcessedEitherWay)
+TEST(KadReceiverKeyPolicy, CountsValidAndMissingKeysSeparatelyPerHandler)
 {
-	// The preference exists to govern requests that carry no proof; a proved sender is never
-	// affected by it.
-	ASSERT_EQUALS(static_cast<int>(EKadReceiverKeyDecision::Process),
-		static_cast<int>(DecideKadReceiverKeyRequest(true, false)));
-	ASSERT_EQUALS(static_cast<int>(EKadReceiverKeyDecision::Process),
-		static_cast<int>(DecideKadReceiverKeyRequest(true, true)));
+	CKadReceiverKeyCounts counts;
+	counts.Record(EKadReceiverKeyHandler::KeywordPublish, true);
+	counts.Record(EKadReceiverKeyHandler::KeywordPublish, false);
+
+	ASSERT_EQUALS(1, counts.GetValid(EKadReceiverKeyHandler::KeywordPublish));
+	ASSERT_EQUALS(1, counts.GetMissing(EKadReceiverKeyHandler::KeywordPublish));
+	ASSERT_EQUALS(0, counts.GetValid(EKadReceiverKeyHandler::SourcePublish));
+	ASSERT_EQUALS(0, counts.GetMissing(EKadReceiverKeyHandler::SourcePublish));
 }
 
-TEST(KadReceiverKeyPolicy, WithoutAKeyAndEnforcementOffItIsProcessedAndCounted)
+TEST(KadReceiverKeyPolicy, HandlersDoNotShareBuckets)
 {
-	// eMule official sends no key: turning enforcement off has to keep those requests working, and
-	// the count is how the user gets the evidence to decide whether to turn it on.
-	ASSERT_EQUALS(static_cast<int>(EKadReceiverKeyDecision::ProcessAndCount),
-		static_cast<int>(DecideKadReceiverKeyRequest(false, false)));
-}
+	CKadReceiverKeyCounts counts;
+	counts.Record(EKadReceiverKeyHandler::KeywordPublish, true);
+	counts.Record(EKadReceiverKeyHandler::SourcePublish, false);
 
-TEST(KadReceiverKeyPolicy, WithoutAKeyAndEnforcementOnItIsRejected)
-{
-	ASSERT_EQUALS(static_cast<int>(EKadReceiverKeyDecision::Reject),
-		static_cast<int>(DecideKadReceiverKeyRequest(false, true)));
+	ASSERT_EQUALS(1, counts.GetValid(EKadReceiverKeyHandler::KeywordPublish));
+	ASSERT_EQUALS(0, counts.GetMissing(EKadReceiverKeyHandler::KeywordPublish));
+	ASSERT_EQUALS(0, counts.GetValid(EKadReceiverKeyHandler::SourcePublish));
+	ASSERT_EQUALS(1, counts.GetMissing(EKadReceiverKeyHandler::SourcePublish));
 }

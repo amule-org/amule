@@ -112,7 +112,6 @@ public:
 	//	bool FindNodeIDByIP(CKadClientSearcher *requester, uint32_t ip, uint16_t tcpPort, uint16_t
 	// udpPort);
 	void ExpireClientSearch(CKadClientSearcher *expireImmediately = NULL);
-	static uint64_t GetInvalidReceiverKeyRequestCount();
 
 private:
 	// Kad1.0

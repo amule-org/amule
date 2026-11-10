@@ -29,9 +29,10 @@
 
 #include "kademlia/utils/ContactDistribution.h"
 #include "DisplayRateCounter.h"
-#include "Constants.h"           // Needed for StatsGraphType
-#include "StatTree.h"            // Needed for CStatTreeItem* classes
-#include "GetTickCount.h"        // Needed for GetTickCount64 in CPreciseRateCounter ctor
+#include "Constants.h" // Needed for StatsGraphType
+#include "StatTree.h"
+#include "kademlia/net/KadReceiverKeyPolicy.h" // Needed for EKadReceiverKeyHandler            // Needed for CStatTreeItem* classes
+#include "GetTickCount.h"                      // Needed for GetTickCount64 in CPreciseRateCounter ctor
 #include "SessionTrafficStats.h" // Needed for AMULE_SESSION_TRAFFIC_STATS
 
 #include <atomic> // Needed for std::atomic (free-space figures)
@@ -382,6 +383,15 @@ public:
 	 * them would report a peer as barred from uploads when it is merely unwelcome in the
 	 * routing table.
 	 */
+	/**
+	 * Record what one Kad handler saw: a receiver key that proved the sender, or its absence.
+	 *
+	 * Counting is per handler because the answer differs by handler: a callback request is sent
+	 * unencrypted by design and never carries a key, so only the publishes can ever justify
+	 * rejecting a request on that basis.
+	 */
+	static void AddKadReceiverKeyObservation(EKadReceiverKeyHandler handler, bool validReceiverKey);
+
 #ifdef ENABLE_KAD_NODE_PROTECTION
 	static void SetKadBannedAddresses(uint32 value) { s_kadBanned->SetValue(value); }
 #endif
@@ -613,6 +623,11 @@ private:
 #endif
 	static CStatTreeItemNativeCounter *s_filtered;
 	static CStatTreeItemNativeCounter *s_banned;
+	static CKadReceiverKeyCounts s_kadReceiverKeyCounts;
+	static CStatTreeItemNativeCounter
+		*s_kadReceiverKeyValid[static_cast<std::size_t>(EKadReceiverKeyHandler::Count)];
+	static CStatTreeItemNativeCounter
+		*s_kadReceiverKeyMissing[static_cast<std::size_t>(EKadReceiverKeyHandler::Count)];
 #ifdef ENABLE_KAD_NODE_PROTECTION
 	static CStatTreeItemNativeCounter *s_kadBanned;
 #endif

@@ -879,8 +879,6 @@ public:
 	// this applies regardless of this setting.
 	static bool GetKadStrictAichPublishers() { return s_KadStrictAichPublishers; }
 	static void SetKadStrictAichPublishers(bool val) { s_KadStrictAichPublishers = val; }
-	static bool GetKadReceiverKeyEnforcement() { return s_KadReceiverKeyEnforcement; }
-	static void SetKadReceiverKeyEnforcement(bool val) { s_KadReceiverKeyEnforcement = val; }
 	// Runtime capability (not persisted): does the core know the two options above? Always true
 	// for monolithic amule. amulegui learns it from the core, which before 3.2 neither sends
 	// nor applies them.
@@ -1298,7 +1296,6 @@ protected:
 	static bool s_ED2KAcceleratedPublication;
 	static bool s_KadProtocol10;
 	static bool s_KadStrictAichPublishers;
-	static bool s_KadReceiverKeyEnforcement;
 	static bool s_KadProtocol10Supported;
 
 	// Statistics

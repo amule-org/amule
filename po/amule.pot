@@ -3700,7 +3700,7 @@ msgstr ""
 msgid "Publish notes"
 msgstr ""
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 msgid "Find buddy"
 msgstr ""
 
@@ -5415,14 +5415,6 @@ msgid ""
 "A node's reported version may be out of date or inaccurate, so this can discard valid hashes and does not make accepted hashes trustworthy. Nodes whose version is unknown are still accepted.\n"
 "\n"
 "Technical detail: rejects AICH publish tags from nodes advertising Kad protocol versions below 0x09."
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Reject Kad requests without a valid receiver key"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "When disabled, Kad requests are still processed and invalid receiver keys are counted. Enable to reject requests with an invalid receiver key. This is off by default for compatibility with clients that do not send receiver keys."
 msgstr ""
 
 #: src/muuli_wdr.cpp
@@ -8777,6 +8769,44 @@ msgstr ""
 #: src/Statistics.cpp
 #, c-format
 msgid "Kad banned addresses: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Source publish"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Keyword publish"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Firewall check"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Firewall check 2"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys valid: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
 msgstr ""
 
 #: src/Statistics.cpp

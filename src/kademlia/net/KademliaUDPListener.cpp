@@ -35,10 +35,8 @@ there client on the eMule forum..
 
 #include <wx/wx.h>
 
-#include <atomic>
-
 #include "KademliaUDPListener.h"
-#include "KadReceiverKeyPolicy.h" // Needed for DecideKadReceiverKeyRequest
+#include "KadReceiverKeyPolicy.h" // Needed for CKadReceiverKeyCounts
 #include "SearchExpression.h"
 
 #include <protocol/Protocols.h>
@@ -105,25 +103,11 @@ using namespace Kademlia;
 
 namespace
 {
-std::atomic<uint64_t> invalidReceiverKeyRequestCount{ 0 };
-
-bool ShouldProcessReceiverKeyRequest(const char *request, uint32_t ip, uint16_t port, bool validReceiverKey)
+// Nothing rejects a request on a missing key: only the publishes ever carry one reliably, and each
+// handler that wanted enforcement would be its own change, argued from these counts.
+void RecordReceiverKeyObservation(EKadReceiverKeyHandler handler, bool validReceiverKey)
 {
-	switch (DecideKadReceiverKeyRequest(validReceiverKey, thePrefs::GetKadReceiverKeyEnforcement())) {
-	case EKadReceiverKeyDecision::Process:
-		return true;
-	case EKadReceiverKeyDecision::Reject:
-		AddLogLineN(CFormat("Rejecting %s with invalid receiver key from %s") % request %
-			    KadIPPortToString(ip, port));
-		return false;
-	case EKadReceiverKeyDecision::ProcessAndCount:
-		++invalidReceiverKeyRequestCount;
-		AddDebugLogLineN(logClientKadUDP,
-			wxString("Would reject ") + request + " with invalid receiver key from " +
-				KadIPPortToString(ip, port));
-		return true;
-	}
-	return true;
+	theStats::AddKadReceiverKeyObservation(handler, validReceiverKey);
 }
 
 // The minimum-size check alone cannot detect a truncated variable-length tag in
@@ -140,8 +124,7 @@ void CheckTagRecords(CMemFile &bio, uint16_t count)
 	bio.Seek(static_cast<sint64>(start), wxFromStart);
 }
 
-// A valid key proves the sender receives at this IP. ShouldProcessReceiverKeyRequest() acts on the
-// same value: it counts while enforcement is off and rejects while it is on.
+// Log the key result already computed by ClientUDPSocket.cpp; the same value is counted below.
 void LogReceiverKey(const char *request, uint32_t ip, uint16_t port, bool validReceiverKey)
 {
 	AddDebugLogLineN(logClientKadUDP,
@@ -149,11 +132,6 @@ void LogReceiverKey(const char *request, uint32_t ip, uint16_t port, bool validR
 			(validReceiverKey ? "valid" : "not valid"));
 }
 } // namespace
-
-uint64_t CKademliaUDPListener::GetInvalidReceiverKeyRequestCount()
-{
-	return invalidReceiverKeyRequestCount.load();
-}
 
 CKademliaUDPListener::~CKademliaUDPListener()
 {
@@ -1092,9 +1070,7 @@ void CKademliaUDPListener::Process2PublishKeyRequest(const uint8_t *packetData,
 	const CKadUDPKey &senderKey,
 	bool validReceiverKey)
 {
-	if (!ShouldProcessReceiverKeyRequest("Kad keyword publish", ip, port, validReceiverKey)) {
-		return;
-	}
+	RecordReceiverKeyObservation(EKadReceiverKeyHandler::KeywordPublish, validReceiverKey);
 	if (!CKademlia::GetIndexed()->IsReady()) {
 		return;
 	}
@@ -1263,9 +1239,7 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	const CKadUDPKey &senderKey,
 	bool validReceiverKey)
 {
-	if (!ShouldProcessReceiverKeyRequest("Kad source publish", ip, port, validReceiverKey)) {
-		return;
-	}
+	RecordReceiverKeyObservation(EKadReceiverKeyHandler::SourcePublish, validReceiverKey);
 	if (!CKademlia::GetIndexed()->IsReady()) {
 		return;
 	}
@@ -1496,9 +1470,7 @@ void CKademliaUDPListener::Process2PublishNotesRequest(const uint8_t *packetData
 	const CKadUDPKey &senderKey,
 	bool validReceiverKey)
 {
-	if (!ShouldProcessReceiverKeyRequest("Kad notes publish", ip, port, validReceiverKey)) {
-		return;
-	}
+	RecordReceiverKeyObservation(EKadReceiverKeyHandler::NotesPublish, validReceiverKey);
 	if (!CKademlia::GetIndexed()->IsReady()) {
 		return;
 	}
@@ -1588,9 +1560,7 @@ void CKademliaUDPListener::ProcessFirewalledRequest(const uint8_t *packetData,
 	const CKadUDPKey &senderKey,
 	bool validReceiverKey)
 {
-	if (!ShouldProcessReceiverKeyRequest("Kad firewall check", ip, port, validReceiverKey)) {
-		return;
-	}
+	RecordReceiverKeyObservation(EKadReceiverKeyHandler::FirewallCheck, validReceiverKey);
 	CHECK_PACKET_EXACT_SIZE(2);
 
 	CMemFile bio(packetData, lenPacket);
@@ -1617,9 +1587,7 @@ void CKademliaUDPListener::ProcessFirewalled2Request(const uint8_t *packetData,
 	const CKadUDPKey &senderKey,
 	bool validReceiverKey)
 {
-	if (!ShouldProcessReceiverKeyRequest("Kad firewall2 check", ip, port, validReceiverKey)) {
-		return;
-	}
+	RecordReceiverKeyObservation(EKadReceiverKeyHandler::Firewall2Check, validReceiverKey);
 	CHECK_PACKET_MIN_SIZE(19);
 
 	CMemFile bio(packetData, lenPacket);
@@ -1696,9 +1664,7 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 	const CKadUDPKey &senderKey,
 	bool validReceiverKey)
 {
-	if (!ShouldProcessReceiverKeyRequest("Kad find buddy request", ip, port, validReceiverKey)) {
-		return;
-	}
+	RecordReceiverKeyObservation(EKadReceiverKeyHandler::FindBuddy, validReceiverKey);
 	// Verify packet is expected size
 	CHECK_PACKET_MIN_SIZE(34);
 
@@ -1775,9 +1741,7 @@ void CKademliaUDPListener::ProcessCallbackRequest(const uint8_t *packetData,
 	const CKadUDPKey &WXUNUSED(senderKey),
 	bool validReceiverKey)
 {
-	if (!ShouldProcessReceiverKeyRequest("Kad callback request", ip, port, validReceiverKey)) {
-		return;
-	}
+	RecordReceiverKeyObservation(EKadReceiverKeyHandler::Callback, validReceiverKey);
 	// Verify packet is expected size
 	CHECK_PACKET_MIN_SIZE(34);
 

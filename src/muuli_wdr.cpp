@@ -1890,15 +1890,6 @@ wxSizer *PreferencesFilesTab( wxWindow *parent, bool call_fit, bool set_sizer )
           "versions below 0x09.") );
     kadProtoSizer->Add( strictAichChk, wxSizerFlags().CenterVertical() );
 
-    wxCheckBox *receiverKeyChk = new wxCheckBox( kadProtoBox, IDC_KADRECEIVERKEYENFORCEMENT,
-        _("Reject Kad requests without a valid receiver key"), wxDefaultPosition, wxDefaultSize, 0 );
-    receiverKeyChk->SetValue( FALSE );
-    receiverKeyChk->SetToolTip(
-        _("When disabled, Kad requests are still processed and invalid receiver keys are counted. "
-          "Enable to reject requests with an invalid receiver key. This is off by default for "
-          "compatibility with clients that do not send receiver keys.") );
-    kadProtoSizer->Add( receiverKeyChk, wxSizerFlags().CenterVertical() );
-
     item0->Add( kadProtoSizer, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0) );
 
     // Extract metadata with the bundled parser on a background worker.
