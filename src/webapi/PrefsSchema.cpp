@@ -25,6 +25,7 @@
 #include "PrefsSchema.h"
 
 #include "SourceSearchLimits.h"
+#include "KadServedBuddyPolicy.h" // Needed for KAD_SERVED_BUDDIES
 #include "WriteBufferLimits.h"
 
 #include <cstring>
@@ -296,6 +297,8 @@ const PrefField kSchema[] = {
 	PREF_U32_DOMAIN_GATED("advanced", "write_buffer_limit_mebibytes", EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, WriteBufferLimits::minMiB, WriteBufferLimits::maxMiB, PrefAccess::ReadWrite, advanced.write_buffer_limit_mebibytes, "write_buffer_limit_supported"),
 	// The core clamps these three, so a value outside the range would be changed, not stored.
 	PREF_U32_DOMAIN("advanced", "kad_max_concurrent_source_search_count", EC_TAG_CORETW_KAD_MAX_SEARCHES, KAD_MAX_SOURCE_SEARCHES.min, KAD_MAX_SOURCE_SEARCHES.max, 0u, PrefAccess::ReadWrite, advanced.kad_max_concurrent_source_search_count),
+	PREF_BOOL("advanced", "kad_max_served_buddies_supported", EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, PrefEnc::Presence, false, PrefAccess::ReadOnly, advanced.kad_max_served_buddies_supported),
+	PREF_U32_DOMAIN_GATED("advanced", "kad_max_served_buddies", EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, Kademlia::KAD_SERVED_BUDDIES.min, Kademlia::KAD_SERVED_BUDDIES.max, PrefAccess::ReadWrite, advanced.kad_max_served_buddies, "kad_max_served_buddies_supported"),
 	PREF_U32_SCALED_DOMAIN("advanced", "kad_source_reask_minutes", EC_TAG_CORETW_KAD_REASK_MS, KAD_SOURCE_REASK_MINUTES.min, KAD_SOURCE_REASK_MINUTES.max, PrefAccess::ReadWrite, advanced.kad_source_reask_minutes, 60000u),
 	// s_MaxConperFive is a uint16; 70000 wrapped to 4464.
 	PREF_U32_DOMAIN("advanced", "max_new_connections_per_5_seconds", EC_TAG_CORETW_MAX_CONN_PER_FIVE, 0u, 65535u, 0u, PrefAccess::ReadWrite, advanced.max_new_connections_per_5_seconds),

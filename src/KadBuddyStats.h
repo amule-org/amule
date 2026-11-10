@@ -31,6 +31,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -86,7 +87,9 @@ struct CBuddyRelayCounts
 	uint64_t reaskBytes = 0;
 	uint64_t reasksNoBuddy = 0;
 	uint64_t reasksMismatched = 0;
-	uint64_t reasksMalformed = 0;
+	uint64_t reasksMalformed = 0; // Too short to name a buddy, or larger than any reask.
+	uint64_t callbacksOverBudget = 0;
+	uint64_t reasksOverBudget = 0;
 	// Log only: the drops above whose BuddyID belongs to a buddy that left.
 	uint64_t callbacksDeparted = 0;
 	uint64_t reasksDeparted = 0;
@@ -104,11 +107,14 @@ struct CBuddyStats
 		uint64_t requestsRefusedFull = 0;
 		uint64_t requestsRefusedConflict = 0;
 		uint64_t requestsRateLimited = 0;
+		uint64_t requestsRefusedSameIP = 0; // We already serve, or offered to, that address.
+		uint64_t requestsNatT = 0;          // Received with a NAT-T bit in the connect options.
 		// Offered, but the node did not connect in time, another buddy took the last slot, or
 		// the node linked through another offer.
 		uint64_t offersExpired = 0;
 		uint64_t offersSuperseded = 0;
 		uint64_t offersDuplicate = 0;
+		uint64_t offersEvicted = 0; // Replaced by a newer request while the pending list was full.
 		uint64_t started = 0;
 		uint64_t releasedExtra = 0;
 		uint64_t ended = 0;
@@ -177,6 +183,45 @@ struct CServedBuddyLink
 	uint64_t minuteStart = 0;
 	uint64_t minuteBytes = 0;
 	uint64_t peakMinuteBytes = 0;
+	uint32_t ip = 0; // For one served buddy per address.
+	bool natT = false;
+	// When each callback sender last asked for this buddy.
+	std::unordered_map<uint32_t, uint64_t> callbackSenders;
+	static constexpr std::size_t MaxCallbackSenders = 256;
+
+	// Whether `bytes` more fit in `budget` for the current one-minute window.
+	bool HasBudgetFor(uint64_t bytes, uint64_t budget, uint64_t now) const
+	{
+		const bool sameWindow = now >= minuteStart && now - minuteStart < CMinutePeak::WindowMs;
+		return (sameWindow ? minuteBytes : 0) + bytes <= budget;
+	}
+
+	// One callback request a minute from each sender for this buddy, as stock eMule allows for its
+	// only buddy. A table full of live senders lets the request through: the byte budget still
+	// bounds what we relay.
+	bool AllowCallbackFrom(uint32_t sender, uint64_t now)
+	{
+		const auto known = callbackSenders.find(sender);
+		if (known != callbackSenders.end()) {
+			if (now >= known->second && now - known->second < CMinutePeak::WindowMs) {
+				return false;
+			}
+			known->second = now;
+			return true;
+		}
+		if (callbackSenders.size() >= MaxCallbackSenders) {
+			for (auto it = callbackSenders.begin(); it != callbackSenders.end();) {
+				it = (now < it->second || now - it->second >= CMinutePeak::WindowMs)
+					     ? callbackSenders.erase(it)
+					     : std::next(it);
+			}
+			if (callbackSenders.size() >= MaxCallbackSenders) {
+				return true;
+			}
+		}
+		callbackSenders.emplace(sender, now);
+		return true;
+	}
 
 	// Returns the bytes relayed to this buddy in the current one-minute window.
 	uint64_t Relay(bool callback, uint64_t bytes, uint64_t now)
@@ -311,6 +356,8 @@ inline std::string FormatBuddyRelaySummary(
 		"reasks for a buddy that left",
 		"reasks for an unknown buddy");
 	drop(now.reasksMalformed - before.reasksMalformed, "malformed reasks");
+	drop(now.callbacksOverBudget - before.callbacksOverBudget, "callbacks over a buddy's byte budget");
+	drop(now.reasksOverBudget - before.reasksOverBudget, "reasks over a buddy's byte budget");
 	if (relayed.empty() && dropped.empty()) {
 		return {};
 	}

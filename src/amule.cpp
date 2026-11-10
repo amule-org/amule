@@ -3706,7 +3706,7 @@ uint32 CamuleApp::GetServedBuddyCount() const
 
 uint32 CamuleApp::GetServedBuddyLimit() const
 {
-	return CClientList::MaxServedBuddies;
+	return clientlist->GetServedBuddyLimit();
 }
 
 const Kademlia::CUInt128 &CamuleApp::GetKadID() const

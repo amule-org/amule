@@ -42,6 +42,7 @@
 #include "ShareExclude.h"
 #include "OtherStructs.h"
 #include "SourceSearchLimits.h"
+#include "KadServedBuddyPolicy.h" // Needed for KAD_SERVED_BUDDIES
 #include "WriteBufferLimits.h"
 
 #include <common/ClientVersion.h> // Needed for __GIT__
@@ -350,6 +351,15 @@ public:
 
 	// Concurrent files that may search Kad for sources at once (was the
 	// KADEMLIATOTALFILE constant). Compared against a uint8 source-count.
+	// The most firewalled nodes we serve as their Kad buddy, before the connection-limit cap.
+	static uint32 GetKadMaxServedBuddies() { return s_kadMaxServedBuddies; }
+	static void SetKadMaxServedBuddies(uint64 val)
+	{
+		s_kadMaxServedBuddies = static_cast<uint32>(Kademlia::KAD_SERVED_BUDDIES.Clamp(val));
+	}
+	// Runtime capability (not persisted): amulegui learns it from a core that sends the setting.
+	static bool IsKadMaxServedBuddiesSupported() { return s_kadMaxServedBuddiesSupported; }
+	static void SetKadMaxServedBuddiesSupported(bool val) { s_kadMaxServedBuddiesSupported = val; }
 	static uint16 GetKadMaxSourceSearches() { return s_kadMaxSourceSearches; }
 	static void SetKadMaxSourceSearches(uint64 val)
 	{
@@ -1146,6 +1156,8 @@ protected:
 	// Source-search tuning (see the matching accessors). Reask intervals are stored in minutes so
 	// the getters can widen to milliseconds without narrowing.
 	static uint16 s_kadMaxSourceSearches;
+	static uint32 s_kadMaxServedBuddies;
+	static bool s_kadMaxServedBuddiesSupported;
 	static uint64 s_kadSourceReaskMins;
 	static uint64 s_sourceReaskMins;
 	static bool s_checkDiskspace;

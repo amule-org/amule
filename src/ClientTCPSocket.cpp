@@ -2028,8 +2028,7 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			logRemoteClient, "Remote Client: OP_BUDDYPING from " + m_client->GetFullIP());
 		theStats::AddDownOverheadKad(size);
 
-		CUpDownClient *buddy = theApp->clientlist->GetBuddy();
-		if (buddy != m_client || m_client->GetKadVersion() == 0 ||
+		if (!theApp->clientlist->IsServedBuddyLinked(m_client) || m_client->GetKadVersion() == 0 ||
 			!m_client->AllowIncomingBuddyPing()) {
 			// This ping was not from our buddy or wrong version or packet sent to fast. Ignore
 			break;

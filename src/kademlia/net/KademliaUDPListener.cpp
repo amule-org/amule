@@ -63,6 +63,7 @@ there client on the eMule forum..
 #include "../../Statistics.h"
 #include "../../MemFile.h"
 #include "../../KadBuddyCallback.h"
+#include "../../KadServedBuddyPolicy.h" // Needed for IsNatTCapableRequest
 #include "../../updownclient.h"
 #include "../../ClientTCPSocket.h"
 #include "../../Logger.h"
@@ -1682,28 +1683,40 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 		AddDebugLogLineN(logKadBuddy,
 			"Buddy request from " + KadIPPortToString(ip, port) + " refused: we are firewalled");
 		return;
-	} else if (theApp->clientlist->GetBuddyStatus() == Connected) {
-		// we already have a buddy
-		++stats.requestsRefusedFull;
-		AddDebugLogLineN(logKadBuddy,
-			"Buddy request from " + KadIPPortToString(ip, port) +
-				" refused: we already serve a buddy");
-		return;
 	}
 
 	CMemFile bio(packetData, lenPacket);
 	CUInt128 BuddyID = bio.ReadUInt128();
 	CUInt128 userID = bio.ReadUInt128();
 	uint16_t tcpport = bio.ReadUInt16();
+	// eMuleAI and eMuleQt append their connect options; stock clients send 34 bytes.
+	const bool natT = lenPacket > 34 && Kademlia::IsNatTCapableRequest(bio.ReadUInt8());
+	if (natT) {
+		++stats.requestsNatT;
+	}
 
 	CUInt128 zero;
 	CContact contact(userID, ip, port, tcpport, 0, 0, false, zero);
-	if (!theApp->clientlist->IncomingBuddy(&contact, &BuddyID)) {
-		// cancelled for some reason, don't send a response
+	const char *refusal = nullptr;
+	switch (theApp->clientlist->IncomingBuddy(&contact, &BuddyID, natT)) {
+	case CClientList::EIncomingBuddy::Offered:
+		break;
+	case CClientList::EIncomingBuddy::Full:
+		++stats.requestsRefusedFull;
+		refusal = "the slots it may take are in use";
+		break;
+	case CClientList::EIncomingBuddy::SameIP:
+		++stats.requestsRefusedSameIP;
+		refusal = "we already serve, or have offered to, that address";
+		break;
+	case CClientList::EIncomingBuddy::Conflict:
 		++stats.requestsRefusedConflict;
+		refusal = "we already know that client, or it is us";
+		break;
+	}
+	if (refusal != nullptr) {
 		AddDebugLogLineN(logKadBuddy,
-			"Buddy request from " + KadIPPortToString(ip, port) +
-				" refused: we already know that client, or it is us");
+			"Buddy request from " + KadIPPortToString(ip, port) + " refused: " + refusal);
 		return;
 	}
 
@@ -1760,7 +1773,7 @@ void CKademliaUDPListener::ProcessFindBuddyResponse(const uint8_t *packetData,
 void CKademliaUDPListener::ProcessCallbackRequest(const uint8_t *packetData,
 	uint32_t lenPacket,
 	uint32_t ip,
-	uint16_t WXUNUSED(port),
+	uint16_t port,
 	const CKadUDPKey &WXUNUSED(senderKey))
 {
 	// Verify packet is expected size
@@ -1782,10 +1795,24 @@ void CKademliaUDPListener::ProcessCallbackRequest(const uint8_t *packetData,
 			return;
 		}
 
+		Kademlia::CBuddyRelayCounts &relays = theApp->clientlist->GetBuddyStats().serving.relays;
+		// One a minute from each sender for each buddy: a caller that downloads from two of our
+		// buddies reaches both, while one repeating itself is limited as stock eMule limits it.
+		if (!theApp->clientlist->AllowBuddyCallback(buddy, ip)) {
+			++relays.callbacksRateLimited;
+			theApp->clientlist->LogBuddyPacketLimited(
+				"Callback request", KadIPPortToString(ip, port), 2, 1, destination);
+			return;
+		}
 		if (buddy->GetSocket()) {
 			CPacket *packet = new CPacket(packetdata, OP_EMULEPROT, OP_CALLBACK);
-			AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACK to " + KadIPToString(ip));
 			const uint32 packetSize = packet->GetPacketSize();
+			if (!theApp->clientlist->HasBuddyRelayBudget(buddy, packetSize)) {
+				delete packet;
+				++relays.callbacksOverBudget;
+				return;
+			}
+			AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACK to " + KadIPToString(ip));
 			buddy->GetSocket()->SendPacket(packet);
 			theStats::AddUpOverheadFileRequest(packetSize);
 			theApp->clientlist->RecordBuddyRelay(buddy, true, packetSize);
