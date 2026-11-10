@@ -457,19 +457,16 @@ void CFileDetailDialog::OnBnClickedApply(wxCommandEvent &WXUNUSED(evt))
 	CPath fileName = CPath(CastChild(IDC_FILENAME, wxTextCtrl)->GetValue());
 
 #ifndef CLIENT_GUI
-	// The local model is current, so preserve the no-op for an unchanged filename.
+	// Only the local model is always current.
 	if (fileName == m_file->GetFileName()) {
 		return;
 	}
 #endif
-	// An edit can restore the old name while an earlier remote rename is still queued.
-	// Compare neither Apply nor OK with that stale model; only submit new user edits.
+	// The remote model lags a queued rename, so compare edits, not names.
 	if (m_filenameChanged && fileName.IsOk()) {
 		if (theApp->sharedfiles->RenameFile(m_file, fileName)) {
 			m_filenameChanged = false;
-			// The remote GUI only queued the rename; its file still has the old name until
-			// the next update from the daemon. Keep the edit intact until then, including
-			// if the user follows Apply with OK. Local renames update the file immediately.
+			// A remote rename is only queued: keep the edit until the daemon reports it.
 			UpdateData(m_file->GetFileName() == fileName);
 		}
 	}
