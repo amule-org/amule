@@ -3699,7 +3699,7 @@ msgstr ""
 msgid "Publish notes"
 msgstr ""
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 msgid "Find buddy"
 msgstr ""
 
@@ -8903,6 +8903,44 @@ msgstr ""
 #: src/Statistics.cpp
 #, c-format
 msgid "Kad banned addresses: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Keyword publish"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Source publish"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Firewall check"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Firewall check 2"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys valid: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
 msgstr ""
 
 #: src/Statistics.cpp

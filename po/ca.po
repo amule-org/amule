@@ -3815,7 +3815,7 @@ msgstr "Publicació de paraula clau"
 msgid "Publish notes"
 msgstr "Publicació de notes"
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 msgid "Find buddy"
 msgstr "Cerca d'amic"
 
@@ -9095,6 +9095,48 @@ msgstr "Expulsat: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Adreces expulsades de Kad: %s"
+
+#: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Keyword publish"
+msgstr "Paraula clau: %s"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Source publish"
+msgstr "Fonts"
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check"
+msgstr "Comprovació del tallafocs UDP"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check 2"
+msgstr "Comprovació del tallafocs UDP"
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Keys valid: %s"
+msgstr "Paraula clau: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
+msgstr ""
 
 #: src/Statistics.cpp
 #, c-format

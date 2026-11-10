@@ -3826,7 +3826,7 @@ msgstr ""
 msgid "Publish notes"
 msgstr ""
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 #, fuzzy
 msgid "Find buddy"
 msgstr "Ingen kompis"
@@ -9131,6 +9131,48 @@ msgstr "Bannlysta: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Kad-blockerade adresser: %s"
+
+#: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Keyword publish"
+msgstr "Filtrerade: %s"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Source publish"
+msgstr "Källor"
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check"
+msgstr "via brandvägg"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check 2"
+msgstr "via brandvägg"
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Keys valid: %s"
+msgstr "Filtrerade: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
+msgstr ""
 
 #: src/Statistics.cpp
 #, c-format

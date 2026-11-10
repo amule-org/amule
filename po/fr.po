@@ -3843,7 +3843,7 @@ msgstr "Publier le mot-clef"
 msgid "Publish notes"
 msgstr "Publier les notes"
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 msgid "Find buddy"
 msgstr "Trouver le pote"
 
@@ -9139,6 +9139,48 @@ msgstr "Banni : %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Adresses Kad bannies : %s"
+
+#: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Keyword publish"
+msgstr "Mot-clef : %s"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Source publish"
+msgstr "Sources"
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check"
+msgstr "Vérification de pare-feu UDP"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check 2"
+msgstr "Vérification de pare-feu UDP"
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Keys valid: %s"
+msgstr "Mot-clef : %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
+msgstr ""
 
 #: src/Statistics.cpp
 #, c-format

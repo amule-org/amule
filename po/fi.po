@@ -3846,7 +3846,7 @@ msgstr ""
 msgid "Publish notes"
 msgstr ""
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 #, fuzzy
 msgid "Find buddy"
 msgstr "Ei kaveria"
@@ -9173,6 +9173,48 @@ msgstr "Estetty: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Kad banned addresses: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Keyword publish"
+msgstr "Suodatettu: %s"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Source publish"
+msgstr "Lähteet"
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check"
+msgstr "palomuurattu"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check 2"
+msgstr "palomuurattu"
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Keys valid: %s"
+msgstr "Suodatettu: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
 msgstr ""
 
 #: src/Statistics.cpp

@@ -3840,7 +3840,7 @@ msgstr ""
 msgid "Publish notes"
 msgstr ""
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 #, fuzzy
 msgid "Find buddy"
 msgstr "친구가 없음"
@@ -9163,6 +9163,48 @@ msgstr "퇴장됨: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Kad banned addresses: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Keyword publish"
+msgstr "차단됨: %s"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Source publish"
+msgstr "자료"
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check"
+msgstr "방화벽됨"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check 2"
+msgstr "방화벽됨"
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Keys valid: %s"
+msgstr "차단됨: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
 msgstr ""
 
 #: src/Statistics.cpp

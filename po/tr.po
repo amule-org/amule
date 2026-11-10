@@ -3826,7 +3826,7 @@ msgstr ""
 msgid "Publish notes"
 msgstr ""
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 #, fuzzy
 msgid "Find buddy"
 msgstr "Eş yok"
@@ -9130,6 +9130,48 @@ msgstr "Engellenen: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Yasaklanmış Kad adresleri: %s"
+
+#: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Keyword publish"
+msgstr "Süzülen: %s"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Source publish"
+msgstr "Kaynaklar"
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check"
+msgstr "güvenlik duvarı"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check 2"
+msgstr "güvenlik duvarı"
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Keys valid: %s"
+msgstr "Süzülen: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
+msgstr ""
 
 #: src/Statistics.cpp
 #, c-format

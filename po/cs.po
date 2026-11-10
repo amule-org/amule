@@ -3830,7 +3830,7 @@ msgstr "Zveřejnit klíčové slovo"
 msgid "Publish notes"
 msgstr "Zveřejnit poznámky"
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 msgid "Find buddy"
 msgstr "Vyhledat kamaráda"
 
@@ -9151,6 +9151,48 @@ msgstr "Zablokovaní: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Zablokované adresy Kad: %s"
+
+#: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Keyword publish"
+msgstr "Klíčové slovo: %s"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Source publish"
+msgstr "Zdroje"
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check"
+msgstr "UDP kontrola firewallu"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check 2"
+msgstr "UDP kontrola firewallu"
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Keys valid: %s"
+msgstr "Klíčové slovo: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
+msgstr ""
 
 #: src/Statistics.cpp
 #, c-format

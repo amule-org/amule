@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-09 08:48+0000\n"
+"PO-Revision-Date: 2026-11-10 17:52+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -3814,7 +3814,7 @@ msgstr "Publiceer sleutelwoord"
 msgid "Publish notes"
 msgstr "Publiceer notities"
 
-#: src/kademlia/utils/LookupDiagnostics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 msgid "Find buddy"
 msgstr "Vind buddy"
 
@@ -8421,14 +8421,13 @@ msgid "Connected to buddy at %s"
 msgstr "Verbonden met buddy op %s"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Served buddies:"
-msgstr "Server-lijst"
+msgstr "Bediende buddies:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "%u of %u"
-msgstr ""
+msgstr "%u van de %u"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
@@ -8780,127 +8779,127 @@ msgstr "aMule sluiten"
 #: src/Statistics.cpp
 #, c-format
 msgid "Served Now: %llu"
-msgstr ""
+msgstr "Nu Bediend: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests Received: %llu"
-msgstr ""
+msgstr "Ontvangen Buddy-Verzoeken: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Offers Sent: %llu"
-msgstr ""
+msgstr "Voorstellen voor Buddy Verstuurd: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests Refused: %llu"
-msgstr ""
+msgstr "Buddy-Verzoeken Geweigerd: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr ""
+msgstr "Verzoeken voor Buddy Boven de Snelheidslimiet: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Unused Buddy Offers: %llu"
-msgstr ""
+msgstr "Ongebruikte Voorstellen voor Buddy: %llu"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Buddies Served: %llu"
-msgstr "Bestanden op werkende servers: %llu"
+msgstr "Buddies Bediend: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Served Buddies Timed Out: %llu"
-msgstr ""
+msgstr "Time-Out bij Bediende Buddies: %llu"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Time Served: %s"
-msgstr "Gefilterde Servers: %s"
+msgstr "Tijd Bediend: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Callbacks Relayed: %llu"
-msgstr ""
+msgstr "Terugroepen Doorgegeven: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Reasks Relayed: %llu"
-msgstr ""
+msgstr "Hervragen Doorgegeven: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Data Relayed: %s"
-msgstr ""
+msgstr "Gegevens Doorgegeven: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Callbacks Dropped: %llu"
-msgstr ""
+msgstr "Terugroepen Laten vallen: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Reasks Dropped: %llu"
-msgstr ""
+msgstr "Hervragen Laten vallen: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Busiest Minute to One Buddy: %s"
-msgstr ""
+msgstr "Drukste Minuut aan Een Buddy: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Searches: %llu"
-msgstr ""
+msgstr "Buddy Zoekopdrachten: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests Sent: %llu"
-msgstr ""
+msgstr "Buddy-Verzoeken Verstuurd: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Offers Received: %llu"
-msgstr ""
+msgstr "Voorstellen voor Buddy Ontvangen: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Failed Buddy Connections: %llu"
-msgstr ""
+msgstr "Mislukte Buddy-Verbindingen: %llu"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Buddies Connected: %llu"
-msgstr " is verbonden met "
+msgstr "Verbonden Buddies: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddies Timed Out: %llu"
-msgstr ""
+msgstr "Time-Out bij Buddies: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Time a Buddy Was Needed: %s"
-msgstr ""
+msgstr "Tijd dat een Buddy Nodig Was: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Time Without a Buddy: %s"
-msgstr ""
+msgstr "Tijd Zonder een Buddy: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Callbacks Received: %llu"
-msgstr ""
+msgstr "Terugroepen Ontvangen: %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Reasks Received: %llu"
-msgstr ""
+msgstr "Hervragen Ontvangen: %llu"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9097,6 +9096,48 @@ msgid "Kad banned addresses: %s"
 msgstr "Verbannen Kad-adressen: %s"
 
 #: src/Statistics.cpp
+msgid "Kad receiver keys"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Keyword publish"
+msgstr "Sleutelwoord: %s"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Source publish"
+msgstr "Bronnen"
+
+#: src/Statistics.cpp
+msgid "Notes publish"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check"
+msgstr "UDP firewall controle"
+
+#: src/Statistics.cpp
+#, fuzzy
+msgid "Firewall check 2"
+msgstr "UDP firewall controle"
+
+#: src/Statistics.cpp
+msgid "Callback"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Keys valid: %s"
+msgstr "Sleutelwoord: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Keys missing: %s"
+msgstr ""
+
+#: src/Statistics.cpp
 #, c-format
 msgid "Total: %i Known: %i"
 msgstr "Totaal: %i Bekend: %i"
@@ -9162,17 +9203,16 @@ msgid "Average file size: %s"
 msgstr "Gemiddelde bestandsgrootte: %s"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Kad Buddies"
-msgstr "Kad-gebruiker"
+msgstr "Kad-Buddies"
 
 #: src/Statistics.cpp
 msgid "Serving Firewalled Nodes"
-msgstr ""
+msgstr "Bedienen van Gefirewallde Nodes"
 
 #: src/Statistics.cpp
 msgid "Our Own Buddy"
-msgstr ""
+msgstr "Onze Eigen Buddy"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -9258,9 +9298,8 @@ msgstr ""
 "Typ 'help search' voor meer hulp.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support media search filters.\n"
-msgstr "De verbonden daemon ondersteunt \"All searches\" niet.\n"
+msgstr "De verbonden daemon ondersteunt mediazoekfilters niet.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -9273,13 +9312,12 @@ msgstr ""
 "Typ 'help search' om helptekst te lezen.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support search management.\n"
-msgstr "De verbonden daemon ondersteunt \"All searches\" niet.\n"
+msgstr "De verbonden daemon ondersteunt zoekbeheer niet.\n"
 
 #: src/TextClient.cpp
 msgid "A search ID from 'search list' is required.\n"
-msgstr ""
+msgstr "Een zoek-ID vanuit de 'zoeklijst' is vereist.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9396,24 +9434,23 @@ msgstr "[PartBestand]"
 
 #: src/TextClient.cpp
 msgid "No retained searches.\n"
-msgstr ""
+msgstr "Geen bewaarde zoekopdrachten.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; availability is unknown.\n"
-msgstr ""
+msgstr "Meer-resultaten-verzoek verwerkt. Beschikbaarheid is niet bekend.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; further requests remain possible.\n"
-msgstr ""
+msgstr "Meer-resultaten-verzoek verwerkt. Verdere verzoeken blijven mogelijk.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "No further results can be requested for this search.\n"
-msgstr "Geef de resultaten van de vorige zoekopdracht.\n"
+msgstr "Geen verdere resultaten kunnen worden aangevraagd voor deze zoekopdracht.\n"
 
 #: src/TextClient.cpp
 msgid "Search stop request processed; retained results were not removed.\n"
-msgstr ""
+msgstr "Zoekopdracht-stop-verzoek verwerkt. Bewaarde resultaten zijn niet verwijderd.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9668,7 +9705,6 @@ msgid "Execute a search."
 msgstr "Voer een zoekopdracht uit."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -9706,8 +9742,13 @@ msgstr ""
 "    --avail <N>            minimum aantal bronnen\n"
 "    --min-size <N[KMG]>    kleinste bestandsgrootte; K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    grootste bestandsgrootte; zelfde achtervoegsels\n"
-"Voorbeeld: 'search global linux iso --type Iso --min-size 100M' geeft\n"
-"resultaten voor \"linux iso\" van bestandstype Iso van minstens 100 MiB.\n"
+"    --min-bitrate <kbps>   geheel getal, 0-1000000\n"
+"    --min-duration <sec>   geheel getal, 0-86400\n"
+"    --codec <tekst> --title <tekst> --album <tekst> --artist <tekst>\n"
+"Omring media-textwaarden die spaties bevatten met aanhaligstekens.\n"
+"Kad past mediafilters toe.eD2k-servers kunnen ze negeren.\n"
+"Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
+"Voorbeeld: 'search global linux iso --type Iso --min-size 100M' geeft resultaten voor \"linux iso\" van bestandstype Iso van minstens 100 MiB.\n"
 
 #: src/TextClient.cpp
 msgid "Execute a global search."
@@ -9727,25 +9768,23 @@ msgstr "Voer een eD2k- en Kad-zoekopdracht uit"
 
 #: src/TextClient.cpp
 msgid "List retained search IDs and queries."
-msgstr ""
+msgstr "Benoem bewaarde zoek-IDs en aanvragen."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Stop a search, keeping its results."
-msgstr "Geen open zoekopdracht bevat dit resultaat."
+msgstr "Stop een zoekopdracht, bewaar de resultaten."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'."
-msgstr ""
+msgstr "Vereist een zoek-ID vanuit de 'zoeklijst'."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Request more Kad search results."
-msgstr "Aantal zoekresultaten: %i\n"
+msgstr "Verzoek meer Kad-zoekresultaten."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
-msgstr ""
+msgstr "Vereist een zoek-ID vanuit de 'zoeklijst'. Verdere resultaten zijn niet gegarandeerd."
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
