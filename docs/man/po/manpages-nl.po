@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-11-10 06:20+0000\n"
-"PO-Revision-Date: 2026-11-02 09:26+0000\n"
+"PO-Revision-Date: 2026-11-10 17:52+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/application-man-pages/nl/>\n"
 "Language: nl\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.dev0\n"
+"X-Generator: Weblate 2026.11.2.dev0\n"
 
 #. type: TH
 #: amule.1.in
@@ -641,22 +641,22 @@ msgstr "Hervat de download gespecificeerd met I<E<lt>hashE<gt>> of I<E<lt>nummer
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Lists retained search IDs and queries, including searches started by other clients."
-msgstr ""
+msgstr "Noemt behouden zoek-IDs en aanvragen, inclusief zoekopdrachten die gestart zijn door andere clients."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Stops activity for the specified search while retaining its results."
-msgstr ""
+msgstr "Stopt activiteit voor de gespecificeerde zoekopdracht en bewaart de bijbehorende resultaten."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
-msgstr ""
+msgstr "Verzoekt meer Kad-resultaten voor de gespecificeerde zoekopdracht. Meer resultaten zijn niet gegarandeerd.  De reactie rapporteert of verdere verzoeken mogelijk blijven of dat de informatie niet beschikbaar is vanuit een oudere daemon."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
-msgstr ""
+msgstr "Deze beheeropdrachten vereisen ondersteuning van de daemon voor het vermelden van zoektaken en meerdere zoekopdrachten.  Gebruik een expliciete ID vanuit B<zoeklijst> voor stop en meer."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -721,47 +721,45 @@ msgstr "Grootste bestandsmaat om terug te geven. Zelfde achtervoegsels als B<--m
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Media filters:"
-msgstr ""
+msgstr "Mediafilters:"
 
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
-msgstr "[B<-t> I<E<lt>numE<gt>>]"
+msgstr "B<--min-bitrate> I<E<lt>kb/sE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum bitrate as a whole number from 0 to 1000000."
-msgstr ""
+msgstr "Minimale bitwaarde als heel getal van 0 tot 1000000."
 
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
-msgstr "[B<-t> I<E<lt>numE<gt>>]"
+msgstr "B<--min-duration> I<E<lt>secondenE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum duration as a whole number from 0 to 86400."
-msgstr ""
+msgstr "Minimale duur als geheel getal van 0 tot 86400."
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
-msgstr ""
+msgstr "B<--codec>,B<--title>,B<--album>,B<--artist> I<E<lt>tekstE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
-msgstr ""
+msgstr "Elke optie neemt een tekstwaarde aan. Omring waardes die spaties bevatten in enkele of dubbele aanhalingstekens.  Wanneer B<-c> gebruikt wordt worden deze aanhalingstekens meegenomen in de opdrachttekenreeks en doorgegeven aan de shell."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
-msgstr ""
+msgstr "Nul of lege mediawaardes bieden geen begrenzing. Niet-lege mediafilters vereisen ondersteuning van de daemon. Kad past deze filters toe. eD2k-servers kunnen ze negeren."
 
 #. type: Plain text
 #: amulecmd.1.in
