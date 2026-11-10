@@ -295,7 +295,7 @@ const PrefField kSchema[] = {
 	PREF_U32_DOMAIN("advanced", "file_buffer_bytes", EC_TAG_CORETW_FILEBUFFER, 0u, 3825000u, 15000u, PrefAccess::ReadWrite, advanced.file_buffer_bytes),
 	PREF_BOOL("advanced", "write_buffer_limit_supported", EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, PrefEnc::Presence, false, PrefAccess::ReadOnly, advanced.write_buffer_limit_supported),
 	PREF_U32_DOMAIN_GATED("advanced", "write_buffer_limit_mebibytes", EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, WriteBufferLimits::minMiB, WriteBufferLimits::maxMiB, PrefAccess::ReadWrite, advanced.write_buffer_limit_mebibytes, "write_buffer_limit_supported"),
-	// The core clamps these three, so a value outside the range would be changed, not stored.
+	// The core clamps these, so a value outside the range would be changed, not stored.
 	PREF_U32_DOMAIN("advanced", "kad_max_concurrent_source_search_count", EC_TAG_CORETW_KAD_MAX_SEARCHES, KAD_MAX_SOURCE_SEARCHES.min, KAD_MAX_SOURCE_SEARCHES.max, 0u, PrefAccess::ReadWrite, advanced.kad_max_concurrent_source_search_count),
 	PREF_BOOL("advanced", "kad_max_served_buddies_supported", EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, PrefEnc::Presence, false, PrefAccess::ReadOnly, advanced.kad_max_served_buddies_supported),
 	PREF_U32_DOMAIN_GATED("advanced", "kad_max_served_buddies", EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, Kademlia::KAD_SERVED_BUDDIES.min, Kademlia::KAD_SERVED_BUDDIES.max, PrefAccess::ReadWrite, advanced.kad_max_served_buddies, "kad_max_served_buddies_supported"),

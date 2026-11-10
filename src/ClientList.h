@@ -320,6 +320,8 @@ public:
 		uint32 counted,
 		uint32 perMinute,
 		const uint8_t *buddyID);
+	//! The same, for a callback request over the limit of one a minute per sender and buddy.
+	void LogBuddyCallbackLimited(const wxString &from, const uint8_t *buddyID);
 	void LogBuddyDisconnect(const CUpDownClient *client, const wxString &reason);
 	void RecordBuddyTimeout(const CUpDownClient *client);
 	void RemoveFromKadList(CUpDownClient *torem);
@@ -433,7 +435,8 @@ private:
 	void EndServedLink(const CUpDownClient *client);
 	uint32 ServedNatTCount() const;
 	bool AdmitsServedBuddy(bool natT) const;
-	bool IsServedOrOfferedIP(uint32 ip) const;
+	bool IsServedOrOfferedIP(uint32 ip, const Kademlia::CUInt128 &requester) const;
+	void LogBuddyDrop(wxString line, const uint8_t *buddyID);
 	void EvictOldestBuddyOffer();
 	const Kademlia::CServedBuddyLink *FindServedLink(const CUpDownClient *client) const;
 	bool IsServedBuddyID(const uint8_t *buddyID) const;

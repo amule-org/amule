@@ -349,8 +349,6 @@ public:
 	static uint64 GetServerKeepAliveTimeout() { return s_dwServerKeepAliveTimeoutMins * 60000; }
 	static void SetServerKeepAliveTimeout(uint64 val) { s_dwServerKeepAliveTimeoutMins = val / 60000; }
 
-	// Concurrent files that may search Kad for sources at once (was the
-	// KADEMLIATOTALFILE constant). Compared against a uint8 source-count.
 	// The most firewalled nodes we serve as their Kad buddy, before the connection-limit cap.
 	static uint32 GetKadMaxServedBuddies() { return s_kadMaxServedBuddies; }
 	static void SetKadMaxServedBuddies(uint64 val)
@@ -360,6 +358,8 @@ public:
 	// Runtime capability (not persisted): amulegui learns it from a core that sends the setting.
 	static bool IsKadMaxServedBuddiesSupported() { return s_kadMaxServedBuddiesSupported; }
 	static void SetKadMaxServedBuddiesSupported(bool val) { s_kadMaxServedBuddiesSupported = val; }
+	// Concurrent files that may search Kad for sources at once (was the
+	// KADEMLIATOTALFILE constant). Compared against a uint8 source-count.
 	static uint16 GetKadMaxSourceSearches() { return s_kadMaxSourceSearches; }
 	static void SetKadMaxSourceSearches(uint64 val)
 	{
