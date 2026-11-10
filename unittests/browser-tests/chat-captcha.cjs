@@ -19,7 +19,7 @@ bmp.write('BM'); bmp.writeUInt32LE(bmp.length, 2); bmp.writeUInt32LE(62, 10);
 bmp.writeUInt32LE(40, 14); bmp.writeInt32LE(92, 18); bmp.writeInt32LE(36, 22);
 bmp.writeUInt16LE(1, 26); bmp.writeUInt16LE(1, 28); bmp.fill(255, 58, 61);
 const image = bmp.toString('base64');
-let pending = 42, requests = [], reject = false, hold = false, closed = false, respond;
+let pending = 42, history = [], requests = [], reject = false, hold = false, closed = false, respond;
 const row = () => ({ address: '127.0.0.1:4662', ip: '127.0.0.1', port: 4662, name: 'peer',
   client_ecid: 1, last_message_id: 42, pending_captcha_id: pending || null,
   pending_captcha_image: pending ? image : null });
@@ -42,7 +42,7 @@ run(async () => {
           }); return true;
         }
         if (url.pathname === '/api/v1/chats') json({ chats: closed ? [] : [row()] });
-        else if (url.pathname.includes('/messages')) json({ address: row().address, messages: [] });
+        else if (url.pathname.includes('/messages')) json({ address: row().address, messages: history });
         else if (url.pathname.endsWith('/friends')) json({ friends: [] });
         else json({});
         return true;
@@ -62,14 +62,13 @@ run(async () => {
   const input = page.locator('input[name="message"]');
   await input.fill('late answer');
   pending = 0; reject = true;
+  // A historical row, so expiry is visibly distinguished from pending. Served, not
+  // written to the store: the reload adopt() starts would overwrite it.
+  history = [{ id: 42, direction: 'in', type: 'captcha_challenge', captcha_image: image }];
   await page.evaluate(() => window.store.set('chat:updated', {
     address: '127.0.0.1:4662', pending_captcha_id: null
   }));
   await page.waitForFunction(() => window.store.get('chats').tabs[0].pendingCaptchaId === 0);
-  // Restore a historical row so expiry is visibly distinguished from pending.
-  await page.evaluate(image => window.store.set('chat:127.0.0.1:4662', [
-    { id: 42, direction: 'in', type: 'captcha_challenge', captcha_image: image }
-  ]), image);
   await page.waitForFunction(() => document.querySelector('.chat-text')?.textContent.includes('no longer pending'));
   await input.press('Enter');
   await page.waitForFunction(() => document.querySelector('.toast')?.textContent.includes('no longer pending'));
