@@ -298,9 +298,13 @@ public:
 	void RecordBuddyRelay(const CUpDownClient *buddy, bool callback, uint32 bytes);
 	//! A callback or reask that no served buddy matched.
 	void RecordBuddyRelayDrop(bool callback, const uint8_t *buddyID);
-	//! One line per rate-limited buddy packet, up to a few a minute. `buddyID` may be nullptr.
-	void LogBuddyPacketLimited(
-		const wxString &what, const wxString &from, uint64 thisMinute, const uint8_t *buddyID);
+	//! One line per rate-limited buddy packet, up to a few a minute. `counted` is the limiter's
+	//! count for the sender, 0 when its table was full. `buddyID` may be nullptr.
+	void LogBuddyPacketLimited(const wxString &what,
+		const wxString &from,
+		uint32 counted,
+		uint32 perMinute,
+		const uint8_t *buddyID);
 	void LogBuddyDisconnect(const CUpDownClient *client, const wxString &reason);
 	void RecordBuddyTimeout(const CUpDownClient *client);
 	void RemoveFromKadList(CUpDownClient *torem);

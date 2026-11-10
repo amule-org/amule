@@ -52,6 +52,8 @@ public:
 	using CPacketTracking::AddLegacyChallenge;
 	using CPacketTracking::AddTrackedOutPacket;
 	using CPacketTracking::HasActiveLegacyChallenge;
+	using CPacketTracking::InTrackListAllowedPerMinute;
+	using CPacketTracking::InTrackListCount;
 	using CPacketTracking::InTrackListIsAllowedPacket;
 	using CPacketTracking::IsLegacyChallenge;
 	using CPacketTracking::IsOnOutTrackList;
@@ -75,6 +77,46 @@ TEST(KadPacketTracking, CapacityRejectsNewAddressesWithoutResettingLiveQuotas)
 	now += 2 * 60000;
 	ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(10001, KADEMLIA2_PING, false) == Result::Allowed);
 	ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(1, KADEMLIA2_PING, false) == Result::Allowed);
+}
+
+TEST(KadPacketTracking, CountReadsTheLimiterWithoutChangingIt)
+{
+	now = 1000;
+	lan = false;
+	Tracker tracker;
+	ASSERT_EQUALS(1u, Tracker::InTrackListAllowedPerMinute(KADEMLIA_CALLBACK_REQ));
+	ASSERT_EQUALS(2u, Tracker::InTrackListAllowedPerMinute(KADEMLIA_FIREWALLED2_REQ));
+	ASSERT_EQUALS(0u, Tracker::InTrackListAllowedPerMinute(KADEMLIA2_PONG));
+	ASSERT_EQUALS(0u, tracker.InTrackListCount(1, KADEMLIA_CALLBACK_REQ));
+
+	ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(1, KADEMLIA_CALLBACK_REQ, false) == Result::Allowed);
+	ASSERT_EQUALS(1u, tracker.InTrackListCount(1, KADEMLIA_CALLBACK_REQ));
+	now += 59999;
+	ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(1, KADEMLIA_CALLBACK_REQ, false) == Result::Drop);
+	ASSERT_EQUALS(2u, tracker.InTrackListCount(1, KADEMLIA_CALLBACK_REQ));
+	// Reading twice changes nothing; the count drains one per interval.
+	ASSERT_EQUALS(2u, tracker.InTrackListCount(1, KADEMLIA_CALLBACK_REQ));
+	now += 1;
+	ASSERT_EQUALS(1u, tracker.InTrackListCount(1, KADEMLIA_CALLBACK_REQ));
+	now += 60000;
+	ASSERT_EQUALS(0u, tracker.InTrackListCount(1, KADEMLIA_CALLBACK_REQ));
+	// Another opcode from the same sender has its own count, and the two firewall requests share one.
+	ASSERT_EQUALS(0u, tracker.InTrackListCount(1, KADEMLIA_FINDBUDDY_REQ));
+	ASSERT_TRUE(
+		tracker.InTrackListIsAllowedPacket(1, KADEMLIA_FIREWALLED2_REQ, false) == Result::Allowed);
+	ASSERT_EQUALS(1u, tracker.InTrackListCount(1, KADEMLIA_FIREWALLED_REQ));
+}
+
+TEST(KadPacketTracking, CountIsZeroForASenderDroppedByAFullTable)
+{
+	now = 1000;
+	lan = false;
+	Tracker tracker;
+	for (uint32_t ip = 1; ip <= 10000; ++ip) {
+		ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(ip, KADEMLIA2_PING, false) == Result::Allowed);
+	}
+	ASSERT_TRUE(tracker.InTrackListIsAllowedPacket(10001, KADEMLIA_CALLBACK_REQ, false) == Result::Drop);
+	ASSERT_EQUALS(0u, tracker.InTrackListCount(10001, KADEMLIA_CALLBACK_REQ));
 }
 
 TEST(KadPacketTracking, SpoofedTrafficCannotPrimeTheVerifiedBanBudget)

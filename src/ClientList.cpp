@@ -1340,16 +1340,18 @@ wxString CClientList::DescribeBuddyTarget(const uint8_t *buddyID) const
 }
 
 void CClientList::LogBuddyPacketLimited(
-	const wxString &what, const wxString &from, uint64 thisMinute, const uint8_t *buddyID)
+	const wxString &what, const wxString &from, uint32 counted, uint32 perMinute, const uint8_t *buddyID)
 {
 	if (!theLogger.IsEnabled(logKadBuddy) || m_limitedLinesThisMinute >= MaxLimitedLinesPerMinute) {
 		return;
 	}
 	++m_limitedLinesThisMinute;
-	wxString line = what + " from " + from + " dropped over the rate limit";
-	// 0: the per-minute table was full, so the count is unknown.
-	if (thisMinute != 0) {
-		line += CFormat(" (%u this minute)") % static_cast<unsigned>(thisMinute);
+	wxString line = what + " from " + from;
+	if (counted == 0) {
+		line += " dropped: the rate limiter tracks too many senders";
+	} else {
+		line += CFormat(" dropped over the rate limit of %u a minute (%u counted)") % perMinute %
+			counted;
 	}
 	if (buddyID != nullptr) {
 		line += ", for " + DescribeBuddyTarget(buddyID);

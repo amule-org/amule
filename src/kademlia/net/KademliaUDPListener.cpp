@@ -298,17 +298,18 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 	uint32_t lenPacket = lenData - 2;
 
 	Kademlia::CBuddyStats::Serving &buddyServing = theApp->clientlist->GetBuddyStats().serving;
-	uint64_t callbackRequestsThisMinute = 0;
 	if (opcode == KADEMLIA_CALLBACK_REQ) {
-		callbackRequestsThisMinute =
-			buddyServing.callbackRequestsPerClient.Add(ip, 1, ::GetTickCount64());
+		buddyServing.callbackRequestsPerClient.Add(ip, 1, ::GetTickCount64());
 	}
 	const IncomingPacket admission = InTrackListIsAllowedPacket(ip, opcode, validReceiverKey);
 	if (admission != IncomingPacket::Allowed) {
 		if (opcode == KADEMLIA_FINDBUDDY_REQ) {
 			++buddyServing.requestsRateLimited;
-			theApp->clientlist->LogBuddyPacketLimited(
-				"Buddy request", KadIPPortToString(ip, port), 0, nullptr);
+			theApp->clientlist->LogBuddyPacketLimited("Buddy request",
+				KadIPPortToString(ip, port),
+				InTrackListCount(ip, opcode),
+				InTrackListAllowedPerMinute(opcode),
+				nullptr);
 		} else if (opcode == KADEMLIA_CALLBACK_REQ) {
 			++buddyServing.relays.callbacksRateLimited;
 			uint8_t destination[16];
@@ -319,7 +320,8 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 			}
 			theApp->clientlist->LogBuddyPacketLimited("Callback request",
 				KadIPPortToString(ip, port),
-				callbackRequestsThisMinute,
+				InTrackListCount(ip, opcode),
+				InTrackListAllowedPerMinute(opcode),
 				hasDestination ? destination : nullptr);
 		}
 		// Only keyed packets reach MassiveFlood, so spoofing cannot get an honest peer banned.
