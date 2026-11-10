@@ -5418,6 +5418,14 @@ msgid ""
 msgstr ""
 
 #: src/muuli_wdr.cpp
+msgid "Reject Kad requests without a valid receiver key"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "When disabled, Kad requests are still processed and invalid receiver keys are counted. Enable to reject requests with an invalid receiver key. This is off by default for compatibility with clients that do not send receiver keys."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Media metadata extraction"
 msgstr ""
 
