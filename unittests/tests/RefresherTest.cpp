@@ -3490,6 +3490,7 @@ TEST(Refresher, KadBuddyCountersAreParsedFromTheirContainer)
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_PENDING, static_cast<std::uint32_t>(2)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REQUESTS, static_cast<std::uint32_t>(40)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EXPIRED, static_cast<std::uint32_t>(3)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_DUPLICATE, static_cast<std::uint32_t>(6)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASK_BYTES, static_cast<std::uint64_t>(5000000000ULL)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACK_REQUESTS_PEAK, static_cast<std::uint32_t>(4)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CONNECTED, static_cast<std::uint32_t>(5)));
@@ -3506,6 +3507,7 @@ TEST(Refresher, KadBuddyCountersAreParsedFromTheirContainer)
 	ASSERT_EQUALS(std::uint64_t(2), out.buddy_serving.pending_count);
 	ASSERT_EQUALS(std::uint64_t(40), out.buddy_serving.requests.received);
 	ASSERT_EQUALS(std::uint64_t(3), out.buddy_serving.requests.expired);
+	ASSERT_EQUALS(std::uint64_t(6), out.buddy_serving.requests.duplicate);
 	ASSERT_EQUALS(std::uint64_t(5000000000ULL), out.buddy_serving.reasks.relayed_bytes);
 	ASSERT_EQUALS(std::uint64_t(4), out.buddy_serving.callbacks.peak_requests_per_minute);
 	ASSERT_EQUALS(std::uint64_t(5), out.buddy_own.buddies.started);

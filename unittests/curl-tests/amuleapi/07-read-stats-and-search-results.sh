@@ -59,6 +59,12 @@ _assert_json_eq '.nodes[0].key' uptime '/stats/tree first node key is "uptime"'
 _assert_json_eq '[.. | objects | select(has("key")) | .key] as $k
 	| (["ul_dl_ratio","download_data","servers_working"] | all(($k | index(.)) != null))' \
 	true '/stats/tree carries the expected stable keys'
+_assert_json_eq '[.nodes[] | select(.key == "kad_buddies") | .children[].key] | join(" ")' \
+	'kad_buddies_serving kad_buddies_own' '/stats/tree groups the Kad buddy rows by role'
+_assert_json_eq '[.. | objects | select(.key? == "kad_buddies_time_served") | .values[0].type] | .[0]' \
+	time '/stats/tree Kad buddy time served is a time value'
+_assert_json_eq '[.. | objects | select(.key? == "kad_buddies_relayed_data") | .values[0].type] | .[0]' \
+	bytes '/stats/tree Kad buddy relayed data is a byte value'
 # Skeleton keys are unique; the dynamic per-client-software rows deliberately
 # share a key by kind, so exclude those. Both the leaves (client_version,
 # client_os) and the containers that group them (client_versions,

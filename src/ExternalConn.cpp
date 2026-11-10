@@ -1422,8 +1422,6 @@ static CECEmptyTag MakeKadBuddyTag()
 	const CClientList &clients = *theApp->clientlist;
 	const Kademlia::CBuddyStats::Serving &serving = clients.GetBuddyStats().serving;
 	const Kademlia::CBuddyStats::Own &own = clients.GetBuddyStats().own;
-	const uint32 served = clients.GetServedBuddyCount();
-	const uint64 linkedMs = clients.GetBuddyLinkedMs();
 	CECEmptyTag tag(EC_TAG_KAD_BUDDY);
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_PENDING, clients.GetPendingBuddyCount()));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REQUESTS, serving.requestsReceived));
@@ -1434,12 +1432,13 @@ static CECEmptyTag MakeKadBuddyTag()
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_RATE_LIMITED, serving.requestsRateLimited));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EXPIRED, serving.offersExpired));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_SUPERSEDED, serving.offersSuperseded));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_DUPLICATE, serving.offersDuplicate));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_STARTED, serving.started));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_RELEASED_EXTRA, serving.releasedExtra));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_ENDED, serving.ended));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_TIMED_OUT, serving.timedOut));
 	tag.AddTag(CECTag(
-		EC_TAG_KAD_BUDDY_SERVING_SECONDS, (serving.endedMs + (served != 0 ? linkedMs : 0)) / 1000));
+		EC_TAG_KAD_BUDDY_SERVING_SECONDS, (serving.endedMs + clients.GetServedLinkedMs()) / 1000));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS, serving.relays.callbacks));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACK_BYTES, serving.relays.callbackBytes));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_NO_BUDDY, serving.relays.callbacksNoBuddy));
@@ -1451,7 +1450,7 @@ static CECEmptyTag MakeKadBuddyTag()
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_NO_BUDDY, serving.relays.reasksNoBuddy));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_MISMATCHED, serving.relays.reasksMismatched));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_MALFORMED, serving.relays.reasksMalformed));
-	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_RELAY_BYTES_PEAK, serving.relayBytesPerBuddy.Peak()));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_RELAY_BYTES_PEAK, serving.peakRelayBytesPerMinute));
 	tag.AddTag(CECTag(
 		EC_TAG_KAD_BUDDY_SERVING_CALLBACK_REQUESTS_PEAK, serving.callbackRequestsPerClient.Peak()));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_SEARCHES, own.searches));
@@ -1463,7 +1462,8 @@ static CECEmptyTag MakeKadBuddyTag()
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CONNECTED, own.connected));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_ENDED, own.ended));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_TIMED_OUT, own.timedOut));
-	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_SECONDS, (own.endedMs + (served == 0 ? linkedMs : 0)) / 1000));
+	tag.AddTag(
+		CECTag(EC_TAG_KAD_BUDDY_OWN_SECONDS, (own.endedMs + clients.GetOwnBuddyLinkedMs()) / 1000));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CALLBACKS, own.callbacksReceived));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REASKS, own.reasksReceived));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_NEEDED_SECONDS, own.neededMs / 1000));

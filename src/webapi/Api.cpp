@@ -7171,6 +7171,7 @@ void WriteKadBuddyCounters(CJsonWriter &w, const webapi::KadSnapshot &k)
 		count("rate_limited", s.requests.rate_limited);
 		count("expired", s.requests.expired);
 		count("superseded", s.requests.superseded);
+		count("duplicate", s.requests.duplicate);
 		w.EndObject();
 		w.Key("buddies");
 		w.BeginObject();

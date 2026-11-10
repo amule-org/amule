@@ -8853,6 +8853,143 @@ msgstr ""
 msgid "Not Received"
 msgstr ""
 
+#: src/Statistics.cpp
+msgid "Kad Buddies"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Serving Firewalled Nodes"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Our Own Buddy"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Served Now: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Offers Sent: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Refused: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Over the Rate Limit: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Unused Buddy Offers: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddies Served: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Served Buddies Timed Out: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Time Served: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Callbacks Relayed: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Reasks Relayed: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Data Relayed: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Callbacks Dropped: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Reasks Dropped: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Busiest Minute to One Buddy: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Searches: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Sent: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Offers Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Failed Buddy Connections: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddies Connected: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddies Timed Out: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Time a Buddy Was Needed: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Time Without a Buddy: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Callbacks Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Reasks Received: %llu"
+msgstr ""
+
 #: src/StatisticsDlg.cpp
 #, c-format
 msgid "Active connections (1:%u)"

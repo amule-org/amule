@@ -629,6 +629,7 @@ struct KadBuddyServingSnapshot
 		std::uint64_t rate_limited = 0;
 		std::uint64_t expired = 0;
 		std::uint64_t superseded = 0;
+		std::uint64_t duplicate = 0;
 	} requests;
 	struct
 	{

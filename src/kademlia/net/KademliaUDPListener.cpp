@@ -298,15 +298,29 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 	uint32_t lenPacket = lenData - 2;
 
 	Kademlia::CBuddyStats::Serving &buddyServing = theApp->clientlist->GetBuddyStats().serving;
+	uint64_t callbackRequestsThisMinute = 0;
 	if (opcode == KADEMLIA_CALLBACK_REQ) {
-		buddyServing.callbackRequestsPerClient.Add(ip, 1, ::GetTickCount64());
+		callbackRequestsThisMinute =
+			buddyServing.callbackRequestsPerClient.Add(ip, 1, ::GetTickCount64());
 	}
 	const IncomingPacket admission = InTrackListIsAllowedPacket(ip, opcode, validReceiverKey);
 	if (admission != IncomingPacket::Allowed) {
 		if (opcode == KADEMLIA_FINDBUDDY_REQ) {
 			++buddyServing.requestsRateLimited;
+			theApp->clientlist->LogBuddyPacketLimited(
+				"Buddy request", KadIPPortToString(ip, port), 0, nullptr);
 		} else if (opcode == KADEMLIA_CALLBACK_REQ) {
 			++buddyServing.relays.callbacksRateLimited;
+			uint8_t destination[16];
+			const bool hasDestination = lenPacket >= sizeof(destination);
+			if (hasDestination) {
+				CMemFile peek(packetData, sizeof(destination));
+				peek.ReadUInt128().ToByteArray(destination);
+			}
+			theApp->clientlist->LogBuddyPacketLimited("Callback request",
+				KadIPPortToString(ip, port),
+				callbackRequestsThisMinute,
+				hasDestination ? destination : nullptr);
 		}
 		// Only keyed packets reach MassiveFlood, so spoofing cannot get an honest peer banned.
 		if (admission == IncomingPacket::MassiveFlood) {
@@ -1750,14 +1764,19 @@ void CKademliaUDPListener::ProcessCallbackRequest(const uint8_t *packetData,
 	// Verify packet is expected size
 	CHECK_PACKET_MIN_SIZE(34);
 
-	CUpDownClient *buddy = theApp->clientlist->GetBuddy();
+	uint8_t destination[16];
+	{
+		CMemFile peek(packetData, sizeof(destination));
+		peek.ReadUInt128().ToByteArray(destination);
+	}
+	CUpDownClient *buddy = theApp->clientlist->FindServedBuddy(destination);
 	if (buddy == nullptr) {
-		++theApp->clientlist->GetBuddyStats().serving.relays.callbacksNoBuddy;
+		theApp->clientlist->RecordBuddyRelayDrop(true, destination);
 	} else {
 		CMemFile bio(packetData, lenPacket);
 		CMemFile packetdata(lenPacket + 6);
 		if (!BuildBuddyCallback(bio, CUInt128(buddy->GetBuddyID()), ip, packetdata)) {
-			++theApp->clientlist->GetBuddyStats().serving.relays.callbacksMismatched;
+			theApp->clientlist->RecordBuddyRelayDrop(true, destination);
 			return;
 		}
 
@@ -1767,7 +1786,7 @@ void CKademliaUDPListener::ProcessCallbackRequest(const uint8_t *packetData,
 			const uint32 packetSize = packet->GetPacketSize();
 			buddy->GetSocket()->SendPacket(packet);
 			theStats::AddUpOverheadFileRequest(packetSize);
-			theApp->clientlist->RecordBuddyRelay(true, packetSize);
+			theApp->clientlist->RecordBuddyRelay(buddy, true, packetSize);
 		} else {
 			throw wxString::FromAscii(__FUNCTION__) + ": Buddy has no valid socket";
 		}

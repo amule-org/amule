@@ -36,6 +36,7 @@
 
 #include <atomic> // Needed for std::atomic (free-space figures)
 #include <deque>  // Needed for std::deque
+#include <vector> // Needed for std::vector
 
 typedef struct UpdateInfo
 {
@@ -616,6 +617,9 @@ private:
 #ifdef ENABLE_KAD_NODE_PROTECTION
 	static CStatTreeItemNativeCounter *s_kadBanned;
 #endif
+
+	// Kad buddies, in the order of the row table in Statistics.cpp
+	static std::vector<CStatTreeItemSimple *> s_kadBuddyRows;
 
 	// NAT traversal and IPv6 traffic
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)

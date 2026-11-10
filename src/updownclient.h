@@ -839,6 +839,7 @@ public:
 	void RecordBuddyPongReceived() { m_buddyLiveness.PongReceived(::GetTickCount64()); }
 	void RecordBuddyPacketReceived() { m_buddyLiveness.ReceivedPacket(::GetTickCount64()); }
 	bool HasBuddyTimedOut() const { return m_buddyLiveness.Expired(::GetTickCount64()); }
+	const Kademlia::CBuddyLiveness &GetBuddyLiveness() const { return m_buddyLiveness; }
 	bool HasBuddyRequestExpired() const { return m_buddyLiveness.RequestExpired(::GetTickCount64()); }
 	EKadState GetKadState() const { return m_nKadState; }
 	void SetKadState(EKadState nNewS)

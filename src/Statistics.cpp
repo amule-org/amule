@@ -54,6 +54,9 @@
 #include <wx/intl.h>
 #include "Logger.h"
 #include "Preferences.h" // Needed for thePrefs
+#ifndef CLIENT_GUI
+#include "ClientList.h" // Needed for the Kad buddy rows
+#endif
 
 #ifdef __BSD__
 // glibc -> bsd libc
@@ -205,6 +208,87 @@ CStatTreeItemNativeCounter *CStatistics::s_banned;
 #ifdef ENABLE_KAD_NODE_PROTECTION
 CStatTreeItemNativeCounter *CStatistics::s_kadBanned;
 #endif
+
+std::vector<CStatTreeItemSimple *> CStatistics::s_kadBuddyRows;
+
+namespace
+{
+struct KadBuddyRow
+{
+	bool serving; // Otherwise our own buddy.
+	const char *key;
+	const char *label;
+	EDisplayMode mode;
+};
+
+const KadBuddyRow kadBuddyRows[] = {
+	{ true, "kad_buddies_served", wxTRANSLATE("Served Now: %llu"), dmDefault },
+	{ true, "kad_buddies_requests_received", wxTRANSLATE("Buddy Requests Received: %llu"), dmDefault },
+	{ true, "kad_buddies_offers_sent", wxTRANSLATE("Buddy Offers Sent: %llu"), dmDefault },
+	{ true, "kad_buddies_requests_refused", wxTRANSLATE("Buddy Requests Refused: %llu"), dmDefault },
+	{ true,
+		"kad_buddies_requests_rate_limited",
+		wxTRANSLATE("Buddy Requests Over the Rate Limit: %llu"),
+		dmDefault },
+	{ true, "kad_buddies_offers_unused", wxTRANSLATE("Unused Buddy Offers: %llu"), dmDefault },
+	{ true, "kad_buddies_served_started", wxTRANSLATE("Buddies Served: %llu"), dmDefault },
+	{ true, "kad_buddies_served_timed_out", wxTRANSLATE("Served Buddies Timed Out: %llu"), dmDefault },
+	{ true, "kad_buddies_time_served", wxTRANSLATE("Time Served: %s"), dmTime },
+	{ true, "kad_buddies_callbacks_relayed", wxTRANSLATE("Callbacks Relayed: %llu"), dmDefault },
+	{ true, "kad_buddies_reasks_relayed", wxTRANSLATE("Reasks Relayed: %llu"), dmDefault },
+	{ true, "kad_buddies_relayed_data", wxTRANSLATE("Data Relayed: %s"), dmBytes },
+	{ true, "kad_buddies_callbacks_dropped", wxTRANSLATE("Callbacks Dropped: %llu"), dmDefault },
+	{ true, "kad_buddies_reasks_dropped", wxTRANSLATE("Reasks Dropped: %llu"), dmDefault },
+	{ true, "kad_buddies_busiest_minute", wxTRANSLATE("Busiest Minute to One Buddy: %s"), dmBytes },
+	{ false, "kad_buddies_own_searches", wxTRANSLATE("Buddy Searches: %llu"), dmDefault },
+	{ false, "kad_buddies_own_requests_sent", wxTRANSLATE("Buddy Requests Sent: %llu"), dmDefault },
+	{ false, "kad_buddies_own_offers_received", wxTRANSLATE("Buddy Offers Received: %llu"), dmDefault },
+	{ false,
+		"kad_buddies_own_connect_failures",
+		wxTRANSLATE("Failed Buddy Connections: %llu"),
+		dmDefault },
+	{ false, "kad_buddies_own_connected", wxTRANSLATE("Buddies Connected: %llu"), dmDefault },
+	{ false, "kad_buddies_own_timed_out", wxTRANSLATE("Buddies Timed Out: %llu"), dmDefault },
+	{ false, "kad_buddies_own_needed", wxTRANSLATE("Time a Buddy Was Needed: %s"), dmTime },
+	{ false, "kad_buddies_own_missing", wxTRANSLATE("Time Without a Buddy: %s"), dmTime },
+	{ false, "kad_buddies_own_callbacks", wxTRANSLATE("Callbacks Received: %llu"), dmDefault },
+	{ false, "kad_buddies_own_reasks", wxTRANSLATE("Reasks Received: %llu"), dmDefault },
+};
+
+// In the order of kadBuddyRows.
+std::vector<uint64> KadBuddyRowValues(const CClientList &clients)
+{
+	const Kademlia::CBuddyStats::Serving &s = clients.GetBuddyStats().serving;
+	const Kademlia::CBuddyStats::Own &o = clients.GetBuddyStats().own;
+	return {
+		clients.GetServedBuddyCount(),
+		s.requestsReceived,
+		s.requestsOffered,
+		s.requestsRefusedFirewalled + s.requestsRefusedFull + s.requestsRefusedConflict,
+		s.requestsRateLimited,
+		s.offersExpired + s.offersSuperseded + s.offersDuplicate,
+		s.started,
+		s.timedOut,
+		(s.endedMs + clients.GetServedLinkedMs()) / 1000,
+		s.relays.callbacks,
+		s.relays.reasks,
+		s.relays.callbackBytes + s.relays.reaskBytes,
+		s.relays.callbacksNoBuddy + s.relays.callbacksMismatched + s.relays.callbacksRateLimited,
+		s.relays.reasksNoBuddy + s.relays.reasksMismatched + s.relays.reasksMalformed,
+		s.peakRelayBytesPerMinute,
+		o.searches,
+		o.requestsSent,
+		o.offersReceived,
+		o.connectFailures,
+		o.connected,
+		o.timedOut,
+		o.neededMs / 1000,
+		o.withoutBuddyMs / 1000,
+		o.callbacksReceived,
+		o.reasksReceived,
+	};
+}
+} // namespace
 
 // NAT traversal and IPv6 traffic
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
@@ -1027,6 +1111,21 @@ void CStatistics::InitStatsTree()
 			 wxTRANSLATE("Average file size: %s"), s_sizeOfShare, s_numberOfShared, dmBytes))
 			->SetKey("shared_avg_size"));
 
+	tmpRoot1 = s_statTree->AddChild(
+		(new CStatTreeItemBase(wxTRANSLATE("Kad Buddies")))->SetKey("kad_buddies"));
+	CStatTreeItemBase *serving =
+		tmpRoot1->AddChild((new CStatTreeItemBase(wxTRANSLATE("Serving Firewalled Nodes")))
+					   ->SetKey("kad_buddies_serving"));
+	CStatTreeItemBase *own = tmpRoot1->AddChild(
+		(new CStatTreeItemBase(wxTRANSLATE("Our Own Buddy")))->SetKey("kad_buddies_own"));
+	s_kadBuddyRows.clear();
+	for (const KadBuddyRow &row : kadBuddyRows) {
+		auto *item = new CStatTreeItemSimple(row.label, stNone, row.mode);
+		item->SetKey(row.key);
+		(row.serving ? serving : own)->AddChild(item);
+		s_kadBuddyRows.push_back(item);
+	}
+
 	// Stable machine keys for API consumers (EC_TAG_STAT_NODE_KEY), assigned here so
 	// they stay fixed regardless of label wording or translation.
 	s_uptime->SetKey("uptime");
@@ -1114,6 +1213,11 @@ void CStatistics::UpdateStatsTree()
 	uint32 servtfile;
 	float servocc;
 	theApp->serverlist->GetStatus(servfail, servuser, servfile, servtuser, servtfile, servocc);
+	const std::vector<uint64> buddyValues = KadBuddyRowValues(*theApp->clientlist);
+	wxASSERT(buddyValues.size() == s_kadBuddyRows.size());
+	for (std::size_t i = 0; i < s_kadBuddyRows.size() && i < buddyValues.size(); ++i) {
+		s_kadBuddyRows[i]->SetValue(buddyValues[i]);
+	}
 	s_workingServers->SetValue((uint64)((*s_totalServers) - servfail));
 	s_failedServers->SetValue((uint64)servfail);
 	s_usersOnWorking->SetValue((uint64)servuser);

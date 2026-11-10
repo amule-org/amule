@@ -286,12 +286,22 @@ public:
 	static constexpr uint32 MaxServedBuddies = 1;
 	Kademlia::CBuddyStats &GetBuddyStats() { return m_buddyStats; }
 	const Kademlia::CBuddyStats &GetBuddyStats() const { return m_buddyStats; }
-	uint32 GetServedBuddyCount() const;
+	uint32 GetServedBuddyCount() const { return static_cast<uint32>(m_servedLinks.size()); }
 	//! Buddy requests we answered whose node has not connected yet.
 	uint32 GetPendingBuddyCount() const;
-	//! How long the current buddy has been linked, 0 without one.
-	uint64 GetBuddyLinkedMs() const;
-	void RecordBuddyRelay(bool callback, uint32 bytes);
+	//! Summed over the buddies we serve now.
+	uint64 GetServedLinkedMs() const;
+	//! How long our own buddy has been linked, 0 without one.
+	uint64 GetOwnBuddyLinkedMs() const;
+	//! The served buddy whose BuddyID matches in either layout, or nullptr.
+	CUpDownClient *FindServedBuddy(const uint8_t *buddyID) const;
+	void RecordBuddyRelay(const CUpDownClient *buddy, bool callback, uint32 bytes);
+	//! A callback or reask that no served buddy matched.
+	void RecordBuddyRelayDrop(bool callback, const uint8_t *buddyID);
+	//! One line per rate-limited buddy packet, up to a few a minute. `buddyID` may be nullptr.
+	void LogBuddyPacketLimited(
+		const wxString &what, const wxString &from, uint64 thisMinute, const uint8_t *buddyID);
+	void LogBuddyDisconnect(const CUpDownClient *client, const wxString &reason);
 	void RecordBuddyTimeout(const CUpDownClient *client);
 	void RemoveFromKadList(CUpDownClient *torem);
 	void AddToKadList(CUpDownClient *toadd);
@@ -382,6 +392,13 @@ private:
 	uint8 m_nBuddyStatus;
 	Kademlia::CBuddyRetry m_buddyRetry;
 	Kademlia::CBuddyStats m_buddyStats;
+	std::vector<Kademlia::CServedBuddyLink> m_servedLinks;
+	Kademlia::CDepartedBuddies m_departedBuddies;
+	// Covers the time before relays reach a buddy that left.
+	static constexpr std::size_t DepartedBuddiesPerSlot = 2;
+	std::string m_departedNote; // The latest drop for a buddy that left, this minute.
+	unsigned m_limitedLinesThisMinute = 0;
+	static constexpr unsigned MaxLimitedLinesPerMinute = 10;
 	uint64 m_buddyLinkedAt = 0;
 	uint64 m_lastBuddyAccounting = 0;
 	uint64 m_nextBuddySummary = 0;
@@ -390,6 +407,10 @@ private:
 	uint64 m_loggedReasksReceived = 0;
 
 	void ReleaseBuddy();
+	void StartServedLink(CUpDownClient *client, uint64 now);
+	const Kademlia::CServedBuddyLink *FindServedLink(const CUpDownClient *client) const;
+	bool IsServedBuddyID(const uint8_t *buddyID) const;
+	wxString DescribeBuddyTarget(const uint8_t *buddyID) const;
 	void AccountBuddyTime(uint64 now);
 	void LogBuddySummary(uint64 now);
 

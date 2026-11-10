@@ -1600,6 +1600,7 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		serving.requests.rate_limited = get(EC_TAG_KAD_BUDDY_SERVING_RATE_LIMITED);
 		serving.requests.expired = get(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EXPIRED);
 		serving.requests.superseded = get(EC_TAG_KAD_BUDDY_SERVING_OFFERS_SUPERSEDED);
+		serving.requests.duplicate = get(EC_TAG_KAD_BUDDY_SERVING_OFFERS_DUPLICATE);
 		serving.buddies.started = get(EC_TAG_KAD_BUDDY_SERVING_STARTED);
 		serving.buddies.released_extra = get(EC_TAG_KAD_BUDDY_SERVING_RELEASED_EXTRA);
 		serving.buddies.ended = get(EC_TAG_KAD_BUDDY_SERVING_ENDED);

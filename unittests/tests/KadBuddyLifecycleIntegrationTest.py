@@ -77,17 +77,18 @@ def pass_firewall_check(udp_port):
 class Requester:
     """A firewalled node whose buddy request the daemon accepted."""
 
-    def __init__(self, address, udp_port, peer_port):
+    def __init__(self, address, udp_port, peer_port, buddy_id=None, user_id=None):
         self.address = address
         self.peer_port = peer_port
         self.sock = socket.socket()
         self.sock.bind((address, 0))
         self.port = self.sock.getsockname()[1]
-        user_id = os.urandom(16)
+        self.buddy_id = buddy_id or os.urandom(16)
+        self.user_id = user_id or os.urandom(16)
         # CUInt128 reads four little-endian words, and the hash is their big-endian bytes.
-        self.user_hash = struct.pack('>4I', *struct.unpack('<4I', user_id))
+        self.user_hash = struct.pack('>4I', *struct.unpack('<4I', self.user_id))
         with kad_peer(address, udp_port) as peer:
-            kad_send(peer, KADEMLIA_FINDBUDDY_REQ, os.urandom(16) + user_id + struct.pack('<H', self.port))
+            kad_send(peer, KADEMLIA_FINDBUDDY_REQ, self.buddy_id + self.user_id + struct.pack('<H', self.port))
             wait_kad_packet(peer, KADEMLIA_FINDBUDDY_RES)
 
     def send_hello(self):
@@ -160,6 +161,25 @@ def check_late_request_is_not_promoted(proc, ec, udp_port, peer_port):
     late.sock.close()
 
 
+def check_duplicate_offer_is_counted_apart(proc, ec, udp_port, peer_port):
+    """A node that asks twice links once; its other offer is a duplicate, not an expiry."""
+    first = Requester('127.0.0.6', udp_port, peer_port)
+    again = Requester('127.0.0.6', udp_port, peer_port, first.buddy_id, first.user_id)
+    before = buddy_counters(ec)
+    first.connect()
+    wait_stat(proc, ec, 'EC_TAG_STATS_BUDDY_STATUS', BUDDY_CONNECTED, MARGIN)
+    wait_for(proc, 'the second offer to be dropped as a duplicate',
+             lambda: buddy_counters(ec)['SERVING_OFFERS_DUPLICATE'] == before['SERVING_OFFERS_DUPLICATE'] + 1,
+             MARGIN)
+    counters = buddy_counters(ec)
+    for name in ('SERVING_OFFERS_EXPIRED', 'SERVING_OFFERS_SUPERSEDED', 'SERVING_RELEASED_EXTRA'):
+        assert counters[name] == before[name], (name, counters)
+    assert counters['PENDING'] == 0, counters
+    first.sock.close()
+    again.sock.close()
+    wait_stat(proc, ec, 'EC_TAG_STATS_BUDDY_STATUS', BUDDY_DISCONNECTED, MARGIN)
+
+
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-kad-buddy-') as directory:
         root = Path(directory)
@@ -172,7 +192,9 @@ def run(binary):
 
             check_extra_buddy_is_dropped(proc, ec, udp_port, peer_port)
             check_late_request_is_not_promoted(proc, ec, udp_port, peer_port)
-    print('PASS: one buddy kept, the extra one dropped, an expired request not promoted, and each counted')
+            check_duplicate_offer_is_counted_apart(proc, ec, udp_port, peer_port)
+    print('PASS: one buddy kept, the extra one dropped, an expired request not promoted, a duplicate '
+          'offer counted apart, and each counted')
 
 
 if __name__ == '__main__':

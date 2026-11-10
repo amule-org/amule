@@ -25,10 +25,16 @@
 #ifndef KAD_BUDDY_STATS_H
 #define KAD_BUDDY_STATS_H
 
+#include "KadBuddyIdLayout.h"
+
 #include <algorithm>
+#include <array>
 #include <cstdint>
+#include <cstring>
+#include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace Kademlia
 {
@@ -41,7 +47,8 @@ public:
 	static constexpr std::size_t MaxKeys = 1024;
 	static constexpr uint64_t WindowMs = 60 * 1000;
 
-	void Add(uint32_t key, uint64_t amount, uint64_t now)
+	// Returns the key's total in this window, or 0 when the cap left it out.
+	uint64_t Add(uint32_t key, uint64_t amount, uint64_t now)
 	{
 		if (now < m_windowStart || now - m_windowStart >= WindowMs) {
 			m_totals.clear();
@@ -50,12 +57,13 @@ public:
 		auto it = m_totals.find(key);
 		if (it == m_totals.end()) {
 			if (m_totals.size() >= MaxKeys) {
-				return;
+				return 0;
 			}
 			it = m_totals.emplace(key, 0).first;
 		}
 		it->second += amount;
 		m_peak = std::max(m_peak, it->second);
+		return it->second;
 	}
 
 	uint64_t Peak() const { return m_peak; }
@@ -79,6 +87,9 @@ struct CBuddyRelayCounts
 	uint64_t reasksNoBuddy = 0;
 	uint64_t reasksMismatched = 0;
 	uint64_t reasksMalformed = 0;
+	// Log only: the drops above whose BuddyID belongs to a buddy that left.
+	uint64_t callbacksDeparted = 0;
+	uint64_t reasksDeparted = 0;
 };
 
 // Counts since start. Times are monotonic milliseconds.
@@ -93,16 +104,18 @@ struct CBuddyStats
 		uint64_t requestsRefusedFull = 0;
 		uint64_t requestsRefusedConflict = 0;
 		uint64_t requestsRateLimited = 0;
-		// Offered, but the node did not connect in time, or another buddy connected first.
+		// Offered, but the node did not connect in time, another buddy took the last slot, or
+		// the node linked through another offer.
 		uint64_t offersExpired = 0;
 		uint64_t offersSuperseded = 0;
+		uint64_t offersDuplicate = 0;
 		uint64_t started = 0;
 		uint64_t releasedExtra = 0;
 		uint64_t ended = 0;
 		uint64_t timedOut = 0;
 		uint64_t endedMs = 0; // Time served by buddies that have ended.
 		CBuddyRelayCounts relays;
-		CMinutePeak relayBytesPerBuddy;
+		uint64_t peakRelayBytesPerMinute = 0; // To one served buddy.
 		CMinutePeak callbackRequestsPerClient;
 	} serving;
 
@@ -126,8 +139,142 @@ struct CBuddyStats
 	} own;
 };
 
+using BuddyId = std::array<uint8_t, 16>;
+
+inline BuddyId MakeBuddyId(const uint8_t *bytes)
+{
+	BuddyId id;
+	std::memcpy(id.data(), bytes, id.size());
+	return id;
+}
+
+// "42 s", "5 min 2 s" or "3 h 12 min".
+inline std::string FormatBuddyDuration(uint64_t ms)
+{
+	const uint64_t seconds = ms / 1000;
+	if (seconds < 60) {
+		return std::to_string(seconds) + " s";
+	}
+	if (seconds < 3600) {
+		return std::to_string(seconds / 60) + " min " + std::to_string(seconds % 60) + " s";
+	}
+	return std::to_string(seconds / 3600) + " h " + std::to_string(seconds % 3600 / 60) + " min";
+}
+
+// One served buddy while it stays linked.
+struct CServedBuddyLink
+{
+	const void *client = nullptr; // Identifies the link; never dereferenced.
+	BuddyId buddyId{};
+	std::string address;
+	std::string software;
+	uint64_t linkedAt = 0;
+	uint32_t linkNumber = 1; // Counts earlier links of the same node that we still remember.
+	uint64_t callbacks = 0;
+	uint64_t callbackBytes = 0;
+	uint64_t reasks = 0;
+	uint64_t reaskBytes = 0;
+	uint64_t minuteStart = 0;
+	uint64_t minuteBytes = 0;
+	uint64_t peakMinuteBytes = 0;
+
+	// Returns the bytes relayed to this buddy in the current one-minute window.
+	uint64_t Relay(bool callback, uint64_t bytes, uint64_t now)
+	{
+		if (callback) {
+			++callbacks;
+			callbackBytes += bytes;
+		} else {
+			++reasks;
+			reaskBytes += bytes;
+		}
+		if (now < minuteStart || now - minuteStart >= CMinutePeak::WindowMs) {
+			minuteStart = now;
+			minuteBytes = 0;
+		}
+		minuteBytes += bytes;
+		peakMinuteBytes = std::max(peakMinuteBytes, minuteBytes);
+		return minuteBytes;
+	}
+};
+
+// "callbacks 3 (114 B), reasks 0 (0 B), busiest minute 76 B"
+inline std::string FormatServedBuddyRelays(const CServedBuddyLink &link)
+{
+	return "callbacks " + std::to_string(link.callbacks) + " (" + std::to_string(link.callbackBytes) +
+	       " B), reasks " + std::to_string(link.reasks) + " (" + std::to_string(link.reaskBytes) +
+	       " B), busiest minute " + std::to_string(link.peakMinuteBytes) + " B";
+}
+
+struct CDepartedBuddy
+{
+	BuddyId buddyId{};
+	std::string address;
+	uint64_t endedAt = 0;
+	uint32_t links = 0;
+};
+
+// Served buddies that left, so drops for their BuddyID can be told apart from unknown ones, and a
+// node that links again is recognised. Entries hold copies only, so a lookup never touches a client.
+class CDepartedBuddies
+{
+public:
+	// Kad source entries, which carry the BuddyID, live this long.
+	static constexpr uint64_t MaxAgeMs = 5 * 60 * 60 * 1000ULL;
+
+	// Keeps at most `capacity` entries, the newest ones. A node already listed moves to the end.
+	void Record(const CDepartedBuddy &buddy, std::size_t capacity)
+	{
+		m_buddies.erase(std::remove_if(m_buddies.begin(),
+					m_buddies.end(),
+					[&buddy](const CDepartedBuddy &listed) {
+						return listed.buddyId == buddy.buddyId;
+					}),
+			m_buddies.end());
+		Prune(buddy.endedAt);
+		m_buddies.push_back(buddy);
+		if (m_buddies.size() > capacity) {
+			m_buddies.erase(
+				m_buddies.begin(), m_buddies.end() - static_cast<std::ptrdiff_t>(capacity));
+		}
+	}
+
+	// The newest match in either BuddyID layout, or nothing.
+	std::optional<CDepartedBuddy> Find(const uint8_t *buddyId, uint64_t now) const
+	{
+		for (auto it = m_buddies.rbegin(); it != m_buddies.rend(); ++it) {
+			if (Age(*it, now) < MaxAgeMs &&
+				MatchesBuddyIdEitherLayout(buddyId, it->buddyId.data())) {
+				return *it;
+			}
+		}
+		return std::nullopt;
+	}
+
+	std::size_t Size() const { return m_buddies.size(); }
+
+	static uint64_t Age(const CDepartedBuddy &buddy, uint64_t now)
+	{
+		return now > buddy.endedAt ? now - buddy.endedAt : 0;
+	}
+
+private:
+	void Prune(uint64_t now)
+	{
+		m_buddies.erase(
+			std::remove_if(m_buddies.begin(),
+				m_buddies.end(),
+				[now](const CDepartedBuddy &listed) { return Age(listed, now) >= MaxAgeMs; }),
+			m_buddies.end());
+	}
+
+	std::vector<CDepartedBuddy> m_buddies;
+};
+
 // One log line for the relays since `before`, or an empty string when nothing changed.
-inline std::string FormatBuddyRelaySummary(const CBuddyRelayCounts &now, const CBuddyRelayCounts &before)
+// `departedNote` names the latest buddy that left whose BuddyID a drop carried.
+inline std::string FormatBuddyRelaySummary(
+	const CBuddyRelayCounts &now, const CBuddyRelayCounts &before, const std::string &departedNote = {})
 {
 	std::string relayed;
 	const auto relay = [&relayed](uint64_t count, uint64_t bytes, const char *what) {
@@ -143,13 +290,26 @@ inline std::string FormatBuddyRelaySummary(const CBuddyRelayCounts &now, const C
 				   std::to_string(count);
 		}
 	};
+	// Drops without a matching buddy, split by whether the BuddyID belongs to one that left.
+	const auto unmatched =
+		[&drop](uint64_t total, uint64_t departed, const char *left, const char *unknown) {
+			drop(departed, left);
+			drop(total > departed ? total - departed : 0, unknown);
+		};
 	relay(now.callbacks - before.callbacks, now.callbackBytes - before.callbackBytes, "callbacks");
 	relay(now.reasks - before.reasks, now.reaskBytes - before.reaskBytes, "reasks");
-	drop(now.callbacksNoBuddy - before.callbacksNoBuddy, "callbacks without a buddy");
-	drop(now.callbacksMismatched - before.callbacksMismatched, "callbacks for another buddy");
+	const uint64_t callbacksDeparted = now.callbacksDeparted - before.callbacksDeparted;
+	const uint64_t reasksDeparted = now.reasksDeparted - before.reasksDeparted;
+	unmatched(now.callbacksNoBuddy - before.callbacksNoBuddy + now.callbacksMismatched -
+			  before.callbacksMismatched,
+		callbacksDeparted,
+		"callbacks for a buddy that left",
+		"callbacks for an unknown buddy");
 	drop(now.callbacksRateLimited - before.callbacksRateLimited, "callbacks over the rate limit");
-	drop(now.reasksNoBuddy - before.reasksNoBuddy, "reasks without a buddy");
-	drop(now.reasksMismatched - before.reasksMismatched, "reasks for another buddy");
+	unmatched(now.reasksNoBuddy - before.reasksNoBuddy + now.reasksMismatched - before.reasksMismatched,
+		reasksDeparted,
+		"reasks for a buddy that left",
+		"reasks for an unknown buddy");
 	drop(now.reasksMalformed - before.reasksMalformed, "malformed reasks");
 	if (relayed.empty() && dropped.empty()) {
 		return {};
@@ -157,6 +317,9 @@ inline std::string FormatBuddyRelaySummary(const CBuddyRelayCounts &now, const C
 	std::string line = "Relays in the last minute: " + (relayed.empty() ? std::string("none") : relayed);
 	if (!dropped.empty()) {
 		line += ". Dropped: " + dropped;
+		if (callbacksDeparted + reasksDeparted != 0 && !departedNote.empty()) {
+			line += ". Latest buddy that left: " + departedNote;
+		}
 	}
 	return line;
 }

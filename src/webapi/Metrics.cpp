@@ -250,6 +250,7 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 			"counter");
 		w.Sample("kad_buddy_offers_unused_total", b.requests.expired, "{reason=\"expired\"}");
 		w.Sample("kad_buddy_offers_unused_total", b.requests.superseded, "{reason=\"superseded\"}");
+		w.Sample("kad_buddy_offers_unused_total", b.requests.duplicate, "{reason=\"duplicate\"}");
 		w.Family("kad_buddy_served_events_total",
 			"Changes to the buddies this node serves.",
 			"counter");
