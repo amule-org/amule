@@ -54,6 +54,18 @@ enum Version
 	V2 = 2
 };
 
+//! The address that decides v2: the live connection's peer when there is one, because a peer we
+//! know by its IPv4 may have reached us over IPv6, and then it cannot see our IPv4.
+inline CNetworkAddress PeerAddressForV2(const CNetworkAddress &socketPeer,
+	const CNetworkAddress &userAddress,
+	const CNetworkAddress &connectAddress)
+{
+	if (socketPeer.IsPresent()) {
+		return socketPeer.Unmapped();
+	}
+	return userAddress.IsPresent() ? userAddress : connectAddress;
+}
+
 inline unsigned SupportedVersions(bool cryptoAvailable, bool hasPeerIPv4)
 {
 	return cryptoAvailable ? (hasPeerIPv4 ? V1 | V2 : V1) : Unavailable;

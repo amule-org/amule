@@ -29,13 +29,15 @@
 #include "NetworkAddress.h"
 #include "PeerAddressing.h" // Needed for IsUsableTagIdentity
 
+#include <algorithm>
 #include <cstdint>
+#include <vector>
 
 struct SServerIPv6SourceFacts
 {
 	CNetworkAddress address; // The sentinel record's address; Absent when missing or malformed.
 	std::uint16_t port = 0;
-	CNetworkAddress ownAddress; // The address our login advertised.
+	std::vector<CNetworkAddress> ownAddresses; // Every address this server session advertised.
 	std::uint16_t ownPort = 0;
 	bool ipv6Built = false;
 	bool familyPermitted = false;
@@ -49,7 +51,9 @@ inline bool ShouldContactServerSourceOverIPv6(const SServerIPv6SourceFacts &fact
 	if (!PeerAddressing::IsUsableTagIdentity(facts.address)) {
 		return false;
 	}
-	if (facts.address == facts.ownAddress && facts.port == facts.ownPort) {
+	if (facts.port == facts.ownPort &&
+		std::find(facts.ownAddresses.begin(), facts.ownAddresses.end(), facts.address) !=
+			facts.ownAddresses.end()) {
 		return false;
 	}
 	SContactFacts contact;

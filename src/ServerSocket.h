@@ -32,6 +32,8 @@
 #include "ServerConnect.h"
 #ifdef ENABLE_IPV6
 #include "NetworkAddress.h" // Needed for CNetworkAddress
+#include <algorithm>
+#include <vector>
 #endif
 #include "OfferFilesPolicy.h"
 
@@ -99,20 +101,28 @@ public:
 
 #ifdef ENABLE_IPV6
 	// The IPv6 this connection last sent, by login or a later OP_IPV6_UPDATE; Absent after a
-	// withdrawal. This is the own-record check address in CPartFile::AddSources().
+	// withdrawal.
 	void SetLoginIPv6(const CNetworkAddress &address)
 	{
 		m_loginIPv6 = address;
-		if (address.IsPresent()) {
-			m_ipv6SentinelParsingOn = true;
+		if (address.IsPresent() &&
+			std::find(m_sentIPv6.begin(), m_sentIPv6.end(), address) == m_sentIPv6.end()) {
+			if (m_sentIPv6.size() == MaxSentIPv6) {
+				m_sentIPv6.erase(m_sentIPv6.begin());
+			}
+			m_sentIPv6.push_back(address);
 		}
 	}
 	const CNetworkAddress &GetLoginIPv6() const { return m_loginIPv6; }
 
-	// Sticky for the rest of this server session once any IPv6 was advertised on it: the server
-	// sends no reply to OP_IPV6_UPDATE, so an OP_FOUNDSOURCES built before a withdrawal can still
-	// arrive after it (0xFFFFFFFF is never a real source id).
-	bool IsIPv6SentinelParsingOn() const { return m_ipv6SentinelParsingOn; }
+	// Every IPv6 this server session advertised: the server sends no reply to OP_IPV6_UPDATE, so
+	// an OP_FOUNDSOURCES built before a withdrawal or a renumber can still name a former one. It
+	// is the own-record check in CPartFile::AddSources().
+	const std::vector<CNetworkAddress> &GetSentIPv6() const { return m_sentIPv6; }
+
+	// Sticky for the rest of this server session once any IPv6 was advertised on it, for the
+	// same reason (0xFFFFFFFF is never a real source id).
+	bool IsIPv6SentinelParsingOn() const { return !m_sentIPv6.empty(); }
 #endif
 
 private:
@@ -141,7 +151,9 @@ private:
 #endif
 #ifdef ENABLE_IPV6
 	CNetworkAddress m_loginIPv6;
-	bool m_ipv6SentinelParsingOn = false;
+	// The server dials an advertised address at most 4 times a session, so few are ever sent.
+	static constexpr std::size_t MaxSentIPv6 = 8;
+	std::vector<CNetworkAddress> m_sentIPv6;
 #endif
 };
 

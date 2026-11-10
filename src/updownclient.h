@@ -1011,7 +1011,8 @@ private:
 
 	void Init();
 	void SendClassicCallbackRequest();
-	bool ProcessHelloTypePacket(const CMemFile &data);
+	//! `inbound`: an OP_HELLO, which only a peer that dialled us sends.
+	bool ProcessHelloTypePacket(const CMemFile &data, bool inbound);
 	void SendHelloTypePacket(CMemFile *data);
 	void SendFirewallCheckUDPRequest();
 	void ClearHelloProperties(); // eMule 0.42
