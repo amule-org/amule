@@ -2690,7 +2690,7 @@ if (TARGET wxWidgets::CORE)
     endfunction()
 
     add_native_list_test (VirtualListViewportTest)
-    # Settling the native GUI across all viewport scenarios exceeds 10 seconds on macOS.
+    # Settling the native GUI across the viewport scenarios takes several seconds.
     set_tests_properties (VirtualListViewportTest PROPERTIES LABELS "gui;slow")
     add_native_list_test (ColumnLayoutTest)
     add_native_list_test (ColumnFitTest
