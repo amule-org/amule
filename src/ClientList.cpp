@@ -1328,7 +1328,8 @@ void CClientList::StartServedLink(CUpDownClient *client, uint64 now)
 	if (theLogger.IsEnabled(logKadBuddy)) {
 		std::string line = "Serving buddy " + link.address + " (" + link.software + "), " +
 				   std::to_string(m_servedLinks.size()) + " of " +
-				   std::to_string(GetServedBuddyLimit()) + (link.natT ? ", NAT-T" : "");
+				   std::to_string(GetServedBuddyLimit()) + (link.natT ? ", NAT-T" : "") +
+				   ", BuddyID " + Kademlia::BuddyIdHex(link.buddyId.data());
 		if (before) {
 			line += ", again: link " + std::to_string(link.linkNumber) + ", the last one ended " +
 				Kademlia::FormatBuddyDuration(Kademlia::CDepartedBuddies::Age(*before, now)) +
@@ -1373,6 +1374,11 @@ void CClientList::RecordBuddyRelayDrop(bool callback, const uint8_t *buddyID)
 			departed->address + ", " +
 			Kademlia::FormatBuddyDuration(Kademlia::CDepartedBuddies::Age(*departed, now)) +
 			" ago";
+	} else if (theLogger.IsEnabled(logKadBuddy)) {
+		// The BuddyID as received, in the sender's layout, so a later run can tell whose it was.
+		AddDebugLogLineN(logKadBuddy,
+			wxString(callback ? "Callback" : "Reask") + " for an unknown BuddyID " +
+				wxString::FromAscii(Kademlia::BuddyIdHex(buddyID).c_str()));
 	}
 }
 

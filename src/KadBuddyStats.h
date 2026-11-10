@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <iterator>
@@ -152,6 +153,19 @@ inline BuddyId MakeBuddyId(const uint8_t *bytes)
 	BuddyId id;
 	std::memcpy(id.data(), bytes, id.size());
 	return id;
+}
+
+// Upper-case hex of the 16 bytes as stored, so log lines from different runs can be matched.
+inline std::string BuddyIdHex(const uint8_t *bytes)
+{
+	static const char digits[] = "0123456789ABCDEF";
+	std::string hex;
+	hex.reserve(32);
+	for (std::size_t i = 0; i < 16; ++i) {
+		hex += digits[bytes[i] >> 4];
+		hex += digits[bytes[i] & 0x0F];
+	}
+	return hex;
 }
 
 // "42 s", "5 min 2 s" or "3 h 12 min".

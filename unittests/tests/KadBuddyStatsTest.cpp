@@ -27,6 +27,7 @@
 
 using namespace muleunit;
 using Kademlia::BuddyId;
+using Kademlia::BuddyIdHex;
 using Kademlia::CBuddyRelayCounts;
 using Kademlia::CDepartedBuddies;
 using Kademlia::CDepartedBuddy;
@@ -275,4 +276,12 @@ TEST(KadBuddyStats, DepartedRelinkReplacesTheEntry)
 	ASSERT_EQUALS(2u, found->links);
 	ASSERT_EQUALS(3000u, found->endedAt);
 	ASSERT_TRUE(departed.Find(Id(40).data(), 4000).has_value());
+}
+
+TEST(KadBuddyStats, BuddyIdHexIsUpperCaseInStoredOrder)
+{
+	const uint8_t id[16] = {
+		0x00, 0x01, 0x0A, 0xFF, 0x10, 0x2B, 0x3C, 0x4D, 0x5E, 0x6F, 0x70, 0x81, 0x92, 0xA3, 0xB4, 0xC5
+	};
+	ASSERT_EQUALS(std::string("00010AFF102B3C4D5E6F708192A3B4C5"), BuddyIdHex(id));
 }
