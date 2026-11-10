@@ -3330,6 +3330,16 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				add_test (NAME ServerListGuiIntegrationTest COMMAND ${SERVER_LIST_GUI_TEST_COMMAND})
 			endif ()
 			set_tests_properties (ServerListGuiIntegrationTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
+			set (LOCAL_FILE_DETAILS_RENAME_TEST_COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/FileDetailsRenameIntegrationTest.py
+				$<TARGET_FILE:amule> $<TARGET_FILE:amuled> --local)
+			if (AMULE_XVFB_RUN)
+				add_test (NAME LocalFileDetailsRenameIntegrationTest
+					COMMAND ${AMULE_XVFB_RUN} -a ${LOCAL_FILE_DETAILS_RENAME_TEST_COMMAND})
+			else ()
+				add_test (NAME LocalFileDetailsRenameIntegrationTest COMMAND ${LOCAL_FILE_DETAILS_RENAME_TEST_COMMAND})
+			endif ()
+			set_tests_properties (LocalFileDetailsRenameIntegrationTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
 		endif ()
 		if (BUILD_REMOTEGUI AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
 			find_program (AMULE_XVFB_RUN xvfb-run)
