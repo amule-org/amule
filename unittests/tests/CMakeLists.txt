@@ -2690,7 +2690,8 @@ if (TARGET wxWidgets::CORE)
     endfunction()
 
     add_native_list_test (VirtualListViewportTest)
-    set_tests_properties (VirtualListViewportTest PROPERTIES LABELS "gui")
+    # Settling the native GUI across all viewport scenarios exceeds 10 seconds on macOS.
+    set_tests_properties (VirtualListViewportTest PROPERTIES LABELS "gui;slow")
     add_native_list_test (ColumnLayoutTest)
     add_native_list_test (ColumnFitTest
         ${CMAKE_SOURCE_DIR}/src/SearchColumnFit.cpp
