@@ -165,6 +165,7 @@ TEST(Metrics, KadBuddyCountersNeedTheirSnapshotFlags)
 	s.kad.buddy_serving.reasks.over_budget = 5;
 	s.kad.buddy_serving.peak_relayed_bytes_per_minute = 4500;
 	s.kad.buddy_own.missing_seconds = 30;
+	s.kad.buddy_own.held_search_count = 6;
 	text = SerializeMetrics(s, "test");
 	ASSERT_TRUE(text.find("amule_kad_buddies_served 1\n") != std::string::npos);
 	ASSERT_TRUE(text.find("amule_kad_buddies_served_limit 1\n") != std::string::npos);
@@ -184,6 +185,8 @@ TEST(Metrics, KadBuddyCountersNeedTheirSnapshotFlags)
 	ASSERT_TRUE(text.find("amule_kad_buddy_peak_relayed_bytes_per_minute 4500\n") != std::string::npos);
 	ASSERT_TRUE(
 		text.find("amule_kad_buddy_own_seconds_total{state=\"missing\"} 30\n") != std::string::npos);
+	ASSERT_TRUE(text.find("# TYPE amule_kad_buddy_searches_held_total counter\n") != std::string::npos);
+	ASSERT_TRUE(text.find("amule_kad_buddy_searches_held_total 6\n") != std::string::npos);
 }
 
 TEST(Metrics, ConnectedNetworkGatesExposeRealZeroValues)

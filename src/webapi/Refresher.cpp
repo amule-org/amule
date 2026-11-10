@@ -1625,6 +1625,7 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		serving.peak_relayed_bytes_per_minute = get(EC_TAG_KAD_BUDDY_SERVING_RELAY_BYTES_PEAK);
 		KadBuddyOwnSnapshot &own = out.buddy_own;
 		own.search_count = get(EC_TAG_KAD_BUDDY_OWN_SEARCHES);
+		own.held_search_count = get(EC_TAG_KAD_BUDDY_OWN_SEARCHES_HELD);
 		own.needed_seconds = get(EC_TAG_KAD_BUDDY_OWN_NEEDED_SECONDS);
 		own.missing_seconds = get(EC_TAG_KAD_BUDDY_OWN_MISSING_SECONDS);
 		own.connected_seconds = get(EC_TAG_KAD_BUDDY_OWN_SECONDS);

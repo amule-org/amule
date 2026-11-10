@@ -8681,6 +8681,11 @@ msgstr ""
 
 #: src/Statistics.cpp
 #, c-format
+msgid "Buddy Searches Held for a Shared File: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Buddy Requests Sent: %llu"
 msgstr ""
 

@@ -1460,6 +1460,7 @@ static CECEmptyTag MakeKadBuddyTag()
 	tag.AddTag(CECTag(
 		EC_TAG_KAD_BUDDY_SERVING_CALLBACK_REQUESTS_PEAK, serving.callbackRequestsPerClient.Peak()));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_SEARCHES, own.searches));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_SEARCHES_HELD, own.searchesHeld));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REQUESTS, own.requestsSent));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REQUESTS_SKIPPED, own.requestsSkipped));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_OFFERS, own.offersReceived));

@@ -23,7 +23,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include "ClientList.h" // Interface declarations.
+#include "ClientList.h"           // Interface declarations.
+#include "KadBuddySearchPolicy.h" // Needed for BuddySearchTarget
 #include "KadCallbackPolicy.h"
 #include "KadServedBuddyPolicy.h" // Needed for the served-buddy limits
 
@@ -44,12 +45,13 @@
 #include "ClientUDPSocket.h"      // Needed to clear callback failure after verified HELLO
 #include "LugdunumNatTraversal.h" // Needed for verified callback failure clearing
 #endif
-#include "DownloadQueue.h" // Needed for CDownloadQueue
-#include "UploadQueue.h"   // Needed for CUploadQueue
-#include "IPFilter.h"      // Needed for CIPFIlter
-#include "updownclient.h"  // Needed for CUpDownClient
-#include "Preferences.h"   // Needed for thePrefs
-#include "Statistics.h"    // Needed for theStats
+#include "DownloadQueue.h"  // Needed for CDownloadQueue
+#include "UploadQueue.h"    // Needed for CUploadQueue
+#include "SharedFileList.h" // Needed for CSharedFileList
+#include "IPFilter.h"       // Needed for CIPFIlter
+#include "updownclient.h"   // Needed for CUpDownClient
+#include "Preferences.h"    // Needed for thePrefs
+#include "Statistics.h"     // Needed for theStats
 #include "Logger.h"
 #include "GuiEvents.h" // Needed for Notify_*
 #include "Packet.h"
@@ -891,22 +893,36 @@ void CClientList::Process()
 			// Kad buddies do not work with RequireCrypt, so it is disabled here. Buddy
 			// connections themselves have supported obfuscation since eMule 0.49a, but
 			// callback requests do not, so we could not answer one under RequireCrypt.
-			if (m_nBuddyStatus == Disconnected &&
-				Kademlia::CKademlia::GetPrefs()->GetFindBuddy() &&
+			Kademlia::CPrefs *kadPrefs = Kademlia::CKademlia::GetPrefs();
+			if (m_nBuddyStatus == Disconnected && kadPrefs->IsFindBuddyDue() &&
 				!thePrefs::IsClientCryptLayerRequired()) {
-				// We are a firewalled client with no buddy. We have also waited a set time
-				// to try to avoid a false firewalled status.. So lets look for a buddy..
-				if (!Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::FINDBUDDY,
-					    true,
-					    Kademlia::CUInt128(true) ^
-						    (Kademlia::CKademlia::GetPrefs()->GetKadID()))) {
-					// This search ID was already going, most likely because we
-					// found and lost a buddy quickly and the last search has
-					// not been removed yet. Set it to happen again next time.
-					Kademlia::CKademlia::GetPrefs()->SetFindBuddy();
+				if (theApp->sharedfiles->GetFileCount() == 0) {
+					// With nothing shared, no one calls us back. The search stays due
+					// until a file is shared, also if Kad connects before hashing ends.
+					if (!m_buddySearchHeld) {
+						m_buddySearchHeld = true;
+						++m_buddyStats.own.searchesHeld;
+						AddDebugLogLineN(
+							logKadBuddy, "Buddy search held: no shared file");
+					}
 				} else {
-					++m_buddyStats.own.searches;
-					AddDebugLogLineN(logKadBuddy, "Started a buddy search");
+					kadPrefs->SetFindBuddy(false);
+					m_buddySearchHeld = false;
+					// We are a firewalled client with no buddy, and we have waited long
+					// enough to trust that status.
+					const Kademlia::CUInt128 target =
+						Kademlia::BuddySearchTarget(kadPrefs->GetKadID(),
+							m_buddyStats.own.searches == 0,
+							Kademlia::CUInt128(Kademlia::CUInt128(0u), 0));
+					if (!Kademlia::CSearchManager::PrepareLookup(
+						    Kademlia::CSearch::FINDBUDDY, true, target)) {
+						// A search for this target still runs. Retry next time.
+						kadPrefs->SetFindBuddy();
+					} else {
+						++m_buddyStats.own.searches;
+						AddDebugLogLineN(logKadBuddy,
+							"Started a buddy search for " + target.ToHexString());
+					}
 				}
 			}
 		} else {

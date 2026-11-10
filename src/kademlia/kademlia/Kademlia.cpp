@@ -52,6 +52,7 @@ there client on the eMule forum..
 #include "../routing/RoutingZone.h"
 #include "../utils/KadUDPKey.h"
 #include "../utils/KadClientSearcher.h"
+#include "../../KadBuddySearchPolicy.h" // Needed for BuddySearchRetrySeconds
 #include "../../amule.h"
 #include "../../Logger.h"
 #include <protocol/kad2/Client2Client/UDP.h>
@@ -203,7 +204,7 @@ void CKademlia::Process()
 
 	if (m_nextFindBuddy <= now) {
 		instance->m_prefs->SetFindBuddy();
-		m_nextFindBuddy = MIN2S(20) + now;
+		m_nextFindBuddy = BuddySearchRetrySeconds + now;
 	}
 
 	if (m_externPortLookup <= now && CUDPFirewallTester::IsFWCheckUDPRunning() &&

@@ -302,6 +302,17 @@ add_test (NAME KadServedBuddyPolicyTest COMMAND KadServedBuddyPolicyTest)
 target_include_directories (KadServedBuddyPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (KadServedBuddyPolicyTest muleunit mulecommon)
 
+# When a firewalled node searches for a buddy and which target it looks up.
+add_executable (KadBuddySearchPolicyTest
+	KadBuddySearchPolicyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+)
+add_test (NAME KadBuddySearchPolicyTest COMMAND KadBuddySearchPolicyTest)
+target_include_directories (KadBuddySearchPolicyTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (KadBuddySearchPolicyTest muleunit mulecommon)
+
 # The Kad firewall state across an hourly recheck, with the clock passed in.
 add_executable (KadFirewallRecheckTest KadFirewallRecheckTest.cpp)
 add_test (NAME KadFirewallRecheckTest COMMAND KadFirewallRecheckTest)

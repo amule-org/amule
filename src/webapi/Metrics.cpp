@@ -314,6 +314,10 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 		const auto &o = k.buddy_own;
 		w.Family("kad_buddy_searches_total", "Searches for a buddy of our own.", "counter");
 		w.Sample("kad_buddy_searches_total", o.search_count);
+		w.Family("kad_buddy_searches_held_total",
+			"Due searches for a buddy of our own held for a shared file.",
+			"counter");
+		w.Sample("kad_buddy_searches_held_total", o.held_search_count);
 		w.Family("kad_buddy_own_requests_total", "Buddy requests for a buddy of our own.", "counter");
 		w.Sample("kad_buddy_own_requests_total", o.requests.sent, "{result=\"sent\"}");
 		w.Sample("kad_buddy_own_requests_total", o.requests.skipped, "{result=\"skipped\"}");
