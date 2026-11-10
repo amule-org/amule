@@ -106,7 +106,7 @@ void CFileStatistic::AddRequest()
 	if (fileParent) {
 		fileParent->MarkECChanged();
 	}
-	theApp->sharedfiles->UpdateItem(fileParent);
+	Notify_SharedFilesUpdateItemDeferred(fileParent);
 }
 
 void CFileStatistic::AddAccepted()
@@ -120,7 +120,7 @@ void CFileStatistic::AddAccepted()
 	if (fileParent) {
 		fileParent->MarkECChanged();
 	}
-	theApp->sharedfiles->UpdateItem(fileParent);
+	Notify_SharedFilesUpdateItemDeferred(fileParent);
 }
 
 void CFileStatistic::AddTransferred(uint64 bytes)
@@ -137,7 +137,8 @@ void CFileStatistic::AddTransferred(uint64 bytes)
 		fileParent->SetLastUpload(time(nullptr));
 		fileParent->MarkECChanged();
 	}
-	theApp->sharedfiles->UpdateItem(fileParent);
+	// Runs per sent block; the GUI repaints the row on its one-second tick.
+	Notify_SharedFilesUpdateItemDeferred(fileParent);
 }
 
 #endif // CLIENT_GUI

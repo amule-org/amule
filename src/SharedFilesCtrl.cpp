@@ -938,6 +938,7 @@ void CSharedFilesCtrl::SetHashingCount(size_t remaining)
 
 void CSharedFilesCtrl::RemoveFile(CKnownFile *toRemove)
 {
+	ForgetDeferred(reinterpret_cast<wxUIntPtr>(toRemove));
 	if (RowOfData(reinterpret_cast<wxUIntPtr>(toRemove)) == -1) {
 		return;
 	}
@@ -1373,6 +1374,25 @@ void CSharedFilesCtrl::UpdateItem(CKnownFile *toupdate)
 	if (IsItemDataSelected(data)) {
 		theApp->amuledlg->m_sharedfileswnd->SelectionUpdated();
 	}
+}
+
+void CSharedFilesCtrl::DeferUpdateItem(CKnownFile *toupdate)
+{
+	const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(toupdate);
+	if (HasItemData(data)) {
+		DeferRefresh(data);
+	}
+}
+
+bool CSharedFilesCtrl::RefreshDeferredItem(wxUIntPtr data)
+{
+	if (!HasItemData(data)) {
+		return false;
+	}
+	CKnownFile *file = reinterpret_cast<CKnownFile *>(data);
+	UpdateItem(file);
+	// Keep repainting while uploading, so the speed column also returns to blank.
+	return file->GetUploadDatarate() > 0;
 }
 
 void CSharedFilesCtrl::BeginBulkUpdate()

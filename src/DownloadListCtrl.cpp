@@ -340,30 +340,27 @@ void CDownloadListCtrl::RemoveFile(CPartFile *file)
 	// caller is about to free.
 	ShowFile(file, false);
 	m_files.erase(file);
-	m_pendingUpdates.erase(file);
+	ForgetDeferred(reinterpret_cast<wxUIntPtr>(file));
 }
 
 void CDownloadListCtrl::DeferUpdateItem(const void *item)
 {
 	CPartFile *file = const_cast<CPartFile *>(static_cast<const CPartFile *>(item));
 	if (m_files.find(file) != m_files.end()) {
-		m_pendingUpdates.insert(file);
+		DeferRefresh(reinterpret_cast<wxUIntPtr>(file));
 	}
 }
 
-void CDownloadListCtrl::RefreshLiveItems()
+bool CDownloadListCtrl::RefreshDeferredItem(wxUIntPtr data)
 {
-	for (auto it = m_pendingUpdates.begin(); it != m_pendingUpdates.end();) {
-		CPartFile *file = *it;
-		UpdateItem(file);
-		// Keep active rows on this GUI cadence even if the next core notification
-		// falls just after the timer. Idle rows need no extra periodic repaint.
-		if (file->GetTransferingSrcCount() || file->GetDisplayDownloadRate()) {
-			++it;
-		} else {
-			it = m_pendingUpdates.erase(it);
-		}
+	CPartFile *file = reinterpret_cast<CPartFile *>(data);
+	if (m_files.find(file) == m_files.end()) {
+		return false;
 	}
+	UpdateItem(file);
+	// Keep active rows on this GUI cadence even if the next core notification
+	// falls just after the timer. Idle rows need no extra periodic repaint.
+	return file->GetTransferingSrcCount() || file->GetDisplayDownloadRate();
 }
 
 void CDownloadListCtrl::UpdateItem(const void *toupdate)

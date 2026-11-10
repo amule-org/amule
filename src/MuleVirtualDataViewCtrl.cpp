@@ -562,6 +562,17 @@ void CMuleVirtualDataViewCtrl::RefreshItemData(wxUIntPtr data)
 	}
 }
 
+void CMuleVirtualDataViewCtrl::RefreshDeferred()
+{
+	for (auto it = m_deferred.begin(); it != m_deferred.end();) {
+		if (RefreshDeferredItem(*it)) {
+			++it;
+		} else {
+			it = m_deferred.erase(it);
+		}
+	}
+}
+
 void CMuleVirtualDataViewCtrl::ClearItemData()
 {
 	// Remembered before the rows go, for the clear-then-refill rebuild the clients list does on

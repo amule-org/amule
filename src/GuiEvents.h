@@ -76,7 +76,7 @@ void SharedFilesShowFile(CKnownFile *file);
 void SharedFilesRemoveFile(CKnownFile *file);
 void SharedFilesRemoveAllFiles();
 void SharedFilesShowFileList();
-void SharedFilesUpdateItem(CKnownFile *file);
+void SharedFilesUpdateItem(CKnownFile *file, bool refreshGUI);
 void SharedFilesBeginBulkUpdate();
 void SharedFilesEndBulkUpdate();
 
@@ -441,7 +441,10 @@ inline void DoNotifyAlways(void (*func)(A1A, A2A, A3A), A1B arg1, A2B arg2, A3B 
 #define Notify_SharedFilesRemoveAllItems() MuleNotify::DoNotify(&MuleNotify::SharedFilesRemoveAllFiles)
 #define Notify_SharedFilesShowFileList() MuleNotify::DoNotify(&MuleNotify::SharedFilesShowFileList)
 #define Notify_SharedFilesSort() MuleNotify::DoNotify(&MuleNotify::SharedFilesSort)
-#define Notify_SharedFilesUpdateItem(file) MuleNotify::DoNotify(&MuleNotify::SharedFilesUpdateItem, file)
+#define Notify_SharedFilesUpdateItem(file) \
+	MuleNotify::DoNotify(&MuleNotify::SharedFilesUpdateItem, file, true)
+#define Notify_SharedFilesUpdateItemDeferred(file) \
+	MuleNotify::DoNotify(&MuleNotify::SharedFilesUpdateItem, file, false)
 #define Notify_SharedFilesBeginBulkUpdate() MuleNotify::DoNotify(&MuleNotify::SharedFilesBeginBulkUpdate)
 #define Notify_SharedFilesEndBulkUpdate() MuleNotify::DoNotify(&MuleNotify::SharedFilesEndBulkUpdate)
 

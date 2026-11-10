@@ -1935,10 +1935,13 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 
 	if (msCur - msPrev1 > 1000) { // every second
 		msPrev1 = msCur;
-		// Paint download rows and totals from the same published core snapshots.
+		// Paint live list rows and totals from the same published core snapshots.
 #ifndef CLIENT_GUI
 		if (m_transferwnd && m_transferwnd->downloadlistctrl) {
-			m_transferwnd->downloadlistctrl->RefreshLiveItems();
+			m_transferwnd->downloadlistctrl->RefreshDeferred();
+		}
+		if (m_sharedfileswnd && m_sharedfileswnd->sharedfilesctrl) {
+			m_sharedfileswnd->sharedfilesctrl->RefreshDeferred();
 		}
 #endif
 		ShowTransferRate();

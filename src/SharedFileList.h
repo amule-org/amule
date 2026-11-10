@@ -150,7 +150,6 @@ public:
 	// files from sharing by filter" log line (issue #1530). `truncated` reports that the
 	// rejected names hit their cap, which makes any count taken from `out` a lower bound.
 	void GetShareCandidateNames(wxArrayString &out, bool &truncated) const;
-	void UpdateItem(CKnownFile *toupdate);
 	void GetSharedFilesByDirectory(const wxString &directory, CKnownFilePtrList &list);
 	void ClearED2KPublishInfo();
 	void RepublishFile(CKnownFile *pFile);

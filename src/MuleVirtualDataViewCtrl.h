@@ -30,6 +30,7 @@
 
 #include <wx/timer.h> // Needed for wxTimer (deferred live re-sort)
 
+#include <set>
 #include <unordered_map>
 #include <vector>
 
@@ -86,6 +87,12 @@ public:
 	//! Repaints just this row, re-sorting only if it moved under the sort.
 	void RefreshItemData(wxUIntPtr data);
 	void ClearItemData();
+	//! Queue a periodic row update for RefreshDeferred(), which the GUI runs once a second.
+	void DeferRefresh(wxUIntPtr data) { m_deferred.insert(data); }
+	//! Drop a queued update; call before the item's data is freed.
+	void ForgetDeferred(wxUIntPtr data) { m_deferred.erase(data); }
+	//! Run the queued updates, keeping the rows RefreshDeferredItem() reports as active.
+	void RefreshDeferred();
 
 	//! Batch insertions into one sort. Routine remote polls pass false to retain
 	//! row invalidations; startup and reconnect snapshots freeze painting.
@@ -236,6 +243,12 @@ protected:
 
 	//! Associates the internal model; call once the columns are appended.
 	void AssociateVirtualModel();
+	//! Update one queued row; return true to update it again on the next tick.
+	virtual bool RefreshDeferredItem(wxUIntPtr data)
+	{
+		RefreshItemData(data);
+		return false;
+	}
 
 	bool m_batchUpdate = false;
 
@@ -286,6 +299,7 @@ private:
 	//! Top row remembered across a ClearItemData() + refill + FinishBulkLoad()
 	//! rebuild, which is the only sequence where the control cannot be asked.
 	wxUIntPtr m_bulkAnchor = 0;
+	std::set<wxUIntPtr> m_deferred;
 
 	wxDECLARE_EVENT_TABLE();
 };
