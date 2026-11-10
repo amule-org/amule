@@ -186,8 +186,7 @@ public:
 			Show(s);
 	}
 	const wxString &GetCmdArgs() const { return m_cmdargs; }
-	// Opt-in for callers whose quoted values must retain whitespace. Existing commands
-	// continue to use the normalized arguments above.
+	// Arguments as typed, for quoted values that must keep their whitespace.
 	const wxString &GetRawCmdArgs() const { return m_rawcmdargs; }
 	const wxString &GetLastCmdStr() const { return m_lastcmdstr; }
 	int GetIDFromString(const wxString &buffer)
