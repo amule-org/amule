@@ -351,12 +351,14 @@ void CMuleVirtualDataViewCtrl::EndBatchUpdate(bool doSort)
 
 bool CMuleVirtualDataViewCtrl::FlushBatchRows()
 {
-	if (!m_batchRowsAppended) {
+	// Startup appends silently; a sort alone cannot tell the native view about
+	// these rows. Decide from the published count, not a caller's drain-mode flag:
+	// a SortList() in between clears the flag but publishes nothing.
+	const bool unpublished = m_virtualModel->GetCount() != m_items.size();
+	if (!m_batchRowsAppended && !unpublished) {
 		return false;
 	}
-	// Startup appends silently; a sort alone cannot tell the native view about
-	// these rows. Decide from the published count, not a caller's drain-mode flag.
-	if (m_virtualModel->GetCount() != m_items.size()) {
+	if (unpublished) {
 		FinishBulkLoad();
 	} else {
 		SortList();
@@ -612,8 +614,10 @@ void CMuleVirtualDataViewCtrl::SortList()
 	long firstRow = 0;
 	long lastRow = 0;
 	const bool visibleRange = GetVisibleRowRange(firstRow, lastRow);
+	// Silent bulk appends are not rows in the native model until FinishBulkLoad().
+	const size_t published = std::min<size_t>(m_items.size(), m_virtualModel->GetCount());
 	if (IsShownOnScreen()) {
-		for (size_t row = 0; row < m_items.size(); ++row) {
+		for (size_t row = 0; row < published; ++row) {
 			if (m_items[row] != previousOrder[row] &&
 				(!visibleRange || (static_cast<long>(row) >= firstRow &&
 							  static_cast<long>(row) <= lastRow + 1))) {

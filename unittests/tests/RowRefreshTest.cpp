@@ -357,6 +357,18 @@ void RunTests()
 	wxTheApp->Yield(true);
 	Check(list->ItemAt(199) == 199, "Scrolling revealed stale order");
 
+	// A sort during a startup drain, such as a header click, must not notify unpublished rows.
+	list->ClearItemData();
+	list->BeginBatchUpdate(false);
+	list->AppendItemData(3);
+	list->AppendItemData(1);
+	list->AppendItemData(2);
+	observer->changed.clear();
+	list->SortList();
+	Check(observer->changed.empty(), "Sort notified rows the model does not have");
+	list->EndBatchUpdate(false);
+	Check(model->GetCount() == 3 && list->ItemAt(0) == 1, "Drain rows were not published");
+
 	// Destruction must discard a queued live-sort callback.
 	{
 		LiveSortScope preference;
