@@ -3436,6 +3436,20 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 	endif ()
 endif ()
 
+# Exercise search parsing and capability checks through the real text client.
+if (BUILD_AMULECMD AND Python3_Interpreter_FOUND)
+	add_test (NAME AmulecmdSearchTest
+		COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/AmulecmdSearchTest.py
+			$<TARGET_FILE:amulecmd>)
+	set_tests_properties (AmulecmdSearchTest PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
+	if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
+		add_test (NAME AmulecmdSearchIntegrationTest
+			COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/AmulecmdSearchIntegrationTest.py
+				$<TARGET_FILE:amuled> $<TARGET_FILE:amulecmd>)
+		set_tests_properties (AmulecmdSearchIntegrationTest PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
+	endif ()
+endif ()
+
 # Verify shutdown reaches the core before the text client exits.
 if (BUILD_AMULECMD AND Python3_Interpreter_FOUND)
 	add_test (NAME AmulecmdShutdownTest

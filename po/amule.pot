@@ -8914,12 +8914,24 @@ msgid ""
 "Type 'help search' to get more help.\n"
 msgstr ""
 
+#: src/TextClient.cpp
+msgid "The connected daemon does not support media search filters.\n"
+msgstr ""
+
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
 msgid ""
 "No search type defined.\n"
 "Type 'help search' to get more help.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "The connected daemon does not support search management.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "A search ID from 'search list' is required.\n"
 msgstr ""
 
 #: src/TextClient.cpp
@@ -9025,6 +9037,26 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "[PartFile]"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "No retained searches.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "More-results request processed; availability is unknown.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "More-results request processed; further requests remain possible.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "No further results can be requested for this search.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "Search stop request processed; retained results were not removed.\n"
 msgstr ""
 
 #: src/TextClient.cpp
@@ -9274,6 +9306,11 @@ msgid ""
 "    --avail <N>            minimum number of sources\n"
 "    --min-size <N[KMG]>    smallest file size; K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    largest file size; same suffixes\n"
+"    --min-bitrate <kbps>   whole number, 0-1000000\n"
+"    --min-duration <seconds> whole number, 0-86400\n"
+"    --codec <text> --title <text> --album <text> --artist <text>\n"
+"Quote media text values containing spaces.\n"
+"Kad applies media filters; eD2k servers may ignore them.\n"
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
@@ -9292,6 +9329,26 @@ msgstr ""
 
 #: src/TextClient.cpp
 msgid "Execute an eD2k and Kad search"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "List retained search IDs and queries."
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "Stop a search, keeping its results."
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "Requires a search ID from 'search list'."
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "Request more Kad search results."
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
 msgstr ""
 
 #: src/TextClient.cpp

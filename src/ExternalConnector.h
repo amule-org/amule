@@ -201,6 +201,11 @@ public:
 	void SendPacket(const CECPacket *request) { m_ECClient->SendPacket(request); }
 	void ExpectClose() { m_ECClient->ExpectClose(); }
 	bool IsServerSearchAllActive() const { return m_ECClient && m_ECClient->ServerSupportsSearchAll(); }
+	bool IsServerSearchListActive() const
+	{
+		return m_ECClient && m_ECClient->ServerSupportsMultiSearch() &&
+		       m_ECClient->ServerSupportsSearchList();
+	}
 	bool IsServerSearchMetadataActive() const
 	{
 		return m_ECClient && m_ECClient->ServerSupportsSearchMetadata();

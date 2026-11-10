@@ -105,6 +105,9 @@ enum
 	CMD_ID_SEARCH_KAD,
 	CMD_ID_SEARCH_RESULTS,
 	CMD_ID_SEARCH_PROGRESS,
+	CMD_ID_SEARCH_LIST,
+	CMD_ID_SEARCH_STOP,
+	CMD_ID_SEARCH_MORE,
 	CMD_ID_DOWNLOAD,
 	// IDs for deprecated commands
 	CMD_ID_SET_IPFILTER
@@ -158,8 +161,44 @@ static bool ParseSizeWithSuffix(const wxString &s, uint64 &out)
 	return true;
 }
 
-// Strip optional --type / --extension / --avail / --min-size / --max-size flags from `args`,
-// leaving the search keywords. Each flag takes exactly one whitespace-separated value; unknown
+// Decimal unsigned values only: signs, fractions and overflow are not search IDs or limits.
+static bool ParseSearchNumber(const wxString &text, uint64 maximum, uint64 &value)
+{
+	unsigned long long parsed = 0;
+	if (text.empty() || text.find_first_not_of("0123456789") != wxString::npos ||
+		!text.ToULongLong(&parsed) || parsed > maximum) {
+		return false;
+	}
+	value = parsed;
+	return true;
+}
+
+// Only filter values consume quotes; leave the query's boolean-expression syntax intact.
+static bool ReadSearchText(wxStringTokenizer &tokens, wxString &value)
+{
+	if (!tokens.HasMoreTokens()) {
+		return false;
+	}
+	value = tokens.GetNextToken();
+	if (value.StartsWith("--")) {
+		return false;
+	}
+	if (value.StartsWith("\"") || value.StartsWith("'")) {
+		const wxString quote = value.Left(1);
+		value.Remove(0, 1);
+		while (!value.EndsWith(quote)) {
+			if (!tokens.HasMoreTokens()) {
+				return false;
+			}
+			value += " " + tokens.GetNextToken();
+		}
+		value.RemoveLast();
+	}
+	return true;
+}
+
+// Strip search filter flags from `args`, leaving the search keywords. Media text values may
+// be quoted; other flags take exactly one whitespace-separated value. Unknown
 // tokens stay part of the query, joined by single spaces in input order. False if a flag is missing
 // its value or a value fails to parse, in which case the outputs are undefined.
 static bool ParseSearchFilters(wxString &args,
@@ -167,13 +206,15 @@ static bool ParseSearchFilters(wxString &args,
 	wxString &extension,
 	uint32 &avail,
 	uint64 &min_size,
-	uint64 &max_size)
+	uint64 &max_size,
+	CSearchMetadata &metadata)
 {
 	type.Clear();
 	extension.Clear();
 	avail = 0;
 	min_size = 0;
 	max_size = 0;
+	metadata = CSearchMetadata();
 
 	wxString remaining;
 	wxStringTokenizer tok(args, wxT(" \t"));
@@ -204,6 +245,29 @@ static bool ParseSearchFilters(wxString &args,
 				return false;
 			if (!ParseSizeWithSuffix(tok.GetNextToken(), max_size))
 				return false;
+		} else if (t == "--min-bitrate" || t == "--min-duration") {
+			if (!tok.HasMoreTokens()) {
+				return false;
+			}
+			const bool bitrate = t == "--min-bitrate";
+			if (!ParseSearchNumber(tok.GetNextToken(),
+				    bitrate ? SEARCH_MAX_MIN_BITRATE_KBPS : SEARCH_MAX_MIN_DURATION_SECONDS,
+				    bitrate ? metadata.minBitrateKbps : metadata.minLength)) {
+				return false;
+			}
+		} else if (t == "--codec" || t == "--title" || t == "--album" || t == "--artist") {
+			wxString value;
+			if (!ReadSearchText(tok, value)) {
+				return false;
+			}
+			if (t == "--codec")
+				metadata.codec = value;
+			else if (t == "--title")
+				metadata.title = value;
+			else if (t == "--album")
+				metadata.album = value;
+			else
+				metadata.artist = value;
 		} else {
 			if (!remaining.IsEmpty()) {
 				remaining += wxT(' ');
@@ -681,8 +745,10 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 			uint32 avail = 0;
 			uint64 min_size = 0;
 			uint64 max_size = 0;
+			CSearchMetadata metadata;
 
-			if (!ParseSearchFilters(search, type, extension, avail, min_size, max_size)) {
+			if (!ParseSearchFilters(
+				    search, type, extension, avail, min_size, max_size, metadata)) {
 				/* TRANSLATORS:
 				   'help search' is a command to the program, do not translate it. */
 				Show(_("Invalid search filter syntax.\nType 'help search' to get more "
@@ -697,9 +763,16 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 				return CMD_ERR_INVALID_ARG;
 			}
 
+			if ((metadata.minBitrateKbps || metadata.minLength || !metadata.codec.empty() ||
+				    !metadata.title.empty() || !metadata.album.empty() ||
+				    !metadata.artist.empty()) &&
+				!IsServerSearchMetadataActive()) {
+				Show(_("The connected daemon does not support media search filters.\n"));
+				return CMD_ERR_INVALID_ARG;
+			}
 			request = new CECPacket(EC_OP_SEARCH_START);
 			request->AddTag(CEC_Search_Tag(
-				search, search_type, type, extension, avail, min_size, max_size));
+				search, search_type, type, extension, avail, min_size, max_size, metadata));
 			request_list.push_back(request);
 		}
 		break;
@@ -708,6 +781,30 @@ int CamulecmdApp::ProcessCommand(int CmdId)
 		   'help search' is a command to the program, do not translate it. */
 		Show(_("No search type defined.\nType 'help search' to get more help.\n"));
 		break;
+
+	case CMD_ID_SEARCH_LIST:
+	case CMD_ID_SEARCH_STOP:
+	case CMD_ID_SEARCH_MORE: {
+		if (!IsServerSearchListActive()) {
+			Show(_("The connected daemon does not support search management.\n"));
+			return CMD_ERR_INVALID_ARG;
+		}
+		uint64 sid = 0;
+		if (CmdId != CMD_ID_SEARCH_LIST &&
+			(!ParseSearchNumber(args, std::numeric_limits<uint32>::max(), sid) || sid == 0)) {
+			Show(_("A search ID from 'search list' is required.\n"));
+			return CMD_ERR_INVALID_ARG;
+		}
+		request = new CECPacket(CmdId == CMD_ID_SEARCH_LIST
+						? EC_OP_SEARCH_LIST
+						: (CmdId == CMD_ID_SEARCH_STOP ? EC_OP_SEARCH_STOP
+									       : EC_OP_SEARCH_REQUEST_MORE));
+		if (CmdId != CMD_ID_SEARCH_LIST) {
+			request->AddTag(CECTag(EC_TAG_SEARCH_ID, static_cast<uint32>(sid)));
+		}
+		request_list.push_back(request);
+		break;
+	}
 
 	case CMD_ID_SEARCH_RESULTS: {
 		CECPacket *req = new CECPacket(EC_OP_SEARCH_RESULTS, EC_DETAIL_FULL);
@@ -1110,6 +1207,32 @@ void CamulecmdApp::Process_Answer_v2(const CECPacket *response)
 			0);
 		break;
 
+	case EC_OP_SEARCH_LIST:
+		if (response->GetTagCount() == 0) {
+			s += _("No retained searches.\n");
+		}
+		for (const CECTag &entry : *response) {
+			if (entry.GetTagName() == EC_TAG_SEARCH_ID) {
+				s += CFormat("%u%s%s\n") % entry.GetInt() % Sep(" ") %
+				     Field(entry.GetTagByNameSafe(EC_TAG_SEARCH_NAME)->GetStringData());
+			}
+		}
+		break;
+	case EC_OP_MISC_DATA:
+		if (m_last_cmd_id == CMD_ID_SEARCH_MORE) {
+			const CECTag *more = response->GetTagByName(EC_TAG_SEARCH_MORE_REASKABLE);
+			if (!more) {
+				s += _("More-results request processed; availability is unknown.\n");
+			} else if (more->GetInt()) {
+				s += _("More-results request processed; further requests remain possible.\n");
+			} else {
+				s += _("No further results can be requested for this search.\n");
+			}
+		} else if (m_last_cmd_id == CMD_ID_SEARCH_STOP) {
+			// The daemon also acknowledges unknown IDs; do not claim a search existed.
+			s += _("Search stop request processed; retained results were not removed.\n");
+		}
+		break;
 	case EC_OP_SEARCH_RESULTS: {
 		if (response->GetTagByName(EC_TAG_SEARCH_EXPIRED)) {
 			s += _("Search expired or unknown ID. Start a new search.\n");
@@ -1356,6 +1479,11 @@ void CamulecmdApp::OnInitCommandSet()
 			    "    --avail <N>            minimum number of sources\n"
 			    "    --min-size <N[KMG]>    smallest file size; K=1024, M=K*1024, G=M*1024\n"
 			    "    --max-size <N[KMG]>    largest file size; same suffixes\n"
+			    "    --min-bitrate <kbps>   whole number, 0-1000000\n"
+			    "    --min-duration <seconds> whole number, 0-86400\n"
+			    "    --codec <text> --title <text> --album <text> --artist <text>\n"
+			    "Quote media text values containing spaces.\n"
+			    "Kad applies media filters; eD2k servers may ignore them.\n"
 			    "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 			    "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"),
 		CMD_PARAM_ALWAYS);
@@ -1371,6 +1499,22 @@ void CamulecmdApp::OnInitCommandSet()
 		CMD_ID_SEARCH_ALL,
 		wxTRANSLATE("Execute an eD2k and Kad search"),
 		"",
+		CMD_PARAM_ALWAYS);
+
+	tmp->AddCommand("list",
+		CMD_ID_SEARCH_LIST,
+		wxTRANSLATE("List retained search IDs and queries."),
+		"",
+		CMD_PARAM_NEVER);
+	tmp->AddCommand("stop",
+		CMD_ID_SEARCH_STOP,
+		wxTRANSLATE("Stop a search, keeping its results."),
+		wxTRANSLATE("Requires a search ID from 'search list'."),
+		CMD_PARAM_ALWAYS);
+	tmp->AddCommand("more",
+		CMD_ID_SEARCH_MORE,
+		wxTRANSLATE("Request more Kad search results."),
+		wxTRANSLATE("Requires a search ID from 'search list'. Further results are not guaranteed."),
 		CMD_PARAM_ALWAYS);
 
 	m_commands.AddCommand("Results",
