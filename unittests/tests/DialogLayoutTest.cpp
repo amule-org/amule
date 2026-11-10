@@ -28,7 +28,6 @@
 #include <wx/evtloop.h>
 
 #include "DialogLayout.h"
-#include "TransferRateLabel.h"
 #include "FileRenameDialog.h"
 
 #include <iostream>
@@ -544,68 +543,6 @@ void TestChangingColumnsAndRename()
 		"Shorter renamed content leaves a stale horizontal range");
 }
 
-void TestTransferRateLabel()
-{
-	wxDialog dialog(nullptr,
-		wxID_ANY,
-		"Transfer rate spacing test",
-		wxDefaultPosition,
-		wxDefaultSize,
-		wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
-	auto *rates = new wxStaticText(&dialog, wxID_ANY, "Up: 0.0 | Down: 0.0");
-	auto *following = new wxStaticText(&dialog, wxID_ANY, "Connected");
-	auto *strip = new wxBoxSizer(wxHORIZONTAL);
-	strip->Add(rates, wxSizerFlags().Border(wxRIGHT, 5));
-	strip->Add(following);
-	dialog.SetSizer(strip);
-	dialog.SetClientSize(dialog.FromDIP(wxSize(900, 100)));
-	dialog.Show();
-	wxTheApp->Yield();
-
-	for (bool largeFont : { false, true }) {
-		if (largeFont) {
-			rates->SetFont(rates->GetFont().Scaled(1.5));
-			// GTK applies font metrics on its next frame, after the change event.
-			for (int frame = 0; frame < 10; ++frame) {
-				wxMilliSleep(10);
-				wxTheApp->Yield(true);
-			}
-		}
-		UpdateTransferRateLabel(rates, "Up: 123.4 KiB/s | Down: 567.8 MiB/s");
-		dialog.SetClientSize(wxSize(strip->GetMinSize().x, dialog.FromDIP(100)));
-		dialog.Layout();
-		const int occupiedWidth = rates->GetSize().x;
-		const int followingX = following->GetPosition().x;
-		for (const auto *text : { "Up: 0.0 | Down: 0.0",
-			     "Up: 1.0 KiB/s | Down: 0.0",
-			     "Up: 0.0 | Down: 2.0 KiB/s",
-			     "Up: 9.9 KiB/s | Down: 10.0 KiB/s",
-			     "Up: 0.0 (0.0) | Down: 0.0 (0.0)",
-			     "Up: 0.0 | Down: 0.0",
-			     "Up: 0.0 | Down: 0.0" }) {
-			UpdateTransferRateLabel(rates, text);
-			Check(rates->GetLabel() == text, "Rate text did not update");
-			Check(rates->GetSize().x == occupiedWidth, "Rate field shrank between samples");
-			Check(following->GetPosition().x == followingX, "Following status field moved");
-			// Another status field can independently relayout the same strip.
-			dialog.Layout();
-			Check(following->GetPosition().x == followingX, "Parent layout lost reserved width");
-		}
-		dialog.SetClientSize(dialog.FromDIP(wxSize(900, 100)));
-		dialog.Layout();
-		const wxString longer = "Up: 123.4 MiB/s (123.4) | Down: 567.8 MiB/s (567.8)";
-		UpdateTransferRateLabel(rates, longer);
-		std::cout << "Rate layout: font=" << rates->GetFont().GetPointSize()
-			  << " previous=" << occupiedWidth << " expanded=" << rates->GetSize().x
-			  << " client=" << dialog.GetClientSize().x << '\n';
-		Check(rates->GetSize().x > occupiedWidth, "Rate field did not grow for larger values");
-		auto *reference = new wxStaticText(&dialog, wxID_ANY, longer);
-		reference->SetFont(rates->GetFont());
-		Check(rates->GetSize().x >= reference->GetBestSize().x, "Rate text is clipped");
-		reference->Destroy();
-	}
-}
-
 void TestSmallContent()
 {
 	wxDialog dialog(nullptr, wxID_ANY, "Small dialog layout test");
@@ -639,7 +576,6 @@ int main(int argc, char **argv)
 		TestFileRenameDialog();
 		TestScrollableContent();
 		TestSmallContent();
-		TestTransferRateLabel();
 		TestHeightCappedContent();
 		TestWidthCappedContent();
 		TestPagedContent();

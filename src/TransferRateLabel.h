@@ -30,32 +30,50 @@
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 
-// Keep the space already needed by transfer rates when the next sample is shorter
-// (especially when zero traffic hides the units). Grow for larger values, translated
-// text or font changes, but never move the following status fields back and forth.
-inline void UpdateTransferRateLabel(wxStaticText *label, const wxString &text)
+// A sizer-managed rate label must not resize itself during SetLabel(): even a
+// temporary shrink emits native size events before the strip restores its width.
+class TransferRateLabel : public wxStaticText
 {
-	if (!label) {
-		return;
+public:
+	TransferRateLabel(wxWindow *parent, wxWindowID id, const wxString &text)
+	: wxStaticText(parent, id, text, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE)
+	{
 	}
-	const bool changed = label->GetLabel() != text;
-	if (changed) {
-		label->SetLabel(text);
+
+	void UpdateRate(const wxString &text, bool showOverhead)
+	{
+		const wxFont font = GetFont();
+		const wxSize dpi = GetDPI();
+		const bool resetWidth = font != m_font || dpi != m_dpi || showOverhead != m_showOverhead;
+		m_font = font;
+		m_dpi = dpi;
+		m_showOverhead = showOverhead;
+		const wxSize previousMinimum = GetMinSize();
+		if (GetLabel() != text) {
+			SetLabel(text);
+		}
+		// An explicit minimum can mask the natural width, including larger text.
+		SetMinSize(wxDefaultSize);
+		InvalidateBestSize();
+		wxSize best = GetBestSize();
+		if (!resetWidth) {
+			best.x = std::max(previousMinimum.x, best.x);
+		}
+		SetMinSize(wxSize(best.x, -1));
+		// Shorter samples retain their space, but a preference/font/DPI change
+		// must release it. Only relayout the strip when its geometry changes:
+		// laying out the parent also repaints the main content on wxMSW.
+		if (previousMinimum != GetMinSize() || GetSize().y != best.y) {
+			if (wxSizer *strip = GetContainingSizer()) {
+				strip->Layout();
+			}
+		}
 	}
-	// Measure without the previous explicit minimum: wxWidgets can use it in
-	// place of the natural width, which would prevent larger rates from fitting.
-	const int previousWidth = label->GetMinSize().x;
-	label->SetMinSize(wxDefaultSize);
-	label->InvalidateBestSize();
-	wxSize best = label->GetBestSize();
-	best.x = std::max(previousWidth, best.x);
-	label->SetMinSize(wxSize(best.x, -1));
-	if (!changed && label->GetSize() == best) {
-		return;
-	}
-	if (wxSizer *strip = label->GetContainingSizer()) {
-		strip->Layout();
-	}
-}
+
+private:
+	wxFont m_font;
+	wxSize m_dpi;
+	bool m_showOverhead = false;
+};
 
 #endif // TRANSFER_RATE_LABEL_H

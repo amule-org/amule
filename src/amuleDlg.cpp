@@ -46,8 +46,8 @@
 
 #include <common/EventIDs.h>
 
-#include "config.h"           // Needed for GITDATE, PACKAGE, VERSION
-#include "amuleDlg.h"         // Interface declarations.
+#include "config.h"   // Needed for GITDATE, PACKAGE, VERSION
+#include "amuleDlg.h" // Interface declarations.
 #include "TransferRateLabel.h"
 #include "AutostartManager.h" // Needed for AutostartManager::RequestFlatpakBackground
 
@@ -1529,8 +1529,8 @@ void CamuleDlg::ShowTransferRate()
 
 	// The status labels all share one strip, and updating any of them used to
 	// re-flow the whole content area behind it -- see UpdateStatusLabel().
-	wxStaticText *label = CastChild("speedLabel", wxStaticText);
-	UpdateTransferRateLabel(label, buffer);
+	TransferRateLabel *label = CastChild("speedLabel", TransferRateLabel);
+	label->UpdateRate(buffer, thePrefs::ShowOverhead());
 	if (!label->GetToolTip()) {
 #ifdef CLIENT_GUI
 		// Older daemons still send longer averages in the same compatible speed fields.
