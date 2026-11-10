@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
 "POT-Creation-Date: 2026-11-10 06:20+0000\n"
-"PO-Revision-Date: 2026-11-07 10:50+0000\n"
+"PO-Revision-Date: 2026-11-10 13:04+0000\n"
 "Last-Translator: Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/application-man-pages/es/>\n"
 "Language: es\n"
@@ -908,7 +908,7 @@ msgstr "B<amulecmd> B<--create-config-from>=I</home/usuario/.aMule/amule.conf>"
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "After daemon credential migration, supply the client password with B<-P> or enter it at the password prompt; the daemon verifier cannot supply it."
-msgstr ""
+msgstr "Tras la migración de las credenciales del demonio, introduce la contraseña del cliente con B<-P> o escríbela cuando se te solicite; el verificador del demonio no puede proporcionarla."
 
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
@@ -987,10 +987,9 @@ msgstr "B<[ -t> I<E<lt>numE<gt>>, B<--category>=I<E<lt>numE<gt>> B<]>"
 
 #. type: TP
 #: amuled.1.in
-#, fuzzy, no-wrap
-#| msgid "I<~/.aMule/remote.conf>"
+#, no-wrap
 msgid "I<~/.aMule/allowed-remote-dirs.dat>"
-msgstr "I<~/.aMule/remote.conf>"
+msgstr "I<~/.aMule/allowed-remote-dirs.dat>"
 
 #. type: Plain text
 #: amuled.1.in
@@ -1006,7 +1005,7 @@ msgstr "METADATOS MULTIMEDIA"
 #. type: Plain text
 #: amuled.1.in
 msgid "B<amuled> runs its bundled B<amule-media-probe> helper on each received file to extract the length, bitrate and codec tags it then publishes to the network. The helper must sit next to the B<amuled> executable. This is on by default (B<Enabled=1> under B<[MediaMetadata]> in I<amule.conf>); set B<Enabled=0> there and restart to turn it off."
-msgstr ""
+msgstr "B<amuled> ejecuta su programa auxiliar integrado B<amule-media-probe> en cada archivo recibido para extraer las etiquetas de duración, bitrate y códec, que a continuación publica en la red. El programa auxiliar debe encontrarse junto al ejecutable de B<amuled>. Esta función está activada por defecto (B<Enabled=1> en B<[MediaMetadata]> dentro de I<amule.conf>); para desactivarla, establece B<Enabled=0> en ese mismo archivo y reinicia el programa."
 
 #. type: TH
 #: amulegui.1.in

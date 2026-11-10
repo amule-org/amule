@@ -2,20 +2,20 @@
 # Copyright (C) 2010 Free Software Foundation, Inc.
 # This file is distributed under the same license as the aMule package.
 # radist.morse <radist.morse@gmail.com>, 2010.
-#
+# Andrei Stepanov <adem@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-11-10 06:20+0000\n"
-"PO-Revision-Date: 2026-11-01 10:29+0000\n"
-"Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
-"Language-Team: Russian <LL@li.org>\n"
+"PO-Revision-Date: 2026-11-10 13:48+0000\n"
+"Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Russian <https://hosted.weblate.org/projects/amule/application-man-pages/ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Poedit 2.0.2\n"
+"X-Generator: Weblate 2026.11.2.dev0\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
 #. type: TH
@@ -643,22 +643,22 @@ msgstr "Возобновляет скачивание, указанное в I<E
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Lists retained search IDs and queries, including searches started by other clients."
-msgstr ""
+msgstr "Показывает сохранённые идентификаторы поисков и запросы, включая поиски, запущенные другими клиентами."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Stops activity for the specified search while retaining its results."
-msgstr ""
+msgstr "Останавливает работу указанного поиска, сохраняя его результаты."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
-msgstr ""
+msgstr "Запрашивает дополнительные результаты Kad для указанного поиска. Дополнительные результаты не гарантируются.  В ответе сообщается, возможны ли последующие запросы или эта информация недоступна от более старого демона."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
-msgstr ""
+msgstr "Эти команды управления требуют поддержки на стороне демона для перечисления поисков и нескольких поисков.  Используйте явный идентификатор из B<search list> для stop и more."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -723,47 +723,45 @@ msgstr "Наибольший размер файла для возврата. Т
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Media filters:"
-msgstr ""
+msgstr "Фильтры медиафайлов:"
 
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
-msgstr "[B<-t> I<E<lt>номерE<gt>>]"
+msgstr "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum bitrate as a whole number from 0 to 1000000."
-msgstr ""
+msgstr "Минимальный битрейт — целое число от 0 до 1000000."
 
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
-msgstr "[B<-t> I<E<lt>номерE<gt>>]"
+msgstr "B<--min-duration> I<E<lt>secondsE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum duration as a whole number from 0 to 86400."
-msgstr ""
+msgstr "Минимальная длительность — целое число от 0 до 86400."
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
-msgstr ""
+msgstr "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
-msgstr ""
+msgstr "Каждый параметр принимает текстовое значение. Значения с пробелами заключайте в одинарные или двойные кавычки.  При использовании B<-c> сохраняйте эти кавычки внутри строки команды, передаваемой оболочкой."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
-msgstr ""
+msgstr "Нулевые или пустые значения медиафайлов не накладывают ограничений. Непустые фильтры медиафайлов требуют поддержки на стороне демона. Kad применяет эти фильтры; серверы eD2k могут их игнорировать."
 
 #. type: Plain text
 #: amulecmd.1.in

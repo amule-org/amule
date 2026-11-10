@@ -1064,7 +1064,7 @@
   "prefs_field_directories_allowed_remote_roots": "Arrels configurades",
   "prefs_field_servers_accelerated_publication_enabled_help": "Segueix el ritme de publicació que anuncia el servidor. Als altres servidors s'aplica el ritme estàndard. S'aplica a partir de la propera connexió a un servidor.",
   "prefs_field_servers_accelerated_publication_enabled": "Publica els fitxers compartits més ràpidament als servidors que ho permeten",
-  "shared_media_refresh_tip_unavailable": "Aquest aMule no té el programa auxiliar multimèdia (amule-media-probe), així que no pot extreure les metadades multimèdia.",
+  "shared_media_refresh_tip_unavailable": "L'extracció de metadades multimèdia no està disponible: falta el programa auxiliar o han fallat les seves restriccions del sistema operatiu. Consulteu el registre del nucli per a més detalls.",
   "shared_media_refresh_tip_disabled": "L'extracció de metadades multimèdia està desactivada a les Preferències.",
   "stats_tree_upload_lowid_to_lowid_data": "Dades d'ID Baixa a ID Baixa (Sessió): %s",
   "stats_tree_upload_ipv6_data": "Dades IPv6 (Sessió): %s",
