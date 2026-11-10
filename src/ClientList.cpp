@@ -1414,6 +1414,9 @@ wxString CClientList::DescribeBuddyTarget(const uint8_t *buddyID) const
 void CClientList::LogBuddyPacketLimited(
 	const wxString &what, const wxString &from, uint32 counted, uint32 perMinute, const uint8_t *buddyID)
 {
+	if (!CanLogBuddyDrop()) {
+		return;
+	}
 	wxString line = what + " from " + from;
 	if (counted == 0) {
 		line += " dropped: the rate limiter tracks too many senders";
@@ -1426,16 +1429,22 @@ void CClientList::LogBuddyPacketLimited(
 
 void CClientList::LogBuddyCallbackLimited(const wxString &from, const uint8_t *buddyID)
 {
+	if (!CanLogBuddyDrop()) {
+		return;
+	}
 	LogBuddyDrop(
 		"Callback request from " + from + " dropped: one a minute from each sender for each buddy",
 		buddyID);
 }
 
+bool CClientList::CanLogBuddyDrop() const
+{
+	return theLogger.IsEnabled(logKadBuddy) && m_limitedLinesThisMinute < MaxLimitedLinesPerMinute;
+}
+
+// Callers check CanLogBuddyDrop() first, so a flood builds no line.
 void CClientList::LogBuddyDrop(wxString line, const uint8_t *buddyID)
 {
-	if (!theLogger.IsEnabled(logKadBuddy) || m_limitedLinesThisMinute >= MaxLimitedLinesPerMinute) {
-		return;
-	}
 	++m_limitedLinesThisMinute;
 	if (buddyID != nullptr) {
 		line += ", for " + DescribeBuddyTarget(buddyID);

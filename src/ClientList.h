@@ -436,6 +436,7 @@ private:
 	uint32 ServedNatTCount() const;
 	bool AdmitsServedBuddy(bool natT) const;
 	bool IsServedOrOfferedIP(uint32 ip, const Kademlia::CUInt128 &requester) const;
+	bool CanLogBuddyDrop() const;
 	void LogBuddyDrop(wxString line, const uint8_t *buddyID);
 	void EvictOldestBuddyOffer();
 	const Kademlia::CServedBuddyLink *FindServedLink(const CUpDownClient *client) const;
