@@ -367,6 +367,8 @@ _assert_header_contains 'retry-after:' \
 	'lockout carries Retry-After header'
 
 # --- 13. Token failures share a bucket across authentication and logout. ---
+# Defaults from amuleapi.conf: TokenFailureWindowSeconds=60,
+# TokenFailureThreshold=30, TokenLockoutSeconds=300.
 _curl -H "Authorization: Bearer $RATE_TOKEN" "$API/status"
 _assert_status 200 'login lockout does not block an existing session'
 for i in $(seq 1 30); do
