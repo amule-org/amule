@@ -457,6 +457,12 @@ void CMuleVirtualDataViewCtrl::RefreshItemData(wxUIntPtr data)
 	if (row < 0) {
 		return;
 	}
+	// Silent bulk appends are not rows in the native model yet. FinishBulkLoad()
+	// publishes their latest values and sorts them, so neither a row notification nor
+	// a deferred live sort is valid until then (including a tail on a populated list).
+	if (static_cast<unsigned long>(row) >= m_virtualModel->GetCount()) {
+		return;
+	}
 
 	// Only rows the user can see are worth telling the control about: values are pulled per
 	// cell as they are drawn, so a row that is off screen -- or in a list on a panel that is
