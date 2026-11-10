@@ -2139,15 +2139,11 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 	}
 
 	if (theApp->serverconnect) {
-#ifdef ENABLE_IPV6
 		// One send per refresh: the address a probing server has to test, or what the peers
 		// decision allows. UpdateAdvertisedIPv6() sends only when the address changed.
 		CServer *const server = theApp->serverconnect->GetCurrentServer();
 		theApp->serverconnect->UpdateAdvertisedIPv6(
 			ServerAddressToSend(facts, server != nullptr && server->SupportsIPv6Probe()));
-#else
-		theApp->serverconnect->UpdateAdvertisedIPv6(advertised);
-#endif
 	}
 	return advertised;
 }

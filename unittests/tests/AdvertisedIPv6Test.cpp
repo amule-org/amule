@@ -22,6 +22,8 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
+#include <functional>
+
 #include <muleunit/test.h>
 #include "AdvertisedIPv6.h"
 #include "IPv6ChangeNotification.h"
@@ -353,4 +355,56 @@ TEST(AdvertisedIPv6, NothingPublishedNeedsNoRepublish)
 	SAdvertisedIPv6Facts disabled = AdvertisableFacts();
 	disabled.mode = EIPv6AdvertisingMode::Never;
 	ASSERT_FALSE(ShouldRepublishKadSources(std::nullopt, disabled));
+}
+
+TEST(AdvertisedIPv6, AServerThatDoesNotProbeGetsWhatPeersWouldTell)
+{
+	// Whatever the peers decision says, verbatim: a server that will not test the address has no
+	// reason to see more than any peer does.
+	const SAdvertisedIPv6Facts unproved = AdvertisableFacts();
+	const SAdvertisedIPv6Facts verified = [] {
+		SAdvertisedIPv6Facts facts = AdvertisableFacts();
+		facts.mode = EIPv6AdvertisingMode::Verified;
+		facts.serverVerified = true;
+		return facts;
+	}();
+	SAdvertisedIPv6Facts proved = AdvertisableFacts();
+	proved.mode = EIPv6AdvertisingMode::Verified;
+	proved.provedByInboundHello = true;
+
+	const SAdvertisedIPv6Facts facts[] = { unproved, verified, proved };
+	for (const SAdvertisedIPv6Facts &each : facts) {
+		ASSERT_EQUALS(
+			DecideAdvertisedIPv6(each).has_value(), ServerAddressToSend(each, false).has_value());
+		if (DecideAdvertisedIPv6(each).has_value()) {
+			ASSERT_TRUE(*ServerAddressToSend(each, false) == *each.choice);
+		}
+	}
+}
+
+TEST(AdvertisedIPv6, AProbingServerGetsTheAddressBeforeItIsProved)
+{
+	// The one thing a probing server must not receive is an address it has already published,
+	// which is why reachability is not required here while every protection still is.
+	SAdvertisedIPv6Facts facts = AdvertisableFacts();
+	facts.mode = EIPv6AdvertisingMode::Verified;
+	ASSERT_FALSE(DecideAdvertisedIPv6(facts).has_value());
+	ASSERT_TRUE(ServerAddressToSend(facts, true).has_value());
+	ASSERT_TRUE(*ServerAddressToSend(facts, true) == *facts.choice);
+
+	// Each protection closes the way on its own.
+	const std::function<void(SAdvertisedIPv6Facts &)> gates[] = {
+		[](SAdvertisedIPv6Facts &f) { f.choice.reset(); },
+		[](SAdvertisedIPv6Facts &f) { f.mode = EIPv6AdvertisingMode::Never; },
+		[](SAdvertisedIPv6Facts &f) { f.proxyEnabled = true; },
+		[](SAdvertisedIPv6Facts &f) { f.familyPermitted = false; },
+		[](SAdvertisedIPv6Facts &f) { f.listenerAcceptsIPv6 = false; },
+		[](SAdvertisedIPv6Facts &f) { f.contradicted = true; },
+		[](SAdvertisedIPv6Facts &f) { f.ipv6Built = false; },
+	};
+	for (const auto &gate : gates) {
+		SAdvertisedIPv6Facts closed = facts;
+		gate(closed);
+		ASSERT_FALSE(ServerAddressToSend(closed, true).has_value());
+	}
 }

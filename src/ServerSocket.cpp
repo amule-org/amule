@@ -505,8 +505,6 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			// rule it out, exactly as they rule out advertising.
 			if (cur_server->SupportsIPv6Updates()) {
 				AddDebugLogLineN(logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
-				// One rule for the login, this update and the periodic refresh: the address a
-				// probing server has to test, or what peers would be told.
 				serverconnect->UpdateAdvertisedIPv6(ServerAddressToSend(
 					CurrentAdvertisedIPv6Facts(), cur_server->SupportsIPv6Probe()));
 			}

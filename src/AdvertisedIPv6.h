@@ -212,12 +212,10 @@ inline bool ShouldRepublishKadSources(
  * The IPv6 address our hellos carry right now, or none.
  *
  * Defined in amule.cpp, beside the interface refresh that feeds it, so this header stays clear of
- * the app and its sockets and the decision above can be unit-tested on its own.
+ * the app and its sockets and the decision above can be unit-tested on its own. It also hands a
+ * server its address on every call, through ServerAddressToSend(); duplicates are dropped there,
+ * so calling it as often as the interface refresh, a hello or Kad does is safe.
  */
-//! The address our hellos carry right now, or none.
-//!
-//! Also hands a server its address on every call, through ServerAddressToSend(); duplicates are
-//! dropped there, so this is safe to call as often as the interface refresh, a hello or Kad does.
 std::optional<CNetworkAddress> AdvertisedIPv6ForPeers();
 
 //! The facts the decision is made from, defined beside the interface refresh.
