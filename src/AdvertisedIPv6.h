@@ -207,20 +207,6 @@ inline bool ShouldRepublishKadSources(
 	return DecideAdvertisedIPv6(facts) != lastPublished;
 }
 
-#ifdef ENABLE_IPV6
-/**
- * The IPv6 address our hellos carry right now, or none.
- *
- * Defined in amule.cpp, beside the interface refresh that feeds it, so this header stays clear of
- * the app and its sockets and the decision above can be unit-tested on its own. It also hands a
- * server its address on every call, through ServerAddressToSend(); duplicates are dropped there,
- * so calling it as often as the interface refresh, a hello or Kad does is safe.
- */
-std::optional<CNetworkAddress> AdvertisedIPv6ForPeers();
-
-//! The facts the decision is made from, defined beside the interface refresh.
-SAdvertisedIPv6Facts CurrentAdvertisedIPv6Facts();
-
 /**
  * The address to send a server: the one it will test, or what the peers decision allows.
  *
@@ -241,6 +227,20 @@ inline std::optional<CNetworkAddress> ServerAddressToSend(
 	}
 	return facts.choice;
 }
+
+#ifdef ENABLE_IPV6
+/**
+ * The IPv6 address our hellos carry right now, or none.
+ *
+ * Defined in amule.cpp, beside the interface refresh that feeds it, so this header stays clear of
+ * the app and its sockets and the decision above can be unit-tested on its own. It also hands a
+ * server its address on every call, through ServerAddressToSend(); duplicates are dropped there,
+ * so calling it as often as the interface refresh, a hello or Kad does is safe.
+ */
+std::optional<CNetworkAddress> AdvertisedIPv6ForPeers();
+
+//! The facts the decision is made from, defined beside the interface refresh.
+SAdvertisedIPv6Facts CurrentAdvertisedIPv6Facts();
 
 /**
  * The stable globally routable local IPv6 selected from the current interfaces, or none.
