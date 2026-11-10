@@ -434,7 +434,8 @@ void CFileDetailDialog::setValueForFilenameTextEdit(const wxString &s)
 void CFileDetailDialog::setEnableForApplyButton()
 {
 	bool enabled = m_file->GetStatus() != PS_COMPLETE && m_file->GetStatus() != PS_COMPLETING &&
-		       m_filenameChanged;
+		       m_filenameChanged &&
+		       CPath(CastChild(IDC_FILENAME, wxTextCtrl)->GetValue()) != m_file->GetFileName();
 	CastChild(IDC_APPLY, wxControl)->Enable(enabled);
 	// Make OK button default so Text can be applied by hitting return
 	CastChild(enabled ? IDC_APPLY_AND_CLOSE : ID_CLOSEWNDFD, wxButton)->SetDefault();
@@ -458,8 +459,10 @@ void CFileDetailDialog::OnBnClickedApply(wxCommandEvent &WXUNUSED(evt))
 
 	if (fileName.IsOk() && (fileName != m_file->GetFileName())) {
 		if (theApp->sharedfiles->RenameFile(m_file, fileName)) {
-			// Refresh labels and their scroll range through the same path as file navigation.
-			UpdateData(true);
+			// The remote GUI only queued the rename; its file still has the old name until
+			// the next update from the daemon. Keep the edit intact until then, including
+			// if the user follows Apply with OK. Local renames update the file immediately.
+			UpdateData(m_file->GetFileName() == fileName);
 		}
 	}
 }

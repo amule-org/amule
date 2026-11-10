@@ -63,11 +63,14 @@ env:
   # half landed on master before anything noticed.
   # Only Boost headers are used; avoid unused MPI and GPU runtime downloads.
   cmake_ubuntu_deps: |-
+    at-spi2-core \
     binutils-dev \
     build-essential \
     ccache \
     cmake \
+    dbus-daemon \
     gettext \
+    gir1.2-atspi-2.0 \
     libayatana-appindicator3-dev \
     libboost-dev \
     libcrypto++-dev \
@@ -82,6 +85,7 @@ env:
     pkg-config \
     po4a \
     python3-cryptography \
+    python3-gi \
     xvfb \
     xauth \
     wx3.2-headers
