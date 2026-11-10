@@ -120,6 +120,8 @@ public:
 
 	/// Updates @a toupdate on the list.
 	void UpdateItem(CKnownFile *toupdate);
+	//! Queue a periodic row update, such as upload statistics, for the GUI's one-second tick.
+	void DeferUpdateItem(CKnownFile *toupdate);
 
 	/// Begin a bulk update: UpdateItem() becomes a no-op and the per-row FindItem/RefreshItem
 	/// cost is skipped, while EndBulkUpdate() issues one full Refresh(). Turns
@@ -176,6 +178,7 @@ protected:
 
 	/// @see CMuleVirtualDataViewCtrl::RebuildFilteredView
 	void RebuildFilteredView() override;
+	bool RefreshDeferredItem(wxUIntPtr data) override;
 
 private:
 	/// Adds @a file to the list. With @a batch, it is appended last, the file count is not

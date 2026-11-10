@@ -393,8 +393,8 @@ void CUploadQueue::Process()
 
 	if (tick - m_lastDisplayUpdate >= 1000) {
 		m_lastDisplayUpdate = tick;
-		// Many peers can upload the same file. Refresh each file once, after all peer
-		// snapshots are published, rather than repainting it once per peer mid-sweep.
+		// Many peers can upload the same file. Queue each file once, after all peer
+		// snapshots are published; the GUI repaints it on its own one-second tick.
 		std::set<const CKnownFile *> files;
 		for (const CClientRef &client : m_uploadinglist) {
 			if (const CKnownFile *file = client.GetUploadFile()) {
@@ -402,7 +402,7 @@ void CUploadQueue::Process()
 			}
 		}
 		for (const CKnownFile *file : files) {
-			Notify_SharedFilesUpdateItem(const_cast<CKnownFile *>(file));
+			Notify_SharedFilesUpdateItemDeferred(const_cast<CKnownFile *>(file));
 		}
 	}
 

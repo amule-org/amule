@@ -1490,11 +1490,6 @@ void CSharedFileList::GetShareCandidateNames(wxArrayString &out, bool &truncated
 	truncated = m_excludedNamesTruncated;
 }
 
-void CSharedFileList::UpdateItem(CKnownFile *toupdate)
-{
-	Notify_SharedFilesUpdateItem(toupdate);
-}
-
 void CSharedFileList::GetSharedFilesByDirectory(const wxString &directory, CKnownFilePtrList &list)
 {
 	wxMutexLocker lock(list_mut);

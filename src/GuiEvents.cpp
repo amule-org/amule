@@ -325,11 +325,15 @@ void ChatRemoveFriend(CFriend *toremove)
 	delete toremove;
 }
 
-void SharedFilesUpdateItem(CKnownFile *NOT_ON_DAEMON(file))
+void SharedFilesUpdateItem(CKnownFile *NOT_ON_DAEMON(file), bool NOT_ON_DAEMON(refreshGUI))
 {
 #ifndef AMULE_DAEMON
 	if (theApp->amuledlg->m_sharedfileswnd && theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl) {
-		theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->UpdateItem(file);
+		if (refreshGUI) {
+			theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->UpdateItem(file);
+		} else {
+			theApp->amuledlg->m_sharedfileswnd->sharedfilesctrl->DeferUpdateItem(file);
+		}
 	}
 #endif
 }
@@ -931,7 +935,7 @@ void KnownFile_Up_Prio_Auto(CKnownFile *file)
 void KnownFile_Comment_Set(CKnownFile *file, wxString comment, int8 rating)
 {
 	file->SetFileCommentRating(comment, rating);
-	SharedFilesUpdateItem(file);
+	SharedFilesUpdateItem(file, true);
 }
 
 void Download_Set_Cat_Prio(uint8 cat, uint8 newprio)
@@ -1239,6 +1243,16 @@ void KnownFileBeingDestroyed(CKnownFile *file)
 		CCommentDialog::DropReferencesTo(file);
 		CCommentDialogLst::DropReferencesTo(file);
 		CFileDetailDialog::DropReferencesTo(file);
+		// Rows queued for the one-second refresh tick.
+		const wxUIntPtr data = reinterpret_cast<wxUIntPtr>(file);
+		CSharedFilesWnd *sharedWnd = theApp->amuledlg->m_sharedfileswnd;
+		if (sharedWnd && sharedWnd->sharedfilesctrl) {
+			sharedWnd->sharedfilesctrl->ForgetDeferred(data);
+		}
+		CTransferWnd *transferWnd = theApp->amuledlg->m_transferwnd;
+		if (transferWnd && transferWnd->downloadlistctrl) {
+			transferWnd->downloadlistctrl->ForgetDeferred(data);
+		}
 	}
 #endif
 #ifdef CLIENT_GUI
