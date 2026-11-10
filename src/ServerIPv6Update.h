@@ -51,7 +51,7 @@ struct SServerIPv6UpdateDecision
 //! @param serverAcceptsUpdates ServerAcceptsIPv6Updates() for this connection's OP_IDCHANGE flags.
 //! @param lastSent             The address this connection last sent (by login or a prior
 //!                             update); Absent if nothing was sent yet.
-//! @param advertised           The current AdvertisedIPv6ForPeers() result.
+//! @param advertised           The address a server should receive, from ServerAddressToSend().
 inline SServerIPv6UpdateDecision DecideServerIPv6Update(bool serverAcceptsUpdates,
 	const std::optional<CNetworkAddress> &lastSent,
 	const std::optional<CNetworkAddress> &advertised)

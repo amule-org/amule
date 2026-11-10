@@ -177,6 +177,12 @@ inline bool IsIPv6DeclaredReachable(const SAdvertisedIPv6Facts &facts)
  * Peer corroboration is a veto, not a precondition. Requiring it first deadlocks: votes arrive only
  * over IPv6 connections, which peers open only to an address we advertise. Behind IPv6 NAT, the case
  * it guards against, peers report a /64 we do not hold, and that contradiction withdraws the address.
+ *
+ * The inbound-hello proof has the same shape as a peer vote, which is worth naming: a peer can only
+ * dial our IPv6 once it has learned the address, and it learns it from our hello, Kad, the server's
+ * source lists or source exchange, all of which wait for this decision. So in practice
+ * `When verified` means "advertise once a server that probes has checked us", with two ways out: a
+ * proof carried over from a probing server for 24 h, and an address the server itself asks for.
  */
 inline std::optional<CNetworkAddress> DecideAdvertisedIPv6(const SAdvertisedIPv6Facts &facts)
 {
@@ -201,14 +207,40 @@ inline bool ShouldRepublishKadSources(
 	return DecideAdvertisedIPv6(facts) != lastPublished;
 }
 
+/**
+ * The address to send a server: the one it will test, or what the peers decision allows.
+ *
+ * A server that probes needs an address it has not published yet, so reachability is not required
+ * here; everything else that protects the address is. Any other server receives exactly what peers
+ * would, which may be nothing until the address is proved.
+ */
+inline std::optional<CNetworkAddress> ServerAddressToSend(
+	const SAdvertisedIPv6Facts &facts, bool serverProbes)
+{
+	if (!serverProbes) {
+		return DecideAdvertisedIPv6(facts);
+	}
+	const bool permitted = facts.ipv6Built && facts.familyPermitted && !facts.proxyEnabled;
+	if (!facts.choice || !permitted || !facts.listenerAcceptsIPv6 || facts.contradicted ||
+		facts.mode == EIPv6AdvertisingMode::Never) {
+		return std::nullopt;
+	}
+	return facts.choice;
+}
+
 #ifdef ENABLE_IPV6
 /**
  * The IPv6 address our hellos carry right now, or none.
  *
  * Defined in amule.cpp, beside the interface refresh that feeds it, so this header stays clear of
- * the app and its sockets and the decision above can be unit-tested on its own.
+ * the app and its sockets and the decision above can be unit-tested on its own. It also hands a
+ * server its address on every call, through ServerAddressToSend(); duplicates are dropped there,
+ * so calling it as often as the interface refresh, a hello or Kad does is safe.
  */
 std::optional<CNetworkAddress> AdvertisedIPv6ForPeers();
+
+//! The facts the decision is made from, defined beside the interface refresh.
+SAdvertisedIPv6Facts CurrentAdvertisedIPv6Facts();
 
 /**
  * The stable globally routable local IPv6 selected from the current interfaces, or none.

@@ -82,5 +82,7 @@ enum OP_ClientToServerTCP
 #define SRV_TCPFLG_LOWID_HOLEPUNCH 0x00020000
 // Server runs the hole-punch extension (ed2k-server 0.9.85).
 #define SRV_TCPFLG_HOLEPUNCH_EXTENSION 0x00100000
+// Server dials an address back before publishing it (ed2k-server 0.9.86+).
+#define SRV_TCPFLG_IPV6_PROBE 0x00400000
 
 #endif // ED2KC2STCP_H
