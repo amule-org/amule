@@ -182,6 +182,12 @@ long CMuleVirtualDataViewCtrl::RowOfData(wxUIntPtr data) const
 
 bool CMuleVirtualDataViewCtrl::GetVisibleRowRange(long &firstRow, long &lastRow) const
 {
+	// The generic backend reports row zero even for an empty virtual model. Deferred
+	// rows in m_items have not been displayed yet and cannot be a scroll anchor.
+	if (m_virtualModel->GetCount() == 0) {
+		return false;
+	}
+
 	const wxDataViewItem top = GetTopItem();
 	const int perPage = GetCountPerPage();
 	if (!top.IsOk() || perPage <= 0) {
