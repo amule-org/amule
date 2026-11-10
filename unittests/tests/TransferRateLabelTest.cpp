@@ -116,11 +116,11 @@ public:
 	int layouts = 0;
 };
 
-class TestRateLabel : public TransferRateLabel
+template <typename Base> class DpiTestLabel : public Base
 {
 public:
-	using TransferRateLabel::TransferRateLabel;
-	wxSize GetDPI() const override { return dpi == wxDefaultSize ? TransferRateLabel::GetDPI() : dpi; }
+	using Base::Base;
+	wxSize GetDPI() const override { return dpi == wxDefaultSize ? Base::GetDPI() : dpi; }
 	wxSize dpi = wxDefaultSize;
 };
 
@@ -140,7 +140,7 @@ void TestTransferRateLifecycle()
 	const wxString overhead = "Up: 123.4 KiB/s (12.3) | Down: 567.8 KiB/s (45.6)";
 	int sizeChanges = 0;
 	wxDialog dialog(nullptr, wxID_ANY, "Rate label lifecycle");
-	auto *rates = new TestRateLabel(&dialog, wxID_ANY, idle);
+	auto *rates = new DpiTestLabel<TransferRateLabel>(&dialog, wxID_ANY, idle);
 	auto *following = new wxStaticText(&dialog, wxID_ANY, "Connected");
 	auto *info = new wxStaticText(
 		&dialog, wxID_ANY, "Log", wxDefaultPosition, wxSize(140, -1), wxST_NO_AUTORESIZE);
@@ -206,12 +206,24 @@ void TestTransferRateLifecycle()
 	// Exercise DPI cache invalidation through the same virtual query as production.
 	// This simulates scale changes; it is not native multi-monitor coverage.
 	const wxSize originalDPI = rates->GetDPI();
+	// A DPI override also affects native font measurements on wxMSW. Compare
+	// with a plain label at the same DPI, not the pixel width at the old DPI.
+	auto *reference = new DpiTestLabel<wxStaticText>(&dialog, wxID_ANY, idle);
+	reference->SetFont(rates->GetFont());
 	for (const wxSize &dpi : { originalDPI * 2, originalDPI }) {
 		rates->UpdateRate(active, false);
+		const int retainedWidth = rates->GetMinSize().x;
 		rates->dpi = dpi;
+		reference->dpi = dpi;
+		reference->InvalidateBestSize();
+		const int expectedWidth = reference->GetBestSize().x;
 		rates->UpdateRate(idle, false);
-		Check(rates->GetSize().x == compactWidth, "A DPI change retained obsolete pixel widths");
+		std::cout << "DPI layout: dpi=" << dpi.x << " retained=" << retainedWidth
+			  << " expected=" << expectedWidth << " actual=" << rates->GetSize().x << '\n';
+		Check(rates->GetSize().x == expectedWidth, "A DPI change retained obsolete pixel widths");
+		Check(rates->GetMinSize().x == expectedWidth, "A DPI change left an obsolete minimum");
 	}
+	reference->Destroy();
 
 	// A newly created window must not inherit another window's peak width.
 	rates->UpdateRate(active, false);
