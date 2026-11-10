@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-09 08:48+0000\n"
+"PO-Revision-Date: 2026-11-10 13:55+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -8421,6 +8421,16 @@ msgid "Connected to buddy at %s"
 msgstr "连接到好友于 %s"
 
 #: src/ServerWnd.cpp
+#, fuzzy
+msgid "Served buddies:"
+msgstr "服务器列表"
+
+#: src/ServerWnd.cpp
+#, c-format
+msgid "%u of %u"
+msgstr ""
+
+#: src/ServerWnd.cpp
 msgid "IP address:"
 msgstr "IP 地址:"
 
@@ -8769,6 +8779,131 @@ msgstr "正在关闭 aMule"
 
 #: src/Statistics.cpp
 #, c-format
+msgid "Served Now: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Offers Sent: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Refused: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Over the Rate Limit: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Unused Buddy Offers: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Buddies Served: %llu"
+msgstr "有效服务器中的文件数： %llu"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Served Buddies Timed Out: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Time Served: %s"
+msgstr "被过滤的服务器：%s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Callbacks Relayed: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Reasks Relayed: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Data Relayed: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Callbacks Dropped: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Reasks Dropped: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Busiest Minute to One Buddy: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Searches: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Sent: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Offers Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Failed Buddy Connections: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Buddies Connected: %llu"
+msgstr " 已连接至 "
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddies Timed Out: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Time a Buddy Was Needed: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Time Without a Buddy: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Callbacks Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Reasks Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "本次上传 (全部): %s"
 
@@ -9027,6 +9162,19 @@ msgid "Average file size: %s"
 msgstr "平均文件大小：%s"
 
 #: src/Statistics.cpp
+#, fuzzy
+msgid "Kad Buddies"
+msgstr "Kad 用户"
+
+#: src/Statistics.cpp
+msgid "Serving Firewalled Nodes"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Our Own Buddy"
+msgstr ""
+
+#: src/Statistics.cpp
 msgid "Operating System"
 msgstr "操作系统"
 
@@ -9108,6 +9256,10 @@ msgstr ""
 "未提供搜索关键词。\n"
 "输入“help search”以获得更多帮助。\n"
 
+#: src/TextClient.cpp
+msgid "The connected daemon does not support media search filters.\n"
+msgstr "已连接的 daemon 不支持媒体搜索筛选器。\n"
+
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
@@ -9117,6 +9269,14 @@ msgid ""
 msgstr ""
 "未定义搜索类型。\n"
 "输入“help search”以获得更多帮助。\n"
+
+#: src/TextClient.cpp
+msgid "The connected daemon does not support search management.\n"
+msgstr "已连接的 daemon 不支持搜索管理。\n"
+
+#: src/TextClient.cpp
+msgid "A search ID from 'search list' is required.\n"
+msgstr ""
 
 #: src/TextClient.cpp
 #, c-format
@@ -9230,6 +9390,26 @@ msgstr ""
 #: src/TextClient.cpp
 msgid "[PartFile]"
 msgstr "[part 文件]"
+
+#: src/TextClient.cpp
+msgid "No retained searches.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "More-results request processed; availability is unknown.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "More-results request processed; further requests remain possible.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "No further results can be requested for this search.\n"
+msgstr "这个搜索没有可请求的进一步结果。\n"
+
+#: src/TextClient.cpp
+msgid "Search stop request processed; retained results were not removed.\n"
+msgstr ""
 
 #: src/TextClient.cpp
 #, c-format
@@ -9498,6 +9678,11 @@ msgid ""
 "    --avail <N>            minimum number of sources\n"
 "    --min-size <N[KMG]>    smallest file size; K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    largest file size; same suffixes\n"
+"    --min-bitrate <kbps>   whole number, 0-1000000\n"
+"    --min-duration <sec>   whole number, 0-86400\n"
+"    --codec <text> --title <text> --album <text> --artist <text>\n"
+"Quote media text values containing spaces.\n"
+"Kad applies media filters; eD2k servers may ignore them.\n"
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
@@ -9506,15 +9691,20 @@ msgstr ""
 "    LOCAL\n"
 "    KAD\n"
 "    ALL: 所有网络 (需要 daemon 支持)\n"
-"示例：'search kad file' 会执行 kad \"file\" 搜索。\n"
+"示例：'search kad file' 会执行 \"file\" 的 kad 搜索。\n"
 "\n"
-"可在搜索词前、后、中间添加筛选器\n"
-"（非必需)\n"
+"可在搜索词前、后、中间添加\n"
+"非必需的筛选器：\n"
 "    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
 "    --extension <ext>      (alias: --ext)\n"
 "    --avail <N>            最少来源数\n"
 "    --min-size <N[KMG]>    最小文件大小； K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    最大大小；相同后缀\n"
+"    --min-bitrate <kbps>   整数, 0-1000000\n"
+"    --min-duration <sec>   整数, 0-86400\n"
+"    --codec <text> --title <text> --album <text> --artist <text>\n"
+"引用包含空格的媒体文本值。\n"
+"Kad 应用媒体筛选器； eD2k 服务器可能忽略它们。\n"
 "示例：'search global linux iso --type Iso --min-size 100M' 返回\n"
 "至少100 MiB 大小文件类型为 lso 的 \"linux iso\"。\n"
 
@@ -9533,6 +9723,26 @@ msgstr "执行 Kad 搜索"
 #: src/TextClient.cpp
 msgid "Execute an eD2k and Kad search"
 msgstr "执行 eD2k 和 Kad 搜索"
+
+#: src/TextClient.cpp
+msgid "List retained search IDs and queries."
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "Stop a search, keeping its results."
+msgstr "停止搜索但保留其结果。"
+
+#: src/TextClient.cpp
+msgid "Requires a search ID from 'search list'."
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "Request more Kad search results."
+msgstr "请求更多的 Kad 搜索结果。"
+
+#: src/TextClient.cpp
+msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
+msgstr ""
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -10767,9 +10977,6 @@ msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再�
 #~ msgid "Click on this button to update the servers list from URL ..."
 #~ msgstr "按此按钮从该网址更新服务器列表 ..."
 
-#~ msgid "Server list"
-#~ msgstr "服务器列表"
-
 #~ msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
 #~ msgstr "输入 server.met 文件的地址，再按此按钮更新服务器列表。"
 
@@ -10999,9 +11206,6 @@ msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再�
 
 #~ msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
 #~ msgstr "如果客户端 ip 和发送数据包的 ip 不同则拒绝数据包。请谨慎使用。"
-
-#~ msgid "Return the results of the previous search.\n"
-#~ msgstr "返回以前搜索的结果。\n"
 
 #~ msgid "Show the progress of a search.\n"
 #~ msgstr "显示搜索进度。\n"

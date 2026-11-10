@@ -1069,5 +1069,18 @@
   "stats_tree_natt_utp_stream_moves": "Los flujos uTP se han movido a un nuevo puerto: %s",
   "prefs_debugging_warning": "Los registros de depuración pueden contener direcciones IP de otros pares, hashes de usuario y nombres de archivo. Los invitados pueden leer el registro, a menos que los mensajes de depuración vayan solo al archivo de registro. Esa opción se aplica solo a las líneas nuevas: las líneas anteriores siguen siendo legibles hasta que se borre el registro, y al borrarlo también se vacía el archivo de registro del demonio.",
   "prefs_field_advanced_verbose_logging_logfile_only": "Sólo al archivo de registro",
-  "shared_media_refresh_tip_unavailable": "La extracción de metadatos multimedia no está disponible: falta el proceso auxiliar o fallaron sus restricciones del SO. Consulta el registro del núcleo para más detalles."
+  "shared_media_refresh_tip_unavailable": "La extracción de metadatos multimedia no está disponible: falta el proceso auxiliar o fallaron sus restricciones del SO. Consulta el registro del núcleo para más detalles.",
+  "stats_tree_download_lowid_to_lowid_data": "Datos de LowID a LowID (sesión): %s",
+  "prefs_daemon_local_hint": "Se configura únicamente en el propio archivo \"amule.conf\" del demonio; no se puede modificar a través de la API.",
+  "prefs_group_remote_roots": "Carpetas remotas permitidas",
+  "prefs_group_debug_categories": "Categorías de mensajes",
+  "stats_tree_download_ipv6_data": "Datos IPv6 (sesión): %s",
+  "stats_tree_upload_lowid_to_lowid_data": "Datos de LowID a LowID (sesión): %s",
+  "prefs_field_servers_accelerated_publication_enabled_help": "Sigue el ritmo de publicación que indica el servidor. Los demás servidores adoptarán el ritmo estándar. Se aplicará a partir de la próxima conexión al servidor.",
+  "shared_media_refresh_tip_disabled": "La extracción de metadatos multimedia está desactivada en Preferencias.",
+  "stats_tree_upload_ipv6_data": "Datos IPv6 (sesión): %s",
+  "prefs_debugging": "Depuración",
+  "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Un límite mayor puede suavizar los atascos breves del disco, aunque a costa de un mayor consumo de memoria. Los datos ya solicitados pueden superar este límite.",
+  "common_err_path_not_allowed": "Carpeta no permitida — {message}. Las carpetas que permite el demonio se listan en Preferencias ▸ Directorios.",
+  "prefs_field_servers_accelerated_publication_enabled": "Publica archivos compartidos más rápido en los servidores que lo permiten"
 }

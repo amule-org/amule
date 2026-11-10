@@ -1065,7 +1065,7 @@
   "prefs_field_servers_accelerated_publication_enabled_help": "Seguir o ritmo de publicação anunciado pelo servidor. Os demais servidores recebem o ritmo padrão. Vale a partir da próxima conexão ao servidor.",
   "prefs_field_servers_accelerated_publication_enabled": "Publicar arquivos compartilhados mais rápido nos servidores que permitem",
   "shared_media_refresh_tip_disabled": "A extração de metadados de mídia está desativada nas Preferências.",
-  "shared_media_refresh_tip_unavailable": "Este aMule não tem o auxiliar de mídia (amule-media-probe), portanto não pode extrair metadados de mídia.",
+  "shared_media_refresh_tip_unavailable": "A extração de metadados de mídia não está disponível: o auxiliar está ausente ou suas restrições do sistema operacional falharam. Veja o log do núcleo para mais detalhes.",
   "stats_tree_upload_lowid_to_lowid_data": "Dados LowID para LowID (Sessão): %s",
   "stats_tree_upload_ipv6_data": "Dados IPv6 (Sessão): %s",
   "stats_tree_download_lowid_to_lowid_data": "Dados LowID para LowID (Sessão): %s",

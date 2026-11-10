@@ -8506,6 +8506,16 @@ msgid "Connected to buddy at %s"
 msgstr "Conectado a colega en %s"
 
 #: src/ServerWnd.cpp
+#, fuzzy
+msgid "Served buddies:"
+msgstr "Lista de servidores"
+
+#: src/ServerWnd.cpp
+#, c-format
+msgid "%u of %u"
+msgstr ""
+
+#: src/ServerWnd.cpp
 msgid "IP address:"
 msgstr "Enderezo IP :"
 
@@ -8858,6 +8868,131 @@ msgstr "Mostrar aMule"
 
 #: src/Statistics.cpp
 #, c-format
+msgid "Served Now: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Offers Sent: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Refused: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Over the Rate Limit: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Unused Buddy Offers: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Buddies Served: %llu"
+msgstr "Ficheiros nos servidores activos: %llu"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Served Buddies Timed Out: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Time Served: %s"
+msgstr "Servidores filtrados: %s"
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Callbacks Relayed: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Reasks Relayed: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Data Relayed: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Callbacks Dropped: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Reasks Dropped: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Busiest Minute to One Buddy: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Searches: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Requests Sent: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Offers Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Failed Buddy Connections: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Buddies Connected: %llu"
+msgstr " está conectado a "
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddies Timed Out: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Time a Buddy Was Needed: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Time Without a Buddy: %s"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Callbacks Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Reasks Received: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "Datos enviados (Sesión (Total)): %s"
 
@@ -9116,6 +9251,19 @@ msgid "Average file size: %s"
 msgstr "Tamaño medio de ficheiro: %s"
 
 #: src/Statistics.cpp
+#, fuzzy
+msgid "Kad Buddies"
+msgstr "Usuario Kad"
+
+#: src/Statistics.cpp
+msgid "Serving Firewalled Nodes"
+msgstr ""
+
+#: src/Statistics.cpp
+msgid "Our Own Buddy"
+msgstr ""
+
+#: src/Statistics.cpp
 msgid "Operating System"
 msgstr "Sistema operativo"
 
@@ -9197,6 +9345,10 @@ msgstr ""
 "Tipo de busca non especificado.\n"
 "Escriba «help search» para obter máis información.\n"
 
+#: src/TextClient.cpp
+msgid "The connected daemon does not support media search filters.\n"
+msgstr ""
+
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
 #: src/TextClient.cpp
@@ -9206,6 +9358,14 @@ msgid ""
 msgstr ""
 "Tipo de busca non especificado.\n"
 "Escriba «help search» para obter máis axuda.\n"
+
+#: src/TextClient.cpp
+msgid "The connected daemon does not support search management.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "A search ID from 'search list' is required.\n"
+msgstr ""
 
 #: src/TextClient.cpp
 #, c-format
@@ -9319,6 +9479,27 @@ msgstr ""
 #: src/TextClient.cpp
 msgid "[PartFile]"
 msgstr "[PartFile]"
+
+#: src/TextClient.cpp
+msgid "No retained searches.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "More-results request processed; availability is unknown.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+msgid "More-results request processed; further requests remain possible.\n"
+msgstr ""
+
+#: src/TextClient.cpp
+#, fuzzy
+msgid "No further results can be requested for this search.\n"
+msgstr "Devolve o resultado da busca anterior.\n"
+
+#: src/TextClient.cpp
+msgid "Search stop request processed; retained results were not removed.\n"
+msgstr ""
 
 #: src/TextClient.cpp
 #, c-format
@@ -9589,6 +9770,11 @@ msgid ""
 "    --avail <N>            minimum number of sources\n"
 "    --min-size <N[KMG]>    smallest file size; K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    largest file size; same suffixes\n"
+"    --min-bitrate <kbps>   whole number, 0-1000000\n"
+"    --min-duration <sec>   whole number, 0-86400\n"
+"    --codec <text> --title <text> --album <text> --artist <text>\n"
+"Quote media text values containing spaces.\n"
+"Kad applies media filters; eD2k servers may ignore them.\n"
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
@@ -9624,6 +9810,28 @@ msgstr "Executar unha busca de kad"
 #, fuzzy
 msgid "Execute an eD2k and Kad search"
 msgstr "Executar unha busca de kad"
+
+#: src/TextClient.cpp
+msgid "List retained search IDs and queries."
+msgstr ""
+
+#: src/TextClient.cpp
+#, fuzzy
+msgid "Stop a search, keeping its results."
+msgstr "Esta orde non debería ter ningún parámetro."
+
+#: src/TextClient.cpp
+msgid "Requires a search ID from 'search list'."
+msgstr ""
+
+#: src/TextClient.cpp
+#, fuzzy
+msgid "Request more Kad search results."
+msgstr "Número de resultados na busca: %i\n"
+
+#: src/TextClient.cpp
+msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
+msgstr ""
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -10796,9 +11004,6 @@ msgstr ""
 #~ msgid "Click on this button to update the servers list from URL ..."
 #~ msgstr "Premer neste botón para actualizar a lista de servidores desde a URL ..."
 
-#~ msgid "Server list"
-#~ msgstr "Lista de servidores"
-
 #~ msgid "Enter the url to a server.met file here and press the button to the left to update the list of known servers."
 #~ msgstr "Introduza a URL dun ficheiro server.met e prema o botón da esquerda para actualizar a lista de servidores coñecidos."
 
@@ -10984,9 +11189,6 @@ msgstr ""
 
 #~ msgid "Rejects packet if the client ip is different from the ip where the packet is received from. Use with caution."
 #~ msgstr "Rexeitar os paquetes se a IP do cliente é distinta á da IP de onde se recibe o paquete. Usar con coidado."
-
-#~ msgid "Return the results of the previous search.\n"
-#~ msgstr "Devolve o resultado da busca anterior.\n"
 
 #~ msgid "Show the progress of a search.\n"
 #~ msgstr "Mostrar o progreso dunha procura.\n"
