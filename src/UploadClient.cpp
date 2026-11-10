@@ -701,7 +701,13 @@ void CUpDownClient::UnBan()
 	m_Aggressiveness = 0;
 
 	theApp->clientlist->AddTrackClient(this);
-	theApp->clientlist->RemoveBannedClient(GetConductAddress());
+	// Both, as IsBanned() reads both: an older entry for the kept identity would otherwise leave
+	// the record looking banned after this one lapsed.
+	const CNetworkAddress conduct = GetConductAddress();
+	theApp->clientlist->RemoveBannedClient(conduct);
+	if (GetUserAddress() != conduct) {
+		theApp->clientlist->RemoveBannedClient(GetUserAddress());
+	}
 	SetUploadState(US_NONE);
 	ClearWaitStartTime();
 }
@@ -731,8 +737,13 @@ void CUpDownClient::Ban()
 
 bool CUpDownClient::IsBanned() const
 {
-	return ((theApp->clientlist->IsBannedClient(GetConductAddress())) &&
-		m_nDownloadState != DS_DOWNLOADING);
+	// A ban lands on the connection that behaved, but is enforced on the kept identity too: a peer
+	// banned over IPv4 stays banned when it comes back over IPv6.
+	const CNetworkAddress conduct = GetConductAddress();
+	const bool banned =
+		theApp->clientlist->IsBannedClient(conduct) ||
+		(GetUserAddress() != conduct && theApp->clientlist->IsBannedClient(GetUserAddress()));
+	return banned && m_nDownloadState != DS_DOWNLOADING;
 }
 
 void CUpDownClient::CheckForAggressive()
