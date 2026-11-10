@@ -138,10 +138,7 @@ wxEND_EVENT_TABLE()
 CSharedFilesCtrl::CSharedFilesCtrl(wxWindow *parent, int id, const wxPoint &pos, wxSize size, int flags)
 : CMuleVirtualDataViewCtrl(parent, id, pos, size, flags)
 , m_inBulkUpdate(false)
-, m_batchUpdate(false)
-, m_batchFrozen(false)
 , m_hashingRemaining(0)
-, m_batchRowsAppended(false)
 , m_shownSize(0)
 {
 	m_menu = nullptr;
@@ -909,44 +906,10 @@ void CSharedFilesCtrl::RebuildFilteredView()
 	ShowFileList();
 }
 
-void CSharedFilesCtrl::BeginBatchUpdate()
-{
-	// During the batch ShowFile() appends the row (O(1)) instead of a sorted AddItemData(),
-	// which rebuilds the whole row index per insert -- O(n), so O(n^2) for a burst on a large
-	// share. Coalesce the repaints (Freeze) and defer the single sort to EndBatchUpdate().
-	Freeze();
-	// The rows arrive unsorted and EndBatchUpdate() sorts them once, so the header's sort key
-	// buys nothing here -- and on macOS it costs a re-query and a full comparison pass per
-	// inserted row. See SuspendHeaderSort().
-	SuspendHeaderSort();
-	m_batchUpdate = true;
-	m_batchFrozen = true;
-}
-
-void CSharedFilesCtrl::ThawForDisplay()
-{
-	// Only the freeze ends here; the batch runs on, so rows keep arriving as
-	// O(1) appends. Whoever wants them ordered calls SortList().
-	if (m_batchFrozen) {
-		m_batchFrozen = false;
-		Thaw();
-	}
-}
-
 void CSharedFilesCtrl::SortIfRowsAppended()
 {
-	if (!m_batchRowsAppended) {
-		return;
-	}
-	m_batchRowsAppended = false;
-	if (m_startupDrain) {
-		// The rows were appended without notifying the model, so this is the first it hears
-		// of them: FinishBulkLoad() sorts and issues the single Reset() that makes them
-		// exist for the control.
-		FinishBulkLoad();
+	if (FlushBatchRows() && m_startupDrain) {
 		ShowFilesCount();
-	} else {
-		SortList();
 	}
 }
 
@@ -955,12 +918,13 @@ void CSharedFilesCtrl::SetStartupDrainMode(bool on)
 	if (m_startupDrain == on) {
 		return;
 	}
-	m_startupDrain = on;
 	if (!on) {
 		// Anything appended since the last tick is still invisible to the
-		// model; flush before the caller ends the batch.
+		// model; flush while drain mode still selects FinishBulkLoad(),
+		// before the caller ends the batch.
 		SortIfRowsAppended();
 	}
+	m_startupDrain = on;
 }
 
 void CSharedFilesCtrl::SetHashingCount(size_t remaining)
@@ -970,24 +934,6 @@ void CSharedFilesCtrl::SetHashingCount(size_t remaining)
 	}
 	m_hashingRemaining = remaining;
 	ShowFilesCount();
-}
-
-void CSharedFilesCtrl::EndBatchUpdate(bool doSort)
-{
-	m_batchUpdate = false;
-	// A poll that only updated rows in place (no new files) leaves the sort
-	// order untouched, so skip the O(n log n) SortList entirely.
-	if (doSort) {
-		SortList();
-	}
-	m_batchRowsAppended = false;
-	RestoreHeaderSort();
-	// Skipped when ThawForDisplay() already ended the freeze: wx counts
-	// Freeze/Thaw and an unbalanced Thaw() asserts.
-	if (m_batchFrozen) {
-		m_batchFrozen = false;
-		Thaw();
-	}
 }
 
 void CSharedFilesCtrl::RemoveFile(CKnownFile *toRemove)
@@ -1029,7 +975,6 @@ void CSharedFilesCtrl::ShowFile(CKnownFile *file)
 			} else {
 				AppendItemDataNow(data);
 			}
-			m_batchRowsAppended = true;
 			m_shownSize += file->GetFileSize();
 			if (!m_startupDrain) {
 				ShowFilesCount();

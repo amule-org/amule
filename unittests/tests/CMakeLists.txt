@@ -2699,6 +2699,7 @@ if (TARGET wxWidgets::CORE)
         set_tests_properties (${name} PROPERTIES SKIP_RETURN_CODE 77)
     endfunction()
 
+    add_native_list_test (RowRefreshTest)
     add_native_list_test (VirtualListViewportTest)
     # Settling the native GUI across the viewport scenarios takes several seconds.
     set_tests_properties (VirtualListViewportTest PROPERTIES LABELS "gui;slow")

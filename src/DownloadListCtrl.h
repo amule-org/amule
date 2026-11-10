@@ -86,14 +86,6 @@ public:
 	// is AND-ed with the current category, and the rebuild it triggers is RebuildFilteredView()
 	// below. Purely GUI-side, so it behaves the same in the monolithic app and the remote GUI.
 
-	/// Bracket a burst of AddFile()/UpdateItem() calls (a reconnect resync, issue #444, or any
-	/// poll that adds a batch of downloads, issue #615) so the list repaints once (Freeze) and
-	/// sorts once instead of per item. Existing rows are updated in place; new rows are
-	/// appended without a per-item sort. EndBatchUpdate() does the single SortList(), unless
-	/// doSort is false.
-	void BeginBatchUpdate();
-	void EndBatchUpdate(bool doSort = true);
-
 	/// Removes @a file from the list.
 	void RemoveFile(CPartFile *file);
 
@@ -241,10 +233,6 @@ private:
 
 	//! The currently displayed category
 	uint8 m_category = 0;
-
-	//! True between BeginBatchUpdate()/EndBatchUpdate(): AddFile() appends
-	//! rows but defers the per-item SortList to one final sort (issue #444).
-	bool m_batchUpdate = false;
 
 	//! The number of displayed files
 	int m_filecount = 0;
