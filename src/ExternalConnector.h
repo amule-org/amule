@@ -186,6 +186,8 @@ public:
 			Show(s);
 	}
 	const wxString &GetCmdArgs() const { return m_cmdargs; }
+	// Arguments as typed, for quoted values that must keep their whitespace.
+	const wxString &GetRawCmdArgs() const { return m_rawcmdargs; }
 	const wxString &GetLastCmdStr() const { return m_lastcmdstr; }
 	int GetIDFromString(const wxString &buffer)
 	{
@@ -201,6 +203,11 @@ public:
 	void SendPacket(const CECPacket *request) { m_ECClient->SendPacket(request); }
 	void ExpectClose() { m_ECClient->ExpectClose(); }
 	bool IsServerSearchAllActive() const { return m_ECClient && m_ECClient->ServerSupportsSearchAll(); }
+	bool IsServerSearchListActive() const
+	{
+		return m_ECClient && m_ECClient->ServerSupportsMultiSearch() &&
+		       m_ECClient->ServerSupportsSearchList();
+	}
 	bool IsServerSearchMetadataActive() const
 	{
 		return m_ECClient && m_ECClient->ServerSupportsSearchMetadata();
@@ -296,6 +303,7 @@ private:
 
 	wxString m_configFileName;
 	wxString m_cmdargs;
+	wxString m_rawcmdargs;
 	wxString m_lastcmdstr;
 	CRemoteConnect *m_ECClient;
 	char *m_InputLine;

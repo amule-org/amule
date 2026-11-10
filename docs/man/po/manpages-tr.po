@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
-"POT-Creation-Date: 2026-10-30 11:29+0000\n"
+"POT-Creation-Date: 2026-11-10 06:20+0000\n"
 "PO-Revision-Date: 2026-10-07 16:31+0000\n"
 "Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
 "Language-Team: \n"
@@ -641,6 +641,26 @@ msgstr "I<E<lt>hashE<gt>> ya da I<E<lt>sayıE<gt>> ile belirtilen indirmeye kald
 
 #. type: Plain text
 #: amulecmd.1.in
+msgid "Lists retained search IDs and queries, including searches started by other clients."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Stops activity for the specified search while retaining its results."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
 msgstr "Girilen I<E<lt>anahtarkelimeE<gt>> için bir arama yapar. Bir arama türü ve bir anahtar kelime kullanmanız mecburidir.  Mesela 'search kad amule' kad ağında 'amule' sözcüğü ile arama yapar.  Bir arama kimliği görüntüler; bu aramayı hedef almak için onu B<results> veya B<progress> ile kullanın. Birden fazla arama aynı anda çalışabilir, her biri kendi kimliğine sahip olur."
 
@@ -698,6 +718,51 @@ msgstr "Geri gönderilecek asgari dosya boyutu. Uzantılar ikili çarpanlar kull
 #: amulecmd.1.in
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
 msgstr "Geri gönderilecek azami dosya boyutu. B<--min-size> ile aynı uzantılar geçerlidir."
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Media filters:"
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
+msgstr "[B<-t> I<E<lt>sayıE<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum bitrate as a whole number from 0 to 1000000."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
+msgstr "[B<-t> I<E<lt>sayıE<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum duration as a whole number from 0 to 86400."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, no-wrap
+msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
+msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -1478,9 +1543,6 @@ msgstr "Pedro de Oliveira'nın B<cas>(1) programına dayalıdır. B<wxcas> ThePo
 
 #~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
 #~ msgstr "Bir dosyanın son aramadan I<E<lt>sayıE<gt>> değerinin girilmesi gerekir.  Mesela 'download 12' son aramadaki 12 numaralı dosyayı indirmeye başlar."
-
-#~ msgid "[B<-t> I<E<lt>numE<gt>>]"
-#~ msgstr "[B<-t> I<E<lt>sayıE<gt>>]"
 
 #~ msgid "Shows the progress of an on-going search."
 #~ msgstr "Sürmekte olan bir aramanın ilerlemesini gösterir."

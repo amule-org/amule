@@ -168,6 +168,17 @@ printed by \fBsearch\fR); with no id, shows the most recently started search.
 Several searches can be kept on the daemon at once and addressed by id.
 .SS_untranslated Resume \fI<hash>\fP | \fI<number>\fP
 Resumes the download specified by \fI<hash>\fR or \fI<number>\fR. To get the value use \fBshow\fR.
+.SS_untranslated Search list
+Lists retained search IDs and queries, including searches started by other clients.
+.SS_untranslated Search stop \fI<id>\fR
+Stops activity for the specified search while retaining its results.
+.SS_untranslated Search more \fI<id>\fR
+Requests more Kad results for the specified search. Further results are not guaranteed.
+The reply reports whether later requests remain possible, or whether that information is
+unavailable from an older daemon.
+.PP
+These management commands require daemon support for search listing and multiple searches.
+Use an explicit ID from \fBsearch list\fR for stop and more.
 .SS_untranslated Search \fI<type>\fP [\fI<filters>\fP] \fI<keyword>\fR
 Makes a search for the given \fI<keyword>\fR. A search type and a keyword
 to search is mandatory to do this.
@@ -204,6 +215,21 @@ Smallest file size to return. Suffixes use binary multipliers
 .IP "\fB\-\-max\-size\fR \fI<N[KMG]>\fR" 4
 Largest file size to return. Same suffixes as \fB\-\-min\-size\fR.
 .RE
+.PP
+Media filters:
+.TP
+\fB\-\-min-bitrate\fR \fI<kbps>\fR
+Minimum bitrate as a whole number from 0 to 1000000.
+.TP
+\fB\-\-min-duration\fR \fI<seconds>\fR
+Minimum duration as a whole number from 0 to 86400.
+.TP
+\fB\-\-codec\fR, \fB\-\-title\fR, \fB\-\-album\fR, \fB\-\-artist\fR \fI<text>\fR
+Each option takes a text value. Enclose values containing spaces in single or double quotes.
+When using \fB\-c\fR, preserve those quotes inside the command string passed by the shell.
+.PP
+Zero or empty media values impose no constraint. Nonempty media filters require daemon
+support. Kad applies these filters; eD2k servers may ignore them.
 .PP
 Example: 'search global linux iso \-\-type Iso \-\-min-size 100M' returns
 results for 'linux iso' of file-type Iso at least 100 MiB.

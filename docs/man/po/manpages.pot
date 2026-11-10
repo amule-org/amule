@@ -5,7 +5,7 @@
 #
 #, fuzzy
 msgid ""
-msgstr "Project-Id-Version: PACKAGE VERSION\nPOT-Creation-Date: 2026-10-30 11:29+0000\nPO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\nLast-Translator: FULL NAME <EMAIL@ADDRESS>\nLanguage-Team: LANGUAGE <LL@li.org>\nLanguage: \nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+msgstr "Project-Id-Version: PACKAGE VERSION\nPOT-Creation-Date: 2026-11-10 06:20+0000\nPO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\nLast-Translator: FULL NAME <EMAIL@ADDRESS>\nLanguage-Team: LANGUAGE <LL@li.org>\nLanguage: \nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
 
 #. type: TH
 #: amule.1.in
@@ -631,6 +631,26 @@ msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in
+msgid "Lists retained search IDs and queries, including searches started by other clients."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Stops activity for the specified search while retaining its results."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
 msgstr ""
 
@@ -687,6 +707,49 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Media filters:"
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, no-wrap
+msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum bitrate as a whole number from 0 to 1000000."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, no-wrap
+msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum duration as a whole number from 0 to 86400."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, no-wrap
+msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
 msgstr ""
 
 #. type: Plain text
