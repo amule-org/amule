@@ -43,6 +43,7 @@
 #include "KadContactHistogram.h"
 #include "DialogLayout.h" // Scrollable details dialogs
 #include "TextClearButton.h"
+#include "TransferRateLabel.h"
 #include "OtherFunctions.h" // Needed for LabelWithColon
 #include "SourceSearchLimits.h"
 #include "WriteBufferLimits.h"
@@ -169,7 +170,7 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticBitmap *item13 = new wxStaticBitmap( parent, -1, wxArtProvider::GetBitmapBundle( "amule:status_speed_idle" ), wxDefaultPosition, wxDefaultSize );
     item13->SetName( "transferImg" );
     item6->Add( item13, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxStaticText *item14 = new wxStaticText( parent, -1, _("Up: 0.0 | Down: 0.0"), wxDefaultPosition, wxDefaultSize, 0 );
+    TransferRateLabel *item14 = new TransferRateLabel( parent, -1, _("Up: 0.0 | Down: 0.0") );
     item14->SetToolTip( _("Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication.") );
     item14->SetName( "speedLabel" );
     item6->Add( item14, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );

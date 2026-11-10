@@ -456,10 +456,18 @@ void CFileDetailDialog::OnBnClickedApply(wxCommandEvent &WXUNUSED(evt))
 {
 	CPath fileName = CPath(CastChild(IDC_FILENAME, wxTextCtrl)->GetValue());
 
-	if (fileName.IsOk() && (fileName != m_file->GetFileName())) {
+#ifndef CLIENT_GUI
+	// Only the local model is always current.
+	if (fileName == m_file->GetFileName()) {
+		return;
+	}
+#endif
+	// The remote model lags a queued rename, so compare edits, not names.
+	if (m_filenameChanged && fileName.IsOk()) {
 		if (theApp->sharedfiles->RenameFile(m_file, fileName)) {
-			// Refresh labels and their scroll range through the same path as file navigation.
-			UpdateData(true);
+			m_filenameChanged = false;
+			// A remote rename is only queued: keep the edit until the daemon reports it.
+			UpdateData(m_file->GetFileName() == fileName);
 		}
 	}
 }

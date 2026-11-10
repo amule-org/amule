@@ -111,12 +111,12 @@ public:
 	 * lastRow is the last *fully* visible row, so a caller that must not miss a drawn pixel has
 	 * to allow for one more below it.
 	 *
-	 * Returns false when the backend cannot report its viewport -- the wxDataViewCtrl base
-	 * answers GetTopItem()/GetCountPerPage() with "don't know" and only the ports override
-	 * them. The range is then meaningless and the caller has to fall back to whatever is safe
-	 * for it. Which way that falls is not symmetric: treating a visible row as off screen
-	 * leaves a stale cell in front of the user, whereas treating an off-screen row as visible
-	 * only costs the work it saved.
+	 * Returns false when no rows have been published, or the backend cannot report its
+	 * viewport -- the wxDataViewCtrl base answers GetTopItem()/GetCountPerPage() with
+	 * "don't know" and only the ports override them. The range is then meaningless and the
+	 * caller has to fall back to whatever is safe for it. Which way that falls is not
+	 * symmetric: treating a visible row as off screen leaves a stale cell in front of the
+	 * user, whereas treating an off-screen row as visible only costs the work it saved.
 	 */
 	bool GetVisibleRowRange(long &firstRow, long &lastRow) const;
 	/**

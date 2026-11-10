@@ -14,6 +14,26 @@ and parses exactly what it always has: four login tags, no `CT_MOD_IP_V6`, and
 `OP_FOUNDSOURCES` / `_OBFU` source ids are never treated as anything but an
 ordinary userid.
 
+## The dial-back probe and its verdict
+
+A server that sets `0x400000` in `OP_IDCHANGE` dials the address before publishing it, and reports
+what it found in `ST_IPV6_STATUS` (`0xAB`), a byte of bits: `0x01` address held, `0x02` reachable,
+`0x04` probed. So `0x07` means the server reached us, `0x05` means it did not, `0x01` means the
+probe is still running, and `0x03` is an address the server published on trust, which proves
+nothing. aMule reads the tag from every `OP_SERVERIDENT`, because a later one carries it.
+
+With `AdvertiseIPv6Mode` set to `0` (when verified), the login carries no address until a probe or
+an inbound hello has proved it. In practice the probe is what can prove it: a peer can only dial
+this address after learning it from our hello, Kad or a source list, and all of those wait for the
+same decision, so the inbound hello can confirm an address that a probing server has already
+checked, or one proved in the last 24 h, but it cannot start the process.
+A server that does not announce the probe receives what the peers decision allows, so an address
+already proved, such as one confirmed by an inbound hello in the last 24 h, still reaches it;
+announcing the probe is what gets a server the chosen local address, through `OP_IPV6_UPDATE`,
+once per real change: it needs the address to test it, and it does not publish anything it has not
+reached. The server caps dial-back attempts, not updates: four per session, the login's own address
+included.
+
 ## Login: advertising our IPv6 address
 
 A client that currently advertises an IPv6 address to peers (`AdvertiseIPv6Mode`

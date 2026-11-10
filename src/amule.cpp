@@ -77,6 +77,7 @@
 #ifdef ENABLE_IPV6
 #include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::SetConfigured
 #include "AdvertisedIPv6.h"         // Needed for ChooseAdvertisedIPv6
+#include "IPv6ReachabilityProof.h"  // Needed for clearing inbound proof on address changes
 #include "IPv6ChangeNotification.h" // Needed for ShouldMarkIPv6ChangeNotification
 #endif
 #include "HashListFile.h"
@@ -2057,6 +2058,7 @@ void RefreshLocalPublicIPv6Addresses()
 		ChooseAdvertisedIPv6(interfaces, thePrefs::GetNetworkInterface());
 	if (choice != s_advertisedIPv6Choice) {
 		ObservedPublicIPv6().ForgetVerdicts();
+		IPv6ReachabilityProof().Clear();
 	}
 	s_advertisedIPv6Choice = choice;
 #endif
@@ -2068,13 +2070,26 @@ std::optional<CNetworkAddress> SelectedLocalIPv6()
 	return s_advertisedIPv6Choice;
 }
 
-std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
+SAdvertisedIPv6Facts CurrentAdvertisedIPv6Facts()
 {
 	SAdvertisedIPv6Facts facts;
 	facts.choice = s_advertisedIPv6Choice;
 	facts.contradicted = s_advertisedIPv6Choice &&
 			     ObservedPublicIPv6().IsPrefixVetoed(*s_advertisedIPv6Choice, ::GetTickCount64());
 	facts.mode = thePrefs::GetAdvertiseIPv6Mode();
+	// The two kinds of evidence: the server's dial-back verdict, and a hello that reached us from
+	// another /48. A failed probe withdraws the address even when the hello proved it, because the
+	// server tests what peers actually reach.
+	CServer *const server = theApp->serverconnect ? theApp->serverconnect->GetCurrentServer() : nullptr;
+	// A verdict is about one address, so a change to another one has not been probed and the old
+	// answer must not speak for it.
+	const bool verdictIsAboutChoice = server != nullptr && facts.choice.has_value() &&
+					  server->GetIPv6VerdictAddress() == *facts.choice;
+	facts.serverVerified =
+		verdictIsAboutChoice && server->GetIPv6Verdict() == EServerIPv6Verdict::Verified;
+	facts.serverProbeFailed =
+		verdictIsAboutChoice && server->GetIPv6Verdict() == EServerIPv6Verdict::Failed;
+	facts.provedByInboundHello = IPv6ReachabilityProof().IsProven(::GetTickCount64());
 	facts.ipv6Built = true;
 	facts.familyPermitted = AddressFamilyPolicy::PermitsIPv6();
 	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
@@ -2082,6 +2097,25 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 	// listener is down; a concrete IPv6 bind (a configured /eMule/Address) accepts on that one
 	// address only, which need not be the one chosen from the interfaces.
 	facts.listenerAcceptsIPv6 = theApp->listensocket && theApp->listensocket->BoundHost() == "[::]";
+	return facts;
+}
+
+std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
+{
+	const SAdvertisedIPv6Facts facts = CurrentAdvertisedIPv6Facts();
+
+	// Always ignores a failed probe by design: the user asserted the port is reachable. It must
+	// not pass silently, but this runs on every refresh, so only the transition is logged.
+	static bool loggedFailedProbe = false;
+	if (facts.mode == EIPv6AdvertisingMode::Always && facts.serverProbeFailed != loggedFailedProbe) {
+		loggedFailedProbe = facts.serverProbeFailed;
+		if (facts.serverProbeFailed) {
+			AddLogLineN(
+				CFormat("Advertising our IPv6 address anyway: the server could not "
+					"reach %s in its dial-back probe") %
+				(facts.choice ? facts.choice->ToWxString() : wxString("the chosen address")));
+		}
+	}
 
 	const std::optional<CNetworkAddress> advertised = DecideAdvertisedIPv6(facts);
 	if (ShouldRepublishKadSources(s_lastKadPublishedIPv6, facts)) {
@@ -2106,9 +2140,14 @@ std::optional<CNetworkAddress> AdvertisedIPv6ForPeers()
 		}
 		SetSocketAdvertisedIPv6(advertised.value_or(CNetworkAddress::Absent()));
 		s_lastAdvertisedIPv6 = advertised;
-		if (theApp->serverconnect) {
-			theApp->serverconnect->UpdateAdvertisedIPv6(advertised);
-		}
+	}
+
+	if (theApp->serverconnect) {
+		// One send per refresh: the address a probing server has to test, or what the peers
+		// decision allows. UpdateAdvertisedIPv6() sends only when the address changed.
+		CServer *const server = theApp->serverconnect->GetCurrentServer();
+		theApp->serverconnect->UpdateAdvertisedIPv6(
+			ServerAddressToSend(facts, server != nullptr && server->SupportsIPv6Probe()));
 	}
 	return advertised;
 }

@@ -182,6 +182,12 @@ long CMuleVirtualDataViewCtrl::RowOfData(wxUIntPtr data) const
 
 bool CMuleVirtualDataViewCtrl::GetVisibleRowRange(long &firstRow, long &lastRow) const
 {
+	// The generic backend reports row zero even for an empty virtual model. Deferred
+	// rows in m_items have not been displayed yet and cannot be a scroll anchor.
+	if (m_virtualModel->GetCount() == 0) {
+		return false;
+	}
+
 	const wxDataViewItem top = GetTopItem();
 	const int perPage = GetCountPerPage();
 	if (!top.IsOk() || perPage <= 0) {
@@ -514,6 +520,12 @@ void CMuleVirtualDataViewCtrl::RefreshItemData(wxUIntPtr data)
 {
 	const long row = RowOfData(data);
 	if (row < 0) {
+		return;
+	}
+	// Silent bulk appends are not rows in the native model yet. FinishBulkLoad()
+	// publishes their latest values and sorts them, so neither a row notification nor
+	// a deferred live sort is valid until then (including a tail on a populated list).
+	if (static_cast<unsigned long>(row) >= m_virtualModel->GetCount()) {
 		return;
 	}
 

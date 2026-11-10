@@ -274,6 +274,9 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 
 		uint32 tagcount = 4;
 #ifdef ENABLE_IPV6
+		// The login carries what the peers-facing decision allows; a probing server receives the
+		// address it has to test at OP_IDCHANGE, so this needs no probe-flag guess from a previous
+		// session.
 		const SServerLoginIPv6Decision ipv6Login = DecideServerLoginIPv6(AdvertisedIPv6ForPeers());
 		if (ipv6Login.advertise) {
 			tagcount++;
