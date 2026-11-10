@@ -1530,7 +1530,9 @@ void CamuleDlg::ShowTransferRate()
 	// The status labels all share one strip, and updating any of them used to
 	// re-flow the whole content area behind it -- see UpdateStatusLabel().
 	TransferRateLabel *label = CastChild("speedLabel", TransferRateLabel);
-	label->UpdateRate(buffer, thePrefs::ShowOverhead());
+	if (label->UpdateRate(buffer, thePrefs::ShowOverhead())) {
+		RelayoutLabelStrip(label);
+	}
 	if (!label->GetToolTip()) {
 #ifdef CLIENT_GUI
 		// Older daemons still send longer averages in the same compatible speed fields.

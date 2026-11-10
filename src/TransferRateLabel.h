@@ -27,7 +27,6 @@
 
 #include <algorithm>
 
-#include <wx/sizer.h>
 #include <wx/stattext.h>
 
 // A sizer-managed rate label must not resize itself during SetLabel(): even a
@@ -40,7 +39,8 @@ public:
 	{
 	}
 
-	void UpdateRate(const wxString &text, bool showOverhead)
+	// Returns true when the strip needs a new layout.
+	bool UpdateRate(const wxString &text, bool showOverhead)
 	{
 		const wxFont font = GetFont();
 		const wxSize dpi = GetDPI();
@@ -59,15 +59,9 @@ public:
 		if (!resetWidth) {
 			best.x = std::max(previousMinimum.x, best.x);
 		}
+		// Shorter samples retain their space; a preference, font or DPI change releases it.
 		SetMinSize(wxSize(best.x, -1));
-		// Shorter samples retain their space, but a preference/font/DPI change
-		// must release it. Only relayout the strip when its geometry changes:
-		// laying out the parent also repaints the main content on wxMSW.
-		if (previousMinimum != GetMinSize() || GetSize().y != best.y) {
-			if (wxSizer *strip = GetContainingSizer()) {
-				strip->Layout();
-			}
-		}
+		return previousMinimum != GetMinSize() || GetSize().y != best.y;
 	}
 
 private:

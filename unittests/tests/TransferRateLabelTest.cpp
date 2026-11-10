@@ -39,6 +39,16 @@ wxIMPLEMENT_APP_NO_MAIN(TransferRateLabelTestApp);
 
 namespace
 {
+// Stands in for RelayoutLabelStrip(), which the main window calls on a true result.
+void UpdateRate(TransferRateLabel *label, const wxString &text, bool showOverhead)
+{
+	if (label->UpdateRate(text, showOverhead)) {
+		if (wxSizer *strip = label->GetContainingSizer()) {
+			strip->Layout();
+		}
+	}
+}
+
 void TestTransferRateLabel()
 {
 	wxDialog dialog(nullptr,
@@ -66,7 +76,7 @@ void TestTransferRateLabel()
 				wxTheApp->Yield(true);
 			}
 		}
-		rates->UpdateRate("Up: 123.4 KiB/s | Down: 567.8 MiB/s", false);
+		UpdateRate(rates, "Up: 123.4 KiB/s | Down: 567.8 MiB/s", false);
 		dialog.SetClientSize(wxSize(strip->GetMinSize().x, dialog.FromDIP(100)));
 		dialog.Layout();
 		const int occupiedWidth = rates->GetSize().x;
@@ -78,7 +88,7 @@ void TestTransferRateLabel()
 			     "Up: 0.0 (0.0) | Down: 0.0 (0.0)",
 			     "Up: 0.0 | Down: 0.0",
 			     "Up: 0.0 | Down: 0.0" }) {
-			rates->UpdateRate(text, false);
+			UpdateRate(rates, text, false);
 			Check(rates->GetLabel() == text, "Rate text did not update");
 			Check(rates->GetSize().x == occupiedWidth, "Rate field shrank between samples");
 			Check(following->GetPosition().x == followingX, "Following status field moved");
@@ -89,7 +99,7 @@ void TestTransferRateLabel()
 		dialog.SetClientSize(dialog.FromDIP(wxSize(900, 100)));
 		dialog.Layout();
 		const wxString longer = "Up: 123.4 MiB/s (123.4) | Down: 567.8 MiB/s (567.8)";
-		rates->UpdateRate(longer, false);
+		UpdateRate(rates, longer, false);
 		std::cout << "Rate layout: font=" << rates->GetFont().GetPointSize()
 			  << " previous=" << occupiedWidth << " expanded=" << rates->GetSize().x
 			  << " client=" << dialog.GetClientSize().x << '\n';
@@ -154,11 +164,11 @@ void TestTransferRateLifecycle()
 	outer->Add(strip, wxSizerFlags().Expand());
 	dialog.SetSizer(outer);
 	// The production control receives updates before and after the frame is shown.
-	rates->UpdateRate(overhead, true);
+	UpdateRate(rates, overhead, true);
 	dialog.SetClientSize(wxSize(outer->GetMinSize().x + dialog.FromDIP(100), dialog.FromDIP(150)));
 	dialog.Show();
 	SettleRateFont();
-	rates->UpdateRate(overhead, true);
+	UpdateRate(rates, overhead, true);
 
 	const wxSize reservedSize = rates->GetSize();
 	rates->Bind(wxEVT_SIZE, [&sizeChanges, reservedSize](wxSizeEvent &event) {
@@ -172,7 +182,7 @@ void TestTransferRateLifecycle()
 	const wxRect followingRect = following->GetRect();
 	const wxRect infoRect = info->GetRect();
 	for (const auto &text : { idle, active, idle, idle }) {
-		rates->UpdateRate(text, true);
+		UpdateRate(rates, text, true);
 		Check(rates->GetLabel() == text, "A retained width prevented a text update");
 		Check(sizeChanges == 0, "A sample temporarily resized the native rate control");
 		Check(strip->layouts == stripLayouts, "A fitting sample needlessly relaid out the strip");
@@ -182,25 +192,25 @@ void TestTransferRateLifecycle()
 	}
 
 	const int overheadWidth = rates->GetSize().x;
-	rates->UpdateRate(idle, false);
+	UpdateRate(rates, idle, false);
 	Check(rates->GetSize().x < overheadWidth, "Disabling overhead retained its reserved width");
 	Check(outer->layouts == outerLayouts, "A mode change relaid out the main content");
 	const int compactWidth = rates->GetSize().x;
-	rates->UpdateRate(overhead, true);
+	UpdateRate(rates, overhead, true);
 	Check(rates->GetSize().x > compactWidth, "Re-enabling overhead clipped its text");
-	rates->UpdateRate(idle, false);
+	UpdateRate(rates, idle, false);
 	Check(rates->GetSize().x == compactWidth, "Repeated mode changes accumulated empty space");
 
 	const wxFont originalFont = rates->GetFont();
 	rates->SetFont(originalFont.Scaled(1.5));
 	SettleRateFont();
-	rates->UpdateRate(idle, false);
+	UpdateRate(rates, idle, false);
 	const int largerFontWidth = rates->GetSize().x;
 	Check(largerFontWidth > compactWidth, "A larger font clipped unchanged rate text");
 	Check(strip->GetSize().y >= rates->GetSize().y, "A larger font escaped the status strip");
 	rates->SetFont(originalFont);
 	SettleRateFont();
-	rates->UpdateRate(idle, false);
+	UpdateRate(rates, idle, false);
 	Check(rates->GetSize().x == compactWidth, "A smaller font retained the larger font's width");
 
 	// Exercise DPI cache invalidation through the same virtual query as production.
@@ -211,13 +221,13 @@ void TestTransferRateLifecycle()
 	auto *reference = new DpiTestLabel<wxStaticText>(&dialog, wxID_ANY, idle);
 	reference->SetFont(rates->GetFont());
 	for (const wxSize &dpi : { originalDPI * 2, originalDPI }) {
-		rates->UpdateRate(active, false);
+		UpdateRate(rates, active, false);
 		const int retainedWidth = rates->GetMinSize().x;
 		rates->dpi = dpi;
 		reference->dpi = dpi;
 		reference->InvalidateBestSize();
 		const int expectedWidth = reference->GetBestSize().x;
-		rates->UpdateRate(idle, false);
+		UpdateRate(rates, idle, false);
 		std::cout << "DPI layout: dpi=" << dpi.x << " retained=" << retainedWidth
 			  << " expected=" << expectedWidth << " actual=" << rates->GetSize().x << '\n';
 		Check(rates->GetSize().x == expectedWidth, "A DPI change retained obsolete pixel widths");
@@ -226,9 +236,9 @@ void TestTransferRateLifecycle()
 	reference->Destroy();
 
 	// A newly created window must not inherit another window's peak width.
-	rates->UpdateRate(active, false);
+	UpdateRate(rates, active, false);
 	auto *fresh = new TransferRateLabel(&dialog, wxID_ANY, idle);
-	fresh->UpdateRate(idle, false);
+	UpdateRate(fresh, idle, false);
 	Check(fresh->GetMinSize().x == compactWidth, "Rate width leaked into a new control");
 	fresh->Destroy();
 }
