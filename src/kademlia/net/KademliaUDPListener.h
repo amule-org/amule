@@ -112,6 +112,7 @@ public:
 	//	bool FindNodeIDByIP(CKadClientSearcher *requester, uint32_t ip, uint16_t tcpPort, uint16_t
 	// udpPort);
 	void ExpireClientSearch(CKadClientSearcher *expireImmediately = NULL);
+	static uint64_t GetInvalidReceiverKeyRequestCount();
 
 private:
 	// Kad1.0
@@ -129,7 +130,8 @@ private:
 		uint32_t lenPacket,
 		uint32_t ip,
 		uint16_t port,
-		const CKadUDPKey &senderKey);
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
 	void ProcessFirewalledResponse(
 		const uint8_t *packetData, uint32_t lenPacket, uint32_t ip, const CKadUDPKey &senderKey);
 	void ProcessFirewalledAckResponse(uint32_t lenPacket, uint32_t ip);
@@ -137,7 +139,8 @@ private:
 		uint32_t lenPacket,
 		uint32_t ip,
 		uint16_t port,
-		const CKadUDPKey &senderKey);
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
 	void ProcessFindBuddyResponse(const uint8_t *packetData,
 		uint32_t lenPacket,
 		uint32_t ip,
@@ -147,7 +150,8 @@ private:
 		uint32_t lenPacket,
 		uint32_t ip,
 		uint16_t port,
-		const CKadUDPKey &senderKey);
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
 
 	// Kad2.0
 	bool AddContact2(const uint8_t *data,
@@ -217,17 +221,20 @@ private:
 		uint32_t lenPacket,
 		uint32_t ip,
 		uint16_t port,
-		const CKadUDPKey &senderKey);
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
 	void Process2PublishKeyRequest(const uint8_t *packetData,
 		uint32_t lenPacket,
 		uint32_t ip,
 		uint16_t port,
-		const CKadUDPKey &senderKey);
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
 	void Process2PublishSourceRequest(const uint8_t *packetData,
 		uint32_t lenPacket,
 		uint32_t ip,
 		uint16_t port,
-		const CKadUDPKey &senderKey);
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
 	void Process2PublishResponse(const uint8_t *packetData,
 		uint32_t lenPacket,
 		uint32_t ip,
@@ -240,7 +247,8 @@ private:
 		uint32_t lenPacket,
 		uint32_t ip,
 		uint16_t port,
-		const CKadUDPKey &senderKey);
+		const CKadUDPKey &senderKey,
+		bool validReceiverKey);
 
 	// Debug
 	//	void DebugClientOutput(const wxString& place, uint32_t kad_ip, uint32_t port,

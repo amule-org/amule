@@ -290,6 +290,7 @@ bool CPreferences::s_ConnectToED2K;
 bool CPreferences::s_ED2KAcceleratedPublication;
 bool CPreferences::s_KadProtocol10;
 bool CPreferences::s_KadStrictAichPublishers;
+bool CPreferences::s_KadReceiverKeyEnforcement;
 bool CPreferences::s_KadProtocol10Supported = true;
 unsigned CPreferences::s_maxClientVersions;
 bool CPreferences::s_DropSlowSources;
@@ -1312,6 +1313,8 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_KADPROTOCOL10, (new Cfg_Bool("/eMule/KadProtocol10", s_KadProtocol10, true)));
 	NewCfgItem(IDC_KADSTRICTAICHPUBLISHERS,
 		(new Cfg_Bool("/eMule/KadStrictAichPublishers", s_KadStrictAichPublishers, false)));
+	NewCfgItem(IDC_KADRECEIVERKEYENFORCEMENT,
+		(new Cfg_Bool("/Kad/EnforceReceiverKey", s_KadReceiverKeyEnforcement, false)));
 
 	/** Files */
 	NewCfgItem(IDC_TEMPFILES, (new Cfg_Path("/eMule/TempDir", s_tempdir, appdir + "Temp", true)));
