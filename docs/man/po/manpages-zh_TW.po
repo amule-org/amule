@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule Manual zh_TW\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-30 11:29+0000\n"
+"POT-Creation-Date: 2026-11-10 06:20+0000\n"
 "PO-Revision-Date: 2026-10-07 16:31+0000\n"
 "Last-Translator: Wayne Su <mstarmstar@gmail.com>\n"
 "Language-Team: \n"
@@ -651,6 +651,26 @@ msgstr "繼續下載指定的檔案，指定方式：I<E<lt>hash 值E<gt>> 或 I
 
 #. type: Plain text
 #: amulecmd.1.in
+msgid "Lists retained search IDs and queries, including searches started by other clients."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Stops activity for the specified search while retaining its results."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
 #, fuzzy
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
 msgstr "用指定的 I<E<lt>關鍵字E<gt>> 搜尋。必須要有搜尋的「種類」加上「關鍵字」，例如：「search kad amule」會開始在 KAD 網路搜尋「amule」。"
@@ -708,6 +728,51 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Media filters:"
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
+msgstr "[B<-t> I<E<lt>號碼E<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum bitrate as a whole number from 0 to 1000000."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
+msgstr "[B<-t> I<E<lt>號碼E<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum duration as a whole number from 0 to 86400."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, no-wrap
+msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
 msgstr ""
 
 #. type: Plain text
@@ -1488,9 +1553,6 @@ msgstr "改寫自 Pedro de Oliveira 的 B<cas>(1)， B<wxcas>的作者：ThePoli
 
 #~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
 #~ msgstr "I<E<lt>編號E<gt>> 指上次搜尋檔案時的結果。例如：「download 12」會下載上次搜尋時編號 12 的檔案。"
-
-#~ msgid "[B<-t> I<E<lt>numE<gt>>]"
-#~ msgstr "[B<-t> I<E<lt>號碼E<gt>>]"
 
 #~ msgid "Shows the progress of an on-going search."
 #~ msgstr "顯示正在進行中的搜尋進度。"

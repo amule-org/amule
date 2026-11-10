@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-10-30 11:29+0000\n"
+"POT-Creation-Date: 2026-11-10 06:20+0000\n"
 "PO-Revision-Date: 2026-11-02 09:26+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/application-man-pages/nl/>\n"
@@ -640,6 +640,26 @@ msgstr "Hervat de download gespecificeerd met I<E<lt>hashE<gt>> of I<E<lt>nummer
 
 #. type: Plain text
 #: amulecmd.1.in
+msgid "Lists retained search IDs and queries, including searches started by other clients."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Stops activity for the specified search while retaining its results."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
 msgstr "Voert een zoekopdracht uit voor het gegeven I<E<lt>sleutelwoordE<gt>>. Een zoektype en een sleutelwoord om naar te zoeken zijn vereist om dit te doen.  Voorbeeld: 'search kad amule' voert een kad-zoekopdracht uit voor 'amule'.  Print een zoek-id; geef het door aan B<resultaten> of B<vooruitgang> om de zoekopdracht aan te roepen. Meerdere zoekopdrachten kunnen tegelijkertijd uitgevoerd worden, elk met zijn eigen id."
 
@@ -697,6 +717,51 @@ msgstr "Kleinste bestandsmaat om terug te geven. Achtervoegsels gebruiken binair
 #: amulecmd.1.in
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
 msgstr "Grootste bestandsmaat om terug te geven. Zelfde achtervoegsels als B<--min-size>."
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Media filters:"
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
+msgstr "[B<-t> I<E<lt>numE<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum bitrate as a whole number from 0 to 1000000."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
+msgstr "[B<-t> I<E<lt>numE<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum duration as a whole number from 0 to 86400."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, no-wrap
+msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
+msgstr ""
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -1475,6 +1540,3 @@ msgstr "Gebaseerd op Pedro de Oliveira's B<cas>(1).  B<wxcas> is geschreven door
 
 #~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
 #~ msgstr "Het I<E<lt>nummerE<gt>> van een bestand in de laatste zoekopdracht moet gegeven worden.  Voorbeeld: 'download 12' zal het bestand met nummer 12 uit de vorige zoekopdracht beginnen te downloaden."
-
-#~ msgid "[B<-t> I<E<lt>numE<gt>>]"
-#~ msgstr "[B<-t> I<E<lt>numE<gt>>]"

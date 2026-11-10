@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: manpages-de\n"
-"POT-Creation-Date: 2026-10-30 11:29+0000\n"
+"POT-Creation-Date: 2026-11-10 06:20+0000\n"
 "PO-Revision-Date: 2026-10-07 16:31+0000\n"
 "Last-Translator: Balla Marcell <marcell.balla@gmx.at>\n"
 "Language-Team: German <kde-i18n-de@kde.org>\n"
@@ -724,6 +724,26 @@ msgstr ""
 msgid "Resumes the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. To get the value use B<show>."
 msgstr "Setzt den Download der mit I<E<lt>PrüfsummeE<gt>> oder I<E<lt>NummerE<gt>> angegeben wurde fort. Nutze B<show>, um den Wert zu erfahren."
 
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Lists retained search IDs and queries, including searches started by other clients."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Stops activity for the specified search while retaining its results."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
+msgstr ""
+
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
@@ -795,6 +815,53 @@ msgstr "Kleinste zurückzugebende Dateigröße. Suffixe verwenden binäre Multip
 #: amulecmd.1.in
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
 msgstr "Größte zurückzugebende Dateigröße. Gleiche Suffixe wie B<--min-size>."
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Media filters:"
+msgstr ""
+
+# type: TP
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
+msgstr "[B<-t> I<E<lt>NumE<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum bitrate as a whole number from 0 to 1000000."
+msgstr ""
+
+# type: TP
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
+msgstr "[B<-t> I<E<lt>NumE<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum duration as a whole number from 0 to 86400."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, no-wrap
+msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
+msgstr ""
 
 # AI-GENERATED — please review.
 #. type: Plain text
@@ -1678,10 +1745,6 @@ msgstr "Basierend auf Pedro de Oliveira's B<cas>(1).  B<wxcas> wurde geschrieben
 # type: Plain text
 #~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
 #~ msgstr "Die I<E<lt>NummerE<gt>> einer Datei aus der letzten Suche muss angegeben werden.  Beispiel: 'download 12' startet den Download der Datei, die in der letzten Suche die Nummer 12 hatte."
-
-# type: TP
-#~ msgid "[B<-t> I<E<lt>numE<gt>>]"
-#~ msgstr "[B<-t> I<E<lt>NumE<gt>>]"
 
 # type: Plain text
 #~ msgid "Shows the progress of an on-going search."

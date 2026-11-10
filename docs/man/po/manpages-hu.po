@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: po 4a\n"
-"POT-Creation-Date: 2026-10-30 11:29+0000\n"
+"POT-Creation-Date: 2026-11-10 06:20+0000\n"
 "PO-Revision-Date: 2026-10-07 16:31+0000\n"
 "Last-Translator: Dévai Tamás <gonosztopi@amule.org>\n"
 "Language-Team: none\n"
@@ -644,6 +644,26 @@ msgstr "Folytatja a I<E<lt>hashE<gt>> vagy I<E<lt>számE<gt>> által azonosítot
 
 #. type: Plain text
 #: amulecmd.1.in
+msgid "Lists retained search IDs and queries, including searches started by other clients."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Stops activity for the specified search while retaining its results."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
 #, fuzzy
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
 msgstr "Elindít egy keresést a megadott I<E<lt>kulcsszóE<gt>>-ra. Kötelező megadni a keresés típusát és a kulcsszót. Példa: a \\(Bqsearch kad amule' parancs egy Kademlia keresést indít az \\(Bqamule' kulcsszóra."
@@ -701,6 +721,51 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Media filters:"
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
+msgstr "[B<-t> I<E<lt>számE<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum bitrate as a whole number from 0 to 1000000."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, fuzzy, no-wrap
+#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
+msgstr "[B<-t> I<E<lt>számE<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Minimum duration as a whole number from 0 to 86400."
+msgstr ""
+
+#. type: TP
+#: amulecmd.1.in
+#, no-wrap
+msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
+msgstr ""
+
+#. type: Plain text
+#: amulecmd.1.in
+msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
 msgstr ""
 
 #. type: Plain text
@@ -1479,9 +1544,6 @@ msgstr "Készült a Pedro de Oliveira írta B<cas>(1) alapján.  A B<wxcas>-t Th
 
 #~ msgid "The I<E<lt>numberE<gt>> of a file from the last search has to be given.  Example: 'download 12' will start to download the file with the number 12 of the previous search."
 #~ msgstr "Meg kell adni egy fájl számát a legutóbbi keresésből. Például: a \\(Bqdownload 12' parancs az előző keresés eredményei közül a 12-es sorszámú fájlt fogja letölteni."
-
-#~ msgid "[B<-t> I<E<lt>numE<gt>>]"
-#~ msgstr "[B<-t> I<E<lt>számE<gt>>]"
 
 #~ msgid "Shows the progress of an on-going search."
 #~ msgstr "Egy folymatban lévő keresés állapotát jeleníti meg."
