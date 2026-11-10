@@ -44,6 +44,7 @@
 #include "ListenSocket.h" // (tree, GetAverageConnections)
 #include "ServerList.h"   // Needed for CServerList (tree)
 #include <cmath>          // Needed for std::floor
+#include <type_traits>    // Needed for std::extent_v
 #include "updownclient.h" // Needed for CUpDownClient
 #else
 #include "GetTickCount.h"         // Needed for GetTickCount64()
@@ -1016,46 +1017,51 @@ void CStatistics::InitStatsTree()
 		CStatTreeItemBase *const keys =
 			s_statTree->AddChild((new CStatTreeItemBase(wxTRANSLATE("Kad receiver keys")))
 						     ->SetKey("kad_receiver_keys"));
-		// wxString rather than a char pointer: on a wxChar-is-wchar_t build the translated literal
-		// is wide, and a char array would not compile there.
-		const wxString handlerNames[] = {
-			wxTRANSLATE("Source publish"),
-			wxTRANSLATE("Keyword publish"),
-			wxTRANSLATE("Notes publish"),
-			wxTRANSLATE("Firewall check"),
-			wxTRANSLATE("Firewall check 2"),
-			wxTRANSLATE("Find buddy"),
-			wxTRANSLATE("Callback"),
+		// In EKadReceiverKeyHandler order. wxString, not a char pointer: on a wxChar-is-wchar_t
+		// build the translated literal is wide.
+		struct HandlerItem
+		{
+			wxString name;
+			const char *validKey;
+			const char *missingKey;
 		};
-		static const char *const validKeys[] = {
-			"kad_recv_key_source_publish_valid",
-			"kad_recv_key_keyword_publish_valid",
-			"kad_recv_key_notes_publish_valid",
-			"kad_recv_key_firewall_check_valid",
-			"kad_recv_key_firewall_check2_valid",
-			"kad_recv_key_find_buddy_valid",
-			"kad_recv_key_callback_valid",
+		const HandlerItem handlers[] = {
+			{ wxTRANSLATE("Keyword publish"),
+				"kad_recv_key_keyword_publish_valid",
+				"kad_recv_key_keyword_publish_missing" },
+			{ wxTRANSLATE("Source publish"),
+				"kad_recv_key_source_publish_valid",
+				"kad_recv_key_source_publish_missing" },
+			{ wxTRANSLATE("Notes publish"),
+				"kad_recv_key_notes_publish_valid",
+				"kad_recv_key_notes_publish_missing" },
+			{ wxTRANSLATE("Firewall check"),
+				"kad_recv_key_firewall_check_valid",
+				"kad_recv_key_firewall_check_missing" },
+			{ wxTRANSLATE("Firewall check 2"),
+				"kad_recv_key_firewall_check2_valid",
+				"kad_recv_key_firewall_check2_missing" },
+			{ wxTRANSLATE("Find buddy"),
+				"kad_recv_key_find_buddy_valid",
+				"kad_recv_key_find_buddy_missing" },
+			{ wxTRANSLATE("Callback"),
+				"kad_recv_key_callback_valid",
+				"kad_recv_key_callback_missing" },
 		};
-		static const char *const missingKeys[] = {
-			"kad_recv_key_source_publish_missing",
-			"kad_recv_key_keyword_publish_missing",
-			"kad_recv_key_notes_publish_missing",
-			"kad_recv_key_firewall_check_missing",
-			"kad_recv_key_firewall_check2_missing",
-			"kad_recv_key_find_buddy_missing",
-			"kad_recv_key_callback_missing",
-		};
+		static_assert(std::extent_v<decltype(handlers)> ==
+				      static_cast<std::size_t>(EKadReceiverKeyHandler::Count),
+			"one stats item per receiver key handler");
 		for (std::size_t i = 0; i < static_cast<std::size_t>(EKadReceiverKeyHandler::Count); ++i) {
 			CStatTreeItemBase *const handler =
-				keys->AddChild(new CStatTreeItemBase(handlerNames[i]));
+				keys->AddChild(new CStatTreeItemBase(handlers[i].name));
 			s_kadReceiverKeyValid[i] =
 				static_cast<CStatTreeItemNativeCounter *>(handler->AddChild(
 					new CStatTreeItemNativeCounter(wxTRANSLATE("Keys valid: %s")), 1));
-			s_kadReceiverKeyValid[i]->SetKey(wxString::FromAscii(validKeys[i]));
+			s_kadReceiverKeyValid[i]->SetKey(wxString::FromAscii(handlers[i].validKey));
 			s_kadReceiverKeyMissing[i] =
 				static_cast<CStatTreeItemNativeCounter *>(handler->AddChild(
 					new CStatTreeItemNativeCounter(wxTRANSLATE("Keys missing: %s")), 1));
-			s_kadReceiverKeyMissing[i]->SetKey(wxString::FromAscii(missingKeys[i]));
+			s_kadReceiverKeyMissing[i]->SetKey(wxString::FromAscii(handlers[i].missingKey));
 		}
 	}
 	s_clients->AddChild(

@@ -29,11 +29,11 @@
 
 #include "kademlia/utils/ContactDistribution.h"
 #include "DisplayRateCounter.h"
-#include "Constants.h" // Needed for StatsGraphType
-#include "StatTree.h"
-#include "kademlia/net/KadReceiverKeyPolicy.h" // Needed for EKadReceiverKeyHandler            // Needed for CStatTreeItem* classes
+#include "Constants.h"                         // Needed for StatsGraphType
+#include "StatTree.h"                          // Needed for CStatTreeItem* classes
 #include "GetTickCount.h"                      // Needed for GetTickCount64 in CPreciseRateCounter ctor
-#include "SessionTrafficStats.h" // Needed for AMULE_SESSION_TRAFFIC_STATS
+#include "kademlia/net/KadReceiverKeyPolicy.h" // Needed for EKadReceiverKeyHandler
+#include "SessionTrafficStats.h"               // Needed for AMULE_SESSION_TRAFFIC_STATS
 
 #include <atomic> // Needed for std::atomic (free-space figures)
 #include <deque>  // Needed for std::deque
@@ -372,6 +372,15 @@ public:
 	static void RemoveBannedClient() { --(*s_banned); }
 
 	/**
+	 * Record what one Kad handler saw: a receiver key that proved the sender, or its absence.
+	 *
+	 * Counting is per handler because the answer differs by handler: a callback request is sent
+	 * unencrypted by design and never carries a key, so only the publishes can ever justify
+	 * rejecting a request on that basis.
+	 */
+	static void AddKadReceiverKeyObservation(EKadReceiverKeyHandler handler, bool validReceiverKey);
+
+	/**
 	 * Addresses Kad is currently refusing to talk to (CSafeKad).
 	 *
 	 * Set rather than incremented, because these bans lapse inside an aged map with no event to
@@ -383,14 +392,6 @@ public:
 	 * them would report a peer as barred from uploads when it is merely unwelcome in the
 	 * routing table.
 	 */
-	/**
-	 * Record what one Kad handler saw: a receiver key that proved the sender, or its absence.
-	 *
-	 * Counting is per handler because the answer differs by handler: a callback request is sent
-	 * unencrypted by design and never carries a key, so only the publishes can ever justify
-	 * rejecting a request on that basis.
-	 */
-	static void AddKadReceiverKeyObservation(EKadReceiverKeyHandler handler, bool validReceiverKey);
 
 #ifdef ENABLE_KAD_NODE_PROTECTION
 	static void SetKadBannedAddresses(uint32 value) { s_kadBanned->SetValue(value); }
