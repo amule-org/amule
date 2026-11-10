@@ -37,7 +37,7 @@ SServerIPv6SourceFacts ContactableOverIPv6()
 	SServerIPv6SourceFacts facts;
 	facts.address = CNetworkAddress::FromString("2001:4860:4860::8888");
 	facts.port = 4662;
-	facts.ownAddress = CNetworkAddress::FromString("2a00:1450:4001:80b::a");
+	facts.ownAddresses = { CNetworkAddress::FromString("2a00:1450:4001:80b::a") };
 	facts.ownPort = 4662;
 	facts.ipv6Built = true;
 	facts.familyPermitted = true;
@@ -76,17 +76,34 @@ TEST(ServerIPv6SourcePolicy, AnAddressThatNamesNoRemotePeerIsNotContacted)
 TEST(ServerIPv6SourcePolicy, OurOwnAddressAndPortIsNotContacted)
 {
 	SServerIPv6SourceFacts ourselves = ContactableOverIPv6();
-	ourselves.address = ourselves.ownAddress;
+	ourselves.address = ourselves.ownAddresses.front();
 	ASSERT_FALSE(ShouldContactServerSourceOverIPv6(ourselves));
 
 	SServerIPv6SourceFacts otherPort = ContactableOverIPv6();
-	otherPort.address = otherPort.ownAddress;
+	otherPort.address = otherPort.ownAddresses.front();
 	otherPort.port = 4663;
 	ASSERT_TRUE(ShouldContactServerSourceOverIPv6(otherPort));
 
 	SServerIPv6SourceFacts otherAddress = ContactableOverIPv6();
 	ASSERT_TRUE(otherAddress.port == otherAddress.ownPort);
 	ASSERT_TRUE(ShouldContactServerSourceOverIPv6(otherAddress));
+}
+
+// After a withdrawal or a renumber, a server can still answer with a list built before it.
+TEST(ServerIPv6SourcePolicy, AnyAddressThisSessionAdvertisedIsNotContacted)
+{
+	SServerIPv6SourceFacts facts = ContactableOverIPv6();
+	const CNetworkAddress former = CNetworkAddress::FromString("2a00:1450:4001:80b::b");
+	facts.ownAddresses.push_back(former);
+	facts.address = former;
+	ASSERT_FALSE(ShouldContactServerSourceOverIPv6(facts));
+
+	// The same check with no address advertised now: the session list still holds the former one.
+	facts.ownAddresses = { former };
+	ASSERT_FALSE(ShouldContactServerSourceOverIPv6(facts));
+
+	facts.ownAddresses.clear();
+	ASSERT_TRUE(ShouldContactServerSourceOverIPv6(facts));
 }
 
 TEST(ServerIPv6SourcePolicy, EachMissingDialPermissionRefusesTheContact)

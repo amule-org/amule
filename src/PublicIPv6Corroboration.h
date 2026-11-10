@@ -116,7 +116,7 @@ constexpr std::size_t PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS = 8;
 //! interface refresh covers the case where the address simply went away.
 constexpr std::uint64_t PUBLIC_IPV6_CORROBORATION_WINDOW_MS = 30ull * 60ull * 1000ull;
 
-//! How many observers' contradicting claims are remembered, one claim per observer /48.
+//! How many observers' contradicting claims are remembered, one claim per observer /32.
 //!
 //! Unlike a vote, a contradiction names a prefix the peer chose, so it cannot be bounded by what
 //! this machine holds. Keeping only each observer's latest claim stops one peer from spending our
@@ -202,13 +202,19 @@ public:
 	 * @param observedFrom the address the hello was actually seen arriving from. Only a globally
 	 * routable IPv6 address counts, as one vote for its whole /48.
 	 * @param claimed 16 bytes, big-endian. May be nullptr, which is ignored.
+	 * @param inbound whether the peer dialled us. Only such a peer can vote for an address we hold:
+	 * one we dialled saw only where we left from, and may simply echo what we advertise. Either can
+	 * contradict, because a translated prefix shows up on our own dials.
 	 * @param nowMs a millisecond tick count. Passed in rather than read here so the window is
 	 * testable at all.
 	 * @return true exactly when this claim brings the claimed /64 to the threshold; false
 	 * otherwise, including repeats once it is reached and every contradiction. A repeat from an
 	 * observer already counted refreshes that vote and changes nothing else.
 	 */
-	bool AddClaim(const CNetworkAddress &observedFrom, const std::uint8_t *claimed, std::uint64_t nowMs)
+	bool AddClaim(const CNetworkAddress &observedFrom,
+		const std::uint8_t *claimed,
+		bool inbound,
+		std::uint64_t nowMs)
 	{
 		// Aging runs before the claim is judged, so a claim arriving after a long quiet
 		// spell sees an empty tally rather than votes that should already have expired.
@@ -244,8 +250,11 @@ public:
 			// rejection that allocated something would let a peer spend our memory on
 			// values it invented.
 			if (!HoldsAddressIn(prefix)) {
-				AddContradiction(scope, prefix, nowMs);
+				AddContradiction(ContradictionScope(observedFrom), prefix, nowMs);
 			}
+			return false;
+		}
+		if (!inbound) {
 			return false;
 		}
 		Candidate *candidate = Find(prefix);
@@ -275,9 +284,10 @@ public:
 		const std::size_t after = candidate->observers.size();
 		if (after >= PUBLIC_IPV6_CORROBORATION_THRESHOLD) {
 			candidate->verdict = true;
+			// A quorum of peers reaching us at an address we hold ends the veto. One vote only
+			// suspends it while the vote lives: see IsPrefixVetoed().
+			m_veto.reset();
 		}
-		// A peer reaching us at an address we hold is direct evidence against the veto.
-		m_veto.reset();
 		return before < PUBLIC_IPV6_CORROBORATION_THRESHOLD &&
 		       after >= PUBLIC_IPV6_CORROBORATION_THRESHOLD;
 	}
@@ -313,8 +323,8 @@ public:
 	 * uplink) or fake claims than new NAT.
 	 *
 	 * A formed veto outlives its contradictions, up to PUBLIC_IPV6_VETO_CEILING_MS after they were
-	 * last confirmed. It ends sooner on a vote for an address we hold, when we come to hold the
-	 * contradicting /64, and on ForgetVerdicts().
+	 * last confirmed. A live vote suspends it, and it ends sooner on a quorum of votes for an
+	 * address we hold, when we come to hold the contradicting /64, and on ForgetVerdicts().
 	 */
 	bool IsPrefixVetoed(const CNetworkAddress &address, std::uint64_t nowMs) const
 	{
@@ -396,6 +406,14 @@ private:
 	static CNetworkAddress ObserverScope(const CNetworkAddress &observer)
 	{
 		return observer.TruncatedToPrefix(48);
+	}
+
+	//! Wider than a vote's: a veto switches advertising off for up to a day, and one tunnel broker
+	//! hands out many /48s from a single /32 for free. Such a peer cannot vote either way, since a
+	//! vote needs it to have dialled us.
+	static CNetworkAddress ContradictionScope(const CNetworkAddress &observer)
+	{
+		return observer.TruncatedToPrefix(32);
 	}
 
 	//! @a value with its interface identifier cleared: the /64 it belongs to.

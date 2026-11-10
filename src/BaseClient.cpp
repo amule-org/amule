@@ -421,7 +421,7 @@ bool CUpDownClient::ProcessHelloPacket(const uint8_t *pachPacket, uint32 nSize)
 	// eMule 0.42: reset all client properties; a client may not send a particular emule tag any longer
 	ClearHelloProperties();
 
-	const bool isMuleHello = ProcessHelloTypePacket(data);
+	const bool isMuleHello = ProcessHelloTypePacket(data, true);
 #ifdef ENABLE_IPV6
 	// Only an inbound OP_HELLO reaches this function: a HELLOANSWER from our own dial goes
 	// straight to ProcessHelloTypePacket(), so our outgoing connections cannot prove us.
@@ -525,12 +525,12 @@ void CUpDownClient::Safe_Delete()
 bool CUpDownClient::ProcessHelloAnswer(const uint8_t *pachPacket, uint32 nSize)
 {
 	const CMemFile data(pachPacket, nSize);
-	bool bIsMule = ProcessHelloTypePacket(data);
+	bool bIsMule = ProcessHelloTypePacket(data, false);
 	m_bHelloAnswerPending = false;
 	return bIsMule;
 }
 
-bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
+bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 {
 	m_strModVersion.Clear();
 	uint32 dwEmuleTags = 0;
@@ -762,13 +762,15 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 			// address this machine holds, so peers can never make us advertise a foreign one, and
 			// counts one vote per /48 of a peer that reached us over IPv6 from outside the
 			// claimed address's /48, keyed on where the packet came from rather than on a
-			// self-declared user hash. Votes for any of our addresses in one /64 add up, within a
-			// time window. Claims for a /64 we do not hold are counted the same way as evidence
-			// that can veto advertising ours.
+			// self-declared user hash. Only a peer that dialled us votes; votes for any of our
+			// addresses in one /64 add up, within a time window. Claims for a /64 we do not hold
+			// are counted the same way as evidence that can veto advertising ours.
 			if (temptag.IsHash() && m_socket != nullptr) {
 				const std::uint8_t *claimed = temptag.GetHash().GetHash();
-				if (ObservedPublicIPv6().AddClaim(
-					    m_socket->GetPeerAddress(), claimed, ::GetTickCount64())) {
+				if (ObservedPublicIPv6().AddClaim(m_socket->GetPeerAddress(),
+					    claimed,
+					    inbound,
+					    ::GetTickCount64())) {
 					AddDebugLogLineN(logClient,
 						CFormat("Peers reaching us over IPv6 see us in %s/64") %
 							CNetworkAddress::FromIPv6Bytes(claimed)
@@ -815,8 +817,10 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data)
 	}
 
 	if (m_socket) {
-		if (!m_preserveIdentityOnHello) {
-			SetUserAddress(m_socket->GetPeerAddress());
+		const CNetworkAddress peerAddress = m_socket->GetPeerAddress();
+		if (!m_preserveIdentityOnHello &&
+			!PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(GetUserAddress(), peerAddress)) {
+			SetUserAddress(peerAddress);
 		}
 	} else {
 		throw wxString("Huh, socket failure. Avoided crash this time.");
@@ -3575,13 +3579,23 @@ void CUpDownClient::UpdateModIPv6(const CNetworkAddress &address)
 }
 #endif
 
+CNetworkAddress CUpDownClient::GetConductAddress() const
+{
+	return PeerAddressing::ConductAddress(
+		m_socket != nullptr ? m_socket->GetPeerAddress() : CNetworkAddress::Absent(),
+		GetUserAddress());
+}
+
 bool CUpDownClient::HasPeerIPv4() const
 {
 	// The user address stays absent until the peer's hello, so an outbound connection has to
 	// ask the address it dialled, or it would advertise SecIdent v1 to an IPv4 peer.
 	uint32 peerIPv4 = 0;
-	return SecIdent::PeerIPv4(
-		GetUserAddress().IsPresent() ? GetUserAddress() : GetConnectAddress(), peerIPv4);
+	return SecIdent::PeerIPv4(SecIdent::PeerAddressForV2(m_socket != nullptr ? m_socket->GetPeerAddress()
+										 : CNetworkAddress::Absent(),
+					  GetUserAddress(),
+					  GetConnectAddress()),
+		peerIPv4);
 }
 
 void CUpDownClient::SetUserAddress(const CNetworkAddress &address)

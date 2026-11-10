@@ -299,6 +299,8 @@ public:
 	CNetworkAddress GetDialAddress() const;
 	//! Whether the peer has an IPv4 form, from the best address known so far.
 	bool HasPeerIPv4() const;
+	//! Where bans, corruption and AICH votes are charged: see PeerAddressing::ConductAddress().
+	CNetworkAddress GetConductAddress() const;
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
 	void SetUserIDHybrid(uint32 val);
 	uint16_t GetUserPort() const { return m_nUserPort; }
@@ -1011,7 +1013,8 @@ private:
 
 	void Init();
 	void SendClassicCallbackRequest();
-	bool ProcessHelloTypePacket(const CMemFile &data);
+	//! `inbound`: an OP_HELLO, which only a peer that dialled us sends.
+	bool ProcessHelloTypePacket(const CMemFile &data, bool inbound);
 	void SendHelloTypePacket(CMemFile *data);
 	void SendFirewallCheckUDPRequest();
 	void ClearHelloProperties(); // eMule 0.42

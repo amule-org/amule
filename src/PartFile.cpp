@@ -2004,7 +2004,7 @@ void CPartFile::AddSources(CMemFile &sources,
 	uint16 serverport,
 	unsigned origin,
 	bool bWithObfuscationAndHash,
-	const CNetworkAddress *loginIPv6)
+	const std::vector<CNetworkAddress> *ownIPv6)
 {
 	uint8 count = sources.ReadUInt8();
 	uint8 debug_lowiddropped = 0;
@@ -2043,14 +2043,14 @@ void CPartFile::AddSources(CMemFile &sources,
 			ParseServerSourceRecord(sources.GetRawBuffer() + sources.GetPosition(),
 				static_cast<std::size_t>(sources.GetAvailable()),
 				bWithObfuscationAndHash,
-				loginIPv6 != nullptr);
+				ownIPv6 != nullptr);
 		if (!parsed.ok) {
 			throw CEOFException("Truncated source record in OP_FOUNDSOURCES");
 		}
 		sources.Seek(static_cast<sint64>(parsed.bytesConsumed), wxFromCurrent);
 
 #ifdef ENABLE_IPV6
-		if (loginIPv6 != nullptr && parsed.record.isIPv6) {
+		if (ownIPv6 != nullptr && parsed.record.isIPv6) {
 			if (thePrefs::GetMaxSourcePerFile() <= GetSourceCount()) {
 				stopAtSourceCap(i);
 				break;
@@ -2058,7 +2058,7 @@ void CPartFile::AddSources(CMemFile &sources,
 			SServerIPv6SourceFacts facts;
 			facts.address = parsed.record.ipv6Address;
 			facts.port = parsed.record.port;
-			facts.ownAddress = *loginIPv6;
+			facts.ownAddresses = *ownIPv6;
 			facts.ownPort = thePrefs::GetPort();
 			facts.ipv6Built = true;
 			facts.familyPermitted = AddressFamilyPolicy::Permits(parsed.record.ipv6Address);
@@ -3581,7 +3581,8 @@ uint32 CPartFile::WriteToBuffer(uint32 transize,
 		m_nTotalBufferData += bytes;
 		buffered += bytes;
 		// Attribute only the bytes actually retained, not overlapping duplicates.
-		m_CorruptionBlackBox->TransferredData(fragment.start, fragment.end, client->GetUserAddress());
+		m_CorruptionBlackBox->TransferredData(
+			fragment.start, fragment.end, client->GetConductAddress());
 		FillGap(fragment.start, fragment.end);
 	}
 	block->transferred += buffered;

@@ -1798,7 +1798,7 @@ void CUpDownClient::ProcessAICHFileHash(CMemFile *data, const CPartFile *file)
 
 	if (pPartFile != NULL && pPartFile == GetRequestFile()) {
 		SetReqFileAICHHash(new CAICHHash(ahMasterHash));
-		pPartFile->GetAICHHashset()->UntrustedHashReceived(ahMasterHash, GetConnectAddress());
+		pPartFile->GetAICHHashset()->UntrustedHashReceived(ahMasterHash, GetConductAddress());
 	} else {
 		AddDebugLogLineN(logAICHTransfer,
 			"ProcessAICHFileHash(): PartFile not found or Partfile differs from requested "

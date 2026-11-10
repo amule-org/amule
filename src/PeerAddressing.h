@@ -502,6 +502,29 @@ inline CNetworkAddress OutboundIPv6Source(
 	return advertised;
 }
 
+/**
+ * Whether a hello that arrived over native IPv6 keeps the IPv4 identity a known peer already has.
+ *
+ * A peer leaves from a temporary IPv6 address (RFC 6724 rule 7), which a firewall usually closes to
+ * inbound dials and which expires within a day. Taking it as the peer's address would turn a
+ * HighID into ID 0 behind an address nobody can dial, so the source dies although its IPv4 works.
+ */
+inline bool KeepsIPv4IdentityOnIPv6Hello(const CNetworkAddress &known, const CNetworkAddress &socketPeer)
+{
+	return known.Unmapped().IsIPv4() && socketPeer.IsIPv6() && !socketPeer.IsIPv4Mapped();
+}
+
+/**
+ * The address a verdict on a peer's conduct lands on: a ban, a corruption charge, an AICH vote.
+ *
+ * While connected it is the live socket's peer, because an IPv6 hello can keep an IPv4 identity it
+ * never proved, and the blame must not reach the host behind that identity.
+ */
+inline CNetworkAddress ConductAddress(const CNetworkAddress &socketPeer, const CNetworkAddress &userAddress)
+{
+	return socketPeer.IsPresent() ? IndexKey(socketPeer) : userAddress;
+}
+
 //! Whether one address is IPv4 (or mapped) and the other native IPv6.
 inline bool IsOtherFamily(const CNetworkAddress &a, const CNetworkAddress &b) noexcept
 {

@@ -55,6 +55,29 @@ TEST(SecIdent, WithoutIPv4OnlyMutuallySupportedV1IsUsable)
 	ASSERT_EQUALS(SecIdent::V1, SecIdent::SignatureVersion(3, false));
 }
 
+// A peer we know by its IPv4 that reached us over IPv6 cannot see our IPv4, so the live
+// connection decides, not the identity we keep for it.
+TEST(SecIdent, TheLiveConnectionDecidesV2)
+{
+	// 203.0.113.7, 2001:4860:4860::8888 and ::ffff:203.0.113.7, built from bytes: this test
+	// links no address parser.
+	const CNetworkAddress ipv4 = CNetworkAddress::FromIPv4NetworkOrderOrAbsent(0x077100cb);
+	const CNetworkAddress ipv6 = CNetworkAddress::IPv6FromOctets(
+		{ 0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0, 0, 0, 0, 0, 0, 0, 0, 0x88, 0x88 });
+	const CNetworkAddress mapped =
+		CNetworkAddress::IPv6FromOctets({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 203, 0, 113, 7 });
+	ASSERT_TRUE(ipv4.IsIPv4() && ipv6.IsIPv6() && mapped.IsIPv4Mapped());
+	uint32_t ip = 0;
+	ASSERT_FALSE(SecIdent::PeerIPv4(SecIdent::PeerAddressForV2(ipv6, ipv4, ipv4), ip));
+	ASSERT_TRUE(SecIdent::PeerIPv4(SecIdent::PeerAddressForV2(mapped, ipv4, ipv4), ip));
+	ASSERT_TRUE(SecIdent::PeerIPv4(SecIdent::PeerAddressForV2(ipv4, ipv6, ipv6), ip));
+	// No socket yet: the user address, else the address we dial.
+	const CNetworkAddress none = CNetworkAddress::Absent();
+	ASSERT_TRUE(SecIdent::PeerIPv4(SecIdent::PeerAddressForV2(none, ipv4, ipv6), ip));
+	ASSERT_TRUE(SecIdent::PeerIPv4(SecIdent::PeerAddressForV2(none, none, ipv4), ip));
+	ASSERT_FALSE(SecIdent::PeerIPv4(SecIdent::PeerAddressForV2(none, none, ipv6), ip));
+}
+
 TEST(SecIdent, ReservedFeatureBitsDoNotEnableSecureIdentification)
 {
 	ASSERT_EQUALS(SecIdent::Unavailable, SecIdent::SignatureVersion(0xfc, true));

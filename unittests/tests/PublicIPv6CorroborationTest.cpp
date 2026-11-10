@@ -90,9 +90,9 @@ CNetworkAddress AsNetworkAddress(const Address &address)
 	return CNetworkAddress::IPv6FromOctets(address);
 }
 
-// A globally routable IPv6 peer: 2a03:2880:<network>:<subnet>::<host>. Each network is a /48 of
-// its own, one subscriber's delegation; subnets and hosts inside one network are that subscriber
-// switching /64 or rotating its suffix. Not 2001:db8::/32, which is documentation space and not
+// A globally routable IPv6 peer: 2a03:28<network>:<network>:<subnet>::<host>. Each network is a
+// /32 and a /48 of its own, one subscriber's delegation; subnets and hosts inside one network are that
+// subscriber switching /64 or rotating its suffix. Not 2001:db8::/32, which is documentation space and not
 // globally routable.
 CNetworkAddress Observer(uint8_t network, uint8_t host = 1, uint8_t subnet = 0)
 {
@@ -100,7 +100,7 @@ CNetworkAddress Observer(uint8_t network, uint8_t host = 1, uint8_t subnet = 0)
 	octets[0] = 0x2a;
 	octets[1] = 0x03;
 	octets[2] = 0x28;
-	octets[3] = 0x80;
+	octets[3] = network;
 	octets[5] = network;
 	octets[7] = subnet;
 	octets[15] = host;
@@ -135,7 +135,7 @@ const uint64_t START_MS = 5000;
 void ClaimFrom(CPublicIPv6Corroboration &tracker, unsigned count, const Address &claimed, uint64_t nowMs)
 {
 	for (unsigned i = 0; i < count; ++i) {
-		tracker.AddClaim(Observer((uint8_t)(i + 1)), claimed.data(), nowMs);
+		tracker.AddClaim(Observer((uint8_t)(i + 1)), claimed.data(), true, nowMs);
 	}
 }
 
@@ -172,12 +172,12 @@ TEST(PublicIPv6Corroboration, AddClaimReportsReachingTheThresholdExactlyOnce)
 	CPublicIPv6Corroboration tracker;
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 
-	ASSERT_FALSE(tracker.AddClaim(Observer(1), Stable().data(), START_MS));
-	ASSERT_FALSE(tracker.AddClaim(Observer(2), Stable().data(), START_MS));
+	ASSERT_FALSE(tracker.AddClaim(Observer(1), Stable().data(), true, START_MS));
+	ASSERT_FALSE(tracker.AddClaim(Observer(2), Stable().data(), true, START_MS));
 	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
-	ASSERT_TRUE(tracker.AddClaim(Observer(3), Stable().data(), START_MS));
-	ASSERT_FALSE(tracker.AddClaim(Observer(3), Stable().data(), START_MS));
-	ASSERT_FALSE(tracker.AddClaim(Observer(4), Stable().data(), START_MS));
+	ASSERT_TRUE(tracker.AddClaim(Observer(3), Stable().data(), true, START_MS));
+	ASSERT_FALSE(tracker.AddClaim(Observer(3), Stable().data(), true, START_MS));
+	ASSERT_FALSE(tracker.AddClaim(Observer(4), Stable().data(), true, START_MS));
 }
 
 // A subscriber holds a whole /64 and can source each hello from a fresh suffix. Counted per /128,
@@ -188,7 +188,7 @@ TEST(PublicIPv6Corroboration, AddressesInsideOneObserverPrefixCountOnce)
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 
 	for (unsigned host = 1; host <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++host) {
-		ASSERT_FALSE(tracker.AddClaim(Observer(1, (uint8_t)host), Stable().data(), START_MS));
+		ASSERT_FALSE(tracker.AddClaim(Observer(1, (uint8_t)host), Stable().data(), true, START_MS));
 	}
 
 	ASSERT_EQUALS(1u, (unsigned)tracker.DistinctObserversFor(Stable().data()));
@@ -203,13 +203,14 @@ TEST(PublicIPv6Corroboration, SubnetsOfOneObserverDelegationCountOnce)
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 
 	for (unsigned subnet = 1; subnet <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++subnet) {
-		ASSERT_FALSE(tracker.AddClaim(Observer(1, 1, (uint8_t)subnet), Stable().data(), START_MS));
+		ASSERT_FALSE(
+			tracker.AddClaim(Observer(1, 1, (uint8_t)subnet), Stable().data(), true, START_MS));
 	}
 	ASSERT_EQUALS(1u, (unsigned)tracker.DistinctObserversFor(Stable().data()));
 	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
 
-	ASSERT_FALSE(tracker.AddClaim(Observer(2), Stable().data(), START_MS));
-	ASSERT_TRUE(tracker.AddClaim(Observer(3), Stable().data(), START_MS));
+	ASSERT_FALSE(tracker.AddClaim(Observer(2), Stable().data(), true, START_MS));
+	ASSERT_TRUE(tracker.AddClaim(Observer(3), Stable().data(), true, START_MS));
 	ASSERT_TRUE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
 }
 
@@ -223,9 +224,9 @@ TEST(PublicIPv6Corroboration, AnObserverInAnotherSubnetOfOurDelegationDoesNotCou
 	ASSERT_TRUE(AsNetworkAddress(neighbour).TruncatedToPrefix(48) ==
 		    AsNetworkAddress(Stable()).TruncatedToPrefix(48));
 
-	tracker.AddClaim(Observer(1), Stable().data(), START_MS);
-	tracker.AddClaim(Observer(2), Stable().data(), START_MS);
-	ASSERT_FALSE(tracker.AddClaim(AsNetworkAddress(neighbour), Stable().data(), START_MS));
+	tracker.AddClaim(Observer(1), Stable().data(), true, START_MS);
+	tracker.AddClaim(Observer(2), Stable().data(), true, START_MS);
+	ASSERT_FALSE(tracker.AddClaim(AsNetworkAddress(neighbour), Stable().data(), true, START_MS));
 
 	ASSERT_EQUALS(2u, (unsigned)tracker.DistinctObserversFor(Stable().data()));
 	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
@@ -248,9 +249,9 @@ TEST(PublicIPv6Corroboration, IPv4AndMappedObserversDoNotCount)
 		mapped[14] = 70;
 		mapped[15] = (uint8_t)i;
 		ASSERT_FALSE(tracker.AddClaim(
-			CNetworkAddress::FromIPv4HostOrder(ipv4), Stable().data(), START_MS));
-		ASSERT_FALSE(
-			tracker.AddClaim(CNetworkAddress::IPv6FromOctets(mapped), Stable().data(), START_MS));
+			CNetworkAddress::FromIPv4HostOrder(ipv4), Stable().data(), true, START_MS));
+		ASSERT_FALSE(tracker.AddClaim(
+			CNetworkAddress::IPv6FromOctets(mapped), Stable().data(), true, START_MS));
 	}
 
 	ASSERT_EQUALS(0u, (unsigned)tracker.CandidateCount());
@@ -270,9 +271,10 @@ TEST(PublicIPv6Corroboration, UniqueLocalAndLinkLocalObserversDoNotCount)
 		uniqueLocal[15] = 1;
 		Address linkLocal = MakePrefixed(0xfe, 0x80);
 		linkLocal[15] = (uint8_t)i;
-		ASSERT_FALSE(tracker.AddClaim(AsNetworkAddress(uniqueLocal), Stable().data(), START_MS));
+		ASSERT_FALSE(
+			tracker.AddClaim(AsNetworkAddress(uniqueLocal), Stable().data(), true, START_MS));
 		ASSERT_FALSE(tracker.AddClaim(
-			CNetworkAddress::IPv6FromOctets(linkLocal, 2), Stable().data(), START_MS));
+			CNetworkAddress::IPv6FromOctets(linkLocal, 2), Stable().data(), true, START_MS));
 	}
 
 	ASSERT_EQUALS(0u, (unsigned)tracker.CandidateCount());
@@ -286,10 +288,10 @@ TEST(PublicIPv6Corroboration, AnObserverInsideTheClaimedPrefixDoesNotCount)
 	CPublicIPv6Corroboration tracker;
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 
-	tracker.AddClaim(Observer(1), Stable().data(), START_MS);
-	tracker.AddClaim(Observer(2), Stable().data(), START_MS);
-	ASSERT_FALSE(
-		tracker.AddClaim(AsNetworkAddress(InPrefix(OUR_SUBNET, 0x99)), Stable().data(), START_MS));
+	tracker.AddClaim(Observer(1), Stable().data(), true, START_MS);
+	tracker.AddClaim(Observer(2), Stable().data(), true, START_MS);
+	ASSERT_FALSE(tracker.AddClaim(
+		AsNetworkAddress(InPrefix(OUR_SUBNET, 0x99)), Stable().data(), true, START_MS));
 
 	ASSERT_EQUALS(2u, (unsigned)tracker.DistinctObserversFor(Stable().data()));
 	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
@@ -302,9 +304,9 @@ TEST(PublicIPv6Corroboration, VotesForTemporaryAndStableAddressesOfOnePrefixAddU
 	CPublicIPv6Corroboration tracker;
 	tracker.SetLocalAddresses(Held(Stable(), Temporary()), START_MS);
 
-	ASSERT_FALSE(tracker.AddClaim(Observer(1), Temporary().data(), START_MS));
-	ASSERT_FALSE(tracker.AddClaim(Observer(2), Temporary().data(), START_MS));
-	ASSERT_TRUE(tracker.AddClaim(Observer(3), Stable().data(), START_MS));
+	ASSERT_FALSE(tracker.AddClaim(Observer(1), Temporary().data(), true, START_MS));
+	ASSERT_FALSE(tracker.AddClaim(Observer(2), Temporary().data(), true, START_MS));
+	ASSERT_TRUE(tracker.AddClaim(Observer(3), Stable().data(), true, START_MS));
 
 	ASSERT_EQUALS(1u, (unsigned)tracker.CandidateCount());
 	ASSERT_TRUE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
@@ -320,7 +322,7 @@ TEST(PublicIPv6Corroboration, AClaimForAnAddressWeDoNotHoldNeverCorroborates)
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 
 	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS + 4; ++i) {
-		ASSERT_FALSE(tracker.AddClaim(Observer((uint8_t)i), host.data(), START_MS));
+		ASSERT_FALSE(tracker.AddClaim(Observer((uint8_t)i), host.data(), true, START_MS));
 	}
 
 	ASSERT_EQUALS(0u, (unsigned)tracker.CandidateCount());
@@ -338,7 +340,7 @@ TEST(PublicIPv6Corroboration, ARejectedClaimLeavesNoTrace)
 
 	for (unsigned i = 0; i < 255; ++i) {
 		const Address invented = InPrefix(OUR_SUBNET, (uint8_t)i);
-		tracker.AddClaim(Observer((uint8_t)i), invented.data(), START_MS);
+		tracker.AddClaim(Observer((uint8_t)i), invented.data(), true, START_MS);
 	}
 
 	ASSERT_EQUALS(0u, (unsigned)tracker.CandidateCount());
@@ -397,7 +399,7 @@ TEST(PublicIPv6Corroboration, WithNoPublishedInterfacesNothingIsBelieved)
 	CPublicIPv6Corroboration tracker;
 
 	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
-		ASSERT_FALSE(tracker.AddClaim(Observer((uint8_t)i), Stable().data(), START_MS));
+		ASSERT_FALSE(tracker.AddClaim(Observer((uint8_t)i), Stable().data(), true, START_MS));
 	}
 	ASSERT_EQUALS(0u, (unsigned)tracker.LocalAddressCount());
 	ASSERT_EQUALS(0u, (unsigned)tracker.CandidateCount());
@@ -411,7 +413,7 @@ TEST(PublicIPv6Corroboration, OneObserverRepeatingItselfNeverCorroborates)
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 
 	for (unsigned i = 0; i < PUBLIC_IPV6_CORROBORATION_THRESHOLD * 10; ++i) {
-		ASSERT_FALSE(tracker.AddClaim(Observer(7), Stable().data(), START_MS));
+		ASSERT_FALSE(tracker.AddClaim(Observer(7), Stable().data(), true, START_MS));
 	}
 	ASSERT_EQUALS(1u, (unsigned)tracker.DistinctObserversFor(Stable().data()));
 	ASSERT_FALSE(tracker.IsPrefixCorroborated(AsNetworkAddress(Stable()), START_MS));
@@ -429,7 +431,7 @@ TEST(PublicIPv6Corroboration, DisagreeingPeersDoNotPoolIntoAQuorum)
 	tracker.SetLocalAddresses(local, START_MS);
 
 	for (unsigned i = 0; i < local.size(); ++i) {
-		tracker.AddClaim(Observer((uint8_t)(i + 1)), local[i].data(), START_MS);
+		tracker.AddClaim(Observer((uint8_t)(i + 1)), local[i].data(), true, START_MS);
 	}
 
 	ASSERT_EQUALS((unsigned)PUBLIC_IPV6_CORROBORATION_THRESHOLD, (unsigned)tracker.CandidateCount());
@@ -450,8 +452,10 @@ TEST(PublicIPv6Corroboration, SurplusVotesCarryAPrefixThroughAnExpiry)
 
 	const uint64_t later = START_MS + 1000;
 	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
-		tracker.AddClaim(
-			Observer((uint8_t)(i + PUBLIC_IPV6_CORROBORATION_THRESHOLD)), Stable().data(), later);
+		tracker.AddClaim(Observer((uint8_t)(i + PUBLIC_IPV6_CORROBORATION_THRESHOLD)),
+			Stable().data(),
+			true,
+			later);
 	}
 	ASSERT_EQUALS((unsigned)(PUBLIC_IPV6_CORROBORATION_THRESHOLD * 2),
 		(unsigned)tracker.DistinctObserversFor(Stable().data()));
@@ -483,9 +487,9 @@ TEST(PublicIPv6Corroboration, NullClaimsAndAbsentObserversAreIgnored)
 	CPublicIPv6Corroboration tracker;
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 
-	ASSERT_FALSE(tracker.AddClaim(Observer(1), nullptr, START_MS));
+	ASSERT_FALSE(tracker.AddClaim(Observer(1), nullptr, true, START_MS));
 	for (unsigned i = 0; i < PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
-		ASSERT_FALSE(tracker.AddClaim(CNetworkAddress::Absent(), Stable().data(), START_MS));
+		ASSERT_FALSE(tracker.AddClaim(CNetworkAddress::Absent(), Stable().data(), true, START_MS));
 	}
 	ASSERT_EQUALS(0u, (unsigned)tracker.CandidateCount());
 	ASSERT_EQUALS(0u, (unsigned)tracker.DistinctObserversFor(nullptr));
@@ -502,7 +506,7 @@ TEST(PublicIPv6Corroboration, VotesOlderThanTheWindowStopCounting)
 	// The deciding claim arrives one millisecond after the first two aged out.
 	const uint64_t tooLate = START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
 	ASSERT_FALSE(tracker.AddClaim(
-		Observer((uint8_t)PUBLIC_IPV6_CORROBORATION_THRESHOLD), Stable().data(), tooLate));
+		Observer((uint8_t)PUBLIC_IPV6_CORROBORATION_THRESHOLD), Stable().data(), true, tooLate));
 	ASSERT_EQUALS(1u, (unsigned)tracker.DistinctObserversFor(Stable().data()));
 }
 
@@ -631,7 +635,7 @@ TEST(PublicIPv6Corroboration, ObserversReportingAPrefixWeDoNotHoldVetoOurs)
 	ASSERT_FALSE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), START_MS));
 
 	ASSERT_FALSE(tracker.AddClaim(
-		Observer((uint8_t)PUBLIC_IPV6_CORROBORATION_THRESHOLD), translated.data(), START_MS));
+		Observer((uint8_t)PUBLIC_IPV6_CORROBORATION_THRESHOLD), translated.data(), true, START_MS));
 	ASSERT_TRUE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), START_MS));
 
 	ASSERT_EQUALS(0u, (unsigned)tracker.CandidateCount());
@@ -647,9 +651,24 @@ TEST(PublicIPv6Corroboration, OneObserverDelegationCannotVeto)
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 
 	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS; ++i) {
-		tracker.AddClaim(Observer(1, (uint8_t)i, (uint8_t)i), translated.data(), START_MS);
+		tracker.AddClaim(Observer(1, (uint8_t)i, (uint8_t)i), translated.data(), true, START_MS);
 	}
 
+	ASSERT_EQUALS(1u, (unsigned)tracker.ContradictionCount());
+	ASSERT_FALSE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), START_MS));
+}
+
+// One tunnel broker hands out many /48s from a single /32 for free: as contradictors they are one.
+TEST(PublicIPv6Corroboration, OneProviderSlash32IsOneContradiction)
+{
+	CPublicIPv6Corroboration tracker;
+	const Address translated = InPrefix(OTHER_SUBNET, 0x01);
+	tracker.SetLocalAddresses(Held(Stable()), START_MS);
+	for (uint8_t site = 1; site <= PUBLIC_IPV6_CONTRADICTION_MAX_OBSERVERS; ++site) {
+		const CNetworkAddress broker = CNetworkAddress::IPv6FromOctets(
+			{ 0x20, 0x01, 0x04, 0x70, 0, site, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 });
+		tracker.AddClaim(broker, translated.data(), false, START_MS);
+	}
 	ASSERT_EQUALS(1u, (unsigned)tracker.ContradictionCount());
 	ASSERT_FALSE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), START_MS));
 }
@@ -663,7 +682,7 @@ TEST(PublicIPv6Corroboration, DisagreeingContradictionsDoNotPoolIntoAVeto)
 
 	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
 		const Address foreign = InPrefix((uint8_t)(0x20 + i), 0x01);
-		tracker.AddClaim(Observer((uint8_t)i), foreign.data(), START_MS);
+		tracker.AddClaim(Observer((uint8_t)i), foreign.data(), true, START_MS);
 	}
 
 	ASSERT_FALSE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), START_MS));
@@ -677,7 +696,7 @@ TEST(PublicIPv6Corroboration, ALiveVoteForOurPrefixBlocksTheVeto)
 	CPublicIPv6Corroboration tracker;
 	const Address translated = InPrefix(OTHER_SUBNET, 0x01);
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
-	tracker.AddClaim(Observer(0x40), Stable().data(), START_MS);
+	tracker.AddClaim(Observer(0x40), Stable().data(), true, START_MS);
 
 	const uint64_t later = START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS / 2;
 	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS, translated, later);
@@ -730,9 +749,9 @@ TEST(PublicIPv6Corroboration, ConfirmingTheContradictionsRenewsTheVeto)
 		AsNetworkAddress(Stable()), START_MS + PUBLIC_IPV6_VETO_CEILING_MS + 1));
 }
 
-// A peer reaching us at an address we hold is direct evidence the veto was wrong. It ends the veto,
-// which does not come back when that vote lapses.
-TEST(PublicIPv6Corroboration, AVoteEndsAFormedVeto)
+// A peer reaching us at an address we hold is direct evidence against the veto. One vote suspends
+// it while the vote lives; only a quorum ends it, so one peer cannot undo what a quorum formed.
+TEST(PublicIPv6Corroboration, AVoteSuspendsAFormedVetoAndAQuorumEndsIt)
 {
 	CPublicIPv6Corroboration tracker;
 	const CNetworkAddress stable = AsNetworkAddress(Stable());
@@ -740,11 +759,49 @@ TEST(PublicIPv6Corroboration, AVoteEndsAFormedVeto)
 	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, InPrefix(OTHER_SUBNET, 0x01), START_MS);
 
 	const uint64_t voted = START_MS + 1000;
-	tracker.AddClaim(Observer(0x40), Stable().data(), voted);
+	tracker.AddClaim(Observer(0x40), Stable().data(), true, voted);
 	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, voted));
 
 	const uint64_t lapsed = voted + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
-	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, lapsed));
+	ASSERT_TRUE(tracker.IsPrefixVetoed(stable, lapsed));
+
+	for (uint8_t i = 0; i < PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
+		tracker.AddClaim(Observer((uint8_t)(0x50 + i)), Stable().data(), true, lapsed);
+	}
+	const uint64_t afterQuorum = lapsed + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
+	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, afterQuorum));
+}
+
+// A peer we dialled saw only where we left from, and may simply echo what we advertise: its claim
+// for an address we hold is no vote, so it neither corroborates nor suspends a veto.
+TEST(PublicIPv6Corroboration, APeerWeDialledDoesNotVote)
+{
+	CPublicIPv6Corroboration tracker;
+	const CNetworkAddress stable = AsNetworkAddress(Stable());
+	tracker.SetLocalAddresses(Held(Stable()), START_MS);
+	for (uint8_t i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
+		ASSERT_FALSE(tracker.AddClaim(Observer(i), Stable().data(), false, START_MS));
+	}
+	ASSERT_FALSE(tracker.IsPrefixCorroborated(stable, START_MS));
+	ASSERT_EQUALS(0u, tracker.DistinctObserversFor(Stable().data()));
+
+	ClaimFrom(tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, InPrefix(OTHER_SUBNET, 0x01), START_MS);
+	tracker.AddClaim(Observer(0x40), Stable().data(), false, START_MS + 1000);
+	ASSERT_TRUE(tracker.IsPrefixVetoed(stable, START_MS + 1000));
+}
+
+// NAT66 shows up on our own dials: the peer sees a prefix we do not hold. So a peer we dialled
+// still contradicts.
+TEST(PublicIPv6Corroboration, APeerWeDialledStillContradicts)
+{
+	CPublicIPv6Corroboration tracker;
+	const CNetworkAddress stable = AsNetworkAddress(Stable());
+	tracker.SetLocalAddresses(Held(Stable()), START_MS);
+	const Address translated = InPrefix(OTHER_SUBNET, 0x01);
+	for (uint8_t i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
+		tracker.AddClaim(Observer(i), translated.data(), false, START_MS);
+	}
+	ASSERT_TRUE(tracker.IsPrefixVetoed(stable, START_MS));
 }
 
 // A /64 peers once reached directly was reachable. Contradictions arriving later, without a
@@ -760,7 +817,7 @@ TEST(PublicIPv6Corroboration, AStandingVerdictBlocksTheVeto)
 	const uint64_t lapsed = START_MS + PUBLIC_IPV6_CORROBORATION_WINDOW_MS + 1;
 	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
 		const Address translated = InPrefix(OTHER_SUBNET, 0x01);
-		tracker.AddClaim(Observer((uint8_t)(0x40 + i)), translated.data(), lapsed);
+		tracker.AddClaim(Observer((uint8_t)(0x40 + i)), translated.data(), true, lapsed);
 	}
 
 	ASSERT_FALSE(tracker.IsPrefixVetoed(stable, lapsed));
@@ -791,7 +848,7 @@ TEST(PublicIPv6Corroboration, ContradictionStorageIsBoundedPerObserver)
 
 	for (unsigned i = 0; i < 255; ++i) {
 		const Address invented = InPrefix((uint8_t)(0x10 + i % 0x80), (uint8_t)i);
-		tracker.AddClaim(Observer(1), invented.data(), START_MS);
+		tracker.AddClaim(Observer(1), invented.data(), true, START_MS);
 	}
 	ASSERT_EQUALS(1u, (unsigned)tracker.ContradictionCount());
 
@@ -812,11 +869,11 @@ TEST(PublicIPv6Corroboration, AFullContradictionTableDropsTheStalestObserver)
 
 	for (unsigned i = 1; i <= PUBLIC_IPV6_CONTRADICTION_MAX_OBSERVERS; ++i) {
 		const Address foreign = InPrefix((uint8_t)(0x20 + i), 0x01);
-		tracker.AddClaim(Observer((uint8_t)i), foreign.data(), START_MS + i);
+		tracker.AddClaim(Observer((uint8_t)i), foreign.data(), true, START_MS + i);
 	}
 	const uint64_t later = START_MS + 1000;
 	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
-		tracker.AddClaim(Observer((uint8_t)(0x80 + i)), translated.data(), later);
+		tracker.AddClaim(Observer((uint8_t)(0x80 + i)), translated.data(), true, later);
 	}
 
 	ASSERT_EQUALS(
@@ -848,10 +905,14 @@ TEST(PublicIPv6Corroboration, ObserversThatCannotSeeUsDoNotContradict)
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
 
 	for (unsigned i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
-		tracker.AddClaim(
-			CNetworkAddress::FromIPv4HostOrder(0x51024500u | i), translated.data(), START_MS);
-		tracker.AddClaim(
-			AsNetworkAddress(InPrefix((uint8_t)(0x30 + i), 0x99)), translated.data(), START_MS);
+		tracker.AddClaim(CNetworkAddress::FromIPv4HostOrder(0x51024500u | i),
+			translated.data(),
+			true,
+			START_MS);
+		tracker.AddClaim(AsNetworkAddress(InPrefix((uint8_t)(0x30 + i), 0x99)),
+			translated.data(),
+			true,
+			START_MS);
 	}
 
 	ASSERT_EQUALS(0u, (unsigned)tracker.ContradictionCount());

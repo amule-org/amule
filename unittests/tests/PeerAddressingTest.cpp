@@ -891,3 +891,32 @@ TEST(PeerAddressing, AnIPv4AndANativeIPv6AreOfOtherFamilies)
 	ASSERT_FALSE(IsOtherFamily(v6, CNetworkAddress::FromString("2a07:9::1")));
 	ASSERT_FALSE(IsOtherFamily(v4, CNetworkAddress::Absent()));
 }
+
+// A peer known by its IPv4 that reconnects from a temporary IPv6 keeps the IPv4 identity: that
+// address is the one that can be dialled again.
+TEST(PeerAddressing, AnIPv6HelloKeepsAKnownIPv4Identity)
+{
+	const CNetworkAddress ipv4 = CNetworkAddress::FromString("203.0.113.7");
+	const CNetworkAddress ipv6 = CNetworkAddress::FromString("2001:4860:4860::8888");
+	const CNetworkAddress mapped = CNetworkAddress::FromString("::ffff:203.0.113.9");
+	ASSERT_TRUE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(ipv4, ipv6));
+	// The same family, a mapped IPv4 or a peer we did not know yet: the socket's address is taken.
+	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(ipv4, mapped));
+	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(
+		ipv4, CNetworkAddress::FromString("198.51.100.4")));
+	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(
+		ipv6, CNetworkAddress::FromString("2001:4860:4860::8844")));
+	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(CNetworkAddress::Absent(), ipv6));
+}
+
+// A verdict on a peer's conduct lands on the connection it behaved on, not on an identity it kept
+// without proving it.
+TEST(PeerAddressing, ConductIsChargedToTheLiveConnection)
+{
+	const CNetworkAddress kept = CNetworkAddress::FromString("203.0.113.7");
+	const CNetworkAddress live = CNetworkAddress::FromString("2001:4860:4860::8888");
+	ASSERT_TRUE(PeerAddressing::ConductAddress(live, kept) == live);
+	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::FromString("::ffff:203.0.113.9"), kept) ==
+		    CNetworkAddress::FromString("203.0.113.9"));
+	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), kept) == kept);
+}
