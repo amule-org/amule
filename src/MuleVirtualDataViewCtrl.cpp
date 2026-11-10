@@ -520,18 +520,32 @@ void CMuleVirtualDataViewCtrl::SortList()
 	const wxUIntPtr currentData =
 		currentItem.IsOk() ? ItemAt(static_cast<long>(m_virtualModel->GetRow(currentItem))) : 0;
 
+	// Keep item identities, not references into the vector that SortItems mutates.
+	const std::vector<wxUIntPtr> previousOrder = m_items;
 	SortItems();
+	if (m_items == previousOrder) {
+		return;
+	}
 
-	// Repaint, rather than Reset(). A sort reorders rows, it does not replace them, and the
-	// count is the same on both sides of the std::sort above. Reset() says the model was
-	// replaced, which makes every backend rebuild its view from scratch -- and a rebuilt view
-	// starts at the top, so an auto-sort threw a user reading further down back to row 0.
-	// Nothing needs telling: rows are addressed by index and their values are pulled per cell
-	// as they are drawn.
-	Refresh();
+	// Sorting does not replace the model. Notify only row positions whose contents
+	// changed, preserving the viewport and avoiding a whole-list repaint on every
+	// live-sort tick. Off-screen values are pulled when they become visible, just
+	// as in RefreshItemData(); an unknown viewport must still refresh changed rows.
+	long firstRow = 0;
+	long lastRow = 0;
+	const bool visibleRange = GetVisibleRowRange(firstRow, lastRow);
+	if (IsShownOnScreen()) {
+		for (size_t row = 0; row < m_items.size(); ++row) {
+			if (m_items[row] != previousOrder[row] &&
+				(!visibleRange || (static_cast<long>(row) >= firstRow &&
+							  static_cast<long>(row) <= lastRow + 1))) {
+				m_virtualModel->RowChanged(static_cast<unsigned>(row));
+			}
+		}
+	}
 
 	// The control's selection is a set of rows, and the rows now mean
-	// different items, so it is re-applied from the item data either way.
+	// different items, so it is re-applied from the item data after a reorder.
 	SetSelectedItemData(selected);
 
 	// Only while the row it lands on is already on screen. Measured on GTK with wx 3.3.3:

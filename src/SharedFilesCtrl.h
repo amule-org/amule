@@ -100,7 +100,8 @@ public:
 
 	// Bracket a reconnect resync (issue #444) so the list repaints once (Freeze) and sorts once
 	// at the end rather than per updated/added row.
-	void BeginBatchUpdate();
+	// Routine remote polls keep row invalidations; bulk rebuilds freeze painting.
+	void BeginBatchUpdate(bool freezePainting = true);
 	void EndBatchUpdate(bool doSort = true);
 
 	/**

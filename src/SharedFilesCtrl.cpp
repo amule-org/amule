@@ -909,18 +909,20 @@ void CSharedFilesCtrl::RebuildFilteredView()
 	ShowFileList();
 }
 
-void CSharedFilesCtrl::BeginBatchUpdate()
+void CSharedFilesCtrl::BeginBatchUpdate(bool freezePainting)
 {
 	// During the batch ShowFile() appends the row (O(1)) instead of a sorted AddItemData(),
 	// which rebuilds the whole row index per insert -- O(n), so O(n^2) for a burst on a large
 	// share. Coalesce the repaints (Freeze) and defer the single sort to EndBatchUpdate().
-	Freeze();
+	m_batchFrozen = freezePainting;
+	if (m_batchFrozen) {
+		Freeze();
+	}
 	// The rows arrive unsorted and EndBatchUpdate() sorts them once, so the header's sort key
 	// buys nothing here -- and on macOS it costs a re-query and a full comparison pass per
 	// inserted row. See SuspendHeaderSort().
 	SuspendHeaderSort();
 	m_batchUpdate = true;
-	m_batchFrozen = true;
 }
 
 void CSharedFilesCtrl::ThawForDisplay()

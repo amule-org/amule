@@ -91,7 +91,8 @@ public:
 	/// sorts once instead of per item. Existing rows are updated in place; new rows are
 	/// appended without a per-item sort. EndBatchUpdate() does the single SortList(), unless
 	/// doSort is false.
-	void BeginBatchUpdate();
+	/// Routine remote polls keep row invalidations; bulk rebuilds freeze painting.
+	void BeginBatchUpdate(bool freezePainting = true);
 	void EndBatchUpdate(bool doSort = true);
 
 	/// Removes @a file from the list.
@@ -245,6 +246,7 @@ private:
 	//! True between BeginBatchUpdate()/EndBatchUpdate(): AddFile() appends
 	//! rows but defers the per-item SortList to one final sort (issue #444).
 	bool m_batchUpdate = false;
+	bool m_batchFrozen = false;
 
 	//! The number of displayed files
 	int m_filecount = 0;

@@ -2689,6 +2689,7 @@ if (TARGET wxWidgets::CORE)
         set_tests_properties (${name} PROPERTIES SKIP_RETURN_CODE 77)
     endfunction()
 
+    add_native_list_test (RowRefreshTest)
     add_native_list_test (ColumnLayoutTest)
     add_native_list_test (ColumnFitTest
         ${CMAKE_SOURCE_DIR}/src/SearchColumnFit.cpp

@@ -287,12 +287,15 @@ void CDownloadListCtrl::AddFile(CPartFile *file, bool deferView)
 	}
 }
 
-void CDownloadListCtrl::BeginBatchUpdate()
+void CDownloadListCtrl::BeginBatchUpdate(bool freezePainting)
 {
 	// Coalesce a burst of AddFile()/UpdateItem() calls into a single repaint and suppress the
 	// per-item SortList; EndBatchUpdate() sorts once. Used when reconciling the list against a
 	// fresh snapshot after a reconnect (issue #444).
-	Freeze();
+	m_batchFrozen = freezePainting;
+	if (m_batchFrozen) {
+		Freeze();
+	}
 	// Same reason as CSharedFilesCtrl::BeginBatchUpdate(): rows land unsorted and
 	// EndBatchUpdate() sorts once, while a live sort key makes macOS re-compare the whole list
 	// on every inserted row. See SuspendHeaderSort().
@@ -309,7 +312,10 @@ void CDownloadListCtrl::EndBatchUpdate(bool doSort)
 		SortList();
 	}
 	RestoreHeaderSort();
-	Thaw();
+	if (m_batchFrozen) {
+		m_batchFrozen = false;
+		Thaw();
+	}
 }
 
 void CDownloadListCtrl::RebuildVisibleList()
