@@ -497,12 +497,6 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			// SetConnectionState(CS_CONNECTED) above is what makes serverconnect's
 			// connectedsocket (and so GetCurrentServer()) point at this connection;
 			// UpdateAdvertisedIPv6() needs it.
-			// Verified mode withholds the address from peers until it is proven, so the server
-			// could never receive what it has to probe. It gets the local address itself, and
-			// only when it announced the probe: a server without it publishes on trust.
-			// The address the server has to test still has to be one we are willing to expose:
-			// Never, an IPv4-only policy, a proxy and a listener that does not accept IPv6 all
-			// rule it out, exactly as they rule out advertising.
 			if (cur_server->SupportsIPv6Updates()) {
 				AddDebugLogLineN(logServer, "OP_IDCHANGE: server accepts OP_IPV6_UPDATE");
 				serverconnect->UpdateAdvertisedIPv6(ServerAddressToSend(
