@@ -701,7 +701,7 @@ void CUpDownClient::UnBan()
 	m_Aggressiveness = 0;
 
 	theApp->clientlist->AddTrackClient(this);
-	theApp->clientlist->RemoveBannedClient(GetUserAddress());
+	theApp->clientlist->RemoveBannedClient(GetConductAddress());
 	SetUploadState(US_NONE);
 	ClearWaitStartTime();
 }
@@ -709,7 +709,7 @@ void CUpDownClient::UnBan()
 void CUpDownClient::Ban()
 {
 	theApp->clientlist->AddTrackClient(this);
-	theApp->clientlist->AddBannedClient(GetUserAddress());
+	theApp->clientlist->AddBannedClient(GetConductAddress());
 
 	AddDebugLogLineN(logClient,
 		"Client '" + GetUserName() +
@@ -731,7 +731,8 @@ void CUpDownClient::Ban()
 
 bool CUpDownClient::IsBanned() const
 {
-	return ((theApp->clientlist->IsBannedClient(GetUserAddress())) && m_nDownloadState != DS_DOWNLOADING);
+	return ((theApp->clientlist->IsBannedClient(GetConductAddress())) &&
+		m_nDownloadState != DS_DOWNLOADING);
 }
 
 void CUpDownClient::CheckForAggressive()

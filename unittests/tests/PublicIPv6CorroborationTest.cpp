@@ -90,9 +90,9 @@ CNetworkAddress AsNetworkAddress(const Address &address)
 	return CNetworkAddress::IPv6FromOctets(address);
 }
 
-// A globally routable IPv6 peer: 2a03:2880:<network>:<subnet>::<host>. Each network is a /48 of
-// its own, one subscriber's delegation; subnets and hosts inside one network are that subscriber
-// switching /64 or rotating its suffix. Not 2001:db8::/32, which is documentation space and not
+// A globally routable IPv6 peer: 2a03:28<network>:<network>:<subnet>::<host>. Each network is a
+// /32 and a /48 of its own, one subscriber's delegation; subnets and hosts inside one network are that
+// subscriber switching /64 or rotating its suffix. Not 2001:db8::/32, which is documentation space and not
 // globally routable.
 CNetworkAddress Observer(uint8_t network, uint8_t host = 1, uint8_t subnet = 0)
 {
@@ -100,7 +100,7 @@ CNetworkAddress Observer(uint8_t network, uint8_t host = 1, uint8_t subnet = 0)
 	octets[0] = 0x2a;
 	octets[1] = 0x03;
 	octets[2] = 0x28;
-	octets[3] = 0x80;
+	octets[3] = network;
 	octets[5] = network;
 	octets[7] = subnet;
 	octets[15] = host;
@@ -654,6 +654,21 @@ TEST(PublicIPv6Corroboration, OneObserverDelegationCannotVeto)
 		tracker.AddClaim(Observer(1, (uint8_t)i, (uint8_t)i), translated.data(), true, START_MS);
 	}
 
+	ASSERT_EQUALS(1u, (unsigned)tracker.ContradictionCount());
+	ASSERT_FALSE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), START_MS));
+}
+
+// One tunnel broker hands out many /48s from a single /32 for free: as contradictors they are one.
+TEST(PublicIPv6Corroboration, OneProviderSlash32IsOneContradiction)
+{
+	CPublicIPv6Corroboration tracker;
+	const Address translated = InPrefix(OTHER_SUBNET, 0x01);
+	tracker.SetLocalAddresses(Held(Stable()), START_MS);
+	for (uint8_t site = 1; site <= PUBLIC_IPV6_CONTRADICTION_MAX_OBSERVERS; ++site) {
+		const CNetworkAddress broker = CNetworkAddress::IPv6FromOctets(
+			{ 0x20, 0x01, 0x04, 0x70, 0, site, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 });
+		tracker.AddClaim(broker, translated.data(), false, START_MS);
+	}
 	ASSERT_EQUALS(1u, (unsigned)tracker.ContradictionCount());
 	ASSERT_FALSE(tracker.IsPrefixVetoed(AsNetworkAddress(Stable()), START_MS));
 }

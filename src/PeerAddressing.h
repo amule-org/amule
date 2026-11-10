@@ -514,6 +514,17 @@ inline bool KeepsIPv4IdentityOnIPv6Hello(const CNetworkAddress &known, const CNe
 	return known.Unmapped().IsIPv4() && socketPeer.IsIPv6() && !socketPeer.IsIPv4Mapped();
 }
 
+/**
+ * The address a verdict on a peer's conduct lands on: a ban, a corruption charge, an AICH vote.
+ *
+ * While connected it is the live socket's peer, because an IPv6 hello can keep an IPv4 identity it
+ * never proved, and the blame must not reach the host behind that identity.
+ */
+inline CNetworkAddress ConductAddress(const CNetworkAddress &socketPeer, const CNetworkAddress &userAddress)
+{
+	return socketPeer.IsPresent() ? IndexKey(socketPeer) : userAddress;
+}
+
 //! Whether one address is IPv4 (or mapped) and the other native IPv6.
 inline bool IsOtherFamily(const CNetworkAddress &a, const CNetworkAddress &b) noexcept
 {

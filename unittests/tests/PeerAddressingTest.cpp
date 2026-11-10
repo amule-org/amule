@@ -908,3 +908,15 @@ TEST(PeerAddressing, AnIPv6HelloKeepsAKnownIPv4Identity)
 		ipv6, CNetworkAddress::FromString("2001:4860:4860::8844")));
 	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(CNetworkAddress::Absent(), ipv6));
 }
+
+// A verdict on a peer's conduct lands on the connection it behaved on, not on an identity it kept
+// without proving it.
+TEST(PeerAddressing, ConductIsChargedToTheLiveConnection)
+{
+	const CNetworkAddress kept = CNetworkAddress::FromString("203.0.113.7");
+	const CNetworkAddress live = CNetworkAddress::FromString("2001:4860:4860::8888");
+	ASSERT_TRUE(PeerAddressing::ConductAddress(live, kept) == live);
+	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::FromString("::ffff:203.0.113.9"), kept) ==
+		    CNetworkAddress::FromString("203.0.113.9"));
+	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), kept) == kept);
+}

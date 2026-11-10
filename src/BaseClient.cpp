@@ -3579,6 +3579,13 @@ void CUpDownClient::UpdateModIPv6(const CNetworkAddress &address)
 }
 #endif
 
+CNetworkAddress CUpDownClient::GetConductAddress() const
+{
+	return PeerAddressing::ConductAddress(
+		m_socket != nullptr ? m_socket->GetPeerAddress() : CNetworkAddress::Absent(),
+		GetUserAddress());
+}
+
 bool CUpDownClient::HasPeerIPv4() const
 {
 	// The user address stays absent until the peer's hello, so an outbound connection has to

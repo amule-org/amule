@@ -116,7 +116,7 @@ constexpr std::size_t PUBLIC_IPV6_CORROBORATION_MAX_OBSERVERS = 8;
 //! interface refresh covers the case where the address simply went away.
 constexpr std::uint64_t PUBLIC_IPV6_CORROBORATION_WINDOW_MS = 30ull * 60ull * 1000ull;
 
-//! How many observers' contradicting claims are remembered, one claim per observer /48.
+//! How many observers' contradicting claims are remembered, one claim per observer /32.
 //!
 //! Unlike a vote, a contradiction names a prefix the peer chose, so it cannot be bounded by what
 //! this machine holds. Keeping only each observer's latest claim stops one peer from spending our
@@ -250,7 +250,7 @@ public:
 			// rejection that allocated something would let a peer spend our memory on
 			// values it invented.
 			if (!HoldsAddressIn(prefix)) {
-				AddContradiction(scope, prefix, nowMs);
+				AddContradiction(ContradictionScope(observedFrom), prefix, nowMs);
 			}
 			return false;
 		}
@@ -406,6 +406,14 @@ private:
 	static CNetworkAddress ObserverScope(const CNetworkAddress &observer)
 	{
 		return observer.TruncatedToPrefix(48);
+	}
+
+	//! Wider than a vote's: a veto switches advertising off for up to a day, and one tunnel broker
+	//! hands out many /48s from a single /32 for free. Such a peer cannot vote either way, since a
+	//! vote needs it to have dialled us.
+	static CNetworkAddress ContradictionScope(const CNetworkAddress &observer)
+	{
+		return observer.TruncatedToPrefix(32);
 	}
 
 	//! @a value with its interface identifier cleared: the /64 it belongs to.
