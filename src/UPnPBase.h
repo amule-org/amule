@@ -369,6 +369,17 @@ private:
 	PortMappingMap m_ActivePortMappingsMap;
 	// Guarded by m_ServiceMapMutex. Key from PinholeKey(), value the gateway's UniqueID.
 	std::map<std::string, std::string> m_IPv6Pinholes;
+	// Guarded by m_ServiceMapMutex. When each pinhole's lease runs out, so renewal can be decided
+	// from the time actually left rather than from when it was last touched.
+	std::map<std::string, std::chrono::steady_clock::time_point> m_IPv6PinholeExpiry;
+	struct IPv6PinholeRequest
+	{
+		std::string client;
+		unsigned short port;
+		int protocol;
+		unsigned int lease;
+	};
+	std::map<std::string, IPv6PinholeRequest> m_IPv6PinholeRequests;
 	CUPnPMutex m_RootDeviceListMutex;
 	bool m_IGWDeviceDetected;
 	mutable CUPnPMutex m_ServiceMapMutex;
@@ -401,6 +412,10 @@ public:
 	bool RenewIPv6Pinhole(const std::string &key, unsigned int leaseSeconds);
 	//! Delete a pinhole previously added under this key.
 	bool DeleteIPv6Pinhole(const std::string &key);
+	//! Renew every pinhole whose lease is within half of what it was granted.
+	void RenewExpiringIPv6Pinholes();
+	//! Delete every pinhole this control point opened.
+	void DeleteIPv6Pinholes();
 	//! The key a pinhole is stored under: protocol and port, since that is what it names.
 	static std::string PinholeKey(int protocol, unsigned short port);
 	bool DeletePortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping);

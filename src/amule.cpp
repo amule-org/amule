@@ -79,6 +79,7 @@
 #include "AdvertisedIPv6.h"         // Needed for ChooseAdvertisedIPv6
 #include "IPv6ReachabilityProof.h"  // Needed for clearing inbound proof on address changes
 #include "IPv6ChangeNotification.h" // Needed for ShouldMarkIPv6ChangeNotification
+#include "IPv6PinholePolicy.h"      // Needed for pinhole request and renewal policy
 #endif
 #include "HashListFile.h"
 #include "ClientCreditsList.h"    // Needed for CClientCreditsList
@@ -523,6 +524,9 @@ int CamuleApp::OnExit()
 	ipfilter = NULL;
 
 #ifdef ENABLE_UPNP
+	if (m_upnp != nullptr) {
+		m_upnp->DeleteIPv6Pinholes();
+	}
 	delete m_upnp;
 	m_upnp = NULL;
 #endif
@@ -2024,6 +2028,12 @@ bool CamuleApp::RebindP2PSockets(bool tcpPortChanged, bool udpPortChanged, uint1
 			if (!changedMappings.empty()) {
 				m_upnp->AddPortMappings(changedMappings);
 			}
+			if (tcpPortChanged || udpPortChanged) {
+				// A pinhole names a port: after a change the old ones point at nothing, so
+				// drop them and ask again for the ports we now listen on.
+				m_upnp->DeleteIPv6Pinholes();
+				RequestIPv6Pinholes();
+			}
 		}
 	}
 #endif
@@ -2183,6 +2193,7 @@ void CamuleApp::StartUPnP()
 			"aMule UDP Extended eMule Socket");
 		m_upnp = new CUPnPControlPoint(thePrefs::GetUPnPTCPPort());
 		m_upnp->AddPortMappings(m_upnpMappings);
+		RequestIPv6Pinholes();
 	} catch (CUPnPException &e) {
 		wxString error_msg;
 		error_msg << e.what();
@@ -2493,12 +2504,56 @@ void CamuleApp::ForgetECObject(uint32 ecid)
 	}
 }
 
+#if defined(ENABLE_UPNP) && defined(ENABLE_IPV6)
+//! Leases are granted by the gateway and expire on their own, so they are asked for an hour at a
+//! time and renewed at half of it.
+static const unsigned int kIPv6PinholeLeaseSeconds = 3600;
+#endif
+
+void CamuleApp::RequestIPv6Pinholes()
+{
+#if defined(ENABLE_UPNP) && defined(ENABLE_IPV6)
+	if (m_upnp == nullptr) {
+		return;
+	}
+	// The same condition the advertising decision uses: without a listener on [::] there is nothing
+	// for an inbound connection to reach.
+	const bool listenerTakesIPv6 = listensocket != nullptr && listensocket->BoundHost() == "[::]";
+	if (!ShouldRequestIPv6Pinhole(true, listenerTakesIPv6, m_upnp->IPv6FirewallDetected())) {
+		return;
+	}
+	const std::optional<CNetworkAddress> local = SelectedLocalIPv6();
+	if (!local.has_value()) {
+		return;
+	}
+	// A pinhole names a host, so it needs the address rather than a wildcard. Same ports the IPv4
+	// mapping covers: the eD2k TCP listener, its UDP companion and the client UDP port.
+	const std::string client = local->ToString();
+	m_upnp->AddIPv6Pinhole(client, thePrefs::GetPort(), 6, kIPv6PinholeLeaseSeconds);
+	m_upnp->AddIPv6Pinhole(
+		client, static_cast<unsigned short>(thePrefs::GetPort() + 3), 17, kIPv6PinholeLeaseSeconds);
+	m_upnp->AddIPv6Pinhole(client, thePrefs::GetUDPPort(), 17, kIPv6PinholeLeaseSeconds);
+#endif
+}
+
 void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 {
 	// Former TimerProc section
 	static uint64 msPrev1, msPrev5, msPrevSave, msPrevHist, msPrevOS, msPrevKnownMet, msPrevIfaces;
 	uint64 msCur = theStats::GetUptimeMillis();
 	TheTime = msCur / 1000;
+
+	// Pinhole leases expire whether or not anything else happens, so they are renewed from here
+	// rather than from an event that may never come.
+	static uint64 msPrevPinhole;
+	if (msCur - msPrevPinhole >= 30000) {
+		msPrevPinhole = msCur;
+#ifdef ENABLE_UPNP
+		if (m_upnp != nullptr) {
+			m_upnp->RenewExpiringIPv6Pinholes();
+		}
+#endif
+	}
 
 	if (!IsRunning()) {
 		return;
