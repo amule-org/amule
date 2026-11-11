@@ -27,12 +27,21 @@ AFTER_SEARCH_TIMER = 3.5
 AFTER_DISCOVERY_DEADLINE = 4.5
 PENDING_POLLS = 20
 ADD, DELETE = 'AddPortMapping', 'DeletePortMapping'
+ADD_PINHOLE, UPDATE_PINHOLE, DELETE_PINHOLE = 'AddPinhole', 'UpdatePinhole', 'DeletePinhole'
+PINHOLE_ACTIONS = [
+    (ADD_PINHOLE, {'RemoteHost': 'RemoteHost', 'RemotePort': 'RemotePort',
+                   'InternalClient': 'InternalClient', 'InternalPort': 'InternalPort',
+                   'Protocol': 'Protocol', 'LeaseTime': 'LeaseTime'}),
+    (UPDATE_PINHOLE, {'UniqueID': 'UniqueID', 'LeaseTime': 'LeaseTime'}),
+    (DELETE_PINHOLE, {'UniqueID': 'UniqueID'}),
+]
 SSDP_GROUP = '239.255.255.250'
 SSDP_PORT = 1900
 IGD = 'urn:schemas-upnp-org:device:InternetGatewayDevice:1'
 SERVICE_TYPES = {
     'ip': 'urn:schemas-upnp-org:service:WANIPConnection:1',
     'ppp': 'urn:schemas-upnp-org:service:WANPPPConnection:1',
+    'ipv6fw': 'urn:schemas-upnp-org:service:WANIPv6FirewallControl:1',
 }
 TCP_PORT, UDP_PORT = 59662, 59672
 TCP, UDP = (str(TCP_PORT), 'TCP'), (str(UDP_PORT), 'UDP')
@@ -102,6 +111,12 @@ class FakeGateway:
         self.release = threading.Event()
         self.first_registered = threading.Event()
         self.tables = {name: set(mappings) for name in services}
+        # Inbound IPv6 pinholes are a different table from the IPv4 mappings: a gateway keeps them
+        # apart, and so must the test, or one could be mistaken for the other.
+        self.pinholes = {}
+        self.pinhole_actions = []
+        self.next_pinhole_id = 1
+        self.last_pinhole_id = ''
         self.requests = []
         self.subscribed = set()
         self.registered = threading.Event()
@@ -177,20 +192,28 @@ class FakeGateway:
                 f'<serviceList>{services}</serviceList></device></deviceList></device></deviceList>'
                 '</device></root>')
 
-    @staticmethod
-    def scpd():
+    def scpd(self, service='ip'):
+        # Each service declares its own actions: the control point refuses to send one the SCPD does
+        # not list, so a gateway advertising a firewall service must describe it.
         def action(name, arguments):
             xml = ''.join(f'<argument><name>{arg}</name><direction>in</direction>'
                           f'<relatedStateVariable>{var}</relatedStateVariable></argument>'
                           for arg, var in arguments.items())
             return f'<action><name>{name}</name><argumentList>{xml}</argumentList></action>'
-        variables = ''.join(f'<stateVariable sendEvents="no"><name>{var}</name>'
-                            '<dataType>string</dataType></stateVariable>'
-                            for var in ADD_ARGS.values())
+        if service == 'ipv6fw':
+            actions = ''.join(action(name, arguments) for name, arguments in PINHOLE_ACTIONS)
+            variables = ''.join(f'<stateVariable sendEvents="no"><name>{var}</name>'
+                                '<dataType>string</dataType></stateVariable>'
+                                for arguments in (a for _, a in PINHOLE_ACTIONS)
+                                for var in arguments.values())
+        else:
+            actions = f'{action(ADD, ADD_ARGS)}{action(DELETE, DELETE_ARGS)}'
+            variables = ''.join(f'<stateVariable sendEvents="no"><name>{var}</name>'
+                                '<dataType>string</dataType></stateVariable>'
+                                for var in ADD_ARGS.values())
         return ('<?xml version="1.0"?><scpd xmlns="urn:schemas-upnp-org:service-1-0"><specVersion>'
                 '<major>1</major><minor>0</minor></specVersion><actionList>'
-                f'{action(ADD, ADD_ARGS)}{action(DELETE, DELETE_ARGS)}'
-                f'{action("GetStatusInfo", {})}</actionList><serviceStateTable>{variables}'
+                f'{actions}</actionList><serviceStateTable>{variables}'
                 '</serviceStateTable></scpd>')
 
     def control(self, service, action, body):
@@ -198,6 +221,23 @@ class FakeGateway:
         def argument(name):
             found = re.search(f'<{name}[^>]*>([^<]*)<', body)
             return found[1] if found else ''
+        if action == ADD_PINHOLE:
+            unique_id = str(self.next_pinhole_id)
+            self.next_pinhole_id += 1
+            self.pinholes[unique_id] = (argument('InternalClient'), argument('InternalPort'),
+                                        argument('Protocol'))
+            self.pinhole_actions.append((ADD_PINHOLE, unique_id))
+            self.last_pinhole_id = unique_id
+            return None
+        if action == UPDATE_PINHOLE:
+            unique_id = argument('UniqueID')
+            self.pinhole_actions.append((UPDATE_PINHOLE, unique_id))
+            return None if unique_id in self.pinholes else NO_SUCH_ENTRY
+        if action == DELETE_PINHOLE:
+            unique_id = argument('UniqueID')
+            self.pinhole_actions.append((DELETE_PINHOLE, unique_id))
+            self.pinholes.pop(unique_id, None)
+            return None
         mapping = (argument('NewExternalPort'), argument('NewProtocol'))
         self.requests.append((service, action, mapping))
         if action == ADD:
@@ -231,7 +271,8 @@ class FakeGateway:
             def do_GET(self):
                 if self.path == f'/scpd/{gateway.held}':
                     gateway.release.wait()
-                self.reply(200, gateway.description() if self.path == '/desc.xml' else gateway.scpd())
+                self.reply(200, gateway.description() if self.path == '/desc.xml'
+                           else gateway.scpd(self.path.rsplit('/', 1)[-1]))
 
             def do_SUBSCRIBE(self):
                 service = self.path.rsplit('/', 1)[-1]
@@ -253,7 +294,13 @@ class FakeGateway:
                 if error is not None:
                     self.reply(500, ENVELOPE % (FAULT % error))
                 else:
-                    self.reply(200, ENVELOPE % f'<u:{action}Response xmlns:u="{SERVICE_TYPES[service]}"/>')
+                    if action == ADD_PINHOLE:
+                        self.reply(200, ENVELOPE % (
+                            f'<u:{action}Response xmlns:u="{SERVICE_TYPES[service]}">'
+                            f'<UniqueID>{gateway.last_pinhole_id}</UniqueID></u:{action}Response>'))
+                    else:
+                        self.reply(200, ENVELOPE %
+                                   f'<u:{action}Response xmlns:u="{SERVICE_TYPES[service]}"/>')
         return Handler
 
 
@@ -387,6 +434,41 @@ LATE_SCENARIOS = [
     ('second service registers after the mappings', {'services': BOTH, 'held': 'ppp'}, ['add'], [],
      {'add': 'true'}, requests(ADD, *BOTH), {TCP, UDP}),
 ]
+
+
+PINHOLE_IP = '2001:db8::1'
+
+
+def run_pinhole_scenarios(driver, failures):
+    """The IGD2 pinhole path, against the fake's own table."""
+    def run(operations):
+        with FakeGateway(services=('ip', 'ipv6fw')) as gateway:
+            got = run_driver(driver, gateway, operations)
+        return got, gateway
+
+    try:
+        got, gateway = run(['addpinhole'])
+        if got != {'addpinhole': 'true'}:
+            record_failure(failures, f'pinhole add: returned {got}')
+        if list(gateway.pinholes.values()) != [(PINHOLE_IP, str(TCP_PORT), '6')]:
+            record_failure(failures, f'pinhole add: gateway holds {gateway.pinholes}')
+        if gateway.tables['ip']:
+            record_failure(failures, f'pinhole add: IPv4 table touched, {gateway.tables["ip"]}')
+
+        got, gateway = run(['addpinhole', 'renewpinhole'])
+        if gateway.pinhole_actions != [(ADD_PINHOLE, '1'), (UPDATE_PINHOLE, '1')]:
+            record_failure(failures, f'pinhole renew: gateway saw {gateway.pinhole_actions}')
+        if len(gateway.pinholes) != 1:
+            record_failure(failures,
+                           f'pinhole renew: renewal created an entry, {gateway.pinholes}')
+
+        got, gateway = run(['addpinhole', 'deletepinholes'])
+        if gateway.pinhole_actions != [(ADD_PINHOLE, '1'), (DELETE_PINHOLE, '1')]:
+            record_failure(failures, f'pinhole delete: gateway saw {gateway.pinhole_actions}')
+        if gateway.pinholes:
+            record_failure(failures, f'pinhole delete: {gateway.pinholes} left behind')
+    except ScenarioFailed as error:
+        record_failure(failures, f'pinhole: {error}')
 
 
 def record_failure(failures, message):
@@ -545,6 +627,7 @@ def main():
     try:
         run_scenarios(sys.argv[1], failures)
         run_late_scenarios(sys.argv[1], failures)
+        run_pinhole_scenarios(sys.argv[1], failures)
         check_discovery_pending(sys.argv[1], failures)
         if len(sys.argv) > 2:
             check_amuled_autoconnect(sys.argv[2], failures)

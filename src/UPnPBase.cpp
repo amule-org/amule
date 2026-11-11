@@ -489,8 +489,12 @@ CUPnPService::CUPnPService(
 	    << "\n        absEventSubURL: " << m_absEventSubURL;
 	AddDebugLogLineN(logUPnP, msg);
 
+	// The IGD2 firewall service belongs here too: it is not a port mapper, but it is the only
+	// service that can open an inbound IPv6 pinhole, and a service that never registers here is
+	// one IPv6FirewallDetected() can never find.
 	if (UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_IP_Connection) ||
-		UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_PPP_Connection)) {
+		UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_PPP_Connection) ||
+		UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_IPv6_Firewall_Control)) {
 #if 0
 	    m_serviceType == UPnP::Service::WAN_PPP_Connection ||
 	    m_serviceType == UPnP::Service::WAN_Common_Interface_Config ||

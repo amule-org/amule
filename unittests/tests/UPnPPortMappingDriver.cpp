@@ -38,6 +38,10 @@
 namespace
 {
 const int EXIT_SKIP = 77;
+// The address the fake gateway should see as the pinhole's inside end, and a lease long enough that
+// no renewal is attempted by the timer during the run.
+const char *const PINHOLE_CLIENT = "2001:db8::1";
+const unsigned int PINHOLE_LEASE = 3600;
 } // namespace
 
 int main(int argc, char **argv)
@@ -65,6 +69,20 @@ int main(int argc, char **argv)
 				result = controlPoint.AddPortMappings(mappings);
 			} else if (std::strcmp(argv[i], "delete") == 0) {
 				result = controlPoint.DeletePortMappings(mappings);
+			} else if (std::strcmp(argv[i], "addpinhole") == 0) {
+				result = controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT,
+					static_cast<unsigned short>(tcpPort),
+					6,
+					PINHOLE_LEASE);
+			} else if (std::strcmp(argv[i], "renewpinhole") == 0) {
+				// Renewed through the same key the control point stores it under.
+				result = controlPoint.RenewIPv6Pinhole(
+					CUPnPControlPoint::PinholeKey(
+						6, static_cast<unsigned short>(tcpPort)),
+					PINHOLE_LEASE);
+			} else if (std::strcmp(argv[i], "deletepinholes") == 0) {
+				controlPoint.DeleteIPv6Pinholes();
+				result = true;
 			} else {
 				result = controlPoint.DiscoveryPending();
 			}
