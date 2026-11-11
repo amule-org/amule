@@ -98,7 +98,11 @@ public:
 		uint32_t fromIP,
 		uint16_t fromPort);
 	static void ProcessResultReply(const CUInt128 &target, uint32_t fromIP, uint16_t fromPort);
-	static void ProcessPublishResult(const CUInt128 &target, const uint8_t load, const bool loadResponse);
+	static void ProcessPublishResult(const CUInt128 &target,
+		const uint8_t load,
+		const bool loadResponse,
+		uint32_t fromIP,
+		uint16_t fromPort);
 
 	static void GetWords(const wxString &str, WordList *words, bool allowDuplicates = false);
 

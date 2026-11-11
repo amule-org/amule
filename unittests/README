@@ -348,3 +348,71 @@ EC integration-test requirements
 Tests that authenticate through ECWire require Python 3 with the cryptography
 module (python3-cryptography on Debian/Ubuntu). These tests return skip code 77
 when the module is unavailable, including fixtures importing the EC helper.
+
+Kad source-publication measurements
+-----------------------------------
+PublishMetricsTest covers unique destination acknowledgements, start failures,
+completed versus cancelled lookups, duration accounting, a 60,000-file stream,
+bounded memory, rolling-minute expiry and sender/main-thread snapshots.
+The PublishMetrics-kad2, PublishMetrics-kad1, PublishMetrics-wrong-port,
+PublishMetrics-removed and PublishMetrics-proxy integration tests use an owned
+private IPv4 address and a local Kad peer. The proxy case uses a local SOCKS5 UDP
+relay without forwarding traffic to external hosts. They exercise both source protocols, native UDP completion,
+duplicate and wrong-port replies, unsharing during a lookup, cancellation and
+repeated Kad restart. They skip with code 77 without a suitable private address
+and never join the public DHT. Each takes about four minutes because it preserves
+the normal Kad startup and publication timers. Like the other daemon fixtures,
+they require Python cryptography. Set TMPDIR to a scratch directory when running the fixture.
+
+For a later live baseline, enable the "Kademlia Search" debug category and debug
+logging to file before starting the measurement. In amule.conf, with aMule stopped:
+
+    [eMule]
+    VerboseDebug=1
+    VerboseDebugLogfile=1
+    [Debug]
+    Cat_Kademlia Search=1
+
+The core's logfile contains "Kad source publish attempt", "Kad source publish"
+and "Kad source publish totals" records. Totals are cumulative for the process,
+including Kad stop/start; one summary is emitted per minute, even while idle.
+Use differences between summaries for a measurement window. The normal local
+and remote GUI logging preferences can enable the same core category.
+
+attempts counts due files passed to PrepareLookup; start_failures counts an
+immediate refusal. starts/in_flight count actual source-search Go calls and live
+objects, including the retained late-reply period. Per-lookup duration_ms uses a
+monotonic clock from Go until destruction. The cumulative duration_ms and
+max_duration_ms include naturally finished lookups only; cancelled lookups are
+separate, and do not inflate zero_ack. deadlines counts naturally finished
+lookups that hit the lifetime threshold rather than finishing after contact
+exhaustion or the answer threshold. It
+is not a count of lost individual packets. No retry or freshness policy changes.
+
+queued counts source packets accepted by the UDP queue. sent counts successful
+native asynchronous completions, excluding queue expiry,
+busy retries and socket-error discards; dispatch alone does not increment it.
+It does not establish network delivery. send_failures counts failed native sends
+and a proxy that cannot forward an observed source packet. sent_bytes includes
+the Kad header and actual compression/obfuscation overhead, plus SOCKS5 framing
+when proxied, excluding IP/UDP headers. Kad1 source publishes are included. The lookup-request peak counts all successful Kad2
+KADEMLIA2_REQ sends, including foreground searches, to the same destination IP
+across ports in any rolling (now-60s, now] interval. The reported peak is the
+highest since process start, not the current rate or receiver flood debt.
+
+acknowledged_ips counts distinct contacted IPs acknowledging each source lookup;
+duplicate responses and replies from uncontacted IP/port endpoints do not add
+replicas. Different contacted ports on one IP still count as one destination. This
+is evidence that a store was accepted, not proof of later search visibility or
+continued retention. It does not change known.met timestamps. Use the per-target
+completion logs to deduplicate files across lookups; the aggregate is not a
+confirmed-fresh file count. A lookup is zero_ack when it finishes naturally
+without a tracked acknowledgement. Source destination tracking is bounded to
+128 IP/port endpoints per lookup, and the rate window to 65,536 requests. Nonzero
+omitted_destinations or omitted_rate_samples makes the corresponding counts
+incomplete and must be reported with the baseline. omitted_destinations counts
+untracked packet destinations, including repeated packets to an omitted endpoint;
+it is not a count of distinct missing replicas. Idle summaries expire old
+rate samples even when Kad has stopped; cumulative counts and peaks remain.
+LibSocketTransportTest exercises the real native UDP success/failure callback,
+including delayed dispatch, a closed socket and a throwing diagnostic observer.

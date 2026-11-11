@@ -2095,10 +2095,12 @@ private:
 		amuleIPV4Address ipadr;
 		CNetworkAddress sourceAddress;
 		uint16 sourcePort = 0;
+		DatagramSendCompletion completion;
 
-		CUDPData(const void *src, uint32 _size, amuleIPV4Address adr)
+		CUDPData(const void *src, uint32 _size, amuleIPV4Address adr, DatagramSendCompletion observer)
 		: size(_size)
 		, ipadr(adr)
+		, completion(std::move(observer))
 		{
 			buffer = new char[size];
 			memcpy(buffer, src, size);
@@ -2177,10 +2179,13 @@ public:
 		return read;
 	}
 
-	uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes)
+	uint32 SendTo(const amuleIPV4Address &addr,
+		const void *buf,
+		uint32 nBytes,
+		DatagramSendCompletion completion)
 	{
 		// Collect data, make a copy of the buffer's content
-		CUDPData *recdata = new CUDPData(buf, nBytes, addr);
+		CUDPData *recdata = new CUDPData(buf, nBytes, addr, std::move(completion));
 		AddDebugLogLineF(logAsio, CFormat("UDP SendTo %d to %s") % nBytes % addr.IPAddress());
 		auto self = shared_from_this();
 		dispatch(m_strand, [self, recdata]() { self->DispatchSendTo(recdata); });
@@ -2308,6 +2313,7 @@ private:
 
 	void HandleSendTo(const error_code &ec, size_t sent, CUDPData *recdata)
 	{
+		NotifyDatagramSend(recdata->completion, !ec && sent == recdata->size, sent);
 		if (ec) {
 			AddDebugLogLineN(logAsio, CFormat("UDP HandleSendToError %s") % ec.message());
 		} else if (sent != recdata->size) {
@@ -2425,9 +2431,10 @@ uint32 CLibUDPSocket::RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, u
 	return m_aSocket->RecvFrom(addr, port, buf, nBytes);
 }
 
-uint32 CLibUDPSocket::SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes)
+uint32 CLibUDPSocket::SendTo(
+	const amuleIPV4Address &addr, const void *buf, uint32 nBytes, DatagramSendCompletion completion)
 {
-	return m_aSocket->SendTo(addr, buf, nBytes);
+	return m_aSocket->SendTo(addr, buf, nBytes, std::move(completion));
 }
 
 int CLibUDPSocket::LastError() const

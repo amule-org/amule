@@ -175,7 +175,8 @@ private:
 	 * @param ip The target IP address.
 	 * @param port The target port.
 	 */
-	bool SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint16_t port);
+	// The result controls queue cleanup. Kad measurements observe asynchronous completion.
+	bool SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint16_t port, bool kad, uint8_t opcode);
 
 	/**
 	 * Creates a new socket. Calling this when one already exists is illegal.

@@ -239,7 +239,7 @@ void CKademliaUDPListener::SendNullPacket(uint8_t opcode,
 	SendPacket(packetdata, opcode, ip, port, targetKey, cryptTargetID);
 }
 
-void CKademliaUDPListener::SendPublishSourcePacket(
+bool CKademliaUDPListener::SendPublishSourcePacket(
 	const CContact &contact, const CUInt128 &targetID, const CUInt128 &contactID, const TagPtrList &tags)
 {
 	uint8_t opcode;
@@ -260,14 +260,14 @@ void CKademliaUDPListener::SendPublishSourcePacket(
 	}
 	if (contact.GetVersion() >= 6) { // obfuscated ?
 		const CUInt128 &clientID = contact.GetClientID();
-		SendPacket(packetdata,
+		return SendPacket(packetdata,
 			opcode,
 			contact.GetIPAddress(),
 			contact.GetUDPPort(),
 			contact.GetUDPKey(),
 			&clientID);
 	} else {
-		SendPacket(packetdata, opcode, contact.GetIPAddress(), contact.GetUDPPort(), 0, NULL);
+		return SendPacket(packetdata, opcode, contact.GetIPAddress(), contact.GetUDPPort(), 0, NULL);
 	}
 }
 
@@ -406,7 +406,7 @@ void CKademliaUDPListener::ProcessPacket(const uint8_t *data,
 		break;
 	case KADEMLIA_PUBLISH_RES:
 		DebugRecv(KadPublishRes, ip, port);
-		ProcessPublishResponse(packetData, lenPacket, ip);
+		ProcessPublishResponse(packetData, lenPacket, ip, port);
 		break;
 	case KADEMLIA2_PUBLISH_RES:
 		DebugRecv(Kad2PublishRes, ip, port);
@@ -1406,7 +1406,8 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 
 // KADEMLIA_PUBLISH_RES
 // Used only by Kad1.0
-void CKademliaUDPListener::ProcessPublishResponse(const uint8_t *packetData, uint32_t lenPacket, uint32_t ip)
+void CKademliaUDPListener::ProcessPublishResponse(
+	const uint8_t *packetData, uint32_t lenPacket, uint32_t ip, uint16_t port)
 {
 	CHECK_PACKET_MIN_SIZE(16);
 	CHECK_TRACKED_PACKET(KADEMLIA_PUBLISH_REQ);
@@ -1421,7 +1422,7 @@ void CKademliaUDPListener::ProcessPublishResponse(const uint8_t *packetData, uin
 		load = bio.ReadUInt8();
 	}
 
-	CSearchManager::ProcessPublishResult(file, load, loadResponse);
+	CSearchManager::ProcessPublishResult(file, load, loadResponse, ip, port);
 }
 
 // KADEMLIA2_PUBLISH_RES
@@ -1441,7 +1442,7 @@ void CKademliaUDPListener::Process2PublishResponse(const uint8_t *packetData,
 	CMemFile bio(packetData, lenPacket);
 	CUInt128 file = bio.ReadUInt128();
 	uint8_t load = bio.ReadUInt8();
-	CSearchManager::ProcessPublishResult(file, load, true);
+	CSearchManager::ProcessPublishResult(file, load, true, ip, port);
 	if (bio.GetLength() > bio.GetPosition()) {
 		// for future use
 		uint8_t options = bio.ReadUInt8();
@@ -1886,7 +1887,7 @@ void CKademliaUDPListener::Process2FirewallUDP(const uint8_t *packetData, uint32
 	}
 }
 
-void CKademliaUDPListener::SendPacket(const CMemFile &data,
+bool CKademliaUDPListener::SendPacket(const CMemFile &data,
 	uint8_t opcode,
 	uint32_t destinationHost,
 	uint16_t destinationPort,
@@ -1907,13 +1908,14 @@ void CKademliaUDPListener::SendPacket(const CMemFile &data,
 		cryptKey = NULL;
 	}
 	theStats::AddUpOverheadKad(packet->GetPacketSize());
-	theApp->clientudp->SendPacket(packet,
+	const bool queued = theApp->clientudp->TrySendPacket(packet,
 		wxUINT32_SWAP_ALWAYS(destinationHost),
 		destinationPort,
 		true,
 		cryptKey,
 		true,
 		targetKey.GetKeyValue(theApp->GetPublicIP(false)));
+	return queued;
 }
 
 #if 0

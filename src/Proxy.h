@@ -544,7 +544,10 @@ public:
 
 	/* wxDatagramSocket Interface */
 	virtual uint32 RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes);
-	virtual uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes);
+	uint32 SendTo(const amuleIPV4Address &addr,
+		const void *buf,
+		uint32 nBytes,
+		DatagramSendCompletion completion = {}) override;
 
 private:
 	// Where datagrams are relayed through: the UDP ASSOCIATE reply's bound address, or the proxy's

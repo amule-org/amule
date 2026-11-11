@@ -1845,6 +1845,25 @@ SKadPublishFacts CSharedFileList::CurrentKadPublishFacts()
 
 void CSharedFileList::Publish()
 {
+	auto &metrics = Kademlia::CPublishMetrics::Instance();
+	if (metrics.ReportDue(::GetTickCount64())) {
+		const auto transport =
+			Kademlia::CPublishTransportMetrics::Instance().GetSnapshot(::GetTickCount64());
+		AddDebugLogLineN(logKadSearch,
+			CFormat("Kad source publish totals: attempts=%llu start_failures=%llu starts=%llu "
+				"in_flight=%llu queued=%llu sent=%llu sent_bytes=%llu send_failures=%llu "
+				"acknowledged_ips=%llu "
+				"finished=%llu zero_ack=%llu deadlines=%llu cancelled=%llu duration_ms=%llu "
+				"max_duration_ms=%llu max_req_per_ip_60s=%llu omitted_rate_samples=%llu "
+				"omitted_destinations=%llu") %
+				metrics.attempts % metrics.startFailures % metrics.starts % metrics.inFlight %
+				metrics.queued % transport.sourcePackets % transport.sourceBytes %
+				transport.failedSourceSends % metrics.acknowledged % metrics.finished %
+				metrics.zeroAcknowledgements % metrics.deadlines % metrics.cancelled %
+				metrics.durationMs % metrics.maxDurationMs % transport.maxRequestsPerIP60s %
+				transport.omittedRateSamples % metrics.omittedDestinations);
+	}
+
 	// Variables to save cpu.
 	unsigned int tNow = time(NULL);
 
@@ -1946,9 +1965,16 @@ void CSharedFileList::Publish()
 					if (pCurKnownFile->PublishSrc()) {
 						Kademlia::CUInt128 kadFileID;
 						kadFileID.SetValueBE(pCurKnownFile->GetFileHash().GetHash());
-						if (Kademlia::CSearchManager::PrepareLookup(
-							    Kademlia::CSearch::STOREFILE, true, kadFileID) ==
-							NULL) {
+						const bool started = Kademlia::CSearchManager::PrepareLookup(
+									     Kademlia::CSearch::STOREFILE,
+									     true,
+									     kadFileID) != nullptr;
+						Kademlia::CPublishMetrics::Instance().Attempt(started);
+						AddDebugLogLineN(logKadSearch,
+							CFormat("Kad source publish attempt: target=%s "
+								"started=%u") %
+								kadFileID.ToHexString() % started);
+						if (!started) {
 							pCurKnownFile->SetLastPublishTimeKadSrc(0, 0);
 						}
 					}
