@@ -131,11 +131,13 @@ public:
 		CarryValue(before.route.serverPort, after.route.serverPort, saved.route.serverPort);
 		CarryValue(before.route.tcpPort, after.route.tcpPort, saved.route.tcpPort);
 		CarryValue(before.route.kadPort, after.route.kadPort, saved.route.kadPort);
-		CarryValue(before.route.directCallback, after.route.directCallback, saved.route.directCallback);
+		CarryValue(
+			before.route.directCallback, after.route.directCallback, saved.route.directCallback);
 		CarryValue(before.serverCandidate, after.serverCandidate, saved.serverCandidate);
 		CarryValue(before.lastResortIPv4, after.lastResortIPv4, saved.lastResortIPv4);
 		CarryValue(before.lastResortIPv6, after.lastResortIPv6, saved.lastResortIPv6);
-		CarryValue(before.identityFromFallback, after.identityFromFallback, saved.identityFromFallback);
+		CarryValue(
+			before.identityFromFallback, after.identityFromFallback, saved.identityFromFallback);
 	}
 
 	//! The saved start, which ends the chain.
@@ -149,8 +151,7 @@ public:
 	void Reset() { m_start.reset(); }
 
 private:
-	template <typename T>
-	static void CarryValue(const T &before, const T &after, T &saved)
+	template <typename T> static void CarryValue(const T &before, const T &after, T &saved)
 	{
 		if (!(after == before)) {
 			saved = after;
