@@ -315,7 +315,7 @@ constexpr std::size_t kMaxPendingRequests = 8;
 constexpr std::uint64_t kHolePunchFallbackMs = 60'000;
 
 // ed2k-server runs Lugdunum's callback beside its hole punch, and the two can succeed on different
-// NATs: the callback has the source dial us. So a failed hole punch moves on to it, once (#2464).
+// NATs: the callback has the source dial us. So each failed hole punch moves on to it once.
 inline bool ShouldFallBackToLugdunumCallback(
 	bool holePunchSent, bool fallbackTried, std::uint64_t sentAt, std::uint64_t now)
 {

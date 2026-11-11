@@ -655,8 +655,10 @@ bool CClientList::ComparePriorUserhash(const CNetworkAddress &address, uint16 nP
 
 void CClientList::AddTrackClient(CUpDownClient *toadd)
 {
-	m_trackedClientsList.Add(
-		toadd->GetUserAddress(), toadd->GetUserPort(), toadd->GetCreditsHash(), ::GetTickCount64());
+	m_trackedClientsList.Add(toadd->GetTrackingAddress(),
+		toadd->GetUserPort(),
+		toadd->GetCreditsHash(),
+		::GetTickCount64());
 }
 
 void CClientList::Process()

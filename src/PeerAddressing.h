@@ -509,10 +509,22 @@ inline CNetworkAddress OutboundIPv6Source(
  * inbound dials and which expires within a day. Taking it as the peer's address would turn a
  * HighID into ID 0 behind an address nobody can dial, so the source dies although its IPv4 works.
  */
-inline bool KeepsIPv4IdentityOnIPv6Hello(
-	const CNetworkAddress &known, const CNetworkAddress &socketPeer, bool knownProven = true)
+inline bool KeepsIPv4IdentityOnIPv6Hello(const CNetworkAddress &known, const CNetworkAddress &socketPeer)
 {
-	return knownProven && known.Unmapped().IsIPv4() && socketPeer.IsIPv6() && !socketPeer.IsIPv4Mapped();
+	return known.Unmapped().IsIPv4() && socketPeer.IsIPv6() && !socketPeer.IsIPv4Mapped();
+}
+
+/**
+ * Where a peer's user hash is tracked and checked for a change.
+ *
+ * Its identity, unless that is an address no hello has come from: an IPv4 a source took from a
+ * fallback route, kept by an IPv6 hello. A hash tracked there could get the host behind that IPv4
+ * banned for a hash change it never made, so the live socket's address is used instead.
+ */
+inline CNetworkAddress TrackingAddress(
+	const CNetworkAddress &userAddress, const CNetworkAddress &socketPeer, bool identityUnproven)
+{
+	return identityUnproven && socketPeer.IsPresent() ? IndexKey(socketPeer) : userAddress;
 }
 
 /**

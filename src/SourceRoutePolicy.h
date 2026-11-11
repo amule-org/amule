@@ -150,7 +150,8 @@ struct SSourceRouteMerge
 	// Our server says the source is a HighID at this address now.
 	bool replaceWithHighID = false;
 	// What a replace from our server overwrites stays as a fallback, so a client that logged in to
-	// our server with this source's hash cannot take away a route that works.
+	// our server with this source's hash cannot take away a route that works. It takes the slot
+	// even when a fallback is stored there: a route that was in use ranks above one that never was.
 	bool keepOldHighIDAsLastResort = false;
 	bool keepOldServerRouteAsCandidate = false;
 	bool takeDirectCallback = false;

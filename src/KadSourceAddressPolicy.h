@@ -87,7 +87,7 @@ inline bool ShouldContactKadSourceOverIPv6(const SKadSourceFacts &facts)
 
 /**
  * Whether a firewalled source contacted on IPv4 keeps its published IPv6 as the route of last
- * resort (#2464). A HighID of ours reaches it by its buddy or a direct callback first, so the
+ * resort. A HighID of ours reaches it by its buddy or a direct callback first, so the
  * eMuleAI ID replacement above costs nothing unless those fail.
  */
 inline bool ShouldKeepKadSourceIPv6AsLastResort(const SKadSourceFacts &facts)

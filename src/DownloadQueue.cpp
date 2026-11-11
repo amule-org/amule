@@ -721,7 +721,9 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 				source->AddRequestForAnotherFile(sender);
 			}
 		} else {
-			// Source was known, but reqfile NULL.
+			// Source was known, but reqfile NULL. No contact runs for it, so every route is
+			// untried.
+			source->ResetContactRoutes();
 			source->SetRequestFile(sender);
 			source->SetSourceFrom(nSourceFrom);
 			sender->AddSource(source);
@@ -801,6 +803,8 @@ void CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *so
 			}
 		}
 	} else {
+		// No contact runs for a client without a request file, so every route is untried.
+		source->ResetContactRoutes();
 		source->SetRequestFile(sender);
 
 		if (source->GetFileRating() || !source->GetFileComment().IsEmpty()) {

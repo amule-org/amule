@@ -907,8 +907,6 @@ TEST(PeerAddressing, AnIPv6HelloKeepsAKnownIPv4Identity)
 	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(
 		ipv6, CNetworkAddress::FromString("2001:4860:4860::8844")));
 	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(CNetworkAddress::Absent(), ipv6));
-	// An IPv4 identity a fallback gave, never proven, moves to the socket of an IPv6 hello.
-	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(ipv4, ipv6, false));
 }
 
 // A verdict on a peer's conduct lands on the connection it behaved on, not on an identity it kept
@@ -921,4 +919,14 @@ TEST(PeerAddressing, ConductIsChargedToTheLiveConnection)
 	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::FromString("::ffff:203.0.113.9"), kept) ==
 		    CNetworkAddress::FromString("203.0.113.9"));
 	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), kept) == kept);
+}
+
+TEST(PeerAddressing, AnUnprovenIdentityTracksTheHashAtTheSocket)
+{
+	const CNetworkAddress ipv4 = CNetworkAddress::FromIPv4NetworkOrder(0x0D0C0B0Au);
+	const CNetworkAddress ipv6 = CNetworkAddress::FromString("2001:4860:4860::8888");
+	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, ipv6, true) == ipv6);
+	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, ipv6, false) == ipv4);
+	// Without a socket nothing better is known.
+	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, CNetworkAddress::Absent(), true) == ipv4);
 }

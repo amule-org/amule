@@ -854,7 +854,7 @@ public:
 	// An IPv6 a third party reported for a source without an IPv4 address, dialled once every
 	// other route has failed.
 	void SetLastResortIPv6(const CNetworkAddress &address);
-	// A source joining a file's source list starts with every route untried again.
+	// A known client that becomes a download source starts with every route untried.
 	void ResetContactRoutes()
 	{
 		m_failedSourceRoutes = 0;
@@ -863,6 +863,9 @@ public:
 	// One key per address this source can be reached on, so a later copy under any of them is
 	// known dead once this one is.
 	std::vector<CDeadSourceKey> DeadSourceKeys() const;
+	//! Where a user hash is tracked: the identity, or the socket while the identity is a fallback
+	//! address no hello came from. An IPv6 hello keeps an IPv4 identity it does not prove.
+	CNetworkAddress GetTrackingAddress() const;
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
 	/* Role: we serve this buddy, or it serves us */
@@ -1262,7 +1265,7 @@ private:
 	SStoredSourceRoute m_lastResortIPv6;
 	// The routes a fallback left behind.
 	std::vector<CDeadSourceKey> m_formerDeadSourceKeys;
-	// The IPv4 identity came from a fallback, unproven: a hello over IPv6 moves it to the socket.
+	// The IPv4 identity came from a fallback and no hello came from it yet.
 	bool m_identityFromFallback = false;
 
 	EKadState m_nKadState;

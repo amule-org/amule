@@ -821,11 +821,13 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	if (m_socket) {
 		const CNetworkAddress peerAddress = m_socket->GetPeerAddress();
 		if (!m_preserveIdentityOnHello &&
-			!PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(
-				GetUserAddress(), peerAddress, !m_identityFromFallback)) {
+			!PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(GetUserAddress(), peerAddress)) {
 			SetUserAddress(peerAddress);
 		}
-		m_identityFromFallback = false;
+		// A hello from the identity's own address proves it.
+		if (GetUserAddress() == PeerAddressing::IndexKey(peerAddress)) {
+			m_identityFromFallback = false;
+		}
 	} else {
 		throw wxString("Huh, socket failure. Avoided crash this time.");
 	}
@@ -850,7 +852,8 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	CClientCredits *pFoundCredits = theApp->clientcredits->GetCredit(m_UserHash);
 	if (credits == NULL) {
 		credits = pFoundCredits;
-		if (!theApp->clientlist->ComparePriorUserhash(GetUserAddress(), m_nUserPort, pFoundCredits)) {
+		if (!theApp->clientlist->ComparePriorUserhash(
+			    GetTrackingAddress(), m_nUserPort, pFoundCredits)) {
 			AddDebugLogLineN(logClient,
 				CFormat("Client: %s (%s) Banreason: Userhash changed (Found in "
 					"TrackedClientsList)") %
@@ -1582,7 +1585,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	SourceItemType source_type = UNAVAILABLE_SOURCE;
 	SourceItemType peer_type = UNAVAILABLE_SOURCE;
 
-	// A source is given up only once every route it offers has failed (#2464).
+	// A source is given up only once every route it offers has failed.
 	if (KeepForNextRoute(failedAdvertisedIPv6)) {
 		SetDownloadState(DS_ONQUEUE);
 		m_bReaskPending = true;
@@ -2302,8 +2305,7 @@ bool CUpDownClient::UseSourceFallback(ESourceFallback fallback, ESourceRoute fai
 	m_formerDeadSourceKeys.push_back(CurrentStoredRoute().DeadKey());
 	ApplyStoredRoute(route);
 	m_failedSourceRoutes = FailedAfterFallback(fallback, m_failedSourceRoutes);
-	// An IPv4 from a fallback is unproven, so an IPv6 hello moves the identity to its socket. A hello
-	// over IPv4 moves an IPv6 identity anyway.
+	// Unproven until a hello comes from it: the hash tracking uses the socket address meanwhile.
 	m_identityFromFallback = fallback == ESourceFallback::LastResortIPv4;
 	if (NextSourceRouteNow() == ESourceRoute::None) {
 		return false;
@@ -2338,6 +2340,13 @@ SStoredSourceRoute StoredRouteOf(const CUpDownClient &client)
 	return route;
 }
 } // namespace
+
+CNetworkAddress CUpDownClient::GetTrackingAddress() const
+{
+	return PeerAddressing::TrackingAddress(GetUserAddress(),
+		m_socket != nullptr ? m_socket->GetPeerAddress() : CNetworkAddress::Absent(),
+		m_identityFromFallback);
+}
 
 SStoredSourceRoute CUpDownClient::CurrentStoredRoute() const
 {
