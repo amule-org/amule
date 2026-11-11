@@ -61,31 +61,6 @@ target_include_directories (PowerManagementTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (PowerManagementTest muleunit mulecommon)
 add_test (NAME PowerManagementTest COMMAND PowerManagementTest)
 
-# Exercise the production sleep entry points against an isolated session bus.
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
-	add_executable (SleepInhibitionTest
-		SleepInhibitionTest.cpp
-		${CMAKE_SOURCE_DIR}/src/CFile.cpp
-		${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
-		${CMAKE_SOURCE_DIR}/src/Tag.cpp
-		${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
-		${CMAKE_SOURCE_DIR}/src/PlatformSpecific.cpp
-		${CMAKE_SOURCE_DIR}/src/Logger.cpp
-	)
-	target_compile_definitions (SleepInhibitionTest PRIVATE HAVE_GIO AMULE_DAEMON wxUSE_GUI=0 AMULE_SLEEP_INHIBITION_TEST)
-	target_include_directories (SleepInhibitionTest PRIVATE
-		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
-		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
-		${CMAKE_BINARY_DIR}/src/libs/ec/cpp ${GLIB_INCLUDE_DIRS}
-	)
-	target_link_libraries (SleepInhibitionTest PRIVATE mulecommon wxWidgets::BASE ${GLIB_LIBRARIES})
-	add_test (NAME SleepInhibitionTest COMMAND SleepInhibitionTest)
-	add_test (NAME SleepInhibitionNoBusTest COMMAND SleepInhibitionTest --no-bus)
-	add_test (NAME SleepInhibitionBusRestartTest COMMAND SleepInhibitionTest --restart-bus)
-	set_tests_properties (SleepInhibitionTest SleepInhibitionNoBusTest SleepInhibitionBusRestartTest PROPERTIES
-		SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 240)
-endif ()
-
 # Shared application anchors for headless tests that link production core code.
 function (add_application_test_stubs target)
 	target_sources (${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ApplicationTestStubs.cpp)
@@ -3092,12 +3067,36 @@ endif()
 option (ENABLE_INTEGRATION_TESTS
 	"Register tests that run real aMule programs on loopback. Timing-sensitive, so off for package builds"
 	OFF)
-if (ENABLE_INTEGRATION_TESTS AND Python3_Interpreter_FOUND AND TARGET SleepInhibitionTest AND TARGET amuled)
-	add_test (NAME SleepModeDaemonIntegrationTest
-		COMMAND SleepInhibitionTest --daemon ${Python3_EXECUTABLE}
-			${CMAKE_CURRENT_SOURCE_DIR}/SleepModeDaemonIntegrationTest.py $<TARGET_FILE:amuled>)
-	set_tests_properties (SleepModeDaemonIntegrationTest PROPERTIES
-		SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 120)
+# Exercise the production sleep entry points against an isolated session bus, with wall-clock bounds.
+if (ENABLE_INTEGRATION_TESTS AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
+	add_executable (SleepInhibitionTest
+		SleepInhibitionTest.cpp
+		${CMAKE_SOURCE_DIR}/src/CFile.cpp
+		${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+		${CMAKE_SOURCE_DIR}/src/Tag.cpp
+		${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+		${CMAKE_SOURCE_DIR}/src/PlatformSpecific.cpp
+		${CMAKE_SOURCE_DIR}/src/Logger.cpp
+	)
+	target_compile_definitions (SleepInhibitionTest PRIVATE HAVE_GIO AMULE_DAEMON wxUSE_GUI=0 AMULE_SLEEP_INHIBITION_TEST)
+	target_include_directories (SleepInhibitionTest PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+		${CMAKE_BINARY_DIR}/src/libs/ec/cpp ${GLIB_INCLUDE_DIRS}
+	)
+	target_link_libraries (SleepInhibitionTest PRIVATE mulecommon wxWidgets::BASE ${GLIB_LIBRARIES})
+	add_test (NAME SleepInhibitionTest COMMAND SleepInhibitionTest)
+	add_test (NAME SleepInhibitionNoBusTest COMMAND SleepInhibitionTest --no-bus)
+	add_test (NAME SleepInhibitionBusRestartTest COMMAND SleepInhibitionTest --restart-bus)
+	set_tests_properties (SleepInhibitionTest SleepInhibitionNoBusTest SleepInhibitionBusRestartTest PROPERTIES
+		SKIP_RETURN_CODE 77 LABELS "integration")
+	if (Python3_Interpreter_FOUND AND TARGET amuled)
+		add_test (NAME SleepModeDaemonIntegrationTest
+			COMMAND SleepInhibitionTest --daemon ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/SleepModeDaemonIntegrationTest.py $<TARGET_FILE:amuled>)
+		set_tests_properties (SleepModeDaemonIntegrationTest PROPERTIES
+			SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 120)
+	endif ()
 endif ()
 if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND Python3_Interpreter_FOUND)
 	add_test (NAME UnicodeCommandLineIntegrationTest
@@ -3994,7 +3993,7 @@ if (TARGET wxWidgets::CORE)
 	add_test (NAME BandwidthRateInputEnglishTest COMMAND BandwidthRateInputTest en)
 	add_test (NAME BandwidthRateInputItalianTest COMMAND BandwidthRateInputTest it)
 	set_tests_properties (BandwidthRateInputEnglishTest BandwidthRateInputItalianTest
-		PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60)
+		PROPERTIES SKIP_RETURN_CODE 77)
 endif()
 
 # Real OS calls, so it must stay registered on every platform.
