@@ -1507,3 +1507,28 @@ TEST(NatServerHolePunch, AFailedHolePunchFallsBackToTheLugdunumCallbackOnce)
 	// A clock before the send, as after a wrap, waits rather than firing.
 	ASSERT_FALSE(ShouldFallBackToLugdunumCallback(true, false, sentAt, sentAt - 1));
 }
+
+TEST(NatServerHolePunch, TheLugdunumFallbackIsReArmedByANewPunch)
+{
+	HolePunchFallback fallback;
+	ASSERT_FALSE(fallback.IsDue(1'000'000));
+	fallback.OnPunchSent(0);
+	ASSERT_FALSE(fallback.IsDue(kHolePunchFallbackMs - 1));
+	ASSERT_TRUE(fallback.IsDue(kHolePunchFallbackMs));
+	fallback.OnFallback(true, kHolePunchFallbackMs);
+	ASSERT_FALSE(fallback.IsDue(10 * kHolePunchFallbackMs));
+	fallback.OnPunchSent(10 * kHolePunchFallbackMs);
+	ASSERT_TRUE(fallback.IsDue(11 * kHolePunchFallbackMs));
+	fallback.Reset();
+	ASSERT_FALSE(fallback.IsDue(100 * kHolePunchFallbackMs));
+}
+
+TEST(NatServerHolePunch, ARequestThatNeverWentOutLeavesTheFallbackForLater)
+{
+	HolePunchFallback fallback;
+	fallback.OnPunchSent(0);
+	fallback.OnFallback(false, kHolePunchFallbackMs);
+	// Not spent, but not asked again on the next tick either.
+	ASSERT_FALSE(fallback.IsDue(kHolePunchFallbackMs + 1));
+	ASSERT_TRUE(fallback.IsDue(2 * kHolePunchFallbackMs));
+}

@@ -20,6 +20,7 @@
 
 #include <muleunit/test.h>
 #include "DeadSourceKey.h"
+#include "StoredSourceRoute.h"
 
 #include <vector>
 using namespace muleunit;
@@ -134,4 +135,76 @@ TEST(CDeadSourceKey, NonNativeKeysBehaveExactlyAsBefore)
 			ASSERT_EQUALS(a.id < b.id, key(a) < key(b));
 		}
 	}
+}
+
+namespace
+{
+// The key CDeadSourceList builds for a source record, before any hello: a HighID record carries no
+// user address yet, a server LowID no address at all, an IPv6 record its address.
+CDeadSourceKey RecordKey(
+	uint32 id, const CNetworkAddress &user, uint16 tcp, uint32 server, uint16 serverPort, uint16 kad)
+{
+	return Key(CProtocolPeerIdentity::FromClientState(id, IsLowID(id), user, server, serverPort),
+		id,
+		tcp,
+		server,
+		kad);
+}
+
+const uint32 kHighID = 0x0A0B0C0Du;
+const uint32 kServer = 0x0100007Fu;
+} // namespace
+
+TEST(CDeadSourceKey, AStoredHighIDMatchesItsLaterRecord)
+{
+	SStoredSourceRoute route;
+	route.id = kHighID;
+	route.address = CNetworkAddress::FromIPv4NetworkOrder(0x0D0C0B0Au);
+	route.tcpPort = 4662;
+	ASSERT_TRUE(route.DeadKey().Matches(RecordKey(kHighID, CNetworkAddress::Absent(), 4662, 0, 0, 0)));
+	ASSERT_FALSE(
+		route.DeadKey().Matches(RecordKey(kHighID + 1, CNetworkAddress::Absent(), 4662, 0, 0, 0)));
+}
+
+TEST(CDeadSourceKey, AStoredServerRouteMatchesItsLaterRecord)
+{
+	SStoredSourceRoute route;
+	route.id = 0x1235;
+	route.serverIP = kServer;
+	route.serverPort = 4661;
+	route.tcpPort = 4662;
+	ASSERT_TRUE(route.DeadKey().Matches(
+		RecordKey(0x1235, CNetworkAddress::Absent(), 4662, kServer, 4661, 0)));
+	// Another server's LowID 0x1235 is another client.
+	ASSERT_FALSE(route.DeadKey().Matches(
+		RecordKey(0x1235, CNetworkAddress::Absent(), 4662, kServer + 1, 4661, 0)));
+}
+
+TEST(CDeadSourceKey, AStoredIPv6MatchesItsLaterRecord)
+{
+	SStoredSourceRoute route;
+	route.address = IPv6(7);
+	route.tcpPort = 4662;
+	ASSERT_TRUE(route.DeadKey().Matches(RecordKey(1, IPv6(7), 4662, 0, 0, 0)));
+	ASSERT_FALSE(route.DeadKey().Matches(RecordKey(1, IPv6(8), 4662, 0, 0, 0)));
+}
+
+TEST(CDeadSourceKey, ADeadSourceIsKeyedUnderEveryRoute)
+{
+	SStoredSourceRoute current;
+	current.id = 0x1235;
+	current.serverIP = kServer;
+	current.serverPort = 4661;
+	current.tcpPort = 4662;
+	SStoredSourceRoute lastResortIPv6;
+	lastResortIPv6.address = IPv6(7);
+	lastResortIPv6.tcpPort = 4662;
+	const CDeadSourceKey former = RecordKey(kHighID, CNetworkAddress::Absent(), 4662, 0, 0, 0);
+
+	const std::vector<CDeadSourceKey> keys =
+		DeadSourceKeysFor(current, { SStoredSourceRoute(), lastResortIPv6 }, { former });
+	ASSERT_EQUALS(3u, keys.size());
+	ASSERT_TRUE(keys[0].Matches(RecordKey(0x1235, CNetworkAddress::Absent(), 4662, kServer, 4661, 0)));
+	ASSERT_TRUE(keys[1].Matches(RecordKey(1, IPv6(7), 4662, 0, 0, 0)));
+	ASSERT_TRUE(keys[2].Matches(former));
 }

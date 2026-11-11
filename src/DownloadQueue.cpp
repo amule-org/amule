@@ -1825,8 +1825,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 	if (ctemp) {
 		ctemp->SetConnectOptions(byCryptOptions);
 #ifdef ENABLE_IPV6
-		if (ShouldKeepKadSourceIPv6AsLastResort(facts) &&
-			!theApp->ipfilter->IsFiltered(publishedIPv6)) {
+		if (ShouldKeepKadSourceIPv6AsLastResort(facts)) {
 			ctemp->SetLastResortIPv6(publishedIPv6);
 		}
 #endif

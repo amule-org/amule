@@ -509,9 +509,10 @@ inline CNetworkAddress OutboundIPv6Source(
  * inbound dials and which expires within a day. Taking it as the peer's address would turn a
  * HighID into ID 0 behind an address nobody can dial, so the source dies although its IPv4 works.
  */
-inline bool KeepsIPv4IdentityOnIPv6Hello(const CNetworkAddress &known, const CNetworkAddress &socketPeer)
+inline bool KeepsIPv4IdentityOnIPv6Hello(
+	const CNetworkAddress &known, const CNetworkAddress &socketPeer, bool knownProven = true)
 {
-	return known.Unmapped().IsIPv4() && socketPeer.IsIPv6() && !socketPeer.IsIPv4Mapped();
+	return knownProven && known.Unmapped().IsIPv4() && socketPeer.IsIPv6() && !socketPeer.IsIPv4Mapped();
 }
 
 /**

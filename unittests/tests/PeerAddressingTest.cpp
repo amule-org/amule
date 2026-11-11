@@ -907,6 +907,8 @@ TEST(PeerAddressing, AnIPv6HelloKeepsAKnownIPv4Identity)
 	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(
 		ipv6, CNetworkAddress::FromString("2001:4860:4860::8844")));
 	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(CNetworkAddress::Absent(), ipv6));
+	// An IPv4 identity a fallback gave, never proven, moves to the socket of an IPv6 hello.
+	ASSERT_FALSE(PeerAddressing::KeepsIPv4IdentityOnIPv6Hello(ipv4, ipv6, false));
 }
 
 // A verdict on a peer's conduct lands on the connection it behaved on, not on an identity it kept

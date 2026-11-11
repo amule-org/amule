@@ -322,6 +322,38 @@ inline bool ShouldFallBackToLugdunumCallback(
 	return holePunchSent && !fallbackTried && now >= sentAt && now - sentAt >= kHolePunchFallbackMs;
 }
 
+// One fallback per punch: a new punch re-arms it. A request that never went out does not use it
+// up; it waits another interval, so a server without the callback is not asked on every tick.
+class HolePunchFallback
+{
+public:
+	void OnPunchSent(std::uint64_t now)
+	{
+		m_sent = true;
+		m_tried = false;
+		m_sentAt = now;
+	}
+	void Reset() { *this = HolePunchFallback(); }
+	bool IsDue(std::uint64_t now) const
+	{
+		return ShouldFallBackToLugdunumCallback(m_sent, m_tried, m_sentAt, now);
+	}
+	//! @a requested: the callback request went out, or waits for the server's UDP key.
+	void OnFallback(bool requested, std::uint64_t now)
+	{
+		if (requested) {
+			m_tried = true;
+		} else {
+			m_sentAt = now;
+		}
+	}
+
+private:
+	bool m_sent = false;
+	bool m_tried = false;
+	std::uint64_t m_sentAt = 0;
+};
+
 class PendingRequestSet
 {
 public:

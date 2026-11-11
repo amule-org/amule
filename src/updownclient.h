@@ -50,7 +50,8 @@
 #include "ClientRef.h"        // Needed for debug defines
 #include "PeerCapabilities.h" // Needed for CPeerCapabilities
 #include "ProtocolPeerIdentity.h"
-#include "DeadSourceKey.h" // Needed for CDeadSourceKey
+#include "DeadSourceKey.h"     // Needed for CDeadSourceKey
+#include "StoredSourceRoute.h" // Needed for SStoredSourceRoute
 #include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
@@ -77,6 +78,7 @@ enum class EContactRoute;
 struct SContactFacts;
 struct SSourceRouteFacts;
 enum class ESourceRoute : std::uint8_t;
+enum class ESourceFallback : std::uint8_t;
 
 enum EChatCaptchaState
 {
@@ -375,6 +377,11 @@ private:
 	bool StartKadBuddyCallback();
 	//! After a contact that never completed the hellos: whether another route is left to try.
 	bool KeepForNextRoute(bool failedAdvertisedIPv6);
+	ESourceRoute NextSourceRouteNow() const;
+	//! Moves to a stored fallback route. Whether it leaves a route to try.
+	bool UseSourceFallback(ESourceFallback fallback, ESourceRoute failedRoute);
+	void ApplyStoredRoute(const SStoredSourceRoute &route);
+	SStoredSourceRoute CurrentStoredRoute() const;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	//! Sends OP_NAT_CALLBACKREQUEST to this LowID peer when the Lugdunum preconditions hold.
 	//! Returns whether the request went out; a request held for the server's UDP key is not a
@@ -387,8 +394,7 @@ private:
 	//! whether the request went out; a busy server slot is not a send.
 	bool TrySendLowIdHolePunchRequest();
 	bool m_lowIdHolePunchRequested = false;
-	uint64 m_lowIdHolePunchSentAt = 0;
-	bool m_lugdunumAfterHolePunchTried = false;
+	NatServerHolePunch::HolePunchFallback m_holePunchFallback;
 	//! The server of this LowID source when it is not ours and would wake the source for us
 	//! (ed2k-server 0.9.86), else null; always null without uTP, which the dial after the answer
 	//! needs.
@@ -847,7 +853,13 @@ public:
 	void AdoptContactRoutes(const CUpDownClient &duplicate);
 	// An IPv6 a third party reported for a source without an IPv4 address, dialled once every
 	// other route has failed.
-	void SetLastResortIPv6(const CNetworkAddress &address) { m_lastResortIPv6 = address; }
+	void SetLastResortIPv6(const CNetworkAddress &address);
+	// A source joining a file's source list starts with every route untried again.
+	void ResetContactRoutes()
+	{
+		m_failedSourceRoutes = 0;
+		m_refreshedSourceRoutes = 0;
+	}
 	// One key per address this source can be reached on, so a later copy under any of them is
 	// known dead once this one is.
 	std::vector<CDeadSourceKey> DeadSourceKeys() const;
@@ -1243,19 +1255,15 @@ private:
 	// Routes our server gave new data for during an attempt: that attempt's failure says nothing
 	// about the new data.
 	unsigned m_refreshedSourceRoutes = 0;
-	CNetworkAddress m_lastResortIPv6;
-	// The IPv4 route of a HighID or Kad type 6 copy, for a copy that cannot use it yet.
-	uint32 m_lastResortIPv4 = 0;
-	uint16 m_lastResortIPv4Port = 0;
-	uint16 m_lastResortIPv4KadPort = 0;
-	uint32 m_lastResortIPv4ID = 0;
-	bool m_lastResortIPv4DirectCallback = false;
-	// A different server route from a source we do not trust to replace the one we have.
-	uint32 m_serverCandidateID = 0;
-	uint32 m_serverCandidateIP = 0;
-	uint16 m_serverCandidatePort = 0;
-	// The identities a switch to another route left behind.
+	// Routes kept for when every route this client has failed: a server route from a source we do
+	// not trust to replace ours, and an address it cannot use yet.
+	SStoredSourceRoute m_serverCandidate;
+	SStoredSourceRoute m_lastResortIPv4;
+	SStoredSourceRoute m_lastResortIPv6;
+	// The routes a fallback left behind.
 	std::vector<CDeadSourceKey> m_formerDeadSourceKeys;
+	// The IPv4 identity came from a fallback, unproven: a hello over IPv6 moves it to the socket.
+	bool m_identityFromFallback = false;
 
 	EKadState m_nKadState;
 

@@ -178,7 +178,9 @@ TEST(SourceRoutePolicy, OurServerReplacesTheServerRoute)
 	SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
 	ASSERT_TRUE(merge.takeServerRoute);
 	ASSERT_FALSE(merge.storeServerCandidate);
-	ASSERT_FALSE(merge.demoteHighIDToLastResort);
+	// The replaced route stays as a fallback: the server does not check the hash a client claims.
+	ASSERT_TRUE(merge.keepOldServerRouteAsCandidate);
+	ASSERT_FALSE(merge.keepOldHighIDAsLastResort);
 }
 
 TEST(SourceRoutePolicy, OurServerTurnsAHighIDIntoALowID)
@@ -189,7 +191,8 @@ TEST(SourceRoutePolicy, OurServerTurnsAHighIDIntoALowID)
 	facts.incomingTrusted = true;
 	SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
 	ASSERT_TRUE(merge.takeServerRoute);
-	ASSERT_TRUE(merge.demoteHighIDToLastResort);
+	ASSERT_TRUE(merge.keepOldHighIDAsLastResort);
+	ASSERT_FALSE(merge.keepOldServerRouteAsCandidate);
 	// A HighID hears a LowID claim from anywhere else as a fallback only.
 	facts.incomingTrusted = false;
 	merge = DecideSourceRouteMerge(facts);
@@ -205,6 +208,7 @@ TEST(SourceRoutePolicy, OurServerReplacesTheHighIDAddress)
 	facts.incomingTrusted = true;
 	SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
 	ASSERT_TRUE(merge.replaceWithHighID);
+	ASSERT_TRUE(merge.keepOldHighIDAsLastResort);
 	ASSERT_FALSE(merge.takeLastResortIPv4);
 	facts.incomingTrusted = false;
 	merge = DecideSourceRouteMerge(facts);
@@ -222,6 +226,12 @@ TEST(SourceRoutePolicy, OurServerTurnsALowIDIntoAHighID)
 	facts.incomingHighIDIPv4 = true;
 	facts.incomingTrusted = true;
 	ASSERT_TRUE(DecideSourceRouteMerge(facts).replaceWithHighID);
+	// A LowID with a server route keeps it as a fallback.
+	facts.existingHasServer = true;
+	const SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+	ASSERT_TRUE(merge.replaceWithHighID);
+	ASSERT_TRUE(merge.keepOldServerRouteAsCandidate);
+	ASSERT_FALSE(merge.keepOldHighIDAsLastResort);
 }
 
 TEST(SourceRoutePolicy, IPv6OnlyClientKeepsItsIdentityEvenForOurServer)
@@ -331,7 +341,65 @@ TEST(SourceRoutePolicy, AddresslessLowIDKeepsAHighIDCopyAsALastResort)
 	ASSERT_FALSE(DecideSourceRouteMerge(facts).takeLastResortIPv4);
 }
 
-TEST(SourceRoutePolicy, FamilySwitchPrefersIPv4AndRetriesOnlyTheAddressRoutes)
+namespace
+{
+std::vector<ESourceFallback> TriedFallbacks(
+	const SSourceFallbacks &available, ESourceFallback usable, bool &used)
+{
+	std::vector<ESourceFallback> tried;
+	used = UseFirstUsableFallback(available, [&tried, usable](ESourceFallback fallback) {
+		tried.push_back(fallback);
+		return fallback == usable;
+	});
+	return tried;
+}
+} // namespace
+
+TEST(SourceRoutePolicy, FallbacksGoServerRouteThenIPv4ThenIPv6)
+{
+	SSourceFallbacks available;
+	available.serverCandidate = true;
+	available.lastResortIPv4 = true;
+	available.lastResortIPv6 = true;
+	bool used = false;
+	const std::vector<ESourceFallback> tried =
+		TriedFallbacks(available, ESourceFallback::ServerCandidate, used);
+	ASSERT_TRUE(used);
+	ASSERT_EQUALS(1u, tried.size());
+}
+
+TEST(SourceRoutePolicy, AFallbackWithoutARouteMovesOnToTheNext)
+{
+	SSourceFallbacks available;
+	available.serverCandidate = true;
+	available.lastResortIPv4 = true;
+	available.lastResortIPv6 = true;
+	bool used = false;
+	std::vector<ESourceFallback> tried = TriedFallbacks(available, ESourceFallback::LastResortIPv6, used);
+	ASSERT_TRUE(used);
+	ASSERT_EQUALS(3u, tried.size());
+	ASSERT_TRUE(tried[0] == ESourceFallback::ServerCandidate);
+	ASSERT_TRUE(tried[1] == ESourceFallback::LastResortIPv4);
+	ASSERT_TRUE(tried[2] == ESourceFallback::LastResortIPv6);
+
+	// None usable: every one is spent and the source is given up.
+	available.lastResortIPv6 = false;
+	tried = TriedFallbacks(available, ESourceFallback::LastResortIPv6, used);
+	ASSERT_FALSE(used);
+	ASSERT_EQUALS(2u, tried.size());
+}
+
+TEST(SourceRoutePolicy, AnIPv6OnlyClientHasNoIPv6Fallback)
+{
+	SSourceFallbacks available;
+	available.lastResortIPv6 = true;
+	available.nativeIPv6 = true;
+	bool used = true;
+	ASSERT_EQUALS(0u, TriedFallbacks(available, ESourceFallback::LastResortIPv6, used).size());
+	ASSERT_FALSE(used);
+}
+
+TEST(SourceRoutePolicy, AFallbackRetriesOnlyTheRoutesItChanges)
 {
 	unsigned failed = 0;
 	for (ESourceRoute route : { ESourceRoute::Dial,
@@ -340,29 +408,10 @@ TEST(SourceRoutePolicy, FamilySwitchPrefersIPv4AndRetriesOnlyTheAddressRoutes)
 		     ESourceRoute::KadBuddy }) {
 		failed |= SourceRouteBit(route);
 	}
-	const unsigned callbacks =
-		SourceRouteBit(ESourceRoute::ServerCallback) | SourceRouteBit(ESourceRoute::KadBuddy);
-
-	SRouteFamilySwitch result = DecideRouteFamilySwitch(true, true, false, failed);
-	ASSERT_TRUE(result.toIPv4);
-	ASSERT_FALSE(result.toIPv6);
-	ASSERT_EQUALS(callbacks, result.failed);
-
-	result = DecideRouteFamilySwitch(false, true, false, failed);
-	ASSERT_TRUE(result.toIPv6);
-	ASSERT_EQUALS(callbacks, result.failed);
-
-	result = DecideRouteFamilySwitch(true, false, true, failed);
-	ASSERT_TRUE(result.toIPv4);
-}
-
-TEST(SourceRoutePolicy, NoFamilySwitchWithoutALastResort)
-{
-	const unsigned failed = SourceRouteBit(ESourceRoute::Dial);
-	SRouteFamilySwitch result = DecideRouteFamilySwitch(false, false, false, failed);
-	ASSERT_FALSE(result.toIPv4 || result.toIPv6);
-	ASSERT_EQUALS(failed, result.failed);
-	// An IPv6-only client is already on its IPv6.
-	result = DecideRouteFamilySwitch(false, true, true, failed);
-	ASSERT_FALSE(result.toIPv4 || result.toIPv6);
+	const unsigned addressRoutes =
+		SourceRouteBit(ESourceRoute::Dial) | SourceRouteBit(ESourceRoute::DirectUdpCallback);
+	ASSERT_EQUALS(failed & ~SourceRouteBit(ESourceRoute::ServerCallback),
+		FailedAfterFallback(ESourceFallback::ServerCandidate, failed));
+	ASSERT_EQUALS(failed & ~addressRoutes, FailedAfterFallback(ESourceFallback::LastResortIPv4, failed));
+	ASSERT_EQUALS(failed & ~addressRoutes, FailedAfterFallback(ESourceFallback::LastResortIPv6, failed));
 }

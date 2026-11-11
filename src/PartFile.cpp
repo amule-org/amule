@@ -4461,6 +4461,7 @@ void CPartFile::ClientStateChanged(int oldState, int newState)
 bool CPartFile::AddSource(CUpDownClient *client)
 {
 	if (m_SrcList.insert(CCLIENTREF(client, "CPartFile::AddSource")).second) {
+		client->ResetContactRoutes();
 		theStats::AddFoundSource();
 		theStats::AddSourceOrigin(client->GetSourceFrom());
 		return true;

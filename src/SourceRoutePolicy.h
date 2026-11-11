@@ -147,10 +147,12 @@ struct SSourceRouteMerge
 	bool takeServerRoute = false;
 	// A different server route from anywhere else, tried once every other route has failed.
 	bool storeServerCandidate = false;
-	// Our server says a HighID is now a LowID: its address waits as the last-resort IPv4.
-	bool demoteHighIDToLastResort = false;
 	// Our server says the source is a HighID at this address now.
 	bool replaceWithHighID = false;
+	// What a replace from our server overwrites stays as a fallback, so a client that logged in to
+	// our server with this source's hash cannot take away a route that works.
+	bool keepOldHighIDAsLastResort = false;
+	bool keepOldServerRouteAsCandidate = false;
 	bool takeDirectCallback = false;
 	// Dialled before the IPv4 address, as one a peer advertised in its hello.
 	bool takeAdvertisedIPv6 = false;
@@ -168,8 +170,9 @@ struct SSourceRouteMerge
  *
  * A route the kept copy lacks is taken. A route it has with a different value is replaced only
  * when the duplicate came from the server we are connected to: the server assigned the LowID and
- * tested the HighID. From anywhere else a different value is a fallback, so an old or forged entry
- * cannot replace a route that still works.
+ * tested the HighID. The replaced value stays as a fallback, because the server does not check the
+ * hash a client logs in with. From anywhere else a different value is only a fallback, so an old or
+ * forged entry cannot replace a route that still works.
  *
  * A kept IPv6-only client takes a server route, which it uses once its IPv6 dial fails. An IPv4
  * address is kept apart as a last resort rather than taken as its identity: a hello over the IPv6
@@ -178,13 +181,14 @@ struct SSourceRouteMerge
 inline SSourceRouteMerge DecideSourceRouteMerge(const SSourceRouteMergeFacts &facts)
 {
 	SSourceRouteMerge merge;
+	const bool keptHighID = !facts.existingLowID && !facts.existingNativeIPv6;
 	if (facts.incomingServerLowID && !facts.sameServerRoute) {
-		const bool keptHighID = !facts.existingLowID && !facts.existingNativeIPv6;
 		if (!keptHighID && !facts.existingHasServer) {
 			merge.takeServerRoute = true;
 		} else if (facts.incomingTrusted) {
 			merge.takeServerRoute = true;
-			merge.demoteHighIDToLastResort = keptHighID && !facts.existingHasLastResortIPv4;
+			merge.keepOldHighIDAsLastResort = keptHighID;
+			merge.keepOldServerRouteAsCandidate = !keptHighID;
 		} else {
 			merge.storeServerCandidate = !facts.existingHasServerCandidate;
 		}
@@ -192,6 +196,8 @@ inline SSourceRouteMerge DecideSourceRouteMerge(const SSourceRouteMergeFacts &fa
 	if (facts.incomingHighIDIPv4 && !facts.sameHighID) {
 		if (facts.incomingTrusted && !facts.existingNativeIPv6) {
 			merge.replaceWithHighID = true;
+			merge.keepOldHighIDAsLastResort = keptHighID;
+			merge.keepOldServerRouteAsCandidate = !keptHighID && facts.existingHasServer;
 		} else {
 			merge.takeLastResortIPv4 = !facts.existingHasLastResortIPv4;
 		}
@@ -211,34 +217,52 @@ inline SSourceRouteMerge DecideSourceRouteMerge(const SSourceRouteMergeFacts &fa
 	return merge;
 }
 
-struct SRouteFamilySwitch
+//! Routes a source keeps for when every route of its own has failed.
+enum class ESourceFallback : std::uint8_t
 {
-	bool toIPv4 = false;
-	bool toIPv6 = false;
-	// The failed routes still failed after the switch.
-	unsigned failed = 0;
+	ServerCandidate,
+	LastResortIPv4,
+	LastResortIPv6,
+};
+
+struct SSourceFallbacks
+{
+	bool serverCandidate = false;
+	bool lastResortIPv4 = false;
+	bool lastResortIPv6 = false;
+	// An IPv6-only client is already on its IPv6.
+	bool nativeIPv6 = false;
 };
 
 /**
- * Where a source goes once every route it offers has failed: to a last-resort address of the other
- * family, IPv4 first, or nowhere. A dial or direct callback that failed on one address says nothing
- * about another, so those two routes become untried again.
+ * Uses the first fallback that leaves the source a route, in the order: server route, IPv4, IPv6.
+ * @a tryFallback applies one and tells whether NextSourceRoute() now gives a route. A fallback that
+ * gives none is spent and the next one is tried. Returns whether one gave a route.
  */
-inline SRouteFamilySwitch DecideRouteFamilySwitch(
-	bool hasLastResortIPv4, bool hasLastResortIPv6, bool nativeIPv6, unsigned failed)
+template <typename TryFallback>
+inline bool UseFirstUsableFallback(const SSourceFallbacks &available, TryFallback tryFallback)
 {
-	SRouteFamilySwitch result;
-	if (hasLastResortIPv4) {
-		result.toIPv4 = true;
-	} else if (hasLastResortIPv6 && !nativeIPv6) {
-		result.toIPv6 = true;
-	} else {
-		result.failed = failed;
-		return result;
+	if (available.serverCandidate && tryFallback(ESourceFallback::ServerCandidate)) {
+		return true;
 	}
-	result.failed = failed & ~(SourceRouteBit(ESourceRoute::Dial) |
-					 SourceRouteBit(ESourceRoute::DirectUdpCallback));
-	return result;
+	if (available.lastResortIPv4 && tryFallback(ESourceFallback::LastResortIPv4)) {
+		return true;
+	}
+	return available.lastResortIPv6 && !available.nativeIPv6 &&
+	       tryFallback(ESourceFallback::LastResortIPv6);
+}
+
+/**
+ * The failed routes still failed on a fallback. A failure on one address or server route says
+ * nothing about another, so the routes it changes become untried again.
+ */
+inline unsigned FailedAfterFallback(ESourceFallback fallback, unsigned failed)
+{
+	if (fallback == ESourceFallback::ServerCandidate) {
+		return failed & ~SourceRouteBit(ESourceRoute::ServerCallback);
+	}
+	return failed &
+	       ~(SourceRouteBit(ESourceRoute::Dial) | SourceRouteBit(ESourceRoute::DirectUdpCallback));
 }
 
 #endif // SOURCE_ROUTE_POLICY_H
