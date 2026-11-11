@@ -394,3 +394,26 @@ TEST(CSourceRouteMerge, AnIPv6IdentityStoresTheHighIDAsItsLastResort)
 	ASSERT_TRUE(IPv6(7) == start.route.address);
 	ASSERT_TRUE(incoming == start.lastResortIPv4);
 }
+
+TEST(CSourceRouteMerge, AnIPv6IdentityTakesNoAdvertisedIPv6ItsFallbackWould)
+{
+	// An IPv6-only source on its last-resort IPv4 gets a Kad copy with another IPv6.
+	SSourceRoutes start;
+	start.route.id = 1;
+	start.route.address = IPv6(7);
+	start.route.tcpPort = 4662;
+	SSourceRoutes onFallback = start;
+	onFallback.route.id = kHighID;
+	onFallback.route.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID);
+	SSourceRouteMergeFacts facts;
+	facts.incomingRoutableIPv6 = true;
+	SStoredSourceRoute incoming;
+	incoming.id = 1;
+	incoming.address = IPv6(8);
+	incoming.tcpPort = 4662;
+
+	ASSERT_TRUE(DecideSourceRouteMerge(WithRouteFacts(facts, onFallback, incoming)).takeAdvertisedIPv6);
+	const SSourceRouteMerge onStart = DecideSourceRouteMerge(WithRouteFacts(facts, start, incoming));
+	ASSERT_FALSE(onStart.takeAdvertisedIPv6);
+	ASSERT_FALSE(onStart.takeLastResortIPv6);
+}

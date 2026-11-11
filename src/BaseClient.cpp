@@ -4094,10 +4094,12 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 
 	// A chain may have moved this client to a fallback. The routes it goes back to after a failed
 	// chain take the merge as decided on them, not on the fallback.
+	bool startTakesAdvertisedIPv6 = true;
 	if (std::optional<SSourceRoutes> start = m_chainStart.Routes()) {
-		ApplySourceRouteMerge(*start,
-			DecideSourceRouteMerge(WithRouteFacts(facts, *start, incomingRoute)),
-			incomingRoute);
+		const SSourceRouteMerge startMerge =
+			DecideSourceRouteMerge(WithRouteFacts(facts, *start, incomingRoute));
+		startTakesAdvertisedIPv6 = startMerge.takeAdvertisedIPv6;
+		ApplySourceRouteMerge(*start, startMerge, incomingRoute);
 		m_chainStart.Update(*start);
 	}
 
@@ -4138,7 +4140,8 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 		taken += " direct callback";
 	}
 #ifdef ENABLE_IPV6
-	if (merge.takeAdvertisedIPv6) {
+	// The advertised IPv6 outlives the chain, so the routes it started from must take it too.
+	if (merge.takeAdvertisedIPv6 && startTakesAdvertisedIPv6) {
 		UpdateModIPv6(incoming);
 		taken += " IPv6";
 	} else if (merge.takeLastResortIPv6) {
