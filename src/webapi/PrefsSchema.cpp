@@ -144,6 +144,8 @@ const PrefField kSchema[] = {
 	PREF_BOOL("connection", "autoconnect", EC_TAG_CONN_AUTOCONNECT, PrefEnc::Presence, false, PrefAccess::ReadWrite, autoconnect),
 	PREF_STR("connection", "bind_address", EC_TAG_CONN_BIND_ADDRESS, PrefAccess::ReadWrite, bind_address),
 	PREF_STR("connection", "bind_interface", EC_TAG_CONN_BIND_INTERFACE, PrefAccess::ReadWrite, bind_interface),
+	// The GUI spin control floor; the setter stores any value as is.
+	PREF_U32_DOMAIN("connection", "download_capacity_kibibytes_per_second", EC_TAG_CONN_DL_CAP, 3u, 1000000u, 0u, PrefAccess::ReadWrite, download_capacity_kibibytes_per_second),
 	PREF_BOOL("connection", "extended_udp_port_enabled", EC_TAG_CONN_UDP_DISABLE, PrefEnc::Presence, true, PrefAccess::ReadWrite, extended_udp_port_enabled),
 	PREF_U32("connection", "max_connection_count", EC_TAG_CONN_MAX_CONN, 65535u, PrefAccess::ReadWrite, max_connection_count),
 	PREF_U32("connection", "max_download_kibibytes_per_second", EC_TAG_CONN_MAX_DL, 1000000000u, PrefAccess::ReadWrite, max_download_kibibytes_per_second),
@@ -162,6 +164,7 @@ const PrefField kSchema[] = {
 	// server UDP socket being TCP+3. A 65534 here was a 200 that left the daemon on 4662.
 	PREF_U16_DOMAIN("connection", "tcp_port", EC_TAG_CONN_TCP_PORT, 1u, 65532u, PrefAccess::ReadWrite, tcp_port),
 	PREF_U16("connection", "udp_port", EC_TAG_CONN_UDP_PORT, 65535u, PrefAccess::ReadWrite, udp_port),
+	PREF_U32_DOMAIN("connection", "upload_capacity_kibibytes_per_second", EC_TAG_CONN_UL_CAP, 3u, 1000000u, 0u, PrefAccess::ReadWrite, upload_capacity_kibibytes_per_second),
 	// Floor of 1: SetSlotAllocation clamps anything lower up to 1, so
 	// without the bound a 0 answered 200 and read back as 1.
 	PREF_U32_DOMAIN("connection", "upload_slot_min_kibibytes_per_second", EC_TAG_CONN_SLOT_ALLOCATION, 1u, 65535u, 0u, PrefAccess::ReadWrite, upload_slot_min_kibibytes_per_second),

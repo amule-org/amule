@@ -1100,6 +1100,9 @@ struct PreferencesSnapshot
 	std::uint32_t max_upload_kibibytes_per_second = 0;
 	std::uint32_t max_download_kibibytes_per_second = 0;
 	std::uint32_t upload_slot_min_kibibytes_per_second = 0;
+	// Line capacity: scales the GUI speed graphs and tray presets; not a limit.
+	std::uint32_t download_capacity_kibibytes_per_second = 0;
+	std::uint32_t upload_capacity_kibibytes_per_second = 0;
 	std::uint16_t tcp_port = 0;
 	std::uint16_t udp_port = 0;
 	// Positive sense: true = the extended UDP port (Kad / global search) is on. The EC

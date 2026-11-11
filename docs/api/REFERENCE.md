@@ -525,7 +525,7 @@ A byte rate is `_bytes_per_second`, not `_bps`. The abbreviation was considered 
 
 The same reasoning gives the media bitrate its full spelling. `media.bitrate_kilobits_per_second` really is kilo**bits** — the helper reports bits per second and the core divides by 1000 — so it is the one quantity on the surface that is not bytes, and the one place `kilo` means 1000 rather than 1024. Abbreviating it would put the surface's only bit-valued rate one character away from its byte-valued ones.
 
-The three bandwidth caps under `connection` are the one place a rate is not per-byte: `max_download_kibibytes_per_second`, `max_upload_kibibytes_per_second` and `upload_slot_min_kibibytes_per_second` carry the KiB/s figure the user types, unconverted, because the core stores and enforces it in those units (`GetMaxUpload() * 1024`). `kibibytes` is spelled out for the same reason every other unit is, and it says 1024 without the reader having to guess which `k` this is.
+The bandwidth settings under `connection` are the one place a rate is not per-byte: `max_download_kibibytes_per_second`, `max_upload_kibibytes_per_second`, `upload_slot_min_kibibytes_per_second`, `download_capacity_kibibytes_per_second` and `upload_capacity_kibibytes_per_second` carry the KiB/s figure the user types, unconverted, because the core stores and enforces it in those units (`GetMaxUpload() * 1024`). `kibibytes` is spelled out for the same reason every other unit is, and it says 1024 without the reader having to guess which `k` this is.
 
 ## Endpoint catalog
 
@@ -2404,6 +2404,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "max_upload_kibibytes_per_second": 50,
     "max_download_kibibytes_per_second": 0,
     "upload_slot_min_kibibytes_per_second": 3,
+    "download_capacity_kibibytes_per_second": 12500,
+    "upload_capacity_kibibytes_per_second": 2500,
     "tcp_port": 4662,
     "udp_port": 4672,
     "extended_udp_port_enabled": true,
@@ -2556,7 +2558,7 @@ The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2
 
 | Kind | What `PATCH` does | Examples |
 | --- | --- | --- |
-| Settable | applied | most of the 145 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
+| Settable | applied | most of the 147 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
 | Read-only status | ignored, request still succeeds | `files.mmap_supported`, `files.media_metadata_available`, `kad.protocol10_supported`, `advanced.debug_categories_supported`, `advanced.kad_max_served_buddies_supported`, `advanced.debug_categories`, `connection.upnp_supported`, the six `geoip.*`, the seven `remote_controls.external_connections.*` |
 | Write-only | applied, never echoed on `GET` | `remote_controls.webserver.password`, `.guest_password` |
 | Refused | `400 bad_request` | `remote_controls.amuleapi.password`, `.guest_password`, `.guest_enabled` |
@@ -2599,6 +2601,7 @@ Downloading a database **now** is [`POST /geoip/update`](#post-apiv1geoipupdate)
 |---|---|---|---|
 | `connection.tcp_port` | `1`–`65532` | | the server UDP socket is TCP+3, and the core substitutes the default port for anything higher |
 | `connection.upload_slot_min_kibibytes_per_second` | `1`–`65535` | | the core clamps anything lower up to `1`, so a `0` would answer `200` and read back as `1` |
+| `connection.download_capacity_kibibytes_per_second`, `connection.upload_capacity_kibibytes_per_second` | `3`–`1000000` | | the desktop GUI's range; the line capacity scales the GUI speed graphs and tray speed presets, and limits nothing |
 | `advanced.write_buffer_limit_mebibytes` | `1`–`1024` | | received download payload awaiting writes, in MiB; default 128 |
 | `advanced.file_buffer_bytes` | `0`–`3825000` | `15000` | stored as a `uint8` count of 15000-byte blocks |
 | `advanced.max_upload_queue_client_count` | `0`–`25500` | `100` | stored as a `uint8` count of hundreds |
