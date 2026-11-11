@@ -221,15 +221,81 @@ TEST(SourceRoutePolicy, ClientWithoutIPv4KeepsTheIPv6AsALastResort)
 	ASSERT_FALSE(DecideSourceRouteMerge(facts).takeLastResortIPv6);
 }
 
-TEST(SourceRoutePolicy, IPv6OnlyClientTakesOnlyAServerRoute)
+TEST(SourceRoutePolicy, IPv6OnlyClientKeepsAnIPv4CopyAsALastResort)
 {
 	SSourceRouteMergeFacts facts = KadClientMeetsServerCopy();
 	facts.incomingDirectCallback = true;
 	facts.incomingRoutableIPv6 = true;
 	facts.existingNativeIPv6 = true;
-	const SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+	SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
 	ASSERT_TRUE(merge.takeServerRoute);
 	ASSERT_FALSE(merge.takeDirectCallback);
 	ASSERT_FALSE(merge.takeAdvertisedIPv6);
 	ASSERT_FALSE(merge.takeLastResortIPv6);
+	ASSERT_TRUE(merge.takeLastResortIPv4);
+
+	facts.incomingDirectCallback = false;
+	facts.incomingHighIDIPv4 = true;
+	ASSERT_TRUE(DecideSourceRouteMerge(facts).takeLastResortIPv4);
+	facts.existingHasLastResortIPv4 = true;
+	ASSERT_FALSE(DecideSourceRouteMerge(facts).takeLastResortIPv4);
+}
+
+TEST(SourceRoutePolicy, IPv6OnlyClientTakesNoIPv4FromALowIDServerCopy)
+{
+	SSourceRouteMergeFacts facts = KadClientMeetsServerCopy();
+	facts.existingNativeIPv6 = true;
+	const SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+	ASSERT_TRUE(merge.takeServerRoute);
+	ASSERT_FALSE(merge.takeLastResortIPv4);
+}
+
+TEST(SourceRoutePolicy, AddresslessLowIDKeepsAHighIDCopyAsALastResort)
+{
+	SSourceRouteMergeFacts facts = KadClientMeetsServerCopy();
+	facts.incomingServerLowID = false;
+	facts.incomingHighIDIPv4 = true;
+	ASSERT_TRUE(DecideSourceRouteMerge(facts).takeLastResortIPv4);
+	// A LowID with an IPv4 address, or a HighID, has a dial of its own.
+	facts.existingHasIPv4 = true;
+	ASSERT_FALSE(DecideSourceRouteMerge(facts).takeLastResortIPv4);
+	facts.existingHasIPv4 = false;
+	facts.existingLowID = false;
+	ASSERT_FALSE(DecideSourceRouteMerge(facts).takeLastResortIPv4);
+}
+
+TEST(SourceRoutePolicy, FamilySwitchPrefersIPv4AndRetriesOnlyTheAddressRoutes)
+{
+	unsigned failed = 0;
+	for (ESourceRoute route : { ESourceRoute::Dial,
+		     ESourceRoute::DirectUdpCallback,
+		     ESourceRoute::ServerCallback,
+		     ESourceRoute::KadBuddy }) {
+		failed |= SourceRouteBit(route);
+	}
+	const unsigned callbacks =
+		SourceRouteBit(ESourceRoute::ServerCallback) | SourceRouteBit(ESourceRoute::KadBuddy);
+
+	SRouteFamilySwitch result = DecideRouteFamilySwitch(true, true, false, failed);
+	ASSERT_TRUE(result.toIPv4);
+	ASSERT_FALSE(result.toIPv6);
+	ASSERT_EQUALS(callbacks, result.failed);
+
+	result = DecideRouteFamilySwitch(false, true, false, failed);
+	ASSERT_TRUE(result.toIPv6);
+	ASSERT_EQUALS(callbacks, result.failed);
+
+	result = DecideRouteFamilySwitch(true, false, true, failed);
+	ASSERT_TRUE(result.toIPv4);
+}
+
+TEST(SourceRoutePolicy, NoFamilySwitchWithoutALastResort)
+{
+	const unsigned failed = SourceRouteBit(ESourceRoute::Dial);
+	SRouteFamilySwitch result = DecideRouteFamilySwitch(false, false, false, failed);
+	ASSERT_FALSE(result.toIPv4 || result.toIPv6);
+	ASSERT_EQUALS(failed, result.failed);
+	// An IPv6-only client is already on its IPv6.
+	result = DecideRouteFamilySwitch(false, true, true, failed);
+	ASSERT_FALSE(result.toIPv4 || result.toIPv6);
 }

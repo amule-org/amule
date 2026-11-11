@@ -98,16 +98,23 @@ bool CDeadSourceList::IsDeadSource(const CUpDownClient *client)
 
 void CDeadSourceList::AddDeadSource(const CUpDownClient *client)
 {
-	const CDeadSourceKey key(client->GetProtocolPeerIdentity(),
-		client->GetUserIDHybrid(),
-		client->GetUserPort(),
-		client->GetServerIP(),
-		client->GetKadPort());
-	CDeadSource source(key);
+	const uint64 deadline =
+		SourceRetryPolicy::DeadSourceDeadline(::GetTickCount64(), m_bGlobalList, client->HasLowID());
+	for (const CDeadSourceKey &key : client->DeadSourceKeys()) {
+		AddDeadKey(key, deadline);
+	}
 
-	// Set the timeout for the new source
-	source.SetTimeout(
-		SourceRetryPolicy::DeadSourceDeadline(::GetTickCount64(), m_bGlobalList, client->HasLowID()));
+	// Check if we should cleanup the list. This is
+	// done to avoid a buildup of stale entries.
+	if (GetTickCount64() - m_dwLastCleanUp > CLEANUPTIME) {
+		CleanUp();
+	}
+}
+
+void CDeadSourceList::AddDeadKey(const CDeadSourceKey &key, uint64 deadline)
+{
+	CDeadSource source(key);
+	source.SetTimeout(deadline);
 
 	// Check if the source is already listed
 	DeadSourcePair range = m_sources.equal_range(key);
@@ -119,12 +126,6 @@ void CDeadSourceList::AddDeadSource(const CUpDownClient *client)
 	}
 
 	m_sources.insert(DeadSourceMap::value_type(key, source));
-
-	// Check if we should cleanup the list. This is
-	// done to avoid a buildup of stale entries.
-	if (GetTickCount64() - m_dwLastCleanUp > CLEANUPTIME) {
-		CleanUp();
-	}
 }
 
 void CDeadSourceList::CleanUp()

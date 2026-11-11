@@ -126,10 +126,13 @@ struct SSourceRouteMergeFacts
 	bool sameIPv4 = false;
 	bool existingHasAdvertisedIPv6 = false;
 	bool existingHasLastResortIPv6 = false;
+	bool existingHasLastResortIPv4 = false;
 	// The duplicate: a LowID from a server, a Kad type 6 result, an IPv6 source.
 	bool incomingServerLowID = false;
 	bool incomingDirectCallback = false;
 	bool incomingRoutableIPv6 = false;
+	// A HighID with a usable IPv4 address.
+	bool incomingHighIDIPv4 = false;
 };
 
 struct SSourceRouteMerge
@@ -141,6 +144,9 @@ struct SSourceRouteMerge
 	// Without an IPv4 address an advertised IPv6 is never dialled, so it waits until every other
 	// route has failed.
 	bool takeLastResortIPv6 = false;
+	// An IPv4 the kept copy cannot use while it has routes of its own: the copy moves to it once they
+	// have all failed, as if that IPv4 copy had arrived first.
+	bool takeLastResortIPv4 = false;
 };
 
 /**
@@ -148,8 +154,9 @@ struct SSourceRouteMerge
  * Kad buddy (KadBuddyMergePolicy.h). Only what the kept copy lacks is taken, and nothing that
  * contradicts it: a different IPv4 address or server stays with the copy we keep.
  *
- * A kept IPv6-only client takes a server route, which it uses once its IPv6 dial fails, but no
- * IPv4 address: its IPv6 is its identity until a hello over IPv4 moves it.
+ * A kept IPv6-only client takes a server route, which it uses once its IPv6 dial fails. An IPv4
+ * address is kept apart as a last resort rather than taken as its identity: a hello over the IPv6
+ * would keep that unproven IPv4, and bans and hash tracking would key on it.
  */
 inline SSourceRouteMerge DecideSourceRouteMerge(const SSourceRouteMergeFacts &facts)
 {
@@ -157,8 +164,13 @@ inline SSourceRouteMerge DecideSourceRouteMerge(const SSourceRouteMergeFacts &fa
 	merge.takeServerRoute =
 		facts.incomingServerLowID && facts.existingKadPlaceholderID && !facts.existingHasServer;
 	if (facts.existingNativeIPv6) {
+		merge.takeLastResortIPv4 = (facts.incomingHighIDIPv4 || facts.incomingDirectCallback) &&
+					   !facts.existingHasLastResortIPv4;
 		return merge;
 	}
+	// A LowID without an IPv4 address dials a HighID copy once its callback routes have failed.
+	merge.takeLastResortIPv4 = facts.incomingHighIDIPv4 && facts.existingLowID &&
+				   !facts.existingHasIPv4 && !facts.existingHasLastResortIPv4;
 	merge.takeDirectCallback = facts.incomingDirectCallback && facts.existingLowID &&
 				   !facts.existingDirectCallback &&
 				   (!facts.existingHasIPv4 || facts.sameIPv4);
@@ -167,6 +179,36 @@ inline SSourceRouteMerge DecideSourceRouteMerge(const SSourceRouteMergeFacts &fa
 		merge.takeLastResortIPv6 = !merge.takeAdvertisedIPv6 && !facts.existingHasLastResortIPv6;
 	}
 	return merge;
+}
+
+struct SRouteFamilySwitch
+{
+	bool toIPv4 = false;
+	bool toIPv6 = false;
+	// The failed routes still failed after the switch.
+	unsigned failed = 0;
+};
+
+/**
+ * Where a source goes once every route it offers has failed: to a last-resort address of the other
+ * family, IPv4 first, or nowhere. A dial or direct callback that failed on one address says nothing
+ * about another, so those two routes become untried again.
+ */
+inline SRouteFamilySwitch DecideRouteFamilySwitch(
+	bool hasLastResortIPv4, bool hasLastResortIPv6, bool nativeIPv6, unsigned failed)
+{
+	SRouteFamilySwitch result;
+	if (hasLastResortIPv4) {
+		result.toIPv4 = true;
+	} else if (hasLastResortIPv6 && !nativeIPv6) {
+		result.toIPv6 = true;
+	} else {
+		result.failed = failed;
+		return result;
+	}
+	result.failed = failed & ~(SourceRouteBit(ESourceRoute::Dial) |
+					 SourceRouteBit(ESourceRoute::DirectUdpCallback));
+	return result;
 }
 
 #endif // SOURCE_ROUTE_POLICY_H

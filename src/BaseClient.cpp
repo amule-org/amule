@@ -2253,16 +2253,34 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 	const ESourceRoute next =
 		NextSourceRoute(SourceRouteFacts(HasLowID() && (!nativeIPv6 || dialFailed)));
 	if (next == ESourceRoute::None) {
-		if (m_lastResortIPv6.IsAbsent() || nativeIPv6) {
+		const SRouteFamilySwitch familySwitch = DecideRouteFamilySwitch(m_lastResortIPv4 != 0,
+			m_lastResortIPv6.IsPresent(),
+			nativeIPv6,
+			m_failedSourceRoutes);
+		if (!familySwitch.toIPv4 && !familySwitch.toIPv6) {
 			return false;
 		}
-		// An IPv6-only source from now on; a hello over IPv4 moves it back.
+		m_formerDeadSourceKey = DeadSourceKeys().front();
+		// As if the copy of the other family had arrived first. A hello moves the identity back.
+		if (familySwitch.toIPv4) {
+			SetUserIDHybrid(m_lastResortIPv4ID);
+			SetIP(m_lastResortIPv4);
+			SetUserPort(m_lastResortIPv4Port);
+			if (m_lastResortIPv4KadPort != 0) {
+				SetKadPort(m_lastResortIPv4KadPort);
+			}
+			SetDirectUDPCallbackSupport(m_lastResortIPv4DirectCallback);
+			m_lastResortIPv4 = 0;
+		} else {
+			SetUserAddress(m_lastResortIPv6);
+			m_lastResortIPv6 = CNetworkAddress::Absent();
+		}
+		m_failedSourceRoutes = familySwitch.failed;
 		AddDebugLogLineN(logClient,
-			CFormat("Contact route %s to source %s failed, dialling its IPv6 [%s]") %
+			CFormat("Contact route %s to source %s failed, moving to its last-resort address "
+				"%s") %
 				SourceRouteName(m_sourceRoute) % GetUserHash().Encode() %
-				m_lastResortIPv6.ToWxString());
-		SetUserAddress(m_lastResortIPv6);
-		m_lastResortIPv6 = CNetworkAddress::Absent();
+				GetUserAddress().ToWxString());
 		return true;
 	}
 	AddDebugLogLineN(logClient,
@@ -3872,6 +3890,44 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	}
 }
 
+std::vector<CDeadSourceKey> CUpDownClient::DeadSourceKeys() const
+{
+	std::vector<CDeadSourceKey> keys{ CDeadSourceKey(
+		GetProtocolPeerIdentity(), GetUserIDHybrid(), GetUserPort(), GetServerIP(), GetKadPort()) };
+	if (m_lastResortIPv4 != 0) {
+		keys.emplace_back(CProtocolPeerIdentity::FromClientState(m_lastResortIPv4ID,
+					  IsLowID(m_lastResortIPv4ID),
+					  CNetworkAddress::FromIPv4NetworkOrder(m_lastResortIPv4),
+					  0,
+					  0),
+			m_lastResortIPv4ID,
+			m_lastResortIPv4Port,
+			0,
+			m_lastResortIPv4KadPort);
+	}
+	if (m_lastResortIPv6.IsPresent()) {
+		keys.emplace_back(CProtocolPeerIdentity::FromNativeIPv6(m_lastResortIPv6),
+			GetUserIDHybrid(),
+			GetUserPort(),
+			0,
+			GetKadPort());
+	}
+#ifdef ENABLE_IPV6
+	if (HasModIPv6()) {
+		keys.emplace_back(
+			CProtocolPeerIdentity::FromNativeIPv6(CNetworkAddress::FromIPv6Bytes(m_modIPv6)),
+			GetUserIDHybrid(),
+			GetUserPort(),
+			0,
+			GetKadPort());
+	}
+#endif
+	if (m_formerDeadSourceKey) {
+		keys.push_back(*m_formerDeadSourceKey);
+	}
+	return keys;
+}
+
 void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 {
 	AdoptKadBuddy(duplicate);
@@ -3889,6 +3945,8 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 				    duplicate.GetServerIP() != 0 && duplicate.GetServerPort() != 0;
 	facts.incomingDirectCallback = duplicate.SupportsDirectUDPCallback() &&
 				       duplicate.GetConnectIP() != 0 && duplicate.GetKadPort() != 0;
+	facts.incomingHighIDIPv4 = !duplicate.HasLowID() && duplicate.GetConnectIP() != 0;
+	facts.existingHasLastResortIPv4 = m_lastResortIPv4 != 0;
 #ifdef ENABLE_IPV6
 	const CNetworkAddress &incoming = duplicate.GetUserAddress();
 	facts.existingHasAdvertisedIPv6 = HasModIPv6();
@@ -3904,6 +3962,14 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 		SetServerPort(duplicate.GetServerPort());
 		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::ServerCallback);
 		taken += " server callback";
+	}
+	if (merge.takeLastResortIPv4) {
+		m_lastResortIPv4 = duplicate.GetConnectIP();
+		m_lastResortIPv4Port = duplicate.GetUserPort();
+		m_lastResortIPv4KadPort = duplicate.GetKadPort();
+		m_lastResortIPv4ID = duplicate.GetUserIDHybrid();
+		m_lastResortIPv4DirectCallback = duplicate.SupportsDirectUDPCallback();
+		taken += " last-resort IPv4";
 	}
 	if (merge.takeDirectCallback) {
 		SetIP(duplicate.GetConnectIP());

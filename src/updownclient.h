@@ -50,6 +50,9 @@
 #include "ClientRef.h"        // Needed for debug defines
 #include "PeerCapabilities.h" // Needed for CPeerCapabilities
 #include "ProtocolPeerIdentity.h"
+#include "DeadSourceKey.h" // Needed for CDeadSourceKey
+#include <optional>
+#include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
 #ifdef ENABLE_NATT_SERVER_COORDINATION
@@ -846,6 +849,9 @@ public:
 	// An IPv6 a third party reported for a source without an IPv4 address, dialled once every
 	// other route has failed.
 	void SetLastResortIPv6(const CNetworkAddress &address) { m_lastResortIPv6 = address; }
+	// One key per address this source can be reached on, so a later copy under any of them is
+	// known dead once this one is.
+	std::vector<CDeadSourceKey> DeadSourceKeys() const;
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
 	/* Role: we serve this buddy, or it serves us */
@@ -1236,6 +1242,14 @@ private:
 	ESourceRoute m_sourceRoute{};
 	unsigned m_failedSourceRoutes = 0;
 	CNetworkAddress m_lastResortIPv6;
+	// The IPv4 route of a HighID or Kad type 6 copy, for a copy that cannot use it yet.
+	uint32 m_lastResortIPv4 = 0;
+	uint16 m_lastResortIPv4Port = 0;
+	uint16 m_lastResortIPv4KadPort = 0;
+	uint32 m_lastResortIPv4ID = 0;
+	bool m_lastResortIPv4DirectCallback = false;
+	// The identity a family switch left behind.
+	std::optional<CDeadSourceKey> m_formerDeadSourceKey;
 
 	EKadState m_nKadState;
 
