@@ -1591,6 +1591,10 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 		m_bReaskPending = true;
 		// The source never got our request, so it is asked on the next tick, not at the next reask.
 		ResetLastAskedTime();
+	} else if (m_sourceRoute != ESourceRoute::None) {
+		// Every route failed. A client that survives this, for an upload or a chat, starts its next
+		// reask with every route untried, as it would on master.
+		ResetContactRoutes();
 	}
 	m_sourceRoute = ESourceRoute::None;
 
