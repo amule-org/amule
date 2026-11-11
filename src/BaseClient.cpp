@@ -1593,7 +1593,8 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 		ResetLastAskedTime();
 	} else if (m_sourceRoute != ESourceRoute::None) {
 		// Every route failed. A client that survives this, for an upload or a chat, starts its next
-		// reask with every route untried, as it would on master.
+		// reask from its own route with every route untried, as it would on master.
+		RestoreChainStart();
 		ResetContactRoutes();
 	}
 	m_sourceRoute = ESourceRoute::None;
@@ -2254,6 +2255,9 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 		return false;
 	}
 	// A fallback buddy leaves the buddy route untried.
+	if (m_sourceRoute == ESourceRoute::KadBuddy && m_nBuddyCandidateIP != 0) {
+		SaveChainStart();
+	}
 	if (m_sourceRoute == ESourceRoute::KadBuddy && SwitchToBuddyCandidate()) {
 		return true;
 	}
@@ -2300,6 +2304,7 @@ bool CUpDownClient::UseSourceFallback(ESourceFallback fallback, ESourceRoute fai
 	SStoredSourceRoute &slot = fallback == ESourceFallback::ServerCandidate  ? m_serverCandidate
 				   : fallback == ESourceFallback::LastResortIPv4 ? m_lastResortIPv4
 										 : m_lastResortIPv6;
+	SaveChainStart();
 	const SStoredSourceRoute route = slot;
 	slot = SStoredSourceRoute();
 	// Checked here rather than when stored: the filter counts only addresses we would dial.
@@ -2376,6 +2381,56 @@ void CUpDownClient::ApplyStoredRoute(const SStoredSourceRoute &route)
 	if (route.kadPort != 0) {
 		SetKadPort(route.kadPort);
 	}
+}
+
+void CUpDownClient::SaveChainStart()
+{
+	if (m_chainStart) {
+		return;
+	}
+	SChainStart start;
+	start.route = CurrentStoredRoute();
+	start.serverCandidate = m_serverCandidate;
+	start.lastResortIPv4 = m_lastResortIPv4;
+	start.lastResortIPv6 = m_lastResortIPv6;
+	start.formerKeys = m_formerDeadSourceKeys.size();
+	start.identityFromFallback = m_identityFromFallback;
+	start.buddyIP = GetBuddyIP();
+	start.buddyPort = GetBuddyPort();
+	start.buddyCandidateIP = m_nBuddyCandidateIP;
+	start.buddyCandidatePort = m_nBuddyCandidatePort;
+	m_chainStart = start;
+}
+
+void CUpDownClient::RestoreChainStart()
+{
+	if (!m_chainStart) {
+		return;
+	}
+	const SChainStart &start = *m_chainStart;
+	SetUserIDHybrid(start.route.id);
+	SetUserAddress(start.route.address);
+	SetServerIP(start.route.serverIP);
+	SetServerPort(start.route.serverPort);
+	SetUserPort(start.route.tcpPort);
+	SetKadPort(start.route.kadPort);
+	SetDirectUDPCallbackSupport(start.route.directCallback);
+	m_serverCandidate = start.serverCandidate;
+	m_lastResortIPv4 = start.lastResortIPv4;
+	m_lastResortIPv6 = start.lastResortIPv6;
+	m_formerDeadSourceKeys.erase(
+		m_formerDeadSourceKeys.begin() + static_cast<std::ptrdiff_t>(start.formerKeys),
+		m_formerDeadSourceKeys.end());
+	m_identityFromFallback = start.identityFromFallback;
+	SetBuddyIP(start.buddyIP);
+	SetBuddyPort(start.buddyPort);
+	m_nBuddyCandidateIP = start.buddyCandidateIP;
+	m_nBuddyCandidatePort = start.buddyCandidatePort;
+	AddDebugLogLineN(logClient,
+		CFormat("Every route to source %s failed, back to its own route for the next reask: ID %u, "
+			"address %s") %
+			GetUserHash().Encode() % GetUserIDHybrid() % GetUserAddress().ToWxString());
+	m_chainStart.reset();
 }
 
 void CUpDownClient::SetLastResortIPv6(const CNetworkAddress &address)
@@ -2797,6 +2852,7 @@ void CUpDownClient::ConnectionEstablished()
 	m_sourceRoute = ESourceRoute::None;
 	m_failedSourceRoutes = 0;
 	m_refreshedSourceRoutes = 0;
+	m_chainStart.reset();
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	m_holePunchFallback.Reset();
 #endif
