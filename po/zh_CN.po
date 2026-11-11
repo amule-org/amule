@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-10 13:55+0000\n"
+"PO-Revision-Date: 2026-11-11 06:56+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -5759,6 +5759,14 @@ msgid "Concurrent Kad source lookups"
 msgstr "并发 Kad 源查找"
 
 #: src/muuli_wdr.cpp
+msgid "Firewalled Kad nodes served as buddy"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
 msgstr "Kad 源重新搜索间隔（分钟）"
 
@@ -8421,9 +8429,8 @@ msgid "Connected to buddy at %s"
 msgstr "连接到好友于 %s"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Served buddies:"
-msgstr "服务器列表"
+msgstr "提供过内容的好友："
 
 #: src/ServerWnd.cpp
 #, c-format
@@ -8799,6 +8806,11 @@ msgstr ""
 
 #: src/Statistics.cpp
 #, c-format
+msgid "Buddy Requests From NAT-T Nodes: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Buddy Requests Over the Rate Limit: %llu"
 msgstr ""
 
@@ -8808,9 +8820,9 @@ msgid "Unused Buddy Offers: %llu"
 msgstr ""
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Buddies Served: %llu"
-msgstr "有效服务器中的文件数： %llu"
+msgstr "提供内容的好友：%llu"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8818,9 +8830,9 @@ msgid "Served Buddies Timed Out: %llu"
 msgstr ""
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Time Served: %s"
-msgstr "被过滤的服务器：%s"
+msgstr "提供时间：%s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8859,6 +8871,11 @@ msgstr ""
 
 #: src/Statistics.cpp
 #, c-format
+msgid "Buddy Searches Held for a Shared File: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Buddy Requests Sent: %llu"
 msgstr ""
 
@@ -8873,9 +8890,9 @@ msgid "Failed Buddy Connections: %llu"
 msgstr ""
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Buddies Connected: %llu"
-msgstr " 已连接至 "
+msgstr "已连接的好友： %llu"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9101,37 +9118,33 @@ msgid "Kad receiver keys"
 msgstr ""
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Keyword publish"
-msgstr "关键词： %s"
+msgstr "关键词发布"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Source publish"
-msgstr "源"
+msgstr "源发布"
 
 #: src/Statistics.cpp
 msgid "Notes publish"
 msgstr ""
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Firewall check"
-msgstr "UDP 防火墙检查"
+msgstr "防火墙检查"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Firewall check 2"
-msgstr "UDP 防火墙检查"
+msgstr "防火墙检查 2"
 
 #: src/Statistics.cpp
 msgid "Callback"
 msgstr ""
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Keys valid: %s"
-msgstr "关键词： %s"
+msgstr "有效 Keys： %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9204,9 +9217,8 @@ msgid "Average file size: %s"
 msgstr "平均文件大小：%s"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Kad Buddies"
-msgstr "Kad 用户"
+msgstr "Kad 好友"
 
 #: src/Statistics.cpp
 msgid "Serving Firewalled Nodes"

@@ -5800,6 +5800,14 @@ msgid "Concurrent Kad source lookups"
 msgstr "חיפושי מקורות Kad מקבילים"
 
 #: src/muuli_wdr.cpp
+msgid "Firewalled Kad nodes served as buddy"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
 msgstr "מרווח חיפוש חוזר של מקורות Kad (דקות)"
 
@@ -8867,6 +8875,11 @@ msgstr ""
 
 #: src/Statistics.cpp
 #, c-format
+msgid "Buddy Requests From NAT-T Nodes: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Buddy Requests Over the Rate Limit: %llu"
 msgstr ""
 
@@ -8923,6 +8936,11 @@ msgstr ""
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Searches: %llu"
+msgstr ""
+
+#: src/Statistics.cpp
+#, c-format
+msgid "Buddy Searches Held for a Shared File: %llu"
 msgstr ""
 
 #: src/Statistics.cpp

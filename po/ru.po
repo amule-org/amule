@@ -5800,6 +5800,14 @@ msgid "Concurrent Kad source lookups"
 msgstr "Одновременные запросы источников Kad"
 
 #: src/muuli_wdr.cpp
+msgid "Firewalled Kad nodes served as buddy"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
 msgstr "Период повторного поиска источников Kad (мин.)"
 
@@ -8883,6 +8891,11 @@ msgid "Buddy Requests Refused: %llu"
 msgstr "Отклонено запросов на партнёрство: %llu"
 
 #: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Buddy Requests From NAT-T Nodes: %llu"
+msgstr "Отправлено запросов на партнёрство: %llu"
+
+#: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests Over the Rate Limit: %llu"
 msgstr "Запросов на партнёрство сверх лимита: %llu"
@@ -8940,6 +8953,11 @@ msgstr "Самая загруженная минута для одного па�
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Searches: %llu"
+msgstr "Поисков партнёров: %llu"
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Buddy Searches Held for a Shared File: %llu"
 msgstr "Поисков партнёров: %llu"
 
 #: src/Statistics.cpp
