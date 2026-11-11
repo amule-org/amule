@@ -697,7 +697,7 @@ LowID-to-LowID session and how much data such sessions carry. The nodes travel i
 tree like any other, so amulegui, amuleweb and amuleapi show them without new EC tags; each has a
 stable `key`.
 
-- **NAT Traversal (Session)** (`nat_traversal`, under Connection), in uTP builds. With
+- **NAT Traversal (Session)** (`nat_traversal`, under Diagnostics, English only), in uTP builds. With
   `ENABLE_NATT_SERVER_COORDINATION` it holds attempts and successes for the ed2k-server punch
   (`natt_server_punch_attempts`, `natt_server_punch_successes`) and Lugdunum's callback
   (`natt_lugdunum_callback_attempts`, `natt_lugdunum_callback_successes`). An attempt is each

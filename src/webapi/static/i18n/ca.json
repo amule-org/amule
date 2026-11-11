@@ -1070,17 +1070,11 @@
   "stats_tree_upload_ipv6_data": "Dades IPv6 (Sessió): %s",
   "stats_tree_download_lowid_to_lowid_data": "Dades d'ID Baixa a ID Baixa (Sessió): %s",
   "stats_tree_download_ipv6_data": "Dades IPv6 (Sessió): %s",
-  "stats_tree_nat_traversal": "Travessia de NAT (Sessió)",
-  "stats_tree_natt_server_punch_attempts": "Perforacions de NAT amb servidor: %s",
-  "stats_tree_natt_server_punch_successes": "Perforacions de NAT amb servidor reeixides: %s",
-  "stats_tree_natt_lugdunum_callback_attempts": "Retrotrucades de Lugdunum: %s",
-  "stats_tree_natt_lugdunum_callback_successes": "Retrotrucades de Lugdunum reeixides: %s",
   "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Un límit més gran pot suavitzar els bloquejos breus del disc a costa de fer servir més memòria. Les dades ja sol·licitades poden superar aquest límit.",
   "prefs_field_advanced_write_buffer_limit_mebibytes": "Límit de la memòria intermèdia d'escriptura de baixades (MiB)",
   "prefs_debugging": "Depuració",
   "prefs_group_debug_logging": "Registre de depuració",
   "prefs_group_debug_categories": "Categories de missatge",
   "prefs_debugging_warning": "Els registres de depuració poden contenir adreces IP de clients, hashes d'usuari i noms de fitxer. Els convidats poden llegir el registre, tret que els missatges de depuració vagin només al fitxer de registre. Aquesta opció només s'aplica a les línies noves: les línies anteriors continuen sent llegibles fins que s'esborra el registre, i esborrar-lo també buida el fitxer de registre del dimoni.",
-  "prefs_field_advanced_verbose_logging_logfile_only": "Només al fitxer de registre",
-  "stats_tree_natt_utp_stream_moves": "Fluxos uTP traslladats a un port nou: %s"
+  "prefs_field_advanced_verbose_logging_logfile_only": "Només al fitxer de registre"
 }
