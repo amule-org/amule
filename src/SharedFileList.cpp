@@ -1846,8 +1846,8 @@ SKadPublishFacts CSharedFileList::CurrentKadPublishFacts()
 void CSharedFileList::Publish()
 {
 	auto &metrics = Kademlia::CPublishMetrics::Instance();
-	if (theLogger.IsEnabled(logKadSearch) && metrics.ReportDue(::GetTickCount64())) {
-		AddDebugLogLineN(logKadSearch,
+	if (theLogger.IsEnabled(logKadPublish) && metrics.ReportDue(::GetTickCount64())) {
+		AddDebugLogLineN(logKadPublish,
 			CFormat("Kad source publish totals: attempts=%llu start_failures=%llu starts=%llu "
 				"queued=%llu "
 				"acknowledged_ips=%llu "
@@ -1964,10 +1964,10 @@ void CSharedFileList::Publish()
 									     Kademlia::CSearch::STOREFILE,
 									     true,
 									     kadFileID) != nullptr;
-						if (theLogger.IsEnabled(logKadSearch)) {
+						if (theLogger.IsEnabled(logKadPublish)) {
 							metrics.Attempt(started);
 						}
-						AddDebugLogLineN(logKadSearch,
+						AddDebugLogLineN(logKadPublish,
 							CFormat("Kad source publish attempt: target=%s "
 								"started=%u") %
 								kadFileID.ToHexString() % started);

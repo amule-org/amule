@@ -30,7 +30,7 @@
 
 namespace Kademlia
 {
-// Main-thread diagnostics, called only while the Kademlia Search category is enabled.
+// Main-thread diagnostics, called only while the Kademlia Publish category is enabled.
 class CPublishMetrics
 {
 public:
@@ -72,13 +72,14 @@ public:
 	void Finish(const CLookupTrace &trace, bool completed, uint64_t elapsed)
 	{
 		++changes;
-		acknowledged += Acknowledged(trace);
+		const auto replies = Acknowledged(trace);
+		acknowledged += replies;
 		if (!completed) {
 			++cancelled;
 			return;
 		}
 		++finished;
-		zeroAcknowledgements += Acknowledged(trace) == 0;
+		zeroAcknowledgements += replies == 0;
 		durationMs += elapsed;
 		maxDurationMs = std::max(maxDurationMs, elapsed);
 	}

@@ -213,7 +213,7 @@ CSearch::~CSearch()
 
 void CSearch::Go()
 {
-	if (m_type == STOREFILE && !m_publishMeasured && theLogger.IsEnabled(logKadSearch)) {
+	if (m_type == STOREFILE && !m_publishMeasured && theLogger.IsEnabled(logKadPublish)) {
 		m_publishMeasured = true;
 		CPublishMetrics::Instance().Start();
 	}
@@ -868,7 +868,7 @@ void CSearch::StorePacket()
 			if (CKademlia::GetUDPListener()->SendPublishSourcePacket(
 				    *from, m_target, id, taglist)) {
 				m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
-				if (theLogger.IsEnabled(logKadSearch)) {
+				if (theLogger.IsEnabled(logKadPublish)) {
 					CPublishMetrics::Instance().Queued();
 				}
 			}

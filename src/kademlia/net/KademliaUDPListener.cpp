@@ -1942,7 +1942,7 @@ bool CKademliaUDPListener::SendPacket(const CMemFile &data,
 		cryptKey,
 		true,
 		targetKey.GetKeyValue(theApp->GetPublicIP(false)));
-	if (queued && opcode == KADEMLIA2_REQ && theLogger.IsEnabled(logKadSearch)) {
+	if (queued && opcode == KADEMLIA2_REQ && theLogger.IsEnabled(logKadPublish)) {
 		CPublishMetrics::Instance().LookupQueued(destinationHost, ::GetTickCount64());
 	}
 	return queued;
