@@ -124,7 +124,6 @@ void CSearchManager::StopSearch(uint32_t searchID, bool delayDelete)
 {
 	for (SearchMap::iterator it = m_searches.begin(); it != m_searches.end(); ++it) {
 		if (it->second->HasSearchID() && it->second->GetSearchID() == searchID) {
-			it->second->m_sourcePublishTrace.cancelled = true;
 			// Do not delete as we want to get a chance for late packets to be processed.
 			if (delayDelete) {
 				it->second->PrepareToStop();
@@ -418,17 +417,10 @@ void CSearchManager::JumpStart()
 		}
 		case CSearch::STOREFILE: {
 			if (current_it->second->m_created + SEARCHSTOREFILE_LIFETIME < now) {
-				current_it->second->m_sourcePublishTrace.completed = true;
-				// A sweep can arrive after the deadline without an earlier PrepareToStop.
-				current_it->second->m_sourcePublishTrace.deadline |=
-					!current_it->second->Stopping();
+				current_it->second->m_publishCompleted = true;
 				DeleteSearch(current_it);
 			} else if (current_it->second->GetAnswers() > SEARCHSTOREFILE_TOTAL ||
 				   current_it->second->m_created + SEARCHSTOREFILE_LIFETIME - SEC(20) < now) {
-				if (!current_it->second->Stopping()) {
-					current_it->second->m_sourcePublishTrace.deadline =
-						current_it->second->GetAnswers() <= SEARCHSTOREFILE_TOTAL;
-				}
 				current_it->second->PrepareToStop();
 			} else {
 				current_it->second->JumpStart();
@@ -545,16 +537,9 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &target,
 		}
 		break;
 	}
-	case CSearch::STOREFILE: {
-		const bool unique = s->m_sourcePublishTrace.Acknowledge(fromIP, fromPort);
-		if (unique) {
-			++CPublishMetrics::Instance().acknowledged;
-		}
-		AddDebugLogLineN(logKadSearch,
-			CFormat("Kad source publish reply: target=%s ip=%u port=%u unique=%u") %
-				target.ToHexString() % fromIP % fromPort % unique);
+	case CSearch::STOREFILE:
+		s->m_lookupTrace.ItemReply({ fromIP, fromPort });
 		break;
-	}
 	case CSearch::STORENOTES:
 		break;
 	}
@@ -659,6 +644,12 @@ std::deque<LookupSnapshot> s_recentLookups;
 
 void CSearchManager::RememberLookup(CSearch &search)
 {
+	if (search.m_publishMeasured && theLogger.IsEnabled(logKadSearch)) {
+		CPublishMetrics::Instance().Finish(search.m_lookupTrace,
+			search.m_publishCompleted,
+			::GetTickCount64() - search.GetLookupStarted());
+	}
+
 	if (search.GetLookupTrace().Peers().empty()) {
 		return;
 	}

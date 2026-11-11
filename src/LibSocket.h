@@ -28,9 +28,8 @@
 
 #include "StreamTransport.h" // IStreamTransport and its event sink
 #include "Types.h"
-#include <atomic>     // The transport's receive-event latch
-#include <memory>     // shared_ptr for CAsioUDPSocketImpl ownership
-#include <functional> // DatagramSendCompletion
+#include <atomic> // The transport's receive-event latch
+#include <memory> // shared_ptr for CAsioUDPSocketImpl ownership
 class amuleIPV4Address;
 class CMuleUDPSocket;
 
@@ -274,20 +273,6 @@ private:
 	ListenerFamilies m_listenerFamilies;
 };
 
-// Optional observation of the final native UDP send, not dispatch or remote delivery.
-// The observer owns its context and must not retain a socket or application object.
-using DatagramSendCompletion = std::function<void(bool, size_t)>;
-inline void NotifyDatagramSend(const DatagramSendCompletion &completion, bool success, size_t bytes) noexcept
-{
-	try {
-		if (completion) {
-			completion(success, bytes);
-		}
-	} catch (...) {
-		// Diagnostic observers must not interrupt socket notification or buffer cleanup.
-	}
-}
-
 // UDP socket
 class CLibUDPSocket
 {
@@ -301,10 +286,7 @@ public:
 	// wx Stuff
 	bool IsOk() const;
 	virtual uint32 RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes);
-	virtual uint32 SendTo(const amuleIPV4Address &addr,
-		const void *buf,
-		uint32 nBytes,
-		DatagramSendCompletion completion = {});
+	virtual uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes);
 	int LastError() const;
 	void Close();
 	void Destroy();

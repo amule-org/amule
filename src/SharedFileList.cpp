@@ -1846,22 +1846,17 @@ SKadPublishFacts CSharedFileList::CurrentKadPublishFacts()
 void CSharedFileList::Publish()
 {
 	auto &metrics = Kademlia::CPublishMetrics::Instance();
-	if (metrics.ReportDue(::GetTickCount64())) {
-		const auto transport =
-			Kademlia::CPublishTransportMetrics::Instance().GetSnapshot(::GetTickCount64());
+	if (theLogger.IsEnabled(logKadSearch) && metrics.ReportDue(::GetTickCount64())) {
 		AddDebugLogLineN(logKadSearch,
 			CFormat("Kad source publish totals: attempts=%llu start_failures=%llu starts=%llu "
-				"in_flight=%llu queued=%llu sent=%llu sent_bytes=%llu send_failures=%llu "
+				"queued=%llu "
 				"acknowledged_ips=%llu "
-				"finished=%llu zero_ack=%llu deadlines=%llu cancelled=%llu duration_ms=%llu "
-				"max_duration_ms=%llu max_req_per_ip_60s=%llu omitted_rate_samples=%llu "
-				"omitted_destinations=%llu") %
-				metrics.attempts % metrics.startFailures % metrics.starts % metrics.inFlight %
-				metrics.queued % transport.sourcePackets % transport.sourceBytes %
-				transport.failedSourceSends % metrics.acknowledged % metrics.finished %
-				metrics.zeroAcknowledgements % metrics.deadlines % metrics.cancelled %
-				metrics.durationMs % metrics.maxDurationMs % transport.maxRequestsPerIP60s %
-				transport.omittedRateSamples % metrics.omittedDestinations);
+				"finished=%llu zero_ack=%llu cancelled=%llu duration_ms=%llu "
+				"max_duration_ms=%llu max_req_per_ip_60s=%llu omitted_rate_samples=%llu") %
+				metrics.attempts % metrics.startFailures % metrics.starts % metrics.queued %
+				metrics.acknowledged % metrics.finished % metrics.zeroAcknowledgements %
+				metrics.cancelled % metrics.durationMs % metrics.maxDurationMs %
+				metrics.maxRequestsPerIP60s % metrics.omittedRateSamples);
 	}
 
 	// Variables to save cpu.
@@ -1969,7 +1964,9 @@ void CSharedFileList::Publish()
 									     Kademlia::CSearch::STOREFILE,
 									     true,
 									     kadFileID) != nullptr;
-						Kademlia::CPublishMetrics::Instance().Attempt(started);
+						if (theLogger.IsEnabled(logKadSearch)) {
+							metrics.Attempt(started);
+						}
 						AddDebugLogLineN(logKadSearch,
 							CFormat("Kad source publish attempt: target=%s "
 								"started=%u") %

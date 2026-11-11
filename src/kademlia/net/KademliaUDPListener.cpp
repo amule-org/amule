@@ -36,6 +36,7 @@ there client on the eMule forum..
 #include <wx/wx.h>
 
 #include "KademliaUDPListener.h"
+#include "../utils/PublishMetrics.h"
 #include "KadReceiverKeyPolicy.h" // Needed for CKadReceiverKeyCounts
 #include "SearchExpression.h"
 
@@ -1941,6 +1942,9 @@ bool CKademliaUDPListener::SendPacket(const CMemFile &data,
 		cryptKey,
 		true,
 		targetKey.GetKeyValue(theApp->GetPublicIP(false)));
+	if (queued && opcode == KADEMLIA2_REQ && theLogger.IsEnabled(logKadSearch)) {
+		CPublishMetrics::Instance().LookupQueued(destinationHost, ::GetTickCount64());
+	}
 	return queued;
 }
 

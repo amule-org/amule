@@ -43,9 +43,6 @@
 #include "Preferences.h"
 #include "UdpObfuscationPolicy.h"
 #include "UdpThrottleCharge.h"
-#include "kademlia/utils/PublishMetrics.h"
-#include <protocol/kad/Client2Client/UDP.h>
-#include <protocol/kad2/Client2Client/UDP.h>
 
 CMuleUDPSocket::CMuleUDPSocket(
 	const wxString &name, int id, const amuleIPV4Address &address, const CProxyData *ProxyData)
@@ -407,7 +404,7 @@ SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, u
 					item.keyIP);
 			}
 
-			if (SendTo(sendbuffer, len, item.IP, item.port, item.bKad, packet->GetOpCode())) {
+			if (SendTo(sendbuffer, len, item.IP, item.port)) {
 				chargedBytes += ThrottledUdpBytes(item.bChargedToStream, len);
 				m_queue.pop_front();
 				delete packet;
@@ -430,8 +427,7 @@ SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, u
 	return returnVal;
 }
 
-bool CMuleUDPSocket::SendTo(
-	uint8_t *buffer, uint32_t length, uint32_t ip, uint16_t port, bool kad, uint8_t opcode)
+bool CMuleUDPSocket::SendTo(uint8_t *buffer, uint32_t length, uint32_t ip, uint16_t port)
 {
 	// Just pretend that we sent the packet in order to avoid infinite loops.
 	if (!(m_socket && m_socket->IsOk())) {
@@ -446,22 +442,7 @@ bool CMuleUDPSocket::SendTo(
 	// between the U.B.T. addition and the real sending happening later
 	m_busy = false;
 	bool sent = false;
-	DatagramSendCompletion completion;
-	if (kad && (opcode == KADEMLIA2_REQ || opcode == KADEMLIA2_PUBLISH_SOURCE_REQ ||
-			   opcode == KADEMLIA_PUBLISH_REQ)) {
-		// Only values cross the asynchronous boundary; completion may outlive this socket.
-		completion = [ip, opcode](bool success, size_t bytes) {
-			auto &metrics = Kademlia::CPublishTransportMetrics::Instance();
-			if (opcode == KADEMLIA2_REQ) {
-				if (success) {
-					metrics.LookupSent(ip, GetTickCount64());
-				}
-			} else {
-				metrics.SourceFinished(success, bytes);
-			}
-		};
-	}
-	m_socket->SendTo(addr, buffer, length, std::move(completion));
+	m_socket->SendTo(addr, buffer, length);
 	if (m_socket->BlocksWrite()) {
 		// The socket is busy and cannot send this data now, so return not-sent and set the
 		// wouldblock flag, and it is resent when the socket is ready.

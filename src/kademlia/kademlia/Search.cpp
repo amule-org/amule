@@ -118,24 +118,6 @@ CSearch::CSearch()
 
 CSearch::~CSearch()
 {
-	if (m_sourcePublishTrace.active) {
-		try {
-			auto &metrics = CPublishMetrics::Instance();
-			const auto now = ::GetTickCount64();
-			metrics.Finish(m_sourcePublishTrace, now);
-			AddDebugLogLineN(logKadSearch,
-				CFormat("Kad source publish: target=%s duration_ms=%llu queued=%llu "
-					"acknowledged_ips=%llu omitted_destinations=%llu completed=%u "
-					"deadline=%u cancelled=%u") %
-					m_target.ToHexString() % (now - m_sourcePublishTrace.started) %
-					m_sourcePublishTrace.queued % m_sourcePublishTrace.acknowledged %
-					m_sourcePublishTrace.omitted % m_sourcePublishTrace.completed %
-					m_sourcePublishTrace.deadline % m_sourcePublishTrace.cancelled);
-		} catch (...) {
-			// Diagnostics must not interfere with destruction.
-		}
-	}
-
 	// remember the closest node we found and tried to contact (if any) during this search
 	// for statistical caluclations, but only if its a certain type
 	switch (m_type) {
@@ -231,8 +213,8 @@ CSearch::~CSearch()
 
 void CSearch::Go()
 {
-	if (m_type == STOREFILE && !m_sourcePublishTrace.active) {
-		m_sourcePublishTrace.Start(::GetTickCount64());
+	if (m_type == STOREFILE && !m_publishMeasured && theLogger.IsEnabled(logKadSearch)) {
+		m_publishMeasured = true;
 		CPublishMetrics::Instance().Start();
 	}
 
@@ -885,11 +867,10 @@ void CSearch::StorePacket()
 
 			if (CKademlia::GetUDPListener()->SendPublishSourcePacket(
 				    *from, m_target, id, taglist)) {
-				const auto before = m_sourcePublishTrace.omitted;
-				m_sourcePublishTrace.Queued(from->GetIPAddress(), from->GetUDPPort());
-				auto &metrics = CPublishMetrics::Instance();
-				++metrics.queued;
-				metrics.omittedDestinations += m_sourcePublishTrace.omitted - before;
+				m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
+				if (theLogger.IsEnabled(logKadSearch)) {
+					CPublishMetrics::Instance().Queued();
+				}
 			}
 			m_totalRequestAnswers++;
 			deleteTagPtrListEntries(&taglist);

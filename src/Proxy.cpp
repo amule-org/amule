@@ -1240,8 +1240,7 @@ amuleIPV4Address CDatagramSocketProxy::RelayAddress() const
 	return address;
 }
 
-uint32 CDatagramSocketProxy::SendTo(
-	const amuleIPV4Address &addr, const void *buf, uint32 nBytes, DatagramSendCompletion completion)
+uint32 CDatagramSocketProxy::SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes)
 {
 	uint32 sent = 0;
 	wxMutexLocker lock(m_socketLocker);
@@ -1267,17 +1266,15 @@ uint32 CDatagramSocketProxy::SendTo(
 			RawPokeUInt16(bufUDP + 8, ENDIAN_HTONS(addr.Service()));
 			memcpy(bufUDP + PROXY_UDP_OVERHEAD_IPV4, buf, nBytes);
 			nBytes += PROXY_UDP_OVERHEAD_IPV4;
-			sent = CLibUDPSocket::SendTo(RelayAddress(), bufUDP, nBytes, std::move(completion));
+			sent = CLibUDPSocket::SendTo(RelayAddress(), bufUDP, nBytes);
 
 			/* Only delete buffer if it was dynamically created */
 			if (bufUDP != m_proxyTCPSocket.GetBuffer()) {
 				delete[] bufUDP;
 			}
-		} else {
-			NotifyDatagramSend(completion, false, 0);
 		}
 	} else {
-		sent = CLibUDPSocket::SendTo(addr, buf, nBytes, std::move(completion));
+		sent = CLibUDPSocket::SendTo(addr, buf, nBytes);
 	}
 
 	return sent;

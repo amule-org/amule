@@ -3257,13 +3257,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/LogfilePathIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (LogfilePathIntegrationTest PROPERTIES LABELS "integration")
-		foreach (publish_mode IN ITEMS kad2 kad1 wrong-port removed proxy)
-			add_test (NAME PublishMetrics-${publish_mode}
-				COMMAND ${Python3_EXECUTABLE}
-					${CMAKE_CURRENT_SOURCE_DIR}/PublishMetricsIntegrationTest.py $<TARGET_FILE:amuled> ${publish_mode}
-			)
-			set_tests_properties (PublishMetrics-${publish_mode} PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
-		endforeach ()
+		add_test (NAME PublishMetrics-kad2
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/PublishMetricsIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (PublishMetrics-kad2 PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
 		add_test (NAME KadIndexLifecycleECTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadIndexLifecycleECTest.py $<TARGET_FILE:amuled>
@@ -4128,10 +4126,6 @@ foreach (ec_wire_test IN ITEMS
 	OfferFilesLiveLimitsTest
 	PacketReceiveIntegrationTest
 	PublishMetrics-kad2
-	PublishMetrics-kad1
-	PublishMetrics-wrong-port
-	PublishMetrics-removed
-	PublishMetrics-proxy
 	PathDefaultsIntegrationTest
 	SearchParamsRestoreIntegrationTest
 	SearchResultDownloadIntegrationTest
@@ -4191,4 +4185,4 @@ endif ()
 add_executable (PublishMetricsTest PublishMetricsTest.cpp)
 add_test (NAME PublishMetricsTest COMMAND PublishMetricsTest)
 target_include_directories (PublishMetricsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries (PublishMetricsTest muleunit mulecommon Threads::Threads)
+target_link_libraries (PublishMetricsTest muleunit mulecommon)

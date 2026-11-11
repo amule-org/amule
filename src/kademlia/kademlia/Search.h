@@ -59,7 +59,8 @@ class CKadClientSearcher;
 class CSearch
 {
 	friend class CSearchManager;
-	CSourcePublishTrace m_sourcePublishTrace;
+	bool m_publishMeasured = false;
+	bool m_publishCompleted = false;
 
 public:
 	const CLookupTrace &GetLookupTrace() const noexcept { return m_lookupTrace; }
