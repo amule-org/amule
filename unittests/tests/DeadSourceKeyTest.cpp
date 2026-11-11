@@ -189,6 +189,31 @@ TEST(CDeadSourceKey, AStoredIPv6MatchesItsLaterRecord)
 	ASSERT_FALSE(route.DeadKey().Matches(RecordKey(1, IPv6(8), 4662, 0, 0, 0)));
 }
 
+TEST(CDeadSourceKey, ARouteWhereAnotherHostAnsweredIsNotDead)
+{
+	SStoredSourceRoute current;
+	current.id = kHighID;
+	current.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID);
+	current.tcpPort = 4662;
+	const CDeadSourceKey left = RecordKey(0x1235, CNetworkAddress::Absent(), 4662, kServer, 4661, 0);
+	const CDeadSourceKey otherHost = current.DeadKey();
+
+	const std::vector<CDeadSourceKey> keys = DeadSourceKeysFor(current, {}, { left }, { otherHost });
+	ASSERT_EQUALS(1u, keys.size());
+	ASSERT_TRUE(keys[0].Matches(left));
+
+	// Also when the other host answered on a route the source left.
+	SStoredSourceRoute now;
+	now.id = 0x1236;
+	now.serverIP = kServer;
+	now.serverPort = 4661;
+	now.tcpPort = 4662;
+	const std::vector<CDeadSourceKey> keysLeft = DeadSourceKeysFor(now, {}, { left }, { left });
+	ASSERT_EQUALS(1u, keysLeft.size());
+	ASSERT_TRUE(
+		keysLeft[0].Matches(RecordKey(0x1236, CNetworkAddress::Absent(), 4662, kServer, 4661, 0)));
+}
+
 TEST(CDeadSourceKey, ADeadSourceIsKeyedUnderEveryRoute)
 {
 	SStoredSourceRoute current;

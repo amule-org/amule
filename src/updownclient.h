@@ -1276,6 +1276,8 @@ private:
 	SStoredSourceRoute m_lastResortIPv6;
 	// The routes a fallback left behind.
 	std::vector<CDeadSourceKey> m_formerDeadSourceKeys;
+	// Routes where another host answered: alive, and not this source, so never recorded as dead.
+	std::vector<CDeadSourceKey> m_otherHostKeys;
 	// The IPv4 identity came from a fallback and no hello came from it yet.
 	bool m_identityFromFallback = false;
 	// The route in use is a fallback, and no hello has come over it yet.

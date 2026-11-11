@@ -30,6 +30,7 @@
 #include "NetworkFunctions.h" // Needed for IsLowID
 #include "SourceRoutePolicy.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -69,20 +70,31 @@ struct SStoredSourceRoute
 };
 
 /**
- * Every key a dead source is recorded under: its current route, each route it could still have
- * used, and the routes it already left. A later copy under any of them is then refused.
+ * The keys a dead source is recorded under: its last route, and the other routes it was seen to fail
+ * on, including the ones it left. A later copy under any of them is then refused. An untried route
+ * is not one of them: it may name another client now. Nor is a route where another host answered:
+ * that host is alive and is not this source.
  */
 inline std::vector<CDeadSourceKey> DeadSourceKeysFor(const SStoredSourceRoute &current,
-	const std::vector<SStoredSourceRoute> &others,
-	const std::vector<CDeadSourceKey> &former)
+	const std::vector<SStoredSourceRoute> &failed,
+	const std::vector<CDeadSourceKey> &former,
+	const std::vector<CDeadSourceKey> &otherHosts = {})
 {
 	std::vector<CDeadSourceKey> keys{ current.DeadKey() };
-	for (const SStoredSourceRoute &route : others) {
+	for (const SStoredSourceRoute &route : failed) {
 		if (route.Present()) {
 			keys.push_back(route.DeadKey());
 		}
 	}
 	keys.insert(keys.end(), former.begin(), former.end());
+	keys.erase(std::remove_if(keys.begin(),
+			   keys.end(),
+			   [&otherHosts](const CDeadSourceKey &key) {
+				   return std::any_of(otherHosts.begin(),
+					   otherHosts.end(),
+					   [&key](const CDeadSourceKey &host) { return key.Matches(host); });
+			   }),
+		keys.end());
 	return keys;
 }
 

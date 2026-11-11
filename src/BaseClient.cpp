@@ -541,6 +541,15 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	switch (PeerAddressing::CheckHelloIdentity(
 		IsContactUnproven(), HasValidHash(), hash == GetUserHash())) {
 	case PeerAddressing::EHelloIdentity::OtherHost:
+		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
+			SStoredSourceRoute advertised;
+			advertised.address = m_dialledIPv6Address;
+			advertised.tcpPort = GetUserPort();
+			advertised.kadPort = GetKadPort();
+			m_otherHostKeys.push_back(advertised.DeadKey());
+		} else {
+			m_otherHostKeys.push_back(CurrentStoredRoute().DeadKey());
+		}
 		AddDebugLogLineN(logClient,
 			CFormat("Another host (hash %s) answered unproven route to source %s at %s") %
 				hash.Encode() % GetUserHash().Encode() %
@@ -4084,17 +4093,19 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 
 std::vector<CDeadSourceKey> CUpDownClient::DeadSourceKeys() const
 {
-	std::vector<SStoredSourceRoute> others{ m_serverCandidate, m_lastResortIPv4, m_lastResortIPv6 };
+	// Stored fallbacks are left out: a route never tried may name another client now.
+	std::vector<SStoredSourceRoute> failed;
 #ifdef ENABLE_IPV6
-	if (HasModIPv6()) {
+	if (HasModIPv6() && m_unansweredIPv6Address.IsPresent() &&
+		m_unansweredIPv6Address == CNetworkAddress::FromIPv6Bytes(m_modIPv6)) {
 		SStoredSourceRoute advertised;
-		advertised.address = CNetworkAddress::FromIPv6Bytes(m_modIPv6);
+		advertised.address = m_unansweredIPv6Address;
 		advertised.tcpPort = GetUserPort();
 		advertised.kadPort = GetKadPort();
-		others.push_back(advertised);
+		failed.push_back(advertised);
 	}
 #endif
-	return DeadSourceKeysFor(CurrentStoredRoute(), others, m_formerDeadSourceKeys);
+	return DeadSourceKeysFor(CurrentStoredRoute(), failed, m_formerDeadSourceKeys, m_otherHostKeys);
 }
 
 void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
