@@ -208,3 +208,123 @@ TEST(CDeadSourceKey, ADeadSourceIsKeyedUnderEveryRoute)
 	ASSERT_TRUE(keys[1].Matches(RecordKey(1, IPv6(7), 4662, 0, 0, 0)));
 	ASSERT_TRUE(keys[2].Matches(former));
 }
+
+DECLARE_SIMPLE(CSourceRouteChainStart)
+
+namespace
+{
+SStoredSourceRoute ServerRoute(uint32 id, uint32 server)
+{
+	SStoredSourceRoute route;
+	route.id = id;
+	route.serverIP = server;
+	route.serverPort = 4661;
+	route.tcpPort = 4662;
+	return route;
+}
+
+// A LowID on our server, with a fallback server route and a last-resort HighID.
+SSourceRoutes ChainStartRoutes()
+{
+	SSourceRoutes routes;
+	routes.route = ServerRoute(0x1235, kServer);
+	routes.route.kadPort = 4672;
+	routes.serverCandidate = ServerRoute(0x2345, kServer + 1);
+	routes.lastResortIPv4.id = kHighID;
+	routes.lastResortIPv4.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID);
+	routes.lastResortIPv4.tcpPort = 4662;
+	return routes;
+}
+
+// The routes once the fallback server route is in use.
+SSourceRoutes OnServerCandidate(const SSourceRoutes &start)
+{
+	SSourceRoutes routes = start;
+	routes.route.id = start.serverCandidate.id;
+	routes.route.serverIP = start.serverCandidate.serverIP;
+	routes.serverCandidate = SStoredSourceRoute();
+	return routes;
+}
+
+bool SameRoutes(const SSourceRoutes &a, const SSourceRoutes &b)
+{
+	return a.route == b.route && a.serverCandidate == b.serverCandidate &&
+	       a.lastResortIPv4 == b.lastResortIPv4 && a.lastResortIPv6 == b.lastResortIPv6 &&
+	       a.identityFromFallback == b.identityFromFallback;
+}
+} // namespace
+
+TEST(CSourceRouteChainStart, OneFallbackGivesBackTheStart)
+{
+	CSourceRouteChainStart chain;
+	const SSourceRoutes start = ChainStartRoutes();
+	chain.Save(start, 2);
+
+	const std::optional<CSourceRouteChainStart::SStart> taken = chain.Take();
+	ASSERT_TRUE(taken.has_value());
+	ASSERT_TRUE(SameRoutes(start, taken->routes));
+	ASSERT_EQUALS(2u, taken->formerKeys);
+	ASSERT_FALSE(chain.Take().has_value());
+}
+
+TEST(CSourceRouteChainStart, ASecondFallbackKeepsTheFirstStart)
+{
+	CSourceRouteChainStart chain;
+	const SSourceRoutes start = ChainStartRoutes();
+	chain.Save(start, 1);
+	SSourceRoutes second = OnServerCandidate(start);
+	second.identityFromFallback = true;
+	chain.Save(second, 2);
+
+	const std::optional<CSourceRouteChainStart::SStart> taken = chain.Take();
+	ASSERT_TRUE(SameRoutes(start, taken->routes));
+	ASSERT_EQUALS(1u, taken->formerKeys);
+}
+
+TEST(CSourceRouteChainStart, ALowIDChangeFromOurServerSurvivesTheRestore)
+{
+	CSourceRouteChainStart chain;
+	const SSourceRoutes start = ChainStartRoutes();
+	chain.Save(start, 0);
+	const SSourceRoutes before = OnServerCandidate(start);
+	SSourceRoutes after = before;
+	after.route.id = 0x1236;
+	after.route.serverIP = kServer;
+	chain.Carry(before, after);
+
+	SSourceRoutes expected = start;
+	expected.route.id = 0x1236;
+	ASSERT_TRUE(SameRoutes(expected, chain.Take()->routes));
+}
+
+TEST(CSourceRouteChainStart, AFallbackStoredDuringTheChainSurvivesTheRestore)
+{
+	CSourceRouteChainStart chain;
+	const SSourceRoutes start = ChainStartRoutes();
+	chain.Save(start, 0);
+	const SSourceRoutes before = OnServerCandidate(start);
+	SSourceRoutes after = before;
+	after.lastResortIPv6.address = IPv6(7);
+	after.lastResortIPv6.tcpPort = 4662;
+	after.serverCandidate = ServerRoute(0x3456, kServer + 2);
+	chain.Carry(before, after);
+
+	SSourceRoutes expected = start;
+	expected.lastResortIPv6 = after.lastResortIPv6;
+	expected.serverCandidate = after.serverCandidate;
+	ASSERT_TRUE(SameRoutes(expected, chain.Take()->routes));
+}
+
+TEST(CSourceRouteChainStart, NoChainNoCarry)
+{
+	CSourceRouteChainStart chain;
+	const SSourceRoutes start = ChainStartRoutes();
+	SSourceRoutes after = start;
+	after.route.id = 0x1236;
+	chain.Carry(start, after);
+	ASSERT_FALSE(chain.Take().has_value());
+
+	chain.Save(start, 0);
+	chain.Reset();
+	ASSERT_FALSE(chain.Take().has_value());
+}

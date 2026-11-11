@@ -382,9 +382,11 @@ private:
 	//! Moves to a stored fallback route. Whether it leaves a route to try.
 	bool UseSourceFallback(ESourceFallback fallback, ESourceRoute failedRoute);
 	void ApplyStoredRoute(const SStoredSourceRoute &route);
-	//! Saves the route a chain starts from, once per chain, before the chain changes it.
+	SSourceRoutes CurrentRoutes() const;
+	//! Saves the routes a chain starts from, once per chain, before the chain changes them.
 	void SaveChainStart();
-	void RestoreChainStart();
+	//! Gives back the saved routes, if the chain saved any.
+	bool RestoreChainStart();
 	SStoredSourceRoute CurrentStoredRoute() const;
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	//! Sends OP_NAT_CALLBACKREQUEST to this LowID peer when the Lugdunum preconditions hold.
@@ -1272,22 +1274,7 @@ private:
 	std::vector<CDeadSourceKey> m_formerDeadSourceKeys;
 	// The IPv4 identity came from a fallback and no hello came from it yet.
 	bool m_identityFromFallback = false;
-	// What a route chain changed from, so a client that survives a chain with no working route
-	// starts its next one from its own route again.
-	struct SChainStart
-	{
-		SStoredSourceRoute route;
-		SStoredSourceRoute serverCandidate;
-		SStoredSourceRoute lastResortIPv4;
-		SStoredSourceRoute lastResortIPv6;
-		size_t formerKeys = 0;
-		bool identityFromFallback = false;
-		uint32 buddyIP = 0;
-		uint16 buddyPort = 0;
-		uint32 buddyCandidateIP = 0;
-		uint16 buddyCandidatePort = 0;
-	};
-	std::optional<SChainStart> m_chainStart;
+	CSourceRouteChainStart m_chainStart;
 
 	EKadState m_nKadState;
 

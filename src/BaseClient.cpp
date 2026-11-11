@@ -1586,6 +1586,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	SourceItemType peer_type = UNAVAILABLE_SOURCE;
 
 	// A source is given up only once every route it offers has failed.
+	bool restoredChainStart = false;
 	if (KeepForNextRoute(failedAdvertisedIPv6)) {
 		SetDownloadState(DS_ONQUEUE);
 		m_bReaskPending = true;
@@ -1594,7 +1595,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	} else if (m_sourceRoute != ESourceRoute::None) {
 		// Every route failed. A client that survives this, for an upload or a chat, starts its next
 		// reask from its own route with every route untried, as it would on master.
-		RestoreChainStart();
+		restoredChainStart = RestoreChainStart();
 		ResetContactRoutes();
 	}
 	m_sourceRoute = ESourceRoute::None;
@@ -1679,6 +1680,13 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 		SetSentCancelTransfer(0);
 		m_bHelloAnswerPending = false;
 		m_fSentOutOfPartReqs = 0;
+		if (restoredChainStart) {
+			AddDebugLogLineN(logClient,
+				CFormat("Every route to source %s failed, back to its own route for the next "
+					"reask: ID %u, address %s") %
+					GetUserHash().Encode() % GetUserIDHybrid() %
+					GetUserAddress().ToWxString());
+		}
 	}
 	AddDebugLogLineN(logClient,
 		CFormat("--- %s client D:%d U:%d \"%s\"; Reason was %s") %
@@ -2255,9 +2263,6 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 		return false;
 	}
 	// A fallback buddy leaves the buddy route untried.
-	if (m_sourceRoute == ESourceRoute::KadBuddy && m_nBuddyCandidateIP != 0) {
-		SaveChainStart();
-	}
 	if (m_sourceRoute == ESourceRoute::KadBuddy && SwitchToBuddyCandidate()) {
 		return true;
 	}
@@ -2383,54 +2388,44 @@ void CUpDownClient::ApplyStoredRoute(const SStoredSourceRoute &route)
 	}
 }
 
-void CUpDownClient::SaveChainStart()
+SSourceRoutes CUpDownClient::CurrentRoutes() const
 {
-	if (m_chainStart) {
-		return;
-	}
-	SChainStart start;
-	start.route = CurrentStoredRoute();
-	start.serverCandidate = m_serverCandidate;
-	start.lastResortIPv4 = m_lastResortIPv4;
-	start.lastResortIPv6 = m_lastResortIPv6;
-	start.formerKeys = m_formerDeadSourceKeys.size();
-	start.identityFromFallback = m_identityFromFallback;
-	start.buddyIP = GetBuddyIP();
-	start.buddyPort = GetBuddyPort();
-	start.buddyCandidateIP = m_nBuddyCandidateIP;
-	start.buddyCandidatePort = m_nBuddyCandidatePort;
-	m_chainStart = start;
+	SSourceRoutes routes;
+	routes.route = CurrentStoredRoute();
+	routes.serverCandidate = m_serverCandidate;
+	routes.lastResortIPv4 = m_lastResortIPv4;
+	routes.lastResortIPv6 = m_lastResortIPv6;
+	routes.identityFromFallback = m_identityFromFallback;
+	return routes;
 }
 
-void CUpDownClient::RestoreChainStart()
+void CUpDownClient::SaveChainStart()
 {
-	if (!m_chainStart) {
-		return;
+	m_chainStart.Save(CurrentRoutes(), m_formerDeadSourceKeys.size());
+}
+
+bool CUpDownClient::RestoreChainStart()
+{
+	const std::optional<CSourceRouteChainStart::SStart> start = m_chainStart.Take();
+	if (!start) {
+		return false;
 	}
-	const SChainStart &start = *m_chainStart;
-	SetUserIDHybrid(start.route.id);
-	SetUserAddress(start.route.address);
-	SetServerIP(start.route.serverIP);
-	SetServerPort(start.route.serverPort);
-	SetUserPort(start.route.tcpPort);
-	SetKadPort(start.route.kadPort);
-	SetDirectUDPCallbackSupport(start.route.directCallback);
-	m_serverCandidate = start.serverCandidate;
-	m_lastResortIPv4 = start.lastResortIPv4;
-	m_lastResortIPv6 = start.lastResortIPv6;
+	const SStoredSourceRoute &route = start->routes.route;
+	SetUserIDHybrid(route.id);
+	SetUserAddress(route.address);
+	SetServerIP(route.serverIP);
+	SetServerPort(route.serverPort);
+	SetUserPort(route.tcpPort);
+	SetKadPort(route.kadPort);
+	SetDirectUDPCallbackSupport(route.directCallback);
+	m_serverCandidate = start->routes.serverCandidate;
+	m_lastResortIPv4 = start->routes.lastResortIPv4;
+	m_lastResortIPv6 = start->routes.lastResortIPv6;
+	m_identityFromFallback = start->routes.identityFromFallback;
 	m_formerDeadSourceKeys.erase(
-		m_formerDeadSourceKeys.begin() + static_cast<std::ptrdiff_t>(start.formerKeys),
+		m_formerDeadSourceKeys.begin() + static_cast<std::ptrdiff_t>(start->formerKeys),
 		m_formerDeadSourceKeys.end());
-	m_identityFromFallback = start.identityFromFallback;
-	SetBuddyIP(start.buddyIP);
-	SetBuddyPort(start.buddyPort);
-	m_nBuddyCandidateIP = start.buddyCandidateIP;
-	m_nBuddyCandidatePort = start.buddyCandidatePort;
-	AddDebugLogLineN(logClient,
-		CFormat("Every route to source %s failed, back to its own route for the next reask: ID %u, "
-			"address %s") %
-			GetUserHash().Encode() % GetUserIDHybrid() % GetUserAddress().ToWxString());
-	m_chainStart.reset();
+	return true;
 }
 
 void CUpDownClient::SetLastResortIPv6(const CNetworkAddress &address)
@@ -2852,7 +2847,7 @@ void CUpDownClient::ConnectionEstablished()
 	m_sourceRoute = ESourceRoute::None;
 	m_failedSourceRoutes = 0;
 	m_refreshedSourceRoutes = 0;
-	m_chainStart.reset();
+	m_chainStart.Reset();
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	m_holePunchFallback.Reset();
 #endif
@@ -4066,6 +4061,7 @@ std::vector<CDeadSourceKey> CUpDownClient::DeadSourceKeys() const
 void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 {
 	AdoptKadBuddy(duplicate);
+	const SSourceRoutes before = CurrentRoutes();
 
 	const CNetworkAddress &user = GetUserAddress();
 	SSourceRouteMergeFacts facts;
@@ -4165,6 +4161,8 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 		taken += " last-resort IPv6";
 	}
 #endif
+	// A restore after a failed chain keeps what this merge changed.
+	m_chainStart.Carry(before, CurrentRoutes());
 	if (!taken.IsEmpty()) {
 		AddDebugLogLineN(logClient,
 			CFormat("Contact routes taken from a duplicate of source %s:%s") %
