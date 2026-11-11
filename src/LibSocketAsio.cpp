@@ -2097,7 +2097,10 @@ private:
 		uint16 sourcePort = 0;
 		DatagramSendCompletion completion;
 
-		CUDPData(const void *src, uint32 _size, amuleIPV4Address adr, DatagramSendCompletion observer)
+		CUDPData(const void *src,
+			uint32 _size,
+			const amuleIPV4Address &adr,
+			DatagramSendCompletion observer)
 		: size(_size)
 		, ipadr(adr)
 		, completion(std::move(observer))

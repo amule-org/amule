@@ -269,7 +269,8 @@ bool CKademliaUDPListener::SendPublishSourcePacket(
 			contact.GetUDPKey(),
 			&clientID);
 	} else {
-		return SendPacket(packetdata, opcode, contact.GetIPAddress(), contact.GetUDPPort(), 0, NULL);
+		return SendPacket(
+			packetdata, opcode, contact.GetIPAddress(), contact.GetUDPPort(), 0, nullptr);
 	}
 }
 

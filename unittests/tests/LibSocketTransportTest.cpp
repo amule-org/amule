@@ -1108,12 +1108,14 @@ TEST(LibSocketTransport, DatagramCompletionIsNotTheDispatchAcknowledgement)
 	int callbacks = 0;
 	bool success = false;
 	size_t bytes = 0;
+	amuleIPV4Address destination = peer.target;
 	ASSERT_EQUALS(uint32(sizeof(payload)),
-		peer.sender->SendTo(peer.target, payload, sizeof(payload), [&](bool sent, size_t count) {
+		peer.sender->SendTo(destination, payload, sizeof(payload), [&](bool sent, size_t count) {
 			++callbacks;
 			success = sent;
 			bytes = count;
 		}));
+	destination.Service(0);      // The queued send owns its address despite the const-reference argument.
 	ASSERT_EQUALS(0, callbacks); // Dispatch has copied the buffer, but no send has completed.
 	peer.Complete([&] { return callbacks != 0; });
 	ASSERT_EQUALS(1, callbacks);
