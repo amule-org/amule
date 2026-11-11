@@ -244,13 +244,21 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 		w.Sample("kad_buddy_requests_total",
 			b.requests.refused_conflict,
 			"{result=\"refused_conflict\"}");
+		w.Sample("kad_buddy_requests_total",
+			b.requests.refused_same_ip,
+			"{result=\"refused_same_ip\"}");
 		w.Sample("kad_buddy_requests_total", b.requests.rate_limited, "{result=\"rate_limited\"}");
+		w.Family("kad_buddy_natt_requests_total",
+			"Buddy requests that set a NAT-T bit in their connect options.",
+			"counter");
+		w.Sample("kad_buddy_natt_requests_total", b.requests.natt);
 		w.Family("kad_buddy_offers_unused_total",
 			"Buddy offers whose node did not become our buddy.",
 			"counter");
 		w.Sample("kad_buddy_offers_unused_total", b.requests.expired, "{reason=\"expired\"}");
 		w.Sample("kad_buddy_offers_unused_total", b.requests.superseded, "{reason=\"superseded\"}");
 		w.Sample("kad_buddy_offers_unused_total", b.requests.duplicate, "{reason=\"duplicate\"}");
+		w.Sample("kad_buddy_offers_unused_total", b.requests.evicted, "{reason=\"evicted\"}");
 		w.Family("kad_buddy_served_events_total",
 			"Changes to the buddies this node serves.",
 			"counter");
@@ -260,12 +268,14 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 			"{event=\"released_extra\"}");
 		w.Sample("kad_buddy_served_events_total", b.buddies.ended, "{event=\"ended\"}");
 		w.Sample("kad_buddy_served_events_total", b.buddies.timed_out, "{event=\"timed_out\"}");
-		w.Family("kad_buddy_served_seconds_total", "Time spent serving a buddy.", "counter");
+		w.Family("kad_buddy_served_seconds_total",
+			"Time spent serving buddies, summed over them.",
+			"counter");
 		w.Sample("kad_buddy_served_seconds_total", b.served_seconds);
-		w.Family("kad_buddy_relays_total", "Packets relayed to the served buddy.", "counter");
+		w.Family("kad_buddy_relays_total", "Packets relayed to served buddies.", "counter");
 		w.Sample("kad_buddy_relays_total", b.callbacks.relayed, "{kind=\"callback\"}");
 		w.Sample("kad_buddy_relays_total", b.reasks.relayed, "{kind=\"reask\"}");
-		w.Family("kad_buddy_relayed_bytes_total", "Bytes relayed to the served buddy.", "counter");
+		w.Family("kad_buddy_relayed_bytes_total", "Bytes relayed to served buddies.", "counter");
 		w.Sample("kad_buddy_relayed_bytes_total", b.callbacks.relayed_bytes, "{kind=\"callback\"}");
 		w.Sample("kad_buddy_relayed_bytes_total", b.reasks.relayed_bytes, "{kind=\"reask\"}");
 		w.Family("kad_buddy_relay_drops_total",
@@ -281,6 +291,9 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 			b.callbacks.rate_limited,
 			"{kind=\"callback\",reason=\"rate_limited\"}");
 		w.Sample("kad_buddy_relay_drops_total",
+			b.callbacks.over_budget,
+			"{kind=\"callback\",reason=\"over_budget\"}");
+		w.Sample("kad_buddy_relay_drops_total",
 			b.reasks.no_buddy,
 			"{kind=\"reask\",reason=\"no_buddy\"}");
 		w.Sample("kad_buddy_relay_drops_total",
@@ -289,6 +302,9 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 		w.Sample("kad_buddy_relay_drops_total",
 			b.reasks.malformed,
 			"{kind=\"reask\",reason=\"malformed\"}");
+		w.Sample("kad_buddy_relay_drops_total",
+			b.reasks.over_budget,
+			"{kind=\"reask\",reason=\"over_budget\"}");
 		w.Gauge("kad_buddy_peak_relayed_bytes_per_minute",
 			"Most bytes relayed to one served buddy in one minute.",
 			b.peak_relayed_bytes_per_minute);
@@ -298,6 +314,10 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 		const auto &o = k.buddy_own;
 		w.Family("kad_buddy_searches_total", "Searches for a buddy of our own.", "counter");
 		w.Sample("kad_buddy_searches_total", o.search_count);
+		w.Family("kad_buddy_searches_held_total",
+			"Due searches for a buddy of our own held for a shared file.",
+			"counter");
+		w.Sample("kad_buddy_searches_held_total", o.held_search_count);
 		w.Family("kad_buddy_own_requests_total", "Buddy requests for a buddy of our own.", "counter");
 		w.Sample("kad_buddy_own_requests_total", o.requests.sent, "{result=\"sent\"}");
 		w.Sample("kad_buddy_own_requests_total", o.requests.skipped, "{result=\"skipped\"}");

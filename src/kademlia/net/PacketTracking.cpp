@@ -25,6 +25,7 @@
 //
 
 #include "PacketTracking.h"
+#include "../../KadServedBuddyPolicy.h" // Needed for MaxServedBuddies
 #include "../kademlia/Kademlia.h"
 #include "../../Logger.h"
 #include "../../OtherFunctions.h"
@@ -138,7 +139,8 @@ uint32_t CPacketTracking::InTrackListAllowedPerMinute(uint8_t opcode) noexcept
 	case KADEMLIA_FINDBUDDY_REQ:
 		return 2;
 	case KADEMLIA_CALLBACK_REQ:
-		return 1;
+		// A flood ceiling only: one a minute per sender and target is enforced per served buddy.
+		return Kademlia::MaxServedBuddies;
 	case KADEMLIA2_PING:
 		return 2;
 	default:

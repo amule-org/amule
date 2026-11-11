@@ -7126,10 +7126,13 @@ void WriteKadBuddyCounters(CJsonWriter &w, const webapi::KadSnapshot &k)
 		count("refused_firewalled", s.requests.refused_firewalled);
 		count("refused_full", s.requests.refused_full);
 		count("refused_conflict", s.requests.refused_conflict);
+		count("refused_same_ip", s.requests.refused_same_ip);
 		count("rate_limited", s.requests.rate_limited);
+		count("natt", s.requests.natt);
 		count("expired", s.requests.expired);
 		count("superseded", s.requests.superseded);
 		count("duplicate", s.requests.duplicate);
+		count("evicted", s.requests.evicted);
 		w.EndObject();
 		w.Key("buddies");
 		w.BeginObject();
@@ -7145,6 +7148,7 @@ void WriteKadBuddyCounters(CJsonWriter &w, const webapi::KadSnapshot &k)
 		count("no_buddy", s.callbacks.no_buddy);
 		count("mismatched", s.callbacks.mismatched);
 		count("rate_limited", s.callbacks.rate_limited);
+		count("over_budget", s.callbacks.over_budget);
 		count("peak_requests_per_minute", s.callbacks.peak_requests_per_minute);
 		w.EndObject();
 		w.Key("reasks");
@@ -7154,6 +7158,7 @@ void WriteKadBuddyCounters(CJsonWriter &w, const webapi::KadSnapshot &k)
 		count("no_buddy", s.reasks.no_buddy);
 		count("mismatched", s.reasks.mismatched);
 		count("malformed", s.reasks.malformed);
+		count("over_budget", s.reasks.over_budget);
 		w.EndObject();
 		count("peak_relayed_bytes_per_minute", s.peak_relayed_bytes_per_minute);
 		w.EndObject();
@@ -7165,6 +7170,7 @@ void WriteKadBuddyCounters(CJsonWriter &w, const webapi::KadSnapshot &k)
 		const webapi::KadBuddyOwnSnapshot &o = k.buddy_own;
 		w.BeginObject();
 		count("search_count", o.search_count);
+		count("held_search_count", o.held_search_count);
 		count("needed_seconds", o.needed_seconds);
 		count("missing_seconds", o.missing_seconds);
 		count("connected_seconds", o.connected_seconds);

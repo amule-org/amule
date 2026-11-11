@@ -1630,6 +1630,7 @@ bool CPreferencesRem::LoadRemote()
 	// Capabilities belong to this connection, not the previously connected core.
 	m_liveNetworkPreferences = false;
 	thePrefs::SetWriteBufferLimitSupported(false);
+	thePrefs::SetKadMaxServedBuddiesSupported(false);
 	thePrefs::SetCoreDebugCategories({});
 	thePrefs::SetCoreVerboseLogfile(false);
 #ifdef GEOIP_GUI

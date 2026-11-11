@@ -114,6 +114,7 @@ public:
 	void SetPublish(bool val) noexcept { m_Publish = val; }
 
 	bool GetFindBuddy() noexcept { return m_findBuddy ? m_findBuddy = false, true : false; }
+	bool IsFindBuddyDue() const noexcept { return m_findBuddy; }
 	void SetFindBuddy(bool val = true) noexcept { m_findBuddy = val; }
 
 	bool GetUseExternKadPort() const;

@@ -296,6 +296,23 @@ add_test (NAME KadBuddyStatsTest COMMAND KadBuddyStatsTest)
 target_include_directories (KadBuddyStatsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (KadBuddyStatsTest muleunit mulecommon)
 
+# How many buddies a node serves, the NAT-T slots and who is admitted.
+add_executable (KadServedBuddyPolicyTest KadServedBuddyPolicyTest.cpp)
+add_test (NAME KadServedBuddyPolicyTest COMMAND KadServedBuddyPolicyTest)
+target_include_directories (KadServedBuddyPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (KadServedBuddyPolicyTest muleunit mulecommon)
+
+# When a firewalled node searches for a buddy and which target it looks up.
+add_executable (KadBuddySearchPolicyTest
+	KadBuddySearchPolicyTest.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+)
+add_test (NAME KadBuddySearchPolicyTest COMMAND KadBuddySearchPolicyTest)
+target_include_directories (KadBuddySearchPolicyTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (KadBuddySearchPolicyTest muleunit mulecommon)
+
 # The Kad firewall state across an hourly recheck, with the clock passed in.
 add_executable (KadFirewallRecheckTest KadFirewallRecheckTest.cpp)
 add_test (NAME KadFirewallRecheckTest COMMAND KadFirewallRecheckTest)
@@ -1347,6 +1364,12 @@ add_executable (KadReceiverKeyPolicyTest KadReceiverKeyPolicyTest.cpp)
 add_test (NAME KadReceiverKeyPolicyTest COMMAND KadReceiverKeyPolicyTest)
 target_include_directories (KadReceiverKeyPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (KadReceiverKeyPolicyTest muleunit mulecommon)
+
+# Which copy of a duplicate source keeps the Kad buddy (#2455).
+add_executable (KadBuddyMergePolicyTest KadBuddyMergePolicyTest.cpp)
+add_test (NAME KadBuddyMergePolicyTest COMMAND KadBuddyMergePolicyTest)
+target_include_directories (KadBuddyMergePolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (KadBuddyMergePolicyTest muleunit mulecommon)
 
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest

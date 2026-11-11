@@ -105,7 +105,8 @@
 #include "kademlia/kademlia/Search.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/routing/RoutingZone.h"
-#include "KadBuddyIdLayout.h" // Needed for ConvertBuddyIdLayout (#1835)
+#include "KadBuddyIdLayout.h"    // Needed for ConvertBuddyIdLayout (#1835)
+#include "KadBuddyMergePolicy.h" // Needed for DecideKadBuddyMerge
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h" // Needed for ShouldRequestLugdunumNatCallback
 #include "NatServerHolePunch.h"   // Needed for ShouldRequestLowIdHolePunch
@@ -1577,6 +1578,13 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 
 	SourceItemType source_type = UNAVAILABLE_SOURCE;
 	SourceItemType peer_type = UNAVAILABLE_SOURCE;
+
+	// A callback through the stored buddy failed. With a fallback buddy, keep the source and its
+	// queue place for the next reask instead of deleting it.
+	if (m_nDownloadState == DS_WAITCALLBACKKAD && SwitchToBuddyCandidate()) {
+		SetDownloadState(DS_ONQUEUE);
+		m_bReaskPending = true;
+	}
 
 	// check if this client is needed in any way, if not delete it
 	bool bDelete = true;
@@ -3766,6 +3774,72 @@ void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID)
 	}
 	m_bBuddyIDValid = true;
 	md4cpy(m_achBuddyID, pucBuddyID);
+}
+
+void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
+{
+	SKadBuddyMergeFacts facts;
+	facts.incomingHasID = duplicate.HasValidBuddyID();
+	facts.existingHasID = HasValidBuddyID();
+	facts.incomingHasAddress = duplicate.GetBuddyIP() != 0 && duplicate.GetBuddyPort() != 0;
+	facts.existingHasAddress = GetBuddyIP() != 0 && GetBuddyPort() != 0;
+	facts.sameAddress =
+		GetBuddyIP() == duplicate.GetBuddyIP() && GetBuddyPort() == duplicate.GetBuddyPort();
+	facts.incomingFromKad = duplicate.GetSourceFrom() == SF_KADEMLIA;
+	const SKadBuddyMerge merge = DecideKadBuddyMerge(facts);
+
+	if (merge.takeID) {
+		SetBuddyID(duplicate.GetBuddyID());
+	}
+	if (merge.takeAddress) {
+		SetBuddyIP(duplicate.GetBuddyIP());
+		SetBuddyPort(duplicate.GetBuddyPort());
+		m_nBuddyCandidateIP = 0;
+		m_nBuddyCandidatePort = 0;
+	}
+	// One Kad search returns the same fallback from several nodes.
+	if (merge.storeCandidate && (m_nBuddyCandidateIP != duplicate.GetBuddyIP() ||
+					    m_nBuddyCandidatePort != duplicate.GetBuddyPort())) {
+		m_nBuddyCandidateIP = duplicate.GetBuddyIP();
+		m_nBuddyCandidatePort = duplicate.GetBuddyPort();
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Kad buddy %s kept as a fallback for source %s, which uses %s") %
+				Uint32_16toStringIP_Port(m_nBuddyCandidateIP, m_nBuddyCandidatePort) %
+				GetUserHash().Encode() %
+				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()));
+	}
+	if (merge.takeID || merge.takeAddress) {
+		if (GetKadPort() == 0) {
+			SetKadPort(duplicate.GetKadPort());
+		}
+		wxString taken = "address";
+		if (merge.takeID) {
+			taken = merge.takeAddress ? "ID and address" : "ID";
+		}
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Kad buddy %s taken from a duplicate of source %s, buddy now %s") % taken %
+				GetUserHash().Encode() %
+				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()));
+	}
+}
+
+bool CUpDownClient::SwitchToBuddyCandidate()
+{
+	if (!ShouldSwitchToBuddyCandidate(
+		    m_nBuddyCandidateIP != 0, m_bBuddyCallbackUnanswered, GetRemoteQueueRank() != 0)) {
+		return false;
+	}
+	AddDebugLogLineN(logKadBuddy,
+		CFormat("Kad buddy %s of source %s did not pass on a callback, switching to %s") %
+			Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) % GetUserHash().Encode() %
+			Uint32_16toStringIP_Port(m_nBuddyCandidateIP, m_nBuddyCandidatePort));
+	SetBuddyIP(m_nBuddyCandidateIP);
+	SetBuddyPort(m_nBuddyCandidatePort);
+	m_nBuddyCandidateIP = 0;
+	m_nBuddyCandidatePort = 0;
+	// The first try through the new buddy keeps the current buddy ID layout (#1835).
+	m_bBuddyCallbackUnanswered = false;
+	return true;
 }
 
 // Kad added by me

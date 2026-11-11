@@ -710,6 +710,9 @@ SAVED_FILEBUF=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.file_buffer_bytes')
 SAVED_ULQUEUE=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_upload_queue_client_count')
 SAVED_CONN5=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.max_new_connections_per_5_seconds')
 SAVED_KADSEARCH=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.kad_max_concurrent_source_search_count')
+SAVED_SERVEDBUDDIES=$(printf '%s' "$CURL_BODY" | jq -r '.advanced.kad_max_served_buddies')
+_assert_json_eq '.advanced.kad_max_served_buddies_supported' true \
+	'advanced.kad_max_served_buddies_supported is true on a current daemon'
 SAVED_MAXUL=$(printf '%s' "$CURL_BODY" | jq -r '.connection.max_upload_kibibytes_per_second')
 SAVED_MAXDL=$(printf '%s' "$CURL_BODY" | jq -r '.connection.max_download_kibibytes_per_second')
 
@@ -738,6 +741,8 @@ for CASE in \
 	"advanced kad_max_concurrent_source_search_count 100000 34464_uint16_wrap" \
 	"advanced kad_max_concurrent_source_search_count 1 5_clamped_at_next_start" \
 	"advanced source_reask_minutes 7 15_clamped_at_next_start" \
+	"advanced kad_max_served_buddies 3 below_minimum" \
+	"advanced kad_max_served_buddies 17 above_maximum" \
 	; do
 	set -- $CASE
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -802,6 +807,8 @@ for CASE in \
 	"advanced source_reask_minutes 60" \
 	"advanced kad_source_reask_minutes 30" \
 	"advanced kad_source_reask_minutes 60" \
+	"advanced kad_max_served_buddies 4" \
+	"advanced kad_max_served_buddies 16" \
 	; do
 	set -- $CASE
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -831,7 +838,7 @@ _assert_json_eq '.connection.max_download_kibibytes_per_second' 9 \
 # This has to stay the last mutation in the file.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
-	-d "{\"advanced\":{\"kad_source_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK,\"write_buffer_limit_mebibytes\":$SAVED_WRITEBUDGET,\"file_buffer_bytes\":$SAVED_FILEBUF,\"max_upload_queue_client_count\":$SAVED_ULQUEUE,\"max_new_connections_per_5_seconds\":$SAVED_CONN5,\"kad_max_concurrent_source_search_count\":$SAVED_KADSEARCH},\"connection\":{\"tcp_port\":$SAVED_TCPPORT,\"max_upload_kibibytes_per_second\":$SAVED_MAXUL,\"max_download_kibibytes_per_second\":$SAVED_MAXDL},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
+	-d "{\"advanced\":{\"kad_source_reask_minutes\":$SAVED_KADREASK,\"source_reask_minutes\":$SAVED_SRCREASK,\"write_buffer_limit_mebibytes\":$SAVED_WRITEBUDGET,\"file_buffer_bytes\":$SAVED_FILEBUF,\"max_upload_queue_client_count\":$SAVED_ULQUEUE,\"max_new_connections_per_5_seconds\":$SAVED_CONN5,\"kad_max_concurrent_source_search_count\":$SAVED_KADSEARCH,\"kad_max_served_buddies\":$SAVED_SERVEDBUDDIES},\"connection\":{\"tcp_port\":$SAVED_TCPPORT,\"max_upload_kibibytes_per_second\":$SAVED_MAXUL,\"max_download_kibibytes_per_second\":$SAVED_MAXDL},\"online_signature\":{\"update_frequency_seconds\":$SAVED_OSFREQ}}" \
 	"$API/preferences"
 _assert_status 200 "PATCH (restore advanced + connection + onlinesig) -> 200"
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
@@ -842,6 +849,8 @@ _assert_json_eq '.advanced.kad_source_reask_minutes' "$SAVED_KADREASK" \
 	'restored advanced.kad_source_reask_minutes to the saved value'
 _assert_json_eq '.advanced.source_reask_minutes' "$SAVED_SRCREASK" \
 	'restored advanced.source_reask_minutes to the saved value'
+_assert_json_eq '.advanced.kad_max_served_buddies' "$SAVED_SERVEDBUDDIES" \
+	'restored advanced.kad_max_served_buddies to the saved value'
 _assert_json_eq '.online_signature.update_frequency_seconds' "$SAVED_OSFREQ" \
 	'restored online_signature.update_frequency_seconds to the saved value'
 

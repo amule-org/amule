@@ -1601,6 +1601,9 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		serving.requests.expired = get(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EXPIRED);
 		serving.requests.superseded = get(EC_TAG_KAD_BUDDY_SERVING_OFFERS_SUPERSEDED);
 		serving.requests.duplicate = get(EC_TAG_KAD_BUDDY_SERVING_OFFERS_DUPLICATE);
+		serving.requests.evicted = get(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EVICTED);
+		serving.requests.refused_same_ip = get(EC_TAG_KAD_BUDDY_SERVING_REFUSED_SAME_IP);
+		serving.requests.natt = get(EC_TAG_KAD_BUDDY_SERVING_REQUESTS_NATT);
 		serving.buddies.started = get(EC_TAG_KAD_BUDDY_SERVING_STARTED);
 		serving.buddies.released_extra = get(EC_TAG_KAD_BUDDY_SERVING_RELEASED_EXTRA);
 		serving.buddies.ended = get(EC_TAG_KAD_BUDDY_SERVING_ENDED);
@@ -1617,9 +1620,12 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		serving.reasks.no_buddy = get(EC_TAG_KAD_BUDDY_SERVING_REASKS_NO_BUDDY);
 		serving.reasks.mismatched = get(EC_TAG_KAD_BUDDY_SERVING_REASKS_MISMATCHED);
 		serving.reasks.malformed = get(EC_TAG_KAD_BUDDY_SERVING_REASKS_MALFORMED);
+		serving.callbacks.over_budget = get(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_OVER_BUDGET);
+		serving.reasks.over_budget = get(EC_TAG_KAD_BUDDY_SERVING_REASKS_OVER_BUDGET);
 		serving.peak_relayed_bytes_per_minute = get(EC_TAG_KAD_BUDDY_SERVING_RELAY_BYTES_PEAK);
 		KadBuddyOwnSnapshot &own = out.buddy_own;
 		own.search_count = get(EC_TAG_KAD_BUDDY_OWN_SEARCHES);
+		own.held_search_count = get(EC_TAG_KAD_BUDDY_OWN_SEARCHES_HELD);
 		own.needed_seconds = get(EC_TAG_KAD_BUDDY_OWN_NEEDED_SECONDS);
 		own.missing_seconds = get(EC_TAG_KAD_BUDDY_OWN_MISSING_SECONDS);
 		own.connected_seconds = get(EC_TAG_KAD_BUDDY_OWN_SECONDS);
@@ -3073,6 +3079,8 @@ void ParsePreferencesFromPacket(
 	// A previous connection's value must not imply support on an older daemon.
 	out_prefs.advanced.write_buffer_limit_supported = false;
 	out_prefs.advanced.write_buffer_limit_mebibytes = 0;
+	out_prefs.advanced.kad_max_served_buddies_supported = false;
+	out_prefs.advanced.kad_max_served_buddies = 0;
 	out_prefs.advanced.debug_categories_supported = false;
 	out_prefs.advanced.verbose_logging_logfile_only = false;
 	out_prefs.advanced.debug_categories.clear();

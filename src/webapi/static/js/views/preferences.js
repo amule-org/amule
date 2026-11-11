@@ -318,6 +318,8 @@ const TABS = [
       { key: "max_new_connections_per_5_seconds", type: "int", min: 0, max: 65535 },
       { key: "kad_max_concurrent_source_search_count", type: "int", min: 5, max: 50 },
       { key: "kad_source_reask_minutes", type: "int", min: 30, max: 60 },
+      { key: "kad_max_served_buddies_supported", type: "bool", hidden: true },
+      { key: "kad_max_served_buddies", type: "int", min: 4, max: 16, titleKey: "prefs_field_advanced_kad_max_served_buddies_help", gatedBy: "kad_max_served_buddies_supported" },
       { key: "source_reask_minutes", type: "int", min: 15, max: 60 },
       { key: "write_buffer_limit_supported", type: "bool", hidden: true },
       { key: "write_buffer_limit_mebibytes", type: "int", min: 1, max: 1024, titleKey: "prefs_field_advanced_write_buffer_limit_mebibytes_help", gatedBy: "write_buffer_limit_supported" },

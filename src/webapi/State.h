@@ -626,10 +626,13 @@ struct KadBuddyServingSnapshot
 		std::uint64_t refused_firewalled = 0;
 		std::uint64_t refused_full = 0;
 		std::uint64_t refused_conflict = 0;
+		std::uint64_t refused_same_ip = 0;
 		std::uint64_t rate_limited = 0;
+		std::uint64_t natt = 0;
 		std::uint64_t expired = 0;
 		std::uint64_t superseded = 0;
 		std::uint64_t duplicate = 0;
+		std::uint64_t evicted = 0;
 	} requests;
 	struct
 	{
@@ -645,6 +648,7 @@ struct KadBuddyServingSnapshot
 		std::uint64_t no_buddy = 0;
 		std::uint64_t mismatched = 0;
 		std::uint64_t rate_limited = 0;
+		std::uint64_t over_budget = 0;
 		std::uint64_t peak_requests_per_minute = 0;
 	} callbacks;
 	struct
@@ -654,6 +658,7 @@ struct KadBuddyServingSnapshot
 		std::uint64_t no_buddy = 0;
 		std::uint64_t mismatched = 0;
 		std::uint64_t malformed = 0;
+		std::uint64_t over_budget = 0;
 	} reasks;
 	std::uint64_t peak_relayed_bytes_per_minute = 0;
 };
@@ -661,6 +666,7 @@ struct KadBuddyServingSnapshot
 struct KadBuddyOwnSnapshot
 {
 	std::uint64_t search_count = 0;
+	std::uint64_t held_search_count = 0;
 	std::uint64_t needed_seconds = 0;
 	std::uint64_t missing_seconds = 0;
 	std::uint64_t connected_seconds = 0;
@@ -1308,6 +1314,8 @@ struct PreferencesSnapshot
 		std::uint32_t server_keepalive_timeout_minutes = 0;
 		std::uint32_t kad_max_concurrent_source_search_count = 0;
 		std::uint32_t kad_source_reask_minutes = 0;
+		std::uint32_t kad_max_served_buddies = 0;
+		bool kad_max_served_buddies_supported = false;
 		std::uint32_t source_reask_minutes = 0;
 	} advanced;
 
