@@ -584,6 +584,30 @@ inline bool IsSameHostAddress(const CNetworkAddress &known,
 	return sameNative64(known, other) || sameNative64(advertisedIPv6, other);
 }
 
+//! What a hello says about the client object it arrived on.
+enum class EHelloIdentity
+{
+	//! Nothing to decide here: the usual hash checks apply, including the hash-change ban.
+	Usual,
+	//! The client's own hash answered on a route no hello had proved: that route is proven now.
+	Proves,
+	//! Another hash answered on such a route: another host, not a hash change.
+	OtherHost,
+};
+
+/**
+ * A route that came from a source record, not from a hello, can lead to another host: a stale or
+ * forged fallback address, or an advertised IPv6 a record named. A different hash there is that
+ * host's own, so it must not be banned as a hash change, nor take over this client.
+ */
+inline EHelloIdentity CheckHelloIdentity(bool routeUnproven, bool hadHash, bool sameHash)
+{
+	if (!routeUnproven || !hadHash) {
+		return EHelloIdentity::Usual;
+	}
+	return sameHash ? EHelloIdentity::Proves : EHelloIdentity::OtherHost;
+}
+
 } // namespace PeerAddressing
 
 #endif // PEERADDRESSING_H

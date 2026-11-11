@@ -874,6 +874,9 @@ public:
 	//! address no hello came from. An IPv6 hello keeps an IPv4 identity it does not prove.
 	CNetworkAddress GetTrackingAddress() const;
 	bool IsIdentityFromFallback() const { return m_identityFromFallback; }
+	//! The contact in flight uses a route no hello has proved: a fallback, or an advertised IPv6
+	//! taken from a record.
+	bool IsContactUnproven() const;
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
 	/* Role: we serve this buddy, or it serves us */
@@ -1275,6 +1278,10 @@ private:
 	std::vector<CDeadSourceKey> m_formerDeadSourceKeys;
 	// The IPv4 identity came from a fallback and no hello came from it yet.
 	bool m_identityFromFallback = false;
+	// The route in use is a fallback, and no hello has come over it yet.
+	bool m_routeFromFallback = false;
+	// The advertised IPv6 came from a source record, not from the peer's own hello.
+	bool m_modIPv6FromRecord = false;
 	CSourceRouteChainStart m_chainStart;
 
 	EKadState m_nKadState;
@@ -1332,6 +1339,13 @@ private:
 #ifdef __DEBUG__
 	wxString connection_reason;
 #endif
+};
+
+//! Thrown by a hello that another host sent on an unproven route: the connection ends, and the
+//! route counts as failed, without the error state that drops the source.
+struct CHelloFromOtherHost
+{
+	wxString reason;
 };
 
 #define MAKE_CLIENT_VERSION(mjr, min, upd) \

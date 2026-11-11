@@ -940,3 +940,31 @@ TEST(PeerAddressing, AnUnprovenIdentityIsNeverCharged)
 	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), ipv4, true).IsAbsent());
 	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), ipv4, false) == ipv4);
 }
+
+TEST(PeerAddressing, AnotherHashOnAnUnprovenRouteIsAnotherHost)
+{
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(true, true, false) ==
+		    PeerAddressing::EHelloIdentity::OtherHost);
+}
+
+TEST(PeerAddressing, TheOwnHashOnAnUnprovenRouteProvesIt)
+{
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(true, true, true) ==
+		    PeerAddressing::EHelloIdentity::Proves);
+}
+
+TEST(PeerAddressing, AnotherHashOnAProvenRouteKeepsTheHashChangeCheck)
+{
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(false, true, false) ==
+		    PeerAddressing::EHelloIdentity::Usual);
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(false, true, true) ==
+		    PeerAddressing::EHelloIdentity::Usual);
+}
+
+TEST(PeerAddressing, NoEarlierHashChangesNothing)
+{
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(true, false, false) ==
+		    PeerAddressing::EHelloIdentity::Usual);
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(false, false, false) ==
+		    PeerAddressing::EHelloIdentity::Usual);
+}

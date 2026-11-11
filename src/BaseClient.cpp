@@ -538,6 +538,24 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	uint32 dwEmuleTags = 0;
 
 	CMD4Hash hash = data.ReadHash();
+	switch (PeerAddressing::CheckHelloIdentity(
+		IsContactUnproven(), HasValidHash(), hash == GetUserHash())) {
+	case PeerAddressing::EHelloIdentity::OtherHost:
+		AddDebugLogLineN(logClient,
+			CFormat("Another host (hash %s) answered unproven route to source %s at %s") %
+				hash.Encode() % GetUserHash().Encode() %
+				(m_socket != nullptr ? m_socket->GetPeerAddress().ToWxString()
+						     : wxString("?")));
+		throw CHelloFromOtherHost{ "Another host answered an unproven route" };
+	case PeerAddressing::EHelloIdentity::Proves:
+		m_routeFromFallback = false;
+		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
+			m_modIPv6FromRecord = false;
+		}
+		break;
+	case PeerAddressing::EHelloIdentity::Usual:
+		break;
+	}
 	SetUserHash(hash);
 	SetUserIDHybrid(data.ReadUInt32());
 	uint16 nUserPort = data.ReadUInt16(); // hmm clientport is sent twice - why?
@@ -736,6 +754,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 					CNetworkAddress::FromIPv6Bytes(temptag.GetHash().GetHash()))) {
 				md4cpy(m_modIPv6, temptag.GetHash().GetHash());
 				m_hasModIPv6 = true;
+				m_modIPv6FromRecord = false;
 			}
 			break;
 
@@ -2321,6 +2340,7 @@ bool CUpDownClient::UseSourceFallback(ESourceFallback fallback, ESourceRoute fai
 	m_failedSourceRoutes = FailedAfterFallback(fallback, m_failedSourceRoutes);
 	// Unproven until a hello comes from it: the hash tracking uses the socket address meanwhile.
 	m_identityFromFallback = fallback == ESourceFallback::LastResortIPv4;
+	m_routeFromFallback = true;
 	if (NextSourceRouteNow() == ESourceRoute::None) {
 		return false;
 	}
@@ -2354,6 +2374,11 @@ SStoredSourceRoute StoredRouteOf(const CUpDownClient &client)
 	return route;
 }
 } // namespace
+
+bool CUpDownClient::IsContactUnproven() const
+{
+	return m_routeFromFallback || (m_dialingIPv6 && m_preserveIdentityOnHello && m_modIPv6FromRecord);
+}
 
 CNetworkAddress CUpDownClient::GetTrackingAddress() const
 {
@@ -2434,6 +2459,7 @@ bool CUpDownClient::RestoreChainStart()
 		return false;
 	}
 	ApplyRoutes(start->routes);
+	m_routeFromFallback = false;
 	m_formerDeadSourceKeys.erase(
 		m_formerDeadSourceKeys.begin() + static_cast<std::ptrdiff_t>(start->formerKeys),
 		m_formerDeadSourceKeys.end());
@@ -2856,6 +2882,7 @@ void CUpDownClient::ConnectionEstablished()
 	m_dialingIPv6 = false;
 	m_preparedDialAddress = CNetworkAddress::Absent();
 	m_dialledIPv6Address = CNetworkAddress::Absent();
+	m_routeFromFallback = false;
 	m_sourceRoute = ESourceRoute::None;
 	m_failedSourceRoutes = 0;
 	m_refreshedSourceRoutes = 0;
@@ -4142,6 +4169,7 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 	// The advertised IPv6 outlives the chain, so the routes it started from decide it.
 	if (startTakesAdvertisedIPv6.value_or(merge.takeAdvertisedIPv6)) {
 		UpdateModIPv6(incoming);
+		m_modIPv6FromRecord = true;
 		taken += " IPv6";
 	} else if (merge.takeLastResortIPv6) {
 		taken += " last-resort IPv6";
