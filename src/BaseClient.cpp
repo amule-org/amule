@@ -547,7 +547,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 			advertised.address = m_dialledIPv6Address;
 			advertised.tcpPort = GetUserPort();
 			advertised.kadPort = GetKadPort();
-			m_otherHostKeys.push_back(advertised.DeadKey());
+			AddOtherHostKey(m_otherHostKeys, advertised.DeadKey());
 		} else {
 			NoteOtherHostOnRoute();
 		}
@@ -2387,7 +2387,7 @@ SStoredSourceRoute StoredRouteOf(const CUpDownClient &client)
 
 void CUpDownClient::NoteOtherHostOnRoute()
 {
-	m_otherHostKeys.push_back(CurrentStoredRoute().DeadKey());
+	AddOtherHostKey(m_otherHostKeys, CurrentStoredRoute().DeadKey());
 }
 
 CNetworkAddress CUpDownClient::GetTrackingAddress() const

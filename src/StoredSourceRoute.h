@@ -98,6 +98,14 @@ inline std::vector<CDeadSourceKey> DeadSourceKeysFor(const SStoredSourceRoute &c
 	return keys;
 }
 
+//! Adds a key where another host answered, once: the same host can answer again.
+inline void AddOtherHostKey(std::vector<CDeadSourceKey> &keys, const CDeadSourceKey &key)
+{
+	if (std::find(keys.begin(), keys.end(), key) == keys.end()) {
+		keys.push_back(key);
+	}
+}
+
 //! The routes of a client that a route chain changes.
 struct SSourceRoutes
 {

@@ -214,6 +214,22 @@ TEST(CDeadSourceKey, ARouteWhereAnotherHostAnsweredIsNotDead)
 		keysLeft[0].Matches(RecordKey(0x1236, CNetworkAddress::Absent(), 4662, kServer, 4661, 0)));
 }
 
+TEST(CDeadSourceKey, AnOtherHostKeyIsStoredOnce)
+{
+	std::vector<CDeadSourceKey> keys;
+	const CDeadSourceKey first = RecordKey(kHighID, CNetworkAddress::Absent(), 4662, 0, 0, 4672);
+	AddOtherHostKey(keys, first);
+	ASSERT_EQUALS(1u, keys.size());
+	AddOtherHostKey(keys, RecordKey(kHighID, CNetworkAddress::Absent(), 4662, 0, 0, 4672));
+	ASSERT_EQUALS(1u, keys.size());
+
+	// Same ID and TCP port, another Kad port: it Matches the stored key but is not equal to it.
+	const CDeadSourceKey otherKad = RecordKey(kHighID, CNetworkAddress::Absent(), 4662, 0, 0, 4673);
+	ASSERT_TRUE(otherKad.Matches(first));
+	AddOtherHostKey(keys, otherKad);
+	ASSERT_EQUALS(2u, keys.size());
+}
+
 TEST(CDeadSourceKey, ADeadSourceIsKeyedUnderEveryRoute)
 {
 	SStoredSourceRoute current;
