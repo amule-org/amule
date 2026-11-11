@@ -2246,12 +2246,34 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 	if (m_sourceRoute == ESourceRoute::KadBuddy && SwitchToBuddyCandidate()) {
 		return true;
 	}
+	if ((m_refreshedSourceRoutes & SourceRouteBit(m_sourceRoute)) != 0) {
+		m_refreshedSourceRoutes &= ~SourceRouteBit(m_sourceRoute);
+		AddDebugLogLineN(logClient,
+			CFormat("Contact route %s to source %s failed on data our server has replaced, "
+				"trying it again") %
+				SourceRouteName(m_sourceRoute) % GetUserHash().Encode());
+		return true;
+	}
 	m_failedSourceRoutes |= SourceRouteBit(m_sourceRoute);
 	const CNetworkAddress &user = GetUserAddress();
 	const bool nativeIPv6 = user.IsIPv6() && !user.IsIPv4Mapped();
 	const bool dialFailed = (m_failedSourceRoutes & SourceRouteBit(ESourceRoute::Dial)) != 0;
 	const ESourceRoute next =
 		NextSourceRoute(SourceRouteFacts(HasLowID() && (!nativeIPv6 || dialFailed)));
+	if (next == ESourceRoute::None && m_serverCandidateID != 0) {
+		m_formerDeadSourceKeys.push_back(DeadSourceKeys().front());
+		SetUserIDHybrid(m_serverCandidateID);
+		SetServerIP(m_serverCandidateIP);
+		SetServerPort(m_serverCandidatePort);
+		m_serverCandidateID = 0;
+		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::ServerCallback);
+		AddDebugLogLineN(logClient,
+			CFormat("Contact route %s to source %s failed, trying its fallback server route, "
+				"LowID %u on %s") %
+				SourceRouteName(m_sourceRoute) % GetUserHash().Encode() % GetUserIDHybrid() %
+				Uint32_16toStringIP_Port(GetServerIP(), GetServerPort()));
+		return true;
+	}
 	if (next == ESourceRoute::None) {
 		const SRouteFamilySwitch familySwitch = DecideRouteFamilySwitch(m_lastResortIPv4 != 0,
 			m_lastResortIPv6.IsPresent(),
@@ -2260,7 +2282,7 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 		if (!familySwitch.toIPv4 && !familySwitch.toIPv6) {
 			return false;
 		}
-		m_formerDeadSourceKey = DeadSourceKeys().front();
+		m_formerDeadSourceKeys.push_back(DeadSourceKeys().front());
 		// As if the copy of the other family had arrived first. A hello moves the identity back.
 		if (familySwitch.toIPv4) {
 			SetUserIDHybrid(m_lastResortIPv4ID);
@@ -2699,6 +2721,7 @@ void CUpDownClient::ConnectionEstablished()
 	m_dialledIPv6Address = CNetworkAddress::Absent();
 	m_sourceRoute = ESourceRoute::None;
 	m_failedSourceRoutes = 0;
+	m_refreshedSourceRoutes = 0;
 
 #ifdef __DEBUG__
 	if (!connection_reason.IsEmpty()) {
@@ -3922,9 +3945,16 @@ std::vector<CDeadSourceKey> CUpDownClient::DeadSourceKeys() const
 			GetKadPort());
 	}
 #endif
-	if (m_formerDeadSourceKey) {
-		keys.push_back(*m_formerDeadSourceKey);
+	if (m_serverCandidateID != 0) {
+		keys.emplace_back(CProtocolPeerIdentity::FromServerScopedLowID(m_serverCandidateID,
+					  CNetworkAddress::FromIPv4NetworkOrder(m_serverCandidateIP),
+					  m_serverCandidatePort),
+			m_serverCandidateID,
+			GetUserPort(),
+			m_serverCandidateIP,
+			GetKadPort());
 	}
+	keys.insert(keys.end(), m_formerDeadSourceKeys.begin(), m_formerDeadSourceKeys.end());
 	return keys;
 }
 
@@ -3947,6 +3977,17 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 				       duplicate.GetConnectIP() != 0 && duplicate.GetKadPort() != 0;
 	facts.incomingHighIDIPv4 = !duplicate.HasLowID() && duplicate.GetConnectIP() != 0;
 	facts.existingHasLastResortIPv4 = m_lastResortIPv4 != 0;
+	facts.existingHasServerCandidate = m_serverCandidateID != 0;
+	// A connected client proved its route with a hello, which outranks any source list.
+	facts.incomingTrusted =
+		!IsConnected() && duplicate.GetSourceFrom() == SF_LOCAL_SERVER &&
+		theApp->serverconnect != nullptr &&
+		theApp->serverconnect->IsLocalServer(duplicate.GetServerIP(), duplicate.GetServerPort());
+	facts.sameServerRoute = GetUserIDHybrid() == duplicate.GetUserIDHybrid() &&
+				GetServerIP() == duplicate.GetServerIP() &&
+				GetServerPort() == duplicate.GetServerPort();
+	facts.sameHighID = !HasLowID() && GetConnectIP() == duplicate.GetConnectIP() &&
+			   GetUserPort() == duplicate.GetUserPort();
 #ifdef ENABLE_IPV6
 	const CNetworkAddress &incoming = duplicate.GetUserAddress();
 	facts.existingHasAdvertisedIPv6 = HasModIPv6();
@@ -3956,12 +3997,39 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 	const SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
 
 	wxString taken;
+	if (merge.demoteHighIDToLastResort) {
+		m_lastResortIPv4 = GetConnectIP();
+		m_lastResortIPv4Port = GetUserPort();
+		m_lastResortIPv4KadPort = GetKadPort();
+		m_lastResortIPv4ID = GetUserIDHybrid();
+		m_lastResortIPv4DirectCallback = SupportsDirectUDPCallback();
+		taken += " server LowID in place of the HighID, now its last-resort IPv4,";
+	}
 	if (merge.takeServerRoute) {
 		SetUserIDHybrid(duplicate.GetUserIDHybrid());
 		SetServerIP(duplicate.GetServerIP());
 		SetServerPort(duplicate.GetServerPort());
 		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::ServerCallback);
+		if (m_sourceRoute == ESourceRoute::ServerCallback) {
+			m_refreshedSourceRoutes |= SourceRouteBit(ESourceRoute::ServerCallback);
+		}
 		taken += " server callback";
+	}
+	if (merge.storeServerCandidate) {
+		m_serverCandidateID = duplicate.GetUserIDHybrid();
+		m_serverCandidateIP = duplicate.GetServerIP();
+		m_serverCandidatePort = duplicate.GetServerPort();
+		taken += " fallback server route";
+	}
+	if (merge.replaceWithHighID) {
+		SetUserIDHybrid(duplicate.GetUserIDHybrid());
+		SetIP(duplicate.GetConnectIP());
+		SetUserPort(duplicate.GetUserPort());
+		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::Dial);
+		if (m_sourceRoute == ESourceRoute::Dial) {
+			m_refreshedSourceRoutes |= SourceRouteBit(ESourceRoute::Dial);
+		}
+		taken += " HighID address from our server";
 	}
 	if (merge.takeLastResortIPv4) {
 		m_lastResortIPv4 = duplicate.GetConnectIP();

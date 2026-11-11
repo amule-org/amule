@@ -51,7 +51,6 @@
 #include "PeerCapabilities.h" // Needed for CPeerCapabilities
 #include "ProtocolPeerIdentity.h"
 #include "DeadSourceKey.h" // Needed for CDeadSourceKey
-#include <optional>
 #include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
@@ -1241,6 +1240,9 @@ private:
 	// The route of the contact in flight, and the routes that failed since the last hello.
 	ESourceRoute m_sourceRoute{};
 	unsigned m_failedSourceRoutes = 0;
+	// Routes our server gave new data for during an attempt: that attempt's failure says nothing
+	// about the new data.
+	unsigned m_refreshedSourceRoutes = 0;
 	CNetworkAddress m_lastResortIPv6;
 	// The IPv4 route of a HighID or Kad type 6 copy, for a copy that cannot use it yet.
 	uint32 m_lastResortIPv4 = 0;
@@ -1248,8 +1250,12 @@ private:
 	uint16 m_lastResortIPv4KadPort = 0;
 	uint32 m_lastResortIPv4ID = 0;
 	bool m_lastResortIPv4DirectCallback = false;
-	// The identity a family switch left behind.
-	std::optional<CDeadSourceKey> m_formerDeadSourceKey;
+	// A different server route from a source we do not trust to replace the one we have.
+	uint32 m_serverCandidateID = 0;
+	uint32 m_serverCandidateIP = 0;
+	uint16 m_serverCandidatePort = 0;
+	// The identities a switch to another route left behind.
+	std::vector<CDeadSourceKey> m_formerDeadSourceKeys;
 
 	EKadState m_nKadState;
 

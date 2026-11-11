@@ -127,17 +127,30 @@ struct SSourceRouteMergeFacts
 	bool existingHasAdvertisedIPv6 = false;
 	bool existingHasLastResortIPv6 = false;
 	bool existingHasLastResortIPv4 = false;
+	bool existingHasServerCandidate = false;
 	// The duplicate: a LowID from a server, a Kad type 6 result, an IPv6 source.
 	bool incomingServerLowID = false;
 	bool incomingDirectCallback = false;
 	bool incomingRoutableIPv6 = false;
 	// A HighID with a usable IPv4 address.
 	bool incomingHighIDIPv4 = false;
+	// The duplicate came from the server we are connected to, which knows the source's current ID.
+	bool incomingTrusted = false;
+	// The duplicate carries the LowID and server, or the HighID address and port, the kept copy has.
+	bool sameServerRoute = false;
+	bool sameHighID = false;
 };
 
 struct SSourceRouteMerge
 {
+	// Taken where the kept copy has no server route, and replacing a different one from our server.
 	bool takeServerRoute = false;
+	// A different server route from anywhere else, tried once every other route has failed.
+	bool storeServerCandidate = false;
+	// Our server says a HighID is now a LowID: its address waits as the last-resort IPv4.
+	bool demoteHighIDToLastResort = false;
+	// Our server says the source is a HighID at this address now.
+	bool replaceWithHighID = false;
 	bool takeDirectCallback = false;
 	// Dialled before the IPv4 address, as one a peer advertised in its hello.
 	bool takeAdvertisedIPv6 = false;
@@ -150,9 +163,13 @@ struct SSourceRouteMerge
 };
 
 /**
- * Which contact routes a duplicate copy of a known source hands to the copy we keep, beside its
- * Kad buddy (KadBuddyMergePolicy.h). Only what the kept copy lacks is taken, and nothing that
- * contradicts it: a different IPv4 address or server stays with the copy we keep.
+ * What a duplicate copy of a known source changes in the copy we keep, beside its Kad buddy
+ * (KadBuddyMergePolicy.h).
+ *
+ * A route the kept copy lacks is taken. A route it has with a different value is replaced only
+ * when the duplicate came from the server we are connected to: the server assigned the LowID and
+ * tested the HighID. From anywhere else a different value is a fallback, so an old or forged entry
+ * cannot replace a route that still works.
  *
  * A kept IPv6-only client takes a server route, which it uses once its IPv6 dial fails. An IPv4
  * address is kept apart as a last resort rather than taken as its identity: a hello over the IPv6
@@ -161,16 +178,29 @@ struct SSourceRouteMerge
 inline SSourceRouteMerge DecideSourceRouteMerge(const SSourceRouteMergeFacts &facts)
 {
 	SSourceRouteMerge merge;
-	merge.takeServerRoute =
-		facts.incomingServerLowID && facts.existingKadPlaceholderID && !facts.existingHasServer;
+	if (facts.incomingServerLowID && !facts.sameServerRoute) {
+		const bool keptHighID = !facts.existingLowID && !facts.existingNativeIPv6;
+		if (!keptHighID && !facts.existingHasServer) {
+			merge.takeServerRoute = true;
+		} else if (facts.incomingTrusted) {
+			merge.takeServerRoute = true;
+			merge.demoteHighIDToLastResort = keptHighID && !facts.existingHasLastResortIPv4;
+		} else {
+			merge.storeServerCandidate = !facts.existingHasServerCandidate;
+		}
+	}
+	if (facts.incomingHighIDIPv4 && !facts.sameHighID) {
+		if (facts.incomingTrusted && !facts.existingNativeIPv6) {
+			merge.replaceWithHighID = true;
+		} else {
+			merge.takeLastResortIPv4 = !facts.existingHasLastResortIPv4;
+		}
+	}
 	if (facts.existingNativeIPv6) {
-		merge.takeLastResortIPv4 = (facts.incomingHighIDIPv4 || facts.incomingDirectCallback) &&
-					   !facts.existingHasLastResortIPv4;
+		merge.takeLastResortIPv4 = merge.takeLastResortIPv4 ||
+					   (facts.incomingDirectCallback && !facts.existingHasLastResortIPv4);
 		return merge;
 	}
-	// A LowID without an IPv4 address dials a HighID copy once its callback routes have failed.
-	merge.takeLastResortIPv4 = facts.incomingHighIDIPv4 && facts.existingLowID &&
-				   !facts.existingHasIPv4 && !facts.existingHasLastResortIPv4;
 	merge.takeDirectCallback = facts.incomingDirectCallback && facts.existingLowID &&
 				   !facts.existingDirectCallback &&
 				   (!facts.existingHasIPv4 || facts.sameIPv4);

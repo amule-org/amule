@@ -155,14 +155,85 @@ TEST(SourceRoutePolicy, KadClientTakesTheServerRoute)
 	ASSERT_TRUE(DecideSourceRouteMerge(KadClientMeetsServerCopy()).takeServerRoute);
 }
 
-TEST(SourceRoutePolicy, KnownServerIsKept)
+TEST(SourceRoutePolicy, OtherServerRouteIsAFallback)
 {
 	SSourceRouteMergeFacts facts = KadClientMeetsServerCopy();
 	facts.existingHasServer = true;
-	ASSERT_FALSE(DecideSourceRouteMerge(facts).takeServerRoute);
-	facts = KadClientMeetsServerCopy();
-	facts.existingKadPlaceholderID = false;
-	ASSERT_FALSE(DecideSourceRouteMerge(facts).takeServerRoute);
+	SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+	ASSERT_FALSE(merge.takeServerRoute);
+	ASSERT_TRUE(merge.storeServerCandidate);
+	facts.existingHasServerCandidate = true;
+	ASSERT_FALSE(DecideSourceRouteMerge(facts).storeServerCandidate);
+	facts.sameServerRoute = true;
+	facts.existingHasServerCandidate = false;
+	merge = DecideSourceRouteMerge(facts);
+	ASSERT_FALSE(merge.takeServerRoute || merge.storeServerCandidate);
+}
+
+TEST(SourceRoutePolicy, OurServerReplacesTheServerRoute)
+{
+	SSourceRouteMergeFacts facts = KadClientMeetsServerCopy();
+	facts.existingHasServer = true;
+	facts.incomingTrusted = true;
+	SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+	ASSERT_TRUE(merge.takeServerRoute);
+	ASSERT_FALSE(merge.storeServerCandidate);
+	ASSERT_FALSE(merge.demoteHighIDToLastResort);
+}
+
+TEST(SourceRoutePolicy, OurServerTurnsAHighIDIntoALowID)
+{
+	SSourceRouteMergeFacts facts;
+	facts.existingHasIPv4 = true;
+	facts.incomingServerLowID = true;
+	facts.incomingTrusted = true;
+	SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+	ASSERT_TRUE(merge.takeServerRoute);
+	ASSERT_TRUE(merge.demoteHighIDToLastResort);
+	// A HighID hears a LowID claim from anywhere else as a fallback only.
+	facts.incomingTrusted = false;
+	merge = DecideSourceRouteMerge(facts);
+	ASSERT_FALSE(merge.takeServerRoute);
+	ASSERT_TRUE(merge.storeServerCandidate);
+}
+
+TEST(SourceRoutePolicy, OurServerReplacesTheHighIDAddress)
+{
+	SSourceRouteMergeFacts facts;
+	facts.existingHasIPv4 = true;
+	facts.incomingHighIDIPv4 = true;
+	facts.incomingTrusted = true;
+	SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+	ASSERT_TRUE(merge.replaceWithHighID);
+	ASSERT_FALSE(merge.takeLastResortIPv4);
+	facts.incomingTrusted = false;
+	merge = DecideSourceRouteMerge(facts);
+	ASSERT_FALSE(merge.replaceWithHighID);
+	ASSERT_TRUE(merge.takeLastResortIPv4);
+	facts.sameHighID = true;
+	merge = DecideSourceRouteMerge(facts);
+	ASSERT_FALSE(merge.replaceWithHighID || merge.takeLastResortIPv4);
+}
+
+TEST(SourceRoutePolicy, OurServerTurnsALowIDIntoAHighID)
+{
+	SSourceRouteMergeFacts facts = KadClientMeetsServerCopy();
+	facts.incomingServerLowID = false;
+	facts.incomingHighIDIPv4 = true;
+	facts.incomingTrusted = true;
+	ASSERT_TRUE(DecideSourceRouteMerge(facts).replaceWithHighID);
+}
+
+TEST(SourceRoutePolicy, IPv6OnlyClientKeepsItsIdentityEvenForOurServer)
+{
+	SSourceRouteMergeFacts facts;
+	facts.existingNativeIPv6 = true;
+	facts.existingLowID = true;
+	facts.incomingHighIDIPv4 = true;
+	facts.incomingTrusted = true;
+	const SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+	ASSERT_FALSE(merge.replaceWithHighID);
+	ASSERT_TRUE(merge.takeLastResortIPv4);
 }
 
 TEST(SourceRoutePolicy, LowIDTakesADirectCallback)
@@ -256,11 +327,7 @@ TEST(SourceRoutePolicy, AddresslessLowIDKeepsAHighIDCopyAsALastResort)
 	facts.incomingServerLowID = false;
 	facts.incomingHighIDIPv4 = true;
 	ASSERT_TRUE(DecideSourceRouteMerge(facts).takeLastResortIPv4);
-	// A LowID with an IPv4 address, or a HighID, has a dial of its own.
-	facts.existingHasIPv4 = true;
-	ASSERT_FALSE(DecideSourceRouteMerge(facts).takeLastResortIPv4);
-	facts.existingHasIPv4 = false;
-	facts.existingLowID = false;
+	facts.existingHasLastResortIPv4 = true;
 	ASSERT_FALSE(DecideSourceRouteMerge(facts).takeLastResortIPv4);
 }
 
