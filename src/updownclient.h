@@ -866,6 +866,7 @@ public:
 	//! Where a user hash is tracked: the identity, or the socket while the identity is a fallback
 	//! address no hello came from. An IPv6 hello keeps an IPv4 identity it does not prove.
 	CNetworkAddress GetTrackingAddress() const;
+	bool IsIdentityFromFallback() const { return m_identityFromFallback; }
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
 	/* Role: we serve this buddy, or it serves us */

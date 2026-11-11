@@ -3754,7 +3754,8 @@ CNetworkAddress CUpDownClient::GetConductAddress() const
 {
 	return PeerAddressing::ConductAddress(
 		m_socket != nullptr ? m_socket->GetPeerAddress() : CNetworkAddress::Absent(),
-		GetUserAddress());
+		GetUserAddress(),
+		m_identityFromFallback);
 }
 
 bool CUpDownClient::HasPeerIPv4() const

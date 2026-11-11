@@ -927,6 +927,16 @@ TEST(PeerAddressing, AnUnprovenIdentityTracksTheHashAtTheSocket)
 	const CNetworkAddress ipv6 = CNetworkAddress::FromString("2001:4860:4860::8888");
 	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, ipv6, true) == ipv6);
 	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, ipv6, false) == ipv4);
-	// Without a socket nothing better is known.
-	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, CNetworkAddress::Absent(), true) == ipv4);
+	// Without a socket nothing a hello proved is known, so nothing is tracked.
+	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, CNetworkAddress::Absent(), true).IsAbsent());
+	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, CNetworkAddress::Absent(), false) == ipv4);
+}
+
+TEST(PeerAddressing, AnUnprovenIdentityIsNeverCharged)
+{
+	const CNetworkAddress ipv4 = CNetworkAddress::FromIPv4NetworkOrder(0x0D0C0B0Au);
+	const CNetworkAddress ipv6 = CNetworkAddress::FromString("2001:4860:4860::8888");
+	ASSERT_TRUE(PeerAddressing::ConductAddress(ipv6, ipv4, true) == ipv6);
+	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), ipv4, true).IsAbsent());
+	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), ipv4, false) == ipv4);
 }

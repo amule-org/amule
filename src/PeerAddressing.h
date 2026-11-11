@@ -524,7 +524,11 @@ inline bool KeepsIPv4IdentityOnIPv6Hello(const CNetworkAddress &known, const CNe
 inline CNetworkAddress TrackingAddress(
 	const CNetworkAddress &userAddress, const CNetworkAddress &socketPeer, bool identityUnproven)
 {
-	return identityUnproven && socketPeer.IsPresent() ? IndexKey(socketPeer) : userAddress;
+	if (!identityUnproven) {
+		return userAddress;
+	}
+	// Without a socket nothing is known that a hello proved: nothing is tracked.
+	return socketPeer.IsPresent() ? IndexKey(socketPeer) : CNetworkAddress::Absent();
 }
 
 /**
@@ -533,9 +537,14 @@ inline CNetworkAddress TrackingAddress(
  * While connected it is the live socket's peer, because an IPv6 hello can keep an IPv4 identity it
  * never proved, and the blame must not reach the host behind that identity.
  */
-inline CNetworkAddress ConductAddress(const CNetworkAddress &socketPeer, const CNetworkAddress &userAddress)
+inline CNetworkAddress ConductAddress(
+	const CNetworkAddress &socketPeer, const CNetworkAddress &userAddress, bool identityUnproven = false)
 {
-	return socketPeer.IsPresent() ? IndexKey(socketPeer) : userAddress;
+	if (socketPeer.IsPresent()) {
+		return IndexKey(socketPeer);
+	}
+	// A ban must not land on an address no hello came from (TrackingAddress()).
+	return identityUnproven ? CNetworkAddress::Absent() : userAddress;
 }
 
 //! Whether one address is IPv4 (or mapped) and the other native IPv6.
