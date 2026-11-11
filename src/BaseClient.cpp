@@ -3838,6 +3838,12 @@ ExtSX::SRecord CUpDownClient::GetExtendedSourceRecord(const ExtSX::SAddressFilte
 	if (HasValidHash()) {
 		record.userHash = GetUserHash();
 	}
+	// Only the address the source advertised itself; one from a third party is not passed on.
+	if (HasModIPv6()) {
+		ExtSX::Bytes16 ipv6;
+		std::copy_n(GetModIPv6(), ipv6.size(), ipv6.begin());
+		record.ipv6 = ipv6;
+	}
 	const uint8_t connectOptions =
 		GetCryptOptions() | (SupportsDirectUDPCallback() ? uint8_t{ 0x08 } : uint8_t{ 0 });
 	if (connectOptions != 0) {

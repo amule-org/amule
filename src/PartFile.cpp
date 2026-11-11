@@ -3501,10 +3501,35 @@ void CPartFile::AddExtendedSources(CMemFile &sources, unsigned nSourceFrom)
 	}
 }
 
+namespace
+{
+// Kad's rule for a buddy-less firewalled source, applied to an ExtSX LowID.
+bool ShouldDialExtendedSourceOverIPv6([[maybe_unused]] const ExtSX::SRecord &record)
+{
+#ifdef ENABLE_IPV6
+	if (!ExtSX::HasOnlyIPv6Route(record)) {
+		return false;
+	}
+	const CNetworkAddress address = CNetworkAddress::FromIPv6Bytes(record.ipv6->data());
+	SKadSourceFacts app;
+	app.ourHelloID = theApp->GetID();
+	app.ipv6Built = true;
+	app.familyPermitted = AddressFamilyPolicy::Permits(address);
+	app.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+	// IsFiltered() counts every match in the statistics, so it only sees an address we would dial.
+	return ExtSX::ShouldDialIPv6(record, app) && !theApp->ipfilter->IsFiltered(address);
+#else
+	return false;
+#endif
+}
+} // namespace
+
 bool CPartFile::AddExtendedSource(const ExtSX::SRecord &record, unsigned nSourceFrom)
 {
 	const uint32 ed2kID = wxUINT32_SWAP_ALWAYS(record.hybridID);
 	const bool lowID = IsLowID(record.hybridID);
+	// A HighID keeps its IPv4 dial, and a third party's IPv6 for it is not kept.
+	const bool dialIPv6 = lowID && ShouldDialExtendedSourceOverIPv6(record);
 	if (!lowID) {
 		if (!IsGoodIP(ed2kID, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(ed2kID) ||
 			theApp->clientlist->IsBannedClient(ed2kID)) {
@@ -3513,7 +3538,7 @@ bool CPartFile::AddExtendedSource(const ExtSX::SRecord &record, unsigned nSource
 					Uint32toStringIP(ed2kID) % OriginToText(nSourceFrom));
 			return true;
 		}
-	} else if (!ExtSX::HasLowIDRoute(record)) {
+	} else if (!dialIPv6 && !ExtSX::HasLowIDRoute(record)) {
 		AddDebugLogLineN(logPartFile,
 			CFormat("Ignored LowID source %u received via %s - no route to it") %
 				record.hybridID % OriginToText(nSourceFrom));
@@ -3526,8 +3551,8 @@ bool CPartFile::AddExtendedSource(const ExtSX::SRecord &record, unsigned nSource
 		    record.serverPort,
 		    nullptr,
 		    false,
-		    lowID && ShouldKeepNatTraversalSource(
-				     record.serverIP, record.serverPort, SF_SOURCE_EXCHANGE))) {
+		    lowID && (dialIPv6 || ShouldKeepNatTraversalSource(
+						  record.serverIP, record.serverPort, SF_SOURCE_EXCHANGE)))) {
 		return true;
 	}
 	if (thePrefs::GetMaxSourcePerFile() <= GetSourceCount()) {
@@ -3556,6 +3581,10 @@ bool CPartFile::AddExtendedSource(const ExtSX::SRecord &record, unsigned nSource
 		if (record.buddyID) {
 			newsource->SetBuddyID(record.buddyID->data());
 		}
+	}
+	if (dialIPv6) {
+		// As for a Kad result: the contact address only, never the hello's advertised IPv6.
+		newsource->SetUserAddress(CNetworkAddress::FromIPv6Bytes(record.ipv6->data()));
 	}
 	newsource->SetSourceFrom((ESourceFrom)nSourceFrom);
 

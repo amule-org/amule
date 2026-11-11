@@ -482,3 +482,127 @@ TEST(ExtSourceExchange, ExtendedNeedsSX2)
 	ASSERT_FALSE(classic.IsExtended());
 	ASSERT_EQUALS(uint8{ 1 }, classic.GetVersion());
 }
+
+namespace
+{
+// 2001:4860:4860::8888: globally routable, unlike the documentation prefix above.
+const ExtSX::Bytes16 RoutableIPv6 = {
+	0x20, 0x01, 0x48, 0x60, 0x48, 0x60, 0, 0, 0, 0, 0, 0, 0, 0, 0x88, 0x88
+};
+
+ExtSX::SRecord IPv6OnlyLowID()
+{
+	ExtSX::SRecord record;
+	record.hybridID = 1;
+	record.port = 4662;
+	record.ipv6 = RoutableIPv6;
+	return record;
+}
+
+// Every switch an IPv6 dial needs is on, as in KadSourceAddressPolicyTest.
+SKadSourceFacts DialableApp(uint32 ourHelloID)
+{
+	SKadSourceFacts app;
+	app.ourHelloID = ourHelloID;
+	app.ipv6Built = true;
+	app.familyPermitted = true;
+	return app;
+}
+} // namespace
+
+// 0xAE is one of eMuleAI's tags, so the source's own IPv6 goes to every ExtSX peer.
+TEST(ExtSourceExchange, SendsTheSourcesIPv6ToEveryExtendedPeer)
+{
+	for (const uint32 id : { uint32{ 0x123456 }, uint32{ 0x01020304 } }) {
+		ExtSX::SRecord record;
+		record.hybridID = id;
+		record.ipv6 = RoutableIPv6;
+		ExtSX::SanitizeRoute(record, RejectOnly(0));
+		ASSERT_TRUE(Contains(TagIDs(Encode(record, false)), CT_MOD_IP_V6));
+		ASSERT_TRUE(Contains(TagIDs(Encode(record, true)), CT_MOD_IP_V6));
+		ASSERT_TRUE(Decode(Encode(record, false)).ipv6 == RoutableIPv6);
+	}
+}
+
+TEST(ExtSourceExchange, IPv6IsTheOnlyRouteOnlyWithoutAnyOther)
+{
+	ASSERT_TRUE(ExtSX::HasOnlyIPv6Route(IPv6OnlyLowID()));
+
+	ExtSX::SRecord record = IPv6OnlyLowID();
+	record.ipv6.reset();
+	ASSERT_FALSE(ExtSX::HasOnlyIPv6Route(record));
+
+	record = IPv6OnlyLowID();
+	record.hybridID = 0x01020304;
+	ASSERT_FALSE(ExtSX::HasOnlyIPv6Route(record));
+
+	record = IPv6OnlyLowID();
+	record.buddyID = WireBuddyID;
+	ASSERT_FALSE(ExtSX::HasOnlyIPv6Route(record));
+
+	// A buddy endpoint is a buddy, as TAG_SERVERIP/TAG_SERVERPORT are in a Kad result.
+	record = IPv6OnlyLowID();
+	record.buddyIP = 0x08070605;
+	record.buddyPort = 4672;
+	ASSERT_FALSE(ExtSX::HasOnlyIPv6Route(record));
+
+	record = IPv6OnlyLowID();
+	record.serverIP = 0x0C0B0A09;
+	record.serverPort = 4661;
+	ASSERT_FALSE(ExtSX::HasOnlyIPv6Route(record));
+
+	record = IPv6OnlyLowID();
+	record.callbackIP = 0x04030201;
+	record.kadPort = 4672;
+	record.userHash = CMD4Hash(WireBuddyID.data());
+	record.connectOptions = 0x08;
+	ASSERT_FALSE(ExtSX::HasOnlyIPv6Route(record));
+}
+
+// Kad's buddy-less rule: any nonzero ID of ours, a routable address, and a dial the build and the
+// settings allow.
+TEST(ExtSourceExchange, DialsAnIPv6OnlyLowIDLikeABuddylessKadSource)
+{
+	for (const uint32 ourHelloID : { 1u, 0x00ABCDEFu, 0xC0A80001u }) {
+		ASSERT_TRUE(ExtSX::ShouldDialIPv6(IPv6OnlyLowID(), DialableApp(ourHelloID)));
+	}
+	ASSERT_FALSE(ExtSX::ShouldDialIPv6(IPv6OnlyLowID(), DialableApp(0)));
+
+	SKadSourceFacts app = DialableApp(1);
+	app.ipv6Built = false;
+	ASSERT_FALSE(ExtSX::ShouldDialIPv6(IPv6OnlyLowID(), app));
+	app = DialableApp(1);
+	app.familyPermitted = false;
+	ASSERT_FALSE(ExtSX::ShouldDialIPv6(IPv6OnlyLowID(), app));
+	app = DialableApp(1);
+	app.proxyEnabled = true;
+	ASSERT_FALSE(ExtSX::ShouldDialIPv6(IPv6OnlyLowID(), app));
+
+	// A third party's address must name a peer across hosts.
+	ExtSX::SRecord record = IPv6OnlyLowID();
+	ExtSX::Bytes16 loopback{};
+	loopback[15] = 1;
+	record.ipv6 = loopback;
+	ASSERT_FALSE(ExtSX::ShouldDialIPv6(record, DialableApp(1)));
+	record.ipv6 = PublicIPv6; // documentation prefix
+	ASSERT_FALSE(ExtSX::ShouldDialIPv6(record, DialableApp(1)));
+}
+
+// A HighID keeps its IPv4 dial; its IPv6 is never dialled.
+TEST(ExtSourceExchange, HighIDIsNotDialledOverIPv6)
+{
+	ExtSX::SRecord record = IPv6OnlyLowID();
+	record.hybridID = 0x01020304;
+	ASSERT_FALSE(ExtSX::ShouldDialIPv6(record, DialableApp(1)));
+}
+
+// What emule-qt sends for a LowID with an open IPv6 and nothing else.
+TEST(ExtSourceExchange, DecodesAnEmuleQtIPv6OnlyLowID)
+{
+	std::vector<uint8> wire = { 0x00, 0x00, 0x00, 0x01, 0x36, 0x12, 1 };
+	AppendHashTag(wire, CT_MOD_IP_V6, RoutableIPv6);
+	ExtSX::SRecord record = Decode(wire);
+	ExtSX::SanitizeRoute(record, RejectOnly(0));
+	ASSERT_FALSE(ExtSX::HasLowIDRoute(record));
+	ASSERT_TRUE(ExtSX::ShouldDialIPv6(record, DialableApp(1)));
+}

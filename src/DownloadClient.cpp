@@ -54,7 +54,8 @@
 
 namespace
 {
-// eMuleAI answers a higher version with its legacy SX tail after the extended tags.
+// eMuleAI clamps only the version byte to 1. Asked for more, it puts the SX v2-v4 tail (user hash,
+// connect options) after each record's tags and writes HighIDs unswapped from v3.
 uint8 SourceExchange2RequestVersion(const CPeerCapabilities &peer)
 {
 	return UsesExtendedSourceExchange(peer) ? SOURCEEXCHANGEEXT_VERSION : SOURCEEXCHANGE2_VERSION;

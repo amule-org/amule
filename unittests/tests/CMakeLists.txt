@@ -742,6 +742,7 @@ add_executable (PacketTest
 	ServerUDPPacketQueueTest.cpp
 	${CMAKE_SOURCE_DIR}/src/Packet.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
 )
@@ -750,7 +751,7 @@ target_include_directories (PacketTest PRIVATE
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/src/include
 )
-target_link_libraries (PacketTest muleunit ZLIB::ZLIB)
+target_link_libraries (PacketTest muleunit ZLIB::ZLIB ${Boost_LIBRARIES})
 add_test (NAME PacketTest COMMAND PacketTest)
 
 add_executable (UploadPacketBuilderTest

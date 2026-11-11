@@ -26,6 +26,7 @@
 #define EXTSOURCEEXCHANGE_H
 
 #include "KadBuddyIdLayout.h"
+#include "KadSourceAddressPolicy.h" // Needed for ShouldContactKadSourceOverIPv6
 #include "MD4Hash.h"
 #include "NetworkFunctions.h" // Needed for IsLowID
 #include "SafeFile.h"
@@ -295,6 +296,25 @@ inline bool HasLowIDRoute(const SRecord &record)
 {
 	return (record.serverIP != 0 && record.serverPort != 0) || record.buddyID ||
 	       HasDirectCallback(record);
+}
+
+//! A LowID that names no route but its own IPv6, like a Kad result without a buddy.
+inline bool HasOnlyIPv6Route(const SRecord &record)
+{
+	return IsLowID(record.hybridID) && record.ipv6 && record.buddyPort == 0 && !HasLowIDRoute(record);
+}
+
+//! The Kad rule for a source firewalled on IPv4 with no buddy: dial the IPv6 it names. `app`
+//! carries our hello ID and what the build, the settings and the address family allow.
+inline bool ShouldDialIPv6(const SRecord &record, SKadSourceFacts app)
+{
+	if (!HasOnlyIPv6Route(record)) {
+		return false;
+	}
+	app.sourceType = 3;
+	app.publishedIPv6 = CNetworkAddress::FromIPv6Bytes(record.ipv6->data());
+	app.carriesBuddy = false;
+	return ShouldContactKadSourceOverIPv6(app);
 }
 
 //! Whether to send one of our LowID sources. The record must already be sanitized and carry
