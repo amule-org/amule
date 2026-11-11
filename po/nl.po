@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-10 17:52+0000\n"
+"PO-Revision-Date: 2026-11-11 08:12+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -5759,6 +5759,14 @@ msgid "Concurrent Kad source lookups"
 msgstr "Gelijktijdige Kad-bronopzoekingen"
 
 #: src/muuli_wdr.cpp
+msgid "Firewalled Kad nodes served as buddy"
+msgstr "Gefirewallde Kad-nodes bediend als buddy"
+
+#: src/muuli_wdr.cpp
+msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
+msgstr "Voor hoe veel gefirewallde Kad-nodes deze node terugroepen heeft doorgegeven. Elke node bevat een verbinding zodat maximaal een tiende van de verbindingslimiet wordt bediend."
+
+#: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
 msgstr "Interval voor Kad-bron-herzoekopdracht (minuten)"
 
@@ -8798,6 +8806,11 @@ msgstr "Buddy-Verzoeken Geweigerd: %llu"
 
 #: src/Statistics.cpp
 #, c-format
+msgid "Buddy Requests From NAT-T Nodes: %llu"
+msgstr "Buddy-Verzoeken Van NAT-T-Nodes: %llu"
+
+#: src/Statistics.cpp
+#, c-format
 msgid "Buddy Requests Over the Rate Limit: %llu"
 msgstr "Verzoeken voor Buddy Boven de Snelheidslimiet: %llu"
 
@@ -8854,6 +8867,11 @@ msgstr "Drukste Minuut aan Een Buddy: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Searches: %llu"
+msgstr "Buddy Zoekopdrachten: %llu"
+
+#: src/Statistics.cpp
+#, fuzzy, c-format
+msgid "Buddy Searches Held for a Shared File: %llu"
 msgstr "Buddy Zoekopdrachten: %llu"
 
 #: src/Statistics.cpp
@@ -9097,45 +9115,41 @@ msgstr "Verbannen Kad-adressen: %s"
 
 #: src/Statistics.cpp
 msgid "Kad receiver keys"
-msgstr ""
+msgstr "Kad-ontvanger sleutels"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Keyword publish"
-msgstr "Sleutelwoord: %s"
+msgstr "Sleutelwoord publiceren"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Source publish"
-msgstr "Bronnen"
+msgstr "Bron publiceren"
 
 #: src/Statistics.cpp
 msgid "Notes publish"
-msgstr ""
+msgstr "Notities publiceren"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Firewall check"
-msgstr "UDP firewall controle"
+msgstr "Firewall controle"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Firewall check 2"
-msgstr "UDP firewall controle"
+msgstr "Firewall controle 2"
 
 #: src/Statistics.cpp
 msgid "Callback"
-msgstr ""
+msgstr "Terugroep"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Keys valid: %s"
-msgstr "Sleutelwoord: %s"
+msgstr "Sleutels geldig: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Keys missing: %s"
-msgstr ""
+msgstr "Ontbrekende sleutels: %s"
 
 #: src/Statistics.cpp
 #, c-format
