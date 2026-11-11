@@ -275,7 +275,7 @@ bool SameRoutes(const SSourceRoutes &a, const SSourceRoutes &b)
 {
 	return a.route == b.route && a.serverCandidate == b.serverCandidate &&
 	       a.lastResortIPv4 == b.lastResortIPv4 && a.lastResortIPv6 == b.lastResortIPv6 &&
-	       a.identityFromFallback == b.identityFromFallback;
+	       a.identityFromFallback == b.identityFromFallback && a.routeUnproven == b.routeUnproven;
 }
 } // namespace
 
@@ -558,4 +558,56 @@ TEST(CSourceRouteMerge, AChainOnAnIPv6FallbackReadsADotZeroRecordByItsStart)
 		MergeSourceRoutes(onFallback, ServerLowIDFacts(true), DotZeroServerRecord(), &start);
 	ASSERT_FALSE(merge.takeServerRoute);
 	ASSERT_TRUE(IPv6(7) == onFallback.route.address);
+}
+
+TEST(CSourceRouteMerge, AServerRouteFromAnotherChannelIsUnproven)
+{
+	// A Kad LowID: ID 1, no server.
+	SSourceRoutes known;
+	known.route.id = 1;
+	known.route.tcpPort = 4662;
+	SSourceRouteMergeFacts facts;
+	facts.incomingServerLowID = true;
+	const SSourceRouteMerge merge = MergeSourceRoutes(known, facts, ServerRoute(0x1235, kServer));
+	ASSERT_TRUE(merge.takeServerRoute);
+	ASSERT_TRUE(known.routeUnproven);
+}
+
+TEST(CSourceRouteMerge, ADirectCallbackFromAnotherChannelIsUnproven)
+{
+	SSourceRoutes known;
+	known.route = ServerRoute(0x1235, kServer);
+	SSourceRouteMergeFacts facts;
+	facts.incomingDirectCallback = true;
+	SStoredSourceRoute incoming;
+	incoming.id = 1;
+	incoming.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID);
+	incoming.kadPort = 4672;
+	const SSourceRouteMerge merge = MergeSourceRoutes(known, facts, incoming);
+	ASSERT_TRUE(merge.takeDirectCallback);
+	ASSERT_TRUE(known.routeUnproven);
+}
+
+TEST(CSourceRouteMerge, ARouteFromOurServerLeavesTheFlag)
+{
+	SSourceRoutes known;
+	known.route = ServerRoute(0x1235, kServer);
+	SSourceRouteMergeFacts facts = FromOurServer();
+	facts.incomingServerLowID = true;
+	const SSourceRouteMerge merge = MergeSourceRoutes(known, facts, ServerRoute(0x1236, kServer));
+	ASSERT_TRUE(merge.takeServerRoute);
+	ASSERT_FALSE(known.routeUnproven);
+
+	known.routeUnproven = true;
+	MergeSourceRoutes(known, facts, ServerRoute(0x1237, kServer));
+	ASSERT_TRUE(known.routeUnproven);
+}
+
+TEST(CSourceRouteChainStart, TheChainStartKeepsTheUnprovenFlag)
+{
+	CSourceRouteChainStart chain;
+	SSourceRoutes start = ChainStartRoutes();
+	start.routeUnproven = true;
+	chain.Save(start, 0);
+	ASSERT_TRUE(chain.Take()->routes.routeUnproven);
 }

@@ -538,8 +538,9 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	uint32 dwEmuleTags = 0;
 
 	CMD4Hash hash = data.ReadHash();
-	switch (PeerAddressing::CheckHelloIdentity(
-		IsContactUnproven(), HasValidHash(), hash == GetUserHash())) {
+	const bool routeUnproven = PeerAddressing::HelloRouteUnproven(
+		m_routeUnproven, inbound, m_dialingIPv6 && m_preserveIdentityOnHello && m_modIPv6FromRecord);
+	switch (PeerAddressing::CheckHelloIdentity(routeUnproven, HasValidHash(), hash == GetUserHash())) {
 	case PeerAddressing::EHelloIdentity::OtherHost:
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
 			SStoredSourceRoute advertised;
@@ -548,7 +549,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 			advertised.kadPort = GetKadPort();
 			m_otherHostKeys.push_back(advertised.DeadKey());
 		} else {
-			m_otherHostKeys.push_back(CurrentStoredRoute().DeadKey());
+			NoteOtherHostOnRoute();
 		}
 		AddDebugLogLineN(logClient,
 			CFormat("Another host (hash %s) answered unproven route to source %s at %s") %
@@ -557,7 +558,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 						     : wxString("?")));
 		throw CHelloFromOtherHost{ "Another host answered an unproven route" };
 	case PeerAddressing::EHelloIdentity::Proves:
-		m_routeFromFallback = false;
+		m_routeUnproven = false;
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
 			m_modIPv6FromRecord = false;
 		}
@@ -2349,7 +2350,7 @@ bool CUpDownClient::UseSourceFallback(ESourceFallback fallback, ESourceRoute fai
 	m_failedSourceRoutes = FailedAfterFallback(fallback, m_failedSourceRoutes);
 	// Unproven until a hello comes from it: the hash tracking uses the socket address meanwhile.
 	m_identityFromFallback = fallback == ESourceFallback::LastResortIPv4;
-	m_routeFromFallback = true;
+	m_routeUnproven = true;
 	if (NextSourceRouteNow() == ESourceRoute::None) {
 		return false;
 	}
@@ -2384,9 +2385,9 @@ SStoredSourceRoute StoredRouteOf(const CUpDownClient &client)
 }
 } // namespace
 
-bool CUpDownClient::IsContactUnproven() const
+void CUpDownClient::NoteOtherHostOnRoute()
 {
-	return m_routeFromFallback || (m_dialingIPv6 && m_preserveIdentityOnHello && m_modIPv6FromRecord);
+	m_otherHostKeys.push_back(CurrentStoredRoute().DeadKey());
 }
 
 CNetworkAddress CUpDownClient::GetTrackingAddress() const
@@ -2430,6 +2431,7 @@ SSourceRoutes CUpDownClient::CurrentRoutes() const
 	routes.lastResortIPv4 = m_lastResortIPv4;
 	routes.lastResortIPv6 = m_lastResortIPv6;
 	routes.identityFromFallback = m_identityFromFallback;
+	routes.routeUnproven = m_routeUnproven;
 	return routes;
 }
 
@@ -2454,6 +2456,7 @@ void CUpDownClient::ApplyRoutes(const SSourceRoutes &routes)
 	m_lastResortIPv4 = routes.lastResortIPv4;
 	m_lastResortIPv6 = routes.lastResortIPv6;
 	m_identityFromFallback = routes.identityFromFallback;
+	m_routeUnproven = routes.routeUnproven;
 }
 
 void CUpDownClient::SaveChainStart()
@@ -2468,7 +2471,6 @@ bool CUpDownClient::RestoreChainStart()
 		return false;
 	}
 	ApplyRoutes(start->routes);
-	m_routeFromFallback = false;
 	m_formerDeadSourceKeys.erase(
 		m_formerDeadSourceKeys.begin() + static_cast<std::ptrdiff_t>(start->formerKeys),
 		m_formerDeadSourceKeys.end());
@@ -2891,7 +2893,7 @@ void CUpDownClient::ConnectionEstablished()
 	m_dialingIPv6 = false;
 	m_preparedDialAddress = CNetworkAddress::Absent();
 	m_dialledIPv6Address = CNetworkAddress::Absent();
-	m_routeFromFallback = false;
+	m_routeUnproven = false;
 	m_sourceRoute = ESourceRoute::None;
 	m_failedSourceRoutes = 0;
 	m_refreshedSourceRoutes = 0;

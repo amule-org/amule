@@ -420,6 +420,22 @@ bool CClientList::AttachToAlreadyKnown(
 		return true;
 	}
 
+	// Decided before the attach changes anything: the known client's own data stays as it was, and
+	// its contact times out and moves on as when nobody answers.
+	if (found_client != nullptr && sender != nullptr &&
+		PeerAddressing::DecideHelloAttach(found_client->IsRouteUnproven(),
+			found_client->HasValidHash() && tocheck->HasValidHash(),
+			found_client->GetUserHash() == tocheck->GetUserHash()) ==
+			PeerAddressing::EHelloAttach::KeepApart) {
+		AddDebugLogLineN(logClient,
+			CFormat("Another host (hash %s) answered unproven route to source %s at %s: kept "
+				"apart") %
+				tocheck->GetUserHash().Encode() % found_client->GetUserHash().Encode() %
+				tocheck->GetFullIP());
+		found_client->NoteOtherHostOnRoute();
+		return false;
+	}
+
 	if (found_client != NULL) {
 #ifdef AMULE_UTP_TRANSPORT
 		if (outgoingSynCandidate != nullptr && outgoingSynCandidate != found_client &&

@@ -106,6 +106,9 @@ struct SSourceRoutes
 	SStoredSourceRoute lastResortIPv4;
 	SStoredSourceRoute lastResortIPv6;
 	bool identityFromFallback = false;
+	// The route in use came from a record no hello has confirmed: a fallback, or a server route or
+	// direct callback taken from a copy that our server did not send.
+	bool routeUnproven = false;
 };
 
 /**
@@ -265,6 +268,9 @@ inline SSourceRouteMerge MergeSourceRoutes(SSourceRoutes &routes,
 	}
 	const SSourceRouteMerge merge = DecideSourceRouteMerge(WithRouteFacts(facts, routes, incoming));
 	ApplySourceRouteMerge(routes, merge, incoming);
+	if (!facts.incomingTrusted && (merge.takeServerRoute || merge.takeDirectCallback)) {
+		routes.routeUnproven = true;
+	}
 	return merge;
 }
 

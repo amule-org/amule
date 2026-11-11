@@ -608,6 +608,28 @@ inline EHelloIdentity CheckHelloIdentity(bool routeUnproven, bool hadHash, bool 
 	return sameHash ? EHelloIdentity::Proves : EHelloIdentity::OtherHost;
 }
 
+//! Whether a hello is checked against an unproven route. A record IPv6 counts only for the answer
+//! on our own dial to it: an incoming hello did not come over that dial.
+inline bool HelloRouteUnproven(bool routeUnproven, bool inbound, bool dialingRecordIPv6)
+{
+	return routeUnproven || (!inbound && dialingRecordIPv6);
+}
+
+//! Whether an incoming hello takes over the known client it matched by address or ID.
+enum class EHelloAttach
+{
+	Attach,
+	//! Another host answered the known client's unproven route: it stays a client of its own, and
+	//! the known client is left as it was.
+	KeepApart,
+};
+
+inline EHelloAttach DecideHelloAttach(bool knownRouteUnproven, bool bothHashesValid, bool sameHash)
+{
+	return knownRouteUnproven && bothHashesValid && !sameHash ? EHelloAttach::KeepApart
+								  : EHelloAttach::Attach;
+}
+
 } // namespace PeerAddressing
 
 #endif // PEERADDRESSING_H

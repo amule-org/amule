@@ -968,3 +968,32 @@ TEST(PeerAddressing, NoEarlierHashChangesNothing)
 	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(false, false, false) ==
 		    PeerAddressing::EHelloIdentity::Usual);
 }
+
+TEST(PeerAddressing, AnotherHashOnAnUnprovenRouteStaysApart)
+{
+	ASSERT_TRUE(PeerAddressing::DecideHelloAttach(true, true, false) ==
+		    PeerAddressing::EHelloAttach::KeepApart);
+}
+
+TEST(PeerAddressing, TheOwnHashOnAnUnprovenRouteAttaches)
+{
+	ASSERT_TRUE(
+		PeerAddressing::DecideHelloAttach(true, true, true) == PeerAddressing::EHelloAttach::Attach);
+}
+
+TEST(PeerAddressing, AnotherHashOnAProvenRouteAttaches)
+{
+	// The hello then goes through the usual hash-change ban.
+	ASSERT_TRUE(PeerAddressing::DecideHelloAttach(false, true, false) ==
+		    PeerAddressing::EHelloAttach::Attach);
+	ASSERT_TRUE(PeerAddressing::DecideHelloAttach(true, false, false) ==
+		    PeerAddressing::EHelloAttach::Attach);
+}
+
+TEST(PeerAddressing, ARecordIPv6CountsOnlyForTheAnswerOnOurDial)
+{
+	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(false, false, true));
+	ASSERT_FALSE(PeerAddressing::HelloRouteUnproven(false, true, true));
+	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(true, true, false));
+	ASSERT_FALSE(PeerAddressing::HelloRouteUnproven(false, false, false));
+}

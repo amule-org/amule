@@ -874,9 +874,10 @@ public:
 	//! address no hello came from. An IPv6 hello keeps an IPv4 identity it does not prove.
 	CNetworkAddress GetTrackingAddress() const;
 	bool IsIdentityFromFallback() const { return m_identityFromFallback; }
-	//! The contact in flight uses a route no hello has proved: a fallback, or an advertised IPv6
-	//! taken from a record.
-	bool IsContactUnproven() const;
+	//! The route in use came from a record no hello has proved (SSourceRoutes::routeUnproven).
+	bool IsRouteUnproven() const { return m_routeUnproven; }
+	//! Another host answered the route in use: it is alive, so it is never recorded as dead.
+	void NoteOtherHostOnRoute();
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
 	/* Role: we serve this buddy, or it serves us */
@@ -1280,8 +1281,8 @@ private:
 	std::vector<CDeadSourceKey> m_otherHostKeys;
 	// The IPv4 identity came from a fallback and no hello came from it yet.
 	bool m_identityFromFallback = false;
-	// The route in use is a fallback, and no hello has come over it yet.
-	bool m_routeFromFallback = false;
+	// SSourceRoutes::routeUnproven of the route in use.
+	bool m_routeUnproven = false;
 	// The advertised IPv6 came from a source record, not from the peer's own hello.
 	bool m_modIPv6FromRecord = false;
 	CSourceRouteChainStart m_chainStart;
