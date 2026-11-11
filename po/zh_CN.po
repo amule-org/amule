@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-11 06:56+0000\n"
+"PO-Revision-Date: 2026-11-11 17:24+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -1415,7 +1415,7 @@ msgstr "已连接的 daemon 不支持 All 搜索类型。"
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
-msgstr "正在搜索好友进行 Low ID 连接"
+msgstr "正在搜索搭档进行 Low ID 连接"
 
 #: src/BaseClient.cpp
 #, c-format
@@ -3817,7 +3817,7 @@ msgstr "发布附注"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
 msgid "Find buddy"
-msgstr "寻找好友"
+msgstr "寻找搭档"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Find source"
@@ -5760,11 +5760,11 @@ msgstr "并发 Kad 源查找"
 
 #: src/muuli_wdr.cpp
 msgid "Firewalled Kad nodes served as buddy"
-msgstr ""
+msgstr "作为搭档提供的防火墙后面的 Kad 节点"
 
 #: src/muuli_wdr.cpp
 msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
-msgstr ""
+msgstr "这个节点为多少个防火墙后面的 Kad 节点传输回馈。每个这样的 Kad 节点持有一个链接，因此最多提供连接上限的 10%。"
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
@@ -7020,7 +7020,7 @@ msgstr "NAT穿透（uTP）"
 
 #: src/PeerCapabilities.h
 msgid "Buddy info pull"
-msgstr "好友信息拉取"
+msgstr "搭档信息拉取"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
@@ -8409,33 +8409,33 @@ msgstr "防火墙状态: "
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - TCP port open"
-msgstr "没有好友请求 - TCP 端口打开"
+msgstr "无需搭档 - TCP 端口打开"
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - UDP port open"
-msgstr "没有好友请求 - UDP 端口打开"
+msgstr "无需搭档 - UDP 端口打开"
 
 #: src/ServerWnd.cpp
 msgid "No buddy"
-msgstr "没有好友"
+msgstr "没有搭档"
 
 #: src/ServerWnd.cpp
 msgid "Connecting to buddy"
-msgstr "已连接至好友"
+msgstr "正连接至搭档"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Connected to buddy at %s"
-msgstr "连接到好友于 %s"
+msgstr "已连接至 %s 的搭档"
 
 #: src/ServerWnd.cpp
 msgid "Served buddies:"
-msgstr "提供过内容的好友："
+msgstr "Served buddies："
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "%u of %u"
-msgstr ""
+msgstr "%u 个，共 %u 个"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
@@ -8787,47 +8787,47 @@ msgstr "正在关闭 aMule"
 #: src/Statistics.cpp
 #, c-format
 msgid "Served Now: %llu"
-msgstr ""
+msgstr "立即提供：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests Received: %llu"
-msgstr ""
+msgstr "接收到的搭档请求：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Offers Sent: %llu"
-msgstr ""
+msgstr "已发送的搭档要约：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests Refused: %llu"
-msgstr ""
+msgstr "遭拒的搭档请求：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests From NAT-T Nodes: %llu"
-msgstr ""
+msgstr "来自 NAT-T 节点的搭档请求：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr ""
+msgstr "超出速率限制的搭档请求：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Unused Buddy Offers: %llu"
-msgstr ""
+msgstr "未使用的搭档要约：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddies Served: %llu"
-msgstr "提供内容的好友：%llu"
+msgstr "提供内容的搭档：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Served Buddies Timed Out: %llu"
-msgstr ""
+msgstr "已超时的 Served Buddies：%llu"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8837,87 +8837,87 @@ msgstr "提供时间：%s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Callbacks Relayed: %llu"
-msgstr ""
+msgstr "已传输的回馈：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Reasks Relayed: %llu"
-msgstr ""
+msgstr "已传输的 Reasks：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Data Relayed: %s"
-msgstr ""
+msgstr "已传输的数据：%s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Callbacks Dropped: %llu"
-msgstr ""
+msgstr "已丢弃的回馈：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Reasks Dropped: %llu"
-msgstr ""
+msgstr "已丢弃的 Reasks：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Busiest Minute to One Buddy: %s"
-msgstr ""
+msgstr "一个搭档最忙碌的分钟：%s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Searches: %llu"
-msgstr ""
+msgstr "搭档搜索：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Searches Held for a Shared File: %llu"
-msgstr ""
+msgstr "为一个共享文件进行的搭档搜索：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Requests Sent: %llu"
-msgstr ""
+msgstr "已发送的搭档请求：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddy Offers Received: %llu"
-msgstr ""
+msgstr "接收到的搭档要约：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Failed Buddy Connections: %llu"
-msgstr ""
+msgstr "失败的搭档连接：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddies Connected: %llu"
-msgstr "已连接的好友： %llu"
+msgstr "已连接的搭档： %llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Buddies Timed Out: %llu"
-msgstr ""
+msgstr "超时的搭档：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Time a Buddy Was Needed: %s"
-msgstr ""
+msgstr "搭档被需要的时间：%s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Time Without a Buddy: %s"
-msgstr ""
+msgstr "没有搭档的时间：%s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Callbacks Received: %llu"
-msgstr ""
+msgstr "接收到的回馈：%llu"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Reasks Received: %llu"
-msgstr ""
+msgstr "接收到的 Reasks：%llu"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9081,12 +9081,12 @@ msgstr "成功的服务器打洞：%s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Lugdunum Callbacks: %s"
-msgstr "Lugdunum 回调： %s"
+msgstr "Lugdunum 回馈： %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Successful Lugdunum Callbacks: %s"
-msgstr "成功的 Lugdunum 回调：%s"
+msgstr "成功的 Lugdunum 回馈：%s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9115,7 +9115,7 @@ msgstr "Kad 封禁地址：%s"
 
 #: src/Statistics.cpp
 msgid "Kad receiver keys"
-msgstr ""
+msgstr "Kad 接收程序密钥"
 
 #: src/Statistics.cpp
 msgid "Keyword publish"
@@ -9127,7 +9127,7 @@ msgstr "源发布"
 
 #: src/Statistics.cpp
 msgid "Notes publish"
-msgstr ""
+msgstr "附注发布"
 
 #: src/Statistics.cpp
 msgid "Firewall check"
@@ -9139,7 +9139,7 @@ msgstr "防火墙检查 2"
 
 #: src/Statistics.cpp
 msgid "Callback"
-msgstr ""
+msgstr "回馈"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9149,7 +9149,7 @@ msgstr "有效 Keys： %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Keys missing: %s"
-msgstr ""
+msgstr "缺失的密钥：%s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9218,7 +9218,7 @@ msgstr "平均文件大小：%s"
 
 #: src/Statistics.cpp
 msgid "Kad Buddies"
-msgstr "Kad 好友"
+msgstr "Kad 搭档"
 
 #: src/Statistics.cpp
 msgid "Serving Firewalled Nodes"
@@ -9226,7 +9226,7 @@ msgstr ""
 
 #: src/Statistics.cpp
 msgid "Our Own Buddy"
-msgstr ""
+msgstr "我们自己的搭档"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -9330,7 +9330,7 @@ msgstr "已连接的 daemon 不支持搜索管理。\n"
 
 #: src/TextClient.cpp
 msgid "A search ID from 'search list' is required.\n"
-msgstr ""
+msgstr "需要一个来自“搜索列表”的搜索 ID。\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9447,15 +9447,15 @@ msgstr "[part 文件]"
 
 #: src/TextClient.cpp
 msgid "No retained searches.\n"
-msgstr ""
+msgstr "没有已保留的搜索\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; availability is unknown.\n"
-msgstr ""
+msgstr "已处理 More-results 请求；可用性未知。\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; further requests remain possible.\n"
-msgstr ""
+msgstr "已处理 More-results；进一步的请求仍有可能。\n"
 
 #: src/TextClient.cpp
 msgid "No further results can be requested for this search.\n"
@@ -9463,7 +9463,7 @@ msgstr "这个搜索没有可请求的进一步结果。\n"
 
 #: src/TextClient.cpp
 msgid "Search stop request processed; retained results were not removed.\n"
-msgstr ""
+msgstr "已处理搜索停止请求；未删除已保留的结果。\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9780,7 +9780,7 @@ msgstr "执行 eD2k 和 Kad 搜索"
 
 #: src/TextClient.cpp
 msgid "List retained search IDs and queries."
-msgstr ""
+msgstr "列出已保留的搜索 ID 和查询。"
 
 #: src/TextClient.cpp
 msgid "Stop a search, keeping its results."
@@ -9788,7 +9788,7 @@ msgstr "停止搜索但保留其结果。"
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'."
-msgstr ""
+msgstr "需要一个来自“搜索列表”的搜索 ID。"
 
 #: src/TextClient.cpp
 msgid "Request more Kad search results."
@@ -9796,7 +9796,7 @@ msgstr "请求更多的 Kad 搜索结果。"
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
-msgstr ""
+msgstr "需要一个来自\"搜索列表”的搜索 ID。不保证进一步的结果。"
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."

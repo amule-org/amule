@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-11 08:12+0000\n"
+"PO-Revision-Date: 2026-11-11 17:24+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -8870,9 +8870,9 @@ msgid "Buddy Searches: %llu"
 msgstr "Buddy Zoekopdrachten: %llu"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Buddy Searches Held for a Shared File: %llu"
-msgstr "Buddy Zoekopdrachten: %llu"
+msgstr "Buddy Zoekopdrachten Vastgehouden voor een Gedeeld Bestand: %llu"
 
 #: src/Statistics.cpp
 #, c-format

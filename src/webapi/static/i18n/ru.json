@@ -1112,5 +1112,9 @@
   "stats_tree_kad_buddies_own_needed": "Время, когда требовался партнёр: %s",
   "stats_tree_kad_buddies_own_missing": "Время без партнёра: %s",
   "stats_tree_kad_buddies_own_callbacks": "Получено обратных вызовов: %llu",
-  "stats_tree_kad_buddies_own_reasks": "Получено повторных запросов: %llu"
+  "stats_tree_kad_buddies_own_reasks": "Получено повторных запросов: %llu",
+  "stats_tree_kad_buddies_requests_natt": "Запросов на партнёрство от узлов с NAT-T: %llu",
+  "stats_tree_kad_buddies_own_searches_held": "Поисков партнёров, удержанных для публикуемого файла: %llu",
+  "prefs_field_advanced_kad_max_served_buddies": "Узлы Kad за брандмауэром, обслуживаемые как партнёры",
+  "prefs_field_advanced_kad_max_served_buddies_help": "Сколько узлов Kad за брандмауэром этот узел обслуживает, передавая для них обратные вызовы. Каждый из них занимает соединение, поэтому обслуживается не более десятой части лимита соединений."
 }

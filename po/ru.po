@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-10 17:52+0000\n"
+"PO-Revision-Date: 2026-11-11 17:24+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -5801,11 +5801,11 @@ msgstr "Одновременные запросы источников Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Firewalled Kad nodes served as buddy"
-msgstr ""
+msgstr "Узлы Kad за брандмауэром, обслуживаемые как партнёры"
 
 #: src/muuli_wdr.cpp
 msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
-msgstr ""
+msgstr "Сколько узлов Kad за брандмауэром этот узел обслуживает, передавая для них обратные вызовы. Каждый из них занимает соединение, поэтому обслуживается не более десятой части лимита соединений."
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
@@ -6538,7 +6538,7 @@ msgstr "Принудительно использовать сжатие ZLIB"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Verbose Debug-Logging."
-msgstr "Записывать в журнал подробные сообщения отладчика."
+msgstr "Записывать в журнал подробные сообщения отладчика"
 
 #: src/muuli_wdr.cpp
 msgid "Only to Logfile"
@@ -8891,9 +8891,9 @@ msgid "Buddy Requests Refused: %llu"
 msgstr "Отклонено запросов на партнёрство: %llu"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Buddy Requests From NAT-T Nodes: %llu"
-msgstr "Отправлено запросов на партнёрство: %llu"
+msgstr "Запросов на партнёрство от узлов с NAT-T: %llu"
 
 #: src/Statistics.cpp
 #, c-format
@@ -8956,9 +8956,9 @@ msgid "Buddy Searches: %llu"
 msgstr "Поисков партнёров: %llu"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Buddy Searches Held for a Shared File: %llu"
-msgstr "Поисков партнёров: %llu"
+msgstr "Поисков партнёров, удержанных для публикуемого файла: %llu"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9202,45 +9202,41 @@ msgstr "Запрещённые Kad адреса: %s"
 
 #: src/Statistics.cpp
 msgid "Kad receiver keys"
-msgstr ""
+msgstr "Ключи получателя Kad"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Keyword publish"
-msgstr "Ключевое слово: %s"
+msgstr "Публикация по ключевому слову"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Source publish"
-msgstr "Источники"
+msgstr "Публикация источников"
 
 #: src/Statistics.cpp
 msgid "Notes publish"
-msgstr ""
+msgstr "Публикация заметок"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Firewall check"
-msgstr "Проверка UDP-фаервола"
+msgstr "Проверка брандмауэра"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Firewall check 2"
-msgstr "Проверка UDP-фаервола"
+msgstr "Проверка брандмауэра 2"
 
 #: src/Statistics.cpp
 msgid "Callback"
-msgstr ""
+msgstr "Обратный вызов"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Keys valid: %s"
-msgstr "Ключевое слово: %s"
+msgstr "Действительных ключей: %s"
 
 #: src/Statistics.cpp
 #, c-format
 msgid "Keys missing: %s"
-msgstr ""
+msgstr "Отсутствующих ключей: %s"
 
 #: src/Statistics.cpp
 #, c-format
