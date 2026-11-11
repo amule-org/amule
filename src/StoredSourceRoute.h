@@ -28,6 +28,7 @@
 #include "DeadSourceKey.h"
 #include "NetworkAddress.h"
 #include "NetworkFunctions.h" // Needed for IsLowID
+#include "SourceRoutePolicy.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -117,27 +118,18 @@ public:
 		}
 	}
 
-	//! A source list changed the routes from before to after during the chain. The saved start
-	//! takes each changed value, so the restore does not undo it.
-	void Carry(const SSourceRoutes &before, const SSourceRoutes &after)
+	//! The saved routes, while a chain runs.
+	std::optional<SSourceRoutes> Routes() const
 	{
-		if (!m_start) {
-			return;
+		return m_start ? std::optional<SSourceRoutes>(m_start->routes) : std::nullopt;
+	}
+
+	//! A source list changed the saved routes during the chain: the restore gives back these.
+	void Update(const SSourceRoutes &routes)
+	{
+		if (m_start) {
+			m_start->routes = routes;
 		}
-		SSourceRoutes &saved = m_start->routes;
-		CarryValue(before.route.id, after.route.id, saved.route.id);
-		CarryValue(before.route.address, after.route.address, saved.route.address);
-		CarryValue(before.route.serverIP, after.route.serverIP, saved.route.serverIP);
-		CarryValue(before.route.serverPort, after.route.serverPort, saved.route.serverPort);
-		CarryValue(before.route.tcpPort, after.route.tcpPort, saved.route.tcpPort);
-		CarryValue(before.route.kadPort, after.route.kadPort, saved.route.kadPort);
-		CarryValue(
-			before.route.directCallback, after.route.directCallback, saved.route.directCallback);
-		CarryValue(before.serverCandidate, after.serverCandidate, saved.serverCandidate);
-		CarryValue(before.lastResortIPv4, after.lastResortIPv4, saved.lastResortIPv4);
-		CarryValue(before.lastResortIPv6, after.lastResortIPv6, saved.lastResortIPv6);
-		CarryValue(
-			before.identityFromFallback, after.identityFromFallback, saved.identityFromFallback);
 	}
 
 	//! The saved start, which ends the chain.
@@ -151,14 +143,83 @@ public:
 	void Reset() { m_start.reset(); }
 
 private:
-	template <typename T> static void CarryValue(const T &before, const T &after, T &saved)
-	{
-		if (!(after == before)) {
-			saved = after;
-		}
-	}
-
 	std::optional<SStart> m_start;
 };
+
+//! Adds the facts about the kept copy's routes, and how they compare with the duplicate's route, to
+//! the facts the caller knows about the duplicate and the client.
+inline SSourceRouteMergeFacts WithRouteFacts(
+	SSourceRouteMergeFacts facts, const SSourceRoutes &existing, const SStoredSourceRoute &incoming)
+{
+	const SStoredSourceRoute &route = existing.route;
+	const std::uint32_t ipv4 = route.address.ToIPv4NetworkOrderOrZero();
+	const std::uint32_t incomingIPv4 = incoming.address.ToIPv4NetworkOrderOrZero();
+	facts.existingNativeIPv6 = route.address.IsIPv6() && !route.address.IsIPv4Mapped();
+	facts.existingKadPlaceholderID = route.id == 1;
+	facts.existingHasServer = route.serverIP != 0 && route.serverPort != 0;
+	facts.existingLowID = IsLowID(route.id);
+	facts.existingDirectCallback = route.directCallback;
+	facts.existingHasIPv4 = ipv4 != 0;
+	facts.sameIPv4 = ipv4 == incomingIPv4;
+	facts.existingHasLastResortIPv4 = existing.lastResortIPv4.Present();
+	facts.existingHasLastResortIPv6 = existing.lastResortIPv6.Present();
+	facts.existingHasServerCandidate = existing.serverCandidate.Present();
+	facts.sameServerRoute = route.id == incoming.id && route.serverIP == incoming.serverIP &&
+				route.serverPort == incoming.serverPort;
+	facts.sameHighID = !IsLowID(route.id) && ipv4 == incomingIPv4 && route.tcpPort == incoming.tcpPort;
+	return facts;
+}
+
+//! The server route part of a route: its ID, server and port.
+inline SStoredSourceRoute ServerRouteOf(const SStoredSourceRoute &route)
+{
+	SStoredSourceRoute server;
+	server.id = route.id;
+	server.serverIP = route.serverIP;
+	server.serverPort = route.serverPort;
+	server.tcpPort = route.tcpPort;
+	return server;
+}
+
+//! Writes what a merge takes from the duplicate's route into the kept copy's routes. An advertised
+//! IPv6 is the caller's: it is not one of these routes.
+inline void ApplySourceRouteMerge(
+	SSourceRoutes &routes, const SSourceRouteMerge &merge, const SStoredSourceRoute &incoming)
+{
+	SStoredSourceRoute &route = routes.route;
+	if (merge.keepOldHighIDAsLastResort) {
+		routes.lastResortIPv4 = route;
+	}
+	if (merge.keepOldServerRouteAsCandidate) {
+		routes.serverCandidate = ServerRouteOf(route);
+	}
+	if (merge.takeServerRoute) {
+		route.id = incoming.id;
+		route.serverIP = incoming.serverIP;
+		route.serverPort = incoming.serverPort;
+	}
+	if (merge.storeServerCandidate) {
+		routes.serverCandidate = ServerRouteOf(incoming);
+	}
+	if (merge.replaceWithHighID) {
+		route.id = incoming.id;
+		route.address = incoming.address;
+		route.tcpPort = incoming.tcpPort;
+		// Our server tested this address.
+		routes.identityFromFallback = false;
+	}
+	if (merge.takeLastResortIPv4) {
+		routes.lastResortIPv4 = incoming;
+	}
+	if (merge.takeDirectCallback) {
+		route.address = CNetworkAddress::FromIPv4NetworkOrderOrAbsent(
+			incoming.address.ToIPv4NetworkOrderOrZero());
+		route.kadPort = incoming.kadPort;
+		route.directCallback = true;
+	}
+	if (merge.takeLastResortIPv6 && !merge.takeAdvertisedIPv6) {
+		routes.lastResortIPv6 = incoming;
+	}
+}
 
 #endif // STORED_SOURCE_ROUTE_H

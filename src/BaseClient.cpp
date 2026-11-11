@@ -2399,6 +2399,29 @@ SSourceRoutes CUpDownClient::CurrentRoutes() const
 	return routes;
 }
 
+void CUpDownClient::ApplyRoutes(const SSourceRoutes &routes)
+{
+	// Only what changed: the ID and address setters move this client in the client list.
+	const SStoredSourceRoute &route = routes.route;
+	if (route.id != GetUserIDHybrid()) {
+		SetUserIDHybrid(route.id);
+	}
+	if (!(route.address == ReachAddress(*this))) {
+		SetUserAddress(route.address);
+	}
+	SetServerIP(route.serverIP);
+	SetServerPort(route.serverPort);
+	SetUserPort(route.tcpPort);
+	SetKadPort(route.kadPort);
+	if (route.directCallback != SupportsDirectUDPCallback()) {
+		SetDirectUDPCallbackSupport(route.directCallback);
+	}
+	m_serverCandidate = routes.serverCandidate;
+	m_lastResortIPv4 = routes.lastResortIPv4;
+	m_lastResortIPv6 = routes.lastResortIPv6;
+	m_identityFromFallback = routes.identityFromFallback;
+}
+
 void CUpDownClient::SaveChainStart()
 {
 	m_chainStart.Save(CurrentRoutes(), m_formerDeadSourceKeys.size());
@@ -2410,18 +2433,7 @@ bool CUpDownClient::RestoreChainStart()
 	if (!start) {
 		return false;
 	}
-	const SStoredSourceRoute &route = start->routes.route;
-	SetUserIDHybrid(route.id);
-	SetUserAddress(route.address);
-	SetServerIP(route.serverIP);
-	SetServerPort(route.serverPort);
-	SetUserPort(route.tcpPort);
-	SetKadPort(route.kadPort);
-	SetDirectUDPCallbackSupport(route.directCallback);
-	m_serverCandidate = start->routes.serverCandidate;
-	m_lastResortIPv4 = start->routes.lastResortIPv4;
-	m_lastResortIPv6 = start->routes.lastResortIPv6;
-	m_identityFromFallback = start->routes.identityFromFallback;
+	ApplyRoutes(start->routes);
 	m_formerDeadSourceKeys.erase(
 		m_formerDeadSourceKeys.begin() + static_cast<std::ptrdiff_t>(start->formerKeys),
 		m_formerDeadSourceKeys.end());
@@ -4061,60 +4073,47 @@ std::vector<CDeadSourceKey> CUpDownClient::DeadSourceKeys() const
 void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 {
 	AdoptKadBuddy(duplicate);
-	const SSourceRoutes before = CurrentRoutes();
 
-	const CNetworkAddress &user = GetUserAddress();
+	const SStoredSourceRoute incomingRoute = StoredRouteOf(duplicate);
 	SSourceRouteMergeFacts facts;
-	facts.existingNativeIPv6 = user.IsIPv6() && !user.IsIPv4Mapped();
-	facts.existingKadPlaceholderID = GetUserIDHybrid() == 1;
-	facts.existingHasServer = GetServerIP() != 0 && GetServerPort() != 0;
-	facts.existingLowID = HasLowID();
-	facts.existingDirectCallback = SupportsDirectUDPCallback();
-	facts.existingHasIPv4 = GetConnectIP() != 0;
-	facts.sameIPv4 = GetConnectIP() == duplicate.GetConnectIP();
 	facts.incomingServerLowID = duplicate.HasLowID() && duplicate.GetUserIDHybrid() > 1 &&
 				    duplicate.GetServerIP() != 0 && duplicate.GetServerPort() != 0;
 	facts.incomingDirectCallback = duplicate.SupportsDirectUDPCallback() &&
 				       duplicate.GetConnectIP() != 0 && duplicate.GetKadPort() != 0;
 	facts.incomingHighIDIPv4 = !duplicate.HasLowID() && duplicate.GetConnectIP() != 0;
-	facts.existingHasLastResortIPv4 = m_lastResortIPv4.Present();
-	facts.existingHasServerCandidate = m_serverCandidate.Present();
 	// A connected client proved its route with a hello, which outranks any source list.
 	facts.incomingTrusted =
 		!IsConnected() && duplicate.GetSourceFrom() == SF_LOCAL_SERVER &&
 		theApp->serverconnect != nullptr &&
 		theApp->serverconnect->IsLocalServer(duplicate.GetServerIP(), duplicate.GetServerPort());
-	facts.sameServerRoute = GetUserIDHybrid() == duplicate.GetUserIDHybrid() &&
-				GetServerIP() == duplicate.GetServerIP() &&
-				GetServerPort() == duplicate.GetServerPort();
-	facts.sameHighID = !HasLowID() && GetConnectIP() == duplicate.GetConnectIP() &&
-			   GetUserPort() == duplicate.GetUserPort();
 #ifdef ENABLE_IPV6
 	const CNetworkAddress &incoming = duplicate.GetUserAddress();
 	facts.existingHasAdvertisedIPv6 = HasModIPv6();
-	facts.existingHasLastResortIPv6 = m_lastResortIPv6.Present();
 	facts.incomingRoutableIPv6 = incoming.IsGloballyRoutableIPv6() && !incoming.IsIPv4Mapped();
 #endif
-	const SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+
+	// A chain may have moved this client to a fallback. The routes it goes back to after a failed
+	// chain take the merge as decided on them, not on the fallback.
+	if (std::optional<SSourceRoutes> start = m_chainStart.Routes()) {
+		ApplySourceRouteMerge(*start,
+			DecideSourceRouteMerge(WithRouteFacts(facts, *start, incomingRoute)),
+			incomingRoute);
+		m_chainStart.Update(*start);
+	}
+
+	SSourceRoutes routes = CurrentRoutes();
+	const SSourceRouteMerge merge = DecideSourceRouteMerge(WithRouteFacts(facts, routes, incomingRoute));
+	ApplySourceRouteMerge(routes, merge, incomingRoute);
+	ApplyRoutes(routes);
 
 	wxString taken;
-	const SStoredSourceRoute incomingRoute = StoredRouteOf(duplicate);
 	if (merge.keepOldHighIDAsLastResort) {
-		m_lastResortIPv4 = CurrentStoredRoute();
 		taken += " (old HighID kept as the last-resort IPv4)";
 	}
 	if (merge.keepOldServerRouteAsCandidate) {
-		m_serverCandidate = SStoredSourceRoute();
-		m_serverCandidate.id = GetUserIDHybrid();
-		m_serverCandidate.serverIP = GetServerIP();
-		m_serverCandidate.serverPort = GetServerPort();
-		m_serverCandidate.tcpPort = GetUserPort();
 		taken += " (old server route kept as a fallback)";
 	}
 	if (merge.takeServerRoute) {
-		SetUserIDHybrid(duplicate.GetUserIDHybrid());
-		SetServerIP(duplicate.GetServerIP());
-		SetServerPort(duplicate.GetServerPort());
 		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::ServerCallback);
 		if (m_sourceRoute == ESourceRoute::ServerCallback) {
 			m_refreshedSourceRoutes |= SourceRouteBit(ESourceRoute::ServerCallback);
@@ -4122,19 +4121,9 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 		taken += " server callback";
 	}
 	if (merge.storeServerCandidate) {
-		m_serverCandidate = SStoredSourceRoute();
-		m_serverCandidate.id = incomingRoute.id;
-		m_serverCandidate.serverIP = incomingRoute.serverIP;
-		m_serverCandidate.serverPort = incomingRoute.serverPort;
-		m_serverCandidate.tcpPort = incomingRoute.tcpPort;
 		taken += " fallback server route";
 	}
 	if (merge.replaceWithHighID) {
-		SetUserIDHybrid(duplicate.GetUserIDHybrid());
-		SetUserAddress(incomingRoute.address);
-		SetUserPort(duplicate.GetUserPort());
-		// Our server tested this address.
-		m_identityFromFallback = false;
 		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::Dial);
 		if (m_sourceRoute == ESourceRoute::Dial) {
 			m_refreshedSourceRoutes |= SourceRouteBit(ESourceRoute::Dial);
@@ -4142,13 +4131,9 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 		taken += " HighID address from our server";
 	}
 	if (merge.takeLastResortIPv4) {
-		m_lastResortIPv4 = incomingRoute;
 		taken += " last-resort IPv4";
 	}
 	if (merge.takeDirectCallback) {
-		SetIP(duplicate.GetConnectIP());
-		SetKadPort(duplicate.GetKadPort());
-		SetDirectUDPCallbackSupport(true);
 		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::DirectUdpCallback);
 		taken += " direct callback";
 	}
@@ -4157,12 +4142,9 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 		UpdateModIPv6(incoming);
 		taken += " IPv6";
 	} else if (merge.takeLastResortIPv6) {
-		m_lastResortIPv6 = incomingRoute;
 		taken += " last-resort IPv6";
 	}
 #endif
-	// A restore after a failed chain keeps what this merge changed.
-	m_chainStart.Carry(before, CurrentRoutes());
 	if (!taken.IsEmpty()) {
 		AddDebugLogLineN(logClient,
 			CFormat("Contact routes taken from a duplicate of source %s:%s") %

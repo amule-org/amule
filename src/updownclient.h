@@ -383,6 +383,7 @@ private:
 	bool UseSourceFallback(ESourceFallback fallback, ESourceRoute failedRoute);
 	void ApplyStoredRoute(const SStoredSourceRoute &route);
 	SSourceRoutes CurrentRoutes() const;
+	void ApplyRoutes(const SSourceRoutes &routes);
 	//! Saves the routes a chain starts from, once per chain, before the chain changes them.
 	void SaveChainStart();
 	//! Gives back the saved routes, if the chain saved any.

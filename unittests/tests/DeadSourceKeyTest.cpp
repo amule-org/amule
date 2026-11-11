@@ -281,50 +281,116 @@ TEST(CSourceRouteChainStart, ASecondFallbackKeepsTheFirstStart)
 	ASSERT_EQUALS(1u, taken->formerKeys);
 }
 
-TEST(CSourceRouteChainStart, ALowIDChangeFromOurServerSurvivesTheRestore)
+TEST(CSourceRouteChainStart, AnUpdateReplacesTheSavedRoutesOnly)
 {
 	CSourceRouteChainStart chain;
 	const SSourceRoutes start = ChainStartRoutes();
-	chain.Save(start, 0);
-	const SSourceRoutes before = OnServerCandidate(start);
-	SSourceRoutes after = before;
-	after.route.id = 0x1236;
-	after.route.serverIP = kServer;
-	chain.Carry(before, after);
+	chain.Save(start, 2);
+	SSourceRoutes updated = start;
+	updated.route.id = 0x1236;
+	chain.Update(updated);
 
-	SSourceRoutes expected = start;
-	expected.route.id = 0x1236;
-	ASSERT_TRUE(SameRoutes(expected, chain.Take()->routes));
+	const std::optional<CSourceRouteChainStart::SStart> taken = chain.Take();
+	ASSERT_TRUE(SameRoutes(updated, taken->routes));
+	ASSERT_EQUALS(2u, taken->formerKeys);
 }
 
-TEST(CSourceRouteChainStart, AFallbackStoredDuringTheChainSurvivesTheRestore)
+TEST(CSourceRouteChainStart, NoChainNoUpdate)
 {
 	CSourceRouteChainStart chain;
-	const SSourceRoutes start = ChainStartRoutes();
-	chain.Save(start, 0);
-	const SSourceRoutes before = OnServerCandidate(start);
-	SSourceRoutes after = before;
-	after.lastResortIPv6.address = IPv6(7);
-	after.lastResortIPv6.tcpPort = 4662;
-	after.serverCandidate = ServerRoute(0x3456, kServer + 2);
-	chain.Carry(before, after);
-
-	SSourceRoutes expected = start;
-	expected.lastResortIPv6 = after.lastResortIPv6;
-	expected.serverCandidate = after.serverCandidate;
-	ASSERT_TRUE(SameRoutes(expected, chain.Take()->routes));
-}
-
-TEST(CSourceRouteChainStart, NoChainNoCarry)
-{
-	CSourceRouteChainStart chain;
-	const SSourceRoutes start = ChainStartRoutes();
-	SSourceRoutes after = start;
-	after.route.id = 0x1236;
-	chain.Carry(start, after);
+	ASSERT_FALSE(chain.Routes().has_value());
+	chain.Update(ChainStartRoutes());
 	ASSERT_FALSE(chain.Take().has_value());
 
-	chain.Save(start, 0);
+	chain.Save(ChainStartRoutes(), 0);
+	ASSERT_TRUE(chain.Routes().has_value());
 	chain.Reset();
 	ASSERT_FALSE(chain.Take().has_value());
+}
+
+DECLARE_SIMPLE(CSourceRouteMerge)
+
+namespace
+{
+SSourceRouteMergeFacts FromOurServer()
+{
+	SSourceRouteMergeFacts facts;
+	facts.incomingTrusted = true;
+	return facts;
+}
+
+void Merge(SSourceRoutes &routes, const SSourceRouteMergeFacts &facts, const SStoredSourceRoute &incoming)
+{
+	ApplySourceRouteMerge(
+		routes, DecideSourceRouteMerge(WithRouteFacts(facts, routes, incoming)), incoming);
+}
+} // namespace
+
+TEST(CSourceRouteMerge, OurServerChangesTheLowIDOnTheStartAndOnTheFallback)
+{
+	const SSourceRoutes start = ChainStartRoutes();
+	SSourceRouteMergeFacts facts = FromOurServer();
+	facts.incomingServerLowID = true;
+	const SStoredSourceRoute incoming = ServerRoute(0x1236, kServer);
+
+	SSourceRoutes onStart = start;
+	Merge(onStart, facts, incoming);
+	ASSERT_EQUALS(0x1236u, onStart.route.id);
+	ASSERT_EQUALS(kServer, onStart.route.serverIP);
+	ASSERT_TRUE(ServerRouteOf(start.route) == onStart.serverCandidate);
+
+	SSourceRoutes onFallback = OnServerCandidate(start);
+	Merge(onFallback, facts, incoming);
+	ASSERT_EQUALS(0x1236u, onFallback.route.id);
+	ASSERT_EQUALS(kServer, onFallback.route.serverIP);
+}
+
+TEST(CSourceRouteMerge, AnIPv6IdentityOnTheStartIsNotReplacedByAHighID)
+{
+	// An IPv6-only source that moved to its last-resort IPv4 when our server lists it at another
+	// HighID.
+	SSourceRoutes start;
+	start.route.id = 1;
+	start.route.address = IPv6(7);
+	start.route.tcpPort = 4662;
+	start.lastResortIPv4.id = kHighID;
+	start.lastResortIPv4.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID);
+	start.lastResortIPv4.tcpPort = 4662;
+	SSourceRoutes onFallback = start;
+	onFallback.route = start.lastResortIPv4;
+	onFallback.lastResortIPv4 = SStoredSourceRoute();
+	onFallback.identityFromFallback = true;
+
+	SSourceRouteMergeFacts facts = FromOurServer();
+	facts.incomingHighIDIPv4 = true;
+	SStoredSourceRoute incoming;
+	incoming.id = kHighID + 1;
+	incoming.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID + 1);
+	incoming.tcpPort = 4662;
+
+	Merge(onFallback, facts, incoming);
+	ASSERT_TRUE(incoming.address == onFallback.route.address);
+	ASSERT_FALSE(onFallback.identityFromFallback);
+
+	SSourceRoutes onStart = start;
+	Merge(onStart, facts, incoming);
+	ASSERT_TRUE(SameRoutes(start, onStart));
+}
+
+TEST(CSourceRouteMerge, AnIPv6IdentityStoresTheHighIDAsItsLastResort)
+{
+	SSourceRoutes start;
+	start.route.id = 1;
+	start.route.address = IPv6(7);
+	start.route.tcpPort = 4662;
+	SSourceRouteMergeFacts facts = FromOurServer();
+	facts.incomingHighIDIPv4 = true;
+	SStoredSourceRoute incoming;
+	incoming.id = kHighID;
+	incoming.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID);
+	incoming.tcpPort = 4662;
+
+	Merge(start, facts, incoming);
+	ASSERT_TRUE(IPv6(7) == start.route.address);
+	ASSERT_TRUE(incoming == start.lastResortIPv4);
 }
