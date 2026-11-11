@@ -4077,6 +4077,8 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 		SetUserIDHybrid(duplicate.GetUserIDHybrid());
 		SetUserAddress(incomingRoute.address);
 		SetUserPort(duplicate.GetUserPort());
+		// Our server tested this address.
+		m_identityFromFallback = false;
 		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::Dial);
 		if (m_sourceRoute == ESourceRoute::Dial) {
 			m_refreshedSourceRoutes |= SourceRouteBit(ESourceRoute::Dial);
