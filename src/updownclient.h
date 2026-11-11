@@ -380,11 +380,13 @@ private:
 	//! asked again) and from the upload callback.
 	bool TrySendLugdunumNatCallbackRequest();
 	//! Sends OP_LOWID_HOLEPUNCH_REQUEST (ed2k-server) to this LowID peer when its
-	//! preconditions hold. Mutually exclusive with the Lugdunum callback per server.
+	//! preconditions hold. Tried before the Lugdunum callback on a server that runs both.
 	//! Called from TryToContact's LowID->LowID decline and from the upload callback. Returns
 	//! whether the request went out; a busy server slot is not a send.
 	bool TrySendLowIdHolePunchRequest();
 	bool m_lowIdHolePunchRequested = false;
+	uint64 m_lowIdHolePunchSentAt = 0;
+	bool m_lugdunumAfterHolePunchTried = false;
 	//! The server of this LowID source when it is not ours and would wake the source for us
 	//! (ed2k-server 0.9.86), else null; always null without uTP, which the dial after the answer
 	//! needs.

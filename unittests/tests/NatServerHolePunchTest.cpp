@@ -1493,3 +1493,17 @@ TEST(NatServerHolePunch, ARefusedSweepSpendsNeitherBudget)
 	}
 	ASSERT_FALSE(budget.Admit({ { 10, 0, 1, 200 } }, 20));
 }
+
+TEST(NatServerHolePunch, AFailedHolePunchFallsBackToTheLugdunumCallbackOnce)
+{
+	using NatServerHolePunch::kHolePunchFallbackMs;
+	using NatServerHolePunch::ShouldFallBackToLugdunumCallback;
+	const std::uint64_t sentAt = 1'000'000;
+	ASSERT_FALSE(
+		ShouldFallBackToLugdunumCallback(true, false, sentAt, sentAt + kHolePunchFallbackMs - 1));
+	ASSERT_TRUE(ShouldFallBackToLugdunumCallback(true, false, sentAt, sentAt + kHolePunchFallbackMs));
+	ASSERT_FALSE(ShouldFallBackToLugdunumCallback(true, true, sentAt, sentAt + kHolePunchFallbackMs));
+	ASSERT_FALSE(ShouldFallBackToLugdunumCallback(false, false, sentAt, sentAt + kHolePunchFallbackMs));
+	// A clock before the send, as after a wrap, waits rather than firing.
+	ASSERT_FALSE(ShouldFallBackToLugdunumCallback(true, false, sentAt, sentAt - 1));
+}

@@ -2034,6 +2034,7 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	theApp->serverconnect->SendPacket(packet);
 	theApp->serverconnect->LowIdHolePunchPendingRequests().OnSent(GetUserIDHybrid(), ::GetTickCount64());
+	m_lowIdHolePunchSentAt = ::GetTickCount64();
 	// On an extension server one 0x9F goes with each 0x60, so the 0x61 carries our current port.
 	if (theApp->serverconnect->IsHolePunchExtensionActive()) {
 		theApp->serverconnect->TrySendLowIdHolePunchKeepalive();
@@ -2117,6 +2118,14 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 	}
 	if (!m_lowIdHolePunchRequested && TrySendLowIdHolePunchRequest()) {
 		m_lowIdHolePunchRequested = true;
+	}
+	if (NatServerHolePunch::ShouldFallBackToLugdunumCallback(
+		    m_lowIdHolePunchRequested, m_lugdunumAfterHolePunchTried, m_lowIdHolePunchSentAt, now)) {
+		m_lugdunumAfterHolePunchTried = true;
+		AddDebugLogLineN(logClient,
+			CFormat("Hole punch to source %u failed, trying the Lugdunum callback") %
+				GetUserIDHybrid());
+		TrySendLugdunumNatCallbackRequest();
 	}
 }
 

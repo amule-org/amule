@@ -237,7 +237,7 @@ struct RequestFacts
 };
 
 // Whether to send OP_LOWID_HOLEPUNCH_REQUEST for a LowID source: both ends must be LowID on the
-// same, hole-punch-capable, non-Lugdunum server, the runtime setting must be on, our UDP port
+// same, hole-punch-capable server, the runtime setting must be on, our UDP port
 // must be enabled, and the build must be able to act on the server's word.
 inline bool ShouldRequestLowIdHolePunch(const RequestFacts &facts)
 {
@@ -309,6 +309,18 @@ inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
 // exactly. A request that never gets one expires after 30 s.
 constexpr std::uint64_t kPendingRequestTimeoutMs = 30'000;
 constexpr std::size_t kMaxPendingRequests = 8;
+
+// A hole punch that leaves its source unconnected this long failed: no 0x61 within
+// kPendingRequestTimeoutMs, a 0x62, or a dial that never completed its uTP handshake.
+constexpr std::uint64_t kHolePunchFallbackMs = 60'000;
+
+// ed2k-server runs Lugdunum's callback beside its hole punch, and the two can succeed on different
+// NATs: the callback has the source dial us. So a failed hole punch moves on to it, once (#2464).
+inline bool ShouldFallBackToLugdunumCallback(
+	bool holePunchSent, bool fallbackTried, std::uint64_t sentAt, std::uint64_t now)
+{
+	return holePunchSent && !fallbackTried && now >= sentAt && now - sentAt >= kHolePunchFallbackMs;
+}
 
 class PendingRequestSet
 {
