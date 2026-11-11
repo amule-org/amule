@@ -139,6 +139,7 @@ static const std::string WAN_Common_Interface_Config(
 	"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1");
 static const std::string WAN_IP_Connection("urn:schemas-upnp-org:service:WANIPConnection:1");
 static const std::string WAN_PPP_Connection("urn:schemas-upnp-org:service:WANPPPConnection:1");
+static const std::string WAN_IPv6_Firewall_Control("urn:schemas-upnp-org:service:WANIPv6FirewallControl:1");
 } // namespace Service
 
 // Decide whether an SSDP NT/ST is something amule wants to learn about. The whitelist is the IGW
@@ -167,6 +168,7 @@ static bool IsWANRelatedDeviceType(const std::string &type)
 		"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:",
 		"urn:schemas-upnp-org:service:WANIPConnection:",
 		"urn:schemas-upnp-org:service:WANPPPConnection:",
+		"urn:schemas-upnp-org:service:WANIPv6FirewallControl:",
 	};
 	for (const std::string &prefix : prefixes) {
 		if (stdStringStartsWithCI(type, prefix)) {
@@ -523,8 +525,10 @@ CUPnPService::~CUPnPService()
 	const_cast<CUPnPControlPoint &>(m_UPnPControlPoint).ForgetService(this);
 }
 
-bool CUPnPService::Execute(
-	const std::string &ActionName, const std::vector<CUPnPArgumentValue> &ArgValue) const
+bool CUPnPService::Execute(const std::string &ActionName,
+	const std::vector<CUPnPArgumentValue> &ArgValue,
+	const char *resultArg,
+	std::string *result) const
 {
 	std::ostringstream msg;
 	if (m_SCPD.get() == nullptr) {
@@ -644,6 +648,21 @@ bool CUPnPService::Execute(
 	IXML::Document::Free(ActionDoc);
 
 	UPnP::ProcessActionResponse(RespDoc, action.GetName());
+
+	if (resultArg != nullptr && result != nullptr) {
+		// SOAP response, so the value is found by tag name rather than by position: gateways
+		// order their output arguments as they please.
+		IXML_NodeList *nodes = ixmlDocument_getElementsByTagName(RespDoc, resultArg);
+		if (nodes != nullptr) {
+			IXML_Node *node = ixmlNodeList_item(nodes, 0);
+			IXML_Node *text = (node != nullptr) ? ixmlNode_getFirstChild(node) : nullptr;
+			const char *value = (text != nullptr) ? ixmlNode_getNodeValue(text) : nullptr;
+			if (value != nullptr) {
+				*result = value;
+			}
+			ixmlNodeList_free(nodes);
+		}
+	}
 
 	IXML::Document::Free(RespDoc);
 
@@ -865,6 +884,129 @@ bool CUPnPControlPoint::ExecuteOnAnyService(
 	for (const auto &entry : m_ServiceMap) {
 		ok = entry.second->Execute(actionName, argval) || ok;
 	}
+	return ok;
+}
+
+//! IGD:2 service that owns inbound IPv6 rules; version-insensitive match, as the IPv4 URNs are.
+static const std::string IPv6FirewallControlType("urn:schemas-upnp-org:service:WANIPv6FirewallControl:");
+
+//! SOAP arguments are strings, and this file builds its own without a formatting library.
+template <typename T> static std::string Numeric(T value)
+{
+	std::ostringstream text;
+	text << value;
+	return text.str();
+}
+
+std::string CUPnPControlPoint::PinholeKey(int protocol, unsigned short port)
+{
+	std::ostringstream key;
+	key << protocol << ":" << static_cast<unsigned int>(port);
+	return key.str();
+}
+
+bool CUPnPControlPoint::IPv6FirewallDetected() const
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	for (const auto &entry : m_ServiceMap) {
+		if (stdStringStartsWithCI(entry.second->GetServiceType(), IPv6FirewallControlType)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CUPnPControlPoint::ExecuteOnIPv6FirewallService(const std::string &actionName,
+	const std::vector<CUPnPArgumentValue> &argval,
+	const char *resultArg,
+	std::string *result)
+{
+	bool ok = false;
+	for (const auto &entry : m_ServiceMap) {
+		if (!stdStringStartsWithCI(entry.second->GetServiceType(), IPv6FirewallControlType)) {
+			continue;
+		}
+		std::string value;
+		if (entry.second->Execute(actionName, argval, resultArg, &value)) {
+			ok = true;
+			if (result != nullptr) {
+				*result = value;
+			}
+		}
+	}
+	return ok;
+}
+
+bool CUPnPControlPoint::AddIPv6Pinhole(const std::string &internalClient,
+	unsigned short internalPort,
+	int protocol,
+	unsigned int leaseSeconds)
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	const std::string key = PinholeKey(protocol, internalPort);
+
+	std::vector<CUPnPArgumentValue> argval(6);
+	argval[0].SetArgument("RemoteHost");
+	argval[0].SetValue("");
+	argval[1].SetArgument("RemotePort");
+	argval[1].SetValue("0");
+	argval[2].SetArgument("InternalClient");
+	argval[2].SetValue(internalClient);
+	argval[3].SetArgument("InternalPort");
+	argval[3].SetValue(Numeric(internalPort));
+	argval[4].SetArgument("Protocol");
+	argval[4].SetValue(Numeric(protocol));
+	argval[5].SetArgument("LeaseTime");
+	argval[5].SetValue(Numeric(leaseSeconds));
+
+	std::string uniqueId;
+	if (!ExecuteOnIPv6FirewallService("AddPinhole", argval, "UniqueID", &uniqueId)) {
+		return false;
+	}
+	if (uniqueId.empty()) {
+		return false;
+	}
+	m_IPv6Pinholes[key] = uniqueId;
+	std::ostringstream msg;
+	msg << "IPv6 pinhole for " << internalClient << " (protocol " << protocol << ") got unique id "
+	    << uniqueId;
+	AddDebugLogLineN(logUPnP, msg);
+	return true;
+}
+
+bool CUPnPControlPoint::RenewIPv6Pinhole(const std::string &key, unsigned int leaseSeconds)
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	const auto it = m_IPv6Pinholes.find(key);
+	if (it == m_IPv6Pinholes.end()) {
+		return false;
+	}
+
+	std::vector<CUPnPArgumentValue> argval(2);
+	argval[0].SetArgument("UniqueID");
+	argval[0].SetValue(it->second);
+	argval[1].SetArgument("LeaseTime");
+	argval[1].SetValue(Numeric(leaseSeconds));
+
+	return ExecuteOnIPv6FirewallService("UpdatePinhole", argval, nullptr, nullptr);
+}
+
+bool CUPnPControlPoint::DeleteIPv6Pinhole(const std::string &key)
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	const auto it = m_IPv6Pinholes.find(key);
+	if (it == m_IPv6Pinholes.end()) {
+		return false;
+	}
+
+	std::vector<CUPnPArgumentValue> argval(1);
+	argval[0].SetArgument("UniqueID");
+	argval[0].SetValue(it->second);
+
+	const bool ok = ExecuteOnIPv6FirewallService("DeletePinhole", argval, nullptr, nullptr);
+	// Dropped even on failure: a pinhole we could not delete expires on its own, and keeping the id
+	// would let a later renew succeed against a lease the gateway already forgot.
+	m_IPv6Pinholes.erase(it);
 	return ok;
 }
 

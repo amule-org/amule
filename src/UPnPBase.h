@@ -290,7 +290,13 @@ public:
 	bool IsSubscribed() const { return m_SCPD.get() != NULL; }
 	void SetSCPD(CUPnPSCPD *SCPD) { m_SCPD.reset(SCPD); }
 
-	bool Execute(const std::string &ActionName, const std::vector<CUPnPArgumentValue> &ArgValue) const;
+	//! Send an action. When resultArg names an output argument, its value is copied into result;
+	//! the IGD2 pinhole actions answer with a UniqueID that is the only handle for renewing and
+	//! deleting, so a bare success flag would lose it.
+	bool Execute(const std::string &ActionName,
+		const std::vector<CUPnPArgumentValue> &ArgValue,
+		const char *resultArg = nullptr,
+		std::string *result = nullptr) const;
 };
 
 class CUPnPDevice
@@ -361,6 +367,8 @@ private:
 	// first.
 	ServiceMap m_ServiceMap;
 	PortMappingMap m_ActivePortMappingsMap;
+	// Guarded by m_ServiceMapMutex. Key from PinholeKey(), value the gateway's UniqueID.
+	std::map<std::string, std::string> m_IPv6Pinholes;
 	CUPnPMutex m_RootDeviceListMutex;
 	bool m_IGWDeviceDetected;
 	mutable CUPnPMutex m_ServiceMapMutex;
@@ -374,6 +382,27 @@ public:
 	void Subscribe(CUPnPService &service);
 	void Unsubscribe(CUPnPService &service);
 	bool AddPortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping);
+	// IGD2 actions go only to a WANIPv6FirewallControl service: an IPv4 WANIPConnection rejects
+	// them, and sending to every service found would report a pinhole that does not exist.
+	bool ExecuteOnIPv6FirewallService(const std::string &actionName,
+		const std::vector<CUPnPArgumentValue> &argval,
+		const char *resultArg,
+		std::string *result);
+
+	//! Whether a gateway exposes IGD2 WANIPv6FirewallControl, which is what an inbound IPv6
+	//! pinhole needs; a gateway that only maps IPv4 ports cannot open one.
+	bool IPv6FirewallDetected() const;
+	//! Add an inbound pinhole and keep the UniqueID the gateway returns, keyed by PinholeKey().
+	bool AddIPv6Pinhole(const std::string &internalClient,
+		unsigned short internalPort,
+		int protocol,
+		unsigned int leaseSeconds);
+	//! Renew a pinhole previously added under this key, using its stored UniqueID.
+	bool RenewIPv6Pinhole(const std::string &key, unsigned int leaseSeconds);
+	//! Delete a pinhole previously added under this key.
+	bool DeleteIPv6Pinhole(const std::string &key);
+	//! The key a pinhole is stored under: protocol and port, since that is what it names.
+	static std::string PinholeKey(int protocol, unsigned short port);
 	bool DeletePortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping);
 
 	UpnpClient_Handle GetUPnPClientHandle() const { return m_UPnPClientHandle; }

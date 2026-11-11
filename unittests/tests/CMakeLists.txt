@@ -419,6 +419,11 @@ add_test (NAME SourceSearchLimitsTest COMMAND SourceSearchLimitsTest)
 target_include_directories (SourceSearchLimitsTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (SourceSearchLimitsTest muleunit mulecommon)
 
+add_executable (IPv6PinholePolicyTest IPv6PinholePolicyTest.cpp)
+add_test (NAME IPv6PinholePolicyTest COMMAND IPv6PinholePolicyTest)
+target_include_directories (IPv6PinholePolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (IPv6PinholePolicyTest muleunit mulecommon)
+
 add_executable (AdvertisedIPv6Test AdvertisedIPv6Test.cpp)
 add_test (NAME AdvertisedIPv6Test COMMAND AdvertisedIPv6Test)
 target_include_directories (AdvertisedIPv6Test PRIVATE ${CMAKE_SOURCE_DIR}/src)
