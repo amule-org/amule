@@ -222,26 +222,34 @@ inline void ApplySourceRouteMerge(
 	}
 }
 
+//! Whether the source is known at this IPv4: its own address or its last-resort IPv4.
+inline bool KnownAtIPv4(const SSourceRoutes &routes, std::uint32_t ip)
+{
+	return ip != 0 && (routes.route.address.ToIPv4NetworkOrderOrZero() == ip ||
+				  routes.lastResortIPv4.address.ToIPv4NetworkOrderOrZero() == ip);
+}
+
 /**
  * Merges a duplicate's route into the kept copy's routes: decides with WithRouteFacts(), writes with
  * ApplySourceRouteMerge(), and returns the decision.
  *
  * A server or old source-exchange record gives a HighID as its IP, so a HighID whose IP ends in .0
- * reads as a LowID. A record whose ID and port are the IPv4 and port the source is known at is that
- * HighID: a real LowID matches both only by chance.
+ * reads as a LowID. A record whose ID is an IPv4 the source is known at is that HighID, on whatever
+ * port it lists: the duplicate matched this source already, and a real LowID equals that IPv4 only
+ * by chance. @a chainStart is where a running chain started, when it moved the source to a fallback
+ * at another address.
  */
-inline SSourceRouteMerge MergeSourceRoutes(
-	SSourceRoutes &routes, SSourceRouteMergeFacts facts, SStoredSourceRoute incoming)
+inline SSourceRouteMerge MergeSourceRoutes(SSourceRoutes &routes,
+	SSourceRouteMergeFacts facts,
+	SStoredSourceRoute incoming,
+	const SSourceRoutes *chainStart = nullptr)
 {
-	const std::uint32_t knownIPv4 = routes.route.address.ToIPv4NetworkOrderOrZero();
-	if (facts.incomingServerLowID && incoming.id == knownIPv4 &&
-		incoming.tcpPort == routes.route.tcpPort) {
+	if (facts.incomingServerLowID &&
+		(KnownAtIPv4(routes, incoming.id) || (chainStart && KnownAtIPv4(*chainStart, incoming.id)))) {
 		facts.incomingServerLowID = false;
 		facts.incomingHighIDIPv4 = true;
-		// A HighID's ID is its IP in host order.
-		incoming.id = (knownIPv4 >> 24) | ((knownIPv4 >> 8) & 0xFF00u) |
-			      ((knownIPv4 << 8) & 0xFF0000u) | (knownIPv4 << 24);
-		incoming.address = routes.route.address;
+		incoming.address = CNetworkAddress::FromIPv4NetworkOrder(incoming.id);
+		incoming.id = CNetworkAddress::SwapOctets(incoming.id);
 	}
 	const SSourceRouteMerge merge = DecideSourceRouteMerge(WithRouteFacts(facts, routes, incoming));
 	ApplySourceRouteMerge(routes, merge, incoming);
