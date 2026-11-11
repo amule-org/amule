@@ -2430,6 +2430,7 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	cw.AddTag(CECTag(EC_TAG_CORETW_MAX_CONN_PER_FIVE, static_cast<std::uint32_t>(200)));
 	cw.AddTag(CECTag(EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, static_cast<std::uint32_t>(256)));
 	cw.AddTag(CECTag(EC_TAG_CORETW_KAD_REASK_MS, static_cast<std::uint32_t>(1800000)));
+	cw.AddTag(CECTag(EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, static_cast<std::uint32_t>(12)));
 	resp.AddTag(cw);
 
 	CECEmptyTag kad(EC_TAG_PREFS_KADEMLIA);
@@ -2490,6 +2491,8 @@ TEST(Refresher, PreferencesExtendedCategoriesDecode)
 	// EC carries milliseconds; the API speaks the minutes the core actually
 	// stores, so the decode divides by 60000 (#1159 section 5).
 	ASSERT_EQUALS(static_cast<std::uint32_t>(30), p.advanced.kad_source_reask_minutes);
+	ASSERT_TRUE(p.advanced.kad_max_served_buddies_supported);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(12), p.advanced.kad_max_served_buddies);
 	ASSERT_EQUALS(std::string("http://nodes"), p.kad.update_url);
 
 	ASSERT_TRUE(p.geoip.supported);
@@ -2771,9 +2774,9 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			++emitted;
 	}
 
-	// The documented payload is 143 fields. A row added or dropped without
+	// The documented payload is 145 fields. A row added or dropped without
 	// updating docs/api/REFERENCE.md should trip this.
-	ASSERT_EQUALS(static_cast<std::size_t>(143), emitted);
+	ASSERT_EQUALS(static_cast<std::size_t>(145), emitted);
 }
 
 // The schema's irregularities are enumerated rather than merely counted: each is deliberate and
@@ -3491,6 +3494,11 @@ TEST(Refresher, KadBuddyCountersAreParsedFromTheirContainer)
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REQUESTS, static_cast<std::uint32_t>(40)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EXPIRED, static_cast<std::uint32_t>(3)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_DUPLICATE, static_cast<std::uint32_t>(6)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EVICTED, static_cast<std::uint32_t>(7)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REFUSED_SAME_IP, static_cast<std::uint32_t>(8)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REQUESTS_NATT, static_cast<std::uint32_t>(9)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_OVER_BUDGET, static_cast<std::uint32_t>(10)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_OVER_BUDGET, static_cast<std::uint32_t>(11)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASK_BYTES, static_cast<std::uint64_t>(5000000000ULL)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACK_REQUESTS_PEAK, static_cast<std::uint32_t>(4)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CONNECTED, static_cast<std::uint32_t>(5)));
@@ -3508,6 +3516,11 @@ TEST(Refresher, KadBuddyCountersAreParsedFromTheirContainer)
 	ASSERT_EQUALS(std::uint64_t(40), out.buddy_serving.requests.received);
 	ASSERT_EQUALS(std::uint64_t(3), out.buddy_serving.requests.expired);
 	ASSERT_EQUALS(std::uint64_t(6), out.buddy_serving.requests.duplicate);
+	ASSERT_EQUALS(std::uint64_t(7), out.buddy_serving.requests.evicted);
+	ASSERT_EQUALS(std::uint64_t(8), out.buddy_serving.requests.refused_same_ip);
+	ASSERT_EQUALS(std::uint64_t(9), out.buddy_serving.requests.natt);
+	ASSERT_EQUALS(std::uint64_t(10), out.buddy_serving.callbacks.over_budget);
+	ASSERT_EQUALS(std::uint64_t(11), out.buddy_serving.reasks.over_budget);
 	ASSERT_EQUALS(std::uint64_t(5000000000ULL), out.buddy_serving.reasks.relayed_bytes);
 	ASSERT_EQUALS(std::uint64_t(4), out.buddy_serving.callbacks.peak_requests_per_minute);
 	ASSERT_EQUALS(std::uint64_t(5), out.buddy_own.buddies.started);
@@ -4201,6 +4214,25 @@ TEST(Refresher, DebugSettingsDoNotSurviveAnOlderCore)
 	CECPacket empty(EC_OP_SET_PREFERENCES);
 	ParsePreferencesFromPacket(&empty, prefs, cats);
 	ASSERT_FALSE(prefs.advanced.debug_categories_supported);
+}
+
+TEST(Refresher, ServedBuddiesCapabilityDoesNotSurviveAnOlderCore)
+{
+	CECPacket modern(EC_OP_SET_PREFERENCES);
+	CECEmptyTag advanced(EC_TAG_PREFS_CORETWEAKS);
+	advanced.AddTag(CECTag(EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, uint32_t{ 8 }));
+	modern.AddTag(advanced);
+	PreferencesSnapshot prefs;
+	std::vector<CategorySnapshot> cats;
+	ParsePreferencesFromPacket(&modern, prefs, cats);
+	ASSERT_TRUE(prefs.advanced.kad_max_served_buddies_supported);
+	ASSERT_EQUALS(uint32_t{ 8 }, prefs.advanced.kad_max_served_buddies);
+
+	CECPacket legacy(EC_OP_SET_PREFERENCES);
+	legacy.AddTag(CECEmptyTag(EC_TAG_PREFS_CORETWEAKS));
+	ParsePreferencesFromPacket(&legacy, prefs, cats);
+	ASSERT_FALSE(prefs.advanced.kad_max_served_buddies_supported);
+	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.kad_max_served_buddies);
 }
 
 TEST(Refresher, WriteBufferCapabilityDoesNotSurviveAnOlderCore)

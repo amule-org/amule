@@ -2495,7 +2495,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "write_buffer_limit_supported": true, "write_buffer_limit_mebibytes": 128,
     "file_buffer_bytes": 240000, "max_upload_queue_client_count": 5000,
     "server_keepalive_timeout_minutes": 0, "kad_max_concurrent_source_search_count": 50,
-    "kad_source_reask_minutes": 30, "source_reask_minutes": 15
+    "kad_source_reask_minutes": 30, "source_reask_minutes": 15,
+    "kad_max_served_buddies_supported": true, "kad_max_served_buddies": 8
   },
   "kad": { "update_url": "http://upd.emule-security.org/nodes.dat", "protocol10_supported": true, "protocol10_enabled": true, "strict_aich_publishers": false },
   "geoip": {
@@ -2535,6 +2536,8 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 
 `advanced.debug_categories_supported` is **read-only**: `true` when the daemon reports its debug categories. On a daemon older than 3.3 it is `false`, `advanced.debug_categories` and `advanced.debug_categories_enabled` are empty, `advanced.verbose_logging_logfile_only` reads `false`, and a `PATCH` that sets either writable field answers `409 option_not_supported`.
 
+`advanced.kad_max_served_buddies` is how many firewalled Kad nodes this node serves as their buddy at once, 4 to 16, default 8. The daemon serves at most a tenth of `connection.max_connection_count`, and at least one, so `/kad` `buddy.served_limit` can be lower than this setting. `advanced.kad_max_served_buddies_supported` is **read-only**: `true` when the daemon reports the setting. A daemon older than 3.3 serves one buddy and does not report it, so there it is `false`, the setting reads `0`, and a `PATCH` that sets it answers `409 option_not_supported`.
+
 `advanced.debug_categories` is **read-only** and lists every category name the daemon can log to. `amuled` has no window, so it does not list `GUI`. `advanced.debug_categories_enabled` is the enabled subset, in the same order. Categories produce output only while `advanced.verbose_logging` is `true`. `advanced.verbose_logging_logfile_only` keeps debug messages in the daemon's logfile and out of [`GET /logs/amule`](#get-apiv1logsamule). All of these apply immediately, with no daemon restart, and the daemon saves them. Debug logs can contain peer IP addresses, user hashes and file names, and guests can read `GET /logs/amule`, so turn on `verbose_logging_logfile_only` when guests should not see them. It applies to new lines only: lines already in the log stay readable until [`DELETE /logs/amule`](#delete-apiv1logsamule) clears them. That also empties `amuled`'s logfile, logfile-only lines included, so copy the file first if you need them.
 
 `connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (Web-server UPnP is not exposed, since amuleweb is deprecated. EC-port UPnP is reported read-only, as `remote_controls.external_connections.upnp_enabled`.)
@@ -2553,8 +2556,8 @@ The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2
 
 | Kind | What `PATCH` does | Examples |
 | --- | --- | --- |
-| Settable | applied | most of the 143 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
-| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `files.media_metadata_available`, `kad.protocol10_supported`, `advanced.debug_categories_supported`, `advanced.debug_categories`, `connection.upnp_supported`, the six `geoip.*`, the seven `remote_controls.external_connections.*` |
+| Settable | applied | most of the 145 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
+| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `files.media_metadata_available`, `kad.protocol10_supported`, `advanced.debug_categories_supported`, `advanced.kad_max_served_buddies_supported`, `advanced.debug_categories`, `connection.upnp_supported`, the six `geoip.*`, the seven `remote_controls.external_connections.*` |
 | Write-only | applied, never echoed on `GET` | `remote_controls.webserver.password`, `.guest_password` |
 | Refused | `400 bad_request` | `remote_controls.amuleapi.password`, `.guest_password`, `.guest_enabled` |
 
@@ -2720,14 +2723,14 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
   "indexed": { "sources": 12000, "keywords": 8500, "notes": 0, "load_percent": 14 },
   "buddy": {
     "state": "connected", "ip": "203.0.113.9", "port": 4672,
-    "served_count": 1, "served_limit": 1,
+    "served_count": 3, "served_limit": 8,
     "serving": {
       "pending_count": 0,
       "served_seconds": 5400,
-      "requests": { "received": 40, "offered": 3, "refused_firewalled": 0, "refused_full": 35, "refused_conflict": 2, "rate_limited": 0, "expired": 1, "superseded": 0, "duplicate": 0 },
+      "requests": { "received": 40, "offered": 32, "refused_firewalled": 0, "refused_full": 5, "refused_conflict": 2, "refused_same_ip": 1, "rate_limited": 0, "natt": 4, "expired": 1, "superseded": 0, "duplicate": 0, "evicted": 0 },
       "buddies": { "started": 2, "released_extra": 0, "ended": 1, "timed_out": 0 },
-      "callbacks": { "relayed": 10, "relayed_bytes": 960, "no_buddy": 0, "mismatched": 1, "rate_limited": 0, "peak_requests_per_minute": 1 },
-      "reasks": { "relayed": 300, "relayed_bytes": 27900, "no_buddy": 3, "mismatched": 0, "malformed": 0 },
+      "callbacks": { "relayed": 10, "relayed_bytes": 960, "no_buddy": 0, "mismatched": 1, "rate_limited": 0, "over_budget": 0, "peak_requests_per_minute": 1 },
+      "reasks": { "relayed": 300, "relayed_bytes": 27900, "no_buddy": 3, "mismatched": 0, "malformed": 0, "over_budget": 0 },
       "peak_relayed_bytes_per_minute": 4500
     },
     "own": {
@@ -2754,15 +2757,15 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
 | `network.node_count` | int \| null | **This node's own routing table size** - how many Kad contacts it currently holds - *not* a network-wide figure like the two above. Saturates at 65535 (the daemon counts it in a `uint16`). **`null` unless `state` is `connected`**: routing contacts outlive the disconnect, so a non-zero count on a fully stopped Kad is not surfaced. |
 | `indexed.sources` / `.keywords` / `.notes` | int \| null | Kad-store counters: how many entries this node is holding for the network as a DHT participant. `null` unless `state` is `connected`, and also `null` while the daemon is still loading its saved index after Kad starts - a `0` would be a real count, indistinguishable from an idle but connected node. |
 | `indexed.load_percent` | int \| null | **A count, not a percentage**, despite its name: how many keywords have a recorded publish delay, because the nodes that store them reported a high load. A delay that has run out stays counted until that keyword is published again. The desktop panel shows it as *Indexed load*. `null` on the same gate as the three counters above. |
-| `buddy.state` | string \| null | LowID-buddy state for NAT-traversal clients: `no_buddy` / `connecting` / `connected` (`unknown` only if the daemon ever ships a value outside its own enum). **`null` unless `state` is `connected`**, along with `buddy.ip` / `buddy.port`; a `no_buddy` there would be a real state rather than the absence of one. While connected with no buddy, `ip` / `port` are `0.0.0.0` / `0`. On an open node the buddy, if any, is the firewalled node this node serves. |
-| `buddy.served_count` / `.served_limit` | int \| null | How many firewalled nodes this node serves as their buddy now, and the most it serves at once. A node serves only while it is open on TCP and UDP. `null` unless `state` is `connected`, and from a daemon too old to report them. |
+| `buddy.state` | string \| null | LowID-buddy state for NAT-traversal clients: `no_buddy` / `connecting` / `connected` (`unknown` only if the daemon ever ships a value outside its own enum). **`null` unless `state` is `connected`**, along with `buddy.ip` / `buddy.port`; a `no_buddy` there would be a real state rather than the absence of one. While connected with no buddy, `ip` / `port` are `0.0.0.0` / `0`. They describe this node's own buddy, which only a firewalled node has: an open node reports `no_buddy`, and counts the firewalled nodes it serves in `buddy.served_count`. |
+| `buddy.served_count` / `.served_limit` | int \| null | How many firewalled nodes this node serves as their buddy now, and the most it serves at once: `advanced.kad_max_served_buddies`, capped at a tenth of the connection limit. A daemon older than 3.3 serves one. A node serves only while it is open on TCP and UDP. `null` unless `state` is `connected`, and from a daemon too old to report them. |
 | `buddy.serving` | object \| null | Counts since the daemon started, for this node as the buddy of a firewalled node. `null` from a daemon too old to report them. The fields are below. |
 | `buddy.serving.pending_count` | int | Buddy requests this node answered with an offer whose node has not connected yet. |
-| `buddy.serving.served_seconds` | int | Total time this node served a buddy, the current one included. |
-| `buddy.serving.requests` | object | Buddy requests from firewalled nodes. `received` counts the ones the daemon handled, which end as `offered` or as one of the three refusals: `refused_firewalled` (this node is not open), `refused_full` (it serves `served_limit` buddies already) or `refused_conflict` (the daemon already knows that client, or it is this node). `rate_limited` counts requests dropped before handling, by the per-client limit, and is not part of `received`. `expired`, `superseded` and `duplicate` count offers that did not become a buddy: the node did not connect in time, another buddy connected first, or the same node linked through another offer. |
-| `buddy.serving.buddies` | object | `started` counts the nodes that became a served buddy, and `ended` the ones that stopped, for any reason. `timed_out` is the part of `ended` that sent nothing within the receive timeout. `released_extra` counts nodes that connected while another buddy was already served, and were released. |
-| `buddy.serving.callbacks` | object | Callback requests for the served buddy. `relayed` and `relayed_bytes` count the callbacks passed on to it, with their size on the wire. Dropped: `no_buddy` (no buddy served), `mismatched` (the request names another buddy) and `rate_limited` (over the per-client limit). `peak_requests_per_minute` is the most requests one client sent in one minute, dropped ones included. |
-| `buddy.serving.reasks` | object | Reasks for the served buddy, counted like `callbacks`. `malformed` counts reasks too short to carry the buddy's id. |
+| `buddy.serving.served_seconds` | int | Total time this node served buddies, summed over them, the current ones included. |
+| `buddy.serving.requests` | object | Buddy requests from firewalled nodes. `received` counts the ones the daemon handled, which end as `offered` or as one of the four refusals: `refused_firewalled` (this node is not open), `refused_full` (it serves `served_limit` buddies already), `refused_conflict` (the daemon already knows that client, or it is this node) or `refused_same_ip` (it serves or has offered to another node at that address). `rate_limited` counts requests dropped before handling, by the per-client limit, and is not part of `received`. `natt` counts handled requests that set a NAT-T bit in their connect options. `expired`, `superseded`, `duplicate` and `evicted` count offers that did not become a buddy: the node did not connect in time, the free slots filled first, the same node linked through another offer, or a newer offer took its place in the full list of pending offers, which holds at most `served_limit`. |
+| `buddy.serving.buddies` | object | `started` counts the nodes that became a served buddy, and `ended` the ones that stopped, for any reason. `timed_out` is the part of `ended` that sent nothing within the receive timeout. `released_extra` counts nodes that connected when no slot was free, while another node at the same address was served, or with a HighID in their hello, and were released. A node with a HighID is reached directly, so it needs no buddy. |
+| `buddy.serving.callbacks` | object | Callback requests for served buddies. `relayed` and `relayed_bytes` count the callbacks passed on to it, with their size on the wire. Dropped: `no_buddy` (no buddy served), `mismatched` (the request names no served buddy), `rate_limited` (over the per-client limit, or a second request from one client for one buddy within a minute) and `over_budget` (the buddy got 64 KiB of relays in the current minute already). `peak_requests_per_minute` is the most requests one client sent in one minute, dropped ones included. |
+| `buddy.serving.reasks` | object | Reasks for served buddies, counted like `callbacks`. `malformed` counts reasks too short to carry the buddy's id, or longer than the largest valid reask (8,228 bytes). |
 | `buddy.serving.peak_relayed_bytes_per_minute` | int | The most bytes relayed to one served buddy in one minute. |
 | `buddy.own` | object \| null | Counts since the daemon started, for this node as a firewalled node with a buddy of its own. `null` from a daemon too old to report them. The fields are below. |
 | `buddy.own.search_count` | int | Kad searches for a buddy. |
@@ -3671,12 +3674,13 @@ Each scrape reads a compact snapshot that amuleapi publishes after a successful 
 | `amule_kad_index_load` | gauge | Daemon-reported index load, separate from item counts |
 | `amule_kad_buddies_served`, `amule_kad_buddies_served_limit` | gauge | Firewalled nodes this node serves as their buddy, and the most it serves at once; only while Kad is connected |
 | `amule_kad_buddy_pending_offers` | gauge | Buddy offers whose node has not connected yet |
-| `amule_kad_buddy_requests_total` | counter, `result="offered\|refused_firewalled\|refused_full\|refused_conflict\|rate_limited"` | Buddy requests from firewalled nodes, by result |
-| `amule_kad_buddy_offers_unused_total` | counter, `reason="expired\|superseded\|duplicate"` | Offers whose node did not become the buddy |
-| `amule_kad_buddy_served_events_total` | counter, `event="started\|released_extra\|ended\|timed_out"` | Changes to the served buddy; `timed_out` is part of `ended` |
-| `amule_kad_buddy_served_seconds_total` | counter | Time spent serving a buddy |
-| `amule_kad_buddy_relays_total`, `amule_kad_buddy_relayed_bytes_total` | counter, `kind="callback\|reask"` | Packets and bytes relayed to the served buddy |
-| `amule_kad_buddy_relay_drops_total` | counter, `kind`, `reason="no_buddy\|mismatched\|rate_limited\|malformed"` | Packets for a served buddy that were not relayed; callbacks have no `malformed`, reasks no `rate_limited` |
+| `amule_kad_buddy_requests_total` | counter, `result="offered\|refused_firewalled\|refused_full\|refused_conflict\|refused_same_ip\|rate_limited"` | Buddy requests from firewalled nodes, by result |
+| `amule_kad_buddy_natt_requests_total` | counter | Buddy requests that set a NAT-T bit in their connect options |
+| `amule_kad_buddy_offers_unused_total` | counter, `reason="expired\|superseded\|duplicate\|evicted"` | Offers whose node did not become a buddy |
+| `amule_kad_buddy_served_events_total` | counter, `event="started\|released_extra\|ended\|timed_out"` | Changes to the served buddies; `timed_out` is part of `ended` |
+| `amule_kad_buddy_served_seconds_total` | counter | Time spent serving buddies, summed over them |
+| `amule_kad_buddy_relays_total`, `amule_kad_buddy_relayed_bytes_total` | counter, `kind="callback\|reask"` | Packets and bytes relayed to served buddies |
+| `amule_kad_buddy_relay_drops_total` | counter, `kind`, `reason="no_buddy\|mismatched\|rate_limited\|malformed\|over_budget"` | Packets for a served buddy that were not relayed; callbacks have no `malformed`, reasks no `rate_limited` |
 | `amule_kad_buddy_peak_relayed_bytes_per_minute` | gauge | Most bytes relayed to one served buddy in one minute, since start |
 | `amule_kad_buddy_peak_callback_requests_per_minute` | gauge | Most callback requests from one client in one minute, since start |
 | `amule_kad_buddy_searches_total` | counter | Searches for a buddy of this node's own |

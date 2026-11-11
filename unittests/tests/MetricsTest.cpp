@@ -161,6 +161,8 @@ TEST(Metrics, KadBuddyCountersNeedTheirSnapshotFlags)
 	s.kad.buddy_serving.requests.refused_full = 7;
 	s.kad.buddy_serving.reasks.malformed = 2;
 	s.kad.buddy_serving.requests.duplicate = 3;
+	s.kad.buddy_serving.requests.refused_same_ip = 4;
+	s.kad.buddy_serving.reasks.over_budget = 5;
 	s.kad.buddy_serving.peak_relayed_bytes_per_minute = 4500;
 	s.kad.buddy_own.missing_seconds = 30;
 	text = SerializeMetrics(s, "test");
@@ -171,6 +173,11 @@ TEST(Metrics, KadBuddyCountersNeedTheirSnapshotFlags)
 		    std::string::npos);
 	ASSERT_TRUE(text.find("amule_kad_buddy_offers_unused_total{reason=\"duplicate\"} 3\n") !=
 		    std::string::npos);
+	ASSERT_TRUE(text.find("amule_kad_buddy_requests_total{result=\"refused_same_ip\"} 4\n") !=
+		    std::string::npos);
+	ASSERT_TRUE(
+		text.find("amule_kad_buddy_relay_drops_total{kind=\"reask\",reason=\"over_budget\"} 5\n") !=
+		std::string::npos);
 	ASSERT_TRUE(text.find("amule_kad_buddy_requests_total{result=\"offered\"} 0\n") != std::string::npos);
 	ASSERT_TRUE(text.find("amule_kad_buddy_relay_drops_total{kind=\"reask\",reason=\"malformed\"} 2\n") !=
 		    std::string::npos);

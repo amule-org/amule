@@ -170,6 +170,8 @@ bool CPreferences::s_Endgame;
 bool CPreferences::s_startMinimized;
 uint16 CPreferences::s_MaxConperFive;
 uint16 CPreferences::s_kadMaxSourceSearches;
+uint32 CPreferences::s_kadMaxServedBuddies;
+bool CPreferences::s_kadMaxServedBuddiesSupported = true;
 uint64 CPreferences::s_kadSourceReaskMins;
 uint64 CPreferences::s_sourceReaskMins;
 bool CPreferences::s_checkDiskspace;
@@ -1270,6 +1272,10 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	NewCfgItem(IDC_KADMAXSEARCHES,
 		(MkCfg_Int(
 			"/eMule/KadMaxSourceSearches", s_kadMaxSourceSearches, KAD_MAX_SOURCE_SEARCHES.def)));
+	NewCfgItem(IDC_KADMAXSERVEDBUDDIES,
+		(MkCfg_Int("/eMule/KadMaxServedBuddies",
+			s_kadMaxServedBuddies,
+			Kademlia::KAD_SERVED_BUDDIES.def)));
 	NewCfgItem(IDC_KADREASKTIME,
 		(MkCfg_Int(
 			"/eMule/KadSourceReaskMinutes", s_kadSourceReaskMins, KAD_SOURCE_REASK_MINUTES.def)));
@@ -1876,6 +1882,8 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 	// amule.conf may have been edited by hand.
 	s_kadMaxSourceSearches = static_cast<uint16>(KAD_MAX_SOURCE_SEARCHES.Clamp(s_kadMaxSourceSearches));
 	s_kadSourceReaskMins = KAD_SOURCE_REASK_MINUTES.Clamp(s_kadSourceReaskMins);
+	s_kadMaxServedBuddies =
+		static_cast<uint32>(Kademlia::KAD_SERVED_BUDDIES.Clamp(s_kadMaxServedBuddies));
 	s_sourceReaskMins = SOURCE_REASK_MINUTES.Clamp(s_sourceReaskMins);
 #endif
 

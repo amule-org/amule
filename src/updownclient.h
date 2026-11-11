@@ -832,6 +832,9 @@ public:
 	/* Role: we serve this buddy, or it serves us */
 	void SetServedBuddy(bool served) { m_bServedBuddy = served; }
 	bool IsServedBuddy() const { return m_bServedBuddy; }
+	//! The buddy request set a NAT-T bit in its connect options.
+	void SetServedBuddyNatT(bool natT) { m_bServedBuddyNatT = natT; }
+	bool IsServedBuddyNatT() const { return m_bServedBuddyNatT; }
 
 	// KadIPCheck
 	bool IsBuddyPingDue() const { return m_buddyLiveness.PingDue(::GetTickCount64()); }
@@ -1204,6 +1207,7 @@ private:
 	// A KADEMLIA_CALLBACK_REQ was sent and the source has not called back since.
 	bool m_bBuddyCallbackUnanswered = false;
 	bool m_bServedBuddy = false;
+	bool m_bServedBuddyNatT = false;
 	uint32 m_nBuddyIP;
 	uint16 m_nBuddyPort;
 

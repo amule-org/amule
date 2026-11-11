@@ -35,18 +35,19 @@
 #include <common/EventIDs.h>
 #include <common/Format.h> // Needed for CFormat
 
-#include "Preferences.h"     // Needed for CPreferences
-#include "PartFile.h"        // Needed for CPartFile
-#include "updownclient.h"    // Needed for CUpDownClient
-#include "UploadQueue.h"     // Needed for CUploadQueue
-#include "Packet.h"          // Needed for CPacket
-#include "SharedFileList.h"  // Needed for CSharedFileList
-#include "DownloadQueue.h"   // Needed for CDownloadQueue
-#include "Statistics.h"      // Needed for theStats
-#include "amule.h"           // Needed for theApp
-#include "ClientList.h"      // Needed for clientlist (buddy support)
-#include "ClientTCPSocket.h" // Needed for CClientTCPSocket
-#include "MemFile.h"         // Needed for CMemFile
+#include "Preferences.h"          // Needed for CPreferences
+#include "PartFile.h"             // Needed for CPartFile
+#include "updownclient.h"         // Needed for CUpDownClient
+#include "UploadQueue.h"          // Needed for CUploadQueue
+#include "Packet.h"               // Needed for CPacket
+#include "SharedFileList.h"       // Needed for CSharedFileList
+#include "DownloadQueue.h"        // Needed for CDownloadQueue
+#include "Statistics.h"           // Needed for theStats
+#include "amule.h"                // Needed for theApp
+#include "ClientList.h"           // Needed for clientlist (buddy support)
+#include "KadServedBuddyPolicy.h" // Needed for MaxReaskRelaySize
+#include "ClientTCPSocket.h"      // Needed for CClientTCPSocket
+#include "MemFile.h"              // Needed for CMemFile
 #include "Logger.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/utils/KadUDPKey.h"
@@ -1523,8 +1524,11 @@ void CClientUDPSocket::ProcessPacket(
 	case OP_REASKCALLBACKUDP: {
 		AddDebugLogLineN(logClientUDP, "Client UDP socket; OP_REASKCALLBACKUDP");
 		theStats::AddDownOverheadOther(size);
-		if (size < 17) {
-			++theApp->clientlist->GetBuddyStats().serving.relays.reasksMalformed;
+		Kademlia::CBuddyRelayCounts &relays = theApp->clientlist->GetBuddyStats().serving.relays;
+		// It is relayed whole and its source can be forged, so nothing larger than a reask can be
+		// is relayed.
+		if (size < 17 || static_cast<std::size_t>(size) > Kademlia::MaxReaskRelaySize) {
+			++relays.reasksMalformed;
 			break;
 		}
 		CUpDownClient *buddy = theApp->clientlist->FindServedBuddy(packet);
@@ -1544,8 +1548,13 @@ void CClientUDPSocket::ProcessPacket(
 		mem_packet.WriteUInt32(host);
 		mem_packet.WriteUInt16(port);
 		CPacket *response = new CPacket(mem_packet, OP_EMULEPROT, OP_REASKCALLBACKTCP);
-		AddDebugLogLineN(logClientUDP, "Client UDP socket: send OP_REASKCALLBACKTCP");
 		const uint32 responseSize = response->GetPacketSize();
+		if (!theApp->clientlist->HasBuddyRelayBudget(buddy, responseSize)) {
+			delete response;
+			++relays.reasksOverBudget;
+			break;
+		}
+		AddDebugLogLineN(logClientUDP, "Client UDP socket: send OP_REASKCALLBACKTCP");
 		theStats::AddUpOverheadFileRequest(responseSize);
 		buddy->GetSocket()->SendPacket(response);
 		theApp->clientlist->RecordBuddyRelay(buddy, false, responseSize);

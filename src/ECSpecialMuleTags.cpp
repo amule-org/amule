@@ -663,6 +663,10 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 			CECTag(EC_TAG_CORETW_SRV_KEEPALIVE_TIMEOUT, thePrefs::GetServerKeepAliveTimeout()));
 		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_KAD_MAX_SEARCHES, thePrefs::GetKadMaxSourceSearches()));
 		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_KAD_REASK_MS, thePrefs::GetKadSourceReaskTime()));
+		if (thePrefs::IsKadMaxServedBuddiesSupported()) {
+			cwPrefs.AddTag(CECTag(
+				EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, thePrefs::GetKadMaxServedBuddies()));
+		}
 		cwPrefs.AddTag(CECTag(EC_TAG_CORETW_SOURCE_REASK_MS, thePrefs::GetSourceReaskTime()));
 		AddTag(cwPrefs);
 	}
@@ -1321,6 +1325,8 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetCoreVerbose, EC_TAG_CORETW_VERBOSE);
 		thePrefs::SetWriteBufferLimitSupported(
 			thisTab->GetTagByName(EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB) != nullptr);
+		thePrefs::SetKadMaxServedBuddiesSupported(
+			thisTab->GetTagByName(EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES) != nullptr);
 #else
 		ApplyBoolean(use_tag, thisTab, thePrefs::SetVerbose, EC_TAG_CORETW_VERBOSE);
 #endif
@@ -1338,6 +1344,9 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_KAD_MAX_SEARCHES)) != nullptr) {
 			thePrefs::SetKadMaxSourceSearches(oneTag->GetInt());
+		}
+		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES)) != nullptr) {
+			thePrefs::SetKadMaxServedBuddies(oneTag->GetInt());
 		}
 		if ((oneTag = thisTab->GetTagByName(EC_TAG_CORETW_KAD_REASK_MS)) != nullptr) {
 			thePrefs::SetKadSourceReaskTime(oneTag->GetInt());

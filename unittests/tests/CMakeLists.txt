@@ -296,6 +296,12 @@ add_test (NAME KadBuddyStatsTest COMMAND KadBuddyStatsTest)
 target_include_directories (KadBuddyStatsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (KadBuddyStatsTest muleunit mulecommon)
 
+# How many buddies a node serves, the NAT-T slots and who is admitted.
+add_executable (KadServedBuddyPolicyTest KadServedBuddyPolicyTest.cpp)
+add_test (NAME KadServedBuddyPolicyTest COMMAND KadServedBuddyPolicyTest)
+target_include_directories (KadServedBuddyPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (KadServedBuddyPolicyTest muleunit mulecommon)
+
 # The Kad firewall state across an hourly recheck, with the clock passed in.
 add_executable (KadFirewallRecheckTest KadFirewallRecheckTest.cpp)
 add_test (NAME KadFirewallRecheckTest COMMAND KadFirewallRecheckTest)

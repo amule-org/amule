@@ -1433,6 +1433,9 @@ static CECEmptyTag MakeKadBuddyTag()
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EXPIRED, serving.offersExpired));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_SUPERSEDED, serving.offersSuperseded));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_DUPLICATE, serving.offersDuplicate));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_OFFERS_EVICTED, serving.offersEvicted));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REFUSED_SAME_IP, serving.requestsRefusedSameIP));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REQUESTS_NATT, serving.requestsNatT));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_STARTED, serving.started));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_RELEASED_EXTRA, serving.releasedExtra));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_ENDED, serving.ended));
@@ -1450,6 +1453,9 @@ static CECEmptyTag MakeKadBuddyTag()
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_NO_BUDDY, serving.relays.reasksNoBuddy));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_MISMATCHED, serving.relays.reasksMismatched));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_MALFORMED, serving.relays.reasksMalformed));
+	tag.AddTag(
+		CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACKS_OVER_BUDGET, serving.relays.callbacksOverBudget));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_REASKS_OVER_BUDGET, serving.relays.reasksOverBudget));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_RELAY_BYTES_PEAK, serving.peakRelayBytesPerMinute));
 	tag.AddTag(CECTag(
 		EC_TAG_KAD_BUDDY_SERVING_CALLBACK_REQUESTS_PEAK, serving.callbackRequestsPerClient.Peak()));
@@ -1595,8 +1601,8 @@ static CECPacket *Get_EC_Response_StatRequest(const CECPacket *request, CLoggerA
 			response->AddTag(CECTag(EC_TAG_STATS_BUDDY_PORT, BuddyPort));
 			response->AddTag(
 				CECTag(EC_TAG_STATS_BUDDY_SERVED, theApp->clientlist->GetServedBuddyCount()));
-			response->AddTag(
-				CECTag(EC_TAG_STATS_BUDDY_SERVED_LIMIT, CClientList::MaxServedBuddies));
+			response->AddTag(CECTag(
+				EC_TAG_STATS_BUDDY_SERVED_LIMIT, theApp->clientlist->GetServedBuddyLimit()));
 		}
 	case EC_DETAIL_UPDATE:
 		break;

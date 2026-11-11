@@ -27,6 +27,7 @@
 
 using namespace muleunit;
 using Kademlia::BuddyId;
+using Kademlia::BuddyIdHex;
 using Kademlia::CBuddyRelayCounts;
 using Kademlia::CDepartedBuddies;
 using Kademlia::CDepartedBuddy;
@@ -161,6 +162,57 @@ TEST(KadBuddyStats, LinkCountsRelaysAndItsBusiestMinute)
 		FormatServedBuddyRelays(link));
 }
 
+TEST(KadBuddyStats, LinkBudgetCountsOnlyTheCurrentMinute)
+{
+	CServedBuddyLink link;
+	const uint64_t start = uint64_t(1) << 33;
+	link.Relay(false, 900, start);
+	ASSERT_TRUE(link.HasBudgetFor(100, 1000, start + 1000));
+	ASSERT_FALSE(link.HasBudgetFor(101, 1000, start + 1000));
+	// The next window starts empty.
+	ASSERT_TRUE(link.HasBudgetFor(1000, 1000, start + CMinutePeak::WindowMs));
+	ASSERT_FALSE(link.HasBudgetFor(1001, 1000, start + CMinutePeak::WindowMs));
+}
+
+TEST(KadBuddyStats, LinkAllowsOneCallbackAMinuteFromEachSender)
+{
+	CServedBuddyLink link;
+	const uint64_t start = uint64_t(1) << 33;
+	ASSERT_TRUE(link.AllowCallbackFrom(1, start));
+	ASSERT_FALSE(link.AllowCallbackFrom(1, start + CMinutePeak::WindowMs - 1));
+	ASSERT_TRUE(link.AllowCallbackFrom(2, start + 1000));
+	ASSERT_TRUE(link.AllowCallbackFrom(1, start + CMinutePeak::WindowMs));
+	ASSERT_FALSE(link.AllowCallbackFrom(1, start + CMinutePeak::WindowMs + 1));
+}
+
+TEST(KadBuddyStats, LinkCallbackTableMakesRoomFromExpiredSenders)
+{
+	CServedBuddyLink link;
+	const uint64_t start = uint64_t(1) << 33;
+	for (uint32_t sender = 0; sender < CServedBuddyLink::MaxCallbackSenders; ++sender) {
+		link.AllowCallbackFrom(sender, start);
+	}
+	const uint64_t later = start + CMinutePeak::WindowMs;
+	ASSERT_TRUE(link.AllowCallbackFrom(1000, later));
+	ASSERT_EQUALS(1u, link.callbackSenders.size());
+	// The new sender is tracked, so a repeat is limited.
+	ASSERT_FALSE(link.AllowCallbackFrom(1000, later + 1));
+}
+
+TEST(KadBuddyStats, LinkCallbackTableFullOfLiveSendersFailsOpen)
+{
+	CServedBuddyLink link;
+	const uint64_t start = uint64_t(1) << 33;
+	for (uint32_t sender = 0; sender < CServedBuddyLink::MaxCallbackSenders; ++sender) {
+		link.AllowCallbackFrom(sender, start);
+	}
+	ASSERT_TRUE(link.AllowCallbackFrom(1000, start + 1));
+	ASSERT_TRUE(link.AllowCallbackFrom(1000, start + 2));
+	ASSERT_EQUALS(CServedBuddyLink::MaxCallbackSenders, link.callbackSenders.size());
+	// A sender already in the table is still limited.
+	ASSERT_FALSE(link.AllowCallbackFrom(5, start + 3));
+}
+
 TEST(KadBuddyStats, DepartedLookupOnAnEmptyListFindsNothing)
 {
 	CDepartedBuddies departed;
@@ -224,4 +276,12 @@ TEST(KadBuddyStats, DepartedRelinkReplacesTheEntry)
 	ASSERT_EQUALS(2u, found->links);
 	ASSERT_EQUALS(3000u, found->endedAt);
 	ASSERT_TRUE(departed.Find(Id(40).data(), 4000).has_value());
+}
+
+TEST(KadBuddyStats, BuddyIdHexIsUpperCaseInStoredOrder)
+{
+	const uint8_t id[16] = {
+		0x00, 0x01, 0x0A, 0xFF, 0x10, 0x2B, 0x3C, 0x4D, 0x5E, 0x6F, 0x70, 0x81, 0x92, 0xA3, 0xB4, 0xC5
+	};
+	ASSERT_EQUALS(std::string("00010AFF102B3C4D5E6F708192A3B4C5"), BuddyIdHex(id));
 }

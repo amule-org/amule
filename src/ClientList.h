@@ -280,10 +280,25 @@ public:
 	void RequestBuddy(Kademlia::CContact *contact, uint8_t connectOptions);
 	bool CanRequestBuddy(uint32_t ip) const;
 	void RecordBuddyFailure(uint32_t ip);
-	bool IncomingBuddy(Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID);
+	enum class EIncomingBuddy
+	{
+		Offered,
+		Full,     // Every slot this requester may take is linked.
+		SameIP,   // We already serve, or have offered to, that address.
+		Conflict, // We already know that client, or it is us.
+	};
+	EIncomingBuddy IncomingBuddy(Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID, bool natT);
 
-	// Stock eMule serves one buddy at a time, and so do we.
-	static constexpr uint32 MaxServedBuddies = 1;
+	//! How many buddies we serve at most: the setting, capped by the connection limit.
+	uint32 GetServedBuddyLimit() const;
+	//! Whether a callback request from `sender` may reach `buddy` now: one a minute per sender.
+	bool AllowBuddyCallback(const CUpDownClient *buddy, uint32 sender);
+	//! Whether `bytes` more fit the buddy's byte budget for this minute.
+	bool HasBuddyRelayBudget(const CUpDownClient *buddy, uint32 bytes) const;
+	bool IsServedBuddyLinked(const CUpDownClient *client) const
+	{
+		return FindServedLink(client) != nullptr;
+	}
 	Kademlia::CBuddyStats &GetBuddyStats() { return m_buddyStats; }
 	const Kademlia::CBuddyStats &GetBuddyStats() const { return m_buddyStats; }
 	uint32 GetServedBuddyCount() const { return static_cast<uint32>(m_servedLinks.size()); }
@@ -305,6 +320,8 @@ public:
 		uint32 counted,
 		uint32 perMinute,
 		const uint8_t *buddyID);
+	//! The same, for a callback request over the limit of one a minute per sender and buddy.
+	void LogBuddyCallbackLimited(const wxString &from, const uint8_t *buddyID);
 	void LogBuddyDisconnect(const CUpDownClient *client, const wxString &reason);
 	void RecordBuddyTimeout(const CUpDownClient *client);
 	void RemoveFromKadList(CUpDownClient *torem);
@@ -397,9 +414,12 @@ private:
 	Kademlia::CBuddyRetry m_buddyRetry;
 	Kademlia::CBuddyStats m_buddyStats;
 	std::vector<Kademlia::CServedBuddyLink> m_servedLinks;
+	std::map<const CUpDownClient *, CClientRef> m_servedRefs; // Keeps each served client alive.
 	Kademlia::CDepartedBuddies m_departedBuddies;
 	// Covers the time before relays reach a buddy that left.
 	static constexpr std::size_t DepartedBuddiesPerSlot = 2;
+	// Slots are kept for NAT-T nodes only once we relay the Kad rendezvous they need.
+	static constexpr bool RelaysKadRendezvous = false;
 	std::string m_departedNote; // The latest drop for a buddy that left, this minute.
 	unsigned m_limitedLinesThisMinute = 0;
 	static constexpr unsigned MaxLimitedLinesPerMinute = 10;
@@ -412,6 +432,13 @@ private:
 
 	void ReleaseBuddy();
 	void StartServedLink(CUpDownClient *client, uint64 now);
+	void EndServedLink(const CUpDownClient *client);
+	uint32 ServedNatTCount() const;
+	bool AdmitsServedBuddy(bool natT) const;
+	bool IsServedOrOfferedIP(uint32 ip, const Kademlia::CUInt128 &requester) const;
+	bool CanLogBuddyDrop() const;
+	void LogBuddyDrop(wxString line, const uint8_t *buddyID);
+	void EvictOldestBuddyOffer();
 	const Kademlia::CServedBuddyLink *FindServedLink(const CUpDownClient *client) const;
 	bool IsServedBuddyID(const uint8_t *buddyID) const;
 	wxString DescribeBuddyTarget(const uint8_t *buddyID) const;
