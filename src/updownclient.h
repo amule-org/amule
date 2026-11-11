@@ -829,6 +829,10 @@ public:
 	/* Port */
 	void SetBuddyPort(uint16 val) { m_nBuddyPort = val; }
 	uint16 GetBuddyPort() const { return m_nBuddyPort; }
+	// Takes the Kad buddy of a duplicate copy of this source before that copy is deleted.
+	void AdoptKadBuddy(const CUpDownClient &duplicate);
+	// Moves to the fallback buddy address after a callback through the stored one failed.
+	bool SwitchToBuddyCandidate();
 	/* Role: we serve this buddy, or it serves us */
 	void SetServedBuddy(bool served) { m_bServedBuddy = served; }
 	bool IsServedBuddy() const { return m_bServedBuddy; }
@@ -1210,6 +1214,9 @@ private:
 	bool m_bServedBuddyNatT = false;
 	uint32 m_nBuddyIP;
 	uint16 m_nBuddyPort;
+	// A different buddy address from a Kad result, held back while the stored one answers.
+	uint32 m_nBuddyCandidateIP = 0;
+	uint16 m_nBuddyCandidatePort = 0;
 
 	EKadState m_nKadState;
 

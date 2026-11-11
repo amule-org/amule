@@ -1365,6 +1365,12 @@ add_test (NAME KadReceiverKeyPolicyTest COMMAND KadReceiverKeyPolicyTest)
 target_include_directories (KadReceiverKeyPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (KadReceiverKeyPolicyTest muleunit mulecommon)
 
+# Which copy of a duplicate source keeps the Kad buddy (#2455).
+add_executable (KadBuddyMergePolicyTest KadBuddyMergePolicyTest.cpp)
+add_test (NAME KadBuddyMergePolicyTest COMMAND KadBuddyMergePolicyTest)
+target_include_directories (KadBuddyMergePolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (KadBuddyMergePolicyTest muleunit mulecommon)
+
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp

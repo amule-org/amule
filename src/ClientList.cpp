@@ -562,6 +562,7 @@ bool CClientList::AttachToAlreadyKnown(
 			tocheck->SetSocket(NULL);
 		}
 		*client = 0;
+		found_client->AdoptKadBuddy(*tocheck);
 		tocheck->Safe_Delete();
 		*client = found_client;
 		return true;
