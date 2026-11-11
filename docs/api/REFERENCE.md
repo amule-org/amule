@@ -2734,7 +2734,7 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
       "peak_relayed_bytes_per_minute": 4500
     },
     "own": {
-      "search_count": 0, "needed_seconds": 0, "missing_seconds": 0, "connected_seconds": 0,
+      "search_count": 0, "held_search_count": 0, "needed_seconds": 0, "missing_seconds": 0, "connected_seconds": 0,
       "requests": { "sent": 0, "skipped": 0, "offered": 0 },
       "connections": { "attempted": 0, "failed": 0 },
       "buddies": { "started": 0, "ended": 0, "timed_out": 0 },
@@ -2768,7 +2768,8 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
 | `buddy.serving.reasks` | object | Reasks for served buddies, counted like `callbacks`. `malformed` counts reasks too short to carry the buddy's id, or longer than the largest valid reask (8,228 bytes). |
 | `buddy.serving.peak_relayed_bytes_per_minute` | int | The most bytes relayed to one served buddy in one minute. |
 | `buddy.own` | object \| null | Counts since the daemon started, for this node as a firewalled node with a buddy of its own. `null` from a daemon too old to report them. The fields are below. |
-| `buddy.own.search_count` | int | Kad searches for a buddy. |
+| `buddy.own.search_count` | int | Kad searches for a buddy. The first looks up this node's BuddyID; the next ones look up a random target. A failed search is retried after 10 minutes. |
+| `buddy.own.held_search_count` | int | Times a due search waited because this node shared no file. It starts once a file is shared. Since 3.3; `0` from an older daemon. |
 | `buddy.own.needed_seconds` / `.missing_seconds` / `.connected_seconds` | int | Time Kad was connected and this node needed a buddy; the part of it without one; and the total time with a buddy, the current one included. |
 | `buddy.own.requests` | object | `sent` counts buddy requests sent to open nodes, and `skipped` the ones not sent because the connection to that node failed within the last hour. `offered` counts the offers received. |
 | `buddy.own.connections` | object | Connections to an offered buddy: `attempted`, and `failed`, which puts that node on the one-hour cooldown. |
@@ -3684,6 +3685,7 @@ Each scrape reads a compact snapshot that amuleapi publishes after a successful 
 | `amule_kad_buddy_peak_relayed_bytes_per_minute` | gauge | Most bytes relayed to one served buddy in one minute, since start |
 | `amule_kad_buddy_peak_callback_requests_per_minute` | gauge | Most callback requests from one client in one minute, since start |
 | `amule_kad_buddy_searches_total` | counter | Searches for a buddy of this node's own |
+| `amule_kad_buddy_searches_held_total` | counter | Due searches for a buddy of this node's own held because it shared no file |
 | `amule_kad_buddy_own_requests_total` | counter, `result="sent\|skipped\|offered"` | Buddy requests sent, skipped for the one-hour cooldown, and offers received |
 | `amule_kad_buddy_own_connections_total` | counter, `result="attempted\|failed"` | Connections to an offered buddy |
 | `amule_kad_buddy_own_events_total` | counter, `event="started\|ended\|timed_out"` | Changes to this node's own buddy |

@@ -658,6 +658,7 @@
   "stats_tree_kad_buddies_reasks_dropped": "Reasks Dropped: %llu",
   "stats_tree_kad_buddies_busiest_minute": "Busiest Minute to One Buddy: %s",
   "stats_tree_kad_buddies_own_searches": "Buddy Searches: %llu",
+  "stats_tree_kad_buddies_own_searches_held": "Buddy Searches Held for a Shared File: %llu",
   "stats_tree_kad_buddies_own_requests_sent": "Buddy Requests Sent: %llu",
   "stats_tree_kad_buddies_own_offers_received": "Buddy Offers Received: %llu",
   "stats_tree_kad_buddies_own_connect_failures": "Failed Buddy Connections: %llu",

@@ -64,6 +64,7 @@ there client on the eMule forum..
 #include "../../Statistics.h"
 #include "../../MemFile.h"
 #include "../../KadBuddyCallback.h"
+#include "../../KadBuddySearchPolicy.h" // Needed for OwnBuddyID
 #include "../../KadServedBuddyPolicy.h" // Needed for IsNatTCapableRequest
 #include "../../updownclient.h"
 #include "../../ClientTCPSocket.h"
@@ -1761,9 +1762,7 @@ void CKademliaUDPListener::ProcessFindBuddyResponse(const uint8_t *packetData,
 	CHECK_TRACKED_PACKET(KADEMLIA_FINDBUDDY_REQ);
 
 	CMemFile bio(packetData, lenPacket);
-	CUInt128 check = bio.ReadUInt128();
-	check ^= CUInt128(true);
-	if (CKademlia::GetPrefs()->GetKadID() == check) {
+	if (bio.ReadUInt128() == OwnBuddyID(CKademlia::GetPrefs()->GetKadID())) {
 		CUInt128 userID = bio.ReadUInt128();
 		uint16_t tcpport = bio.ReadUInt16();
 		uint8_t connectOptions = 0;

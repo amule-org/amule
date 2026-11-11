@@ -83,6 +83,7 @@ there client on the eMule forum..
 #endif
 #include "../../GuiEvents.h"
 #include "../../KadBuddyIdLayout.h"
+#include "../../KadBuddySearchPolicy.h" // Needed for OwnBuddyID
 
 ////////////////////////////////////////
 using namespace Kademlia;
@@ -796,8 +797,7 @@ void CSearch::StorePacket()
 				}
 			} else if (publishAs == EKadSourcePublish::Buddy) {
 				// We send the ID to our buddy so they can do a callback.
-				CUInt128 buddyID(true);
-				buddyID ^= CKademlia::GetPrefs()->GetKadID();
+				const CUInt128 buddyID = OwnBuddyID(CKademlia::GetPrefs()->GetKadID());
 				taglist.push_back(new CTagInt8(TAG_SOURCETYPE, file->IsLargeFile() ? 5 : 3));
 				taglist.push_back(new CTagVarInt(
 					TAG_SERVERIP, theApp->clientlist->GetBuddy()->GetIP()));
@@ -1007,9 +1007,8 @@ void CSearch::StorePacket()
 		}
 
 		CMemFile packetdata;
-		// Send the ID we used to find our buddy. Used for checks later and allows users to callback
-		// someone if they change buddies.
-		packetdata.WriteUInt128(m_target);
+		// Our BuddyID, not the lookup target: the offer must echo it, and sources publish it.
+		packetdata.WriteUInt128(OwnBuddyID(CKademlia::GetPrefs()->GetKadID()));
 		packetdata.WriteUInt128(CKademlia::GetPrefs()->GetClientHash());
 		packetdata.WriteUInt16(thePrefs::GetPort());
 

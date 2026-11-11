@@ -3503,6 +3503,7 @@ TEST(Refresher, KadBuddyCountersAreParsedFromTheirContainer)
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_SERVING_CALLBACK_REQUESTS_PEAK, static_cast<std::uint32_t>(4)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CONNECTED, static_cast<std::uint32_t>(5)));
 	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_MISSING_SECONDS, static_cast<std::uint32_t>(60)));
+	buddy.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_SEARCHES_HELD, static_cast<std::uint32_t>(12)));
 	resp.AddTag(buddy);
 
 	KadSnapshot out;
@@ -3525,6 +3526,7 @@ TEST(Refresher, KadBuddyCountersAreParsedFromTheirContainer)
 	ASSERT_EQUALS(std::uint64_t(4), out.buddy_serving.callbacks.peak_requests_per_minute);
 	ASSERT_EQUALS(std::uint64_t(5), out.buddy_own.buddies.started);
 	ASSERT_EQUALS(std::uint64_t(60), out.buddy_own.missing_seconds);
+	ASSERT_EQUALS(std::uint64_t(12), out.buddy_own.held_search_count);
 	// A counter the daemon did not send reads as zero, not as garbage.
 	ASSERT_EQUALS(std::uint64_t(0), out.buddy_own.search_count);
 }

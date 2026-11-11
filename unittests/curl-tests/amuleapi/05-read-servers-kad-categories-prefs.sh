@@ -182,7 +182,7 @@ _assert_json_eq '[.buddy.serving | paths(scalars) | join(".")] | join(" ")' \
 	'pending_count served_seconds requests.received requests.offered requests.refused_firewalled requests.refused_full requests.refused_conflict requests.refused_same_ip requests.rate_limited requests.natt requests.expired requests.superseded requests.duplicate requests.evicted buddies.started buddies.released_extra buddies.ended buddies.timed_out callbacks.relayed callbacks.relayed_bytes callbacks.no_buddy callbacks.mismatched callbacks.rate_limited callbacks.over_budget callbacks.peak_requests_per_minute reasks.relayed reasks.relayed_bytes reasks.no_buddy reasks.mismatched reasks.malformed reasks.over_budget peak_relayed_bytes_per_minute' \
 	'/kad.buddy.serving has every counter'
 _assert_json_eq '[.buddy.own | paths(scalars) | join(".")] | join(" ")' \
-	'search_count needed_seconds missing_seconds connected_seconds requests.sent requests.skipped requests.offered connections.attempted connections.failed buddies.started buddies.ended buddies.timed_out received_callback_count received_reask_count' \
+	'search_count held_search_count needed_seconds missing_seconds connected_seconds requests.sent requests.skipped requests.offered connections.attempted connections.failed buddies.started buddies.ended buddies.timed_out received_callback_count received_reask_count' \
 	'/kad.buddy.own has every counter'
 _assert_json_eq '[.buddy.serving, .buddy.own | .. | scalars | type] | unique | join(",")' number \
 	'/kad.buddy counters are numbers'

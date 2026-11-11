@@ -130,6 +130,7 @@ struct CBuddyStats
 	struct Own
 	{
 		uint64_t searches = 0;
+		uint64_t searchesHeld = 0; // A due search waited for a shared file.
 		uint64_t requestsSent = 0;
 		uint64_t requestsSkipped = 0; // The node failed us within the cooldown.
 		uint64_t offersReceived = 0;

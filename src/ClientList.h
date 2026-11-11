@@ -413,6 +413,7 @@ private:
 	uint8 m_nBuddyStatus;
 	Kademlia::CBuddyRetry m_buddyRetry;
 	Kademlia::CBuddyStats m_buddyStats;
+	bool m_buddySearchHeld = false; // A due buddy search waits for a shared file.
 	std::vector<Kademlia::CServedBuddyLink> m_servedLinks;
 	std::map<const CUpDownClient *, CClientRef> m_servedRefs; // Keeps each served client alive.
 	Kademlia::CDepartedBuddies m_departedBuddies;

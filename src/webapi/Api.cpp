@@ -7170,6 +7170,7 @@ void WriteKadBuddyCounters(CJsonWriter &w, const webapi::KadSnapshot &k)
 		const webapi::KadBuddyOwnSnapshot &o = k.buddy_own;
 		w.BeginObject();
 		count("search_count", o.search_count);
+		count("held_search_count", o.held_search_count);
 		count("needed_seconds", o.needed_seconds);
 		count("missing_seconds", o.missing_seconds);
 		count("connected_seconds", o.connected_seconds);

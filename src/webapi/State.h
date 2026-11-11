@@ -666,6 +666,7 @@ struct KadBuddyServingSnapshot
 struct KadBuddyOwnSnapshot
 {
 	std::uint64_t search_count = 0;
+	std::uint64_t held_search_count = 0;
 	std::uint64_t needed_seconds = 0;
 	std::uint64_t missing_seconds = 0;
 	std::uint64_t connected_seconds = 0;
