@@ -73,6 +73,8 @@ class CAICHHash;
 class CServer;
 enum class EContactRoute;
 struct SContactFacts;
+struct SSourceRouteFacts;
+enum class ESourceRoute : std::uint8_t;
 
 enum EChatCaptchaState
 {
@@ -365,6 +367,12 @@ private:
 	//! How this client is reached: Refuse exactly where CheckContactPreconditions() declines it.
 	EContactRoute ContactRoute() const;
 	SContactFacts ContactFactsFor(const CNetworkAddress &address) const;
+	//! The facts NextSourceRoute() decides on. @a callbackOnly: a LowID reached only by a callback.
+	SSourceRouteFacts SourceRouteFacts(bool callbackOnly) const;
+	//! The callback through the Kad buddy, or the search for its address. Whether a request went out.
+	bool StartKadBuddyCallback();
+	//! After a contact that never completed the hellos: whether another route is left to try.
+	bool KeepForNextRoute(bool failedAdvertisedIPv6);
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	//! Sends OP_NAT_CALLBACKREQUEST to this LowID peer when the Lugdunum preconditions hold.
 	//! Returns whether the request went out; a request held for the server's UDP key is not a
@@ -831,6 +839,11 @@ public:
 	uint16 GetBuddyPort() const { return m_nBuddyPort; }
 	// Takes the Kad buddy of a duplicate copy of this source before that copy is deleted.
 	void AdoptKadBuddy(const CUpDownClient &duplicate);
+	// Takes every contact route a duplicate copy of this source has and this one lacks.
+	void AdoptContactRoutes(const CUpDownClient &duplicate);
+	// An IPv6 a third party reported for a source without an IPv4 address, dialled once every
+	// other route has failed.
+	void SetLastResortIPv6(const CNetworkAddress &address) { m_lastResortIPv6 = address; }
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
 	/* Role: we serve this buddy, or it serves us */
@@ -1217,6 +1230,10 @@ private:
 	// A different buddy address from a Kad result, held back while the stored one answers.
 	uint32 m_nBuddyCandidateIP = 0;
 	uint16 m_nBuddyCandidatePort = 0;
+	// The route of the contact in flight, and the routes that failed since the last hello.
+	ESourceRoute m_sourceRoute{};
+	unsigned m_failedSourceRoutes = 0;
+	CNetworkAddress m_lastResortIPv6;
 
 	EKadState m_nKadState;
 

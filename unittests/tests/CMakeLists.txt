@@ -1371,6 +1371,12 @@ add_test (NAME KadBuddyMergePolicyTest COMMAND KadBuddyMergePolicyTest)
 target_include_directories (KadBuddyMergePolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (KadBuddyMergePolicyTest muleunit mulecommon)
 
+# The order a download source's contact routes are tried in, and moving on after a failure (#2464).
+add_executable (SourceRoutePolicyTest SourceRoutePolicyTest.cpp)
+add_test (NAME SourceRoutePolicyTest COMMAND SourceRoutePolicyTest)
+target_include_directories (SourceRoutePolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (SourceRoutePolicyTest muleunit mulecommon)
+
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp

@@ -72,15 +72,15 @@ inline SKadBuddyMerge DecideKadBuddyMerge(const SKadBuddyMergeFacts &facts)
 }
 
 /**
- * A callback through the stored buddy of a source we are queued at failed: move to the fallback.
+ * A callback through the stored buddy failed: move to the fallback.
  *
  * The callback is the signal because the source answers it with a TCP connection. A UDP reask
  * answer is matched by the exact IP and UDP port, so a source behind a NAT that changes the port
  * looks silent through a working buddy.
  */
-inline bool ShouldSwitchToBuddyCandidate(bool hasCandidate, bool callbackUnanswered, bool queued)
+inline bool ShouldSwitchToBuddyCandidate(bool hasCandidate, bool callbackUnanswered)
 {
-	return hasCandidate && callbackUnanswered && queued;
+	return hasCandidate && callbackUnanswered;
 }
 
 #endif // KAD_BUDDY_MERGE_POLICY_H

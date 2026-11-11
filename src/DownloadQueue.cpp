@@ -701,7 +701,7 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 					}
 				}
 
-				it->GetClient()->AdoptKadBuddy(*source);
+				it->GetClient()->AdoptContactRoutes(*source);
 				source->Safe_Delete();
 				return;
 			}
@@ -1824,6 +1824,12 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 
 	if (ctemp) {
 		ctemp->SetConnectOptions(byCryptOptions);
+#ifdef ENABLE_IPV6
+		if (ShouldKeepKadSourceIPv6AsLastResort(facts) &&
+			!theApp->ipfilter->IsFiltered(publishedIPv6)) {
+			ctemp->SetLastResortIPv6(publishedIPv6);
+		}
+#endif
 
 		AddDebugLogLineN(logKadSearch,
 			CFormat("Happily adding a source (%s) type %d") %

@@ -1751,8 +1751,10 @@ uint32 CPartFile::Process(uint8 m_icounter)
 
 				// Give up to 1 min for UDP to respond..
 				// If we are within on min on TCP, do not try..
+				// A source asked on the next tick gets the TCP ask below, not a UDP reask as
+				// well.
 				const uint64 reask = thePrefs::GetSourceReaskTime();
-				if (theApp->IsConnected() &&
+				if (theApp->IsConnected() && cur_src->GetLastAskedTime() != 0 &&
 					SourceRetryPolicy::IsDue(
 						dwCurTick, cur_src->GetLastAskedTime(), reask - 20000)) {
 					cur_src->UDPReaskForDownload();

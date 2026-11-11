@@ -107,6 +107,7 @@
 #include "kademlia/routing/RoutingZone.h"
 #include "KadBuddyIdLayout.h"    // Needed for ConvertBuddyIdLayout (#1835)
 #include "KadBuddyMergePolicy.h" // Needed for DecideKadBuddyMerge
+#include "SourceRoutePolicy.h"   // Needed for NextSourceRoute
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h" // Needed for ShouldRequestLugdunumNatCallback
 #include "NatServerHolePunch.h"   // Needed for ShouldRequestLowIdHolePunch
@@ -1579,12 +1580,14 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	SourceItemType source_type = UNAVAILABLE_SOURCE;
 	SourceItemType peer_type = UNAVAILABLE_SOURCE;
 
-	// A callback through the stored buddy failed. With a fallback buddy, keep the source and its
-	// queue place for the next reask instead of deleting it.
-	if (m_nDownloadState == DS_WAITCALLBACKKAD && SwitchToBuddyCandidate()) {
+	// A source is given up only once every route it offers has failed (#2464).
+	if (KeepForNextRoute(failedAdvertisedIPv6)) {
 		SetDownloadState(DS_ONQUEUE);
 		m_bReaskPending = true;
+		// The source never got our request, so it is asked on the next tick, not at the next reask.
+		ResetLastAskedTime();
 	}
+	m_sourceRoute = ESourceRoute::None;
 
 	// check if this client is needed in any way, if not delete it
 	bool bDelete = true;
@@ -1616,12 +1619,6 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 
 	switch (m_nDownloadState) {
 	case DS_CONNECTING:
-		if (failedAdvertisedIPv6) {
-			SetDownloadState(DS_ONQUEUE);
-			bDelete = false;
-			break;
-		}
-		/* fall through */
 	case DS_WAITCALLBACK:
 	case DS_ERROR:
 	case DS_BANNED:
@@ -2160,6 +2157,111 @@ void CUpDownClient::SendClassicCallbackRequest()
 	theApp->serverconnect->SendPacket(packet);
 }
 
+SSourceRouteFacts CUpDownClient::SourceRouteFacts(bool callbackOnly) const
+{
+	SSourceRouteFacts facts;
+	facts.callbackOnly = callbackOnly;
+	facts.directCallback = HasLowID() && SupportsDirectUDPCallback() &&
+			       thePrefs::GetEffectiveUDPPort() != 0 && GetConnectIP() != 0;
+	facts.hasBuddyID = HasValidBuddyID();
+	facts.kadConnected = Kademlia::CKademlia::IsConnected();
+	// Also asked from Disconnected(), which runs during shutdown.
+	if (theApp->serverconnect != nullptr) {
+		facts.onOurServer = theApp->serverconnect->IsLocalServer(m_dwServerIP, m_nServerPort);
+		facts.canTakeCallback = theApp->CanDoCallback(GetServerIP(), GetServerPort());
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+		// A server list lookup, needed only for a LowID.
+		facts.foreignNatCallback = callbackOnly && ForeignNatCallbackServer() != nullptr;
+#endif
+	}
+	facts.failed = m_failedSourceRoutes;
+	return facts;
+}
+
+bool CUpDownClient::StartKadBuddyCallback()
+{
+	if (GetBuddyIP() && GetBuddyPort()) {
+		// One form per request: eMule's flood protection allows about one request per minute (#1835).
+		m_bBuddyIdUseAmuleLayout = Kademlia::NextBuddyIdUsesAmuleLayout(
+			m_bBuddyIdUseAmuleLayout, m_bBuddyCallbackUnanswered);
+		uint8_t buddyIDToSend[16];
+		if (m_bBuddyIdUseAmuleLayout) {
+			Kademlia::ConvertBuddyIdLayout(GetBuddyID(), buddyIDToSend);
+		} else {
+			md4cpy(buddyIDToSend, GetBuddyID());
+		}
+		m_bBuddyCallbackUnanswered = true;
+		CMemFile bio(34);
+		bio.WriteUInt128(Kademlia::CUInt128(buddyIDToSend));
+		bio.WriteUInt128(Kademlia::CUInt128(m_reqfile->GetFileHash().GetHash()));
+		bio.WriteUInt16(thePrefs::GetPort());
+		CPacket *packet = new CPacket(bio, OP_KADEMLIAHEADER, KADEMLIA_CALLBACK_REQ);
+		// eMule FIXME: We don't know which kadversion the buddy has, so we need to send unencrypted
+		theApp->clientudp->SendPacket(packet, GetBuddyIP(), GetBuddyPort(), false, nullptr, true, 0);
+		AddDebugLogLineN(logClientKadUDP,
+			CFormat("KadCallbackReq (size=%i) to %s") % packet->GetPacketSize() %
+				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()));
+		theStats::AddUpOverheadKad(packet->GetRealPacketSize());
+	} else {
+		AddLogLineN(_("Searching buddy for lowid connection"));
+		// Create search to find buddy.
+		Kademlia::CSearch *findSource = new Kademlia::CSearch;
+		findSource->SetSearchTypes(Kademlia::CSearch::FINDSOURCE);
+		findSource->SetTargetID(Kademlia::CUInt128(GetBuddyID()));
+		findSource->AddFileID(Kademlia::CUInt128(m_reqfile->GetFileHash().GetHash()));
+		if (!Kademlia::CSearchManager::StartSearch(findSource)) {
+			// This should never happen..
+			wxFAIL;
+			return false;
+		}
+	}
+	SetDownloadState(DS_WAITCALLBACKKAD);
+	m_sourceRoute = ESourceRoute::KadBuddy;
+	return true;
+}
+
+bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
+{
+	const uint8 state = m_nDownloadState;
+	if (state != DS_CONNECTING && state != DS_WAITCALLBACK && state != DS_WAITCALLBACKKAD) {
+		return false;
+	}
+	// The next dial goes to the IPv4 identity (ContactDialPolicy.h).
+	if (failedAdvertisedIPv6 && state == DS_CONNECTING) {
+		return true;
+	}
+	if (m_sourceRoute == ESourceRoute::None || m_reqfile == nullptr) {
+		return false;
+	}
+	// A fallback buddy leaves the buddy route untried.
+	if (m_sourceRoute == ESourceRoute::KadBuddy && SwitchToBuddyCandidate()) {
+		return true;
+	}
+	m_failedSourceRoutes |= SourceRouteBit(m_sourceRoute);
+	const CNetworkAddress &user = GetUserAddress();
+	const bool nativeIPv6 = user.IsIPv6() && !user.IsIPv4Mapped();
+	const bool dialFailed = (m_failedSourceRoutes & SourceRouteBit(ESourceRoute::Dial)) != 0;
+	const ESourceRoute next =
+		NextSourceRoute(SourceRouteFacts(HasLowID() && (!nativeIPv6 || dialFailed)));
+	if (next == ESourceRoute::None) {
+		if (m_lastResortIPv6.IsAbsent() || nativeIPv6) {
+			return false;
+		}
+		// An IPv6-only source from now on; a hello over IPv4 moves it back.
+		AddDebugLogLineN(logClient,
+			CFormat("Contact route %s to source %s failed, dialling its IPv6 [%s]") %
+				SourceRouteName(m_sourceRoute) % GetUserHash().Encode() %
+				m_lastResortIPv6.ToWxString());
+		SetUserAddress(m_lastResortIPv6);
+		m_lastResortIPv6 = CNetworkAddress::Absent();
+		return true;
+	}
+	AddDebugLogLineN(logClient,
+		CFormat("Contact route %s to source %s failed, trying %s") % SourceRouteName(m_sourceRoute) %
+			GetUserHash().Encode() % SourceRouteName(next));
+	return true;
+}
+
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 {
 	// Kad reviewed
@@ -2181,10 +2283,14 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		return refused;
 	}
 	// Every callback route carries IPv4 only, so a native IPv6 contact skips them and is dialled.
-	const bool dialIPv6 = ContactRoute() == EContactRoute::DialIPv6;
+	// A LowID whose IPv6 dial failed is called back instead.
+	const bool dialIPv6 =
+		ContactRoute() == EContactRoute::DialIPv6 &&
+		!(HasLowID() && (m_failedSourceRoutes & SourceRouteBit(ESourceRoute::Dial)) != 0);
 	if (!dialIPv6) {
 		m_preparedDialAddress = CNetworkAddress::Absent();
 	}
+	const ESourceRoute route = NextSourceRoute(SourceRouteFacts(HasLowID() && !dialIPv6));
 
 	if (GetKadState() == KS_QUEUED_FWCHECK) {
 		SetKadState(KS_CONNECTING_FWCHECK);
@@ -2224,27 +2330,16 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			// reached while we cannot call back.
 			return EContactResult::Declined;
 		}
+	}
 
-		// We already know we are not firewalled here, as the condition above detected LowID->LowID
-		// and returned. If ANYTHING changes with the "if(!theApp->CanDoCallback(this))" above that
-		// lets you fall through with both the source and us firewalled, it must be rechecked
-		// before this check.
-		if (HasValidBuddyID() && !GetBuddyIP() && !GetBuddyPort() &&
-			!theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort()) &&
-			!(SupportsDirectUDPCallback() && thePrefs::GetEffectiveUDPPort() != 0)) {
-			// This is a Kad firewalled source that we want to do a special callback because it
-			// has no buddyIP or buddyPort.
-			if (Kademlia::CKademlia::IsConnected()) {
-				// We are connect to Kad
-				if (Kademlia::CKademlia::GetPrefs()->GetTotalSource() > 0 ||
-					Kademlia::CSearchManager::AlreadySearchingFor(
-						Kademlia::CUInt128(GetBuddyID()))) {
-					// There are too many source lookups already or we are already
-					// searching this key.
-					SetDownloadState(DS_TOOMANYCONNSKAD);
-					return EContactResult::Declined;
-				}
-			}
+	// A buddy without an address is searched for first. The route needs us reachable, which the
+	// LowID->LowID decline above and the policy's HighID check ensure.
+	if (route == ESourceRoute::KadBuddy && !GetBuddyIP() && !GetBuddyPort()) {
+		if (Kademlia::CKademlia::GetPrefs()->GetTotalSource() > 0 ||
+			Kademlia::CSearchManager::AlreadySearchingFor(Kademlia::CUInt128(GetBuddyID()))) {
+			// There are too many source lookups already or we are already searching this key.
+			SetDownloadState(DS_TOOMANYCONNSKAD);
+			return EContactResult::Declined;
 		}
 	}
 
@@ -2258,8 +2353,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		return EContactResult::Contacting;
 	}
 
-	if (HasLowID() && SupportsDirectUDPCallback() && thePrefs::GetEffectiveUDPPort() != 0 &&
-		GetConnectIP() != 0) { // LOWID with DirectCallback
+	if (route == ESourceRoute::DirectUdpCallback) {
 		if (m_dwDirectCallbackTimeout != 0) {
 			AddDebugLogLineN(logClient,
 				"ERROR: Trying Direct UDP Callback while already trying to connect to client "
@@ -2295,6 +2389,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			GetUserHash().GetHash(),
 			false,
 			0);
+		m_sourceRoute = route;
 	} else if (HasLowID() && !dialIPv6) { // LOWID
 		// Set where a packet actually goes out. Several of the paths below reach the end having
 		// sent nothing -- a source we are merely queued at, a peer that is not a download source, a
@@ -2312,114 +2407,56 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			return EContactResult::Declined;
 		}
 
-		if (theApp->serverconnect->IsLocalServer(m_dwServerIP, m_nServerPort)) {
+		if (route == ESourceRoute::ServerCallback) {
 			SendClassicCallbackRequest();
 			SetDownloadState(DS_WAITCALLBACK);
+			m_sourceRoute = route;
 			contacted = true;
-		} else {
-			if (GetUploadState() == US_NONE && (!GetRemoteQueueRank() || m_bReaskPending)) {
-
-				if (!HasValidBuddyID()) {
+		} else if (GetUploadState() == US_NONE && (!GetRemoteQueueRank() || m_bReaskPending)) {
+			if (route == ESourceRoute::KadBuddy) {
+				if (GetDownloadState() == DS_WAITCALLBACK) {
+					contacted = StartKadBuddyCallback();
+				}
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-					// Its own server can wake it for us, whatever our ID.
-					if (GetDownloadState() == DS_WAITCALLBACK &&
-						ForeignNatCallbackServer() != nullptr) {
-						if (TrySendForeignNatCallbackRequest()) {
-							return EContactResult::Contacting;
-						}
-						// Held back by the request limits: asked again on reask.
-						m_bReaskPending = true;
-						SetDownloadState(DS_ONQUEUE);
-						return EContactResult::Declined;
-					}
+			} else if (route == ESourceRoute::ForeignNatCallback &&
+				   GetDownloadState() == DS_WAITCALLBACK) {
+				// Its own server can wake it for us, whatever our ID.
+				if (TrySendForeignNatCallbackRequest()) {
+					m_sourceRoute = route;
+					return EContactResult::Contacting;
+				}
+				// Held back by the request limits: asked again on reask.
+				m_bReaskPending = true;
+				SetDownloadState(DS_ONQUEUE);
+				return EContactResult::Declined;
 #endif
-					theApp->downloadqueue->RemoveSource(this);
-					if (Disconnected("LowID and US_NONE and QR=0")) {
-						Safe_Delete();
-						return EContactResult::ClientDeleted;
-					}
-					return EContactResult::Declined;
-				}
-
-				if (!Kademlia::CKademlia::IsConnected()) {
-					// We are not connected to Kad and this is a Kad Firewalled source..
-					theApp->downloadqueue->RemoveSource(this);
-					if (Disconnected("Kad Firewalled source but not connected to Kad.")) {
-						Safe_Delete();
-						return EContactResult::ClientDeleted;
-					}
-					return EContactResult::Declined;
-				}
-
-				if (GetDownloadState() == DS_WAITCALLBACK) {
-					if (GetBuddyIP() && GetBuddyPort()) {
-						// One form per request: eMule's flood protection allows about
-						// one request per minute (#1835).
-						m_bBuddyIdUseAmuleLayout =
-							Kademlia::NextBuddyIdUsesAmuleLayout(
-								m_bBuddyIdUseAmuleLayout,
-								m_bBuddyCallbackUnanswered);
-						uint8_t buddyIDToSend[16];
-						if (m_bBuddyIdUseAmuleLayout) {
-							Kademlia::ConvertBuddyIdLayout(
-								GetBuddyID(), buddyIDToSend);
-						} else {
-							md4cpy(buddyIDToSend, GetBuddyID());
-						}
-						m_bBuddyCallbackUnanswered = true;
-						CMemFile bio(34);
-						bio.WriteUInt128(Kademlia::CUInt128(buddyIDToSend));
-						bio.WriteUInt128(Kademlia::CUInt128(
-							m_reqfile->GetFileHash().GetHash()));
-						bio.WriteUInt16(thePrefs::GetPort());
-						CPacket *packet = new CPacket(
-							bio, OP_KADEMLIAHEADER, KADEMLIA_CALLBACK_REQ);
-						// eMule FIXME: We don't know which kadversion the buddy has,
-						// so we need to send unencrypted
-						theApp->clientudp->SendPacket(packet,
-							GetBuddyIP(),
-							GetBuddyPort(),
-							false,
-							NULL,
-							true,
-							0);
-						AddDebugLogLineN(logClientKadUDP,
-							CFormat("KadCallbackReq (size=%i) to %s") %
-								packet->GetPacketSize() %
-								Uint32_16toStringIP_Port(
-									GetBuddyIP(), GetBuddyPort()));
-						theStats::AddUpOverheadKad(packet->GetRealPacketSize());
-						SetDownloadState(DS_WAITCALLBACKKAD);
-						contacted = true;
-					} else {
-						AddLogLineN(_("Searching buddy for lowid connection"));
-						// Create search to find buddy.
-						Kademlia::CSearch *findSource = new Kademlia::CSearch;
-						findSource->SetSearchTypes(Kademlia::CSearch::FINDSOURCE);
-						findSource->SetTargetID(Kademlia::CUInt128(GetBuddyID()));
-						findSource->AddFileID(Kademlia::CUInt128(
-							m_reqfile->GetFileHash().GetHash()));
-						if (Kademlia::CSearchManager::StartSearch(findSource)) {
-							// Started lookup..
-							SetDownloadState(DS_WAITCALLBACKKAD);
-							contacted = true;
-						} else {
-							// This should never happen..
-							wxFAIL;
-						}
-					}
-				}
 			} else {
-				if (GetDownloadState() == DS_WAITCALLBACK) {
-					m_bReaskPending = true;
-					SetDownloadState(DS_ONQUEUE);
+				theApp->downloadqueue->RemoveSource(this);
+				const wxString reason =
+					HasValidBuddyID() && !Kademlia::CKademlia::IsConnected()
+						? wxString("Kad Firewalled source but not connected to Kad.")
+						: wxString("LowID and US_NONE and QR=0");
+				if (Disconnected(reason)) {
+					Safe_Delete();
+					return EContactResult::ClientDeleted;
 				}
+				return EContactResult::Declined;
 			}
+		} else if (GetDownloadState() == DS_WAITCALLBACK) {
+			m_bReaskPending = true;
+			SetDownloadState(DS_ONQUEUE);
 		}
 		if (!contacted) {
 			return EContactResult::Declined;
 		}
+	} else if (route == ESourceRoute::KadBuddy && GetDownloadState() == DS_CONNECTING) {
+		// A HighID that has become firewalled since: a newer Kad result gave it a buddy.
+		SetDownloadState(DS_WAITCALLBACK);
+		if (!StartKadBuddyCallback()) {
+			return EContactResult::Declined;
+		}
 	} else { // HIGHID
+		m_sourceRoute = ESourceRoute::Dial;
 #ifdef AMULE_UTP_TRANSPORT
 		IUtpContext *utp = theApp->clientudp->GetUtpContext();
 		// Only a port learned from this peer is a remote endpoint. Our own
@@ -2633,6 +2670,8 @@ void CUpDownClient::ConnectionEstablished()
 	m_dialingIPv6 = false;
 	m_preparedDialAddress = CNetworkAddress::Absent();
 	m_dialledIPv6Address = CNetworkAddress::Absent();
+	m_sourceRoute = ESourceRoute::None;
+	m_failedSourceRoutes = 0;
 
 #ifdef __DEBUG__
 	if (!connection_reason.IsEmpty()) {
@@ -3809,6 +3848,7 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()));
 	}
 	if (merge.takeID || merge.takeAddress) {
+		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::KadBuddy);
 		if (GetKadPort() == 0) {
 			SetKadPort(duplicate.GetKadPort());
 		}
@@ -3823,10 +3863,65 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	}
 }
 
+void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
+{
+	AdoptKadBuddy(duplicate);
+
+	const CNetworkAddress &user = GetUserAddress();
+	SSourceRouteMergeFacts facts;
+	facts.existingNativeIPv6 = user.IsIPv6() && !user.IsIPv4Mapped();
+	facts.existingKadPlaceholderID = GetUserIDHybrid() == 1;
+	facts.existingHasServer = GetServerIP() != 0 && GetServerPort() != 0;
+	facts.existingLowID = HasLowID();
+	facts.existingDirectCallback = SupportsDirectUDPCallback();
+	facts.existingHasIPv4 = GetConnectIP() != 0;
+	facts.sameIPv4 = GetConnectIP() == duplicate.GetConnectIP();
+	facts.incomingServerLowID = duplicate.HasLowID() && duplicate.GetUserIDHybrid() > 1 &&
+				    duplicate.GetServerIP() != 0 && duplicate.GetServerPort() != 0;
+	facts.incomingDirectCallback = duplicate.SupportsDirectUDPCallback() &&
+				       duplicate.GetConnectIP() != 0 && duplicate.GetKadPort() != 0;
+#ifdef ENABLE_IPV6
+	const CNetworkAddress &incoming = duplicate.GetUserAddress();
+	facts.existingHasAdvertisedIPv6 = HasModIPv6();
+	facts.existingHasLastResortIPv6 = m_lastResortIPv6.IsPresent();
+	facts.incomingRoutableIPv6 = incoming.IsGloballyRoutableIPv6() && !incoming.IsIPv4Mapped();
+#endif
+	const SSourceRouteMerge merge = DecideSourceRouteMerge(facts);
+
+	wxString taken;
+	if (merge.takeServerRoute) {
+		SetUserIDHybrid(duplicate.GetUserIDHybrid());
+		SetServerIP(duplicate.GetServerIP());
+		SetServerPort(duplicate.GetServerPort());
+		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::ServerCallback);
+		taken += " server callback";
+	}
+	if (merge.takeDirectCallback) {
+		SetIP(duplicate.GetConnectIP());
+		SetKadPort(duplicate.GetKadPort());
+		SetDirectUDPCallbackSupport(true);
+		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::DirectUdpCallback);
+		taken += " direct callback";
+	}
+#ifdef ENABLE_IPV6
+	if (merge.takeAdvertisedIPv6) {
+		UpdateModIPv6(incoming);
+		taken += " IPv6";
+	} else if (merge.takeLastResortIPv6) {
+		m_lastResortIPv6 = incoming;
+		taken += " last-resort IPv6";
+	}
+#endif
+	if (!taken.IsEmpty()) {
+		AddDebugLogLineN(logClient,
+			CFormat("Contact routes taken from a duplicate of source %s:%s") %
+				GetUserHash().Encode() % taken);
+	}
+}
+
 bool CUpDownClient::SwitchToBuddyCandidate()
 {
-	if (!ShouldSwitchToBuddyCandidate(
-		    m_nBuddyCandidateIP != 0, m_bBuddyCallbackUnanswered, GetRemoteQueueRank() != 0)) {
+	if (!ShouldSwitchToBuddyCandidate(m_nBuddyCandidateIP != 0, m_bBuddyCallbackUnanswered)) {
 		return false;
 	}
 	AddDebugLogLineN(logKadBuddy,
