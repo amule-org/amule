@@ -4096,16 +4096,12 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 	// chain take the merge as decided on them, not on the fallback.
 	std::optional<bool> startTakesAdvertisedIPv6;
 	if (std::optional<SSourceRoutes> start = m_chainStart.Routes()) {
-		const SSourceRouteMerge startMerge =
-			DecideSourceRouteMerge(WithRouteFacts(facts, *start, incomingRoute));
-		startTakesAdvertisedIPv6 = startMerge.takeAdvertisedIPv6;
-		ApplySourceRouteMerge(*start, startMerge, incomingRoute);
+		startTakesAdvertisedIPv6 = MergeSourceRoutes(*start, facts, incomingRoute).takeAdvertisedIPv6;
 		m_chainStart.Update(*start);
 	}
 
 	SSourceRoutes routes = CurrentRoutes();
-	const SSourceRouteMerge merge = DecideSourceRouteMerge(WithRouteFacts(facts, routes, incomingRoute));
-	ApplySourceRouteMerge(routes, merge, incomingRoute);
+	const SSourceRouteMerge merge = MergeSourceRoutes(routes, facts, incomingRoute);
 	ApplyRoutes(routes);
 
 	wxString taken;

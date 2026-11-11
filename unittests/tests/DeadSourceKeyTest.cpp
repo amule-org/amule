@@ -321,8 +321,27 @@ SSourceRouteMergeFacts FromOurServer()
 
 void Merge(SSourceRoutes &routes, const SSourceRouteMergeFacts &facts, const SStoredSourceRoute &incoming)
 {
-	ApplySourceRouteMerge(
-		routes, DecideSourceRouteMerge(WithRouteFacts(facts, routes, incoming)), incoming);
+	MergeSourceRoutes(routes, facts, incoming);
+}
+
+// 81.39.134.0 as an ed2k ID: below 0x1000000, so it reads as a LowID.
+const uint32 kDotZeroIP = 0x00862751u;
+const uint32 kDotZeroHybrid = 0x51278600u;
+
+// Our server lists the source at kDotZeroIP, port 21338, as a server record does.
+SStoredSourceRoute DotZeroServerRecord()
+{
+	SStoredSourceRoute record = ServerRoute(kDotZeroIP, kServer);
+	record.tcpPort = 21338;
+	return record;
+}
+
+SSourceRouteMergeFacts ServerLowIDFacts(bool trusted)
+{
+	SSourceRouteMergeFacts facts;
+	facts.incomingTrusted = trusted;
+	facts.incomingServerLowID = true;
+	return facts;
 }
 } // namespace
 
@@ -438,4 +457,57 @@ TEST(CSourceRouteMerge, AnIPv4StartTakesTheAdvertisedIPv6ItsIPv6FallbackWouldNot
 
 	ASSERT_FALSE(DecideSourceRouteMerge(WithRouteFacts(facts, onFallback, incoming)).takeAdvertisedIPv6);
 	ASSERT_TRUE(DecideSourceRouteMerge(WithRouteFacts(facts, start, incoming)).takeAdvertisedIPv6);
+}
+
+TEST(CSourceRouteMerge, AHighIDAtADotZeroIPListedByOurServerStaysAHighID)
+{
+	SSourceRoutes known;
+	known.route.id = kDotZeroHybrid;
+	known.route.address = CNetworkAddress::FromIPv4NetworkOrder(kDotZeroIP);
+	known.route.tcpPort = 21338;
+
+	SSourceRoutes merged = known;
+	const SSourceRouteMerge merge =
+		MergeSourceRoutes(merged, ServerLowIDFacts(true), DotZeroServerRecord());
+	ASSERT_FALSE(merge.takeServerRoute);
+	ASSERT_TRUE(SameRoutes(known, merged));
+}
+
+TEST(CSourceRouteMerge, ALowIDListedByOurServerAtItsOwnDotZeroIPBecameAHighID)
+{
+	SSourceRoutes known;
+	known.route = ServerRoute(0x1235, kServer);
+	known.route.address = CNetworkAddress::FromIPv4NetworkOrder(kDotZeroIP);
+	known.route.tcpPort = 21338;
+
+	SSourceRoutes merged = known;
+	MergeSourceRoutes(merged, ServerLowIDFacts(true), DotZeroServerRecord());
+	ASSERT_EQUALS(kDotZeroHybrid, merged.route.id);
+	ASSERT_TRUE(known.route.address == merged.route.address);
+	ASSERT_EQUALS(0x1235u, merged.serverCandidate.id);
+
+	SSourceRoutes untrusted = known;
+	MergeSourceRoutes(untrusted, ServerLowIDFacts(false), DotZeroServerRecord());
+	ASSERT_EQUALS(0x1235u, untrusted.route.id);
+	ASSERT_EQUALS(kDotZeroHybrid, untrusted.lastResortIPv4.id);
+}
+
+TEST(CSourceRouteMerge, ADotZeroRecordIsALowIDWithoutTheSameAddressAndPort)
+{
+	// No known address: it cannot be told apart from a LowID.
+	SSourceRoutes known;
+	known.route = ServerRoute(0x1235, kServer);
+	SSourceRoutes merged = known;
+	MergeSourceRoutes(merged, ServerLowIDFacts(true), DotZeroServerRecord());
+	ASSERT_EQUALS(kDotZeroIP, merged.route.id);
+
+	// Another port at that address is another client.
+	SSourceRoutes highID;
+	highID.route.id = kDotZeroHybrid;
+	highID.route.address = CNetworkAddress::FromIPv4NetworkOrder(kDotZeroIP);
+	highID.route.tcpPort = 8249;
+	SSourceRoutes other = highID;
+	const SSourceRouteMerge merge =
+		MergeSourceRoutes(other, ServerLowIDFacts(true), DotZeroServerRecord());
+	ASSERT_TRUE(merge.takeServerRoute);
 }

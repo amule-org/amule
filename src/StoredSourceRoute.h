@@ -222,4 +222,30 @@ inline void ApplySourceRouteMerge(
 	}
 }
 
+/**
+ * Merges a duplicate's route into the kept copy's routes: decides with WithRouteFacts(), writes with
+ * ApplySourceRouteMerge(), and returns the decision.
+ *
+ * A server or old source-exchange record gives a HighID as its IP, so a HighID whose IP ends in .0
+ * reads as a LowID. A record whose ID and port are the IPv4 and port the source is known at is that
+ * HighID: a real LowID matches both only by chance.
+ */
+inline SSourceRouteMerge MergeSourceRoutes(
+	SSourceRoutes &routes, SSourceRouteMergeFacts facts, SStoredSourceRoute incoming)
+{
+	const std::uint32_t knownIPv4 = routes.route.address.ToIPv4NetworkOrderOrZero();
+	if (facts.incomingServerLowID && incoming.id == knownIPv4 &&
+		incoming.tcpPort == routes.route.tcpPort) {
+		facts.incomingServerLowID = false;
+		facts.incomingHighIDIPv4 = true;
+		// A HighID's ID is its IP in host order.
+		incoming.id = (knownIPv4 >> 24) | ((knownIPv4 >> 8) & 0xFF00u) |
+			      ((knownIPv4 << 8) & 0xFF0000u) | (knownIPv4 << 24);
+		incoming.address = routes.route.address;
+	}
+	const SSourceRouteMerge merge = DecideSourceRouteMerge(WithRouteFacts(facts, routes, incoming));
+	ApplySourceRouteMerge(routes, merge, incoming);
+	return merge;
+}
+
 #endif // STORED_SOURCE_ROUTE_H
