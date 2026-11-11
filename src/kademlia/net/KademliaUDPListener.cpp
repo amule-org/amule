@@ -1814,8 +1814,7 @@ void CKademliaUDPListener::ProcessCallbackRequest(const uint8_t *packetData,
 		// buddies reaches both, while one repeating itself is limited as stock eMule limits it.
 		if (!theApp->clientlist->AllowBuddyCallback(buddy, ip)) {
 			++relays.callbacksRateLimited;
-			theApp->clientlist->LogBuddyPacketLimited(
-				"Callback request", KadIPPortToString(ip, port), 2, 1, destination);
+			theApp->clientlist->LogBuddyCallbackLimited(KadIPPortToString(ip, port), destination);
 			return;
 		}
 		if (buddy->GetSocket()) {

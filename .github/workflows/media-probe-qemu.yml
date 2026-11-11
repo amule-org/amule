@@ -59,7 +59,7 @@ jobs:
       - uses: actions/checkout@v7
       # User emulation is used only to provision the guest filesystem. Every
       # restriction test runs after booting a separate, full Linux kernel.
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v4
       - name: Install cross-build and VM tools
         run: |
           package=qemu-system-${{ matrix.emulator }}

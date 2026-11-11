@@ -98,15 +98,15 @@ class Requester:
             if offered:
                 wait_kad_packet(peer, KADEMLIA_FINDBUDDY_RES)
 
-    def send_hello(self):
+    def send_hello(self, client_id=LOW_ID_ADDRESS):
         self.sock.connect(('127.0.0.1', self.peer_port))
-        send(self.sock, OP_HELLO, hello(self.address.encode(), LOW_ID_ADDRESS, self.port, user_hash=self.user_hash))
+        send(self.sock, OP_HELLO, hello(self.address.encode(), client_id, self.port, user_hash=self.user_hash))
 
     def wait_hello_answer(self):
         assert wait_packet(self.sock, OP_HELLOANSWER, 30) is not None, 'no hello answer'
 
-    def connect(self):
-        self.send_hello()
+    def connect(self, client_id=LOW_ID_ADDRESS):
+        self.send_hello(client_id)
         self.wait_hello_answer()
 
     def closed(self):
@@ -249,6 +249,39 @@ def check_duplicate_offer_is_counted_apart(proc, ec, udp_port, peer_port):
     wait_served(proc, ec, 0)
 
 
+def check_highid_buddy_is_released(proc, ec, udp_port, peer_port):
+    """A hello whose ID is the node's own address is a HighID: it is reached directly."""
+    before = buddy_counters(ec)
+    node = Requester('127.0.0.60', udp_port, peer_port)
+    node.connect(client_id=node.address)
+    wait_counter(proc, ec, 'SERVING_RELEASED_EXTRA', before['SERVING_RELEASED_EXTRA'] + 1)
+    assert served(ec) == 0, 'a node with a HighID became a served buddy'
+    assert buddy_counters(ec)['SERVING_STARTED'] == before['SERVING_STARTED'], 'a HighID node counted as served'
+    node.sock.close()
+
+
+def check_one_offer_per_address(proc, ec, udp_port, peer_port):
+    """Two nodes behind one address before either connects: only the first gets an offer."""
+    # The per-IP limit allows two buddy requests a minute, so each case uses its own address.
+    before = buddy_counters(ec)
+    first = Requester('127.0.0.61', udp_port, peer_port)
+    other = Requester('127.0.0.61', udp_port, peer_port, offered=False)
+    wait_counter(proc, ec, 'SERVING_REFUSED_SAME_IP', before['SERVING_REFUSED_SAME_IP'] + 1)
+    assert buddy_counters(ec)['PENDING'] == before['PENDING'] + 1, buddy_counters(ec)
+    # The same node may ask again, as when our offer was lost.
+    lost = Requester('127.0.0.62', udp_port, peer_port)
+    again = Requester('127.0.0.62', udp_port, peer_port, lost.buddy_id, lost.user_id)
+    counters = buddy_counters(ec)
+    assert counters['SERVING_OFFERED'] == before['SERVING_OFFERED'] + 3, counters
+    assert counters['SERVING_REFUSED_SAME_IP'] == before['SERVING_REFUSED_SAME_IP'] + 1, counters
+    first.connect()
+    again.connect()
+    wait_served(proc, ec, 2)
+    for request in (first, other, lost, again):
+        request.sock.close()
+    wait_served(proc, ec, 0)
+
+
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-kad-buddy-') as directory:
         root = Path(directory)
@@ -268,9 +301,11 @@ def run(binary):
             wait_served(proc, ec, 0)
             check_pending_offers_are_capped_and_expire(proc, ec, udp_port, peer_port)
             check_duplicate_offer_is_counted_apart(proc, ec, udp_port, peer_port)
+            check_highid_buddy_is_released(proc, ec, udp_port, peer_port)
+            check_one_offer_per_address(proc, ec, udp_port, peer_port)
     print(f'PASS: {SERVED_LIMIT} buddies served, one per address, the extra one dropped, callbacks limited '
           'per sender and buddy, pending offers capped, an expired request not promoted, a duplicate '
-          'offer counted apart, and each counted')
+          'offer counted apart, a HighID node released, one offer per address, and each counted')
 
 
 if __name__ == '__main__':

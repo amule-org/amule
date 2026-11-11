@@ -799,6 +799,18 @@ void CClientList::Process()
 
 		case KS_CONNECTED_BUDDY:
 			if (cur_client->IsServedBuddy()) {
+				// As stock eMule: a node with a HighID is reached directly and needs no
+				// buddy.
+				if (!cur_client->HasLowID()) {
+					if (FindServedLink(cur_client) == nullptr) {
+						++m_buddyStats.serving.releasedExtra;
+					}
+					AddDebugLogLineN(logKadBuddy,
+						"Released buddy " + cur_client->GetFullIP() +
+							": it has a HighID");
+					cur_client->SetKadState(KS_NONE);
+					break;
+				}
 				if (FindServedLink(cur_client) != nullptr) {
 					break;
 				}
@@ -1262,8 +1274,7 @@ uint64 CClientList::GetServedLinkedMs() const
 
 uint64 CClientList::GetOwnBuddyLinkedMs() const
 {
-	const CUpDownClient *buddy = m_pBuddy.GetClient();
-	return buddy != nullptr && !buddy->IsServedBuddy() ? ::GetTickCount64() - m_buddyLinkedAt : 0;
+	return m_pBuddy.IsLinked() ? ::GetTickCount64() - m_buddyLinkedAt : 0;
 }
 
 const Kademlia::CServedBuddyLink *CClientList::FindServedLink(const CUpDownClient *client) const
@@ -1344,7 +1355,8 @@ void CClientList::StartServedLink(CUpDownClient *client, uint64 now)
 	if (theLogger.IsEnabled(logKadBuddy)) {
 		std::string line = "Serving buddy " + link.address + " (" + link.software + "), " +
 				   std::to_string(m_servedLinks.size()) + " of " +
-				   std::to_string(GetServedBuddyLimit()) + (link.natT ? ", NAT-T" : "");
+				   std::to_string(GetServedBuddyLimit()) + (link.natT ? ", NAT-T" : "") +
+				   ", BuddyID " + Kademlia::BuddyIdHex(link.buddyId.data());
 		if (before) {
 			line += ", again: link " + std::to_string(link.linkNumber) + ", the last one ended " +
 				Kademlia::FormatBuddyDuration(Kademlia::CDepartedBuddies::Age(*before, now)) +
@@ -1389,6 +1401,11 @@ void CClientList::RecordBuddyRelayDrop(bool callback, const uint8_t *buddyID)
 			departed->address + ", " +
 			Kademlia::FormatBuddyDuration(Kademlia::CDepartedBuddies::Age(*departed, now)) +
 			" ago";
+	} else if (theLogger.IsEnabled(logKadBuddy)) {
+		// The BuddyID as received, in the sender's layout, so a later run can tell whose it was.
+		AddDebugLogLineN(logKadBuddy,
+			wxString(callback ? "Callback" : "Reask") + " for an unknown BuddyID " +
+				wxString::FromAscii(Kademlia::BuddyIdHex(buddyID).c_str()));
 	}
 }
 
@@ -1413,10 +1430,9 @@ wxString CClientList::DescribeBuddyTarget(const uint8_t *buddyID) const
 void CClientList::LogBuddyPacketLimited(
 	const wxString &what, const wxString &from, uint32 counted, uint32 perMinute, const uint8_t *buddyID)
 {
-	if (!theLogger.IsEnabled(logKadBuddy) || m_limitedLinesThisMinute >= MaxLimitedLinesPerMinute) {
+	if (!CanLogBuddyDrop()) {
 		return;
 	}
-	++m_limitedLinesThisMinute;
 	wxString line = what + " from " + from;
 	if (counted == 0) {
 		line += " dropped: the rate limiter tracks too many senders";
@@ -1424,6 +1440,28 @@ void CClientList::LogBuddyPacketLimited(
 		line += CFormat(" dropped over the rate limit of %u a minute (%u counted)") % perMinute %
 			counted;
 	}
+	LogBuddyDrop(line, buddyID);
+}
+
+void CClientList::LogBuddyCallbackLimited(const wxString &from, const uint8_t *buddyID)
+{
+	if (!CanLogBuddyDrop()) {
+		return;
+	}
+	LogBuddyDrop(
+		"Callback request from " + from + " dropped: one a minute from each sender for each buddy",
+		buddyID);
+}
+
+bool CClientList::CanLogBuddyDrop() const
+{
+	return theLogger.IsEnabled(logKadBuddy) && m_limitedLinesThisMinute < MaxLimitedLinesPerMinute;
+}
+
+// Callers check CanLogBuddyDrop() first, so a flood builds no line.
+void CClientList::LogBuddyDrop(wxString line, const uint8_t *buddyID)
+{
+	++m_limitedLinesThisMinute;
 	if (buddyID != nullptr) {
 		line += ", for " + DescribeBuddyTarget(buddyID);
 	}
@@ -1568,7 +1606,7 @@ CClientList::EIncomingBuddy CClientList::IncomingBuddy(
 	uint32_t nContactIP = wxUINT32_SWAP_ALWAYS(contact->GetIPAddress());
 	// One buddy per address: the TCP connection proves the IP, so this bounds what one host can
 	// take on this node. A subnet rule would refuse neighbours behind one carrier NAT.
-	if (IsServedOrOfferedIP(nContactIP)) {
+	if (IsServedOrOfferedIP(nContactIP, contact->GetClientID())) {
 		return EIncomingBuddy::SameIP;
 	}
 	// If aMule already knows this client, abort this.. It could cause conflicts.
@@ -1630,14 +1668,23 @@ bool CClientList::AdmitsServedBuddy(bool natT) const
 		natT);
 }
 
-bool CClientList::IsServedOrOfferedIP(uint32 ip) const
+bool CClientList::IsServedOrOfferedIP(uint32 ip, const Kademlia::CUInt128 &requester) const
 {
 	const bool served = std::any_of(m_servedRefs.begin(), m_servedRefs.end(), [ip](const auto &entry) {
 		return entry.second.GetClient()->GetIP() == ip;
 	});
-	return served || std::any_of(m_KadSources.begin(), m_KadSources.end(), [ip](const CClientRef &ref) {
-		return ref.GetClient()->GetKadState() == KS_INCOMING_BUDDY && ref.GetClient()->GetIP() == ip;
-	});
+	uint8_t hash[16];
+	requester.ToByteArray(hash);
+	const CMD4Hash requesterHash(hash);
+	// A pending offer has no socket yet, so only its connect IP is set. The same node may ask
+	// again when our offer was lost.
+	return served ||
+	       std::any_of(
+		       m_KadSources.begin(), m_KadSources.end(), [ip, &requesterHash](const CClientRef &ref) {
+			       const CUpDownClient *client = ref.GetClient();
+			       return client->GetKadState() == KS_INCOMING_BUDDY &&
+				      client->GetConnectIP() == ip && client->GetUserHash() != requesterHash;
+		       });
 }
 
 void CClientList::EvictOldestBuddyOffer()
