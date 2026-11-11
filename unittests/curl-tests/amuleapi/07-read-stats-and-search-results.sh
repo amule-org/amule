@@ -65,6 +65,15 @@ _assert_json_eq '[.nodes[] | select(.key == "diagnostics") | .children[].key] | 
 	'kad_buddies kad_receiver_keys' '/stats/tree puts the developer counters under diagnostics'
 _assert_json_eq '[.nodes[] | select(.key == "diagnostics") | .children[] | select(.key == "kad_buddies") | .children[].key] | join(" ")' \
 	'kad_buddies_serving kad_buddies_own' '/stats/tree groups the Kad buddy rows by role'
+# The IPv6 data rows and the IPv6 diagnostics both exist only in ENABLE_IPV6 builds.
+if [ "$(printf '%s' "$CURL_BODY" | jq '[.. | objects | select(.key? == "upload_ipv6_data")] | length')" != 0 ]; then
+	_assert_json_eq '[.nodes[] | select(.key == "diagnostics") | .children[] | select(.key == "ipv6") | .children[].key] | join(" ")' \
+		'ipv6_dials ipv6_dials_answered ipv6_dials_unanswered ipv6_inbound_hellos ipv6_hellos_with_address ipv6_server_sources_accepted ipv6_server_sources_ignored' \
+		'/stats/tree lists the IPv6 diagnostics in an IPv6 build'
+else
+	_assert_json_eq '[.. | objects | select(.key? == "ipv6")] | length' 0 \
+		'/stats/tree has no IPv6 diagnostics without IPv6'
+fi
 _assert_json_eq '[.. | objects | select(.key? == "kad_buddies_time_served") | .values[0].type] | .[0]' \
 	time '/stats/tree Kad buddy time served is a time value'
 _assert_json_eq '[.. | objects | select(.key? == "kad_buddies_relayed_data") | .values[0].type] | .[0]' \

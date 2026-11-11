@@ -716,6 +716,14 @@ stable `key`.
   connects.
 - **IPv6 Data (Session)** (`upload_ipv6_data`, `download_ipv6_data`), in `ENABLE_IPV6` builds:
   payload exchanged with a peer connected over IPv6.
+- **IPv6 (Session)** (`ipv6`, under Diagnostics, English only), in `ENABLE_IPV6` builds:
+  `ipv6_dials` counts TCP dials to a peer's IPv6 address, and `ipv6_dials_answered` and
+  `ipv6_dials_unanswered` how they ended: the hellos completed, or the connection closed first.
+  The two may sum to less than the dials while some are in flight. `ipv6_inbound_hellos` counts
+  inbound hellos over IPv6 from outside our /48, the proof that we are reachable.
+  `ipv6_hellos_with_address` counts hellos whose `CT_MOD_IP_V6` tag aMule kept.
+  `ipv6_server_sources_accepted` and `ipv6_server_sources_ignored` count the IPv6 sentinel source
+  records from servers that aMule tried, or dropped as unusable or IP-filtered.
 
 A session is classified when its hello is processed, on the main thread; the upload disk I/O
 thread only reads the result.

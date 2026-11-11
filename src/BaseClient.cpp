@@ -431,6 +431,7 @@ bool CUpDownClient::ProcessHelloPacket(const uint8_t *pachPacket, uint32 nSize)
 	if (localIPv6.IsIPv6() && peerAddress.IsIPv6() &&
 		peerAddress.TruncatedToPrefix(48) != localIPv6.TruncatedToPrefix(48)) {
 		IPv6ReachabilityProof().NoteHello(::GetTickCount64());
+		theStats::AddIPv6Event(EIPv6Event::InboundHello);
 	}
 #endif
 
@@ -735,6 +736,9 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 					CNetworkAddress::FromIPv6Bytes(temptag.GetHash().GetHash()))) {
 				md4cpy(m_modIPv6, temptag.GetHash().GetHash());
 				m_hasModIPv6 = true;
+#ifdef ENABLE_IPV6
+				theStats::AddIPv6Event(EIPv6Event::HelloWithAddress);
+#endif
 			}
 			break;
 
@@ -1543,6 +1547,11 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	// got that far.
 	const bool failedAdvertisedIPv6 =
 		IsUnansweredAdvertisedDial(m_dialingIPv6, m_dialledIPv6Address, GetConnectAddress());
+#ifdef ENABLE_IPV6
+	if (m_dialingIPv6) {
+		theStats::AddIPv6Event(EIPv6Event::DialUnanswered);
+	}
+#endif
 	if (failedAdvertisedIPv6) {
 		m_unansweredIPv6Address = m_dialledIPv6Address;
 	}
@@ -2557,6 +2566,7 @@ bool CUpDownClient::Connect()
 				CFormat("Trying to connect to [%s]:%u") % connectAddress.ToWxString() %
 					static_cast<unsigned int>(GetUserPort()));
 			m_dialingIPv6 = true;
+			theStats::AddIPv6Event(EIPv6Event::Dial);
 			// A peer reached at its advertised IPv6 keeps the identity it is known by, so that
 			// address stays the fallback if the advertised one later stops answering.
 			m_preserveIdentityOnHello = IsAdvertisedIPv6Dial(connectAddress, GetConnectAddress());
@@ -2630,6 +2640,11 @@ void CUpDownClient::ConnectionEstablished()
 	// debug thing for myself -- check the connection_reason definition.
 
 	RefreshObfuscationState();
+#ifdef ENABLE_IPV6
+	if (m_dialingIPv6) {
+		theStats::AddIPv6Event(EIPv6Event::DialAnswered);
+	}
+#endif
 	m_dialingIPv6 = false;
 	m_preparedDialAddress = CNetworkAddress::Absent();
 	m_dialledIPv6Address = CNetworkAddress::Absent();
