@@ -2578,6 +2578,24 @@ TEST(Refresher, PreferencesEnumAndNestedRemoteControlsDecode)
 	ASSERT_EQUALS(std::string("127.0.0.1"), p.remote_controls.amuleapi.bind_address);
 }
 
+TEST(Refresher, PreferencesLineCapacitiesDecode)
+{
+	CECPacket resp(EC_OP_SET_PREFERENCES);
+	CECEmptyTag conn(EC_TAG_PREFS_CONNECTIONS);
+	conn.AddTag(CECTag(EC_TAG_CONN_DL_CAP, static_cast<std::uint32_t>(12500)));
+	conn.AddTag(CECTag(EC_TAG_CONN_UL_CAP, static_cast<std::uint32_t>(2500)));
+	conn.AddTag(CECTag(EC_TAG_CONN_MAX_DL, static_cast<std::uint32_t>(0)));
+	resp.AddTag(conn);
+
+	PreferencesSnapshot p;
+	std::vector<CategorySnapshot> cats;
+	ParsePreferencesFromPacket(&resp, p, cats);
+
+	ASSERT_EQUALS(static_cast<std::uint32_t>(12500), p.download_capacity_kibibytes_per_second);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(2500), p.upload_capacity_kibibytes_per_second);
+	ASSERT_EQUALS(static_cast<std::uint32_t>(0), p.max_download_kibibytes_per_second);
+}
+
 // The EC listener's settings are value tags, so a false bool arrives as false rather than as
 // nothing, and a daemon that predates them is told apart by the missing port tag. Its sibling
 // sub-objects in the same EC group must keep decoding either way.
@@ -2774,9 +2792,9 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			++emitted;
 	}
 
-	// The documented payload is 145 fields. A row added or dropped without
+	// The documented payload is 147 fields. A row added or dropped without
 	// updating docs/api/REFERENCE.md should trip this.
-	ASSERT_EQUALS(static_cast<std::size_t>(145), emitted);
+	ASSERT_EQUALS(static_cast<std::size_t>(147), emitted);
 }
 
 // The schema's irregularities are enumerated rather than merely counted: each is deliberate and
