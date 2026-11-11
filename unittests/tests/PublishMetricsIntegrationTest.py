@@ -93,10 +93,9 @@ def run(binary):
                     assert summary['max_req_per_ip_60s'] > 0 and lookup_packets > 0, summary
                     break
             else:
-                raise AssertionError(f'No expected Kad2 publication result:\n' + '\n'.join(lines[-100:]))
+                raise AssertionError('No expected Kad2 publication result:\n' + '\n'.join(lines[-100:]))
             assert target is not None
             assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-            ec.sock.close()
     print('PASS: Kad2 queued publication, duplicate acknowledgements and totals')
 
 
