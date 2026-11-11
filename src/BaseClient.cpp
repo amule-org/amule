@@ -3797,7 +3797,9 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 		m_nBuddyCandidateIP = 0;
 		m_nBuddyCandidatePort = 0;
 	}
-	if (merge.storeCandidate) {
+	// One Kad search returns the same fallback from several nodes.
+	if (merge.storeCandidate && (m_nBuddyCandidateIP != duplicate.GetBuddyIP() ||
+					    m_nBuddyCandidatePort != duplicate.GetBuddyPort())) {
 		m_nBuddyCandidateIP = duplicate.GetBuddyIP();
 		m_nBuddyCandidatePort = duplicate.GetBuddyPort();
 		AddDebugLogLineN(logKadBuddy,
