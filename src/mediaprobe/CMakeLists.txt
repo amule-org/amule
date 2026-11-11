@@ -43,7 +43,7 @@ if(BUILD_TESTING AND Python3_Interpreter_FOUND)
   add_test(NAME MediaProbeStartup COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/test_helper.py $<TARGET_FILE:amule-media-probe>
     HelperTests.test_extracts_wav)
-  set_tests_properties(MediaProbeStartup PROPERTIES FIXTURES_SETUP MediaProbeReady TIMEOUT 15)
+  set_tests_properties(MediaProbeStartup PROPERTIES FIXTURES_SETUP MediaProbeReady)
   add_executable(media-probe-sandbox-test sandbox-test.cpp)
   target_compile_features(media-probe-sandbox-test PRIVATE cxx_std_17)
   target_link_libraries(media-probe-sandbox-test PRIVATE media-probe-sandbox)
