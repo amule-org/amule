@@ -4,6 +4,7 @@
 """Download display snapshots must follow two local sources, including idle expiry."""
 import fcntl
 import hashlib
+import ipaddress
 import os
 from pathlib import Path
 import select
@@ -23,7 +24,7 @@ from ED2KLinkIntegrationTest import add_link
 from UploadRefillIntegrationTest import packet, send
 
 
-def local_ipv4():
+def local_ipv4(*, private_only=False):
     # Discovered download sources reject 127/8 even with FilterLanIPs=0, so the fixture
     # binds to an address on this host instead; no external peer is used.
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
@@ -33,8 +34,11 @@ def local_ipv4():
                     probe, 0x8915, struct.pack('256s', interface.encode()))[20:24])
             except OSError:
                 continue
-            if not address.startswith('127.'):
+            if (not address.startswith('127.')
+                    and (not private_only or ipaddress.ip_address(address).is_private)):
                 return address
+    if private_only:
+        return None
     raise AssertionError('the download fixture requires a local non-loopback IPv4 address')
 
 

@@ -213,6 +213,11 @@ CSearch::~CSearch()
 
 void CSearch::Go()
 {
+	if (m_type == STOREFILE && !m_publishMeasured && theLogger.IsEnabled(logKadPublish)) {
+		m_publishMeasured = true;
+		CPublishMetrics::Instance().Start();
+	}
+
 	// Start with a lot of possible contacts, this is a fallback in case search stalls due to dead
 	// contacts
 	if (m_possible.empty()) {
@@ -860,7 +865,13 @@ void CSearch::StorePacket()
 			}
 #endif
 
-			CKademlia::GetUDPListener()->SendPublishSourcePacket(*from, m_target, id, taglist);
+			if (CKademlia::GetUDPListener()->SendPublishSourcePacket(
+				    *from, m_target, id, taglist)) {
+				m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
+				if (theLogger.IsEnabled(logKadPublish)) {
+					CPublishMetrics::Instance().Queued();
+				}
+			}
 			m_totalRequestAnswers++;
 			deleteTagPtrListEntries(&taglist);
 		} else {

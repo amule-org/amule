@@ -87,6 +87,13 @@ def publish(udp_port, file_id, source_id, tags, opcode=KADEMLIA2_PUBLISH_SOURCE_
         assert response[:2] == bytes([0xE4, KADEMLIA2_PUBLISH_RES]), ('publish', response)
 
 
+def unpack_kad_packet(packet):
+    if packet[0] == 0xE5:
+        # OP_KADEMLIAPACKEDPROT: the payload after the opcode is zlib-compressed.
+        return bytes([0xE4, packet[1]]) + zlib.decompress(packet[2:])
+    return packet
+
+
 def search(udp_port, file_id, notes=False):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
         peer.bind(('127.0.0.1', 0))
@@ -96,9 +103,7 @@ def search(udp_port, file_id, notes=False):
                    + struct.pack('<HQ', 0, FILE_SIZE))
         peer.sendto(request, ('127.0.0.1', udp_port))
         response, _ = peer.recvfrom(65535)
-    if response[0] == 0xE5:
-        # OP_KADEMLIAPACKEDPROT: the payload after the opcode is zlib-compressed.
-        response = bytes([0xE4, response[1]]) + zlib.decompress(response[2:])
+    response = unpack_kad_packet(response)
     assert response[:2] == bytes([0xE4, KADEMLIA2_SEARCH_RES]), ('search', response)
     count = struct.unpack_from('<H', response, 34)[0]
     offset, results = 36, {}

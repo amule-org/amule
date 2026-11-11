@@ -13,22 +13,26 @@ from AllSearchIntegrationTest import C, retry_port_collisions, wait_for
 from KadSourceTagsECTest import running_kad_daemon
 
 KADEMLIA2_HELLO_REQ = 0x11
+KADEMLIA2_HELLO_RES = 0x19
+KADEMLIA2_REQ = 0x21
+KADEMLIA2_RES = 0x29
 PRIVATE_CONTACT = int.from_bytes(socket.inet_aton('10.255.0.1'), 'big')
 # IsRunningInLANMode() looks at the routing table every 10 seconds.
 LAN_MODE_TIMEOUT = 15
 
 
-def write_private_contacts(root, count=1):
-    """A nodes.dat of unreachable private contacts. One a minute is checked, then dropped 2 minutes later."""
+def write_private_contacts(root, count=1, *, address=None, udp_port=4672, tcp_port=4662, version=8):
+    """Write private nodes.dat contacts; defaults are unreachable and age out normally."""
+    first_ip = PRIVATE_CONTACT if address is None else int.from_bytes(socket.inet_aton(address), 'big')
     contacts = b''.join(
-        struct.pack('<4IIHHB2IB', 0xA0000000 + index, 0, 0, 1, PRIVATE_CONTACT + index, 4672, 4662, 8, 0, 0, 1)
+        struct.pack('<4IIHHB2IB', 0xA0000000 + index, 0, 0, 1, first_ip + index, udp_port, tcp_port, version, 0, 0, 1)
         for index in range(count))
     (Path(root) / 'nodes.dat').write_bytes(struct.pack('<III', 0, 2, count) + contacts)
 
 
-def kad2_hello():
-    """A KADEMLIA2_HELLO_REQ body: a random Kad ID, TCP port 1, Kad version 8, no tags."""
-    return os.urandom(16) + struct.pack('<HBB', 1, 8, 0)
+def kad2_hello(*, peer_id=None, tcp_port=1, version=8):
+    """A Kad2 hello body, with a random Kad ID by default and no tags."""
+    return (os.urandom(16) if peer_id is None else peer_id) + struct.pack('<HBB', tcp_port, version, 0)
 
 
 def kad_stats(ec):
