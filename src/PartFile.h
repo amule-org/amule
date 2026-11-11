@@ -46,6 +46,10 @@ class CMemFile;
 class CFileDataIO;
 class CED2KFileLink;
 class CNetworkAddress;
+namespace ExtSX
+{
+struct SRecord;
+}
 struct CPartMetGen;
 
 // #define BUFFER_SIZE_LIMIT	500000 // Max bytes before forcing a flush
@@ -375,6 +379,11 @@ public:
 	void AllocationFinished();
 
 private:
+	void AddExtendedSources(CMemFile &sources, unsigned nSourceFrom);
+	// False once the file has as many sources as it may take.
+	bool AddExtendedSource(const ExtSX::SRecord &record, unsigned nSourceFrom);
+	CUpDownClient *FindSourceByBuddyID(const uint8_t *buddyID) const;
+
 #ifndef CLIENT_GUI
 	// partfile handle (opened on demand)
 	CFileAutoClose m_hpartfile;

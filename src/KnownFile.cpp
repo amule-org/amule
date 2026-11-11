@@ -1047,14 +1047,19 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 		forClient->SupportsSourceExchange2(),
 		forClient->GetSourceExchange1Version(),
 		byRequestedVersion,
-		nRequestedOptions);
+		nRequestedOptions,
+		UsesExtendedSourceExchange(forClient->GetModCapabilities()));
+	const bool peerSkipsUnknownTags =
+		forClient->GetModCapabilities().SkipsUnknownExtendedSourceExchangeTags();
+	const ExtSX::SAddressFilter addressFilter = MakeExtendedSourceAddressFilter();
 	uint32 cDbgNoSrc = 0;
 
 	SourceSet::iterator it = m_ClientUploadList.begin();
 	for (; it != m_ClientUploadList.end(); ++it) {
 		const CUpDownClient *cur_src = it->GetClient();
 
-		if (cur_src->HasLowID() || cur_src == forClient ||
+		// Only the extended format can describe how to reach a LowID.
+		if ((cur_src->HasLowID() && !packet.IsExtended()) || cur_src == forClient ||
 			!(cur_src->GetUploadState() == US_UPLOADING ||
 				cur_src->GetUploadState() == US_ONUPLOADQUEUE)) {
 			continue;
@@ -1109,7 +1114,16 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 			}
 		}
 
-		if (bNeeded) {
+		if (bNeeded && packet.IsExtended()) {
+			const ExtSX::SRecord record = cur_src->GetExtendedSourceRecord(addressFilter);
+			if (cur_src->HasLowID() && !ExtSX::ShouldOfferLowID(record, peerSkipsUnknownTags)) {
+				continue;
+			}
+			packet.AddExtendedSource(record, peerSkipsUnknownTags);
+			if (packet.IsFull()) {
+				break;
+			}
+		} else if (bNeeded) {
 			uint32 dwID;
 			if (packet.GetVersion() >= 3) {
 				dwID = cur_src->GetUserIDHybrid();

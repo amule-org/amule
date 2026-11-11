@@ -61,7 +61,8 @@ TEST(PeerCapabilities, BitPositionsAreExact)
 	ASSERT_EQUALS(0x00000004u, (uint32_t)MOD_MISCOPT_IPV6);
 	ASSERT_EQUALS(0x00000008u, (uint32_t)MOD_MISCOPT_SERVING_BUDDY_PULL);
 	ASSERT_EQUALS(0x00000010u, (uint32_t)MOD_MISCOPT_NAT_TRAVERSAL_QUIC);
-	ASSERT_EQUALS(0x0000001Fu, MOD_MISCOPT_KNOWN_MASK);
+	ASSERT_EQUALS(0x00000020u, (uint32_t)MOD_MISCOPT_EXTXS_SKIP_TAGS);
+	ASSERT_EQUALS(0x0000003Fu, MOD_MISCOPT_KNOWN_MASK);
 }
 
 // One decoded flag per bit, so a rotation of the enum shows up as a wrong
@@ -104,6 +105,12 @@ TEST(PeerCapabilities, EachBitDecodesToItsOwnAccessor)
 	ASSERT_FALSE(caps.SupportsIPv6());
 	ASSERT_FALSE(caps.SupportsServingBuddyPull());
 	ASSERT_TRUE(caps.SupportsNatTraversalQuic());
+	ASSERT_FALSE(caps.SkipsUnknownExtendedSourceExchangeTags());
+
+	caps.SetFromWire(0x00000020u);
+	ASSERT_FALSE(caps.SupportsExtendedSourceExchange());
+	ASSERT_FALSE(caps.SupportsNatTraversalQuic());
+	ASSERT_TRUE(caps.SkipsUnknownExtendedSourceExchangeTags());
 }
 
 // The scenario from the spec delta: a peer that advertises IPv6 and QUIC NAT-T
@@ -120,7 +127,7 @@ TEST(PeerCapabilities, PeerAdvertisingIPv6AndQuic)
 	ASSERT_FALSE(caps.SupportsServingBuddyPull());
 }
 
-// Round-trip: the fixture encoding all five documented bits survives
+// Round-trip: the fixture encoding all six documented bits survives
 // decode -> encode unchanged.
 TEST(PeerCapabilities, RoundTripsEveryKnownBit)
 {
@@ -131,7 +138,7 @@ TEST(PeerCapabilities, RoundTripsEveryKnownBit)
 	}
 }
 
-// Reserved bits 5..31 carry no meaning yet. A peer setting bit 7 must not produce a capability, and
+// Reserved bits 6..31 carry no meaning yet. A peer setting bit 7 must not produce a capability, and
 // must not survive a re-encode either -- otherwise aMule would relay a claim it cannot interpret.
 TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 {
@@ -146,15 +153,26 @@ TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 	ASSERT_FALSE(caps.SupportsServingBuddyPull());
 	ASSERT_FALSE(caps.SupportsNatTraversalQuic());
 
-	// All reserved bits at once, plus every known bit: only the known five
+	// All reserved bits at once, plus every known bit: only the known six
 	// come back out.
 	caps.SetFromWire(0xFFFFFFFFu);
 	ASSERT_EQUALS(MOD_MISCOPT_KNOWN_MASK, caps.KnownBits());
 }
 
-TEST(PeerCapabilities, DoesNotAdvertiseIncompleteNatTraversal)
+// Extended Source Exchange and its tag skipping only: no NAT traversal, which is incomplete.
+TEST(PeerCapabilities, AdvertisesOnlyExtendedSourceExchange)
 {
-	ASSERT_EQUALS(0x00000000u, LocalAdvertisedModMiscOptions());
+	ASSERT_EQUALS(0x00000021u, LocalAdvertisedModMiscOptions());
+}
+
+TEST(PeerCapabilities, ExtendedSourceExchangeNeedsThePeersBitZero)
+{
+	CPeerCapabilities caps;
+	ASSERT_FALSE(UsesExtendedSourceExchange(caps));
+	caps.SetFromWire(MOD_MISCOPT_EXTXS_SKIP_TAGS);
+	ASSERT_FALSE(UsesExtendedSourceExchange(caps));
+	caps.SetFromWire(MOD_MISCOPT_EXTENDED_XS);
+	ASSERT_TRUE(UsesExtendedSourceExchange(caps));
 }
 
 // Setters exist for the advertise side; they must land on the same bits the
@@ -216,10 +234,14 @@ TEST(PeerCapabilities, EachBitDisplaysItsOwnName)
 	caps.SetFromWire(MOD_MISCOPT_NAT_TRAVERSAL_QUIC);
 	ASSERT_EQUALS(wxString("NAT traversal (QUIC)"), caps.GetDisplayText());
 
-	// All five at once: comma-separated, in table order, no trailing comma.
+	caps.SetFromWire(MOD_MISCOPT_EXTXS_SKIP_TAGS);
+	ASSERT_EQUALS(wxString("Skips unknown source exchange tags"), caps.GetDisplayText());
+
+	// All six at once: comma-separated, in table order, no trailing comma.
 	caps.SetFromWire(MOD_MISCOPT_KNOWN_MASK);
 	ASSERT_EQUALS(wxString("Extended source exchange, NAT traversal (uTP), IPv6, "
-			       "Buddy info pull, NAT traversal (QUIC)"),
+			       "Buddy info pull, NAT traversal (QUIC), "
+			       "Skips unknown source exchange tags"),
 		caps.GetDisplayText());
 }
 

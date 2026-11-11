@@ -6871,6 +6871,10 @@ msgstr ""
 msgid "NAT traversal (QUIC)"
 msgstr ""
 
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
+msgstr ""
+
 #: src/Preferences.cpp
 msgid "no options available"
 msgstr ""

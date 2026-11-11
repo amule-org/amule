@@ -107,6 +107,7 @@
 #include "kademlia/routing/RoutingZone.h"
 #include "KadBuddyIdLayout.h"    // Needed for ConvertBuddyIdLayout (#1835)
 #include "KadBuddyMergePolicy.h" // Needed for DecideKadBuddyMerge
+#include "ExtSourceExchange.h"   // Needed for ExtSX::SRecord
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h" // Needed for ShouldRequestLugdunumNatCallback
 #include "NatServerHolePunch.h"   // Needed for ShouldRequestLowIdHolePunch
@@ -703,16 +704,16 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 			dwEmuleTags |= 4;
 			break;
 
-		// eMuleAI vendor capability tags. Recorded, never acted on: what aMule buys here is that
-		// an eMuleAI peer stops looking like a client sending malformed handshakes. The bit
-		// meanings are wire format and live in src/PeerCapabilities.h.
+		// eMuleAI vendor capability tags. aMule acts on bits 0 and 5 (Extended Source Exchange);
+		// the bit meanings are wire format and live in src/PeerCapabilities.h.
 		case CT_MOD_MISCOPTIONS:
 			//  1 Extended source exchange
 			//  1 Legacy uTP NAT traversal
 			//  1 IPv6
 			//  1 Serving-buddy pull
 			//  1 QUIC NAT traversal
-			// 27 Reserved -- masked off by SetFromWire, so nothing can be inferred from a peer
+			//  1 Skips unknown extended source exchange tags (emule-qt)
+			// 26 Reserved -- masked off by SetFromWire, so nothing can be inferred from a peer
 			//    that sets them.
 			if (temptag.IsInt()) {
 				m_modCapabilities.SetFromWire((uint32)temptag.GetInt());
@@ -3763,16 +3764,18 @@ void CUpDownClient::SendChatPacket(const wxString &message)
 
 /* Kad stuff */
 
-void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID)
+void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID, bool fromKad)
 {
 	m_bBuddyIdUseAmuleLayout = false;
 	m_bBuddyCallbackUnanswered = false;
 	if (pucBuddyID == NULL) {
 		md4clr(m_achBuddyID);
 		m_bBuddyIDValid = false;
+		m_bBuddyIDFromKad = false;
 		return;
 	}
 	m_bBuddyIDValid = true;
+	m_bBuddyIDFromKad = fromKad;
 	md4cpy(m_achBuddyID, pucBuddyID);
 }
 
@@ -3781,6 +3784,8 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	SKadBuddyMergeFacts facts;
 	facts.incomingHasID = duplicate.HasValidBuddyID();
 	facts.existingHasID = HasValidBuddyID();
+	facts.incomingIDFromKad = duplicate.IsBuddyIDFromKad();
+	facts.existingIDFromKad = IsBuddyIDFromKad();
 	facts.incomingHasAddress = duplicate.GetBuddyIP() != 0 && duplicate.GetBuddyPort() != 0;
 	facts.existingHasAddress = GetBuddyIP() != 0 && GetBuddyPort() != 0;
 	facts.sameAddress =
@@ -3789,7 +3794,7 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	const SKadBuddyMerge merge = DecideKadBuddyMerge(facts);
 
 	if (merge.takeID) {
-		SetBuddyID(duplicate.GetBuddyID());
+		SetBuddyID(duplicate.GetBuddyID(), duplicate.IsBuddyIDFromKad());
 	}
 	if (merge.takeAddress) {
 		SetBuddyIP(duplicate.GetBuddyIP());
@@ -3821,6 +3826,54 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 				GetUserHash().Encode() %
 				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()));
 	}
+}
+
+ExtSX::SRecord CUpDownClient::GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const
+{
+	ExtSX::SRecord record;
+	record.hybridID = GetUserIDHybrid();
+	record.port = GetUserPort();
+	record.serverIP = GetServerIP();
+	record.serverPort = GetServerPort();
+	if (HasValidHash()) {
+		record.userHash = GetUserHash();
+	}
+	const uint8_t connectOptions =
+		GetCryptOptions() | (SupportsDirectUDPCallback() ? uint8_t{ 0x08 } : uint8_t{ 0 });
+	if (connectOptions != 0) {
+		record.connectOptions = connectOptions;
+	}
+	if (HasLowID()) {
+		if (SupportsDirectUDPCallback()) {
+			record.callbackIP = GetIP();
+			record.udpPort = GetUDPPort();
+			record.kadPort = GetKadPort();
+		}
+		record.buddyIP = GetBuddyIP();
+		record.buddyPort = GetBuddyPort();
+		if (IsBuddyIDFromKad()) {
+			ExtSX::Bytes16 id;
+			std::copy_n(GetBuddyID(), id.size(), id.begin());
+			record.buddyID = id;
+		}
+	}
+	ExtSX::SanitizeRoute(record, filter);
+	return record;
+}
+
+ExtSX::SAddressFilter MakeExtendedSourceAddressFilter()
+{
+	ExtSX::SAddressFilter filter;
+	filter.acceptIPv4 = [](uint32_t ip) {
+		return IsGoodIP(ip, thePrefs::FilterLanIPs()) && !theApp->ipfilter->IsFiltered(ip) &&
+		       !theApp->clientlist->IsBannedClient(ip);
+	};
+	filter.acceptIPv6 = [](const ExtSX::Bytes16 &bytes) {
+		const CNetworkAddress address = CNetworkAddress::FromIPv6Bytes(bytes.data());
+		return PeerAddressing::IsUsableTagIdentity(address) &&
+		       !theApp->clientlist->IsBannedClient(address);
+	};
+	return filter;
 }
 
 bool CUpDownClient::SwitchToBuddyCandidate()

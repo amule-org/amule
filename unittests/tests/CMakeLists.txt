@@ -737,6 +737,7 @@ endif()
 
 add_executable (PacketTest
 	PacketTest.cpp
+	ExtSourceExchangeTest.cpp
 	SourceExchangePacketTest.cpp
 	ServerUDPPacketQueueTest.cpp
 	${CMAKE_SOURCE_DIR}/src/Packet.cpp

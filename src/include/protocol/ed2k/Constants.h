@@ -71,6 +71,9 @@
 	  // set this too high
 
 #define SOURCEEXCHANGE2_VERSION 4 // replaces the version sent in MISC_OPTIONS flag from SX1
+// SX2 version byte of Extended Source Exchange: each source record is a tag block. It means
+// that only between two peers with MOD_MISCOPT_EXTENDED_XS; otherwise it is SX2 version 1.
+#define SOURCEEXCHANGEEXT_VERSION 1
 
 // MOD Note: end
 

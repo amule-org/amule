@@ -29,6 +29,9 @@ struct SKadBuddyMergeFacts
 {
 	bool incomingHasID = false;
 	bool existingHasID = false;
+	// The ID came from TAG_BUDDYHASH rather than from source exchange.
+	bool incomingIDFromKad = false;
+	bool existingIDFromKad = false;
 	// Both the buddy IP and port are set.
 	bool incomingHasAddress = false;
 	bool existingHasAddress = false;
@@ -52,6 +55,9 @@ struct SKadBuddyMerge
  * address from Kad is not applied at once: the buddy ID stays the same across a buddy change, and
  * nodes the republish missed keep the old address for up to 5 hours, so one search can return
  * either in any order. Applying the last one could move a working route to a dead buddy.
+ *
+ * An ID from Kad replaces one from source exchange: only the source publishes it, and only an ID
+ * from Kad is passed on to other peers.
  */
 inline SKadBuddyMerge DecideKadBuddyMerge(const SKadBuddyMergeFacts &facts)
 {
@@ -59,7 +65,7 @@ inline SKadBuddyMerge DecideKadBuddyMerge(const SKadBuddyMergeFacts &facts)
 	if (!facts.incomingHasID) {
 		return merge;
 	}
-	merge.takeID = !facts.existingHasID;
+	merge.takeID = !facts.existingHasID || (facts.incomingIDFromKad && !facts.existingIDFromKad);
 	if (!facts.incomingHasAddress || facts.sameAddress) {
 		return merge;
 	}
