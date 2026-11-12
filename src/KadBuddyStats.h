@@ -279,8 +279,9 @@ struct CDepartedBuddy
 class CDepartedBuddies
 {
 public:
-	// Kad source entries, which carry the BuddyID, live this long.
-	static constexpr uint64_t MaxAgeMs = 5 * 60 * 60 * 1000ULL;
+	// Downloaders keep a source and its BuddyID past the 5 h Kad source lifetime: live callbacks came
+	// up to about 8 h after the buddy left.
+	static constexpr uint64_t MaxAgeMs = 8 * 60 * 60 * 1000ULL;
 
 	// Keeps at most `capacity` entries, the newest ones. A node already listed moves to the end.
 	void Record(const CDepartedBuddy &buddy, std::size_t capacity)
