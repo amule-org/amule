@@ -3815,7 +3815,7 @@ msgstr "发布关键词"
 msgid "Publish notes"
 msgstr "发布附注"
 
-#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Find buddy"
 msgstr "寻找搭档"
 
@@ -8786,141 +8786,6 @@ msgstr "正在关闭 aMule"
 
 #: src/Statistics.cpp
 #, c-format
-msgid "Served Now: %llu"
-msgstr "立即提供：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Received: %llu"
-msgstr "接收到的搭档请求：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Sent: %llu"
-msgstr "已发送的搭档要约：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Refused: %llu"
-msgstr "遭拒的搭档请求：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests From NAT-T Nodes: %llu"
-msgstr "来自 NAT-T 节点的搭档请求：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr "超出速率限制的搭档请求：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Unused Buddy Offers: %llu"
-msgstr "未使用的搭档要约：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Served: %llu"
-msgstr "提供内容的搭档：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Served Buddies Timed Out: %llu"
-msgstr "已超时的 Served Buddies：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Served: %s"
-msgstr "提供时间：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Relayed: %llu"
-msgstr "已传输的回馈：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Relayed: %llu"
-msgstr "已传输的 Reasks：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Data Relayed: %s"
-msgstr "已传输的数据：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Dropped: %llu"
-msgstr "已丢弃的回馈：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Dropped: %llu"
-msgstr "已丢弃的 Reasks：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Busiest Minute to One Buddy: %s"
-msgstr "一个搭档最忙碌的分钟：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches: %llu"
-msgstr "搭档搜索：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches Held for a Shared File: %llu"
-msgstr "为一个共享文件进行的搭档搜索：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Sent: %llu"
-msgstr "已发送的搭档请求：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Received: %llu"
-msgstr "接收到的搭档要约：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Failed Buddy Connections: %llu"
-msgstr "失败的搭档连接：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Connected: %llu"
-msgstr "已连接的搭档： %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Timed Out: %llu"
-msgstr "超时的搭档：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time a Buddy Was Needed: %s"
-msgstr "搭档被需要的时间：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Without a Buddy: %s"
-msgstr "没有搭档的时间：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Received: %llu"
-msgstr "接收到的回馈：%llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Received: %llu"
-msgstr "接收到的 Reasks：%llu"
-
-#: src/Statistics.cpp
-#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "本次上传 (全部): %s"
 
@@ -9065,35 +8930,6 @@ msgid "Peak Connections (estimate): %i"
 msgstr "最高连接（估计值）： %i"
 
 #: src/Statistics.cpp
-msgid "NAT Traversal (Session)"
-msgstr "NAT 穿透（会话）"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Server Hole Punches: %s"
-msgstr "服务器打洞： %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Server Hole Punches: %s"
-msgstr "成功的服务器打洞：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Lugdunum Callbacks: %s"
-msgstr "Lugdunum 回馈： %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Lugdunum Callbacks: %s"
-msgstr "成功的 Lugdunum 回馈：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "uTP Streams Moved to a New Port: %s"
-msgstr "uTP 流移动到了新端口：%s"
-
-#: src/Statistics.cpp
 #, c-format
 msgid "Unknown: %s"
 msgstr "未知大小: %s"
@@ -9112,44 +8948,6 @@ msgstr "封杀: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Kad 封禁地址：%s"
-
-#: src/Statistics.cpp
-msgid "Kad receiver keys"
-msgstr "Kad 接收程序密钥"
-
-#: src/Statistics.cpp
-msgid "Keyword publish"
-msgstr "关键词发布"
-
-#: src/Statistics.cpp
-msgid "Source publish"
-msgstr "源发布"
-
-#: src/Statistics.cpp
-msgid "Notes publish"
-msgstr "附注发布"
-
-#: src/Statistics.cpp
-msgid "Firewall check"
-msgstr "防火墙检查"
-
-#: src/Statistics.cpp
-msgid "Firewall check 2"
-msgstr "防火墙检查 2"
-
-#: src/Statistics.cpp
-msgid "Callback"
-msgstr "回馈"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys valid: %s"
-msgstr "有效 Keys： %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys missing: %s"
-msgstr "缺失的密钥：%s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9217,16 +9015,9 @@ msgid "Average file size: %s"
 msgstr "平均文件大小：%s"
 
 #: src/Statistics.cpp
-msgid "Kad Buddies"
-msgstr "Kad 搭档"
-
-#: src/Statistics.cpp
-msgid "Serving Firewalled Nodes"
-msgstr ""
-
-#: src/Statistics.cpp
-msgid "Our Own Buddy"
-msgstr "我们自己的搭档"
+#, fuzzy
+msgid "Diagnostics"
+msgstr "查询诊断"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -10898,6 +10689,172 @@ msgstr "无法将旧的 ECPassword 和 ECPasswordVerifier 进行比较；拒绝�
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再对本次运行进行身份认证。"
+
+#, c-format
+#~ msgid "Served Now: %llu"
+#~ msgstr "立即提供：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests Received: %llu"
+#~ msgstr "接收到的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Buddy Offers Sent: %llu"
+#~ msgstr "已发送的搭档要约：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests Refused: %llu"
+#~ msgstr "遭拒的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests From NAT-T Nodes: %llu"
+#~ msgstr "来自 NAT-T 节点的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests Over the Rate Limit: %llu"
+#~ msgstr "超出速率限制的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Unused Buddy Offers: %llu"
+#~ msgstr "未使用的搭档要约：%llu"
+
+#, c-format
+#~ msgid "Buddies Served: %llu"
+#~ msgstr "提供内容的搭档：%llu"
+
+#, c-format
+#~ msgid "Served Buddies Timed Out: %llu"
+#~ msgstr "已超时的 Served Buddies：%llu"
+
+#, c-format
+#~ msgid "Time Served: %s"
+#~ msgstr "提供时间：%s"
+
+#, c-format
+#~ msgid "Callbacks Relayed: %llu"
+#~ msgstr "已传输的回馈：%llu"
+
+#, c-format
+#~ msgid "Reasks Relayed: %llu"
+#~ msgstr "已传输的 Reasks：%llu"
+
+#, c-format
+#~ msgid "Data Relayed: %s"
+#~ msgstr "已传输的数据：%s"
+
+#, c-format
+#~ msgid "Callbacks Dropped: %llu"
+#~ msgstr "已丢弃的回馈：%llu"
+
+#, c-format
+#~ msgid "Reasks Dropped: %llu"
+#~ msgstr "已丢弃的 Reasks：%llu"
+
+#, c-format
+#~ msgid "Busiest Minute to One Buddy: %s"
+#~ msgstr "一个搭档最忙碌的分钟：%s"
+
+#, c-format
+#~ msgid "Buddy Searches: %llu"
+#~ msgstr "搭档搜索：%llu"
+
+#, c-format
+#~ msgid "Buddy Searches Held for a Shared File: %llu"
+#~ msgstr "为一个共享文件进行的搭档搜索：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests Sent: %llu"
+#~ msgstr "已发送的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Buddy Offers Received: %llu"
+#~ msgstr "接收到的搭档要约：%llu"
+
+#, c-format
+#~ msgid "Failed Buddy Connections: %llu"
+#~ msgstr "失败的搭档连接：%llu"
+
+#, c-format
+#~ msgid "Buddies Connected: %llu"
+#~ msgstr "已连接的搭档： %llu"
+
+#, c-format
+#~ msgid "Buddies Timed Out: %llu"
+#~ msgstr "超时的搭档：%llu"
+
+#, c-format
+#~ msgid "Time a Buddy Was Needed: %s"
+#~ msgstr "搭档被需要的时间：%s"
+
+#, c-format
+#~ msgid "Time Without a Buddy: %s"
+#~ msgstr "没有搭档的时间：%s"
+
+#, c-format
+#~ msgid "Callbacks Received: %llu"
+#~ msgstr "接收到的回馈：%llu"
+
+#, c-format
+#~ msgid "Reasks Received: %llu"
+#~ msgstr "接收到的 Reasks：%llu"
+
+#~ msgid "NAT Traversal (Session)"
+#~ msgstr "NAT 穿透（会话）"
+
+#, c-format
+#~ msgid "Server Hole Punches: %s"
+#~ msgstr "服务器打洞： %s"
+
+#, c-format
+#~ msgid "Successful Server Hole Punches: %s"
+#~ msgstr "成功的服务器打洞：%s"
+
+#, c-format
+#~ msgid "Lugdunum Callbacks: %s"
+#~ msgstr "Lugdunum 回馈： %s"
+
+#, c-format
+#~ msgid "Successful Lugdunum Callbacks: %s"
+#~ msgstr "成功的 Lugdunum 回馈：%s"
+
+#, c-format
+#~ msgid "uTP Streams Moved to a New Port: %s"
+#~ msgstr "uTP 流移动到了新端口：%s"
+
+#~ msgid "Kad receiver keys"
+#~ msgstr "Kad 接收程序密钥"
+
+#~ msgid "Keyword publish"
+#~ msgstr "关键词发布"
+
+#~ msgid "Source publish"
+#~ msgstr "源发布"
+
+#~ msgid "Notes publish"
+#~ msgstr "附注发布"
+
+#~ msgid "Firewall check"
+#~ msgstr "防火墙检查"
+
+#~ msgid "Firewall check 2"
+#~ msgstr "防火墙检查 2"
+
+#~ msgid "Callback"
+#~ msgstr "回馈"
+
+#, c-format
+#~ msgid "Keys valid: %s"
+#~ msgstr "有效 Keys： %s"
+
+#, c-format
+#~ msgid "Keys missing: %s"
+#~ msgstr "缺失的密钥：%s"
+
+#~ msgid "Kad Buddies"
+#~ msgstr "Kad 搭档"
+
+#~ msgid "Our Own Buddy"
+#~ msgstr "我们自己的搭档"
 
 #~ msgid "This aMule has no media helper (amule-media-probe)"
 #~ msgstr "这个 aMule 没有多媒体助手 (amule-media-probe)"

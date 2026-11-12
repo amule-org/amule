@@ -3844,7 +3844,7 @@ msgstr "Публикация ключевого слова"
 msgid "Publish notes"
 msgstr "Публикация заметок"
 
-#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Find buddy"
 msgstr "Поиск друга"
 
@@ -8872,141 +8872,6 @@ msgstr "Закрытие aMule"
 
 #: src/Statistics.cpp
 #, c-format
-msgid "Served Now: %llu"
-msgstr "Обслуживается сейчас: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Received: %llu"
-msgstr "Получено запросов на партнёрство: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Sent: %llu"
-msgstr "Отправлено предложений партнёрства: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Refused: %llu"
-msgstr "Отклонено запросов на партнёрство: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests From NAT-T Nodes: %llu"
-msgstr "Запросов на партнёрство от узлов с NAT-T: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr "Запросов на партнёрство сверх лимита: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Unused Buddy Offers: %llu"
-msgstr "Неиспользованных предложений партнёрства: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Served: %llu"
-msgstr "Обслужено партнёров: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Served Buddies Timed Out: %llu"
-msgstr "Обслуженных партнёров с истёкшим временем ожидания: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Served: %s"
-msgstr "Время обслуживания: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Relayed: %llu"
-msgstr "Передано обратных вызовов: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Relayed: %llu"
-msgstr "Передано повторных запросов: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Data Relayed: %s"
-msgstr "Передано данных: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Dropped: %llu"
-msgstr "Отброшено обратных вызовов: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Dropped: %llu"
-msgstr "Отброшено повторных запросов: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Busiest Minute to One Buddy: %s"
-msgstr "Самая загруженная минута для одного партнёра: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches: %llu"
-msgstr "Поисков партнёров: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches Held for a Shared File: %llu"
-msgstr "Поисков партнёров, удержанных для публикуемого файла: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Sent: %llu"
-msgstr "Отправлено запросов на партнёрство: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Received: %llu"
-msgstr "Получено предложений партнёрства: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Failed Buddy Connections: %llu"
-msgstr "Неудачных подключений к партнёрам: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Connected: %llu"
-msgstr "Подключено партнёров: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Timed Out: %llu"
-msgstr "Партнёров с истёкшим временем ожидания: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time a Buddy Was Needed: %s"
-msgstr "Время, когда требовался партнёр: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Without a Buddy: %s"
-msgstr "Время без партнёра: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Received: %llu"
-msgstr "Получено обратных вызовов: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Received: %llu"
-msgstr "Получено повторных запросов: %llu"
-
-#: src/Statistics.cpp
-#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "Отдано данных (за сеанс (всего)): %s"
 
@@ -9152,35 +9017,6 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Максимальное число соединений (примерно): %i"
 
 #: src/Statistics.cpp
-msgid "NAT Traversal (Session)"
-msgstr "Обход NAT (за сеанс)"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Server Hole Punches: %s"
-msgstr "Проколы через сервер: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Server Hole Punches: %s"
-msgstr "Успешные проколы через сервер: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Lugdunum Callbacks: %s"
-msgstr "Обратные вызовы Lugdunum: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Lugdunum Callbacks: %s"
-msgstr "Успешные обратные вызовы Lugdunum: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "uTP Streams Moved to a New Port: %s"
-msgstr "Потоки uTP перенесены на новый порт: %s"
-
-#: src/Statistics.cpp
 #, c-format
 msgid "Unknown: %s"
 msgstr "Неизвестны: %s"
@@ -9199,44 +9035,6 @@ msgstr "Заблокированы: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Запрещённые Kad адреса: %s"
-
-#: src/Statistics.cpp
-msgid "Kad receiver keys"
-msgstr "Ключи получателя Kad"
-
-#: src/Statistics.cpp
-msgid "Keyword publish"
-msgstr "Публикация по ключевому слову"
-
-#: src/Statistics.cpp
-msgid "Source publish"
-msgstr "Публикация источников"
-
-#: src/Statistics.cpp
-msgid "Notes publish"
-msgstr "Публикация заметок"
-
-#: src/Statistics.cpp
-msgid "Firewall check"
-msgstr "Проверка брандмауэра"
-
-#: src/Statistics.cpp
-msgid "Firewall check 2"
-msgstr "Проверка брандмауэра 2"
-
-#: src/Statistics.cpp
-msgid "Callback"
-msgstr "Обратный вызов"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys valid: %s"
-msgstr "Действительных ключей: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys missing: %s"
-msgstr "Отсутствующих ключей: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9304,16 +9102,9 @@ msgid "Average file size: %s"
 msgstr "Средний размер файлов: %s"
 
 #: src/Statistics.cpp
-msgid "Kad Buddies"
-msgstr "Партнёры Kad"
-
-#: src/Statistics.cpp
-msgid "Serving Firewalled Nodes"
-msgstr "Обслуживание узлов за брандмауэром"
-
-#: src/Statistics.cpp
-msgid "Our Own Buddy"
-msgstr "Наш собственный партнёр"
+#, fuzzy
+msgid "Diagnostics"
+msgstr "Диагностика поиска"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -10991,6 +10782,175 @@ msgstr "Не удалось сравнить устаревший ECPassword с 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Выполняется миграция изменённого устаревшего ECPassword после отката версии; предыдущий верификатор больше не действует в этом запуске."
+
+#, c-format
+#~ msgid "Served Now: %llu"
+#~ msgstr "Обслуживается сейчас: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests Received: %llu"
+#~ msgstr "Получено запросов на партнёрство: %llu"
+
+#, c-format
+#~ msgid "Buddy Offers Sent: %llu"
+#~ msgstr "Отправлено предложений партнёрства: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests Refused: %llu"
+#~ msgstr "Отклонено запросов на партнёрство: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests From NAT-T Nodes: %llu"
+#~ msgstr "Запросов на партнёрство от узлов с NAT-T: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests Over the Rate Limit: %llu"
+#~ msgstr "Запросов на партнёрство сверх лимита: %llu"
+
+#, c-format
+#~ msgid "Unused Buddy Offers: %llu"
+#~ msgstr "Неиспользованных предложений партнёрства: %llu"
+
+#, c-format
+#~ msgid "Buddies Served: %llu"
+#~ msgstr "Обслужено партнёров: %llu"
+
+#, c-format
+#~ msgid "Served Buddies Timed Out: %llu"
+#~ msgstr "Обслуженных партнёров с истёкшим временем ожидания: %llu"
+
+#, c-format
+#~ msgid "Time Served: %s"
+#~ msgstr "Время обслуживания: %s"
+
+#, c-format
+#~ msgid "Callbacks Relayed: %llu"
+#~ msgstr "Передано обратных вызовов: %llu"
+
+#, c-format
+#~ msgid "Reasks Relayed: %llu"
+#~ msgstr "Передано повторных запросов: %llu"
+
+#, c-format
+#~ msgid "Data Relayed: %s"
+#~ msgstr "Передано данных: %s"
+
+#, c-format
+#~ msgid "Callbacks Dropped: %llu"
+#~ msgstr "Отброшено обратных вызовов: %llu"
+
+#, c-format
+#~ msgid "Reasks Dropped: %llu"
+#~ msgstr "Отброшено повторных запросов: %llu"
+
+#, c-format
+#~ msgid "Busiest Minute to One Buddy: %s"
+#~ msgstr "Самая загруженная минута для одного партнёра: %s"
+
+#, c-format
+#~ msgid "Buddy Searches: %llu"
+#~ msgstr "Поисков партнёров: %llu"
+
+#, c-format
+#~ msgid "Buddy Searches Held for a Shared File: %llu"
+#~ msgstr "Поисков партнёров, удержанных для публикуемого файла: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests Sent: %llu"
+#~ msgstr "Отправлено запросов на партнёрство: %llu"
+
+#, c-format
+#~ msgid "Buddy Offers Received: %llu"
+#~ msgstr "Получено предложений партнёрства: %llu"
+
+#, c-format
+#~ msgid "Failed Buddy Connections: %llu"
+#~ msgstr "Неудачных подключений к партнёрам: %llu"
+
+#, c-format
+#~ msgid "Buddies Connected: %llu"
+#~ msgstr "Подключено партнёров: %llu"
+
+#, c-format
+#~ msgid "Buddies Timed Out: %llu"
+#~ msgstr "Партнёров с истёкшим временем ожидания: %llu"
+
+#, c-format
+#~ msgid "Time a Buddy Was Needed: %s"
+#~ msgstr "Время, когда требовался партнёр: %s"
+
+#, c-format
+#~ msgid "Time Without a Buddy: %s"
+#~ msgstr "Время без партнёра: %s"
+
+#, c-format
+#~ msgid "Callbacks Received: %llu"
+#~ msgstr "Получено обратных вызовов: %llu"
+
+#, c-format
+#~ msgid "Reasks Received: %llu"
+#~ msgstr "Получено повторных запросов: %llu"
+
+#~ msgid "NAT Traversal (Session)"
+#~ msgstr "Обход NAT (за сеанс)"
+
+#, c-format
+#~ msgid "Server Hole Punches: %s"
+#~ msgstr "Проколы через сервер: %s"
+
+#, c-format
+#~ msgid "Successful Server Hole Punches: %s"
+#~ msgstr "Успешные проколы через сервер: %s"
+
+#, c-format
+#~ msgid "Lugdunum Callbacks: %s"
+#~ msgstr "Обратные вызовы Lugdunum: %s"
+
+#, c-format
+#~ msgid "Successful Lugdunum Callbacks: %s"
+#~ msgstr "Успешные обратные вызовы Lugdunum: %s"
+
+#, c-format
+#~ msgid "uTP Streams Moved to a New Port: %s"
+#~ msgstr "Потоки uTP перенесены на новый порт: %s"
+
+#~ msgid "Kad receiver keys"
+#~ msgstr "Ключи получателя Kad"
+
+#~ msgid "Keyword publish"
+#~ msgstr "Публикация по ключевому слову"
+
+#~ msgid "Source publish"
+#~ msgstr "Публикация источников"
+
+#~ msgid "Notes publish"
+#~ msgstr "Публикация заметок"
+
+#~ msgid "Firewall check"
+#~ msgstr "Проверка брандмауэра"
+
+#~ msgid "Firewall check 2"
+#~ msgstr "Проверка брандмауэра 2"
+
+#~ msgid "Callback"
+#~ msgstr "Обратный вызов"
+
+#, c-format
+#~ msgid "Keys valid: %s"
+#~ msgstr "Действительных ключей: %s"
+
+#, c-format
+#~ msgid "Keys missing: %s"
+#~ msgstr "Отсутствующих ключей: %s"
+
+#~ msgid "Kad Buddies"
+#~ msgstr "Партнёры Kad"
+
+#~ msgid "Serving Firewalled Nodes"
+#~ msgstr "Обслуживание узлов за брандмауэром"
+
+#~ msgid "Our Own Buddy"
+#~ msgstr "Наш собственный партнёр"
 
 #~ msgid "This aMule has no media helper (amule-media-probe)"
 #~ msgstr "В этом aMule нет помощника для работы с медиа (amule-media-probe)"

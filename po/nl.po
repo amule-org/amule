@@ -3814,7 +3814,7 @@ msgstr "Publiceer sleutelwoord"
 msgid "Publish notes"
 msgstr "Publiceer notities"
 
-#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Find buddy"
 msgstr "Vind buddy"
 
@@ -8786,141 +8786,6 @@ msgstr "aMule sluiten"
 
 #: src/Statistics.cpp
 #, c-format
-msgid "Served Now: %llu"
-msgstr "Nu Bediend: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Received: %llu"
-msgstr "Ontvangen Buddy-Verzoeken: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Sent: %llu"
-msgstr "Voorstellen voor Buddy Verstuurd: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Refused: %llu"
-msgstr "Buddy-Verzoeken Geweigerd: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests From NAT-T Nodes: %llu"
-msgstr "Buddy-Verzoeken Van NAT-T-Nodes: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr "Verzoeken voor Buddy Boven de Snelheidslimiet: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Unused Buddy Offers: %llu"
-msgstr "Ongebruikte Voorstellen voor Buddy: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Served: %llu"
-msgstr "Buddies Bediend: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Served Buddies Timed Out: %llu"
-msgstr "Time-Out bij Bediende Buddies: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Served: %s"
-msgstr "Tijd Bediend: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Relayed: %llu"
-msgstr "Terugroepen Doorgegeven: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Relayed: %llu"
-msgstr "Hervragen Doorgegeven: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Data Relayed: %s"
-msgstr "Gegevens Doorgegeven: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Dropped: %llu"
-msgstr "Terugroepen Laten vallen: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Dropped: %llu"
-msgstr "Hervragen Laten vallen: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Busiest Minute to One Buddy: %s"
-msgstr "Drukste Minuut aan Een Buddy: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches: %llu"
-msgstr "Buddy Zoekopdrachten: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches Held for a Shared File: %llu"
-msgstr "Buddy Zoekopdrachten Vastgehouden voor een Gedeeld Bestand: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Sent: %llu"
-msgstr "Buddy-Verzoeken Verstuurd: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Received: %llu"
-msgstr "Voorstellen voor Buddy Ontvangen: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Failed Buddy Connections: %llu"
-msgstr "Mislukte Buddy-Verbindingen: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Connected: %llu"
-msgstr "Verbonden Buddies: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Timed Out: %llu"
-msgstr "Time-Out bij Buddies: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time a Buddy Was Needed: %s"
-msgstr "Tijd dat een Buddy Nodig Was: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Without a Buddy: %s"
-msgstr "Tijd Zonder een Buddy: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Received: %llu"
-msgstr "Terugroepen Ontvangen: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Received: %llu"
-msgstr "Hervragen Ontvangen: %llu"
-
-#: src/Statistics.cpp
-#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "Geuploadde Gegevens (Sessie (Totaal)): %s"
 
@@ -9065,35 +8930,6 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Aantal Piekverbindingen (schatting): %i"
 
 #: src/Statistics.cpp
-msgid "NAT Traversal (Session)"
-msgstr "NAT Traversal (Sessie)"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Server Hole Punches: %s"
-msgstr "Serverperforatiepogingen: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Server Hole Punches: %s"
-msgstr "Succesvolle Serverperforatiepogingen: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Lugdunum Callbacks: %s"
-msgstr "Lugdunum Terugroepen: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Lugdunum Callbacks: %s"
-msgstr "Succesvolle Lugdunum Terugroepen: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "uTP Streams Moved to a New Port: %s"
-msgstr "uTP-Streams Verplaatst naar een Nieuwe Poort: %s"
-
-#: src/Statistics.cpp
 #, c-format
 msgid "Unknown: %s"
 msgstr "Onbekend: %s"
@@ -9112,44 +8948,6 @@ msgstr "Geband: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Verbannen Kad-adressen: %s"
-
-#: src/Statistics.cpp
-msgid "Kad receiver keys"
-msgstr "Kad-ontvanger sleutels"
-
-#: src/Statistics.cpp
-msgid "Keyword publish"
-msgstr "Sleutelwoord publiceren"
-
-#: src/Statistics.cpp
-msgid "Source publish"
-msgstr "Bron publiceren"
-
-#: src/Statistics.cpp
-msgid "Notes publish"
-msgstr "Notities publiceren"
-
-#: src/Statistics.cpp
-msgid "Firewall check"
-msgstr "Firewall controle"
-
-#: src/Statistics.cpp
-msgid "Firewall check 2"
-msgstr "Firewall controle 2"
-
-#: src/Statistics.cpp
-msgid "Callback"
-msgstr "Terugroep"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys valid: %s"
-msgstr "Sleutels geldig: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys missing: %s"
-msgstr "Ontbrekende sleutels: %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9217,16 +9015,9 @@ msgid "Average file size: %s"
 msgstr "Gemiddelde bestandsgrootte: %s"
 
 #: src/Statistics.cpp
-msgid "Kad Buddies"
-msgstr "Kad-Buddies"
-
-#: src/Statistics.cpp
-msgid "Serving Firewalled Nodes"
-msgstr "Bedienen van Gefirewallde Nodes"
-
-#: src/Statistics.cpp
-msgid "Our Own Buddy"
-msgstr "Onze Eigen Buddy"
+#, fuzzy
+msgid "Diagnostics"
+msgstr "Opzoekingsdiagnostiek"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -10905,6 +10696,175 @@ msgstr "Kon verouderde ECPassword niet vergelijken met ECPasswordVerifier. Exter
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migreren van een vernaderde ECPassword na downgrade. De vorige verificatie authenticeert deze uitvoer niet meer."
+
+#, c-format
+#~ msgid "Served Now: %llu"
+#~ msgstr "Nu Bediend: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests Received: %llu"
+#~ msgstr "Ontvangen Buddy-Verzoeken: %llu"
+
+#, c-format
+#~ msgid "Buddy Offers Sent: %llu"
+#~ msgstr "Voorstellen voor Buddy Verstuurd: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests Refused: %llu"
+#~ msgstr "Buddy-Verzoeken Geweigerd: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests From NAT-T Nodes: %llu"
+#~ msgstr "Buddy-Verzoeken Van NAT-T-Nodes: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests Over the Rate Limit: %llu"
+#~ msgstr "Verzoeken voor Buddy Boven de Snelheidslimiet: %llu"
+
+#, c-format
+#~ msgid "Unused Buddy Offers: %llu"
+#~ msgstr "Ongebruikte Voorstellen voor Buddy: %llu"
+
+#, c-format
+#~ msgid "Buddies Served: %llu"
+#~ msgstr "Buddies Bediend: %llu"
+
+#, c-format
+#~ msgid "Served Buddies Timed Out: %llu"
+#~ msgstr "Time-Out bij Bediende Buddies: %llu"
+
+#, c-format
+#~ msgid "Time Served: %s"
+#~ msgstr "Tijd Bediend: %s"
+
+#, c-format
+#~ msgid "Callbacks Relayed: %llu"
+#~ msgstr "Terugroepen Doorgegeven: %llu"
+
+#, c-format
+#~ msgid "Reasks Relayed: %llu"
+#~ msgstr "Hervragen Doorgegeven: %llu"
+
+#, c-format
+#~ msgid "Data Relayed: %s"
+#~ msgstr "Gegevens Doorgegeven: %s"
+
+#, c-format
+#~ msgid "Callbacks Dropped: %llu"
+#~ msgstr "Terugroepen Laten vallen: %llu"
+
+#, c-format
+#~ msgid "Reasks Dropped: %llu"
+#~ msgstr "Hervragen Laten vallen: %llu"
+
+#, c-format
+#~ msgid "Busiest Minute to One Buddy: %s"
+#~ msgstr "Drukste Minuut aan Een Buddy: %s"
+
+#, c-format
+#~ msgid "Buddy Searches: %llu"
+#~ msgstr "Buddy Zoekopdrachten: %llu"
+
+#, c-format
+#~ msgid "Buddy Searches Held for a Shared File: %llu"
+#~ msgstr "Buddy Zoekopdrachten Vastgehouden voor een Gedeeld Bestand: %llu"
+
+#, c-format
+#~ msgid "Buddy Requests Sent: %llu"
+#~ msgstr "Buddy-Verzoeken Verstuurd: %llu"
+
+#, c-format
+#~ msgid "Buddy Offers Received: %llu"
+#~ msgstr "Voorstellen voor Buddy Ontvangen: %llu"
+
+#, c-format
+#~ msgid "Failed Buddy Connections: %llu"
+#~ msgstr "Mislukte Buddy-Verbindingen: %llu"
+
+#, c-format
+#~ msgid "Buddies Connected: %llu"
+#~ msgstr "Verbonden Buddies: %llu"
+
+#, c-format
+#~ msgid "Buddies Timed Out: %llu"
+#~ msgstr "Time-Out bij Buddies: %llu"
+
+#, c-format
+#~ msgid "Time a Buddy Was Needed: %s"
+#~ msgstr "Tijd dat een Buddy Nodig Was: %s"
+
+#, c-format
+#~ msgid "Time Without a Buddy: %s"
+#~ msgstr "Tijd Zonder een Buddy: %s"
+
+#, c-format
+#~ msgid "Callbacks Received: %llu"
+#~ msgstr "Terugroepen Ontvangen: %llu"
+
+#, c-format
+#~ msgid "Reasks Received: %llu"
+#~ msgstr "Hervragen Ontvangen: %llu"
+
+#~ msgid "NAT Traversal (Session)"
+#~ msgstr "NAT Traversal (Sessie)"
+
+#, c-format
+#~ msgid "Server Hole Punches: %s"
+#~ msgstr "Serverperforatiepogingen: %s"
+
+#, c-format
+#~ msgid "Successful Server Hole Punches: %s"
+#~ msgstr "Succesvolle Serverperforatiepogingen: %s"
+
+#, c-format
+#~ msgid "Lugdunum Callbacks: %s"
+#~ msgstr "Lugdunum Terugroepen: %s"
+
+#, c-format
+#~ msgid "Successful Lugdunum Callbacks: %s"
+#~ msgstr "Succesvolle Lugdunum Terugroepen: %s"
+
+#, c-format
+#~ msgid "uTP Streams Moved to a New Port: %s"
+#~ msgstr "uTP-Streams Verplaatst naar een Nieuwe Poort: %s"
+
+#~ msgid "Kad receiver keys"
+#~ msgstr "Kad-ontvanger sleutels"
+
+#~ msgid "Keyword publish"
+#~ msgstr "Sleutelwoord publiceren"
+
+#~ msgid "Source publish"
+#~ msgstr "Bron publiceren"
+
+#~ msgid "Notes publish"
+#~ msgstr "Notities publiceren"
+
+#~ msgid "Firewall check"
+#~ msgstr "Firewall controle"
+
+#~ msgid "Firewall check 2"
+#~ msgstr "Firewall controle 2"
+
+#~ msgid "Callback"
+#~ msgstr "Terugroep"
+
+#, c-format
+#~ msgid "Keys valid: %s"
+#~ msgstr "Sleutels geldig: %s"
+
+#, c-format
+#~ msgid "Keys missing: %s"
+#~ msgstr "Ontbrekende sleutels: %s"
+
+#~ msgid "Kad Buddies"
+#~ msgstr "Kad-Buddies"
+
+#~ msgid "Serving Firewalled Nodes"
+#~ msgstr "Bedienen van Gefirewallde Nodes"
+
+#~ msgid "Our Own Buddy"
+#~ msgstr "Onze Eigen Buddy"
 
 #~ msgid "This aMule has no media helper (amule-media-probe)"
 #~ msgstr "Deze aMule heeft geen mediahelper (amule-media-probe)"
