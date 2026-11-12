@@ -1080,5 +1080,9 @@
   "networks_kad_served_buddies": "Обслужено партнёров",
   "networks_kad_served_buddies_value": "{count} из {limit}",
   "prefs_field_advanced_kad_max_served_buddies": "Узлы Kad за брандмауэром, обслуживаемые как партнёры",
-  "prefs_field_advanced_kad_max_served_buddies_help": "Сколько узлов Kad за брандмауэром этот узел обслуживает, передавая для них обратные вызовы. Каждый из них занимает соединение, поэтому обслуживается не более десятой части лимита соединений."
+  "prefs_field_advanced_kad_max_served_buddies_help": "Сколько узлов Kad за брандмауэром этот узел обслуживает, передавая для них обратные вызовы. Каждый из них занимает соединение, поэтому обслуживается не более десятой части лимита соединений.",
+  "stats_tree_diagnostics": "Диагностика",
+  "prefs_group_capacity": "Пропускная способность канала (масштабирует только графики скорости)",
+  "prefs_field_connection_download_capacity_kibibytes_per_second": "Скорость скачивания (КиБ/с)",
+  "prefs_field_connection_upload_capacity_kibibytes_per_second": "Скорость отдачи (КиБ/с)"
 }

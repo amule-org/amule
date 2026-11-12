@@ -1068,23 +1068,14 @@ msgstr "Kuvaus"
 msgid "aMuleGUI"
 msgstr "aMule loki"
 
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Ylös: %.1f%s (%.1f) | Alas: %.1f%s (%.1f)"
-
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
 msgid " MiB/s"
 msgstr ""
 
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
+#: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
 msgstr ""
-
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Ylös: %.1f%s | Alas: %.1f%s"
 
 #: src/amuleDlg.cpp
 msgid "Transfer speeds are reported by the daemon. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
@@ -1093,6 +1084,16 @@ msgstr ""
 #: src/amuleDlg.cpp
 msgid "Live speeds are averaged over the last second. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
 msgstr ""
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s | Down: %.1f%s"
+msgstr "Ylös: %.1f%s | Alas: %.1f%s"
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
+msgstr "Ylös: %.1f%s (%.1f) | Alas: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -4613,12 +4614,13 @@ msgid "Users connected to the current server and an estimate of the total number
 msgstr "Yhdistettyjen käyttäjien määrä nykyisellä palvelimella sekä arvio kaikkien käyttäjien määrästä."
 
 #: src/muuli_wdr.cpp
-msgid "Up: 0.0 | Down: 0.0"
-msgstr "Ylös: 0,0 | Alas: 0,0"
+msgid "Up:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
-msgstr "Nykyiset keskimääräiset lähetys- ja latausnopeudet. Mikäli aktivoitu, numerot suluissa näyttävät asiakasyhteyksien otsikkotietojen nopeuksia."
+#, fuzzy
+msgid "Down:"
+msgstr "Lataus: "
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -10763,6 +10765,12 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Up: 0.0 | Down: 0.0"
+#~ msgstr "Ylös: 0,0 | Alas: 0,0"
+
+#~ msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
+#~ msgstr "Nykyiset keskimääräiset lähetys- ja latausnopeudet. Mikäli aktivoitu, numerot suluissa näyttävät asiakasyhteyksien otsikkotietojen nopeuksia."
 
 #, fuzzy, c-format
 #~ msgid "Buddies Served: %llu"

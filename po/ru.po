@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-11 17:24+0000\n"
+"PO-Revision-Date: 2026-11-12 09:15+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -1073,23 +1073,14 @@ msgstr "Шифрование"
 msgid "aMuleGUI"
 msgstr "aMuleGUI"
 
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Отд: %.1f%s (%.1f) | Заг: %.1f%s (%.1f)"
-
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
 msgid " MiB/s"
 msgstr " МиБ/с"
 
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
+#: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
 msgstr " КиБ/с"
-
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Отд: %.1f%s | Заг: %.1f%s"
 
 #: src/amuleDlg.cpp
 msgid "Transfer speeds are reported by the daemon. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
@@ -1098,6 +1089,16 @@ msgstr "Скорости передачи сообщаются демоном. �
 #: src/amuleDlg.cpp
 msgid "Live speeds are averaged over the last second. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
 msgstr "Текущие скорости усреднены за последнюю секунду. Общая отдача включает служебный трафик; скорость отдачи пирам учитывает только пакеты файлов. Значения в скобках показывают служебный трафик протокола в КиБ/с."
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s | Down: %.1f%s"
+msgstr "Отд: %.1f%s | Заг: %.1f%s"
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
+msgstr "Отд: %.1f%s (%.1f) | Заг: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -4605,14 +4606,13 @@ msgid "Users connected to the current server and an estimate of the total number
 msgstr "Пользователи, подключённые к текущему серверу, и примерное общее число пользователей."
 
 #: src/muuli_wdr.cpp
-msgid "Up: 0.0 | Down: 0.0"
-msgstr "Отд: 0,0 | Заг: 0,0"
+msgid "Up:"
+msgstr ""
 
-# Тултип. Лучше оставить как можно более коротким (не все системы автоматом
-# делают их многострочными ;-))
 #: src/muuli_wdr.cpp
-msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
-msgstr "Текущая средняя скорость отдачи и загрузки. Если включено, числа в скобках обозначают служебный трафик обмена данными с клиентами."
+#, fuzzy
+msgid "Down:"
+msgstr "Загрузка: "
 
 # Тултип. Лучше оставить как можно более коротким (не все системы автоматом
 # делают их многострочными ;-))
@@ -9102,9 +9102,8 @@ msgid "Average file size: %s"
 msgstr "Средний размер файлов: %s"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Diagnostics"
-msgstr "Диагностика поиска"
+msgstr "Диагностика"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -10782,6 +10781,14 @@ msgstr "Не удалось сравнить устаревший ECPassword с 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Выполняется миграция изменённого устаревшего ECPassword после отката версии; предыдущий верификатор больше не действует в этом запуске."
+
+#~ msgid "Up: 0.0 | Down: 0.0"
+#~ msgstr "Отд: 0,0 | Заг: 0,0"
+
+# Тултип. Лучше оставить как можно более коротким (не все системы автоматом
+# делают их многострочными ;-))
+#~ msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
+#~ msgstr "Текущая средняя скорость отдачи и загрузки. Если включено, числа в скобках обозначают служебный трафик обмена данными с клиентами."
 
 #, c-format
 #~ msgid "Served Now: %llu"

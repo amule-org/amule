@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-11 17:24+0000\n"
+"PO-Revision-Date: 2026-11-12 09:15+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -1066,23 +1066,14 @@ msgstr "加密"
 msgid "aMuleGUI"
 msgstr "aMule 图形用户界面"
 
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "上传: %.1f%s（%.1f） | 下载: %.1f%s（%.1f）"
-
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
 msgid " MiB/s"
 msgstr " MiB/s"
 
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
+#: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
 msgstr " KiB/s"
-
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "上传: %.1f%s | 下载: %.1f%s"
 
 #: src/amuleDlg.cpp
 msgid "Transfer speeds are reported by the daemon. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
@@ -1091,6 +1082,16 @@ msgstr "传输速度由 daemon 程序报告。总上传包括控制流量；对�
 #: src/amuleDlg.cpp
 msgid "Live speeds are averaged over the last second. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
 msgstr "实时速度是过去一秒均值。总上传包括控制流量；对等方上传速度只包括文件数据包。圆括号中的值显示协议总开销，单位 KiB/s。"
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s | Down: %.1f%s"
+msgstr "上传: %.1f%s | 下载: %.1f%s"
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
+msgstr "上传: %.1f%s（%.1f） | 下载: %.1f%s（%.1f）"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -4571,12 +4572,13 @@ msgid "Users connected to the current server and an estimate of the total number
 msgstr "当前服务器上的用户和估算总用户数。"
 
 #: src/muuli_wdr.cpp
-msgid "Up: 0.0 | Down: 0.0"
-msgstr "上传: 0.0 | 下载: 0.0"
+msgid "Up:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
-msgstr "当前平均上传下载速度。括号中的值为于其他用户连接所消耗的带宽。"
+#, fuzzy
+msgid "Down:"
+msgstr "下载: "
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -9015,9 +9017,8 @@ msgid "Average file size: %s"
 msgstr "平均文件大小：%s"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Diagnostics"
-msgstr "查询诊断"
+msgstr "诊断"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -10689,6 +10690,12 @@ msgstr "无法将旧的 ECPassword 和 ECPasswordVerifier 进行比较；拒绝�
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再对本次运行进行身份认证。"
+
+#~ msgid "Up: 0.0 | Down: 0.0"
+#~ msgstr "上传: 0.0 | 下载: 0.0"
+
+#~ msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
+#~ msgstr "当前平均上传下载速度。括号中的值为于其他用户连接所消耗的带宽。"
 
 #, c-format
 #~ msgid "Served Now: %llu"
