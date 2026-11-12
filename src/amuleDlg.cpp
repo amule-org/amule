@@ -1527,7 +1527,6 @@ void CamuleDlg::ShowTransferRate()
 	}
 	buffer.Truncate(50); // Max size 50
 
-
 	const bool showOverhead = thePrefs::ShowOverhead();
 	TransferRateLabel *upload = CastChild("uploadRateLabel", TransferRateLabel);
 	TransferRateLabel *download = CastChild("downloadRateLabel", TransferRateLabel);
@@ -1579,7 +1578,6 @@ void CamuleDlg::ShowTransferRate()
 
 	wxASSERT((m_wndTaskbarNotifier != NULL) == thePrefs::UseTrayIcon());
 	if (m_wndTaskbarNotifier) {
-
 		// set trayicon-icon
 		const int percentDown =
 			BandwidthRateConversion::ToPercent(kBpsDown, thePrefs::GetMaxGraphDownloadRate());
