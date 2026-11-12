@@ -302,7 +302,6 @@ void CUpDownClient::Init()
 	m_nBuddyIP = 0;
 	m_nBuddyPort = 0;
 	m_nUserIDHybrid = 0;
-	m_helloUserID = 0;
 
 	m_nSourceFrom = SF_NONE;
 
@@ -540,8 +539,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 
 	CMD4Hash hash = data.ReadHash();
 	SetUserHash(hash);
-	m_helloUserID = data.ReadUInt32();
-	SetUserIDHybrid(m_helloUserID);
+	SetUserIDHybrid(data.ReadUInt32());
 	uint16 nUserPort = data.ReadUInt16(); // hmm clientport is sent twice - why?
 	uint32 tagcount = data.ReadUInt32();
 	for (uint32 i = 0; i < tagcount; i++) {
@@ -853,13 +851,14 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	CClientCredits *pFoundCredits = theApp->clientcredits->GetCredit(m_UserHash);
 	if (credits == NULL) {
 		credits = pFoundCredits;
-		if (!theApp->clientlist->ComparePriorUserhash(
-			    GetUserAddress(), m_nUserPort, pFoundCredits, OwnsUserAddress())) {
+		// Not a ban: users behind one NAT share the address and often the default port, and
+		// servers grant a HighID to whichever host answers there. A peer that changes its
+		// hash on purpose avoids this check by changing its port anyway.
+		if (!theApp->clientlist->ComparePriorUserhash(GetUserAddress(), m_nUserPort, pFoundCredits)) {
 			AddDebugLogLineN(logClient,
-				CFormat("Client: %s (%s) Banreason: Userhash changed (Found in "
-					"TrackedClientsList)") %
+				CFormat("Client: %s (%s) Userhash differs from the one tracked for this "
+					"address and port (TrackedClientsList)") %
 					GetUserName() % GetFullIP());
-			Ban();
 		}
 	} else if (credits != pFoundCredits) {
 		// userhash change ok, however two hours "waittime" before it can be used
@@ -3610,13 +3609,6 @@ CNetworkAddress CUpDownClient::GetConductAddress() const
 	return PeerAddressing::ConductAddress(
 		m_socket != nullptr ? m_socket->GetPeerAddress() : CNetworkAddress::Absent(),
 		GetUserAddress());
-}
-
-bool CUpDownClient::OwnsUserAddress() const
-{
-	return OwnsTrackedAddress(GetUserAddress(),
-		m_helloUserID,
-		m_hasModIPv6 ? CNetworkAddress::FromIPv6Bytes(m_modIPv6) : CNetworkAddress::Absent());
 }
 
 bool CUpDownClient::HasPeerIPv4() const

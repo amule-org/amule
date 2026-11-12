@@ -176,8 +176,7 @@ public:
 	/**
 	 * Checks if a client has changed its user-hash.
 	 */
-	bool ComparePriorUserhash(
-		const CNetworkAddress &address, uint16 nPort, void *pNewHash, bool ownsAddress);
+	bool ComparePriorUserhash(const CNetworkAddress &address, uint16 nPort, void *pNewHash);
 
 	/**
 	 * Bans an IP address for 2 hours.

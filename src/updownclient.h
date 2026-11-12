@@ -299,8 +299,6 @@ public:
 	CNetworkAddress GetDialAddress() const;
 	//! Whether the peer has an IPv4 form, from the best address known so far.
 	bool HasPeerIPv4() const;
-	//! Whether the user address is this peer's alone (see OwnsTrackedAddress).
-	bool OwnsUserAddress() const;
 	//! Where bans, corruption and AICH votes are charged: see PeerAddressing::ConductAddress().
 	CNetworkAddress GetConductAddress() const;
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
@@ -1228,8 +1226,6 @@ private:
 	CPeerCapabilities m_modCapabilities;
 	uint8_t m_modIPv6[16];
 	uint8_t m_servingBuddyIPv6[16];
-	//! The ID from the last hello, before ProcessHelloTypePacket() rewrites a HighID.
-	uint32 m_helloUserID;
 	bool m_hasModIPv6;
 	bool m_hasServingBuddyIPv6;
 #ifdef ENABLE_IPV6
