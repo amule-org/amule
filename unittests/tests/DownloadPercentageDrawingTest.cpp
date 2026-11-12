@@ -26,6 +26,7 @@
 #include <wx/dcmemory.h>
 #include <stdexcept>
 #include <cstring>
+#include <iostream>
 #include "DownloadPercentageDrawing.h"
 #include "NativeListTest.h"
 
@@ -66,12 +67,16 @@ int Ink(const wxImage &image, const wxRect &area)
 	return count;
 }
 
-void Check(ScaledView &view, int points, int width)
+void Check(ScaledView &view, double points, int width, bool styled)
 {
-	view.SetFont(wxFontInfo(points).Family(wxFONTFAMILY_SWISS));
+	wxFont font = wxFontInfo(points).Family(wxFONTFAMILY_SWISS);
+	if (styled) {
+		font.MakeBold().MakeItalic();
+	}
+	view.SetFont(font);
 	const wxFont originalFont = wxFontInfo(8).Family(wxFONTFAMILY_ROMAN).Italic();
 	const wxColour originalColour(123, 45, 67);
-	const wxRect cell(25, 20, width, points * 4);
+	const wxRect cell(25, 20, width, static_cast<int>(points * 4));
 	const wxSize size(400, 180);
 	wxBitmap actual(size), expected(size), normal(size);
 	wxMemoryDC dc(actual), reference(expected), control(normal);
@@ -82,6 +87,15 @@ void Check(ScaledView &view, int points, int width)
 	dc.SetFont(originalFont);
 	dc.SetTextForeground(originalColour);
 	dc.SetBackgroundMode(wxSOLID);
+	// A hidden/zero-sized cell must not draw or change the caller's state.
+	DrawDownloadPercentage(dc, wxRect(), "100.0%", view, false);
+	Require(dc.GetFont() == originalFont && dc.GetTextForeground() == originalColour &&
+			dc.GetBackgroundMode() == wxSOLID,
+		"Empty percentage cell changed the drawing state");
+	dc.SelectObject(wxNullBitmap);
+	const wxImage empty = actual.ConvertToImage();
+	Require(Ink(empty, wxRect(wxPoint(0, 0), size)) == 0, "Empty percentage cell painted text");
+	dc.SelectObject(actual);
 	DrawDownloadPercentage(dc, cell, "100.0%", view, true);
 	Require(dc.GetFont() == originalFont, "Percentage leaked its bold font into other cells");
 	Require(dc.GetTextForeground() == originalColour, "Percentage leaked its text colour");
@@ -101,7 +115,7 @@ void Check(ScaledView &view, int points, int width)
 	Require(memcmp(result.GetData(), wanted.GetData(), size.x * size.y * 3) == 0,
 		"Percentage does not match a centred label with the expected font weight");
 	const int normalInk = Ink(normal.ConvertToImage(), cell);
-	Require(points <= 12 ? Ink(result, cell) > normalInk : Ink(result, cell) == normalInk,
+	Require(points <= 12 && !styled ? Ink(result, cell) > normalInk : Ink(result, cell) == normalInk,
 		"Only small percentage fonts should be made bold");
 
 	// Every ordinary percentage needs a contrast outline, including small fonts.
@@ -109,6 +123,9 @@ void Check(ScaledView &view, int points, int width)
 	dc.SetBackground(wxBrush(wxColour(220, 220, 220)));
 	dc.Clear();
 	DrawDownloadPercentage(dc, cell, "99.9%", view, false);
+	Require(dc.GetFont() == originalFont && dc.GetTextForeground() == originalColour &&
+			dc.GetBackgroundMode() == wxSOLID,
+		"Outlined percentage leaked drawing state into the next cell");
 	dc.SelectObject(wxNullBitmap);
 	const wxImage outlined = actual.ConvertToImage();
 	int whites = 0;
@@ -150,9 +167,18 @@ void RunTests()
 	wxFrame frame(nullptr, wxID_ANY, "Download percentage drawing");
 	for (int scale : { 1, 2 }) {
 		auto *view = new ScaledView(&frame, scale);
-		for (int points : { 10, 12, 13, 16, 22 }) {
+		for (double points : { 10.0, 12.0, 12.5, 13.0, 16.0, 22.0 }) {
 			for (int width : { 180, 300 }) {
-				Check(*view, points, width);
+				for (bool styled : { false, true }) {
+					try {
+						Check(*view, points, width, styled);
+					} catch (...) {
+						std::cerr << "scale=" << scale << " points=" << points
+							  << " width=" << width << " styled=" << styled
+							  << '\n';
+						throw;
+					}
+				}
 			}
 		}
 		delete view;
