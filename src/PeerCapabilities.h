@@ -56,30 +56,25 @@ enum EModMiscOptions : uint32_t
 	//! Vendor buddy-info pull.
 	MOD_MISCOPT_SERVING_BUDDY_PULL = 1u << 3,
 	//! QUIC NAT-T data transport.
-	MOD_MISCOPT_NAT_TRAVERSAL_QUIC = 1u << 4
+	MOD_MISCOPT_NAT_TRAVERSAL_QUIC = 1u << 4,
+	//! emule-qt: skips unknown Extended Source Exchange tags, so it can take tags eMuleAI's reader
+	//! would reject (MODMISC_EXTXS_SKIPTAGS).
+	MOD_MISCOPT_EXTXS_SKIP_TAGS = 1u << 5
 };
 
-//! Bits 0-4 are defined. Bits 5-31 are reserved and travel as zero in both directions: they are
+//! Bits 0-5 are defined. Bits 6-31 are reserved and travel as zero in both directions: they are
 //! masked out of what a peer sends, so no capability can be inferred from them, and never set in
 //! what aMule sends.
 //!
-//! "Reserved" means reserved to aMule, not unallocated on the wire. The 0xAA word is not eMuleAI's
-//! alone: emule-qt allocates bit 5 in it (MODMISC_EXTXS_SKIPTAGS, extended source exchange without
-//! the tag preamble) and bit 10 (MODMISC_HTTPCACHE, HTTP cache sourcing). This mask drops both, so
-//! a peer that sets either reaches m_bits with it cleared.
-//!
-//! That is right while aMule acts on neither -- a bit it cannot use is a bit it must not relay --
-//! and wrong the moment it wants to gate on one, because a dropped bit reads as absent rather than
-//! as unknown, which is a different claim. Widening this mask is the change that has to happen
-//! first: no query site can recover a bit that was cleared here. A new bit needs an EModMiscOptions
-//! entry, a widened mask, an entry in the display table below, and the literal position pinned in
-//! PeerCapabilitiesTest.
-constexpr uint32_t MOD_MISCOPT_KNOWN_MASK = 0x0000001Fu;
+//! "Reserved" means reserved to aMule, not unallocated on the wire: emule-qt also allocates bit 10
+//! (MODMISC_HTTPCACHE, HTTP cache sourcing), and eMuleAI keeps bits 6-9. A dropped bit reads as
+//! absent rather than as unknown, so this mask must be widened before any query site can gate on
+//! a new bit. A new bit needs an EModMiscOptions entry, a widened mask, an entry in the display
+//! table below, and the literal position pinned in PeerCapabilitiesTest.
+constexpr uint32_t MOD_MISCOPT_KNOWN_MASK = 0x0000003Fu;
 
 /**
- * What a peer told us it can do. Read-only as far as this change is concerned: aMule records the
- * peer's claims so later changes in this set can act on them, and advertises nothing new itself.
- * See LocalAdvertisedModMiscOptions().
+ * What a peer told us it can do. What aMule claims itself is LocalAdvertisedModMiscOptions().
  */
 class CPeerCapabilities
 {
@@ -113,6 +108,7 @@ public:
 	bool SupportsIPv6() const { return Has(MOD_MISCOPT_IPV6); }
 	bool SupportsServingBuddyPull() const { return Has(MOD_MISCOPT_SERVING_BUDDY_PULL); }
 	bool SupportsNatTraversalQuic() const { return Has(MOD_MISCOPT_NAT_TRAVERSAL_QUIC); }
+	bool SkipsUnknownExtendedSourceExchangeTags() const { return Has(MOD_MISCOPT_EXTXS_SKIP_TAGS); }
 
 	/**
 	 * The capability word as a comma-separated list, for client details.
@@ -205,6 +201,9 @@ public:
 			{ MOD_MISCOPT_NAT_TRAVERSAL_QUIC,
 				wxTRANSLATE("NAT traversal (QUIC)"),
 				"nat_traversal_quic" },
+			{ MOD_MISCOPT_EXTXS_SKIP_TAGS,
+				wxTRANSLATE("Skips unknown source exchange tags"),
+				"extended_source_exchange_skip_tags" },
 		};
 		return names;
 	}
@@ -214,25 +213,26 @@ private:
 };
 
 /**
- * The CT_MOD_MISCOPTIONS word aMule puts in its own handshake.
+ * The CT_MOD_MISCOPTIONS word aMule puts in its own handshake: Extended Source Exchange, and
+ * that aMule skips unknown tags in it.
  *
- * Zero, so no tag is emitted, because sending it costs more than it buys today.
+ * The cost: eMuleAI flags a sender of this tag that has no readable ET_MOD_VERSION string as a
+ * ghost mod. aMule sends that string only under __GIT__, so a release build gets eMuleAI's
+ * GhostModPunishment, which by default multiplies its upload score by 0.7.
  *
- * The cost: eMuleAI marks any sender of this tag as an unofficial-opcode client and bans one that
- * carries no readable ET_MOD_VERSION string. aMule emits that string only under __GIT__, which a
- * tagged release suppresses.
- *
- * What it buys: the tag reaches only peers already connected over TCP, where uTP adds no
- * reachability. It does gate what eMuleAI tells us about other sources -- it sets bit 0x80 of the
- * source-exchange connect-options byte only for a recipient that advertised here -- but aMule does
- * not read that bit yet, so nothing is lost until it does.
- *
- * Turning a bit on means emitting the tag and counting it, which the hello already does, and
- * settling the ET_MOD_VERSION question first.
+ * What it buys: eMuleAI and emule-qt answer source requests with Extended Source Exchange only
+ * to a peer with bit 0, and only that format carries LowID sources with their buddy route.
  */
 constexpr uint32_t LocalAdvertisedModMiscOptions()
 {
-	return 0;
+	return MOD_MISCOPT_EXTENDED_XS | MOD_MISCOPT_EXTXS_SKIP_TAGS;
+}
+
+//! Whether source requests and answers with this peer use Extended Source Exchange.
+inline bool UsesExtendedSourceExchange(const CPeerCapabilities &peer)
+{
+	return (LocalAdvertisedModMiscOptions() & MOD_MISCOPT_EXTENDED_XS) != 0 &&
+	       peer.SupportsExtendedSourceExchange();
 }
 
 /**

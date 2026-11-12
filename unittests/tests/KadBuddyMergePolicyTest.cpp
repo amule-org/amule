@@ -90,6 +90,29 @@ TEST(KadBuddyMergePolicy, CopyWithoutBuddyIDChangesNothing)
 	ASSERT_FALSE(merge.takeID || merge.takeAddress || merge.storeCandidate);
 }
 
+// Only an ID from Kad is passed on, so it replaces one learned from source exchange.
+TEST(KadBuddyMergePolicy, KadIDReplacesASourceExchangeID)
+{
+	SKadBuddyMergeFacts facts = KadCopyFor(true, true, true);
+	facts.incomingIDFromKad = true;
+	facts.existingIDFromKad = false;
+	ASSERT_TRUE(DecideKadBuddyMerge(facts).takeID);
+
+	facts.existingIDFromKad = true;
+	ASSERT_FALSE(DecideKadBuddyMerge(facts).takeID);
+}
+
+TEST(KadBuddyMergePolicy, SourceExchangeIDNeverReplacesAnID)
+{
+	SKadBuddyMergeFacts facts = KadCopyFor(true, true, true);
+	facts.incomingFromKad = false;
+	facts.incomingIDFromKad = false;
+	facts.existingIDFromKad = false;
+	ASSERT_FALSE(DecideKadBuddyMerge(facts).takeID);
+	facts.existingHasID = false;
+	ASSERT_TRUE(DecideKadBuddyMerge(facts).takeID);
+}
+
 TEST(KadBuddyMergePolicy, SwitchesOnlyAfterAFailedCallbackWhileQueued)
 {
 	ASSERT_TRUE(ShouldSwitchToBuddyCandidate(true, true, true));

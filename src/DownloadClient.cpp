@@ -52,6 +52,16 @@
 #include "GuiEvents.h"   // Needed for Notify_*
 #include "UploadQueue.h" // Needed for CUploadQueue
 
+namespace
+{
+// eMuleAI clamps only the version byte to 1. Asked for more, it puts the SX v2-v4 tail (user hash,
+// connect options) after each record's tags and writes HighIDs unswapped from v3.
+uint8 SourceExchange2RequestVersion(const CPeerCapabilities &peer)
+{
+	return UsesExtendedSourceExchange(peer) ? SOURCEEXCHANGEEXT_VERSION : SOURCEEXCHANGE2_VERSION;
+}
+} // namespace
+
 #ifdef __MULE_UNUSED_CODE__
 // This function is left as a reminder.
 // Changes here _must_ be reflected in CClientList::FindMatchingClient.
@@ -242,7 +252,7 @@ void CUpDownClient::SendFileRequest()
 			if (SupportsSourceExchange2()) {
 				DEBUG_ONLY(sent_opcodes += "|RSRC2|";)
 				dataFileReq.WriteUInt8(OP_REQUESTSOURCES2);
-				dataFileReq.WriteUInt8(SOURCEEXCHANGE2_VERSION);
+				dataFileReq.WriteUInt8(SourceExchange2RequestVersion(GetModCapabilities()));
 				const uint16 nOptions = 0; // 16 ... Reserved
 				dataFileReq.WriteUInt16(nOptions);
 			} else {
@@ -301,7 +311,7 @@ void CUpDownClient::SendFileRequest()
 			CMemFile packetdata;
 
 			if (SupportsSourceExchange2()) {
-				packetdata.WriteUInt8(SOURCEEXCHANGE2_VERSION);
+				packetdata.WriteUInt8(SourceExchange2RequestVersion(GetModCapabilities()));
 				packetdata.WriteUInt16(0 /* Reserved */);
 			}
 

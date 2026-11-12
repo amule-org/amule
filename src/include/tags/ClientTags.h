@@ -56,6 +56,18 @@ enum client_tags
 	// something the wire does not say, so it falls through to the unknown-vendor-tag log in
 	// BaseClient.cpp like any other unhandled 0xA? id.
 
+	// Extended Source Exchange record tags (src/ExtSourceExchange.h). 0xBC and 0xBE are
+	// emule-qt's and go only to a peer that skips unknown tags. 0xBD is emule-qt's buddy offer,
+	// which aMule skips like any unknown tag.
+	CT_EMULE_ADDRESS = 0xB0,   // <uint32> a LowID source's own IPv4, for a UDP callback
+	CT_EMULE_SERVERIP = 0xBA,  // <uint32>
+	CT_EMULE_SERVERTCP = 0xBB, // <uint16>
+	CT_EMULE_USERHASH = 0xBC,  // <hash>
+	CT_EMULE_CONOPTS = 0xBE,   // <uint8> connect options, as in the SX v4 record
+	// <hash> the source's buddy ID in CUInt128::ToByteArray order. Unlike TAG_BUDDYHASH, no
+	// 4-byte groups are reversed: eMuleAI and emule-qt write the ID they got from ToByteArray.
+	CT_EMULE_SERVINGBUDDYID = 0xBF,
+
 	CT_EMULECOMPAT_OPTIONS = 0xEF,
 	CT_EMULE_RESERVED1 = 0xF0,
 	CT_EMULE_RESERVED2 = 0xF1,

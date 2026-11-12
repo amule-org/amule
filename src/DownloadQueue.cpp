@@ -1792,7 +1792,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		pcontactID->ToByteArray(cID);
 		ctemp->SetUserHash(CMD4Hash(cID));
 		pbuddyID->ToByteArray(cID);
-		ctemp->SetBuddyID(cID);
+		ctemp->SetBuddyID(cID, true);
 		ctemp->SetBuddyIP(buddyip);
 		ctemp->SetBuddyPort(buddyport);
 		break;
