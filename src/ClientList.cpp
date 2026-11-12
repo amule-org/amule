@@ -643,15 +643,19 @@ bool CClientList::IsIPAlreadyKnown(uint32_t ip)
 	return FindClientByIP(ip) != nullptr;
 }
 
-bool CClientList::ComparePriorUserhash(const CNetworkAddress &address, uint16 nPort, void *pNewHash)
+bool CClientList::ComparePriorUserhash(
+	const CNetworkAddress &address, uint16 nPort, void *pNewHash, bool ownsAddress)
 {
-	return m_trackedClientsList.Compare(address, nPort, pNewHash);
+	return m_trackedClientsList.Compare(address, nPort, pNewHash, ownsAddress);
 }
 
 void CClientList::AddTrackClient(CUpDownClient *toadd)
 {
-	m_trackedClientsList.Add(
-		toadd->GetUserAddress(), toadd->GetUserPort(), toadd->GetCreditsHash(), ::GetTickCount64());
+	m_trackedClientsList.Add(toadd->GetUserAddress(),
+		toadd->GetUserPort(),
+		toadd->GetCreditsHash(),
+		toadd->OwnsUserAddress(),
+		::GetTickCount64());
 }
 
 void CClientList::Process()
