@@ -312,6 +312,7 @@ CStatTreeItemNativeCounter *CStatistics::s_utpStreamMoves;
 #ifdef ENABLE_IPV6
 CStatTreeItemCounter *CStatistics::s_ipv6Upload;
 CStatTreeItemCounter *CStatistics::s_ipv6Download;
+CStatTreeItemNativeCounter *CStatistics::s_ipv6Events[static_cast<std::size_t>(EIPv6Event::Count)];
 #endif
 
 // Servers
@@ -1199,6 +1200,35 @@ void CStatistics::InitStatsTree()
 #ifdef AMULE_UTP_TRANSPORT
 	s_utpStreamMoves = static_cast<CStatTreeItemNativeCounter *>(
 		tmpRoot2->AddChild(new CStatTreeItemNativeCounter("uTP Streams Moved to a New Port: %s")));
+#endif
+
+#ifdef ENABLE_IPV6
+	{
+		CStatTreeItemBase *const ipv6 =
+			diagnostics->AddChild((new CStatTreeItemBase("IPv6 (Session)"))->SetKey("ipv6"));
+		struct EventItem
+		{
+			const char *label;
+			const char *key;
+		};
+		// In EIPv6Event order.
+		const EventItem events[] = {
+			{ "Connections Dialled: %s", "ipv6_dials" },
+			{ "Dials Answered: %s", "ipv6_dials_answered" },
+			{ "Dials Not Answered: %s", "ipv6_dials_unanswered" },
+			{ "Inbound Hellos From Outside Our /48: %s", "ipv6_inbound_hellos" },
+			{ "Hellos With an IPv6 Address: %s", "ipv6_hellos_with_address" },
+			{ "Server Sources Accepted: %s", "ipv6_server_sources_accepted" },
+			{ "Server Sources Ignored: %s", "ipv6_server_sources_ignored" },
+		};
+		static_assert(std::extent_v<decltype(events)> == static_cast<std::size_t>(EIPv6Event::Count),
+			"one stats item per IPv6 event");
+		for (std::size_t i = 0; i < static_cast<std::size_t>(EIPv6Event::Count); ++i) {
+			s_ipv6Events[i] = static_cast<CStatTreeItemNativeCounter *>(
+				ipv6->AddChild(new CStatTreeItemNativeCounter(events[i].label)));
+			s_ipv6Events[i]->SetKey(events[i].key);
+		}
+	}
 #endif
 
 	// Stable machine keys for API consumers (EC_TAG_STAT_NODE_KEY), assigned here so

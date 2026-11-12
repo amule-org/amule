@@ -2078,7 +2078,9 @@ void CPartFile::AddSources(CMemFile &sources,
 						"[%s]:%u") %
 						parsed.record.ipv6Address.ToWxString() % parsed.record.port);
 				theApp->downloadqueue->CheckAndAddSource(this, newsource);
+				theStats::AddIPv6Event(EIPv6Event::ServerSourceAccepted);
 			} else {
+				theStats::AddIPv6Event(EIPv6Event::ServerSourceIgnored);
 				AddDebugLogLineN(logPartFile,
 					CFormat("Ignored IPv6 source [%s]:%u of '%s': not usable or IP "
 						"filtered") %
