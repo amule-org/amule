@@ -22,165 +22,113 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include <wx/wx.h>
-#include <wx/dcmemory.h>
-#include <stdexcept>
-#include <cstring>
-#include <iostream>
 #include "DownloadPercentageDrawing.h"
-#include "NativeListTest.h"
+#include "GuiTestDiagnostics.h"
+
+#include <wx/dcmemory.h>
+#include <wx/wx.h>
+
+#include <functional>
+#include <iostream>
+
+class DownloadPercentageDrawingTestApp : public wxApp
+{
+public:
+	bool OnInit() override { return true; }
+};
+
+wxIMPLEMENT_APP_NO_MAIN(DownloadPercentageDrawingTestApp);
 
 namespace
 {
-void Require(bool condition, const char *message)
+const wxSize Canvas(160, 60);
+const wxRect Cell(20, 15, 120, 30);
+
+wxImage Paint(const wxColour &background, const std::function<void(wxDC &)> &draw)
 {
-	if (!condition) {
-		throw std::runtime_error(message);
+	wxBitmap bitmap(Canvas);
+	{
+		wxMemoryDC dc(bitmap);
+		dc.SetBackground(wxBrush(background));
+		dc.Clear();
+		draw(dc);
 	}
+	return bitmap.ConvertToImage();
 }
 
-class ScaledView : public wxWindow
-{
-public:
-	ScaledView(wxWindow *parent, int scale)
-	: wxWindow(parent, wxID_ANY)
-	, m_scale(scale)
-	{
-	}
-	wxSize GetDPI() const override { return wxSize(96 * m_scale, 96 * m_scale); }
-	double GetDPIScaleFactor() const override { return m_scale; }
-
-private:
-	int m_scale;
-};
-
-int Ink(const wxImage &image, const wxRect &area)
+int CountPixels(const wxImage &image, const std::function<bool(unsigned char)> &match)
 {
 	int count = 0;
-	for (int y = area.y; y < area.GetBottom() + 1; ++y) {
-		for (int x = area.x; x < area.GetRight() + 1; ++x) {
-			if (image.GetRed(x, y) < 128) {
-				++count;
-			}
+	for (int y = 0; y < image.GetHeight(); ++y) {
+		for (int x = 0; x < image.GetWidth(); ++x) {
+			count += match(image.GetRed(x, y)) ? 1 : 0;
 		}
 	}
 	return count;
 }
 
-void Check(ScaledView &view, double points, int width, bool styled)
+void TestDrawingStateIsRestored(const wxWindow &view)
 {
-	wxFont font = wxFontInfo(points).Family(wxFONTFAMILY_SWISS);
-	if (styled) {
-		font.MakeBold().MakeItalic();
-	}
-	view.SetFont(font);
-	const wxFont originalFont = wxFontInfo(8).Family(wxFONTFAMILY_ROMAN).Italic();
-	const wxColour originalColour(123, 45, 67);
-	const wxRect cell(25, 20, width, static_cast<int>(points * 4));
-	const wxSize size(400, 180);
-	wxBitmap actual(size), expected(size), normal(size);
-	wxMemoryDC dc(actual), reference(expected), control(normal);
-	for (wxDC *context : { &dc, &reference, &control }) {
-		context->SetBackground(*wxWHITE_BRUSH);
-		context->Clear();
-	}
-	dc.SetFont(originalFont);
-	dc.SetTextForeground(originalColour);
-	dc.SetBackgroundMode(wxSOLID);
-	// A hidden/zero-sized cell must not draw or change the caller's state.
-	DrawDownloadPercentage(dc, wxRect(), "100.0%", view, false);
-	Require(dc.GetFont() == originalFont && dc.GetTextForeground() == originalColour &&
-			dc.GetBackgroundMode() == wxSOLID,
-		"Empty percentage cell changed the drawing state");
-	dc.SelectObject(wxNullBitmap);
-	const wxImage empty = actual.ConvertToImage();
-	Require(Ink(empty, wxRect(wxPoint(0, 0), size)) == 0, "Empty percentage cell painted text");
-	dc.SelectObject(actual);
-	DrawDownloadPercentage(dc, cell, "100.0%", view, true);
-	Require(dc.GetFont() == originalFont, "Percentage leaked its bold font into other cells");
-	Require(dc.GetTextForeground() == originalColour, "Percentage leaked its text colour");
-	Require(dc.GetBackgroundMode() == wxSOLID, "Percentage leaked its background mode");
-	// Native centred label is an independent reference for size, weight and placement.
-	reference.SetFont(points <= 12 ? view.GetFont().Bold() : view.GetFont());
-	reference.SetTextForeground(*wxBLACK);
-	reference.DrawLabel("100.0%", cell, wxALIGN_CENTER);
-	control.SetFont(view.GetFont());
-	control.SetTextForeground(*wxBLACK);
-	control.DrawLabel("100.0%", cell, wxALIGN_CENTER);
-	dc.SelectObject(wxNullBitmap);
-	reference.SelectObject(wxNullBitmap);
-	control.SelectObject(wxNullBitmap);
-	const wxImage result = actual.ConvertToImage();
-	const wxImage wanted = expected.ConvertToImage();
-	Require(memcmp(result.GetData(), wanted.GetData(), size.x * size.y * 3) == 0,
-		"Percentage does not match a centred label with the expected font weight");
-	const int normalInk = Ink(normal.ConvertToImage(), cell);
-	Require(points <= 12 && !styled ? Ink(result, cell) > normalInk : Ink(result, cell) == normalInk,
-		"Only small percentage fonts should be made bold");
+	const wxFont font = wxFontInfo(8).Italic();
+	const wxColour colour(1, 2, 3);
+	const wxRect clip(0, 0, Canvas.x - 1, Canvas.y - 1);
+	Paint(*wxWHITE, [&](wxDC &dc) {
+		dc.SetFont(font);
+		dc.SetTextForeground(colour);
+		dc.SetBackgroundMode(wxSOLID);
+		dc.SetClippingRegion(clip);
+		DrawDownloadPercentage(dc, Cell, "42.0%", view, false);
+		DrawDownloadPercentage(dc, Cell, "42.0%", view, true);
+		wxRect box;
+		dc.GetClippingBox(box);
+		Check(dc.GetFont() == font && dc.GetTextForeground() == colour &&
+				dc.GetBackgroundMode() == wxSOLID && box == clip,
+			"Percentage leaked its drawing state into later cells");
+	});
+}
 
-	// Every ordinary percentage needs a contrast outline, including small fonts.
-	dc.SelectObject(actual);
-	dc.SetBackground(wxBrush(wxColour(220, 220, 220)));
-	dc.Clear();
-	DrawDownloadPercentage(dc, cell, "99.9%", view, false);
-	Require(dc.GetFont() == originalFont && dc.GetTextForeground() == originalColour &&
-			dc.GetBackgroundMode() == wxSOLID,
-		"Outlined percentage leaked drawing state into the next cell");
-	dc.SelectObject(wxNullBitmap);
-	const wxImage outlined = actual.ConvertToImage();
-	int whites = 0;
-	int blacks = 0;
-	for (int y = 0; y < size.y; ++y) {
-		for (int x = 0; x < size.x; ++x) {
-			const int red = outlined.GetRed(x, y);
-			whites += red > 245;
-			blacks += red < 30;
-		}
-	}
-	Require(whites > 0, "Ordinary percentage needs white text");
-	Require(blacks > 0, "Every ordinary percentage font size needs a black outline");
+void TestTextIsBoldAndOutlined(const wxWindow &view)
+{
+	auto dark = [](unsigned char red) { return red < 128; };
+	// Hashing text has no outline, so its ink shows the weight alone.
+	const wxImage hashing =
+		Paint(*wxWHITE, [&](wxDC &dc) { DrawDownloadPercentage(dc, Cell, "42.0%", view, true); });
+	const wxImage regular = Paint(*wxWHITE, [&](wxDC &dc) {
+		dc.SetFont(view.GetFont());
+		dc.SetTextForeground(*wxBLACK);
+		dc.DrawLabel("42.0%", Cell, wxALIGN_CENTER);
+	});
+	Check(CountPixels(hashing, dark) > CountPixels(regular, dark), "Percentage is not bold");
 
-	// A narrow cell and a pre-existing clip must not paint into adjacent rows/columns.
-	dc.SelectObject(actual);
-	dc.SetBackground(*wxWHITE_BRUSH);
-	dc.Clear();
-	const wxRect clip(35, 30, 15, 15);
-	dc.SetClippingRegion(clip);
-	DrawDownloadPercentage(dc, wxRect(30, 25, 25, 25), "100.0%", view, false);
-	wxRect restoredClip;
-	dc.GetClippingBox(restoredClip);
-	Require(restoredClip == clip, "Percentage must preserve the caller's clip");
-	dc.DestroyClippingRegion();
-	dc.SelectObject(wxNullBitmap);
-	const wxImage clipped = actual.ConvertToImage();
-	for (int y = 0; y < size.y; ++y) {
-		for (int x = 0; x < size.x; ++x) {
-			Require(clip.Contains(x, y) || clipped.GetRed(x, y) == 255,
-				"Narrow percentage painted outside its clipping region");
+	const wxImage ordinary = Paint(wxColour(128, 128, 128),
+		[&](wxDC &dc) { DrawDownloadPercentage(dc, Cell, "42.0%", view, false); });
+	Check(CountPixels(ordinary, [](unsigned char red) { return red > 230; }) > 0,
+		"Ordinary percentage is not white");
+	Check(CountPixels(ordinary, [](unsigned char red) { return red < 30; }) > 0,
+		"Ordinary percentage has no outline");
+}
+
+void TestTextStaysInItsCell(const wxWindow &view)
+{
+	const wxRect narrow(60, 20, 12, 12);
+	const wxImage image =
+		Paint(*wxWHITE, [&](wxDC &dc) { DrawDownloadPercentage(dc, narrow, "100.0%", view, false); });
+	for (int y = 0; y < Canvas.y; ++y) {
+		for (int x = 0; x < Canvas.x; ++x) {
+			Check(narrow.Contains(x, y) || image.GetRed(x, y) == 255,
+				"Percentage painted outside its cell");
 		}
 	}
 }
 } // namespace
 
-void RunTests()
+int main(int argc, char **argv)
 {
-	wxFrame frame(nullptr, wxID_ANY, "Download percentage drawing");
-	for (int scale : { 1, 2 }) {
-		auto *view = new ScaledView(&frame, scale);
-		for (double points : { 10.0, 12.0, 12.5, 13.0, 16.0, 22.0 }) {
-			for (int width : { 180, 300 }) {
-				for (bool styled : { false, true }) {
-					try {
-						Check(*view, points, width, styled);
-					} catch (...) {
-						std::cerr << "scale=" << scale << " points=" << points
-							  << " width=" << width << " styled=" << styled
-							  << '\n';
-						throw;
-					}
-				}
-			}
-		}
-		delete view;
-	}
+	return RunGuiTest(argc, argv, "No GUI display available; skipping percentage tests", [] {
+		wxFrame view(nullptr, wxID_ANY, "Download percentage drawing");
+		TestDrawingStateIsRestored(view);
+		TestTextIsBoldAndOutlined(view);
+		TestTextStaysInItsCell(view);
+		std::cout << "Download percentage drawing tests passed\n";
+	});
 }

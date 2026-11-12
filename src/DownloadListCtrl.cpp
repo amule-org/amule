@@ -105,6 +105,7 @@ private:
 		// rather than completed ones.
 		const bool showStrip = !file->IsCompleted() && file->GetStatus() != PS_COMPLETING &&
 				       file->GetHashingProgress() == 0;
+		const int stripHeight = 3;
 		if (showStrip && barRect.GetWidth() > 0) {
 			const int width = static_cast<int>((static_cast<double>(barRect.GetWidth()) /
 								   static_cast<double>(file->GetFileSize())) *
@@ -116,7 +117,7 @@ private:
 				// reproduce the old look.
 				dc->SetPen(*wxTRANSPARENT_PEN);
 				dc->SetBrush(crFlatProgress.GetBrush());
-				dc->DrawRectangle(barRect.x, barRect.y, width, 3);
+				dc->DrawRectangle(barRect.x, barRect.y, width, stripHeight);
 			} else {
 				dc->SetPen(*wxBLACK_PEN);
 				dc->DrawLine(barRect.x, barRect.y + 0, barRect.x + width, barRect.y + 0);
@@ -139,7 +140,13 @@ private:
 			percent = 99.9;
 		}
 		const wxString buffer = CFormat("%.1f%%") % percent;
-		DrawDownloadPercentage(*dc, cell, buffer, *GetView(), hashingProgress != 0);
+		// Below the strip, so the text never covers it.
+		wxRect textArea = barRect;
+		if (showStrip) {
+			textArea.y += stripHeight;
+			textArea.height -= stripHeight;
+		}
+		DrawDownloadPercentage(*dc, textArea, buffer, *GetView(), hashingProgress != 0);
 	}
 };
 } // namespace

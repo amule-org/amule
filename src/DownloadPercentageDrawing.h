@@ -29,28 +29,24 @@
 #include <wx/dc.h>
 #include <wx/window.h>
 
-// Use the live list font, including its point size and display scaling. A fixed
-// pixel font would become too small on high-DPI displays. Measure after choosing
-// the weight, so the label stays centred as the font or column changes.
+// Bold, because the contrast outline thins regular strokes. The list font follows
+// the OS and display scaling, which a fixed pixel size would not.
 inline void DrawDownloadPercentage(
-	wxDC &dc, wxRect cell, const wxString &text, const wxWindow &view, bool hashing)
+	wxDC &dc, wxRect area, const wxString &text, const wxWindow &view, bool hashing)
 {
-	if (cell.IsEmpty()) {
+	if (area.IsEmpty()) {
 		return;
 	}
 	const wxFont oldFont = dc.GetFont();
 	const wxColour oldColour = dc.GetTextForeground();
 	const int oldBackgroundMode = dc.GetBackgroundMode();
-	wxDCClipper clipper(dc, cell);
-	// Use point size so display scaling does not change the weight choice.
-	const wxFont font = view.GetFont();
-	dc.SetFont(font.GetFractionalPointSize() <= 12.0 ? font.Bold() : font);
+	wxDCClipper clipper(dc, area);
+	dc.SetFont(view.GetFont().Bold());
 	dc.SetBackgroundMode(wxTRANSPARENT);
 	const wxSize extent = dc.GetTextExtent(text);
-	const int x = cell.x + (cell.width - extent.x) / 2;
-	const int y = cell.y + (cell.height - extent.y) / 2;
-	// Keep the contrast outline at every font size on ordinary bars.
-	// Hashing bars retain their black text on green/yellow.
+	const int x = area.x + (area.width - extent.x) / 2;
+	const int y = area.y + (area.height - extent.y) / 2;
+	// Outline white text so it stays readable on light fills.
 	if (!hashing) {
 		dc.SetTextForeground(*wxBLACK);
 		const int offset = view.FromDIP(1);

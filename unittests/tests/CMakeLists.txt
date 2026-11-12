@@ -2709,7 +2709,6 @@ if (TARGET wxWidgets::CORE)
         set_tests_properties (${name} PROPERTIES SKIP_RETURN_CODE 77)
     endfunction()
 
-    add_native_list_test (DownloadPercentageDrawingTest)
     add_native_list_test (RowRefreshTest)
     add_native_list_test (VirtualListViewportTest)
     # Settling the native GUI across the viewport scenarios takes several seconds.
@@ -3540,6 +3539,15 @@ if (TARGET wxWidgets::CORE)
 	target_link_libraries (TransferRateLabelTest PRIVATE wxWidgets::CORE)
 	add_test (NAME TransferRateLabelTest COMMAND TransferRateLabelTest)
 	set_tests_properties (TransferRateLabelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
+
+	add_executable (DownloadPercentageDrawingTest DownloadPercentageDrawingTest.cpp)
+	if (WIN32)
+		target_sources (DownloadPercentageDrawingTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (DownloadPercentageDrawingTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+	target_link_libraries (DownloadPercentageDrawingTest PRIVATE wxWidgets::CORE)
+	add_test (NAME DownloadPercentageDrawingTest COMMAND DownloadPercentageDrawingTest)
+	set_tests_properties (DownloadPercentageDrawingTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
 
 	add_executable (DialogLayoutTest DialogLayoutTest.cpp)
 	if (WIN32)
