@@ -264,3 +264,24 @@ TEST(LogRecord, HumanExportsStripOnlyOneWireBytePerLine)
 	ASSERT_EQUALS(std::string("\n\n"), Text(ECLogToText(" \n!\n")));
 	ASSERT_TRUE(ECLogToText("").empty());
 }
+
+TEST(LogRecord, StatusBarUsesCompactTimestampForEverySeverity)
+{
+	const TimeZoneGuard zone("UTC0");
+	for (const LogLevel level :
+		{ LogLevel::Trace, LogLevel::Debug, LogLevel::Info, LogLevel::Warning, LogLevel::Error }) {
+		const wxString line = FormatLogLines(
+			CLogRecord(level, "FileIO", wxString::FromUTF8("café INFO .123+00:00"), FixedTime()));
+		ASSERT_EQUALS(std::string("1970-01-01 00:00:00 [FileIO] café INFO .123+00:00\n"),
+			Text(FormatStatusBarLogLine(line)));
+		ASSERT_TRUE(HasLogRecordHeader(line));
+	}
+	ASSERT_EQUALS(std::string("1970-01-01 00:00:00 message\n"),
+		Text(FormatStatusBarLogLine(
+			FormatLogLines(CLogRecord(LogLevel::Info, "", "message", FixedTime())))));
+	for (const wxString line : { wxString("2016-11-11 18:00:00: old message\n"),
+		     wxString("raw crash text\n"),
+		     wxString("\n") }) {
+		ASSERT_EQUALS(Text(line), Text(FormatStatusBarLogLine(line)));
+	}
+}

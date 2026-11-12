@@ -1189,7 +1189,7 @@ void CamuleDlg::AddLogLineToView(const wxString &line, int viewId)
 		wxStaticText *text = CastChild("infoLabel", wxStaticText);
 		text->SetToolTip(bufferline);
 		// Only show the first line if multiple lines
-		UpdateStatusLabel(text, bufferline.BeforeFirst('\n'));
+		UpdateStatusLabel(text, FormatStatusBarLogLine(bufferline.BeforeFirst('\n')));
 	}
 }
 

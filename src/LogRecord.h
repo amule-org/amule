@@ -192,6 +192,16 @@ inline bool HasLogRecordHeader(const wxString &line)
 	       level == "ERROR ";
 }
 
+// The status bar has no room for milliseconds, UTC offset and severity; the log
+// view, logfile and EC keep them.
+inline wxString FormatStatusBarLogLine(const wxString &line)
+{
+	if (!HasLogRecordHeader(line)) {
+		return line;
+	}
+	return line.Left(10) + " " + line.Mid(11, 8) + " " + line.Mid(LogRecordHeaderLength);
+}
+
 // Accept pre-upgrade marker files too: backup failure intentionally appends to
 // the existing logfile. Unstructured crash output must not lose its first byte.
 inline bool DecodeLogFileLine(const wxString &line, wxString &ecLine, bool includeLogfileOnly = false)

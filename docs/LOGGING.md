@@ -15,6 +15,10 @@ is taken when the message is logged, before the core queues it from a worker thr
 Remote clients show the server's time and offset. Every physical line gets a prefix,
 including blank lines inside a message and records that are entirely blank.
 
+The GUI status bar has less room. It shows the first line of a status message
+with a compact `2026-10-18 17:42:31` timestamp and no severity. Its tooltip keeps
+the full line.
+
 The severity takes five columns. The levels are TRACE, DEBUG, INFO, WARN and ERROR.
 Ordinary core messages have no subsystem tag; named debug categories and explicit
 subsystems keep their tags. There is no runtime level threshold; debug categories are
