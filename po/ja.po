@@ -3817,7 +3817,7 @@ msgstr ""
 msgid "Publish notes"
 msgstr ""
 
-#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, fuzzy
 msgid "Find buddy"
 msgstr "仲間がありません"
@@ -8806,141 +8806,6 @@ msgstr "aMuleを表示する"
 
 #: src/Statistics.cpp
 #, c-format
-msgid "Served Now: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Refused: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests From NAT-T Nodes: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Unused Buddy Offers: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Served: %llu"
-msgstr "動作サーバのファイル数： %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Served Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Time Served: %s"
-msgstr "フィルタされたサーバ数： %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Data Relayed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Busiest Minute to One Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches Held for a Shared File: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Failed Buddy Connections: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Connected: %llu"
-msgstr " は次のものに接続しています： "
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time a Buddy Was Needed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Without a Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "アップロードされたデータ（セッション合計）： %s"
 
@@ -9085,35 +8950,6 @@ msgid "Peak Connections (estimate): %i"
 msgstr "ピーク接続数（推測）： %i"
 
 #: src/Statistics.cpp
-msgid "NAT Traversal (Session)"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Server Hole Punches: %s"
-msgstr "サーバのオーバヘッド（パケット数）： %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Server Hole Punches: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Lugdunum Callbacks: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Successful Lugdunum Callbacks: %s"
-msgstr "%s を正常に更新しました"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "uTP Streams Moved to a New Port: %s"
-msgstr ""
-
-#: src/Statistics.cpp
 #, c-format
 msgid "Unknown: %s"
 msgstr "不明：%s"
@@ -9131,48 +8967,6 @@ msgstr "接続禁止：%s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Kad banned addresses: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-msgid "Kad receiver keys"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Keyword publish"
-msgstr "フィルタ済み：%s"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Source publish"
-msgstr "ソース数"
-
-#: src/Statistics.cpp
-msgid "Notes publish"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check"
-msgstr "ファイアウォールされています"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check 2"
-msgstr "ファイアウォールされています"
-
-#: src/Statistics.cpp
-msgid "Callback"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Keys valid: %s"
-msgstr "フィルタ済み：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys missing: %s"
 msgstr ""
 
 #: src/Statistics.cpp
@@ -9241,16 +9035,7 @@ msgid "Average file size: %s"
 msgstr "平均ファイルサイズ：%s"
 
 #: src/Statistics.cpp
-#, fuzzy
-msgid "Kad Buddies"
-msgstr "Kadユーザ"
-
-#: src/Statistics.cpp
-msgid "Serving Firewalled Nodes"
-msgstr ""
-
-#: src/Statistics.cpp
-msgid "Our Own Buddy"
+msgid "Diagnostics"
 msgstr ""
 
 #: src/Statistics.cpp
@@ -10918,6 +10703,50 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Buddies Served: %llu"
+#~ msgstr "動作サーバのファイル数： %llu"
+
+#, fuzzy, c-format
+#~ msgid "Time Served: %s"
+#~ msgstr "フィルタされたサーバ数： %s"
+
+#, fuzzy, c-format
+#~ msgid "Buddies Connected: %llu"
+#~ msgstr " は次のものに接続しています： "
+
+#, fuzzy, c-format
+#~ msgid "Server Hole Punches: %s"
+#~ msgstr "サーバのオーバヘッド（パケット数）： %s"
+
+#, fuzzy, c-format
+#~ msgid "Successful Lugdunum Callbacks: %s"
+#~ msgstr "%s を正常に更新しました"
+
+#, fuzzy
+#~ msgid "Keyword publish"
+#~ msgstr "フィルタ済み：%s"
+
+#, fuzzy
+#~ msgid "Source publish"
+#~ msgstr "ソース数"
+
+#, fuzzy
+#~ msgid "Firewall check"
+#~ msgstr "ファイアウォールされています"
+
+#, fuzzy
+#~ msgid "Firewall check 2"
+#~ msgstr "ファイアウォールされています"
+
+#, fuzzy, c-format
+#~ msgid "Keys valid: %s"
+#~ msgstr "フィルタ済み：%s"
+
+#, fuzzy
+#~ msgid "Kad Buddies"
+#~ msgstr "Kadユーザ"
 
 #~ msgid "Disable computer's timed standby mode"
 #~ msgstr "コンピューターの自動スタンバイモードを無効にする"

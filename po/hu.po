@@ -3824,7 +3824,7 @@ msgstr ""
 msgid "Publish notes"
 msgstr ""
 
-#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, fuzzy
 msgid "Find buddy"
 msgstr "Nincs pajtás"
@@ -8813,141 +8813,6 @@ msgstr "aMule megjelenítése"
 
 #: src/Statistics.cpp
 #, c-format
-msgid "Served Now: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Refused: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests From NAT-T Nodes: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Unused Buddy Offers: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Served: %llu"
-msgstr "Fájlok a működő kiszolgálókon: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Served Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Time Served: %s"
-msgstr "Kiszűrt kiszolgálók: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Data Relayed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Busiest Minute to One Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches Held for a Shared File: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Failed Buddy Connections: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Connected: %llu"
-msgstr " kapcsolódva ehhez: "
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time a Buddy Was Needed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Without a Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "Feltöltött adatok (folyamat (összesen)): %s"
 
@@ -9092,35 +8957,6 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Legtöbb kapcsolat (becsült): %i"
 
 #: src/Statistics.cpp
-msgid "NAT Traversal (Session)"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Server Hole Punches: %s"
-msgstr "Kiszolgáló többletterhelése (csomagok): %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Server Hole Punches: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Lugdunum Callbacks: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Successful Lugdunum Callbacks: %s"
-msgstr "%s frissítése sikerrel járt."
-
-#: src/Statistics.cpp
-#, c-format
-msgid "uTP Streams Moved to a New Port: %s"
-msgstr ""
-
-#: src/Statistics.cpp
 #, c-format
 msgid "Unknown: %s"
 msgstr "Ismeretlen: %s"
@@ -9138,48 +8974,6 @@ msgstr "Kitiltott: %s"
 #: src/Statistics.cpp
 #, c-format
 msgid "Kad banned addresses: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-msgid "Kad receiver keys"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Keyword publish"
-msgstr "Kiszűrve: %s"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Source publish"
-msgstr "Források"
-
-#: src/Statistics.cpp
-msgid "Notes publish"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check"
-msgstr "tűzfal mögül"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check 2"
-msgstr "tűzfal mögül"
-
-#: src/Statistics.cpp
-msgid "Callback"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Keys valid: %s"
-msgstr "Kiszűrve: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys missing: %s"
 msgstr ""
 
 #: src/Statistics.cpp
@@ -9248,16 +9042,7 @@ msgid "Average file size: %s"
 msgstr "Átlagos fájlméret: %s"
 
 #: src/Statistics.cpp
-#, fuzzy
-msgid "Kad Buddies"
-msgstr "Kad felhasználó"
-
-#: src/Statistics.cpp
-msgid "Serving Firewalled Nodes"
-msgstr ""
-
-#: src/Statistics.cpp
-msgid "Our Own Buddy"
+msgid "Diagnostics"
 msgstr ""
 
 #: src/Statistics.cpp
@@ -10929,6 +10714,50 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, fuzzy, c-format
+#~ msgid "Buddies Served: %llu"
+#~ msgstr "Fájlok a működő kiszolgálókon: %llu"
+
+#, fuzzy, c-format
+#~ msgid "Time Served: %s"
+#~ msgstr "Kiszűrt kiszolgálók: %s"
+
+#, fuzzy, c-format
+#~ msgid "Buddies Connected: %llu"
+#~ msgstr " kapcsolódva ehhez: "
+
+#, fuzzy, c-format
+#~ msgid "Server Hole Punches: %s"
+#~ msgstr "Kiszolgáló többletterhelése (csomagok): %s"
+
+#, fuzzy, c-format
+#~ msgid "Successful Lugdunum Callbacks: %s"
+#~ msgstr "%s frissítése sikerrel járt."
+
+#, fuzzy
+#~ msgid "Keyword publish"
+#~ msgstr "Kiszűrve: %s"
+
+#, fuzzy
+#~ msgid "Source publish"
+#~ msgstr "Források"
+
+#, fuzzy
+#~ msgid "Firewall check"
+#~ msgstr "tűzfal mögül"
+
+#, fuzzy
+#~ msgid "Firewall check 2"
+#~ msgstr "tűzfal mögül"
+
+#, fuzzy, c-format
+#~ msgid "Keys valid: %s"
+#~ msgstr "Kiszűrve: %s"
+
+#, fuzzy
+#~ msgid "Kad Buddies"
+#~ msgstr "Kad felhasználó"
 
 #~ msgid "Disable computer's timed standby mode"
 #~ msgstr "Számítógép időzített készenléti állapotának hatástalanítása"
