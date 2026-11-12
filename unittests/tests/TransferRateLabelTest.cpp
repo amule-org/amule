@@ -28,6 +28,7 @@
 #include <wx/wx.h>
 
 #include <iostream>
+#include <utility>
 
 class TransferRateLabelTestApp : public wxApp
 {
@@ -49,6 +50,56 @@ void UpdateRate(TransferRateLabel *label, const wxString &text, bool showOverhea
 	}
 }
 
+void TestRateFormattingAndAlignment()
+{
+	Check(TransferRateLabel::FormatRate(0, 0, false) == "0.0 KiB/s", "Idle rate lost its unit");
+	Check(TransferRateLabel::FormatRate(1024, 0, false) == "1.0 KiB/s", "Small rate used the wrong unit");
+	Check(TransferRateLabel::FormatRate(1024 * 1024 - 1, 0, false) == "1024.0 KiB/s",
+		"Rate switched units below one MiB/s");
+	Check(TransferRateLabel::FormatRate(1024 * 1024, 0, false) == "1.0 MiB/s",
+		"Rate did not switch at one MiB/s");
+	Check(TransferRateLabel::FormatRate(0, 1024, true) == "0.0 KiB/s (1.0)",
+		"Idle rate or overhead lost its units/value");
+
+	wxDialog dialog(nullptr, wxID_ANY, "Independent rate alignment");
+	auto *strip = new wxBoxSizer(wxHORIZONTAL);
+	auto *up = new wxStaticText(&dialog, wxID_ANY, "Up:");
+	auto *upload = new TransferRateLabel(&dialog, wxID_ANY, TransferRateLabel::FormatRate(0, 0, false));
+	auto *down = new wxStaticText(&dialog, wxID_ANY, "| Down:");
+	auto *download = new TransferRateLabel(&dialog, wxID_ANY, TransferRateLabel::FormatRate(0, 0, false));
+	auto *following = new wxStaticText(&dialog, wxID_ANY, "Connected");
+	for (wxWindow *window : std::initializer_list<wxWindow *>{ up, upload, down, download, following }) {
+		strip->Add(window, wxSizerFlags().Border(wxRIGHT, 5));
+	}
+	dialog.SetSizer(strip);
+	UpdateRate(upload, TransferRateLabel::FormatRate(999 * 1024, 0, false), false);
+	UpdateRate(download, TransferRateLabel::FormatRate(999 * 1024, 0, false), false);
+	dialog.SetClientSize(strip->GetMinSize());
+	dialog.Show();
+	wxTheApp->Yield();
+	const wxRect upRect = up->GetRect();
+	const wxRect downRect = down->GetRect();
+	const wxRect followingRect = following->GetRect();
+	const wxRect uploadRect = upload->GetRect();
+	const wxRect downloadRect = download->GetRect();
+	Check((upload->GetWindowStyleFlag() & wxALIGN_RIGHT) != 0 &&
+			(download->GetWindowStyleFlag() & wxALIGN_RIGHT) != 0,
+		"Rate values are not right-aligned");
+	for (const auto &sample : { std::pair<double, double>{ 0, 1024 }, { 1024 * 1024, 0 }, { 0, 0 } }) {
+		UpdateRate(upload, TransferRateLabel::FormatRate(sample.first, 0, false), false);
+		UpdateRate(download, TransferRateLabel::FormatRate(sample.second, 0, false), false);
+		dialog.Layout();
+		Check(up->GetRect() == upRect && down->GetRect() == downRect &&
+				following->GetRect() == followingRect,
+			"Independent rate updates moved a prefix or following status field");
+		Check(upload->GetRect() == uploadRect && download->GetRect() == downloadRect,
+			"Independent rate updates moved a value's right edge");
+		Check(upload->GetTextExtent(upload->GetLabel()).x <= upload->GetSize().x &&
+				download->GetTextExtent(download->GetLabel()).x <= download->GetSize().x,
+			"A rate value was clipped");
+	}
+}
+
 void TestTransferRateLabel()
 {
 	wxDialog dialog(nullptr,
@@ -57,7 +108,7 @@ void TestTransferRateLabel()
 		wxDefaultPosition,
 		wxDefaultSize,
 		wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
-	auto *rates = new TransferRateLabel(&dialog, wxID_ANY, "Up: 0.0 | Down: 0.0");
+	auto *rates = new TransferRateLabel(&dialog, wxID_ANY, "0.0 KiB/s");
 	auto *following = new wxStaticText(&dialog, wxID_ANY, "Connected");
 	auto *strip = new wxBoxSizer(wxHORIZONTAL);
 	strip->Add(rates, wxSizerFlags().Border(wxRIGHT, 5));
@@ -76,18 +127,13 @@ void TestTransferRateLabel()
 				wxTheApp->Yield(true);
 			}
 		}
-		UpdateRate(rates, "Up: 123.4 KiB/s | Down: 567.8 MiB/s", false);
+		UpdateRate(rates, "567.8 MiB/s", false);
 		dialog.SetClientSize(wxSize(strip->GetMinSize().x, dialog.FromDIP(100)));
 		dialog.Layout();
 		const int occupiedWidth = rates->GetSize().x;
 		const int followingX = following->GetPosition().x;
-		for (const auto *text : { "Up: 0.0 | Down: 0.0",
-			     "Up: 1.0 KiB/s | Down: 0.0",
-			     "Up: 0.0 | Down: 2.0 KiB/s",
-			     "Up: 9.9 KiB/s | Down: 10.0 KiB/s",
-			     "Up: 0.0 (0.0) | Down: 0.0 (0.0)",
-			     "Up: 0.0 | Down: 0.0",
-			     "Up: 0.0 | Down: 0.0" }) {
+		for (double bytesPerSecond : { 0, 1024, 2048, 10240, 1024 * 1024, 0, 0 }) {
+			const wxString text = TransferRateLabel::FormatRate(bytesPerSecond, 0, false);
 			UpdateRate(rates, text, false);
 			Check(rates->GetLabel() == text, "Rate text did not update");
 			Check(rates->GetSize().x == occupiedWidth, "Rate field shrank between samples");
@@ -98,7 +144,7 @@ void TestTransferRateLabel()
 		}
 		dialog.SetClientSize(dialog.FromDIP(wxSize(900, 100)));
 		dialog.Layout();
-		const wxString longer = "Up: 123.4 MiB/s (123.4) | Down: 567.8 MiB/s (567.8)";
+		const wxString longer = "567.8 MiB/s (567.8)";
 		UpdateRate(rates, longer, false);
 		std::cout << "Rate layout: font=" << rates->GetFont().GetPointSize()
 			  << " previous=" << occupiedWidth << " expanded=" << rates->GetSize().x
@@ -145,9 +191,9 @@ void SettleRateFont()
 
 void TestTransferRateLifecycle()
 {
-	const wxString idle = "Up: 0.0 | Down: 0.0";
-	const wxString active = "Up: 123.4 KiB/s | Down: 567.8 KiB/s";
-	const wxString overhead = "Up: 123.4 KiB/s (12.3) | Down: 567.8 KiB/s (45.6)";
+	const wxString idle = "0.0 KiB/s";
+	const wxString active = "567.8 KiB/s";
+	const wxString overhead = "567.8 KiB/s (45.6)";
 	int sizeChanges = 0;
 	wxDialog dialog(nullptr, wxID_ANY, "Rate label lifecycle");
 	auto *rates = new DpiTestLabel<TransferRateLabel>(&dialog, wxID_ANY, idle);
@@ -248,6 +294,7 @@ void TestTransferRateLifecycle()
 int main(int argc, char **argv)
 {
 	return RunGuiTest(argc, argv, "No GUI display available; skipping rate label tests", [] {
+		TestRateFormattingAndAlignment();
 		TestTransferRateLabel();
 		TestTransferRateLifecycle();
 		std::cout << "Transfer rate label regression tests passed\n";
