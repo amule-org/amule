@@ -3868,6 +3868,8 @@ void CUpDownClient::UpdateModIPv6(const CNetworkAddress &address)
 	}
 	md4cpy(m_modIPv6, address.GetOctets().data());
 	m_hasModIPv6 = true;
+	// The source's own word; the merge that takes one from a copy marks it again.
+	m_modIPv6FromRecord = false;
 }
 #endif
 
