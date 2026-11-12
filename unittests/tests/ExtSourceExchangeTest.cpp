@@ -27,6 +27,7 @@
 #include "ExtSourceExchange.h"
 #include "MemFile.h"
 #include "SourceExchangePacket.h"
+#include "kademlia/utils/UInt128.h"
 
 #include <algorithm>
 #include <memory>
@@ -89,13 +90,6 @@ bool Contains(const std::vector<uint8> &ids, uint8 id)
 	return std::find(ids.begin(), ids.end(), id) != ids.end();
 }
 
-ExtSX::Bytes16 ToAmuleLayout(const ExtSX::Bytes16 &emuleLayout)
-{
-	ExtSX::Bytes16 out;
-	Kademlia::ConvertBuddyIdLayout(emuleLayout.data(), out.data());
-	return out;
-}
-
 // LowID 0x123456 on TCP 4662, as eMuleAI's WriteExtendedSourceExchangeData writes it: callback
 // address 1.2.3.4, Kad 4672 / UDP 4665, buddy 5.6.7.8:4672, buddy ID, server 9.10.11.12:4661.
 std::vector<uint8> EmuleAILowIDRecord()
@@ -126,7 +120,7 @@ ExtSX::SRecord LowIDWithBuddy()
 	record.port = 4662;
 	record.buddyIP = 0x08070605;
 	record.buddyPort = 4672;
-	record.buddyID = ToAmuleLayout(WireBuddyID);
+	record.buddyID = WireBuddyID;
 	return record;
 }
 } // namespace
@@ -146,9 +140,8 @@ TEST(ExtSourceExchange, DecodesAnEmuleAIRecord)
 	ASSERT_EQUALS(uint32{ 0x0C0B0A09 }, record.serverIP);
 	ASSERT_EQUALS(uint16{ 4661 }, record.serverPort);
 	ASSERT_TRUE(record.buddyID.has_value());
-	// Read as TAG_BUDDYHASH is: eMule layout on the wire, aMule layout in memory.
-	ASSERT_TRUE(*record.buddyID == ToAmuleLayout(WireBuddyID));
-	ASSERT_EQUALS(0x13, (*record.buddyID)[0]);
+	// Unlike TAG_BUDDYHASH, 0xBF is not converted: it is already in ToByteArray order.
+	ASSERT_TRUE(*record.buddyID == WireBuddyID);
 	ASSERT_FALSE(record.userHash.has_value());
 	ASSERT_FALSE(record.connectOptions.has_value());
 }
@@ -158,6 +151,46 @@ TEST(ExtSourceExchange, WritesTheEmuleAIRecordByteForByte)
 {
 	const std::vector<uint8> wire = EmuleAILowIDRecord();
 	ASSERT_TRUE(Encode(Decode(wire), false) == wire);
+}
+
+// eMuleAI and emule-qt put the ToByteArray bytes in 0xBF, and send the callback request as
+// WriteUInt128(CUInt128(id)), which reverses each 4-byte group:
+//   eMuleAI  DownloadQueue.cpp KademliaSearchFile: pServingBuddyID->ToByteArray(cID);
+//            BaseClient.cpp: CTag(CT_EMULE_SERVINGBUDDYID, GetServingBuddyID());
+//            BaseClient.cpp: bio.WriteUInt128(Kademlia::CUInt128(GetServingBuddyID()));
+//   emule-qt KadSearch.cpp buddyHashFromTagString; KnownFile.cpp: (CT_EMULE_SERVINGBUDDYID, src->buddyID());
+//            UpDownClient.cpp sendKadCallback: kad::io::writeUInt128(data, kad::UInt128(m_buddyID));
+TEST(ExtSourceExchange, KadCallbackSendsTheBuddyIDTheWayEmuleAIAndEmuleQtDo)
+{
+	const ExtSX::Bytes16 fromRecord = Decode(EmuleAILowIDRecord()).buddyID.value();
+	ASSERT_TRUE(fromRecord == WireBuddyID);
+
+	// As CUpDownClient::TryToConnect writes it for a buddy ID read from 0xBF.
+	CMemFile request;
+	request.WriteUInt128(Kademlia::CUInt128(fromRecord.data()));
+	const std::vector<uint8> sent = Contents(request);
+	const std::vector<uint8> expected = {
+		0x13, 0x12, 0x11, 0x10, 0x17, 0x16, 0x15, 0x14, 0x1b, 0x1a, 0x19, 0x18, 0x1f, 0x1e, 0x1d, 0x1c
+	};
+	ASSERT_TRUE(sent == expected);
+}
+
+TEST(ExtSourceExchange, WritesTheBuddyIDUnchanged)
+{
+	CMemFile data;
+	ExtSX::WriteRecord(data, LowIDWithBuddy(), false);
+	data.Seek(0, wxFromStart);
+	data.ReadUInt32();
+	data.ReadUInt16();
+	const uint8 count = data.ReadUInt8();
+	bool found = false;
+	for (uint8 i = 0; i < count; ++i) {
+		const CTag tag(data, true);
+		if (tag.GetNameID() == CT_EMULE_SERVINGBUDDYID) {
+			found = tag.GetHash() == CMD4Hash(WireBuddyID.data());
+		}
+	}
+	ASSERT_TRUE(found);
 }
 
 TEST(ExtSourceExchange, DecodesAnEmuleQtAnswerAndSkipsItsBuddyOffer)
@@ -215,7 +248,7 @@ TEST(ExtSourceExchange, DecodesAnEmuleQtLowIDRoute)
 	ExtSX::SanitizeRoute(record, RejectOnly(0));
 	ASSERT_EQUALS(uint32{ 1 }, record.hybridID);
 	ASSERT_TRUE(record.buddyIPv6 && *record.buddyIPv6 == PublicIPv6);
-	ASSERT_TRUE(record.buddyID && *record.buddyID == ToAmuleLayout(WireBuddyID));
+	ASSERT_TRUE(record.buddyID && *record.buddyID == WireBuddyID);
 	ASSERT_TRUE(ExtSX::HasDirectCallback(record));
 	ASSERT_TRUE(ExtSX::HasLowIDRoute(record));
 }

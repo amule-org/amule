@@ -25,7 +25,6 @@
 #ifndef EXTSOURCEEXCHANGE_H
 #define EXTSOURCEEXCHANGE_H
 
-#include "KadBuddyIdLayout.h"
 #include "KadSourceAddressPolicy.h" // Needed for ShouldContactKadSourceOverIPv6
 #include "MD4Hash.h"
 #include "NetworkFunctions.h" // Needed for IsLowID
@@ -67,7 +66,7 @@ struct SRecord
 	uint32_t buddyIP = 0;
 	std::optional<Bytes16> buddyIPv6;
 	uint16_t buddyPort = 0;
-	//! aMule layout (CUInt128::ToByteArray), as CUpDownClient stores it.
+	//! CUInt128::ToByteArray order, as CUpDownClient stores it and 0xBF carries it.
 	std::optional<Bytes16> buddyID;
 };
 
@@ -166,9 +165,7 @@ inline SRecord ReadRecord(const CFileDataIO &data)
 			break;
 		case CT_EMULE_SERVINGBUDDYID:
 			if (tag.IsHash()) {
-				Bytes16 id;
-				Kademlia::ConvertBuddyIdLayout(tag.GetHash().GetHash(), id.data());
-				record.buddyID = id;
+				record.buddyID = ToBytes16(tag.GetHash());
 			}
 			break;
 		default:
@@ -203,9 +200,7 @@ inline void WriteRecord(CFileDataIO &data, const SRecord &record, bool peerSkips
 			addInt(CT_EMULE_BUDDYUDP, record.buddyPort);
 		}
 		if (record.buddyID) {
-			uint8_t emuleLayout[16];
-			Kademlia::ConvertBuddyIdLayout(record.buddyID->data(), emuleLayout);
-			addHash(CT_EMULE_SERVINGBUDDYID, emuleLayout);
+			addHash(CT_EMULE_SERVINGBUDDYID, record.buddyID->data());
 		}
 	}
 	if (record.serverIP != 0) {

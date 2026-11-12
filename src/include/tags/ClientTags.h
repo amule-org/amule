@@ -64,7 +64,8 @@ enum client_tags
 	CT_EMULE_SERVERTCP = 0xBB, // <uint16>
 	CT_EMULE_USERHASH = 0xBC,  // <hash>
 	CT_EMULE_CONOPTS = 0xBE,   // <uint8> connect options, as in the SX v4 record
-	// <hash> the source's buddy ID in the eMule layout, the bytes TAG_BUDDYHASH decodes to.
+	// <hash> the source's buddy ID in CUInt128::ToByteArray order. Unlike TAG_BUDDYHASH, no
+	// 4-byte groups are reversed: eMuleAI and emule-qt write the ID they got from ToByteArray.
 	CT_EMULE_SERVINGBUDDYID = 0xBF,
 
 	CT_EMULECOMPAT_OPTIONS = 0xEF,

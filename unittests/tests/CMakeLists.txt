@@ -745,6 +745,7 @@ add_executable (PacketTest
 	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 )
 target_include_directories (PacketTest PRIVATE
 	${CMAKE_BINARY_DIR}
