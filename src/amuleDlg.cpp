@@ -1531,14 +1531,15 @@ void CamuleDlg::ShowTransferRate()
 	TransferRateLabel *upload = CastChild("uploadRateLabel", TransferRateLabel);
 	TransferRateLabel *download = CastChild("downloadRateLabel", TransferRateLabel);
 	const bool uploadChanged = upload->UpdateRate(
-		TransferRateLabel::FormatRate(
-			theStats::GetDisplayUploadRate(), theStats::GetDisplayUpOverheadRate(), showOverhead),
+		TransferRateLabel::FormatRate(static_cast<double>(theStats::GetDisplayUploadRate()),
+			static_cast<double>(theStats::GetDisplayUpOverheadRate()),
+			showOverhead),
 		showOverhead);
-	const bool downloadChanged =
-		download->UpdateRate(TransferRateLabel::FormatRate(theStats::GetDisplayDownloadRate(),
-					     theStats::GetDisplayDownOverheadRate(),
-					     showOverhead),
-			showOverhead);
+	const bool downloadChanged = download->UpdateRate(
+		TransferRateLabel::FormatRate(static_cast<double>(theStats::GetDisplayDownloadRate()),
+			static_cast<double>(theStats::GetDisplayDownOverheadRate()),
+			showOverhead),
+		showOverhead);
 	if (uploadChanged || downloadChanged) {
 		RelayoutLabelStrip(upload);
 	}
