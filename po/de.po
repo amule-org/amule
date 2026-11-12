@@ -1072,23 +1072,14 @@ msgstr "Beschreibung"
 msgid "aMuleGUI"
 msgstr "aMule-Log"
 
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
 msgid " MiB/s"
 msgstr ""
 
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
+#: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
 msgstr " KiB/s"
-
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Up: %.1f%s | Down: %.1f%s"
 
 #: src/amuleDlg.cpp
 msgid "Transfer speeds are reported by the daemon. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
@@ -1097,6 +1088,16 @@ msgstr "Die Übertragungsgeschwindigkeiten werden vom Daemon gemeldet. Der gesam
 #: src/amuleDlg.cpp
 msgid "Live speeds are averaged over the last second. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
 msgstr "Die aktuellen Geschwindigkeiten werden als Durchschnittswert der letzten Sekunde berechnet. Der gesamte Upload umfasst auch Steuerungsdaten; die Upload-Geschwindigkeiten zu Peers beziehen sich hingegen nur auf Dateipakete. Die Werte in Klammern geben den Protokoll-Overhead in KiB/s an."
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s | Down: %.1f%s"
+msgstr "Up: %.1f%s | Down: %.1f%s"
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
+msgstr "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -4642,12 +4643,13 @@ msgid "Users connected to the current server and an estimate of the total number
 msgstr "Zum aktuellen Server verbundene Benutzer und ungefähre Anzahl der Benutzer insgesamt im Netz."
 
 #: src/muuli_wdr.cpp
-msgid "Up: 0.0 | Down: 0.0"
-msgstr "Hoch: 0.0 | Herunter: 0.0"
+msgid "Up:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
-msgstr "Derzeitige Upload- und Download-Raten im Schnitt. Wenn aktiviert, dann auch noch in Klammern der Overhead durch Client-Kommunikation."
+#, fuzzy
+msgid "Down:"
+msgstr "Download: "
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -10853,6 +10855,12 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Up: 0.0 | Down: 0.0"
+#~ msgstr "Hoch: 0.0 | Herunter: 0.0"
+
+#~ msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
+#~ msgstr "Derzeitige Upload- und Download-Raten im Schnitt. Wenn aktiviert, dann auch noch in Klammern der Overhead durch Client-Kommunikation."
 
 #, fuzzy, c-format
 #~ msgid "Buddies Served: %llu"
