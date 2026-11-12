@@ -3233,8 +3233,10 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 		CUpDownClient *cur_src = it->GetClient();
 
 		int state = cur_src->GetDownloadState();
+		// A route no hello has proved may lead to another host: it is not passed on.
 		int valid =
-			(state == DS_DOWNLOADING) || (state == DS_ONQUEUE && !cur_src->IsRemoteQueueFull());
+			!cur_src->IsRouteUnproven() &&
+			((state == DS_DOWNLOADING) || (state == DS_ONQUEUE && !cur_src->IsRemoteQueueFull()));
 
 		// Only the extended format can describe how to reach a LowID.
 		if ((cur_src->HasLowID() && !packet.IsExtended()) || !valid) {

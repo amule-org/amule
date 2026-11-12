@@ -1058,8 +1058,10 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 	for (; it != m_ClientUploadList.end(); ++it) {
 		const CUpDownClient *cur_src = it->GetClient();
 
-		// Only the extended format can describe how to reach a LowID.
+		// Only the extended format can describe how to reach a LowID. A route no hello has
+		// proved may lead to another host: it is not passed on.
 		if ((cur_src->HasLowID() && !packet.IsExtended()) || cur_src == forClient ||
+			cur_src->IsRouteUnproven() ||
 			!(cur_src->GetUploadState() == US_UPLOADING ||
 				cur_src->GetUploadState() == US_ONUPLOADQUEUE)) {
 			continue;
