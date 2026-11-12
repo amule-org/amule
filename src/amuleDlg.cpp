@@ -1284,7 +1284,8 @@ void CamuleDlg::ShowConnectionState()
 	if (theApp->IsConnectedED2K()) {
 		CServer *server = theApp->serverconnect->GetCurrentServer();
 		if (server) {
-			msgED2K = CFormat("eD2k: %s") % server->GetListName();
+			// A literal '&' in a server name must not become a mnemonic.
+			msgED2K = CFormat("eD2k: %s") % wxControl::EscapeMnemonics(server->GetListName());
 		}
 
 		if (theApp->serverconnect->IsLowID()) {
