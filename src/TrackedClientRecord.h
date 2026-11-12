@@ -31,7 +31,7 @@
 #include <map>
 
 /**
- * The user hash each deleted peer had per address and port, kept after its client is gone so a
+ * The user hash each identified peer had per address and port, kept after its client is gone so a
  * peer that returns with a different hash can be banned for it. The tick is a parameter, so expiry
  * is testable without the application clock.
  */
@@ -41,7 +41,9 @@ public:
 	bool Add(const CNetworkAddress &address, uint16 port, void *hash, uint64 now)
 	{
 		const auto key = PeerAddressing::IndexKey(address);
-		if (key.IsAbsent()) {
+		// A peer that never identified has no credits; recording it would make its real hash look
+		// changed when it connects.
+		if (key.IsAbsent() || hash == nullptr) {
 			return false;
 		}
 		auto &record = m_clients[key];

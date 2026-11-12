@@ -64,6 +64,19 @@ TEST(TrackedClientRecord, TrackedAbsenceNeverStoresHistory)
 	ASSERT_TRUE(record.Compare(CNetworkAddress::Absent(), 4662, &second));
 }
 
+TEST(TrackedClientRecord, PeerWithoutCreditsIsNotTracked)
+{
+	CTrackedClientRecord record;
+	int credits;
+	// A source that never sent a hello is deleted, then the peer connects with its real hash.
+	ASSERT_FALSE(record.Add(IPv6(1), 4662, nullptr, 100));
+	ASSERT_TRUE(record.Compare(IPv6(1), 4662, &credits));
+	// Nor does it replace what an identified client left.
+	ASSERT_TRUE(record.Add(IPv6(1), 4662, &credits, 100));
+	ASSERT_FALSE(record.Add(IPv6(1), 4662, nullptr, 200));
+	ASSERT_TRUE(record.Compare(IPv6(1), 4662, &credits));
+}
+
 TEST(TrackedClientRecord, TrackedRefreshAndExpiryPreserveLegacyBoundaries)
 {
 	CTrackedClientRecord record;
