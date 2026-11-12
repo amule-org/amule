@@ -36,6 +36,7 @@
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst
 #include "DataToText.h"       // Needed for PriorityToStr
 #include "DownloadQueue.h"
+#include "DownloadPercentageDrawing.h"
 #include "FileDetailDialog.h" // Needed for CFileDetailDialog
 #include "FileRenameDialog.h" // Needed for AskNewFileName
 #include "FileLaunch.h"       // Needed for FileLaunch::Open / Reveal
@@ -138,26 +139,7 @@ private:
 			percent = 99.9;
 		}
 		const wxString buffer = CFormat("%.1f%%") % percent;
-		const int middlex = (2 * cell.GetX() + cell.GetWidth()) >> 1;
-		const int middley = (2 * cell.GetY() + cell.GetHeight()) >> 1;
-		wxCoord textwidth;
-		wxCoord textheight;
-		dc->GetTextExtent(buffer, &textwidth, &textheight);
-		const wxColour oldColour = dc->GetTextForeground();
-		const int x = middlex - (textwidth >> 1);
-		const int y = middley - (textheight >> 1);
-		// Outline white text so it stays readable on light fills.
-		if (hashingProgress == 0) {
-			dc->SetTextForeground(*wxBLACK);
-			const int offset = GetView()->FromDIP(1);
-			dc->DrawText(buffer, x - offset, y);
-			dc->DrawText(buffer, x + offset, y);
-			dc->DrawText(buffer, x, y - offset);
-			dc->DrawText(buffer, x, y + offset);
-		}
-		dc->SetTextForeground(hashingProgress == 0 ? *wxWHITE : *wxBLACK);
-		dc->DrawText(buffer, x, y);
-		dc->SetTextForeground(oldColour);
+		DrawDownloadPercentage(*dc, cell, buffer, *GetView(), hashingProgress != 0);
 	}
 };
 } // namespace
