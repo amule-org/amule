@@ -38,6 +38,8 @@ public:
 	: wxStaticText(
 		  parent, id, text, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE | wxST_ELLIPSIZE_END)
 	{
+		// The base constructor measures its text before our sizing hooks are active.
+		InvalidateBestSize();
 		SetToolTip(text);
 	}
 
@@ -50,9 +52,18 @@ public:
 	}
 
 protected:
-	wxSize DoGetBestSize() const override
+	wxSize DoGetBestSize() const override { return LimitWidth(wxStaticText::DoGetBestSize()); }
+
+	wxSize DoGetBestClientSize() const override
 	{
-		wxSize best = wxStaticText::DoGetBestSize();
+		// wxMSW supplies a client size, which takes precedence over DoGetBestSize().
+		return LimitWidth(wxStaticText::DoGetBestClientSize());
+	}
+
+private:
+	wxSize LimitWidth(wxSize best) const
+	{
+		// Preserve wxDefaultSize when a port does not implement the client-size hook.
 		best.x = std::min(best.x, FromDIP(300));
 		return best;
 	}

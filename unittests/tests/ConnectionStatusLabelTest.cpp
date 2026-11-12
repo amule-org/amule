@@ -77,6 +77,17 @@ void TestConnectionStatus()
 	const wxString shortStatus = "eD2k: Short server | Kad: Off";
 	const wxString longStatus = "eD2k: !EmuleServer v1.6 (no needo) "
 				    "(https://github.com/dagg3r/IEmuleServer/) | Kad: Connected";
+	// A translated initial label must also respect the cap before its first update.
+	{
+		wxDialog initial(nullptr, wxID_ANY, "Initial connection label");
+		auto *label = new ConnectionStatusLabel(&initial, wxID_ANY, longStatus);
+		auto *row = new wxBoxSizer(wxHORIZONTAL);
+		row->Add(label);
+		initial.SetSizerAndFit(row);
+		Check(label->GetBestSize().x <= label->FromDIP(300), "Initial best size exceeded the cap");
+		Check(label->GetSize().x <= label->FromDIP(300), "Initial layout exceeded the cap");
+		Check(label->GetToolTip()->GetTip() == longStatus, "Initial tooltip truncated a long label");
+	}
 	for (bool largeFont : { false, true }) {
 		if (largeFont) {
 			connection->SetFont(connection->GetFont().Scaled(1.5));
@@ -95,6 +106,11 @@ void TestConnectionStatus()
 				"Connection text was destructively truncated");
 			Check(connection->GetToolTip()->GetTip() == status,
 				"Tooltip did not follow the full status");
+			std::cout << "Connection metrics: best=" << connection->GetBestSize().x
+				  << " actual=" << connection->GetSize().x
+				  << " cap=" << connection->FromDIP(300) << '\n';
+			Check(connection->GetBestSize().x <= connection->FromDIP(300),
+				"A server name exceeded the preferred width cap");
 			Check(connection->GetSize().x <= connection->FromDIP(300),
 				"A server name exceeded the connection field's width cap");
 			Check(log->GetSize().x >= log->FromDIP(140),
