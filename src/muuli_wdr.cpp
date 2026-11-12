@@ -44,6 +44,7 @@
 #include "DialogLayout.h" // Scrollable details dialogs
 #include "TextClearButton.h"
 #include "TransferRateLabel.h"
+#include "ConnectionStatusLabel.h"
 #include "OtherFunctions.h" // Needed for LabelWithColon
 #include "SourceSearchLimits.h"
 #include "WriteBufferLimits.h"
@@ -127,7 +128,7 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item7->SetToolTip( _("Events are displayed here. For a complete list of events, refer to the log in the Networks tab.") );
     item6->Add( item7, wxSizerFlags().Center() );
 
-    wxStaticText *item8 = new wxStaticText( parent, -1, _("Loading ..."), wxDefaultPosition, wxSize(140,-1), wxST_NO_AUTORESIZE );
+    wxStaticText *item8 = new wxStaticText( parent, -1, _("Loading ..."), wxDefaultPosition, wxSize(140,-1), wxST_NO_AUTORESIZE | wxST_ELLIPSIZE_END );
     item8->SetName( "infoLabel" );
     item6->Add( item8, wxSizerFlags(1).FixedMinSize().Center().Border(wxLEFT, 5) );
     wxStaticLine *item9 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
@@ -181,8 +182,7 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item16->SetToolTip( _("Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type).") );
     item16->SetName( "connImage" );
     item6->Add( item16, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxStaticText *item17 = new wxStaticText( parent, -1, _("Not Connected ..."), wxDefaultPosition, wxDefaultSize, 0 );
-    item17->SetToolTip( _("Currently connected server.") );
+    ConnectionStatusLabel *item17 = new ConnectionStatusLabel( parent, -1, _("Not Connected ...") );
     item17->SetName( "connLabel" );
     item6->Add( item17, wxSizerFlags().Center().Border(wxRIGHT, 5) );
 #if defined(__WXMAC__)

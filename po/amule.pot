@@ -4472,10 +4472,6 @@ msgid "Not Connected ..."
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Search"
 msgstr ""
 
