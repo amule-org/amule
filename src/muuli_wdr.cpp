@@ -170,10 +170,15 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticBitmap *item13 = new wxStaticBitmap( parent, -1, wxArtProvider::GetBitmapBundle( "amule:status_speed_idle" ), wxDefaultPosition, wxDefaultSize );
     item13->SetName( "transferImg" );
     item6->Add( item13, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    TransferRateLabel *item14 = new TransferRateLabel( parent, -1, _("Up: 0.0 | Down: 0.0") );
-    item14->SetToolTip( _("Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication.") );
-    item14->SetName( "speedLabel" );
-    item6->Add( item14, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    item6->Add( new wxStaticText( parent, -1, _("Up:") ), wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    TransferRateLabel *uploadRate = new TransferRateLabel( parent, -1, TransferRateLabel::FormatRate(0, 0, false) );
+    uploadRate->SetName( "uploadRateLabel" );
+    item6->Add( uploadRate, wxSizerFlags().Center() );
+    item6->Add( new wxStaticText( parent, -1, "|" ), wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    item6->Add( new wxStaticText( parent, -1, _("Down:") ), wxSizerFlags().Center().Border(wxRIGHT, 5) );
+    TransferRateLabel *downloadRate = new TransferRateLabel( parent, -1, TransferRateLabel::FormatRate(0, 0, false) );
+    downloadRate->SetName( "downloadRateLabel" );
+    item6->Add( downloadRate, wxSizerFlags().Center().Border(wxRIGHT, 5) );
 
     wxStaticLine *item15 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item6->Add( item15, wxSizerFlags().Center().Border(wxLEFT, 5) );

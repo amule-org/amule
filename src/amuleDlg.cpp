@@ -1527,31 +1527,44 @@ void CamuleDlg::ShowTransferRate()
 	}
 	buffer.Truncate(50); // Max size 50
 
-	// The status labels all share one strip, and updating any of them used to
-	// re-flow the whole content area behind it -- see UpdateStatusLabel().
-	TransferRateLabel *label = CastChild("speedLabel", TransferRateLabel);
-	if (label->UpdateRate(buffer, thePrefs::ShowOverhead())) {
-		RelayoutLabelStrip(label);
+
+	const bool showOverhead = thePrefs::ShowOverhead();
+	TransferRateLabel *upload = CastChild("uploadRateLabel", TransferRateLabel);
+	TransferRateLabel *download = CastChild("downloadRateLabel", TransferRateLabel);
+	const bool uploadChanged = upload->UpdateRate(
+		TransferRateLabel::FormatRate(
+			theStats::GetDisplayUploadRate(), theStats::GetDisplayUpOverheadRate(), showOverhead),
+		showOverhead);
+	const bool downloadChanged =
+		download->UpdateRate(TransferRateLabel::FormatRate(theStats::GetDisplayDownloadRate(),
+					     theStats::GetDisplayDownOverheadRate(),
+					     showOverhead),
+			showOverhead);
+	if (uploadChanged || downloadChanged) {
+		RelayoutLabelStrip(upload);
 	}
-	if (!label->GetToolTip()) {
+	for (TransferRateLabel *label : { upload, download }) {
+		if (!label->GetToolTip()) {
 #ifdef CLIENT_GUI
-		// Older daemons still send longer averages in the same compatible speed fields.
-		label->SetToolTip(_(
-			"Transfer speeds are reported by the daemon. Total upload includes control traffic; "
-			"peer upload speeds include file packets only. Values in parentheses show protocol "
-			"overhead in KiB/s."));
+			// Older daemons still send longer averages in the same compatible speed fields.
+			label->SetToolTip(_("Transfer speeds are reported by the daemon. Total upload "
+					    "includes control traffic; "
+					    "peer upload speeds include file packets only. Values in "
+					    "parentheses show protocol "
+					    "overhead in KiB/s."));
 #else
-		label->SetToolTip(_("Live speeds are averaged over the last second. Total upload includes "
-				    "control traffic; "
-				    "peer upload speeds include file packets only. Values in parentheses "
-				    "show protocol overhead in KiB/s."));
+			label->SetToolTip(
+				_("Live speeds are averaged over the last second. Total upload includes "
+				  "control traffic; "
+				  "peer upload speeds include file packets only. Values in parentheses "
+				  "show protocol overhead in KiB/s."));
 #endif
+		}
 	}
 
 	// Show upload/download speed in title
 	if (thePrefs::GetShowRatesOnTitle()) {
-		// Same msgid as the speed label above, so this reuses that translation
-		// rather than asking translators for the string twice.
+		// The title keeps its compact combined rate display.
 		wxString UpDownSpeed = CFormat(_("Up: %.1f%s | Down: %.1f%s")) %
 				       (showMBpsUp ? MBpsUp : kBpsUp) %
 				       (showMBpsUp ? _(" MiB/s") : ((kBpsUp > 0) ? _(" KiB/s") : "")) %
@@ -1566,6 +1579,7 @@ void CamuleDlg::ShowTransferRate()
 
 	wxASSERT((m_wndTaskbarNotifier != NULL) == thePrefs::UseTrayIcon());
 	if (m_wndTaskbarNotifier) {
+
 		// set trayicon-icon
 		const int percentDown =
 			BandwidthRateConversion::ToPercent(kBpsDown, thePrefs::GetMaxGraphDownloadRate());

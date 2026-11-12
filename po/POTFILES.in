@@ -114,6 +114,7 @@ src/TextClearButton.h
 src/TextClient.cpp
 src/TextClient.h
 src/ThreadTasks.cpp
+src/TransferRateLabel.h
 src/TransferWnd.cpp
 src/UploadClient.cpp
 src/UploadDiskIOThread.cpp
