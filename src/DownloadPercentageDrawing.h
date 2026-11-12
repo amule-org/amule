@@ -26,6 +26,8 @@
 #ifndef DOWNLOAD_PERCENTAGE_DRAWING_H
 #define DOWNLOAD_PERCENTAGE_DRAWING_H
 
+#include <cmath>
+
 #include <wx/dc.h>
 #include <wx/window.h>
 
@@ -45,7 +47,8 @@ inline void DrawDownloadPercentage(
 	dc.SetBackgroundMode(wxTRANSPARENT);
 	const wxSize extent = dc.GetTextExtent(text);
 	const int x = area.x + (area.width - extent.x) / 2;
-	const int y = area.y + (area.height - extent.y) / 2;
+	// The text is often taller than the area; rounding toward zero would push it down.
+	const int y = area.y + static_cast<int>(std::floor((area.height - extent.y) / 2.0));
 	// Outline white text so it stays readable on light fills.
 	if (!hashing) {
 		dc.SetTextForeground(*wxBLACK);
