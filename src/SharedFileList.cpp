@@ -1845,6 +1845,20 @@ SKadPublishFacts CSharedFileList::CurrentKadPublishFacts()
 
 void CSharedFileList::Publish()
 {
+	auto &metrics = Kademlia::CPublishMetrics::Instance();
+	if (theLogger.IsEnabled(logKadPublish) && metrics.ReportDue(::GetTickCount64())) {
+		AddDebugLogLineN(logKadPublish,
+			CFormat("Kad source publish totals: attempts=%llu start_failures=%llu starts=%llu "
+				"queued=%llu "
+				"acknowledged_ips=%llu "
+				"finished=%llu zero_ack=%llu cancelled=%llu duration_ms=%llu "
+				"max_duration_ms=%llu max_req_per_ip_60s=%llu omitted_rate_samples=%llu") %
+				metrics.attempts % metrics.startFailures % metrics.starts % metrics.queued %
+				metrics.acknowledged % metrics.finished % metrics.zeroAcknowledgements %
+				metrics.cancelled % metrics.durationMs % metrics.maxDurationMs %
+				metrics.maxRequestsPerIP60s % metrics.omittedRateSamples);
+	}
+
 	// Variables to save cpu.
 	unsigned int tNow = time(NULL);
 
@@ -1946,9 +1960,18 @@ void CSharedFileList::Publish()
 					if (pCurKnownFile->PublishSrc()) {
 						Kademlia::CUInt128 kadFileID;
 						kadFileID.SetValueBE(pCurKnownFile->GetFileHash().GetHash());
-						if (Kademlia::CSearchManager::PrepareLookup(
-							    Kademlia::CSearch::STOREFILE, true, kadFileID) ==
-							NULL) {
+						const bool started = Kademlia::CSearchManager::PrepareLookup(
+									     Kademlia::CSearch::STOREFILE,
+									     true,
+									     kadFileID) != nullptr;
+						if (theLogger.IsEnabled(logKadPublish)) {
+							metrics.Attempt(started);
+						}
+						AddDebugLogLineN(logKadPublish,
+							CFormat("Kad source publish attempt: target=%s "
+								"started=%u") %
+								kadFileID.ToHexString() % started);
+						if (!started) {
 							pCurKnownFile->SetLastPublishTimeKadSrc(0, 0);
 						}
 					}

@@ -1059,23 +1059,14 @@ msgstr "Kryptering"
 msgid "aMuleGUI"
 msgstr "aMuleGUI"
 
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Upp: %.1f%s (%.1f) | Ned: %.1f%s (%.1f)"
-
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
 msgid " MiB/s"
 msgstr " MiB/s"
 
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
+#: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
 msgstr " KiB/s"
-
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Upp: %.1f%s | Ned: %.1f%s"
 
 #: src/amuleDlg.cpp
 msgid "Transfer speeds are reported by the daemon. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
@@ -1084,6 +1075,16 @@ msgstr ""
 #: src/amuleDlg.cpp
 msgid "Live speeds are averaged over the last second. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
 msgstr ""
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s | Down: %.1f%s"
+msgstr "Upp: %.1f%s | Ned: %.1f%s"
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
+msgstr "Upp: %.1f%s (%.1f) | Ned: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -3826,7 +3827,7 @@ msgstr ""
 msgid "Publish notes"
 msgstr ""
 
-#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, fuzzy
 msgid "Find buddy"
 msgstr "Ingen kompis"
@@ -4593,12 +4594,13 @@ msgid "Users connected to the current server and an estimate of the total number
 msgstr "Användare som är anslutna till den aktuella servern och en uppskattning av det totala antalet användare."
 
 #: src/muuli_wdr.cpp
-msgid "Up: 0.0 | Down: 0.0"
-msgstr "Upp: 0.0 | Ner: 0.0"
+msgid "Up:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
-msgstr "Nuvarande genomsnittliga uppladdnings- och nedladdningsnivåer. Om aktiverat visar siffrorna även overhead från klientkommunikationen."
+#, fuzzy
+msgid "Down:"
+msgstr "Hämta: "
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -5779,6 +5781,14 @@ msgstr "Max nya anslutningar / 5 sek"
 #: src/muuli_wdr.cpp
 msgid "Concurrent Kad source lookups"
 msgstr "Samtidiga uppslag av Kad-källor"
+
+#: src/muuli_wdr.cpp
+msgid "Firewalled Kad nodes served as buddy"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
@@ -8814,131 +8824,6 @@ msgstr "Visa aMule"
 
 #: src/Statistics.cpp
 #, c-format
-msgid "Served Now: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Refused: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Unused Buddy Offers: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Served: %llu"
-msgstr "Filer på fungerande servrar: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Served Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Time Served: %s"
-msgstr "Filtrerade servrar: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Data Relayed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Busiest Minute to One Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Failed Buddy Connections: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Connected: %llu"
-msgstr " är ansluten till "
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time a Buddy Was Needed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Without a Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "Överförd data (Session (Total)): %s"
 
@@ -9083,36 +8968,6 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Toppar anslutningar (uppskattning): %i"
 
 #: src/Statistics.cpp
-#, fuzzy
-msgid "NAT Traversal (Session)"
-msgstr "NAT-traversering (uTP)"
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Server Hole Punches: %s"
-msgstr "Server Overhead (paket): %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Server Hole Punches: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Lugdunum Callbacks: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Successful Lugdunum Callbacks: %s"
-msgstr "Lyckad uppdatering av %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "uTP Streams Moved to a New Port: %s"
-msgstr ""
-
-#: src/Statistics.cpp
 #, c-format
 msgid "Unknown: %s"
 msgstr "Okänd: %s"
@@ -9131,48 +8986,6 @@ msgstr "Bannlysta: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Kad-blockerade adresser: %s"
-
-#: src/Statistics.cpp
-msgid "Kad receiver keys"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Keyword publish"
-msgstr "Filtrerade: %s"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Source publish"
-msgstr "Källor"
-
-#: src/Statistics.cpp
-msgid "Notes publish"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check"
-msgstr "via brandvägg"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check 2"
-msgstr "via brandvägg"
-
-#: src/Statistics.cpp
-msgid "Callback"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Keys valid: %s"
-msgstr "Filtrerade: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys missing: %s"
-msgstr ""
 
 #: src/Statistics.cpp
 #, c-format
@@ -9240,16 +9053,7 @@ msgid "Average file size: %s"
 msgstr "Genomsnittlig filstorlek: %s"
 
 #: src/Statistics.cpp
-#, fuzzy
-msgid "Kad Buddies"
-msgstr "Kad-användare"
-
-#: src/Statistics.cpp
-msgid "Serving Firewalled Nodes"
-msgstr ""
-
-#: src/Statistics.cpp
-msgid "Our Own Buddy"
+msgid "Diagnostics"
 msgstr ""
 
 #: src/Statistics.cpp
@@ -10923,6 +10727,60 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Up: 0.0 | Down: 0.0"
+#~ msgstr "Upp: 0.0 | Ner: 0.0"
+
+#~ msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
+#~ msgstr "Nuvarande genomsnittliga uppladdnings- och nedladdningsnivåer. Om aktiverat visar siffrorna även overhead från klientkommunikationen."
+
+#, fuzzy, c-format
+#~ msgid "Buddies Served: %llu"
+#~ msgstr "Filer på fungerande servrar: %llu"
+
+#, fuzzy, c-format
+#~ msgid "Time Served: %s"
+#~ msgstr "Filtrerade servrar: %s"
+
+#, fuzzy, c-format
+#~ msgid "Buddies Connected: %llu"
+#~ msgstr " är ansluten till "
+
+#, fuzzy
+#~ msgid "NAT Traversal (Session)"
+#~ msgstr "NAT-traversering (uTP)"
+
+#, fuzzy, c-format
+#~ msgid "Server Hole Punches: %s"
+#~ msgstr "Server Overhead (paket): %s"
+
+#, fuzzy, c-format
+#~ msgid "Successful Lugdunum Callbacks: %s"
+#~ msgstr "Lyckad uppdatering av %s"
+
+#, fuzzy
+#~ msgid "Keyword publish"
+#~ msgstr "Filtrerade: %s"
+
+#, fuzzy
+#~ msgid "Source publish"
+#~ msgstr "Källor"
+
+#, fuzzy
+#~ msgid "Firewall check"
+#~ msgstr "via brandvägg"
+
+#, fuzzy
+#~ msgid "Firewall check 2"
+#~ msgstr "via brandvägg"
+
+#, fuzzy, c-format
+#~ msgid "Keys valid: %s"
+#~ msgstr "Filtrerade: %s"
+
+#, fuzzy
+#~ msgid "Kad Buddies"
+#~ msgstr "Kad-användare"
 
 #~ msgid "Disable computer's timed standby mode"
 #~ msgstr "Inaktivera datorns inställda standby-läge"

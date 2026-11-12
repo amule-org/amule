@@ -27,6 +27,7 @@
 
 #include <algorithm>
 
+#include <wx/intl.h>
 #include <wx/stattext.h>
 
 // A sizer-managed rate label must not resize itself during SetLabel(): even a
@@ -35,8 +36,21 @@ class TransferRateLabel : public wxStaticText
 {
 public:
 	TransferRateLabel(wxWindow *parent, wxWindowID id, const wxString &text)
-	: wxStaticText(parent, id, text, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE)
+	: wxStaticText(parent, id, text, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE | wxALIGN_RIGHT)
 	{
+	}
+
+	static wxString FormatRate(double bytesPerSecond, double overheadBytesPerSecond, bool showOverhead)
+	{
+		const double kibibytes = bytesPerSecond / 1024.0;
+		const bool mebibytes = kibibytes >= 1024.0;
+		wxString text = wxString::Format("%.1f%s",
+			mebibytes ? kibibytes / 1024.0 : kibibytes,
+			mebibytes ? _(" MiB/s") : _(" KiB/s"));
+		if (showOverhead) {
+			text += wxString::Format(" (%.1f)", overheadBytesPerSecond / 1024.0);
+		}
+		return text;
 	}
 
 	// Returns true when the strip needs a new layout.

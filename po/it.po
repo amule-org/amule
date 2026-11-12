@@ -1076,23 +1076,14 @@ msgstr "Cifratura"
 msgid "aMuleGUI"
 msgstr "aMuleGUI"
 
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
 msgid " MiB/s"
 msgstr " MiB/s"
 
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
+#: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
 msgstr " KiB/s"
-
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "Up: %.1f%s | Down: %.1f%s"
 
 #: src/amuleDlg.cpp
 msgid "Transfer speeds are reported by the daemon. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
@@ -1101,6 +1092,16 @@ msgstr "Le velocità di trasferimento sono riportate dal demone. L’upload tota
 #: src/amuleDlg.cpp
 msgid "Live speeds are averaged over the last second. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
 msgstr "Le velocità in tempo reale sono una media sull’ultimo secondo. L’upload totale include il traffico di controllo; le velocità di upload verso i peer includono solo i pacchetti dei file. I valori tra parentesi indicano l’overhead di protocollo in KiB/s."
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s | Down: %.1f%s"
+msgstr "Up: %.1f%s | Down: %.1f%s"
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
+msgstr "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -3825,7 +3826,7 @@ msgstr "Pubblicazione parola chiave"
 msgid "Publish notes"
 msgstr "Pubblicazione note"
 
-#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Find buddy"
 msgstr "Ricerca amico"
 
@@ -4581,12 +4582,13 @@ msgid "Users connected to the current server and an estimate of the total number
 msgstr "Utenti connessi al server attuale e stima del numero totale di utenti."
 
 #: src/muuli_wdr.cpp
-msgid "Up: 0.0 | Down: 0.0"
-msgstr "Up: 0.0 | Down: 0.0"
+msgid "Up:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
-msgstr "Medie attuali di upload e download. Se l'opzione è stata abilitata i numeri tra parentesi indicano l'overhead dovuto alla comunicazione tra client."
+#, fuzzy
+msgid "Down:"
+msgstr "Download: "
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -5771,6 +5773,14 @@ msgstr "Numero massimo nuove connessioni / 5 secondi"
 #: src/muuli_wdr.cpp
 msgid "Concurrent Kad source lookups"
 msgstr "Ricerche di fonti Kad simultanee"
+
+#: src/muuli_wdr.cpp
+msgid "Firewalled Kad nodes served as buddy"
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
@@ -8793,131 +8803,6 @@ msgstr "Chiusura di aMule"
 
 #: src/Statistics.cpp
 #, c-format
-msgid "Served Now: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Refused: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Unused Buddy Offers: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Served: %llu"
-msgstr "File su server attivi: %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Served Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Time Served: %s"
-msgstr "Server filtrati: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Data Relayed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Busiest Minute to One Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Failed Buddy Connections: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Connected: %llu"
-msgstr " è connesso a "
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time a Buddy Was Needed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Without a Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "Dati inviati (sessione (totale)): %s"
 
@@ -9062,36 +8947,6 @@ msgid "Peak Connections (estimate): %i"
 msgstr "Picco connessioni (stima): %i"
 
 #: src/Statistics.cpp
-#, fuzzy
-msgid "NAT Traversal (Session)"
-msgstr "Attraversamento NAT (uTP)"
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Server Hole Punches: %s"
-msgstr "Overhead server (pacchetti): %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Server Hole Punches: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Lugdunum Callbacks: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Successful Lugdunum Callbacks: %s"
-msgstr "%s aggiornato con successo"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "uTP Streams Moved to a New Port: %s"
-msgstr ""
-
-#: src/Statistics.cpp
 #, c-format
 msgid "Unknown: %s"
 msgstr "Sconosciuti: %s"
@@ -9110,48 +8965,6 @@ msgstr "Bannati: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Indirizzi Kad bannati: %s"
-
-#: src/Statistics.cpp
-msgid "Kad receiver keys"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Keyword publish"
-msgstr "Parola chiave: %s"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Source publish"
-msgstr "Fonti"
-
-#: src/Statistics.cpp
-msgid "Notes publish"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check"
-msgstr "Verifica firewall UDP"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check 2"
-msgstr "Verifica firewall UDP"
-
-#: src/Statistics.cpp
-msgid "Callback"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Keys valid: %s"
-msgstr "Parola chiave: %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys missing: %s"
-msgstr ""
 
 #: src/Statistics.cpp
 #, c-format
@@ -9220,16 +9033,8 @@ msgstr "Dimensione media dei file: %s"
 
 #: src/Statistics.cpp
 #, fuzzy
-msgid "Kad Buddies"
-msgstr "Utente Kad"
-
-#: src/Statistics.cpp
-msgid "Serving Firewalled Nodes"
-msgstr ""
-
-#: src/Statistics.cpp
-msgid "Our Own Buddy"
-msgstr ""
+msgid "Diagnostics"
+msgstr "Diagnostica delle ricerche"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -10906,6 +10711,60 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Up: 0.0 | Down: 0.0"
+#~ msgstr "Up: 0.0 | Down: 0.0"
+
+#~ msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
+#~ msgstr "Medie attuali di upload e download. Se l'opzione è stata abilitata i numeri tra parentesi indicano l'overhead dovuto alla comunicazione tra client."
+
+#, fuzzy, c-format
+#~ msgid "Buddies Served: %llu"
+#~ msgstr "File su server attivi: %llu"
+
+#, fuzzy, c-format
+#~ msgid "Time Served: %s"
+#~ msgstr "Server filtrati: %s"
+
+#, fuzzy, c-format
+#~ msgid "Buddies Connected: %llu"
+#~ msgstr " è connesso a "
+
+#, fuzzy
+#~ msgid "NAT Traversal (Session)"
+#~ msgstr "Attraversamento NAT (uTP)"
+
+#, fuzzy, c-format
+#~ msgid "Server Hole Punches: %s"
+#~ msgstr "Overhead server (pacchetti): %s"
+
+#, fuzzy, c-format
+#~ msgid "Successful Lugdunum Callbacks: %s"
+#~ msgstr "%s aggiornato con successo"
+
+#, fuzzy
+#~ msgid "Keyword publish"
+#~ msgstr "Parola chiave: %s"
+
+#, fuzzy
+#~ msgid "Source publish"
+#~ msgstr "Fonti"
+
+#, fuzzy
+#~ msgid "Firewall check"
+#~ msgstr "Verifica firewall UDP"
+
+#, fuzzy
+#~ msgid "Firewall check 2"
+#~ msgstr "Verifica firewall UDP"
+
+#, fuzzy, c-format
+#~ msgid "Keys valid: %s"
+#~ msgstr "Parola chiave: %s"
+
+#, fuzzy
+#~ msgid "Kad Buddies"
+#~ msgstr "Utente Kad"
 
 #~ msgid "This aMule has no media helper (amule-media-probe)"
 #~ msgstr "Questo aMule non dispone di un helper multimediale (amule-media-probe)"

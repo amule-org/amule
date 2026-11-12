@@ -156,6 +156,21 @@ protected:
 
 #ifndef CLIENT_GUI
 
+#ifdef ENABLE_IPV6
+// IPv6 events counted under Diagnostics, in tree order.
+enum class EIPv6Event
+{
+	Dial,
+	DialAnswered,
+	DialUnanswered,
+	InboundHello,
+	HelloWithAddress,
+	ServerSourceAccepted,
+	ServerSourceIgnored,
+	Count
+};
+#endif
+
 class CECTag;
 
 /// Stat tree item for rates/averages.
@@ -416,6 +431,9 @@ public:
 	// A connected uTP stream that followed its peer's NAT to a new source port.
 	static void AddUtpStreamMove() { ++(*s_utpStreamMoves); }
 #endif
+#ifdef ENABLE_IPV6
+	static void AddIPv6Event(EIPv6Event event) { ++(*s_ipv6Events[static_cast<std::size_t>(event)]); }
+#endif
 
 	// Servers
 	static void AddServer() { ++(*s_totalServers); }
@@ -652,6 +670,7 @@ private:
 #ifdef ENABLE_IPV6
 	static CStatTreeItemCounter *s_ipv6Upload;
 	static CStatTreeItemCounter *s_ipv6Download;
+	static CStatTreeItemNativeCounter *s_ipv6Events[static_cast<std::size_t>(EIPv6Event::Count)];
 #endif
 
 	// Servers

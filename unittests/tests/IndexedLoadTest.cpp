@@ -31,7 +31,7 @@ void CKademliaUDPListener::ProcessPacket(
 	throw std::runtime_error("unexpected packet");
 }
 wxString CPreferences::s_configDir;
-void CKademliaUDPListener::SendPacket(
+bool CKademliaUDPListener::SendPacket(
 	const CMemFile &, uint8_t, uint32_t, uint16_t, const CKadUDPKey &, const CUInt128 *)
 {
 	throw std::runtime_error("unexpected packet");

@@ -44,6 +44,7 @@
 #include "DialogLayout.h" // Scrollable details dialogs
 #include "TextClearButton.h"
 #include "TransferRateLabel.h"
+#include "ConnectionStatusLabel.h"
 #include "OtherFunctions.h" // Needed for LabelWithColon
 #include "SourceSearchLimits.h"
 #include "WriteBufferLimits.h"
@@ -127,7 +128,7 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item7->SetToolTip( _("Events are displayed here. For a complete list of events, refer to the log in the Networks tab.") );
     item6->Add( item7, wxSizerFlags().Center() );
 
-    wxStaticText *item8 = new wxStaticText( parent, -1, _("Loading ..."), wxDefaultPosition, wxSize(140,-1), wxST_NO_AUTORESIZE );
+    wxStaticText *item8 = new wxStaticText( parent, -1, _("Loading ..."), wxDefaultPosition, wxSize(140,-1), wxST_NO_AUTORESIZE | wxST_ELLIPSIZE_END );
     item8->SetName( "infoLabel" );
     item6->Add( item8, wxSizerFlags(1).FixedMinSize().Center().Border(wxLEFT, 5) );
     wxStaticLine *item9 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
@@ -170,10 +171,19 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticBitmap *item13 = new wxStaticBitmap( parent, -1, wxArtProvider::GetBitmapBundle( "amule:status_speed_idle" ), wxDefaultPosition, wxDefaultSize );
     item13->SetName( "transferImg" );
     item6->Add( item13, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    TransferRateLabel *item14 = new TransferRateLabel( parent, -1, _("Up: 0.0 | Down: 0.0") );
-    item14->SetToolTip( _("Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication.") );
-    item14->SetName( "speedLabel" );
-    item6->Add( item14, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    wxStaticText *uploadCaption = new wxStaticText( parent, -1, _("Up:") );
+    uploadCaption->SetName( "uploadRateCaption" );
+    item6->Add( uploadCaption, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    TransferRateLabel *uploadRate = new TransferRateLabel( parent, -1, TransferRateLabel::FormatRate(0, 0, false) );
+    uploadRate->SetName( "uploadRateLabel" );
+    item6->Add( uploadRate, wxSizerFlags().Center() );
+    item6->Add( new wxStaticText( parent, -1, "|" ), wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    wxStaticText *downloadCaption = new wxStaticText( parent, -1, _("Down:") );
+    downloadCaption->SetName( "downloadRateCaption" );
+    item6->Add( downloadCaption, wxSizerFlags().Center().Border(wxRIGHT, 5) );
+    TransferRateLabel *downloadRate = new TransferRateLabel( parent, -1, TransferRateLabel::FormatRate(0, 0, false) );
+    downloadRate->SetName( "downloadRateLabel" );
+    item6->Add( downloadRate, wxSizerFlags().Center().Border(wxRIGHT, 5) );
 
     wxStaticLine *item15 = new wxStaticLine( parent, -1, wxDefaultPosition, wxSize(-1,20), wxLI_VERTICAL );
     item6->Add( item15, wxSizerFlags().Center().Border(wxLEFT, 5) );
@@ -181,8 +191,7 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     item16->SetToolTip( _("Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type).") );
     item16->SetName( "connImage" );
     item6->Add( item16, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    wxStaticText *item17 = new wxStaticText( parent, -1, _("Not Connected ..."), wxDefaultPosition, wxDefaultSize, 0 );
-    item17->SetToolTip( _("Currently connected server.") );
+    ConnectionStatusLabel *item17 = new ConnectionStatusLabel( parent, -1, _("Not Connected ...") );
     item17->SetName( "connLabel" );
     item6->Add( item17, wxSizerFlags().Center().Border(wxRIGHT, 5) );
 #if defined(__WXMAC__)

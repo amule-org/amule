@@ -80,6 +80,11 @@ struct SContactFacts;
 struct SSourceRouteFacts;
 enum class ESourceRoute : std::uint8_t;
 enum class ESourceFallback : std::uint8_t;
+namespace ExtSX
+{
+struct SRecord;
+struct SAddressFilter;
+} // namespace ExtSX
 
 enum EChatCaptchaState
 {
@@ -846,8 +851,10 @@ public:
 	/* Kad buddy support */
 	// ID
 	const uint8_t *GetBuddyID() const { return m_achBuddyID; }
-	void SetBuddyID(const uint8_t *m_achTempBuddyID);
+	void SetBuddyID(const uint8_t *m_achTempBuddyID, bool fromKad = false);
 	bool HasValidBuddyID() const { return m_bBuddyIDValid; }
+	// From TAG_BUDDYHASH, so known to be the source's ~KadID: only such an ID is passed on.
+	bool IsBuddyIDFromKad() const { return m_bBuddyIDValid && m_bBuddyIDFromKad; }
 	/* IP */
 	void SetBuddyIP(uint32 val) { m_nBuddyIP = val; }
 	uint32 GetBuddyIP() const { return m_nBuddyIP; }
@@ -880,6 +887,8 @@ public:
 	void NoteOtherHostOnRoute();
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
+	// This source as an Extended Source Exchange record, sanitized with `filter`.
+	ExtSX::SRecord GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const;
 	/* Role: we serve this buddy, or it serves us */
 	void SetServedBuddy(bool served) { m_bServedBuddy = served; }
 	bool IsServedBuddy() const { return m_bServedBuddy; }
@@ -908,8 +917,7 @@ public:
 	uint8 GetKadVersion() { return m_byKadVersion; }
 	void ProcessFirewallCheckUDPRequest(CMemFile *data);
 
-	//! What the peer claimed in CT_MOD_MISCOPTIONS (eMuleAI vendor capabilities). Recorded
-	//! only: aMule implements none of them and advertises none back. See
+	//! What the peer claimed in CT_MOD_MISCOPTIONS (eMuleAI vendor capabilities). See
 	//! src/PeerCapabilities.h.
 	const CPeerCapabilities &GetModCapabilities() const { return m_modCapabilities; }
 	//! The peer's own IPv6 address from CT_MOD_IP_V6, big-endian, 16 bytes.
@@ -1253,6 +1261,7 @@ private:
 	/* Kad Stuff */
 	uint8_t m_achBuddyID[16];
 	bool m_bBuddyIDValid;
+	bool m_bBuddyIDFromKad = false;
 	// KADEMLIA_CALLBACK_REQ reads the published buddy hash as a pre-fix aMule wrote it (#1835).
 	bool m_bBuddyIdUseAmuleLayout = false;
 	// A KADEMLIA_CALLBACK_REQ was sent and the source has not called back since.
@@ -1350,6 +1359,8 @@ struct CHelloFromOtherHost
 {
 	wxString reason;
 };
+// Extended Source Exchange address checks: IsGoodIP, the IP filter and the ban list.
+ExtSX::SAddressFilter MakeExtendedSourceAddressFilter();
 
 #define MAKE_CLIENT_VERSION(mjr, min, upd) \
 	((uint32)(mjr) * 100U * 10U * 100U + (uint32)(min) * 100U * 10U + (uint32)(upd) * 100U)

@@ -525,7 +525,7 @@ A byte rate is `_bytes_per_second`, not `_bps`. The abbreviation was considered 
 
 The same reasoning gives the media bitrate its full spelling. `media.bitrate_kilobits_per_second` really is kilo**bits** — the helper reports bits per second and the core divides by 1000 — so it is the one quantity on the surface that is not bytes, and the one place `kilo` means 1000 rather than 1024. Abbreviating it would put the surface's only bit-valued rate one character away from its byte-valued ones.
 
-The three bandwidth caps under `connection` are the one place a rate is not per-byte: `max_download_kibibytes_per_second`, `max_upload_kibibytes_per_second` and `upload_slot_min_kibibytes_per_second` carry the KiB/s figure the user types, unconverted, because the core stores and enforces it in those units (`GetMaxUpload() * 1024`). `kibibytes` is spelled out for the same reason every other unit is, and it says 1024 without the reader having to guess which `k` this is.
+The bandwidth settings under `connection` are the one place a rate is not per-byte: `max_download_kibibytes_per_second`, `max_upload_kibibytes_per_second`, `upload_slot_min_kibibytes_per_second`, `download_capacity_kibibytes_per_second` and `upload_capacity_kibibytes_per_second` carry the KiB/s figure the user types, unconverted, because the core stores and enforces it in those units (`GetMaxUpload() * 1024`). `kibibytes` is spelled out for the same reason every other unit is, and it says 1024 without the reader having to guess which `k` this is.
 
 ## Endpoint catalog
 
@@ -1393,7 +1393,7 @@ Every one of them falls back to `"unknown"` for a code the daemon does not map, 
 
 `credit_ratio` is the credit modifier the core computes for this peer from its transfer history (`CClientCredits::GetCreditRatio()`), the value the desktop labels "DL/UP modifier" and both peer lists show as their Ratio column. It runs from `1` to `10`: a peer you have downloaded under 1 MB from reads `1`, and the value climbs with how much you have taken from it relative to what you sent back. It is **not** `downloaded_bytes_total / uploaded_bytes_total` - do not re-derive it, and do not expect the two to agree. [`GET /known_clients`](#get-apiv1known_clients) carries the same key computed the same way, so a peer reads the same number online or offline. `null` on a daemon that does not send it, and for a peer whose hello has not attached a credit record yet, which is not the same as a peer whose history earns exactly `1`.
 
-`protocol_extensions` is the set of protocol extensions the peer claimed in its handshake, as stable tokens: `extended_source_exchange`, `nat_traversal_utp`, `ipv6`, `serving_buddy_pull`, `nat_traversal_quic`. A list rather than one token because a peer claims any combination of them, and tokens rather than the `EC_TAG_CLIENT_MOD_CAPABILITIES` bitfield they arrive in so no consumer has to carry its own copy of aMule's bit meanings. The order is stable. The daemon has already dropped every extension it does not define, so a token here is one aMule names, and an extension aMule does not name is absent rather than unknown. `[]` means the peer claimed nothing, which is what nearly every peer on the network does — a peer that sent no capability tag and one that sent an all-zero word are the same state on the wire and report the same here. The desktop GUI renders the same set as its *Protocol extensions* row.
+`protocol_extensions` is the set of protocol extensions the peer claimed in its handshake, as stable tokens: `extended_source_exchange`, `nat_traversal_utp`, `ipv6`, `serving_buddy_pull`, `nat_traversal_quic`, `extended_source_exchange_skip_tags`. A list rather than one token because a peer claims any combination of them, and tokens rather than the `EC_TAG_CLIENT_MOD_CAPABILITIES` bitfield they arrive in so no consumer has to carry its own copy of aMule's bit meanings. The order is stable. The daemon has already dropped every extension it does not define, so a token here is one aMule names, and an extension aMule does not name is absent rather than unknown. `[]` means the peer claimed nothing, which is what nearly every peer on the network does — a peer that sent no capability tag and one that sent an all-zero word are the same state on the wire and report the same here. The desktop GUI renders the same set as its *Protocol extensions* row.
 
 It says what the *peer* supports, never what this daemon does: aMule implements none of these extensions yet and advertises none of them back, so the field is recognition only. The bit meanings are wire format shared with eMuleAI and are defined in `src/PeerCapabilities.h`.
 
@@ -2404,6 +2404,8 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "max_upload_kibibytes_per_second": 50,
     "max_download_kibibytes_per_second": 0,
     "upload_slot_min_kibibytes_per_second": 3,
+    "download_capacity_kibibytes_per_second": 12500,
+    "upload_capacity_kibibytes_per_second": 2500,
     "tcp_port": 4662,
     "udp_port": 4672,
     "extended_udp_port_enabled": true,
@@ -2556,7 +2558,7 @@ The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2
 
 | Kind | What `PATCH` does | Examples |
 | --- | --- | --- |
-| Settable | applied | most of the 145 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
+| Settable | applied | most of the 147 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
 | Read-only status | ignored, request still succeeds | `files.mmap_supported`, `files.media_metadata_available`, `kad.protocol10_supported`, `advanced.debug_categories_supported`, `advanced.kad_max_served_buddies_supported`, `advanced.debug_categories`, `connection.upnp_supported`, the six `geoip.*`, the seven `remote_controls.external_connections.*` |
 | Write-only | applied, never echoed on `GET` | `remote_controls.webserver.password`, `.guest_password` |
 | Refused | `400 bad_request` | `remote_controls.amuleapi.password`, `.guest_password`, `.guest_enabled` |
@@ -2599,6 +2601,7 @@ Downloading a database **now** is [`POST /geoip/update`](#post-apiv1geoipupdate)
 |---|---|---|---|
 | `connection.tcp_port` | `1`–`65532` | | the server UDP socket is TCP+3, and the core substitutes the default port for anything higher |
 | `connection.upload_slot_min_kibibytes_per_second` | `1`–`65535` | | the core clamps anything lower up to `1`, so a `0` would answer `200` and read back as `1` |
+| `connection.download_capacity_kibibytes_per_second`, `connection.upload_capacity_kibibytes_per_second` | `3`–`1000000` | | the desktop GUI's range; the line capacity scales the GUI speed graphs and tray speed presets, and limits nothing |
 | `advanced.write_buffer_limit_mebibytes` | `1`–`1024` | | received download payload awaiting writes, in MiB; default 128 |
 | `advanced.file_buffer_bytes` | `0`–`3825000` | `15000` | stored as a `uint8` count of 15000-byte blocks |
 | `advanced.max_upload_queue_client_count` | `0`–`25500` | `100` | stored as a `uint8` count of hundreds |
@@ -2937,7 +2940,7 @@ The ed2k server-info log buffer. Unlike `/logs/amule`, amuled ships this one as 
 
 **Query parameters:** `max_client_versions=N` (`0`–`255`, default `0` = unlimited) — caps how many per-software **version** rows the daemon serializes. Only the version lists are affected; the OS breakdown and the fixed skeleton nodes are always complete. A long-lived node accumulates hundreds of version rows, so a dashboard showing a top-10 should pass this rather than discard the rest client-side.
 
-A tree mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, shared files, Kad buddies). Cached with a 1 s TTL. The `kad_buddies` node holds a summary of the buddy counters in [`GET /kad`](#get-apiv1kad), split into `kad_buddies_serving` and `kad_buddies_own`.
+A tree mirroring amuled's "Statistics" tree (transfers, connections, clients, servers, shared files, diagnostics). Cached with a 1 s TTL. The `diagnostics` node holds counters meant for bug reports, with English-only labels: `kad_buddies` (a summary of the buddy counters in [`GET /kad`](#get-apiv1kad), split into `kad_buddies_serving` and `kad_buddies_own`), `kad_receiver_keys`, `nat_traversal` in uTP builds and `ipv6` in IPv6 builds.
 
 The envelope is `{ "nodes": [...] }`. Each node is `{ "key": "<id>", "label_value": "<value>", "label": "<template>", "values": [...], "children": [...] }`. A leaf is a node whose `children` array is empty. `key` is optional; `label_value` is always present, `null` unless the node's `label` is itself data (see below).
 

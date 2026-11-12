@@ -417,6 +417,7 @@ void CSearchManager::JumpStart()
 		}
 		case CSearch::STOREFILE: {
 			if (current_it->second->m_created + SEARCHSTOREFILE_LIFETIME < now) {
+				current_it->second->m_publishCompleted = true;
 				DeleteSearch(current_it);
 			} else if (current_it->second->GetAnswers() > SEARCHSTOREFILE_TOTAL ||
 				   current_it->second->m_created + SEARCHSTOREFILE_LIFETIME - SEC(20) < now) {
@@ -511,7 +512,11 @@ void CSearchManager::UpdateStats() noexcept
 	prefs->SetTotalStoreNotes(m_totalStoreNotes);
 }
 
-void CSearchManager::ProcessPublishResult(const CUInt128 &target, const uint8_t load, const bool loadResponse)
+void CSearchManager::ProcessPublishResult(const CUInt128 &target,
+	const uint8_t load,
+	const bool loadResponse,
+	uint32_t fromIP,
+	uint16_t fromPort)
 {
 	// We tried to publish some info and got a result.
 	CSearch *s = NULL;
@@ -533,6 +538,8 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &target, const uint8_t 
 		break;
 	}
 	case CSearch::STOREFILE:
+		s->m_lookupTrace.ItemReply({ fromIP, fromPort });
+		break;
 	case CSearch::STORENOTES:
 		break;
 	}
@@ -637,6 +644,12 @@ std::deque<LookupSnapshot> s_recentLookups;
 
 void CSearchManager::RememberLookup(CSearch &search)
 {
+	if (search.m_publishMeasured && theLogger.IsEnabled(logKadPublish)) {
+		CPublishMetrics::Instance().Finish(search.m_lookupTrace,
+			search.m_publishCompleted,
+			::GetTickCount64() - search.GetLookupStarted());
+	}
+
 	if (search.GetLookupTrace().Peers().empty()) {
 		return;
 	}

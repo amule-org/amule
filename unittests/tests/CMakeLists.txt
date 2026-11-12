@@ -61,31 +61,6 @@ target_include_directories (PowerManagementTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (PowerManagementTest muleunit mulecommon)
 add_test (NAME PowerManagementTest COMMAND PowerManagementTest)
 
-# Exercise the production sleep entry points against an isolated session bus.
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
-	add_executable (SleepInhibitionTest
-		SleepInhibitionTest.cpp
-		${CMAKE_SOURCE_DIR}/src/CFile.cpp
-		${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
-		${CMAKE_SOURCE_DIR}/src/Tag.cpp
-		${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
-		${CMAKE_SOURCE_DIR}/src/PlatformSpecific.cpp
-		${CMAKE_SOURCE_DIR}/src/Logger.cpp
-	)
-	target_compile_definitions (SleepInhibitionTest PRIVATE HAVE_GIO AMULE_DAEMON wxUSE_GUI=0 AMULE_SLEEP_INHIBITION_TEST)
-	target_include_directories (SleepInhibitionTest PRIVATE
-		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
-		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
-		${CMAKE_BINARY_DIR}/src/libs/ec/cpp ${GLIB_INCLUDE_DIRS}
-	)
-	target_link_libraries (SleepInhibitionTest PRIVATE mulecommon wxWidgets::BASE ${GLIB_LIBRARIES})
-	add_test (NAME SleepInhibitionTest COMMAND SleepInhibitionTest)
-	add_test (NAME SleepInhibitionNoBusTest COMMAND SleepInhibitionTest --no-bus)
-	add_test (NAME SleepInhibitionBusRestartTest COMMAND SleepInhibitionTest --restart-bus)
-	set_tests_properties (SleepInhibitionTest SleepInhibitionNoBusTest SleepInhibitionBusRestartTest PROPERTIES
-		SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 240)
-endif ()
-
 # Shared application anchors for headless tests that link production core code.
 function (add_application_test_stubs target)
 	target_sources (${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ApplicationTestStubs.cpp)
@@ -762,19 +737,22 @@ endif()
 
 add_executable (PacketTest
 	PacketTest.cpp
+	ExtSourceExchangeTest.cpp
 	SourceExchangePacketTest.cpp
 	ServerUDPPacketQueueTest.cpp
 	${CMAKE_SOURCE_DIR}/src/Packet.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 )
 target_include_directories (PacketTest PRIVATE
 	${CMAKE_BINARY_DIR}
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/src/include
 )
-target_link_libraries (PacketTest muleunit ZLIB::ZLIB)
+target_link_libraries (PacketTest muleunit ZLIB::ZLIB ${Boost_LIBRARIES})
 add_test (NAME PacketTest COMMAND PacketTest)
 
 add_executable (UploadPacketBuilderTest
@@ -3098,12 +3076,36 @@ endif()
 option (ENABLE_INTEGRATION_TESTS
 	"Register tests that run real aMule programs on loopback. Timing-sensitive, so off for package builds"
 	OFF)
-if (ENABLE_INTEGRATION_TESTS AND Python3_Interpreter_FOUND AND TARGET SleepInhibitionTest AND TARGET amuled)
-	add_test (NAME SleepModeDaemonIntegrationTest
-		COMMAND SleepInhibitionTest --daemon ${Python3_EXECUTABLE}
-			${CMAKE_CURRENT_SOURCE_DIR}/SleepModeDaemonIntegrationTest.py $<TARGET_FILE:amuled>)
-	set_tests_properties (SleepModeDaemonIntegrationTest PROPERTIES
-		SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 120)
+# Exercise the production sleep entry points against an isolated session bus, with wall-clock bounds.
+if (ENABLE_INTEGRATION_TESTS AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND GLIB_FOUND)
+	add_executable (SleepInhibitionTest
+		SleepInhibitionTest.cpp
+		${CMAKE_SOURCE_DIR}/src/CFile.cpp
+		${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+		${CMAKE_SOURCE_DIR}/src/Tag.cpp
+		${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+		${CMAKE_SOURCE_DIR}/src/PlatformSpecific.cpp
+		${CMAKE_SOURCE_DIR}/src/Logger.cpp
+	)
+	target_compile_definitions (SleepInhibitionTest PRIVATE HAVE_GIO AMULE_DAEMON wxUSE_GUI=0 AMULE_SLEEP_INHIBITION_TEST)
+	target_include_directories (SleepInhibitionTest PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+		${CMAKE_BINARY_DIR}/src/libs/ec/cpp ${GLIB_INCLUDE_DIRS}
+	)
+	target_link_libraries (SleepInhibitionTest PRIVATE mulecommon wxWidgets::BASE ${GLIB_LIBRARIES})
+	add_test (NAME SleepInhibitionTest COMMAND SleepInhibitionTest)
+	add_test (NAME SleepInhibitionNoBusTest COMMAND SleepInhibitionTest --no-bus)
+	add_test (NAME SleepInhibitionBusRestartTest COMMAND SleepInhibitionTest --restart-bus)
+	set_tests_properties (SleepInhibitionTest SleepInhibitionNoBusTest SleepInhibitionBusRestartTest PROPERTIES
+		SKIP_RETURN_CODE 77 LABELS "integration")
+	if (Python3_Interpreter_FOUND AND TARGET amuled)
+		add_test (NAME SleepModeDaemonIntegrationTest
+			COMMAND SleepInhibitionTest --daemon ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/SleepModeDaemonIntegrationTest.py $<TARGET_FILE:amuled>)
+		set_tests_properties (SleepModeDaemonIntegrationTest PROPERTIES
+			SKIP_RETURN_CODE 77 LABELS "integration" TIMEOUT 120)
+	endif ()
 endif ()
 if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND Python3_Interpreter_FOUND)
 	add_test (NAME UnicodeCommandLineIntegrationTest
@@ -3263,6 +3265,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/LogfilePathIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (LogfilePathIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME PublishMetrics-kad2
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/PublishMetricsIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (PublishMetrics-kad2 PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
 		add_test (NAME KadIndexLifecycleECTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadIndexLifecycleECTest.py $<TARGET_FILE:amuled>
@@ -3533,6 +3540,15 @@ if (TARGET wxWidgets::CORE)
 	add_test (NAME SearchMetadataPanelTest COMMAND SearchMetadataPanelTest)
 	set_tests_properties (SearchMetadataPanelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
 
+	add_executable (ConnectionStatusLabelTest ConnectionStatusLabelTest.cpp)
+	if (WIN32)
+		target_sources (ConnectionStatusLabelTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (ConnectionStatusLabelTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+	target_link_libraries (ConnectionStatusLabelTest PRIVATE wxWidgets::CORE)
+	add_test (NAME ConnectionStatusLabelTest COMMAND ConnectionStatusLabelTest)
+	set_tests_properties (ConnectionStatusLabelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
+
 	add_executable (TransferRateLabelTest TransferRateLabelTest.cpp)
 	if (WIN32)
 		target_sources (TransferRateLabelTest PRIVATE DialogLayoutTest.rc)
@@ -3541,6 +3557,15 @@ if (TARGET wxWidgets::CORE)
 	target_link_libraries (TransferRateLabelTest PRIVATE wxWidgets::CORE)
 	add_test (NAME TransferRateLabelTest COMMAND TransferRateLabelTest)
 	set_tests_properties (TransferRateLabelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
+
+	add_executable (DownloadPercentageDrawingTest DownloadPercentageDrawingTest.cpp)
+	if (WIN32)
+		target_sources (DownloadPercentageDrawingTest PRIVATE DialogLayoutTest.rc)
+	endif()
+	target_include_directories (DownloadPercentageDrawingTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+	target_link_libraries (DownloadPercentageDrawingTest PRIVATE wxWidgets::CORE)
+	add_test (NAME DownloadPercentageDrawingTest COMMAND DownloadPercentageDrawingTest)
+	set_tests_properties (DownloadPercentageDrawingTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
 
 	add_executable (DialogLayoutTest DialogLayoutTest.cpp)
 	if (WIN32)
@@ -4000,7 +4025,7 @@ if (TARGET wxWidgets::CORE)
 	add_test (NAME BandwidthRateInputEnglishTest COMMAND BandwidthRateInputTest en)
 	add_test (NAME BandwidthRateInputItalianTest COMMAND BandwidthRateInputTest it)
 	set_tests_properties (BandwidthRateInputEnglishTest BandwidthRateInputItalianTest
-		PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 60)
+		PROPERTIES SKIP_RETURN_CODE 77)
 endif()
 
 # Real OS calls, so it must stay registered on every platform.
@@ -4126,6 +4151,7 @@ foreach (ec_wire_test IN ITEMS
 	NetworkPreferencesIntegrationTest
 	OfferFilesLiveLimitsTest
 	PacketReceiveIntegrationTest
+	PublishMetrics-kad2
 	PathDefaultsIntegrationTest
 	SearchParamsRestoreIntegrationTest
 	SearchResultDownloadIntegrationTest
@@ -4181,3 +4207,8 @@ if (BUILD_WXCAS)
 	add_test (NAME WxCasStatsPanelTest COMMAND WxCasStatsPanelTest)
 	set_tests_properties (WxCasStatsPanelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
 endif ()
+
+add_executable (PublishMetricsTest PublishMetricsTest.cpp)
+add_test (NAME PublishMetricsTest COMMAND PublishMetricsTest)
+target_include_directories (PublishMetricsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (PublishMetricsTest muleunit mulecommon)

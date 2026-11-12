@@ -108,6 +108,7 @@
 #include "KadBuddyIdLayout.h"    // Needed for ConvertBuddyIdLayout (#1835)
 #include "KadBuddyMergePolicy.h" // Needed for DecideKadBuddyMerge
 #include "SourceRoutePolicy.h"   // Needed for NextSourceRoute
+#include "ExtSourceExchange.h"   // Needed for ExtSX::SRecord
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h" // Needed for ShouldRequestLugdunumNatCallback
 #include "NatServerHolePunch.h"   // Needed for ShouldRequestLowIdHolePunch
@@ -432,6 +433,7 @@ bool CUpDownClient::ProcessHelloPacket(const uint8_t *pachPacket, uint32 nSize)
 	if (localIPv6.IsIPv6() && peerAddress.IsIPv6() &&
 		peerAddress.TruncatedToPrefix(48) != localIPv6.TruncatedToPrefix(48)) {
 		IPv6ReachabilityProof().NoteHello(::GetTickCount64());
+		theStats::AddIPv6Event(EIPv6Event::InboundHello);
 	}
 #endif
 
@@ -732,16 +734,16 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 			dwEmuleTags |= 4;
 			break;
 
-		// eMuleAI vendor capability tags. Recorded, never acted on: what aMule buys here is that
-		// an eMuleAI peer stops looking like a client sending malformed handshakes. The bit
-		// meanings are wire format and live in src/PeerCapabilities.h.
+		// eMuleAI vendor capability tags. aMule acts on bits 0 and 5 (Extended Source Exchange);
+		// the bit meanings are wire format and live in src/PeerCapabilities.h.
 		case CT_MOD_MISCOPTIONS:
 			//  1 Extended source exchange
 			//  1 Legacy uTP NAT traversal
 			//  1 IPv6
 			//  1 Serving-buddy pull
 			//  1 QUIC NAT traversal
-			// 27 Reserved -- masked off by SetFromWire, so nothing can be inferred from a peer
+			//  1 Skips unknown extended source exchange tags (emule-qt)
+			// 26 Reserved -- masked off by SetFromWire, so nothing can be inferred from a peer
 			//    that sets them.
 			if (temptag.IsInt()) {
 				m_modCapabilities.SetFromWire((uint32)temptag.GetInt());
@@ -765,6 +767,9 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 				md4cpy(m_modIPv6, temptag.GetHash().GetHash());
 				m_hasModIPv6 = true;
 				m_modIPv6FromRecord = false;
+#ifdef ENABLE_IPV6
+				theStats::AddIPv6Event(EIPv6Event::HelloWithAddress);
+#endif
 			}
 			break;
 
@@ -1578,6 +1583,11 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	// got that far.
 	const bool failedAdvertisedIPv6 =
 		IsUnansweredAdvertisedDial(m_dialingIPv6, m_dialledIPv6Address, GetConnectAddress());
+#ifdef ENABLE_IPV6
+	if (m_dialingIPv6) {
+		theStats::AddIPv6Event(EIPv6Event::DialUnanswered);
+	}
+#endif
 	if (failedAdvertisedIPv6) {
 		m_unansweredIPv6Address = m_dialledIPv6Address;
 	}
@@ -2817,6 +2827,7 @@ bool CUpDownClient::Connect()
 				CFormat("Trying to connect to [%s]:%u") % connectAddress.ToWxString() %
 					static_cast<unsigned int>(GetUserPort()));
 			m_dialingIPv6 = true;
+			theStats::AddIPv6Event(EIPv6Event::Dial);
 			// A peer reached at its advertised IPv6 keeps the identity it is known by, so that
 			// address stays the fallback if the advertised one later stops answering.
 			m_preserveIdentityOnHello = IsAdvertisedIPv6Dial(connectAddress, GetConnectAddress());
@@ -2890,6 +2901,11 @@ void CUpDownClient::ConnectionEstablished()
 	// debug thing for myself -- check the connection_reason definition.
 
 	RefreshObfuscationState();
+#ifdef ENABLE_IPV6
+	if (m_dialingIPv6) {
+		theStats::AddIPv6Event(EIPv6Event::DialAnswered);
+	}
+#endif
 	m_dialingIPv6 = false;
 	m_preparedDialAddress = CNetworkAddress::Absent();
 	m_dialledIPv6Address = CNetworkAddress::Absent();
@@ -4032,16 +4048,18 @@ void CUpDownClient::SendChatPacket(const wxString &message)
 
 /* Kad stuff */
 
-void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID)
+void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID, bool fromKad)
 {
 	m_bBuddyIdUseAmuleLayout = false;
 	m_bBuddyCallbackUnanswered = false;
 	if (pucBuddyID == NULL) {
 		md4clr(m_achBuddyID);
 		m_bBuddyIDValid = false;
+		m_bBuddyIDFromKad = false;
 		return;
 	}
 	m_bBuddyIDValid = true;
+	m_bBuddyIDFromKad = fromKad;
 	md4cpy(m_achBuddyID, pucBuddyID);
 }
 
@@ -4050,6 +4068,8 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	SKadBuddyMergeFacts facts;
 	facts.incomingHasID = duplicate.HasValidBuddyID();
 	facts.existingHasID = HasValidBuddyID();
+	facts.incomingIDFromKad = duplicate.IsBuddyIDFromKad();
+	facts.existingIDFromKad = IsBuddyIDFromKad();
 	facts.incomingHasAddress = duplicate.GetBuddyIP() != 0 && duplicate.GetBuddyPort() != 0;
 	facts.existingHasAddress = GetBuddyIP() != 0 && GetBuddyPort() != 0;
 	facts.sameAddress =
@@ -4058,7 +4078,7 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	const SKadBuddyMerge merge = DecideKadBuddyMerge(facts);
 
 	if (merge.takeID) {
-		SetBuddyID(duplicate.GetBuddyID());
+		SetBuddyID(duplicate.GetBuddyID(), duplicate.IsBuddyIDFromKad());
 	}
 	if (merge.takeAddress) {
 		SetBuddyIP(duplicate.GetBuddyIP());
@@ -4193,6 +4213,60 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 			CFormat("Contact routes taken from a duplicate of source %s:%s") %
 				GetUserHash().Encode() % taken);
 	}
+}
+
+ExtSX::SRecord CUpDownClient::GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const
+{
+	ExtSX::SRecord record;
+	record.hybridID = GetUserIDHybrid();
+	record.port = GetUserPort();
+	record.serverIP = GetServerIP();
+	record.serverPort = GetServerPort();
+	if (HasValidHash()) {
+		record.userHash = GetUserHash();
+	}
+	// Only the address the source advertised itself; one from a third party is not passed on.
+	if (HasModIPv6()) {
+		ExtSX::Bytes16 ipv6;
+		std::copy_n(GetModIPv6(), ipv6.size(), ipv6.begin());
+		record.ipv6 = ipv6;
+	}
+	const uint8_t connectOptions =
+		GetCryptOptions() | (SupportsDirectUDPCallback() ? uint8_t{ 0x08 } : uint8_t{ 0 });
+	if (connectOptions != 0) {
+		record.connectOptions = connectOptions;
+	}
+	if (HasLowID()) {
+		if (SupportsDirectUDPCallback()) {
+			record.callbackIP = GetIP();
+			record.udpPort = GetUDPPort();
+			record.kadPort = GetKadPort();
+		}
+		record.buddyIP = GetBuddyIP();
+		record.buddyPort = GetBuddyPort();
+		if (IsBuddyIDFromKad()) {
+			ExtSX::Bytes16 id;
+			std::copy_n(GetBuddyID(), id.size(), id.begin());
+			record.buddyID = id;
+		}
+	}
+	ExtSX::SanitizeRoute(record, filter);
+	return record;
+}
+
+ExtSX::SAddressFilter MakeExtendedSourceAddressFilter()
+{
+	ExtSX::SAddressFilter filter;
+	filter.acceptIPv4 = [](uint32_t ip) {
+		return IsGoodIP(ip, thePrefs::FilterLanIPs()) && !theApp->ipfilter->IsFiltered(ip) &&
+		       !theApp->clientlist->IsBannedClient(ip);
+	};
+	filter.acceptIPv6 = [](const ExtSX::Bytes16 &bytes) {
+		const CNetworkAddress address = CNetworkAddress::FromIPv6Bytes(bytes.data());
+		return PeerAddressing::IsUsableTagIdentity(address) &&
+		       !theApp->clientlist->IsBannedClient(address);
+	};
+	return filter;
 }
 
 bool CUpDownClient::SwitchToBuddyCandidate()

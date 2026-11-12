@@ -740,8 +740,6 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client)
 
 bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, const wxString &reason)
 {
-	theApp->clientlist->AddTrackClient(client);
-
 	// Guard the find+erase against concurrent iteration by the disk I/O thread.
 	bool found = false;
 	{
@@ -755,6 +753,8 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, const wxString &
 	}
 
 	if (found) {
+		// Only a client that had a slot, as eMule does: every deleted client passes through here.
+		theApp->clientlist->AddTrackClient(client);
 		AddDebugLogLineN(logFileIO,
 			CFormat("Upload slot ended: id=%u reason=\"%s\" seconds=%u session_bytes=%u "
 				"client=\"%s\"") %

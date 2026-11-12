@@ -5,6 +5,7 @@
 #ifndef SOURCEEXCHANGEPACKET_H
 #define SOURCEEXCHANGEPACKET_H
 
+#include "ExtSourceExchange.h"
 #include "Logger.h"
 #include "MemFile.h"
 #include "Packet.h"
@@ -23,9 +24,13 @@ public:
 		bool supportsSX2,
 		uint8 sx1Version,
 		uint8 requestedVersion,
-		uint16 requestedOptions)
+		uint16 requestedOptions,
+		bool extended = false)
 	: m_sx2(supportsSX2 && requestedVersion > 0)
-	, m_version(m_sx2 ? std::min(requestedVersion, uint8{ SOURCEEXCHANGE2_VERSION }) : sx1Version)
+	, m_extended(m_sx2 && extended)
+	, m_version(m_extended ? uint8{ SOURCEEXCHANGEEXT_VERSION }
+		    : m_sx2    ? std::min(requestedVersion, uint8{ SOURCEEXCHANGE2_VERSION })
+			       : sx1Version)
 	{
 		if (m_sx2) {
 			m_data.WriteUInt8(m_version);
@@ -43,6 +48,13 @@ public:
 	}
 
 	uint8 GetVersion() const { return m_version; }
+	bool IsExtended() const { return m_extended; }
+
+	void AddExtendedSource(const ExtSX::SRecord &record, bool peerSkipsUnknownTags)
+	{
+		ExtSX::WriteRecord(m_data, record, peerSkipsUnknownTags);
+		++m_count;
+	}
 
 	void AddSource(uint32 id,
 		uint16 port,
@@ -85,6 +97,7 @@ public:
 
 private:
 	const bool m_sx2;
+	const bool m_extended;
 	const uint8 m_version;
 	CMemFile m_data;
 	uint16 m_count = 0;

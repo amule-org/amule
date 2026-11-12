@@ -1048,5 +1048,31 @@ else
 	_skip 'the daemon does not report debug categories'
 fi
 
+# --- Line capacities round-trip and keep the GUI range. ----------
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '(.connection.download_capacity_kibibytes_per_second|type)' number 'download_capacity_kibibytes_per_second is a number'
+_assert_json_eq '(.connection.upload_capacity_kibibytes_per_second|type)' number 'upload_capacity_kibibytes_per_second is a number'
+SAVED_DLCAP=$(printf '%s' "$CURL_BODY" | jq -r '.connection.download_capacity_kibibytes_per_second')
+SAVED_ULCAP=$(printf '%s' "$CURL_BODY" | jq -r '.connection.upload_capacity_kibibytes_per_second')
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"connection":{"download_capacity_kibibytes_per_second":4321,"upload_capacity_kibibytes_per_second":1234}}' \
+	"$API/preferences"
+_assert_status 200 'PATCH both line capacities -> 200'
+_assert_json_eq '.connection.download_capacity_kibibytes_per_second' 4321 'download capacity echoed in the PATCH reply'
+_assert_json_eq '.connection.upload_capacity_kibibytes_per_second' 1234 'upload capacity echoed in the PATCH reply'
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '.connection.download_capacity_kibibytes_per_second' 4321 'download capacity persisted (no stale GET)'
+_assert_json_eq '.connection.upload_capacity_kibibytes_per_second' 1234 'upload capacity persisted (no stale GET)'
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"connection":{"upload_capacity_kibibytes_per_second":2}}' "$API/preferences"
+_assert_status 400 'PATCH upload_capacity_kibibytes_per_second=2 -> 400 (below the floor)'
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"connection":{"download_capacity_kibibytes_per_second":1000001}}' "$API/preferences"
+_assert_status 400 'PATCH download_capacity_kibibytes_per_second=1000001 -> 400 (above the ceiling)'
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d "{\"connection\":{\"download_capacity_kibibytes_per_second\":$SAVED_DLCAP,\"upload_capacity_kibibytes_per_second\":$SAVED_ULCAP}}" \
+	"$API/preferences"
+_assert_status 200 'restored the line capacities'
+
 # --- Summary. -----------------------------------------------------
 _summary

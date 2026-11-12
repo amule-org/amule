@@ -36,6 +36,7 @@
 #include "CommentDialogLst.h" // Needed for CCommentDialogLst
 #include "DataToText.h"       // Needed for PriorityToStr
 #include "DownloadQueue.h"
+#include "DownloadPercentageDrawing.h"
 #include "FileDetailDialog.h" // Needed for CFileDetailDialog
 #include "FileRenameDialog.h" // Needed for AskNewFileName
 #include "FileLaunch.h"       // Needed for FileLaunch::Open / Reveal
@@ -104,6 +105,7 @@ private:
 		// rather than completed ones.
 		const bool showStrip = !file->IsCompleted() && file->GetStatus() != PS_COMPLETING &&
 				       file->GetHashingProgress() == 0;
+		const int stripHeight = 3;
 		if (showStrip && barRect.GetWidth() > 0) {
 			const int width = static_cast<int>((static_cast<double>(barRect.GetWidth()) /
 								   static_cast<double>(file->GetFileSize())) *
@@ -115,7 +117,7 @@ private:
 				// reproduce the old look.
 				dc->SetPen(*wxTRANSPARENT_PEN);
 				dc->SetBrush(crFlatProgress.GetBrush());
-				dc->DrawRectangle(barRect.x, barRect.y, width, 3);
+				dc->DrawRectangle(barRect.x, barRect.y, width, stripHeight);
 			} else {
 				dc->SetPen(*wxBLACK_PEN);
 				dc->DrawLine(barRect.x, barRect.y + 0, barRect.x + width, barRect.y + 0);
@@ -138,26 +140,13 @@ private:
 			percent = 99.9;
 		}
 		const wxString buffer = CFormat("%.1f%%") % percent;
-		const int middlex = (2 * cell.GetX() + cell.GetWidth()) >> 1;
-		const int middley = (2 * cell.GetY() + cell.GetHeight()) >> 1;
-		wxCoord textwidth;
-		wxCoord textheight;
-		dc->GetTextExtent(buffer, &textwidth, &textheight);
-		const wxColour oldColour = dc->GetTextForeground();
-		const int x = middlex - (textwidth >> 1);
-		const int y = middley - (textheight >> 1);
-		// Outline white text so it stays readable on light fills.
-		if (hashingProgress == 0) {
-			dc->SetTextForeground(*wxBLACK);
-			const int offset = GetView()->FromDIP(1);
-			dc->DrawText(buffer, x - offset, y);
-			dc->DrawText(buffer, x + offset, y);
-			dc->DrawText(buffer, x, y - offset);
-			dc->DrawText(buffer, x, y + offset);
+		// Below the strip, so the text never covers it.
+		wxRect textArea = barRect;
+		if (showStrip) {
+			textArea.y += stripHeight;
+			textArea.height -= stripHeight;
 		}
-		dc->SetTextForeground(hashingProgress == 0 ? *wxWHITE : *wxBLACK);
-		dc->DrawText(buffer, x, y);
-		dc->SetTextForeground(oldColour);
+		DrawDownloadPercentage(*dc, textArea, buffer, *GetView(), hashingProgress != 0);
 	}
 };
 } // namespace

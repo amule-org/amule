@@ -75,6 +75,10 @@ const TABS = [
     ] },
   ] },
   { id: "connection", labelKey: "prefs_connection", cat: "connection", groups: [
+    { legendKey: "prefs_group_capacity", fields: [
+      { key: "download_capacity_kibibytes_per_second", type: "int", min: 3, max: 1000000 },
+      { key: "upload_capacity_kibibytes_per_second", type: "int", min: 3, max: 1000000 },
+    ] },
     { legendKey: "prefs_group_bandwidth", fields: [
       { key: "max_download_kibibytes_per_second", type: "int", min: 0, max: 1000000 },
       { key: "max_upload_kibibytes_per_second", type: "int", min: 0, max: 1000000 },

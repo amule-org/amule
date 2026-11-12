@@ -92,7 +92,8 @@ public:
 		uint16_t port,
 		const CKadUDPKey &targetKey,
 		const CUInt128 *cryptTargetID);
-	void SendPublishSourcePacket(const CContact &contact,
+	// True means accepted by the UDP queue, not sent or acknowledged.
+	bool SendPublishSourcePacket(const CContact &contact,
 		const CUInt128 &targetID,
 		const CUInt128 &contactID,
 		const TagPtrList &tags);
@@ -102,7 +103,8 @@ public:
 		uint16_t port,
 		bool validReceiverKey,
 		const CKadUDPKey &senderKey);
-	void SendPacket(const CMemFile &data,
+	// Returns UDP queue admission; callers that do not need it may ignore the result.
+	bool SendPacket(const CMemFile &data,
 		uint8_t opcode,
 		uint32_t destinationHost,
 		uint16_t destinationPort,
@@ -122,7 +124,8 @@ private:
 	void ProcessSearchResponse(CMemFile &bio, uint32_t fromIP, uint16_t fromPort);
 	void ProcessSearchResponse(
 		const uint8_t *packetData, uint32_t lenPacket, uint32_t fromIP, uint16_t fromPort);
-	void ProcessPublishResponse(const uint8_t *packetData, uint32_t lenPacket, uint32_t ip);
+	void ProcessPublishResponse(
+		const uint8_t *packetData, uint32_t lenPacket, uint32_t ip, uint16_t port);
 	void ProcessSearchNotesResponse(
 		const uint8_t *packetData, uint32_t lenPacket, uint32_t ip, uint16_t port);
 	void ProcessFirewalledRequest(const uint8_t *packetData,

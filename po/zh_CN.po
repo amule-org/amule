@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-10 13:55+0000\n"
+"PO-Revision-Date: 2026-11-12 09:15+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -1066,23 +1066,14 @@ msgstr "加密"
 msgid "aMuleGUI"
 msgstr "aMule 图形用户界面"
 
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr "上传: %.1f%s（%.1f） | 下载: %.1f%s（%.1f）"
-
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
 msgid " MiB/s"
 msgstr " MiB/s"
 
-#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/utils/wxCas/src/wxcasframe.cpp
+#: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
+#: src/utils/wxCas/src/wxcasframe.cpp
 msgid " KiB/s"
 msgstr " KiB/s"
-
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr "上传: %.1f%s | 下载: %.1f%s"
 
 #: src/amuleDlg.cpp
 msgid "Transfer speeds are reported by the daemon. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
@@ -1091,6 +1082,16 @@ msgstr "传输速度由 daemon 程序报告。总上传包括控制流量；对�
 #: src/amuleDlg.cpp
 msgid "Live speeds are averaged over the last second. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
 msgstr "实时速度是过去一秒均值。总上传包括控制流量；对等方上传速度只包括文件数据包。圆括号中的值显示协议总开销，单位 KiB/s。"
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s | Down: %.1f%s"
+msgstr "上传: %.1f%s | 下载: %.1f%s"
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
+msgstr "上传: %.1f%s（%.1f） | 下载: %.1f%s（%.1f）"
 
 #: src/amuleDlg.cpp
 #, c-format
@@ -1415,7 +1416,7 @@ msgstr "已连接的 daemon 不支持 All 搜索类型。"
 
 #: src/BaseClient.cpp
 msgid "Searching buddy for lowid connection"
-msgstr "正在搜索好友进行 Low ID 连接"
+msgstr "正在搜索搭档进行 Low ID 连接"
 
 #: src/BaseClient.cpp
 #, c-format
@@ -3815,9 +3816,9 @@ msgstr "发布关键词"
 msgid "Publish notes"
 msgstr "发布附注"
 
-#: src/kademlia/utils/LookupDiagnostics.cpp src/Statistics.cpp
+#: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Find buddy"
-msgstr "寻找好友"
+msgstr "寻找搭档"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "Find source"
@@ -4571,12 +4572,13 @@ msgid "Users connected to the current server and an estimate of the total number
 msgstr "当前服务器上的用户和估算总用户数。"
 
 #: src/muuli_wdr.cpp
-msgid "Up: 0.0 | Down: 0.0"
-msgstr "上传: 0.0 | 下载: 0.0"
+msgid "Up:"
+msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
-msgstr "当前平均上传下载速度。括号中的值为于其他用户连接所消耗的带宽。"
+#, fuzzy
+msgid "Down:"
+msgstr "下载: "
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -5757,6 +5759,14 @@ msgstr "5 秒内最大新连接数"
 #: src/muuli_wdr.cpp
 msgid "Concurrent Kad source lookups"
 msgstr "并发 Kad 源查找"
+
+#: src/muuli_wdr.cpp
+msgid "Firewalled Kad nodes served as buddy"
+msgstr "作为搭档提供的防火墙后面的 Kad 节点"
+
+#: src/muuli_wdr.cpp
+msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
+msgstr "这个节点为多少个防火墙后面的 Kad 节点传输回馈。每个这样的 Kad 节点持有一个链接，因此最多提供连接上限的 10%。"
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
@@ -7012,7 +7022,7 @@ msgstr "NAT穿透（uTP）"
 
 #: src/PeerCapabilities.h
 msgid "Buddy info pull"
-msgstr "好友信息拉取"
+msgstr "搭档信息拉取"
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
@@ -8401,34 +8411,33 @@ msgstr "防火墙状态: "
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - TCP port open"
-msgstr "没有好友请求 - TCP 端口打开"
+msgstr "无需搭档 - TCP 端口打开"
 
 #: src/ServerWnd.cpp
 msgid "No buddy required - UDP port open"
-msgstr "没有好友请求 - UDP 端口打开"
+msgstr "无需搭档 - UDP 端口打开"
 
 #: src/ServerWnd.cpp
 msgid "No buddy"
-msgstr "没有好友"
+msgstr "没有搭档"
 
 #: src/ServerWnd.cpp
 msgid "Connecting to buddy"
-msgstr "已连接至好友"
+msgstr "正连接至搭档"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "Connected to buddy at %s"
-msgstr "连接到好友于 %s"
+msgstr "已连接至 %s 的搭档"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Served buddies:"
-msgstr "服务器列表"
+msgstr "Served buddies："
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "%u of %u"
-msgstr ""
+msgstr "%u 个，共 %u 个"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
@@ -8779,131 +8788,6 @@ msgstr "正在关闭 aMule"
 
 #: src/Statistics.cpp
 #, c-format
-msgid "Served Now: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Refused: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Over the Rate Limit: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Unused Buddy Offers: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Served: %llu"
-msgstr "有效服务器中的文件数： %llu"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Served Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Time Served: %s"
-msgstr "被过滤的服务器：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Relayed: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Data Relayed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Dropped: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Busiest Minute to One Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Searches: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Requests Sent: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddy Offers Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Failed Buddy Connections: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Buddies Connected: %llu"
-msgstr " 已连接至 "
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Buddies Timed Out: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time a Buddy Was Needed: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Time Without a Buddy: %s"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Callbacks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Reasks Received: %llu"
-msgstr ""
-
-#: src/Statistics.cpp
-#, c-format
 msgid "Uploaded Data (Session (Total)): %s"
 msgstr "本次上传 (全部): %s"
 
@@ -9048,35 +8932,6 @@ msgid "Peak Connections (estimate): %i"
 msgstr "最高连接（估计值）： %i"
 
 #: src/Statistics.cpp
-msgid "NAT Traversal (Session)"
-msgstr "NAT 穿透（会话）"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Server Hole Punches: %s"
-msgstr "服务器打洞： %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Server Hole Punches: %s"
-msgstr "成功的服务器打洞：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Lugdunum Callbacks: %s"
-msgstr "Lugdunum 回调： %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Successful Lugdunum Callbacks: %s"
-msgstr "成功的 Lugdunum 回调：%s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "uTP Streams Moved to a New Port: %s"
-msgstr "uTP 流移动到了新端口：%s"
-
-#: src/Statistics.cpp
 #, c-format
 msgid "Unknown: %s"
 msgstr "未知大小: %s"
@@ -9095,48 +8950,6 @@ msgstr "封杀: %s"
 #, c-format
 msgid "Kad banned addresses: %s"
 msgstr "Kad 封禁地址：%s"
-
-#: src/Statistics.cpp
-msgid "Kad receiver keys"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Keyword publish"
-msgstr "关键词： %s"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Source publish"
-msgstr "源"
-
-#: src/Statistics.cpp
-msgid "Notes publish"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check"
-msgstr "UDP 防火墙检查"
-
-#: src/Statistics.cpp
-#, fuzzy
-msgid "Firewall check 2"
-msgstr "UDP 防火墙检查"
-
-#: src/Statistics.cpp
-msgid "Callback"
-msgstr ""
-
-#: src/Statistics.cpp
-#, fuzzy, c-format
-msgid "Keys valid: %s"
-msgstr "关键词： %s"
-
-#: src/Statistics.cpp
-#, c-format
-msgid "Keys missing: %s"
-msgstr ""
 
 #: src/Statistics.cpp
 #, c-format
@@ -9204,17 +9017,8 @@ msgid "Average file size: %s"
 msgstr "平均文件大小：%s"
 
 #: src/Statistics.cpp
-#, fuzzy
-msgid "Kad Buddies"
-msgstr "Kad 用户"
-
-#: src/Statistics.cpp
-msgid "Serving Firewalled Nodes"
-msgstr ""
-
-#: src/Statistics.cpp
-msgid "Our Own Buddy"
-msgstr ""
+msgid "Diagnostics"
+msgstr "诊断"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -9318,7 +9122,7 @@ msgstr "已连接的 daemon 不支持搜索管理。\n"
 
 #: src/TextClient.cpp
 msgid "A search ID from 'search list' is required.\n"
-msgstr ""
+msgstr "需要一个来自“搜索列表”的搜索 ID。\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9435,15 +9239,15 @@ msgstr "[part 文件]"
 
 #: src/TextClient.cpp
 msgid "No retained searches.\n"
-msgstr ""
+msgstr "没有已保留的搜索\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; availability is unknown.\n"
-msgstr ""
+msgstr "已处理 More-results 请求；可用性未知。\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; further requests remain possible.\n"
-msgstr ""
+msgstr "已处理 More-results；进一步的请求仍有可能。\n"
 
 #: src/TextClient.cpp
 msgid "No further results can be requested for this search.\n"
@@ -9451,7 +9255,7 @@ msgstr "这个搜索没有可请求的进一步结果。\n"
 
 #: src/TextClient.cpp
 msgid "Search stop request processed; retained results were not removed.\n"
-msgstr ""
+msgstr "已处理搜索停止请求；未删除已保留的结果。\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9768,7 +9572,7 @@ msgstr "执行 eD2k 和 Kad 搜索"
 
 #: src/TextClient.cpp
 msgid "List retained search IDs and queries."
-msgstr ""
+msgstr "列出已保留的搜索 ID 和查询。"
 
 #: src/TextClient.cpp
 msgid "Stop a search, keeping its results."
@@ -9776,7 +9580,7 @@ msgstr "停止搜索但保留其结果。"
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'."
-msgstr ""
+msgstr "需要一个来自“搜索列表”的搜索 ID。"
 
 #: src/TextClient.cpp
 msgid "Request more Kad search results."
@@ -9784,7 +9588,7 @@ msgstr "请求更多的 Kad 搜索结果。"
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
-msgstr ""
+msgstr "需要一个来自\"搜索列表”的搜索 ID。不保证进一步的结果。"
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -10886,6 +10690,178 @@ msgstr "无法将旧的 ECPassword 和 ECPasswordVerifier 进行比较；拒绝�
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再对本次运行进行身份认证。"
+
+#~ msgid "Up: 0.0 | Down: 0.0"
+#~ msgstr "上传: 0.0 | 下载: 0.0"
+
+#~ msgid "Current average upload and download rates. If enabled the numbers in the braces signify the overhead from client communication."
+#~ msgstr "当前平均上传下载速度。括号中的值为于其他用户连接所消耗的带宽。"
+
+#, c-format
+#~ msgid "Served Now: %llu"
+#~ msgstr "立即提供：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests Received: %llu"
+#~ msgstr "接收到的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Buddy Offers Sent: %llu"
+#~ msgstr "已发送的搭档要约：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests Refused: %llu"
+#~ msgstr "遭拒的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests From NAT-T Nodes: %llu"
+#~ msgstr "来自 NAT-T 节点的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests Over the Rate Limit: %llu"
+#~ msgstr "超出速率限制的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Unused Buddy Offers: %llu"
+#~ msgstr "未使用的搭档要约：%llu"
+
+#, c-format
+#~ msgid "Buddies Served: %llu"
+#~ msgstr "提供内容的搭档：%llu"
+
+#, c-format
+#~ msgid "Served Buddies Timed Out: %llu"
+#~ msgstr "已超时的 Served Buddies：%llu"
+
+#, c-format
+#~ msgid "Time Served: %s"
+#~ msgstr "提供时间：%s"
+
+#, c-format
+#~ msgid "Callbacks Relayed: %llu"
+#~ msgstr "已传输的回馈：%llu"
+
+#, c-format
+#~ msgid "Reasks Relayed: %llu"
+#~ msgstr "已传输的 Reasks：%llu"
+
+#, c-format
+#~ msgid "Data Relayed: %s"
+#~ msgstr "已传输的数据：%s"
+
+#, c-format
+#~ msgid "Callbacks Dropped: %llu"
+#~ msgstr "已丢弃的回馈：%llu"
+
+#, c-format
+#~ msgid "Reasks Dropped: %llu"
+#~ msgstr "已丢弃的 Reasks：%llu"
+
+#, c-format
+#~ msgid "Busiest Minute to One Buddy: %s"
+#~ msgstr "一个搭档最忙碌的分钟：%s"
+
+#, c-format
+#~ msgid "Buddy Searches: %llu"
+#~ msgstr "搭档搜索：%llu"
+
+#, c-format
+#~ msgid "Buddy Searches Held for a Shared File: %llu"
+#~ msgstr "为一个共享文件进行的搭档搜索：%llu"
+
+#, c-format
+#~ msgid "Buddy Requests Sent: %llu"
+#~ msgstr "已发送的搭档请求：%llu"
+
+#, c-format
+#~ msgid "Buddy Offers Received: %llu"
+#~ msgstr "接收到的搭档要约：%llu"
+
+#, c-format
+#~ msgid "Failed Buddy Connections: %llu"
+#~ msgstr "失败的搭档连接：%llu"
+
+#, c-format
+#~ msgid "Buddies Connected: %llu"
+#~ msgstr "已连接的搭档： %llu"
+
+#, c-format
+#~ msgid "Buddies Timed Out: %llu"
+#~ msgstr "超时的搭档：%llu"
+
+#, c-format
+#~ msgid "Time a Buddy Was Needed: %s"
+#~ msgstr "搭档被需要的时间：%s"
+
+#, c-format
+#~ msgid "Time Without a Buddy: %s"
+#~ msgstr "没有搭档的时间：%s"
+
+#, c-format
+#~ msgid "Callbacks Received: %llu"
+#~ msgstr "接收到的回馈：%llu"
+
+#, c-format
+#~ msgid "Reasks Received: %llu"
+#~ msgstr "接收到的 Reasks：%llu"
+
+#~ msgid "NAT Traversal (Session)"
+#~ msgstr "NAT 穿透（会话）"
+
+#, c-format
+#~ msgid "Server Hole Punches: %s"
+#~ msgstr "服务器打洞： %s"
+
+#, c-format
+#~ msgid "Successful Server Hole Punches: %s"
+#~ msgstr "成功的服务器打洞：%s"
+
+#, c-format
+#~ msgid "Lugdunum Callbacks: %s"
+#~ msgstr "Lugdunum 回馈： %s"
+
+#, c-format
+#~ msgid "Successful Lugdunum Callbacks: %s"
+#~ msgstr "成功的 Lugdunum 回馈：%s"
+
+#, c-format
+#~ msgid "uTP Streams Moved to a New Port: %s"
+#~ msgstr "uTP 流移动到了新端口：%s"
+
+#~ msgid "Kad receiver keys"
+#~ msgstr "Kad 接收程序密钥"
+
+#~ msgid "Keyword publish"
+#~ msgstr "关键词发布"
+
+#~ msgid "Source publish"
+#~ msgstr "源发布"
+
+#~ msgid "Notes publish"
+#~ msgstr "附注发布"
+
+#~ msgid "Firewall check"
+#~ msgstr "防火墙检查"
+
+#~ msgid "Firewall check 2"
+#~ msgstr "防火墙检查 2"
+
+#~ msgid "Callback"
+#~ msgstr "回馈"
+
+#, c-format
+#~ msgid "Keys valid: %s"
+#~ msgstr "有效 Keys： %s"
+
+#, c-format
+#~ msgid "Keys missing: %s"
+#~ msgstr "缺失的密钥：%s"
+
+#~ msgid "Kad Buddies"
+#~ msgstr "Kad 搭档"
+
+#~ msgid "Our Own Buddy"
+#~ msgstr "我们自己的搭档"
 
 #~ msgid "This aMule has no media helper (amule-media-probe)"
 #~ msgstr "这个 aMule 没有多媒体助手 (amule-media-probe)"

@@ -50,7 +50,7 @@ AUTH=()
 # The tokens the table in src/PeerCapabilities.h defines, in bit order. A row
 # added there without a matching entry here fails the membership check below,
 # which is the point: the two must not drift.
-KNOWN_TOKENS="extended_source_exchange nat_traversal_utp ipv6 serving_buddy_pull nat_traversal_quic"
+KNOWN_TOKENS="extended_source_exchange nat_traversal_utp ipv6 serving_buddy_pull nat_traversal_quic extended_source_exchange_skip_tags"
 
 # The two properties every appearance of the field has to hold, wherever it
 # came from: it is an array, and every token in it is one the daemon defines.

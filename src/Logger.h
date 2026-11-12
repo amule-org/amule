@@ -126,6 +126,8 @@ enum DebugType
 	logVerifyLocalData,
 	//! Main window state, toolbar events and paint activity
 	logGUI,
+	//! Kad source-publication measurements and baseline summaries.
+	logKadPublish,
 	logCategoryCount
 	// IMPORTANT NOTE: when you add values to this enum, update the g_debugcats
 	// array in Logger.cpp!

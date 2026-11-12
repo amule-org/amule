@@ -2080,7 +2080,9 @@ void CPartFile::AddSources(CMemFile &sources,
 						"[%s]:%u") %
 						parsed.record.ipv6Address.ToWxString() % parsed.record.port);
 				theApp->downloadqueue->CheckAndAddSource(this, newsource);
+				theStats::AddIPv6Event(EIPv6Event::ServerSourceAccepted);
 			} else {
+				theStats::AddIPv6Event(EIPv6Event::ServerSourceIgnored);
 				AddDebugLogLineN(logPartFile,
 					CFormat("Ignored IPv6 source [%s]:%u of '%s': not usable or IP "
 						"filtered") %
@@ -3220,7 +3222,11 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 		forClient->SupportsSourceExchange2(),
 		forClient->GetSourceExchange1Version(),
 		byRequestedVersion,
-		nRequestedOptions);
+		nRequestedOptions,
+		UsesExtendedSourceExchange(forClient->GetModCapabilities()));
+	const bool peerSkipsUnknownTags =
+		forClient->GetModCapabilities().SkipsUnknownExtendedSourceExchangeTags();
+	const ExtSX::SAddressFilter addressFilter = MakeExtendedSourceAddressFilter();
 	bool bNeeded;
 	for (SourceSet::iterator it = m_SrcList.begin(); it != m_SrcList.end(); ++it) {
 		bNeeded = false;
@@ -3230,7 +3236,8 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 		int valid =
 			(state == DS_DOWNLOADING) || (state == DS_ONQUEUE && !cur_src->IsRemoteQueueFull());
 
-		if (cur_src->HasLowID() || !valid) {
+		// Only the extended format can describe how to reach a LowID.
+		if ((cur_src->HasLowID() && !packet.IsExtended()) || !valid) {
 			continue;
 		}
 
@@ -3264,7 +3271,16 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 				}
 			}
 		}
-		if (bNeeded) {
+		if (bNeeded && packet.IsExtended()) {
+			const ExtSX::SRecord record = cur_src->GetExtendedSourceRecord(addressFilter);
+			if (cur_src->HasLowID() && !ExtSX::ShouldOfferLowID(record, peerSkipsUnknownTags)) {
+				continue;
+			}
+			packet.AddExtendedSource(record, peerSkipsUnknownTags);
+			if (packet.IsFull()) {
+				break;
+			}
+		} else if (bNeeded) {
 			uint32 dwID;
 			if (packet.GetVersion() >= 3) {
 				dwID = cur_src->GetUserIDHybrid();
@@ -3290,11 +3306,17 @@ void CPartFile::AddClientSources(CMemFile *sources,
 	unsigned nSourceFrom,
 	uint8 uClientSXVersion,
 	bool bSourceExchange2,
-	const CUpDownClient * /*pClient*/)
+	const CUpDownClient *pClient)
 {
 	// Kad reviewed
 
 	if (m_stopped) {
+		return;
+	}
+
+	if (bSourceExchange2 && pClient != nullptr && uClientSXVersion == SOURCEEXCHANGEEXT_VERSION &&
+		UsesExtendedSourceExchange(pClient->GetModCapabilities())) {
+		AddExtendedSources(*sources, nSourceFrom);
 		return;
 	}
 
@@ -3456,6 +3478,142 @@ void CPartFile::AddClientSources(CMemFile *sources,
 			break;
 		}
 	}
+}
+
+void CPartFile::AddExtendedSources(CMemFile &sources, unsigned nSourceFrom)
+{
+	const ExtSX::SAddressFilter addressFilter = MakeExtendedSourceAddressFilter();
+	// Records have no fixed size, so a bad one is found only while reading it. The sources read
+	// before it are kept.
+	try {
+		const uint16 count = sources.ReadUInt16();
+		for (uint16 i = 0; i != count; ++i) {
+			ExtSX::SRecord record = ExtSX::ReadRecord(sources);
+			ExtSX::SanitizeRoute(record, addressFilter);
+			if (!AddExtendedSource(record, nSourceFrom)) {
+				break;
+			}
+		}
+	} catch (const CSafeIOException &e) {
+		AddDebugLogLineN(logPartFile,
+			CFormat("Truncated extended source exchange answer for %s: %s") % GetFileName() %
+				e.what());
+	} catch (const CInvalidPacket &e) {
+		AddDebugLogLineN(logPartFile,
+			CFormat("Malformed extended source exchange answer for %s: %s") % GetFileName() %
+				e.what());
+	}
+}
+
+namespace
+{
+// Kad's rule for a buddy-less firewalled source, applied to an ExtSX LowID.
+bool ShouldDialExtendedSourceOverIPv6([[maybe_unused]] const ExtSX::SRecord &record)
+{
+#ifdef ENABLE_IPV6
+	if (!ExtSX::HasOnlyIPv6Route(record)) {
+		return false;
+	}
+	const CNetworkAddress address = CNetworkAddress::FromIPv6Bytes(record.ipv6->data());
+	SKadSourceFacts app;
+	app.ourHelloID = theApp->GetID();
+	app.ipv6Built = true;
+	app.familyPermitted = AddressFamilyPolicy::Permits(address);
+	app.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+	// IsFiltered() counts every match in the statistics, so it only sees an address we would dial.
+	return ExtSX::ShouldDialIPv6(record, app) && !theApp->ipfilter->IsFiltered(address);
+#else
+	return false;
+#endif
+}
+} // namespace
+
+bool CPartFile::AddExtendedSource(const ExtSX::SRecord &record, unsigned nSourceFrom)
+{
+	const uint32 ed2kID = wxUINT32_SWAP_ALWAYS(record.hybridID);
+	const bool lowID = IsLowID(record.hybridID);
+	// A HighID keeps its IPv4 dial, and a third party's IPv6 for it is not kept.
+	const bool dialIPv6 = lowID && ShouldDialExtendedSourceOverIPv6(record);
+	if (!lowID) {
+		if (!IsGoodIP(ed2kID, thePrefs::FilterLanIPs()) || theApp->ipfilter->IsFiltered(ed2kID) ||
+			theApp->clientlist->IsBannedClient(ed2kID)) {
+			AddDebugLogLineN(logIPFilter,
+				CFormat("Ignored source (IP=%s) received via %s - bad or blocked IP") %
+					Uint32toStringIP(ed2kID) % OriginToText(nSourceFrom));
+			return true;
+		}
+	} else if (!dialIPv6 && !ExtSX::HasLowIDRoute(record)) {
+		AddDebugLogLineN(logPartFile,
+			CFormat("Ignored LowID source %u received via %s - no route to it") %
+				record.hybridID % OriginToText(nSourceFrom));
+		return true;
+	}
+
+	if (!CanAddSource(record.hybridID,
+		    record.port,
+		    record.serverIP,
+		    record.serverPort,
+		    nullptr,
+		    false,
+		    lowID && (dialIPv6 || ShouldKeepNatTraversalSource(
+						  record.serverIP, record.serverPort, SF_SOURCE_EXCHANGE)))) {
+		return true;
+	}
+	if (thePrefs::GetMaxSourcePerFile() <= GetSourceCount()) {
+		return false;
+	}
+
+	CUpDownClient *newsource = new CUpDownClient(
+		record.port, record.hybridID, record.serverIP, record.serverPort, this, false, true);
+	if (record.userHash) {
+		newsource->SetUserHash(*record.userHash);
+	}
+	if (record.connectOptions) {
+		newsource->SetConnectOptions(*record.connectOptions, true, ExtSX::HasDirectCallback(record));
+	}
+	if (lowID) {
+		if (record.callbackIP != 0) {
+			newsource->SetIP(record.callbackIP);
+			newsource->SetUDPPort(record.udpPort);
+			newsource->SetKadPort(record.kadPort);
+		}
+		// IPv6 buddies are not reached: aMule calls buddies over IPv4 only.
+		if (record.buddyIP != 0) {
+			newsource->SetBuddyIP(record.buddyIP);
+			newsource->SetBuddyPort(record.buddyPort);
+		}
+		if (record.buddyID) {
+			newsource->SetBuddyID(record.buddyID->data());
+		}
+	}
+	if (dialIPv6) {
+		// As for a Kad result: the contact address only, never the hello's advertised IPv6.
+		newsource->SetUserAddress(CNetworkAddress::FromIPv6Bytes(record.ipv6->data()));
+	}
+	newsource->SetSourceFrom((ESourceFrom)nSourceFrom);
+
+	// Without a user hash nothing else identifies a Kad LowID: its ID is 1 and it has no server.
+	if (!record.userHash && record.buddyID) {
+		if (CUpDownClient *known = FindSourceByBuddyID(record.buddyID->data())) {
+			known->AdoptKadBuddy(*newsource);
+			newsource->Safe_Delete();
+			return true;
+		}
+	}
+	theApp->downloadqueue->CheckAndAddSource(this, newsource);
+	return true;
+}
+
+CUpDownClient *CPartFile::FindSourceByBuddyID(const uint8_t *buddyID) const
+{
+	for (const CClientRef &ref : m_SrcList) {
+		CUpDownClient *source = ref.GetClient();
+		if (source->HasLowID() && source->HasValidBuddyID() &&
+			Kademlia::MatchesBuddyIdEitherLayout(source->GetBuddyID(), buddyID)) {
+			return source;
+		}
+	}
+	return nullptr;
 }
 
 void CPartFile::UpdateAutoDownPriority()

@@ -2918,6 +2918,12 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_SLOT_ALLOCATION)) {
 		out.upload_slot_min_kibibytes_per_second = static_cast<std::uint32_t>(t->GetInt());
 	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_DL_CAP)) {
+		out.download_capacity_kibibytes_per_second = static_cast<std::uint32_t>(t->GetInt());
+	}
+	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_UL_CAP)) {
+		out.upload_capacity_kibibytes_per_second = static_cast<std::uint32_t>(t->GetInt());
+	}
 	if (const CECTag *t = conn->GetTagByName(EC_TAG_CONN_TCP_PORT)) {
 		out.tcp_port = static_cast<std::uint16_t>(t->GetInt());
 	}

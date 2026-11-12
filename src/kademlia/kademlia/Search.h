@@ -44,6 +44,7 @@ there client on the eMule forum..
 
 #include "SearchManager.h"
 #include "../utils/LookupTrace.h"
+#include "../utils/PublishMetrics.h"
 
 class CKnownFile;
 class CTag;
@@ -58,6 +59,8 @@ class CKadClientSearcher;
 class CSearch
 {
 	friend class CSearchManager;
+	bool m_publishMeasured = false;
+	bool m_publishCompleted = false;
 
 public:
 	const CLookupTrace &GetLookupTrace() const noexcept { return m_lookupTrace; }
