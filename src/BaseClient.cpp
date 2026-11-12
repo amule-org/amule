@@ -4225,8 +4225,9 @@ ExtSX::SRecord CUpDownClient::GetExtendedSourceRecord(const ExtSX::SAddressFilte
 	if (HasValidHash()) {
 		record.userHash = GetUserHash();
 	}
-	// Only the address the source advertised itself; one from a third party is not passed on.
-	if (HasModIPv6()) {
+	// Only the address the source advertised itself in a hello; one from a third party, even one
+	// taken from another source list, is not passed on.
+	if (HasModIPv6() && !m_modIPv6FromRecord) {
 		ExtSX::Bytes16 ipv6;
 		std::copy_n(GetModIPv6(), ipv6.size(), ipv6.begin());
 		record.ipv6 = ipv6;
