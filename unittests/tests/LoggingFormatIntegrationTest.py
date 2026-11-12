@@ -13,7 +13,6 @@ from AllSearchIntegrationTest import (C, DAEMON_ARGS, free_ports, retry_port_col
 from DaemonConfig import daemon_env, write_amule_conf
 
 STAMP = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}'
-DISPLAY_STAMP = r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}'
 # Legacy macros include a source basename and line number in Debug builds.
 SOURCE = r'(?:[^()\r\n]+\(\d+\): )?'
 
@@ -57,12 +56,10 @@ def run(binary, amulecmd=None):
                                   if pattern.fullmatch(line)), None)
                     assert match is not None, disk
                     human = re.sub(r'\[log status=[01] replay=[01]\] ', '', match[0], count=1)
-                    display = datetime.strptime(match[1], '%Y-%m-%dT%H:%M:%S.%f%z').strftime(
-                        '%Y-%m-%d %H:%M:%S') + ' ' + human[len(match[1]) + len(' INFO  '):]
-                    assert marker + display in replay.splitlines(), replay
-                    assert marker + display in debug_snapshot.splitlines(), debug_snapshot
+                    assert marker + human in replay.splitlines(), replay
+                    assert marker + human in debug_snapshot.splitlines(), debug_snapshot
                     if physical_line == message.split("\n")[-1]:
-                        assert marker + display in incremental.splitlines(), incremental
+                        assert marker + human in incremental.splitlines(), incremental
                     assert human in stdout.splitlines(), stdout
                     assert all(re.match(STAMP, line) for line in disk.splitlines()), disk
                     instant = datetime.strptime(match[1], '%Y-%m-%dT%H:%M:%S.%f%z')
@@ -76,7 +73,7 @@ def run(binary, amulecmd=None):
                 assert result.returncode == 0, (result.stdout, result.stderr)
                 lines = [line for line in result.stdout.splitlines() if 'logging-format-' in line]
                 assert len(lines) >= 3, result.stdout
-                assert all(re.match(DISPLAY_STAMP, line) for line in lines), result.stdout
+                assert all(re.match(STAMP, line) for line in lines), result.stdout
                 assert '[log status=' not in result.stdout, result.stdout
     print('LoggingFormatIntegrationTest: stdout, logfile and legacy EC replay passed')
 

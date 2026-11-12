@@ -8,12 +8,16 @@ Core logs and the console logger use UTF-8 text with an explicit severity:
 ```
 
 The timestamp uses the local time of the program that writes the record, with
-milliseconds and a numeric UTC offset (`+08:00` in this example). Saved logs stay
-unambiguous, also across daylight-saving changes. Milliseconds tell apart messages
-written within the same second. The time is taken when the message is logged,
-before the core queues it from a worker thread.
-Remote clients show the server's local time. Every physical line gets a prefix,
+milliseconds and a numeric UTC offset (`+08:00` in this example). Desktop users see
+familiar times, and server logs stay unambiguous, also across daylight-saving
+changes. Milliseconds tell apart messages written within the same second. The time
+is taken when the message is logged, before the core queues it from a worker thread.
+Remote clients show the server's time and offset. Every physical line gets a prefix,
 including blank lines inside a message and records that are entirely blank.
+
+The GUI status bar has less room. It shows the first line of a status message
+with a compact `2026-10-18 17:42:31` timestamp and no severity. Its tooltip keeps
+the full line.
 
 The severity takes five columns. The levels are TRACE, DEBUG, INFO, WARN and ERROR.
 Ordinary core messages have no subsystem tag; named debug categories and explicit
@@ -46,17 +50,6 @@ historical `.` marker. Every record has the field before its category and messag
 so text inside a message cannot pose as flags. The flags stay with the record
 through append, backup and reset, without a separate file. Stdout and GUI text do
 not show the field.
-
-GUI and EC output uses a compact `YYYY-MM-DD HH:MM:SS` timestamp without
-milliseconds, UTC offset or severity, leaving more space for the message in the
-status bar. Category tags and message text are preserved. This applies in both
-Release and Debug builds and also covers older remote GUIs, because the daemon
-formats the text before sending it. Saved logs and stdout keep the detailed format.
-
-```text
-2026-10-18 17:42:31 Disconnected from eD2k
-2026-10-18 17:42:31 [wx] A warning
-```
 
 For GUI and EC delivery only, the logger puts back the historical first byte: a
 space for ordinary messages and `!` for status-bar messages. Older remote GUIs keep

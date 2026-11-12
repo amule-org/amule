@@ -192,9 +192,9 @@ inline bool HasLogRecordHeader(const wxString &line)
 	       level == "ERROR ";
 }
 
-// GUI and EC clients use the compact local timestamp, including older clients
-// which display the daemon's text verbatim. Keep the detailed header on disk.
-inline wxString FormatDisplayLogLine(const wxString &line)
+// The status bar has no room for milliseconds, UTC offset and severity; the log
+// view, logfile and EC keep them.
+inline wxString FormatStatusBarLogLine(const wxString &line)
 {
 	if (!HasLogRecordHeader(line)) {
 		return line;
@@ -224,9 +224,8 @@ inline bool DecodeLogFileLine(const wxString &line, wxString &ecLine, bool inclu
 					}
 					ecLine = wxString(static_cast<wxChar>(
 							 LegacyLogMarker(status, replay))) +
-						 FormatDisplayLogLine(
-							 line.Left(LogRecordHeaderLength) +
-							 line.Mid(LogRecordHeaderLength + flags.length()));
+						 line.Left(LogRecordHeaderLength) +
+						 line.Mid(LogRecordHeaderLength + flags.length());
 					return true;
 				}
 			}
