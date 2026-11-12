@@ -40,7 +40,7 @@ public:
 	{
 		// The base constructor measures its text before our sizing hooks are active.
 		InvalidateBestSize();
-		SetToolTip(text);
+		SetToolTip(RemoveMnemonics(text));
 	}
 
 	void SetLabel(const wxString &text) override
@@ -48,7 +48,8 @@ public:
 		wxStaticText::SetLabel(text);
 		// NO_AUTORESIZE can leave the previous text's measured size cached.
 		InvalidateBestSize();
-		SetToolTip(text);
+		// The label text escapes '&'; a tooltip shows it literally.
+		SetToolTip(RemoveMnemonics(text));
 	}
 
 protected:
