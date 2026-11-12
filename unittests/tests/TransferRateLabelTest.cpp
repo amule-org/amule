@@ -132,13 +132,8 @@ void TestTransferRateLabel()
 		dialog.Layout();
 		const int occupiedWidth = rates->GetSize().x;
 		const int followingX = following->GetPosition().x;
-		for (const auto *text : { "0.0 KiB/s",
-			     "1.0 KiB/s",
-			     "2.0 KiB/s",
-			     "10.0 KiB/s",
-			     "0.0 MiB/s",
-			     "0.0 KiB/s",
-			     "0.0 KiB/s" }) {
+		for (double bytesPerSecond : { 0, 1024, 2048, 10240, 1024 * 1024, 0, 0 }) {
+			const wxString text = TransferRateLabel::FormatRate(bytesPerSecond, 0, false);
 			UpdateRate(rates, text, false);
 			Check(rates->GetLabel() == text, "Rate text did not update");
 			Check(rates->GetSize().x == occupiedWidth, "Rate field shrank between samples");

@@ -1005,11 +1005,6 @@ msgstr ""
 msgid "aMuleGUI"
 msgstr ""
 
-#: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
-msgstr ""
-
 #: src/amuleDlg.cpp src/MuleTrayIcon.cpp src/TransferRateLabel.h
 msgid " MiB/s"
 msgstr ""
@@ -1020,16 +1015,21 @@ msgid " KiB/s"
 msgstr ""
 
 #: src/amuleDlg.cpp
-#, c-format
-msgid "Up: %.1f%s | Down: %.1f%s"
-msgstr ""
-
-#: src/amuleDlg.cpp
 msgid "Transfer speeds are reported by the daemon. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
 msgstr ""
 
 #: src/amuleDlg.cpp
 msgid "Live speeds are averaged over the last second. Total upload includes control traffic; peer upload speeds include file packets only. Values in parentheses show protocol overhead in KiB/s."
+msgstr ""
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s | Down: %.1f%s"
+msgstr ""
+
+#: src/amuleDlg.cpp
+#, c-format
+msgid "Up: %.1f%s (%.1f) | Down: %.1f%s (%.1f)"
 msgstr ""
 
 #: src/amuleDlg.cpp

@@ -170,12 +170,16 @@ wxSizer *muleDlg( wxWindow *parent, bool call_fit, bool set_sizer )
     wxStaticBitmap *item13 = new wxStaticBitmap( parent, -1, wxArtProvider::GetBitmapBundle( "amule:status_speed_idle" ), wxDefaultPosition, wxDefaultSize );
     item13->SetName( "transferImg" );
     item6->Add( item13, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    item6->Add( new wxStaticText( parent, -1, _("Up:") ), wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
+    wxStaticText *uploadCaption = new wxStaticText( parent, -1, _("Up:") );
+    uploadCaption->SetName( "uploadRateCaption" );
+    item6->Add( uploadCaption, wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
     TransferRateLabel *uploadRate = new TransferRateLabel( parent, -1, TransferRateLabel::FormatRate(0, 0, false) );
     uploadRate->SetName( "uploadRateLabel" );
     item6->Add( uploadRate, wxSizerFlags().Center() );
     item6->Add( new wxStaticText( parent, -1, "|" ), wxSizerFlags().Center().Border(wxLEFT|wxRIGHT, 5) );
-    item6->Add( new wxStaticText( parent, -1, _("Down:") ), wxSizerFlags().Center().Border(wxRIGHT, 5) );
+    wxStaticText *downloadCaption = new wxStaticText( parent, -1, _("Down:") );
+    downloadCaption->SetName( "downloadRateCaption" );
+    item6->Add( downloadCaption, wxSizerFlags().Center().Border(wxRIGHT, 5) );
     TransferRateLabel *downloadRate = new TransferRateLabel( parent, -1, TransferRateLabel::FormatRate(0, 0, false) );
     downloadRate->SetName( "downloadRateLabel" );
     item6->Add( downloadRate, wxSizerFlags().Center().Border(wxRIGHT, 5) );
