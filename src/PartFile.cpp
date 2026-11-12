@@ -3594,8 +3594,7 @@ bool CPartFile::AddExtendedSource(const ExtSX::SRecord &record, unsigned nSource
 	}
 	newsource->SetSourceFrom((ESourceFrom)nSourceFrom);
 
-	// Without a user hash nothing else identifies a Kad LowID: its ID is 1 and it has no server.
-	if (!record.userHash && record.buddyID) {
+	if (ExtSX::MatchesKnownSourceByBuddyID(record)) {
 		if (CUpDownClient *known = FindSourceByBuddyID(record.buddyID->data())) {
 			// The same merge as any other copy: routes from source exchange are fallbacks.
 			known->AdoptContactRoutes(*newsource);

@@ -604,6 +604,22 @@ TEST(CSourceRouteMerge, ADirectCallbackFromAnotherChannelIsUnproven)
 	ASSERT_TRUE(known.routeUnproven);
 }
 
+// A hashless ExtSX copy matched by its buddy ID: its server route is only a fallback when the
+// source already has one, and its route stays the same.
+TEST(CSourceRouteMerge, AnotherChannelsServerRouteIsOnlyAFallbackBesideTheSourcesOwn)
+{
+	SSourceRoutes known;
+	known.route = ServerRoute(0x1235, kServer);
+	SSourceRouteMergeFacts facts;
+	facts.incomingServerLowID = true;
+	const SSourceRouteMerge merge = MergeSourceRoutes(known, facts, ServerRoute(0x1236, kServer + 1));
+	ASSERT_FALSE(merge.takeServerRoute);
+	ASSERT_TRUE(merge.storeServerCandidate);
+	ASSERT_TRUE(ServerRoute(0x1235, kServer) == known.route);
+	ASSERT_TRUE(ServerRoute(0x1236, kServer + 1) == known.serverCandidate);
+	ASSERT_FALSE(known.routeUnproven);
+}
+
 TEST(CSourceRouteMerge, ARouteFromOurServerLeavesTheFlag)
 {
 	SSourceRoutes known;
