@@ -192,6 +192,16 @@ inline bool HasLogRecordHeader(const wxString &line)
 	       level == "ERROR ";
 }
 
+// GUI and EC clients use the compact local timestamp, including older clients
+// which display the daemon's text verbatim. Keep the detailed header on disk.
+inline wxString FormatDisplayLogLine(const wxString &line)
+{
+	if (!HasLogRecordHeader(line)) {
+		return line;
+	}
+	return line.Left(10) + " " + line.Mid(11, 8) + " " + line.Mid(LogRecordHeaderLength);
+}
+
 // Accept pre-upgrade marker files too: backup failure intentionally appends to
 // the existing logfile. Unstructured crash output must not lose its first byte.
 inline bool DecodeLogFileLine(const wxString &line, wxString &ecLine, bool includeLogfileOnly = false)
@@ -214,8 +224,9 @@ inline bool DecodeLogFileLine(const wxString &line, wxString &ecLine, bool inclu
 					}
 					ecLine = wxString(static_cast<wxChar>(
 							 LegacyLogMarker(status, replay))) +
-						 line.Left(LogRecordHeaderLength) +
-						 line.Mid(LogRecordHeaderLength + flags.length());
+						 FormatDisplayLogLine(
+							 line.Left(LogRecordHeaderLength) +
+							 line.Mid(LogRecordHeaderLength + flags.length()));
 					return true;
 				}
 			}

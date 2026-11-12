@@ -90,9 +90,9 @@ TEST(LogFileReplay, PersistentFlagsSurviveReopenAndReaderEof)
 	CLoggerAccess reader;
 	wxString line;
 	ASSERT_TRUE(reader.GetString(line));
-	ASSERT_TRUE(line.StartsWith(" ") && line.Contains(wxString::FromUTF8("ERROR [test] ordinary café")));
+	ASSERT_TRUE(line.StartsWith(" ") && line.Contains(wxString::FromUTF8("[test] ordinary café")));
 	ASSERT_TRUE(reader.GetString(line));
-	ASSERT_TRUE(line.StartsWith("!") && line.Contains("INFO  [test] status"));
+	ASSERT_TRUE(line.StartsWith("!") && line.Contains("[test] status"));
 	ASSERT_TRUE(!reader.HasString());
 	theLogger.Log(LogLevel::Info, "test", "after eof");
 	ASSERT_TRUE(reader.GetString(line));
@@ -130,16 +130,20 @@ TEST(LogFileReplay, MixedLegacyFileAndPartialUtf8Record)
 TEST(LogFileReplay, EmptyAndEmergencyRecordsAreTimestamped)
 {
 	LogFile file;
-	theLogger.Log(LogLevel::Info, "", "");
+	wxDateTime time;
+	time.Set((time_t)0);
+	time.SetMillisecond(123);
+	theLogger.Log(CLogRecord(LogLevel::Info, "", "", time));
 	theLogger.EmergencyLog(wxString::FromUTF8("fatal café\n\nlast frame\n"), false);
 	CLoggerAccess reader;
 	wxString line;
 	ASSERT_TRUE(reader.GetString(line));
-	ASSERT_TRUE(line.StartsWith(" ") && HasLogRecordHeader(line.Mid(1)));
+	ASSERT_EQUALS(std::string((" " + time.Format("%Y-%m-%d %H:%M:%S") + " \n").utf8_str()),
+		std::string(line.utf8_str()));
 	for (int i = 0; i < 3; ++i) {
 		ASSERT_TRUE(reader.GetString(line));
-		ASSERT_TRUE(line.StartsWith("!") && HasLogRecordHeader(line.Mid(1)));
-		ASSERT_TRUE(line.Contains("ERROR [crash] "));
+		ASSERT_TRUE(line.StartsWith("!") && !HasLogRecordHeader(line.Mid(1)));
+		ASSERT_TRUE(line.Contains("[crash] "));
 	}
 	ASSERT_TRUE(!reader.HasString());
 	ASSERT_TRUE(!file.Read().Contains("\n!"));

@@ -263,8 +263,8 @@ void CLogger::DoLine(const wxString &line, bool toStatusBar, bool toStdout, bool
 	}
 #ifndef AMULE_DAEMON
 	if (toGUI) {
-		theApp->AddGuiLogLine(
-			wxString(static_cast<wxChar>(LegacyLogMarker(toStatusBar, toGUI))) + line);
+		theApp->AddGuiLogLine(wxString(static_cast<wxChar>(LegacyLogMarker(toStatusBar, toGUI))) +
+				      FormatDisplayLogLine(line));
 	}
 #endif
 }

@@ -2892,13 +2892,13 @@ amuled's general log buffer.
 
 ```json
 {
-  "lines": ["2026-06-19T11:00:00.123+02:00 INFO  line one", "2026-06-19T11:00:00.456+02:00 WARN  [wx] line two"],
+  "lines": ["2026-06-19 11:00:00 line one", "2026-06-19 11:00:00 [wx] line two"],
   "total_lines": 1024,
   "returned_lines": 2
 }
 ```
 
-`lines` is the array of log lines. Each starts with a local RFC 3339 timestamp and a five-column severity, as described in [LOGGING.md](../LOGGING.md); `total_lines` is how many lines are held in the buffer and `returned_lines` how many this response carried (≤ `tail`).
+`lines` is the array of log lines. Each starts with a compact local `YYYY-MM-DD HH:MM:SS` timestamp without severity, as described in [LOGGING.md](../LOGGING.md); `total_lines` is how many lines are held in the buffer and `returned_lines` how many this response carried (≤ `tail`).
 
 **Errors:** `400 bad_request` (`tail` is not an integer, or outside `0`-`100000`), `400 amuled_rejected` (the daemon refused the read), `503 ec_unavailable`.
 
