@@ -247,6 +247,15 @@ TEST(KadBuddyStats, DepartedEntriesAgeOut)
 	ASSERT_EQUALS(1u, departed.Size());
 }
 
+TEST(KadBuddyStats, DepartedEntriesOutliveTheKadSourceLifetime)
+{
+	CDepartedBuddies departed;
+	departed.Record(Departed(1, 1000), 2);
+	// The latest drop measured live, 7 h 37 min after the buddy left.
+	const uint64_t measured = (7 * 60 + 37) * 60 * 1000ULL;
+	ASSERT_TRUE(departed.Find(Id(1).data(), 1000 + measured).has_value());
+}
+
 TEST(KadBuddyStats, DepartedKeepsTheNewestWithinCapacity)
 {
 	CDepartedBuddies departed;
