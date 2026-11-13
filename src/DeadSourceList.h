@@ -64,6 +64,8 @@ public:
 	uint32 GetDeadSourcesCount() const;
 
 private:
+	void AddDeadKey(const CDeadSourceKey &key, uint64 deadline);
+
 	/**
 	 * Removes entries that are too old.
 	 */

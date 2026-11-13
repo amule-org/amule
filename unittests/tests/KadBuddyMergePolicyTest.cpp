@@ -113,14 +113,13 @@ TEST(KadBuddyMergePolicy, SourceExchangeIDNeverReplacesAnID)
 	ASSERT_TRUE(DecideKadBuddyMerge(facts).takeID);
 }
 
-TEST(KadBuddyMergePolicy, SwitchesOnlyAfterAFailedCallbackWhileQueued)
+TEST(KadBuddyMergePolicy, SwitchesOnlyAfterAFailedCallback)
 {
-	ASSERT_TRUE(ShouldSwitchToBuddyCandidate(true, true, true));
-	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(true, false, true));
-	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(true, true, false));
+	ASSERT_TRUE(ShouldSwitchToBuddyCandidate(true, true));
+	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(true, false));
 }
 
 TEST(KadBuddyMergePolicy, NoSwitchWithoutACandidate)
 {
-	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(false, true, true));
+	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(false, true));
 }

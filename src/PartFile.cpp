@@ -1751,8 +1751,10 @@ uint32 CPartFile::Process(uint8 m_icounter)
 
 				// Give up to 1 min for UDP to respond..
 				// If we are within on min on TCP, do not try..
+				// A source asked on the next tick gets the TCP ask below, not a UDP reask as
+				// well.
 				const uint64 reask = thePrefs::GetSourceReaskTime();
-				if (theApp->IsConnected() &&
+				if (theApp->IsConnected() && cur_src->GetLastAskedTime() != 0 &&
 					SourceRetryPolicy::IsDue(
 						dwCurTick, cur_src->GetLastAskedTime(), reask - 20000)) {
 					cur_src->UDPReaskForDownload();
@@ -3231,8 +3233,10 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 		CUpDownClient *cur_src = it->GetClient();
 
 		int state = cur_src->GetDownloadState();
+		// A route no hello has proved may lead to another host: it is not passed on.
 		int valid =
-			(state == DS_DOWNLOADING) || (state == DS_ONQUEUE && !cur_src->IsRemoteQueueFull());
+			!cur_src->IsRouteUnproven() &&
+			((state == DS_DOWNLOADING) || (state == DS_ONQUEUE && !cur_src->IsRemoteQueueFull()));
 
 		// Only the extended format can describe how to reach a LowID.
 		if ((cur_src->HasLowID() && !packet.IsExtended()) || !valid) {
@@ -3590,10 +3594,10 @@ bool CPartFile::AddExtendedSource(const ExtSX::SRecord &record, unsigned nSource
 	}
 	newsource->SetSourceFrom((ESourceFrom)nSourceFrom);
 
-	// Without a user hash nothing else identifies a Kad LowID: its ID is 1 and it has no server.
-	if (!record.userHash && record.buddyID) {
+	if (ExtSX::MatchesKnownSourceByBuddyID(record)) {
 		if (CUpDownClient *known = FindSourceByBuddyID(record.buddyID->data())) {
-			known->AdoptKadBuddy(*newsource);
+			// The same merge as any other copy: routes from source exchange are fallbacks.
+			known->AdoptContactRoutes(*newsource);
 			newsource->Safe_Delete();
 			return true;
 		}

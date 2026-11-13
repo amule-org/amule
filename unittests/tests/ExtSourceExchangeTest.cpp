@@ -639,3 +639,30 @@ TEST(ExtSourceExchange, DecodesAnEmuleQtIPv6OnlyLowID)
 	ASSERT_FALSE(ExtSX::HasLowIDRoute(record));
 	ASSERT_TRUE(ExtSX::ShouldDialIPv6(record, DialableApp(1)));
 }
+
+// A Kad LowID has ID 1 and no server: without a user hash only its buddy ID names it.
+TEST(ExtSourceExchange, AHashlessRecordIsMatchedByItsBuddyID)
+{
+	ExtSX::SRecord record;
+	record.hybridID = 1;
+	record.buddyID = WireBuddyID;
+	ASSERT_TRUE(ExtSX::MatchesKnownSourceByBuddyID(record));
+}
+
+TEST(ExtSourceExchange, ARecordWithAUserHashIsMatchedByItsHash)
+{
+	ExtSX::SRecord record;
+	record.hybridID = 1;
+	record.buddyID = WireBuddyID;
+	record.userHash = CMD4Hash(PublicIPv6.data());
+	ASSERT_FALSE(ExtSX::MatchesKnownSourceByBuddyID(record));
+}
+
+TEST(ExtSourceExchange, ARecordWithoutABuddyIDIsNotMatchedByOne)
+{
+	ExtSX::SRecord record;
+	record.hybridID = 0x1235;
+	record.serverIP = 0x0100007F;
+	record.serverPort = 4661;
+	ASSERT_FALSE(ExtSX::MatchesKnownSourceByBuddyID(record));
+}

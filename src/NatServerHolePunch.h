@@ -237,7 +237,7 @@ struct RequestFacts
 };
 
 // Whether to send OP_LOWID_HOLEPUNCH_REQUEST for a LowID source: both ends must be LowID on the
-// same, hole-punch-capable, non-Lugdunum server, the runtime setting must be on, our UDP port
+// same, hole-punch-capable server, the runtime setting must be on, our UDP port
 // must be enabled, and the build must be able to act on the server's word.
 inline bool ShouldRequestLowIdHolePunch(const RequestFacts &facts)
 {
@@ -309,6 +309,50 @@ inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
 // exactly. A request that never gets one expires after 30 s.
 constexpr std::uint64_t kPendingRequestTimeoutMs = 30'000;
 constexpr std::size_t kMaxPendingRequests = 8;
+
+// A hole punch that leaves its source unconnected this long failed: no 0x61 within
+// kPendingRequestTimeoutMs, a 0x62, or a dial that never completed its uTP handshake.
+constexpr std::uint64_t kHolePunchFallbackMs = 60'000;
+
+// ed2k-server runs Lugdunum's callback beside its hole punch, and the two can succeed on different
+// NATs: the callback has the source dial us. So each failed hole punch moves on to it once.
+inline bool ShouldFallBackToLugdunumCallback(
+	bool holePunchSent, bool fallbackTried, std::uint64_t sentAt, std::uint64_t now)
+{
+	return holePunchSent && !fallbackTried && now >= sentAt && now - sentAt >= kHolePunchFallbackMs;
+}
+
+// One fallback per punch: a new punch re-arms it. A request that never went out does not use it
+// up; it waits another interval, so a server without the callback is not asked on every tick.
+class HolePunchFallback
+{
+public:
+	void OnPunchSent(std::uint64_t now)
+	{
+		m_sent = true;
+		m_tried = false;
+		m_sentAt = now;
+	}
+	void Reset() { *this = HolePunchFallback(); }
+	bool IsDue(std::uint64_t now) const
+	{
+		return ShouldFallBackToLugdunumCallback(m_sent, m_tried, m_sentAt, now);
+	}
+	//! @a requested: the callback request went out, or waits for the server's UDP key.
+	void OnFallback(bool requested, std::uint64_t now)
+	{
+		if (requested) {
+			m_tried = true;
+		} else {
+			m_sentAt = now;
+		}
+	}
+
+private:
+	bool m_sent = false;
+	bool m_tried = false;
+	std::uint64_t m_sentAt = 0;
+};
 
 class PendingRequestSet
 {

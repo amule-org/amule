@@ -285,6 +285,13 @@ inline bool HasDirectCallback(const SRecord &record)
 	       (*record.connectOptions & 0x08) != 0;
 }
 
+//! Whether a received record is matched to a known source by its buddy ID. Without a user hash
+//! nothing else identifies a Kad LowID: its ID is 1 and it has no server.
+inline bool MatchesKnownSourceByBuddyID(const SRecord &record)
+{
+	return !record.userHash && record.buddyID.has_value();
+}
+
 //! Whether a received LowID record names a way to reach the source. A buddy ID without an
 //! endpoint is enough: a Kad search near the ID finds the buddy.
 inline bool HasLowIDRoute(const SRecord &record)

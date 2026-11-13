@@ -701,7 +701,7 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 					}
 				}
 
-				it->GetClient()->AdoptKadBuddy(*source);
+				it->GetClient()->AdoptContactRoutes(*source);
 				source->Safe_Delete();
 				return;
 			}
@@ -721,7 +721,9 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 				source->AddRequestForAnotherFile(sender);
 			}
 		} else {
-			// Source was known, but reqfile NULL.
+			// Source was known, but reqfile NULL. No contact runs for it, so every route is
+			// untried.
+			source->ResetContactRoutes();
 			source->SetRequestFile(sender);
 			source->SetSourceFrom(nSourceFrom);
 			sender->AddSource(source);
@@ -801,6 +803,8 @@ void CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *so
 			}
 		}
 	} else {
+		// No contact runs for a client without a request file, so every route is untried.
+		source->ResetContactRoutes();
 		source->SetRequestFile(sender);
 
 		if (source->GetFileRating() || !source->GetFileComment().IsEmpty()) {
@@ -1824,6 +1828,11 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 
 	if (ctemp) {
 		ctemp->SetConnectOptions(byCryptOptions);
+#ifdef ENABLE_IPV6
+		if (ShouldKeepKadSourceIPv6AsLastResort(facts)) {
+			ctemp->SetLastResortIPv6(publishedIPv6);
+		}
+#endif
 
 		AddDebugLogLineN(logKadSearch,
 			CFormat("Happily adding a source (%s) type %d") %

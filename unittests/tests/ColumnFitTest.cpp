@@ -352,8 +352,6 @@ void TestClientDrawing()
 
 void RunTests()
 {
-	// Outlives the frame, whose destructor sends a hide event.
-	bool mapped = false;
 	wxFrame frame(nullptr, wxID_ANY, "Column fitting test");
 	TestSearchSampling(&frame);
 	TestClientToolTip();
@@ -367,17 +365,10 @@ void RunTests()
 	sizer->Add(list, 1, wxEXPAND);
 	frame.SetSizer(sizer);
 	frame.SetSize(1000, 500);
-	frame.Bind(wxEVT_SHOW, [&](wxShowEvent &event) {
-		mapped = event.IsShown();
-		event.Skip();
-	});
-	frame.Show();
-	wxTheApp->Yield(true);
+	ShowAndWaitForPaint(frame);
 	const wxDataViewItem first = static_cast<wxDataViewVirtualListModel *>(list->GetModel())->GetItem(0);
-	// Under an X11 window manager, wxGTK maps the frame only once the manager reports its
-	// decoration size, up to 1 s later, and GTK sizes the columns after that. GetItemRect()
-	// needs the mapped list.
-	const auto laidOut = [&] { return mapped && list->GetItemRect(first, list->GetColumn(1)).width > 0; };
+	// GTK sizes the columns just after the map.
+	const auto laidOut = [&] { return list->GetItemRect(first, list->GetColumn(1)).width > 0; };
 	for (int attempt = 0; attempt < 300 && !laidOut(); ++attempt) {
 		wxMilliSleep(10);
 		wxTheApp->Yield(true);

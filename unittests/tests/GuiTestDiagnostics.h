@@ -30,6 +30,8 @@
 #include <wx/evtloop.h>
 #include <wx/init.h>
 #include <wx/log.h>
+#include <wx/toplevel.h>
+#include <wx/utils.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -103,6 +105,36 @@ inline void Check(bool condition, const char *message)
 	if (!condition) {
 		throw std::runtime_error(message);
 	}
+}
+
+// Under an X11 window manager, GTK maps a frame only when the manager allows it, up to 1 s after
+// Show(), and a compositing manager also paces every later frame. Native GTK lists size and
+// scroll in those frames. A paint comes after the layout of its frame, so waiting for one
+// lets the list catch up.
+inline void WaitForPaint(wxTopLevelWindow &frame)
+{
+#ifdef __WXGTK__
+	bool painted = false;
+	const auto onPaint = [&painted](wxPaintEvent &event) {
+		painted = true;
+		event.Skip();
+	};
+	frame.Bind(wxEVT_PAINT, onPaint);
+	frame.Refresh();
+	for (int waited = 0; !painted && waited < 3000; waited += 10) {
+		wxMilliSleep(10);
+		wxTheApp->Yield(true);
+	}
+	frame.Unbind(wxEVT_PAINT, onPaint);
+	Check(painted, "Frame was not drawn");
+#endif
+	wxTheApp->Yield(true);
+}
+
+inline void ShowAndWaitForPaint(wxTopLevelWindow &frame)
+{
+	frame.Show();
+	WaitForPaint(frame);
 }
 
 enum class GuiTestEventLoop
