@@ -230,6 +230,21 @@ TEST(CDeadSourceKey, AnOtherHostKeyIsStoredOnce)
 	ASSERT_EQUALS(2u, keys.size());
 }
 
+TEST(CDeadSourceKey, OnlyTheAnsweredRouteLosesItsOtherHostKey)
+{
+	std::vector<CDeadSourceKey> keys;
+	const CDeadSourceKey first = RecordKey(kHighID, CNetworkAddress::Absent(), 4662, 0, 0, 4672);
+	const CDeadSourceKey otherKad = RecordKey(kHighID, CNetworkAddress::Absent(), 4662, 0, 0, 4673);
+	AddOtherHostKey(keys, first);
+	AddOtherHostKey(keys, otherKad);
+	// The client's own hash answered the first route: only that key goes.
+	RemoveOtherHostKey(keys, RecordKey(kHighID, CNetworkAddress::Absent(), 4662, 0, 0, 4672));
+	ASSERT_EQUALS(1u, keys.size());
+	ASSERT_TRUE(keys[0] == otherKad);
+	RemoveOtherHostKey(keys, first);
+	ASSERT_EQUALS(1u, keys.size());
+}
+
 TEST(CDeadSourceKey, ADeadSourceIsKeyedUnderEveryRoute)
 {
 	SStoredSourceRoute current;

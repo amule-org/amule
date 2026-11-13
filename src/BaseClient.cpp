@@ -546,17 +546,20 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 		m_routeUnproven, inbound, m_dialingIPv6 && m_preserveIdentityOnHello && m_modIPv6FromRecord);
 	const bool checked =
 		routeUnproven || PeerAddressing::ChecksDialAnswer(inbound, GetCreditsHash() != nullptr);
-	switch (PeerAddressing::CheckHelloIdentity(checked, HasValidHash(), hash == GetUserHash())) {
-	case PeerAddressing::EHelloIdentity::OtherHost:
+	// The route this hello answers: an advertised IPv6 we dialled, or the route in use.
+	const auto answeredRoute = [this] {
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
 			SStoredSourceRoute advertised;
 			advertised.address = m_dialledIPv6Address;
 			advertised.tcpPort = GetUserPort();
 			advertised.kadPort = GetKadPort();
-			AddOtherHostKey(m_otherHostKeys, advertised.DeadKey());
-		} else {
-			NoteOtherHostOnRoute();
+			return advertised.DeadKey();
 		}
+		return CurrentStoredRoute().DeadKey();
+	};
+	switch (PeerAddressing::CheckHelloIdentity(checked, HasValidHash(), hash == GetUserHash())) {
+	case PeerAddressing::EHelloIdentity::OtherHost:
+		AddOtherHostKey(m_otherHostKeys, answeredRoute());
 		// The counter covers routes from source records; a dial for a known client logs only.
 		if (routeUnproven) {
 			theStats::AddSourceRouteEvent(ESourceRouteEvent::OtherHostRefused);
@@ -568,6 +571,10 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 						     : wxString("?")));
 		throw CHelloFromOtherHost{ "Another host answered the route" };
 	case PeerAddressing::EHelloIdentity::Proves:
+		if (!inbound) {
+			// Our dial reached this client again, so no other host holds that route now.
+			RemoveOtherHostKey(m_otherHostKeys, answeredRoute());
+		}
 		m_routeUnproven = false;
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
 			m_modIPv6FromRecord = false;

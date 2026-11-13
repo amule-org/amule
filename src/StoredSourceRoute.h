@@ -106,6 +106,12 @@ inline void AddOtherHostKey(std::vector<CDeadSourceKey> &keys, const CDeadSource
 	}
 }
 
+//! Removes that key once the client's own hash answers there again.
+inline void RemoveOtherHostKey(std::vector<CDeadSourceKey> &keys, const CDeadSourceKey &key)
+{
+	keys.erase(std::remove(keys.begin(), keys.end(), key), keys.end());
+}
+
 //! The routes of a client that a route chain changes.
 struct SSourceRoutes
 {

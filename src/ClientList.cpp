@@ -614,12 +614,23 @@ CUpDownClient *CClientList::FindClientByIP(uint32 clientip, uint16 port)
 
 CUpDownClient *CClientList::FindClientByIP(const CNetworkAddress &address, uint16 port)
 {
+	return FindClientAtEndpoint(address, port, false);
+}
+
+CUpDownClient *CClientList::FindCallbackClientByIP(uint32 clientip, uint16 port)
+{
+	return FindClientAtEndpoint(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(clientip), port, true);
+}
+
+CUpDownClient *CClientList::FindClientAtEndpoint(
+	const CNetworkAddress &address, uint16 port, bool skipAnsweredByOtherHost)
+{
 	auto range = m_ipList.equal_range(PeerAddressing::IndexKey(address));
 
 	for (; range.first != range.second; ++range.first) {
 		CUpDownClient *cur_client = range.first->second.GetClient();
-		// Another host answered there: a NAT neighbour's client, not the one at that endpoint.
-		if (cur_client->GetUserPort() == port && !cur_client->IsRouteAnsweredByOtherHost()) {
+		if (cur_client->GetUserPort() == port &&
+			!(skipAnsweredByOtherHost && cur_client->IsRouteAnsweredByOtherHost())) {
 			return cur_client;
 		}
 	}

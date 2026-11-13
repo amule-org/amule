@@ -813,7 +813,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					}
 				}
 				if (!client) {
-					client = theApp->clientlist->FindClientByIP(dwIP, nPort);
+					client = theApp->clientlist->FindCallbackClientByIP(dwIP, nPort);
 					// A NAT neighbour's client, known from its hello: dial anew.
 					if (client != nullptr && size >= 23 &&
 						client->GetCreditsHash() != nullptr &&

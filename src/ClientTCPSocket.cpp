@@ -2013,7 +2013,7 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		uint32 ip = data.ReadUInt32();
 		uint16 tcp = data.ReadUInt16();
 		CUpDownClient *callback;
-		callback = theApp->clientlist->FindClientByIP(wxUINT32_SWAP_ALWAYS(ip), tcp);
+		callback = theApp->clientlist->FindCallbackClientByIP(wxUINT32_SWAP_ALWAYS(ip), tcp);
 		if (callback == NULL) {
 			// #warning Do we actually have to check friend status here?
 			callback = new CUpDownClient(tcp, ip, 0, 0, NULL, false, false);
