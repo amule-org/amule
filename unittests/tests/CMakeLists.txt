@@ -1349,6 +1349,12 @@ add_test (NAME KadBuddyMergePolicyTest COMMAND KadBuddyMergePolicyTest)
 target_include_directories (KadBuddyMergePolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (KadBuddyMergePolicyTest muleunit mulecommon)
 
+# Whether a client found by address and port is another peer behind the same NAT.
+add_executable (ClientMatchPolicyTest ClientMatchPolicyTest.cpp)
+add_test (NAME ClientMatchPolicyTest COMMAND ClientMatchPolicyTest)
+target_include_directories (ClientMatchPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (ClientMatchPolicyTest muleunit mulecommon)
+
 # The order a download source's contact routes are tried in, and moving on after a failure.
 add_executable (SourceRoutePolicyTest SourceRoutePolicyTest.cpp)
 add_test (NAME SourceRoutePolicyTest COMMAND SourceRoutePolicyTest)

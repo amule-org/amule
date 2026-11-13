@@ -151,6 +151,12 @@ public:
 	CUpDownClient *FindClientByIP(const CNetworkAddress &address, uint16 port);
 
 	/**
+	 * As FindClientByIP(), for a callback we are asked to dial: skips a client whose route
+	 * another host answered. That is a NAT neighbour's client, not the one at that endpoint now.
+	 */
+	CUpDownClient *FindCallbackClientByIP(uint32 clientip, uint16 port);
+
+	/**
 	 * Finds a client with the specified ip, returning the first if several share it.
 	 */
 	CUpDownClient *FindClientByIP(uint32 clientip);
@@ -355,6 +361,8 @@ private:
 	 * CUpDownClient::Compare, but without the overhead.
 	 */
 	CUpDownClient *FindMatchingClient(CUpDownClient *client, const CUpDownClient *excluded = nullptr);
+
+	CUpDownClient *FindClientAtEndpoint(const CNetworkAddress &address, uint16 port, bool forCallback);
 
 	/**
 	 * Check if we already know this IP.

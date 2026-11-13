@@ -997,3 +997,43 @@ TEST(PeerAddressing, ARecordIPv6CountsOnlyForTheAnswerOnOurDial)
 	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(true, true, false));
 	ASSERT_FALSE(PeerAddressing::HelloRouteUnproven(false, false, false));
 }
+
+TEST(PeerAddressing, AnotherHashAnsweringOurDialForAHelloHashIsAnotherHost)
+{
+	// A NAT neighbour, or a new owner of a recycled address, answered a client a hello proved.
+	const bool checked = PeerAddressing::ChecksDialAnswer(false, true);
+	ASSERT_TRUE(checked);
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(checked, true, false) ==
+		    PeerAddressing::EHelloIdentity::OtherHost);
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(checked, true, true) ==
+		    PeerAddressing::EHelloIdentity::Proves);
+}
+
+TEST(PeerAddressing, OnlyTheOwnHashOnOurDialClearsTheOtherHostMark)
+{
+	using PeerAddressing::EHelloIdentity;
+	ASSERT_TRUE(PeerAddressing::ClearsOtherHostMark(EHelloIdentity::Proves, false));
+	// From behind the NAT the client can always dial in: that proves nothing about the route.
+	ASSERT_FALSE(PeerAddressing::ClearsOtherHostMark(EHelloIdentity::Proves, true));
+	ASSERT_FALSE(PeerAddressing::ClearsOtherHostMark(EHelloIdentity::OtherHost, false));
+	ASSERT_FALSE(PeerAddressing::ClearsOtherHostMark(EHelloIdentity::Usual, false));
+
+	// Our dial for a client a hello proved: its own hash clears the mark, another hash keeps it.
+	const bool checked = PeerAddressing::ChecksDialAnswer(false, true);
+	ASSERT_TRUE(PeerAddressing::ClearsOtherHostMark(
+		PeerAddressing::CheckHelloIdentity(checked, true, true), false));
+	ASSERT_FALSE(PeerAddressing::ClearsOtherHostMark(
+		PeerAddressing::CheckHelloIdentity(checked, true, false), false));
+}
+
+TEST(PeerAddressing, AListHashOrAnIncomingHelloIsNotCheckedOnOurDial)
+{
+	// A hash from a source list or Kad may be stale: whoever answers is taken, as before.
+	ASSERT_FALSE(PeerAddressing::ChecksDialAnswer(false, false));
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(PeerAddressing::ChecksDialAnswer(false, false),
+			    true,
+			    false) == PeerAddressing::EHelloIdentity::Usual);
+	// An incoming hello keeps the hash-change check.
+	ASSERT_FALSE(PeerAddressing::ChecksDialAnswer(true, true));
+	ASSERT_FALSE(PeerAddressing::ChecksDialAnswer(true, false));
+}

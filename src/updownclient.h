@@ -908,6 +908,8 @@ public:
 	bool IsRouteUnproven() const { return m_routeUnproven; }
 	//! Another host answered the route in use: it is alive, so it is never recorded as dead.
 	void NoteOtherHostOnRoute();
+	//! Whether another host already answered the route in use.
+	bool IsRouteAnsweredByOtherHost() const;
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
 	// This source as an Extended Source Exchange record, sanitized with `filter`.

@@ -29,6 +29,7 @@
 #include <wx/mstream.h>
 #include <wx/tokenzr.h>
 
+#include <algorithm>
 #include <array>
 
 #include "updownclient.h"   // Needed for CUpDownClient
@@ -543,24 +544,37 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	CMD4Hash hash = data.ReadHash();
 	const bool routeUnproven = PeerAddressing::HelloRouteUnproven(
 		m_routeUnproven, inbound, m_dialingIPv6 && m_preserveIdentityOnHello && m_modIPv6FromRecord);
-	switch (PeerAddressing::CheckHelloIdentity(routeUnproven, HasValidHash(), hash == GetUserHash())) {
-	case PeerAddressing::EHelloIdentity::OtherHost:
+	const bool checked =
+		routeUnproven || PeerAddressing::ChecksDialAnswer(inbound, GetCreditsHash() != nullptr);
+	// The route this hello answers: an advertised IPv6 we dialled, or the route in use.
+	const auto answeredRoute = [this] {
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
 			SStoredSourceRoute advertised;
 			advertised.address = m_dialledIPv6Address;
 			advertised.tcpPort = GetUserPort();
 			advertised.kadPort = GetKadPort();
-			AddOtherHostKey(m_otherHostKeys, advertised.DeadKey());
-		} else {
-			NoteOtherHostOnRoute();
+			return advertised.DeadKey();
 		}
-		theStats::AddSourceRouteEvent(ESourceRouteEvent::OtherHostRefused);
-		AddDebugLogLineN(logSourceRoutes,
-			CFormat("Another host (hash %s) answered unproven route to source %s at %s") %
-				hash.Encode() % GetUserHash().Encode() %
+		return CurrentStoredRoute().DeadKey();
+	};
+	const PeerAddressing::EHelloIdentity identity =
+		PeerAddressing::CheckHelloIdentity(checked, HasValidHash(), hash == GetUserHash());
+	if (PeerAddressing::ClearsOtherHostMark(identity, inbound)) {
+		RemoveOtherHostKey(m_otherHostKeys, answeredRoute());
+	}
+	switch (identity) {
+	case PeerAddressing::EHelloIdentity::OtherHost:
+		AddOtherHostKey(m_otherHostKeys, answeredRoute());
+		// The counter covers routes from source records; a dial for a known client logs only.
+		if (routeUnproven) {
+			theStats::AddSourceRouteEvent(ESourceRouteEvent::OtherHostRefused);
+		}
+		AddDebugLogLineN(routeUnproven ? logSourceRoutes : logClient,
+			CFormat("Another host (hash %s) answered the route to %s at %s") % hash.Encode() %
+				GetUserHash().Encode() %
 				(m_socket != nullptr ? m_socket->GetPeerAddress().ToWxString()
 						     : wxString("?")));
-		throw CHelloFromOtherHost{ "Another host answered an unproven route" };
+		throw CHelloFromOtherHost{ "Another host answered the route" };
 	case PeerAddressing::EHelloIdentity::Proves:
 		m_routeUnproven = false;
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
@@ -887,13 +901,15 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	CClientCredits *pFoundCredits = theApp->clientcredits->GetCredit(m_UserHash);
 	if (credits == NULL) {
 		credits = pFoundCredits;
+		// Logged for diagnosis, not banned: users behind one NAT share the address and often
+		// the default port, and servers grant a HighID to whichever host answers there. A
+		// peer that changes its hash on purpose avoids this check by changing its port anyway.
 		if (!theApp->clientlist->ComparePriorUserhash(
 			    GetTrackingAddress(), m_nUserPort, pFoundCredits)) {
 			AddDebugLogLineN(logClient,
-				CFormat("Client: %s (%s) Banreason: Userhash changed (Found in "
-					"TrackedClientsList)") %
+				CFormat("Client: %s (%s) Userhash differs from the one tracked for this "
+					"address and port (TrackedClientsList)") %
 					GetUserName() % GetFullIP());
-			Ban();
 		}
 	} else if (credits != pFoundCredits) {
 		// userhash change ok, however two hours "waittime" before it can be used
@@ -2418,6 +2434,12 @@ SStoredSourceRoute StoredRouteOf(const CUpDownClient &client)
 void CUpDownClient::NoteOtherHostOnRoute()
 {
 	AddOtherHostKey(m_otherHostKeys, CurrentStoredRoute().DeadKey());
+}
+
+bool CUpDownClient::IsRouteAnsweredByOtherHost() const
+{
+	const CDeadSourceKey key = CurrentStoredRoute().DeadKey();
+	return std::find(m_otherHostKeys.begin(), m_otherHostKeys.end(), key) != m_otherHostKeys.end();
 }
 
 CNetworkAddress CUpDownClient::GetTrackingAddress() const

@@ -24,6 +24,7 @@
 //
 
 #include "ClientList.h"           // Interface declarations.
+#include "ClientMatchPolicy.h"    // Needed for IsOtherPeerAtSameEndpoint
 #include "KadBuddySearchPolicy.h" // Needed for BuddySearchTarget
 #include "KadCallbackPolicy.h"
 #include "KadServedBuddyPolicy.h" // Needed for the served-buddy limits
@@ -287,6 +288,20 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client, const CUpD
 	const uint16 userPort = client->GetUserPort();
 	const uint16 userKadPort = client->GetKadPort();
 
+	// Excluded, or another peer behind the same address (IsOtherPeerAtSameEndpoint).
+	const auto skip = [client, excluded](const CUpDownClient *other) {
+		if (other == excluded) {
+			return true;
+		}
+		SClientMatchFacts facts;
+		facts.incomingHasHash = client->HasValidHash();
+		facts.candidateHasHash = other->HasValidHash();
+		facts.incomingHashFromHello = client->GetCreditsHash() != nullptr;
+		facts.candidateHashFromHello = other->GetCreditsHash() != nullptr;
+		facts.sameHash = client->GetUserHash() == other->GetUserHash();
+		return IsOtherPeerAtSameEndpoint(facts);
+	};
+
 	// LowID clients need a different set of checks
 	if (client->HasLowID()) {
 		// User is firewalled ... Must do two checks.
@@ -295,7 +310,7 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client, const CUpD
 
 			for (; range.first != range.second; ++range.first) {
 				CUpDownClient *other = range.first->second.GetClient();
-				if (other == excluded) {
+				if (skip(other)) {
 					continue;
 				}
 				wxASSERT(userIP == other->GetUserAddress());
@@ -315,7 +330,7 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client, const CUpD
 
 			for (; range.first != range.second; ++range.first) {
 				CUpDownClient *other = range.first->second.GetClient();
-				if (other == excluded) {
+				if (skip(other)) {
 					continue;
 				}
 				wxASSERT(userID == other->GetUserIDHybrid());
@@ -331,11 +346,10 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client, const CUpD
 	} else if (userPort || userKadPort) {
 		// Check by address first, then by ID. Within each range all TCP-port
 		// matches take precedence over Kad-port matches, as in the IPv4 index.
-		const auto findByPort = [userPort, userKadPort, excluded](
-						const auto &range) -> CUpDownClient * {
+		const auto findByPort = [userPort, userKadPort, &skip](const auto &range) -> CUpDownClient * {
 			if (userPort) {
 				for (auto it = range.first; it != range.second; ++it) {
-					if (it->second.GetClient() != excluded &&
+					if (!skip(it->second.GetClient()) &&
 						userPort == it->second.GetUserPort()) {
 						return it->second.GetClient();
 					}
@@ -343,7 +357,7 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client, const CUpD
 			}
 			if (userKadPort) {
 				for (auto it = range.first; it != range.second; ++it) {
-					if (it->second.GetClient() != excluded &&
+					if (!skip(it->second.GetClient()) &&
 						userKadPort == it->second.GetClient()->GetKadPort()) {
 						return it->second.GetClient();
 					}
@@ -600,11 +614,23 @@ CUpDownClient *CClientList::FindClientByIP(uint32 clientip, uint16 port)
 
 CUpDownClient *CClientList::FindClientByIP(const CNetworkAddress &address, uint16 port)
 {
+	return FindClientAtEndpoint(address, port, false);
+}
+
+CUpDownClient *CClientList::FindCallbackClientByIP(uint32 clientip, uint16 port)
+{
+	return FindClientAtEndpoint(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(clientip), port, true);
+}
+
+CUpDownClient *CClientList::FindClientAtEndpoint(
+	const CNetworkAddress &address, uint16 port, bool forCallback)
+{
 	auto range = m_ipList.equal_range(PeerAddressing::IndexKey(address));
 
 	for (; range.first != range.second; ++range.first) {
 		CUpDownClient *cur_client = range.first->second.GetClient();
-		if (cur_client->GetUserPort() == port) {
+		if (cur_client->GetUserPort() == port &&
+			!SkipsClientAtEndpoint(forCallback, cur_client->IsRouteAnsweredByOtherHost())) {
 			return cur_client;
 		}
 	}
