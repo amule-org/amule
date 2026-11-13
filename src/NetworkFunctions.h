@@ -109,6 +109,16 @@ inline bool IsLowID(uint32 id)
 }
 
 /**
+ * True if the ed2k ID @a id is the HighID of @a ip. Anti-host order, as the ID arrives: a HighID is
+ * its IPv4, so one whose IPv4 ends in .0 reads as a LowID to IsLowID(). A hybrid ID never does, so
+ * it never needs this.
+ */
+inline bool IsHighIDOf(uint32 id, uint32 ip)
+{
+	return ip != 0 && id == ip;
+}
+
+/**
  * True if @a ip is a LAN address. Anti-host order.
  */
 bool IsLanIP(uint32_t ip) noexcept;

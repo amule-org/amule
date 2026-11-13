@@ -883,10 +883,9 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	}
 
 	// (a) If this is a highID user, store the ID in the Hybrid format. (b) Some older clients
-	// will not send an ID; those are HighID users not connected to a server. (c) Kad users
-	// with a *.*.*.0 IP look like a lowID user but are actually highID -- easily detected,
-	// because they send an ID that is the same as their IP.
-	if (!HasLowID() || m_nUserIDHybrid == 0 || m_nUserIDHybrid == GetIP()) {
+	// will not send an ID; those are HighID users not connected to a server. (c) A HighID at
+	// an IP ending in .0 looks like a LowID.
+	if (!HasLowID() || m_nUserIDHybrid == 0 || IsHighIDOf(m_nUserIDHybrid, GetIP())) {
 		SetUserIDHybrid(wxUINT32_SWAP_ALWAYS(GetIP()));
 	}
 
