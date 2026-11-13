@@ -383,6 +383,18 @@ public:
 	}
 	// Another unused function, useful for the shared files control column
 	uint32 GetLastPublishBuddy() const { return m_lastBuddyIP; }
+	// The last source publish that some node acknowledged, and the buddy it named.
+	void SetKadSourceAck(uint32 time, uint32 nodes)
+	{
+		m_kadSrcAckTime = time;
+		m_kadSrcAckNodes = nodes;
+		m_kadSrcAckBuddyIP = m_lastBuddyIP;
+		m_kadSrcAckBuddyPort = m_lastBuddyPort;
+	}
+	uint32 GetKadSourceAckTime() const { return m_kadSrcAckTime; }
+	uint32 GetKadSourceAckNodes() const { return m_kadSrcAckNodes; }
+	uint32 GetKadSourceAckBuddyIP() const { return m_kadSrcAckBuddyIP; }
+	uint16 GetKadSourceAckBuddyPort() const { return m_kadSrcAckBuddyPort; }
 	void SetLastPublishTimeKadNotes(uint32 time) { m_lastPublishTimeKadNotes = time; }
 	uint32 GetLastPublishTimeKadNotes() const { return m_lastPublishTimeKadNotes; }
 
@@ -514,6 +526,10 @@ protected:
 	uint32 m_lastPublishTimeKadNotes;
 	uint32 m_lastBuddyIP;
 	uint16 m_lastBuddyPort;
+	uint32 m_kadSrcAckTime = 0;
+	uint32 m_kadSrcAckNodes = 0;
+	uint32 m_kadSrcAckBuddyIP = 0;
+	uint16 m_kadSrcAckBuddyPort = 0;
 
 	uint32 m_lastSeen;
 

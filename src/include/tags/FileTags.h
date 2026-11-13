@@ -96,6 +96,8 @@
 #define FT_VERIFY_DATE 0x58        // <uint32>
 #define FT_VERIFY_CORRUPTMD4 0x59  // <string> "p,p,p" corrupt parts
 #define FT_VERIFY_CORRUPTAICH 0x5A // <string> "p:b.b;p:b" corrupt AICH blocks per part
+#define FT_KADSRCACKTIME 0x5B      // <uint32> when a node last acknowledged our Kad source entry
+#define FT_KADSRCACKCOUNT 0x5C     // <uint32> how many nodes acknowledged that publish
 #define FT_FILERATING 0xF7         // <uint8>
 
 // Kad search + some unused tags to mirror the ed2k ones.

@@ -66,6 +66,7 @@ there client on the eMule forum..
 #include "../../AdvertisedIPv6.h"
 #endif
 #include "../../SharedFileList.h"
+#include "../../Statistics.h"       // Needed for theStats
 #include "../../KadPublishPolicy.h" // Needed for DecideKadSourcePublish
 #include "../../DownloadQueue.h"
 #include "../../PartFile.h"
@@ -585,6 +586,26 @@ void CSearch::ProcessResponse(
 	}
 }
 
+void CSearch::RecordStoreAcknowledgements() const
+{
+	if (m_type != STOREFILE) {
+		return;
+	}
+	const uint64_t acknowledged = CPublishMetrics::Acknowledged(m_lookupTrace);
+	theStats::AddPublishEvent(EPublishEvent::KadSourceStoreAcknowledged, acknowledged);
+	if (!acknowledged) {
+		return;
+	}
+	uint8_t fileID[16];
+	m_target.ToByteArray(fileID);
+	if (CKnownFile *file = theApp->sharedfiles->GetFileByID(CMD4Hash(fileID))) {
+		// Nodes keep the entry from when they stored it, so date it from the lookup start.
+		const uint64_t elapsed = (::GetTickCount64() - m_lookupStarted) / 1000;
+		file->SetKadSourceAck(
+			static_cast<uint32_t>(time(nullptr) - elapsed), static_cast<uint32_t>(acknowledged));
+	}
+}
+
 void CSearch::StorePacket()
 {
 	wxASSERT(!m_possible.empty());
@@ -868,6 +889,7 @@ void CSearch::StorePacket()
 			if (CKademlia::GetUDPListener()->SendPublishSourcePacket(
 				    *from, m_target, id, taglist)) {
 				m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
+				theStats::AddPublishEvent(EPublishEvent::KadSourceStoreSent);
 				if (theLogger.IsEnabled(logKadPublish)) {
 					CPublishMetrics::Instance().Queued(
 						from->GetIPAddress(), ::GetTickCount64());

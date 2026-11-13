@@ -79,6 +79,19 @@ _assert_json_eq '[.nodes[] | select(.key == "diagnostics") | .children[] | selec
 	'/stats/tree lists the source route diagnostics'
 _assert_json_eq '[.. | objects | select(.key? == "source_routes_next_route") | .values[0].type] | .[0]' \
 	integer '/stats/tree source route counters are integers'
+_assert_json_eq '[.. | objects | select(.key? == "publishing_kad") | .children[].key] | join(" ")' \
+	'publishing_kad_published publishing_kad_published_share publishing_kad_published_5_nodes publishing_kad_lookups publishing_kad_stores_sent publishing_kad_stores_acknowledged' \
+	'/stats/tree lists the Kad publishing diagnostics'
+_assert_json_eq '[.. | objects | select(.key? == "publishing_ed2k") | .children[].key] | join(" ")' \
+	'publishing_ed2k_offered publishing_ed2k_offered_share publishing_ed2k_offer_lists publishing_ed2k_files_offered' \
+	'/stats/tree lists the eD2k publishing diagnostics'
+_assert_json_eq '[.nodes[] | select(.key == "diagnostics") | .children[] | select(.key == "source_exchange") | .children[].key] | join(" ")' \
+	'source_exchange_requests source_exchange_answered source_exchange_too_soon source_exchange_no_sources source_exchange_unknown_file source_exchange_unsupported source_exchange_sources_sent source_exchange_extended_answers source_exchange_extended_sources source_exchange_lowid_routed_sources' \
+	'/stats/tree lists the source exchange diagnostics'
+_assert_json_eq '[.. | objects | select(.key? == "publishing_kad_published") | .values[0].type] | .[0]' \
+	integer '/stats/tree files published on Kad is an integer'
+_assert_json_eq '[.. | objects | select(.key? == "publishing_kad_published_share") | .values[0].type] | .[0]' \
+	double '/stats/tree share of files published on Kad is a double'
 _assert_json_eq '[.. | objects | select(.key? == "kad_buddies_time_served") | .values[0].type] | .[0]' \
 	time '/stats/tree Kad buddy time served is a time value'
 _assert_json_eq '[.. | objects | select(.key? == "kad_buddies_relayed_data") | .values[0].type] | .[0]' \

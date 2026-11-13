@@ -3301,6 +3301,7 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 			}
 		}
 	}
+	theStats::AddSourceAnswer(packet.Count(), packet.IsExtended(), packet.RoutedLowIDs());
 	return packet.CreatePacket();
 }
 

@@ -201,6 +201,22 @@ public:
 	void Publish();
 	//! The publish gate, PublishSrc() and StorePacket() all decide from these facts.
 	static SKadPublishFacts CurrentKadPublishFacts();
+	//! How a source published now reaches us; only a buddy publish names a buddy.
+	struct SKadSourceRoute
+	{
+		EKadSourcePublish mode;
+		uint32 buddyIP = 0;
+		uint16 buddyPort = 0;
+	};
+	static SKadSourceRoute CurrentKadSourceRoute();
+	struct SPublishingState
+	{
+		uint64 shared = 0;
+		uint64 kadPublished = 0;
+		uint64 kadPublishedWell = 0; // Acknowledged by 5 or more nodes.
+		uint64 ed2kOffered = 0;
+	};
+	SPublishingState GetPublishingState() const;
 	void AddKeywords(CKnownFile *pFile);
 	void RemoveKeywords(CKnownFile *pFile);
 	// This is actually unused, but keep it here - will be needed later.

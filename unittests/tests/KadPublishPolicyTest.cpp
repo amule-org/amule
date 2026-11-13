@@ -135,4 +135,34 @@ TEST(KadPublishPolicy, AContactBelowKadVersionSixKeepsNoKey)
 	ASSERT_FALSE(KeepsLookupResponderKey(true, 5, 0, 0x1234));
 }
 
+TEST(KadPublishPolicy, AnAcknowledgedEntryLivesForTheLifetimeNodesKeepIt)
+{
+	const uint32_t now = 100000;
+	const uint32_t lifetime = 18000;
+	const auto live = [&](uint32_t ackTime) {
+		return KadSourceEntriesLive(EKadSourcePublish::HighID, ackTime, 0, 0, now, lifetime, 0, 0);
+	};
+	ASSERT_TRUE(live(now - 60));
+	ASSERT_TRUE(live(now - lifetime + 1));
+	ASSERT_FALSE(live(now - lifetime)); // Expired on the nodes.
+	ASSERT_FALSE(live(0));              // Never acknowledged.
+	ASSERT_FALSE(live(now + 60));       // A clock step back must not count it twice.
+}
+
+TEST(KadPublishPolicy, AnEntryMustNameTheBuddyWePublishWithNow)
+{
+	const uint32_t now = 100000;
+	const uint32_t lifetime = 18000;
+	const uint32_t ack = now - 60;
+	// Published through buddy 1:10, still our buddy.
+	ASSERT_TRUE(KadSourceEntriesLive(EKadSourcePublish::Buddy, ack, 1, 10, now, lifetime, 1, 10));
+	// The buddy changed: callbacks for the old entry go to a node that no longer relays for us.
+	ASSERT_FALSE(KadSourceEntriesLive(EKadSourcePublish::Buddy, ack, 1, 10, now, lifetime, 2, 10));
+	ASSERT_FALSE(KadSourceEntriesLive(EKadSourcePublish::Buddy, ack, 1, 10, now, lifetime, 1, 11));
+	// Became HighID: an entry naming a buddy no longer describes how to reach us.
+	ASSERT_FALSE(KadSourceEntriesLive(EKadSourcePublish::HighID, ack, 1, 10, now, lifetime, 0, 0));
+	// With no route back at all, nothing we published leads to us.
+	ASSERT_FALSE(KadSourceEntriesLive(EKadSourcePublish::None, ack, 0, 0, now, lifetime, 0, 0));
+}
+
 // File_checked_for_headers

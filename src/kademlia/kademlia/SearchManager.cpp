@@ -644,6 +644,8 @@ std::deque<LookupSnapshot> s_recentLookups;
 
 void CSearchManager::RememberLookup(CSearch &search)
 {
+	search.RecordStoreAcknowledgements();
+
 	if (search.m_publishMeasured && theLogger.IsEnabled(logKadPublish)) {
 		CPublishMetrics::Instance().Finish(search.m_lookupTrace,
 			search.m_publishCompleted,

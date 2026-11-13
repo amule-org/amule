@@ -149,6 +149,25 @@ TEST(SourceExchangePacket, PreservesThe501SourceLimitAndCountOffset)
 	}
 }
 
+TEST(SourceExchangePacket, CountsSourcesAndLowIDsWithABuddyRoute)
+{
+	CSourceExchangePacket builder(CMD4Hash(FileHash.data()), true, 4, 4, 0, true);
+	ASSERT_TRUE(builder.IsExtended());
+	ExtSX::SRecord highID;
+	highID.hybridID = 0x12345678;
+	ExtSX::SRecord routed;
+	routed.hybridID = 1234;
+	routed.buddyIP = 0x01020304;
+	routed.buddyPort = 4672;
+	ExtSX::SRecord unrouted;
+	unrouted.hybridID = 1234;
+	for (const ExtSX::SRecord &record : { highID, routed, unrouted }) {
+		builder.AddExtendedSource(record, true);
+	}
+	ASSERT_EQUALS(uint16{ 3 }, builder.Count());
+	ASSERT_EQUALS(uint16{ 1 }, builder.RoutedLowIDs());
+}
+
 TEST(SourceExchangePacket, CompressesOnlyAbove354Bytes)
 {
 	// SX1 v1: 18 + 28*12 = 354 bytes. SX2 adds one version byte, crossing the threshold.

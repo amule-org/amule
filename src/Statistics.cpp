@@ -56,7 +56,8 @@
 #include "Logger.h"
 #include "Preferences.h" // Needed for thePrefs
 #ifndef CLIENT_GUI
-#include "ClientList.h" // Needed for the Kad buddy rows
+#include "ClientList.h"     // Needed for the Kad buddy rows
+#include "SharedFileList.h" // Needed for the publishing rows
 #endif
 
 #ifdef __BSD__
@@ -316,6 +317,12 @@ CStatTreeItemNativeCounter *CStatistics::s_ipv6Events[static_cast<std::size_t>(E
 #endif
 CStatTreeItemNativeCounter
 	*CStatistics::s_sourceRouteEvents[static_cast<std::size_t>(ESourceRouteEvent::Count)];
+CStatTreeItemCounter *CStatistics::s_publishEvents[static_cast<std::size_t>(EPublishEvent::Count)];
+CStatTreeItemSimple *CStatistics::s_kadPublishedNow;
+CStatTreeItemSimple *CStatistics::s_kadPublishedShare;
+CStatTreeItemSimple *CStatistics::s_kadPublishedWellNow;
+CStatTreeItemSimple *CStatistics::s_ed2kOfferedNow;
+CStatTreeItemSimple *CStatistics::s_ed2kOfferedShare;
 
 // Servers
 CStatTreeItemSimple *CStatistics::s_workingServers;
@@ -1263,6 +1270,73 @@ void CStatistics::InitStatsTree()
 			s_sourceRouteEvents[i]->SetKey(events[i].key);
 		}
 	}
+	{
+		CStatTreeItemBase *const publishing =
+			diagnostics->AddChild((new CStatTreeItemBase("Publishing"))->SetKey("publishing"));
+		CStatTreeItemBase *const kad = publishing->AddChild(
+			(new CStatTreeItemBase("Kad Sources"))->SetKey("publishing_kad"));
+		CStatTreeItemBase *const ed2k = publishing->AddChild(
+			(new CStatTreeItemBase("eD2k Server"))->SetKey("publishing_ed2k"));
+		CStatTreeItemBase *const exchange = diagnostics->AddChild(
+			(new CStatTreeItemBase("Source Exchange (Session)"))->SetKey("source_exchange"));
+		// Current state: nodes keep a source entry for KADEMLIAREPUBLISHTIMES.
+		const auto addNow = [](CStatTreeItemBase *parent, const char *label, const char *key) {
+			auto *item = new CStatTreeItemSimple(label);
+			item->SetKey(key);
+			parent->AddChild(item);
+			return item;
+		};
+		s_kadPublishedNow = addNow(kad, "Files Published Now: %llu", "publishing_kad_published");
+		s_kadPublishedNow->SetValue(uint64(0));
+		s_kadPublishedShare =
+			addNow(kad, "Shared Files Published Now: %.1f%%", "publishing_kad_published_share");
+		s_kadPublishedShare->SetValue(0.0);
+		s_kadPublishedWellNow = addNow(kad,
+			"Files Acknowledged by 5 or More Nodes: %llu",
+			"publishing_kad_published_5_nodes");
+		s_kadPublishedWellNow->SetValue(uint64(0));
+		s_ed2kOfferedNow = addNow(
+			ed2k, "Files Offered to the Connected Server: %llu", "publishing_ed2k_offered");
+		s_ed2kOfferedNow->SetValue(uint64(0));
+		s_ed2kOfferedShare =
+			addNow(ed2k, "Shared Files Offered: %.1f%%", "publishing_ed2k_offered_share");
+		s_ed2kOfferedShare->SetValue(0.0);
+
+		struct EventItem
+		{
+			CStatTreeItemBase *parent;
+			const char *label;
+			const char *key;
+		};
+		// In EPublishEvent order.
+		const EventItem events[] = {
+			{ kad, "Lookups Started (Session): %s", "publishing_kad_lookups" },
+			{ kad, "Stores Sent (Session): %s", "publishing_kad_stores_sent" },
+			{ kad, "Stores Acknowledged (Session): %s", "publishing_kad_stores_acknowledged" },
+			{ ed2k, "Offer Lists Sent (Session): %s", "publishing_ed2k_offer_lists" },
+			{ ed2k, "Files Offered (Session): %s", "publishing_ed2k_files_offered" },
+			{ exchange, "Requests Received: %s", "source_exchange_requests" },
+			{ exchange, "Requests Answered: %s", "source_exchange_answered" },
+			{ exchange, "Not Answered, Asked Too Soon: %s", "source_exchange_too_soon" },
+			{ exchange, "Not Answered, No Sources to Give: %s", "source_exchange_no_sources" },
+			{ exchange, "Not Answered, Unknown File: %s", "source_exchange_unknown_file" },
+			{ exchange, "Not Answered, Unsupported Version: %s", "source_exchange_unsupported" },
+			{ exchange, "Sources Sent: %s", "source_exchange_sources_sent" },
+			{ exchange, "Extended Answers Sent: %s", "source_exchange_extended_answers" },
+			{ exchange, "Extended Sources Sent: %s", "source_exchange_extended_sources" },
+			{ exchange,
+				"LowID Sources Sent With a Buddy Route: %s",
+				"source_exchange_lowid_routed_sources" },
+		};
+		static_assert(
+			std::extent_v<decltype(events)> == static_cast<std::size_t>(EPublishEvent::Count),
+			"one stats item per publishing event");
+		for (std::size_t i = 0; i < static_cast<std::size_t>(EPublishEvent::Count); ++i) {
+			s_publishEvents[i] = static_cast<CStatTreeItemCounter *>(
+				events[i].parent->AddChild(new CStatTreeItemCounter(events[i].label)));
+			s_publishEvents[i]->SetKey(events[i].key);
+		}
+	}
 
 	// Stable machine keys for API consumers (EC_TAG_STAT_NODE_KEY), assigned here so
 	// they stay fixed regardless of label wording or translation.
@@ -1356,6 +1430,15 @@ void CStatistics::UpdateStatsTree()
 	for (std::size_t i = 0; i < s_kadBuddyRows.size() && i < buddyValues.size(); ++i) {
 		s_kadBuddyRows[i]->SetValue(buddyValues[i]);
 	}
+	const CSharedFileList::SPublishingState publishing = theApp->sharedfiles->GetPublishingState();
+	const double shared = publishing.shared ? static_cast<double>(publishing.shared) : 1.0;
+	s_kadPublishedNow->SetValue(publishing.kadPublished);
+	s_kadPublishedShare->SetValue(100.0 * static_cast<double>(publishing.kadPublished) / shared);
+	s_kadPublishedWellNow->SetValue(publishing.kadPublishedWell);
+	// Offered flags outlive a disconnection; nothing is offered without a server.
+	const uint64 offered = theApp->IsConnectedED2K() ? publishing.ed2kOffered : 0;
+	s_ed2kOfferedNow->SetValue(offered);
+	s_ed2kOfferedShare->SetValue(100.0 * static_cast<double>(offered) / shared);
 	s_workingServers->SetValue((uint64)((*s_totalServers) - servfail));
 	s_failedServers->SetValue((uint64)servfail);
 	s_usersOnWorking->SetValue((uint64)servuser);

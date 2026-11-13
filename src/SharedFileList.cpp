@@ -64,6 +64,7 @@
 #include "kademlia/kademlia/Search.h"
 #include "kademlia/routing/RoutingZone.h"
 #include "ClientList.h"
+#include "updownclient.h"                        // Needed for CUpDownClient (buddy route)
 #include "KadCallbackPolicy.h"                   // Needed for DirectCallbackAvailable
 #include "kademlia/kademlia/UDPFirewallTester.h" // Needed for CUDPFirewallTester
 #ifdef ENABLE_IPV6
@@ -1742,6 +1743,8 @@ bool CSharedFileList::SendListToServer()
 	// Published means offered to the connection, not acknowledged as indexed.
 	// Only mark records when ServerConnect accepts the packet for this connection.
 	if (theApp->serverconnect->SendPacket(packet, true, socket)) {
+		theStats::AddPublishEvent(EPublishEvent::Ed2kOfferListSent);
+		theStats::AddPublishEvent(EPublishEvent::Ed2kFileOffered, count);
 		publication.Sent(GetTickCount64());
 		if (socket->AwaitingOfferFilesAdvertisement()) {
 			publication.SentBeforeAdvertisement(count);
@@ -1857,6 +1860,47 @@ SKadPublishFacts CSharedFileList::CurrentKadPublishFacts()
 #endif
 	}
 	return facts;
+}
+
+CSharedFileList::SKadSourceRoute CSharedFileList::CurrentKadSourceRoute()
+{
+	SKadSourceRoute route{ DecideKadSourcePublish(CurrentKadPublishFacts()) };
+	if (route.mode == EKadSourcePublish::Buddy) {
+		if (const CUpDownClient *buddy = theApp->clientlist->GetBuddy()) {
+			route.buddyIP = buddy->GetIP();
+			route.buddyPort = buddy->GetUDPPort();
+		}
+	}
+	return route;
+}
+
+CSharedFileList::SPublishingState CSharedFileList::GetPublishingState() const
+{
+	const SKadSourceRoute route = CurrentKadSourceRoute();
+	const uint32 now = static_cast<uint32>(time(nullptr));
+	SPublishingState state;
+	wxMutexLocker lock(list_mut);
+	for (const auto &entry : m_Files_map) {
+		const CKnownFile *file = entry.second;
+		++state.shared;
+		if (file->GetPublishedED2K()) {
+			++state.ed2kOffered;
+		}
+		if (KadSourceEntriesLive(route.mode,
+			    file->GetKadSourceAckTime(),
+			    file->GetKadSourceAckBuddyIP(),
+			    file->GetKadSourceAckBuddyPort(),
+			    now,
+			    KADEMLIAREPUBLISHTIMES,
+			    route.buddyIP,
+			    route.buddyPort)) {
+			++state.kadPublished;
+			if (file->GetKadSourceAckNodes() >= 5) {
+				++state.kadPublishedWell;
+			}
+		}
+	}
+	return state;
 }
 
 void CSharedFileList::Publish()
@@ -2010,6 +2054,10 @@ void CSharedFileList::Publish()
 						nullptr;
 					if (theLogger.IsEnabled(logKadPublish)) {
 						metrics.Attempt(started);
+					}
+					if (started) {
+						theStats::AddPublishEvent(
+							EPublishEvent::KadSourceLookupStarted);
 					}
 					AddDebugLogLineN(logKadPublish,
 						CFormat("Kad source publish attempt: target=%s "

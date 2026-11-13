@@ -25,14 +25,19 @@ LONG_AGO = 1577836800  # 2020-01-01, well past the TTL
 NEW, DOWNLOADED = 0, 1
 
 
-def known_met(file_hash, name, size):
+def known_record(file_hash, name, size, last_seen=LONG_AGO, extra_tags=()):
     """One record, as CKnownFile::WriteToFile lays it out, for a file under one part."""
     name = name.encode()
-    tags = (bytes([0x82, 0x01]) + struct.pack('<H', len(name)) + name  # FT_FILENAME
-            + bytes([0x83, 0x02]) + struct.pack('<I', size)  # FT_FILESIZE
-            + bytes([0x83, 0x28]) + struct.pack('<I', LONG_AGO))  # FT_LASTSEEN
-    record = struct.pack('<I', LONG_AGO) + file_hash + struct.pack('<H', 0) + struct.pack('<I', 3) + tags
-    return b'\x0e' + struct.pack('<I', 1) + record
+    tags = [bytes([0x82, 0x01]) + struct.pack('<H', len(name)) + name,  # FT_FILENAME
+            bytes([0x83, 0x02]) + struct.pack('<I', size),  # FT_FILESIZE
+            bytes([0x83, 0x28]) + struct.pack('<I', last_seen),  # FT_LASTSEEN
+            *extra_tags]
+    return (struct.pack('<I', last_seen) + file_hash + struct.pack('<H', 0)
+            + struct.pack('<I', len(tags)) + b''.join(tags))
+
+
+def known_met(*records):
+    return b'\x0e' + struct.pack('<I', len(records)) + b''.join(records)
 
 
 def search_result(file_hash, name):
@@ -99,7 +104,7 @@ def run(binary, root):
     # The fake server is on loopback, which only an unfiltered LAN setting dials.
     write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToED2K=1,
                      FilterLanIPs=0)
-    (root / 'known.met').write_bytes(known_met(FORGOTTEN, 'forgotten.bin', 4096))
+    (root / 'known.met').write_bytes(known_met(known_record(FORGOTTEN, 'forgotten.bin', 4096)))
 
     # The prune only runs after the first share scan, and the shutdown save runs it.
     with running_daemon(binary, root, ports, server_udp=True) as (proc, ec):
