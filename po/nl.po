@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-11 17:24+0000\n"
+"PO-Revision-Date: 2026-11-12 10:38+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -4573,12 +4573,11 @@ msgstr "Gebruikers verbonden met de huidige server en een schatting van het tota
 
 #: src/muuli_wdr.cpp
 msgid "Up:"
-msgstr ""
+msgstr "Up:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Down:"
-msgstr "Download: "
+msgstr "Down:"
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -4587,10 +4586,6 @@ msgstr "Toont de verbonden status en actieve overdrachten. Rode pijlen geven aan
 #: src/muuli_wdr.cpp
 msgid "Not Connected ..."
 msgstr "Niet verbonden ..."
-
-#: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr "Server nu mee verbonden."
 
 #: src/muuli_wdr.cpp
 msgid "Search"
@@ -7028,6 +7023,10 @@ msgstr "Buddygegevensopvraag"
 msgid "NAT traversal (QUIC)"
 msgstr "NAT traversal (QUIC)"
 
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
+msgstr ""
+
 #: src/Preferences.cpp
 msgid "no options available"
 msgstr "geen opties beschikbaar"
@@ -9017,9 +9016,8 @@ msgid "Average file size: %s"
 msgstr "Gemiddelde bestandsgrootte: %s"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Diagnostics"
-msgstr "Opzoekingsdiagnostiek"
+msgstr "Diagnostiek"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -10698,6 +10696,9 @@ msgstr "Kon verouderde ECPassword niet vergelijken met ECPasswordVerifier. Exter
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migreren van een vernaderde ECPassword na downgrade. De vorige verificatie authenticeert deze uitvoer niet meer."
+
+#~ msgid "Currently connected server."
+#~ msgstr "Server nu mee verbonden."
 
 #~ msgid "Up: 0.0 | Down: 0.0"
 #~ msgstr "Up: 0.0 | Down: 0.0"

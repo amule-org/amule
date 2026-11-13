@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-12 09:15+0000\n"
+"PO-Revision-Date: 2026-11-13 08:22+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -23,7 +23,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -4573,12 +4573,11 @@ msgstr "当前服务器上的用户和估算总用户数。"
 
 #: src/muuli_wdr.cpp
 msgid "Up:"
-msgstr ""
+msgstr "上传："
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Down:"
-msgstr "下载: "
+msgstr "下载:"
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -4587,10 +4586,6 @@ msgstr "显示当前连接状态及当前传送状态。红色箭头表示未连
 #: src/muuli_wdr.cpp
 msgid "Not Connected ..."
 msgstr "未连接..."
-
-#: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr "现在已连接的服务器。"
 
 #: src/muuli_wdr.cpp
 msgid "Search"
@@ -7027,6 +7022,10 @@ msgstr "搭档信息拉取"
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
 msgstr "NAT 穿透（QUIC）"
+
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
+msgstr "跳过未知来源交换标签"
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -10690,6 +10689,9 @@ msgstr "无法将旧的 ECPassword 和 ECPasswordVerifier 进行比较；拒绝�
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再对本次运行进行身份认证。"
+
+#~ msgid "Currently connected server."
+#~ msgstr "现在已连接的服务器。"
 
 #~ msgid "Up: 0.0 | Down: 0.0"
 #~ msgstr "上传: 0.0 | 下载: 0.0"

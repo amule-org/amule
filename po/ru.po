@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-12 09:15+0000\n"
+"PO-Revision-Date: 2026-11-13 00:41+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -23,7 +23,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AboutDialog.cpp
@@ -4607,12 +4607,11 @@ msgstr "Пользователи, подключённые к текущему �
 
 #: src/muuli_wdr.cpp
 msgid "Up:"
-msgstr ""
+msgstr "Отдача:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Down:"
-msgstr "Загрузка: "
+msgstr "Скачивание:"
 
 # Тултип. Лучше оставить как можно более коротким (не все системы автоматом
 # делают их многострочными ;-))
@@ -4623,10 +4622,6 @@ msgstr "Отображает статус подключения и активн
 #: src/muuli_wdr.cpp
 msgid "Not Connected ..."
 msgstr "Не подключён…"
-
-#: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr "Сейчас подключён к серверу."
 
 #: src/muuli_wdr.cpp
 msgid "Search"
@@ -6060,7 +6055,7 @@ msgstr "Нажмите здесь, чтобы применить изменен�
 
 #: src/muuli_wdr.cpp
 msgid "Reset any changes made to the preferences."
-msgstr "Сбросить все изменения, внесенные вами."
+msgstr "Сбросить все изменения, сделанные в настройках."
 
 #: src/muuli_wdr.cpp
 msgid "Incoming Dir"
@@ -7078,6 +7073,10 @@ msgstr "Запрос информации о друге"
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
 msgstr "Обход NAT (QUIC)"
+
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
+msgstr "Пропускает неизвестные теги обмена источниками"
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -10781,6 +10780,9 @@ msgstr "Не удалось сравнить устаревший ECPassword с 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Выполняется миграция изменённого устаревшего ECPassword после отката версии; предыдущий верификатор больше не действует в этом запуске."
+
+#~ msgid "Currently connected server."
+#~ msgstr "Сейчас подключён к серверу."
 
 #~ msgid "Up: 0.0 | Down: 0.0"
 #~ msgstr "Отд: 0,0 | Заг: 0,0"
