@@ -4114,6 +4114,20 @@ void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID, bool fromKad)
 	md4cpy(m_achBuddyID, pucBuddyID);
 }
 
+void CUpDownClient::AdoptSourceOrigins(unsigned mask)
+{
+	const unsigned added = mask & ~m_sourceFromMask;
+	if (added == 0) {
+		return;
+	}
+	// A source gains its first channel on the way in, which is not a second sighting.
+	const bool hadChannel = m_sourceFromMask != 0;
+	m_sourceFromMask |= added;
+	if (hadChannel) {
+		theStats::AddSourceRouteEvent(ESourceRouteEvent::OriginGained);
+	}
+}
+
 void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 {
 	// Every merge ends in Safe_Delete() of the duplicate, and an incoming hello takes only this

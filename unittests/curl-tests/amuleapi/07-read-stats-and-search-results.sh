@@ -75,7 +75,7 @@ else
 		'/stats/tree has no IPv6 diagnostics without IPv6'
 fi
 _assert_json_eq '[.nodes[] | select(.key == "diagnostics") | .children[] | select(.key == "source_routes") | .children[].key] | join(" ")' \
-	'source_routes_next_route source_routes_fallback_server_route source_routes_fallback_ipv4 source_routes_fallback_ipv6 source_routes_chain_restored source_routes_reached_after_failure source_routes_merge_took_route source_routes_merge_kept_fallback source_routes_other_host_refused source_routes_other_host_kept_apart' \
+	'source_routes_next_route source_routes_fallback_server_route source_routes_fallback_ipv4 source_routes_fallback_ipv6 source_routes_chain_restored source_routes_reached_after_failure source_routes_merge_took_route source_routes_merge_kept_fallback source_routes_origin_gained source_routes_other_host_refused source_routes_other_host_kept_apart' \
 	'/stats/tree lists the source route diagnostics'
 _assert_json_eq '[.. | objects | select(.key? == "source_routes_next_route") | .values[0].type] | .[0]' \
 	integer '/stats/tree source route counters are integers'

@@ -1257,6 +1257,7 @@ void CStatistics::InitStatsTree()
 			{ "Sources Reached After a Failed Route: %s", "source_routes_reached_after_failure" },
 			{ "Copies That Added a Route: %s", "source_routes_merge_took_route" },
 			{ "Copies Kept Only as a Fallback: %s", "source_routes_merge_kept_fallback" },
+			{ "Sources That Gained Another Origin: %s", "source_routes_origin_gained" },
 			{ "Other Hosts Refused on an Unproven Route: %s",
 				"source_routes_other_host_refused" },
 			{ "Other Hosts Kept Apart From a Source: %s", "source_routes_other_host_kept_apart" },

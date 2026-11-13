@@ -167,6 +167,7 @@ enum class ESourceRouteEvent
 	ReachedAfterFailure,
 	MergeTookRoute,
 	MergeKeptFallback,
+	OriginGained,
 	OtherHostRefused,
 	OtherHostKeptApart,
 	Count
