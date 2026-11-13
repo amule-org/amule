@@ -27,7 +27,7 @@
 
 #include "DeadSourceKey.h"
 #include "NetworkAddress.h"
-#include "NetworkFunctions.h" // Needed for IsLowID
+#include "NetworkFunctions.h" // Needed for IsLowID and IsHighIDOf
 #include "SourceRoutePolicy.h"
 
 #include <algorithm>
@@ -245,11 +245,11 @@ inline void ApplySourceRouteMerge(
 	}
 }
 
-//! Whether the source is known at this IPv4: its own address or its last-resort IPv4.
-inline bool KnownAtIPv4(const SSourceRoutes &routes, std::uint32_t ip)
+//! Whether @a id is the HighID of an IPv4 the source is known at: its own or its last-resort IPv4.
+inline bool IsHighIDOfKnownIPv4(const SSourceRoutes &routes, std::uint32_t id)
 {
-	return ip != 0 && (routes.route.address.ToIPv4NetworkOrderOrZero() == ip ||
-				  routes.lastResortIPv4.address.ToIPv4NetworkOrderOrZero() == ip);
+	return IsHighIDOf(id, routes.route.address.ToIPv4NetworkOrderOrZero()) ||
+	       IsHighIDOf(id, routes.lastResortIPv4.address.ToIPv4NetworkOrderOrZero());
 }
 
 /**
@@ -268,7 +268,8 @@ inline SSourceRouteMerge MergeSourceRoutes(SSourceRoutes &routes,
 	const SSourceRoutes *chainStart = nullptr)
 {
 	if (facts.incomingServerLowID &&
-		(KnownAtIPv4(routes, incoming.id) || (chainStart && KnownAtIPv4(*chainStart, incoming.id)))) {
+		(IsHighIDOfKnownIPv4(routes, incoming.id) ||
+			(chainStart && IsHighIDOfKnownIPv4(*chainStart, incoming.id)))) {
 		facts.incomingServerLowID = false;
 		facts.incomingHighIDIPv4 = true;
 		incoming.address = CNetworkAddress::FromIPv4NetworkOrder(incoming.id);
