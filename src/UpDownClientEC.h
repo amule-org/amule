@@ -26,10 +26,11 @@
 #ifndef UPDOWNCLIENTEC_H
 #define UPDOWNCLIENTEC_H
 
-#include <ec/cpp/ECID.h>      // Needed for CECID
-#include "BitVector.h"        // Needed for BitVector
-#include "ClientRef.h"        // Needed for debug defines
-#include "PeerCapabilities.h" // Needed for CPeerCapabilities
+#include <ec/cpp/ECID.h>       // Needed for CECID
+#include "BitVector.h"         // Needed for BitVector
+#include "ClientRef.h"         // Needed for debug defines
+#include "PeerCapabilities.h"  // Needed for CPeerCapabilities
+#include "SourceRoutePolicy.h" // Needed for the EC_TAG_CLIENT_CONTACT_ROUTE helpers
 
 class CKnownFile;
 class CPartFile;
@@ -120,6 +121,18 @@ public:
 	const wxString &GetSoftStr() const { return m_clientSoftString; }
 	const wxString &GetSoftVerStr() const { return m_clientVerString; }
 	ESourceFrom GetSourceFrom() const { return m_nSourceFrom; }
+	int GetContactRoute() const { return m_contactRoute; }
+	//! Unpacks EC_TAG_CLIENT_CONTACT_ROUTE, as the core packed it.
+	void SetContactRoute(std::uint8_t packed)
+	{
+		m_contactRoute = static_cast<int>(UnpackContactRoute(packed));
+		m_routeUnproven = ContactRouteIsUnproven(packed);
+		m_identityFromFallback = ContactRouteFromFallback(packed);
+		m_contactOverIPv6 = ContactRouteOverIPv6(packed);
+	}
+	bool IsIdentityFromFallback() const { return m_identityFromFallback; }
+	bool IsRouteUnproven() const { return m_routeUnproven; }
+	bool IsContactOverIPv6() const { return m_contactOverIPv6; }
 	uint64 GetTransferredDown() const { return m_nTransferredDown; }
 	uint64 GetTransferredUp() const { return m_nTransferredUp; }
 	uint32 GetUploadDatarate() const { return m_nUpDatarate; }
@@ -195,6 +208,11 @@ private:
 	wxString m_clientSoftString;
 	wxString m_clientVerString;
 	ESourceFrom m_nSourceFrom;
+	// Unpacked from EC_TAG_CLIENT_CONTACT_ROUTE; zero on a core that does not send it.
+	int m_contactRoute = 0;
+	bool m_identityFromFallback = false;
+	bool m_routeUnproven = false;
+	bool m_contactOverIPv6 = false;
 	uint64 m_nTransferredDown;
 	uint64 m_nTransferredUp;
 	uint32 m_nUpDatarate;

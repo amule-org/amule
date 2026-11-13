@@ -26,6 +26,8 @@
 
 #include "DataToText.h"
 #include "Constants.h"
+#include "SourceRoutePolicy.h" // Needed for EContactRouteReport
+#include <common/Format.h>     // Needed for CFormat
 #include <protocol/ed2k/ClientSoftware.h>
 
 wxString PriorityToStr(int priority, bool isAuto)
@@ -195,6 +197,53 @@ wxString OriginToText(unsigned int source_from)
 	default:
 		return wxTRANSLATE("Unknown");
 	}
+}
+
+/**
+ * The way a source is being contacted, as a noun phrase for ContactRouteStatus()'s sentences.
+ * Empty before the first contact attempt, and for a route this build does not know.
+ */
+wxString ContactRouteToText(unsigned int route)
+{
+	switch ((EContactRouteReport)route) {
+	case EContactRouteReport::Dial:
+		return wxTRANSLATE("a direct connection");
+	case EContactRouteReport::DirectUdpCallback:
+		return wxTRANSLATE("a direct callback");
+	case EContactRouteReport::ServerCallback:
+		return wxTRANSLATE("our server");
+	case EContactRouteReport::KadBuddy:
+		return wxTRANSLATE("the Kad buddy");
+	case EContactRouteReport::ForeignNatCallback:
+		return wxTRANSLATE("the source's own server");
+	case EContactRouteReport::ServerHolePunch:
+		return wxTRANSLATE("a server hole punch");
+	case EContactRouteReport::LugdunumCallback:
+		return wxTRANSLATE("a Lugdunum callback");
+	case EContactRouteReport::None:
+		break;
+	}
+	return wxEmptyString;
+}
+
+/**
+ * What the source list says while a contact is in flight: the route, and whether it is one the
+ * source kept for when the others failed, or one no hello has proved. A fallback is always
+ * unproven as well, so the two never have to be said together.
+ */
+wxString ContactRouteStatus(unsigned int route, bool unproven, bool fromFallback)
+{
+	const wxString name = wxGetTranslation(ContactRouteToText(route));
+	if (name.IsEmpty()) {
+		return wxEmptyString;
+	}
+	if (fromFallback) {
+		return CFormat(_("Connecting via %s, on a fallback route")) % name;
+	}
+	if (unproven) {
+		return CFormat(_("Connecting via %s, on an unproven route")) % name;
+	}
+	return CFormat(_("Connecting via %s")) % name;
 }
 
 wxString GetConversionState(unsigned int state)

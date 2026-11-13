@@ -412,6 +412,8 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .badge.stopped { color: var(--bad); border-color: var(--bad); }
 .badge.error { color: var(--bad); border-color: var(--bad); }
 .badge.waiting { color: var(--warn); border-color: var(--warn); }
+/* The contact route beside the download-state badge, as the desktop source list words it. */
+.route-note { color: var(--text-dim); font-size: 12px; margin-left: 6px; }
 
 /* --- placeholders --- */
 .placeholder {

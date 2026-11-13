@@ -392,8 +392,12 @@ struct ClientSnapshot
 	std::string server_ip;          // dotted-quad; "" when unknown/0
 	std::uint16_t server_port = 0;
 	std::string server_name;
-	std::uint16_t kad_port = 0; // 0 => Kad not connected for this peer
-	std::string source_origin;  // "local_server" | "remote_server" | "kad" | "source_exchange" | ...
+	std::uint16_t kad_port = 0;  // 0 => Kad not connected for this peer
+	std::string source_origin;   // "local_server" | "remote_server" | "kad" | "source_exchange" | ...
+	std::string contact_route;   // "dial" | "direct_udp_callback" | "server_callback" | ...; "" => none
+	bool route_unproven = false; // the route comes from a record no hello has proved
+	bool route_from_fallback = false;      // the IPv4 identity came from a fallback route
+	bool route_ipv6 = false;               // the route is a dial to the peer's IPv6 address
 	std::uint32_t parts_offered_count = 0; // count of parts the peer has (EC_TAG_CLIENT_AVAILABLE_PARTS)
 	bool has_parts_offered_count = false;  // false => tag absent, emitted as null
 	std::string client_mod_name;           // EC_TAG_CLIENT_MOD_VERSION

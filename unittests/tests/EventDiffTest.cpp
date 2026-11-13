@@ -2255,6 +2255,8 @@ TEST(EventDiff, ClientEventNullsOptionalStringsThatNeverArrived)
 		"download_file_hash",
 		"obfuscation_state",
 		"source_origin",
+		// null until a contact has been attempted, and on a daemon older than the tag.
+		"contact_route",
 		"client_mod_name" };
 	for (const char *key : nulled) {
 		ASSERT_TRUE(payload.find(std::string("\"") + key + "\":null") != std::string::npos);

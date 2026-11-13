@@ -2178,6 +2178,7 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 	if (now >= m_nextForeignNatCallbackRetry) {
 		m_nextForeignNatCallbackRetry = now + NatServerHolePunch::kForeignRequestTimeoutMs;
 		if (TrySendForeignNatCallbackRequest()) {
+			NoteContactStep(EContactRouteReport::ForeignNatCallback);
 			return;
 		}
 	}
@@ -2187,12 +2188,14 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 	}
 	if (!m_lowIdHolePunchRequested && TrySendLowIdHolePunchRequest()) {
 		m_lowIdHolePunchRequested = true;
+		NoteContactStep(EContactRouteReport::ServerHolePunch);
 	}
 	if (m_holePunchFallback.IsDue(now)) {
 		const bool requested =
 			TrySendLugdunumNatCallbackRequest() || m_lugdunumCallbackAwaitsServerKey;
 		m_holePunchFallback.OnFallback(requested, now);
 		if (requested) {
+			NoteContactStep(EContactRouteReport::LugdunumCallback);
 			AddDebugLogLineN(logClient,
 				CFormat("Hole punch to source %u failed, trying the Lugdunum callback") %
 					GetUserIDHybrid());
@@ -2296,7 +2299,7 @@ bool CUpDownClient::StartKadBuddyCallback()
 		}
 	}
 	SetDownloadState(DS_WAITCALLBACKKAD);
-	m_sourceRoute = ESourceRoute::KadBuddy;
+	StartSourceRoute(ESourceRoute::KadBuddy);
 	return true;
 }
 
@@ -2557,13 +2560,15 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 				// Sent once per source: a DS_LOWTOLOWIP source is not asked again.
 				if (TrySendForeignNatCallbackRequest()) {
 					// The source is on another server, which wakes it for us.
+					NoteContactStep(EContactRouteReport::ForeignNatCallback);
 				} else if (NatServerHolePunch::ShouldRequestLowIdHolePunch(
 						   BuildLowIdHolePunchRequestFacts(*this))) {
 					if (TrySendLowIdHolePunchRequest()) {
 						m_lowIdHolePunchRequested = true;
+						NoteContactStep(EContactRouteReport::ServerHolePunch);
 					}
-				} else {
-					TrySendLugdunumNatCallbackRequest();
+				} else if (TrySendLugdunumNatCallbackRequest()) {
+					NoteContactStep(EContactRouteReport::LugdunumCallback);
 				}
 #endif
 				SetDownloadState(DS_LOWTOLOWIP);
@@ -2640,7 +2645,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			GetUserHash().GetHash(),
 			false,
 			0);
-		m_sourceRoute = route;
+		StartSourceRoute(route);
 	} else if (HasLowID() && !dialIPv6) { // LOWID
 		// Set where a packet actually goes out. Several of the paths below reach the end having
 		// sent nothing -- a source we are merely queued at, a peer that is not a download source, a
@@ -2661,7 +2666,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		if (route == ESourceRoute::ServerCallback) {
 			SendClassicCallbackRequest();
 			SetDownloadState(DS_WAITCALLBACK);
-			m_sourceRoute = route;
+			StartSourceRoute(route);
 			contacted = true;
 		} else if (GetUploadState() == US_NONE && (!GetRemoteQueueRank() || m_bReaskPending)) {
 			if (route == ESourceRoute::KadBuddy) {
@@ -2673,7 +2678,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 				   GetDownloadState() == DS_WAITCALLBACK) {
 				// Its own server can wake it for us, whatever our ID.
 				if (TrySendForeignNatCallbackRequest()) {
-					m_sourceRoute = route;
+					StartSourceRoute(route);
 					return EContactResult::Contacting;
 				}
 				// Held back by the request limits: asked again on reask.
@@ -2707,7 +2712,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			return EContactResult::Declined;
 		}
 	} else { // HIGHID
-		m_sourceRoute = ESourceRoute::Dial;
+		StartSourceRoute(ESourceRoute::Dial, dialIPv6);
 #ifdef AMULE_UTP_TRANSPORT
 		IUtpContext *utp = theApp->clientudp->GetUtpContext();
 		// Only a port learned from this peer is a remote endpoint. Our own

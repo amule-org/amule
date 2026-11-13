@@ -381,6 +381,20 @@ private:
 	SContactFacts ContactFactsFor(const CNetworkAddress &address) const;
 	//! The facts NextSourceRoute() decides on. @a callbackOnly: a LowID reached only by a callback.
 	SSourceRouteFacts SourceRouteFacts(bool callbackOnly) const;
+	//! Notes the route a contact just went out on. m_sourceRoute ends with the attempt, the
+	//! reported one stays for the source list. @a overIPv6: the dial goes to the peer's IPv6.
+	void StartSourceRoute(ESourceRoute route, bool overIPv6 = false)
+	{
+		m_sourceRoute = route;
+		m_lastContactRoute = ReportedRoute(route);
+		m_lastContactOverIPv6 = overIPv6;
+	}
+	//! Notes a NAT-T step the route chain does not pick: it has no route of its own to fail.
+	void NoteContactStep(EContactRouteReport step)
+	{
+		m_lastContactRoute = step;
+		m_lastContactOverIPv6 = false;
+	}
 	//! The callback through the Kad buddy, or the search for its address. Whether a request went out.
 	bool StartKadBuddyCallback();
 	//! After a contact that never completed the hellos: whether another route is left to try.
@@ -875,7 +889,14 @@ public:
 	{
 		m_failedSourceRoutes = 0;
 		m_refreshedSourceRoutes = 0;
+		m_lastContactRoute = EContactRouteReport::None;
+		m_lastContactOverIPv6 = false;
 	}
+	//! The route of the contact in flight, or the last one tried. EContactRouteReport, as an int
+	//! for CClientRef, which both client classes share.
+	int GetContactRoute() const { return static_cast<int>(m_lastContactRoute); }
+	//! That route is a dial to the peer's IPv6 address.
+	bool IsContactOverIPv6() const { return m_lastContactOverIPv6; }
 	// One key per address this source can be reached on, so a later copy under any of them is
 	// known dead once this one is.
 	std::vector<CDeadSourceKey> DeadSourceKeys() const;
@@ -1277,6 +1298,11 @@ private:
 	uint16 m_nBuddyCandidatePort = 0;
 	// The route of the contact in flight, and the routes that failed since the last hello.
 	ESourceRoute m_sourceRoute{};
+	// The same route, kept after the attempt ends so the source list can show it, plus the two
+	// NAT-T steps the chain does not pick.
+	EContactRouteReport m_lastContactRoute{};
+	// The route is a dial to the peer's IPv6 address.
+	bool m_lastContactOverIPv6 = false;
 	unsigned m_failedSourceRoutes = 0;
 	// Routes our server gave new data for during an attempt: that attempt's failure says nothing
 	// about the new data.

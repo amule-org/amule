@@ -64,6 +64,80 @@ inline const char *SourceRouteName(ESourceRoute route)
 	return "none";
 }
 
+/**
+ * What the GUIs and the API are told about how a source is being reached.
+ *
+ * The first values are ESourceRoute's, one for one. The two NAT-T steps below them are not routes
+ * NextSourceRoute() picks: while we are LowID and the source is too, the hole punch and the
+ * Lugdunum callback are driven by the NAT-T code, which asks the source's server rather than
+ * choosing among this source's own routes. They stay out of ESourceRoute so they never enter the
+ * failed-route mask or the chain.
+ */
+enum class EContactRouteReport : std::uint8_t
+{
+	None = 0,
+	Dial = 1,
+	DirectUdpCallback = 2,
+	ServerCallback = 3,
+	KadBuddy = 4,
+	ForeignNatCallback = 5,
+	//! Our server punches a hole to the source's server.
+	ServerHolePunch = 6,
+	//! The source's own server wakes it, on a Lugdunum extension.
+	LugdunumCallback = 7,
+};
+
+inline EContactRouteReport ReportedRoute(ESourceRoute route)
+{
+	static_assert(static_cast<unsigned>(EContactRouteReport::Dial) ==
+				      static_cast<unsigned>(ESourceRoute::Dial) &&
+			      static_cast<unsigned>(EContactRouteReport::ForeignNatCallback) ==
+				      static_cast<unsigned>(ESourceRoute::ForeignNatCallback),
+		"the reported values must match ESourceRoute one for one");
+	return static_cast<EContactRouteReport>(route);
+}
+
+//! EC_TAG_CLIENT_CONTACT_ROUTE: the route in the low nibble, its flags above it.
+constexpr std::uint8_t ContactRouteMask = 0x0F;
+constexpr std::uint8_t ContactRouteUnprovenBit = 0x10;
+constexpr std::uint8_t ContactRouteFallbackBit = 0x20;
+constexpr std::uint8_t ContactRouteIPv6Bit = 0x40;
+
+inline std::uint8_t PackContactRoute(
+	EContactRouteReport route, bool unproven, bool identityFromFallback, bool overIPv6)
+{
+	static_assert(static_cast<unsigned>(EContactRouteReport::LugdunumCallback) <= ContactRouteMask,
+		"every route must fit in the low nibble");
+	return static_cast<std::uint8_t>(
+		static_cast<std::uint8_t>(route) | (unproven ? ContactRouteUnprovenBit : 0) |
+		(identityFromFallback ? ContactRouteFallbackBit : 0) | (overIPv6 ? ContactRouteIPv6Bit : 0));
+}
+
+//! None for a route a newer daemon knows and this build does not.
+inline EContactRouteReport UnpackContactRoute(std::uint8_t packed)
+{
+	const std::uint8_t route = packed & ContactRouteMask;
+	return route <= static_cast<std::uint8_t>(EContactRouteReport::LugdunumCallback)
+		       ? static_cast<EContactRouteReport>(route)
+		       : EContactRouteReport::None;
+}
+
+inline bool ContactRouteIsUnproven(std::uint8_t packed)
+{
+	return (packed & ContactRouteUnprovenBit) != 0;
+}
+
+inline bool ContactRouteFromFallback(std::uint8_t packed)
+{
+	return (packed & ContactRouteFallbackBit) != 0;
+}
+
+//! The route is a dial to the peer's IPv6 address. A callback route never sets it.
+inline bool ContactRouteOverIPv6(std::uint8_t packed)
+{
+	return (packed & ContactRouteIPv6Bit) != 0;
+}
+
 struct SSourceRouteFacts
 {
 	// A LowID that is not dialled over IPv6, so only a callback reaches it.
