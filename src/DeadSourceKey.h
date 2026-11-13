@@ -52,6 +52,14 @@ public:
 		       (!IsLowID(m_hybridID) || m_serverIP == other.m_serverIP);
 	}
 
+	//! Exact equality over every field. Matches() is not transitive: it accepts either port.
+	friend bool operator==(const CDeadSourceKey &a, const CDeadSourceKey &b)
+	{
+		return a.m_identity == b.m_identity && a.m_hybridID == b.m_hybridID &&
+		       a.m_tcpPort == b.m_tcpPort && a.m_serverIP == b.m_serverIP &&
+		       a.m_kadPort == b.m_kadPort;
+	}
+
 	friend bool operator<(const CDeadSourceKey &a, const CDeadSourceKey &b)
 	{
 		if (a.IsNativeIPv6() != b.IsNativeIPv6())

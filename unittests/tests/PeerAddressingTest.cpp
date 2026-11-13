@@ -920,3 +920,80 @@ TEST(PeerAddressing, ConductIsChargedToTheLiveConnection)
 		    CNetworkAddress::FromString("203.0.113.9"));
 	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), kept) == kept);
 }
+
+TEST(PeerAddressing, AnUnprovenIdentityTracksTheHashAtTheSocket)
+{
+	const CNetworkAddress ipv4 = CNetworkAddress::FromIPv4NetworkOrder(0x0D0C0B0Au);
+	const CNetworkAddress ipv6 = CNetworkAddress::FromString("2001:4860:4860::8888");
+	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, ipv6, true) == ipv6);
+	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, ipv6, false) == ipv4);
+	// Without a socket nothing a hello proved is known, so nothing is tracked.
+	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, CNetworkAddress::Absent(), true).IsAbsent());
+	ASSERT_TRUE(PeerAddressing::TrackingAddress(ipv4, CNetworkAddress::Absent(), false) == ipv4);
+}
+
+TEST(PeerAddressing, AnUnprovenIdentityIsNeverCharged)
+{
+	const CNetworkAddress ipv4 = CNetworkAddress::FromIPv4NetworkOrder(0x0D0C0B0Au);
+	const CNetworkAddress ipv6 = CNetworkAddress::FromString("2001:4860:4860::8888");
+	ASSERT_TRUE(PeerAddressing::ConductAddress(ipv6, ipv4, true) == ipv6);
+	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), ipv4, true).IsAbsent());
+	ASSERT_TRUE(PeerAddressing::ConductAddress(CNetworkAddress::Absent(), ipv4, false) == ipv4);
+}
+
+TEST(PeerAddressing, AnotherHashOnAnUnprovenRouteIsAnotherHost)
+{
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(true, true, false) ==
+		    PeerAddressing::EHelloIdentity::OtherHost);
+}
+
+TEST(PeerAddressing, TheOwnHashOnAnUnprovenRouteProvesIt)
+{
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(true, true, true) ==
+		    PeerAddressing::EHelloIdentity::Proves);
+}
+
+TEST(PeerAddressing, AnotherHashOnAProvenRouteKeepsTheHashChangeCheck)
+{
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(false, true, false) ==
+		    PeerAddressing::EHelloIdentity::Usual);
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(false, true, true) ==
+		    PeerAddressing::EHelloIdentity::Usual);
+}
+
+TEST(PeerAddressing, NoEarlierHashChangesNothing)
+{
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(true, false, false) ==
+		    PeerAddressing::EHelloIdentity::Usual);
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(false, false, false) ==
+		    PeerAddressing::EHelloIdentity::Usual);
+}
+
+TEST(PeerAddressing, AnotherHashOnAnUnprovenRouteStaysApart)
+{
+	ASSERT_TRUE(PeerAddressing::DecideHelloAttach(true, true, false) ==
+		    PeerAddressing::EHelloAttach::KeepApart);
+}
+
+TEST(PeerAddressing, TheOwnHashOnAnUnprovenRouteAttaches)
+{
+	ASSERT_TRUE(
+		PeerAddressing::DecideHelloAttach(true, true, true) == PeerAddressing::EHelloAttach::Attach);
+}
+
+TEST(PeerAddressing, AnotherHashOnAProvenRouteAttaches)
+{
+	// The hello then goes through the usual hash-change ban.
+	ASSERT_TRUE(PeerAddressing::DecideHelloAttach(false, true, false) ==
+		    PeerAddressing::EHelloAttach::Attach);
+	ASSERT_TRUE(PeerAddressing::DecideHelloAttach(true, false, false) ==
+		    PeerAddressing::EHelloAttach::Attach);
+}
+
+TEST(PeerAddressing, ARecordIPv6CountsOnlyForTheAnswerOnOurDial)
+{
+	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(false, false, true));
+	ASSERT_FALSE(PeerAddressing::HelloRouteUnproven(false, true, true));
+	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(true, true, false));
+	ASSERT_FALSE(PeerAddressing::HelloRouteUnproven(false, false, false));
+}

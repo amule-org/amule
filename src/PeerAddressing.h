@@ -515,14 +515,36 @@ inline bool KeepsIPv4IdentityOnIPv6Hello(const CNetworkAddress &known, const CNe
 }
 
 /**
+ * Where a peer's user hash is tracked and checked for a change.
+ *
+ * Its identity, unless that is an address no hello has come from: an IPv4 a source took from a
+ * fallback route, kept by an IPv6 hello. A hash tracked there could get the host behind that IPv4
+ * banned for a hash change it never made, so the live socket's address is used instead.
+ */
+inline CNetworkAddress TrackingAddress(
+	const CNetworkAddress &userAddress, const CNetworkAddress &socketPeer, bool identityUnproven)
+{
+	if (!identityUnproven) {
+		return userAddress;
+	}
+	// Without a socket nothing is known that a hello proved: nothing is tracked.
+	return socketPeer.IsPresent() ? IndexKey(socketPeer) : CNetworkAddress::Absent();
+}
+
+/**
  * The address a verdict on a peer's conduct lands on: a ban, a corruption charge, an AICH vote.
  *
  * While connected it is the live socket's peer, because an IPv6 hello can keep an IPv4 identity it
  * never proved, and the blame must not reach the host behind that identity.
  */
-inline CNetworkAddress ConductAddress(const CNetworkAddress &socketPeer, const CNetworkAddress &userAddress)
+inline CNetworkAddress ConductAddress(
+	const CNetworkAddress &socketPeer, const CNetworkAddress &userAddress, bool identityUnproven = false)
 {
-	return socketPeer.IsPresent() ? IndexKey(socketPeer) : userAddress;
+	if (socketPeer.IsPresent()) {
+		return IndexKey(socketPeer);
+	}
+	// A ban must not land on an address no hello came from (TrackingAddress()).
+	return identityUnproven ? CNetworkAddress::Absent() : userAddress;
 }
 
 //! Whether one address is IPv4 (or mapped) and the other native IPv6.
@@ -560,6 +582,52 @@ inline bool IsSameHostAddress(const CNetworkAddress &known,
 		       a.TruncatedToPrefix(64) == b.TruncatedToPrefix(64);
 	};
 	return sameNative64(known, other) || sameNative64(advertisedIPv6, other);
+}
+
+//! What a hello says about the client object it arrived on.
+enum class EHelloIdentity
+{
+	//! Nothing to decide here: the usual hash checks apply, including the hash-change ban.
+	Usual,
+	//! The client's own hash answered on a route no hello had proved: that route is proven now.
+	Proves,
+	//! Another hash answered on such a route: another host, not a hash change.
+	OtherHost,
+};
+
+/**
+ * A route that came from a source record, not from a hello, can lead to another host: a stale or
+ * forged fallback address, or an advertised IPv6 a record named. A different hash there is that
+ * host's own, so it must not be banned as a hash change, nor take over this client.
+ */
+inline EHelloIdentity CheckHelloIdentity(bool routeUnproven, bool hadHash, bool sameHash)
+{
+	if (!routeUnproven || !hadHash) {
+		return EHelloIdentity::Usual;
+	}
+	return sameHash ? EHelloIdentity::Proves : EHelloIdentity::OtherHost;
+}
+
+//! Whether a hello is checked against an unproven route. A record IPv6 counts only for the answer
+//! on our own dial to it: an incoming hello did not come over that dial.
+inline bool HelloRouteUnproven(bool routeUnproven, bool inbound, bool dialingRecordIPv6)
+{
+	return routeUnproven || (!inbound && dialingRecordIPv6);
+}
+
+//! Whether an incoming hello takes over the known client it matched by address or ID.
+enum class EHelloAttach
+{
+	Attach,
+	//! Another host answered the known client's unproven route: it stays a client of its own, and
+	//! the known client is left as it was.
+	KeepApart,
+};
+
+inline EHelloAttach DecideHelloAttach(bool knownRouteUnproven, bool bothHashesValid, bool sameHash)
+{
+	return knownRouteUnproven && bothHashesValid && !sameHash ? EHelloAttach::KeepApart
+								  : EHelloAttach::Attach;
 }
 
 } // namespace PeerAddressing

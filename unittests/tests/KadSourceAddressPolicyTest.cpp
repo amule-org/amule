@@ -156,3 +156,31 @@ TEST(KadSourceAddressPolicy, EachMissingDialPermissionRefusesTheIPv6Contact)
 	proxied.proxyEnabled = true;
 	ASSERT_FALSE(ShouldContactKadSourceOverIPv6(proxied));
 }
+
+TEST(KadSourceAddressPolicy, AHighIDOfOursKeepsTheIPv6AsALastResort)
+{
+	for (std::uint8_t sourceType : { 3, 5, 6 }) {
+		SKadSourceFacts facts = ContactableOverIPv6();
+		facts.sourceType = sourceType;
+		facts.ourHelloID = 0x0A0B0C0Du;
+		ASSERT_FALSE(ShouldContactKadSourceOverIPv6(facts));
+		ASSERT_TRUE(ShouldKeepKadSourceIPv6AsLastResort(facts));
+	}
+}
+
+TEST(KadSourceAddressPolicy, AnIPv6ContactIsNoLastResort)
+{
+	ASSERT_FALSE(ShouldKeepKadSourceIPv6AsLastResort(ContactableOverIPv6()));
+}
+
+TEST(KadSourceAddressPolicy, ALastResortNeedsADialableAddressAndAFirewalledSource)
+{
+	SKadSourceFacts facts = ContactableOverIPv6();
+	facts.ourHelloID = 0x0A0B0C0Du;
+	facts.familyPermitted = false;
+	ASSERT_FALSE(ShouldKeepKadSourceIPv6AsLastResort(facts));
+	facts = ContactableOverIPv6();
+	facts.ourHelloID = 0x0A0B0C0Du;
+	facts.sourceType = 1;
+	ASSERT_FALSE(ShouldKeepKadSourceIPv6AsLastResort(facts));
+}

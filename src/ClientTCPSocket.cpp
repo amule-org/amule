@@ -2429,6 +2429,10 @@ bool CClientTCPSocket::PacketReceived(CPacket *packet)
 		exception = "InvalidPacket exception: " + err.what();
 	} catch (const wxString &error) {
 		exception = "error: " + (error.IsEmpty() ? wxString("Unknown error") : error);
+	} catch (const CHelloFromOtherHost &otherHost) {
+		// Not an error of this source: its route led elsewhere, so the next route is tried.
+		Disconnect(otherHost.reason);
+		return false;
 	}
 
 	if (!exception.IsEmpty()) {

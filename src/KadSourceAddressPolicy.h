@@ -56,13 +56,14 @@ struct SKadSourceFacts
  * across hosts and must not point us at local services. The dial itself goes through the same gate
  * as every native IPv6 contact.
  */
-inline bool ShouldContactKadSourceOverIPv6(const SKadSourceFacts &facts)
+inline bool IsKadSourceFirewalledOnIPv4(const SKadSourceFacts &facts)
 {
-	const bool firewalledOnIPv4 = facts.sourceType == 3 || facts.sourceType == 5 || facts.sourceType == 6;
-	const bool buddyless = (facts.sourceType == 3 || facts.sourceType == 5) && !facts.carriesBuddy;
-	if (!firewalledOnIPv4 || facts.ourHelloID == 0 || (!buddyless && !IsLowID(facts.ourHelloID))) {
-		return false;
-	}
+	return facts.sourceType == 3 || facts.sourceType == 5 || facts.sourceType == 6;
+}
+
+//! Whether the published IPv6 names a peer we may dial, whatever route is chosen.
+inline bool IsDialableKadSourceIPv6(const SKadSourceFacts &facts)
+{
 	if (!PeerAddressing::IsUsableTagIdentity(facts.publishedIPv6)) {
 		return false;
 	}
@@ -72,6 +73,27 @@ inline bool ShouldContactKadSourceOverIPv6(const SKadSourceFacts &facts)
 	contact.familyPermitted = facts.familyPermitted;
 	contact.proxyEnabled = facts.proxyEnabled;
 	return DecideContactRoute(contact) == EContactRoute::DialIPv6;
+}
+
+inline bool ShouldContactKadSourceOverIPv6(const SKadSourceFacts &facts)
+{
+	const bool buddyless = (facts.sourceType == 3 || facts.sourceType == 5) && !facts.carriesBuddy;
+	if (!IsKadSourceFirewalledOnIPv4(facts) || facts.ourHelloID == 0 ||
+		(!buddyless && !IsLowID(facts.ourHelloID))) {
+		return false;
+	}
+	return IsDialableKadSourceIPv6(facts);
+}
+
+/**
+ * Whether a firewalled source contacted on IPv4 keeps its published IPv6 as the route of last
+ * resort. A HighID of ours reaches it by its buddy or a direct callback first, so the
+ * eMuleAI ID replacement above costs nothing unless those fail.
+ */
+inline bool ShouldKeepKadSourceIPv6AsLastResort(const SKadSourceFacts &facts)
+{
+	return IsKadSourceFirewalledOnIPv4(facts) && !ShouldContactKadSourceOverIPv6(facts) &&
+	       IsDialableKadSourceIPv6(facts);
 }
 
 #endif // KAD_SOURCE_ADDRESS_POLICY_H
