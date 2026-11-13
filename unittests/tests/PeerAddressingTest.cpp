@@ -990,10 +990,22 @@ TEST(PeerAddressing, AnotherHashOnAProvenRouteAttaches)
 		    PeerAddressing::EHelloAttach::Attach);
 }
 
-TEST(PeerAddressing, ARecordIPv6CountsOnlyForTheAnswerOnOurDial)
+TEST(PeerAddressing, EveryAnswerOnOurDialIsChecked)
 {
-	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(false, false, true));
-	ASSERT_FALSE(PeerAddressing::HelloRouteUnproven(false, true, true));
-	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(true, true, false));
-	ASSERT_FALSE(PeerAddressing::HelloRouteUnproven(false, false, false));
+	// Whoever holds the address answers our dial, even on a route a hello proved.
+	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(false, false));
+	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(true, false));
+	ASSERT_TRUE(PeerAddressing::HelloRouteUnproven(true, true));
+	// An incoming hello on a proven route keeps the hash-change check.
+	ASSERT_FALSE(PeerAddressing::HelloRouteUnproven(false, true));
+}
+
+TEST(PeerAddressing, AnotherHashAnsweringOurDialIsAnotherHost)
+{
+	// A NAT neighbour, or a new owner of a recycled address, answered a route a hello proved.
+	const bool checked = PeerAddressing::HelloRouteUnproven(false, false);
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(checked, true, false) ==
+		    PeerAddressing::EHelloIdentity::OtherHost);
+	ASSERT_TRUE(PeerAddressing::CheckHelloIdentity(checked, true, true) ==
+		    PeerAddressing::EHelloIdentity::Proves);
 }

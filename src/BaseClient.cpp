@@ -541,8 +541,7 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	uint32 dwEmuleTags = 0;
 
 	CMD4Hash hash = data.ReadHash();
-	const bool routeUnproven = PeerAddressing::HelloRouteUnproven(
-		m_routeUnproven, inbound, m_dialingIPv6 && m_preserveIdentityOnHello && m_modIPv6FromRecord);
+	const bool routeUnproven = PeerAddressing::HelloRouteUnproven(m_routeUnproven, inbound);
 	switch (PeerAddressing::CheckHelloIdentity(routeUnproven, HasValidHash(), hash == GetUserHash())) {
 	case PeerAddressing::EHelloIdentity::OtherHost:
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
@@ -556,11 +555,11 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 		}
 		theStats::AddSourceRouteEvent(ESourceRouteEvent::OtherHostRefused);
 		AddDebugLogLineN(logSourceRoutes,
-			CFormat("Another host (hash %s) answered unproven route to source %s at %s") %
-				hash.Encode() % GetUserHash().Encode() %
+			CFormat("Another host (hash %s) answered the route to %s at %s") % hash.Encode() %
+				GetUserHash().Encode() %
 				(m_socket != nullptr ? m_socket->GetPeerAddress().ToWxString()
 						     : wxString("?")));
-		throw CHelloFromOtherHost{ "Another host answered an unproven route" };
+		throw CHelloFromOtherHost{ "Another host answered the route" };
 	case PeerAddressing::EHelloIdentity::Proves:
 		m_routeUnproven = false;
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {

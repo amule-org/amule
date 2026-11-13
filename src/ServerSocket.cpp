@@ -799,7 +799,22 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					achUserHash = data.ReadHash();
 				}
 
-				CUpDownClient *client = theApp->clientlist->FindClientByIP(dwIP, nPort);
+				// By the reported hash first: NAT neighbours can share an address and port.
+				CUpDownClient *client = nullptr;
+				if (size >= 23) {
+					for (const CClientRef &ref :
+						theApp->clientlist->GetClientsByHash(achUserHash)) {
+						CUpDownClient *known = ref.GetClient();
+						if (known != nullptr && known->GetIP() == dwIP &&
+							known->GetUserPort() == nPort) {
+							client = known;
+							break;
+						}
+					}
+				}
+				if (!client) {
+					client = theApp->clientlist->FindClientByIP(dwIP, nPort);
+				}
 
 				if (!client) {
 					client = new CUpDownClient(nPort, dwIP, 0, 0, 0, true, true);
