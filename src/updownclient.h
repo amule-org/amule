@@ -868,13 +868,14 @@ public:
 		// Every assignment widens the set: this is the one funnel, so no call site has to
 		// remember it, and a channel a copy came from survives that copy.
 		if (val != SF_NONE) {
-			m_sourceFromMask |= SourceFromBit(val);
+			AdoptSourceOrigins(SourceFromBit(val));
 		}
 	}
 	//! Every channel this source has been seen on, SourceFromBit() per ESourceFrom.
 	unsigned GetSourceOriginMask() const { return m_sourceFromMask; }
-	//! Takes the channels a duplicate copy was seen on, before that copy is deleted.
-	void AdoptSourceOrigins(unsigned mask) { m_sourceFromMask |= mask; }
+	//! Takes a channel this source was seen on: its own, or those of a duplicate copy before
+	//! that copy is deleted. Counts every channel beyond the first.
+	void AdoptSourceOrigins(unsigned mask);
 
 	/* Kad buddy support */
 	// ID
