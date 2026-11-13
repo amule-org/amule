@@ -3,19 +3,29 @@
 # that never runs stays "Expected" forever, so this one status stands in for
 # all of them.
 #
-# No job waits for the builds. A PR push sets the status to pending, and each
-# PR workflow that finishes re-checks the head commit; the last one sets
-# success or failure. A re-run that passes flips it to success.
+# No job waits for the builds. Each run predicts which PR workflows the head
+# commit starts, from the PR's changed files and the base branch's path
+# filters, and compares that with the runs that exist: pending while one is
+# missing or not finished, else failure or success. The PR push sets the first
+# status, and each PR workflow that finishes re-checks it. A PR that matches no
+# filter, such as a docs-only one, is green at once. A re-run that passes flips
+# it to success.
+#
+# The prediction is there because GitHub can create the PR's runs minutes
+# after pull_request_target fires. On #2489 the gate found no runs 30 s in,
+# set success, and auto-merge merged the PR with Build CI still running.
 #
 # pull_request_target and workflow_run, because a fork PR's pull_request token
-# cannot set statuses. Neither checks out the PR's code.
+# cannot set statuses. Neither checks out the PR's code: the path filters come
+# from the base branch.
 name: CI gate
 
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
-  # Keep every name slash-free: a name the trigger cannot resolve makes every
-  # completion a startup_failure.
+  # Every workflow with a pull_request trigger, or its finish never re-checks
+  # the status. Keep every name slash-free: a name the trigger cannot resolve
+  # makes every completion a startup_failure.
   workflow_run:
     workflows:
       - Build CI
@@ -23,49 +33,122 @@ on:
       - clang-tidy
       - I18n CI
       - Icons CI
+      - Media probe restrictions
     types: [completed]
 
 permissions:
   actions: read
+  contents: read
+  pull-requests: read
   statuses: write
 
 jobs:
   status:
     if: github.event_name == 'pull_request_target' || github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-slim
+    # One run per commit at a time, so a re-check that read older run states
+    # cannot post after one that read newer ones. Each run reads the current
+    # state, so a queued run that a newer one replaces loses nothing.
+    concurrency:
+      group: ci-gate-${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha }}
+      cancel-in-progress: false
+    # pipefail, so a failed API call stops the step instead of reading as no
+    # files or no runs.
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      SHA: ${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha }}
     steps:
-      - name: Set the status from the PR's workflow runs
+      - name: Find the PR
+        id: pr
         env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
           EVENT: ${{ github.event_name }}
-          SHA: ${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [ "$EVENT" = pull_request_target ]; then
+              number=$PR_NUMBER base=$PR_BASE
+          else
+              # A fork PR's workflow_run lists no pull requests. A PR whose
+              # head moved on has a newer commit to gate, so skip this one.
+              pr=$(gh api -X GET "repos/${REPO}/pulls" -f state=open -f head="${HEAD_OWNER}:${HEAD_BRANCH}" \
+                  --jq "[.[] | select(.head.sha == \"${SHA}\")][0] // empty | \"\(.number) \(.base.ref)\"")
+              read -r number base <<<"$pr" || true
+          fi
+          if [ -z "$number" ]; then
+              echo "No open PR has ${SHA} as its head"
+              exit 0
+          fi
+          echo "PR #${number} into ${base}"
+          echo "number=${number}" >>"$GITHUB_OUTPUT"
+          echo "base=${base}" >>"$GITHUB_OUTPUT"
+
+      - name: Check out the base branch's workflows
+        if: steps.pr.outputs.number
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.pr.outputs.base }}
+          sparse-checkout: .github/workflows
+          persist-credentials: false
+
+      - name: Set the status from the PR's workflow runs
+        if: steps.pr.outputs.number
+        env:
+          NUMBER: ${{ steps.pr.outputs.number }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          # The PR's pull_request runs start with this event; give them time
-          # to show up.
-          if [ "$EVENT" = pull_request_target ]; then
-              sleep 30
-          fi
+          # Renames count under both names.
+          files=$(gh api --paginate "repos/${REPO}/pulls/${NUMBER}/files?per_page=100" \
+              --jq '.[] | .filename, (.previous_filename // empty)' | jq -Rn '[inputs]')
+          shopt -s nullglob
+          workflows=$(yq ea -o=json -I0 '{"path": filename, "name": .name, "on": .on}' \
+              .github/workflows/*.yml .github/workflows/*.yaml | jq -s .)
+          # The PR workflows this commit starts. Only * and ** are understood:
+          # a filter with other glob syntax counts as matching, so the gate
+          # waits rather than passes early.
+          expected=$(jq -c --argjson files "$files" '
+              def triggers: if type == "string" then {(.): null}
+                  elif type == "array" then map({(.): null}) | add else . end;
+              def regex: "^" + (gsub("(?<c>[.^$|(){}\\\\])"; "\\\(.c)")
+                  | gsub("\\*\\*/"; "\u0001") | gsub("\\*\\*"; "\u0002") | gsub("\\*"; "[^/]*")
+                  | gsub("\u0001"; "(.*/)?") | gsub("\u0002"; ".*")) + "$";
+              # A later pattern overrides an earlier one, as in GitHub filters.
+              def matches($f): reduce .[] as $p (false;
+                  if $p | startswith("!") then (if $f | test($p[1:] | regex) then false else . end)
+                  elif $f | test($p | regex) then true else . end);
+              [.[] | select(.on | triggers | has("pull_request"))
+               | (.on | triggers | .pull_request // {}) as $t
+               | select(([$t.paths[]?, $t["paths-ignore"][]?] | any(test("[?+\\[\\]]")))
+                   or ($t.paths == null and $t["paths-ignore"] == null)
+                   or ($t.paths != null and any($files[] as $f | $t.paths | matches($f); .))
+                   or ($t["paths-ignore"] != null and any($files[] as $f | $t["paths-ignore"] | matches($f) | not; .)))
+               | {path, name: (.name // .path)}]' <<<"$workflows")
           # Latest run per workflow, so runs cancelled by a close and reopen
           # don't count. This workflow's own pull_request runs are from the
           # earlier gate, which waited for the builds.
           runs=$(gh api "repos/${REPO}/actions/runs?event=pull_request&head_sha=${SHA}&per_page=100" --jq '
               [.workflow_runs[] | select(.path != ".github/workflows/ci-gate.yml")]
               | group_by(.workflow_id) | map(max_by(.id))')
+          echo "Expected: $(jq -r 'map(.name) | join(", ")' <<<"$expected")"
           jq -r '.[] | "\(.status)\t\(.conclusion)\t\(.name)"' <<<"$runs"
-          pending=$(jq '[.[] | select(.status != "completed")] | length' <<<"$runs")
+          waiting=$(jq -rn --argjson e "$expected" --argjson r "$runs" '
+              [($e[] | select(.path as $p | $r | any(.path == $p) | not)),
+               ($r[] | select(.status != "completed"))] | map(.name) | unique | join(", ")')
           failed=$(jq '[.[] | select(.status == "completed" and (.conclusion | IN("success", "skipped", "neutral") | not))] | length' <<<"$runs")
-          if [ "$pending" -gt 0 ]; then
-              # Only the PR push sets pending. A finished workflow leaves the
-              # status to whichever one finishes last.
-              [ "$EVENT" = pull_request_target ] || exit 0
-              state=pending desc="Waiting for ${pending} workflow(s)"
+          if [ -n "$waiting" ]; then
+              state=pending desc="Waiting for ${waiting}"
           elif [ "$failed" -gt 0 ]; then
               state=failure desc="${failed} workflow(s) did not pass"
+          elif [ "$(jq length <<<"$runs")" -eq 0 ]; then
+              state=success desc="No PR workflow matches the changed files"
           else
               state=success desc="All PR workflows passed or were skipped"
           fi
           gh api -X POST "repos/${REPO}/statuses/${SHA}" -f state="$state" \
-              -f context="All checks passed" -f description="$desc" -f target_url="$RUN_URL" >/dev/null
+              -f context="All checks passed" -f description="${desc:0:140}" -f target_url="$RUN_URL" >/dev/null
           echo "${SHA}: ${state} (${desc})"
