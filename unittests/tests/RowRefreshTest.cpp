@@ -130,9 +130,8 @@ void RunTests()
 	for (wxUIntPtr data = 1; data <= 4; ++data)
 		list->AppendItemData(data);
 	list->FinishBulkLoad();
-	frame.Show();
+	ShowAndWaitForPaint(frame);
 	wxTheApp->ProcessPendingEvents();
-	wxTheApp->Yield(true);
 	long initialFirst = 0, initialLast = 0;
 	for (int attempt = 0; attempt < 100; ++attempt) {
 		if (list->GetVisibleRowRange(initialFirst, initialLast) && initialLast >= 3) {
@@ -180,9 +179,8 @@ void RunTests()
 	list->values[2] = 15;
 	list->SortList();
 	Check(observer->changed.empty(), "Hidden sort notified invisible rows");
-	frame.Show();
+	ShowAndWaitForPaint(frame);
 	wxTheApp->ProcessPendingEvents();
-	wxTheApp->Yield(true);
 	wxVariant value;
 	model->GetValueByRow(value, 1, 0);
 	Check(value.GetString() == "15", "Restored view has stale row data");
@@ -271,7 +269,7 @@ void RunTests()
 		wxTheApp->ProcessPendingEvents();
 		wxTheApp->Yield(true);
 		Check(list->ItemAt(0) == 1, "Hidden live sort moved rows");
-		frame.Show();
+		ShowAndWaitForPaint(frame);
 		list->RefreshItemData(3);
 		wxTheApp->ProcessPendingEvents();
 		wxTheApp->Yield(true);

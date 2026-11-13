@@ -127,8 +127,20 @@ private:
 	bool m_reverse;
 };
 
-void Settle()
+void Settle(wxTopLevelWindow &frame, const TestList &list)
 {
+	// GTK may scroll over several frames: settle on one that leaves the rows in place.
+	long first = -1, last = -1;
+	for (int frames = 0; frames < 10; ++frames) {
+		WaitForPaint(frame);
+		long newFirst = -1, newLast = -1;
+		list.GetVisibleRowRange(newFirst, newLast);
+		if (frames > 0 && newFirst == first && newLast == last) {
+			break;
+		}
+		first = newFirst;
+		last = newLast;
+	}
 	for (int i = 0; i < 10; ++i) {
 		wxTheApp->Yield(true);
 		wxMilliSleep(10);
@@ -141,28 +153,28 @@ void TestBulkLoad(bool genericEmptyViewport, bool reverse)
 	wxFrame frame(nullptr, wxID_ANY, "Bulk load scroll test", wxDefaultPosition, wxSize(600, 350));
 	auto *list = new TestList(&frame, genericEmptyViewport, reverse);
 	frame.Show();
-	Settle();
+	Settle(frame, *list);
 	list->Load(200);
-	Settle();
+	Settle(frame, *list);
 	Check(list->TopRow() == 0, "Initial bulk load scrolled away from the top");
 	Check(list->ItemAt(0) == (reverse ? 200 : 1), "Initial sort order is wrong");
 
 	// A displayed scroll position must survive a clear and refill.
 	list->ShowRow(100);
-	Settle();
+	Settle(frame, *list);
 	Check(list->TopRow() > 0, "Fixture did not scroll the populated list");
 	const wxUIntPtr anchor = list->ItemAt(list->TopRow());
 	list->Load(200);
-	Settle();
+	Settle(frame, *list);
 	// GTK may leave a fraction of the preceding row visible after EnsureVisible.
 	Check(list->ItemAt(list->TopRow()) == anchor || list->ItemAt(list->TopRow() + 1) == anchor,
 		"Rebuild discarded the existing scroll anchor");
 
 	// An empty load must not leave an anchor behind for the next one.
 	list->Load(0);
-	Settle();
+	Settle(frame, *list);
 	list->Load(200);
-	Settle();
+	Settle(frame, *list);
 	Check(list->TopRow() == 0, "Refill after an empty load reused a stale anchor");
 }
 
@@ -174,7 +186,7 @@ void TestUnpublishedRefresh()
 	auto *observer = new ChangeObserver;
 	list->GetModel()->AddNotifier(observer); // The model owns the notifier.
 	frame.Show();
-	Settle();
+	Settle(frame, *list);
 	// Restored on unwind too: a failed Check() throws.
 	struct RestoreLiveSort
 	{
@@ -188,11 +200,11 @@ void TestUnpublishedRefresh()
 	}
 	list->RefreshItemData(1);
 	list->RefreshItemData(200);
-	Settle();
+	Settle(frame, *list);
 	Check(observer->changes == 0, "Unpublished rows emitted model changes");
 	Check(list->comparisons == 0, "Unpublished refresh scheduled a live sort");
 	list->FinishBulkLoad();
-	Settle();
+	Settle(frame, *list);
 	Check(list->PublishedCount() == 200, "Bulk completion lost rows");
 
 	// A tail appended to a populated list, even when the viewport is unknown.
@@ -202,7 +214,7 @@ void TestUnpublishedRefresh()
 	list->unknownViewport = false;
 	Check(observer->changes == 0, "Unpublished tail row emitted a model change");
 	list->FinishBulkLoad();
-	Settle();
+	Settle(frame, *list);
 	Check(list->PublishedCount() == 201, "Bulk completion lost the tail row");
 }
 
