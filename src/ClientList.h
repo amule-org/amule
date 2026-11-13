@@ -362,8 +362,7 @@ private:
 	 */
 	CUpDownClient *FindMatchingClient(CUpDownClient *client, const CUpDownClient *excluded = nullptr);
 
-	CUpDownClient *FindClientAtEndpoint(
-		const CNetworkAddress &address, uint16 port, bool skipAnsweredByOtherHost);
+	CUpDownClient *FindClientAtEndpoint(const CNetworkAddress &address, uint16 port, bool forCallback);
 
 	/**
 	 * Check if we already know this IP.

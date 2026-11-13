@@ -50,4 +50,14 @@ inline bool IsOtherPeerAtSameEndpoint(const SClientMatchFacts &facts)
 	       facts.candidateHashFromHello && !facts.sameHash;
 }
 
+/**
+ * Whether a lookup by address and port passes over a client whose route another host answered.
+ * Only a callback we are asked to dial does: that client is a NAT neighbour's, not the one at the
+ * endpoint now. Every other lookup wants the client at that endpoint whatever its route.
+ */
+inline bool SkipsClientAtEndpoint(bool forCallback, bool routeAnsweredByOtherHost)
+{
+	return forCallback && routeAnsweredByOtherHost;
+}
+
 #endif // CLIENT_MATCH_POLICY_H

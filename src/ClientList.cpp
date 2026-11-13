@@ -623,14 +623,14 @@ CUpDownClient *CClientList::FindCallbackClientByIP(uint32 clientip, uint16 port)
 }
 
 CUpDownClient *CClientList::FindClientAtEndpoint(
-	const CNetworkAddress &address, uint16 port, bool skipAnsweredByOtherHost)
+	const CNetworkAddress &address, uint16 port, bool forCallback)
 {
 	auto range = m_ipList.equal_range(PeerAddressing::IndexKey(address));
 
 	for (; range.first != range.second; ++range.first) {
 		CUpDownClient *cur_client = range.first->second.GetClient();
 		if (cur_client->GetUserPort() == port &&
-			!(skipAnsweredByOtherHost && cur_client->IsRouteAnsweredByOtherHost())) {
+			!SkipsClientAtEndpoint(forCallback, cur_client->IsRouteAnsweredByOtherHost())) {
 			return cur_client;
 		}
 	}

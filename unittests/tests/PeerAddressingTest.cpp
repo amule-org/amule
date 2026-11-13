@@ -1009,6 +1009,23 @@ TEST(PeerAddressing, AnotherHashAnsweringOurDialForAHelloHashIsAnotherHost)
 		    PeerAddressing::EHelloIdentity::Proves);
 }
 
+TEST(PeerAddressing, OnlyTheOwnHashOnOurDialClearsTheOtherHostMark)
+{
+	using PeerAddressing::EHelloIdentity;
+	ASSERT_TRUE(PeerAddressing::ClearsOtherHostMark(EHelloIdentity::Proves, false));
+	// From behind the NAT the client can always dial in: that proves nothing about the route.
+	ASSERT_FALSE(PeerAddressing::ClearsOtherHostMark(EHelloIdentity::Proves, true));
+	ASSERT_FALSE(PeerAddressing::ClearsOtherHostMark(EHelloIdentity::OtherHost, false));
+	ASSERT_FALSE(PeerAddressing::ClearsOtherHostMark(EHelloIdentity::Usual, false));
+
+	// Our dial for a client a hello proved: its own hash clears the mark, another hash keeps it.
+	const bool checked = PeerAddressing::ChecksDialAnswer(false, true);
+	ASSERT_TRUE(PeerAddressing::ClearsOtherHostMark(
+		PeerAddressing::CheckHelloIdentity(checked, true, true), false));
+	ASSERT_FALSE(PeerAddressing::ClearsOtherHostMark(
+		PeerAddressing::CheckHelloIdentity(checked, true, false), false));
+}
+
 TEST(PeerAddressing, AListHashOrAnIncomingHelloIsNotCheckedOnOurDial)
 {
 	// A hash from a source list or Kad may be stale: whoever answers is taken, as before.

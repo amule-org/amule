@@ -617,6 +617,13 @@ inline bool HelloRouteUnproven(bool routeUnproven, bool inbound, bool dialingRec
 	return routeUnproven || (!inbound && dialingRecordIPv6);
 }
 
+//! Whether a hello clears the mark that another host answered its route: only the client's own hash
+//! on our dial proves that it holds the address again. Behind a NAT it can always dial in.
+inline bool ClearsOtherHostMark(EHelloIdentity identity, bool inbound)
+{
+	return identity == EHelloIdentity::Proves && !inbound;
+}
+
 //! Whether the answer on our own dial is checked against the client's hash, as on an unproven route.
 //! Only a hash a hello proved counts: one from a source list or Kad may be stale.
 inline bool ChecksDialAnswer(bool inbound, bool hashFromHello)

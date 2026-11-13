@@ -72,6 +72,15 @@ TEST(ClientMatchPolicy, ASourceFromAListIsMergedAsBefore)
 	ASSERT_FALSE(IsOtherPeerAtSameEndpoint(facts));
 }
 
+TEST(ClientMatchPolicy, OnlyACallbackLookupSkipsAnAnsweredRoute)
+{
+	ASSERT_TRUE(SkipsClientAtEndpoint(true, true));
+	// The buddy, firewall-check and dial-back lookups still see that client.
+	ASSERT_FALSE(SkipsClientAtEndpoint(false, true));
+	ASSERT_FALSE(SkipsClientAtEndpoint(true, false));
+	ASSERT_FALSE(SkipsClientAtEndpoint(false, false));
+}
+
 TEST(ClientMatchPolicy, WithoutBothHashesTheEndpointDecides)
 {
 	SClientMatchFacts facts = Neighbour();

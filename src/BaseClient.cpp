@@ -557,7 +557,12 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 		}
 		return CurrentStoredRoute().DeadKey();
 	};
-	switch (PeerAddressing::CheckHelloIdentity(checked, HasValidHash(), hash == GetUserHash())) {
+	const PeerAddressing::EHelloIdentity identity =
+		PeerAddressing::CheckHelloIdentity(checked, HasValidHash(), hash == GetUserHash());
+	if (PeerAddressing::ClearsOtherHostMark(identity, inbound)) {
+		RemoveOtherHostKey(m_otherHostKeys, answeredRoute());
+	}
+	switch (identity) {
 	case PeerAddressing::EHelloIdentity::OtherHost:
 		AddOtherHostKey(m_otherHostKeys, answeredRoute());
 		// The counter covers routes from source records; a dial for a known client logs only.
@@ -571,10 +576,6 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 						     : wxString("?")));
 		throw CHelloFromOtherHost{ "Another host answered the route" };
 	case PeerAddressing::EHelloIdentity::Proves:
-		if (!inbound) {
-			// Our dial reached this client again, so no other host holds that route now.
-			RemoveOtherHostKey(m_otherHostKeys, answeredRoute());
-		}
 		m_routeUnproven = false;
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
 			m_modIPv6FromRecord = false;
