@@ -2303,7 +2303,8 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	hi.AddTag(CECTag(EC_TAG_CLIENT_FROM, static_cast<std::uint64_t>(3))); // SF_KADEMLIA
 	// Kad buddy route (4), reached on a fallback address, not yet proved by a hello.
 	hi.AddTag(CECTag(EC_TAG_CLIENT_CONTACT_ROUTE,
-		static_cast<std::uint64_t>(PackContactRoute(ESourceRoute::KadBuddy, true, true))));
+		static_cast<std::uint64_t>(
+			PackContactRoute(EContactRouteReport::KadBuddy, true, true, false))));
 	hi.AddTag(CECTag(EC_TAG_PARTFILE_NAME, wxString::FromUTF8("upload.iso")));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_AVAILABLE_PARTS, static_cast<std::uint32_t>(7)));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_MOD_VERSION, wxString::FromUTF8("mod-x")));

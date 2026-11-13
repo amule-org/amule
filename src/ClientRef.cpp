@@ -134,8 +134,8 @@ double WRAPC(GetCreditRatio)
 uint32 WRAPC(GetServerIP) const wxString WRAPC(GetServerName)
 uint16 WRAPC(GetServerPort) const wxString &WRAPC(GetSoftStr) const wxString &WRAPC(GetSoftVerStr) int WRAPC(
 	GetSourceFrom)
-int WRAPC(GetContactRoute) bool WRAPC(IsIdentityFromFallback) bool WRAPC(IsRouteUnproven) uint64
-	WRAPC(GetTransferredDown)
+int WRAPC(GetContactRoute) bool WRAPC(IsIdentityFromFallback) bool WRAPC(IsRouteUnproven) bool WRAPC(
+	IsContactOverIPv6) uint64 WRAPC(GetTransferredDown)
 uint64 WRAPC(GetTransferredUp)
 uint32 WRAPC(GetUploadDatarate)
 uint32 WRAPC(GetDisplayUploadDatarate)

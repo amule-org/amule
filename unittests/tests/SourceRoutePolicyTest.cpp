@@ -419,28 +419,35 @@ TEST(SourceRoutePolicy, AFallbackRetriesOnlyTheRoutesItChanges)
 // EC_TAG_CLIENT_CONTACT_ROUTE packs the route and its two flags into one byte.
 TEST(SourceRoutePolicy, AContactRouteSurvivesItsPacking)
 {
-	for (ESourceRoute route : { ESourceRoute::None,
-		     ESourceRoute::Dial,
-		     ESourceRoute::DirectUdpCallback,
-		     ESourceRoute::ServerCallback,
-		     ESourceRoute::KadBuddy,
-		     ESourceRoute::ForeignNatCallback }) {
-		for (int flags = 0; flags < 4; ++flags) {
+	for (EContactRouteReport route : { EContactRouteReport::None,
+		     EContactRouteReport::Dial,
+		     EContactRouteReport::DirectUdpCallback,
+		     EContactRouteReport::ServerCallback,
+		     EContactRouteReport::KadBuddy,
+		     EContactRouteReport::ForeignNatCallback,
+		     EContactRouteReport::ServerHolePunch,
+		     EContactRouteReport::LugdunumCallback }) {
+		for (int flags = 0; flags < 8; ++flags) {
 			const bool unproven = (flags & 1) != 0;
 			const bool fallback = (flags & 2) != 0;
-			const std::uint8_t packed = PackContactRoute(route, unproven, fallback);
+			const bool overIPv6 = (flags & 4) != 0;
+			const std::uint8_t packed = PackContactRoute(route, unproven, fallback, overIPv6);
 			ASSERT_TRUE(UnpackContactRoute(packed) == route);
 			ASSERT_EQUALS(unproven, ContactRouteIsUnproven(packed));
 			ASSERT_EQUALS(fallback, ContactRouteFromFallback(packed));
+			ASSERT_EQUALS(overIPv6, ContactRouteOverIPv6(packed));
 		}
 	}
+	// The chain's own routes report under the same numbers.
+	ASSERT_TRUE(ReportedRoute(ESourceRoute::KadBuddy) == EContactRouteReport::KadBuddy);
+	ASSERT_TRUE(ReportedRoute(ESourceRoute::None) == EContactRouteReport::None);
 }
 
 // A route a newer daemon knows and this build does not reads as none, flags and all.
 TEST(SourceRoutePolicy, AnUnknownPackedRouteReadsAsNone)
 {
 	const std::uint8_t packed = 0x0F | ContactRouteUnprovenBit | ContactRouteFallbackBit;
-	ASSERT_TRUE(UnpackContactRoute(packed) == ESourceRoute::None);
+	ASSERT_TRUE(UnpackContactRoute(packed) == EContactRouteReport::None);
 	ASSERT_TRUE(ContactRouteIsUnproven(packed));
 	ASSERT_TRUE(ContactRouteFromFallback(packed));
 }

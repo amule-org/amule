@@ -54,6 +54,16 @@ wxString FormatClientSoftware(
  */
 wxString OriginToText(unsigned int source_from);
 
+//! The contact route as a noun phrase (EContactRouteReport). A wxTRANSLATE marker, so the caller
+//! applies wxGetTranslation(); empty before the first attempt.
+wxString ContactRouteToText(unsigned int route);
+
+/**
+ * The source list's status line while a contact is in flight, already translated: the route and,
+ * when it is one, that the route is a fallback or is unproven. Empty before the first attempt.
+ */
+wxString ContactRouteStatus(unsigned int route, bool unproven, bool fromFallback);
+
 /// @return The textual representation of a partfile conversion state.
 wxString GetConversionState(unsigned int state);
 

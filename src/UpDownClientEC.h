@@ -128,9 +128,11 @@ public:
 		m_contactRoute = static_cast<int>(UnpackContactRoute(packed));
 		m_routeUnproven = ContactRouteIsUnproven(packed);
 		m_identityFromFallback = ContactRouteFromFallback(packed);
+		m_contactOverIPv6 = ContactRouteOverIPv6(packed);
 	}
 	bool IsIdentityFromFallback() const { return m_identityFromFallback; }
 	bool IsRouteUnproven() const { return m_routeUnproven; }
+	bool IsContactOverIPv6() const { return m_contactOverIPv6; }
 	uint64 GetTransferredDown() const { return m_nTransferredDown; }
 	uint64 GetTransferredUp() const { return m_nTransferredUp; }
 	uint32 GetUploadDatarate() const { return m_nUpDatarate; }
@@ -210,6 +212,7 @@ private:
 	int m_contactRoute = 0;
 	bool m_identityFromFallback = false;
 	bool m_routeUnproven = false;
+	bool m_contactOverIPv6 = false;
 	uint64 m_nTransferredDown;
 	uint64 m_nTransferredUp;
 	uint32 m_nUpDatarate;

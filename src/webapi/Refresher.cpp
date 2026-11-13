@@ -154,17 +154,21 @@ std::string SourceOriginName(std::uint32_t from)
 std::string ContactRouteName(std::uint8_t packed)
 {
 	switch (UnpackContactRoute(packed)) {
-	case ESourceRoute::Dial:
+	case EContactRouteReport::Dial:
 		return "dial";
-	case ESourceRoute::DirectUdpCallback:
+	case EContactRouteReport::DirectUdpCallback:
 		return "direct_udp_callback";
-	case ESourceRoute::ServerCallback:
+	case EContactRouteReport::ServerCallback:
 		return "server_callback";
-	case ESourceRoute::KadBuddy:
+	case EContactRouteReport::KadBuddy:
 		return "kad_buddy";
-	case ESourceRoute::ForeignNatCallback:
+	case EContactRouteReport::ForeignNatCallback:
 		return "foreign_nat_callback";
-	case ESourceRoute::None:
+	case EContactRouteReport::ServerHolePunch:
+		return "server_hole_punch";
+	case EContactRouteReport::LugdunumCallback:
+		return "lugdunum_callback";
+	case EContactRouteReport::None:
 		break;
 	}
 	return std::string();
@@ -1049,6 +1053,7 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 			cs.contact_route = ContactRouteName(v);
 			cs.route_unproven = ContactRouteIsUnproven(v);
 			cs.route_from_fallback = ContactRouteFromFallback(v);
+			cs.route_ipv6 = ContactRouteOverIPv6(v);
 		}
 	}
 	// PARTFILE_NAME rides inside the client tag only while the peer is

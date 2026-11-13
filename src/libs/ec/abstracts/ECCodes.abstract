@@ -510,12 +510,13 @@ EC_TAG_CLIENT                             0x0600
 	EC_TAG_CLIENT_MOD_CAPABILITIES            0x0633
 
 # How a download source is being contacted, packed into one byte: the low
-# nibble is the ESourceRoute value (SourceRoutePolicy.h), bit 4 says the route
-# comes from a record no hello has proved, and bit 5 says the IPv4 identity
-# came from a fallback. One tag rather than three, because the three always
-# change together, at the start and the end of a contact attempt. Additive: a
-# missing tag means an older daemon, which is a distinct third state from
-# "no contact has been attempted yet".
+# nibble is the EContactRouteReport value (SourceRoutePolicy.h), bit 4 says the
+# route comes from a record no hello has proved, bit 5 says the IPv4 identity
+# came from a fallback, and bit 6 says the route is a dial to the peer's IPv6.
+# One tag rather than four, because they always change together, at the start
+# and the end of a contact attempt. Additive: a missing tag means an older
+# daemon, which is a distinct third state from "no contact has been attempted
+# yet".
 	EC_TAG_CLIENT_CONTACT_ROUTE               0x0634
 EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_TYPE                        0x0701

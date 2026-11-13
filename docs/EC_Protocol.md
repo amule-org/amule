@@ -734,12 +734,18 @@ together, at the start and the end of an attempt:
 
 | Bits | Meaning |
 | ---- | ------- |
-| 0-3 | The route: `0` none, `1` dial, `2` direct UDP callback, `3` server callback, `4` Kad buddy, `5` foreign-server NAT callback |
+| 0-3 | The route: `0` none, `1` dial, `2` direct UDP callback, `3` server callback, `4` Kad buddy, `5` foreign-server NAT callback, `6` server hole punch, `7` Lugdunum callback |
 | 4 | The route comes from a record no hello has proved |
 | 5 | The IPv4 identity came from a fallback route |
+| 6 | The route is a dial to the peer's IPv6 address |
 
-Bits 6 and 7 are reserved. A route value this build does not know reads
-as none, so a newer daemon cannot make an older client invent a route.
+Bit 7 is reserved. A route value this build does not know reads as none,
+so a newer daemon cannot make an older client invent a route.
+
+Routes `6` and `7` are the two NAT-T steps taken while both ends are
+firewalled. They are not routes the source's own chain picks, so they
+never enter its failed-route mask; they are reported here because
+otherwise such a source shows no route at all.
 
 The tag is additive and follows the usual convention: a reply without it
 means an older daemon, which is a **third state**, distinct from a

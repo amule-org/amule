@@ -269,20 +269,23 @@ export function identBadge(s) {
   return html`<${Badge} kind=${IDENT_KIND[s] || "paused"}>${identLabel(s)}<//>`;
 }
 
-// `c` is the peer row, when the caller has it: the contact route refines the label and adds the
-// route cue. Callers without a row still get the plain state badge.
+// While a contact is in flight the route says more than the state does, so the badge carries it
+// as a note, the way the desktop source list words it. `c` is the peer row, when the caller has
+// it; callers without one still get the plain state badge.
+const CONNECTING = ["connecting", "waiting_callback", "waiting_callback_kad", "low_to_low_ip"];
+function routeNote(c) {
+  if (!c || !c.contact_route || !CONNECTING.includes(c.download_state)) return null;
+  const name = t("downloads_peer_route_" + c.contact_route);
+  const key = c.route_from_fallback ? "downloads_peer_route_fallback"
+    : c.route_unproven ? "downloads_peer_route_unproven" : "downloads_peer_route_plain";
+  return html`<span class="route-note">${t(key, { route: name })}</span>`;
+}
+
 export function stateBadge(s, c) {
-  // A direct UDP callback goes to the peer, so the waiting-for-a-server-callback label would
-  // name a server that has nothing to do with it. The download_state token itself is untouched.
-  const label = s === "waiting_callback" && c && c.contact_route === "direct_udp_callback"
-    ? "connecting" : s;
-  const cue = c ? (c.route_from_fallback ? " route-fallback" : "") + (c.route_unproven ? " route-unproven" : "") : "";
-  if (!label || label === "idle") {
-    return html`<${Badge} kind=${cue.trim()}>${t("downloads_peer_state_" + (label || "idle"))}<//>`;
-  }
-  const kind = label === "downloading" || label === "uploading" ? "downloading"
-    : label === "banned" || label === "error" ? "paused" : "waiting";
-  return html`<${Badge} kind=${kind + cue}>${t("downloads_peer_state_" + label)}<//>`;
+  const kind = !s || s === "idle" ? ""
+    : s === "downloading" || s === "uploading" ? "downloading"
+    : s === "banned" || s === "error" ? "paused" : "waiting";
+  return html`<${Badge} kind=${kind}>${t("downloads_peer_state_" + (s || "idle"))}<//>${routeNote(c)}`;
 }
 
 // Toolbar + peer table, shared by every consumer. Always offers the full

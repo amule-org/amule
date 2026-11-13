@@ -2712,6 +2712,8 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueBool(c.route_unproven);
 	w.Key("route_from_fallback");
 	w.ValueBool(c.route_from_fallback);
+	w.Key("route_ipv6");
+	w.ValueBool(c.route_ipv6);
 	// Gated on the flag the refresher sets when the tag actually arrives: emitted
 	// unconditionally, a peer that never reported its part map was indistinguishable
 	// from one reporting zero, and zero is a real answer.
