@@ -19,7 +19,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-12 17:35+0000\n"
+"PO-Revision-Date: 2026-11-13 15:33+0000\n"
 "Last-Translator: Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -27,7 +27,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 "X-Language: es_ES\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
@@ -2119,6 +2119,55 @@ msgstr "Semillas fuente"
 #: src/DataToText.cpp
 msgid "Search Result"
 msgstr "Resultado de la búsqueda"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Conexiones activas"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Borrar el servidor"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Buscar compañero"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k: servidor actual"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Perforaciones de NAT del servidor: %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "Respuestas de Lugdunum: %s"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Conectando vía servidor"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Conectando vía servidor"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Conectando vía Kad"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7035,7 +7084,7 @@ msgstr "Superación de NAT (QUIC)"
 
 #: src/PeerCapabilities.h
 msgid "Skips unknown source exchange tags"
-msgstr ""
+msgstr "Omite etiquetas desconocidas de intercambio de fuentes"
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -10728,16 +10777,8 @@ msgstr "Migrando la clave heredada ECPassword modificada tras degradar la versi�
 #~ msgstr "NAT Traversal (sesión)"
 
 #, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Perforaciones de NAT del servidor: %s"
-
-#, c-format
 #~ msgid "Successful Server Hole Punches: %s"
 #~ msgstr "Perforaciones de NAT del servidor exitosas: %s"
-
-#, c-format
-#~ msgid "Lugdunum Callbacks: %s"
-#~ msgstr "Respuestas de Lugdunum: %s"
 
 #, c-format
 #~ msgid "Successful Lugdunum Callbacks: %s"

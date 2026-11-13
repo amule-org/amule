@@ -2114,6 +2114,55 @@ msgstr "Llavors font"
 msgid "Search Result"
 msgstr "Resultat de la cerca"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Connexions actives"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Esborra el servidor"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Cerca d'amic"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k: Servidor actual"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Perforacions de NAT amb servidor: %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "Retrotrucades de Lugdunum: %s"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "S'està connectant via servidor"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "S'està connectant via servidor"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "S'està connectant via Kad"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10722,16 +10771,8 @@ msgstr "S'està migrant un ECPassword antic modificat després de tornar a una v
 #~ msgstr "Travessia de NAT (Sessió)"
 
 #, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Perforacions de NAT amb servidor: %s"
-
-#, c-format
 #~ msgid "Successful Server Hole Punches: %s"
 #~ msgstr "Perforacions de NAT amb servidor reeixides: %s"
-
-#, c-format
-#~ msgid "Lugdunum Callbacks: %s"
-#~ msgstr "Retrotrucades de Lugdunum: %s"
 
 #, c-format
 #~ msgid "Successful Lugdunum Callbacks: %s"
