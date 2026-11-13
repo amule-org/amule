@@ -869,7 +869,8 @@ void CSearch::StorePacket()
 				    *from, m_target, id, taglist)) {
 				m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
 				if (theLogger.IsEnabled(logKadPublish)) {
-					CPublishMetrics::Instance().Queued();
+					CPublishMetrics::Instance().Queued(
+						from->GetIPAddress(), ::GetTickCount64());
 				}
 			}
 			m_totalRequestAnswers++;

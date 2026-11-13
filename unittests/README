@@ -349,7 +349,7 @@ Tests that authenticate through ECWire require Python 3 with the cryptography
 module (python3-cryptography on Debian/Ubuntu). These tests return skip code 77
 when the module is unavailable, including fixtures importing the EC helper.
 
-PublishMetricsTest checks diagnostic totals and rolling request peaks;
+PublishMetricsTest checks diagnostic totals, rolling per-IP request peaks and thresholds;
 PublishMetrics-kad2 exercises queued source packets and duplicate acknowledgements
 with a private Kad peer (about four minutes; requires Python cryptography and a
 private IPv4 address).

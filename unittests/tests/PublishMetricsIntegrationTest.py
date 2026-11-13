@@ -91,6 +91,7 @@ def run(binary):
                     assert summary['finished'] == 1, summary
                     assert summary['zero_ack'] == summary['cancelled'] == 0, summary
                     assert summary['max_req_per_ip_60s'] > 0 and lookup_packets > 0, summary
+                    assert summary['max_pub_per_ip_60s'] == 1 and summary['pub_ips_ge2'] == 0, summary
                     break
             else:
                 raise AssertionError('No expected Kad2 publication result:\n' + '\n'.join(lines[-100:]))
