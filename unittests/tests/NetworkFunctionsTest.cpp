@@ -208,6 +208,23 @@ TEST(NetworkFunctions, IsGoodIPPort)
 	ASSERT_FALSE(IsGoodIPPort(loopback, 4672, false));
 }
 
+// A HighID is its IPv4, so one ending in .0 is below the LowID limit.
+TEST(NetworkFunctions, IsHighIDOf)
+{
+	const uint32 dotZero = StringIPtoUint32("192.0.2.0");
+	ASSERT_TRUE(IsLowID(dotZero));
+	ASSERT_TRUE(IsHighIDOf(dotZero, dotZero));
+
+	const uint32 ip = StringIPtoUint32("192.0.2.1");
+	ASSERT_FALSE(IsLowID(ip));
+	ASSERT_TRUE(IsHighIDOf(ip, ip));
+
+	ASSERT_FALSE(IsHighIDOf(dotZero, ip));
+	ASSERT_FALSE(IsHighIDOf(12345, ip));
+	// No address: nothing to be the HighID of.
+	ASSERT_FALSE(IsHighIDOf(0, 0));
+}
+
 // A server on this machine is reachable once LAN IPs are not filtered; nothing else changes.
 TEST(NetworkFunctions, IsGoodServerIP)
 {
