@@ -1988,30 +1988,38 @@ void CSharedFileList::Publish()
 
 		if (Kademlia::CKademlia::GetTotalStoreSrc() < KADEMLIATOTALSTORESRC) {
 			if (tNow >= m_lastPublishKadSrc) {
-				CKnownFile *pCurKnownFile = GetNextKadFile(m_srcPublishCursor);
+				// Pass over files published in the last 5 h in this tick, rather than one
+				// per KADEMLIAPUBLISHTIME. The bound caps the work when few files are due.
+				const size_t maxChecks = std::min<size_t>(100, GetCount());
+				CKnownFile *pCurKnownFile = nullptr;
+				for (size_t i = 0; i < maxChecks && !pCurKnownFile; ++i) {
+					CKnownFile *file = GetNextKadFile(m_srcPublishCursor);
+					if (!file) {
+						break;
+					}
+					if (file->PublishSrc()) {
+						pCurKnownFile = file;
+					}
+				}
 				if (pCurKnownFile) {
-					if (pCurKnownFile->PublishSrc()) {
-						Kademlia::CUInt128 kadFileID;
-						kadFileID.SetValueBE(pCurKnownFile->GetFileHash().GetHash());
-						const bool started = Kademlia::CSearchManager::PrepareLookup(
-									     Kademlia::CSearch::STOREFILE,
-									     true,
-									     kadFileID) != nullptr;
-						if (theLogger.IsEnabled(logKadPublish)) {
-							metrics.Attempt(started);
-						}
-						AddDebugLogLineN(logKadPublish,
-							CFormat("Kad source publish attempt: target=%s "
-								"started=%u") %
-								kadFileID.ToHexString() % started);
-						if (!started) {
-							pCurKnownFile->SetLastPublishTimeKadSrc(0, 0);
-						}
+					Kademlia::CUInt128 kadFileID;
+					kadFileID.SetValueBE(pCurKnownFile->GetFileHash().GetHash());
+					const bool started =
+						Kademlia::CSearchManager::PrepareLookup(
+							Kademlia::CSearch::STOREFILE, true, kadFileID) !=
+						nullptr;
+					if (theLogger.IsEnabled(logKadPublish)) {
+						metrics.Attempt(started);
+					}
+					AddDebugLogLineN(logKadPublish,
+						CFormat("Kad source publish attempt: target=%s "
+							"started=%u") %
+							kadFileID.ToHexString() % started);
+					if (!started) {
+						pCurKnownFile->SetLastPublishTimeKadSrc(0, 0);
 					}
 				}
 
-				// even if we did not publish a source, reset the timer so that this list is
-				// processed only every KADEMLIAPUBLISHTIME seconds.
 				m_lastPublishKadSrc = KADEMLIAPUBLISHTIME + tNow;
 			}
 		}

@@ -5,27 +5,58 @@
 #ifndef KADPUBLISHCURSOR_H
 #define KADPUBLISHCURSOR_H
 
-#include <optional>
+#include <algorithm>
+#include <cmath>
+#include <numeric>
+#include <vector>
 
-// Keep a key rather than an iterator so removals and reloads cannot invalidate the
-// cursor. Each selection costs O(log N), with no walk from the start of the map.
+// Visits every key once per pass. Files close in hash order share leading hash bits, so their
+// sources land on the same Kad nodes, which refuse more than 2 a minute from one sender. Each
+// pass therefore puts the j-th key in hash order at slot j * T mod N, with T near N / golden
+// ratio: neighbours are 0.38 N slots apart, keys within 3 places at least 0.14 N.
+// Keys, not iterators, so removals and reloads cannot invalidate the cursor: removed keys are
+// skipped, new keys join the next pass.
 template <typename Key> class CKadPublishCursor
 {
 public:
 	template <typename Map> typename Map::const_iterator Next(const Map &files)
 	{
-		auto next = m_lastKey ? files.upper_bound(*m_lastKey) : files.begin();
-		if (next == files.end()) {
-			next = files.begin();
+		// The second round starts a new pass when the current one is used up.
+		for (int round = 0; round < 2; ++round) {
+			while (m_position < m_order.size()) {
+				const auto next = files.find(m_order[m_position++]);
+				if (next != files.end()) {
+					return next;
+				}
+			}
+			StartPass(files);
 		}
-		if (next != files.end()) {
-			m_lastKey = next->first;
-		}
-		return next;
+		return files.end();
 	}
 
 private:
-	std::optional<Key> m_lastKey;
+	template <typename Map> void StartPass(const Map &files)
+	{
+		const size_t count = files.size();
+		m_order.resize(count);
+		m_position = 0;
+		if (count == 0) {
+			return;
+		}
+		size_t step = std::max<size_t>(
+			1, static_cast<size_t>(std::lround(static_cast<double>(count) * 0.6180339887)));
+		while (std::gcd(step, count) != 1) {
+			++step;
+		}
+		size_t slot = 0;
+		for (const auto &file : files) {
+			m_order[slot] = file.first;
+			slot = (slot + step) % count;
+		}
+	}
+
+	std::vector<Key> m_order;
+	size_t m_position = 0;
 };
 
 #endif // KADPUBLISHCURSOR_H
