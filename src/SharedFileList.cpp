@@ -634,13 +634,28 @@ CSharedFileList::AddPathResult CSharedFileList::AddPathToShares(
 		// decline with previousPath == directory is close to unreachable, since the watcher
 		// route returns on an index hit before reaching here and the bulk walk visits each root
 		// once.
+		CKnownFile *sharedCopy = nullptr;
 		{
 			wxMutexLocker lock(list_mut);
-			if (m_Files_map.find(toadd->GetFileHash()) != m_Files_map.end()) {
+			CKnownFileMap::const_iterator it = m_Files_map.find(toadd->GetFileHash());
+			if (it != m_Files_map.end()) {
+				sharedCopy = it->second;
+			}
+		}
+		if (sharedCopy) {
+			// A file moved to another shared folder can be seen at its new path before its old
+			// path is gone from the share. Declining it then would leave it unshared once the
+			// old path is removed.
+			if (sharedCopy->IsPartFile() ||
+				sharedCopy->GetFilePath().JoinPaths(sharedCopy->GetFileName()).FileExists()) {
 				AddDebugLogLineN(
 					logKnownFiles, CFormat("File already shared, skipping: %s") % fname);
 				return kAddPathAlreadyShared;
 			}
+			AddDebugLogLineN(logKnownFiles,
+				CFormat("Shared copy of '%s' is gone from disk, sharing it from %s") % fname %
+					directory);
+			RemoveFile(sharedCopy);
 		}
 
 		// Set the path BEFORE AddFile so the path index that AddFile maintains keys off the

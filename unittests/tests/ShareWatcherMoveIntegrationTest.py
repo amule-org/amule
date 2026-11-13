@@ -103,13 +103,51 @@ def run(binary, root):
                  lambda: shared(ec).get('a.bin') not in (None, c_hash))
 
 
+def run_into_tree(binary, root):
+    """A shared file moved from Incoming into a recursive share stays shared.
+
+    The new path is seen while the old one is still shared, so the file looks like a duplicate.
+    """
+    incoming, tv = root / 'Incoming', root / 'tv'
+    for d in (incoming, tv / 'show', root / 'Temp'):
+        d.mkdir(parents=True)
+    names = [f'm{i}.bin' for i in range(8)]
+    for name in names + ['new.bin', 'renamed.bin']:
+        (incoming / name).write_bytes(os.urandom(100_000))
+    (root / 'shareddir-recursive.dat').write_text(f'{tv}\n')
+    port, peer_port = free_ports(2)
+    write_amule_conf(root, port, Port=peer_port, UDPEnable=0, IncomingDir=incoming,
+                     AutoRescanSharedDirs=1)
+    with running_daemon(binary, root, (port, peer_port)) as (proc, ec):
+        before = wait_shared(proc, ec, names + ['new.bin', 'renamed.bin'], 60)
+
+        # Into a folder made just before: the move lands before the folder is watched.
+        (tv / 'new').mkdir()
+        os.replace(incoming / 'new.bin', tv / 'new' / 'new.bin')
+        # Copy and delete, as a move across filesystems does. Eight files, because the old and
+        # new path are applied in no fixed order.
+        for name in names:
+            shutil.copy2(incoming / name, tv / 'show' / name)
+            os.remove(incoming / name)
+        os.replace(incoming / 'renamed.bin', tv / 'show' / 'renamed.bin')
+        # Written in the same watcher window, so once it is shared that window has been applied.
+        (incoming / 'barrier.bin').write_bytes(os.urandom(50_000))
+        wait_shared(proc, ec, ['barrier.bin'], 60)
+        time.sleep(1)
+
+        after = shared(ec)
+        lost = sorted(n for n in before if after.get(n) != before[n])
+        assert not lost, f'no longer shared after the move: {lost}'
+
+
 def main():
     binary = str(Path(sys.argv[1]).resolve())
-    def attempt():
-        with tempfile.TemporaryDirectory(prefix='amule-share-watcher-') as scratch:
-            # Resolved: macOS FSEvents reports /private/var for /var.
-            run(binary, Path(scratch).resolve())
-    retry_port_collisions(attempt)
+    for test in (run, run_into_tree):
+        def attempt(test=test):
+            with tempfile.TemporaryDirectory(prefix='amule-share-watcher-') as scratch:
+                # Resolved: macOS FSEvents reports /private/var for /var.
+                test(binary, Path(scratch).resolve())
+        retry_port_collisions(attempt)
     print('Shared-dir watcher move checks passed')
 
 
