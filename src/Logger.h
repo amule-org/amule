@@ -128,6 +128,8 @@ enum DebugType
 	logGUI,
 	//! Kad source-publication measurements and baseline summaries.
 	logKadPublish,
+	//! Source contact routes: route chain, fallbacks and merges of source copies.
+	logSourceRoutes,
 	logCategoryCount
 	// IMPORTANT NOTE: when you add values to this enum, update the g_debugcats
 	// array in Logger.cpp!

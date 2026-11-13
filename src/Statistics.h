@@ -156,6 +156,22 @@ protected:
 
 #ifndef CLIENT_GUI
 
+// Source contact route events counted under Diagnostics, in tree order.
+enum class ESourceRouteEvent
+{
+	NextRoute,
+	FallbackServerRoute,
+	FallbackIPv4,
+	FallbackIPv6,
+	ChainRestored,
+	ReachedAfterFailure,
+	MergeTookRoute,
+	MergeKeptFallback,
+	OtherHostRefused,
+	OtherHostKeptApart,
+	Count
+};
+
 #ifdef ENABLE_IPV6
 // IPv6 events counted under Diagnostics, in tree order.
 enum class EIPv6Event
@@ -434,6 +450,10 @@ public:
 #ifdef ENABLE_IPV6
 	static void AddIPv6Event(EIPv6Event event) { ++(*s_ipv6Events[static_cast<std::size_t>(event)]); }
 #endif
+	static void AddSourceRouteEvent(ESourceRouteEvent event)
+	{
+		++(*s_sourceRouteEvents[static_cast<std::size_t>(event)]);
+	}
 
 	// Servers
 	static void AddServer() { ++(*s_totalServers); }
@@ -672,6 +692,8 @@ private:
 	static CStatTreeItemCounter *s_ipv6Download;
 	static CStatTreeItemNativeCounter *s_ipv6Events[static_cast<std::size_t>(EIPv6Event::Count)];
 #endif
+	static CStatTreeItemNativeCounter
+		*s_sourceRouteEvents[static_cast<std::size_t>(ESourceRouteEvent::Count)];
 
 	// Servers
 	static CStatTreeItemSimple *s_workingServers;

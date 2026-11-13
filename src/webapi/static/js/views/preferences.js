@@ -627,7 +627,9 @@ export default function Preferences({ isGuest }) {
     }
     if (f.type === "checklist") {
       const selected = asArr(val);
-      return asArr(values[cat + "." + f.optionsKey]).map((name, i) => {
+      const options = [...asArr(values[cat + "." + f.optionsKey])]
+        .sort((x, y) => x.localeCompare(y, undefined, { sensitivity: "base" }));
+      return options.map((name, i) => {
         const optId = id + "." + i;
         const onChange = (e) => setVal(id, e.target.checked
           ? [...selected, name] : selected.filter((n) => n !== name));

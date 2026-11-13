@@ -427,7 +427,8 @@ bool CClientList::AttachToAlreadyKnown(
 			found_client->HasValidHash() && tocheck->HasValidHash(),
 			found_client->GetUserHash() == tocheck->GetUserHash()) ==
 			PeerAddressing::EHelloAttach::KeepApart) {
-		AddDebugLogLineN(logClient,
+		theStats::AddSourceRouteEvent(ESourceRouteEvent::OtherHostKeptApart);
+		AddDebugLogLineN(logSourceRoutes,
 			CFormat("Another host (hash %s) answered unproven route to source %s at %s: kept "
 				"apart") %
 				tocheck->GetUserHash().Encode() % found_client->GetUserHash().Encode() %

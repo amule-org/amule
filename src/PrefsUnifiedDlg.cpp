@@ -33,7 +33,7 @@
 #include <common/Constants.h>
 #include <common/Macros.h> // Needed for itemsof()
 
-#include <algorithm> // std::max (page-sidebar column width)
+#include <algorithm> // std::max (page-sidebar column width), std::sort
 
 #include <wx/artprov.h> // wxArtProvider::GetBitmapBundle for the page icons
 #include <wx/bmpbndl.h> // wxBitmapBundle for DPI-aware page icons
@@ -285,6 +285,22 @@ static bool OffersDebugCategory(const CDebugCategory &category)
 	wxUnusedVar(category);
 	return true;
 #endif
+}
+
+// The offered categories by name, the order the list shows them in and is read back in.
+static std::vector<int> OfferedDebugCategories()
+{
+	std::vector<int> offered;
+	for (int i = 0; i < static_cast<int>(theLogger.GetDebugCategoryCount()); ++i) {
+		if (OffersDebugCategory(theLogger.GetDebugCategory(i))) {
+			offered.push_back(i);
+		}
+	}
+	std::sort(offered.begin(), offered.end(), [](int a, int b) {
+		return theLogger.GetDebugCategory(a).GetName().CmpNoCase(
+			       theLogger.GetDebugCategory(b).GetName()) < 0;
+	});
+	return offered;
 }
 
 static void SendCheckBoxEvent(wxWindow *parent, int id)
@@ -589,14 +605,9 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			warning.Replace("\n\n", "\n \n");
 			txt->SetLabel(warning);
 		} else if (pages[i].m_function == PreferencesDebug) {
-			int count = theLogger.GetDebugCategoryCount();
 			wxCheckListBox *list = CastChild(ID_DEBUGCATS, wxCheckListBox);
-
-			for (int j = 0; j < count; j++) {
-				const CDebugCategory &category = theLogger.GetDebugCategory(j);
-				if (OffersDebugCategory(category)) {
-					list->Append(category.GetName());
-				}
+			for (int j : OfferedDebugCategories()) {
+				list->Append(theLogger.GetDebugCategory(j).GetName());
 			}
 		}
 
@@ -1113,21 +1124,20 @@ bool PrefsUnifiedDlg::TransferToWindow()
 #endif
 
 	// Set debugging toggles
-	int count = theLogger.GetDebugCategoryCount();
 	wxCheckListBox *list = CastChild(ID_DEBUGCATS, wxCheckListBox);
-
 	unsigned int row = 0;
-	for (int i = 0; i < count; i++) {
-		const CDebugCategory &category = theLogger.GetDebugCategory(i);
-		if (OffersDebugCategory(category)) {
-			list->Check(row++, category.IsEnabled());
-		}
+	for (int i : OfferedDebugCategories()) {
+		list->Check(row++, theLogger.GetDebugCategory(i).IsEnabled());
 	}
 #ifdef CLIENT_GUI
 	// Rebuilt on each open: the list belongs to the connected core.
 	wxCheckListBox *coreList = CastChild(ID_DEBUGCATS_CORE, wxCheckListBox);
 	coreList->Clear();
-	for (const auto &category : thePrefs::GetCoreDebugCategories()) {
+	std::vector<CPreferences::CoreDebugCategory> coreCategories = thePrefs::GetCoreDebugCategories();
+	std::sort(coreCategories.begin(), coreCategories.end(), [](const auto &a, const auto &b) {
+		return a.name.CmpNoCase(b.name) < 0;
+	});
+	for (const auto &category : coreCategories) {
 		coreList->Check(coreList->Append(category.name), category.enabled);
 	}
 	coreList->Enable(!coreList->IsEmpty());
@@ -1199,15 +1209,10 @@ bool PrefsUnifiedDlg::TransferFromWindow()
 	thePrefs::SetVerboseLogfile(thePrefs::GetVerboseLogfile());
 
 	// Get debugging toggles
-	int count = theLogger.GetDebugCategoryCount();
 	wxCheckListBox *list = CastChild(ID_DEBUGCATS, wxCheckListBox);
-
 	unsigned int row = 0;
-	for (int i = 0; i < count; i++) {
-		const CDebugCategory &category = theLogger.GetDebugCategory(i);
-		if (OffersDebugCategory(category)) {
-			theLogger.SetEnabled(category.GetType(), list->IsChecked(row++));
-		}
+	for (int i : OfferedDebugCategories()) {
+		theLogger.SetEnabled(theLogger.GetDebugCategory(i).GetType(), list->IsChecked(row++));
 	}
 #ifdef CLIENT_GUI
 	// SendChangesToRemote serialises from here.

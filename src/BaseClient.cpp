@@ -553,7 +553,8 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 		} else {
 			NoteOtherHostOnRoute();
 		}
-		AddDebugLogLineN(logClient,
+		theStats::AddSourceRouteEvent(ESourceRouteEvent::OtherHostRefused);
+		AddDebugLogLineN(logSourceRoutes,
 			CFormat("Another host (hash %s) answered unproven route to source %s at %s") %
 				hash.Encode() % GetUserHash().Encode() %
 				(m_socket != nullptr ? m_socket->GetPeerAddress().ToWxString()
@@ -2307,7 +2308,7 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 	}
 	if ((m_refreshedSourceRoutes & SourceRouteBit(m_sourceRoute)) != 0) {
 		m_refreshedSourceRoutes &= ~SourceRouteBit(m_sourceRoute);
-		AddDebugLogLineN(logClient,
+		AddDebugLogLineN(logSourceRoutes,
 			CFormat("Contact route %s to source %s failed on data our server has replaced, "
 				"trying it again") %
 				SourceRouteName(m_sourceRoute) % GetUserHash().Encode());
@@ -2317,7 +2318,8 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 	const ESourceRoute failedRoute = m_sourceRoute;
 	const ESourceRoute next = NextSourceRouteNow();
 	if (next != ESourceRoute::None) {
-		AddDebugLogLineN(logClient,
+		theStats::AddSourceRouteEvent(ESourceRouteEvent::NextRoute);
+		AddDebugLogLineN(logSourceRoutes,
 			CFormat("Contact route %s to source %s failed, trying %s") %
 				SourceRouteName(failedRoute) % GetUserHash().Encode() %
 				SourceRouteName(next));
@@ -2364,7 +2366,11 @@ bool CUpDownClient::UseSourceFallback(ESourceFallback fallback, ESourceRoute fai
 	if (NextSourceRouteNow() == ESourceRoute::None) {
 		return false;
 	}
-	AddDebugLogLineN(logClient,
+	theStats::AddSourceRouteEvent(
+		fallback == ESourceFallback::ServerCandidate  ? ESourceRouteEvent::FallbackServerRoute
+		: fallback == ESourceFallback::LastResortIPv4 ? ESourceRouteEvent::FallbackIPv4
+							      : ESourceRouteEvent::FallbackIPv6);
+	AddDebugLogLineN(logSourceRoutes,
 		CFormat("Contact route %s to source %s failed, moving to its fallback route: ID %u, "
 			"address %s, server %s") %
 			SourceRouteName(failedRoute) % GetUserHash().Encode() % GetUserIDHybrid() %
@@ -2480,6 +2486,7 @@ bool CUpDownClient::RestoreChainStart()
 	if (!start) {
 		return false;
 	}
+	theStats::AddSourceRouteEvent(ESourceRouteEvent::ChainRestored);
 	ApplyRoutes(start->routes);
 	m_formerDeadSourceKeys.erase(
 		m_formerDeadSourceKeys.begin() + static_cast<std::ptrdiff_t>(start->formerKeys),
@@ -2911,6 +2918,10 @@ void CUpDownClient::ConnectionEstablished()
 	m_dialledIPv6Address = CNetworkAddress::Absent();
 	m_routeUnproven = false;
 	m_sourceRoute = ESourceRoute::None;
+	// A fallback starts with its own routes untried, so a saved chain start counts too.
+	if (m_failedSourceRoutes != 0 || m_chainStart.Routes()) {
+		theStats::AddSourceRouteEvent(ESourceRouteEvent::ReachedAfterFailure);
+	}
 	m_failedSourceRoutes = 0;
 	m_refreshedSourceRoutes = 0;
 	m_chainStart.Reset();
@@ -4170,6 +4181,8 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 	ApplyRoutes(routes);
 
 	wxString taken;
+	bool tookRoute = merge.takeServerRoute || merge.replaceWithHighID || merge.takeDirectCallback;
+	bool keptFallback = merge.storeServerCandidate || merge.takeLastResortIPv4;
 	if (merge.keepOldHighIDAsLastResort) {
 		taken += " (old HighID kept as the last-resort IPv4)";
 	}
@@ -4206,12 +4219,20 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 		UpdateModIPv6(incoming);
 		m_modIPv6FromRecord = true;
 		taken += " IPv6";
+		tookRoute = true;
 	} else if (merge.takeLastResortIPv6) {
 		taken += " last-resort IPv6";
+		keptFallback = true;
 	}
 #endif
+	// A taken route keeps the old one as a fallback, so a merge counts once.
+	if (tookRoute) {
+		theStats::AddSourceRouteEvent(ESourceRouteEvent::MergeTookRoute);
+	} else if (keptFallback) {
+		theStats::AddSourceRouteEvent(ESourceRouteEvent::MergeKeptFallback);
+	}
 	if (!taken.IsEmpty()) {
-		AddDebugLogLineN(logClient,
+		AddDebugLogLineN(logSourceRoutes,
 			CFormat("Contact routes taken from a duplicate of source %s:%s") %
 				GetUserHash().Encode() % taken);
 	}

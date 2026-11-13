@@ -314,6 +314,8 @@ CStatTreeItemCounter *CStatistics::s_ipv6Upload;
 CStatTreeItemCounter *CStatistics::s_ipv6Download;
 CStatTreeItemNativeCounter *CStatistics::s_ipv6Events[static_cast<std::size_t>(EIPv6Event::Count)];
 #endif
+CStatTreeItemNativeCounter
+	*CStatistics::s_sourceRouteEvents[static_cast<std::size_t>(ESourceRouteEvent::Count)];
 
 // Servers
 CStatTreeItemSimple *CStatistics::s_workingServers;
@@ -1230,6 +1232,37 @@ void CStatistics::InitStatsTree()
 		}
 	}
 #endif
+	{
+		CStatTreeItemBase *const routes = diagnostics->AddChild(
+			(new CStatTreeItemBase("Source Contact Routes (Session)"))->SetKey("source_routes"));
+		struct EventItem
+		{
+			const char *label;
+			const char *key;
+		};
+		// In ESourceRouteEvent order.
+		const EventItem events[] = {
+			{ "Next Route Tried After a Failed One: %s", "source_routes_next_route" },
+			{ "Fallback Server Routes Used: %s", "source_routes_fallback_server_route" },
+			{ "Last-Resort IPv4 Addresses Used: %s", "source_routes_fallback_ipv4" },
+			{ "Last-Resort IPv6 Addresses Used: %s", "source_routes_fallback_ipv6" },
+			{ "Chains Restored After Every Route Failed: %s", "source_routes_chain_restored" },
+			{ "Sources Reached After a Failed Route: %s", "source_routes_reached_after_failure" },
+			{ "Copies That Added a Route: %s", "source_routes_merge_took_route" },
+			{ "Copies Kept Only as a Fallback: %s", "source_routes_merge_kept_fallback" },
+			{ "Other Hosts Refused on an Unproven Route: %s",
+				"source_routes_other_host_refused" },
+			{ "Other Hosts Kept Apart From a Source: %s", "source_routes_other_host_kept_apart" },
+		};
+		static_assert(
+			std::extent_v<decltype(events)> == static_cast<std::size_t>(ESourceRouteEvent::Count),
+			"one stats item per source route event");
+		for (std::size_t i = 0; i < static_cast<std::size_t>(ESourceRouteEvent::Count); ++i) {
+			s_sourceRouteEvents[i] = static_cast<CStatTreeItemNativeCounter *>(
+				routes->AddChild(new CStatTreeItemNativeCounter(events[i].label)));
+			s_sourceRouteEvents[i]->SetKey(events[i].key);
+		}
+	}
 
 	// Stable machine keys for API consumers (EC_TAG_STAT_NODE_KEY), assigned here so
 	// they stay fixed regardless of label wording or translation.
