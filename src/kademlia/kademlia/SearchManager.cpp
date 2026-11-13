@@ -479,7 +479,10 @@ void CSearchManager::UpdateStats() noexcept
 			break;
 		}
 		case CSearch::STOREFILE: {
-			m_totalStoreSrc++;
+			// A stopping lookup asks no more nodes; it only waits for late replies.
+			if (!it->second->Stopping()) {
+				m_totalStoreSrc++;
+			}
 			break;
 		}
 		case CSearch::STOREKEYWORD: {
