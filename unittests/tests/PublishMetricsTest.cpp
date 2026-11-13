@@ -48,7 +48,7 @@ TEST(PublishMetrics, TotalsAndChangedReports)
 	metrics.Attempt(false);
 	metrics.Attempt(true);
 	metrics.Start();
-	metrics.Queued();
+	metrics.Queued(5, 0);
 	metrics.Finish(trace, true, 20);
 	metrics.Start();
 	metrics.Finish({}, false, 30);
@@ -70,16 +70,48 @@ TEST(PublishMetrics, TotalsAndChangedReports)
 	metrics.LookupQueued(1, 120000);
 	metrics.LookupQueued(1, 120001);
 	metrics.LookupQueued(2, 120002);
-	ASSERT_EQUALS(uint64_t(2), metrics.maxRequestsPerIP60s);
+	ASSERT_EQUALS(uint64_t(2), metrics.lookupRequests.peak);
 	ASSERT_TRUE(metrics.ReportDue(180000));
 	metrics.LookupQueued(1, 180002); // Both old IP 1 samples have expired.
 	metrics.LookupQueued(1, 180002);
-	ASSERT_EQUALS(uint64_t(2), metrics.maxRequestsPerIP60s);
-	for (size_t i = 0; i < CPublishMetrics::MaxRateSamples - 1; ++i) {
+	ASSERT_EQUALS(uint64_t(2), metrics.lookupRequests.peak);
+	for (size_t i = 0; i < CPerIPRate::MaxSamples - 1; ++i) {
 		metrics.LookupQueued(3, 180002);
 	}
-	ASSERT_EQUALS(uint64_t(1), metrics.omittedRateSamples);
+	ASSERT_EQUALS(uint64_t(1), metrics.lookupRequests.omitted);
 	ASSERT_TRUE(metrics.ReportDue(240002));
 	metrics.LookupQueued(4, 240003); // Neither the peak nor any logged counter changes.
 	ASSERT_FALSE(metrics.ReportDue(300002));
+}
+
+TEST(PublishMetrics, PerIPThresholdsSinceLastReport)
+{
+	CPublishMetrics metrics;
+	ASSERT_FALSE(metrics.ReportDue(0));
+	for (int i = 0; i < 11; ++i) {
+		metrics.LookupQueued(1, 1000 + i);
+	}
+	for (int i = 0; i < 6; ++i) {
+		metrics.LookupQueued(2, 1000 + i);
+	}
+	metrics.Queued(3, 1000);
+	metrics.Queued(3, 1001);
+	metrics.Queued(4, 1002);
+	ASSERT_TRUE(metrics.ReportDue(60000));
+	ASSERT_EQUALS(size_t(2), metrics.reportedLookupIPs[0].size());    // At least 6.
+	ASSERT_EQUALS(size_t(1), metrics.reportedLookupIPs[1].size());    // At least 8.
+	ASSERT_EQUALS(size_t(1), metrics.reportedLookupIPs[2].count(1));  // Over the limit of 10.
+	ASSERT_EQUALS(size_t(1), metrics.reportedPublishIPs[0].count(3)); // At least 2.
+	ASSERT_TRUE(metrics.reportedPublishIPs[1].empty());               // None over the limit of 2.
+	ASSERT_EQUALS(uint64_t(11), metrics.lookupRequests.peak);
+	ASSERT_EQUALS(uint64_t(2), metrics.publishRequests.peak);
+
+	// The next report counts only IPs that reached a threshold since this one.
+	metrics.Queued(3, 61000);
+	metrics.Queued(3, 61001);
+	metrics.Queued(3, 61002);
+	ASSERT_TRUE(metrics.ReportDue(120000));
+	ASSERT_TRUE(metrics.reportedLookupIPs[0].empty());
+	ASSERT_EQUALS(size_t(1), metrics.reportedPublishIPs[1].count(3));
+	ASSERT_EQUALS(uint64_t(3), metrics.publishRequests.peak);
 }

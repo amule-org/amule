@@ -4608,10 +4608,6 @@ msgid "Not Connected ..."
 msgstr "Nepřipojeno..."
 
 #: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr "Aktuálně připojený server."
-
-#: src/muuli_wdr.cpp
 msgid "Search"
 msgstr "Vyhledávání"
 
@@ -7055,6 +7051,10 @@ msgstr "Získávání informací o kamarádovi"
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
 msgstr "NAT traverzování (QUIC)"
+
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -10752,6 +10752,9 @@ msgstr "Nelze porovnat zastaralé ECPassword s ECPasswordVerifier; odmítám ext
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrace změněného zastaralého ECPassword po přechodu na starší verzi; předchozí ověřovač již tuto relaci neověřuje."
+
+#~ msgid "Currently connected server."
+#~ msgstr "Aktuálně připojený server."
 
 #~ msgid "Up: 0.0 | Down: 0.0"
 #~ msgstr "Up: 0.0 | Down: 0.0"

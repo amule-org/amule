@@ -62,6 +62,7 @@
 
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Search.h"
+#include "kademlia/routing/RoutingZone.h"
 #include "ClientList.h"
 #include "KadCallbackPolicy.h"                   // Needed for DirectCallbackAvailable
 #include "kademlia/kademlia/UDPFirewallTester.h" // Needed for CUDPFirewallTester
@@ -1847,16 +1848,33 @@ void CSharedFileList::Publish()
 {
 	auto &metrics = Kademlia::CPublishMetrics::Instance();
 	if (theLogger.IsEnabled(logKadPublish) && metrics.ReportDue(::GetTickCount64())) {
+		const auto &lookupIPs = metrics.reportedLookupIPs;
+		const auto &publishIPs = metrics.reportedPublishIPs;
+		// Busy destinations that are our own contacts point at the first hops of our lookups.
+		uint64_t busyContacts = 0;
+		if (Kademlia::CKademlia::IsRunning()) {
+			for (uint32_t ip : lookupIPs[1]) {
+				if (Kademlia::CKademlia::GetRoutingZone()->GetContact(ip, 0, false)) {
+					++busyContacts;
+				}
+			}
+		}
 		AddDebugLogLineN(logKadPublish,
 			CFormat("Kad source publish totals: attempts=%llu start_failures=%llu starts=%llu "
 				"queued=%llu "
 				"acknowledged_ips=%llu "
 				"finished=%llu zero_ack=%llu cancelled=%llu duration_ms=%llu "
-				"max_duration_ms=%llu max_req_per_ip_60s=%llu omitted_rate_samples=%llu") %
+				"max_duration_ms=%llu max_req_per_ip_60s=%llu req_ips_ge6=%zu "
+				"req_ips_ge8=%zu "
+				"req_ips_gt10=%zu req_ips_ge8_contacts=%llu max_pub_per_ip_60s=%llu "
+				"pub_ips_ge2=%zu pub_ips_gt2=%zu omitted_rate_samples=%llu") %
 				metrics.attempts % metrics.startFailures % metrics.starts % metrics.queued %
 				metrics.acknowledged % metrics.finished % metrics.zeroAcknowledgements %
 				metrics.cancelled % metrics.durationMs % metrics.maxDurationMs %
-				metrics.maxRequestsPerIP60s % metrics.omittedRateSamples);
+				metrics.lookupRequests.peak % lookupIPs[0].size() % lookupIPs[1].size() %
+				lookupIPs[2].size() % busyContacts % metrics.publishRequests.peak %
+				publishIPs[0].size() % publishIPs[1].size() %
+				(metrics.lookupRequests.omitted + metrics.publishRequests.omitted));
 	}
 
 	// Variables to save cpu.

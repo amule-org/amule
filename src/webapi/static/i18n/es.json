@@ -1076,5 +1076,13 @@
   "prefs_debugging": "Depuración",
   "prefs_field_advanced_write_buffer_limit_mebibytes_help": "Un límite mayor puede suavizar los atascos breves del disco, aunque a costa de un mayor consumo de memoria. Los datos ya solicitados pueden superar este límite.",
   "common_err_path_not_allowed": "Carpeta no permitida — {message}. Las carpetas que permite el demonio se listan en Preferencias ▸ Directorios.",
-  "prefs_field_servers_accelerated_publication_enabled": "Publica archivos compartidos más rápido en los servidores que lo permiten"
+  "prefs_field_servers_accelerated_publication_enabled": "Publica archivos compartidos más rápido en los servidores que lo permiten",
+  "networks_kad_served_buddies": "Compañeros atendidos",
+  "networks_kad_served_buddies_value": "{count} de {limit}",
+  "stats_tree_diagnostics": "Diagnósticos",
+  "prefs_group_capacity": "Capacidades de la línea (solo escalan las gráficas de velocidad)",
+  "prefs_field_connection_download_capacity_kibibytes_per_second": "Capacidad de descarga (KiB/s)",
+  "prefs_field_connection_upload_capacity_kibibytes_per_second": "Capacidad de subida (KiB/s)",
+  "prefs_field_advanced_kad_max_served_buddies": "Nodos Kad tras cortafuegos atendidos como compañero",
+  "prefs_field_advanced_kad_max_served_buddies_help": "Cuántos nodos Kad tras cortafuegos tienen sus devoluciones de llamada retransmitidas por este nodo. Cada uno mantiene una conexión, por lo que como máximo se atiende a una décima parte del límite de conexiones."
 }

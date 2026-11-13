@@ -4589,10 +4589,6 @@ msgid "Not Connected ..."
 msgstr "Desconnectat ..."
 
 #: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr "Servidor connectat actualment."
-
-#: src/muuli_wdr.cpp
 msgid "Search"
 msgstr "Cerca"
 
@@ -7027,6 +7023,10 @@ msgstr "Consulta d'informació de company"
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
 msgstr "Travessia de NAT (QUIC)"
+
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -10696,6 +10696,9 @@ msgstr "No s'ha pogut comparar l'ECPassword antic amb l'ECPasswordVerifier; es r
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "S'està migrant un ECPassword antic modificat després de tornar a una versió anterior; el verificador anterior ja no autentica aquesta execució."
+
+#~ msgid "Currently connected server."
+#~ msgstr "Servidor connectat actualment."
 
 #~ msgid "Up: 0.0 | Down: 0.0"
 #~ msgstr "PU: 0.0 | BA: 0.0"
