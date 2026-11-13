@@ -29,6 +29,7 @@
 #include <wx/mstream.h>
 #include <wx/tokenzr.h>
 
+#include <algorithm>
 #include <array>
 
 #include "updownclient.h"   // Needed for CUpDownClient
@@ -541,8 +542,11 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	uint32 dwEmuleTags = 0;
 
 	CMD4Hash hash = data.ReadHash();
-	const bool routeUnproven = PeerAddressing::HelloRouteUnproven(m_routeUnproven, inbound);
-	switch (PeerAddressing::CheckHelloIdentity(routeUnproven, HasValidHash(), hash == GetUserHash())) {
+	const bool routeUnproven = PeerAddressing::HelloRouteUnproven(
+		m_routeUnproven, inbound, m_dialingIPv6 && m_preserveIdentityOnHello && m_modIPv6FromRecord);
+	const bool checked =
+		routeUnproven || PeerAddressing::ChecksDialAnswer(inbound, GetCreditsHash() != nullptr);
+	switch (PeerAddressing::CheckHelloIdentity(checked, HasValidHash(), hash == GetUserHash())) {
 	case PeerAddressing::EHelloIdentity::OtherHost:
 		if (m_dialingIPv6 && m_preserveIdentityOnHello) {
 			SStoredSourceRoute advertised;
@@ -553,8 +557,11 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 		} else {
 			NoteOtherHostOnRoute();
 		}
-		theStats::AddSourceRouteEvent(ESourceRouteEvent::OtherHostRefused);
-		AddDebugLogLineN(logSourceRoutes,
+		// The counter covers routes from source records; a dial for a known client logs only.
+		if (routeUnproven) {
+			theStats::AddSourceRouteEvent(ESourceRouteEvent::OtherHostRefused);
+		}
+		AddDebugLogLineN(routeUnproven ? logSourceRoutes : logClient,
 			CFormat("Another host (hash %s) answered the route to %s at %s") % hash.Encode() %
 				GetUserHash().Encode() %
 				(m_socket != nullptr ? m_socket->GetPeerAddress().ToWxString()
@@ -887,9 +894,9 @@ bool CUpDownClient::ProcessHelloTypePacket(const CMemFile &data, bool inbound)
 	CClientCredits *pFoundCredits = theApp->clientcredits->GetCredit(m_UserHash);
 	if (credits == NULL) {
 		credits = pFoundCredits;
-		// Not a ban: users behind one NAT share the address and often the default port, and
-		// servers grant a HighID to whichever host answers there. A peer that changes its
-		// hash on purpose avoids this check by changing its port anyway.
+		// Logged for diagnosis, not banned: users behind one NAT share the address and often
+		// the default port, and servers grant a HighID to whichever host answers there. A
+		// peer that changes its hash on purpose avoids this check by changing its port anyway.
 		if (!theApp->clientlist->ComparePriorUserhash(
 			    GetTrackingAddress(), m_nUserPort, pFoundCredits)) {
 			AddDebugLogLineN(logClient,
@@ -2417,6 +2424,12 @@ SStoredSourceRoute StoredRouteOf(const CUpDownClient &client)
 void CUpDownClient::NoteOtherHostOnRoute()
 {
 	AddOtherHostKey(m_otherHostKeys, CurrentStoredRoute().DeadKey());
+}
+
+bool CUpDownClient::IsRouteAnsweredByOtherHost() const
+{
+	const CDeadSourceKey key = CurrentStoredRoute().DeadKey();
+	return std::find(m_otherHostKeys.begin(), m_otherHostKeys.end(), key) != m_otherHostKeys.end();
 }
 
 CNetworkAddress CUpDownClient::GetTrackingAddress() const

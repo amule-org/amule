@@ -296,6 +296,7 @@ CUpDownClient *CClientList::FindMatchingClient(CUpDownClient *client, const CUpD
 		SClientMatchFacts facts;
 		facts.incomingHasHash = client->HasValidHash();
 		facts.candidateHasHash = other->HasValidHash();
+		facts.incomingHashFromHello = client->GetCreditsHash() != nullptr;
 		facts.candidateHashFromHello = other->GetCreditsHash() != nullptr;
 		facts.sameHash = client->GetUserHash() == other->GetUserHash();
 		return IsOtherPeerAtSameEndpoint(facts);
@@ -617,7 +618,8 @@ CUpDownClient *CClientList::FindClientByIP(const CNetworkAddress &address, uint1
 
 	for (; range.first != range.second; ++range.first) {
 		CUpDownClient *cur_client = range.first->second.GetClient();
-		if (cur_client->GetUserPort() == port) {
+		// Another host answered there: a NAT neighbour's client, not the one at that endpoint.
+		if (cur_client->GetUserPort() == port && !cur_client->IsRouteAnsweredByOtherHost()) {
 			return cur_client;
 		}
 	}

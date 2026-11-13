@@ -38,6 +38,7 @@ SClientMatchFacts Neighbour()
 	SClientMatchFacts facts;
 	facts.incomingHasHash = true;
 	facts.candidateHasHash = true;
+	facts.incomingHashFromHello = true;
 	facts.candidateHashFromHello = true;
 	facts.sameHash = false;
 	return facts;
@@ -60,6 +61,14 @@ TEST(ClientMatchPolicy, AHashFromASourceListMayBeStale)
 {
 	SClientMatchFacts facts = Neighbour();
 	facts.candidateHashFromHello = false;
+	ASSERT_FALSE(IsOtherPeerAtSameEndpoint(facts));
+}
+
+TEST(ClientMatchPolicy, ASourceFromAListIsMergedAsBefore)
+{
+	// The hash of a source added from a source list or Kad may be stale.
+	SClientMatchFacts facts = Neighbour();
+	facts.incomingHashFromHello = false;
 	ASSERT_FALSE(IsOtherPeerAtSameEndpoint(facts));
 }
 

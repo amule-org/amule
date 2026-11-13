@@ -145,7 +145,8 @@ public:
 		bool matchOthersOnly = false);
 
 	/**
-	 * Finds a client with the specified ip and port.
+	 * Finds a client with the specified ip and port, skipping one whose route another host
+	 * answered.
 	 */
 	CUpDownClient *FindClientByIP(uint32 clientip, uint16 port);
 	CUpDownClient *FindClientByIP(const CNetworkAddress &address, uint16 port);

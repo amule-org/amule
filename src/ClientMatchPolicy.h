@@ -29,7 +29,8 @@ struct SClientMatchFacts
 {
 	bool incomingHasHash = false;
 	bool candidateHasHash = false;
-	// The candidate's hash came from its own hello, not from a source list or Kad.
+	// Each hash came from that client's own hello, not from a source list or Kad.
+	bool incomingHashFromHello = false;
 	bool candidateHashFromHello = false;
 	bool sameHash = false;
 };
@@ -40,12 +41,13 @@ struct SClientMatchFacts
  * Users behind one NAT share the address and often the default port. Merging the second user's
  * hello into the first user's client drops the first one's connection and bans the address. A hash
  * is only a claim, so this only refuses a merge: a peer with a new hash is treated as a new peer.
- * A hash from a source list may be stale, so such a candidate is merged as before.
+ * Both hashes must come from a hello. One from a source list or Kad may be stale, so a source
+ * added from a list, or a candidate known only from one, is merged as before.
  */
 inline bool IsOtherPeerAtSameEndpoint(const SClientMatchFacts &facts)
 {
-	return facts.incomingHasHash && facts.candidateHasHash && facts.candidateHashFromHello &&
-	       !facts.sameHash;
+	return facts.incomingHasHash && facts.candidateHasHash && facts.incomingHashFromHello &&
+	       facts.candidateHashFromHello && !facts.sameHash;
 }
 
 #endif // CLIENT_MATCH_POLICY_H

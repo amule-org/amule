@@ -32,8 +32,9 @@
 
 /**
  * The user hash each deleted peer had per address and port, kept after its client is gone so a
- * peer that returns with a different hash can be banned for it. The tick is a parameter, so expiry
- * is testable without the application clock.
+ * peer that returns with a different hash can be logged. It is kept for diagnosis only: a NAT
+ * neighbour looks the same, so nothing is banned for it. The tick is a parameter, so expiry is
+ * testable without the application clock.
  */
 class CTrackedClientRecord
 {
