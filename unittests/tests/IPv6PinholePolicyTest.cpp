@@ -12,10 +12,10 @@ DECLARE_SIMPLE(IPv6PinholePolicy)
 
 TEST(IPv6PinholePolicy, RequiresIPv6ListenerAndBackend)
 {
-	ASSERT_FALSE(ShouldRequestIPv6Pinhole(false, true, true));
-	ASSERT_FALSE(ShouldRequestIPv6Pinhole(true, false, true));
-	ASSERT_FALSE(ShouldRequestIPv6Pinhole(true, true, false));
-	ASSERT_TRUE(ShouldRequestIPv6Pinhole(true, true, true));
+	// Not gated on the gateway: a request made before discovery is recorded and replayed later.
+	ASSERT_FALSE(ShouldRequestIPv6Pinhole(false, true));
+	ASSERT_FALSE(ShouldRequestIPv6Pinhole(true, false));
+	ASSERT_TRUE(ShouldRequestIPv6Pinhole(true, true));
 }
 
 TEST(IPv6PinholePolicy, RenewsAtOrInsideMargin)

@@ -30,7 +30,9 @@
 #include "config.h"
 #include "UPnPBase.h"
 
+#include <chrono>
 #include <cstdio>
+#include <thread>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
@@ -42,6 +44,7 @@ const int EXIT_SKIP = 77;
 // no renewal is attempted by the timer during the run.
 const char *const PINHOLE_CLIENT = "2001:db8::1";
 const unsigned int PINHOLE_LEASE = 3600;
+const unsigned int PINHOLE_LEASE_SHORT = 1;
 } // namespace
 
 int main(int argc, char **argv)
@@ -70,16 +73,27 @@ int main(int argc, char **argv)
 			} else if (std::strcmp(argv[i], "delete") == 0) {
 				result = controlPoint.DeletePortMappings(mappings);
 			} else if (std::strcmp(argv[i], "addpinhole") == 0) {
-				result = controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT,
+				controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT,
 					static_cast<unsigned short>(tcpPort),
 					6,
 					PINHOLE_LEASE);
-			} else if (std::strcmp(argv[i], "renewpinhole") == 0) {
-				// Renewed through the same key the control point stores it under.
-				result = controlPoint.RenewIPv6Pinhole(
-					CUPnPControlPoint::PinholeKey(
-						6, static_cast<unsigned short>(tcpPort)),
-					PINHOLE_LEASE);
+				result = true;
+			} else if (std::strcmp(argv[i], "addpinholeshort") == 0) {
+				// A lease already inside the renewal margin, so the production pass renews it
+				// instead of skipping it.
+				controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT,
+					static_cast<unsigned short>(tcpPort),
+					6,
+					PINHOLE_LEASE_SHORT);
+				result = true;
+			} else if (std::strcmp(argv[i], "renewexpiring") == 0) {
+				// Driven the way production drives it: the whole renewal pass, not a single
+				// key. The short lease needs its second to elapse before the pass runs, or
+				// the policy correctly decides nothing is near expiry.
+				std::this_thread::sleep_for(std::chrono::seconds(2));
+				controlPoint.RenewExpiringIPv6Pinholes(
+					static_cast<unsigned short>(tcpPort), PINHOLE_CLIENT);
+				result = true;
 			} else if (std::strcmp(argv[i], "deletepinholes") == 0) {
 				controlPoint.DeleteIPv6Pinholes();
 				result = true;

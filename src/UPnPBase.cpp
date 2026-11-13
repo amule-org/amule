@@ -933,135 +933,135 @@ bool CUPnPControlPoint::ExecuteOnIPv6FirewallService(const std::string &actionNa
 		}
 		std::string value;
 		if (entry.second->Execute(actionName, argval, resultArg, &value)) {
+			// First accepting service wins: a second firewall would only produce a second pinhole
+			// whose UniqueID nobody stores, and a pinhole nobody renews outlives its welcome.
 			ok = true;
 			if (result != nullptr) {
 				*result = value;
 			}
+			break;
 		}
 	}
 	return ok;
 }
 
-bool CUPnPControlPoint::AddIPv6Pinhole(const std::string &internalClient,
-	unsigned short internalPort,
-	int protocol,
-	unsigned int leaseSeconds)
+bool CUPnPControlPoint::SendAddPinhole(SIPv6Pinhole &pinhole)
 {
-	CUPnPMutexLocker lock(m_ServiceMapMutex);
-	const std::string key = PinholeKey(protocol, internalPort);
-
 	std::vector<CUPnPArgumentValue> argval(6);
 	argval[0].SetArgument("RemoteHost");
 	argval[0].SetValue("");
 	argval[1].SetArgument("RemotePort");
 	argval[1].SetValue("0");
 	argval[2].SetArgument("InternalClient");
-	argval[2].SetValue(internalClient);
+	argval[2].SetValue(pinhole.client);
 	argval[3].SetArgument("InternalPort");
-	argval[3].SetValue(Numeric(internalPort));
+	argval[3].SetValue(Numeric(pinhole.port));
 	argval[4].SetArgument("Protocol");
-	argval[4].SetValue(Numeric(protocol));
+	argval[4].SetValue(Numeric(pinhole.protocol));
 	argval[5].SetArgument("LeaseTime");
-	argval[5].SetValue(Numeric(leaseSeconds));
+	argval[5].SetValue(Numeric(pinhole.lease));
 
 	std::string uniqueId;
-	if (!ExecuteOnIPv6FirewallService("AddPinhole", argval, "UniqueID", &uniqueId)) {
+	if (!ExecuteOnIPv6FirewallService("AddPinhole", argval, "UniqueID", &uniqueId) || uniqueId.empty()) {
 		return false;
 	}
-	if (uniqueId.empty()) {
-		return false;
-	}
-	m_IPv6Pinholes[key] = uniqueId;
-	m_IPv6PinholeExpiry[key] = std::chrono::steady_clock::now() + std::chrono::seconds(leaseSeconds);
-	m_IPv6PinholeRequests[key] = { internalClient, internalPort, protocol, leaseSeconds };
+	pinhole.uniqueId = uniqueId;
+	pinhole.expiry = std::chrono::steady_clock::now() + std::chrono::seconds(pinhole.lease);
 	std::ostringstream msg;
-	msg << "IPv6 pinhole for " << internalClient << " (protocol " << protocol << ") got unique id "
-	    << uniqueId;
+	msg << "IPv6 pinhole for " << pinhole.client << " (protocol " << pinhole.protocol
+	    << ") got unique id " << uniqueId;
 	AddDebugLogLineN(logUPnP, msg);
 	return true;
 }
 
-bool CUPnPControlPoint::RenewIPv6Pinhole(const std::string &key, unsigned int leaseSeconds)
+bool CUPnPControlPoint::SendUpdatePinhole(SIPv6Pinhole &pinhole)
 {
-	CUPnPMutexLocker lock(m_ServiceMapMutex);
-	const auto it = m_IPv6Pinholes.find(key);
-	if (it == m_IPv6Pinholes.end()) {
-		return false;
-	}
-
+	// IGD2 names this argument NewLeaseTime: an argument the SCPD does not list is refused before
+	// it ever reaches the gateway.
 	std::vector<CUPnPArgumentValue> argval(2);
 	argval[0].SetArgument("UniqueID");
-	argval[0].SetValue(it->second);
-	argval[1].SetArgument("LeaseTime");
-	argval[1].SetValue(Numeric(leaseSeconds));
+	argval[0].SetValue(pinhole.uniqueId);
+	argval[1].SetArgument("NewLeaseTime");
+	argval[1].SetValue(Numeric(pinhole.lease));
 
-	return ExecuteOnIPv6FirewallService("UpdatePinhole", argval, nullptr, nullptr);
+	if (!ExecuteOnIPv6FirewallService("UpdatePinhole", argval, nullptr, nullptr)) {
+		return false;
+	}
+	pinhole.expiry = std::chrono::steady_clock::now() + std::chrono::seconds(pinhole.lease);
+	return true;
+}
+
+void CUPnPControlPoint::SendDeletePinhole(const SIPv6Pinhole &pinhole)
+{
+	if (pinhole.uniqueId.empty()) {
+		return;
+	}
+	std::vector<CUPnPArgumentValue> argval(1);
+	argval[0].SetArgument("UniqueID");
+	argval[0].SetValue(pinhole.uniqueId);
+	ExecuteOnIPv6FirewallService("DeletePinhole", argval, nullptr, nullptr);
+}
+
+void CUPnPControlPoint::AddIPv6Pinhole(const std::string &internalClient,
+	unsigned short internalPort,
+	int protocol,
+	unsigned int leaseSeconds)
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	const std::string key = PinholeKey(protocol, internalPort);
+	SIPv6Pinhole &pinhole = m_IPv6Pinholes[key];
+	// Recorded before it is sent: if the firewall service has not registered yet, this entry is
+	// what the registration path replays.
+	pinhole.client = internalClient;
+	pinhole.port = internalPort;
+	pinhole.protocol = protocol;
+	pinhole.lease = leaseSeconds;
+	SendAddPinhole(pinhole);
 }
 
 void CUPnPControlPoint::DeleteIPv6Pinholes()
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
-	for (const auto &entry : m_IPv6Pinholes) {
-		std::vector<CUPnPArgumentValue> argval(1);
-		argval[0].SetArgument("UniqueID");
-		argval[0].SetValue(entry.second);
-		ExecuteOnIPv6FirewallService("DeletePinhole", argval, nullptr, nullptr);
+	for (auto &entry : m_IPv6Pinholes) {
+		SendDeletePinhole(entry.second);
 	}
 	// Forgotten whether or not the gateway acknowledged: the leases expire by themselves, and a
 	// kept id would only let a later renewal claim a lease that no longer exists.
 	m_IPv6Pinholes.clear();
-	m_IPv6PinholeExpiry.clear();
-	m_IPv6PinholeRequests.clear();
 }
 
-void CUPnPControlPoint::RenewExpiringIPv6Pinholes()
+void CUPnPControlPoint::RenewExpiringIPv6Pinholes(
+	unsigned short currentPort, const std::string &currentClient)
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	const auto now = std::chrono::steady_clock::now();
-	for (const auto &entry : m_IPv6Pinholes) {
-		const auto request = m_IPv6PinholeRequests.find(entry.first);
-		const auto expiry = m_IPv6PinholeExpiry.find(entry.first);
-		if (request == m_IPv6PinholeRequests.end() || expiry == m_IPv6PinholeExpiry.end()) {
+	for (auto &entry : m_IPv6Pinholes) {
+		SIPv6Pinhole &pinhole = entry.second;
+		// A prefix change leaves the pinhole naming an address we no longer hold: replace it
+		// rather than renew it.
+		if (!currentClient.empty() &&
+			IsIPv6PinholeStale(currentPort, currentClient, pinhole.port, pinhole.client)) {
+			SendDeletePinhole(pinhole);
+			pinhole.uniqueId.clear();
+			pinhole.client = currentClient;
+			SendAddPinhole(pinhole);
 			continue;
 		}
-		const auto left = std::chrono::duration_cast<std::chrono::seconds>(expiry->second - now);
+		const auto left = std::chrono::duration_cast<std::chrono::seconds>(pinhole.expiry - now);
 		// Half the granted lease is the margin: room to retry on the next tick if this attempt
 		// fails, without renewing so eagerly that a gateway sees a flood of updates.
-		const unsigned int margin = request->second.lease / 2;
+		const unsigned int margin = pinhole.lease / 2;
 		const unsigned int remaining =
 			(left.count() > 0) ? static_cast<unsigned int>(left.count()) : 0;
 		if (!ShouldRenewIPv6Pinhole(remaining, margin)) {
 			continue;
 		}
-		std::vector<CUPnPArgumentValue> argval(2);
-		argval[0].SetArgument("UniqueID");
-		argval[0].SetValue(entry.second);
-		argval[1].SetArgument("LeaseTime");
-		argval[1].SetValue(Numeric(request->second.lease));
-		if (ExecuteOnIPv6FirewallService("UpdatePinhole", argval, nullptr, nullptr)) {
-			m_IPv6PinholeExpiry[entry.first] = now + std::chrono::seconds(request->second.lease);
+		// A renewal that the gateway cannot grant - a rebooted router has forgotten the UniqueID -
+		// falls back to asking again, instead of retrying an update forever.
+		if (!SendUpdatePinhole(pinhole)) {
+			SendAddPinhole(pinhole);
 		}
 	}
-}
-
-bool CUPnPControlPoint::DeleteIPv6Pinhole(const std::string &key)
-{
-	CUPnPMutexLocker lock(m_ServiceMapMutex);
-	const auto it = m_IPv6Pinholes.find(key);
-	if (it == m_IPv6Pinholes.end()) {
-		return false;
-	}
-
-	std::vector<CUPnPArgumentValue> argval(1);
-	argval[0].SetArgument("UniqueID");
-	argval[0].SetValue(it->second);
-
-	const bool ok = ExecuteOnIPv6FirewallService("DeletePinhole", argval, nullptr, nullptr);
-	// Dropped even on failure: a pinhole we could not delete expires on its own, and keeping the id
-	// would let a later renew succeed against a lease the gateway already forgot.
-	m_IPv6Pinholes.erase(it);
-	m_IPv6PinholeRequests.erase(key);
-	return ok;
 }
 
 static std::vector<CUPnPArgumentValue> AddPortMappingArguments(const CUPnPPortMapping &upnpPortMapping)
@@ -1654,39 +1654,18 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 			// the mapping on the gateway.
 			CUPnPMutexLocker lock(m_ServiceMapMutex);
 			m_ServiceMap[service.GetAbsEventSubURL()] = &service;
-			for (const auto &entry : m_ActivePortMappingsMap) {
-				service.Execute("AddPortMapping", AddPortMappingArguments(entry.second));
+			if (!stdStringStartsWithCI(service.GetServiceType(), IPv6FirewallControlType)) {
+				for (const auto &entry : m_ActivePortMappingsMap) {
+					service.Execute(
+						"AddPortMapping", AddPortMappingArguments(entry.second));
+				}
 			}
 			if (stdStringStartsWithCI(service.GetServiceType(), IPv6FirewallControlType)) {
-				for (const auto &entry : m_IPv6PinholeRequests) {
-					const auto old = m_IPv6Pinholes.find(entry.first);
-					if (old != m_IPv6Pinholes.end()) {
-						std::vector<CUPnPArgumentValue> removeArgs(1);
-						removeArgs[0].SetArgument("UniqueID");
-						removeArgs[0].SetValue(old->second);
-						service.Execute("DeletePinhole", removeArgs);
-					}
-					std::vector<CUPnPArgumentValue> addArgs(6);
-					addArgs[0].SetArgument("RemoteHost");
-					addArgs[0].SetValue("");
-					addArgs[1].SetArgument("RemotePort");
-					addArgs[1].SetValue("0");
-					addArgs[2].SetArgument("InternalClient");
-					addArgs[2].SetValue(entry.second.client);
-					addArgs[3].SetArgument("InternalPort");
-					addArgs[3].SetValue(Numeric(entry.second.port));
-					addArgs[4].SetArgument("Protocol");
-					addArgs[4].SetValue(Numeric(entry.second.protocol));
-					addArgs[5].SetArgument("LeaseTime");
-					addArgs[5].SetValue(Numeric(entry.second.lease));
-					std::string uniqueId;
-					if (service.Execute("AddPinhole", addArgs, "UniqueID", &uniqueId) &&
-						!uniqueId.empty()) {
-						m_IPv6Pinholes[entry.first] = uniqueId;
-						m_IPv6PinholeExpiry[entry.first] =
-							std::chrono::steady_clock::now() +
-							std::chrono::seconds(entry.second.lease);
-					}
+				// Requests recorded before this service registered are replayed here: this is
+				// the point where they can finally be sent.
+				for (auto &entry : m_IPv6Pinholes) {
+					SendDeletePinhole(entry.second);
+					SendAddPinhole(entry.second);
 				}
 			}
 		}

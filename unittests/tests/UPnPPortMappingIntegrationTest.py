@@ -32,7 +32,7 @@ PINHOLE_ACTIONS = [
     (ADD_PINHOLE, {'RemoteHost': 'RemoteHost', 'RemotePort': 'RemotePort',
                    'InternalClient': 'InternalClient', 'InternalPort': 'InternalPort',
                    'Protocol': 'Protocol', 'LeaseTime': 'LeaseTime'}),
-    (UPDATE_PINHOLE, {'UniqueID': 'UniqueID', 'LeaseTime': 'LeaseTime'}),
+    (UPDATE_PINHOLE, {'UniqueID': 'UniqueID', 'NewLeaseTime': 'LeaseTime'}),
     (DELETE_PINHOLE, {'UniqueID': 'UniqueID'}),
 ]
 SSDP_GROUP = '239.255.255.250'
@@ -455,7 +455,7 @@ def run_pinhole_scenarios(driver, failures):
         if gateway.tables['ip']:
             record_failure(failures, f'pinhole add: IPv4 table touched, {gateway.tables["ip"]}')
 
-        got, gateway = run(['addpinhole', 'renewpinhole'])
+        got, gateway = run(['addpinholeshort', 'renewexpiring'])
         if gateway.pinhole_actions != [(ADD_PINHOLE, '1'), (UPDATE_PINHOLE, '1')]:
             record_failure(failures, f'pinhole renew: gateway saw {gateway.pinhole_actions}')
         if len(gateway.pinholes) != 1:
@@ -490,6 +490,25 @@ def run_scenarios(driver, failures):
         # Exact list: also rules out state queries, GetStatusInfo and the disabled mapping.
         if sorted(gateway.requests) != sorted(expected):
             record_failure(failures, f'{name}: gateway saw {gateway.requests}, expected {expected}')
+
+
+def run_pinhole_late_scenarios(driver, failures):
+    """The point-1 scenario: a request recorded before the firewall service registers.
+
+    The harness's late mechanism holds the SCPD, so the service has not registered when the
+    request is made - exactly the ordering production hits at startup, and exactly what the first
+    driver revision hid by requesting only after registration.
+    """
+    try:
+        with FakeGateway(services=('ip', 'ipv6fw'), held='ipv6fw') as gateway:
+            run_late(driver, gateway, ['addpinhole'], ['pending'])
+            if gateway.pinhole_actions[:1] != [(ADD_PINHOLE, '1')]:
+                record_failure(failures, 'pinhole late: the recorded request was not replayed '
+                                         f'when the service registered, {gateway.pinhole_actions}')
+            if list(gateway.pinholes.values()) != [(PINHOLE_IP, str(TCP_PORT), '6')]:
+                record_failure(failures, f'pinhole late: gateway holds {gateway.pinholes}')
+    except ScenarioFailed as error:
+        record_failure(failures, f'pinhole late: {error}')
 
 
 def run_late_scenarios(driver, failures):
@@ -628,6 +647,7 @@ def main():
         run_scenarios(sys.argv[1], failures)
         run_late_scenarios(sys.argv[1], failures)
         run_pinhole_scenarios(sys.argv[1], failures)
+        run_pinhole_late_scenarios(sys.argv[1], failures)
         check_discovery_pending(sys.argv[1], failures)
         if len(sys.argv) > 2:
             check_amuled_autoconnect(sys.argv[2], failures)
