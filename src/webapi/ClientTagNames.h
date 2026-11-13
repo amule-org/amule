@@ -25,8 +25,11 @@
 #ifndef WEBAPI_CLIENTTAGNAMES_H
 #define WEBAPI_CLIENTTAGNAMES_H
 
+#include "../Constants.h" // Needed for ESourceFrom and SourceFromBit
+
 #include <cstdint>
 #include <string>
+#include <vector>
 
 namespace webapi
 {
@@ -50,8 +53,49 @@ const char *ClientSoftwareName(std::uint32_t code);
 //! EC_TAG_CLIENT_OBFUSCATION_STATUS (EObfuscationState) to a token.
 const char *ClientObfuscationName(std::uint8_t code);
 
-//! EC_TAG_CLIENT_FROM (ESourceFrom) to a token, e.g. "local_server".
-std::string SourceOriginName(std::uint32_t from);
+/**
+ * EC_TAG_CLIENT_FROM (ESourceFrom) to a token, e.g. "local_server", mirroring the GUI's Origin
+ * column without leaking the daemon locale. Inline because the SSE writer needs it in a
+ * translation unit that does not link the refresher.
+ */
+inline std::string SourceOriginName(std::uint32_t from)
+{
+	switch (from) {
+	case SF_LOCAL_SERVER:
+		return "local_server";
+	case SF_REMOTE_SERVER:
+		return "remote_server";
+	case SF_KADEMLIA:
+		return "kad";
+	case SF_SOURCE_EXCHANGE:
+		return "source_exchange";
+	case SF_PASSIVE:
+		return "passive";
+	case SF_LINK:
+		return "link";
+	case SF_SOURCE_SEEDS:
+		return "source_seeds";
+	case SF_SEARCH_RESULT:
+		return "search_result";
+	default:
+		return "unknown";
+	}
+}
+
+/**
+ * EC_TAG_CLIENT_FROM_MASK to its tokens, in ESourceFrom order. A source merged from several
+ * copies carries more than one; SF_NONE is not a channel and is skipped.
+ */
+inline std::vector<std::string> SourceOriginNames(std::uint32_t mask)
+{
+	std::vector<std::string> out;
+	for (int from = SF_LOCAL_SERVER; from <= SF_SEARCH_RESULT; ++from) {
+		if ((mask & SourceFromBit(static_cast<ESourceFrom>(from))) != 0) {
+			out.push_back(SourceOriginName(static_cast<std::uint32_t>(from)));
+		}
+	}
+	return out;
+}
 
 //! The route nibble of EC_TAG_CLIENT_CONTACT_ROUTE (ESourceRoute) to a token, empty for none.
 std::string ContactRouteName(std::uint8_t packed);

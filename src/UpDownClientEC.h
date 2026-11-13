@@ -121,6 +121,7 @@ public:
 	const wxString &GetSoftStr() const { return m_clientSoftString; }
 	const wxString &GetSoftVerStr() const { return m_clientVerString; }
 	ESourceFrom GetSourceFrom() const { return m_nSourceFrom; }
+	unsigned GetSourceOriginMask() const { return m_sourceFromMask; }
 	int GetContactRoute() const { return m_contactRoute; }
 	//! Unpacks EC_TAG_CLIENT_CONTACT_ROUTE, as the core packed it.
 	void SetContactRoute(std::uint8_t packed)
@@ -208,6 +209,8 @@ private:
 	wxString m_clientSoftString;
 	wxString m_clientVerString;
 	ESourceFrom m_nSourceFrom;
+	// Zero on a core that does not send the mask.
+	unsigned m_sourceFromMask = 0;
 	// Unpacked from EC_TAG_CLIENT_CONTACT_ROUTE; zero on a core that does not send it.
 	int m_contactRoute = 0;
 	bool m_identityFromFallback = false;

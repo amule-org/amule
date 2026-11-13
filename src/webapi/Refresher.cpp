@@ -123,32 +123,6 @@ const char *ClientObfuscationName(std::uint8_t code)
 		return "unknown";
 	}
 }
-// Map EC_TAG_CLIENT_FROM (ESourceFrom, Constants.h) to a stable lowercase token,
-// mirroring the GUI's Origin column without leaking the daemon locale.
-std::string SourceOriginName(std::uint32_t from)
-{
-	switch (from) {
-	case SF_LOCAL_SERVER:
-		return "local_server";
-	case SF_REMOTE_SERVER:
-		return "remote_server";
-	case SF_KADEMLIA:
-		return "kad";
-	case SF_SOURCE_EXCHANGE:
-		return "source_exchange";
-	case SF_PASSIVE:
-		return "passive";
-	case SF_LINK:
-		return "link";
-	case SF_SOURCE_SEEDS:
-		return "source_seeds";
-	case SF_SEARCH_RESULT:
-		return "search_result";
-	default:
-		return "unknown";
-	}
-}
-
 // Map the route nibble of EC_TAG_CLIENT_CONTACT_ROUTE (ESourceRoute, SourceRoutePolicy.h) to a
 // stable lowercase token. Empty when no contact has been attempted, which reads as null.
 std::string ContactRouteName(std::uint8_t packed)
@@ -1045,6 +1019,13 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 		std::uint32_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_FROM, v))
 			cs.source_origin = SourceOriginName(v);
+	}
+	{
+		// Absent on a core older than the tag: the guard leaves the mask empty, and the row
+		// then reports the one channel EC_TAG_CLIENT_FROM carries.
+		std::uint32_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_FROM_MASK, v))
+			cs.source_origins_mask = v;
 	}
 	{
 		// Absent on a core older than the tag: the guard leaves the defaults.

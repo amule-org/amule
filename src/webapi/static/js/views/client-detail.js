@@ -16,7 +16,9 @@ import { softLabel, identLabel, stateBadge } from "./client-table.js";
 import { t } from "../i18n.js";
 
 const hashCell = (h) => html`<span class="mono">${(h || "").toUpperCase() || "—"}</span>`;
-const origin = (c) => c.source_origin ? t("downloads_peer_origin_" + c.source_origin) : "—";
+const origin = (c) => (c.source_origins || []).length
+  ? c.source_origins.map((o) => t("downloads_peer_origin_" + o)).join(" + ")
+  : c.source_origin ? t("downloads_peer_origin_" + c.source_origin) : "—";
 const yesNo = (v) => v ? t("common_yes") : t("common_no");
 // "undefined" is the core's not-reported token; render it (and an empty) as a dash.
 const obfuscation = (c) => c.obfuscation_state && c.obfuscation_state !== "undefined"

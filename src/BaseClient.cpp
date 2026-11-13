@@ -4094,6 +4094,11 @@ void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID, bool fromKad)
 
 void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 {
+	// Every merge ends in Safe_Delete() of the duplicate, and an incoming hello takes only this
+	// much of it, so the channels it was seen on are taken here rather than with the routes.
+	// This copy keeps its own ESourceFrom: the mask is the set, the field is where it came from.
+	AdoptSourceOrigins(duplicate.GetSourceOriginMask());
+
 	SKadBuddyMergeFacts facts;
 	facts.incomingHasID = duplicate.HasValidBuddyID();
 	facts.existingHasID = HasValidBuddyID();

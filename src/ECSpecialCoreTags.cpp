@@ -444,6 +444,7 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	}
 #endif
 	AddDiffTag(this, EC_TAG_CLIENT_FROM, (uint64)client->GetSourceFrom(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_FROM_MASK, (uint64)client->GetSourceOriginMask(), valuemap);
 	AddDiffTag(this,
 		EC_TAG_CLIENT_CONTACT_ROUTE,
 		(uint64)PackContactRoute(static_cast<EContactRouteReport>(client->GetContactRoute()),

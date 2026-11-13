@@ -133,6 +133,16 @@ enum ESourceFrom
 	SF_SEARCH_RESULT
 };
 
+/**
+ * One bit per ESourceFrom, for the set of channels a source has been seen on. Copies of one
+ * source are merged into the first one, which keeps its own ESourceFrom, so without this the
+ * channels the other copies came from are lost with them.
+ */
+inline constexpr unsigned SourceFromBit(ESourceFrom from)
+{
+	return 1u << static_cast<unsigned>(from);
+}
+
 // downloadstate
 enum EDownloadState
 {

@@ -76,7 +76,10 @@ export const COLS = [
   // How this source was found (server/kad/passive/…), the desktop's Origin column.
   { key: "origin", th: "downloads_peer_col_origin", width: "120px", sortable: true,
     sortVal: (c) => c.source_origin || "",
-    cell: (c) => c.source_origin ? t("downloads_peer_origin_" + c.source_origin) : "—" },
+    // Every channel the source was seen on, not just the one its first copy came from.
+    cell: (c) => (c.source_origins || []).length
+      ? c.source_origins.map((o) => t("downloads_peer_origin_" + o)).join(" + ")
+      : c.source_origin ? t("downloads_peer_origin_" + c.source_origin) : "—" },
   { key: "file", th: "downloads_peer_col_file", cls: "name", sortable: true,
     sortVal: (c) => fileNameOf(c).toLowerCase(),
     // A4AF row: the peer-advertised name belongs to the other file it is parked

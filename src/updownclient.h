@@ -862,7 +862,19 @@ public:
 
 	/* Source comes from? */
 	ESourceFrom GetSourceFrom() const { return m_nSourceFrom; }
-	void SetSourceFrom(ESourceFrom val) { m_nSourceFrom = val; }
+	void SetSourceFrom(ESourceFrom val)
+	{
+		m_nSourceFrom = val;
+		// Every assignment widens the set: this is the one funnel, so no call site has to
+		// remember it, and a channel a copy came from survives that copy.
+		if (val != SF_NONE) {
+			m_sourceFromMask |= SourceFromBit(val);
+		}
+	}
+	//! Every channel this source has been seen on, SourceFromBit() per ESourceFrom.
+	unsigned GetSourceOriginMask() const { return m_sourceFromMask; }
+	//! Takes the channels a duplicate copy was seen on, before that copy is deleted.
+	void AdoptSourceOrigins(unsigned mask) { m_sourceFromMask |= mask; }
 
 	/* Kad buddy support */
 	// ID
@@ -1280,6 +1292,7 @@ private:
 	CAICHHash *m_pReqFileAICHHash;
 
 	ESourceFrom m_nSourceFrom;
+	unsigned m_sourceFromMask = 0;
 
 	/* Kad Stuff */
 	uint8_t m_achBuddyID[16];

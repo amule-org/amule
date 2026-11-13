@@ -518,6 +518,13 @@ EC_TAG_CLIENT                             0x0600
 # daemon, which is a distinct third state from "no contact has been attempted
 # yet".
 	EC_TAG_CLIENT_CONTACT_ROUTE               0x0634
+
+# Every channel a download source has been seen on, one bit per ESourceFrom
+# (Constants.h). Copies of one source are merged into the first one, which
+# keeps its own EC_TAG_CLIENT_FROM, so without this the channels the other
+# copies came from are lost with them. Additive: a missing tag means an older
+# daemon, which is a distinct third state from "seen on no channel".
+	EC_TAG_CLIENT_FROM_MASK                   0x0635
 EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_TYPE                        0x0701
 	EC_TAG_SEARCH_NAME                        0x0702

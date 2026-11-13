@@ -782,7 +782,9 @@ wxString CGenericClientListCtrl::GetItemColumnText(wxUIntPtr data, unsigned colu
 		return _("None");
 
 	case ColumnUserOrigin:
-		return wxGetTranslation(OriginToText(client.GetSourceFrom()));
+		// Not just the channel this copy was created on: a source found by our server and then
+		// offered again over Kad was reached two ways, and the merge keeps only the first.
+		return OriginsToText(client.GetSourceOriginMask(), client.GetSourceFrom());
 
 	case ColumnUserFileNameDownload:
 		if (const CPartFile *pf = client.GetRequestFile()) {

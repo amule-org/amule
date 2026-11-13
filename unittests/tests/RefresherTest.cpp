@@ -2301,6 +2301,9 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	hi.AddTag(CECTag(EC_TAG_CLIENT_SERVER_NAME, wxString::FromUTF8("test-server")));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_KAD_PORT, static_cast<std::uint16_t>(4672)));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_FROM, static_cast<std::uint64_t>(3))); // SF_KADEMLIA
+	// Seen on our server first, then over Kad: the row reports both, the field keeps the first.
+	hi.AddTag(CECTag(EC_TAG_CLIENT_FROM_MASK,
+		static_cast<std::uint64_t>(SourceFromBit(SF_LOCAL_SERVER) | SourceFromBit(SF_KADEMLIA))));
 	// Kad buddy route (4), reached on a fallback address, not yet proved by a hello.
 	hi.AddTag(CECTag(EC_TAG_CLIENT_CONTACT_ROUTE,
 		static_cast<std::uint64_t>(
@@ -2340,6 +2343,12 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_EQUALS(std::string("de"), cs.country_code);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(4672), cs.kad_port);
 	ASSERT_EQUALS(std::string("kad"), cs.source_origin);
+	{
+		const std::vector<std::string> origins = webapi::SourceOriginNames(cs.source_origins_mask);
+		ASSERT_EQUALS(static_cast<size_t>(2), origins.size());
+		ASSERT_EQUALS(std::string("local_server"), origins[0]);
+		ASSERT_EQUALS(std::string("kad"), origins[1]);
+	}
 	ASSERT_EQUALS(std::string("kad_buddy"), cs.contact_route);
 	ASSERT_TRUE(cs.route_unproven);
 	ASSERT_TRUE(cs.route_from_fallback);

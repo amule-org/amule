@@ -605,6 +605,11 @@ public:
 	// AssignIfExist(EC_TAG_CLIENT_LAST_TIME, target); } uint32 QueueTime(uint32 *target = 0) const {
 	// return AssignIfExist(EC_TAG_CLIENT_QUEUE_TIME, target); }
 	bool GetSourceFrom(uint8 &target) const { return AssignIfExist(EC_TAG_CLIENT_FROM, target); }
+	//! One bit per ESourceFrom; absent on a core older than the tag.
+	bool GetSourceOriginMask(uint32 &target) const
+	{
+		return AssignIfExist(EC_TAG_CLIENT_FROM_MASK, target);
+	}
 	//! Packed by PackContactRoute(); absent on a core older than the tag.
 	bool GetContactRoute(uint8 &target) const
 	{
