@@ -150,6 +150,9 @@ private:
 
 	bool ProcessPacket(const uint8_t *packet, uint32 size, uint8 opcode);
 	bool ProcessExtPacket(const uint8_t *packet, uint32 size, uint8 opcode);
+	// Answers OP_REQUESTSOURCES(2) for file, which is null when we have no such file.
+	void AnswerSourceRequest(
+		CKnownFile *file, uint8 requestedVersion, uint16 requestedOptions, bool setUploadFile);
 	bool ProcessED2Kv2Packet(const uint8_t *packet, uint32 size, uint8 opcode);
 	void ResetTimeOutTimer();
 	void SetClient(CUpDownClient *client);

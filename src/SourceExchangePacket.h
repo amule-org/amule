@@ -54,6 +54,10 @@ public:
 	{
 		ExtSX::WriteRecord(m_data, record, peerSkipsUnknownTags);
 		++m_count;
+		// A hybrid ID below 16777216 is a LowID.
+		if (record.hybridID < 16777216 && (record.buddyIP || record.buddyIPv6 || record.buddyID)) {
+			++m_routedLowIDs;
+		}
 	}
 
 	void AddSource(uint32 id,
@@ -75,6 +79,9 @@ public:
 		}
 		++m_count;
 	}
+
+	uint16 Count() const { return m_count; }
+	uint16 RoutedLowIDs() const { return m_routedLowIDs; }
 
 	// Preserve the existing limit: both callers stopped after writing their 501st source.
 	bool IsFull() const { return m_count > 500; }
@@ -101,6 +108,7 @@ private:
 	const uint8 m_version;
 	CMemFile m_data;
 	uint16 m_count = 0;
+	uint16 m_routedLowIDs = 0;
 };
 
 #endif

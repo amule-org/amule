@@ -172,6 +172,27 @@ enum class ESourceRouteEvent
 	Count
 };
 
+// Publishing and source exchange events counted under Diagnostics, in tree order.
+enum class EPublishEvent
+{
+	KadSourceLookupStarted,
+	KadSourceStoreSent,
+	KadSourceStoreAcknowledged,
+	Ed2kOfferListSent,
+	Ed2kFileOffered,
+	SourceRequestReceived,
+	SourceRequestAnswered,
+	SourceRequestTooSoon,
+	SourceRequestNoSources,
+	SourceRequestUnknownFile,
+	SourceRequestUnsupported,
+	SourceSent,
+	ExtendedAnswerSent,
+	ExtendedSourceSent,
+	RoutedLowIDSourceSent,
+	Count
+};
+
 #ifdef ENABLE_IPV6
 // IPv6 events counted under Diagnostics, in tree order.
 enum class EIPv6Event
@@ -454,6 +475,20 @@ public:
 	{
 		++(*s_sourceRouteEvents[static_cast<std::size_t>(event)]);
 	}
+	static void AddPublishEvent(EPublishEvent event, uint64_t count = 1)
+	{
+		*s_publishEvents[static_cast<std::size_t>(event)] += count;
+	}
+	// The sources in one source exchange answer we built.
+	static void AddSourceAnswer(uint32_t sources, bool extended, uint32_t routedLowIDs)
+	{
+		AddPublishEvent(EPublishEvent::SourceSent, sources);
+		if (extended && sources) {
+			AddPublishEvent(EPublishEvent::ExtendedAnswerSent);
+			AddPublishEvent(EPublishEvent::ExtendedSourceSent, sources);
+			AddPublishEvent(EPublishEvent::RoutedLowIDSourceSent, routedLowIDs);
+		}
+	}
 
 	// Servers
 	static void AddServer() { ++(*s_totalServers); }
@@ -694,6 +729,12 @@ private:
 #endif
 	static CStatTreeItemNativeCounter
 		*s_sourceRouteEvents[static_cast<std::size_t>(ESourceRouteEvent::Count)];
+	static CStatTreeItemCounter *s_publishEvents[static_cast<std::size_t>(EPublishEvent::Count)];
+	static CStatTreeItemSimple *s_kadPublishedNow;
+	static CStatTreeItemSimple *s_kadPublishedShare;
+	static CStatTreeItemSimple *s_kadPublishedWellNow;
+	static CStatTreeItemSimple *s_ed2kOfferedNow;
+	static CStatTreeItemSimple *s_ed2kOfferedShare;
 
 	// Servers
 	static CStatTreeItemSimple *s_workingServers;

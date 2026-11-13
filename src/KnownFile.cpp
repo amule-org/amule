@@ -671,6 +671,16 @@ bool CKnownFile::LoadTagsFromFile(const CFileDataIO *file)
 			SetLastPublishTimeKadNotes(newtag.GetInt());
 			break;
 
+		case FT_KADSRCACKTIME:
+			// A time ahead of the clock is corrupt; the buddy it named is not saved.
+			m_kadSrcAckTime =
+				newtag.GetInt() <= static_cast<uint64>(time(nullptr)) ? newtag.GetInt() : 0;
+			break;
+
+		case FT_KADSRCACKCOUNT:
+			m_kadSrcAckNodes = newtag.GetInt();
+			break;
+
 		case FT_LASTSEEN:
 			m_lastSeen = newtag.GetInt();
 			break;
@@ -776,6 +786,10 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 		++tagcount;
 	}
 
+	if (m_kadSrcAckTime) {
+		tagcount += 2;
+	}
+
 	// Upload-activity tags (issue #466) -- only persisted once set.
 	if (m_lastUploadDatetime) {
 		++tagcount;
@@ -857,6 +871,14 @@ bool CKnownFile::WriteToFile(CFileDataIO *file)
 	if (m_lastPublishTimeKadNotes) {
 		CTagInt32 kadLastPubNotes(FT_KADLASTPUBLISHNOTES, m_lastPublishTimeKadNotes);
 		kadLastPubNotes.WriteTagToFile(file);
+	}
+
+	// Kad source acknowledgements
+	if (m_kadSrcAckTime) {
+		CTagInt32 ackTime(FT_KADSRCACKTIME, m_kadSrcAckTime);
+		ackTime.WriteTagToFile(file);
+		CTagInt32 ackNodes(FT_KADSRCACKCOUNT, m_kadSrcAckNodes);
+		ackNodes.WriteTagToFile(file);
 	}
 
 	// Upload activity (issue #466)
@@ -1145,6 +1167,7 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 		}
 	}
 
+	theStats::AddSourceAnswer(packet.Count(), packet.IsExtended(), packet.RoutedLowIDs());
 	return packet.CreatePacket();
 }
 
@@ -1494,34 +1517,23 @@ bool CAbstractFile::RequestKadNoteSearch()
 
 bool CKnownFile::PublishSrc()
 {
-	const SKadPublishFacts facts = CSharedFileList::CurrentKadPublishFacts();
-	if (!PublishesToKad(facts)) {
+	const CSharedFileList::SKadSourceRoute route = CSharedFileList::CurrentKadSourceRoute();
+	if (route.mode == EKadSourcePublish::None) {
 		return false;
 	}
 	// Only a buddy route is tracked, so gaining or losing a buddy republishes at once.
-	const bool needsBuddy = DecideKadSourcePublish(facts) == EKadSourcePublish::Buddy;
-	uint32 buddyIP = 0;
-	uint16 buddyPort = 0;
-	if (needsBuddy) {
-		CUpDownClient *buddy = theApp->clientlist->GetBuddy();
-		if (buddy) {
-			buddyIP = buddy->GetIP();
-			buddyPort = buddy->GetUDPPort();
-		}
-	}
-
 	const uint32 now = static_cast<uint32>(time(nullptr));
-	if (!Kademlia::CanPublishSource(needsBuddy,
-		    buddyIP,
+	if (!Kademlia::CanPublishSource(route.mode == EKadSourcePublish::Buddy,
+		    route.buddyIP,
 		    m_lastBuddyIP,
 		    m_lastPublishTimeKadSrc,
 		    now,
-		    buddyPort,
+		    route.buddyPort,
 		    m_lastBuddyPort)) {
 		return false;
 	}
 
-	SetLastPublishTimeKadSrc(now + KADEMLIAREPUBLISHTIMES, buddyIP, buddyPort);
+	SetLastPublishTimeKadSrc(now + KADEMLIAREPUBLISHTIMES, route.buddyIP, route.buddyPort);
 	return true;
 }
 

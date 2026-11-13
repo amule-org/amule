@@ -84,6 +84,24 @@ inline bool PublishesToKad(const SKadPublishFacts &facts)
 }
 
 /**
+ * Whether a file's Kad source entries still lead to us: a node acknowledged one less than `lifetime`
+ * seconds ago, the time nodes keep it, and it names the buddy we would publish with now. Only a
+ * buddy publish names one, so `buddyIP`/`buddyPort` are 0 for every other mode.
+ */
+inline bool KadSourceEntriesLive(EKadSourcePublish mode,
+	uint32_t ackTime,
+	uint32_t ackBuddyIP,
+	uint16_t ackBuddyPort,
+	uint32_t now,
+	uint32_t lifetime,
+	uint32_t buddyIP,
+	uint16_t buddyPort)
+{
+	return mode != EKadSourcePublish::None && ackTime != 0 && ackTime <= now &&
+	       now - ackTime < lifetime && ackBuddyIP == buddyIP && ackBuddyPort == buddyPort;
+}
+
+/**
  * Whether a lookup answer's sender key is kept on the contact that answered, so that what we publish
  * to it later proves we receive at our IP.
  *

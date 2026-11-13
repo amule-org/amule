@@ -3432,6 +3432,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/KnownHistoryIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (KnownHistoryIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME KnownMetKadAckIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/KnownMetKadAckIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (KnownMetKadAckIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME GlobalSourceRequestIntegrationTest
 			COMMAND ${Python3_EXECUTABLE} -u
 				${CMAKE_CURRENT_SOURCE_DIR}/GlobalSourceRequestIntegrationTest.py $<TARGET_FILE:amuled>
@@ -4149,6 +4154,7 @@ foreach (ec_wire_test IN ITEMS
 	KadReceiverKeyLogIntegrationTest
 	KadSourceTagsECTest
 	KnownHistoryIntegrationTest
+	KnownMetKadAckIntegrationTest
 	LogfilePathIntegrationTest
 	LoggerRuntimeIntegrationTest
 	LoggingFormatIntegrationTest
