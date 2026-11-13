@@ -19,7 +19,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-10 13:02+0000\n"
+"PO-Revision-Date: 2026-11-12 17:35+0000\n"
 "Last-Translator: Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/amule-application/es/>\n"
 "Language: es\n"
@@ -4583,12 +4583,11 @@ msgstr "Usuarios conectados al servidor actual y una estimación del número tot
 
 #: src/muuli_wdr.cpp
 msgid "Up:"
-msgstr ""
+msgstr "Subida:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Down:"
-msgstr "Descargado: "
+msgstr "Bajada:"
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -4597,10 +4596,6 @@ msgstr "Muestra el estado de la conexión y las transferencias activas. Las flec
 #: src/muuli_wdr.cpp
 msgid "Not Connected ..."
 msgstr "No conectado..."
-
-#: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr "Conectado al servidor."
 
 #: src/muuli_wdr.cpp
 msgid "Search"
@@ -5772,11 +5767,11 @@ msgstr "Búsquedas simultáneas de fuentes Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Firewalled Kad nodes served as buddy"
-msgstr ""
+msgstr "Nodos Kad tras cortafuegos atendidos como compañero"
 
 #: src/muuli_wdr.cpp
 msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
-msgstr ""
+msgstr "Cuántos nodos Kad tras cortafuegos tienen sus devoluciones de llamada retransmitidas por este nodo. Cada uno mantiene una conexión, por lo que como máximo se atiende a una décima parte del límite de conexiones."
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
@@ -7037,6 +7032,10 @@ msgstr "Solicitud de información del compañero"
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
 msgstr "Superación de NAT (QUIC)"
+
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
+msgstr ""
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -8441,14 +8440,13 @@ msgid "Connected to buddy at %s"
 msgstr "Conectado a compañero en %s"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Served buddies:"
-msgstr "Lista de servidores"
+msgstr "Compañeros atendidos:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "%u of %u"
-msgstr ""
+msgstr "%u de %u"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
@@ -9028,9 +9026,8 @@ msgid "Average file size: %s"
 msgstr "Tamaño medio de archivo: %s"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Diagnostics"
-msgstr "Diagnósticos de búsqueda"
+msgstr "Diagnósticos"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -9115,9 +9112,8 @@ msgstr ""
 "Escriba 'help search' para obtener más ayuda.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support media search filters.\n"
-msgstr "El demonio conectado no admite búsquedas en todas las redes.\n"
+msgstr "El demonio conectado no admite filtros de búsqueda multimedia.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -9130,13 +9126,12 @@ msgstr ""
 "Escriba 'help search' para obtener más ayuda.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support search management.\n"
-msgstr "El demonio conectado no admite búsquedas en todas las redes.\n"
+msgstr "El demonio conectado no admite gestión de búsquedas.\n"
 
 #: src/TextClient.cpp
 msgid "A search ID from 'search list' is required.\n"
-msgstr ""
+msgstr "Se requiere un ID de búsqueda de «search list».\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9253,24 +9248,23 @@ msgstr "[Archivo de partes]"
 
 #: src/TextClient.cpp
 msgid "No retained searches.\n"
-msgstr ""
+msgstr "No hay búsquedas retenidas.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; availability is unknown.\n"
-msgstr ""
+msgstr "Solicitud de más resultados procesada; se desconoce la disponibilidad.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; further requests remain possible.\n"
-msgstr ""
+msgstr "Solicitud de más resultados procesada; aún es posible realizar más solicitudes.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "No further results can be requested for this search.\n"
-msgstr "Devolver los resultados de la búsqueda anterior.\n"
+msgstr "No se pueden solicitar más resultados para esta búsqueda.\n"
 
 #: src/TextClient.cpp
 msgid "Search stop request processed; retained results were not removed.\n"
-msgstr ""
+msgstr "Solicitud de detención de búsqueda procesada; los resultados retenidos no se han eliminado.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9525,7 +9519,6 @@ msgid "Execute a search."
 msgstr "Ejecutar una búsqueda."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -9549,22 +9542,27 @@ msgid ""
 "Example: 'search global linux iso --type Iso --min-size 100M' returns\n"
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
-"El tipo de búsqueda debe especificarse con el tipo:\n"
+"Debe especificarse un tipo de búsqueda indicando el tipo:\n"
 "    GLOBAL\n"
 "    LOCAL\n"
 "    KAD\n"
-"    ALL: todas las redes (requiere soporte del demonio)\n"
-"Ejemplo: 'search kad archivo' buscará en la red kad \"archivo\".\n"
+"    ALL: Todas las redes (requiere compatibilidad del demonio)\n"
+"Ejemplo: 'search kad archivo' ejecutará una búsqueda kad para \"archivo\".\n"
 "\n"
-"Filtros opcionales pueden añadirse antes, después o intercalados con\n"
-"la(s) palabra(s) de búsqueda:\n"
+"Se pueden añadir filtros opcionales antes, después o intercalados con\n"
+"las palabras clave de búsqueda:\n"
 "    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
 "    --extension <ext>      (alias: --ext)\n"
 "    --avail <N>            número mínimo de fuentes\n"
 "    --min-size <N[KMG]>    tamaño mínimo de archivo; K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    tamaño máximo de archivo; mismos sufijos\n"
-"Ejemplo: 'search global linux iso --type Iso --min-size 100M' devolverá\n"
-"resultados de \"linux iso\" de tipo de archivo Iso de al menos 100 MiB.\n"
+"    --min-bitrate <kbps>   número entero, 0-1000000\n"
+"    --min-duration <sec>   número entero, 0-86400\n"
+"    --codec <texto> --title <texto> --album <texto> --artist <texto>\n"
+"Entrecomille los valores de texto multimedia que contengan espacios.\n"
+"Kad aplica los filtros multimedia; los servidores eD2k pueden ignorarlos.\n"
+"Ejemplo: 'search global linux iso --type Iso --min-size 100M' devuelve\n"
+"resultados para \"linux iso\" de tipo de archivo Iso de al menos 100 MiB.\n"
 
 #: src/TextClient.cpp
 msgid "Execute a global search."
@@ -9584,25 +9582,23 @@ msgstr "Ejecutar una búsqueda eD2k y Kad"
 
 #: src/TextClient.cpp
 msgid "List retained search IDs and queries."
-msgstr ""
+msgstr "Lista los ID y las consultas de las búsquedas retenidas."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Stop a search, keeping its results."
-msgstr "Ninguna búsqueda abierta arroja este resultado."
+msgstr "Detiene una búsqueda, conservando sus resultados."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'."
-msgstr ""
+msgstr "Requiere un ID de búsqueda de «search list»."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Request more Kad search results."
-msgstr "Número de resultados de la búsqueda: %i\n"
+msgstr "Solicita más resultados de búsqueda Kad."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
-msgstr ""
+msgstr "Requiere un ID de búsqueda de «search list». No se garantizan más resultados."
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -10706,6 +10702,9 @@ msgstr "No se ha podido comparar la contraseña ECPassword heredada con ECPasswo
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrando la clave heredada ECPassword modificada tras degradar la versión; el verificador anterior ya no se utilizará para autenticar esta sesión."
+
+#~ msgid "Currently connected server."
+#~ msgstr "Conectado al servidor."
 
 #~ msgid "Up: 0.0 | Down: 0.0"
 #~ msgstr "Su: 0.0 | De: 0.0"

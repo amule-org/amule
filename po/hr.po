@@ -4581,10 +4581,6 @@ msgid "Not Connected ..."
 msgstr "Ne povezan..."
 
 #: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Search"
 msgstr "Pretraga"
 
@@ -7041,6 +7037,10 @@ msgstr ""
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp

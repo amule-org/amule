@@ -6,19 +6,20 @@
 # Mad-Soft <mad.soft@gmail.com>, 2010
 # thorin <thorin@users.noreply.hosted.weblate.org>, 2026.
 # Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>, 2026.
+# Got3nks <got3nks@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
 "POT-Creation-Date: 2026-11-10 06:20+0000\n"
-"PO-Revision-Date: 2026-11-10 13:04+0000\n"
-"Last-Translator: Francisco José Juan Quintanilla <frnjjq@users.noreply.hosted.weblate.org>\n"
+"PO-Revision-Date: 2026-11-13 09:25+0000\n"
+"Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/application-man-pages/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
 #. type: TH
@@ -646,22 +647,22 @@ msgstr "Reanuda la descarga especificada por I<E<lt>hashE<gt>> o I<E<lt>numberE<
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Lists retained search IDs and queries, including searches started by other clients."
-msgstr ""
+msgstr "Lista los ID y las consultas de las búsquedas retenidas, incluidas las iniciadas por otros clientes."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Stops activity for the specified search while retaining its results."
-msgstr ""
+msgstr "Detiene la actividad de la búsqueda especificada mientras retiene sus resultados."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
-msgstr ""
+msgstr "Solicita más resultados de Kad para la búsqueda especificada. No se garantizan más resultados. La respuesta informa si sigue siendo posible realizar solicitudes posteriores o si dicha información no está disponible en un demonio antiguo."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
-msgstr ""
+msgstr "Estos comandos de gestión requieren que el demonio admita el listado de búsquedas y las búsquedas múltiples.  Use un ID explícito de B<search list> para parar y más."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -726,47 +727,45 @@ msgstr "Tamaño máximo de archivo a devolver. Mismos sufijos que B<--min-size>.
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Media filters:"
-msgstr ""
+msgstr "Filtros multimedia:"
 
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
-msgstr "[B<-t> I<E<lt>numE<gt>>]"
+msgstr "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum bitrate as a whole number from 0 to 1000000."
-msgstr ""
+msgstr "Tasa de bits mínima como un número entero entre 0 y 1000000."
 
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
-msgstr "[B<-t> I<E<lt>numE<gt>>]"
+msgstr "B<--min-duration> I<E<lt>segundosE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum duration as a whole number from 0 to 86400."
-msgstr ""
+msgstr "Duración mínima como un número entero entre 0 y 86400."
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
-msgstr ""
+msgstr "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textoE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
-msgstr ""
+msgstr "Cada opción acepta un valor de texto. Encierre entre comillas simples o dobles los valores que contengan espacios.  Al usar B<-c>, conserve dichas comillas dentro de la cadena de comandos pasada por el intérprete de órdenes."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
-msgstr ""
+msgstr "Los valores multimedia nulos o vacíos no imponen ninguna restricción. Los filtros multimedia no vacíos requieren compatibilidad del demonio. Kad aplica estos filtros; los servidores eD2k pueden ignorarlos."
 
 #. type: Plain text
 #: amulecmd.1.in

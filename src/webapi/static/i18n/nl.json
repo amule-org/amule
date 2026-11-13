@@ -1070,5 +1070,9 @@
   "networks_kad_served_buddies": "Bediende buddies",
   "networks_kad_served_buddies_value": "{count} van de {limit}",
   "prefs_field_advanced_kad_max_served_buddies": "Gefirewallde Kad-nodes bediend als buddy",
-  "prefs_field_advanced_kad_max_served_buddies_help": "Voor hoe veel gefirewallde Kad-nodes deze node terugroepen heeft doorgegeven. Elke node bevat een verbinding zodat maximaal een tiende van de verbindingslimiet wordt bediend."
+  "prefs_field_advanced_kad_max_served_buddies_help": "Voor hoe veel gefirewallde Kad-nodes deze node terugroepen heeft doorgegeven. Elke node bevat een verbinding zodat maximaal een tiende van de verbindingslimiet wordt bediend.",
+  "stats_tree_diagnostics": "Diagnostiek",
+  "prefs_group_capacity": "Lijncapaciteit (schaalt alleen de snelheidsgrafiek)",
+  "prefs_field_connection_download_capacity_kibibytes_per_second": "Downloadcapaciteit (KiB/s)",
+  "prefs_field_connection_upload_capacity_kibibytes_per_second": "Uploadcapaciteit (KiB/s)"
 }

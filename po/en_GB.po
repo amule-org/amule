@@ -4591,10 +4591,6 @@ msgid "Not Connected ..."
 msgstr "Not Connected ..."
 
 #: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr "Currently connected server."
-
-#: src/muuli_wdr.cpp
 msgid "Search"
 msgstr "Search"
 
@@ -7024,6 +7020,10 @@ msgstr ""
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
@@ -10690,6 +10690,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Currently connected server."
+#~ msgstr "Currently connected server."
 
 #~ msgid "Up: 0.0 | Down: 0.0"
 #~ msgstr "Up: 0.0 | Down: 0.0"

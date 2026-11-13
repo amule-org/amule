@@ -1078,5 +1078,11 @@
   "prefs_debugging_warning": "Os logs de depuração podem conter endereços IP de pares, hashes de usuário e nomes de arquivos. Convidados podem ler o log, a menos que as mensagens de depuração sejam enviadas apenas para o arquivo de log. Essa opção vale somente para novas linhas: as linhas anteriores continuam legíveis até que o log seja limpo, e limpá-lo também esvazia o arquivo de log do daemon.",
   "prefs_field_advanced_verbose_logging_logfile_only": "Apenas para o arquivo de log",
   "networks_kad_served_buddies": "Amigos atendidos",
-  "networks_kad_served_buddies_value": "{count} de {limit}"
+  "networks_kad_served_buddies_value": "{count} de {limit}",
+  "stats_tree_diagnostics": "Diagnóstico",
+  "prefs_group_capacity": "Capacidades da linha (afetam apenas a escala dos gráficos de velocidade)",
+  "prefs_field_connection_download_capacity_kibibytes_per_second": "Capacidade de download (KiB/s)",
+  "prefs_field_connection_upload_capacity_kibibytes_per_second": "Capacidade de upload (KiB/s)",
+  "prefs_field_advanced_kad_max_served_buddies": "Nós Kad sob firewall atendidos como amigo",
+  "prefs_field_advanced_kad_max_served_buddies_help": "Para quantos nós Kad sob firewall este nó repassa callbacks. Cada um ocupa uma conexão, por isso no máximo um décimo do limite de conexões é atendido."
 }

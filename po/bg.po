@@ -4616,10 +4616,6 @@ msgid "Not Connected ..."
 msgstr "Няма връзка..."
 
 #: src/muuli_wdr.cpp
-msgid "Currently connected server."
-msgstr "Сървър, с който в момента сте свързани."
-
-#: src/muuli_wdr.cpp
 msgid "Search"
 msgstr "Търсене"
 
@@ -7082,6 +7078,10 @@ msgstr ""
 
 #: src/PeerCapabilities.h
 msgid "NAT traversal (QUIC)"
+msgstr ""
+
+#: src/PeerCapabilities.h
+msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
@@ -10757,6 +10757,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "Currently connected server."
+#~ msgstr "Сървър, с който в момента сте свързани."
 
 #~ msgid "Up: 0.0 | Down: 0.0"
 #~ msgstr "Качване: 0.0 | Изтегляне: 0.0"
