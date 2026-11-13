@@ -3450,6 +3450,11 @@ void CUpDownClientListRem::ProcessItemUpdate(const CEC_UpDownClient_Tag *tag, CC
 		client->m_nSourceFrom = (ESourceFrom)sourceFrom;
 	}
 
+	uint32 originMask = 0;
+	if (tag->GetSourceOriginMask(originMask)) {
+		client->m_sourceFromMask = originMask;
+	}
+
 	uint8 contactRoute = 0;
 	if (tag->GetContactRoute(contactRoute)) {
 		client->SetContactRoute(contactRoute);

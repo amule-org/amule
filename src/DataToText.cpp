@@ -200,6 +200,25 @@ wxString OriginToText(unsigned int source_from)
 }
 
 /**
+ * Every channel a source has been seen on, joined in enum order: "Local Server + Kad". @a primary
+ * is its own ESourceFrom, which names the cell on its own while nothing has been merged in.
+ */
+wxString OriginsToText(unsigned int originMask, unsigned int primary)
+{
+	wxString joined;
+	for (int from = SF_LOCAL_SERVER; from <= SF_SEARCH_RESULT; ++from) {
+		if ((originMask & SourceFromBit((ESourceFrom)from)) == 0) {
+			continue;
+		}
+		if (!joined.IsEmpty()) {
+			joined += wxT(" + ");
+		}
+		joined += wxGetTranslation(OriginToText(from));
+	}
+	return joined.IsEmpty() ? wxGetTranslation(OriginToText(primary)) : joined;
+}
+
+/**
  * The way a source is being contacted, as a noun phrase for ContactRouteStatus()'s sentences.
  * Empty before the first contact attempt, and for a route this build does not know.
  */

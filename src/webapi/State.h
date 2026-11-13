@@ -392,8 +392,9 @@ struct ClientSnapshot
 	std::string server_ip;          // dotted-quad; "" when unknown/0
 	std::uint16_t server_port = 0;
 	std::string server_name;
-	std::uint16_t kad_port = 0;  // 0 => Kad not connected for this peer
-	std::string source_origin;   // "local_server" | "remote_server" | "kad" | "source_exchange" | ...
+	std::uint16_t kad_port = 0; // 0 => Kad not connected for this peer
+	std::string source_origin;  // "local_server" | "remote_server" | "kad" | "source_exchange" | ...
+	std::uint32_t source_origins_mask = 0; // every channel it was seen on, one bit per ESourceFrom
 	std::string contact_route;   // "dial" | "direct_udp_callback" | "server_callback" | ...; "" => none
 	bool route_unproven = false; // the route comes from a record no hello has proved
 	bool route_from_fallback = false;      // the IPv4 identity came from a fallback route

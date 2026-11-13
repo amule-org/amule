@@ -720,6 +720,22 @@ that advertised no capabilities (word `0`). aMule itself advertises
 nothing here yet — it implements none of the five features — so the tag
 describes the peer only.
 
+### Channels a download source was seen on
+
+| Tag | Code | Type | Meaning |
+| --- | ---- | ---- | ------- |
+| `EC_TAG_CLIENT_FROM_MASK` | `0x0635` | `uint32` | One bit per `ESourceFrom` |
+
+A child of `EC_TAG_CLIENT`, beside `EC_TAG_CLIENT_FROM`. Copies of one
+source are merged into the first one, which keeps its own
+`EC_TAG_CLIENT_FROM`, so without this the channels the other copies came
+from are lost when those copies are deleted. Bit `n` is `ESourceFrom`
+value `n`; bit 0 (`SF_NONE`) is never set.
+
+The tag is additive and follows the usual convention: a reply without it
+means an older daemon, which is a **third state**, distinct from a source
+seen on no channel (mask `0`).
+
 ### Contact route of a download source
 
 | Tag | Code | Type | Meaning |

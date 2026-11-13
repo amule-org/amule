@@ -723,5 +723,21 @@ else
 	_skip "/clients: no rows, cannot check the contact_route tokens"
 fi
 
+# --- 12. source_origins is every channel a source was seen on: the same
+# vocabulary as source_origin, an array rather than null, and it always
+# contains source_origin itself. Reads only, appended at the end for the same
+# reason as 8.
+_curl -H "Authorization: Bearer $TOKEN" "$API/clients"
+if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
+	_assert_json_eq "[.clients[] | select((.source_origins|type) != \"array\")] | length" 0 \
+		"/clients: source_origins is an array on every row"
+	_assert_json_eq "[.clients[].source_origins[]] - $ORIGIN_TOKENS | length" 0 \
+		"/clients: every source_origins entry is a documented token"
+	_assert_json_eq '[.clients[] | select(.source_origin != null and (.source_origins | length) > 0 and ((.source_origins | index(.source_origin)) == null))] | length' 0 \
+		"/clients: source_origins contains source_origin"
+else
+	_skip "/clients: no rows, cannot check source_origins"
+fi
+
 # --- Summary. -----------------------------------------------------
 _summary

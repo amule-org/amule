@@ -2706,6 +2706,14 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// both ToJson AND Equal in EventDiff.cpp; a field in one but not the other never
 	// updates.
 	WriteStringOrNull(w, "source_origin", !c.source_origin.empty(), c.source_origin);
+	// Every channel the source was seen on, not just the one its first copy came from. Empty
+	// on a daemon older than the tag, where `source_origin` is all there is.
+	w.Key("source_origins");
+	w.BeginArray();
+	for (const std::string &token : webapi::SourceOriginNames(c.source_origins_mask)) {
+		w.ValueString(token.c_str());
+	}
+	w.EndArray();
 	// null until a contact has been attempted, and on a daemon older than the tag.
 	WriteStringOrNull(w, "contact_route", !c.contact_route.empty(), c.contact_route);
 	w.Key("route_unproven");

@@ -31,6 +31,7 @@
 #include "SnapshotJson.h"
 #include "SearchJson.h"      // WriteSearchResultFields, shared with GET /search/{id}/results
 #include "ServerFlagNames.h" // Shared server capability-bit tables, decoded to JSON
+#include "ClientTagNames.h"  // Needed for SourceOriginNames
 
 #include <common/MediaCodecName.h> // Needed for MediaCodecLabel
 
@@ -78,6 +79,21 @@ std::string JsonStrOrNull(bool known, const std::string &v)
 // definition.
 //
 // Empty array, not null: the peer claimed nothing, which is a known answer.
+std::string JsonSourceOrigins(std::uint32_t mask)
+{
+	std::string out = "[";
+	bool first = true;
+	for (const std::string &token : webapi::SourceOriginNames(mask)) {
+		if (!first) {
+			out += ",";
+		}
+		first = false;
+		out += "\"" + token + "\"";
+	}
+	out += "]";
+	return out;
+}
+
 std::string JsonProtocolExtensions(std::uint32_t bits)
 {
 	CPeerCapabilities caps;
@@ -312,6 +328,7 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"friend\":" << (c.is_friend ? "true" : "false") << ",\"credit_ratio\":"
 	  << (c.has_credit_ratio ? JsonDoubleToString(c.credit_ratio) : std::string("null"))
 	  << ",\"source_origin\":" << JsonStrOrNull(!c.source_origin.empty(), c.source_origin)
+	  << ",\"source_origins\":" << JsonSourceOrigins(c.source_origins_mask)
 	  << ",\"contact_route\":" << JsonStrOrNull(!c.contact_route.empty(), c.contact_route)
 	  << ",\"route_unproven\":" << (c.route_unproven ? "true" : "false")
 	  << ",\"route_from_fallback\":" << (c.route_from_fallback ? "true" : "false")
@@ -457,9 +474,10 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.friend_slot == b.friend_slot && a.is_friend == b.is_friend &&
 	       a.credit_ratio == b.credit_ratio && a.has_credit_ratio == b.has_credit_ratio &&
 	       a.connected == b.connected && a.has_connected == b.has_connected &&
-	       a.source_origin == b.source_origin && a.contact_route == b.contact_route &&
-	       a.route_unproven == b.route_unproven && a.route_from_fallback == b.route_from_fallback &&
-	       a.route_ipv6 == b.route_ipv6 && a.parts_offered_count == b.parts_offered_count &&
+	       a.source_origin == b.source_origin && a.source_origins_mask == b.source_origins_mask &&
+	       a.contact_route == b.contact_route && a.route_unproven == b.route_unproven &&
+	       a.route_from_fallback == b.route_from_fallback && a.route_ipv6 == b.route_ipv6 &&
+	       a.parts_offered_count == b.parts_offered_count &&
 	       // Without the flag, null -> 0 (the part map arriving and reporting
 	       // zero) compares equal and the row never updates.
 	       a.has_parts_offered_count == b.has_parts_offered_count &&
