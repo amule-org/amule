@@ -2134,6 +2134,55 @@ msgstr "Источники сидов"
 msgid "Search Result"
 msgstr "Результаты поиска"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Активные соединения"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Удалить выбранный сервер"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Поиск друга"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k: текущий сервер"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Проколы через сервер: %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "Обратные вызовы Lugdunum: %s"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Соединение через сервер"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Соединение через сервер"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Подключение через Kad"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10904,16 +10953,8 @@ msgstr "Выполняется миграция изменённого уста�
 #~ msgstr "Обход NAT (за сеанс)"
 
 #, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Проколы через сервер: %s"
-
-#, c-format
 #~ msgid "Successful Server Hole Punches: %s"
 #~ msgstr "Успешные проколы через сервер: %s"
-
-#, c-format
-#~ msgid "Lugdunum Callbacks: %s"
-#~ msgstr "Обратные вызовы Lugdunum: %s"
 
 #, c-format
 #~ msgid "Successful Lugdunum Callbacks: %s"

@@ -2118,6 +2118,55 @@ msgstr "Πηγαίος σπόρος"
 msgid "Search Result"
 msgstr "Αποτέλεσμα Αναζήτησης"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Ενεργές συνδέσεις"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Αφαίρεση διακομιστή"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Όχι φιλαράκος"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "Λίστα διακομιστών eD2k (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Επιβάρυνση διακομιστή (Πακέτα): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "Το %s ενημερώθηκε με επιτυχία"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Σύνδεση μέσω διακομιστή"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Σύνδεση μέσω διακομιστή"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Σύνδεση μέσω Kad"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10789,14 +10838,6 @@ msgstr ""
 #, fuzzy, c-format
 #~ msgid "Buddies Connected: %llu"
 #~ msgstr "είναι συνδεδεμένο με"
-
-#, fuzzy, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Επιβάρυνση διακομιστή (Πακέτα): %s"
-
-#, fuzzy, c-format
-#~ msgid "Successful Lugdunum Callbacks: %s"
-#~ msgstr "Το %s ενημερώθηκε με επιτυχία"
 
 #, fuzzy
 #~ msgid "Keyword publish"

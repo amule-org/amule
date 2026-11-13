@@ -2093,6 +2093,55 @@ msgstr "সোর্স সিড"
 msgid "Search Result"
 msgstr "অনুসন্ধান ফলাফল"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "সক্রিয় সংযোগ"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "সার্ভার সরান"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "কোনো বাডি নেই"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k সার্ভার তালিকা (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "সার্ভার ওভারহেড (প্যাকেট): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "%s সফলভাবে আপডেট করা হয়েছে"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "সার্ভারের মাধ্যমে সংযোগ করা হচ্ছে"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "সার্ভারের মাধ্যমে সংযোগ করা হচ্ছে"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Kad-এর মাধ্যমে সংযোগ করা হচ্ছে"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10706,14 +10755,6 @@ msgstr ""
 #, fuzzy, c-format
 #~ msgid "Time Served: %s"
 #~ msgstr "ফিল্টার করা সার্ভার: %s"
-
-#, fuzzy, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "সার্ভার ওভারহেড (প্যাকেট): %s"
-
-#, fuzzy, c-format
-#~ msgid "Successful Lugdunum Callbacks: %s"
-#~ msgstr "%s সফলভাবে আপডেট করা হয়েছে"
 
 #, fuzzy
 #~ msgid "Keyword publish"

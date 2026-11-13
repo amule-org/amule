@@ -2116,6 +2116,55 @@ msgstr "Kildeseeds"
 msgid "Search Result"
 msgstr "Søgeresultat"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Aktive Forbindelser"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Fjern server"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Ingen buddy"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k-serverliste (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Serveroverhead (pakker): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "%s opdateret"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Forbinder via Server"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Forbinder via Server"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Forbinder via Kad"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10769,14 +10818,6 @@ msgstr ""
 #, fuzzy, c-format
 #~ msgid "Buddies Connected: %llu"
 #~ msgstr " er forbundet til "
-
-#, fuzzy, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Serveroverhead (pakker): %s"
-
-#, fuzzy, c-format
-#~ msgid "Successful Lugdunum Callbacks: %s"
-#~ msgstr "%s opdateret"
 
 #, fuzzy
 #~ msgid "Keyword publish"

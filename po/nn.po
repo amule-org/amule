@@ -2118,6 +2118,55 @@ msgstr "Kjeldefrø"
 msgid "Search Result"
 msgstr "Søkjeresultat"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Aktive koplingar"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Ta bort tenar"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Ingen kamerat"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k-tenarliste (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Dataoverskot på tenar (pakkar): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "Oppdaterte %s"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Koplar til gjennom tenar"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Koplar til gjennom tenar"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Koplar til gjennom Kad"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10788,14 +10837,6 @@ msgstr ""
 #, fuzzy, c-format
 #~ msgid "Buddies Connected: %llu"
 #~ msgstr " er tilkopla "
-
-#, fuzzy, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Dataoverskot på tenar (pakkar): %s"
-
-#, fuzzy, c-format
-#~ msgid "Successful Lugdunum Callbacks: %s"
-#~ msgstr "Oppdaterte %s"
 
 #, fuzzy
 #~ msgid "Keyword publish"

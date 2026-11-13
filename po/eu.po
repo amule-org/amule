@@ -2118,6 +2118,55 @@ msgstr "Jatorri haziak"
 msgid "Search Result"
 msgstr "Bilaketa emaitza"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Konexio aktiboak"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Ezabatu zerbitzaria"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Laguna ez"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k zerbitzari-zerrenda (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Zerbitzari buruak (paketeak): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "%s behar bezala eguneratu da"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Konektatu zerbitzaria bidez"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Konektatu zerbitzaria bidez"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Kad bidez Konektatzen"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10783,14 +10832,6 @@ msgstr ""
 #, fuzzy, c-format
 #~ msgid "Buddies Connected: %llu"
 #~ msgstr " hona konektaturik dago: "
-
-#, fuzzy, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Zerbitzari buruak (paketeak): %s"
-
-#, fuzzy, c-format
-#~ msgid "Successful Lugdunum Callbacks: %s"
-#~ msgstr "%s behar bezala eguneratu da"
 
 #, fuzzy
 #~ msgid "Keyword publish"

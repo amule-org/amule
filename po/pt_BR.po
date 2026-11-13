@@ -2119,6 +2119,55 @@ msgstr "Fontes salvas"
 msgid "Search Result"
 msgstr "Resultado da Busca"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Conexões ativas"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Remover servidor"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Procurar amigo"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k: Servidor atual"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Hole punches via servidor: %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "Callbacks Lugdunum: %s"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Conectando via servidor"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Conectando via servidor"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Conectando via Kad"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10819,16 +10868,8 @@ msgstr "Migrando um ECPassword legado alterado após um downgrade; o verificador
 #~ msgstr "Travessia de NAT (Sessão)"
 
 #, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Hole punches via servidor: %s"
-
-#, c-format
 #~ msgid "Successful Server Hole Punches: %s"
 #~ msgstr "Hole punches via servidor bem-sucedidos: %s"
-
-#, c-format
-#~ msgid "Lugdunum Callbacks: %s"
-#~ msgstr "Callbacks Lugdunum: %s"
 
 #, c-format
 #~ msgid "Successful Lugdunum Callbacks: %s"

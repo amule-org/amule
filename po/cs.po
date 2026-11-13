@@ -2122,6 +2122,55 @@ msgstr "Uchované zdroje"
 msgid "Search Result"
 msgstr "Výsledek hledání"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Aktivní připojení"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Odstranit server"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Vyhledat kamaráda"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k: Aktuální server"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Server Hole Punches: %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "Zpětná volání v Lugdunum: %s"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Připojování přes server"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Připojování přes server"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Připojování přes síť Kad"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10778,16 +10827,8 @@ msgstr "Migrace změněného zastaralého ECPassword po přechodu na starší ve
 #~ msgstr "NAT Traversal (relace)"
 
 #, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Server Hole Punches: %s"
-
-#, c-format
 #~ msgid "Successful Server Hole Punches: %s"
 #~ msgstr "Úspěšné Server Hole Punches: %s"
-
-#, c-format
-#~ msgid "Lugdunum Callbacks: %s"
-#~ msgstr "Zpětná volání v Lugdunum: %s"
 
 #, c-format
 #~ msgid "Successful Lugdunum Callbacks: %s"

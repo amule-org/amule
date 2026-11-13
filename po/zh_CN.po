@@ -2114,6 +2114,55 @@ msgstr "资源种子"
 msgid "Search Result"
 msgstr "搜索结果"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "活跃连接"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "删除服务器"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "寻找搭档"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k：当前服务器"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "服务器打洞： %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "Lugdunum 回馈： %s"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "通过服务器连接中"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "通过服务器连接中"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "正在通过 Kad 连接"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"
@@ -10811,16 +10860,8 @@ msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再�
 #~ msgstr "NAT 穿透（会话）"
 
 #, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "服务器打洞： %s"
-
-#, c-format
 #~ msgid "Successful Server Hole Punches: %s"
 #~ msgstr "成功的服务器打洞：%s"
-
-#, c-format
-#~ msgid "Lugdunum Callbacks: %s"
-#~ msgstr "Lugdunum 回馈： %s"
 
 #, c-format
 #~ msgid "Successful Lugdunum Callbacks: %s"

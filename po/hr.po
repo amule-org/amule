@@ -2107,6 +2107,52 @@ msgstr ""
 msgid "Search Result"
 msgstr "Rezultati pretrage"
 
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Aktivne veze"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Odstrani servera"
+
+#: src/DataToText.cpp
+msgid "the Kad buddy"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "%i servera pronadjeno u server.met"
+
+#: src/DataToText.cpp
+msgid "a server hole punch"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "a Lugdunum callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Spaja preko servera"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Spaja preko servera"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Spaja preko servera"
+
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
 msgid "Completed"

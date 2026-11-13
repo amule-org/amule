@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-12 10:38+0000\n"
+"PO-Revision-Date: 2026-11-13 15:33+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -21,7 +21,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -2111,6 +2111,55 @@ msgstr "Bron Seeds"
 #: src/DataToText.cpp
 msgid "Search Result"
 msgstr "Zoekresultaat"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a direct connection"
+msgstr "Actieve verbindingen"
+
+#: src/DataToText.cpp
+msgid "a direct callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "our server"
+msgstr "Verwijder server"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the Kad buddy"
+msgstr "Vind buddy"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "the source's own server"
+msgstr "eD2k: Huidige server"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a server hole punch"
+msgstr "Serverperforatiepogingen: %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "a Lugdunum callback"
+msgstr "Lugdunum Terugroepen: %s"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on a fallback route"
+msgstr "Verbinden via server"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s, on an unproven route"
+msgstr "Verbinden via server"
+
+#: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Connecting via %s"
+msgstr "Verbinding maken via Kad"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7025,7 +7074,7 @@ msgstr "NAT traversal (QUIC)"
 
 #: src/PeerCapabilities.h
 msgid "Skips unknown source exchange tags"
-msgstr ""
+msgstr "Slaat onbekende bronuitwisselingslabels over"
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -10818,16 +10867,8 @@ msgstr "Migreren van een vernaderde ECPassword na downgrade. De vorige verificat
 #~ msgstr "NAT Traversal (Sessie)"
 
 #, c-format
-#~ msgid "Server Hole Punches: %s"
-#~ msgstr "Serverperforatiepogingen: %s"
-
-#, c-format
 #~ msgid "Successful Server Hole Punches: %s"
 #~ msgstr "Succesvolle Serverperforatiepogingen: %s"
-
-#, c-format
-#~ msgid "Lugdunum Callbacks: %s"
-#~ msgstr "Lugdunum Terugroepen: %s"
 
 #, c-format
 #~ msgid "Successful Lugdunum Callbacks: %s"
