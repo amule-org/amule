@@ -31,7 +31,8 @@
 #include "Server.h" // SRV_PR_*
 #include "PrefsSchema.h"
 #include "ClientTagNames.h"
-#include "Constants.h" // ESourceFrom
+#include "Constants.h"         // ESourceFrom
+#include "SourceRoutePolicy.h" // PackContactRoute
 #include "Refresher.h"
 #include "State.h"
 
@@ -2300,6 +2301,9 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	hi.AddTag(CECTag(EC_TAG_CLIENT_SERVER_NAME, wxString::FromUTF8("test-server")));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_KAD_PORT, static_cast<std::uint16_t>(4672)));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_FROM, static_cast<std::uint64_t>(3))); // SF_KADEMLIA
+	// Kad buddy route (4), reached on a fallback address, not yet proved by a hello.
+	hi.AddTag(CECTag(EC_TAG_CLIENT_CONTACT_ROUTE,
+		static_cast<std::uint64_t>(PackContactRoute(ESourceRoute::KadBuddy, true, true))));
 	hi.AddTag(CECTag(EC_TAG_PARTFILE_NAME, wxString::FromUTF8("upload.iso")));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_AVAILABLE_PARTS, static_cast<std::uint32_t>(7)));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_MOD_VERSION, wxString::FromUTF8("mod-x")));
@@ -2335,6 +2339,9 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_EQUALS(std::string("de"), cs.country_code);
 	ASSERT_EQUALS(static_cast<std::uint16_t>(4672), cs.kad_port);
 	ASSERT_EQUALS(std::string("kad"), cs.source_origin);
+	ASSERT_EQUALS(std::string("kad_buddy"), cs.contact_route);
+	ASSERT_TRUE(cs.route_unproven);
+	ASSERT_TRUE(cs.route_from_fallback);
 	ASSERT_EQUALS(std::string("upload.iso"), cs.upload_file_name);
 	ASSERT_TRUE(cs.has_parts_offered_count);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(7), cs.parts_offered_count);

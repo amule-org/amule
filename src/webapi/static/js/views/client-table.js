@@ -92,7 +92,7 @@ export const COLS = [
       : formatInt(c.parts_offered_count) + (c.partsTotal ? " / " + formatInt(c.partsTotal) : "") },
 
   { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", sortable: true,
-    sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state) },
+    sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state, c) },
   { key: "dl_speed", th: "downloads_peer_col_dl_speed", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.download_speed_bytes_per_second || 0, cell: (c) => formatSpeed(c.download_speed_bytes_per_second) },
   { key: "downloaded", th: "downloads_peer_col_downloaded", num: true, width: "100px", sortable: true,
@@ -269,11 +269,20 @@ export function identBadge(s) {
   return html`<${Badge} kind=${IDENT_KIND[s] || "paused"}>${identLabel(s)}<//>`;
 }
 
-export function stateBadge(s) {
-  if (!s || s === "idle") return html`<${Badge}>${t("downloads_peer_state_" + (s || "idle"))}<//>`;
-  const kind = s === "downloading" || s === "uploading" ? "downloading"
-    : s === "banned" || s === "error" ? "paused" : "waiting";
-  return html`<${Badge} kind=${kind}>${t("downloads_peer_state_" + s)}<//>`;
+// `c` is the peer row, when the caller has it: the contact route refines the label and adds the
+// route cue. Callers without a row still get the plain state badge.
+export function stateBadge(s, c) {
+  // A direct UDP callback goes to the peer, so the waiting-for-a-server-callback label would
+  // name a server that has nothing to do with it. The download_state token itself is untouched.
+  const label = s === "waiting_callback" && c && c.contact_route === "direct_udp_callback"
+    ? "connecting" : s;
+  const cue = c ? (c.route_from_fallback ? " route-fallback" : "") + (c.route_unproven ? " route-unproven" : "") : "";
+  if (!label || label === "idle") {
+    return html`<${Badge} kind=${cue.trim()}>${t("downloads_peer_state_" + (label || "idle"))}<//>`;
+  }
+  const kind = label === "downloading" || label === "uploading" ? "downloading"
+    : label === "banned" || label === "error" ? "paused" : "waiting";
+  return html`<${Badge} kind=${kind + cue}>${t("downloads_peer_state_" + label)}<//>`;
 }
 
 // Toolbar + peer table, shared by every consumer. Always offers the full

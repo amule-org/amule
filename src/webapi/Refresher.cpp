@@ -36,6 +36,7 @@
 #include "State.h"
 
 #include "Constants.h"                            // PS_* / PR_* / US_* / DS_* / OBST_* enums
+#include "SourceRoutePolicy.h"                    // ESourceRoute and the contact-route helpers
 #include "OtherFunctions.h"                       // GetFiletypeByName for the search-result `type`
 #include <common/Path.h>                          // CPath
 #include "ClientList.h"                           // buddyState enum (Disconnected/Connecting/Connected)
@@ -146,6 +147,27 @@ std::string SourceOriginName(std::uint32_t from)
 	default:
 		return "unknown";
 	}
+}
+
+// Map the route nibble of EC_TAG_CLIENT_CONTACT_ROUTE (ESourceRoute, SourceRoutePolicy.h) to a
+// stable lowercase token. Empty when no contact has been attempted, which reads as null.
+std::string ContactRouteName(std::uint8_t packed)
+{
+	switch (UnpackContactRoute(packed)) {
+	case ESourceRoute::Dial:
+		return "dial";
+	case ESourceRoute::DirectUdpCallback:
+		return "direct_udp_callback";
+	case ESourceRoute::ServerCallback:
+		return "server_callback";
+	case ESourceRoute::KadBuddy:
+		return "kad_buddy";
+	case ESourceRoute::ForeignNatCallback:
+		return "foreign_nat_callback";
+	case ESourceRoute::None:
+		break;
+	}
+	return std::string();
 }
 
 namespace
@@ -1019,6 +1041,15 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 		std::uint32_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_FROM, v))
 			cs.source_origin = SourceOriginName(v);
+	}
+	{
+		// Absent on a core older than the tag: the guard leaves the defaults.
+		std::uint8_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_CONTACT_ROUTE, v)) {
+			cs.contact_route = ContactRouteName(v);
+			cs.route_unproven = ContactRouteIsUnproven(v);
+			cs.route_from_fallback = ContactRouteFromFallback(v);
+		}
 	}
 	// PARTFILE_NAME rides inside the client tag only while the peer is
 	// downloading from us; leave the cached value when absent.

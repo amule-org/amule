@@ -53,6 +53,9 @@ const char *ClientObfuscationName(std::uint8_t code);
 //! EC_TAG_CLIENT_FROM (ESourceFrom) to a token, e.g. "local_server".
 std::string SourceOriginName(std::uint32_t from);
 
+//! The route nibble of EC_TAG_CLIENT_CONTACT_ROUTE (ESourceRoute) to a token, empty for none.
+std::string ContactRouteName(std::uint8_t packed);
+
 } // namespace webapi
 
 #endif // WEBAPI_CLIENTTAGNAMES_H

@@ -415,3 +415,32 @@ TEST(SourceRoutePolicy, AFallbackRetriesOnlyTheRoutesItChanges)
 	ASSERT_EQUALS(failed & ~addressRoutes, FailedAfterFallback(ESourceFallback::LastResortIPv4, failed));
 	ASSERT_EQUALS(failed & ~addressRoutes, FailedAfterFallback(ESourceFallback::LastResortIPv6, failed));
 }
+
+// EC_TAG_CLIENT_CONTACT_ROUTE packs the route and its two flags into one byte.
+TEST(SourceRoutePolicy, AContactRouteSurvivesItsPacking)
+{
+	for (ESourceRoute route : { ESourceRoute::None,
+		     ESourceRoute::Dial,
+		     ESourceRoute::DirectUdpCallback,
+		     ESourceRoute::ServerCallback,
+		     ESourceRoute::KadBuddy,
+		     ESourceRoute::ForeignNatCallback }) {
+		for (int flags = 0; flags < 4; ++flags) {
+			const bool unproven = (flags & 1) != 0;
+			const bool fallback = (flags & 2) != 0;
+			const std::uint8_t packed = PackContactRoute(route, unproven, fallback);
+			ASSERT_TRUE(UnpackContactRoute(packed) == route);
+			ASSERT_EQUALS(unproven, ContactRouteIsUnproven(packed));
+			ASSERT_EQUALS(fallback, ContactRouteFromFallback(packed));
+		}
+	}
+}
+
+// A route a newer daemon knows and this build does not reads as none, flags and all.
+TEST(SourceRoutePolicy, AnUnknownPackedRouteReadsAsNone)
+{
+	const std::uint8_t packed = 0x0F | ContactRouteUnprovenBit | ContactRouteFallbackBit;
+	ASSERT_TRUE(UnpackContactRoute(packed) == ESourceRoute::None);
+	ASSERT_TRUE(ContactRouteIsUnproven(packed));
+	ASSERT_TRUE(ContactRouteFromFallback(packed));
+}

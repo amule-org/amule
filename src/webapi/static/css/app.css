@@ -412,6 +412,11 @@ table.data.virtual td.name .name-select { width: 100%; max-width: 100%; }
 .badge.stopped { color: var(--bad); border-color: var(--bad); }
 .badge.error { color: var(--bad); border-color: var(--bad); }
 .badge.waiting { color: var(--warn); border-color: var(--warn); }
+/* Contact route cue, with no wording of its own, as the desktop source list draws it: a source
+   whose IPv4 identity came from a fallback is dimmed, and one on a route no hello has proved is
+   italic. */
+.badge.route-fallback { opacity: 0.65; }
+.badge.route-unproven { font-style: italic; }
 
 /* --- placeholders --- */
 .placeholder {

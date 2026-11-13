@@ -381,6 +381,13 @@ private:
 	SContactFacts ContactFactsFor(const CNetworkAddress &address) const;
 	//! The facts NextSourceRoute() decides on. @a callbackOnly: a LowID reached only by a callback.
 	SSourceRouteFacts SourceRouteFacts(bool callbackOnly) const;
+	//! Notes the route a contact just went out on. m_sourceRoute ends with the attempt, the other
+	//! one stays for the source list.
+	void StartSourceRoute(ESourceRoute route)
+	{
+		m_sourceRoute = route;
+		m_lastSourceRoute = route;
+	}
 	//! The callback through the Kad buddy, or the search for its address. Whether a request went out.
 	bool StartKadBuddyCallback();
 	//! After a contact that never completed the hellos: whether another route is left to try.
@@ -875,7 +882,11 @@ public:
 	{
 		m_failedSourceRoutes = 0;
 		m_refreshedSourceRoutes = 0;
+		m_lastSourceRoute = ESourceRoute::None;
 	}
+	//! The route of the contact in flight, or the last one tried. ESourceRoute, as an int for
+	//! CClientRef, which both client classes share.
+	int GetContactRoute() const { return static_cast<int>(m_lastSourceRoute); }
 	// One key per address this source can be reached on, so a later copy under any of them is
 	// known dead once this one is.
 	std::vector<CDeadSourceKey> DeadSourceKeys() const;
@@ -1277,6 +1288,8 @@ private:
 	uint16 m_nBuddyCandidatePort = 0;
 	// The route of the contact in flight, and the routes that failed since the last hello.
 	ESourceRoute m_sourceRoute{};
+	// The same route, kept after the attempt ends so the source list can show it.
+	ESourceRoute m_lastSourceRoute{};
 	unsigned m_failedSourceRoutes = 0;
 	// Routes our server gave new data for during an attempt: that attempt's failure says nothing
 	// about the new data.

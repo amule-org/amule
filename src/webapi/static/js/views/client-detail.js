@@ -76,7 +76,7 @@ function clientSections(c) {
     has("obfuscation_state") ? statRow("client_detail_obfuscation", obfuscation(c)) : null,
   ];
   const transfer = [
-    has("download_state") ? statRow("client_detail_dl_state", stateBadge(c.download_state)) : null,
+    has("download_state") ? statRow("client_detail_dl_state", stateBadge(c.download_state, c)) : null,
     has("upload_state") ? statRow("client_detail_ul_state", stateBadge(c.upload_state)) : null,
     has("download_speed_bytes_per_second") ? statRow("client_detail_dl_speed", formatSpeed(c.download_speed_bytes_per_second)) : null,
     has("upload_speed_bytes_per_second") ? statRow("client_detail_ul_speed", formatSpeed(c.upload_speed_bytes_per_second)) : null,

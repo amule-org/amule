@@ -148,7 +148,10 @@ public:
 	uint16 GetServerPort() const;
 	const wxString &GetSoftStr() const;
 	const wxString &GetSoftVerStr() const;
-	int GetSourceFrom() const; // ESourceFrom
+	int GetSourceFrom() const;   // ESourceFrom
+	int GetContactRoute() const; // ESourceRoute
+	bool IsIdentityFromFallback() const;
+	bool IsRouteUnproven() const;
 	wxString GetSecureIdentTextStatus() const;
 	wxString GetModCapabilitiesText() const;
 	uint64 GetTransferredDown() const;

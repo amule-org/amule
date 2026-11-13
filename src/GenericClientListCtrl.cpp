@@ -50,8 +50,9 @@
 #include "PartBarLegendUI.h" // Needed for ShowPartBarLegend, ToMuleColour
 #include "PartFile.h"        // Needed for CPartFile
 #include "Preferences.h"
-#include "SharedFileList.h" // Needed for CSharedFileList
-#include "ClientRef.h"      // Needed for CClientRef
+#include "SharedFileList.h"    // Needed for CSharedFileList
+#include "ClientRef.h"         // Needed for CClientRef
+#include "SourceRoutePolicy.h" // Needed for ESourceRoute
 // CUpDownClient (country accessors, #439). MUST match the build's client class: the reduced EC
 // client for amulegui, the full one for monolithic. The wrong header gives this TU a different
 // CUpDownClient layout than the rest of the GUI, so member reads land at the wrong offset.
@@ -744,7 +745,15 @@ wxString CGenericClientListCtrl::GetItemColumnText(wxUIntPtr data, unsigned colu
 			return _("On Queue");
 		}
 		if (notA4AF) {
-			return DownloadStateToStr(client.GetDownloadState(), client.IsRemoteQueueFull());
+			// A direct UDP callback goes to the peer, so DS_WAITCALLBACK's "via server" would
+			// name a server that has nothing to do with it.
+			const uint8 state =
+				client.GetDownloadState() == DS_WAITCALLBACK &&
+						static_cast<ESourceRoute>(client.GetContactRoute()) ==
+							ESourceRoute::DirectUdpCallback
+					? static_cast<uint8>(DS_CONNECTING)
+					: client.GetDownloadState();
+			return DownloadStateToStr(state, client.IsRemoteQueueFull());
 		}
 		wxString buffer = _("Asked for another file");
 		if (client.GetRequestFile() && client.GetRequestFile()->GetFileName().IsOk()) {
@@ -807,8 +816,20 @@ bool CGenericClientListCtrl::GetItemAttr(wxUIntPtr data, unsigned column, wxData
 
 	switch (m_columndata.columns[column].cid) {
 	case ColumnUserQueueRankRemote: {
-		if (item->GetType() == A4AF_SOURCE || client.GetDownloadState() != DS_ONQUEUE ||
-			client.IsRemoteQueueFull()) {
+		if (item->GetType() == A4AF_SOURCE) {
+			return false;
+		}
+		// Route cue, with no wording of its own: a source whose IPv4 identity came from a
+		// fallback is dimmed, and one on a route no hello has proved is italic. Both outrank
+		// the queue-rank cue below, which only applies while queued.
+		if (client.IsIdentityFromFallback() || client.IsRouteUnproven()) {
+			if (client.IsIdentityFromFallback()) {
+				attr.SetColour(isDark ? wxColour(160, 160, 160) : wxColour(110, 110, 110));
+			}
+			attr.SetItalic(client.IsRouteUnproven());
+			return true;
+		}
+		if (client.GetDownloadState() != DS_ONQUEUE || client.IsRemoteQueueFull()) {
 			return false;
 		}
 		const uint16 rank = client.GetRemoteQueueRank();

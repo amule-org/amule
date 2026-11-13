@@ -444,6 +444,12 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	}
 #endif
 	AddDiffTag(this, EC_TAG_CLIENT_FROM, (uint64)client->GetSourceFrom(), valuemap);
+	AddDiffTag(this,
+		EC_TAG_CLIENT_CONTACT_ROUTE,
+		(uint64)PackContactRoute(static_cast<ESourceRoute>(client->GetContactRoute()),
+			client->IsRouteUnproven(),
+			client->IsIdentityFromFallback()),
+		valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_SERVER_IP, client->GetServerIP(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_SERVER_PORT, client->GetServerPort(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_SERVER_NAME, client->GetServerName(), valuemap);

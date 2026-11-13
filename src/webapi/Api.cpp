@@ -2706,6 +2706,12 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	// both ToJson AND Equal in EventDiff.cpp; a field in one but not the other never
 	// updates.
 	WriteStringOrNull(w, "source_origin", !c.source_origin.empty(), c.source_origin);
+	// null until a contact has been attempted, and on a daemon older than the tag.
+	WriteStringOrNull(w, "contact_route", !c.contact_route.empty(), c.contact_route);
+	w.Key("route_unproven");
+	w.ValueBool(c.route_unproven);
+	w.Key("route_from_fallback");
+	w.ValueBool(c.route_from_fallback);
 	// Gated on the flag the refresher sets when the tag actually arrives: emitted
 	// unconditionally, a peer that never reported its part map was indistinguishable
 	// from one reporting zero, and zero is a real answer.

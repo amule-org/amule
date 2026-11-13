@@ -64,6 +64,39 @@ inline const char *SourceRouteName(ESourceRoute route)
 	return "none";
 }
 
+//! EC_TAG_CLIENT_CONTACT_ROUTE: the route in the low nibble, its two flags above it.
+constexpr std::uint8_t ContactRouteMask = 0x0F;
+constexpr std::uint8_t ContactRouteUnprovenBit = 0x10;
+constexpr std::uint8_t ContactRouteFallbackBit = 0x20;
+
+inline std::uint8_t PackContactRoute(ESourceRoute route, bool unproven, bool identityFromFallback)
+{
+	static_assert(static_cast<unsigned>(ESourceRoute::ForeignNatCallback) <= ContactRouteMask,
+		"every route must fit in the low nibble");
+	return static_cast<std::uint8_t>(static_cast<std::uint8_t>(route) |
+					 (unproven ? ContactRouteUnprovenBit : 0) |
+					 (identityFromFallback ? ContactRouteFallbackBit : 0));
+}
+
+//! None for a route a newer daemon knows and this build does not.
+inline ESourceRoute UnpackContactRoute(std::uint8_t packed)
+{
+	const std::uint8_t route = packed & ContactRouteMask;
+	return route <= static_cast<std::uint8_t>(ESourceRoute::ForeignNatCallback)
+		       ? static_cast<ESourceRoute>(route)
+		       : ESourceRoute::None;
+}
+
+inline bool ContactRouteIsUnproven(std::uint8_t packed)
+{
+	return (packed & ContactRouteUnprovenBit) != 0;
+}
+
+inline bool ContactRouteFromFallback(std::uint8_t packed)
+{
+	return (packed & ContactRouteFallbackBit) != 0;
+}
+
 struct SSourceRouteFacts
 {
 	// A LowID that is not dialled over IPv6, so only a callback reaches it.
