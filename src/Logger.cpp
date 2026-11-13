@@ -82,7 +82,8 @@ CDebugCategory g_debugcats[] = { CDebugCategory(logGeneral, "General"),
 	CDebugCategory(logMediaProbe, "Media Probe"),
 	CDebugCategory(logVerifyLocalData, "Verify Local Data"),
 	CDebugCategory(logGUI, "GUI"),
-	CDebugCategory(logKadPublish, "Kademlia Publish") };
+	CDebugCategory(logKadPublish, "Kademlia Publish"),
+	CDebugCategory(logSourceRoutes, "Source Routes") };
 
 const int categoryCount = itemsof(g_debugcats);
 static_assert(categoryCount == logCategoryCount, "Update the debug category table");
