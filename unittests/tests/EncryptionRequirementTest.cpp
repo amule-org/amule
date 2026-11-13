@@ -26,6 +26,7 @@
 #include "EncryptionRequirement.h"
 
 using namespace muleunit;
+using EncryptionRequirement::CryptSettingsForbidDial;
 using EncryptionRequirement::MustRefusePlainConnection;
 
 DECLARE_SIMPLE(EncryptionRequirement)
@@ -45,4 +46,46 @@ TEST(EncryptionRequirement, TestConnectionIsExemptUnlessStrict)
 {
 	ASSERT_FALSE(MustRefusePlainConnection(false, false, true));
 	ASSERT_TRUE(MustRefusePlainConnection(true, false, true));
+}
+
+namespace
+{
+EncryptionRequirement::DialFacts RequireFacts()
+{
+	EncryptionRequirement::DialFacts f;
+	f.weSupport = true;
+	f.weRequire = true;
+	return f;
+}
+} // namespace
+
+TEST(EncryptionRequirement, RequireRefusesPlainPeer)
+{
+	ASSERT_TRUE(CryptSettingsForbidDial(RequireFacts()));
+}
+
+TEST(EncryptionRequirement, RequireAllowsObfuscatingPeer)
+{
+	EncryptionRequirement::DialFacts f = RequireFacts();
+	f.peerSupports = true;
+	ASSERT_FALSE(CryptSettingsForbidDial(f));
+}
+
+TEST(EncryptionRequirement, UdpFirewallCheckIsExemptUnlessStrict)
+{
+	EncryptionRequirement::DialFacts f = RequireFacts();
+	f.isUdpFirewallCheck = true;
+	ASSERT_FALSE(CryptSettingsForbidDial(f));
+	f.weRequireStrict = true;
+	ASSERT_TRUE(CryptSettingsForbidDial(f));
+}
+
+TEST(EncryptionRequirement, PeerRequiringCryptNeedsOurSupport)
+{
+	EncryptionRequirement::DialFacts f;
+	f.peerSupports = true;
+	f.peerRequires = true;
+	ASSERT_TRUE(CryptSettingsForbidDial(f));
+	f.weSupport = true;
+	ASSERT_FALSE(CryptSettingsForbidDial(f));
 }
