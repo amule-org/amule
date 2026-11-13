@@ -38,6 +38,31 @@ constexpr bool MustRefusePlainConnection(bool strict, bool transportObfuscates, 
 {
 	return !transportObfuscates && (strict || !isTestConnection);
 }
+
+//! Our crypt settings and a peer's, for deciding whether we may dial it.
+struct DialFacts
+{
+	bool weSupport = false;
+	bool weRequire = false;
+	bool weRequireStrict = false;
+	bool peerSupports = false;
+	bool peerRequires = false;
+	//! A Kad UDP firewall check. Its contact has no user hash, so the connection can only be plain.
+	bool isUdpFirewallCheck = false;
+};
+
+/**
+ * Whether the crypt settings on either side rule out dialling the peer.
+ *
+ * The Kad UDP firewall check is exempt from our "require encryption", like inbound test
+ * connections. Refusing it leaves Kad UDP unverified, and then we refuse every buddy request.
+ */
+constexpr bool CryptSettingsForbidDial(const DialFacts &f)
+{
+	return (f.peerRequires && !f.weSupport) ||
+	       (f.weRequire && !f.peerSupports &&
+		       MustRefusePlainConnection(f.weRequireStrict, false, f.isUdpFirewallCheck));
+}
 } // namespace EncryptionRequirement
 
 #endif // AMULE_ENCRYPTION_REQUIREMENT_H

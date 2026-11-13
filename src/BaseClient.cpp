@@ -90,8 +90,9 @@
 #include "IPv6ReachabilityProof.h"  // Needed for inbound IPv6 hello proof
 #include "IPv6ChangeNotification.h" // Needed for OP_CHANGE_CLIENT_IP policy
 #endif
-#include "ChatState.h"         // Needed for ChatStateAfterFailedConnect
-#include "ContactDialPolicy.h" // Needed for DecideContactRoute
+#include "ChatState.h"             // Needed for ChatStateAfterFailedConnect
+#include "ContactDialPolicy.h"     // Needed for DecideContactRoute
+#include "EncryptionRequirement.h" // Needed for CryptSettingsForbidDial
 #ifdef AMULE_UTP_TRANSPORT
 #include "UtpDialPolicy.h" // Needed for file-request recovery after a uTP socket swap
 #endif
@@ -1818,13 +1819,25 @@ CNetworkAddress CUpDownClient::ContactAddress() const
 		GetUserAddress(), GetDialAddress(), HasLowID(), wxUINT32_SWAP_ALWAYS(m_nUserIDHybrid));
 }
 
+bool CUpDownClient::CryptSettingsForbidDial() const
+{
+	EncryptionRequirement::DialFacts facts;
+	facts.weSupport = thePrefs::IsClientCryptLayerSupported();
+	facts.weRequire = thePrefs::IsClientCryptLayerRequired();
+	facts.weRequireStrict = thePrefs::IsClientCryptLayerRequiredStrict();
+	facts.peerSupports = SupportsCryptLayer();
+	facts.peerRequires = RequiresCryptLayer();
+	facts.isUdpFirewallCheck =
+		GetKadState() == KS_QUEUED_FWCHECK_UDP || GetKadState() == KS_CONNECTING_FWCHECK_UDP;
+	return EncryptionRequirement::CryptSettingsForbidDial(facts);
+}
+
 bool CUpDownClient::IsRedialAllowed() const
 {
 	// Every refusal CheckContactPreconditions() makes, asked without acting on the
 	// answer: a redial happens where that function never runs, so anything it would
 	// have caught has to be caught here instead.
-	if ((RequiresCryptLayer() && !thePrefs::IsClientCryptLayerSupported()) ||
-		(thePrefs::IsClientCryptLayerRequired() && !SupportsCryptLayer())) {
+	if (CryptSettingsForbidDial()) {
 		return false;
 	}
 	const CNetworkAddress contactAddress = ContactAddress();
@@ -1888,8 +1901,7 @@ bool CUpDownClient::IsCallableIPv6Contact() const
 // call sites: it can delete `this`.
 EContactResult CUpDownClient::CheckContactPreconditions()
 {
-	if ((RequiresCryptLayer() && !thePrefs::IsClientCryptLayerSupported()) ||
-		(thePrefs::IsClientCryptLayerRequired() && !SupportsCryptLayer())) {
+	if (CryptSettingsForbidDial()) {
 		if (Disconnected("CryptLayer-Settings (Obfuscation) incompatible")) {
 			Safe_Delete();
 			return EContactResult::ClientDeleted;

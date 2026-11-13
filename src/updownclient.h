@@ -364,6 +364,8 @@ public:
 	/// checks are settings-derived, and every one of those settings can change while a
 	/// connection is open.
 	EContactResult CheckContactPreconditions();
+	//! Whether our obfuscation settings and this client's rule out dialling it.
+	bool CryptSettingsForbidDial() const;
 	//! The address the security checks below are made against.
 	CNetworkAddress ContactAddress() const;
 	//! Whether a socket whose stream died may be dialled again over TCP: every refusal
