@@ -110,10 +110,13 @@ def tag_list(data, offset, count):
 
 
 class EC:
-    def __init__(self, port, host="127.0.0.1", password="regression", timeout=60, capabilities=()):
+    def __init__(self, port, host="127.0.0.1", password="regression", timeout=60, capabilities=(),
+                 multi_search=True):
         self.sock = socket.create_connection((host, port), timeout=timeout)
         from ECWire import authenticate
-        caps = [tag(C[name]) for name in ('EC_TAG_CAN_MULTI_SEARCH', 'EC_TAG_CAN_SEARCH_LIST', 'EC_TAG_CAN_PARTIAL_SEARCH')]
+        # multi_search=False is a pre-multi-search client, which has only the 0xffffffff search.
+        caps = [tag(C[name]) for name in ('EC_TAG_CAN_MULTI_SEARCH', 'EC_TAG_CAN_SEARCH_LIST',
+                                          'EC_TAG_CAN_PARTIAL_SEARCH')] if multi_search else []
         caps.extend(capabilities)
         self.sock, op, tags = authenticate(self.sock, hashlib.md5(password.encode()).digest(), capabilities=caps)
         assert op == C['EC_OP_AUTH_OK'] and C['EC_TAG_CAN_SEARCH_ALL'] in tags, (op, tags)
@@ -427,15 +430,15 @@ def stored_param_tags(*tags):
     return bytes([len(tags)]) + b''.join(tags)
 
 
-def stored_search(results, kind=C['EC_SEARCH_ALL'], params=b''):
+def stored_search(results, kind=C['EC_SEARCH_ALL'], params=b'', search_id=123):
     query = b'restored'
-    data = (struct.pack('<BIIH', 1, 1, 123, len(query)) + query
+    data = (struct.pack('<BIIH', 1, 1, search_id, len(query)) + query
             + struct.pack('<BQ', kind, int(time.time()))
             + struct.pack('<I', len(results)) + b''.join(results))
     # Start parameters are a trailing block after the records: marker, count, then an id
     # and a tag list per search. Omitted when the search has no recorded form.
     if params:
-        data += struct.pack('<II', 0x534D5052, 1) + struct.pack('<I', 123) + params
+        data += struct.pack('<II', 0x534D5052, 1) + struct.pack('<I', search_id) + params
     return data
 
 
