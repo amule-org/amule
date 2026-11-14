@@ -55,5 +55,11 @@
   "common_free_space_temp": "临时",
   "app_logout": "退出登录",
   "about_update_latest": "最新版本",
-  "about_country_data": "IP2country数据"
+  "about_country_data": "IP2country数据",
+  "app_nav_search": "搜索",
+  "app_update_banner": "有新版本（{version}）可用。",
+  "about_update_status": "状态",
+  "app_nav_shared": "共享文件",
+  "app_nav_downloads": "下载内容",
+  "app_not_connected": "未连接"
 }

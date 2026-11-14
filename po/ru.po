@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-13 00:41+0000\n"
+"PO-Revision-Date: 2026-11-14 10:37+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -2135,53 +2135,47 @@ msgid "Search Result"
 msgstr "Результаты поиска"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a direct connection"
-msgstr "Активные соединения"
+msgstr "прямое соединение"
 
 #: src/DataToText.cpp
 msgid "a direct callback"
-msgstr ""
+msgstr "прямой обратный вызов"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "our server"
-msgstr "Удалить выбранный сервер"
+msgstr "наш сервер"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the Kad buddy"
-msgstr "Поиск друга"
+msgstr "партнёр Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the source's own server"
-msgstr "eD2k: текущий сервер"
+msgstr "собственный сервер источника"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a server hole punch"
-msgstr "Проколы через сервер: %s"
+msgstr "прокол через сервер"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a Lugdunum callback"
-msgstr "Обратные вызовы Lugdunum: %s"
+msgstr "обратный вызов Lugdunum"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on a fallback route"
-msgstr "Соединение через сервер"
+msgstr "Соединение через %s, по резервному маршруту"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on an unproven route"
-msgstr "Соединение через сервер"
+msgstr "Соединение через %s, по непроверенному маршруту"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s"
-msgstr "Подключение через Kad"
+msgstr "Соединение через %s"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
