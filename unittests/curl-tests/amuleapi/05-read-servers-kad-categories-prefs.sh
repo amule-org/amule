@@ -278,6 +278,9 @@ _assert_json_eq '.remote_controls.webserver.enabled         | type' boolean '/pr
 _assert_json_eq '.remote_controls.webserver.port            | type' number  '/preferences.remote_controls.webserver.port is numeric'
 _assert_json_eq '.remote_controls.webserver.refresh_seconds | type' number  '/preferences.remote_controls.webserver.refresh_seconds is numeric'
 _assert_json_eq '.remote_controls.webserver.template_name        | type' string  '/preferences.remote_controls.webserver.template_name is string'
+# webserver is retired: kept for v1 with fixed values.
+_assert_json_eq '.remote_controls.webserver | tojson' '{"enabled":false,"guest_enabled":false,"port":4711,"refresh_seconds":120,"template_name":"","gzip_enabled":true}' \
+	'/preferences.remote_controls.webserver has its fixed values'
 _assert_json_eq '.remote_controls.amuleapi.enabled          | type' boolean '/preferences.remote_controls.amuleapi.enabled is boolean'
 _assert_json_eq '.remote_controls.amuleapi.port             | type' number  '/preferences.remote_controls.amuleapi.port is numeric'
 _assert_json_eq '.remote_controls.amuleapi.bind_address     | type' string  '/preferences.remote_controls.amuleapi.bind_address is string'

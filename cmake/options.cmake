@@ -38,7 +38,6 @@ option (BUILD_EVERYTHING "compile all parts of aMule")
 option (BUILD_FILEVIEW "compile aMule file viewer for console (EXPERIMENTAL)")
 option (BUILD_MONOLITHIC "enable building of the monolithic aMule app" ON)
 option (BUILD_REMOTEGUI "compile aMule remote GUI")
-option (BUILD_WEBSERVER "compile aMule WebServer")
 option (BUILD_AMULEAPI "compile aMule REST API daemon")
 option (BUILD_WXCAS "compile aMule GUI Statistics")
 option (BUILD_TESTING "Build unit tests" OFF)
@@ -65,7 +64,6 @@ if (BUILD_EVERYTHING)
 	set (BUILD_DAEMON ON CACHE BOOL "compile aMule daemon version" FORCE)
 	set (BUILD_FILEVIEW ON CACHE BOOL "compile aMule file viewer for console (EXPERIMENTAL)" FORCE)
 	set (BUILD_REMOTEGUI ON CACHE BOOL "compile aMule remote GUI" FORCE)
-	set (BUILD_WEBSERVER ON CACHE BOOL "compile aMule WebServer" FORCE)
 	set (BUILD_AMULEAPI ON CACHE BOOL "compile aMule REST API daemon" FORCE)
 	set (BUILD_WXCAS ON CACHE BOOL "compile aMule GUI Statistics" FORCE)
 endif()
@@ -102,11 +100,10 @@ if (BUILD_AMULEAPI)
 	set (wx_NEED_NET TRUE)
 	set (NEED_ZLIB TRUE)
 	# Compile-time install path the daemon falls back to when
-	# [Server]/StaticRoot is empty in the conf. Mirrors WEBSERVERDIR but
-	# uses the ABSOLUTE form so a binary running from /usr/local/bin
-	# (or wherever the operator put it) resolves to the matching
-	# /usr/local/share/amule/amuleapi-static without needing to be
-	# cwd'd at the install prefix.
+	# [Server]/StaticRoot is empty in the conf. Absolute, so a binary
+	# running from /usr/local/bin (or wherever the operator put it)
+	# resolves to the matching /usr/local/share/amule/amuleapi-static
+	# without needing to be cwd'd at the install prefix.
 	set (AMULEAPI_STATIC_DIR
 		"${CMAKE_INSTALL_FULL_DATADIR}/${PACKAGE}/amuleapi-static/")
 endif()
@@ -169,15 +166,6 @@ if (BUILD_REMOTEGUI)
 	set (NEED_LIB_MULESOCKET TRUE)
 	set (NEED_ZLIB TRUE)
 	set (wx_NEED_ADV TRUE)
-	set (wx_NEED_NET TRUE)
-endif()
-
-if (BUILD_WEBSERVER)
-	set (NEED_LIB_EC TRUE)
-	set (NEED_LIB_MULECOMMON TRUE)
-	set (NEED_LIB_MULESOCKET TRUE)
-	set (NEED_ZLIB TRUE)
-	set (WEBSERVERDIR "${PKGDATADIR}/webserver/")
 	set (wx_NEED_NET TRUE)
 endif()
 
@@ -246,11 +234,9 @@ if (NEED_LIB_MULESOCKET)
 endif()
 
 # boost::asio is mandatory; the remaining wxWidgets-sockets consumers are
-# the daemon/GUI EC paths, the wxcas helper, and amuleweb (which links
-# wxWidgets::NET directly in src/webserver/src/CMakeLists.txt for its
-# socket code). Keep wx_NEED_NET on only when those are actually being
-# built.
-if (NOT (BUILD_DAEMON OR BUILD_MONOLITHIC OR BUILD_REMOTEGUI OR BUILD_WEBSERVER OR BUILD_WXCAS OR BUILD_AMULECMD OR BUILD_AMULEAPI))
+# the daemon/GUI EC paths and the wxcas helper. Keep wx_NEED_NET on only
+# when those are actually being built.
+if (NOT (BUILD_DAEMON OR BUILD_MONOLITHIC OR BUILD_REMOTEGUI OR BUILD_WXCAS OR BUILD_AMULECMD OR BUILD_AMULEAPI))
 	set (wx_NEED_NET FALSE)
 endif()
 
@@ -283,7 +269,7 @@ if (WIN32)
 	add_compile_definitions ($<$<CONFIG:DEBUG>:wxDEBUG_LEVEL=0>)
 endif (WIN32)
 
-if (NEED_LIB_MULEAPPCOMMON OR BUILD_WEBSERVER)
+if (NEED_LIB_MULEAPPCOMMON)
 	option (ENABLE_UPNP "enable UPnP support in aMule" ON)
 endif()
 

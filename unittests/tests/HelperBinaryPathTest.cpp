@@ -120,10 +120,10 @@ TEST(HelperBinaryPath, UnknownSelfOrEmptyNameChangesNothing)
 {
 #ifdef __WINDOWS__
 	ASSERT_EQUALS(
-		wxString(""), ResolveHelperBinary("amuleweb", "", "", Holding({ SiblingOf("amuleweb") })));
+		wxString(""), ResolveHelperBinary("amuleapi", "", "", Holding({ SiblingOf("amuleapi") })));
 #else
-	ASSERT_EQUALS(wxString("amuleweb"),
-		ResolveHelperBinary("amuleweb", "", "", Holding({ SiblingOf("amuleweb") })));
+	ASSERT_EQUALS(wxString("amuleapi"),
+		ResolveHelperBinary("amuleapi", "", "", Holding({ SiblingOf("amuleapi") })));
 #endif
 	ASSERT_EQUALS(wxString(""), ResolveHelperBinary("", kSelf, kBin, Holding({ SiblingOf("") })));
 }

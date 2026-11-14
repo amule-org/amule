@@ -300,9 +300,8 @@ TEST(AddressFamilyPolicy, ResolverIsUnrestrictedOnlyUnderDualStack)
 
 TEST(AddressFamilyPolicy, AnyAddressStaysIPv4WhereverIPv4IsPermitted)
 {
-	// Including dual stack. Handing :: to the single-socket services -- the EC listener, the
-	// web server -- would move the daemon's control channel to another family as a side effect
-	// of the ed2k work.
+	// Including dual stack. Handing :: to a single-socket service such as the EC listener would
+	// move the daemon's control channel to another family as a side effect of the ed2k work.
 	{
 		ScopedFamilies scope(Families::IPv4Only);
 		ASSERT_TRUE(AnyAddress() == AnyIPv4Address());

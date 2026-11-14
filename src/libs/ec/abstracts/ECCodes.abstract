@@ -682,12 +682,8 @@ EC_TAG_SELECT_PREFS                       0x1000
 		EC_TAG_MSGFILTER_CAPTCHA                 0x140B
 
 	EC_TAG_PREFS_REMOTECTRL                   0x1500
-		EC_TAG_WEBSERVER_AUTORUN                  0x1501
-		EC_TAG_WEBSERVER_PORT                     0x1502
-		EC_TAG_WEBSERVER_GUEST                    0x1503
-		EC_TAG_WEBSERVER_USEGZIP                  0x1504
-		EC_TAG_WEBSERVER_REFRESH                  0x1505
-		EC_TAG_WEBSERVER_TEMPLATE                 0x1506
+# 0x1501-0x1506 were the amuleweb settings (EC_TAG_WEBSERVER_AUTORUN, _PORT, _GUEST,
+# _USEGZIP, _REFRESH, _TEMPLATE). Reserved: never reuse them.
 		EC_TAG_AMULEAPI_AUTORUN                   0x1507
 		EC_TAG_AMULEAPI_PORT                      0x1508
 		EC_TAG_AMULEAPI_PASSWD                    0x1509

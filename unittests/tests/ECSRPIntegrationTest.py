@@ -358,6 +358,10 @@ def main(daemon,cmd,async_probe):
                     encrypted,op,tags=W.authenticate(sock,os.urandom(16),credential=1)
                     W.assert_refused(op,tags,'EC_AUTH_FAIL_REJECTED',b'wrong password')
                     assert isinstance(encrypted, W.EncryptedSocket)
+                # The retired selector 2 is refused like an unknown one.
+                with socket.create_connection(('127.0.0.1',port),timeout=10) as sock:
+                    _,op,_=W.authenticate(sock,os.urandom(16),credential=2)
+                    assert op==C['EC_OP_AUTH_FAIL'],'retired credential selector was accepted'
                 with FixtureServer(('127.0.0.1',0),Relay) as relay:
                     relay.target=port;relay.error=None;relay.observed=None
                     threading.Thread(target=relay.serve_forever,daemon=True).start()

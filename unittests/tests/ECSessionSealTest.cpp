@@ -37,7 +37,7 @@
 using namespace muleunit;
 
 // SRP seals every reply after key setup, including the first proof reply. The synchronous
-// SendRecvPacket path (amulecmd, amuleweb, amuleapi) must reject plaintext at that boundary
+// SendRecvPacket path (amulecmd, amuleapi) must reject plaintext at that boundary
 // like the async client and daemon do. A login rejected before key setup can still fail clear.
 
 DECLARE_SIMPLE(ECSessionSeal)

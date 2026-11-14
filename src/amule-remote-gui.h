@@ -300,8 +300,6 @@ public:
 		this->m_full_req_cmd = cmd;
 	}
 
-	// Following is basically the same code as in webserver. Eventually it must be the same
-	// class.
 	void DoRequery(int cmd, int tag)
 	{
 		if (this->m_state != IDLE) {

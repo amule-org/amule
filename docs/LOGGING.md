@@ -67,7 +67,7 @@ byte.
 
 ## Console programs
 
-`amulecmd`, `amuleweb` and `amuleapi` share the formatter. The category names the
+`amulecmd` and `amuleapi` share the formatter. The category names the
 program. It is set once, from the name each program declares, before any worker
 starts, so renaming the executable or starting it through a symlink does not change
 the tag. Explicit `CLogger::Log` calls can supply a subsystem. Debug builds keep the

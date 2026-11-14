@@ -159,9 +159,6 @@ How to use:
     script sources it, calls _preflight and ends with _summary. Keep
     the lib/ directory next to a script that is copied elsewhere.
 
-    curl-tests/amuleweb-smoke/phase0.sh checks the landing pages of a
-    running amuleweb. See the header of the script for its settings.
-
 AllSearch integration coverage (Linux, Python 3, BUILD_DAEMON=ON):
 
   ctest --test-dir build -R 'AllSearch|SearchSourceCount|SearchRequest|SearchProgressReport|SearchHistory' --output-on-failure

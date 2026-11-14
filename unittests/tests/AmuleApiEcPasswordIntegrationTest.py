@@ -31,7 +31,7 @@ def run(daemon_binary, api_binary):
             api.mkdir()
             ec_port, http_port, peer_port, udp_port = free_ports(4, udp_indices=(3,), peer_index=2)
             write_amule_conf(core, ec_port, ec_password=secret, Port=peer_port,
-                             UDPEnable=1, UDPPort=udp_port, sections={'WebServer': {'Enabled': 0}})
+                             UDPEnable=1, UDPPort=udp_port)
             env = daemon_env(root)
             with (root / 'fixture.log').open('w') as log:
                 daemon = None

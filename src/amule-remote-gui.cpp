@@ -99,7 +99,7 @@ CEConnectDlg::CEConnectDlg()
 	wxString pref_host, pref_port;
 	// The literal loopback address rather than "localhost": on Windows, "localhost"
 	// lookups can fail intermittently (IPv4 vs IPv6 stack ordering, hosts-file shape).
-	// 127.0.0.1 is portable, and is the same default amulecmd / amuleweb use (#822).
+	// 127.0.0.1 is portable, and is the same default amulecmd uses (#822).
 	wxConfig::Get()->Read("/EC/Host", &pref_host, "127.0.0.1");
 	wxConfig::Get()->Read("/EC/Port", &pref_port, "4712");
 	wxConfig::Get()->Read("/EC/Password", &pwd_hash);
@@ -4868,8 +4868,7 @@ void CStatGraphRem::DoRequery()
 	CECPacket request(EC_OP_GET_STATSGRAPHS, EC_DETAIL_FULL);
 	// Send back the most recent timestamp we have seen; daemon-side
 	// CStatistics::GetHistoryForGui uses it as the lower bound so the response only
-	// carries points the GUI has not drawn yet. (GetHistoryForWeb is amuleweb's
-	// near-identical twin, not this path.)
+	// carries points the GUI has not drawn yet.
 	request.AddTag(CECTag(EC_TAG_STATSGRAPH_LAST, m_lastTimestamp));
 	// Seconds between points. This has to be the same step the graphs are going to plot
 	// at -- COScopeCtrl gets it from the "Update delay" preference and asks

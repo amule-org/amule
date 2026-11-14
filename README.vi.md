@@ -65,8 +65,8 @@ Thống kê phát triển:
 * `amuled` — daemon chạy ngầm, không có GUI.
 * `amulegui` — GUI từ xa; kết nối với `amuled` cục bộ hoặc từ xa qua giao thức
   EC (External Connection).
-* `amuleweb` — giao diện HTTP cho `amuled` đang chạy.
 * `amulecmd` — CLI tương tác cho `amuled` đang chạy.
+* `amuleapi` — REST API cho `amuled` đang chạy.
 
 ## Biên dịch
 

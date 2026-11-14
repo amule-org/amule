@@ -18,7 +18,7 @@ under `~/.aMule/`:
 | `amule`     | The all-in-one GUI client. Daemon and UI in one process. | Day-to-day use on a desktop. |
 | `amuled`    | The headless daemon — same engine as `amule` minus the UI. | When you want aMule running on a NAS / VPS / always-on box and connect to it remotely. |
 | `amulegui`  | A remote GUI that talks to a running `amuled` over the [EC protocol](EC_Protocol.md). | Drive a remote `amuled` from your desktop. |
-| `amuleweb`  | A small HTTP server that exposes a running `amuled` to a browser. | Drive a remote `amuled` from a phone or another machine without installing anything. |
+| `amuleapi`  | A REST API and Web UI for a running `amuled`. | Drive a remote `amuled` from a browser, a phone or a script, without installing anything on the client. |
 | `amulecmd`  | An interactive CLI that talks to a running `amuled`. | Scripts, headless administration, troubleshooting. |
 | `ed2k`      | A tiny helper that hands `ed2k://` and magnet links to a running aMule. | Queue links from a script or a terminal. Browsers hand clicked links to `amule` / `amulegui` themselves. |
 
@@ -107,7 +107,7 @@ Cat_ThreadScheduler=1
 ```
 
 `VerboseDebugLogfile=1` keeps non-critical debug messages in the logfile and excludes
-them from incremental remote log replay. `amulecmd` and `amuleweb` also enable their
+them from incremental remote log replay. `amulecmd` also enables its
 own runtime diagnostics with `--verbose` or `VerboseDebug=1` in the core configuration.
 
 Some diagnostics require Debug-only bookkeeping and remain available only in Debug
@@ -170,20 +170,20 @@ If you want aMule running on a NAS, VPS, or always-on home server, use
 
 ```sh
 # Generate a config dir and EC password (the daemon needs a password
-# for amulegui / amuleweb / amulecmd to connect)
+# for amulegui / amuleapi / amulecmd to connect)
 amuled --ec-config   # set the EC password; Ctrl-C once it is running
 
 # Then run it daemonised
 amuled --full-daemon
 ```
 
-Connect to it from another machine with `amulegui`, `amuleweb`, or
+Connect to it from another machine with `amulegui`, `amuleapi`, or
 `amulecmd` using the same EC password.
 
 The documentation has detailed walkthroughs for
-[amuled setup](https://amule-org.github.io/docs/manual/interfaces/amuled),
-[amuleweb](https://amule-org.github.io/docs/manual/interfaces/amuleweb), and
+[amuled setup](https://amule-org.github.io/docs/manual/interfaces/amuled) and
 [amulecmd](https://amule-org.github.io/docs/manual/interfaces/amulecmd).
+For amuleapi and its Web UI, see [QUICKSTART-AMULEAPI.md](QUICKSTART-AMULEAPI.md).
 
 
 ## Reading the transfers window

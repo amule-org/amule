@@ -65,7 +65,7 @@ license text in
 [`unittests/muleunit/license.txt`](../unittests/muleunit/license.txt).
 The framework is statically linked into every test binary but is NOT
 linked into shipped daemon binaries (`amule`, `amuled`, `amulegui`,
-`amuleweb`, `amuleapi`), so the LGPL relinking clause does not constrain
+`amuleapi`), so the LGPL relinking clause does not constrain
 end-user binary distribution.
 
 ## libutp

@@ -178,9 +178,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_CHECKBOX(IDC_NETWORKED2K, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_NETWORKKAD, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_UPNP_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
-	EVT_CHECKBOX(IDC_UPNP_WEBSERVER_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_EXT_CONN_ACCEPT, PrefsUnifiedDlg::OnCheckBoxChange)
-	EVT_CHECKBOX(IDC_ENABLE_WEB, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_ENABLE_AMULEAPI, PrefsUnifiedDlg::OnCheckBoxChange)
 	EVT_CHECKBOX(IDC_AMULEAPI_GUEST_ENABLED, PrefsUnifiedDlg::OnCheckBoxChange)
 
@@ -967,8 +965,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	FindWindow(IDC_KADSTRICTAICHPUBLISHERS)
 		->Enable(thePrefs::IsKadProtocol10Supported() && thePrefs::GetKadProtocol10());
 
-	// amuleapi's stored password is salted and stretched, so unlike the web server's it
-	// cannot be loaded back into the field. The field is a write-only request ("set it to
+	// amuleapi's stored password is salted and stretched, so it cannot be loaded back into
+	// the field. The field is a write-only request ("set it to
 	// this") and empty means "leave it alone", which needs saying somewhere the user looks
 	// -- otherwise an empty box reads as "no password configured".
 	SetCredentialStateLabel(IDC_AMULEAPI_PASSWD_STATE, thePrefs::GetAmuleApiAdminIsSet());
@@ -1007,12 +1005,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	// uses the value locally for its own version-check HTTP. GeoIP, by contrast, is
 	// daemon-only -- amulegui has no local resolver.
 	const int amuledOnlyPrefs[] = {
-		// Web-server UPnP (amuleweb is deprecated) and EC-port UPnP (the EC port is not a P2P
-		// port) stay hidden; only the P2P-router UPnP is wired over EC, and it is
-		// capability-gated in the UPNP block below.
-		IDC_UPNP_WEBSERVER_ENABLED,
-		IDC_WEBUPNPTCPPORT,
-		IDC_WEBUPNPTCPPORTTEXT,
+		// EC-port UPnP stays hidden (the EC port is not a P2P port); only the P2P-router UPnP
+		// is wired over EC, and it is capability-gated in the UPNP block below.
 		IDC_UPNP_EC_ENABLED,
 		// Online-signature "Browse" is a local file picker; the directory field
 		// + update frequency beside it are EC-wired and stay visible.
@@ -1094,17 +1088,11 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	FindWindow(IDC_UPNPTCPPORT)->Enable(false);
 	FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(false);
 	thePrefs::SetUPnPEnabled(false);
-	FindWindow(IDC_UPNP_WEBSERVER_ENABLED)->Enable(false);
-	FindWindow(IDC_WEBUPNPTCPPORT)->Enable(false);
-	FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(false);
-	thePrefs::SetUPnPWebServerEnabled(false);
 	FindWindow(IDC_UPNP_EC_ENABLED)->Enable(false);
 	thePrefs::SetUPnPECEnabled(false);
 #else
 	FindWindow(IDC_UPNPTCPPORT)->Enable(thePrefs::GetUPnPEnabled());
 	FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPEnabled());
-	FindWindow(IDC_WEBUPNPTCPPORT)->Enable(thePrefs::GetUPnPWebServerEnabled());
-	FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPWebServerEnabled());
 #endif
 #endif
 
@@ -1538,17 +1526,15 @@ void PrefsUnifiedDlg::OnOk(wxCommandEvent &WXUNUSED(event))
 	}
 
 #ifndef CLIENT_GUI
-	// The web server and amuleapi are EC clients of the core; without external connections
-	// they can never connect. OnCheckBoxChange already warns live and reverts the toggles,
-	// so this is a silent backstop that keeps the saved prefs consistent for a config
+	// amuleapi is an EC client of the core; without external connections it can never
+	// connect. OnCheckBoxChange already warns live and reverts the toggle, so this is a
+	// silent backstop that keeps the saved prefs consistent for a config
 	// loaded in a mismatched state.
 	//
 	// amulegui is itself a connected EC client, so external connections are necessarily
 	// enabled on the daemon; its local AcceptExternalConnections pref only mirrors
 	// remote.conf, so this backstop must not run there.
-	if ((thePrefs::GetWSIsEnabled() || thePrefs::GetAmuleApiIsEnabled()) &&
-		!thePrefs::AcceptExternalConnections()) {
-		thePrefs::SetWSIsEnabled(false);
+	if (thePrefs::GetAmuleApiIsEnabled() && !thePrefs::AcceptExternalConnections()) {
 		thePrefs::SetAmuleApiIsEnabled(false);
 	}
 #endif
@@ -2029,50 +2015,32 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(value);
 		break;
 
-	case IDC_UPNP_WEBSERVER_ENABLED:
-		FindWindow(IDC_WEBUPNPTCPPORT)->Enable(value);
-		FindWindow(IDC_WEBUPNPTCPPORTTEXT)->Enable(value);
-		break;
-
-	// The web server and amuleapi are EC clients of the core: they can only run when
-	// external connections are enabled. Warn live and refuse the invalid combination
+	// amuleapi is an EC client of the core: it can only run when external connections are
+	// enabled. Warn live and refuse the invalid combination
 	// instead of waiting for OK.
 	//
 	// amulegui is itself a connected EC client, so the precondition is always met. The
 	// IDC_EXT_CONN_ACCEPT checkbox is hidden there and only mirrors remote.conf, so reading
 	// it would wrongly block the toggle.
-	case IDC_ENABLE_WEB:
 	case IDC_ENABLE_AMULEAPI:
 #ifndef CLIENT_GUI
 		if (value && !CastChild(IDC_EXT_CONN_ACCEPT, wxCheckBox)->IsChecked()) {
-			wxMessageBox(_("The web server and aMule API require external connections "
-				       "to be enabled."),
+			wxMessageBox(_("The aMule API requires external connections to be enabled."),
 				_("Message"),
 				wxOK | wxICON_INFORMATION);
 			CastChild(id, wxCheckBox)->SetValue(false);
-			break;
 		}
 #endif
-		if (value && id == IDC_ENABLE_WEB) {
-			// Enabled and allowed: nudge toward the actively-developed API.
-			wxMessageBox(_("The aMule web server is deprecated. Consider running the aMule "
-				       "API instead."),
-				_("Message"),
-				wxOK | wxICON_INFORMATION);
-		}
 		break;
 
 #ifndef CLIENT_GUI
 	case IDC_EXT_CONN_ACCEPT: {
-		// Turning external connections off strands both EC-client services. (amulegui hides
-		// this checkbox and always runs over EC, so the case is core-only.)
-		wxCheckBox *web = CastChild(IDC_ENABLE_WEB, wxCheckBox);
+		// Turning external connections off strands amuleapi. (amulegui hides this checkbox
+		// and always runs over EC, so the case is core-only.)
 		wxCheckBox *api = CastChild(IDC_ENABLE_AMULEAPI, wxCheckBox);
-		if (!value && (web->IsChecked() || api->IsChecked())) {
-			web->SetValue(false);
+		if (!value && api->IsChecked()) {
 			api->SetValue(false);
-			wxMessageBox(_("The web server and aMule API require external connections "
-				       "to be enabled."),
+			wxMessageBox(_("The aMule API requires external connections to be enabled."),
 				_("Message"),
 				wxOK | wxICON_INFORMATION);
 		}

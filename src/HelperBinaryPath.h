@@ -95,7 +95,7 @@ inline wxString FindProgram(const wxString &program)
 		program, wxStandardPaths::Get().GetExecutablePath(), CurrentSearchPath(), IsExecutableFile);
 }
 
-// The command that starts a helper binary (amuleweb, amuleapi) configured as `configured`. A value
+// The command that starts a helper binary (amuleapi) configured as `configured`. A value
 // with a directory is used as is. A bare name, the default, is looked for next to `selfExePath`
 // first, so an unpacked static build finds its helpers without PATH. Failing that, POSIX leaves the
 // name to execvp's PATH search, and Windows looks in `searchPath` itself (see FindProgram). Empty

@@ -147,7 +147,7 @@ static io_context &NextTcpContext()
 
 // The network interface to bind every socket to (empty = system default). Pushed in by the
 // core via SetSocketBindInterface() rather than read from thePrefs directly: mulesocket
-// must not depend on CPreferences, since EC-only tools (amulecmd, amuleweb) link this
+// must not depend on CPreferences, since EC-only tools (amulecmd, amuleapi) link this
 // library but not the full preferences.
 static wxString s_bindToInterface;
 
@@ -1253,13 +1253,12 @@ private:
 		return sent;
 	}
 
-	// Sync clients (amulecmd, amuleweb) have no async_read pending after auth, so the EOF that
-	// fires HandleRead -> PostLostEvent for async clients is never seen. Detection happens here
+	// Sync clients (amulecmd) have no async_read pending after auth, so the EOF that fires
+	// HandleRead -> PostLostEvent for async clients is never seen. Detection happens here
 	// instead, in ReadSync / WriteSync. PostLostEvent + wxQueueEvent would round-trip through
-	// the wx event loop, which amuleweb has but amulecmd does not -- its main thread is in
-	// fgets reading stdin, so queued events are never processed. Direct synchronous dispatch
-	// through the same wrapper->OnLost(0) path the async reactor uses covers both, so the
-	// headless EC client exits cleanly rather than serving stale data in limp mode.
+	// the wx event loop, which amulecmd does not run -- its main thread is in fgets reading
+	// stdin, so queued events are never processed. Direct synchronous dispatch through the same
+	// wrapper->OnLost(0) path the async reactor uses lets the headless EC client exit cleanly.
 	void DispatchSyncLost()
 	{
 		CLibSocket *wrapper = m_libSocket.load(std::memory_order_acquire);
@@ -1827,7 +1826,6 @@ public:
 			m_socketAvailable = true; // it is already true, but this improves readability
 			AddDebugLogLineF(logAsio, "AcceptWith: ok, another socket is available");
 			// aMule actually doesn't need a notification as it polls the listen socket.
-			// amuleweb does need it though
 			CLibSocketServer *w = m_libSocketServer.load(std::memory_order_acquire);
 			if (w) {
 				CoreNotify_ServerTCPAccept(w);

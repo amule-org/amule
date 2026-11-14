@@ -22,7 +22,7 @@ def run(daemon_binary, api_binary, checks):
         api.mkdir()
         port, http, peer_port, udp_port = free_ports(4, udp_indices=(3,), peer_index=2)
         write_amule_conf(core, port, Port=peer_port, UDPEnable=1, UDPPort=udp_port, Autoconnect=0,
-                         ConnectToKad=1, sections={'WebServer': {'Enabled': 0}})
+                         ConnectToKad=1)
         (core / 'nodes.dat').write_bytes(struct.pack('<III', 0, 1, 0))
         # A finished All search exercises discovery and progress serialization
         # without public peers; later checks start Kad with no contacts.

@@ -639,69 +639,6 @@ unsigned CStatistics::GetHistory(        // Assemble arrays of sample points for
 
 #ifndef CLIENT_GUI
 
-unsigned CStatistics::GetHistoryForWeb( // Assemble arrays of sample points for the webserver
-	unsigned cntPoints,             // maximum number of sample points to assemble
-	double sStep,                   // time difference between sample points
-	double *sStart,                 // earliest allowed timestamp
-	uint32 **graphData)             // a pointer to a pointer that will point to the graph data array
-{
-	if (*sStart < 0.0) {
-		*sStart = 0.0;
-	}
-	if (sStep == 0.0 || cntPoints == 0)
-		return (0);
-	unsigned cntFilled = 0;
-	listRPOS pos = listHR.rbegin();
-	double LastTimeStamp = pos->sTimestamp;
-	double sTarget = LastTimeStamp;
-
-	HR **pphr = new HR *[cntPoints];
-
-	while (pos != listHR.rend()) {
-		if (pos->sTimestamp > sTarget) {
-			++pos; // find next history record
-			continue;
-		}
-		pphr[cntFilled] = &(*pos);
-		if (++cntFilled == cntPoints) // enough points
-			break;
-		if (pos->sTimestamp <= *sStart) // reached beginning of requested time
-			break;
-		if ((sTarget -= sStep) <= 0.0) { // don't overshoot the beginning
-			pphr[cntFilled++] = NULL;
-			break;
-		}
-	}
-
-	if (cntFilled) {
-		*graphData = new uint32[4 * cntFilled];
-		if (*graphData) {
-			for (unsigned int i = 0; i < cntFilled; i++) {
-				HR *phr = pphr[cntFilled - i - 1];
-				if (phr) {
-					(*graphData)[4 * i] =
-						ENDIAN_HTONL((uint32)(phr->kBpsDownCur * 1024.0));
-					(*graphData)[4 * i + 1] =
-						ENDIAN_HTONL((uint32)(phr->kBpsUpCur * 1024.0));
-					(*graphData)[4 * i + 2] = ENDIAN_HTONL((uint32)phr->cntConnections);
-					(*graphData)[4 * i + 3] = ENDIAN_HTONL((uint32)phr->kadNodesCur);
-				} else {
-					(*graphData)[4 * i] = (*graphData)[4 * i + 1] = 0;
-					(*graphData)[4 * i + 2] = (*graphData)[4 * i + 3] = 0;
-				}
-			}
-		}
-	} else {
-		*graphData = NULL;
-	}
-
-	delete[] pphr;
-
-	*sStart = LastTimeStamp;
-
-	return cntFilled;
-}
-
 unsigned CStatistics::GetHistoryForGui(unsigned cntPoints,
 	double sStep,
 	double *sStart,

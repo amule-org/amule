@@ -45,7 +45,7 @@
 
 #include "kademlia/kademlia/Kademlia.h"
 
-// used for webserver, amulecmd
+// used for amulecmd and other EC clients
 CEC_Server_Tag::CEC_Server_Tag(const CServer *server, EC_DETAIL_LEVEL detail_level)
 : CECTag(EC_TAG_SERVER, EC_IPv4_t(server->GetIP(), server->GetPort()))
 {
@@ -119,7 +119,7 @@ CEC_Server_Tag::CEC_Server_Tag(const CServer *server, EC_DETAIL_LEVEL detail_lev
 		}
 #ifdef ENABLE_IP2COUNTRY
 		// Server host country ISO code (#440). WEB / FULL fall through to here,
-		// so this covers the webserver, amulecmd and remote-detail paths.
+		// so this covers the amulecmd and remote-detail paths.
 		if (theApp->GetIP2Country() && theApp->GetIP2Country()->IsEnabled()) {
 			AddTag(CECTag(EC_TAG_SERVER_COUNTRY,
 				theApp->GetIP2Country()->GetCountryCode(server->GetFullIP())));

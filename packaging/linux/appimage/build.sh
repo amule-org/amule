@@ -42,7 +42,6 @@ cmake -B "${BUILD_DIR}" -S "${REPO}" -G Ninja \
     -DBUILD_AMULECMD=YES \
     -DBUILD_AMULEAPI=YES \
     -DBUILD_ED2K=YES \
-    -DBUILD_WEBSERVER=YES \
     -DBUILD_CAS=YES \
     -DBUILD_WXCAS=YES \
     -DBUILD_ALC=YES \
@@ -68,7 +67,7 @@ DESTDIR="${APPDIR}" cmake --install "${BUILD_DIR}"
 #    invokes the daemon, amulegui invokes the remote GUI, and so on.
 #    Listing each via --executable makes linuxdeploy walk their .so
 #    deps and bundle every transitive library.
-EXTRA_BINS=(amuled amulegui amulecmd amuleweb amuleapi ed2k cas wxcas alc alcc)
+EXTRA_BINS=(amuled amulegui amulecmd amuleapi ed2k cas wxcas alc alcc)
 EXEC_ARGS=()
 for bin in "${EXTRA_BINS[@]}"; do
     if [ -x "${APPDIR}/usr/bin/${bin}" ]; then

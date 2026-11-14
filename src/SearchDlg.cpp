@@ -349,8 +349,7 @@ namespace
 // Search *query* history -- the strings typed into the Name field, not the results they
 // returned. Deliberately not stored in amule.conf: query terms are arguably private, and
 // putting them in the main config both bloats it and makes them travel with the file
-// (config backups, the --amule-config-file push to amuleweb/amuleapi). A dedicated file
-// mirrors eMule's AC_SearchStrings.dat.
+// (config backups, for one). A dedicated file mirrors eMule's AC_SearchStrings.dat.
 wxString SearchHistoryFilePath()
 {
 	return thePrefs::GetConfigDir() + "searchhistory.dat";

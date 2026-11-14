@@ -193,7 +193,7 @@ int main()
 		Client client;
 		Server server;
 		const Bytes transcript(163, 42);
-		for (uint8_t credential : { 0, 1, 2 }) {
+		for (uint8_t credential : { 0, 1 }) {
 			const auto cA = client.Start();
 			const auto sB = server.Start(verifier, credential, cA, transcript);
 			const auto m1 = client.Respond(password, credential, verifier.salt, sB, transcript);
@@ -202,6 +202,8 @@ int main()
 			Check(!client.Verify(m2), "server proof replay rejected");
 			Check(server.Verify(m1).empty(), "client proof replay rejected");
 		}
+		// 2 was the amuleweb token: reserved, so refused like any unknown selector.
+		Reject([&] { server.Start(verifier, 2, client.Start(), transcript); });
 		{
 			const auto cA = client.Start();
 			const auto sB = server.Start(verifier, 0, cA, transcript);

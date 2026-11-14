@@ -158,7 +158,6 @@ build() {
         -DBUILD_AMULECMD=YES \
         -DBUILD_AMULEAPI=YES \
         -DBUILD_ED2K=YES \
-        -DBUILD_WEBSERVER=YES \
         -DBUILD_CAS=YES \
         -DBUILD_WXCAS=YES \
         -DBUILD_ALC=YES \

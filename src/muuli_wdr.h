@@ -466,17 +466,6 @@ wxSizer *PreferencesGuiTweaksTab(wxWindow *parent, bool call_fit = TRUE, bool se
 #define IDC_EXT_CONN_TCP_PORT 10215
 #define IDC_UPNP_EC_ENABLED 10216
 #define IDC_EXT_CONN_PASSWD 10217
-#define IDC_ENABLE_WEB 10218
-#define IDC_WEBTEMPLATE 10219
-#define IDC_WEB_PASSWD 10220
-#define IDC_ENABLE_WEB_LOW 10221
-#define IDC_WEB_PASSWD_LOW 10222
-#define IDC_WEB_PORT 10223
-#define IDC_UPNP_WEBSERVER_ENABLED 10224
-#define IDC_WEBUPNPTCPPORTTEXT 10225
-#define IDC_WEBUPNPTCPPORT 10226
-#define IDC_WEB_REFRESH_TIMEOUT 10227
-#define IDC_WEB_GZIP 10228
 wxSizer *PreferencesRemoteControlsTab(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 extern wxSizer *prefs_sizer;

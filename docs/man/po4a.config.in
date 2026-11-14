@@ -8,7 +8,6 @@
 [type: man] @CMAKE_CURRENT_SOURCE_DIR@/amulecmd.1.in $lang:@CMAKE_CURRENT_BINARY_DIR@/amulecmd.$lang.1.in add_$lang:?@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.add
 [type: man] @CMAKE_CURRENT_SOURCE_DIR@/amuled.1.in $lang:@CMAKE_CURRENT_BINARY_DIR@/amuled.$lang.1.in add_$lang:?@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.add
 [type: man] @CMAKE_CURRENT_SOURCE_DIR@/amulegui.1.in $lang:@CMAKE_CURRENT_BINARY_DIR@/amulegui.$lang.1.in add_$lang:?@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.add
-[type: man] @CMAKE_CURRENT_SOURCE_DIR@/amuleweb.1.in $lang:@CMAKE_CURRENT_BINARY_DIR@/amuleweb.$lang.1.in add_$lang:?@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.add
 [type: man] @CMAKE_CURRENT_SOURCE_DIR@/ed2k.1.in $lang:@CMAKE_CURRENT_BINARY_DIR@/ed2k.$lang.1.in add_$lang:?@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.add
 [type: man] @CMAKE_SOURCE_DIR@/src/utils/aLinkCreator/docs/alc.1.in $lang:@CMAKE_BINARY_DIR@/src/utils/aLinkCreator/docs/alc.$lang.1.in add_$lang:?@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.add
 [type: man] @CMAKE_SOURCE_DIR@/src/utils/aLinkCreator/docs/alcc.1.in $lang:@CMAKE_BINARY_DIR@/src/utils/aLinkCreator/docs/alcc.$lang.1.in add_$lang:?@CMAKE_CURRENT_SOURCE_DIR@/po/manpages-$lang.add

@@ -371,8 +371,7 @@ std::string SearchLocation(const std::string &base_path, std::uint32_t search_id
 	return base_path + "/api/v1/search/" + std::to_string(search_id);
 }
 
-// Namespaced apart from amuleweb's `amule_token` so the two daemons can
-// coexist behind one host without a Set-Cookie tug-of-war.
+// Namespaced so amuleapi can share a host with another web app without a Set-Cookie tug-of-war.
 const char *const kSessionCookieName = "amuleapi_token";
 
 // Ceiling for one static-asset read: keeps a StaticRoot pointing at /dev/zero
@@ -454,8 +453,7 @@ std::string BuildStaticEtag(const struct stat &st)
 }
 
 // Resolve the default static directory when amuleapi.conf's [Server]/StaticRoot is
-// empty. Mirrors amuleweb's GetTemplateDir (src/webserver/src/WebInterface.cpp):
-// the macOS .app bundle's Resources/ first (so an installed aMule.app surfaces the
+// empty. Tries the macOS .app bundle's Resources/ first (so an installed aMule.app surfaces the
 // bundled frontend without a conf edit), then a copy beside the running binary
 // (the relocatable Linux static tarball), then AMULEAPI_STATIC_DIR, then
 // wxStandardPaths' platform-adjusted resource dir. First existing one wins.
@@ -523,8 +521,7 @@ std::string ResolveDefaultStaticDir()
 	}
 #endif
 
-	// wxStandardPaths fallback, with the same platform adjustments amuleweb
-	// applies for its `webserver/` lookup.
+	// wxStandardPaths fallback, with the platform adjustments for each install layout.
 	wxString dir = wxStandardPaths::Get().GetResourcesDir();
 #if defined(__WINDOWS__)
 	// Installer layout: bin\amuleapi.exe + share\amule\amuleapi-static\.
@@ -8153,8 +8150,8 @@ namespace
 // shape is defined exactly once.
 //
 // Categories whose name contains a dot are nested one level under their prefix
-// (remote_controls.webserver -> "remote_controls": {"webserver": {...}}). Write-only
-// rows (passwords) and Rejected rows are never emitted.
+// (remote_controls.amuleapi -> "remote_controls": {"amuleapi": {...}}). Write-only
+// rows (passwords), Rejected rows and Retired rows without a member are never emitted.
 void WritePrefFieldValue(CJsonWriter &w, const webapi::PrefField &f, const webapi::PreferencesSnapshot &p)
 {
 	// The accessor takes a non-const snapshot; emitting never mutates it.
@@ -8187,6 +8184,7 @@ void WritePrefFieldValue(CJsonWriter &w, const webapi::PrefField &f, const webap
 bool PrefFieldIsEmitted(const webapi::PrefField &f, bool admin)
 {
 	return f.access != webapi::PrefAccess::WriteOnly && f.access != webapi::PrefAccess::Rejected &&
+	       (f.access != webapi::PrefAccess::Retired || f.member) &&
 	       (admin || f.access != webapi::PrefAccess::AdminRead);
 }
 
@@ -8503,15 +8501,16 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 	// gates ApplyBoolean on it -- which is also why every bool below is a value tag.
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SET_PREFERENCES, EC_DETAIL_FULL));
 	bool any_change = false;
-	// A daemon-local field (e.g. the online-signature folder) sent back unchanged: a valid no-op, so the
-	// request is not "no writable fields" even when it names nothing else.
-	bool daemon_local_noop = false;
+	// A daemon-local field (e.g. the online-signature folder) sent back unchanged, or a retired
+	// field: a valid no-op, so the request is not "no writable fields" even when it names nothing
+	// else.
+	bool accepted_noop = false;
 	// Names of read-only fields the body carried, so a request naming only
 	// those can say which ones rather than claiming none were known.
 	std::string skipped_read_only;
 
 	// One CECTag per EC group, created on first use. Two categories can share a group
-	// (remote_controls.webserver / .amuleapi), so they must land in the same tag.
+	// (the remote_controls.* ones), so they must land in the same tag.
 	std::map<ec_tagname_t, CECTag> groups;
 	std::vector<ec_tagname_t> group_order;
 	auto group_for = [&](ec_tagname_t tag) -> CECTag & {
@@ -8565,16 +8564,19 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 
 		// Read-only fields (daemon capabilities, live status) are ignored rather than
 		// rejected: the read-modify-write round trip necessarily sends them back.
-		// Bespoke fields are applied further down.
 		//
 		// Remember the names, though: a body naming ONLY non-writable fields would
 		// otherwise fall through to "did not include any known pref fields".
-		if (f.access == webapi::PrefAccess::ReadOnly || f.access == webapi::PrefAccess::Bespoke) {
-			if (f.access == webapi::PrefAccess::ReadOnly) {
-				if (!skipped_read_only.empty())
-					skipped_read_only += ", ";
-				skipped_read_only += std::string(f.category) + "." + f.key;
-			}
+		if (f.access == webapi::PrefAccess::ReadOnly) {
+			if (!skipped_read_only.empty())
+				skipped_read_only += ", ";
+			skipped_read_only += std::string(f.category) + "." + f.key;
+			continue;
+		}
+
+		// Writable in v1, so a write is still accepted; it has nothing left to change.
+		if (f.access == webapi::PrefAccess::Retired) {
+			accepted_noop = true;
 			continue;
 		}
 
@@ -8615,7 +8617,7 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 					"cannot be changed through the API";
 				return ErrorResponse(400, "read_only_field", msg.c_str());
 			}
-			daemon_local_noop = true;
+			accepted_noop = true;
 			continue;
 		}
 
@@ -8694,56 +8696,14 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 			return ErrorResponse(400, "bad_request", err.c_str());
 	}
 
-	// --- The one field pair the table cannot describe. ------------------
-	// remote_controls.webserver.guest_enabled and .guest_password share a single EC
-	// tag: EC_TAG_WEBSERVER_GUEST carries the enable bool as its value and the password
-	// hash as a child, so there is no 1:1 field-to-tag mapping for the schema. When
-	// only the password is given, the enable bit falls back to the snapshot value.
-	{
-		const picojson::object *ws = nullptr;
-		for (std::size_t c = 0; c < webapi::PrefCategoryCount(); ++c) {
-			if (std::strcmp(webapi::PrefCategories()[c].name, "remote_controls.webserver") == 0) {
-				ws = cat_obj[c];
-				break;
-			}
-		}
-		if (ws) {
-			const auto en_it = ws->find("guest_enabled");
-			const auto pw_it = ws->find("guest_password");
-			const bool has_en = en_it != ws->end();
-			const bool has_pw = pw_it != ws->end();
-			if (has_en || has_pw) {
-				if (has_en && !en_it->second.is<bool>())
-					return ErrorResponse(
-						400, "bad_request", "guest_enabled must be a bool");
-				if (has_pw && !pw_it->second.is<std::string>())
-					return ErrorResponse(
-						400, "bad_request", "guest_password must be a string");
-				const bool enabled = has_en ? en_it->second.get<bool>()
-							    : current.remote_controls.webserver.guest_enabled;
-				CECTag guest(
-					EC_TAG_WEBSERVER_GUEST, static_cast<std::uint8_t>(enabled ? 1 : 0));
-				if (has_pw) {
-					const wxString md5hex = MD5Sum(
-						wxString::FromUTF8(pw_it->second.get<std::string>().c_str()))
-									.GetHash();
-					CMD4Hash h;
-					if (HashFromHex(std::string(md5hex.utf8_str()), h))
-						guest.AddTag(CECTag(EC_TAG_PASSWD_HASH, h));
-				}
-				group_for(EC_TAG_PREFS_REMOTECTRL).AddTag(guest);
-				any_change = true;
-			}
-		}
-	}
-
 	for (ec_tagname_t tag : group_order)
 		ec_req->AddTag(groups.find(tag)->second);
 
 	if (!any_change) {
-		// A daemon-local field echoed back unchanged is an accepted no-op: return the current
-		// state (like a successful PATCH) rather than a "nothing writable" error.
-		if (daemon_local_noop) {
+		// A daemon-local field echoed back unchanged, or a retired field, is an accepted
+		// no-op: return the current state (like a successful PATCH) rather than a "nothing
+		// writable" error.
+		if (accepted_noop) {
 			const webapi::PreferencesSnapshot p = m_state.Preferences();
 			CHttpServer::Response r;
 			r.status = 200;

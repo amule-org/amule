@@ -128,10 +128,6 @@ if (BUILD_UTIL)
 	add_subdirectory (utils)
 endif()
 
-if (BUILD_WEBSERVER)
-	add_subdirectory (webserver)
-endif()
-
 # Pure-logic primitives (JWT / ETag / route patterns / JSON writer)
 # that the upcoming amuleapi binary and its unit tests link against.
 # Built unconditionally — no transitive cost for builds that don't
@@ -570,37 +566,6 @@ if (BUILD_MONOLITHIC)
 
 		amule_bundle_translations (amule)
 
-		# Bundle the default webserver template into the .app at
-		# Contents/Resources/webserver/default/. amuleweb's macOS
-		# template lookup in WebInterface.cpp::GetTemplateDir uses
-		# LSCopyApplicationURLsForBundleIdentifier("org.amule.aMule")
-		# to find the bundle, then expects login.php and friends under
-		# Contents/Resources/webserver/<templateName>/. The unix-style
-		# INSTALL rule in src/webserver/default/CMakeLists.txt writes
-		# to ${PKGDATADIR}/webserver/default which is outside the .app
-		# bundle scope, so without this bundling step every macOS user
-		# enabling the web server gets a fatal "Cannot find template:
-		# default" at amuleweb startup. The file list is the one set
-		# in src/webserver/default/CMakeLists.txt so the bundle stays
-		# in sync with the unix INSTALL rule automatically.
-		if (BUILD_WEBSERVER AND WEBSERVER_DEFAULT_TEMPLATE_FILES)
-			set (_tmpl_src "${CMAKE_SOURCE_DIR}/src/webserver/default")
-			set (_tmpl_dst
-				"$<TARGET_BUNDLE_CONTENT_DIR:amule>/Resources/webserver/default")
-			add_custom_command (TARGET amule POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E make_directory "${_tmpl_dst}"
-				COMMENT "Bundling default webserver template into aMule.app"
-				VERBATIM
-			)
-			foreach (_tmpl IN LISTS WEBSERVER_DEFAULT_TEMPLATE_FILES)
-				add_custom_command (TARGET amule POST_BUILD
-					COMMAND ${CMAKE_COMMAND} -E copy_if_different
-						"${_tmpl_src}/${_tmpl}" "${_tmpl_dst}/"
-					VERBATIM
-				)
-			endforeach()
-		endif()
-
 		# Mirror for amuleapi's static-frontend root. Resolves at
 		# runtime via LSCopyApplicationURLsForBundleIdentifier(
 		# "org.amule.aMule") + CFBundleCopyResourceURL("amuleapi-
@@ -958,7 +923,6 @@ if (NEED_LIB_MULEAPPCORE)
 		RC4Encrypt.cpp
 		StateMachine.cpp
 		TerminationProcessAmuleApi.cpp
-		TerminationProcessAmuleweb.cpp
 		ThreadScheduler.cpp
 		UPnPBase.cpp
 		UserHash.cpp
@@ -1143,8 +1107,8 @@ IF (NEED_LIB_MULESOCKET)
 		PUBLIC wxWidgets::BASE
 	)
 	# CAsioSocketImpl's 64-bit atomics need libatomic on 32-bit targets without a
-	# hardware 8-byte CAS. PUBLIC, so amulecmd and amuleweb, which do not link
-	# muleappcore, get it too.
+	# hardware 8-byte CAS. PUBLIC, so amulecmd, which does not link
+	# muleappcore, gets it too.
 	if (LIBATOMIC)
 		target_link_libraries (mulesocket PUBLIC ${LIBATOMIC})
 	endif()
@@ -1239,7 +1203,7 @@ endif()
 # it would later install. Skipped under ENABLE_NLS=OFF because
 # `pofiles` is only created when `add_subdirectory(po)` runs.
 if (ENABLE_NLS AND TARGET pofiles)
-	foreach (_bin amule amuled amulecmd amulegui amuleweb ed2k alc alcc cas wxcas fileview)
+	foreach (_bin amule amuled amulecmd amulegui ed2k alc alcc cas wxcas fileview)
 		if (TARGET ${_bin})
 			add_dependencies (${_bin} pofiles)
 		endif()

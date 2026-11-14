@@ -17,7 +17,7 @@ def check(binary):
                             timeout=15)
     lines = result.stdout.splitlines()
     assert len(lines) == 7, result.stdout
-    for i, name in enumerate(['amulecmd', 'amuleweb', 'amuleapi']):
+    for i, name in enumerate(['amulecmd', 'amuled', 'amuleapi']):
         for line in lines[2 * i:2 * i + 2]:
             assert re.search(r' INFO  \[' + name + r'\] (?:probe\(7\): )?console identity$',
                              line), line

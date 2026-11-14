@@ -144,7 +144,7 @@ public:
 	/**
 	 * Whether this connector keeps its own remote.conf.
 	 *
-	 * True for amulecmd and amuleweb, which have no config file of their own. amuleapi returns
+	 * True for amulecmd, which has no config file of its own. amuleapi returns
 	 * false: it owns amuleapi.conf, and reading remote.conf as well gave two files describing
 	 * the same EC connection, with the winner decided by load order. When false the base class
 	 * registers neither --config-file, --write-config nor --create-config-from, and loads
@@ -161,8 +161,8 @@ public:
 	 * amuleapi.conf. Keeping the option registered would keep offering the one route that
 	 * leaks.
 	 *
-	 * amulecmd and amuleweb keep it. Both are commonly run by hand, and neither owns a config
-	 * file that could hold the value instead.
+	 * amulecmd keeps it. It is commonly run by hand, and owns no config file that could hold
+	 * the value instead.
 	 */
 	virtual bool UsesEcPasswordOption() const { return true; }
 
@@ -248,7 +248,7 @@ public:
 	void ShowGreet();
 
 	// Command line processing
-	void OnInitCmdLine(wxCmdLineParser &amuleweb_parser, const char *appname);
+	void OnInitCmdLine(wxCmdLineParser &parser, const char *appname);
 	// --log-file / --no-log-file, for amuleapi only.
 	static void AddLogFileOptions(wxCmdLineParser &parser);
 	bool OnCmdLineParsed(wxCmdLineParser &parser);
@@ -278,12 +278,11 @@ protected:
 	// where the locality check would otherwise strip ZLIB.
 	bool m_forceZLIB;
 
-	// Select the spawned API or web token's verifier instead of the configured password's.
+	// Select the spawned API token's verifier instead of the configured password's.
 	uint8_t m_ECTokenCredential = 0;
 	// Advertise the multi-search EC capability (EC_TAG_CAN_MULTI_SEARCH) so the daemon
 	// addresses searches by ID and several can run at once. Off by default; only a connector
 	// that reads EC_TAG_SEARCH_ID back and handles per-ID results (amulecmd) sets it true.
-	// amuleweb stays single-search.
 	bool m_canMultiSearch;
 	// With multi-search, read an id-less EC_OP_SEARCH_PROGRESS as every search rather than
 	// the current one. amulecmd turns it off.

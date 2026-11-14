@@ -71,7 +71,7 @@ def run(daemon_binary, api_binary):
         write_amule_conf(core, port, Port=peer_port, UDPEnable=0,
                          Nick='url-privacy-regression', VerboseDebug=1,
                          Autoconnect=0, GeoIPAutoUpdate=0, GeoIPSource='custom',
-                         sections={'WebServer': {'Enabled': 0}, 'Debug': {'Cat_HTTP': 1}})
+                         sections={'Debug': {'Cat_HTTP': 1}})
         env = daemon_env(root, HTTP_PROXY='', HTTPS_PROXY='', ALL_PROXY='', http_proxy='',
                          https_proxy='', all_proxy='', NO_PROXY='127.0.0.1,localhost,::1')
         processes = []

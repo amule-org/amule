@@ -553,23 +553,29 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: applica
 _assert_status 200 "PATCH (restore proxy fields) → 200"
 
 # --- Nested remote_controls (#655): round-trip through the sub-objects. ---
-# Both subsystems pack into one EC category, so this also proves the two
-# sub-objects can be sent together without one clobbering the other.
+# The retired webserver sub-object is accepted beside a writable one and
+# ignored, without blocking the writable change.
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
-SAVED_WS_PORT=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.webserver.port')
-SAVED_WS_REFRESH=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.webserver.refresh_seconds')
 SAVED_API_BIND=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.amuleapi.bind_address')
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d '{"remote_controls":{"webserver":{"port":4711,"refresh_seconds":123},"amuleapi":{"bind_address":"127.0.0.1"}}}' \
+	-d '{"remote_controls":{"webserver":{"port":4712,"refresh_seconds":123},"amuleapi":{"bind_address":"127.0.0.1"}}}' \
 	"$API/preferences"
 _assert_status 200 "PATCH nested remote_controls (webserver + amuleapi) → 200"
-_assert_json_eq '.remote_controls.webserver.port' 4711 'webserver.port=4711 in response'
-_assert_json_eq '.remote_controls.webserver.refresh_seconds' 123 'webserver.refresh_seconds=123 in response'
+_assert_json_eq '.remote_controls.webserver.port' 4711 'retired webserver.port ignored in response'
+_assert_json_eq '.remote_controls.webserver.refresh_seconds' 120 'retired webserver.refresh_seconds ignored in response'
 _assert_json_eq '.remote_controls.amuleapi.bind_address' 127.0.0.1 'amuleapi.bind_address set in response'
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
-_assert_json_eq '.remote_controls.webserver.port' 4711 'webserver.port persisted (no stale GET)'
+_assert_json_eq '.remote_controls.webserver.port' 4711 'retired webserver.port still fixed on GET'
 _assert_json_eq '.remote_controls.amuleapi.bind_address' 127.0.0.1 'amuleapi.bind_address persisted'
+
+# A body naming only retired fields, passwords included, is an accepted no-op.
+_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+	-d '{"remote_controls":{"webserver":{"enabled":true,"password":"x","guest_password":"y"}}}' \
+	"$API/preferences"
+_assert_status 200 "PATCH only retired remote_controls.webserver fields → 200"
+_assert_json_eq '.remote_controls.webserver.enabled' false 'retired webserver.enabled ignored'
+_assert_json_eq '.remote_controls.webserver.password | type' null 'retired webserver.password not emitted'
 
 # The flat remote_controls keys are not a write path — they are simply
 # unknown fields, so a body carrying only those changes nothing.
@@ -590,7 +596,7 @@ _assert_status 400 "PATCH remote_controls.amuleapi.password → 400 (managed via
 
 # Restore.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"remote_controls\":{\"webserver\":{\"port\":$SAVED_WS_PORT,\"refresh_seconds\":$SAVED_WS_REFRESH},\"amuleapi\":{\"bind_address\":\"$SAVED_API_BIND\"}}}" \
+	-d "{\"remote_controls\":{\"amuleapi\":{\"bind_address\":\"$SAVED_API_BIND\"}}}" \
 	"$API/preferences"
 _assert_status 200 "PATCH (restore remote_controls fields) → 200"
 
@@ -913,7 +919,7 @@ _assert_json_eq '.connection.upload_slot_min_kibibytes_per_second' 1 \
 # --- remote_controls.external_connections: read-only, never applied. -------
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 EC_BEFORE=$(printf '%s' "$CURL_BODY" | jq -c '.remote_controls.external_connections')
-WS_REFRESH=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.webserver.refresh_seconds')
+API_PORT=$(printf '%s' "$CURL_BODY" | jq -r '.remote_controls.amuleapi.port')
 
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 	-d '{"remote_controls":{"external_connections":{"port":1,"enabled":false}}}' "$API/preferences"
@@ -923,7 +929,7 @@ _assert_json_eq '.error.message | contains("remote_controls.external_connections
 
 # Alongside a writable field, set to its own value, they are ignored rather than rejected.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-	-d "{\"remote_controls\":{\"webserver\":{\"refresh_seconds\":$WS_REFRESH},\"external_connections\":{\"port\":1,\"enabled\":false,\"password_set\":false}}}" \
+	-d "{\"remote_controls\":{\"amuleapi\":{\"port\":$API_PORT},\"external_connections\":{\"port\":1,\"enabled\":false,\"password_set\":false}}}" \
 	"$API/preferences"
 _assert_status 200 'PATCH with external_connections beside a writable field -> 200'
 _assert_json_eq '.remote_controls.external_connections | tojson' "$EC_BEFORE" \

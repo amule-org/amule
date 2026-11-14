@@ -25,9 +25,6 @@ release — it is based on 8.9.0, so every release clears the minimum). The cmak
 check disambiguates the two by `CRYPTOPP_VERSION`, which the fork encodes as a
 calendar version.
 
-For `amuleweb` you'll also need a POSIX-compliant regex library — part of
-the standard C library on most GNU systems.
-
 ### Optional dependencies
 
 | Package                    | Minimum | What it enables                                                          |
@@ -146,7 +143,6 @@ Common `-D` options (`YES` / `NO` unless noted otherwise):
 | `BUILD_REMOTEGUI`        | NO      | `amulegui` — remote control GUI                                          |
 | `BUILD_DAEMON`           | NO      | `amuled` — headless daemon                                               |
 | `BUILD_AMULECMD`         | NO      | `amulecmd` — CLI client for the daemon                                   |
-| `BUILD_WEBSERVER`        | NO      | `amuleweb` — HTTP interface for the daemon                               |
 | `BUILD_AMULEAPI`         | NO      | `amuleapi` — REST API + SSE daemon ([docs/QUICKSTART-AMULEAPI.md](QUICKSTART-AMULEAPI.md)) |
 | `BUILD_ED2K`             | YES     | `ed2k` — queue `ed2k://` and magnet links from the command line          |
 | `BUILD_CAS`              | NO      | `cas` — C statistics tool                                                |

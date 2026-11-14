@@ -131,8 +131,6 @@ src/utils/wxCas/src/onlinesig.cpp
 src/utils/wxCas/src/wxcas.cpp
 src/utils/wxCas/src/wxcasframe.cpp
 src/utils/wxCas/src/wxcasprefs.cpp
-src/webserver/src/WebInterface.cpp
-src/webserver/src/WebServer.cpp
 packaging/windows/installer_strings.c
 src/kademlia/kademlia/Indexed.cpp
 src/libs/ec/cpp/ECSRPConfig.cpp

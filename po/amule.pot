@@ -313,28 +313,18 @@ msgstr ""
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr ""
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr ""
 
 #: src/amule.cpp
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
+msgstr ""
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
 msgstr ""
 
 #: src/amule.cpp
@@ -483,28 +473,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr ""
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr ""
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr ""
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -526,13 +494,9 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr ""
 
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb EC token."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
 msgstr ""
 
 #: src/amule.cpp
@@ -2394,10 +2358,6 @@ msgstr[1] ""
 #: src/DownloadQueue.cpp
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
-msgstr ""
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
 msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
@@ -5872,46 +5832,6 @@ msgid "Guest password"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr ""
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr ""
 
@@ -6916,10 +6836,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr ""
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7256,11 +7172,7 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+msgid "The aMule API requires external connections to be enabled."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
@@ -8975,7 +8887,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr ""
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr ""
 
@@ -10187,139 +10099,6 @@ msgstr ""
 
 #: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Folder where generating the statistic image"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr ""
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr ""
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
 msgstr ""
 
 #: packaging/windows/installer_strings.c

@@ -2398,7 +2398,7 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
 #ifndef CLIENT_GUI
     // The folders a remote EC/amuleapi client may point the incoming, temp, shared or category
     // folders at. Local amule.conf config (allowed-remote-dirs.dat), never settable over EC, and
-    // used only when this instance runs the EC listener or the web server. Empty (the default)
+    // used only when this instance runs the EC listener. Empty (the default)
     // means a remote client cannot change any folder.
     wxStaticBox *itemARBox = new wxStaticBox( parent, -1, _("Folders remote clients may use") );
     wxStaticBoxSizer *itemAR = new wxStaticBoxSizer( itemARBox, wxVERTICAL );
@@ -2484,68 +2484,6 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     item36->Add( item42, wxSizerFlags().Expand().CenterVertical() );
 
     item0->Add( item36, wxSizerFlags().Expand().Border(wxALL, 0) );
-    wxStaticBox *item15 = new wxStaticBox( parent, -1, _("Web server parameters") );
-    wxStaticBoxSizer *item14 = new wxStaticBoxSizer( item15, wxVERTICAL );
-
-    wxCheckBox *item16 = new wxCheckBox( item15, IDC_ENABLE_WEB, _("Run webserver on startup (deprecated)"), wxDefaultPosition, wxDefaultSize, 0 );
-    item14->Add( item16, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
-
-    wxFlexGridSizer *item17 = new wxFlexGridSizer( 2, 0, 0 );
-    item17->AddGrowableCol( 1 );
-
-    wxStaticText *item18 = new wxStaticText( item15, -1, _("Web template"), wxDefaultPosition, wxDefaultSize, 0 );
-    item17->Add( item18, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
-    wxString *strs19 = (wxString*) NULL;
-    wxChoice *item19 = new wxChoice( item15, IDC_WEBTEMPLATE, wxDefaultPosition, wxSize(200,-1), 0, strs19, 0 );
-    item17->Add( item19, wxSizerFlags().CenterVertical().Right() );
-    wxStaticText *item20 = new wxStaticText( item15, -1, _("Full rights password"), wxDefaultPosition, wxDefaultSize, 0 );
-    item17->Add( item20, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
-    CMuleTextCtrl *item21 = new CMuleTextCtrl( item15, IDC_WEB_PASSWD, "", wxDefaultPosition, wxSize(80,-1), wxTE_PASSWORD );
-    item17->Add( item21, wxSizerFlags(1).Expand() );
-    wxCheckBox *item22 = new wxCheckBox( item15, IDC_ENABLE_WEB_LOW, _("Enable Low rights User"), wxDefaultPosition, wxDefaultSize, 0 );
-    item22->SetValue( TRUE );
-    item17->Add( item22, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
-
-    item17->Add( 20, 20, wxSizerFlags().Center().Border(wxALL, 5) );
-    wxStaticText *item23 = new wxStaticText( item15, -1, _("Low rights password"), wxDefaultPosition, wxDefaultSize, 0 );
-    item17->Add( item23, wxSizerFlags().CenterVertical().Border(wxRIGHT, 5) );
-    CMuleTextCtrl *item24 = new CMuleTextCtrl( item15, IDC_WEB_PASSWD_LOW, "", wxDefaultPosition, wxSize(80,-1), wxTE_PASSWORD );
-    item17->Add( item24, wxSizerFlags(1).Expand().CenterVertical() );
-    item14->Add( item17, wxSizerFlags().Expand().CenterVertical() );
-    wxBoxSizer *item25 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item26 = new wxStaticText( item15, -1, _("TCP port:"), wxDefaultPosition, wxDefaultSize, 0 );
-    item25->Add( item26, wxSizerFlags(1).CenterVertical() );
-
-    wxSpinCtrl *item27 = new wxSpinCtrl( item15, IDC_WEB_PORT, "10000", wxDefaultPosition, wxDefaultSize, 0, 1025, 65535, 10000 );
-    item25->Add( item27, wxSizerFlags().Center() );
-
-    item14->Add( item25, wxSizerFlags().Expand().CenterVertical() );
-    wxCheckBox *item28 = new wxCheckBox( item15, IDC_UPNP_WEBSERVER_ENABLED, _("Enable UPnP port forwarding of the web server port"), wxDefaultPosition, wxDefaultSize, 0 );
-    item14->Add( item28, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
-
-    wxBoxSizer *item29 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item30 = new wxStaticText( item15, IDC_WEBUPNPTCPPORTTEXT, _("Web server UPnP TCP port (Optional)"), wxDefaultPosition, wxDefaultSize, 0 );
-    item29->Add( item30, wxSizerFlags(1).Center().Border(wxRIGHT, 5) );
-    wxSpinCtrl *item31 = new wxSpinCtrl( item15, IDC_WEBUPNPTCPPORT, "10000", wxDefaultPosition, wxDefaultSize, 0, 1025, 65535, 10000 );
-    item29->Add( item31, wxSizerFlags().Center() );
-
-    item14->Add( item29, wxSizerFlags().Expand().CenterVertical().Border(wxLEFT, 20) );
-    wxBoxSizer *item32 = new wxBoxSizer( wxHORIZONTAL );
-
-    wxStaticText *item33 = new wxStaticText( item15, -1, _("Page Refresh Time (in secs)"), wxDefaultPosition, wxDefaultSize, 0 );
-    item32->Add( item33, wxSizerFlags(1).Center() );
-
-    wxSpinCtrl *item34 = new wxSpinCtrl( item15, IDC_WEB_REFRESH_TIMEOUT, "120", wxDefaultPosition, wxDefaultSize, 0, 120, 600, 120 );
-    item32->Add( item34, wxSizerFlags().Center() );
-
-    item14->Add( item32, wxSizerFlags().Expand().CenterVertical() );
-    wxCheckBox *item35 = new wxCheckBox( item15, IDC_WEB_GZIP, _("Enable Gzip compression"), wxDefaultPosition, wxDefaultSize, 0 );
-    item35->SetValue( TRUE );
-    item14->Add( item35, wxSizerFlags().CenterVertical().Border(wxALL, 5) );
-
-    item0->Add( item14, wxSizerFlags().Expand().Border(wxALL, 0) );
     if (set_sizer)
     {
         parent->SetSizer( item0 );

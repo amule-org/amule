@@ -2,10 +2,7 @@
 
 amuleapi gives aMule an HTTP interface: a JSON REST API and a live event
 stream, so other programs can drive a running `amuled`. It connects to
-amuled the same way `amulecmd` does and listens on its own port, so it can
-run alongside `amuleweb`.
-
-> aMule's older web frontend, **amuleweb**, is **deprecated** — it may be removed in aMule 3.2 or later (it is not being removed yet). amuleapi is its intended replacement.
+amuled the same way `amulecmd` does and listens on its own port.
 
 Endpoint details are in [`docs/api/REFERENCE.md`](api/REFERENCE.md), and the
 event stream in [`docs/api/EVENTS.md`](api/EVENTS.md).

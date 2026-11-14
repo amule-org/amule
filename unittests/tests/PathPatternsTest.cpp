@@ -445,9 +445,9 @@ TEST(PathPatterns, StripBasePath_OutsideIsUntouched)
 	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Outside);
 	ASSERT_EQUALS(std::string("/api/v1/status"), t);
 	// Segment boundary, not a string prefix.
-	t = "/amuleweb/x";
+	t = "/amuled/x";
 	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Outside);
-	ASSERT_EQUALS(std::string("/amuleweb/x"), t);
+	ASSERT_EQUALS(std::string("/amuled/x"), t);
 	t = "/Amule/x";
 	ASSERT_TRUE(StripBasePath("/amule", t) == BasePathMatch::Outside);
 	t = "/amule/x";

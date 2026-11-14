@@ -38,7 +38,7 @@ DECLARE_SIMPLE(ECPrefsDiff)
 namespace
 {
 // Shaped like CEC_Prefs_Packet at EC_DETAIL_UPDATE: booleans are bare tags.
-CECPacket MakePrefs(uint32 maxUpload, bool filterComments, bool guest, bool webPassword)
+CECPacket MakePrefs(uint32 maxUpload, bool filterComments, bool guest, bool password)
 {
 	CECPacket prefs(EC_OP_SET_PREFERENCES, EC_DETAIL_UPDATE);
 
@@ -55,11 +55,11 @@ CECPacket MakePrefs(uint32 maxUpload, bool filterComments, bool guest, bool webP
 	prefs.AddTag(filter);
 
 	CECEmptyTag remote(EC_TAG_PREFS_REMOTECTRL);
-	if (webPassword) {
+	if (password) {
 		remote.AddTag(CECTag(EC_TAG_PASSWD_HASH, CMD4Hash()));
 	}
 	if (guest) {
-		CECEmptyTag guestTag(EC_TAG_WEBSERVER_GUEST);
+		CECEmptyTag guestTag(EC_TAG_AMULEAPI_GUEST_PASSWD);
 		guestTag.AddTag(CECTag(EC_TAG_PASSWD_HASH, CMD4Hash()));
 		remote.AddTag(guestTag);
 	}
@@ -141,7 +141,7 @@ TEST(ECPrefsDiff, GuestSwitchedOnKeepsItsPassword)
 {
 	const std::unique_ptr<CECPacket> diff =
 		MakePrefsDiffPacket(MakePrefs(100, true, false, true), MakePrefs(100, true, true, true));
-	const CECTag *guest = Find(*diff, EC_TAG_PREFS_REMOTECTRL, EC_TAG_WEBSERVER_GUEST);
+	const CECTag *guest = Find(*diff, EC_TAG_PREFS_REMOTECTRL, EC_TAG_AMULEAPI_GUEST_PASSWD);
 	ASSERT_TRUE(guest != nullptr);
 	ASSERT_EQUALS(1u, guest->GetInt());
 	ASSERT_TRUE(guest->GetTagByName(EC_TAG_PASSWD_HASH) != nullptr);
@@ -151,7 +151,7 @@ TEST(ECPrefsDiff, GuestSwitchedOffCarriesFalse)
 {
 	const std::unique_ptr<CECPacket> diff =
 		MakePrefsDiffPacket(MakePrefs(100, true, true, true), MakePrefs(100, true, false, true));
-	const CECTag *guest = Find(*diff, EC_TAG_PREFS_REMOTECTRL, EC_TAG_WEBSERVER_GUEST);
+	const CECTag *guest = Find(*diff, EC_TAG_PREFS_REMOTECTRL, EC_TAG_AMULEAPI_GUEST_PASSWD);
 	ASSERT_TRUE(guest != nullptr);
 	ASSERT_EQUALS(0u, guest->GetInt());
 }

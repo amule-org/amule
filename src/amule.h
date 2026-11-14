@@ -605,7 +605,6 @@ protected:
 
 	// PID type: `int` fits any OS pid we run on -- POSIX pid_t is typically int, and Windows
 	// process IDs are 32-bit DWORDs. `long` was right on LLP64 only by accident.
-	int webserver_pid;
 	int amuleapi_pid;
 	CTerminationProcessAmuleApi *m_amuleApiProcess = nullptr;
 	AmuleApiRestart m_amuleApiRestart;
@@ -613,21 +612,17 @@ protected:
 	void StartAmuleApi(bool startup);
 	void ScheduleAmuleApiRestart();
 	bool ClearAmuleApiToken();
-	bool ClearAmulewebToken();
-	bool PrepareAmulewebToken();
 
-	// Independent verifier-only credentials for the helpers we spawn. Raw tokens
-	// exist only during the owner-only file handoff and in the child that consumes
-	// them. A dummy verifier makes an absent/revoked token follow the same handshake.
+	// Verifier-only credential for the amuleapi we spawn. The raw token exists only
+	// during the owner-only file handoff and in the child that consumes it. A dummy
+	// verifier makes an absent/revoked token follow the same handshake.
 	ECSRP::Verifier m_ecTokenVerifier;
-	ECSRP::Verifier m_ecWebTokenVerifier;
 	ECSRP::Verifier m_ecDummyTokenVerifier;
 
 	// Uptime-ms deadline after which the token file is removed whether or not the child read
 	// it: a child that dies before reading would leave a live secret at rest. 0 = nothing
 	// pending.
 	uint64 m_ecTokenFileExpiryMs = 0;
-	uint64 m_ecWebTokenFileExpiryMs = 0;
 
 	wxString server_msg;
 
@@ -635,9 +630,8 @@ protected:
 
 public:
 	void OnAmuleApiTerminated(int pid, int status);
-	void OnAmulewebTerminated();
 
-	// Select the API (1) or web (2) child verifier, or the dummy when revoked.
+	// The amuleapi child verifier, or the dummy when revoked.
 	const ECSRP::Verifier &GetEcTokenVerifier(uint8_t credential = 1);
 
 #ifdef ENABLE_VERSION_CHECK

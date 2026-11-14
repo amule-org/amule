@@ -2567,10 +2567,11 @@ TEST(Refresher, PreferencesEnumAndNestedRemoteControlsDecode)
 	resp.AddTag(conn);
 
 	CECEmptyTag rc(EC_TAG_PREFS_REMOTECTRL);
-	rc.AddTag(CECEmptyTag(EC_TAG_WEBSERVER_AUTORUN)); // presence == true
-	rc.AddTag(CECTag(EC_TAG_WEBSERVER_PORT, static_cast<std::uint32_t>(4711)));
-	rc.AddTag(CECTag(EC_TAG_WEBSERVER_REFRESH, static_cast<std::uint32_t>(120)));
-	rc.AddTag(CECTag(EC_TAG_WEBSERVER_TEMPLATE, wxString::FromUTF8("php-default")));
+	// The retired web-server tags (0x1501-0x1506), as an older core still sends them.
+	rc.AddTag(CECEmptyTag(static_cast<ec_tagname_t>(0x1501))); // autorun, presence == true
+	rc.AddTag(CECTag(static_cast<ec_tagname_t>(0x1502), static_cast<std::uint32_t>(8080)));
+	rc.AddTag(CECTag(static_cast<ec_tagname_t>(0x1505), static_cast<std::uint32_t>(300)));
+	rc.AddTag(CECTag(static_cast<ec_tagname_t>(0x1506), wxString::FromUTF8("php-default")));
 	rc.AddTag(CECTag(EC_TAG_AMULEAPI_PORT, static_cast<std::uint32_t>(4712)));
 	rc.AddTag(CECTag(EC_TAG_AMULEAPI_BIND, wxString::FromUTF8("127.0.0.1")));
 	resp.AddTag(rc);
@@ -2583,12 +2584,13 @@ TEST(Refresher, PreferencesEnumAndNestedRemoteControlsDecode)
 	// defaulting to the first enum member.
 	ASSERT_EQUALS(std::string("http"), p.proxy_type);
 
-	// One flat EC category fans out into the two nested API sub-objects.
-	ASSERT_TRUE(p.remote_controls.webserver.enabled);
+	// The retired sub-object ignores the wire and keeps its fixed values.
+	ASSERT_TRUE(!p.remote_controls.webserver.enabled);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(4711), p.remote_controls.webserver.port);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(120), p.remote_controls.webserver.refresh_seconds);
-	ASSERT_EQUALS(std::string("php-default"), p.remote_controls.webserver.template_name);
-	ASSERT_TRUE(!p.remote_controls.webserver.guest_enabled); // absent -> false
+	ASSERT_EQUALS(std::string(), p.remote_controls.webserver.template_name);
+	ASSERT_TRUE(p.remote_controls.webserver.gzip_enabled);
+	ASSERT_TRUE(!p.remote_controls.webserver.guest_enabled);
 
 	ASSERT_TRUE(!p.remote_controls.amuleapi.enabled); // absent -> false
 	ASSERT_EQUALS(static_cast<std::uint32_t>(4712), p.remote_controls.amuleapi.port);
@@ -2649,7 +2651,7 @@ TEST(Refresher, PreferencesExternalConnectionsDecodeOrStayUnknown)
 		// A daemon from before these tags: the group is there, the port tag is not.
 		CECPacket resp(EC_OP_SET_PREFERENCES);
 		CECEmptyTag rc(EC_TAG_PREFS_REMOTECTRL);
-		rc.AddTag(CECTag(EC_TAG_WEBSERVER_PORT, static_cast<std::uint32_t>(4711)));
+		rc.AddTag(CECTag(EC_TAG_AMULEAPI_PORT, static_cast<std::uint32_t>(4711)));
 		resp.AddTag(rc);
 
 		PreferencesSnapshot p;
@@ -2658,7 +2660,7 @@ TEST(Refresher, PreferencesExternalConnectionsDecodeOrStayUnknown)
 
 		ASSERT_EQUALS(static_cast<std::size_t>(1), p.unknown_categories.count(category));
 		ASSERT_EQUALS(static_cast<std::size_t>(1), p.unknown_categories.size());
-		ASSERT_EQUALS(static_cast<std::uint32_t>(4711), p.remote_controls.webserver.port);
+		ASSERT_EQUALS(static_cast<std::uint32_t>(4711), p.remote_controls.amuleapi.port);
 	}
 	{
 		CECPacket resp(EC_OP_SET_PREFERENCES);
@@ -2777,11 +2779,12 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 		// Rows that round-trip a value need a backing member; rows that
 		// never do must not have one. DaemonLocal reads its member on GET and
 		// compares against it on PATCH (to accept an unchanged echo), so it needs one too.
+		// A Retired row has one exactly when it is emitted, so either is valid.
 		const bool needs_member =
 			f.access == PrefAccess::ReadWrite || f.access == PrefAccess::AdminRead ||
-			f.access == PrefAccess::ReadOnly || f.access == PrefAccess::DaemonLocal ||
-			f.access == PrefAccess::Bespoke;
-		ASSERT_TRUE(needs_member == (f.member != nullptr));
+			f.access == PrefAccess::ReadOnly || f.access == PrefAccess::DaemonLocal;
+		if (f.access != PrefAccess::Retired)
+			ASSERT_TRUE(needs_member == (f.member != nullptr));
 
 		// Enum rows carry a non-empty, nullptr-terminated name table.
 		if (f.type == PrefType::Enum) {
@@ -2805,7 +2808,8 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			ASSERT_TRUE(found);
 		}
 
-		if (f.access != PrefAccess::WriteOnly && f.access != PrefAccess::Rejected)
+		if (f.access != PrefAccess::WriteOnly && f.access != PrefAccess::Rejected &&
+			(f.access != PrefAccess::Retired || f.member))
 			++emitted;
 	}
 
@@ -2822,7 +2826,7 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 // API states the positive fact and the schema undoes the EC negation on read and write alike.
 TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 {
-	std::size_t inverted = 0, foreign_group = 0, bespoke = 0, admin_read = 0;
+	std::size_t inverted = 0, foreign_group = 0, retired = 0, admin_read = 0;
 	for (std::size_t i = 0; i < PrefSchemaSize(); ++i) {
 		const PrefField &f = PrefSchema()[i];
 		if (f.invert) {
@@ -2834,9 +2838,11 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 			++foreign_group;
 			ASSERT_EQUALS(std::string("upnp_supported"), std::string(f.key));
 		}
-		if (f.access == PrefAccess::Bespoke) {
-			++bespoke;
-			ASSERT_EQUALS(std::string("guest_enabled"), std::string(f.key));
+		// Kept only because /api/v1/ is frozen; nothing else may join them.
+		if (f.access == PrefAccess::Retired) {
+			++retired;
+			ASSERT_EQUALS(std::string("remote_controls.webserver"), std::string(f.category));
+			ASSERT_EQUALS(static_cast<ec_tagname_t>(0), f.tag);
 		}
 		// Hidden from guests: the REST reference lists each one.
 		if (f.access == PrefAccess::AdminRead) {
@@ -2850,7 +2856,7 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 	}
 	ASSERT_EQUALS(static_cast<std::size_t>(2), inverted);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), foreign_group);
-	ASSERT_EQUALS(static_cast<std::size_t>(1), bespoke);
+	ASSERT_EQUALS(static_cast<std::size_t>(8), retired);
 	ASSERT_EQUALS(static_cast<std::size_t>(7), admin_read);
 
 	// One category is gated on a tag proving the daemon has it. That tag must be one of the
@@ -3889,7 +3895,6 @@ TEST(PrefsSchema, AnUnboundedNumericRowIsADeliberateChoice)
 	// the core during that audit.
 	static const char *const kKnownUnbounded[] = {
 		"files.min_free_space_mebibytes",
-		"remote_controls.webserver.refresh_seconds",
 	};
 	const webapi::PrefField *schema = webapi::PrefSchema();
 	for (std::size_t i = 0; i < webapi::PrefSchemaSize(); ++i) {

@@ -293,7 +293,6 @@ const wxString kAppRunNames[] = {
 	wxT("amuled"),
 	wxT("amulegui"),
 	wxT("amulecmd"),
-	wxT("amuleweb"),
 	wxT("amuleapi"),
 	wxT("ed2k"),
 	wxT("cas"),

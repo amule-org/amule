@@ -19,12 +19,6 @@
 # The location, where the headers of libgeoip can be found.
 #SET (GEOIP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../geoip-api-c-master/libGeoIP")
 
-# The location, where to find libpng headers.
-#SET (PNG_HEADER_DIR "${CMAKE_SOURCE_DIR}/../lpng1626")
-
-# The location, where to find libpng.
-#SET (PNG_LIB_DIR "${CMAKE_SOURCE_DIR}/../lpng1626/projects/vstudio/Debug")
-
 # The location, where you extracted wx-sources
 #SET (wxWidgets_ROOT_DIR "${CMAKE_SOURCE_DIR}/../wxWidgets")
 
@@ -55,14 +49,6 @@ if (GEOIP_INCLUDE_DIR)
 	set (SEARCH_DIR_GEOIP ${GEOIP_INCLUDE_DIR})
 endif()
 
-if (PNG_HEADER_DIR)
-	set (SEARCH_DIR_PNG_HEADER ${PNG_HEADER_DIR})
-endif()
-
-if (PNG_LIB_DIR)
-	set (SEARCH_DIR_PNG_LIB ${PNG_LIB_DIR})
-endif()
-
 if (wxWidgets_ROOT_DIR)
 	set (SEARCH_DIR_wxWidgets ${wxWidgets_ROOT_DIR})
 endif()
@@ -77,8 +63,6 @@ set (SEARCH_DIR_CRYPTOPP_HEADER ${SEARCH_DIR_CRYPTOPP_HEADER} CACHE PATH "Search
 set (SEARCH_DIR_CRYPTOPP_LIB ${SEARCH_DIR_CRYPTOPP_LIB} CACHE PATH "Search hint for crypto++ library" FORCE)
 set (SEARCH_DIR_FLEX ${SEARCH_DIR_FLEX} CACHE FILEPATH "Location of the flex executable" FORCE)
 set (SEARCH_DIR_GEOIP ${SEARCH_DIR_GEOIP} CACHE PATH "Search hint for geoip" FORCE)
-set (SEARCH_DIR_PNG_HEADER ${SEARCH_DIR_PNG_HEADER} CACHE PATH "Search hint for libpng headers" FORCE)
-set (SEARCH_DIR_PNG_LIB ${SEARCH_DIR_PNG_LIB} CACHE PATH "Search hint for libpng library" FORCE)
 set (SEARCH_DIR_UPNP ${SEARCH_DIR_UPNP} CACHE PATH "Search hint for libupnp library" FORCE)
 set (SEARCH_DIR_wxWidgets ${SEARCH_DIR_wxWidgets} CACHE PATH "Search hint for wxconfig executable" FORCE)
 set (SEARCH_DIR_ZLIB ${SEARCH_DIR_ZLIB} CACHE PATH "Search hint for zlib" FORCE)
@@ -88,8 +72,6 @@ mark_as_advanced (FORCE SEARCH_DIR_CRYPTOPP_HEADER)
 mark_as_advanced (FORCE SEARCH_DIR_CRYPTOPP_LIB)
 mark_as_advanced (FORCE SEARCH_DIR_FLEX)
 mark_as_advanced (FORCE SEARCH_DIR_GEOIP)
-mark_as_advanced (FORCE SEARCH_DIR_PNG_HEADER)
-mark_as_advanced (FORCE SEARCH_DIR_PNG_LIB)
 mark_as_advanced (FORCE SEARCH_DIR_UPNP)
 mark_as_advanced (FORCE SEARCH_DIR_wxWidgets)
 mark_as_advanced (FORCE SEARCH_DIR_ZLIB)
