@@ -259,16 +259,21 @@ To check that every translated manpage still renders, run
 
 ### Adding a new language
 
-1. Add the language code to `[po4a_langs]` in `docs/man/po4a.config.in`.
-2. Create the initial `.po` from the template:
+1. Create the initial `.po` from the template, or add the language on
+   Weblate:
 
    ```sh
    msginit --input=docs/man/po/manpages.pot \
        --locale=xx --output=docs/man/po/manpages-xx.po
    ```
 
-3. Translate the strings.
-4. Commit `docs/man/po/manpages-xx.po` and the updated `po4a.config.in`.
+2. Translate the strings.
+3. Commit `docs/man/po/manpages-xx.po`. `scripts/update-manpages-po.sh`
+   merges the template into it from then on.
+4. When every page is at least 70% translated, add the language code to
+   `[po4a_langs]` in `docs/man/po4a.config.in` and to
+   `AMULE_MANPAGE_LANGUAGES` in `docs/man/CMakeLists.txt`. The build then
+   renders and installs its manpages.
 
 ### Build integration
 

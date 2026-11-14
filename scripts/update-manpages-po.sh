@@ -103,5 +103,16 @@ echo "Updating po/manpages.pot and merging into po/manpages-*.po ..."
 po4a --no-translations --force --porefs file "${TMP_CONFIG}"
 die 31 "po4a failed"
 
+# po4a merges only the [po4a_langs] catalogs, the languages the build renders.
+# Merge the rest the same way, so they stay current until they join the list.
+read -r -a PO4A_LANGS < <(sed -n 's/^\[po4a_langs\] *//p' po4a.config.in)
+for po in po/manpages-*.po; do
+	lang=${po#po/manpages-}
+	lang=${lang%.po}
+	[[ " ${PO4A_LANGS[*]} " == *" ${lang} "* ]] && continue
+	msgmerge --quiet --previous --add-location=file --no-wrap --backup=none --update "${po}" po/manpages.pot
+	die 32 "msgmerge failed on ${po}"
+done
+
 echo "Done."
 exit 0
