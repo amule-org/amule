@@ -1973,8 +1973,10 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     itemSDAddRow->Add( itemSDRemove, wxSizerFlags().CenterVertical().Border(wxLEFT, 4) );
     item9->Add( itemSDAddRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
 #else
-    wxStaticText *item11 = new wxStaticText( item10, -1, _("(Right click on folder icon for recursive share)"), wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE );
-    item9->Add( item11, 0, wxALIGN_CENTER, 0 );
+    WrappingStaticText *item11 = new WrappingStaticText( item10, -1, _("Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."), wxALIGN_CENTRE_HORIZONTAL );
+    item9->Add( item11, wxSizerFlags().Expand() );
+    WrappingStaticText *item11b = new WrappingStaticText( item10, -1, _("Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."), wxALIGN_CENTRE_HORIZONTAL );
+    item9->Add( item11b, wxSizerFlags().Expand().Border(wxBOTTOM, 2) );
 
     CDirectoryTreeCtrl *item12 = new CDirectoryTreeCtrl(item10, IDC_SHARESELECTOR, wxPoint(0,0), wxSize(100,100), wxSUNKEN_BORDER|wxTR_DEFAULT_STYLE|wxTR_HIDE_ROOT );
     wxASSERT( item12 );
@@ -1984,7 +1986,7 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     item13->SetValue( TRUE );
     item9->Add( item13, 0, wxALIGN_CENTER_VERTICAL, 0 );
     // Auto-rescan toggle. When on, the fs-watcher reflects changes in the shared dirs without a
-    // manual reload; new subdirs created under any path in the tree above are auto-shared.
+    // manual reload; new subdirs are auto-shared only under a recursive share root.
     wxCheckBox *itemAutoRescan = new wxCheckBox( item10, IDC_AUTO_RESCAN_SHARED, _("Automatically rescan shared folders for changes"), wxDefaultPosition, wxDefaultSize, 0 );
     itemAutoRescan->SetValue( TRUE );
     item9->Add( itemAutoRescan, 0, wxALIGN_CENTER_VERTICAL, 0 );

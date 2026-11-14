@@ -431,10 +431,9 @@ void CSharedDirWatcher::OnFileSystemEvent(wxFileSystemWatcherEvent &event)
 		return;
 	}
 
-	// Auto-share new subdirectories of any watched path. A user who has already shared /Music
-	// gets new subdirs of /Music auto-included without having to revisit the prefs dialog.
-	// Existing subdirs that were originally excluded (non-recursive share) are not
-	// retroactively scanned -- only newly-created ones get added.
+	// Auto-share new subdirectories under a recursive share root. A user who shared /Music with
+	// all its subfolders gets new subdirs of /Music without revisiting the prefs dialog. A
+	// folder-only share never gains subdirs; RegisterNewSubdirectory checks this.
 	//
 	// Early-return after registration: a directory CREATE is fully handled inside
 	// RegisterNewSubdirectory (add to shareddir_list, install a watch, race-scan the contents).
