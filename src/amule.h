@@ -477,6 +477,9 @@ public:
 #ifdef ENABLE_UPNP
 	CUPnPControlPoint *m_upnp;
 	std::vector<CUPnPPortMapping> m_upnpMappings;
+	//! Ask the gateway's IGD2 firewall service for the inbound IPv6 pinholes the node needs. A
+	//! no-op without an IPv6 listener or without that service.
+	void RequestIPv6Pinholes();
 	// Build the port mappings from the current preferences and start the UPnP
 	// control point. A no-op when UPnP is disabled or already running.
 	void StartUPnP();

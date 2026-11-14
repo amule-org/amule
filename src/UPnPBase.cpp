@@ -49,6 +49,7 @@
 #endif /* UPNP_MAJOR_VERSION == 17 */
 
 #include "UPnPBase.h"
+#include "IPv6PinholePolicy.h" // Needed for ShouldRenewIPv6Pinhole
 
 #include <algorithm>          // For transform()
 #include "CCtypeAsciiScope.h" // Needed to pin LC_CTYPE = C around the
@@ -139,6 +140,7 @@ static const std::string WAN_Common_Interface_Config(
 	"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1");
 static const std::string WAN_IP_Connection("urn:schemas-upnp-org:service:WANIPConnection:1");
 static const std::string WAN_PPP_Connection("urn:schemas-upnp-org:service:WANPPPConnection:1");
+static const std::string WAN_IPv6_Firewall_Control("urn:schemas-upnp-org:service:WANIPv6FirewallControl:1");
 } // namespace Service
 
 // Decide whether an SSDP NT/ST is something amule wants to learn about. The whitelist is the IGW
@@ -167,6 +169,7 @@ static bool IsWANRelatedDeviceType(const std::string &type)
 		"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:",
 		"urn:schemas-upnp-org:service:WANIPConnection:",
 		"urn:schemas-upnp-org:service:WANPPPConnection:",
+		"urn:schemas-upnp-org:service:WANIPv6FirewallControl:",
 	};
 	for (const std::string &prefix : prefixes) {
 		if (stdStringStartsWithCI(type, prefix)) {
@@ -486,8 +489,12 @@ CUPnPService::CUPnPService(
 	    << "\n        absEventSubURL: " << m_absEventSubURL;
 	AddDebugLogLineN(logUPnP, msg);
 
+	// The IGD2 firewall service belongs here too: it is not a port mapper, but it is the only
+	// service that can open an inbound IPv6 pinhole, and a service that never registers here is
+	// one IPv6FirewallDetected() can never find.
 	if (UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_IP_Connection) ||
-		UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_PPP_Connection)) {
+		UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_PPP_Connection) ||
+		UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_IPv6_Firewall_Control)) {
 #if 0
 	    m_serviceType == UPnP::Service::WAN_PPP_Connection ||
 	    m_serviceType == UPnP::Service::WAN_Common_Interface_Config ||
@@ -523,8 +530,10 @@ CUPnPService::~CUPnPService()
 	const_cast<CUPnPControlPoint &>(m_UPnPControlPoint).ForgetService(this);
 }
 
-bool CUPnPService::Execute(
-	const std::string &ActionName, const std::vector<CUPnPArgumentValue> &ArgValue) const
+bool CUPnPService::Execute(const std::string &ActionName,
+	const std::vector<CUPnPArgumentValue> &ArgValue,
+	const char *resultArg,
+	std::string *result) const
 {
 	std::ostringstream msg;
 	if (m_SCPD.get() == nullptr) {
@@ -644,6 +653,21 @@ bool CUPnPService::Execute(
 	IXML::Document::Free(ActionDoc);
 
 	UPnP::ProcessActionResponse(RespDoc, action.GetName());
+
+	if (resultArg != nullptr && result != nullptr) {
+		// SOAP response, so the value is found by tag name rather than by position: gateways
+		// order their output arguments as they please.
+		IXML_NodeList *nodes = ixmlDocument_getElementsByTagName(RespDoc, resultArg);
+		if (nodes != nullptr) {
+			IXML_Node *node = ixmlNodeList_item(nodes, 0);
+			IXML_Node *text = (node != nullptr) ? ixmlNode_getFirstChild(node) : nullptr;
+			const char *value = (text != nullptr) ? ixmlNode_getNodeValue(text) : nullptr;
+			if (value != nullptr) {
+				*result = value;
+			}
+			ixmlNodeList_free(nodes);
+		}
+	}
 
 	IXML::Document::Free(RespDoc);
 
@@ -866,6 +890,178 @@ bool CUPnPControlPoint::ExecuteOnAnyService(
 		ok = entry.second->Execute(actionName, argval) || ok;
 	}
 	return ok;
+}
+
+//! IGD:2 service that owns inbound IPv6 rules; version-insensitive match, as the IPv4 URNs are.
+static const std::string IPv6FirewallControlType("urn:schemas-upnp-org:service:WANIPv6FirewallControl:");
+
+//! SOAP arguments are strings, and this file builds its own without a formatting library.
+template <typename T> static std::string Numeric(T value)
+{
+	std::ostringstream text;
+	text << value;
+	return text.str();
+}
+
+std::string CUPnPControlPoint::PinholeKey(int protocol, unsigned short port)
+{
+	std::ostringstream key;
+	key << protocol << ":" << static_cast<unsigned int>(port);
+	return key.str();
+}
+
+bool CUPnPControlPoint::IPv6FirewallDetected() const
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	for (const auto &entry : m_ServiceMap) {
+		if (stdStringStartsWithCI(entry.second->GetServiceType(), IPv6FirewallControlType)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CUPnPControlPoint::ExecuteOnIPv6FirewallService(const std::string &actionName,
+	const std::vector<CUPnPArgumentValue> &argval,
+	const char *resultArg,
+	std::string *result)
+{
+	bool ok = false;
+	for (const auto &entry : m_ServiceMap) {
+		if (!stdStringStartsWithCI(entry.second->GetServiceType(), IPv6FirewallControlType)) {
+			continue;
+		}
+		std::string value;
+		if (entry.second->Execute(actionName, argval, resultArg, &value)) {
+			// First accepting service wins: a second firewall would only produce a second pinhole
+			// whose UniqueID nobody stores, and a pinhole nobody renews outlives its welcome.
+			ok = true;
+			if (result != nullptr) {
+				*result = value;
+			}
+			break;
+		}
+	}
+	return ok;
+}
+
+bool CUPnPControlPoint::SendAddPinhole(SIPv6Pinhole &pinhole)
+{
+	std::vector<CUPnPArgumentValue> argval(6);
+	argval[0].SetArgument("RemoteHost");
+	argval[0].SetValue("");
+	argval[1].SetArgument("RemotePort");
+	argval[1].SetValue("0");
+	argval[2].SetArgument("InternalClient");
+	argval[2].SetValue(pinhole.client);
+	argval[3].SetArgument("InternalPort");
+	argval[3].SetValue(Numeric(pinhole.port));
+	argval[4].SetArgument("Protocol");
+	argval[4].SetValue(Numeric(pinhole.protocol));
+	argval[5].SetArgument("LeaseTime");
+	argval[5].SetValue(Numeric(pinhole.lease));
+
+	std::string uniqueId;
+	if (!ExecuteOnIPv6FirewallService("AddPinhole", argval, "UniqueID", &uniqueId) || uniqueId.empty()) {
+		return false;
+	}
+	pinhole.uniqueId = uniqueId;
+	pinhole.expiry = std::chrono::steady_clock::now() + std::chrono::seconds(pinhole.lease);
+	std::ostringstream msg;
+	msg << "IPv6 pinhole for " << pinhole.client << " (protocol " << pinhole.protocol
+	    << ") got unique id " << uniqueId;
+	AddDebugLogLineN(logUPnP, msg);
+	return true;
+}
+
+bool CUPnPControlPoint::SendUpdatePinhole(SIPv6Pinhole &pinhole)
+{
+	// IGD2 names this argument NewLeaseTime: an argument the SCPD does not list is refused before
+	// it ever reaches the gateway.
+	std::vector<CUPnPArgumentValue> argval(2);
+	argval[0].SetArgument("UniqueID");
+	argval[0].SetValue(pinhole.uniqueId);
+	argval[1].SetArgument("NewLeaseTime");
+	argval[1].SetValue(Numeric(pinhole.lease));
+
+	if (!ExecuteOnIPv6FirewallService("UpdatePinhole", argval, nullptr, nullptr)) {
+		return false;
+	}
+	pinhole.expiry = std::chrono::steady_clock::now() + std::chrono::seconds(pinhole.lease);
+	return true;
+}
+
+void CUPnPControlPoint::SendDeletePinhole(const SIPv6Pinhole &pinhole)
+{
+	if (pinhole.uniqueId.empty()) {
+		return;
+	}
+	std::vector<CUPnPArgumentValue> argval(1);
+	argval[0].SetArgument("UniqueID");
+	argval[0].SetValue(pinhole.uniqueId);
+	ExecuteOnIPv6FirewallService("DeletePinhole", argval, nullptr, nullptr);
+}
+
+void CUPnPControlPoint::AddIPv6Pinhole(const std::string &internalClient,
+	unsigned short internalPort,
+	int protocol,
+	unsigned int leaseSeconds)
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	const std::string key = PinholeKey(protocol, internalPort);
+	SIPv6Pinhole &pinhole = m_IPv6Pinholes[key];
+	// Recorded before it is sent: if the firewall service has not registered yet, this entry is
+	// what the registration path replays.
+	pinhole.client = internalClient;
+	pinhole.port = internalPort;
+	pinhole.protocol = protocol;
+	pinhole.lease = leaseSeconds;
+	SendAddPinhole(pinhole);
+}
+
+void CUPnPControlPoint::DeleteIPv6Pinholes()
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	for (auto &entry : m_IPv6Pinholes) {
+		SendDeletePinhole(entry.second);
+	}
+	// Forgotten whether or not the gateway acknowledged: the leases expire by themselves, and a
+	// kept id would only let a later renewal claim a lease that no longer exists.
+	m_IPv6Pinholes.clear();
+}
+
+void CUPnPControlPoint::RenewExpiringIPv6Pinholes(
+	unsigned short currentPort, const std::string &currentClient)
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	const auto now = std::chrono::steady_clock::now();
+	for (auto &entry : m_IPv6Pinholes) {
+		SIPv6Pinhole &pinhole = entry.second;
+		// A prefix change leaves the pinhole naming an address we no longer hold: replace it
+		// rather than renew it.
+		if (!currentClient.empty() &&
+			IsIPv6PinholeStale(currentPort, currentClient, pinhole.port, pinhole.client)) {
+			SendDeletePinhole(pinhole);
+			pinhole.uniqueId.clear();
+			pinhole.client = currentClient;
+			SendAddPinhole(pinhole);
+			continue;
+		}
+		const auto left = std::chrono::duration_cast<std::chrono::seconds>(pinhole.expiry - now);
+		// Half the granted lease is the margin: room to retry on the next tick if this attempt
+		// fails, without renewing so eagerly that a gateway sees a flood of updates.
+		const unsigned int margin = pinhole.lease / 2;
+		const unsigned int remaining =
+			(left.count() > 0) ? static_cast<unsigned int>(left.count()) : 0;
+		if (!ShouldRenewIPv6Pinhole(remaining, margin)) {
+			continue;
+		}
+		// A renewal that the gateway cannot grant - a rebooted router has forgotten the UniqueID -
+		// falls back to asking again, instead of retrying an update forever.
+		if (!SendUpdatePinhole(pinhole)) {
+			SendAddPinhole(pinhole);
+		}
+	}
 }
 
 static std::vector<CUPnPArgumentValue> AddPortMappingArguments(const CUPnPPortMapping &upnpPortMapping)
@@ -1458,8 +1654,19 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 			// the mapping on the gateway.
 			CUPnPMutexLocker lock(m_ServiceMapMutex);
 			m_ServiceMap[service.GetAbsEventSubURL()] = &service;
-			for (const auto &entry : m_ActivePortMappingsMap) {
-				service.Execute("AddPortMapping", AddPortMappingArguments(entry.second));
+			if (!stdStringStartsWithCI(service.GetServiceType(), IPv6FirewallControlType)) {
+				for (const auto &entry : m_ActivePortMappingsMap) {
+					service.Execute(
+						"AddPortMapping", AddPortMappingArguments(entry.second));
+				}
+			}
+			if (stdStringStartsWithCI(service.GetServiceType(), IPv6FirewallControlType)) {
+				// Requests recorded before this service registered are replayed here: this is
+				// the point where they can finally be sent.
+				for (auto &entry : m_IPv6Pinholes) {
+					SendDeletePinhole(entry.second);
+					SendAddPinhole(entry.second);
+				}
 			}
 		}
 		msg << "Successfully retrieved SCPD Document for service " << service.GetServiceType()
