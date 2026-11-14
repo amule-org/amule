@@ -362,22 +362,6 @@ msgstr "Encerrando os aplicativos auxiliares..."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Terminando a instância do amuleweb com o pid '%d'... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Matando a instância do amuleweb com o pid '%d'... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Falha"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Terminando a instância do amuleapi com o pid '%d'... "
 
@@ -385,6 +369,12 @@ msgstr "Terminando a instância do amuleapi com o pid '%d'... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Matando a instância do amuleapi com o pid '%d'... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Falha"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -536,28 +526,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "Não iniciando %s: não está nem ao lado do aMule nem no PATH."
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr "Ocorreu uma exceção ao iniciar o amuleweb."
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "servidor web rodando no pid %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr "Não foi possível preparar o token de autenticação do amuleweb. O servidor web não foi iniciado."
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "ERRO"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Você pediu para rodar o servidor web no início, mas o binário do amuleweb não pode ser rodado. Por favor instale o pacote contendo o servidor web do aMule, ou compile o aMule a partir do código fonte usando -DBUILD_WEBSERVER=YES e instale-o."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr "Não foi possível escrever o token EC do amuleapi em %s; o amuleapi usará a senha configurada."
@@ -579,14 +547,10 @@ msgstr "Não foi possível iniciar o amuleapi durante a reinicialização autom�
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Você pediu para rodar o amuleapi no início, mas o binário do amuleapi não pode ser rodado. Por favor instale o pacote contendo o servidor REST API do aMule, ou compile o aMule a partir do código fonte usando -DBUILD_AMULEAPI=YES e instale-o."
 
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Não foi possível preparar o token EC do amuleweb."
-
-#: src/amule.cpp
-#, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Não foi possível remover o arquivo de token EC do amuleweb: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "ERRO"
 
 #: src/amule.cpp
 #, c-format
@@ -2477,10 +2441,6 @@ msgstr[1] "Não foi possível adicionar %u links (veja o log para detalhes)."
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Link eD2k inválido! ERRO: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr "Solicitação remota para definir o modelo web recusada: o valor deve ser um nome de modelo simples, não um caminho."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6018,46 +5978,6 @@ msgid "Guest password"
 msgstr "Senha de convidado"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Parâmetros do servidor web"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Rodar o servidor web ao iniciar (obsoleto)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Modelo web"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Senha para acesso completo"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Habilitar usuário com direitos limitados"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Senha para acesso limitado"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Habilitar redirecionamento de porta UPnP da porta do servidor web"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Porta TCP UPnP do servidor web (Opcional)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Tempo de atualização da página (em segundos)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Ativar compactação Gzip"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Redefinir a página para os valores padrão"
 
@@ -7086,10 +7006,6 @@ msgid "Skips unknown source exchange tags"
 msgstr "Ignora tags desconhecidas da troca de fontes"
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "nenhuma opção disponível"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr "Metadados de mídia: FFProbePath está obsoleto; o aMule agora usa seu analisador de mídia embutido. Removendo a configuração antiga."
 
@@ -7448,12 +7364,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr "O macOS não permite que um aplicativo deixe de ser o manipulador padrão. Para que o aMule pare de abri-los, defina outro aplicativo como padrão."
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "O servidor web e o aMule API necessitam que as conexões externas estejam habilitadas."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "O servidor web do aMule está obsoleto. Considere usar a API do aMule em seu lugar."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -9186,7 +9099,7 @@ msgstr "É necessário um ID de busca obtido com 'search list'.\n"
 msgid "Download File: %lu %s\n"
 msgstr "Baixar arquivo: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Solicitação falhou com erro desconhecido."
 
@@ -10476,139 +10389,6 @@ msgstr "Pasta contendo seu arquivo de assinatura"
 msgid "Folder where generating the statistic image"
 msgstr "Pasta para colocar imagem estatística gerada"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Carregar modelo <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Porta HTTP do servidor web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Usar redirecionamento de porta UPnP na porta do servidor web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "Porta UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Utilizar compressão gzip"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Senha de total acesso para servidor web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Senha de visitante para servidor web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Permitir acesso de convidado"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Negar acesso de convidado"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Carregar/salvar configurações do servidor web de/para aMule remoto"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "Caminho para arquivo amule.conf - NÃO USE DIRETAMENTE!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Desabilitar o interpretador PHP (obsoleto)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Recompilar páginas PHP a cada solicitação"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "Servidor Web do aMule"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "conexão de cliente web aceita\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "ERRO: não foi possível aceitar a conexão do cliente web\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Solicitação falhou com o seguinte erro: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Arquivo index não encontrado: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Sessão expirada - solicitando login\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Sessão Ok, logado\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Sessão Ok, ainda não logado\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Nenhuma sessão aberta - solicitando login\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Sessão criada - solicitando login\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Processando pedido [original]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Recusando-se a ler `pass` da query string da URL\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Nenhuma senha especificada, login não será permitido."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Verificando senha\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Hash de senha inválido\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Senha Ok\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Senha inválida\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Você não digitou nenhuma senha. Senha em branco não é permitida.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Solicitado logout\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Processando solicitação [redirecionado]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (obrigatório)"
@@ -10750,6 +10530,173 @@ msgstr "Não foi possível comparar o ECPassword legado com o ECPasswordVerifier
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrando um ECPassword legado alterado após um downgrade; o verificador anterior não autentica mais esta sessão."
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Terminando a instância do amuleweb com o pid '%d'... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Matando a instância do amuleweb com o pid '%d'... "
+
+#~ msgid "An exception occurred while launching amuleweb."
+#~ msgstr "Ocorreu uma exceção ao iniciar o amuleweb."
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "servidor web rodando no pid %d"
+
+#~ msgid "Could not prepare the amuleweb authentication token. The web server was not started."
+#~ msgstr "Não foi possível preparar o token de autenticação do amuleweb. O servidor web não foi iniciado."
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Você pediu para rodar o servidor web no início, mas o binário do amuleweb não pode ser rodado. Por favor instale o pacote contendo o servidor web do aMule, ou compile o aMule a partir do código fonte usando -DBUILD_WEBSERVER=YES e instale-o."
+
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Não foi possível preparar o token EC do amuleweb."
+
+#, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Não foi possível remover o arquivo de token EC do amuleweb: %s"
+
+#~ msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
+#~ msgstr "Solicitação remota para definir o modelo web recusada: o valor deve ser um nome de modelo simples, não um caminho."
+
+#~ msgid "Web server parameters"
+#~ msgstr "Parâmetros do servidor web"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Rodar o servidor web ao iniciar (obsoleto)"
+
+#~ msgid "Web template"
+#~ msgstr "Modelo web"
+
+#~ msgid "Full rights password"
+#~ msgstr "Senha para acesso completo"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Habilitar usuário com direitos limitados"
+
+#~ msgid "Low rights password"
+#~ msgstr "Senha para acesso limitado"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Habilitar redirecionamento de porta UPnP da porta do servidor web"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Porta TCP UPnP do servidor web (Opcional)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Tempo de atualização da página (em segundos)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Ativar compactação Gzip"
+
+#~ msgid "no options available"
+#~ msgstr "nenhuma opção disponível"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "O servidor web do aMule está obsoleto. Considere usar a API do aMule em seu lugar."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Carregar modelo <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Porta HTTP do servidor web"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Usar redirecionamento de porta UPnP na porta do servidor web"
+
+#~ msgid "UPnP port"
+#~ msgstr "Porta UPnP"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Utilizar compressão gzip"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Senha de total acesso para servidor web"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Senha de visitante para servidor web"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Permitir acesso de convidado"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Negar acesso de convidado"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Carregar/salvar configurações do servidor web de/para aMule remoto"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "Caminho para arquivo amule.conf - NÃO USE DIRETAMENTE!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Desabilitar o interpretador PHP (obsoleto)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Recompilar páginas PHP a cada solicitação"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "Servidor Web do aMule"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "conexão de cliente web aceita\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "ERRO: não foi possível aceitar a conexão do cliente web\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Solicitação falhou com o seguinte erro: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Arquivo index não encontrado: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Sessão expirada - solicitando login\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Sessão Ok, logado\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Sessão Ok, ainda não logado\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Nenhuma sessão aberta - solicitando login\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Sessão criada - solicitando login\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Processando pedido [original]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Recusando-se a ler `pass` da query string da URL\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Nenhuma senha especificada, login não será permitido."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Verificando senha\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Hash de senha inválido\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Senha Ok\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Senha inválida\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Você não digitou nenhuma senha. Senha em branco não é permitida.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Solicitado logout\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Processando solicitação [redirecionado]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Botão direito na pasta para compartilhar recursivamente)"

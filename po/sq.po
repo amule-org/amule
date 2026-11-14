@@ -334,22 +334,6 @@ msgstr "Del nga aplikimi."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Po ndërpritet instanca e amuleweb me pid '%d' ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Po vritet instanca e amuleweb me pid '%d' ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "E Deshtuar"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Po ndërpritet instanca e amuleapi me pid '%d' ... "
 
@@ -357,6 +341,12 @@ msgstr "Po ndërpritet instanca e amuleapi me pid '%d' ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Po vritet instanca e amuleapi me pid '%d' ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "E Deshtuar"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -517,28 +507,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "serveri web po ekzekutohet me pid %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "GABIM"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Kërkuat që serveri web të ekzekutohet në nisje, por binari amuleweb nuk mund të ekzekutohet. Ju lutemi instaloni paketën që përmban serverin web të aMule, ose ndërtoni aMule nga burimi me -DBUILD_WEBSERVER=YES dhe instalojeni."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -560,15 +528,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Kërkuat që amuleapi të ekzekutohet në nisje, por binari amuleapi nuk mund të ekzekutohet. Ju lutemi instaloni paketën që përmban serverin REST API të aMule, ose ndërtoni aMule nga burimi me -DBUILD_AMULEAPI=YES dhe instalojeni."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Nuk mund të ruhej fjalëkalimi i amuleapi: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Nuk mund të ruhej fjalëkalimi i amuleapi: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "GABIM"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2475,10 +2438,6 @@ msgstr[1] "Nuk u shtuan dot %u lidhje (shih regjistrin për detaje)."
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Lidhje eD2k e pavlefshme! GABIM: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6053,46 +6012,6 @@ msgid "Guest password"
 msgstr "Fjalëkalimi i vizitorit"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Parametrat e serverit web"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Ekzekuto serverin web në nisje (i vjetëruar)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Modeli Web"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Fjalekalim per te drejta komplete"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Aktivizo Perdorues me te drejta te kufizuara"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Fjalekalim per te drejta te kufizuara"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Aktivizo përcjelljen UPnP të portës së serverit web"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Porta TCP UPnP e serverit web (Opsionale)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Koha e Rifreskimit te Faqes (ne sek)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Aktivizo kompresimin Gzip"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Rikthe faqen te parazgjedhjet"
 
@@ -7131,10 +7050,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "nuk ka opsione të disponueshme"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7495,12 +7410,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Serveri web dhe API-ja e aMule kërkojnë që lidhjet e jashtme të jenë të aktivizuara."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "Serveri web i aMule është i vjetëruar. Konsideroni ekzekutimin e API-së së aMule në vend të tij."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9256,7 +9168,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Shkarko skedarin: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Kerkesa deshtoi me nje gabim te panjohur."
 
@@ -10541,139 +10453,6 @@ msgstr "Kartela qe mban failoin e firmes"
 msgid "Folder where generating the statistic image"
 msgstr "Kartela ku prodhohet imazhi i statistikave"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Duke ngarkuar modelin <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Porta HTTP e serverit web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Përdor përcjelljen e portës UPnP në portën e serverit web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "Porta UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Perdor kompresimin gzip"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Fjalëkalimi për akses të plotë në serverin web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Fjalëkalimi i vizitorit për serverin web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Lejo hyrjen e guest-ve"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Ndalo hyrjen e guest-ve"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Ngarko/ruaj cilësimet e serverit web nga/te aMule i largët"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "Rruga per konfigurimin e failit te aMule. MOS E PERDORNI DIREKT!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "C'aktivizo interpretuesin e PHP (nuk aprovohet)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Rimbush faqet PHP ne c'do kerkese"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "Web Server i aMule"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "lidhja e klientit web u pranua\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "GABIM: nuk mund të pranohet lidhja e klientit web\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Kerkesa deshtoi me kete gabim: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Indeksi i failit nuk u gjet:  "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Sesioni mbaroi - kerkohet hyrja\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Sesioni ne rregull, u futet ne\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Sesioni ne rregul,nuk u futet ne\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Nuk ka sesion te hapur - kerkese per hyrje\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Sesioni u krijua - kerkohet hyrja\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Perpunim i kerkeses [origjinale]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Po refuzohet leximi i `pass` nga vargu i pyetjes së URL-së\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Nuk u specifikua asnjë fjalëkalim, hyrja nuk do të lejohet."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Duke kerkuar fjalekalimin\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Hash-i i fjalekalimit nuk eshte i rregullt\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Fjalekalimi ne rregull\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Fjalekalim i gabuar\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Ju nuk futet asnje fjalekalim: Vendi bosh nuk lejohet.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Dalja e kerkuar\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Perpunimi i kerkeses [e ridrejtuar]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (i kërkuar)"
@@ -10810,6 +10589,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Po ndërpritet instanca e amuleweb me pid '%d' ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Po vritet instanca e amuleweb me pid '%d' ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "serveri web po ekzekutohet me pid %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Kërkuat që serveri web të ekzekutohet në nisje, por binari amuleweb nuk mund të ekzekutohet. Ju lutemi instaloni paketën që përmban serverin web të aMule, ose ndërtoni aMule nga burimi me -DBUILD_WEBSERVER=YES dhe instalojeni."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Nuk mund të ruhej fjalëkalimi i amuleapi: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Nuk mund të ruhej fjalëkalimi i amuleapi: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Parametrat e serverit web"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Ekzekuto serverin web në nisje (i vjetëruar)"
+
+#~ msgid "Web template"
+#~ msgstr "Modeli Web"
+
+#~ msgid "Full rights password"
+#~ msgstr "Fjalekalim per te drejta komplete"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Aktivizo Perdorues me te drejta te kufizuara"
+
+#~ msgid "Low rights password"
+#~ msgstr "Fjalekalim per te drejta te kufizuara"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Aktivizo përcjelljen UPnP të portës së serverit web"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Porta TCP UPnP e serverit web (Opsionale)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Koha e Rifreskimit te Faqes (ne sek)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Aktivizo kompresimin Gzip"
+
+#~ msgid "no options available"
+#~ msgstr "nuk ka opsione të disponueshme"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "Serveri web i aMule është i vjetëruar. Konsideroni ekzekutimin e API-së së aMule në vend të tij."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Duke ngarkuar modelin <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Porta HTTP e serverit web"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Përdor përcjelljen e portës UPnP në portën e serverit web"
+
+#~ msgid "UPnP port"
+#~ msgstr "Porta UPnP"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Perdor kompresimin gzip"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Fjalëkalimi për akses të plotë në serverin web"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Fjalëkalimi i vizitorit për serverin web"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Lejo hyrjen e guest-ve"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Ndalo hyrjen e guest-ve"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Ngarko/ruaj cilësimet e serverit web nga/te aMule i largët"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "Rruga per konfigurimin e failit te aMule. MOS E PERDORNI DIREKT!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "C'aktivizo interpretuesin e PHP (nuk aprovohet)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Rimbush faqet PHP ne c'do kerkese"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "Web Server i aMule"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "lidhja e klientit web u pranua\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "GABIM: nuk mund të pranohet lidhja e klientit web\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Kerkesa deshtoi me kete gabim: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Indeksi i failit nuk u gjet:  "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Sesioni mbaroi - kerkohet hyrja\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Sesioni ne rregull, u futet ne\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Sesioni ne rregul,nuk u futet ne\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Nuk ka sesion te hapur - kerkese per hyrje\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Sesioni u krijua - kerkohet hyrja\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Perpunim i kerkeses [origjinale]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Po refuzohet leximi i `pass` nga vargu i pyetjes së URL-së\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Nuk u specifikua asnjë fjalëkalim, hyrja nuk do të lejohet."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Duke kerkuar fjalekalimin\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Hash-i i fjalekalimit nuk eshte i rregullt\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Fjalekalimi ne rregull\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Fjalekalim i gabuar\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Ju nuk futet asnje fjalekalim: Vendi bosh nuk lejohet.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Dalja e kerkuar\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Perpunimi i kerkeses [e ridrejtuar]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "( Klikoni me butonin e djathte ne ikonene e karteles per te ndare ne menyre rekursive)"

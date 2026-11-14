@@ -356,22 +356,6 @@ msgstr "Ukončování pomocných aplikací..."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Ukončování instance amuleweb s PID '%d' ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Vynucuje se ukončení instance amuleweb s PID '%d' ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Nezdařilo se"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Ukončování instance amuleapi s PID '%d' ... "
 
@@ -379,6 +363,12 @@ msgstr "Ukončování instance amuleapi s PID '%d' ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Vynucuje se ukončení instance amuleapi s PID '%d' ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Nezdařilo se"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -530,28 +520,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "Nespouštím %s: není vedle aMule ani v PATH."
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr "Došlo k výjimce při spouštění amuleweb."
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "Webový server běží s PID %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr "Nepodařilo se připravit ověřovací token amuleweb. Webový server nebyl spuštěn."
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "CHYBA"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Požádali jste o spuštění webového serveru po startu, avšak binární soubor amuleweb nelze spustit. Nainstalujte balíček obsahující webový server aMule, nebo sestavte aMule ze zdrojového kódu pomocí přepínače -DBUILD_WEBSERVER=YES a pak jej nainstalujte."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr "Nebylo možné zapsat token amuleapi EC do %s; amuleapi se tedy vrátí k použití nastaveného hesla."
@@ -573,14 +541,10 @@ msgstr "Nepodařilo se spustit amuleapi během automatického restartu."
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Požádali jste o spuštění amuleapi po startu, avšak binární soubor amuleapi nelze spustit. Nainstalujte balíček obsahující REST API server aMule, nebo sestavte aMule ze zdrojového kódu pomocí přepínače -DBUILD_AMULEAPI=YES a pak jej nainstalujte."
 
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Nepodařilo se připravit EC token amuleweb."
-
-#: src/amule.cpp
-#, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Nepodařilo se odebrat soubor EC tokenu amuleapi: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "CHYBA"
 
 #: src/amule.cpp
 #, c-format
@@ -2482,10 +2446,6 @@ msgstr[2] "Nelze přidat %u odkazů (podrobnosti viz protokol)."
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Neplatný odkaz eD2k! CHYBA: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr "Odmítnut vzdálený požadavek na nastavení šablony webového serveru: hodnota musí být prostý název šablony, nikoli cestou."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6038,46 +5998,6 @@ msgid "Guest password"
 msgstr "Heslo hosta"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Parametry webového serveru"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Spustit webový server při startu (zastaralé)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Šablona webového rozhraní"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Heslo pro úplná oprávnění"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Povolit uživatele s omezenými oprávněními"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Heslo pro omezená oprávnění"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Povolit přesměrování portu webového serveru přes UPnP"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Port TCP UPnP webového serveru (volitelný)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Interval obnovení stránky (v sekundách)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Povolit kompresi gzip"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Obnovit výchozí nastavení stránky"
 
@@ -7110,10 +7030,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "nejsou k dispozici žádné možnosti"
-
-#: src/Preferences.cpp
 #, fuzzy
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr "Mediální metadata: FFProbePath je zastaralý; aMule nyní používá vestavěný parser MediaInfo. Odebírání staré předvolby."
@@ -7474,12 +7390,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr "macOS neumožňuje aplikaci přestat být výchozím obslužným programem. Abyste zabránili otevírání aMule, nastavte jinou aplikaci jako výchozí."
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Webový server a aMule API vyžadují povolení externích připojení."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "Webový server aMule je zastaralý. Zvažte místo něho použít aMule API."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -9242,7 +9155,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Stahování souboru: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Požadavek selhal kvůli neznámé chybě."
 
@@ -10531,139 +10444,6 @@ msgstr "Adresář obsahující soubor s podpisem"
 msgid "Folder where generating the statistic image"
 msgstr "Adresář pro vytváření obrázku statistik"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Načíst šablonu <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Port HTTP webového serveru"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Použít přesměrování portu webového serveru přes UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "Port UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Použít kompresi gzip"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Heslo webového serveru pro úplný přístup"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Heslo hosta webového serveru"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Povolit přístup hostům"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Zakázat přístup hostům"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Načíst/uložit nastavení webového serveru ze/do vzdáleného aMule"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "Cesta ke konfiguračnímu souboru aMule. NEPOUŽÍVAT PŘÍMO!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Zakázat interpret PHP (zastaralé)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Při každém požadavku znovu zkompilovat stránky PHP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "Webový server aMule"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "připojení webového klienta přijato\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "CHYBA: nelze přijmout připojení webového klienta\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Požadavek selhal kvůli následující chybě: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Soubor indexu nebyl nalezen: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Relace vypršela – bude vyžadováno přihlášení\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Relace je platná, uživatel je přihlášen\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Relace je platná, uživatel není přihlášen\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Není otevřena žádná relace – bude vyžadováno přihlášení\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Relace byla vytvořena – bude vyžadováno přihlášení\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Zpracování požadavku [původní]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Odmítám číst `pass` z řetězce dotazu URL\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Nebylo zadáno heslo; přihlášení nebude povoleno."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Kontrola hesla\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Hash hesla je neplatný\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Heslo je správné\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Heslo je nesprávné\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Nebylo zadáno žádné heslo. Prázdné heslo není povoleno.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Bylo vyžádáno odhlášení\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Zpracování požadavku [přesměrovaný]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (vyžadováno)"
@@ -10805,6 +10585,173 @@ msgstr "Nelze porovnat zastaralé ECPassword s ECPasswordVerifier; odmítám ext
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrace změněného zastaralého ECPassword po přechodu na starší verzi; předchozí ověřovač již tuto relaci neověřuje."
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Ukončování instance amuleweb s PID '%d' ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Vynucuje se ukončení instance amuleweb s PID '%d' ... "
+
+#~ msgid "An exception occurred while launching amuleweb."
+#~ msgstr "Došlo k výjimce při spouštění amuleweb."
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "Webový server běží s PID %d"
+
+#~ msgid "Could not prepare the amuleweb authentication token. The web server was not started."
+#~ msgstr "Nepodařilo se připravit ověřovací token amuleweb. Webový server nebyl spuštěn."
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Požádali jste o spuštění webového serveru po startu, avšak binární soubor amuleweb nelze spustit. Nainstalujte balíček obsahující webový server aMule, nebo sestavte aMule ze zdrojového kódu pomocí přepínače -DBUILD_WEBSERVER=YES a pak jej nainstalujte."
+
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Nepodařilo se připravit EC token amuleweb."
+
+#, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Nepodařilo se odebrat soubor EC tokenu amuleapi: %s"
+
+#~ msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
+#~ msgstr "Odmítnut vzdálený požadavek na nastavení šablony webového serveru: hodnota musí být prostý název šablony, nikoli cestou."
+
+#~ msgid "Web server parameters"
+#~ msgstr "Parametry webového serveru"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Spustit webový server při startu (zastaralé)"
+
+#~ msgid "Web template"
+#~ msgstr "Šablona webového rozhraní"
+
+#~ msgid "Full rights password"
+#~ msgstr "Heslo pro úplná oprávnění"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Povolit uživatele s omezenými oprávněními"
+
+#~ msgid "Low rights password"
+#~ msgstr "Heslo pro omezená oprávnění"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Povolit přesměrování portu webového serveru přes UPnP"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Port TCP UPnP webového serveru (volitelný)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Interval obnovení stránky (v sekundách)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Povolit kompresi gzip"
+
+#~ msgid "no options available"
+#~ msgstr "nejsou k dispozici žádné možnosti"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "Webový server aMule je zastaralý. Zvažte místo něho použít aMule API."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Načíst šablonu <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Port HTTP webového serveru"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Použít přesměrování portu webového serveru přes UPnP"
+
+#~ msgid "UPnP port"
+#~ msgstr "Port UPnP"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Použít kompresi gzip"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Heslo webového serveru pro úplný přístup"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Heslo hosta webového serveru"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Povolit přístup hostům"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Zakázat přístup hostům"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Načíst/uložit nastavení webového serveru ze/do vzdáleného aMule"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "Cesta ke konfiguračnímu souboru aMule. NEPOUŽÍVAT PŘÍMO!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Zakázat interpret PHP (zastaralé)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Při každém požadavku znovu zkompilovat stránky PHP"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "Webový server aMule"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "připojení webového klienta přijato\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "CHYBA: nelze přijmout připojení webového klienta\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Požadavek selhal kvůli následující chybě: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Soubor indexu nebyl nalezen: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Relace vypršela – bude vyžadováno přihlášení\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Relace je platná, uživatel je přihlášen\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Relace je platná, uživatel není přihlášen\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Není otevřena žádná relace – bude vyžadováno přihlášení\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Relace byla vytvořena – bude vyžadováno přihlášení\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Zpracování požadavku [původní]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Odmítám číst `pass` z řetězce dotazu URL\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Nebylo zadáno heslo; přihlášení nebude povoleno."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Kontrola hesla\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Hash hesla je neplatný\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Heslo je správné\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Heslo je nesprávné\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Nebylo zadáno žádné heslo. Prázdné heslo není povoleno.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Bylo vyžádáno odhlášení\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Zpracování požadavku [přesměrovaný]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Klikněte pravým tlačítkem na ikonu složky pro rekurzivní sdílení)"

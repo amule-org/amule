@@ -335,22 +335,6 @@ msgstr "Avsluttar programmet."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Avsluttar amuleweb-instans med pid «%d» ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Drep amuleweb-instans med pid «%d» ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Mislukka"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Avsluttar amuleapi-instans med pid «%d» ... "
 
@@ -358,6 +342,12 @@ msgstr "Avsluttar amuleapi-instans med pid «%d» ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Drep amuleapi-instans med pid «%d» ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Mislukka"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -518,28 +508,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "vevtenar køyrer på pid %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "FEIL"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Du har bedt om at vevtenaren skal køyre ved oppstart, men den binære fila amuleweb kan ikkje køyrast. Installer pakken som inneheld aMule-vevtenaren, eller bygg aMule frå kjeldekode med -DBUILD_WEBSERVER=YES og installer det."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -561,15 +529,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Du har bede om å køyre amuleapi ved oppstart, men amuleapi-programfila kan ikkje køyrast. Installer pakken som inneheld aMule sin REST API-tenar, eller bygg aMule frå kjeldekode med -DBUILD_AMULEAPI=YES og installer han."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Kunne ikkje lagre amuleapi-passordet: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Kunne ikkje lagre amuleapi-passordet: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "FEIL"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2477,10 +2440,6 @@ msgstr[1] "Greidde ikkje å leggje til %u lenkjer (sjå loggen for detaljar)."
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Ugangbar eD2k lenkje! FEIL: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6058,46 +6017,6 @@ msgid "Guest password"
 msgstr "Gjestepassord"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Vevtenarparameter"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Køyr vevtenar ved oppstart (forelda)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Vevmønster"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Passord for fulle rettar"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Aktivér brukar med få rettar"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Passord for låge rettar"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Aktiver UPnP-portvidaresending for vevtenarporten"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "UPnP TCP-port for vevtenar (valfritt)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Sideoppfriskingstid (i sekund)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Aktivér Gzipkompresjon"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Tilbakestill sida til standardverdiar"
 
@@ -7137,10 +7056,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "ingen val tilgjengelege"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7501,12 +7416,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Vevtenaren og aMule API krev at eksterne tilkoplingar er slått på."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "aMule-vevtenaren er forelda. Vurder å køyre aMule API i staden."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9263,7 +9175,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Last ned fil: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Etterspurnaden mislukka med ukjend feil."
 
@@ -10551,139 +10463,6 @@ msgstr "Katalog som inneheld signaturfila di"
 msgid "Folder where generating the statistic image"
 msgstr "Katalog der statistikkbiletet vert laga"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Lastar modell <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "HTTP port for vevtenar"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Bruk UPnP portvidarekopling på vevtenarport"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP port"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Nytt gzipkomprimering"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Fulltilgangspassord for vevtenar"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Gjestepassord for vevtenar"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Gje løyve til gjestetilgang"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Nekt gjestetilgang"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Last/lagre vevtenarinnstillingar frå/til fjern aMule"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "aMule konfugurasjonsfilsti. IKKJE NYTT DIREKTE!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Deaktivér PHP tolk (frårådd)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Omkompilér PHP-sider ved kvar etterspurnad"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "aMule vevtenar"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "vevklientoppkopling godkjend\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "FEIL: kan ikkje ta imot tilkopling frå nettlesarklient\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Etterspurnaden mislukka med følgjande feil: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Registerfil ikkje funne: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Økt utgått - ber om logginn\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Økt ok, logga inn\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Økt ok, ikkje innlogga\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Inga økt opna - vil be om logginn\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Økt oppretta - ber om logginn\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Handsamar etterspurnad [original]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Nektar å lese «pass» frå URL-spørjestreng\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Ingen passord oppgitt, innlogging vert ikkje tillate."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Sjekkar passord\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Passord hash feil\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Passord ok\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Feil passord\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Du skreiv ikkje inn eit passord. Tomt passord er ikkje tillate.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Utlogging etterspurt\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Handsamar etterspurnad [omdirigert]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (påkravd)"
@@ -10820,6 +10599,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Avsluttar amuleweb-instans med pid «%d» ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Drep amuleweb-instans med pid «%d» ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "vevtenar køyrer på pid %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Du har bedt om at vevtenaren skal køyre ved oppstart, men den binære fila amuleweb kan ikkje køyrast. Installer pakken som inneheld aMule-vevtenaren, eller bygg aMule frå kjeldekode med -DBUILD_WEBSERVER=YES og installer det."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Kunne ikkje lagre amuleapi-passordet: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Kunne ikkje lagre amuleapi-passordet: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Vevtenarparameter"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Køyr vevtenar ved oppstart (forelda)"
+
+#~ msgid "Web template"
+#~ msgstr "Vevmønster"
+
+#~ msgid "Full rights password"
+#~ msgstr "Passord for fulle rettar"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Aktivér brukar med få rettar"
+
+#~ msgid "Low rights password"
+#~ msgstr "Passord for låge rettar"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Aktiver UPnP-portvidaresending for vevtenarporten"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "UPnP TCP-port for vevtenar (valfritt)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Sideoppfriskingstid (i sekund)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Aktivér Gzipkompresjon"
+
+#~ msgid "no options available"
+#~ msgstr "ingen val tilgjengelege"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "aMule-vevtenaren er forelda. Vurder å køyre aMule API i staden."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Lastar modell <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "HTTP port for vevtenar"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Bruk UPnP portvidarekopling på vevtenarport"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP port"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Nytt gzipkomprimering"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Fulltilgangspassord for vevtenar"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Gjestepassord for vevtenar"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Gje løyve til gjestetilgang"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Nekt gjestetilgang"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Last/lagre vevtenarinnstillingar frå/til fjern aMule"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "aMule konfugurasjonsfilsti. IKKJE NYTT DIREKTE!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Deaktivér PHP tolk (frårådd)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Omkompilér PHP-sider ved kvar etterspurnad"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "aMule vevtenar"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "vevklientoppkopling godkjend\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "FEIL: kan ikkje ta imot tilkopling frå nettlesarklient\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Etterspurnaden mislukka med følgjande feil: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Registerfil ikkje funne: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Økt utgått - ber om logginn\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Økt ok, logga inn\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Økt ok, ikkje innlogga\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Inga økt opna - vil be om logginn\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Økt oppretta - ber om logginn\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Handsamar etterspurnad [original]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Nektar å lese «pass» frå URL-spørjestreng\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Ingen passord oppgitt, innlogging vert ikkje tillate."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Sjekkar passord\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Passord hash feil\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Passord ok\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Feil passord\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Du skreiv ikkje inn eit passord. Tomt passord er ikkje tillate.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Utlogging etterspurt\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Handsamar etterspurnad [omdirigert]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Høgreklikk på mappeikonet for å dele underkatalogar)"

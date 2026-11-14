@@ -335,22 +335,6 @@ msgstr "Κλείσιμο της εφαρμογής."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Τερματισμός στιγμιότυπου amuleweb με pid '%d' ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Βίαιος τερματισμός στιγμιότυπου amuleweb με pid '%d' ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Απέτυχε"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Τερματισμός στιγμιότυπου amuleapi με pid '%d' ... "
 
@@ -358,6 +342,12 @@ msgstr "Τερματισμός στιγμιότυπου amuleapi με pid '%d' .
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Βίαιος τερματισμός στιγμιότυπου amuleapi με pid '%d' ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Απέτυχε"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -518,28 +508,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "διακομιστής ιστού τρέχει με αριθμό διεργασίας %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "ΣΦΑΛΜΑ"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Ζητήσατε να εκτελείται ο διακομιστής ιστού κατά την εκκίνηση, αλλά δεν είναι δυνατή η εκτέλεση του δυαδικού αρχείου amuleweb. Παρακαλώ εγκαταστήστε το πακέτο που περιέχει τον διακομιστή ιστού του aMule, ή δημιουργήστε το aMule από τον πηγαίο κώδικα με -DBUILD_WEBSERVER=YES και εγκαταστήστε το."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -561,15 +529,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Ζητήσατε την εκτέλεση του amuleapi κατά την εκκίνηση, αλλά το εκτελέσιμο amuleapi δεν μπορεί να εκτελεστεί. Εγκαταστήστε το πακέτο που περιέχει τον διακομιστή REST API του aMule, ή δημιουργήστε το aMule από τον πηγαίο κώδικα με -DBUILD_AMULEAPI=YES και εγκαταστήστε το."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Δεν ήταν δυνατή η αποθήκευση του κωδικού amuleapi: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Δεν ήταν δυνατή η αποθήκευση του κωδικού amuleapi: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "ΣΦΑΛΜΑ"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2477,10 +2440,6 @@ msgstr[1] "Δεν ήταν δυνατή η προσθήκη %u συνδέσμω�
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Άκυρος σύνδεσμος eD2k! ΣΦΑΛΜΑ: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6055,46 +6014,6 @@ msgid "Guest password"
 msgstr "Κωδικός επισκέπτη"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Παράμετροι διακομιστή ιστού"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Εκτέλεση διακομιστή ιστού κατά την εκκίνηση (καταργημένο)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Πρότυπη σελίδα"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Κωδικός πλήρων δικαιωμάτων"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Ενεργοποίηση χρήστη μειωμένων δικαιωμάτων"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Κωδικός μειωμένων δικαιωμάτων"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Ενεργοποίηση της προώθησης της θύρας του εξηπηρετητή ιστού στη θύρα UPnP"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Θύρα UPnP TCP του εξυπηρετητή (Προαιρετική)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Χρόνος ανανέωσης σελίδας (σε δευτερόλεπτα)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Ενεργοποίηση συμπίεσης Gzip"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Επαναφορά σελίδας στις προεπιλογές"
 
@@ -7134,10 +7053,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "Δεν υπάρχουν επιλογές"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7497,12 +7412,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Ο διακομιστής ιστού και το aMule API απαιτούν την ενεργοποίηση των εξωτερικών συνδέσεων."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "Ο διακομιστής ιστού του aMule είναι καταργημένος. Εξετάστε το ενδεχόμενο να εκτελέσετε αντ' αυτού το aMule API."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9259,7 +9171,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Κατέβασμα αρχείου: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Η αίτηση απέτυχε για άγνωστο λόγο"
 
@@ -10552,139 +10464,6 @@ msgstr "Κατάλογος που περιέχει το αρχείο υπογρ�
 msgid "Folder where generating the statistic image"
 msgstr "Κατάλογος όπου να δημιουργηθεί η στατιστική απεικόνιση"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Φορτώνει προτύπου <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Θύρα HTTP του διακομιστή ιστού"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Χρήση της προώθησης της θύρας UPnP στη θύρα διακομιστή ιστού"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "Θύρα UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Χρήση συμπίεσης τύπου gzip"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Κωδικός πλήρους πρόσβασης για τον διακομιστή ιστού"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Κωδικός επισκέπτη για τον διακομιστή ιστού"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Να επιτρέπεται η πρόσβαση σε επισκέπτες"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Να απαγορεύεται η πρόσβαση σε επισκέπτες"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Φόρτωση/Αποθήκευση των ρυθμίσεων του διακομιστή ιστού από/προς απομακρυσμένο aMule"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "Η διαδρομή στα αρχεία ρυθμίσεων του aMule. ΜΗΝ ΑΛΛΑΖΕΤΕ ΑΠΕΥΘΕΙΑΣ"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Απενεργοποίηση του διερμηνέα PHP (απαρχαιωμένο)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Μεταγλώττιση των σελίδων PHP σε κάθε αίτηση"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "Ο διακομιστής δικτύου του aMule"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "η σύνδεση πελάτη ιστού έγινε αποδεκτή\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "ΣΦΑΛΜΑ: δεν μπορεί να γίνει δεκτή η σύνδεση πελάτη ιστού\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Η αίτηση απέτυχε με το εξής σφάλμα: %s"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Το αρχείο δεικτών δεν βρέθηκε (ψάχνω ψάχνω και τίποτα δεν βρίσκω)"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Η περίοδος εργασίας έληξε - αίτηση επανασύνδεσης\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Η Περίοδος εργασίας είναι εντάξει, συνδεδεμένο\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Η περίοδος εργασίας είναι εντάξει, μη συνδεδεμένο\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Δεν έχει ξεκινήσει περίοδος εργασίας - θα ζητήσει σύνδεση\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Δημιουργία περιόδου εργασίας - ζήτηση σύνδεσης\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "H αίτηση διεκπεραιώνεται [αρχικό]:"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Άρνηση ανάγνωσης του `pass` από τη συμβολοσειρά ερωτήματος URL\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Δεν καθορίστηκε κωδικός, η σύνδεση δεν θα επιτραπεί."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Έλεγχος κωδικού\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Ο κωδικός κατακερματισμού είναι άκυρος\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Ο κωδικός είναι εντάξει\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Κακός κωδικός\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Δεν βάλατε κανέναν κωδικό. Δεν επιτρέπεται κενός κωδικός.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Ζητήθηκε αποσύνδεση\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Επεξεργασία αιτήματος [ανακατεύθυνση]"
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (απαιτείται)"
@@ -10821,6 +10600,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Τερματισμός στιγμιότυπου amuleweb με pid '%d' ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Βίαιος τερματισμός στιγμιότυπου amuleweb με pid '%d' ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "διακομιστής ιστού τρέχει με αριθμό διεργασίας %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Ζητήσατε να εκτελείται ο διακομιστής ιστού κατά την εκκίνηση, αλλά δεν είναι δυνατή η εκτέλεση του δυαδικού αρχείου amuleweb. Παρακαλώ εγκαταστήστε το πακέτο που περιέχει τον διακομιστή ιστού του aMule, ή δημιουργήστε το aMule από τον πηγαίο κώδικα με -DBUILD_WEBSERVER=YES και εγκαταστήστε το."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Δεν ήταν δυνατή η αποθήκευση του κωδικού amuleapi: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Δεν ήταν δυνατή η αποθήκευση του κωδικού amuleapi: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Παράμετροι διακομιστή ιστού"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Εκτέλεση διακομιστή ιστού κατά την εκκίνηση (καταργημένο)"
+
+#~ msgid "Web template"
+#~ msgstr "Πρότυπη σελίδα"
+
+#~ msgid "Full rights password"
+#~ msgstr "Κωδικός πλήρων δικαιωμάτων"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Ενεργοποίηση χρήστη μειωμένων δικαιωμάτων"
+
+#~ msgid "Low rights password"
+#~ msgstr "Κωδικός μειωμένων δικαιωμάτων"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Ενεργοποίηση της προώθησης της θύρας του εξηπηρετητή ιστού στη θύρα UPnP"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Θύρα UPnP TCP του εξυπηρετητή (Προαιρετική)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Χρόνος ανανέωσης σελίδας (σε δευτερόλεπτα)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Ενεργοποίηση συμπίεσης Gzip"
+
+#~ msgid "no options available"
+#~ msgstr "Δεν υπάρχουν επιλογές"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "Ο διακομιστής ιστού του aMule είναι καταργημένος. Εξετάστε το ενδεχόμενο να εκτελέσετε αντ' αυτού το aMule API."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Φορτώνει προτύπου <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Θύρα HTTP του διακομιστή ιστού"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Χρήση της προώθησης της θύρας UPnP στη θύρα διακομιστή ιστού"
+
+#~ msgid "UPnP port"
+#~ msgstr "Θύρα UPnP"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Χρήση συμπίεσης τύπου gzip"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Κωδικός πλήρους πρόσβασης για τον διακομιστή ιστού"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Κωδικός επισκέπτη για τον διακομιστή ιστού"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Να επιτρέπεται η πρόσβαση σε επισκέπτες"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Να απαγορεύεται η πρόσβαση σε επισκέπτες"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Φόρτωση/Αποθήκευση των ρυθμίσεων του διακομιστή ιστού από/προς απομακρυσμένο aMule"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "Η διαδρομή στα αρχεία ρυθμίσεων του aMule. ΜΗΝ ΑΛΛΑΖΕΤΕ ΑΠΕΥΘΕΙΑΣ"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Απενεργοποίηση του διερμηνέα PHP (απαρχαιωμένο)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Μεταγλώττιση των σελίδων PHP σε κάθε αίτηση"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "Ο διακομιστής δικτύου του aMule"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "η σύνδεση πελάτη ιστού έγινε αποδεκτή\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "ΣΦΑΛΜΑ: δεν μπορεί να γίνει δεκτή η σύνδεση πελάτη ιστού\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Η αίτηση απέτυχε με το εξής σφάλμα: %s"
+
+#~ msgid "Index file not found: "
+#~ msgstr "Το αρχείο δεικτών δεν βρέθηκε (ψάχνω ψάχνω και τίποτα δεν βρίσκω)"
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Η περίοδος εργασίας έληξε - αίτηση επανασύνδεσης\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Η Περίοδος εργασίας είναι εντάξει, συνδεδεμένο\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Η περίοδος εργασίας είναι εντάξει, μη συνδεδεμένο\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Δεν έχει ξεκινήσει περίοδος εργασίας - θα ζητήσει σύνδεση\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Δημιουργία περιόδου εργασίας - ζήτηση σύνδεσης\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "H αίτηση διεκπεραιώνεται [αρχικό]:"
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Άρνηση ανάγνωσης του `pass` από τη συμβολοσειρά ερωτήματος URL\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Δεν καθορίστηκε κωδικός, η σύνδεση δεν θα επιτραπεί."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Έλεγχος κωδικού\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Ο κωδικός κατακερματισμού είναι άκυρος\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Ο κωδικός είναι εντάξει\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Κακός κωδικός\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Δεν βάλατε κανέναν κωδικό. Δεν επιτρέπεται κενός κωδικός.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Ζητήθηκε αποσύνδεση\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Επεξεργασία αιτήματος [ανακατεύθυνση]"
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Δεξί κλικ στην εικόνα του καταλόγου για να γίνουν κοινόχρηστοι οι υποκατάλογοι)"

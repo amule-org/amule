@@ -356,22 +356,6 @@ msgstr "Helperapplicaties worden gestopt..."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Amuleweb-instantie met pid '%d' wordt afgesloten ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Amuleweb-instantie met pid '%d' wordt geforceerd beëindigd... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Mislukt"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "amuleapi-exemplaar met pid '%d' wordt beëindigd... "
 
@@ -379,6 +363,12 @@ msgstr "amuleapi-exemplaar met pid '%d' wordt beëindigd... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "amuleapi-exemplaar met pid '%d' wordt geforceerd beëindigd... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Mislukt"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -530,28 +520,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "Kan %s niet starten: het staat niet in de map naast aMule en ook niet op PATH."
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr "En uitzondering vond plaats tijdens het opstarten van amuleweb."
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "webserver draait met pid %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr "Kon de amuleweb authenticatietoken niet voorbereiden. De webserver is niet opgestart."
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "FOUT"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "U hebt gevraagd om de webserver bij het opstarten uit te voeren, maar het programma amuleweb kan niet worden uitgevoerd. Installeer het pakket met de aMule-webserver, of bouw aMule vanuit de broncode met -DBUILD_WEBSERVER=YES en installeer het."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr "De amuleapi EV-token kon niet naar %s geschreven worden; amuleapi zal terugvallen op het ingestelde wachtwoord."
@@ -573,14 +541,10 @@ msgstr "Kon amuleapi tijdens automatisch herstarten niet opstarten."
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "U hebt gevraagd om amuleapi bij het opstarten uit te voeren, maar het programma amuleapi kan niet worden uitgevoerd. Installeer het pakket met de REST API-server van aMule, of bouw aMule vanuit de broncode met -DBUILD_AMULEAPI=YES en installeer het."
 
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Kon de amuleweb EV-token niet voorbereiden."
-
-#: src/amule.cpp
-#, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Kon het amuleweb EV-tokenbestand niet verwijderen: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "FOUT"
 
 #: src/amule.cpp
 #, c-format
@@ -2471,10 +2435,6 @@ msgstr[1] "Kon %u links niet toevoegen (zie log voor details)."
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Ongeldige eD2k-link! FOUT: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr "Een extern verzoek om het web-server sjabloon in te stellen is geweigerd. De waarde moet een eenvoudige sjabloonnaam zijn, geen pad."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6013,46 +5973,6 @@ msgid "Guest password"
 msgstr "Gastwachtwoord"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Webserver parameters"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Webserver uitvoeren bij opstarten (verouderd)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Web-template"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Alle rechten wachtwoord"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Schakel gebruiker met beperkte rechten in"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Beperkte rechten wachtwoord"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Schakel UPnP portforwarding van de webserver-poort in"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Web server UPnP TCP-poort (optioneel)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Pagina verversingstijd (in seconden)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Schakel Gzip-compressie in"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Pagina terugzetten naar standaardwaarden"
 
@@ -7081,10 +7001,6 @@ msgid "Skips unknown source exchange tags"
 msgstr "Slaat onbekende bronuitwisselingslabels over"
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "geen opties beschikbaar"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr "Media-metadata: FFProbePath is verouderd. aMule gebruikt nu de bijgevoegde mediaparser. De oude instelling wordt verwijderd."
 
@@ -7443,12 +7359,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr "macOS staat niet toe dat een app niet langer de standaard afhandelaar is. Om te voorkomen dat aMule deze opent maakt u een andere app de standaard."
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "De webserver en de aMule API vereisen dat externe verbindingen zijn ingeschakeld."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "De aMule-webserver is verouderd. Overweeg in plaats daarvan de aMule API uit te voeren."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -9182,7 +9095,7 @@ msgstr "Een zoek-ID vanuit de 'zoeklijst' is vereist.\n"
 msgid "Download File: %lu %s\n"
 msgstr "Downloadbestand: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Aanvraag mislukt met een onbekende fout."
 
@@ -10475,139 +10388,6 @@ msgstr "Map die uw handtekeningbestand bevat"
 msgid "Folder where generating the statistic image"
 msgstr "Map waar de afbeelding van statistieken gegenereerd moet worden"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Laadt template <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Webserver HTTP-poort"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Gebruik UPnP portforwarding voor webserver-poort"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP-poort"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Gebruik Gzip-compressie"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Wachtwoord voor volledige toegang tot webserver"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Gastwachtwoord voor webserver"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Sta gasttoegang toe"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Weiger gasttoegang"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Laad/bewaar webserverinstellingen van/naar externe aMule"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "aMule configuratiebestand pad. NIET DIRECT GEBRUIKEN!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Schakel PHP-interpreter uit (verouderd)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Compileer PHP-pagina's opnieuw bij elke aanvraag"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "aMule webserver"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "webclient verbinding geaccepteerd\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "FOUT: kan verbinding van webclient niet accepteren\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Aanvraag mislukt met de volgende fout: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Indexbestand niet gevonden: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Sessie verlopen - inloggen wordt aangevraagd\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Sessie ok, ingelogd\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Sessie ok, niet ingelogd\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Geen sessie geopend - login wordt aangevraad\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Sessie aangemaakt - inloggen wordt aangevraagd\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Aanvraag wordt verwerkt [origineel]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Weigert `pass` te lezen uit de URL-queryreeks\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Geen wachtwoord opgegeven, login wordt niet toegestaan."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Controleren van wachtwoord\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Wachtwoord-hash ongeldig\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Wachtwoord is ok\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Wachtwoord-fout\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "U heeft geen wachtwoord ingevoerd. Een leeg wachtwoord is niet toegestaan.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Uitloggen aangevraagd\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Aanvraag wordt verwerkt [omgeleid]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (vereist)"
@@ -10749,6 +10529,173 @@ msgstr "Kon verouderde ECPassword niet vergelijken met ECPasswordVerifier. Exter
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migreren van een vernaderde ECPassword na downgrade. De vorige verificatie authenticeert deze uitvoer niet meer."
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Amuleweb-instantie met pid '%d' wordt afgesloten ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Amuleweb-instantie met pid '%d' wordt geforceerd beëindigd... "
+
+#~ msgid "An exception occurred while launching amuleweb."
+#~ msgstr "En uitzondering vond plaats tijdens het opstarten van amuleweb."
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "webserver draait met pid %d"
+
+#~ msgid "Could not prepare the amuleweb authentication token. The web server was not started."
+#~ msgstr "Kon de amuleweb authenticatietoken niet voorbereiden. De webserver is niet opgestart."
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "U hebt gevraagd om de webserver bij het opstarten uit te voeren, maar het programma amuleweb kan niet worden uitgevoerd. Installeer het pakket met de aMule-webserver, of bouw aMule vanuit de broncode met -DBUILD_WEBSERVER=YES en installeer het."
+
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Kon de amuleweb EV-token niet voorbereiden."
+
+#, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Kon het amuleweb EV-tokenbestand niet verwijderen: %s"
+
+#~ msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
+#~ msgstr "Een extern verzoek om het web-server sjabloon in te stellen is geweigerd. De waarde moet een eenvoudige sjabloonnaam zijn, geen pad."
+
+#~ msgid "Web server parameters"
+#~ msgstr "Webserver parameters"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Webserver uitvoeren bij opstarten (verouderd)"
+
+#~ msgid "Web template"
+#~ msgstr "Web-template"
+
+#~ msgid "Full rights password"
+#~ msgstr "Alle rechten wachtwoord"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Schakel gebruiker met beperkte rechten in"
+
+#~ msgid "Low rights password"
+#~ msgstr "Beperkte rechten wachtwoord"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Schakel UPnP portforwarding van de webserver-poort in"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Web server UPnP TCP-poort (optioneel)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Pagina verversingstijd (in seconden)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Schakel Gzip-compressie in"
+
+#~ msgid "no options available"
+#~ msgstr "geen opties beschikbaar"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "De aMule-webserver is verouderd. Overweeg in plaats daarvan de aMule API uit te voeren."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Laadt template <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Webserver HTTP-poort"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Gebruik UPnP portforwarding voor webserver-poort"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP-poort"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Gebruik Gzip-compressie"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Wachtwoord voor volledige toegang tot webserver"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Gastwachtwoord voor webserver"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Sta gasttoegang toe"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Weiger gasttoegang"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Laad/bewaar webserverinstellingen van/naar externe aMule"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "aMule configuratiebestand pad. NIET DIRECT GEBRUIKEN!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Schakel PHP-interpreter uit (verouderd)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Compileer PHP-pagina's opnieuw bij elke aanvraag"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "aMule webserver"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "webclient verbinding geaccepteerd\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "FOUT: kan verbinding van webclient niet accepteren\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Aanvraag mislukt met de volgende fout: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Indexbestand niet gevonden: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Sessie verlopen - inloggen wordt aangevraagd\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Sessie ok, ingelogd\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Sessie ok, niet ingelogd\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Geen sessie geopend - login wordt aangevraad\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Sessie aangemaakt - inloggen wordt aangevraagd\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Aanvraag wordt verwerkt [origineel]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Weigert `pass` te lezen uit de URL-queryreeks\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Geen wachtwoord opgegeven, login wordt niet toegestaan."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Controleren van wachtwoord\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Wachtwoord-hash ongeldig\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Wachtwoord is ok\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Wachtwoord-fout\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "U heeft geen wachtwoord ingevoerd. Een leeg wachtwoord is niet toegestaan.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Uitloggen aangevraagd\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Aanvraag wordt verwerkt [omgeleid]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Rechtermuisklik op mappictogram om recursief te delen)"

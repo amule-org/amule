@@ -336,22 +336,6 @@ msgstr "응용프로그램에서 나감."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "pid '%d'인 amuleweb 인스턴스를 종료하는 중... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "pid '%d'인 amuleweb 인스턴스를 강제 종료하는 중... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "실패"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "PID '%d'인 amuleapi 인스턴스를 종료하는 중... "
 
@@ -359,6 +343,12 @@ msgstr "PID '%d'인 amuleapi 인스턴스를 종료하는 중... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "PID '%d'인 amuleapi 인스턴스를 강제 종료하는 중... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "실패"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -519,28 +509,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "웹 서버가 pid %d에서 실행 중입니다"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "오류"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "시작 시 웹 서버를 실행하도록 요청하셨지만, amuleweb 바이너리를 실행할 수 없습니다. aMule 웹 서버가 포함된 패키지를 설치하거나, -DBUILD_WEBSERVER=YES 옵션으로 aMule을 소스에서 빌드하여 설치하세요."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -562,15 +530,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "시작 시 amuleapi를 실행하도록 요청하셨지만 amuleapi 바이너리를 실행할 수 없습니다. aMule의 REST API 서버가 포함된 패키지를 설치하거나, -DBUILD_AMULEAPI=YES 옵션으로 aMule을 소스에서 빌드하여 설치하세요."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "amuleapi 암호를 저장할 수 없습니다: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "amuleapi 암호를 저장할 수 없습니다: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "오류"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2477,10 +2440,6 @@ msgstr[1] "%u개의 링크를 추가할 수 없습니다(자세한 내용은 로
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "잘못된 eD2k 링크입니다! 오류: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6055,46 +6014,6 @@ msgid "Guest password"
 msgstr "손님 암호"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "웹 서버 매개변수"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "시작 시 웹 서버 실행 (사용 중단됨)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "웹 템플릿"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "모든 권한 암호"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "낮은권한 사용자 활성화"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "낮은 권한 암호"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "웹 서버 포트에 대한 UPnP 포트 포워딩 활성화"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "웹 서버 UPnP TCP 포트 (선택 사항)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "페이지를 갱신 시간 (초)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Gzip압축을 활성화"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "페이지를 기본값으로 초기화"
 
@@ -7129,10 +7048,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "사용 가능한 옵션 없음"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7493,12 +7408,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "웹 서버와 aMule API를 사용하려면 외부 연결이 활성화되어 있어야 합니다."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "aMule 웹 서버는 사용이 중단되었습니다. 대신 aMule API를 실행하는 것을 고려하세요."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9252,7 +9164,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "파일 내려받기: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "알 수 없는 오류로 요청이 실패함."
 
@@ -10540,139 +10452,6 @@ msgstr "서명 파일이 있는 폴더"
 msgid "Folder where generating the statistic image"
 msgstr "통계 이미지를 생성하는곳의 폴더"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "템플릿<str>을 읽음"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "웹 서버 HTTP 포트"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "웹 서버 포트에 UPnP 포트 포워딩 사용"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP 포트"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "gzip 압축 사용"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "웹 서버 전체 접근 암호"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "웹 서버 손님 암호"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "손님 접근 허가"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "손님 접근 금지"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "원격 aMule에서/로 웹 서버 설정 불러오기/저장하기"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "어뮬 설정 파일 경로. DO NOT USE DIRECTLY!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "PHP 해석자를 (권장되지 않는) 사용않함"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "각 요청의 PHP 페이지를 재컴파일함"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "어뮬 웹 서버"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "웹 클라이언트 연결이 수락되었습니다\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "오류: 웹 클라이언트 연결을 수락할 수 없습니다\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "다음과 같은 오류로 요청 실패함: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "인덱스 파일을 찾을 수 없음:"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "세션이 만료됨 - 로그인 요청중\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "세션 확인, 로그인 됨\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "세션 확인, 로그인 안됨\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "열린 세션 없음 - 로그인을 요청할 것임\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "세션이 생성됨 - 로그인 요청중\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "요청 처리중 [원본]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "URL 쿼리 문자열에서 `pass`를 읽는 것을 거부합니다\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "암호가 지정되지 않아 로그인이 허용되지 않습니다."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "암호를 검사중\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "암호 해시가 유효하지 않음\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "암호 맞음\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "암호 틀림\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "암호를 입력하지 않았습니다. 빈암호는 사용할수 없습니다.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "로그아웃이 요청됨\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "요청 처리중[redirected]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (필수)"
@@ -10809,6 +10588,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "pid '%d'인 amuleweb 인스턴스를 종료하는 중... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "pid '%d'인 amuleweb 인스턴스를 강제 종료하는 중... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "웹 서버가 pid %d에서 실행 중입니다"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "시작 시 웹 서버를 실행하도록 요청하셨지만, amuleweb 바이너리를 실행할 수 없습니다. aMule 웹 서버가 포함된 패키지를 설치하거나, -DBUILD_WEBSERVER=YES 옵션으로 aMule을 소스에서 빌드하여 설치하세요."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "amuleapi 암호를 저장할 수 없습니다: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "amuleapi 암호를 저장할 수 없습니다: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "웹 서버 매개변수"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "시작 시 웹 서버 실행 (사용 중단됨)"
+
+#~ msgid "Web template"
+#~ msgstr "웹 템플릿"
+
+#~ msgid "Full rights password"
+#~ msgstr "모든 권한 암호"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "낮은권한 사용자 활성화"
+
+#~ msgid "Low rights password"
+#~ msgstr "낮은 권한 암호"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "웹 서버 포트에 대한 UPnP 포트 포워딩 활성화"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "웹 서버 UPnP TCP 포트 (선택 사항)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "페이지를 갱신 시간 (초)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Gzip압축을 활성화"
+
+#~ msgid "no options available"
+#~ msgstr "사용 가능한 옵션 없음"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "aMule 웹 서버는 사용이 중단되었습니다. 대신 aMule API를 실행하는 것을 고려하세요."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "템플릿<str>을 읽음"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "웹 서버 HTTP 포트"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "웹 서버 포트에 UPnP 포트 포워딩 사용"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP 포트"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "gzip 압축 사용"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "웹 서버 전체 접근 암호"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "웹 서버 손님 암호"
+
+#~ msgid "Allow guest access"
+#~ msgstr "손님 접근 허가"
+
+#~ msgid "Deny guest access"
+#~ msgstr "손님 접근 금지"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "원격 aMule에서/로 웹 서버 설정 불러오기/저장하기"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "어뮬 설정 파일 경로. DO NOT USE DIRECTLY!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "PHP 해석자를 (권장되지 않는) 사용않함"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "각 요청의 PHP 페이지를 재컴파일함"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "어뮬 웹 서버"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "웹 클라이언트 연결이 수락되었습니다\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "오류: 웹 클라이언트 연결을 수락할 수 없습니다\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "다음과 같은 오류로 요청 실패함: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "인덱스 파일을 찾을 수 없음:"
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "세션이 만료됨 - 로그인 요청중\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "세션 확인, 로그인 됨\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "세션 확인, 로그인 안됨\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "열린 세션 없음 - 로그인을 요청할 것임\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "세션이 생성됨 - 로그인 요청중\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "요청 처리중 [원본]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "URL 쿼리 문자열에서 `pass`를 읽는 것을 거부합니다\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "암호가 지정되지 않아 로그인이 허용되지 않습니다."
+
+#~ msgid "Checking password\n"
+#~ msgstr "암호를 검사중\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "암호 해시가 유효하지 않음\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "암호 맞음\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "암호 틀림\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "암호를 입력하지 않았습니다. 빈암호는 사용할수 없습니다.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "로그아웃이 요청됨\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "요청 처리중[redirected]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(하위폴더 전체를 공유하려면 폴더 아이콘상에서 오른쪽 버튼을 클릭)"

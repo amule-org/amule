@@ -339,22 +339,6 @@ msgstr "Konča program."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Končanje izvoda amuleweb s PID »%d« ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Ubijanje izvoda amuleweb s PID »%d« ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Neuspeh"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Končanje izvoda amuleapi s PID »%d« ... "
 
@@ -362,6 +346,12 @@ msgstr "Končanje izvoda amuleapi s PID »%d« ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Ubijanje izvoda amuleapi s PID »%d« ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Neuspeh"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -522,28 +512,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "spletni strežnik teče s PID %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "NAPAKA"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Zahtevali ste zagon spletnega strežnika ob zagonu, vendar binarne datoteke amuleweb ni mogoče zagnati. Namestite paket, ki vsebuje spletni strežnik aMule, ali zgradite aMule iz izvorne kode z -DBUILD_WEBSERVER=YES in ga namestite."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -565,15 +533,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Zahtevali ste zagon amuleapi ob zagonu, vendar binarne datoteke amuleapi ni mogoče zagnati. Namestite paket, ki vsebuje strežnik REST API za aMule, ali zgradite aMule iz izvorne kode z -DBUILD_AMULEAPI=YES in ga namestite."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Gesla amuleapi ni bilo mogoče shraniti: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Gesla amuleapi ni bilo mogoče shraniti: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "NAPAKA"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2504,10 +2467,6 @@ msgstr[3] "Ni bilo mogoče dodati %u povezav (podrobnosti si oglejte v dnevniku)
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Neveljavna povezava eD2k. NAPAKA: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6102,46 +6061,6 @@ msgid "Guest password"
 msgstr "Gostujoče geslo"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Parametri spletnega strežnika"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Zaženi spletni strežnik ob zagonu (opuščeno)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Spletna predloga"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Geslo za vse pravice"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Omogoči uporabnika z nizkimi pravicami"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Geslo za nizke pravice"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Vklopi posredovanje vrat UPnP za vrata spletnega strežnika"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Vrata TCP za UPnP za spletni strežnik (neobvezno)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Čas med osvežitvami strani (v sek.)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Omogoči stiskanje gzip"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Ponastavi stran na privzete vrednosti"
 
@@ -7189,10 +7108,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "na voljo ni nobene možnosti"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7556,12 +7471,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Spletni strežnik in API aMule zahtevata omogočene zunanje povezave."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "Spletni strežnik aMule je opuščen. Namesto tega razmislite o uporabi API-ja aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9367,7 +9279,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Prejmi datoteko: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Zahteva spodletela z neznano napako."
 
@@ -10650,139 +10562,6 @@ msgstr "Mapa, ki vsebuje vašo datoteko s podpisom"
 msgid "Folder where generating the statistic image"
 msgstr "Mapa, v katerem je ustvarjena statistična slika"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Naloži predlogo <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Vrata HTTP spletnega strežnika"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Uporabi posredovanje vrat UPnP za vrata spletnega strežnika"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "Vrata UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Uporabi stiskanje gzip"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Geslo za polni dostop do spletnega strežnika"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Geslo za goste na spletnem strežniku"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Dovoli dostop gostom"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Zavrni dostop gostom"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Naloži/shrani nastavitve spletnega strežnika od/na oddaljeni aMule"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "Pot do nastavitvene datoteke. NE UPORABITE NEPOSREDNO."
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Onemogoči tolmača PHP-ja (opuščeno)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Ponovno prevedi strani PHP ob vsaki zahtevi"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "Spletni strežnik aMule"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "povezava spletnega odjemalca sprejeta\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "NAPAKA: ni moč sprejeti povezave spletnega odjemalca\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Zahteve ni bilo mogoče izvesti zaradi napake: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Indeksne datoteke ni mogoče najti: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Seja potekla – zahtevek za prijavo\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Seja v redu, prijavljen\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Seja v redu, ni prijave\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Ni odprte seje – zahtevek za prijavo\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Seja ustvarjena – zahtevek za prijavo\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Obdelovanje zahteve [izvorno]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Branje `pass` iz poizvedbenega niza URL zavrnjeno\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Geslo ni nastavljeno, prijava ne bo dovoljena."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Preverjanje gesla\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Koda gesla ni veljavna\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Geslo v redu\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Napačno geslo\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Niste navedli gesla. Prazno geslo ni dovoljeno.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Zahtevana odjava\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Obdelovanje zahteve [preusmerjeno]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (obvezno)"
@@ -10919,6 +10698,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Končanje izvoda amuleweb s PID »%d« ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Ubijanje izvoda amuleweb s PID »%d« ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "spletni strežnik teče s PID %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Zahtevali ste zagon spletnega strežnika ob zagonu, vendar binarne datoteke amuleweb ni mogoče zagnati. Namestite paket, ki vsebuje spletni strežnik aMule, ali zgradite aMule iz izvorne kode z -DBUILD_WEBSERVER=YES in ga namestite."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Gesla amuleapi ni bilo mogoče shraniti: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Gesla amuleapi ni bilo mogoče shraniti: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Parametri spletnega strežnika"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Zaženi spletni strežnik ob zagonu (opuščeno)"
+
+#~ msgid "Web template"
+#~ msgstr "Spletna predloga"
+
+#~ msgid "Full rights password"
+#~ msgstr "Geslo za vse pravice"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Omogoči uporabnika z nizkimi pravicami"
+
+#~ msgid "Low rights password"
+#~ msgstr "Geslo za nizke pravice"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Vklopi posredovanje vrat UPnP za vrata spletnega strežnika"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Vrata TCP za UPnP za spletni strežnik (neobvezno)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Čas med osvežitvami strani (v sek.)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Omogoči stiskanje gzip"
+
+#~ msgid "no options available"
+#~ msgstr "na voljo ni nobene možnosti"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "Spletni strežnik aMule je opuščen. Namesto tega razmislite o uporabi API-ja aMule."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Naloži predlogo <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Vrata HTTP spletnega strežnika"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Uporabi posredovanje vrat UPnP za vrata spletnega strežnika"
+
+#~ msgid "UPnP port"
+#~ msgstr "Vrata UPnP"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Uporabi stiskanje gzip"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Geslo za polni dostop do spletnega strežnika"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Geslo za goste na spletnem strežniku"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Dovoli dostop gostom"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Zavrni dostop gostom"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Naloži/shrani nastavitve spletnega strežnika od/na oddaljeni aMule"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "Pot do nastavitvene datoteke. NE UPORABITE NEPOSREDNO."
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Onemogoči tolmača PHP-ja (opuščeno)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Ponovno prevedi strani PHP ob vsaki zahtevi"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "Spletni strežnik aMule"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "povezava spletnega odjemalca sprejeta\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "NAPAKA: ni moč sprejeti povezave spletnega odjemalca\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Zahteve ni bilo mogoče izvesti zaradi napake: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Indeksne datoteke ni mogoče najti: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Seja potekla – zahtevek za prijavo\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Seja v redu, prijavljen\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Seja v redu, ni prijave\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Ni odprte seje – zahtevek za prijavo\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Seja ustvarjena – zahtevek za prijavo\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Obdelovanje zahteve [izvorno]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Branje `pass` iz poizvedbenega niza URL zavrnjeno\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Geslo ni nastavljeno, prijava ne bo dovoljena."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Preverjanje gesla\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Koda gesla ni veljavna\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Geslo v redu\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Napačno geslo\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Niste navedli gesla. Prazno geslo ni dovoljeno.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Zahtevana odjava\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Obdelovanje zahteve [preusmerjeno]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(desni klik na ikono mape izbere tudi podmape)"
