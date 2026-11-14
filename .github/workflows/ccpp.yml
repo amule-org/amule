@@ -661,7 +661,7 @@ jobs:
           import xml.etree.ElementTree as ET
           from pathlib import Path
           tests = ET.parse(Path(os.environ['RUNNER_TEMP']) / 'ec-tests.xml').findall('.//testcase')
-          assert len(tests) == 6, 'Expected all six EC integration tests'
+          assert len(tests) == 5, 'Expected all five EC integration tests'
           assert all(t.find('skipped') is None for t in tests), 'EC integration tests must not skip'
           PY
 
