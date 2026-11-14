@@ -5618,8 +5618,12 @@ msgid "Remove"
 msgstr "Xóa"
 
 #: src/muuli_wdr.cpp
-msgid "(Right click on folder icon for recursive share)"
-msgstr "(Nhấp chuột phải vào biểu tượng thư mục để chia sẻ đệ quy)"
+msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -10686,6 +10690,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "(Right click on folder icon for recursive share)"
+#~ msgstr "(Nhấp chuột phải vào biểu tượng thư mục để chia sẻ đệ quy)"
 
 #~ msgid "Currently connected server."
 #~ msgstr "Máy chủ đang kết nối hiện tại."
