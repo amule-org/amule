@@ -330,22 +330,6 @@ msgstr "Thoát khỏi ứng dụng."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Đang chấm dứt tiến trình amuleweb với pid '%d' ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Đang buộc dừng tiến trình amuleweb với pid '%d' ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Thất bại"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Đang chấm dứt tiến trình amuleapi với pid '%d' ... "
 
@@ -353,6 +337,12 @@ msgstr "Đang chấm dứt tiến trình amuleapi với pid '%d' ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Đang buộc dừng tiến trình amuleapi với pid '%d' ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Thất bại"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -506,28 +496,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "máy chủ web đang chạy với pid %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "LỖI"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Bạn đã yêu cầu chạy máy chủ web khi khởi động, nhưng không thể chạy tệp thực thi amuleweb. Vui lòng cài đặt gói chứa máy chủ web aMule, hoặc biên dịch aMule từ mã nguồn với -DBUILD_WEBSERVER=YES và cài đặt nó."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -549,15 +517,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Bạn đã yêu cầu chạy amuleapi khi khởi động, nhưng không thể chạy tệp thực thi amuleapi. Vui lòng cài đặt gói chứa máy chủ REST API của aMule, hoặc biên dịch aMule từ mã nguồn với -DBUILD_AMULEAPI=YES và cài đặt nó."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Không thể lưu mật khẩu amuleapi: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Không thể lưu mật khẩu amuleapi: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "LỖI"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2439,10 +2402,6 @@ msgstr[0] "Không thể thêm %u liên kết (xem nhật ký để biết chi ti
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Liên kết eD2k không hợp lệ! LỖI: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -5990,46 +5949,6 @@ msgid "Guest password"
 msgstr "Mật khẩu khách"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Tham số máy chủ web"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Chạy máy chủ web khi khởi động (không dùng nữa)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Mẫu giao diện web"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Mật khẩu toàn quyền"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Bật người dùng quyền hạn chế"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Mật khẩu quyền hạn chế"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Bật chuyển tiếp cổng UPnP cho cổng máy chủ web"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Cổng TCP UPnP của máy chủ web (Tùy chọn)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Thời gian làm mới trang (giây)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Bật nén Gzip"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Đặt lại trang về mặc định"
 
@@ -7053,10 +6972,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "không có tùy chọn nào khả dụng"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7416,12 +7331,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Máy chủ web và aMule API yêu cầu bật kết nối bên ngoài."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "Máy chủ web aMule đã lỗi thời. Hãy cân nhắc chạy aMule API thay thế."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9135,7 +9047,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Tải xuống tệp: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Yêu cầu thất bại với lỗi không xác định."
 
@@ -10421,139 +10333,6 @@ msgstr "Thư mục chứa tệp chữ ký của bạn"
 msgid "Folder where generating the statistic image"
 msgstr "Thư mục để tạo hình ảnh thống kê"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Nạp mẫu <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Cổng HTTP máy chủ web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Sử dụng chuyển tiếp cổng UPnP cho cổng máy chủ web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "Cổng UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Sử dụng nén gzip"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Mật khẩu truy cập đầy đủ cho máy chủ web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Mật khẩu khách cho máy chủ web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Cho phép truy cập khách"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Từ chối truy cập khách"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Tải/lưu cài đặt máy chủ web từ/đến aMule từ xa"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "Đường dẫn tệp cấu hình aMule. KHÔNG SỬ DỤNG TRỰC TIẾP!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Tắt trình thông dịch PHP (không dùng nữa)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Biên dịch lại các trang PHP mỗi khi có yêu cầu"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "Máy chủ Web aMule"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "đã chấp nhận kết nối từ client web\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "LỖI: không thể chấp nhận kết nối từ client web\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Yêu cầu thất bại với lỗi sau: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Không tìm thấy tệp chỉ mục: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Phiên đã hết hạn - yêu cầu đăng nhập\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Phiên hợp lệ, đã đăng nhập\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Phiên hợp lệ, chưa đăng nhập\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Chưa mở phiên nào - sẽ yêu cầu đăng nhập\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Đã tạo phiên - yêu cầu đăng nhập\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Đang xử lý yêu cầu [gốc]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Từ chối đọc `pass` từ chuỗi truy vấn URL\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Chưa chỉ định mật khẩu, sẽ không cho phép đăng nhập."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Đang kiểm tra mật khẩu\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Hash mật khẩu không hợp lệ\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Mật khẩu đúng\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Mật khẩu sai\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Bạn chưa nhập mật khẩu. Không cho phép để trống mật khẩu.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Đã yêu cầu đăng xuất\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Đang xử lý yêu cầu [đã chuyển hướng]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (bắt buộc)"
@@ -10690,6 +10469,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Đang chấm dứt tiến trình amuleweb với pid '%d' ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Đang buộc dừng tiến trình amuleweb với pid '%d' ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "máy chủ web đang chạy với pid %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Bạn đã yêu cầu chạy máy chủ web khi khởi động, nhưng không thể chạy tệp thực thi amuleweb. Vui lòng cài đặt gói chứa máy chủ web aMule, hoặc biên dịch aMule từ mã nguồn với -DBUILD_WEBSERVER=YES và cài đặt nó."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Không thể lưu mật khẩu amuleapi: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Không thể lưu mật khẩu amuleapi: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Tham số máy chủ web"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Chạy máy chủ web khi khởi động (không dùng nữa)"
+
+#~ msgid "Web template"
+#~ msgstr "Mẫu giao diện web"
+
+#~ msgid "Full rights password"
+#~ msgstr "Mật khẩu toàn quyền"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Bật người dùng quyền hạn chế"
+
+#~ msgid "Low rights password"
+#~ msgstr "Mật khẩu quyền hạn chế"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Bật chuyển tiếp cổng UPnP cho cổng máy chủ web"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Cổng TCP UPnP của máy chủ web (Tùy chọn)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Thời gian làm mới trang (giây)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Bật nén Gzip"
+
+#~ msgid "no options available"
+#~ msgstr "không có tùy chọn nào khả dụng"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "Máy chủ web aMule đã lỗi thời. Hãy cân nhắc chạy aMule API thay thế."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Nạp mẫu <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Cổng HTTP máy chủ web"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Sử dụng chuyển tiếp cổng UPnP cho cổng máy chủ web"
+
+#~ msgid "UPnP port"
+#~ msgstr "Cổng UPnP"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Sử dụng nén gzip"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Mật khẩu truy cập đầy đủ cho máy chủ web"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Mật khẩu khách cho máy chủ web"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Cho phép truy cập khách"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Từ chối truy cập khách"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Tải/lưu cài đặt máy chủ web từ/đến aMule từ xa"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "Đường dẫn tệp cấu hình aMule. KHÔNG SỬ DỤNG TRỰC TIẾP!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Tắt trình thông dịch PHP (không dùng nữa)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Biên dịch lại các trang PHP mỗi khi có yêu cầu"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "Máy chủ Web aMule"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "đã chấp nhận kết nối từ client web\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "LỖI: không thể chấp nhận kết nối từ client web\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Yêu cầu thất bại với lỗi sau: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Không tìm thấy tệp chỉ mục: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Phiên đã hết hạn - yêu cầu đăng nhập\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Phiên hợp lệ, đã đăng nhập\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Phiên hợp lệ, chưa đăng nhập\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Chưa mở phiên nào - sẽ yêu cầu đăng nhập\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Đã tạo phiên - yêu cầu đăng nhập\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Đang xử lý yêu cầu [gốc]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Từ chối đọc `pass` từ chuỗi truy vấn URL\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Chưa chỉ định mật khẩu, sẽ không cho phép đăng nhập."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Đang kiểm tra mật khẩu\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Hash mật khẩu không hợp lệ\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Mật khẩu đúng\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Mật khẩu sai\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Bạn chưa nhập mật khẩu. Không cho phép để trống mật khẩu.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Đã yêu cầu đăng xuất\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Đang xử lý yêu cầu [đã chuyển hướng]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Nhấp chuột phải vào biểu tượng thư mục để chia sẻ đệ quy)"

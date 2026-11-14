@@ -336,22 +336,6 @@ msgstr "Вийти з програми."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Зупиняю екземпляр amuleweb з pid '%d' ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Вбиваю екземпляр amuleweb з pid '%d' ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Невдалі"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Завершення екземпляра amuleapi з pid '%d' ... "
 
@@ -359,6 +343,12 @@ msgstr "Завершення екземпляра amuleapi з pid '%d' ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Примусове завершення екземпляра amuleapi з pid '%d' ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Невдалі"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -519,28 +509,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "Веб-сервер запущений з %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "ПОМИЛКА"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Ви запросили запуск веб-сервера під час старту, але виконуваний файл amuleweb не вдалося запустити. Встановіть пакунок, що містить веб-сервер aMule, або зберіть aMule з вихідного коду з -DBUILD_WEBSERVER=YES та встановіть його."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -562,15 +530,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Ви налаштували запуск amuleapi під час старту, але виконуваний файл amuleapi неможливо запустити. Встановіть пакунок, що містить сервер REST API aMule, або зберіть aMule з вихідного коду з параметром -DBUILD_AMULEAPI=YES і встановіть його."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Не вдалося зберегти пароль amuleapi: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Не вдалося зберегти пароль amuleapi: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "ПОМИЛКА"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2494,10 +2457,6 @@ msgstr[2] "Не вдалося додати %u посилань (див. час�
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Невірне eD2k-посилання! ПОМИЛКА: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6085,46 +6044,6 @@ msgid "Guest password"
 msgstr "Гостьовий пароль"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Налаштування веб-сервера"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Запускати веб-сервер під час старту (застаріло)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Веб шаблон"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Пароль повних прав"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Ввімкнути користувача з низькими правами"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Пароль низьких прав"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Ввімкнути UPnP перенаправлення портів для порту веб-сервера"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "UPnP TCP-порт веб-сервера (не обов'язково)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Час оновлення сторінки (с)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Дозволити Gzip-стиснення"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Скинути сторінку до значень за замовчуванням"
 
@@ -7168,10 +7087,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "немає наявних опцій"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7534,12 +7449,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Веб-сервер та aMule API вимагають увімкнення зовнішніх з'єднань."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "Веб-сервер aMule застарів. Розгляньте можливість використання aMule API замість нього."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9322,7 +9234,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Звантажити файл: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Запит невдалий з невідомою помилкою."
 
@@ -10615,139 +10527,6 @@ msgstr "Тека, що містить файл з вашим підписом"
 msgid "Folder where generating the statistic image"
 msgstr "Тека, де створюються зображення статистики"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Завантажується зразок <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "HTTP порт веб-сервера"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Використовувати перенаправлення UPnP-портів на порт веб-сервера"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP порт"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Використовувати gzip-стиснення"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Пароль повного доступу для веб-сервера"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Пароль гостя веб-сервера"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Дозволити гостьовий доступ"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Заборонити гостьовий доступ"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Завантажити/записати налаштування веб-сервера з/до віддаленого aMule"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "Шлях до файлу налаштувань aMule. НЕ ВИКОРИСТОВУЙТЕ БЕЗПОСЕРЕДНЬО!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Вимкнути інтерпретатор PHP (застаріло)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Перекомпілювати PHP-сторінки під час кожного запиту"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "Веб-сервер aMule"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "з'єднання веб-клієнта прийнято\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "ПОМИЛКА: неможливо прийняти з'єднання веб-клієнта\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Запит невдалий з наступною помилкою: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Файл індексу не знайдено: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Сесія добігла кінця - запитуємо новий вхід\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Сесія в порядку, входимо\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Сесія в порядку, не увійшли\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Немає відкритих сесій, буде запитано вхід\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Сесію створено - запит на вхід\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Оброблюю запит [початковий]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Відмова читати `pass` з рядка запиту URL-адреси\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Пароль не вказано, вхід не буде дозволено."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Перевіряється пароль\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Неправильний хеш пароля\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Пароль правильний\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Пароль неправильний\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Ви не ввели жодного паролю. Порожній пароль не дозволено.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Запитано вихід\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Обробляється запит [перенаправлений]:"
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (обов'язково)"
@@ -10884,6 +10663,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Зупиняю екземпляр amuleweb з pid '%d' ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Вбиваю екземпляр amuleweb з pid '%d' ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "Веб-сервер запущений з %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Ви запросили запуск веб-сервера під час старту, але виконуваний файл amuleweb не вдалося запустити. Встановіть пакунок, що містить веб-сервер aMule, або зберіть aMule з вихідного коду з -DBUILD_WEBSERVER=YES та встановіть його."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Не вдалося зберегти пароль amuleapi: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Не вдалося зберегти пароль amuleapi: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Налаштування веб-сервера"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Запускати веб-сервер під час старту (застаріло)"
+
+#~ msgid "Web template"
+#~ msgstr "Веб шаблон"
+
+#~ msgid "Full rights password"
+#~ msgstr "Пароль повних прав"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Ввімкнути користувача з низькими правами"
+
+#~ msgid "Low rights password"
+#~ msgstr "Пароль низьких прав"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Ввімкнути UPnP перенаправлення портів для порту веб-сервера"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "UPnP TCP-порт веб-сервера (не обов'язково)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Час оновлення сторінки (с)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Дозволити Gzip-стиснення"
+
+#~ msgid "no options available"
+#~ msgstr "немає наявних опцій"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "Веб-сервер aMule застарів. Розгляньте можливість використання aMule API замість нього."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Завантажується зразок <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "HTTP порт веб-сервера"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Використовувати перенаправлення UPnP-портів на порт веб-сервера"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP порт"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Використовувати gzip-стиснення"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Пароль повного доступу для веб-сервера"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Пароль гостя веб-сервера"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Дозволити гостьовий доступ"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Заборонити гостьовий доступ"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Завантажити/записати налаштування веб-сервера з/до віддаленого aMule"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "Шлях до файлу налаштувань aMule. НЕ ВИКОРИСТОВУЙТЕ БЕЗПОСЕРЕДНЬО!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Вимкнути інтерпретатор PHP (застаріло)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Перекомпілювати PHP-сторінки під час кожного запиту"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "Веб-сервер aMule"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "з'єднання веб-клієнта прийнято\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "ПОМИЛКА: неможливо прийняти з'єднання веб-клієнта\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Запит невдалий з наступною помилкою: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Файл індексу не знайдено: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Сесія добігла кінця - запитуємо новий вхід\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Сесія в порядку, входимо\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Сесія в порядку, не увійшли\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Немає відкритих сесій, буде запитано вхід\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Сесію створено - запит на вхід\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Оброблюю запит [початковий]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Відмова читати `pass` з рядка запиту URL-адреси\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Пароль не вказано, вхід не буде дозволено."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Перевіряється пароль\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Неправильний хеш пароля\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Пароль правильний\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Пароль неправильний\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Ви не ввели жодного паролю. Порожній пароль не дозволено.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Запитано вихід\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Обробляється запит [перенаправлений]:"
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Праве клацання по значку теки для рекурсивного додавання)"

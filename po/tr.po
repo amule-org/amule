@@ -342,22 +342,6 @@ msgstr "Uygulamadan çıkar."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Amuleweb oturumu pid `%d' ile sonlandırılıyor… "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "pid `%d' ile ilişkili amuleweb oturumu öldürülüyor… "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Başarısız"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "'%d' pid'sine sahip amuleapi oturumu sonlandırılıyor… "
 
@@ -365,6 +349,12 @@ msgstr "'%d' pid'sine sahip amuleapi oturumu sonlandırılıyor… "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "pid `%d' ile ilişkili amuleapi oturumu sonlandırılıyor… "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Başarısız"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -522,28 +512,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "web sunucusu pid %d üzerinde çalışıyor"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "HATA"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Web sunucusunun başlangıçta çalışmasını istediniz, fakat amuleweb ikilisi çalıştırılamıyor. Lütfen aMule web sunucusunu içeren paketi yükleyin veya aMule' yi -DBUILD_WEBSERVER=YES seçeneği ile derleyin ve kurun."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr "amuleapi Harici Bağlantı jetonu %s konumuna yazılamadı; amuleapi yapılandırılmış parolasına dönüş yapacaktır."
@@ -565,15 +533,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "amuleapi'nın başlangıçta çalışmasını istediniz, fakat amuleapi ikilisi çalıştırılamıyor. Lütfen aMule REST API sunucusunu içeren paketi yükleyin veya aMule' yi -DBUILD_AMULEAPI=YES seçeneği ile derleyin ve kurun."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "amuleapi parolası kaydedilemedi: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "amuleapi parolası kaydedilemedi: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "HATA"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2469,10 +2432,6 @@ msgstr[1] "%u bağlantı eklenemedi (teferruatlar için kütüğe bakın)."
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Geçersiz eD2k bağlantısı! HATA: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6037,46 +5996,6 @@ msgid "Guest password"
 msgstr "Misafir parolası"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Web sunucusu değerleri"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Başlangıçta web sunucusunu başlat (eskimiş)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Web şablonu"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Tam hak şifresi"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Düşük hakka sahip kullanıcıyı etkin kıl."
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Düşük hak şifresi"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Web sunucu portunun UPnp port iletimini etkinleştir"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Web sunucusu UPnp TCP portu (İsteğe bağlı)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Sayfa yenileme zamanı (sn)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Gzip sıkıştırmayı etkinleştir."
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Sayfayı varsayılan değerlere sıfırla"
 
@@ -7104,10 +7023,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "mevcut seçenek yok"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7468,12 +7383,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Web sunucusu ve aMule API, dış bağlantıların etkinleştirilmiş olmalarına ihtiyaç duyar."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "aMule Web sunucusu eskimiştir. Yerine aMule API çalıştırmayı değerlendirin."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9217,7 +9129,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Dosyayı indir: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "İstem bilinmeyen bir hatayla başarısız oldu."
 
@@ -10504,139 +10416,6 @@ msgstr "Dizin imza dosyanızı içeriyor."
 msgid "Folder where generating the statistic image"
 msgstr "İstatistik imajının üretildiği dizin"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Şablonu yükler <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Web sunucusu HTTP portu"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Web sunucu portu üzerine iletmek için UPnP portunu kullan"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP portu"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Gzip sıkıştırması kullan"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Web sunucusu için tam erişim parolası"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Web sunucusu için konuk parolası"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Konuk girişine izin ver"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Konuk girişini reddet"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Web sunucusu ayarlarını uzak aMule'ye/ aMule'den kaydet/yükle"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "aMule yapılandırma yolu: DOĞRUDAN KULLANMAYINIZ!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "PHP yorumcusunu devreden çıkar (eskimiş)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Her istemde PHP sayfalarını yeniden oluştur"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "aMule Web Sunucusu"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "web aracı bağlantısı kabul edildi\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "HATA: web aracı bağlantısı kabul edilemiyor\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "İstem şu hatayla başarısız oldu: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Fihristleme dosyası bulunamadı: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Oturum sona erdi - giriş gerekiyor\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Oturum tamam, giriş yapıldı.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Oturum tamam, giriş yapılmadı.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Hiç oturum açılmadı - giriş gerekecek\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Oturum oluşturuldu - giriş gerekiyor\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "İstem işleniyor [özgün]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "URL sorgu dizesinden `pass` unsurunun okunması reddediliyor.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Bir parola belirtilmemiş. Giriş yapılamaz."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Şifre denetleniyor\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Şifre adreslemesi geçersiz.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Şifre kabul edildi.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Şifre kötü.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Herhangi bir şifre girmediniz. Boş şifre kullanılamaz.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Çıkış istendi.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "İstem işleniyor [yönlendirilmiş]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (gerekli)"
@@ -10779,6 +10558,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Amuleweb oturumu pid `%d' ile sonlandırılıyor… "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "pid `%d' ile ilişkili amuleweb oturumu öldürülüyor… "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "web sunucusu pid %d üzerinde çalışıyor"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Web sunucusunun başlangıçta çalışmasını istediniz, fakat amuleweb ikilisi çalıştırılamıyor. Lütfen aMule web sunucusunu içeren paketi yükleyin veya aMule' yi -DBUILD_WEBSERVER=YES seçeneği ile derleyin ve kurun."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "amuleapi parolası kaydedilemedi: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "amuleapi parolası kaydedilemedi: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Web sunucusu değerleri"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Başlangıçta web sunucusunu başlat (eskimiş)"
+
+#~ msgid "Web template"
+#~ msgstr "Web şablonu"
+
+#~ msgid "Full rights password"
+#~ msgstr "Tam hak şifresi"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Düşük hakka sahip kullanıcıyı etkin kıl."
+
+#~ msgid "Low rights password"
+#~ msgstr "Düşük hak şifresi"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Web sunucu portunun UPnp port iletimini etkinleştir"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Web sunucusu UPnp TCP portu (İsteğe bağlı)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Sayfa yenileme zamanı (sn)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Gzip sıkıştırmayı etkinleştir."
+
+#~ msgid "no options available"
+#~ msgstr "mevcut seçenek yok"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "aMule Web sunucusu eskimiştir. Yerine aMule API çalıştırmayı değerlendirin."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Şablonu yükler <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Web sunucusu HTTP portu"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Web sunucu portu üzerine iletmek için UPnP portunu kullan"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP portu"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Gzip sıkıştırması kullan"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Web sunucusu için tam erişim parolası"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Web sunucusu için konuk parolası"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Konuk girişine izin ver"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Konuk girişini reddet"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Web sunucusu ayarlarını uzak aMule'ye/ aMule'den kaydet/yükle"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "aMule yapılandırma yolu: DOĞRUDAN KULLANMAYINIZ!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "PHP yorumcusunu devreden çıkar (eskimiş)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Her istemde PHP sayfalarını yeniden oluştur"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "aMule Web Sunucusu"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "web aracı bağlantısı kabul edildi\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "HATA: web aracı bağlantısı kabul edilemiyor\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "İstem şu hatayla başarısız oldu: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Fihristleme dosyası bulunamadı: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Oturum sona erdi - giriş gerekiyor\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Oturum tamam, giriş yapıldı.\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Oturum tamam, giriş yapılmadı.\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Hiç oturum açılmadı - giriş gerekecek\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Oturum oluşturuldu - giriş gerekiyor\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "İstem işleniyor [özgün]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "URL sorgu dizesinden `pass` unsurunun okunması reddediliyor.\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Bir parola belirtilmemiş. Giriş yapılamaz."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Şifre denetleniyor\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Şifre adreslemesi geçersiz.\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Şifre kabul edildi.\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Şifre kötü.\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Herhangi bir şifre girmediniz. Boş şifre kullanılamaz.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Çıkış istendi.\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "İstem işleniyor [yönlendirilmiş]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Özyinelemeli paylaşım için dizin simgesine sağ tıklayınız.)"

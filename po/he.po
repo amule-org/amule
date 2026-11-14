@@ -335,22 +335,6 @@ msgstr "יוצא מהיישום."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "מסיים מופע amuleweb עם pid '%d' ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "הורג מופע amuleweb עם pid '%d' ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "נכשל"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "מסיים מופע amuleapi עם pid '%d' ... "
 
@@ -358,6 +342,12 @@ msgstr "מסיים מופע amuleapi עם pid '%d' ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "הורג מופע amuleapi עם pid '%d' ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "נכשל"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -518,28 +508,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "שרת האינטרנט פועל עם pid %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "שגיאה"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "ביקשת להריץ את שרת האינטרנט בעת ההפעלה, אך לא ניתן להריץ את הקובץ הבינארי amuleweb. אנא התקן את החבילה המכילה את שרת האינטרנט של aMule, או בנה את aMule מהמקור עם -DBUILD_WEBSERVER=YES והתקן אותו."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -561,15 +529,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "ביקשת להריץ את amuleapi בעת ההפעלה, אך לא ניתן להריץ את הקובץ הבינארי של amuleapi. אנא התקן את החבילה המכילה את שרת ה-REST API של aMule, או בנה את aMule מהמקור עם -DBUILD_AMULEAPI=YES והתקן אותו."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "לא ניתן היה לשמור את סיסמת amuleapi: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "לא ניתן היה לשמור את סיסמת amuleapi: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "שגיאה"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2478,10 +2441,6 @@ msgstr[1] "לא ניתן היה להוסיף %u קישורים (לפרטים ר�
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "קישור eD2k לא תקין! שגיאה: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6055,46 +6014,6 @@ msgid "Guest password"
 msgstr "סיסמת אורח"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "פרמטרים של שרת האינטרנט"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "הרץ שרת אינטרנט בעת ההפעלה (מיושן)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "תבנית אינטרנט"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "סיסמת הרשאות מלאות"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "הפעל משתמש עם הרשאות מוגבלות"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "סיסמת הרשאות מוגבלות"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "הפעל העברת מבואות UPnP עבור מבואת שרת האינטרנט"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "מבואת TCP של UPnP לשרת האינטרנט (אופציונלי)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "זמן רענון דף (בשניות)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "הפעל דחיסת Gzip"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "אפס דף לברירות המחדל"
 
@@ -7128,10 +7047,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "אין אפשרויות זמינות"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7492,12 +7407,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "שרת האינטרנט וה-API של aMule דורשים הפעלה של חיבורים חיצוניים."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "שרת האינטרנט של aMule מיושן. שקול להריץ במקומו את ה-API של aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9251,7 +9163,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "הורד קובץ: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "הבקשה נכשלה עם שגיאה לא ידועה"
 
@@ -10537,139 +10449,6 @@ msgstr "תיקיה המכילה את קובץ החתימה שלך"
 msgid "Folder where generating the statistic image"
 msgstr "תיקיה שבה יווצרו תמונות הסטאטוס"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "טוען תבנית<מחרוזת>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "מבואת HTTP של שרת האינטרנט"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "השתמש בהעברת מבואות UPnP עבור מבואת שרת האינטרנט"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "מבואת UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "השמתש בדחיסת gzip"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "סיסמת גישה מלאה לשרת האינטרנט"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "סיסמת אורח לשרת האינטרנט"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "אפשר גישה לאורחים"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "מנע גישה מאורחים"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "טען/שמור הגדרות שרת אינטרנט מ/אל aMule מרוחק"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "נתיב קובץ ההגדרות של אימיול. לא לשימוש בצורה ישירה!!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "נטרל מפענח PHP (מיושן-מבוטל)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "הדר מחדש דפי PHP לאחר כל בקשה"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "שרת אימיול רשתי"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "חיבור לקוח אינטרנט התקבל\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "שגיאה: לא ניתן לקבל חיבור לקוח אינטרנט\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "הבקשה נכשלה עם השגיאות הבאות: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "קובץ האינדקס לא נמצא"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "פג התוקף של החיבור - מבקש התחברות מחדש\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "התחברות הצליחה - מחובר\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "התחברות הצליחה, לא מזוהה\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "לא נפתחה התחברות - הולך לבקש להזדהות\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "נוצרה התחברות מבקש להזדהות\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "מעבד בקשה [מקורי]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "מסרב לקרוא `pass` ממחרוזת השאילתה של ה-URL\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "לא צוינה סיסמא, ההתחברות לא תתאפשר."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "בודק סיסמא\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "גיבוב הסיסמא אינו תקף\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "הסיסמא בסדר\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "סיסמא שגויה\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "לא הזנת סיסמא. סיסמאות ריקות אינם קבילות.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "ב‏‎ֻקְשַה התנתקות\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "מעבד בקשה [הופנתה מחדש]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (חובה)"
@@ -10806,6 +10585,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "מסיים מופע amuleweb עם pid '%d' ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "הורג מופע amuleweb עם pid '%d' ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "שרת האינטרנט פועל עם pid %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "ביקשת להריץ את שרת האינטרנט בעת ההפעלה, אך לא ניתן להריץ את הקובץ הבינארי amuleweb. אנא התקן את החבילה המכילה את שרת האינטרנט של aMule, או בנה את aMule מהמקור עם -DBUILD_WEBSERVER=YES והתקן אותו."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "לא ניתן היה לשמור את סיסמת amuleapi: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "לא ניתן היה לשמור את סיסמת amuleapi: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "פרמטרים של שרת האינטרנט"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "הרץ שרת אינטרנט בעת ההפעלה (מיושן)"
+
+#~ msgid "Web template"
+#~ msgstr "תבנית אינטרנט"
+
+#~ msgid "Full rights password"
+#~ msgstr "סיסמת הרשאות מלאות"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "הפעל משתמש עם הרשאות מוגבלות"
+
+#~ msgid "Low rights password"
+#~ msgstr "סיסמת הרשאות מוגבלות"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "הפעל העברת מבואות UPnP עבור מבואת שרת האינטרנט"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "מבואת TCP של UPnP לשרת האינטרנט (אופציונלי)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "זמן רענון דף (בשניות)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "הפעל דחיסת Gzip"
+
+#~ msgid "no options available"
+#~ msgstr "אין אפשרויות זמינות"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "שרת האינטרנט של aMule מיושן. שקול להריץ במקומו את ה-API של aMule."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "טוען תבנית<מחרוזת>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "מבואת HTTP של שרת האינטרנט"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "השתמש בהעברת מבואות UPnP עבור מבואת שרת האינטרנט"
+
+#~ msgid "UPnP port"
+#~ msgstr "מבואת UPnP"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "השמתש בדחיסת gzip"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "סיסמת גישה מלאה לשרת האינטרנט"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "סיסמת אורח לשרת האינטרנט"
+
+#~ msgid "Allow guest access"
+#~ msgstr "אפשר גישה לאורחים"
+
+#~ msgid "Deny guest access"
+#~ msgstr "מנע גישה מאורחים"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "טען/שמור הגדרות שרת אינטרנט מ/אל aMule מרוחק"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "נתיב קובץ ההגדרות של אימיול. לא לשימוש בצורה ישירה!!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "נטרל מפענח PHP (מיושן-מבוטל)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "הדר מחדש דפי PHP לאחר כל בקשה"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "שרת אימיול רשתי"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "חיבור לקוח אינטרנט התקבל\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "שגיאה: לא ניתן לקבל חיבור לקוח אינטרנט\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "הבקשה נכשלה עם השגיאות הבאות: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "קובץ האינדקס לא נמצא"
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "פג התוקף של החיבור - מבקש התחברות מחדש\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "התחברות הצליחה - מחובר\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "התחברות הצליחה, לא מזוהה\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "לא נפתחה התחברות - הולך לבקש להזדהות\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "נוצרה התחברות מבקש להזדהות\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "מעבד בקשה [מקורי]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "מסרב לקרוא `pass` ממחרוזת השאילתה של ה-URL\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "לא צוינה סיסמא, ההתחברות לא תתאפשר."
+
+#~ msgid "Checking password\n"
+#~ msgstr "בודק סיסמא\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "גיבוב הסיסמא אינו תקף\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "הסיסמא בסדר\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "סיסמא שגויה\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "לא הזנת סיסמא. סיסמאות ריקות אינם קבילות.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "ב‏‎ֻקְשַה התנתקות\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "מעבד בקשה [הופנתה מחדש]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(לחיצה ימנית על סמל התיקייה לשיתוף רקורסיבי)"

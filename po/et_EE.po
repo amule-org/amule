@@ -336,22 +336,6 @@ msgstr "Lahkub rakendusest."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Lõpetan amuleweb'i eksemplari, protsessi id '%d' ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Tapan amuleweb'i eksemplari, protsessi id '%d' ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Nurjunud"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Lõpetatakse amuleapi eksemplar PID-ga '%d' ... "
 
@@ -359,6 +343,12 @@ msgstr "Lõpetatakse amuleapi eksemplar PID-ga '%d' ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Tapetakse amuleapi eksemplar PID-ga '%d' ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Nurjunud"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -519,28 +509,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "web server töötab protsessi id'ga %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "VIGA"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Palusid käivitusel veebiserverit käivitada, kuid amuleweb binaarfaili ei saa käivitada. Palun paigalda aMule veebiserverit sisaldav pakett või ehita aMule lähtekoodist valikuga -DBUILD_WEBSERVER=YES ja paigalda see."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -562,15 +530,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Palusid käivitusel amuleapi käivitada, kuid amuleapi binaarfaili ei saa käivitada. Palun paigalda aMule REST API serverit sisaldav pakett või ehita aMule lähtekoodist valikuga -DBUILD_AMULEAPI=YES ja paigalda see."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "amuleapi parooli ei õnnestunud salvestada: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "amuleapi parooli ei õnnestunud salvestada: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "VIGA"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2476,10 +2439,6 @@ msgstr[1] "%u linki jäi lisamata (üksikasjad vt logist)."
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Vigane eD2k link! VIGA: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6054,46 +6013,6 @@ msgid "Guest password"
 msgstr "Külalisparool"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Web serveri seaded"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Käivita veebiserver käivitumisel (aegunud)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "WEB näidis/mall"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Täisõiguste parool"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Luba madalate õigustega kasutaja"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Madalate õiguste parool"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Luba webservri portide UPnP pordisuunamist"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Webserveri UPnP TCP port (Valikuline)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Lehekülje värskendusaeg (sekundites)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Luba Gzip pakkimine"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Lähtesta leht vaikeväärtustele"
 
@@ -7128,10 +7047,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "valikud puuduvad"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7493,12 +7408,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Veebiserver ja aMule API nõuavad väliste ühenduste lubamist."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "aMule veebiserver on aegunud. Kaalu selle asemel aMule API kasutamist."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9254,7 +9166,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Laadi fail alla: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Päring ebaõnnestus tundmatu vea tõttu."
 
@@ -10536,139 +10448,6 @@ msgstr "Sinu allkirjafaili asukoha kataloog"
 msgid "Folder where generating the statistic image"
 msgstr "Genereeritud statistiliste piltide kataloog"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Laeb malli <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "WEB serveri HTTP port"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Kasuta UPnP pordisuunamist webserveri portide suunamiseks"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP port"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Kasuta gzip pakkimist"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Webserveri täieliku ligipääsu parool"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Webserveri külalise (guest) parool"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Luba külalise (guest) ligipääs"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Keela külalise (guest) ligipääs"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Lae/salvesta webserveri parameetrid eemal-asuvast/asuvasse aMule"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "aMule seadetefaili asukoht. ÄRA KASUTA OTSE!!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Ära kasuta PHP interpretaatorit (aegunud)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Loo PHP lehed iga päringu puhul uuesti"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "aMule WebServer"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "web kliendi ühenus lubatud\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "VIGA: ei luba web kliendil ühenduda\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Päring ebaõnnestus, põhjus: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Indeksfaili ei leidnud: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Seanss on aegunud - vajalik uuestilogimine\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Seanss ok, sisselogitud\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Seanss ok, pole sisselogitud\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Pole avatud seanssi - nõuan logimist\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Seanss loodud - nõuan logimist\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Töötlen päringut [algupärane]:"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Keeldun lugemast `pass` väärtust URL-i päringustringist\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Ilma paroolita logimine pole lubatud."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Kontrollin parooli\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Parooli kontrollsumma vigane\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Parool ok\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Parool, paha\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Sa ei sisestanud parooli. Tühja prooli kasutamine pole lubatud.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Nõuti väljalogimist\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Töötlen päringut [ümbersuunatud]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (nõutav)"
@@ -10805,6 +10584,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Lõpetan amuleweb'i eksemplari, protsessi id '%d' ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Tapan amuleweb'i eksemplari, protsessi id '%d' ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "web server töötab protsessi id'ga %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Palusid käivitusel veebiserverit käivitada, kuid amuleweb binaarfaili ei saa käivitada. Palun paigalda aMule veebiserverit sisaldav pakett või ehita aMule lähtekoodist valikuga -DBUILD_WEBSERVER=YES ja paigalda see."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "amuleapi parooli ei õnnestunud salvestada: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "amuleapi parooli ei õnnestunud salvestada: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Web serveri seaded"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Käivita veebiserver käivitumisel (aegunud)"
+
+#~ msgid "Web template"
+#~ msgstr "WEB näidis/mall"
+
+#~ msgid "Full rights password"
+#~ msgstr "Täisõiguste parool"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Luba madalate õigustega kasutaja"
+
+#~ msgid "Low rights password"
+#~ msgstr "Madalate õiguste parool"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Luba webservri portide UPnP pordisuunamist"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Webserveri UPnP TCP port (Valikuline)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Lehekülje värskendusaeg (sekundites)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Luba Gzip pakkimine"
+
+#~ msgid "no options available"
+#~ msgstr "valikud puuduvad"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "aMule veebiserver on aegunud. Kaalu selle asemel aMule API kasutamist."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Laeb malli <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "WEB serveri HTTP port"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Kasuta UPnP pordisuunamist webserveri portide suunamiseks"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP port"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Kasuta gzip pakkimist"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Webserveri täieliku ligipääsu parool"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Webserveri külalise (guest) parool"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Luba külalise (guest) ligipääs"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Keela külalise (guest) ligipääs"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Lae/salvesta webserveri parameetrid eemal-asuvast/asuvasse aMule"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "aMule seadetefaili asukoht. ÄRA KASUTA OTSE!!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Ära kasuta PHP interpretaatorit (aegunud)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Loo PHP lehed iga päringu puhul uuesti"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "aMule WebServer"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "web kliendi ühenus lubatud\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "VIGA: ei luba web kliendil ühenduda\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Päring ebaõnnestus, põhjus: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Indeksfaili ei leidnud: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Seanss on aegunud - vajalik uuestilogimine\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Seanss ok, sisselogitud\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Seanss ok, pole sisselogitud\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Pole avatud seanssi - nõuan logimist\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Seanss loodud - nõuan logimist\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Töötlen päringut [algupärane]:"
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Keeldun lugemast `pass` väärtust URL-i päringustringist\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Ilma paroolita logimine pole lubatud."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Kontrollin parooli\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Parooli kontrollsumma vigane\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Parool ok\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Parool, paha\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Sa ei sisestanud parooli. Tühja prooli kasutamine pole lubatud.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Nõuti väljalogimist\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Töötlen päringut [ümbersuunatud]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Rekursiivseks jagamiseks tee paremklikk kataloogi ikoonil)"

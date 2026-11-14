@@ -336,22 +336,6 @@ msgstr "Colar de l'aplicación."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Finando la instancia d'amuleweb col pid '%d' ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Matando la instancia d'amuleweb col pid '%d' ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Falló"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Finando la instancia d'amuleapi col pid '%d'... "
 
@@ -359,6 +343,12 @@ msgstr "Finando la instancia d'amuleapi col pid '%d'... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Matando la instancia d'amuleapi col pid '%d'... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Falló"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -519,28 +509,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "sirvidor web corriendo con pid: %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "FALLU"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Solicitasti executar el sirvidor web al aniciu, pero nun se pue executar el binariu amuleweb. Instala'l paquete que contién el sirvidor web d'aMule, o compila aMule dende'l códigu fonte con -DBUILD_WEBSERVER=YES ya instalalu."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -562,15 +530,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Solicitesti executar amuleapi nel aniciu, pero'l binariu amuleapi nun se pue executar. Por favor, instala'l paquete que contién el sirvidor REST API d'aMule, o compila aMule dende'l códigu fonte con -DBUILD_AMULEAPI=YES y instálalu."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Nun se pudo guardar la contraseña d'amuleapi: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Nun se pudo guardar la contraseña d'amuleapi: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "FALLU"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2476,10 +2439,6 @@ msgstr[1] "Nun se pudieron amestar %u enllaces (ver rexistru pa más detalles)."
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Enllaz eD2k inválidu! FALLU: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6058,46 +6017,6 @@ msgid "Guest password"
 msgstr "Contraseña d'invitáu"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Parámetros del sirvidor web"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Executar el sirvidor web nel aniciu (obsoletu)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Plantía Web"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Contraseña alministrador"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Activar invitáu"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Contraseña invitáu"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Usar forwarding de puertos UPnP nel puertu del sirvidor web"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Puertu HTTP del sirvidor web (Opcional)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Tiempu d'actualización de páxina (en segs)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Activar compresión gzip"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Restablecer la páxina a los valores por defeutu"
 
@@ -7136,10 +7055,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "opciones non disponibles"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7501,12 +7416,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "El sirvidor web y la API d'aMule necesiten que les conexones esternes tean activaes."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "El sirvidor web d'aMule ta obsoletu. Considera executar la API d'aMule en cuenta d'esi."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9261,7 +9173,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Descargar ficheru: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Solicitú fallía con un fallu desconocíu."
 
@@ -10532,139 +10444,6 @@ msgstr "Direutoriu que contién el to ficheru de robla"
 msgid "Folder where generating the statistic image"
 msgstr "Direutoriu au se xenera la imaxe d'estadístiques"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Carga la plantía <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Puertu HTTP del sirvidor web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Usar forwarding de puertos UPnP nel puertu del sirvidor web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "Puertu UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Usar compresión gzip"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Contraseña d'accesu total pal sirvidor web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Contraseña d'invitáu pa sirvidor web"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Permitir accesu a invitáu"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Denegar accesu a invitáu"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Cargar/guardar la configuración del sirvidor web dende/a aMule remotu"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "Camín al ficheru config de aMule. ¡NUN USAR DIREUTAMENTE!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Deshabilitar intérprete PHP (desusu)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "Recompila páxines PHP pa otra solicitú"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "Sirvidor Web aMule"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "conexón aceutada del veceru web\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "FALLU: nun pue aceutase la conexón del veceru web\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Solicitú fallía col siguiente fallu: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Ficheru índiz non alcontráu: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Sesión finada - solicitando conexón\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Sesión ok, coneutáu\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Sesión ok, non coneutáu\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Nun hai denguna sesión - coneute de nuevu\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Sesión criada - solicitando conexón\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Procesando solicitú [orixinal]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Refugando lleer `pass` de la cadena de consulta de la URL\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Nun s'especificó dengún password, nun se permite l'accesu."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Comprobando contraseña\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Hash de la contraseña incorreutu\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Contraseña ok\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Contraseña incorreuta\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Nun introduxisti denguna contraseña. Nun ta permitía una contraseña en blancu.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Desconexón solicitada\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Procesando solicitú [redirixía]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (requeríu)"
@@ -10801,6 +10580,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Finando la instancia d'amuleweb col pid '%d' ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Matando la instancia d'amuleweb col pid '%d' ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "sirvidor web corriendo con pid: %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Solicitasti executar el sirvidor web al aniciu, pero nun se pue executar el binariu amuleweb. Instala'l paquete que contién el sirvidor web d'aMule, o compila aMule dende'l códigu fonte con -DBUILD_WEBSERVER=YES ya instalalu."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Nun se pudo guardar la contraseña d'amuleapi: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Nun se pudo guardar la contraseña d'amuleapi: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Parámetros del sirvidor web"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Executar el sirvidor web nel aniciu (obsoletu)"
+
+#~ msgid "Web template"
+#~ msgstr "Plantía Web"
+
+#~ msgid "Full rights password"
+#~ msgstr "Contraseña alministrador"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Activar invitáu"
+
+#~ msgid "Low rights password"
+#~ msgstr "Contraseña invitáu"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Usar forwarding de puertos UPnP nel puertu del sirvidor web"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Puertu HTTP del sirvidor web (Opcional)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Tiempu d'actualización de páxina (en segs)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Activar compresión gzip"
+
+#~ msgid "no options available"
+#~ msgstr "opciones non disponibles"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "El sirvidor web d'aMule ta obsoletu. Considera executar la API d'aMule en cuenta d'esi."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Carga la plantía <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Puertu HTTP del sirvidor web"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Usar forwarding de puertos UPnP nel puertu del sirvidor web"
+
+#~ msgid "UPnP port"
+#~ msgstr "Puertu UPnP"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Usar compresión gzip"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Contraseña d'accesu total pal sirvidor web"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Contraseña d'invitáu pa sirvidor web"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Permitir accesu a invitáu"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Denegar accesu a invitáu"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Cargar/guardar la configuración del sirvidor web dende/a aMule remotu"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "Camín al ficheru config de aMule. ¡NUN USAR DIREUTAMENTE!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Deshabilitar intérprete PHP (desusu)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "Recompila páxines PHP pa otra solicitú"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "Sirvidor Web aMule"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "conexón aceutada del veceru web\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "FALLU: nun pue aceutase la conexón del veceru web\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Solicitú fallía col siguiente fallu: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Ficheru índiz non alcontráu: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Sesión finada - solicitando conexón\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Sesión ok, coneutáu\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Sesión ok, non coneutáu\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Nun hai denguna sesión - coneute de nuevu\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Sesión criada - solicitando conexón\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Procesando solicitú [orixinal]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Refugando lleer `pass` de la cadena de consulta de la URL\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Nun s'especificó dengún password, nun se permite l'accesu."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Comprobando contraseña\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Hash de la contraseña incorreutu\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Contraseña ok\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Contraseña incorreuta\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Nun introduxisti denguna contraseña. Nun ta permitía una contraseña en blancu.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Desconexón solicitada\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Procesando solicitú [redirixía]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Click drechu n'iconu de carpeta, pa compartición recursiva)"

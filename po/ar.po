@@ -355,22 +355,6 @@ msgstr "جارٍ إيقاف التطبيقات المساعدة..."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "جارٍ إنهاء نسخة amuleweb ذات المعرّف '%d' ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "جارٍ إيقاف نسخة amuleweb ذات المعرّف '%d' قسرًا ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "فشل"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "جارٍ إنهاء نسخة amuleapi ذات المعرّف '%d' ... "
 
@@ -378,6 +362,12 @@ msgstr "جارٍ إنهاء نسخة amuleapi ذات المعرّف '%d' ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "جارٍ إيقاف نسخة amuleapi ذات المعرّف '%d' قسرًا ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "فشل"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -529,29 +519,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "تعذر تشغيل %s: لأنه لا يوجد بجانب aMule ولا في مسار PATH."
 
 #: src/amule.cpp
-#, fuzzy
-msgid "An exception occurred while launching amuleweb."
-msgstr "حدث استثناء أثناء تشغيل amuleapi."
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "خادم الويب يعمل برقم العملية %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "خطأ"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "لقد طلبت تشغيل خادم الويب عند بدء التشغيل، لكن الملف التنفيذي amuleweb لا يمكن تشغيله. الرجاء تثبيت الحزمة التي تحتوي على خادم ويب aMule، أو بناء aMule من المصدر باستخدام -DBUILD_WEBSERVER=YES وتثبيته."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr "تعذر كتابة رمز EC الخاص بـ amuleapi في %s؛ سيستخدم amuleapi كلمة المرور المُعدّة بدلاً من ذلك."
@@ -573,15 +540,10 @@ msgstr "تعذر تشغيل amuleapi أثناء إعادة التشغيل الت
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "طلبت تشغيل amuleapi عند بدء التشغيل، لكن الملف التنفيذي لـ amuleapi لا يمكن تشغيله. يرجى تثبيت الحزمة التي تحتوي على خادم REST API الخاص بـ aMule، أو بناء aMule من المصدر مع -DBUILD_AMULEAPI=YES وتثبيته."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "تعذر حذف ملف رمز EC الخاص بـ amuleapi: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "تعذر حذف ملف رمز EC الخاص بـ amuleapi: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "خطأ"
 
 #: src/amule.cpp
 #, c-format
@@ -2474,10 +2436,6 @@ msgstr[1] "تعذرت إضافة %u روابط (راجع السجل للتفاص
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "رابط eD2k غير صالح! خطأ: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6028,46 +5986,6 @@ msgid "Guest password"
 msgstr "كلمة مرور الضيف"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "معاملات خادم الويب"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "تشغيل خادم الويب عند بدء التشغيل (قديم)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "قالب الويب"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "كلمة مرور الصلاحيات الكاملة"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "تفعيل مستخدم بصلاحيات محدودة"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "كلمة مرور الصلاحيات المحدودة"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "تفعيل إعادة توجيه منفذ UPnP لمنفذ خادم الويب"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "منفذ TCP الخاص بـ UPnP لخادم الويب (اختياري)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "زمن تحديث الصفحة (بالثانية)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr " Gzipتمكين ضغط نوع"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "إعادة تعيين الصفحة إلى الإعدادات الافتراضية"
 
@@ -7095,10 +7013,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "لا توجد خيارات متاحة"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7459,12 +7373,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "يتطلب خادم الويب و aMule API تفعيل الاتصالات الخارجية."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "خادم ويب aMule قديم. يُنصح بتشغيل aMule API بدلاً منه."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9217,7 +9128,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "تحميل الملف: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "فشل الطلب بسبب خطأ غير معروف."
 
@@ -10503,139 +10414,6 @@ msgstr "المجلد الذي يحتوي على ملف التوقيع الخاص
 msgid "Folder where generating the statistic image"
 msgstr "المجلد الذي سيتم إنشاء صورة الإحصائيات فيه"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "تحميل القالب <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "منفذ HTTP لخادم الويب"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "استخدام توجيه منافذ UPnP على منفذ خادم الويب"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "منفذ UPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "استخدام ضغط gzip"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "كلمة مرور الوصول الكامل لخادم الويب"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "كلمة مرور الضيف لخادم الويب"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "السماح بوصول الضيف"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "منع وصول الضيف"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "تحميل/حفظ إعدادات خادم الويب من/إلى aMule عن بُعد"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "مسار ملف إعدادات aMule. لا تستخدمه مباشرة!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "تعطيل مفسّر PHP (قديم)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "إعادة تجميع صفحات PHP مع كل طلب"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "خادم ويب aMule"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "تم قبول اتصال عميل الويب\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "خطأ: تعذر قبول اتصال عميل الويب\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "فشل الطلب مع الخطأ التالي: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "ملف الفهرس غير موجود: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "انتهت صلاحية الجلسة - سيتم طلب تسجيل الدخول\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "الجلسة سليمة، تم تسجيل الدخول\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "الجلسة سليمة، لم يتم تسجيل الدخول\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "لا توجد جلسة مفتوحة - سيتم طلب تسجيل الدخول\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "تم إنشاء الجلسة - سيتم طلب تسجيل الدخول\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "معالجة الطلب [الأصلي]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "رفض قراءة `pass` من سلسلة استعلام الرابط\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "لم يتم تحديد كلمة مرور، لن يُسمح بتسجيل الدخول."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "جارٍ التحقق من كلمة المرور\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "تجزئة كلمة المرور غير صالحة\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "كلمة المرور صحيحة\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "كلمة المرور خاطئة\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "لم تُدخل أي كلمة مرور. كلمة المرور الفارغة غير مسموح بها.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "تم طلب تسجيل الخروج\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "معالجة الطلب [المعاد توجيهه]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (مطلوب)"
@@ -10772,6 +10550,169 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "جارٍ إنهاء نسخة amuleweb ذات المعرّف '%d' ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "جارٍ إيقاف نسخة amuleweb ذات المعرّف '%d' قسرًا ... "
+
+#, fuzzy
+#~ msgid "An exception occurred while launching amuleweb."
+#~ msgstr "حدث استثناء أثناء تشغيل amuleapi."
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "خادم الويب يعمل برقم العملية %d"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "لقد طلبت تشغيل خادم الويب عند بدء التشغيل، لكن الملف التنفيذي amuleweb لا يمكن تشغيله. الرجاء تثبيت الحزمة التي تحتوي على خادم ويب aMule، أو بناء aMule من المصدر باستخدام -DBUILD_WEBSERVER=YES وتثبيته."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "تعذر حذف ملف رمز EC الخاص بـ amuleapi: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "تعذر حذف ملف رمز EC الخاص بـ amuleapi: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "معاملات خادم الويب"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "تشغيل خادم الويب عند بدء التشغيل (قديم)"
+
+#~ msgid "Web template"
+#~ msgstr "قالب الويب"
+
+#~ msgid "Full rights password"
+#~ msgstr "كلمة مرور الصلاحيات الكاملة"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "تفعيل مستخدم بصلاحيات محدودة"
+
+#~ msgid "Low rights password"
+#~ msgstr "كلمة مرور الصلاحيات المحدودة"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "تفعيل إعادة توجيه منفذ UPnP لمنفذ خادم الويب"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "منفذ TCP الخاص بـ UPnP لخادم الويب (اختياري)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "زمن تحديث الصفحة (بالثانية)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr " Gzipتمكين ضغط نوع"
+
+#~ msgid "no options available"
+#~ msgstr "لا توجد خيارات متاحة"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "خادم ويب aMule قديم. يُنصح بتشغيل aMule API بدلاً منه."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "تحميل القالب <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "منفذ HTTP لخادم الويب"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "استخدام توجيه منافذ UPnP على منفذ خادم الويب"
+
+#~ msgid "UPnP port"
+#~ msgstr "منفذ UPnP"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "استخدام ضغط gzip"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "كلمة مرور الوصول الكامل لخادم الويب"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "كلمة مرور الضيف لخادم الويب"
+
+#~ msgid "Allow guest access"
+#~ msgstr "السماح بوصول الضيف"
+
+#~ msgid "Deny guest access"
+#~ msgstr "منع وصول الضيف"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "تحميل/حفظ إعدادات خادم الويب من/إلى aMule عن بُعد"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "مسار ملف إعدادات aMule. لا تستخدمه مباشرة!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "تعطيل مفسّر PHP (قديم)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "إعادة تجميع صفحات PHP مع كل طلب"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "خادم ويب aMule"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "تم قبول اتصال عميل الويب\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "خطأ: تعذر قبول اتصال عميل الويب\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "فشل الطلب مع الخطأ التالي: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "ملف الفهرس غير موجود: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "انتهت صلاحية الجلسة - سيتم طلب تسجيل الدخول\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "الجلسة سليمة، تم تسجيل الدخول\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "الجلسة سليمة، لم يتم تسجيل الدخول\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "لا توجد جلسة مفتوحة - سيتم طلب تسجيل الدخول\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "تم إنشاء الجلسة - سيتم طلب تسجيل الدخول\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "معالجة الطلب [الأصلي]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "رفض قراءة `pass` من سلسلة استعلام الرابط\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "لم يتم تحديد كلمة مرور، لن يُسمح بتسجيل الدخول."
+
+#~ msgid "Checking password\n"
+#~ msgstr "جارٍ التحقق من كلمة المرور\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "تجزئة كلمة المرور غير صالحة\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "كلمة المرور صحيحة\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "كلمة المرور خاطئة\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "لم تُدخل أي كلمة مرور. كلمة المرور الفارغة غير مسموح بها.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "تم طلب تسجيل الخروج\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "معالجة الطلب [المعاد توجيهه]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(انقر بزر الماوس الأيمن على أيقونة المجلد للمشاركة التكرارية)"

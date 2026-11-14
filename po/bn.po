@@ -331,22 +331,6 @@ msgstr "অ্যাপ্লিকেশন থেকে প্রস্থা�
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "pid '%d' সহ amuleweb ইনস্ট্যান্স বন্ধ করা হচ্ছে ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "pid '%d' সহ amuleweb ইনস্ট্যান্স কিল করা হচ্ছে ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "ব্যর্থ"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "pid '%d' সহ amuleapi ইনস্ট্যান্স বন্ধ করা হচ্ছে ... "
 
@@ -354,6 +338,12 @@ msgstr "pid '%d' সহ amuleapi ইনস্ট্যান্স বন্ধ 
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "pid '%d' সহ amuleapi ইনস্ট্যান্স কিল করা হচ্ছে ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "ব্যর্থ"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -507,28 +497,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "ওয়েব সার্ভার pid %d-এ চলছে"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "ত্রুটি"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "আপনি স্টার্টআপে ওয়েব সার্ভার চালানোর অনুরোধ করেছেন, কিন্তু amuleweb বাইনারি চালানো যাচ্ছে না। অনুগ্রহ করে aMule ওয়েব সার্ভার সম্বলিত প্যাকেজটি ইনস্টল করুন, অথবা -DBUILD_WEBSERVER=YES সহ সোর্স থেকে aMule বিল্ড করে ইনস্টল করুন।"
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -550,15 +518,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "আপনি স্টার্টআপে amuleapi চালানোর অনুরোধ করেছেন, কিন্তু amuleapi বাইনারি চালানো যাচ্ছে না। অনুগ্রহ করে aMule-এর REST API সার্ভার ধারণকারী প্যাকেজ ইনস্টল করুন, অথবা -DBUILD_AMULEAPI=YES সহ সোর্স থেকে aMule বিল্ড করে ইনস্টল করুন।"
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "amuleapi পাসওয়ার্ড সংরক্ষণ করা যায়নি: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "amuleapi পাসওয়ার্ড সংরক্ষণ করা যায়নি: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "ত্রুটি"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2452,10 +2415,6 @@ msgstr[1] "%uটি লিংক যোগ করা যায়নি (বি�
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "অবৈধ eD2k লিংক! ত্রুটি: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6012,46 +5971,6 @@ msgid "Guest password"
 msgstr "গেস্ট পাসওয়ার্ড"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "ওয়েব সার্ভার প্যারামিটার"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "স্টার্টআপে ওয়েব সার্ভার চালান (অপ্রচলিত)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "ওয়েব টেমপ্লেট"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "পূর্ণ অধিকার পাসওয়ার্ড"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "সীমিত অধিকার ব্যবহারকারী সক্রিয় করুন"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "সীমিত অধিকার পাসওয়ার্ড"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "ওয়েব সার্ভার পোর্টের UPnP পোর্ট ফরওয়ার্ডিং সক্রিয় করুন"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "ওয়েব সার্ভার UPnP TCP পোর্ট (ঐচ্ছিক)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "পেজ রিফ্রেশ সময় (সেকেন্ডে)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Gzip কম্প্রেশন সক্রিয় করুন"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "পেজ ডিফল্টে রিসেট করুন"
 
@@ -7079,10 +6998,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "কোনো অপশন উপলব্ধ নেই"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7443,12 +7358,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "ওয়েব সার্ভার এবং aMule API-এর জন্য বাহ্যিক সংযোগ সক্রিয় থাকা প্রয়োজন।"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "aMule ওয়েব সার্ভার অপ্রচলিত। পরিবর্তে aMule API চালানোর কথা বিবেচনা করুন।"
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9187,7 +9099,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "ফাইল ডাউনলোড: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "অনুরোধ একটি অজানা ত্রুটির কারণে ব্যর্থ হয়েছে।"
 
@@ -10473,139 +10385,6 @@ msgstr "আপনার স্বাক্ষর ফাইলযুক্ত ফ
 msgid "Folder where generating the statistic image"
 msgstr "যেখানে পরিসংখ্যান ছবি তৈরি হবে সেই ফোল্ডার"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "টেমপ্লেট <str> লোড করে"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "ওয়েব সার্ভার HTTP পোর্ট"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "ওয়েব সার্ভার পোর্টে UPnP পোর্ট ফরওয়ার্ডিং ব্যবহার করুন"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP পোর্ট"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "gzip কম্প্রেশন ব্যবহার করুন"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "ওয়েব সার্ভারের জন্য সম্পূর্ণ অ্যাক্সেস পাসওয়ার্ড"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "ওয়েব সার্ভারের জন্য গেস্ট পাসওয়ার্ড"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "গেস্ট অ্যাক্সেসের অনুমতি দিন"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "গেস্ট অ্যাক্সেস প্রত্যাখ্যান করুন"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "রিমোট aMule থেকে/এ ওয়েব সার্ভার সেটিংস লোড/সংরক্ষণ করুন"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "aMule কনফিগ ফাইল পাথ। সরাসরি ব্যবহার করবেন না!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "PHP ইন্টারপ্রেটার নিষ্ক্রিয় করুন (অপ্রচলিত)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "প্রতিটি অনুরোধে PHP পেজ পুনরায় কম্পাইল করুন"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "aMule ওয়েব সার্ভার"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "ওয়েব ক্লায়েন্ট সংযোগ গৃহীত হয়েছে\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "ত্রুটি: ওয়েব ক্লায়েন্ট সংযোগ গ্রহণ করা যাচ্ছে না\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "অনুরোধ নিম্নলিখিত ত্রুটির সাথে ব্যর্থ হয়েছে: %s।"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "ইনডেক্স ফাইল পাওয়া যায়নি: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "সেশনের মেয়াদ শেষ হয়েছে - লগইন অনুরোধ করা হচ্ছে\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "সেশন ঠিক আছে, লগ ইন করা হয়েছে\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "সেশন ঠিক আছে, লগ ইন করা হয়নি\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "কোনো সেশন খোলা নেই - লগইন অনুরোধ করা হবে\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "সেশন তৈরি হয়েছে - লগইন অনুরোধ করা হচ্ছে\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "অনুরোধ প্রক্রিয়া করা হচ্ছে [original]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "URL কোয়েরি স্ট্রিং থেকে `pass` পড়তে অস্বীকার করা হচ্ছে\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "কোনো পাসওয়ার্ড নির্দিষ্ট করা হয়নি, লগইনের অনুমতি দেওয়া হবে না।"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "পাসওয়ার্ড যাচাই করা হচ্ছে\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "পাসওয়ার্ড হ্যাশ অবৈধ\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "পাসওয়ার্ড ঠিক আছে\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "পাসওয়ার্ড ভুল\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "আপনি কোনো পাসওয়ার্ড লেখেননি। খালি পাসওয়ার্ড অনুমোদিত নয়।\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "লগআউট অনুরোধ করা হয়েছে\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "অনুরোধ প্রক্রিয়া করা হচ্ছে [redirected]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (প্রয়োজনীয়)"
@@ -10742,6 +10521,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "pid '%d' সহ amuleweb ইনস্ট্যান্স বন্ধ করা হচ্ছে ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "pid '%d' সহ amuleweb ইনস্ট্যান্স কিল করা হচ্ছে ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "ওয়েব সার্ভার pid %d-এ চলছে"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "আপনি স্টার্টআপে ওয়েব সার্ভার চালানোর অনুরোধ করেছেন, কিন্তু amuleweb বাইনারি চালানো যাচ্ছে না। অনুগ্রহ করে aMule ওয়েব সার্ভার সম্বলিত প্যাকেজটি ইনস্টল করুন, অথবা -DBUILD_WEBSERVER=YES সহ সোর্স থেকে aMule বিল্ড করে ইনস্টল করুন।"
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "amuleapi পাসওয়ার্ড সংরক্ষণ করা যায়নি: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "amuleapi পাসওয়ার্ড সংরক্ষণ করা যায়নি: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "ওয়েব সার্ভার প্যারামিটার"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "স্টার্টআপে ওয়েব সার্ভার চালান (অপ্রচলিত)"
+
+#~ msgid "Web template"
+#~ msgstr "ওয়েব টেমপ্লেট"
+
+#~ msgid "Full rights password"
+#~ msgstr "পূর্ণ অধিকার পাসওয়ার্ড"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "সীমিত অধিকার ব্যবহারকারী সক্রিয় করুন"
+
+#~ msgid "Low rights password"
+#~ msgstr "সীমিত অধিকার পাসওয়ার্ড"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "ওয়েব সার্ভার পোর্টের UPnP পোর্ট ফরওয়ার্ডিং সক্রিয় করুন"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "ওয়েব সার্ভার UPnP TCP পোর্ট (ঐচ্ছিক)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "পেজ রিফ্রেশ সময় (সেকেন্ডে)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Gzip কম্প্রেশন সক্রিয় করুন"
+
+#~ msgid "no options available"
+#~ msgstr "কোনো অপশন উপলব্ধ নেই"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "aMule ওয়েব সার্ভার অপ্রচলিত। পরিবর্তে aMule API চালানোর কথা বিবেচনা করুন।"
+
+#~ msgid "Loads template <str>"
+#~ msgstr "টেমপ্লেট <str> লোড করে"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "ওয়েব সার্ভার HTTP পোর্ট"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "ওয়েব সার্ভার পোর্টে UPnP পোর্ট ফরওয়ার্ডিং ব্যবহার করুন"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP পোর্ট"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "gzip কম্প্রেশন ব্যবহার করুন"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "ওয়েব সার্ভারের জন্য সম্পূর্ণ অ্যাক্সেস পাসওয়ার্ড"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "ওয়েব সার্ভারের জন্য গেস্ট পাসওয়ার্ড"
+
+#~ msgid "Allow guest access"
+#~ msgstr "গেস্ট অ্যাক্সেসের অনুমতি দিন"
+
+#~ msgid "Deny guest access"
+#~ msgstr "গেস্ট অ্যাক্সেস প্রত্যাখ্যান করুন"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "রিমোট aMule থেকে/এ ওয়েব সার্ভার সেটিংস লোড/সংরক্ষণ করুন"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "aMule কনফিগ ফাইল পাথ। সরাসরি ব্যবহার করবেন না!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "PHP ইন্টারপ্রেটার নিষ্ক্রিয় করুন (অপ্রচলিত)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "প্রতিটি অনুরোধে PHP পেজ পুনরায় কম্পাইল করুন"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "aMule ওয়েব সার্ভার"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "ওয়েব ক্লায়েন্ট সংযোগ গৃহীত হয়েছে\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "ত্রুটি: ওয়েব ক্লায়েন্ট সংযোগ গ্রহণ করা যাচ্ছে না\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "অনুরোধ নিম্নলিখিত ত্রুটির সাথে ব্যর্থ হয়েছে: %s।"
+
+#~ msgid "Index file not found: "
+#~ msgstr "ইনডেক্স ফাইল পাওয়া যায়নি: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "সেশনের মেয়াদ শেষ হয়েছে - লগইন অনুরোধ করা হচ্ছে\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "সেশন ঠিক আছে, লগ ইন করা হয়েছে\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "সেশন ঠিক আছে, লগ ইন করা হয়নি\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "কোনো সেশন খোলা নেই - লগইন অনুরোধ করা হবে\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "সেশন তৈরি হয়েছে - লগইন অনুরোধ করা হচ্ছে\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "অনুরোধ প্রক্রিয়া করা হচ্ছে [original]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "URL কোয়েরি স্ট্রিং থেকে `pass` পড়তে অস্বীকার করা হচ্ছে\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "কোনো পাসওয়ার্ড নির্দিষ্ট করা হয়নি, লগইনের অনুমতি দেওয়া হবে না।"
+
+#~ msgid "Checking password\n"
+#~ msgstr "পাসওয়ার্ড যাচাই করা হচ্ছে\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "পাসওয়ার্ড হ্যাশ অবৈধ\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "পাসওয়ার্ড ঠিক আছে\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "পাসওয়ার্ড ভুল\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "আপনি কোনো পাসওয়ার্ড লেখেননি। খালি পাসওয়ার্ড অনুমোদিত নয়।\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "লগআউট অনুরোধ করা হয়েছে\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "অনুরোধ প্রক্রিয়া করা হচ্ছে [redirected]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(পুনরাবৃত্তিমূলক শেয়ারের জন্য ফোল্ডার আইকনে ডান ক্লিক করুন)"

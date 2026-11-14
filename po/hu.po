@@ -350,22 +350,6 @@ msgstr "Segítő alkalmazások megállítása..."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "Az amuleweb instancia - melynek a pid-je '%d' - bezárása ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "Az amuleweb instancia - melynek a pid-je '%d' - kivégzése ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Sikertelen"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "Az amuleapi példány leállítása '%d' pid-del ... "
 
@@ -373,6 +357,12 @@ msgstr "Az amuleapi példány leállítása '%d' pid-del ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "Az amuleapi példány kilövése '%d' pid-del ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Sikertelen"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -524,28 +514,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "Nem indul el %s: nincs az aMule közelében és nem a PATH része."
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr "Kivétel történt az amuleweb indítása közben."
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "web kiszolgáló fut, pid=%d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr "Nem lehett előkészíteni az amuleweb tokent. A web szerver nem lett elindítva."
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "HIBA"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "A web szerver futtatását kérte induláskor, de az amuleweb program nem futtatható. Kérem telepítse az aMule web szervert tartalmazó csomagot, vagy építse az aMule-t a forráskódból a -DBUILD_WEBSERVER=YES paraméterrel és installálja azt."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -567,14 +535,10 @@ msgstr "Nem lehetet indítani az amuleapi-t az automatikus újraindítás alatt.
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Az amuleapi indítását kérted induláskor, de az amuleapi futtatható fájl nem futtatható. Telepítsd az aMule REST API szerverét tartalmazó csomagot, vagy fordítsd le az aMule-t forrásból a -DBUILD_AMULEAPI=YES kapcsolóval, és telepítsd."
 
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Nem lehetett előkészíteni az amuleweb EC tokenjét."
-
-#: src/amule.cpp
-#, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Nem lehetett törölni az amuleweb EC token fájlt: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "HIBA"
 
 #: src/amule.cpp
 #, c-format
@@ -2467,10 +2431,6 @@ msgstr[0] "Nem sikerült hozzáadni %u linket (a részletekért lásd a naplót)
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Érvénytelen eD2k hivatkozás! HIBA: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6037,46 +5997,6 @@ msgid "Guest password"
 msgstr "Vendég jelszó"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Web kiszolgáló paraméterek"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Webkiszolgáló futtatása induláskor (elavult)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Web minta"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Admin jelszó"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Vendég felhasználó engedélyezése"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Vendég jelszó"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "A web kiszolgáló port UPnP továbbításának engedélyezése"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Web szerver UPnP TCP port (nem kötelező)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Oldal frissítésének időzítése (mp múlva)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Gzip tömörítés engedélyezése"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Oldal visszaállítása alapértelmezettre"
 
@@ -7109,10 +7029,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "nincs elérhető opció"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7473,12 +7389,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "A webszerverhez és az aMule API-hoz engedélyezni kell a külső kapcsolatokat."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "Az aMule webszerver elavult. Fontold meg inkább az aMule API futtatását."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9211,7 +9124,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Letöltöndő fájl: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Kérés ismeretlen hibával sikertelen."
 
@@ -10500,139 +10413,6 @@ msgstr "Aláírás fájlt tartalmazó könyvtár"
 msgid "Folder where generating the statistic image"
 msgstr "A statisztika készítésének könyvtára"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "Betölti a(z) <str> sablont"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Web kiszolgáló HTTP port"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "UPnP port továbbítás használata a web kiszolgáló porton"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP port"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Gzip tömörítés használata"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Teljes jogú jelszó a web kiszolgálóhoz"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Vendég jelszó a web kiszolgálóhoz"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Vendég felhasználó engedélyezése"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Vendég felhasználó tiltása"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "A web kiszolgáló beállításait a távoli aMule-től kéri, illetve oda menti"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "aMule konfig fájl útvonala. NE HASZNÁLD!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "PHP feldolgozó letiltása (nem ajánlott)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "PHP oldalak újrafordítása minden kérésnél"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "aMule Web kiszolgáló"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "web ügyfél kapcsolat elfogadva\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "HIBA: nem tudom fogadni a web ügyfél kapcsolatot\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "A kérés sikertelen volt a következő hibával: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Index fájl nem található: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Munkafolyamat időtúllépés - bejelentkezés kérése\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Munkamenet rendben, bejelentkezve\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Munkamenet rendben, nincs bejelentkezve\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Nincs munkafolyamat megnyitva - bejelentkezés kérése\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Munkafolyamat létrehozva - bejelentkezés kérése\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Kérés feldolgozása [eredeti]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "A `pass` beolvasásának megtagadása az URL lekérdezési karakterláncából\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Nincsen megadva jelszó, bejelentkezés nem lesz engedélyezve."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Jelszó ellenőrzése\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Jelszó hash érvénytelen\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Jelszó rendben\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Hibás jelszó\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Nem adtál meg jelszót. Üres jelszó nem megengedett.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Kijelentkezés\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Kérés feldolgozása [átirányított]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (kötelező)"
@@ -10769,6 +10549,170 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "Az amuleweb instancia - melynek a pid-je '%d' - bezárása ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "Az amuleweb instancia - melynek a pid-je '%d' - kivégzése ... "
+
+#~ msgid "An exception occurred while launching amuleweb."
+#~ msgstr "Kivétel történt az amuleweb indítása közben."
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "web kiszolgáló fut, pid=%d"
+
+#~ msgid "Could not prepare the amuleweb authentication token. The web server was not started."
+#~ msgstr "Nem lehett előkészíteni az amuleweb tokent. A web szerver nem lett elindítva."
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "A web szerver futtatását kérte induláskor, de az amuleweb program nem futtatható. Kérem telepítse az aMule web szervert tartalmazó csomagot, vagy építse az aMule-t a forráskódból a -DBUILD_WEBSERVER=YES paraméterrel és installálja azt."
+
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Nem lehetett előkészíteni az amuleweb EC tokenjét."
+
+#, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Nem lehetett törölni az amuleweb EC token fájlt: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Web kiszolgáló paraméterek"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Webkiszolgáló futtatása induláskor (elavult)"
+
+#~ msgid "Web template"
+#~ msgstr "Web minta"
+
+#~ msgid "Full rights password"
+#~ msgstr "Admin jelszó"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Vendég felhasználó engedélyezése"
+
+#~ msgid "Low rights password"
+#~ msgstr "Vendég jelszó"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "A web kiszolgáló port UPnP továbbításának engedélyezése"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Web szerver UPnP TCP port (nem kötelező)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Oldal frissítésének időzítése (mp múlva)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Gzip tömörítés engedélyezése"
+
+#~ msgid "no options available"
+#~ msgstr "nincs elérhető opció"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "Az aMule webszerver elavult. Fontold meg inkább az aMule API futtatását."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "Betölti a(z) <str> sablont"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Web kiszolgáló HTTP port"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "UPnP port továbbítás használata a web kiszolgáló porton"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP port"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Gzip tömörítés használata"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Teljes jogú jelszó a web kiszolgálóhoz"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Vendég jelszó a web kiszolgálóhoz"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Vendég felhasználó engedélyezése"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Vendég felhasználó tiltása"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "A web kiszolgáló beállításait a távoli aMule-től kéri, illetve oda menti"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "aMule konfig fájl útvonala. NE HASZNÁLD!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "PHP feldolgozó letiltása (nem ajánlott)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "PHP oldalak újrafordítása minden kérésnél"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "aMule Web kiszolgáló"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "web ügyfél kapcsolat elfogadva\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "HIBA: nem tudom fogadni a web ügyfél kapcsolatot\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "A kérés sikertelen volt a következő hibával: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Index fájl nem található: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Munkafolyamat időtúllépés - bejelentkezés kérése\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Munkamenet rendben, bejelentkezve\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Munkamenet rendben, nincs bejelentkezve\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Nincs munkafolyamat megnyitva - bejelentkezés kérése\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Munkafolyamat létrehozva - bejelentkezés kérése\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Kérés feldolgozása [eredeti]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "A `pass` beolvasásának megtagadása az URL lekérdezési karakterláncából\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Nincsen megadva jelszó, bejelentkezés nem lesz engedélyezve."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Jelszó ellenőrzése\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Jelszó hash érvénytelen\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Jelszó rendben\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Hibás jelszó\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Nem adtál meg jelszót. Üres jelszó nem megengedett.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Kijelentkezés\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Kérés feldolgozása [átirányított]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Jobb klikk az mappa ikonra az összes alatta levő mappát is megosztja)"

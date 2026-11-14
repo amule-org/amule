@@ -337,22 +337,6 @@ msgstr "Aplikaziotik ateratzen da."
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "'%d' pid-a duen amuleweb instantzia amaitzen ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "'%d' pid-a duen amuleweb instantzia hiltzen ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "Huts egin du"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "'%d' pid-a duen amuleapi instantzia amaitzen... "
 
@@ -360,6 +344,12 @@ msgstr "'%d' pid-a duen amuleapi instantzia amaitzen... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "'%d' pid-a duen amuleapi instantzia hiltzen... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "Huts egin du"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -520,28 +510,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr ""
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr ""
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "web zerbitzaria abiarazirik %d pid-arekin"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr ""
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "ERROREA"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "Abioan web zerbitzaria exekutatzeko eskatu duzu, baina amuleweb bitarra ezin da exekutatu. Mesedez, instalatu aMule web zerbitzaria duen paketea, edo eraiki aMule iturburutik -DBUILD_WEBSERVER=YES aukerarekin eta instalatu."
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr ""
@@ -563,15 +531,10 @@ msgstr ""
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "Abioan amuleapi exekutatzeko eskatu duzu, baina amuleapi bitarra ezin da exekutatu. Mesedez, instalatu aMule-ren REST API zerbitzaria duen paketea, edo eraiki aMule iturburutik -DBUILD_AMULEAPI=YES aukerarekin eta instalatu."
 
-#: src/amule.cpp
-#, fuzzy
-msgid "Could not prepare the amuleweb EC token."
-msgstr "Ezin izan da amuleapi pasahitza gorde: %s"
-
-#: src/amule.cpp
-#, fuzzy, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "Ezin izan da amuleapi pasahitza gorde: %s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "ERROREA"
 
 #: src/amule.cpp
 #, fuzzy, c-format
@@ -2477,10 +2440,6 @@ msgstr[1] "Ezin izan dira %u lotura gehitu (xehetasunetarako, ikusi erregistroa)
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Okerreko eD2k lotura! ERROREA: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr ""
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6057,46 +6016,6 @@ msgid "Guest password"
 msgstr "Gonbidatuaren pasahitza"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Web zerbitzari parametroak"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "Exekutatu web zerbitzaria abioan (zaharkitua)"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Web txantiloia"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "Baimen osorako pasahitza"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "Gaitu baimen gutxiko erabiltzailea"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "Baimen baxuko pasahitza"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "Gaitu web zerbitzari atakaren UPnP ataka birbidalketa"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Web zerbitzari UPnP ataka (aukerakoa)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "Orrialdea berritzeko denbora (segundotan)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "Gaitu Gzip konpresioa"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "Berrezarri orria balio lehenetsietara"
 
@@ -7133,10 +7052,6 @@ msgid "Skips unknown source exchange tags"
 msgstr ""
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "ez dago aukera erabilgarririk"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr ""
 
@@ -7498,12 +7413,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "Web zerbitzariak eta aMule API-ak kanpo-konexioak gaituta egotea behar dute."
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "aMule web zerbitzaria zaharkituta dago. Kontuan hartu horren ordez aMule API exekutatzea."
 
 #: src/PrefsUnifiedDlg.cpp
 #, fuzzy
@@ -9259,7 +9171,7 @@ msgstr ""
 msgid "Download File: %lu %s\n"
 msgstr "Deskargatu fitxategia: %lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "Eskakizunak errore ezezagun batez huts egin du."
 
@@ -10546,139 +10458,6 @@ msgstr "Zure sinadura fitxategia duen karpeta"
 msgid "Folder where generating the statistic image"
 msgstr "Estatistika irudiak sortuko diren karpeta"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "<str> txantiloia kargatzen du"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Web zerbitzariaren HTTP ataka"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "Erabili UPnP ataka berbideraketa web zerbitzari atakan"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP ataka"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "Erabili gzip konpresioa"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Sarrera osoko pasahitza web zerbitzarirako"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Gonbidatu pasahitza web zerbitzarirako"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "Gaitu gonbidatu sarrera"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "Gonbidatu sarrera ezgaitu"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "Kargatu/gorde web-zerbitzari ezarpenak urruneko aMule-tik/ra"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "aMule konfigurazio fitxategi bidea. EZ ERABILI ZUZENEAN!"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "PHP interpretea ezgaitu (zaharkiturik)"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "PHP orrialdeak eskakizun bakoitzean birkonpilatu"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "aMule web zerbitzaria"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "web bezero konexioa onartua\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "ERROREA: ezin da web bezero konexioa onartu\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "Eskakizunak errore honez huts egin du: %s."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "Ez da index fitxategia aurkitu: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "Saioa Iraungirik - saio hasiera eskatzen\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "Saioa ondo, saioa hasirik\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "Saioa ondo, saioa hasi gabe\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "Ez dago saio irekirik - saio hasiera eskatuko da\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "Saioa sorturik - saio hasiera eskatzen\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "Eskakizuna prozesatzen [jatorrizkoa]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "Uko egiten `pass` URLaren kontsulta-katetik irakurtzeari\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "Ez da pasahitzik ezarri, ez da saioa hastea onartzen."
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "Pasahitz egiaztatzen\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "Pasahitz egiaztapen baliogabea\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "Pasahitza ondo\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "Pasahitza oker\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "Ez duzu pasahitzik idatzi. Ez da pasahitz zuria onartzen.\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "Saio amaiera eskakizuna\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "Eskakizuna prozesatzen [birbidalia]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule (beharrezkoa)"
@@ -10815,6 +10594,165 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "'%d' pid-a duen amuleweb instantzia amaitzen ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "'%d' pid-a duen amuleweb instantzia hiltzen ... "
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "web zerbitzaria abiarazirik %d pid-arekin"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "Abioan web zerbitzaria exekutatzeko eskatu duzu, baina amuleweb bitarra ezin da exekutatu. Mesedez, instalatu aMule web zerbitzaria duen paketea, edo eraiki aMule iturburutik -DBUILD_WEBSERVER=YES aukerarekin eta instalatu."
+
+#, fuzzy
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "Ezin izan da amuleapi pasahitza gorde: %s"
+
+#, fuzzy, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "Ezin izan da amuleapi pasahitza gorde: %s"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Web zerbitzari parametroak"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "Exekutatu web zerbitzaria abioan (zaharkitua)"
+
+#~ msgid "Web template"
+#~ msgstr "Web txantiloia"
+
+#~ msgid "Full rights password"
+#~ msgstr "Baimen osorako pasahitza"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "Gaitu baimen gutxiko erabiltzailea"
+
+#~ msgid "Low rights password"
+#~ msgstr "Baimen baxuko pasahitza"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "Gaitu web zerbitzari atakaren UPnP ataka birbidalketa"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Web zerbitzari UPnP ataka (aukerakoa)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "Orrialdea berritzeko denbora (segundotan)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "Gaitu Gzip konpresioa"
+
+#~ msgid "no options available"
+#~ msgstr "ez dago aukera erabilgarririk"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "aMule web zerbitzaria zaharkituta dago. Kontuan hartu horren ordez aMule API exekutatzea."
+
+#~ msgid "Loads template <str>"
+#~ msgstr "<str> txantiloia kargatzen du"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Web zerbitzariaren HTTP ataka"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "Erabili UPnP ataka berbideraketa web zerbitzari atakan"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP ataka"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "Erabili gzip konpresioa"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Sarrera osoko pasahitza web zerbitzarirako"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Gonbidatu pasahitza web zerbitzarirako"
+
+#~ msgid "Allow guest access"
+#~ msgstr "Gaitu gonbidatu sarrera"
+
+#~ msgid "Deny guest access"
+#~ msgstr "Gonbidatu sarrera ezgaitu"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "Kargatu/gorde web-zerbitzari ezarpenak urruneko aMule-tik/ra"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "aMule konfigurazio fitxategi bidea. EZ ERABILI ZUZENEAN!"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "PHP interpretea ezgaitu (zaharkiturik)"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "PHP orrialdeak eskakizun bakoitzean birkonpilatu"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "aMule web zerbitzaria"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "web bezero konexioa onartua\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "ERROREA: ezin da web bezero konexioa onartu\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "Eskakizunak errore honez huts egin du: %s."
+
+#~ msgid "Index file not found: "
+#~ msgstr "Ez da index fitxategia aurkitu: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "Saioa Iraungirik - saio hasiera eskatzen\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "Saioa ondo, saioa hasirik\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "Saioa ondo, saioa hasi gabe\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "Ez dago saio irekirik - saio hasiera eskatuko da\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "Saioa sorturik - saio hasiera eskatzen\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "Eskakizuna prozesatzen [jatorrizkoa]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "Uko egiten `pass` URLaren kontsulta-katetik irakurtzeari\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "Ez da pasahitzik ezarri, ez da saioa hastea onartzen."
+
+#~ msgid "Checking password\n"
+#~ msgstr "Pasahitz egiaztatzen\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "Pasahitz egiaztapen baliogabea\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "Pasahitza ondo\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "Pasahitza oker\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "Ez duzu pasahitzik idatzi. Ez da pasahitz zuria onartzen.\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "Saio amaiera eskakizuna\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "Eskakizuna prozesatzen [birbidalia]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(Egin klik eskuineko botoiaz karpeta ikono batean barnekoak ere partekatzeko)"

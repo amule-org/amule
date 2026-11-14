@@ -359,22 +359,6 @@ msgstr "正在停止助手程序…"
 
 #: src/amule.cpp
 #, c-format
-msgid "Terminating amuleweb instance with pid '%d' ... "
-msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
-
-#: src/amule.cpp
-#, c-format
-msgid "Killing amuleweb instance with pid '%d' ... "
-msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
-
-#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
-#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
-#: src/SharedFilesCtrl.cpp
-msgid "Failed"
-msgstr "失败"
-
-#: src/amule.cpp
-#, c-format
 msgid "Terminating amuleapi instance with pid '%d' ... "
 msgstr "正在终止 pid 为“%d”的 amuleapi 实例 ... "
 
@@ -382,6 +366,12 @@ msgstr "正在终止 pid 为“%d”的 amuleapi 实例 ... "
 #, c-format
 msgid "Killing amuleapi instance with pid '%d' ... "
 msgstr "正在终止 pid 为“%d”的 amuleapi 实例 ... "
+
+#: src/amule.cpp src/ClientNameCellDrawing.cpp src/ClientRef.cpp
+#: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
+#: src/SharedFilesCtrl.cpp
+msgid "Failed"
+msgstr "失败"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -533,28 +523,6 @@ msgid "Not starting %s: it is neither next to aMule nor on PATH."
 msgstr "没有在启动 %s：它不在 aMule 边上也不在 PATH 上。"
 
 #: src/amule.cpp
-msgid "An exception occurred while launching amuleweb."
-msgstr "启动 amuleweb 时发生异常。"
-
-#: src/amule.cpp
-#, c-format
-msgid "web server running on pid %d"
-msgstr "web 服务器正在运行，pid 为 %d"
-
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb authentication token. The web server was not started."
-msgstr "无法准备 amuleweb 身份认证令牌。web 服务器未启动。"
-
-#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
-#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
-msgid "ERROR"
-msgstr "错误"
-
-#: src/amule.cpp
-msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
-msgstr "您要求启动时运行 Web 服务器，但 amuleweb 程序无法运行， 请先安装包含 amule web 服务器的 aMule 包，或者使用 -DBUILD_WEBSERVER=YES 选项从源码构建 aMule 并安装它。"
-
-#: src/amule.cpp
 #, c-format
 msgid "Could not write the amuleapi EC token to %s; amuleapi will fall back to its configured password."
 msgstr "无法写入 amuleapi EC 令牌到 %s； amuleapi 将退回到其配置的密码。"
@@ -576,14 +544,10 @@ msgstr "自动重启期间无法启动 amuleapi。"
 msgid "You requested to run amuleapi on startup, but the amuleapi binary cannot be run. Please install the package containing aMule's REST API server, or build aMule from source with -DBUILD_AMULEAPI=YES and install it."
 msgstr "您要求启动时运行 amuleapi，但 amuleapi 程序无法运行， 请先安装包含 amule REST API 服务器的 包，或者使用 -DBUILD_AMULEAPI=YES 选项从源码构建 aMule 并安装它。"
 
-#: src/amule.cpp
-msgid "Could not prepare the amuleweb EC token."
-msgstr "无法准备 amuleweb EC 令牌。"
-
-#: src/amule.cpp
-#, c-format
-msgid "Could not remove the amuleweb EC token file: %s"
-msgstr "无法删除 amuleweb EC 令牌文件：%s"
+#: src/amule.cpp src/amule-remote-gui.cpp src/DownloadQueue.cpp
+#: src/EditServerListDlg.cpp src/PrefsUnifiedDlg.cpp src/SearchDlg.cpp
+msgid "ERROR"
+msgstr "错误"
 
 #: src/amule.cpp
 #, c-format
@@ -2467,10 +2431,6 @@ msgstr[1] "无法添加 %u 个链接（详情请查看日志）"
 #, c-format
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "非法 eD2k 链接！错误: %s"
-
-#: src/ECSpecialMuleTags.cpp
-msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
-msgstr "拒绝了设置 web-server 模板的远程请求：值必须只有模板名，不是路径。"
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -6008,46 +5968,6 @@ msgid "Guest password"
 msgstr "访客密码"
 
 #: src/muuli_wdr.cpp
-msgid "Web server parameters"
-msgstr "Web 服务参数"
-
-#: src/muuli_wdr.cpp
-msgid "Run webserver on startup (deprecated)"
-msgstr "启动时运行 web 服务器（已废弃）"
-
-#: src/muuli_wdr.cpp
-msgid "Web template"
-msgstr "Web 模板"
-
-#: src/muuli_wdr.cpp
-msgid "Full rights password"
-msgstr "最高权限密码"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Low rights User"
-msgstr "启用低权限用户"
-
-#: src/muuli_wdr.cpp
-msgid "Low rights password"
-msgstr "低权限密码"
-
-#: src/muuli_wdr.cpp
-msgid "Enable UPnP port forwarding of the web server port"
-msgstr "为 Web 服务端口启用 UPn P端口转发"
-
-#: src/muuli_wdr.cpp
-msgid "Web server UPnP TCP port (Optional)"
-msgstr "Web 服务器 UPnP 的 TCP 端口(可选)"
-
-#: src/muuli_wdr.cpp
-msgid "Page Refresh Time (in secs)"
-msgstr "页面刷新周期(秒)"
-
-#: src/muuli_wdr.cpp
-msgid "Enable Gzip compression"
-msgstr "启用 Gzip 压缩"
-
-#: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
 msgstr "重置页面为默认"
 
@@ -7076,10 +6996,6 @@ msgid "Skips unknown source exchange tags"
 msgstr "跳过未知来源交换标签"
 
 #: src/Preferences.cpp
-msgid "no options available"
-msgstr "选项不可用"
-
-#: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
 msgstr "媒体元数据：FFProbePath 无效; aMule 现在使用其捆绑的媒体解析器。正删除旧设置。"
 
@@ -7438,12 +7354,9 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr "macOS 不让程序停止成为默认链接处理方。要阻止 aMule 打开这些链接，让另一个程序成为默认处理方。"
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "The web server and aMule API require external connections to be enabled."
+#, fuzzy
+msgid "The aMule API requires external connections to be enabled."
 msgstr "启用 web 服务器和 aMule API 需要外部连接。"
-
-#: src/PrefsUnifiedDlg.cpp
-msgid "The aMule web server is deprecated. Consider running the aMule API instead."
-msgstr "aMule Web 服务器已弃用。请考虑运行 aMule API。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -9176,7 +9089,7 @@ msgstr "需要一个来自“搜索列表”的搜索 ID。\n"
 msgid "Download File: %lu %s\n"
 msgstr "下载文件：%lu %s\n"
 
-#: src/TextClient.cpp src/webserver/src/WebServer.cpp
+#: src/TextClient.cpp
 msgid "Request failed with an unknown error."
 msgstr "请求失败，错误未知。"
 
@@ -10463,139 +10376,6 @@ msgstr "统计文件所在文件夹"
 msgid "Folder where generating the statistic image"
 msgstr "统计图存放文件夹"
 
-#: src/webserver/src/WebInterface.cpp
-msgid "Loads template <str>"
-msgstr "载入模板 <str>"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Web server HTTP port"
-msgstr "Web服务器的HTTP端口"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use UPnP port forwarding on web server port"
-msgstr "为Web服务器端口启用uPnP"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "UPnP port"
-msgstr "UPnP 端口"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Use gzip compression"
-msgstr "使用 gzip 压缩"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Full access password for web server"
-msgstr "Web服务器的完整权限密码"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Guest password for web server"
-msgstr "Web服务器的访客密码"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Allow guest access"
-msgstr "允许访客访问"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Deny guest access"
-msgstr "拒绝访客访问"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Load/save web server settings from/to remote aMule"
-msgstr "载入/保存Web服务器设置从/至远程aMule"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule config file path. DO NOT USE DIRECTLY!"
-msgstr "aMule 配置文件路径，不要直接使用！"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "禁用 PHP 解释器（已废弃）"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "Recompile PHP pages on each request"
-msgstr "为每个请求重编译 PHP 页面"
-
-#: src/webserver/src/WebInterface.cpp
-msgid "aMule Web Server"
-msgstr "aMule Web 服务器"
-
-#: src/webserver/src/WebServer.cpp
-msgid "web client connection accepted\n"
-msgstr "网页客户端连接已被接受\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "ERROR: cannot accept web client connection\n"
-msgstr "错误：无法接受网页客户端连接\n"
-
-#: src/webserver/src/WebServer.cpp
-#, c-format
-msgid "Request failed with the following error: %s."
-msgstr "请求失败，错误为: %s 。"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Index file not found: "
-msgstr "索引文件未找到: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session expired - requesting login\n"
-msgstr "会话过期 - 正在请求登录\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, logged in\n"
-msgstr "会话正常，已登录\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session ok, not logged in\n"
-msgstr "会话正常，未登录\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No session opened - will request login\n"
-msgstr "没有会话已打开 - 将请求登录\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Session created - requesting login\n"
-msgstr "会话已创建 - 正在请求登录\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [original]: "
-msgstr "正在处理请求 [原始]: "
-
-#: src/webserver/src/WebServer.cpp
-msgid "Refusing to read `pass` from URL query string\n"
-msgstr "拒绝从 URL 查询字符串读取 `pass`\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "No password specified, login will not be allowed."
-msgstr "没有指定密码，不允许登录。"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Checking password\n"
-msgstr "检查密码\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password hash invalid\n"
-msgstr "密码哈希值无效\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password ok\n"
-msgstr "密码正确\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Password bad\n"
-msgstr "密码错误\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "You did not enter any password. Blank password is not allowed.\n"
-msgstr "您没有输入密码，不能输入空密码。\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Logout requested\n"
-msgstr "已请求注销\n"
-
-#: src/webserver/src/WebServer.cpp
-msgid "Processing request [redirected]: "
-msgstr "正在处理请求 [已重定向]: "
-
 #: packaging/windows/installer_strings.c
 msgid "aMule (required)"
 msgstr "aMule（必需）"
@@ -10737,6 +10517,173 @@ msgstr "无法将旧的 ECPassword 和 ECPasswordVerifier 进行比较；拒绝�
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再对本次运行进行身份认证。"
+
+#, c-format
+#~ msgid "Terminating amuleweb instance with pid '%d' ... "
+#~ msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
+
+#, c-format
+#~ msgid "Killing amuleweb instance with pid '%d' ... "
+#~ msgstr "正在终止 pid 为“%d”的 amuleweb 实例 ... "
+
+#~ msgid "An exception occurred while launching amuleweb."
+#~ msgstr "启动 amuleweb 时发生异常。"
+
+#, c-format
+#~ msgid "web server running on pid %d"
+#~ msgstr "web 服务器正在运行，pid 为 %d"
+
+#~ msgid "Could not prepare the amuleweb authentication token. The web server was not started."
+#~ msgstr "无法准备 amuleweb 身份认证令牌。web 服务器未启动。"
+
+#~ msgid "You requested to run web server on startup, but the amuleweb binary cannot be run. Please install the package containing aMule web server, or build aMule from source with -DBUILD_WEBSERVER=YES and install it."
+#~ msgstr "您要求启动时运行 Web 服务器，但 amuleweb 程序无法运行， 请先安装包含 amule web 服务器的 aMule 包，或者使用 -DBUILD_WEBSERVER=YES 选项从源码构建 aMule 并安装它。"
+
+#~ msgid "Could not prepare the amuleweb EC token."
+#~ msgstr "无法准备 amuleweb EC 令牌。"
+
+#, c-format
+#~ msgid "Could not remove the amuleweb EC token file: %s"
+#~ msgstr "无法删除 amuleweb EC 令牌文件：%s"
+
+#~ msgid "Refused a remote request to set the web-server template: the value must be a plain template name, not a path."
+#~ msgstr "拒绝了设置 web-server 模板的远程请求：值必须只有模板名，不是路径。"
+
+#~ msgid "Web server parameters"
+#~ msgstr "Web 服务参数"
+
+#~ msgid "Run webserver on startup (deprecated)"
+#~ msgstr "启动时运行 web 服务器（已废弃）"
+
+#~ msgid "Web template"
+#~ msgstr "Web 模板"
+
+#~ msgid "Full rights password"
+#~ msgstr "最高权限密码"
+
+#~ msgid "Enable Low rights User"
+#~ msgstr "启用低权限用户"
+
+#~ msgid "Low rights password"
+#~ msgstr "低权限密码"
+
+#~ msgid "Enable UPnP port forwarding of the web server port"
+#~ msgstr "为 Web 服务端口启用 UPn P端口转发"
+
+#~ msgid "Web server UPnP TCP port (Optional)"
+#~ msgstr "Web 服务器 UPnP 的 TCP 端口(可选)"
+
+#~ msgid "Page Refresh Time (in secs)"
+#~ msgstr "页面刷新周期(秒)"
+
+#~ msgid "Enable Gzip compression"
+#~ msgstr "启用 Gzip 压缩"
+
+#~ msgid "no options available"
+#~ msgstr "选项不可用"
+
+#~ msgid "The aMule web server is deprecated. Consider running the aMule API instead."
+#~ msgstr "aMule Web 服务器已弃用。请考虑运行 aMule API。"
+
+#~ msgid "Loads template <str>"
+#~ msgstr "载入模板 <str>"
+
+#~ msgid "Web server HTTP port"
+#~ msgstr "Web服务器的HTTP端口"
+
+#~ msgid "Use UPnP port forwarding on web server port"
+#~ msgstr "为Web服务器端口启用uPnP"
+
+#~ msgid "UPnP port"
+#~ msgstr "UPnP 端口"
+
+#~ msgid "Use gzip compression"
+#~ msgstr "使用 gzip 压缩"
+
+#~ msgid "Full access password for web server"
+#~ msgstr "Web服务器的完整权限密码"
+
+#~ msgid "Guest password for web server"
+#~ msgstr "Web服务器的访客密码"
+
+#~ msgid "Allow guest access"
+#~ msgstr "允许访客访问"
+
+#~ msgid "Deny guest access"
+#~ msgstr "拒绝访客访问"
+
+#~ msgid "Load/save web server settings from/to remote aMule"
+#~ msgstr "载入/保存Web服务器设置从/至远程aMule"
+
+#~ msgid "aMule config file path. DO NOT USE DIRECTLY!"
+#~ msgstr "aMule 配置文件路径，不要直接使用！"
+
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "禁用 PHP 解释器（已废弃）"
+
+#~ msgid "Recompile PHP pages on each request"
+#~ msgstr "为每个请求重编译 PHP 页面"
+
+#~ msgid "aMule Web Server"
+#~ msgstr "aMule Web 服务器"
+
+#~ msgid "web client connection accepted\n"
+#~ msgstr "网页客户端连接已被接受\n"
+
+#~ msgid "ERROR: cannot accept web client connection\n"
+#~ msgstr "错误：无法接受网页客户端连接\n"
+
+#, c-format
+#~ msgid "Request failed with the following error: %s."
+#~ msgstr "请求失败，错误为: %s 。"
+
+#~ msgid "Index file not found: "
+#~ msgstr "索引文件未找到: "
+
+#~ msgid "Session expired - requesting login\n"
+#~ msgstr "会话过期 - 正在请求登录\n"
+
+#~ msgid "Session ok, logged in\n"
+#~ msgstr "会话正常，已登录\n"
+
+#~ msgid "Session ok, not logged in\n"
+#~ msgstr "会话正常，未登录\n"
+
+#~ msgid "No session opened - will request login\n"
+#~ msgstr "没有会话已打开 - 将请求登录\n"
+
+#~ msgid "Session created - requesting login\n"
+#~ msgstr "会话已创建 - 正在请求登录\n"
+
+#~ msgid "Processing request [original]: "
+#~ msgstr "正在处理请求 [原始]: "
+
+#~ msgid "Refusing to read `pass` from URL query string\n"
+#~ msgstr "拒绝从 URL 查询字符串读取 `pass`\n"
+
+#~ msgid "No password specified, login will not be allowed."
+#~ msgstr "没有指定密码，不允许登录。"
+
+#~ msgid "Checking password\n"
+#~ msgstr "检查密码\n"
+
+#~ msgid "Password hash invalid\n"
+#~ msgstr "密码哈希值无效\n"
+
+#~ msgid "Password ok\n"
+#~ msgstr "密码正确\n"
+
+#~ msgid "Password bad\n"
+#~ msgstr "密码错误\n"
+
+#~ msgid "You did not enter any password. Blank password is not allowed.\n"
+#~ msgstr "您没有输入密码，不能输入空密码。\n"
+
+#~ msgid "Logout requested\n"
+#~ msgstr "已请求注销\n"
+
+#~ msgid "Processing request [redirected]: "
+#~ msgstr "正在处理请求 [已重定向]: "
 
 #~ msgid "(Right click on folder icon for recursive share)"
 #~ msgstr "(鼠标右键单击文件夹图标来递归共享)"
