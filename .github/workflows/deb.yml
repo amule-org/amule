@@ -31,11 +31,13 @@ jobs:
         suite: [debian12, debian13, ubuntu22.04, ubuntu24.04, ubuntu26.04]
         arch: [amd64, arm64, i386, armhf, ppc64el, s390x, riscv64]
         exclude:
-          # Ubuntu has no i386 images, and Debian 12 has no riscv64 port.
+          # Ubuntu has no i386 images. Debian 12 has no riscv64 port and no
+          # s390x image.
           - { suite: ubuntu22.04, arch: i386 }
           - { suite: ubuntu24.04, arch: i386 }
           - { suite: ubuntu26.04, arch: i386 }
           - { suite: debian12, arch: riscv64 }
+          - { suite: debian12, arch: s390x }
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-qemu-action@v4

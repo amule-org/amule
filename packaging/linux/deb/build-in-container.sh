@@ -13,6 +13,10 @@ upstream="${upstream%-*}"
 export DEBIAN_FRONTEND=noninteractive
 apt-get -qq update
 apt-get -qq install -y --no-install-recommends dpkg-dev lintian >/dev/null
+# uutils chmod fails with EOVERFLOW for 32-bit arm on a 64-bit kernel.
+if [ "$(dpkg --print-architecture)" = armhf ] && dpkg -s coreutils-from-uutils >/dev/null 2>&1; then
+    apt-get -qq install -y --allow-remove-essential coreutils-from-gnu coreutils-from-uutils- >/dev/null
+fi
 
 # shellcheck disable=SC1091
 . /etc/os-release
