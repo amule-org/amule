@@ -21,11 +21,15 @@ commands:
   static [arch]              produce a fully static musl daemon tarball
                              (amuled + amulecmd + amuleapi + amule-media-probe) in dist/
                              arch: host (default) | x86_64 | aarch64
-  deb <suite> [channel]      produce native .debs in dist/deb/<suite>/out
-                             for the host arch, with a private wx
+  deb <suite> [channel] [arch]
+                             produce .debs in dist/deb/<suite>[-<arch>]/out,
+                             with a private wx
                              suite: debian12 | debian13 | ubuntu22.04 |
                                     ubuntu24.04 | ubuntu26.04
                              channel: release (default) | nightly
+                             arch: host (default) | amd64 | arm64 | i386 |
+                                   armhf | ppc64el | s390x | riscv64
+                             (non-native arches need setup-cross-arch)
   validate [arch]            run amuled --version inside a fixed matrix
                              of distro Docker images to catch lib-load
                              regressions. arch: host (default) only —
@@ -383,8 +387,8 @@ build_deb() {
     # build takes its version from ClientVersion.h; a nightly appends
     # +git<date>.<commit count>.<sha>, which sorts above that release and
     # below the next one. The count keeps two nightlies of one day in order.
-    local suite="${1:-}" channel="${2:-release}"
-    local image tag
+    local suite="${1:-}" channel="${2:-release}" arch="${3:-}"
+    local image tag platform=() personality=()
     case "${suite}" in
         debian12)    image=debian:12;    tag=deb12 ;;
         debian13)    image=debian:13;    tag=deb13 ;;
@@ -412,7 +416,20 @@ build_deb() {
     esac
     local version="1:${upstream}-1~${tag}"
 
-    local work="${REPO_ROOT}/dist/deb/${suite}"
+    case "${arch}" in
+        '') ;;
+        amd64)   platform=(--platform linux/amd64) ;;
+        arm64)   platform=(--platform linux/arm64) ;;
+        # On an x86_64 kernel uname still says x86_64, and wx's configure trusts it.
+        i386)    platform=(--platform linux/386); personality=(setarch i686) ;;
+        armhf)   platform=(--platform linux/arm/v7) ;;
+        ppc64el) platform=(--platform linux/ppc64le) ;;
+        s390x)   platform=(--platform linux/s390x) ;;
+        riscv64) platform=(--platform linux/riscv64) ;;
+        *) echo "fatal: unsupported arch '${arch}' (choose amd64|arm64|i386|armhf|ppc64el|s390x|riscv64)" >&2; exit 1 ;;
+    esac
+
+    local work="${REPO_ROOT}/dist/deb/${suite}${arch:+-${arch}}"
     rm -rf "${work}"
     mkdir -p "${work}"
     # git's own gzip is deterministic, so every suite gets a byte-identical
@@ -434,12 +451,13 @@ build_deb() {
     cp "${wx_tarball}" "${work}/amule_${upstream}.orig-wxwidgets.tar.bz2"
     cp -r "${SCRIPT_DIR}/deb/debian" "${work}/debian"
 
-    echo "==> Building amule ${version} in ${image}"
-    docker run --rm \
+    echo "==> Building amule ${version} in ${image}${arch:+ (${arch})}"
+    docker run --rm ${platform[@]+"${platform[@]}"} \
         -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+        -e DEB_BUILD_OPTIONS="${DEB_BUILD_OPTIONS:-}" \
         -v "${work}:/work" \
         -v "${SCRIPT_DIR}/deb/build-in-container.sh:/build-in-container.sh:ro" \
-        "${image}" /build-in-container.sh "${version}"
+        "${image}" ${personality[@]+"${personality[@]}"} /build-in-container.sh "${version}"
 
     echo "==> Packages in ${work}/out"
 }
@@ -609,7 +627,7 @@ case "${target}" in
     appimage)                build_appimage "${1:-}" ;;
     flatpak)                 build_flatpak "${1:-}" ;;
     static)                  build_static "${1:-}" ;;
-    deb)                     build_deb "${1:-}" "${2:-}" ;;
+    deb)                     build_deb "${1:-}" "${2:-}" "${3:-}" ;;
     render-flatpak-manifest) render_flatpak_manifest ;;
     validate)                validate_appimage "${1:-}" ;;
     all)                     build_all ;;
