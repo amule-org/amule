@@ -8,6 +8,7 @@ import struct
 import sys
 import tempfile
 import time
+from datetime import datetime
 from pathlib import Path
 from AllSearchIntegrationTest import C, retry_port_collisions
 from DownloadDisplayRatesIntegrationTest import local_ipv4
@@ -16,6 +17,10 @@ from KadLanModeIntegrationTest import (KADEMLIA2_HELLO_REQ, KADEMLIA2_HELLO_RES,
                                       kad2_hello, write_private_contacts)
 from KadSourceTagsECTest import (KADEMLIA2_PUBLISH_SOURCE_REQ, KADEMLIA2_PUBLISH_RES,
                                 running_kad_daemon, unpack_kad_packet)
+
+
+# One more file than KADEMLIATOTALSTORESRC, so the last lookup waits for a slot.
+FILES = 4
 
 
 def fields(line):
@@ -32,7 +37,8 @@ def run(binary):
         root = Path(directory)
         incoming = root / 'Incoming'
         incoming.mkdir()
-        (incoming / 'publication.bin').write_bytes(b'publication metrics fixture\n' * 100)
+        for n in range(FILES):
+            (incoming / f'publication{n}.bin').write_bytes(f'publication fixture {n}\n'.encode() * 100)
         peer.bind((ip, 0))
         peer.settimeout(0.1)
         peer_port = peer.getsockname()[1]
@@ -49,10 +55,10 @@ def run(binary):
             peer.sendto(bytes([0xE4, KADEMLIA2_HELLO_REQ]) + hello, ('127.0.0.1', udp_port))
             source_packets = 0
             lookup_packets = 0
-            target = None
+            targets = set()
             # The first self-lookup starts after 180 seconds, then enables publishing
             # after its ordinary 45-second lifetime. Do not accelerate production timers.
-            deadline = time.monotonic() + 270
+            deadline = time.monotonic() + 360
             while time.monotonic() < deadline:
                 assert proc.poll() is None, 'daemon exited during publication'
                 try:
@@ -71,31 +77,35 @@ def run(binary):
                     elif data[:2] == bytes([0xE4, KADEMLIA2_PUBLISH_SOURCE_REQ]):
                         source_packets += 1
                         target = data[2:18]
+                        targets.add(target)
                         reply = bytes([0xE4, KADEMLIA2_PUBLISH_RES]) + target + bytes(1)
                         peer.sendto(reply, address)
                         peer.sendto(reply, address) # Duplicate acknowledgements count once.
                 lines = (root / 'logfile').read_text(errors='replace').splitlines()
                 summaries = [fields(line) for line in lines if 'Kad source publish totals:' in line]
-                if summaries and summaries[-1]['acknowledged_ips']:
+                if summaries and summaries[-1]['finished'] == FILES:
                     summary = summaries[-1]
                     assert not any('[Kademlia Search]' in line for line in lines), 'lookup-step logging enabled'
                     assert all('[Kademlia Publish]' in line for line in lines
                                if 'Kad source publish' in line), 'publication used the wrong category'
-                    assert source_packets == 1, source_packets
-                    assert summary['queued'] == 1, summary
-                    assert summary['acknowledged_ips'] == 1, summary
-                    assert summary['attempts'] == summary['starts'] == 1, summary
+                    assert source_packets == len(targets) == FILES, (source_packets, len(targets))
+                    assert summary['queued'] == FILES, summary
+                    assert summary['acknowledged_ips'] == FILES, summary
+                    assert summary['attempts'] == summary['starts'] == FILES, summary
                     assert summary['start_failures'] == 0, summary
-                    # JumpStart exhausts this single-contact lookup, then retains it
-                    # for late replies. It naturally finishes before the minute summary.
-                    assert summary['finished'] == 1, summary
                     assert summary['zero_ack'] == summary['cancelled'] == 0, summary
                     assert summary['max_req_per_ip_60s'] > 0 and lookup_packets > 0, summary
-                    assert summary['max_pub_per_ip_60s'] == 1 and summary['pub_ips_ge2'] == 0, summary
+                    assert summary['max_pub_per_ip_60s'] == FILES, summary
+                    # JumpStart exhausts each single-contact lookup and stops it; it then
+                    # lingers 15 s for late replies. A stopping lookup frees its slot, so
+                    # the last one starts a few 2 s publish ticks after the first.
+                    starts = [datetime.fromisoformat(line.split()[0]) for line in lines
+                              if 'Kad source publish attempt:' in line and 'started=1' in line]
+                    gap = (starts[-1] - starts[0]).total_seconds()
+                    assert gap < 13, f'the last lookup waited {gap:.0f} s for a slot'
                     break
             else:
                 raise AssertionError('No expected Kad2 publication result:\n' + '\n'.join(lines[-100:]))
-            assert target is not None
             assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
     print('PASS: Kad2 queued publication, duplicate acknowledgements and totals')
 
