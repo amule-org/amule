@@ -63,9 +63,8 @@
 # generated-code patterns) that aren't actionable: regenerating from
 # the .l / .y sources would re-introduce them. Skip warnings on these
 # files when triaging output. Vendored / generated subdirectories are
-# excluded properly via per-directory .clang-tidy files at:
+# excluded properly via a per-directory .clang-tidy file at:
 #   src/extern/.clang-tidy        (vendored wx code)
-#   src/webserver/src/.clang-tidy (PHP interpreter, mostly generated)
 
 # Tier-1 bug/UB checks (added for the whole-tree lint gate). These point at
 # real defects -- use-after-move, null derefs, uninitialised reads, lifetime

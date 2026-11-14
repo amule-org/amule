@@ -33,7 +33,7 @@ amuleapi \- the aMule REST API + Server\-Sent Events daemon
 serves a JSON REST API and a live event stream for a running
 \fBamuled\fR(1), so other programs can control aMule over HTTP. It
 connects to amuled the same way \fBamulecmd\fR(1) does, and listens on its
-own port, so it can run at the same time as \fBamuleweb\fR(1).
+own port.
 .PP
 The wire contract for the REST API is documented at
 \fIdocs/api/REFERENCE.md\fR; the SSE event catalog lives at
@@ -166,6 +166,6 @@ bugtracker (\fIhttps://github.com/amule-org/amule/issues\fR).
 aMule and all of its related utilities are distributed under the GNU
 General Public License.
 .SH SEE ALSO
-.B_untranslated amule\fR(1), \fBamuled\fR(1), \fBamulecmd\fR(1), \fBamuleweb\fR(1)
+.B_untranslated amule\fR(1), \fBamuled\fR(1), \fBamulecmd\fR(1)
 .SH AUTHOR
 This manpage was written for the aMule project.

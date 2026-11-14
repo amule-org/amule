@@ -32,7 +32,7 @@ int main()
 	if (!wx.IsOk()) {
 		return 1;
 	}
-	for (const char *name : { "amulecmd", "amuleweb", "amuleapi" }) {
+	for (const char *name : { "amulecmd", "amuled", "amuleapi" }) {
 		theLogger.SetProgramName(wxString::FromAscii(name));
 		for (int i = 0; i < 2; ++i) {
 			theLogger.AddLogLine("probe", 7, false, logStandard, "console identity");

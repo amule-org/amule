@@ -37,7 +37,7 @@
 #include <common/RateLimiter.h>
 
 // State containers + helpers for the /auth/* surface. They live on the amuleapi process side rather
-// than in libwebcommon because they are stateful and amuleweb has no use for them.
+// than in libwebcommon because they are stateful and only amuleapi uses them.
 //
 // Thread-safety model: today every caller runs on the Boost.Asio I/O thread (single io_context,
 // single std::thread). The std::mutex in each container is forward-compat insurance -- the SSE

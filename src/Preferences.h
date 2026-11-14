@@ -547,8 +547,6 @@ public:
 	static void SetUPnPEnabled(bool val) { s_UPnPEnabled = val; }
 	static bool GetUPnPECEnabled() { return s_UPnPECEnabled; }
 	static void SetUPnPECEnabled(bool val) { s_UPnPECEnabled = val; }
-	static bool GetUPnPWebServerEnabled() { return s_UPnPWebServerEnabled; }
-	static void SetUPnPWebServerEnabled(bool val) { s_UPnPWebServerEnabled = val; }
 	static uint16 GetUPnPTCPPort() { return s_UPnPTCPPort; }
 	static void SetUPnPTCPPort(uint16 val) { s_UPnPTCPPort = val; }
 	// Runtime capability (not persisted): whether the connected daemon is built with UPnP,
@@ -586,18 +584,8 @@ public:
 	static AllCategoryFilter GetAllcatFilter() { return s_allcatFilter; }
 	static void SetAllcatFilter(AllCategoryFilter in) { s_allcatFilter = in; }
 
-	// WebServer
-	static uint16 GetWSPort() { return s_nWebPort; }
-	static void SetWSPort(uint16 uPort) { s_nWebPort = uPort; }
-	static const wxString &GetWSPass() { return s_sWebPassword; }
-	static void SetWSPass(const wxString &pass) { s_sWebPassword = pass; }
-	static const wxString &GetWSPath() { return s_sWebPath; }
-	static void SetWSPath(const wxString &path) { s_sWebPath = path; }
-	static bool GetWSIsEnabled() { return s_bWebEnabled; }
-	static void SetWSIsEnabled(bool bEnable) { s_bWebEnabled = bEnable; }
-
 	// amuleapi (REST/SSE API daemon). Auto-started by amule as a child
-	// process when enabled, mirroring the WebServer autorun above.
+	// process when enabled.
 	static bool GetAmuleApiIsEnabled() { return s_bAmuleApiEnabled; }
 	static void SetAmuleApiIsEnabled(bool bEnable) { s_bAmuleApiEnabled = bEnable; }
 	static uint16 GetAmuleApiPort() { return s_nAmuleApiPort; }
@@ -629,16 +617,6 @@ public:
 	static void SetAmuleApiAdminIsSet(bool isSet) { s_bAmuleApiAdminIsSet = isSet; }
 	static const wxString &GetAmuleApiPath() { return s_sAmuleApiPath; }
 	static void SetAmuleApiPath(const wxString &path) { s_sAmuleApiPath = path; }
-	static bool GetWebUseGzip() { return s_bWebUseGzip; }
-	static void SetWebUseGzip(bool bUse) { s_bWebUseGzip = bUse; }
-	static uint32 GetWebPageRefresh() { return s_nWebPageRefresh; }
-	static void SetWebPageRefresh(uint32 nRefresh) { s_nWebPageRefresh = nRefresh; }
-	static bool GetWSIsLowUserEnabled() { return s_bWebLowEnabled; }
-	static void SetWSIsLowUserEnabled(bool in) { s_bWebLowEnabled = in; }
-	static const wxString &GetWSLowPass() { return s_sWebLowPassword; }
-	static void SetWSLowPass(const wxString &pass) { s_sWebLowPassword = pass; }
-	static const wxString &GetWebTemplate() { return s_WebTemplate; }
-	static void SetWebTemplate(const wxString &val) { s_WebTemplate = val; }
 
 	static void SetMaxSourcesPerFile(uint16 in) { s_maxsourceperfile = in; }
 	static void SetMaxConnections(uint16 in) { s_maxconnections = in; }
@@ -1095,7 +1073,6 @@ protected:
 	static bool s_autoconnectstaticonly;
 	static bool s_UPnPEnabled;
 	static bool s_UPnPECEnabled;
-	static bool s_UPnPWebServerEnabled;
 	static uint16 s_UPnPTCPPort;
 	static bool s_UPnPAvailable;
 
@@ -1191,15 +1168,6 @@ protected:
 	static bool s_ToolbarOrientation;
 	static bool s_liveListSort;
 
-	// Web Server [kuchin]
-	static wxString s_sWebPassword;
-	static wxString s_sWebPath;
-	static wxString s_sWebLowPassword;
-	static uint16 s_nWebPort;
-	static uint16 s_nWebUPnPTCPPort;
-	static bool s_bWebEnabled;
-	static bool s_bWebUseGzip;
-
 	// amuleapi (REST/SSE API daemon) autorun.
 	static bool s_bAmuleApiEnabled;
 	static uint16 s_nAmuleApiPort;
@@ -1209,9 +1177,6 @@ protected:
 	static bool s_bAmuleApiGuestEnabled;
 	static bool s_bAmuleApiAdminIsSet;
 	static wxString s_sAmuleApiPath;
-	static uint32 s_nWebPageRefresh;
-	static bool s_bWebLowEnabled;
-	static wxString s_WebTemplate;
 
 	static bool s_showCatTabInfos;
 	static AllCategoryFilter s_allcatFilter;

@@ -64,7 +64,7 @@ public:
 
 private:
 	// other command line switches
-	void OnInitCmdLine(wxCmdLineParser &amuleweb_parser);
+	void OnInitCmdLine(wxCmdLineParser &parser);
 	bool OnCmdLineParsed(wxCmdLineParser &parser);
 	void TextShell(const wxString &prompt);
 	void ShowResults(const CResultList &results);

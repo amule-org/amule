@@ -83,7 +83,6 @@ build() {
         -DBUILD_AMULECMD=YES \
         -DBUILD_AMULEAPI=YES \
         -DBUILD_ED2K=YES \
-        -DBUILD_WEBSERVER=YES \
         -DBUILD_CAS=YES \
         -DBUILD_WXCAS=YES \
         -DBUILD_ALC=YES \
@@ -121,7 +120,6 @@ build() {
         src/amule-media-probe
         src/amuled
         src/amulecmd
-        src/webserver/src/amuleweb
         src/webapi/amuleapi
         src/ed2k
         src/utils/cas/cas

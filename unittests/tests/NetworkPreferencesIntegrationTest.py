@@ -42,7 +42,7 @@ def run(daemon_binary, api_binary):
         ec_port, peer_port, udp_port, http_port = free_ports(4, udp_indices=(2,), peer_index=1)
         ports = ec_port, peer_port, udp_port
         write_amule_conf(core, ec_port, Port=peer_port, UDPPort=udp_port, UDPEnable=1,
-                         FilterLanIPs=0, Serverlist=1, sections={'WebServer': {'Enabled': 0}})
+                         FilterLanIPs=0, Serverlist=1)
         (core / 'addresses.dat').write_text('')  # Exercise auto-update without downloading.
         (core / 'server.met').write_bytes(server_met(4661))
         (core / 'staticservers.dat').write_text('203.0.113.8:4662,0,Static regression server\n')

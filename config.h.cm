@@ -197,9 +197,6 @@
 /* Version number of package */
 #cmakedefine VERSION "${VERSION}"
 
-/* Where the webserver finds it's themes */
-#cmakedefine WEBSERVERDIR "${WEBSERVERDIR}"
-
 /* Compile-time install path of amuleapi's bundled static frontend.
    amuleapi falls back to this when [Server]/StaticRoot is empty. */
 #cmakedefine AMULEAPI_STATIC_DIR "${AMULEAPI_STATIC_DIR}"
@@ -209,9 +206,6 @@
 
 /* Installed helper, relative to the folder of the core's own executable. */
 #cmakedefine AMULE_MEDIA_PROBE_RELPATH "${AMULE_MEDIA_PROBE_RELPATH}"
-
-/* Define if libpng is present is set. */
-#cmakedefine WITH_LIBPNG
 
 /* Define if libayatana-appindicator3 was found at configure time —
  * enables the StatusNotifierItem backend in MuleTrayIcon. */

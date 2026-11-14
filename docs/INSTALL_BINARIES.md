@@ -112,8 +112,8 @@ What is in it:
   renaming that directory leaves the API answering `/api/v1` and
   nothing on `/`.
 
-What is **not** in it: the GUIs (`amule`, `amulegui`) and
-`amuleweb`. This track is daemon, CLI and API only. To drive it
+What is **not** in it: the GUIs (`amule`, `amulegui`). This track
+is daemon, CLI and API only. To drive it
 from a desktop, run `amulegui` from any other package on your own
 machine and point it at this daemon over External Connect, or open
 the Web UI that `amuleapi` serves.
@@ -244,7 +244,8 @@ Compare against the value on the release page.
 
 aMule ships several binaries that share the same `~/.aMule/` state:
 the GUI (`amule`), the headless daemon (`amuled`), the remote GUI
-(`amulegui`), the web UI (`amuleweb`), and the CLI (`amulecmd`).
+(`amulegui`), the REST API and Web UI (`amuleapi`), and the CLI
+(`amulecmd`).
 For day-to-day desktop use the GUI is enough; the rest are for
 running aMule on a NAS / VPS / always-on box and connecting from
 elsewhere.
@@ -252,7 +253,7 @@ elsewhere.
 The user-guide section
 [Running aMule headless](README.md#running-amule-headless-amuled)
 covers the first-run setup (EC password, daemon flags). Its example
-commands assume `amuled` / `amulecmd` / `amulegui` / `amuleweb`
+commands assume `amuled` / `amulecmd` / `amulegui` / `amuleapi`
 resolve on `$PATH`, which is true for a `make install` build but
 not for any of the binary packages below — each one stages the
 binaries differently.
@@ -267,7 +268,7 @@ Command Prompt and invoke by full path:
 "C:\Program Files\aMule\bin\amuled.exe" --full-daemon
 "C:\Program Files\aMule\bin\amulecmd.exe" -h 127.0.0.1 -p 4712 -P <password>
 "C:\Program Files\aMule\bin\amulegui.exe"
-"C:\Program Files\aMule\bin\amuleweb.exe" --admin-pass=<password>
+"C:\Program Files\aMule\bin\amuleapi.exe"
 ```
 
 Add `<InstallDir>\bin` to `PATH` (System Properties → Environment
@@ -282,20 +283,20 @@ PowerShell or Command Prompt in that folder and run them directly:
 .\amuled.exe --full-daemon
 .\amulecmd.exe -h 127.0.0.1 -p 4712 -P <password>
 .\amulegui.exe
-.\amuleweb.exe --admin-pass=<password>
+.\amuleapi.exe
 ```
 
 ### macOS .dmg
 
 `aMule.app/Contents/MacOS/` holds the GUI plus `amuled`,
-`amulecmd`, `amuleweb`, `amuleapi`, `ed2k` and the `cas`, `wxcas`,
+`amulecmd`, `amuleapi`, `ed2k` and the `cas`, `wxcas`,
 `alc` and `alcc` utilities, and the `amule-media-probe` helper the core
 runs to read media metadata; invoke them by full path:
 
 ```sh
 /Applications/aMule.app/Contents/MacOS/amuled --full-daemon
 /Applications/aMule.app/Contents/MacOS/amulecmd -h 127.0.0.1 -p 4712 -P <password>
-/Applications/aMule.app/Contents/MacOS/amuleweb --admin-pass=<password>
+/Applications/aMule.app/Contents/MacOS/amuleapi
 ```
 
 `amulegui` ships as a separate `aMuleGUI.app` bundle in the `.dmg`
@@ -310,7 +311,6 @@ already on `$PATH`:
 ```sh
 sudo ln -s /Applications/aMule.app/Contents/MacOS/amuled       /usr/local/bin/amuled
 sudo ln -s /Applications/aMule.app/Contents/MacOS/amulecmd     /usr/local/bin/amulecmd
-sudo ln -s /Applications/aMule.app/Contents/MacOS/amuleweb     /usr/local/bin/amuleweb
 sudo ln -s /Applications/aMule.app/Contents/MacOS/amuleapi     /usr/local/bin/amuleapi
 sudo ln -s /Applications/aMuleGUI.app/Contents/MacOS/aMuleGUI  /usr/local/bin/amulegui
 ```
@@ -344,7 +344,6 @@ different binary with `--command=`:
 flatpak run --command=amuled    org.amule.aMule --full-daemon
 flatpak run --command=amulecmd  org.amule.aMule -h 127.0.0.1 -p 4712 -P <password>
 flatpak run --command=amulegui  org.amule.aMule
-flatpak run --command=amuleweb  org.amule.aMule --admin-pass=<password>
 flatpak run --command=amuleapi  org.amule.aMule
 ```
 

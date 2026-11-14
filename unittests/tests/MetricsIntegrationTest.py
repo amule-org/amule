@@ -299,8 +299,7 @@ def real_daemon_checks(daemon, binary, root):
     core_dir = root / 'core'
     core_dir.mkdir()
     ec, peer, udp = free_ports(3, udp_indices=(2,), peer_index=1)
-    write_amule_conf(core_dir, ec, Port=peer, UDPPort=udp, UDPEnable=0,
-                     sections={'WebServer': {'Enabled': 0}})
+    write_amule_conf(core_dir, ec, Port=peer, UDPPort=udp, UDPEnable=0)
     with running_daemon(daemon, core_dir, (ec, peer), env=daemon_env(root),
                         console='core.log', stop_timeout=15) as (_, client):
         client.sock.close()

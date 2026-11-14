@@ -488,9 +488,7 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 				if (m_interactive) {
 					ShowGreet();
 				}
-				Pre_Shell();
 				TextShell(ProgName);
-				Post_Shell();
 				if (m_interactive) {
 					Show(CFormat(_("\nOk, exiting %s...\n")) % ProgName);
 				}
@@ -694,7 +692,7 @@ void CaMuleExternalConnector::LoadConfigFile()
 		// password, and the stored value is what authenticates.
 		RestrictToOwner(CPath(m_configFileName));
 		m_language = m_configFile->Read("/Locale", "");
-		// Match the default across amulecmd / amuleweb / amulegui. The literal loopback
+		// Match the default across amulecmd / amulegui. The literal loopback
 		// address rather than "localhost": on Windows those lookups can fail intermittently
 		// (IPv4 vs IPv6 stack ordering, Hosts file shape), showing up as `Connection
 		// Failed. Unable to connect to localhost:4712` (#822). 127.0.0.1 is portable and
@@ -774,7 +772,7 @@ bool CaMuleExternalConnector::OnInit()
 
 	// Below wxApp::OnInit(), which is what runs OnInitCmdLine() and so sets m_appname: above it
 	// the name is still NULL and the banner would name no binary at all, which is the one thing
-	// it exists to say. amulecmd, amuleweb and amuleapi share a version string, so without the
+	// it exists to say. amulecmd and amuleapi share a version string, so without the
 	// name a pasted report cannot be attributed. The handler is armed before this point and
 	// would report without a version line; that is strictly better than one that never has a
 	// name. Written from a signal handler, which cannot format, hence the fixed buffer.

@@ -88,7 +88,7 @@ void aMuleInitLocale()
 			}
 			setenv("LC_CTYPE", utf8, 1);
 			// Dropping LC_ALL above also stops forcing LC_NUMERIC to C for any child
-			// process (media probe, spawned amuleweb/amuleapi): its numeric category
+			// process (media probe, spawned amuleapi): its numeric category
 			// would then resolve from LANG and could inherit a comma decimal separator.
 			// Pin LC_NUMERIC=C in the environment too, so children keep parsing "1.5",
 			// matching the in-process setting below.

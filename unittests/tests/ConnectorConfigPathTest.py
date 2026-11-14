@@ -6,7 +6,6 @@ import configparser
 import hashlib
 import os
 from pathlib import Path
-import socket
 import subprocess
 import sys
 import tempfile
@@ -39,8 +38,7 @@ def read_config(path):
 
 def check_path(binary, root, argument, expected):
     source = root / 'amule.conf'
-    source.write_text(f'[ExternalConnect]\nECPort=48123\nECPassword={PASSWORD}\n'
-                      '[WebServer]\nPort=48125\n')
+    source.write_text(f'[ExternalConnect]\nECPort=48123\nECPassword={PASSWORD}\n')
     args = [] if argument is None else [f'--config-file={argument}']
     run(binary, root, *args, f'--create-config-from={source.as_posix()}')
     config = read_config(expected)
@@ -48,8 +46,6 @@ def check_path(binary, root, argument, expected):
     assert config['EC']['Password'].lower() == PASSWORD, expected
     if os.name != 'nt':
         assert expected.stat().st_mode & 0o777 == 0o600, expected
-    if Path(binary).stem == 'amuleweb':
-        assert config['WebServer']['Port'] == '48125', expected
     # Read the same selected file, then save it without starting a connection.
     config['EC']['Host'] = 'config-path-test.invalid'
     with expected.open('w') as stream:
@@ -97,7 +93,7 @@ def check_password_config(binary, root):
 
 def main():
     binaries = [str(Path(arg).resolve()) for arg in sys.argv[1:]]
-    assert binaries, 'Pass amulecmd and/or amuleweb paths'
+    assert binaries, 'Pass amulecmd paths'
     with tempfile.TemporaryDirectory(prefix='amule-config-path-') as scratch:
         for index, binary in enumerate(binaries):
             base = Path(scratch).resolve() / str(index)
@@ -185,44 +181,6 @@ def main():
                 run(binary, root, '--config-file=./directory-target', action,
                     expect_failure=True)
                 assert (root / 'directory-target').is_dir()
-
-            if Path(binary).stem == 'amuleweb':
-                root = base / 'amule-config-file'
-                root.mkdir()
-                source = root / 'amule.conf'
-                template = 'config-path-test-template'
-                template_dir = root / 'webserver' / template
-                template_dir.mkdir(parents=True)
-                (template_dir / 'login.php').write_text('')
-                # A missing template can fall back to an installed default. Supply our
-                # own template and verify the selected config via its EC port instead.
-                # Close the mock peer before authentication, so HTTP never starts.
-                with socket.socket() as listener:
-                    listener.bind(('127.0.0.1', 0))
-                    listener.listen()
-                    listener.settimeout(10)
-                    port = listener.getsockname()[1]
-                    source.write_text(f'[ExternalConnect]\nECPort={port}\n'
-                                      f'ECPassword={PASSWORD}\n'
-                                      f'[WebServer]\nTemplate={template}\n')
-                    for argument in [source.as_posix(), './amule.conf']:
-                        process = subprocess.Popen(
-                            [binary, f'--amule-config-file={argument}'], cwd=root,
-                            env=daemon_env(root),
-                            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, text=True, errors='replace')
-                        try:
-                            with listener.accept()[0] as peer:
-                                peer.settimeout(5)
-                                assert peer.recv(4096), 'Missing EC authentication request'
-                            output, _ = process.communicate(timeout=5)
-                            assert process.returncode == 1, (argument, process.returncode, output)
-                            assert 'Enter password' not in output, (argument, output)
-                        finally:
-                            if process.poll() is None:
-                                process.kill()
-                            process.communicate()
-                print('amuleweb: amule-config-file passed', flush=True)
 
 
 if __name__ == '__main__':

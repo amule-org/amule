@@ -1841,27 +1841,6 @@ target_link_libraries (StringFunctionsTest
 	muleunit
 )
 
-add_executable (PhpArrayTest
-	PhpArrayTest.cpp
-	${CMAKE_SOURCE_DIR}/src/webserver/src/php_syntree.cpp
-)
-
-add_test (NAME PhpArrayTest
-	COMMAND PhpArrayTest
-)
-
-target_compile_definitions (PhpArrayTest
-	PRIVATE PHP_STANDALONE_EN
-)
-
-target_include_directories (PhpArrayTest
-	PRIVATE ${CMAKE_SOURCE_DIR}/src/webserver/src
-)
-
-target_link_libraries (PhpArrayTest
-	muleunit
-)
-
 add_executable (CMuleCollectionTest
 	CMuleCollectionTest.cpp
 	${CMAKE_SOURCE_DIR}/src/MuleCollection.cpp
@@ -1949,7 +1928,7 @@ target_link_libraries (ECFileConfigTest muleunit mulecommon)
 
 # Offline command-line coverage, including native Windows path forms.
 if (Python3_Interpreter_FOUND)
-	foreach (connector IN ITEMS amulecmd amuleweb)
+	foreach (connector IN ITEMS amulecmd)
 		if (TARGET ${connector})
 			add_test (NAME ConnectorConfigPathTest-${connector}
 				COMMAND ${Python3_EXECUTABLE}
@@ -3035,7 +3014,7 @@ target_include_directories (AllSearchTypeTest PRIVATE
 )
 target_link_libraries (AllSearchTypeTest muleunit mulecommon ec)
 
-# Where amule/amuled look for amuleweb and amuleapi before falling back to PATH.
+# Where amule/amuled look for amuleapi before falling back to PATH.
 # Only http and https URLs reach the downloader.
 add_executable (HttpUrlTest HttpUrlTest.cpp)
 add_test (NAME HttpUrlTest COMMAND HttpUrlTest)
@@ -3427,6 +3406,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/StartPausedIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (StartPausedIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME PartialUpdatePollingIntegrationTest
+			COMMAND ${Python3_EXECUTABLE} -u
+				${CMAKE_CURRENT_SOURCE_DIR}/PartialUpdatePollingIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (PartialUpdatePollingIntegrationTest PROPERTIES LABELS "integration")
 		add_test (NAME KnownHistoryIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KnownHistoryIntegrationTest.py $<TARGET_FILE:amuled>
@@ -4003,16 +3987,6 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND BUILD_AMULEAPI AND Python3_Int
 	set_tests_properties (ECSRPApiIntegrationTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
 endif()
 
-if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND BUILD_WEBSERVER AND Python3_Interpreter_FOUND AND UNIX)
-	set (ec_srp_web_args $<TARGET_FILE:amuled> $<TARGET_FILE:amuleweb>)
-	if (BUILD_AMULEAPI)
-		list (APPEND ec_srp_web_args $<TARGET_FILE:amuleapi>)
-	endif()
-	add_test (NAME ECSRPWebIntegrationTest COMMAND ${Python3_EXECUTABLE}
-		${CMAKE_CURRENT_SOURCE_DIR}/ECSRPWebIntegrationTest.py ${ec_srp_web_args})
-	set_tests_properties (ECSRPWebIntegrationTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "integration")
-endif()
-
 if (BUILD_MONOLITHIC OR BUILD_REMOTEGUI)
 	add_executable (WindowGeometryTest WindowGeometryTest.cpp)
 	target_include_directories (WindowGeometryTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
@@ -4136,7 +4110,6 @@ foreach (ec_wire_test IN ITEMS
 	ECDisconnectIntegrationTest
 	ECSRPApiIntegrationTest
 	ECSRPIntegrationTest
-	ECSRPWebIntegrationTest
 	ED2KLinkIntegrationTest
 	GlobalSearchSilentServerIntegrationTest
 	GlobalSourceRequestIntegrationTest
@@ -4163,6 +4136,7 @@ foreach (ec_wire_test IN ITEMS
 	NetworkPreferencesIntegrationTest
 	OfferFilesLiveLimitsTest
 	PacketReceiveIntegrationTest
+	PartialUpdatePollingIntegrationTest
 	PublishMetrics-kad2
 	PathDefaultsIntegrationTest
 	SearchParamsRestoreIntegrationTest

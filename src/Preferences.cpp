@@ -124,7 +124,6 @@ bool CPreferences::s_autoconnect;
 bool CPreferences::s_autoconnectstaticonly;
 bool CPreferences::s_UPnPEnabled;
 bool CPreferences::s_UPnPECEnabled;
-bool CPreferences::s_UPnPWebServerEnabled;
 uint16 CPreferences::s_UPnPTCPPort;
 bool CPreferences::s_UPnPAvailable = false;
 bool CPreferences::s_autoserverlist;
@@ -198,13 +197,6 @@ uint8 CPreferences::s_iFileBufferSize;
 uint32 CPreferences::s_writeBufferLimitMiB = WriteBufferLimits::defaultMiB;
 bool CPreferences::s_writeBufferLimitSupported = true;
 uint8 CPreferences::s_iQueueSize;
-wxString CPreferences::s_sWebPath;
-wxString CPreferences::s_sWebPassword;
-wxString CPreferences::s_sWebLowPassword;
-uint16 CPreferences::s_nWebPort;
-uint16 CPreferences::s_nWebUPnPTCPPort;
-bool CPreferences::s_bWebEnabled;
-bool CPreferences::s_bWebUseGzip;
 bool CPreferences::s_bAmuleApiEnabled;
 uint16 CPreferences::s_nAmuleApiPort;
 wxString CPreferences::s_sAmuleApiBindAddress;
@@ -213,9 +205,6 @@ wxString CPreferences::s_sAmuleApiGuestPassword;
 bool CPreferences::s_bAmuleApiGuestEnabled;
 bool CPreferences::s_bAmuleApiAdminIsSet;
 wxString CPreferences::s_sAmuleApiPath;
-uint32 CPreferences::s_nWebPageRefresh;
-bool CPreferences::s_bWebLowEnabled;
-wxString CPreferences::s_WebTemplate;
 bool CPreferences::s_showCatTabInfos;
 AllCategoryFilter CPreferences::s_allcatFilter;
 bool CPreferences::s_AcceptExternalConnections;
@@ -983,7 +972,6 @@ class Cfg_Skin : public Cfg_Str
 public:
 	Cfg_Skin(const wxString &keyname, wxString &value, const wxString &defaultVal = EmptyString)
 	: Cfg_Str(keyname, value, defaultVal)
-	, m_is_skin(false)
 	{
 	}
 
@@ -991,12 +979,10 @@ public:
 	virtual bool TransferFromWindow()
 	{
 		if (Cfg_Str::TransferFromWindow()) {
-			if (m_is_skin) {
-				wxChoice *skinSelector = dynamic_cast<wxChoice *>(m_widget);
-				// "- default -" is always the first
-				if (skinSelector->GetSelection() == 0) {
-					m_value.Clear();
-				}
+			wxChoice *skinSelector = dynamic_cast<wxChoice *>(m_widget);
+			// "- default -" is always the first
+			if (skinSelector->GetSelection() == 0) {
+				m_value.Clear();
 			}
 			return true;
 		}
@@ -1010,44 +996,27 @@ public:
 		wxChoice *skinSelector = dynamic_cast<wxChoice *>(m_widget);
 		skinSelector->Clear();
 
-		wxString folder;
-		int flags = wxDIR_DIRS;
-		wxString filespec;
-		wxString defaultSelection = _("- default -");
-		// #warning there has to be a better way...
-		if (GetKey() == "/SkinGUIOptions/Skin") {
-			folder = "skins";
-			m_is_skin = true;
-			flags = wxDIR_FILES;
-			filespec = "*.zip";
-			skinSelector->Append(defaultSelection);
-		} else {
-			folder = "webserver";
-		}
+		const wxString folder = "skins";
+		const int flags = wxDIR_FILES;
+		const wxString filespec = "*.zip";
+		const wxString defaultSelection = _("- default -");
+		skinSelector->Append(defaultSelection);
 		wxString dirName(JoinPaths(thePrefs::GetConfigDir(), folder));
 		wxString Filename;
 		wxDir d;
 
 		if (wxDir::Exists(dirName) && d.Open(dirName) && d.GetFirst(&Filename, filespec, flags)) {
 			do {
-				if (m_is_skin) {
-					Filename = "User:" + Filename;
-				}
-				skinSelector->Append(Filename);
+				skinSelector->Append("User:" + Filename);
 			} while (d.GetNext(&Filename));
 		}
 
-		wxString dataDir;
-		if (m_is_skin) {
-			dataDir = wxStandardPaths::Get().GetDataDir();
-		} else {
-			dataDir = wxStandardPaths::Get().GetResourcesDir();
-		}
+		wxString dataDir = wxStandardPaths::Get().GetDataDir();
 #if defined(__WINDOWS__)
-		// Windows portable layout puts amule.exe in bin\ and installable data (skins,
-		// webserver templates, ...) in ..\share\amule\. wxStandardPaths::GetDataDir() /
-		// GetResourcesDir() both return the exe directory on Windows, so relocate up one
-		// level and into the FHS-style share/amule/ tree the installer actually populates.
+		// Windows portable layout puts amule.exe in bin\ and installable data (skins, ...) in
+		// ..\share\amule\. wxStandardPaths::GetDataDir() returns the exe directory on Windows, so
+		// relocate up one level and into the FHS-style share/amule/ tree the installer actually
+		// populates.
 		dataDir = JoinPaths(JoinPaths(dataDir, ".."), "share");
 		dataDir = JoinPaths(dataDir, "amule");
 #elif !defined(__WXMAC__)
@@ -1057,56 +1026,21 @@ public:
 
 		if (wxDir::Exists(systemDir) && d.Open(systemDir) && d.GetFirst(&Filename, filespec, flags)) {
 			do {
-				if (m_is_skin) {
-					Filename = "System:" + Filename;
-				}
-				// avoid duplicates for webserver templates
-				if (skinSelector->FindString(Filename) == wxNOT_FOUND) {
-					skinSelector->Append(Filename);
-				}
+				skinSelector->Append("System:" + Filename);
 			} while (d.GetNext(&Filename));
-		}
-
-		bool placeholderAppended = false;
-		if (skinSelector->GetCount() == 0) {
-			skinSelector->Append(_("no options available"));
-			placeholderAppended = true;
 		}
 
 		int id = skinSelector->FindString(m_value);
 		if (id == wxNOT_FOUND) {
-			if (m_is_skin) {
-				// Skin files must be local to load; fall back to the
-				// default visually.
-				id = 0;
-				m_value = defaultSelection;
-			} else if (placeholderAppended) {
-				// No real templates found and m_value does not match the
-				// placeholder just appended. m_value is almost certainly a
-				// localized "no options available" string saved by a prior session
-				// under a different aMule locale. Falling through to the
-				// cross-host preserve branch below would re-append the stale
-				// string, so discard it instead.
-				id = 0;
-				m_value.Clear();
-			} else if (!m_value.IsEmpty()) {
-				// Template names are consumed by amuleweb, which may be running
-				// on a different host than amulegui or installing templates
-				// outside the GUI's scanned directories. Preserve the configured
-				// value in the dropdown so a Save round-trip does not erase it.
-				id = skinSelector->Append(m_value);
-			} else {
-				id = 0;
-			}
+			// Skin files must be local to load; fall back to the default visually.
+			id = 0;
+			m_value = defaultSelection;
 		}
 		skinSelector->SetSelection(id);
 
 		return Cfg_Str::TransferToWindow();
 	}
 #endif /* ! AMULE_DAEMON */
-
-protected:
-	bool m_is_skin;
 };
 
 int CPreferences::PreviewExcludeCount(const wxString &patterns, bool useRegex, const wxArrayString &fileNames)
@@ -1365,11 +1299,12 @@ void CPreferences::BuildItemList(const wxString &appdir)
 		IDC_CREATEFILESSPARSE, (new Cfg_Bool("/eMule/CreateSparseFiles", s_createFilesSparse, true)));
 	NewCfgItem(IDC_MMAP_ENABLE, (new Cfg_Bool("/eMule/MMapEnabled", s_mmapEnabled, false)));
 
-	/** Web Server */
+	/** Online signature */
 	NewCfgItem(IDC_OSDIR, (new Cfg_Path("/eMule/OSDirectory", s_OSDirectory, appdir)));
 	NewCfgItem(IDC_ONLINESIG, (new Cfg_Bool("/eMule/OnlineSignature", s_onlineSig, false)));
 	NewCfgItem(IDC_OSUPDATE, (MkCfg_Int("/eMule/OnlineSignatureUpdate", s_OSUpdate, 5)));
-	NewCfgItem(IDC_ENABLE_WEB, (new Cfg_Bool("/WebServer/Enabled", s_bWebEnabled, false)));
+
+	/** amuleapi */
 	NewCfgItem(IDC_ENABLE_AMULEAPI, (new Cfg_Bool("/AmuleApi/Enabled", s_bAmuleApiEnabled, false)));
 	NewCfgItem(IDC_AMULEAPI_PORT, (MkCfg_Int("/AmuleApi/HttpPort", s_nAmuleApiPort, 4713)));
 	NewCfgItem(IDC_AMULEAPI_BIND,
@@ -1382,18 +1317,6 @@ void CPreferences::BuildItemList(const wxString &appdir)
 		(new Cfg_Transient<Cfg_Bool>("/AmuleApi/GuestEnabled", s_bAmuleApiGuestEnabled, false)));
 	NewCfgItem(IDC_AMULEAPI_GUEST_PASSWD,
 		(new Cfg_Transient<Cfg_Str_Encrypted>("/AmuleApi/GuestPassword", s_sAmuleApiGuestPassword)));
-	NewCfgItem(IDC_WEB_PASSWD, (new Cfg_Str_Encrypted("/WebServer/Password", s_sWebPassword)));
-	NewCfgItem(IDC_WEB_PASSWD_LOW, (new Cfg_Str_Encrypted("/WebServer/PasswordLow", s_sWebLowPassword)));
-	NewCfgItem(IDC_WEB_PORT, (MkCfg_Int("/WebServer/Port", s_nWebPort, 4711)));
-	NewCfgItem(IDC_WEBUPNPTCPPORT, (MkCfg_Int("/WebServer/WebUPnPTCPPort", s_nWebUPnPTCPPort, 50001)));
-	NewCfgItem(IDC_UPNP_WEBSERVER_ENABLED,
-		(new Cfg_Bool("/WebServer/UPnPWebServerEnabled", s_UPnPWebServerEnabled, false)));
-	NewCfgItem(IDC_WEB_GZIP, (new Cfg_Bool("/WebServer/UseGzip", s_bWebUseGzip, true)));
-	NewCfgItem(
-		IDC_ENABLE_WEB_LOW, (new Cfg_Bool("/WebServer/UseLowRightsUser", s_bWebLowEnabled, false)));
-	NewCfgItem(
-		IDC_WEB_REFRESH_TIMEOUT, (MkCfg_Int("/WebServer/PageRefreshTime", s_nWebPageRefresh, 120)));
-	NewCfgItem(IDC_WEBTEMPLATE, (new Cfg_Skin("/WebServer/Template", s_WebTemplate, "")));
 
 	/** External Connections */
 	NewCfgItem(IDC_EXT_CONN_ACCEPT,
@@ -1680,7 +1603,6 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	s_MiscList.push_back(new Cfg_Str("/eMule/GeoLiteCountryUpdateUrl", s_GeoIPUpdateUrl, ""));
 	wxConfigBase::Get()->DeleteEntry("/eMule/GeoIPUpdateUrl"); // get rid of the old one for a while
 
-	s_MiscList.push_back(new Cfg_Str("/WebServer/Path", s_sWebPath, "amuleweb"));
 	s_MiscList.push_back(new Cfg_Str("/AmuleApi/Path", s_sAmuleApiPath, "amuleapi"));
 
 	s_MiscList.push_back(new Cfg_Str("/eMule/StatsServerName", s_StatsServerName, "Shorty's ED2K stats"));

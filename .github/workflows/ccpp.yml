@@ -131,7 +131,6 @@ env:
     -DBUILD_REMOTEGUI=YES \
     -DBUILD_TESTING=YES \
     -DENABLE_INTEGRATION_TESTS=YES \
-    -DBUILD_WEBSERVER=YES \
     -DENABLE_NLS=YES \
     -DENABLE_UPNP=YES
 
@@ -482,8 +481,6 @@ jobs:
           ECAddress=127.0.0.1
           ECPort=4712
           ECPassword=$EC_HASH
-          [WebServer]
-          Enabled=0
           EOF
           nohup build/src/amuled -c "$CONF" > "$CONF/stdout.log" 2>&1 &
           # Wait for the EC listener instead of sleeping: cold start is a
@@ -657,14 +654,14 @@ jobs:
       - name: SRP integration tests (require execution)
         run: |
           ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error \
-            -R '^(AmulecmdShutdownTest|AmuleApiEcPasswordIntegrationTest|MetricsIntegrationTest|ECSRPIntegrationTest|ECSRPApiIntegrationTest|ECSRPWebIntegrationTest)$' \
+            -R '^(AmulecmdShutdownTest|AmuleApiEcPasswordIntegrationTest|MetricsIntegrationTest|ECSRPIntegrationTest|ECSRPApiIntegrationTest)$' \
             --output-junit "$RUNNER_TEMP/ec-tests.xml"
           "$EC_TEST_PYTHON" - <<'PY'
           import os
           import xml.etree.ElementTree as ET
           from pathlib import Path
           tests = ET.parse(Path(os.environ['RUNNER_TEMP']) / 'ec-tests.xml').findall('.//testcase')
-          assert len(tests) == 6, 'Expected all six EC integration tests'
+          assert len(tests) == 5, 'Expected all five EC integration tests'
           assert all(t.find('skipped') is None for t in tests), 'EC integration tests must not skip'
           PY
 

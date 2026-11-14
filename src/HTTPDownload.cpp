@@ -214,7 +214,7 @@ static void ApplyProxyToSession(wxWebSession &session)
 // BACKS the default session. On macOS that default is NSURLSession, whose native handle is an
 // NSURLSessionTask*, and calling curl_easy_setopt() on it corrupts the Obj-C object and crashes on
 // startup (#601).
-static wxWebSession &GetAmuleWebSession(bool &isCurlBackend)
+static wxWebSession &GetSharedWebSession(bool &isCurlBackend)
 {
 	isCurlBackend = false;
 #ifdef AMULE_HTTP_CURL_BIND
@@ -291,7 +291,7 @@ bool CanBindHttpToInterface()
 // fallback does not raise SIGALRM in this multi-threaded process, CURLOPT_CONNECTTIMEOUT_MS so the
 // connect phase gives up after 30 s instead of the full OS resolver timeout, and
 // CURLOPT_SOCKOPTFUNCTION to bind egress when an interface is configured. Only call this when curl
-// actually backs the request (see GetAmuleWebSession).
+// actually backs the request (see GetSharedWebSession).
 static void CustomizeCurlRequest(wxWebRequest &request)
 {
 #if defined(AMULE_HAVE_LIBCURL) && defined(AMULE_HTTP_CURL_BIND)
@@ -325,7 +325,7 @@ static void CustomizeCurlRequest(wxWebRequest &request)
 
 // Single entry point for all aMule HTTP: curl-backed session, proxy and interface bind, so every
 // HTTP channel is consistent and honours the bind-to-interface preference.
-wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url)
+wxWebRequest CreateSharedWebRequest(wxEvtHandler *handler, const wxString &url)
 {
 	if (!IsHttpUrl(url)) {
 		AddLogLineC(
@@ -335,7 +335,7 @@ wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url)
 	bool isCurlBackend = false;
 	// The proxy is applied when the session is first handed out, not here:
 	// setting it per request asserts on WinHTTP once a request has been made.
-	wxWebSession &session = GetAmuleWebSession(isCurlBackend);
+	wxWebSession &session = GetSharedWebSession(isCurlBackend);
 	wxWebRequest request = session.CreateRequest(handler, url);
 	if (request.IsOk() && isCurlBackend) {
 		CustomizeCurlRequest(request);
@@ -442,7 +442,7 @@ CHTTPDownloadThread::CHTTPDownloadThread(const wxString &url,
 	// Curl-backed session, proxy and interface bind, all in one place. The threaded-resolver
 	// caveat still applies: the CONNECTTIMEOUT set inside bounds the visible delay before
 	// Failed fires, but not the cleanup-time pthread_join on libcurl's threaded resolver.
-	m_request = CreateAmuleWebRequest(this, m_url);
+	m_request = CreateSharedWebRequest(this, m_url);
 	if (!m_request.IsOk()) {
 		AddLogLineC(CFormat(_("Failed to create HTTP request for %s")) % DownloadUrlForLog(m_url));
 		FinishAndDestroy(HTTP_Error);

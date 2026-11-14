@@ -274,7 +274,6 @@ public:
 	/* Statistics graph functions */
 
 	void RecordHistory();
-	unsigned GetHistoryForWeb(unsigned cntPoints, double sStep, double *sStart, uint32 **graphData);
 	// EC_OP_STATSGRAPHS variant that also fills per-point active-up / active-down counters and
 	// the latest session totals, so amulegui can render the same 3-line Connections scope and
 	// true session average as monolithic amule. connData is new[]'d on success and owned by the

@@ -32,7 +32,7 @@ namespace webapi
 {
 
 //! Deepest nesting a request body may carry before it is refused unparsed. The deepest legitimate
-//! body on this surface is 3 (`{"remote_controls":{"webserver":{...}}}`), so 32 leaves ample
+//! body on this surface is 3 (`{"remote_controls":{"amuleapi":{...}}}`), so 32 leaves ample
 //! headroom.
 constexpr std::size_t kMaxJsonDepth = 32;
 

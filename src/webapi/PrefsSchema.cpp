@@ -130,6 +130,13 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 #define PREF_REJECT(cat, key) \
 	{cat, key, 0, PrefType::String, PrefEnc::Value, false, PrefAccess::Rejected, 0u, nullptr, nullptr, nullptr, 0}
 
+// Retired rows carry no tag either: they read as the snapshot default and PATCH ignores them.
+#define PREF_RETIRED(cat, key, type, cpp_type, memb) \
+	{cat, key, 0, type, PrefEnc::Value, false, PrefAccess::Retired, 0u, nullptr, nullptr, PREF_MEMBER(memb, cpp_type), 0}
+
+#define PREF_RETIRED_WRITEONLY(cat, key) \
+	{cat, key, 0, PrefType::String, PrefEnc::Value, false, PrefAccess::Retired, 0u, nullptr, nullptr, nullptr, 0}
+
 const PrefField kSchema[] = {
 	// [general]
 	// Value, not Presence: the core emits EC_TAG_GENERAL_CHECK_NEW_VERSION unconditionally as a
@@ -254,19 +261,16 @@ const PrefField kSchema[] = {
 	PREF_BOOL("message_filter", "log_filtered_messages", EC_TAG_MSGFILTER_SHOW_IN_LOG, PrefEnc::Presence, false, PrefAccess::ReadWrite, message_filter.log_filtered_messages),
 
 	// [remote_controls.webserver]
-	PREF_BOOL("remote_controls.webserver", "enabled", EC_TAG_WEBSERVER_AUTORUN, PrefEnc::Presence, false, PrefAccess::ReadWrite, remote_controls.webserver.enabled),
-	// Its partner `remote_controls.webserver.guest_password` deliberately has NO row here, and
-	// that is not an oversight -- neither access level fits. The two share one EC tag
-	// (EC_TAG_WEBSERVER_GUEST carries the enable bool with the password hash as a child), so a
-	// WriteOnly row would send the generic loop at the tag a second time behind the bespoke
-	// packing; and Bespoke rows are emitted on GET, which a password must never be. It is applied
-	// only by the hand-written branch in Api.cpp and documented in REFERENCE.md.
-	PREF_BOOL("remote_controls.webserver", "guest_enabled", EC_TAG_WEBSERVER_GUEST, PrefEnc::Presence, false, PrefAccess::Bespoke, remote_controls.webserver.guest_enabled),
-	PREF_U32("remote_controls.webserver", "port", EC_TAG_WEBSERVER_PORT, 65535u, PrefAccess::ReadWrite, remote_controls.webserver.port),
-	PREF_U32("remote_controls.webserver", "refresh_seconds", EC_TAG_WEBSERVER_REFRESH, 0xFFFFFFFFu, PrefAccess::ReadWrite, remote_controls.webserver.refresh_seconds),
-	PREF_STR("remote_controls.webserver", "template_name", EC_TAG_WEBSERVER_TEMPLATE, PrefAccess::ReadWrite, remote_controls.webserver.template_name),
-	PREF_BOOL("remote_controls.webserver", "gzip_enabled", EC_TAG_WEBSERVER_USEGZIP, PrefEnc::Presence, false, PrefAccess::ReadWrite, remote_controls.webserver.gzip_enabled),
-	PREF_PASSWD_HASHED("remote_controls.webserver", "password", EC_TAG_PASSWD_HASH),
+	// The core no longer has a web server. The rows stay because /api/v1/ is frozen; remove them
+	// in /api/v2/.
+	PREF_RETIRED("remote_controls.webserver", "enabled", PrefType::Bool, bool, remote_controls.webserver.enabled),
+	PREF_RETIRED("remote_controls.webserver", "guest_enabled", PrefType::Bool, bool, remote_controls.webserver.guest_enabled),
+	PREF_RETIRED("remote_controls.webserver", "port", PrefType::Uint32, std::uint32_t, remote_controls.webserver.port),
+	PREF_RETIRED("remote_controls.webserver", "refresh_seconds", PrefType::Uint32, std::uint32_t, remote_controls.webserver.refresh_seconds),
+	PREF_RETIRED("remote_controls.webserver", "template_name", PrefType::String, std::string, remote_controls.webserver.template_name),
+	PREF_RETIRED("remote_controls.webserver", "gzip_enabled", PrefType::Bool, bool, remote_controls.webserver.gzip_enabled),
+	PREF_RETIRED_WRITEONLY("remote_controls.webserver", "password"),
+	PREF_RETIRED_WRITEONLY("remote_controls.webserver", "guest_password"),
 
 	// [remote_controls.amuleapi]
 	PREF_STR("remote_controls.amuleapi", "bind_address", EC_TAG_AMULEAPI_BIND, PrefAccess::ReadWrite, remote_controls.amuleapi.bind_address),

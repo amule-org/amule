@@ -30,7 +30,7 @@
 
 #include "OtherFunctions.h" // CompareLatestReleaseVersion
 #include "Logger.h"         // AddDebugLogLineN / logGeneral
-#include "HTTPDownload.h"   // CreateAmuleWebRequest (shared curl session + interface bind)
+#include "HTTPDownload.h"   // CreateSharedWebRequest (shared curl session + interface bind)
 
 wxDEFINE_EVENT(wxEVT_VERSION_CHECK_DONE, wxCommandEvent);
 
@@ -64,7 +64,7 @@ void CVersionCheck::Start(wxEvtHandler *notify, int notifyId)
 
 	// Shared aMule HTTP path: curl-backed session, proxy, and egress bound to the configured
 	// network interface when one is set, so the check does not leak past a bound interface.
-	m_request = CreateAmuleWebRequest(this, VERSION_CHECK_URL);
+	m_request = CreateSharedWebRequest(this, VERSION_CHECK_URL);
 	if (!m_request.IsOk()) {
 		Finish(Failed);
 		return;

@@ -285,15 +285,14 @@ bool IsSymlink(const wxString &path)
 }
 #endif
 
-// The names AppRun's argv[0]-dispatch case knows about. Any name AppRun does not recognize falls
-// back to `amule`, so a stale symlink to a since-removed binary still launches the monolithic GUI.
-// Order matches the AppRun case statement.
+// The names AppRun's argv[0]-dispatch case knows about. Any other name falls back to `amule`, so a
+// stale symlink still launches the monolithic GUI; AppRun refuses only `amuleweb`, which an older
+// AppImage linked. Order matches the AppRun case statement.
 const wxString kAppRunNames[] = {
 	wxT("amule"),
 	wxT("amuled"),
 	wxT("amulegui"),
 	wxT("amulecmd"),
-	wxT("amuleweb"),
 	wxT("amuleapi"),
 	wxT("ed2k"),
 	wxT("cas"),

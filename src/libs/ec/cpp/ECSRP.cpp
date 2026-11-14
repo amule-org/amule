@@ -111,7 +111,7 @@ Bytes Derive(const std::string &digest, const Bytes &salt)
 }
 Bytes Context(uint8_t credential, const Bytes &salt, const Bytes &transcript, const Bytes &A, const Bytes &B)
 {
-	if (credential > WebToken || salt.size() != 16 || transcript.empty()) {
+	if (credential > ApiToken || salt.size() != 16 || transcript.empty()) {
 		throw std::invalid_argument("Invalid SRP context");
 	}
 	// Fixed v1 profile; transcript length is uint32, network byte order.

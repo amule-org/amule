@@ -15,7 +15,6 @@ amuled \- the all\-platform eMule p2p client \- daemonized version
 .RB_untranslated [ \-\-configure\-autostart " " \fI<on|off> ]
 .RB_untranslated [ \-\-configure\-protocols " " \fI<value> ]
 .RB_untranslated [ \-\-configure\-file\-assoc " " \fI<on|off> ]
-.RB [ \-w " " \fI<path> ]
 .RB_untranslated [ \-d ]
 .RB_untranslated [ \-i ]
 .RB [ \-t " " \fI<num> ]
@@ -70,9 +69,6 @@ The OS\-specific store is selected automatically: Windows registry, macOS Launch
 Enable or disable aMule as the current user's handler for \fI.emulecollection\fR files, then exit.
 The OS\-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG \fImimeapps.list\fR.
 .TP
-\fB[ \-w\fR \fI<path>\fR, \fB\-\-use\-amuleweb\fR=\fI<path>\fR \fB]\fR
-Specify location of amuleweb binary to \fI<path>\fR.
-.TP
 .B_untranslated [ \-d\fR, \fB\-\-disable\-fatal ]\fR
 Don't catch fatal exceptions and don't block exit on assertions.
 Useful for headless / supervised setups (systemd, watchdog scripts)
@@ -122,6 +118,6 @@ Please do not report bugs in e-mail, neither to our mailing list nor directly to
 .SH COPYRIGHT
 aMule and all of its related utilities are distributed under the GNU General Public License.
 .SH SEE ALSO
-.B_untranslated alcc\fR(1), \fBamule\fR(1), \fBamuleapi\fR(1), \fBamulecmd\fR(1), \fBamulegui\fR(1), \fBamuleweb\fR(1), \fBcas\fR(1), \fBed2k\fR(1)
+.B_untranslated alcc\fR(1), \fBamule\fR(1), \fBamuleapi\fR(1), \fBamulecmd\fR(1), \fBamulegui\fR(1), \fBcas\fR(1), \fBed2k\fR(1)
 .SH AUTHOR
 This manpage was written by Vollstrecker <amule@vollstreckernet.de>

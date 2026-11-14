@@ -1085,7 +1085,7 @@ void CSearchList::ProcessSharedFileList(const uint8_t *in_packet,
 	// results.
 	//
 	// A local browse used to key its results on the client pointer, which no remote client can
-	// address, so the browse was invisible to amulegui, amuleweb and amuleapi while an
+	// address, so the browse was invisible to amulegui and amuleapi while an
 	// EC-initiated one showed up everywhere. A pointer is also reused once the client is freed,
 	// so two browses of different peers could collide on one key.
 	//

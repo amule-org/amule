@@ -1,6 +1,6 @@
 # amuleapi — REST API + SSE daemon. Standalone executable that
 # connects to amuled via the existing EC protocol (same wire as
-# amulecmd / amuleweb) and serves /api/v1/* over HTTP via Boost.Beast.
+# amulecmd) and serves /api/v1/* over HTTP via Boost.Beast.
 
 add_executable (amuleapi
 	${CMAKE_SOURCE_DIR}/src/ExternalConnector.cpp
@@ -101,7 +101,7 @@ if (LIBATOMIC)
 	target_link_libraries (amuleapi PRIVATE ${LIBATOMIC})
 endif()
 
-# Same gettext shim as amuleweb — _() in the CLI text needs libintl on
+# _() in the CLI text needs libintl on
 # macOS / MinGW. Glibc bakes the symbols into libc, so the guard is a
 # noop there.
 if (ENABLE_NLS AND Intl_FOUND)
@@ -132,7 +132,7 @@ if (APPLE)
 		PRIVATE ${SRC_DIR}/MacBackgroundOnly_mac.mm
 	)
 
-	# CoreServices / ApplicationServices — same set amuleweb links, used
+	# CoreServices / ApplicationServices, used
 	# by wxStandardPaths::GetUserDataDir() on a .app bundle to look up
 	# Application Support/ correctly.
 	target_link_libraries (amuleapi

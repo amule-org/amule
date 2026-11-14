@@ -2,7 +2,7 @@
 # Custom AppRun for the aMule AppImage.
 #
 # Dispatches to one of the bundled binaries (amule / amuled / amulegui /
-# amulecmd / amuleweb / amuleapi / ed2k) based on the name the AppImage was invoked
+# amulecmd / amuleapi / ed2k) based on the name the AppImage was invoked
 # as. The AppImage runtime sets $ARGV0 to the path used to launch the
 # image; basename of that gives us the symlink name. Standard idiom —
 # same pattern Krita and GIMP use to ship multiple tools in one bundle.
@@ -88,8 +88,13 @@ case "${NAME}" in
     amule-media-probe)
         BIN="${HERE}/usr/libexec/amule/${NAME}"
         ;;
-    amuled|amulegui|amulecmd|amuleweb|amuleapi|ed2k|cas|wxcas|alc|alcc)
+    amuled|amulegui|amulecmd|amuleapi|ed2k|cas|wxcas|alc|alcc)
         BIN="${HERE}/usr/bin/${NAME}"
+        ;;
+    amuleweb)
+        # An older AppImage made this symlink. Falling back to the GUI would surprise a service.
+        echo "amuleweb was removed in aMule 3.3.0. Use amuleapi." >&2
+        exit 127
         ;;
     *)
         BIN="${HERE}/usr/bin/amule"

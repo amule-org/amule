@@ -370,8 +370,7 @@ void CRemoteConnect::OnConnect()
 	m_lastReplyAt = std::chrono::steady_clock::now();
 	// Apply the EC-tuned socket options now that the asio socket is fully connected.
 	// Sync clients got them in CECMuleSocket::InternalConnect; this is the amulegui /
-	// amuleweb / amuleapi side, where InternalConnect returns before the connect
-	// completes.
+	// amuleapi side, where InternalConnect returns before the connect completes.
 	ApplyEcSocketOptions();
 
 	if (m_notifier) {
@@ -430,9 +429,8 @@ void CRemoteConnect::OnLost()
 	if (m_closeExpected) {
 		return;
 	}
-	// Headless EC clients (amulecmd, amuleweb) pass a NULL m_notifier. Continuing
-	// would mean amuleweb serving an empty shell with no error, or amulecmd at a
-	// prompt with a dead socket. Failing fast is right; the supervisor recovers.
+	// Headless EC clients (amulecmd) pass a NULL m_notifier. Continuing would leave
+	// amulecmd at a prompt with a dead socket. Failing fast is right; the supervisor recovers.
 	fprintf(stderr, "%s\n", (const char *)unicode2char(_("External Connection lost - exiting.")));
 	fflush(stderr);
 	if (s_connectionLostHandler) {

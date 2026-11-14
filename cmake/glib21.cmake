@@ -19,11 +19,11 @@ if (BUILD_DAEMON)
 	check_include_file (unistd.h HAVE_UNISTD_H)
 endif()
 
-if (BUILD_DAEMON OR BUILD_WEBSERVER)
+if (BUILD_DAEMON)
 	check_include_file (sys/types.h HAVE_SYS_TYPES_H)
 endif()
 
-if (BUILD_DAEMON OR BUILD_WEBSERVER OR NEED_LIB_MULECOMMON)
+if (BUILD_DAEMON OR NEED_LIB_MULECOMMON)
 	include (CheckTypeSize) #Sets also HAVE_SYS_TYPES_H, HAVE_STDINT_H, and HAVE_STDDEF_H
 	check_type_size (int INTSIZE)
 endif()

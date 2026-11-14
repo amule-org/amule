@@ -58,7 +58,6 @@ generally adopted into aMule shortly after.
 * `amuled` — headless daemon, no GUI.
 * `amulegui` — remote GUI; connects to a local or remote `amuled` over the
   EC (External Connection) protocol.
-* `amuleweb` — HTTP interface to a running `amuled`.
 * `amulecmd` — interactive CLI for a running `amuled`.
 * `amuleapi` — REST API for a running `amuled`.
 

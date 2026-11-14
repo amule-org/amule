@@ -1268,12 +1268,13 @@ struct PreferencesSnapshot
 	// single EC_TAG_PREFS_REMOTECTRL group on the write path.
 	struct RemoteControlsPrefs
 	{
+		// Retired: kept for /api/v1/ only, always these values (the old defaults).
 		struct WebserverPrefs
 		{
 			bool enabled = false;
-			std::uint32_t port = 0;
-			bool gzip_enabled = false;
-			std::uint32_t refresh_seconds = 0;
+			std::uint32_t port = 4711;
+			bool gzip_enabled = true;
+			std::uint32_t refresh_seconds = 120;
 			// `template_name`, not `template`: the JSON key matches the member,
 			// which could never be `template` (C++ keyword).
 			std::string template_name;

@@ -300,7 +300,7 @@ class DaemonConfigUnitTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             DaemonConfig.write_amule_conf(root, 4712, Port=4662, ConnectToKad=1,
-                                          sections={'WebServer': {'Enabled': 0}})
+                                          sections={'AmuleApi': {'Enabled': 0}})
             config = configparser.ConfigParser(interpolation=None)
             config.optionxform = str
             config.read(root / 'amule.conf', encoding='utf-8')
@@ -317,7 +317,7 @@ class DaemonConfigUnitTest(unittest.TestCase):
         self.assertEqual(config['ExternalConnect']['ECPort'], '4712')
         self.assertEqual(config['ExternalConnect']['ECPassword'],
                          hashlib.md5(DaemonConfig.EC_PASSWORD.encode()).hexdigest())
-        self.assertEqual(config['WebServer']['Enabled'], '0')
+        self.assertEqual(config['AmuleApi']['Enabled'], '0')
 
     def test_daemon_env_isolates_home_and_drops_preload(self):
         with patch.dict(DaemonConfig.os.environ, {'LD_PRELOAD': 'x.so', 'DISPLAY': ':0'}):

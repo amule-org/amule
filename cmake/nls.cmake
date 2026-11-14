@@ -51,11 +51,11 @@ if (NOT YYENABLE_NLS)
 	endif()
 
 	message (STATUS "Everything is fine. aMule can be localized")
-	set (YYENABLE_NLS TRUE CACHE INTERNAL "For parser, php-parser and to not recheck for nls-support" FORCE)
+	set (YYENABLE_NLS TRUE CACHE INTERNAL "For the parser and to not recheck for nls-support" FORCE)
 endif()
 
-# Parser.cpp and the webserver call dgettext directly, so libintl needs
-# to be on the link line.  On glibc systems Intl_LIBRARIES is empty
+# Parser.cpp calls dgettext directly, so libintl needs to be on the
+# link line.  On glibc systems Intl_LIBRARIES is empty
 # (gettext lives inside libc); on macOS, MinGW/MSYS2 and *BSD it points
 # at the separate libintl.  Without this, ENABLE_NLS=ON used to link
 # fine on Linux and fail with `_libintl_dgettext` undefined elsewhere.

@@ -128,7 +128,7 @@ std::string JsonDoubleToString(double v)
 	char buf[64];
 	std::snprintf(buf, sizeof(buf), "%.17g", v);
 	// JSON numbers are always C-locale, with a '.' decimal point, but snprintf honours
-	// LC_NUMERIC, which amuleapi/amuleweb inherit from --locale. %g never emits digit grouping,
+	// LC_NUMERIC, which amuleapi inherits from --locale. %g never emits digit grouping,
 	// so the only possible locale artifact is the decimal separator; normalise it to '.' so the
 	// output is valid JSON whatever the process locale.
 	const char decimal_point = *std::localeconv()->decimal_point;

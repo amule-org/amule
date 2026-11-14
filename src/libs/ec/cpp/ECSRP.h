@@ -40,8 +40,8 @@ inline const Bytes PROFILE_BYTES{ 1, 15, 8, 1 };
 enum Credential : uint8_t
 {
 	Password = 0,
-	ApiToken = 1,
-	WebToken = 2
+	ApiToken = 1
+	// 2 was the amuleweb child token. Reserved: never reuse it.
 };
 // v1 deliberately supports one bounded profile. Never allocate using peer costs.
 const char *Profile();

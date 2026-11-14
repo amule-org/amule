@@ -41,7 +41,7 @@ class wxWebRequestEvent;
 // platforms), the current proxy pref applied, and egress bound to the configured network interface
 // when one is set. Used by every HTTP channel (this downloader and the version check) so they
 // behave consistently and honour bind-to-interface (amule-org/amule#173).
-wxWebRequest CreateAmuleWebRequest(wxEvtHandler *handler, const wxString &url);
+wxWebRequest CreateSharedWebRequest(wxEvtHandler *handler, const wxString &url);
 
 // Whether HTTP requests follow the bind-to-interface choice: only where libcurl serves them, which
 // excludes Windows (WinHTTP), and macOS or a build without libcurl headers when curl is missing.

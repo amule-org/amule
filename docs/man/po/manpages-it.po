@@ -8,7 +8,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
-"POT-Creation-Date: 2026-11-10 06:20+0000\n"
+"POT-Creation-Date: 2026-11-14 11:48+0100\n"
 "PO-Revision-Date: 2026-11-14 10:37+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/application-man-pages/it/>\n"
@@ -27,7 +27,7 @@ msgid "AMULE"
 msgstr "AMULE"
 
 #. type: TH
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -51,7 +51,7 @@ msgstr "aMule"
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -67,7 +67,7 @@ msgstr "amule - il client p2p multipiattaforma basato su eMule"
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -83,19 +83,13 @@ msgstr "[B<-c> I<E<lt>percorsoE<gt>>] [B<-geometry> I<E<lt>geometriaE<gt>>]"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amuled.1.in
-msgid "[B<-w> I<E<lt>pathE<gt>>]"
-msgstr "[B<-w> I<E<lt>percorsoE<gt>>]"
-
-# type: Plain text
-#. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "[B<-t> I<E<lt>numE<gt>>] [I<eD2k-link>|I<collection-file>]"
 msgstr "[B<-t> I<E<lt>numeroE<gt>>] [I<collegamento-eD2k>|I<file-collezione>]"
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -170,19 +164,6 @@ msgstr "Abilita o disabilita aMule come gestore predefinito dell'utente corrente
 msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
 msgstr "Abilita o disabilita aMule come gestore dei file I<.emulecollection> dell'utente corrente, poi esce.  L'archivio specifico del sistema operativo viene selezionato automaticamente: registro di Windows, LaunchServices su macOS, I<mimeapps.list> XDG su Linux."
 
-# type: TP
-#. type: TP
-#: amule.1.in amuled.1.in
-#, no-wrap
-msgid "B<[ -w> I<E<lt>pathE<gt>>, B<--use-amuleweb>=I<E<lt>pathE<gt>> B<]>"
-msgstr "B<[ -w> I<E<lt>percorsoE<gt>>, B<--use-amuleweb>=I<E<lt>percorsoE<gt>> B<]>"
-
-# type: Plain text
-#. type: Plain text
-#: amule.1.in amuled.1.in
-msgid "Specify location of amuleweb binary to I<E<lt>pathE<gt>>."
-msgstr "Specifica la posizione dell'eseguibile di amuleweb in I<E<lt>percorsoE<gt>>."
-
 # AI-GENERATED — please review.
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
@@ -210,13 +191,13 @@ msgstr "Imposta la categoria per i collegamenti eD2k ricevuti a I<E<lt>numeroE<g
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "Displays the current version number."
 msgstr "Visualizza il numero di versione corrente."
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "Prints a short usage description."
@@ -272,27 +253,27 @@ msgstr "In alternativa l'argomento può essere il percorso di un file .emulecoll
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amulegui.1.in amuleweb.1.in
+#: amule.1.in amulecmd.1.in amulegui.1.in
 #, no-wrap
 msgid "NOTES"
 msgstr "NOTE"
 
 # type: SS
 #. type: SS
-#: amule.1.in amulecmd.1.in amulegui.1.in amuleweb.1.in
+#: amule.1.in amulecmd.1.in amulegui.1.in
 #, no-wrap
 msgid "Paths"
 msgstr "Percorsi"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amulegui.1.in amuleweb.1.in
+#: amule.1.in amulecmd.1.in amulegui.1.in
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
 msgstr "Per tutte le opzioni che accettano un I<E<lt>percorsoE<gt>>, se il I<percorso> non contiene una directory (ossia è solo un nome di file), allora si assume che esso sia presente nella directory di configurazione di aMule, I<~/.aMule>."
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/cas/docs/cas.1.in
 #, no-wrap
 msgid "FILES"
@@ -306,7 +287,7 @@ msgstr "~/.aMule/*"
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -316,7 +297,7 @@ msgstr "SEGNALARE I BUG"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -325,7 +306,7 @@ msgstr "Per favore segnalare i bug nel nostro forum (I<https://github.com/amule-
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -335,7 +316,7 @@ msgstr "COPYRIGHT"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -344,7 +325,7 @@ msgstr "aMule e tutti i programmi di utilità correlati sono distribuiti in acco
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -354,7 +335,7 @@ msgstr "VEDI ANCHE"
 
 # type: SH
 #. type: SH
-#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -364,7 +345,7 @@ msgstr "AUTORE"
 
 # type: Plain text
 #. type: Plain text
-#: amule.1.in amulecmd.1.in amuled.1.in amuleweb.1.in ed2k.1.in
+#: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
@@ -387,8 +368,7 @@ msgstr "aMuleCmd v@PACKAGE_VERSION@"
 
 # type: TH
 #. type: TH
-#: amulecmd.1.in amuleweb.1.in ed2k.1.in
-#: ../../src/utils/aLinkCreator/docs/alc.1.in
+#: amulecmd.1.in ed2k.1.in ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 #, no-wrap
@@ -403,7 +383,7 @@ msgstr "amulecmd - programma in console per controllare aMule"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>] [B<-P> I<E<lt>passwordE<gt>>] [B<-f> I<E<lt>pathE<gt>>]"
 msgstr "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portaE<gt>>] [B<-P> I<E<lt>passwordE<gt>>] [B<-f> I<E<lt>percorsoE<gt>>]"
 
@@ -415,7 +395,7 @@ msgstr "[B<-l> I<E<lt>linguaggioE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> I<E<lt>coman
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "[B<--create-config-from>=I<E<lt>pathE<gt>>]"
 msgstr "[B<--create-config-from>=I<E<lt>percorsoE<gt>>]"
 
@@ -427,84 +407,84 @@ msgstr "B<amulecmd> è un client in console per controllare aMule."
 
 # type: TP
 #. type: TP
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -h> I<E<lt>hostE<gt>>, B<--host>=I<E<lt>hostE<gt>> B<]>"
 msgstr "B<[ -h> I<E<lt>hostE<gt>>, B<--host>=I<E<lt>hostE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "Host where aMule is running (default: I<127.0.0.1>).  I<E<lt>hostE<gt>> might be an IP address or a DNS name"
 msgstr "Computer dove è in esecuzione aMule (default: I<127.0.0.1>). I<E<lt>hostE<gt>> può essere un indirizzo IP o un nome DNS"
 
 # type: TP
 #. type: TP
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -p> I<E<lt>portE<gt>>, B<--port>=I<E<lt>portE<gt>> B<]>"
 msgstr "B<[ -p> I<E<lt>portaE<gt>>, B<--port>=I<E<lt>portaE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "aMule's port for External Connections, as set in Preferences-E<gt>Remote Controls (default: I<4712>)"
 msgstr "porta di aMule per le connessioni esterne, come impostata nelle preferenze-E<gt>controllo remoto (default: I<4712>)"
 
 # type: TP
 #. type: TP
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -P> I<E<lt>passwordE<gt>>, B<--password>=I<E<lt>passwordE<gt>> B<]>"
 msgstr "B<[ -P> I<E<lt>passwordE<gt>>, B<--password>=I<E<lt>passwordE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "External Connections password."
 msgstr "Password delle connessioni esterne."
 
 # type: TP
 #. type: TP
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -f> I<E<lt>pathE<gt>>, B<--config-file>=I<E<lt>pathE<gt>> B<]>"
 msgstr "B<[ -f> I<E<lt>percorsoE<gt>>, B<--config-file>=I<E<lt>percorsoE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "Use the given configuration file.  Default configuration file is I<~/.aMule/remote.conf>"
 msgstr "Usa il file di configurazione fornito. Il file di configurazione di default è I<~/.aMule/remote.conf>"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "Do not print any output to stdout."
 msgstr "Non scrivere nulla nello stdout."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "Be verbose - show also debug messages."
 msgstr "Mostra anche i messaggi di debug."
 
 # type: TP
 #. type: TP
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -l> I<E<lt>langE<gt>>, B<--locale>=I<E<lt>langE<gt>> B<]>"
 msgstr "B<[ -l> I<E<lt>linguaggioE<gt>>, B<--locale>=I<E<lt>linguaggioE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "Sets program locale (language).  See the B<NOTES> section for the description of the I<E<lt>langE<gt>> parameter."
 msgstr "Imposta il linguaggio del programma. Vedi anche la sezione delle B<NOTE> per la descrizione del parametro I<E<lt>linguaggioE<gt>> ."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "Write command line options to config file and exit"
 msgstr "Scrive le opzioni della riga di comando nel file di configurazione ed esce"
 
@@ -523,19 +503,19 @@ msgstr "Esegue il I<E<lt>comandoE<gt>> come se fosse stato immesso nel prompt di
 
 # type: TP
 #. type: TP
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 #, no-wrap
 msgid "B<[ --create-config-from>=I<E<lt>pathE<gt>> B<]>"
 msgstr "B<[ --create-config-from>=I<E<lt>percorsoE<gt>> B<]>"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "Create config file based upon I<E<lt>pathE<gt>>, which must point to a valid aMule config file, and then exit."
 msgstr "Crea un file di configurazione basandosi sul I<E<lt>percorsoE<gt>>, che deve puntare ad un file di configurazione di aMule valido, e quindi esce."
 
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "Force ZLIB compression on the External Connection link regardless of the dialed-IP locality.  Useful when the server side is reachable over a VPN tunnel that resolves to a LAN IP and the heuristic would otherwise skip compression."
 msgstr "Forza la compressione ZLIB sulla connessione esterna indipendentemente dalla località dell'IP contattato.  Utile quando il server è raggiungibile attraverso un tunnel VPN che risolve a un IP di LAN e l'euristica salterebbe altrimenti la compressione."
 
@@ -968,50 +948,50 @@ msgstr "Mostra lo stato della connessione, le velocità correnti di up/download,
 
 # type: SS
 #. type: SS
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 #, no-wrap
 msgid "Languages"
 msgstr "Linguaggi"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "The I<E<lt>langE<gt>> parameter for the B<-l> option has the following form: I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] where I<lang> is the primary language, I<LANG> is a sublanguage/territory, I<encoding> is the character set to use and I<modifier> allows the user to select a specific instance of localization data within a single category."
 msgstr "Il parametro I<E<lt>linguaggioE<gt>> per l'opzione B<-l> ha la forma seguente: I<linguaggio>[B<_>I<LINGUAGGIO>][B<.>I<codifica>][B<@>I<modificatore>] dove I<linguaggio> è il linguaggio primario, I<LINGUAGGIO> è il sottotipo/territorio, I<codifica> è l'insieme di caratteri usato e I<modificatore> consente all'utente di selezionare una specifica istanza dei dati di localizzazione all'interno di una singola categoria."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "For example, the following strings are valid:"
 msgstr "Per esempio, le stringhe seguenti sono valide:"
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "Though all the above strings are accepted as valid language definitions, I<encoding> and I<modifier> are yet unused."
 msgstr "Sebbene tutte le stringhe sopra elencate sono accettate come definizioni di linguaggio valide, I<codifica> e I<modificatore> sono ancora inutilizzati."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "In addition to the format above, you can also specify full language names in English - so B<-l german> is also valid and is equal to B<-l de_DE>."
 msgstr "In aggiunta al formato di cui sopra, si può anche specificare il nome completo del linguaggio in inglese, e quindi B<-l german> è valido ed equivalente a B<-l de_DE>."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "When no locale is defined, either on command-line or in config file, system default language will be used."
 msgstr "Quando nessun linguaggio è definito in riga di comando o nel file di configurazione, verrà usato il linguaggio di default del sistema."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "~/.aMule/remote.conf"
 msgstr "~/.aMule/remote.conf"
 
 # type: SH
 #. type: SH
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 #, no-wrap
 msgid "EXAMPLE"
 msgstr "ESEMPIO"
@@ -1030,7 +1010,7 @@ msgstr "B<amulecmd> B<-h> I<nomehost> B<-p> I<portaEC> B<-P> I<passwordEC> B<-w>
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "or"
 msgstr "o"
 
@@ -1041,13 +1021,13 @@ msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 msgstr "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "After daemon credential migration, supply the client password with B<-P> or enter it at the password prompt; the daemon verifier cannot supply it."
 msgstr "Dopo la migrazione delle credenziali del demone, fornisci la password del client con B<-P> oppure inseriscila alla richiesta della password; il verificatore del demone non può fornirla."
 
 # type: Plain text
 #. type: Plain text
-#: amulecmd.1.in amuleweb.1.in
+#: amulecmd.1.in
 msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgstr "In questo modo la configurazione verrà salvata in I<$HOME/.aMule/remote.conf>, e le volte successive si dovrà solo digitare:"
 
@@ -1259,248 +1239,6 @@ msgstr "Questa pagina di manuale è stata scritta da Julien Delange per Debian E
 #: amulegui.1.in
 msgid "This manpage was rewritten by Vollstrecker E<lt>amule@vollstreckernet.deE<gt>"
 msgstr "Questa pagina di manuale è stata riscritta da Vollstrecker E<lt>amule@vollstreckernet.deE<gt>"
-
-# type: TH
-#. type: TH
-#: amuleweb.1.in
-#, no-wrap
-msgid "AMULEWEB"
-msgstr "AMULEWEB"
-
-# type: TH
-#. type: TH
-#: amuleweb.1.in
-#, no-wrap
-msgid "aMule webserver v@PACKAGE_VERSION@"
-msgstr "aMule webserver v@PACKAGE_VERSION@"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "amuleweb - aMule web server"
-msgstr "amuleweb - aMule web server"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "[B<-l> I<E<lt>langE<gt>>]"
-msgstr "[B<-l> I<E<lt>linguaggioE<gt>>]"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
-msgstr "B<-t> I<E<lt>nomeE<gt>>] [B<-s> I<E<lt>portaE<gt>>]"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "[B<-U> I<E<lt>portE<gt>>]"
-msgstr "[B<-U> I<E<lt>portaE<gt>>]"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "[B<-A> I<E<lt>passwordE<gt>>] [B<-G> I<E<lt>passwordE<gt>>]"
-msgstr "[B<-A> I<E<lt>passwordE<gt>>] [B<-G> I<E<lt>passwordE<gt>>]"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "[B<--amule-config-file>=I<E<lt>pathE<gt>>]"
-msgstr "[B<--amule-config-file>=I<E<lt>percorsoE<gt>>]"
-
-#. type: Plain text
-#: amuleweb.1.in
-msgid "B<DEPRECATED:> amuleweb is deprecated and may be removed in aMule 3.2 or later.  It is not being removed yet; consider migrating to amuleapi, the REST/SSE API."
-msgstr "B<DEPRECATED:> amuleweb è deprecato e potrebbe essere rimosso in aMule 3.2 o versioni successive.  Per ora non viene rimosso; valuta la migrazione ad amuleapi, l'API REST/SSE."
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "B<amuleweb> manages your access to amule through a web browser.  You can start amuleweb together with B<amule>(1), or separately, any time later.  Options can be specified via command-line or via config-file.  Command-line options take precedence over config-file options."
-msgstr "B<amuleweb> gestisce l'accesso ad amule attraverso un browser web.  Si può eseguire amuleweb insieme ad B<amule>(1), o separatamente in qualunque momento successivo. Le opzioni possono essere specificate in riga di comando o nel file di configurazione. Le opzioni in riga di comando hanno la precedenza su quelle nel file di configurazione."
-
-# type: TP
-#. type: TP
-#: amuleweb.1.in
-#, no-wrap
-msgid "B<[ -t> I<E<lt>nameE<gt>>, B<--template>=I<E<lt>nameE<gt>> B<]>"
-msgstr "B<[ -t> I<E<lt>nomeE<gt>>, B<--template>=I<E<lt>nomeE<gt>> B<]>"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Loads the template named I<E<lt>nameE<gt>>. See the B<SKIN SUPPORT> section for details."
-msgstr "Carica il modello chiamato I<E<lt>nomeE<gt>>. Vedi la sezione B<SUPPORTO AGLI SKIN> per i dettagli."
-
-# type: TP
-#. type: TP
-#: amuleweb.1.in
-#, no-wrap
-msgid "B<[ -s> I<E<lt>portE<gt>>, B<--server-port>=I<E<lt>portE<gt>> B<]>"
-msgstr "B<[ -s> I<E<lt>portaE<gt>>, B<--server-port>=I<E<lt>portaE<gt>> B<]>"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Webserver's HTTP port. This is the port you must point your browser to (default: I<4711>)."
-msgstr "Porta HTTP del server web. Questa è la porta da indicare nel browser (default: I<4711>)."
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Enable UPnP."
-msgstr "Abilita il supporto UPnP."
-
-# type: TP
-#. type: TP
-#: amuleweb.1.in
-#, no-wrap
-msgid "B<[ -U> I<E<lt>portE<gt>>, B<--upnp-port>=I<E<lt>portE<gt>> B<]>"
-msgstr "B<[ -U> I<E<lt>portaE<gt>>, B<--upnp-port>=I<E<lt>portaE<gt>> B<]>"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "UPnP port."
-msgstr "Porta per l'UPnP."
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Enables using gzip compression in HTTP traffic to save bandwidth."
-msgstr "Abilita la compressione gzip nel traffico HTTP per risparmiare banda."
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Disables using gzip compression (this is the default)."
-msgstr "Disabilita la compressione gzip (questo è il default)."
-
-# type: TP
-#. type: TP
-#: amuleweb.1.in
-#, no-wrap
-msgid "B<[ -A> I<E<lt>passwdE<gt>>, B<--admin-pass>=I<E<lt>passwdE<gt>> B<]>"
-msgstr "B<[ -A> I<E<lt>passwordE<gt>>, B<--admin-pass>=I<E<lt>passwordE<gt>> B<]>"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Full access password for webserver."
-msgstr "Password per l'accesso completo al web server."
-
-# type: TP
-#. type: TP
-#: amuleweb.1.in
-#, no-wrap
-msgid "B<[ -G> I<E<lt>passwdE<gt>>, B<--guest-pass>=I<E<lt>passwdE<gt>> B<]>"
-msgstr "B<[ -G> I<E<lt>passwordE<gt>>, B<--guest-pass>=I<E<lt>passwordE<gt>> B<]>"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Guest password for webserver."
-msgstr "Password for l'accesso ospite al web server."
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Allows guest access."
-msgstr "Permette l'accesso ospite."
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Denies guest access (default)."
-msgstr "Nega l'accesso ospite (default)."
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Load/save webserver settings from/to remote aMule.  This causes amuleweb to ignore command-line and config-file settings, and load them from aMule.  When saving preferences none will be written to the config file, but to aMule.  (Of course, this works only for those settings that can be set in aMule's Preferences-E<gt>Remote Controls.)"
-msgstr "Carica/salva le configurazioni del webserver da/verso aMule remoto. amuleweb ignorerà le opzioni in linea di comando e nel file di configurazione, e le caricherà invece da aMule. Quando si salveranno le preferenze, niente verrà scritto nel file di configurazione, ma in aMule. (Ovviamente, questo funzionerà solo per quelle impostazioni che possono essere scritte nelle preferenze di aMule-E<gt>controllo remoto.)"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Disable PHP interpreter (deprecated)"
-msgstr "Disabilita l'interprete PHP (deprecato)"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Recompiles PHP pages on each request."
-msgstr "Ricompila le pagine PHP ad ogni richiesta."
-
-# type: TP
-#. type: TP
-#: amuleweb.1.in
-#, no-wrap
-msgid "B<[ --amule-config-file>=I<E<lt>pathE<gt>> B<]>"
-msgstr "B<[ --amule-config-file>=I<E<lt>percorsoE<gt>> B<]>"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "aMule config file path.  B<DO NOT USE DIRECTLY!> aMule uses this option when starting amuleweb at aMule startup.  This option causes all other command-line and config-file settings to be ignored, preferences to be read from the given config file, and also implies the B<-q -L> options."
-msgstr "percorso del file di configurazione di aMule. B<NON USARE DIRETTAMENTE!> aMule usa questa opzione quando lancia amuleweb all'avvio di aMule. Questa opzione fa sì che tutte le altre impostazioni in riga di comando e nel file di configurazione vengano ignorate, le preferenze vengano lette dal file di configurazione dato, e anche implica le opzioni B<-q -L> ."
-
-# type: SH
-#. type: SH
-#: amuleweb.1.in
-#, no-wrap
-msgid "SKIN SUPPORT"
-msgstr "SUPPORTO AGLI SKIN"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "B<amuleweb> is capable of displaying information in different skins.  These skins are called templates, and you can make amuleweb load a specific template via the B<-t> command line option.  Templates are searched in two places: first in I<~/.aMule/webserver/> and then in I</usr/share/amule/webserver/> if you installed with --prefix=/usr."
-msgstr "B<amuleweb> può visualizzare l'informazione utilizzando diversi 'skin'. Questi 'skin' sono contenuti in dei modelli, e si può far caricare da amuleweb un dato modello tramite l'opzione B<-t> in riga di comando. I modelli sono cercati in due posti: prima in I<~/.aMule/webserver/> e quindi in I</usr/share/amule/webserver/> se aMule è stato installato con --prefix=/usr."
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Each template must be in a subdirectory of the template name, and this directory must contain all files the template needs."
-msgstr "Ogni modello deve essere in una sottodirectory del nome di modello, e questa directory deve contenere tutti i file necessari al modello."
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "~/.aMule/webserver/"
-msgstr "~/.aMule/webserver/"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "I<$(pkgdatadir)>/webserver/"
-msgstr "I<$(pkgdatadir)>/webserver/"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Typically amuleweb will be first run as:"
-msgstr "Di norma amuleweb sarà inizialmente eseguito con:"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "B<amuleweb> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-s> I<HTTPport> B<-A> I<AdminPassword> B<-w>"
-msgstr "B<amuleweb> B<-h> I<nomehost> B<-p> I<ECporta> B<-P> I<passwordEC> B<-s> I<portaHTTP> B<-A> I<PasswordAmministrazione> B<-w>"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
-msgstr "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
-
-# type: Plain text
-#. type: Plain text
-#: amuleweb.1.in
-msgid "Of course, you may specify any more or less options on the first example line, and you may also totally omit it."
-msgstr "Ovviamente, si possono specificare più o meno opzioni della prima riga di esempio, e si possono anche omettere completamente."
 
 # type: TH
 #. type: TH
@@ -1773,6 +1511,183 @@ msgstr "B<wxcas> è un programma per visualizzare i contenuti del file di firma 
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Basato su B<cas>(1) di Pedro de Oliveira.  B<wxcas> è stato scritto da ThePolish E<lt>thepolish@vipmail.ruE<gt>"
+
+# type: Plain text
+#~ msgid "[B<-w> I<E<lt>pathE<gt>>]"
+#~ msgstr "[B<-w> I<E<lt>percorsoE<gt>>]"
+
+# type: TP
+#, no-wrap
+#~ msgid "B<[ -w> I<E<lt>pathE<gt>>, B<--use-amuleweb>=I<E<lt>pathE<gt>> B<]>"
+#~ msgstr "B<[ -w> I<E<lt>percorsoE<gt>>, B<--use-amuleweb>=I<E<lt>percorsoE<gt>> B<]>"
+
+# type: Plain text
+#~ msgid "Specify location of amuleweb binary to I<E<lt>pathE<gt>>."
+#~ msgstr "Specifica la posizione dell'eseguibile di amuleweb in I<E<lt>percorsoE<gt>>."
+
+# type: TH
+#, no-wrap
+#~ msgid "AMULEWEB"
+#~ msgstr "AMULEWEB"
+
+# type: TH
+#, no-wrap
+#~ msgid "aMule webserver v@PACKAGE_VERSION@"
+#~ msgstr "aMule webserver v@PACKAGE_VERSION@"
+
+# type: Plain text
+#~ msgid "amuleweb - aMule web server"
+#~ msgstr "amuleweb - aMule web server"
+
+# type: Plain text
+#~ msgid "[B<-l> I<E<lt>langE<gt>>]"
+#~ msgstr "[B<-l> I<E<lt>linguaggioE<gt>>]"
+
+# type: Plain text
+#~ msgid "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
+#~ msgstr "B<-t> I<E<lt>nomeE<gt>>] [B<-s> I<E<lt>portaE<gt>>]"
+
+# type: Plain text
+#~ msgid "[B<-U> I<E<lt>portE<gt>>]"
+#~ msgstr "[B<-U> I<E<lt>portaE<gt>>]"
+
+# type: Plain text
+#~ msgid "[B<-A> I<E<lt>passwordE<gt>>] [B<-G> I<E<lt>passwordE<gt>>]"
+#~ msgstr "[B<-A> I<E<lt>passwordE<gt>>] [B<-G> I<E<lt>passwordE<gt>>]"
+
+# type: Plain text
+#~ msgid "[B<--amule-config-file>=I<E<lt>pathE<gt>>]"
+#~ msgstr "[B<--amule-config-file>=I<E<lt>percorsoE<gt>>]"
+
+#~ msgid "B<DEPRECATED:> amuleweb is deprecated and may be removed in aMule 3.2 or later.  It is not being removed yet; consider migrating to amuleapi, the REST/SSE API."
+#~ msgstr "B<DEPRECATED:> amuleweb è deprecato e potrebbe essere rimosso in aMule 3.2 o versioni successive.  Per ora non viene rimosso; valuta la migrazione ad amuleapi, l'API REST/SSE."
+
+# type: Plain text
+#~ msgid "B<amuleweb> manages your access to amule through a web browser.  You can start amuleweb together with B<amule>(1), or separately, any time later.  Options can be specified via command-line or via config-file.  Command-line options take precedence over config-file options."
+#~ msgstr "B<amuleweb> gestisce l'accesso ad amule attraverso un browser web.  Si può eseguire amuleweb insieme ad B<amule>(1), o separatamente in qualunque momento successivo. Le opzioni possono essere specificate in riga di comando o nel file di configurazione. Le opzioni in riga di comando hanno la precedenza su quelle nel file di configurazione."
+
+# type: TP
+#, no-wrap
+#~ msgid "B<[ -t> I<E<lt>nameE<gt>>, B<--template>=I<E<lt>nameE<gt>> B<]>"
+#~ msgstr "B<[ -t> I<E<lt>nomeE<gt>>, B<--template>=I<E<lt>nomeE<gt>> B<]>"
+
+# type: Plain text
+#~ msgid "Loads the template named I<E<lt>nameE<gt>>. See the B<SKIN SUPPORT> section for details."
+#~ msgstr "Carica il modello chiamato I<E<lt>nomeE<gt>>. Vedi la sezione B<SUPPORTO AGLI SKIN> per i dettagli."
+
+# type: TP
+#, no-wrap
+#~ msgid "B<[ -s> I<E<lt>portE<gt>>, B<--server-port>=I<E<lt>portE<gt>> B<]>"
+#~ msgstr "B<[ -s> I<E<lt>portaE<gt>>, B<--server-port>=I<E<lt>portaE<gt>> B<]>"
+
+# type: Plain text
+#~ msgid "Webserver's HTTP port. This is the port you must point your browser to (default: I<4711>)."
+#~ msgstr "Porta HTTP del server web. Questa è la porta da indicare nel browser (default: I<4711>)."
+
+# type: Plain text
+#~ msgid "Enable UPnP."
+#~ msgstr "Abilita il supporto UPnP."
+
+# type: TP
+#, no-wrap
+#~ msgid "B<[ -U> I<E<lt>portE<gt>>, B<--upnp-port>=I<E<lt>portE<gt>> B<]>"
+#~ msgstr "B<[ -U> I<E<lt>portaE<gt>>, B<--upnp-port>=I<E<lt>portaE<gt>> B<]>"
+
+# type: Plain text
+#~ msgid "UPnP port."
+#~ msgstr "Porta per l'UPnP."
+
+# type: Plain text
+#~ msgid "Enables using gzip compression in HTTP traffic to save bandwidth."
+#~ msgstr "Abilita la compressione gzip nel traffico HTTP per risparmiare banda."
+
+# type: Plain text
+#~ msgid "Disables using gzip compression (this is the default)."
+#~ msgstr "Disabilita la compressione gzip (questo è il default)."
+
+# type: TP
+#, no-wrap
+#~ msgid "B<[ -A> I<E<lt>passwdE<gt>>, B<--admin-pass>=I<E<lt>passwdE<gt>> B<]>"
+#~ msgstr "B<[ -A> I<E<lt>passwordE<gt>>, B<--admin-pass>=I<E<lt>passwordE<gt>> B<]>"
+
+# type: Plain text
+#~ msgid "Full access password for webserver."
+#~ msgstr "Password per l'accesso completo al web server."
+
+# type: TP
+#, no-wrap
+#~ msgid "B<[ -G> I<E<lt>passwdE<gt>>, B<--guest-pass>=I<E<lt>passwdE<gt>> B<]>"
+#~ msgstr "B<[ -G> I<E<lt>passwordE<gt>>, B<--guest-pass>=I<E<lt>passwordE<gt>> B<]>"
+
+# type: Plain text
+#~ msgid "Guest password for webserver."
+#~ msgstr "Password for l'accesso ospite al web server."
+
+# type: Plain text
+#~ msgid "Allows guest access."
+#~ msgstr "Permette l'accesso ospite."
+
+# type: Plain text
+#~ msgid "Denies guest access (default)."
+#~ msgstr "Nega l'accesso ospite (default)."
+
+# type: Plain text
+#~ msgid "Load/save webserver settings from/to remote aMule.  This causes amuleweb to ignore command-line and config-file settings, and load them from aMule.  When saving preferences none will be written to the config file, but to aMule.  (Of course, this works only for those settings that can be set in aMule's Preferences-E<gt>Remote Controls.)"
+#~ msgstr "Carica/salva le configurazioni del webserver da/verso aMule remoto. amuleweb ignorerà le opzioni in linea di comando e nel file di configurazione, e le caricherà invece da aMule. Quando si salveranno le preferenze, niente verrà scritto nel file di configurazione, ma in aMule. (Ovviamente, questo funzionerà solo per quelle impostazioni che possono essere scritte nelle preferenze di aMule-E<gt>controllo remoto.)"
+
+# type: Plain text
+#~ msgid "Disable PHP interpreter (deprecated)"
+#~ msgstr "Disabilita l'interprete PHP (deprecato)"
+
+# type: Plain text
+#~ msgid "Recompiles PHP pages on each request."
+#~ msgstr "Ricompila le pagine PHP ad ogni richiesta."
+
+# type: TP
+#, no-wrap
+#~ msgid "B<[ --amule-config-file>=I<E<lt>pathE<gt>> B<]>"
+#~ msgstr "B<[ --amule-config-file>=I<E<lt>percorsoE<gt>> B<]>"
+
+# type: Plain text
+#~ msgid "aMule config file path.  B<DO NOT USE DIRECTLY!> aMule uses this option when starting amuleweb at aMule startup.  This option causes all other command-line and config-file settings to be ignored, preferences to be read from the given config file, and also implies the B<-q -L> options."
+#~ msgstr "percorso del file di configurazione di aMule. B<NON USARE DIRETTAMENTE!> aMule usa questa opzione quando lancia amuleweb all'avvio di aMule. Questa opzione fa sì che tutte le altre impostazioni in riga di comando e nel file di configurazione vengano ignorate, le preferenze vengano lette dal file di configurazione dato, e anche implica le opzioni B<-q -L> ."
+
+# type: SH
+#, no-wrap
+#~ msgid "SKIN SUPPORT"
+#~ msgstr "SUPPORTO AGLI SKIN"
+
+# type: Plain text
+#~ msgid "B<amuleweb> is capable of displaying information in different skins.  These skins are called templates, and you can make amuleweb load a specific template via the B<-t> command line option.  Templates are searched in two places: first in I<~/.aMule/webserver/> and then in I</usr/share/amule/webserver/> if you installed with --prefix=/usr."
+#~ msgstr "B<amuleweb> può visualizzare l'informazione utilizzando diversi 'skin'. Questi 'skin' sono contenuti in dei modelli, e si può far caricare da amuleweb un dato modello tramite l'opzione B<-t> in riga di comando. I modelli sono cercati in due posti: prima in I<~/.aMule/webserver/> e quindi in I</usr/share/amule/webserver/> se aMule è stato installato con --prefix=/usr."
+
+# type: Plain text
+#~ msgid "Each template must be in a subdirectory of the template name, and this directory must contain all files the template needs."
+#~ msgstr "Ogni modello deve essere in una sottodirectory del nome di modello, e questa directory deve contenere tutti i file necessari al modello."
+
+# type: Plain text
+#~ msgid "~/.aMule/webserver/"
+#~ msgstr "~/.aMule/webserver/"
+
+# type: Plain text
+#~ msgid "I<$(pkgdatadir)>/webserver/"
+#~ msgstr "I<$(pkgdatadir)>/webserver/"
+
+# type: Plain text
+#~ msgid "Typically amuleweb will be first run as:"
+#~ msgstr "Di norma amuleweb sarà inizialmente eseguito con:"
+
+# type: Plain text
+#~ msgid "B<amuleweb> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-s> I<HTTPport> B<-A> I<AdminPassword> B<-w>"
+#~ msgstr "B<amuleweb> B<-h> I<nomehost> B<-p> I<ECporta> B<-P> I<passwordEC> B<-s> I<portaHTTP> B<-A> I<PasswordAmministrazione> B<-w>"
+
+# type: Plain text
+#~ msgid "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
+#~ msgstr "B<amuleweb> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
+
+# type: Plain text
+#~ msgid "Of course, you may specify any more or less options on the first example line, and you may also totally omit it."
+#~ msgstr "Ovviamente, si possono specificare più o meno opzioni della prima riga di esempio, e si possono anche omettere completamente."
 
 #~ msgid "Do not encrypt the External Connection link.  Encryption is negotiated automatically whenever the remote aMule supports it, and is on by default for every destination, local or remote.  Turning it off leaves everything after the login readable, and modifiable, by anyone able to observe the connection."
 #~ msgstr "Non cifrare il collegamento di connessione esterna. La cifratura viene negoziata automaticamente ogni volta che l'aMule remoto la supporta ed è attiva per impostazione predefinita per ogni destinazione, locale o remota. Disattivarla lascia tutto ciò che segue il login leggibile, e modificabile, da chiunque sia in grado di osservare la connessione."

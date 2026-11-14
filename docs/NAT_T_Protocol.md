@@ -694,7 +694,7 @@ for the key at most once per 30 s, since each check looks the server up in the l
 
 The statistics tree shows, per session, how often the server-coordinated paths start a
 LowID-to-LowID session and how much data such sessions carry. The nodes travel in the
-tree like any other, so amulegui, amuleweb and amuleapi show them without new EC tags; each has a
+tree like any other, so amulegui and amuleapi show them without new EC tags; each has a
 stable `key`.
 
 - **NAT Traversal (Session)** (`nat_traversal`, under Diagnostics, English only), in uTP builds. With

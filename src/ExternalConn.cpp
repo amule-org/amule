@@ -105,8 +105,9 @@ class CKnownFile_Encoder
 	// Deliberately specific to that one response path rather than a general "the client
 	// has this file": a path that has never sent the identity must not take the
 	// unchanged-file shortcut, or the client is left with a child-less tag it turns into
-	// a ghost entry. The two amuleweb handlers answer the same question from their own
-	// sets, because they iterate a CopyFileList snapshot rather than the encoder map.
+	// a ghost entry. The GET_SHARED_FILES and GET_DLOAD_QUEUE handlers answer the same
+	// question from their own sets, because they iterate a CopyFileList snapshot rather than
+	// the encoder map.
 	bool m_sentOnUpdatePath;
 
 protected:
@@ -502,7 +503,7 @@ private:
 	// particular request path* -- files with a smaller `m_ecGen` did not change since
 	// that path's last response and are skipped. Three independent counters because the
 	// request paths interleave on different schedules: GET_UPDATE (amulegui),
-	// GET_SHARED_FILES and GET_DLOAD_QUEUE (both amuleweb).
+	// GET_SHARED_FILES and GET_DLOAD_QUEUE (polling clients).
 	uint64 m_lastEcGenSeen;
 	uint64 m_lastEcGenSeenShared;
 	uint64 m_lastEcGenSeenPart;
@@ -548,8 +549,8 @@ private:
 	bool m_chatPeerHashActive;
 	// File ECIDs sent in the previous response for each EC request path, diffed against
 	// the current snapshot to compute the removal list emitted to partial-update-capable
-	// clients. Tracked per-path because amulegui uses EC_OP_GET_UPDATE while amuleweb
-	// drives two separate INC_UPDATE streams.
+	// clients. Tracked per-path because amulegui uses EC_OP_GET_UPDATE while a polling
+	// client can drive two separate INC_UPDATE streams.
 	//
 	// `m_lastSentFileIds` is held sorted ascending in a vector rather than a std::set:
 	// Get_EC_Response_GetUpdate walks the encoder map, which is keyed by ECID, so the
@@ -562,14 +563,14 @@ private:
 	std::vector<uint32> m_lastSentFileIds;
 	std::set<uint32> m_lastSentSharedFileIds;
 	std::set<uint32> m_lastSentPartFileIds;
-	// `EC_OP_SEARCH_RESULTS` at `EC_DETAIL_UPDATE` (amuleweb's polling
-	// path), which addresses one search at a time.
+	// `EC_OP_SEARCH_RESULTS` at `EC_DETAIL_UPDATE` (the polling path),
+	// which addresses one search at a time.
 	std::set<uint32> m_lastSentSearchIds;
 
 	// Result ECIDs last sent on the EC_DETAIL_INC_UPDATE union poll (amulegui), so
 	// Get_EC_Response_Search_Results_Union can emit EC_TAG_FILE_REMOVED for results that
 	// are gone instead of relying on absence. Separate from m_lastSentSearchIds, which
-	// belongs to amuleweb's per-search path.
+	// belongs to the per-search polling path.
 	//
 	// Only populated for clients that negotiated EC_TAG_CAN_PARTIAL_UPDATE: a legacy
 	// client keeps the bulk "anything missing == deleted" rule, so the union must keep
@@ -586,8 +587,8 @@ private:
 	// destroyed with its file, and a re-created one starts at zero -- exactly the
 	// "re-send full detail" state wanted.
 	//
-	// The two amuleweb paths keep their sets, for the reason given on m_lastSentFileIds
-	// above.
+	// The GET_SHARED_FILES and GET_DLOAD_QUEUE paths keep their sets, for the reason given
+	// on m_lastSentFileIds above.
 	std::set<uint32> m_sentWithDetailIdsShared;
 	std::set<uint32> m_sentWithDetailIdsPart;
 };
@@ -1947,7 +1948,7 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
 	encoders.UpdateEncoders();
 
 	// Skip-unchanged + EC_TAG_FILE_REMOVED is wired only for the EC_DETAIL_UPDATE
-	// polling path that amuleweb uses, and only when the client opted into the
+	// polling path, and only when the client opted into the
 	// partial-update protocol at auth. EC_DETAIL_FULL callers (amulecmd `show shared`,
 	// any one-shot query) still get every alive file in full.
 	const bool skip_unchanged_path = partial_update_active && detail_level == EC_DETAIL_UPDATE;
@@ -2278,7 +2279,7 @@ static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request,
 	encoders.UpdateEncoders();
 
 	// Skip-unchanged + EC_TAG_FILE_REMOVED is wired only for the EC_DETAIL_UPDATE
-	// polling path that amuleweb uses, and only when the client opted into the
+	// polling path, and only when the client opted into the
 	// partial-update protocol at auth. Other callers get every alive file.
 	const bool skip_unchanged_path = partial_update_active && detail_level == EC_DETAIL_UPDATE;
 	const uint64 ec_snapshot = skip_unchanged_path ? CKnownFile::GetGlobalECGen() : 0;
@@ -2930,7 +2931,7 @@ static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
 	CTagSet<uint32, EC_TAG_SEARCHFILE> queryitems(request);
 
 	// EC_TAG_FILE_REMOVED tombstoning is wired only for the EC_DETAIL_UPDATE polling
-	// path that amuleweb uses, and only when the client opted into the partial-update
+	// path, and only when the client opted into the partial-update
 	// protocol at auth. The EC_DETAIL_INC_UPDATE dispatch (amulegui) takes the tagmap
 	// overload below; EC_DETAIL_FULL callers are unchanged. The queryitems.empty() check
 	// excludes per-ID subset queries: tombstoning is meaningful only when polling the
@@ -2941,7 +2942,7 @@ static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
 	// Result grouping: a caller that wants the same-hash/same-size/different-filename
 	// children (the expandable tree the GUI shows) opts in by adding an empty
 	// EC_TAG_SEARCH_PARENT flag to the request. Without it this path stays parents-only,
-	// so amulecmd and amuleweb are unchanged. Children carry their parent's ECID via
+	// so amulecmd is unchanged. Children carry their parent's ECID via
 	// EC_TAG_SEARCH_PARENT so the client can rebuild the tree.
 	const bool want_children = request->GetTagByName(EC_TAG_SEARCH_PARENT) != nullptr;
 
@@ -2971,9 +2972,9 @@ static CECPacket *Get_EC_Response_Search_Results(const CECPacket *request,
 	if (tombstone_path) {
 		// One EC_TAG_FILE_REMOVED per result that was in the previous response but is no
 		// longer in the daemon's searchlist -- typically because the user started a new
-		// search, which clears the list. Without these markers amuleweb's ProcessUpdate
-		// takes the partial-update branch, which expects explicit deletions, and sees no
-		// signal to drop the old results, so they accumulate across searches.
+		// search, which clears the list. A partial-update client expects explicit deletions;
+		// without these markers it sees no signal to drop the old results, so they
+		// accumulate across searches.
 		for (std::set<uint32>::const_iterator i = io_lastSentSearchIds.begin();
 			i != io_lastSentSearchIds.end();
 			++i) {
@@ -3233,7 +3234,7 @@ static void AppendSearchProgress(CECTag &out, wxUIntPtr sid)
 		out.AddTag(CECTag(EC_TAG_SEARCH_RESULT_COUNT,
 			static_cast<uint32>(theApp->searchlist->GetSearchResults(sid).size())));
 		// Also emit the standard lifecycle tags, mapped from the browse status, so amuleapi
-		// / amuleweb consume a browse through their existing SEARCH_PROGRESS handling with
+		// consumes a browse through their existing SEARCH_PROGRESS handling with
 		// no special-casing: browsing -> RUNNING, finished/failed -> FINISHED. Percent is
 		// the dir-based bar value.
 		const bool browsing = browseStatus == BROWSE_IN_PROGRESS;
@@ -4291,7 +4292,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			break;
 		}
 		// EC_TAG_SEARCH_STATUS: unchanged overloaded sentinel for pre-3.1
-		// consumers (amulegui / amuleweb / amulecmd).
+		// consumers (amulegui / amulecmd).
 		response->AddTag(CECTag(EC_TAG_SEARCH_STATUS, theApp->searchlist->GetSearchProgress()));
 		// New unambiguous lifecycle tags (3.1+). Modern consumers like
 		// amuleapi prefer these and skip the sentinel decode entirely.
@@ -4406,8 +4407,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			AddLogLineC(CFormat(_("Could not save the amuleapi password: %s")) % credentialError);
 		}
 		theApp->glob_prefs->Save();
-		// Remote preference clients (amulegui, amuleweb, and the text
-		// client) apply connection settings through this EC operation.
+		// Remote preference clients (amulegui and the text client) apply
+		// connection settings through this EC operation.
 		// Rebind only the changed P2P endpoints; keep the EC listener
 		// and its active clients untouched.
 		const bool portsChanged =
@@ -4891,8 +4892,8 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			delete tree;
 		}
 		if (request->GetDetailLevel() == EC_DETAIL_WEB) {
-			// Same short form as the AUTH_OK handshake above, so amuleweb
-			// and the GUI never see two spellings of one build.
+			// Same short form as the AUTH_OK handshake above, so clients
+			// never see two spellings of one build.
 			response->AddTag(CECTag(EC_TAG_SERVER_VERSION, GetShortMuleVersion()));
 			response->AddTag(CECTag(EC_TAG_USER_NICK, thePrefs::GetUserNick()));
 		}

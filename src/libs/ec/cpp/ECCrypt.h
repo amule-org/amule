@@ -43,7 +43,7 @@
  * X25519 transcript on each side, so relaying across separate exchanges fails.
  *
  * No new dependency: the `ec` library already links Crypto++, which also backs
- * aMule's eD2k obfuscation, secure identification and the webserver's HMAC.
+ * aMule's eD2k obfuscation and secure identification.
  */
 namespace ECCrypt
 {

@@ -1747,8 +1747,8 @@ void MergeServerTag(const CEC_Server_Tag *st, ServerSnapshot &s, bool is_new)
 	if (const CECTag *t = st->GetTagByName(EC_TAG_SERVER_COUNTRY)) {
 		s.country_code = std::string(t->GetStringData().utf8_str());
 	}
-	// IP + port shipping shape varies by EC detail level. FULL/WEB/UPDATE (webserver,
-	// amulecmd) pack them into the OUTER tag as IPv4 data (st->GetIPv4Data()). INC_UPDATE /
+	// IP + port shipping shape varies by EC detail level. FULL/WEB/UPDATE (amulecmd)
+	// pack them into the OUTER tag as IPv4 data (st->GetIPv4Data()). INC_UPDATE /
 	// GET_UPDATE (amulegui, amuleapi) ship them as CHILD tags EC_TAG_SERVER_IP +
 	// EC_TAG_SERVER_PORT; the outer tag carries the ECID instead, so GetIPv4Data() returns
 	// all-zeros and /servers[].address silently degrades to "0.0.0.0:0". Try the child-tag
@@ -2279,8 +2279,7 @@ void ParseStatsTreeFromPacket(const CECPacket *resp, StatsTreeNode &out)
 	if (!resp)
 		return;
 	// amuled emits a single root EC_TAG_STATTREE_NODE whose label is always an unlabeled
-	// container, so it is dropped and its direct children surface at the top level -- what
-	// amuleweb's am_load_stats_tree.php does too.
+	// container, so it is dropped and its direct children surface at the top level.
 	const CECTag *root = resp->GetTagByName(EC_TAG_STATTREE_NODE);
 	if (!root)
 		return;
@@ -3024,8 +3023,8 @@ void ParseConnectionPrefs(const CECTag *conn, PreferencesSnapshot &out)
 
 void ApplyPrefFieldFromTag(const PrefField &f, const CECTag *group, PreferencesSnapshot &out)
 {
-	if (!f.member)
-		return; // write-only row: nothing is ever read back
+	if (!f.member || f.access == PrefAccess::Retired)
+		return; // write-only or retired row: nothing is ever read back
 
 	const CECTag *t = group->GetTagByName(f.tag);
 

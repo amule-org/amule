@@ -77,16 +77,13 @@ enum class PrefAccess
 	DaemonLocal, // emitted on GET; set only in the daemon's own config, so a PATCH that would
 		     // change it is a 400, while the same value sent back (read-modify-write) is a
 		     // no-op. Used for a path the core executes, which must not be settable remotely.
-	Bespoke,     // emitted on GET, PATCH handled by dedicated code (see below)
+	Retired,     // kept only because /api/v1/ is frozen: no EC tag, emitted on GET with the
+		     // snapshot default (unless it has no member), accepted and ignored on PATCH
 };
-
-// `Bespoke` exists for exactly one field: remote_controls.webserver.guest_enabled and its
-// guest_password share a single EC tag, so there is no 1:1 field-to-tag mapping for the table to
-// express. Its GET emission is still table-driven; only the PATCH packing is hand-written.
 
 struct PrefField
 {
-	const char *category; // dotted path, e.g. "files" or "remote_controls.webserver"
+	const char *category; // dotted path, e.g. "files" or "remote_controls.amuleapi"
 	const char *key;      // JSON key within that category
 	ec_tagname_t tag;
 	PrefType type;
@@ -134,9 +131,9 @@ struct PrefField
 	std::uint32_t step;
 };
 
-// EC group tag each category packs into. Two categories intentionally share one group
-// (remote_controls.webserver / .amuleapi both live in EC_TAG_PREFS_REMOTECTRL): the JSON nesting is
-// an API shape, not an EC one.
+// EC group tag each category packs into. Several categories intentionally share one group
+// (the remote_controls.* ones all live in EC_TAG_PREFS_REMOTECTRL): the JSON nesting is an API
+// shape, not an EC one.
 struct PrefCategory
 {
 	const char *name;
