@@ -41,6 +41,7 @@ wxBEGIN_EVENT_TABLE(CDirectoryTreeCtrl, wxTreeCtrl)
 	EVT_TREE_ITEM_RIGHT_CLICK(wxID_ANY, CDirectoryTreeCtrl::OnRButtonDown)
 	EVT_TREE_ITEM_ACTIVATED(wxID_ANY, CDirectoryTreeCtrl::OnItemActivated)
 	EVT_TREE_ITEM_EXPANDED(wxID_ANY, CDirectoryTreeCtrl::OnItemExpanding)
+	EVT_CHAR(CDirectoryTreeCtrl::OnChar)
 wxEND_EVENT_TABLE()
 
 class CItemData : public wxTreeItemData
@@ -188,6 +189,24 @@ bool CDirectoryTreeCtrl::NeedsRepaintFor(const PathList &explicitDirs, const Pat
 		wanted.insert("R:" + path.GetRaw());
 	}
 	return wanted != m_paintedRoots;
+}
+
+void CDirectoryTreeCtrl::OnChar(wxKeyEvent &evt)
+{
+	// Until an item is selected, the generic tree's current item is the hidden root, and its
+	// '-'/'*' handling (and Left on macOS) collapses it, which asserts.
+	switch (evt.GetKeyCode()) {
+	case '-':
+	case '*':
+	case WXK_SUBTRACT:
+	case WXK_MULTIPLY:
+	case WXK_LEFT:
+		if (GetFocusedItem() == GetRootItem()) {
+			return;
+		}
+		break;
+	}
+	evt.Skip();
 }
 
 void CDirectoryTreeCtrl::OnItemExpanding(wxTreeEvent &evt)

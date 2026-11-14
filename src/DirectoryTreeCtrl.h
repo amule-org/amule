@@ -110,6 +110,7 @@ private:
 	void OnItemExpanding(wxTreeEvent &evt);
 	void OnRButtonDown(wxTreeEvent &evt);
 	void OnItemActivated(wxTreeEvent &evt);
+	void OnChar(wxKeyEvent &evt);
 
 	typedef std::pair<wxString, CPath> SharedMapItem;
 	typedef std::map<wxString, CPath> SharedMap;
