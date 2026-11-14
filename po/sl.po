@@ -5727,8 +5727,12 @@ msgid "Remove"
 msgstr "Odstrani"
 
 #: src/muuli_wdr.cpp
-msgid "(Right click on folder icon for recursive share)"
-msgstr "(desni klik na ikono mape izbere tudi podmape)"
+msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -10915,6 +10919,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "(Right click on folder icon for recursive share)"
+#~ msgstr "(desni klik na ikono mape izbere tudi podmape)"
 
 #~ msgid "Currently connected server."
 #~ msgstr "Trenutno povezan strežnik."

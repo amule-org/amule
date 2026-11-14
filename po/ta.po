@@ -5503,7 +5503,11 @@ msgid "Remove"
 msgstr ""
 
 #: src/muuli_wdr.cpp
-msgid "(Right click on folder icon for recursive share)"
+msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
 msgstr ""
 
 #: src/muuli_wdr.cpp

@@ -5666,8 +5666,12 @@ msgid "Remove"
 msgstr "Odebrat"
 
 #: src/muuli_wdr.cpp
-msgid "(Right click on folder icon for recursive share)"
-msgstr "(Klikněte pravým tlačítkem na ikonu složky pro rekurzivní sdílení)"
+msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -10801,6 +10805,9 @@ msgstr "Nelze porovnat zastaralé ECPassword s ECPasswordVerifier; odmítám ext
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrace změněného zastaralého ECPassword po přechodu na starší verzi; předchozí ověřovač již tuto relaci neověřuje."
+
+#~ msgid "(Right click on folder icon for recursive share)"
+#~ msgstr "(Klikněte pravým tlačítkem na ikonu složky pro rekurzivní sdílení)"
 
 #~ msgid "Currently connected server."
 #~ msgstr "Aktuálně připojený server."

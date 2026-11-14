@@ -5646,8 +5646,12 @@ msgid "Remove"
 msgstr "Rimuovi"
 
 #: src/muuli_wdr.cpp
-msgid "(Right click on folder icon for recursive share)"
-msgstr "(fai click con il tasto destro sulle icone per condividere ricorsivamente le sottodirectory)"
+msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
+msgstr ""
+
+#: src/muuli_wdr.cpp
+msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -10747,6 +10751,9 @@ msgstr "Impossibile confrontare la vecchia ECPassword con ECPasswordVerifier; co
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrazione di una vecchia ECPassword modificata dopo un downgrade; il verificatore precedente non autentica più questa esecuzione."
+
+#~ msgid "(Right click on folder icon for recursive share)"
+#~ msgstr "(fai click con il tasto destro sulle icone per condividere ricorsivamente le sottodirectory)"
 
 #~ msgid "Currently connected server."
 #~ msgstr "Server attualmente connesso."
