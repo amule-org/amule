@@ -21,7 +21,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-06 08:28+0000\n"
+"PO-Revision-Date: 2026-11-14 10:37+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -29,7 +29,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -1806,15 +1806,15 @@ msgstr "Offuscamento"
 #. TRANSLATORS: the upload credit a peer has earned by sending us data.
 #: src/ClientNameCellDrawing.cpp
 msgid "Credits"
-msgstr ""
+msgstr "Crediti"
 
 #: src/ClientNameCellDrawing.cpp
 msgid "Moves up faster in our upload queue"
-msgstr ""
+msgstr "Avanza più velocemente nella nostra coda di upload"
 
 #: src/ClientNameCellDrawing.cpp
 msgid "Does not support the eMule extended protocol"
-msgstr ""
+msgstr "Non supporta il protocollo esteso di eMule"
 
 #: src/ClientRef.cpp
 msgid "Not complete"
@@ -2125,54 +2125,48 @@ msgid "Search Result"
 msgstr "Risultato della ricerca"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a direct connection"
-msgstr "Connessioni attive"
+msgstr "una connessione diretta"
 
 #: src/DataToText.cpp
 msgid "a direct callback"
-msgstr ""
+msgstr "una callback diretta"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "our server"
-msgstr "Rimuovi il server"
+msgstr "il nostro server"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the Kad buddy"
-msgstr "Ricerca amico"
+msgstr "l'amico Kad"
 
 # AI-GENERATED — please review.
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the source's own server"
-msgstr "eD2k: server attuale"
+msgstr "il server della fonte"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a server hole punch"
-msgstr "Overhead server (pacchetti): %s"
+msgstr "un hole punch del server"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a Lugdunum callback"
-msgstr "%s aggiornato con successo"
+msgstr "una callback Lugdunum"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on a fallback route"
-msgstr "Connessione in corso attraverso il server"
+msgstr "Connessione tramite %s, su un percorso di riserva"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on an unproven route"
-msgstr "Connessione in corso attraverso il server"
+msgstr "Connessione tramite %s, su un percorso non verificato"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s"
-msgstr "Connessione via Kad"
+msgstr "Connessione tramite %s"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -2829,7 +2823,7 @@ msgstr "L'estrazione dei metadati multimediali è disabilitata nelle preferenze"
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
 msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
-msgstr ""
+msgstr "Estrazione dei metadati multimediali non disponibile: il programma di supporto manca oppure le sue restrizioni di sistema non sono state applicate. Vedi il log del core per i dettagli."
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -4310,9 +4304,9 @@ msgid "Media metadata: bundled amule-media-probe helper is unavailable."
 msgstr "Metadati multimediali: l'helper integrato amule-media-probe non è disponibile."
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: no result for %s: %s"
-msgstr "Metadati multimediali: parser fallito per %s"
+msgstr "Metadati multimediali: nessun risultato per %s: %s"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -4325,9 +4319,9 @@ msgid "Extracting media metadata: %s"
 msgstr "Estrazione dei metadati multimediali: %s"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata extraction disabled until restart: %s"
-msgstr "L'estrazione dei metadati multimediali è disabilitata nelle preferenze"
+msgstr "Estrazione dei metadati multimediali disabilitata fino al riavvio: %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -4633,12 +4627,11 @@ msgstr "Utenti connessi al server attuale e stima del numero totale di utenti."
 
 #: src/muuli_wdr.cpp
 msgid "Up:"
-msgstr ""
+msgstr "Up:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Down:"
-msgstr "Download: "
+msgstr "Down:"
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -5178,26 +5171,23 @@ msgstr "Registra una voce di avvio automatico per l'utente nel sistema operativo
 
 #: src/muuli_wdr.cpp
 msgid "Prevent automatic sleep: "
-msgstr ""
+msgstr "Impedisci la sospensione automatica: "
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Off"
-msgstr "inattivo"
+msgstr "Disattivato"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While downloading"
-msgstr "Download già in corso"
+msgstr "Durante i download"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While aMule is running"
-msgstr "aMule è in funzione"
+msgstr "Mentre aMule è in funzione"
 
 #: src/muuli_wdr.cpp
 msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgstr "Durante i download: resta attivo finché un download è in coda e non è in pausa, fermato o in errore, oppure finché gli upload della sessione non eguagliano i download della sessione. Mentre è in funzione: resta attivo anche quando è inattivo, disconnesso o ridotto a icona nel vassoio. Lo schermo può comunque spegnersi."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5616,9 +5606,8 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "Estrai durata / bitrate / codec dai file audio e video condivisi"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
-msgstr "Quando abilitato, aMule utilizza il suo analizzatore integrato MediaInfo per estrarre metadata dai file multimediali condivisi."
+msgstr "Quando è abilitato, aMule usa il suo analizzatore multimediale integrato per estrarre i metadati dai file multimediali condivisi."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5698,7 +5687,7 @@ msgstr "Cartelle in cui il demone consente modifiche da remoto"
 
 #: src/muuli_wdr.cpp
 msgid "(Read-only. Configured on the daemon; if empty, the daemon refuses every remote folder change.)"
-msgstr ""
+msgstr "(Sola lettura. Configurato sul demone; se vuoto, il demone rifiuta ogni modifica remota delle cartelle.)"
 
 #: src/muuli_wdr.cpp
 msgid "When the connected core's files live on a different machine, map a path prefix it reports to where that filesystem is reachable from here (a network share, say) so \"Open\" and \"Show in folder\" work."
@@ -5822,11 +5811,11 @@ msgstr "Ricerche di fonti Kad simultanee"
 
 #: src/muuli_wdr.cpp
 msgid "Firewalled Kad nodes served as buddy"
-msgstr ""
+msgstr "Nodi Kad dietro firewall serviti come amico"
 
 #: src/muuli_wdr.cpp
 msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
-msgstr ""
+msgstr "Per quanti nodi Kad dietro firewall questo nodo inoltra le callback. Ognuno occupa una connessione, quindi viene servito al massimo un decimo del limite di connessioni."
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
@@ -5838,11 +5827,11 @@ msgstr "Intervallo tra le richieste alle fonti (minuti)"
 
 #: src/muuli_wdr.cpp
 msgid "Download write buffer limit (MiB)"
-msgstr ""
+msgstr "Limite del buffer di scrittura dei download (MiB)"
 
 #: src/muuli_wdr.cpp
 msgid "Total received download data waiting to be written. A larger limit can smooth short disk stalls at the cost of more memory. Already requested data can exceed this limit."
-msgstr ""
+msgstr "Totale dei dati scaricati in attesa di essere scritti. Un limite più alto può attenuare i brevi blocchi del disco al costo di più memoria. I dati già richiesti possono superare questo limite."
 
 #: src/muuli_wdr.cpp
 msgid "File Buffer Size: 240000 bytes"
@@ -5974,15 +5963,15 @@ msgstr "Password"
 
 #: src/muuli_wdr.cpp
 msgid "Folders remote clients may use"
-msgstr ""
+msgstr "Cartelle utilizzabili dai client remoti"
 
 #: src/muuli_wdr.cpp
 msgid "(Remote clients may set the incoming, temp, shared and category folders only inside these. Empty means no remote folder change is allowed. Local changes here are never restricted.)"
-msgstr ""
+msgstr "(I client remoti possono impostare le cartelle di entrata, temporanea, condivise e di categoria solo al loro interno. Se vuoto, nessuna modifica remota delle cartelle è permessa. Le modifiche locali fatte qui non sono mai limitate.)"
 
 #: src/muuli_wdr.cpp
 msgid "Absolute path of a folder, e.g. /home/user/aMule. A remote client may then set any folder at or below it."
-msgstr ""
+msgstr "Percorso assoluto di una cartella, ad esempio /home/utente/aMule. Un client remoto può quindi impostare quella cartella o qualsiasi cartella al suo interno."
 
 #: src/muuli_wdr.cpp
 msgid "aMule API server parameters"
@@ -6411,9 +6400,8 @@ msgid "Check for a newer GeoIP database at startup and every week while aMule is
 msgstr "Controlla se è disponibile un database GeoIP più recente all’avvio e ogni settimana mentre aMule è in esecuzione."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Enable incoming message filtering (except current chat):"
-msgstr "Filtra messaggi in arrivo (tranne per la chat in corso):"
+msgstr "Abilita il filtro dei messaggi in arrivo (tranne la chat in corso):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6421,6 +6409,9 @@ msgid ""
 "Turning this off keeps your selected options and word list.\n"
 "Filtered messages are discarded without opening a chat or replying to the sender."
 msgstr ""
+"Abilita le opzioni di filtro qui sotto. Seleziona almeno un'opzione per filtrare i messaggi.\n"
+"Disattivandolo, le opzioni selezionate e la lista di parole vengono mantenute.\n"
+"I messaggi filtrati sono scartati senza aprire una chat né rispondere al mittente."
 
 #: src/muuli_wdr.cpp
 msgid "Filter all messages"
@@ -6444,36 +6435,37 @@ msgid ""
 "Terms match anywhere in a message: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported. A * is literal, except that a word list of exactly * blocks every message."
 msgstr ""
+"Scarta i messaggi di chat che contengono uno dei termini separati da virgola. Il confronto ignora maiuscole e minuscole e gli spazi attorno a ogni termine.\n"
+"I termini corrispondono in qualsiasi punto del messaggio: cane corrisponde a canestro e a cane nero avvistato.\n"
+"I caratteri jolly non sono supportati. Un * vale come carattere letterale, tranne quando la lista di parole è esattamente *, che blocca ogni messaggio."
 
 #: src/muuli_wdr.cpp
 msgid "Enable advanced spam filter"
-msgstr ""
+msgstr "Abilita il filtro antispam avanzato"
 
 #: src/muuli_wdr.cpp
 msgid "Block unsolicited links and repeated messages from non-friends."
-msgstr ""
+msgstr "Blocca i link non richiesti e i messaggi ripetuti da chi non è un amico."
 
 #: src/muuli_wdr.cpp
 msgid "Require a CAPTCHA for first messages from non-friends"
-msgstr ""
+msgstr "Richiedi un CAPTCHA per i primi messaggi da chi non è un amico"
 
 #: src/muuli_wdr.cpp
 msgid "Withhold the message until the sender solves the challenge. Clients without CAPTCHA support cannot start a chat."
-msgstr ""
+msgstr "Trattieni il messaggio finché il mittente non risolve la verifica. I client senza supporto CAPTCHA non possono iniziare una chat."
 
 #: src/muuli_wdr.cpp
 msgid "Show received messages in the log"
 msgstr "Mostra nel log i messaggi ricevuti"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "File comments"
-msgstr "Commenti file"
+msgstr "Commenti dei file"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Filter file comments containing (use ',' as separator):"
-msgstr "Filtra i commenti contenenti (usa ',' come separatore):"
+msgstr "Filtra i commenti dei file che contengono (usa ',' come separatore):"
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -6481,11 +6473,13 @@ msgid ""
 "Matching ignores case and spaces around each term. Terms match anywhere in a comment: dog matches hotdog and black dog spotted.\n"
 "Wildcards are not supported; * is matched literally."
 msgstr ""
+"Nasconde i commenti di altri utenti che contengono uno dei termini separati da virgola. Questo non filtra i messaggi di chat.\n"
+"Il confronto ignora maiuscole e minuscole e gli spazi attorno a ogni termine. I termini corrispondono in qualsiasi punto del commento: cane corrisponde a canestro e a cane nero avvistato.\n"
+"I caratteri jolly non sono supportati; * vale come carattere letterale."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "With these settings"
-msgstr "Ricorda impostazioni"
+msgstr "Con queste impostazioni"
 
 #: src/muuli_wdr.cpp
 msgid "Enable Proxy"
@@ -6560,13 +6554,12 @@ msgid "Message Categories:"
 msgstr "Categorie messaggi:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Connected Core:"
-msgstr "Connesso dal:"
+msgstr "Core connesso:"
 
 #: src/muuli_wdr.cpp
 msgid "This Remote GUI:"
-msgstr ""
+msgstr "Questa GUI remota:"
 
 #: src/muuli_wdr.cpp src/PartFileConvertDlg.cpp
 msgid "Waiting..."
@@ -6992,7 +6985,7 @@ msgstr[1] "Trovata parte danneggiata (%d) in %d parti %s - FileResultHash |%s| F
 #: src/PartFile.cpp
 #, c-format
 msgid "'%s' does not match its file hash, and without the part hashset the corrupt part cannot be found. Waiting for the hashset."
-msgstr ""
+msgstr "'%s' non corrisponde al suo hash e senza l'hashset delle parti non è possibile individuare la parte corrotta. In attesa dell'hashset."
 
 #: src/PartFile.cpp
 #, c-format
@@ -7086,7 +7079,7 @@ msgstr "Attraversamento NAT (QUIC)"
 
 #: src/PeerCapabilities.h
 msgid "Skips unknown source exchange tags"
-msgstr ""
+msgstr "Salta i tag sconosciuti dello scambio fonti"
 
 #: src/Preferences.cpp
 msgid "no options available"
@@ -7094,7 +7087,7 @@ msgstr "nessuna opzione disponibile"
 
 #: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
-msgstr ""
+msgstr "Metadati multimediali: FFProbePath è obsoleto; aMule ora usa il suo analizzatore integrato. L'impostazione precedente viene rimossa."
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -7116,39 +7109,39 @@ msgstr "Sarà usata la porta predefinita (%d)"
 #: src/Preferences.cpp
 #, c-format
 msgid "Moved the shared folders from %s to shareddir-explicit.dat"
-msgstr ""
+msgstr "Cartelle condivise spostate da %s a shareddir-explicit.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Could not read %s. It is left in place and ignored."
-msgstr ""
+msgstr "Impossibile leggere %s. Il file viene lasciato al suo posto e ignorato."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Removing %s: its folders are already in shareddir-explicit.dat and shareddir-recursive.dat"
-msgstr ""
+msgstr "Rimozione di %s: le sue cartelle sono già in shareddir-explicit.dat e shareddir-recursive.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
-msgstr ""
+msgstr "%s ignorato: le cartelle condivise sono mantenute in shareddir-explicit.dat e shareddir-recursive.dat. Il file verrà rimosso."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "%u folder listed only there is not shared:%s"
 msgid_plural "%u folders listed only there are not shared:%s"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%u cartella elencata solo lì non è condivisa:%s"
+msgstr[1] "%u cartelle elencate solo lì non sono condivise:%s"
 
 #: src/Preferences.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove %s"
-msgstr "Impossibile spostare il file scaricato in %s"
+msgstr "Impossibile rimuovere %s"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Ignoring a relative path in allowed-remote-dirs.dat (only absolute paths are accepted): %s"
-msgstr ""
+msgstr "Percorso relativo ignorato in allowed-remote-dirs.dat (sono accettati solo percorsi assoluti): %s"
 
 #: src/BandwidthLimitSlider.h
 msgid "Adjust the enabled limit from 1 KiB/s to line capacity."
@@ -7261,7 +7254,7 @@ msgstr "Il tipo di proxy a cui ti stai connettendo"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Set in the daemon's own configuration (amule.conf); not editable remotely."
-msgstr ""
+msgstr "Impostato nella configurazione del demone (amule.conf); non modificabile da remoto."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -7459,15 +7452,14 @@ msgid "The aMule web server is deprecated. Consider running the aMule API instea
 msgstr "Il server web di aMule è deprecato. Valuta in alternativa l'uso di aMule API."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid ""
 "Your server list sources are empty.\n"
 "Please add at least one URL of a valid server.met file.\n"
 "Click the \"Edit sources...\" button next to this checkbox to add one."
 msgstr ""
-"La tua lista di aggiornamento automatico dei server è vuota.\n"
-"Inserisci l'URL di almeno un server valido nel file server.met.\n"
-"Clicca sul pulsante \"Lista\" per inserire l'URL."
+"Le fonti della tua lista server sono vuote.\n"
+"Aggiungi almeno un URL di un file server.met valido.\n"
+"Fai clic sul pulsante \"Modifica fonti...\" accanto a questa casella per aggiungerne uno."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Temporary files"
@@ -7716,16 +7708,15 @@ msgstr "Scegli la cartella locale"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Please enter an absolute path. A relative path would be resolved against the daemon's working directory, so it is not accepted."
-msgstr ""
+msgstr "Inserisci un percorso assoluto. Un percorso relativo verrebbe risolto rispetto alla directory di lavoro del demone, quindi non è accettato."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Allowed folders for remote clients"
-msgstr ""
+msgstr "Cartelle permesse ai client remoti"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose a folder remote clients may use"
-msgstr "Scegli una directory per i file scaricati"
+msgstr "Scegli una cartella utilizzabile dai client remoti"
 
 #: src/SearchDlg.cpp
 msgid "Clear Search History"
@@ -7737,7 +7728,7 @@ msgstr "Cancellare la cronologia delle ricerche salvata? L'operazione non può e
 
 #: src/SearchDlg.cpp
 msgid "Load into search form"
-msgstr ""
+msgstr "Carica nel modulo di ricerca"
 
 #: src/SearchDlg.cpp
 msgid "Search warning"
@@ -7771,7 +7762,7 @@ msgstr "Ricerca in corso"
 
 #: src/SearchDlg.cpp
 msgid "Enter whole, non-negative sizes and availability within the supported range."
-msgstr ""
+msgstr "Inserisci dimensioni e disponibilità come numeri interi non negativi entro l'intervallo supportato."
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -7783,28 +7774,27 @@ msgstr "Principale"
 
 #: src/SearchMetadataPanel.cpp
 msgid "minutes"
-msgstr ""
+msgstr "minuti"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Duration unit"
-msgstr ""
+msgstr "Unità di durata"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum duration"
-msgstr ""
+msgstr "Durata minima"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
-msgstr ""
+msgstr "Bitrate minimo (kbps)"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Kad applies these filters; eD2k servers may ignore them"
-msgstr ""
+msgstr "Kad applica questi filtri; i server eD2k possono ignorarli"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
-msgstr "Il demone connesso non supporta la ricerca su tutte le reti."
+msgstr "Il demone connesso non supporta i filtri multimediali. Aggiorna il demone per usare questi campi."
 
 #: src/SearchList.cpp
 #, c-format
@@ -8082,9 +8072,9 @@ msgid "ERROR: Socket invalid at timeout check"
 msgstr "ERRORE: Nessun socket valido trovato entro il tempo massimo"
 
 #: src/ServerConnect.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connection attempt to %s (%s:%i) timed out; retrying without obfuscation."
-msgstr "Connessione a %s (%s:%i) non riuscita per timeout."
+msgstr "Tentativo di connessione a %s (%s:%i) scaduto; nuovo tentativo senza offuscamento."
 
 #: src/ServerConnect.cpp
 #, c-format
@@ -8495,14 +8485,13 @@ msgid "Connected to buddy at %s"
 msgstr "Connesso all'amico a %s"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Served buddies:"
-msgstr "Lista server"
+msgstr "Amici serviti:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "%u of %u"
-msgstr ""
+msgstr "%u di %u"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
@@ -8645,7 +8634,7 @@ msgstr[1] "Rilevati %u nuovi file condivisi"
 #: src/SharedFileList.cpp
 #, c-format
 msgid "Refused to rename '%s' to '%s': the new name must be a plain file name, not a path."
-msgstr ""
+msgstr "Rinomina di '%s' in '%s' rifiutata: il nuovo nome deve essere un semplice nome di file, non un percorso."
 
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "User Name"
@@ -8887,14 +8876,14 @@ msgid "Crypt overhead (UDP): %s"
 msgstr "Overhead da offuscamento (UDP): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "LowID to LowID Data (Session): %s"
-msgstr "Dati scaricati (sessione (totale)): %s"
+msgstr "Dati da ID basso a ID basso (sessione): %s"
 
 #: src/Statistics.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "IPv6 Data (Session): %s"
-msgstr "Dati inviati (sessione (totale)): %s"
+msgstr "Dati IPv6 (sessione): %s"
 
 #: src/Statistics.cpp
 #, c-format
@@ -9082,9 +9071,8 @@ msgid "Average file size: %s"
 msgstr "Dimensione media dei file: %s"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Diagnostics"
-msgstr "Diagnostica delle ricerche"
+msgstr "Diagnostica"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -9169,9 +9157,8 @@ msgstr ""
 "Digitare 'help search' per ottenere ulteriori informazioni.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support media search filters.\n"
-msgstr "Il demone connesso non supporta la ricerca su tutte le reti.\n"
+msgstr "Il demone connesso non supporta i filtri di ricerca multimediali.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -9184,13 +9171,12 @@ msgstr ""
 "Digitare 'help search' per ottenere ulteriori informazioni.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support search management.\n"
-msgstr "Il demone connesso non supporta la ricerca su tutte le reti.\n"
+msgstr "Il demone connesso non supporta la gestione delle ricerche.\n"
 
 #: src/TextClient.cpp
 msgid "A search ID from 'search list' is required.\n"
-msgstr ""
+msgstr "È necessario un ID di ricerca ottenuto da 'search list'.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9307,24 +9293,23 @@ msgstr "[Partfile]"
 
 #: src/TextClient.cpp
 msgid "No retained searches.\n"
-msgstr ""
+msgstr "Nessuna ricerca conservata.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; availability is unknown.\n"
-msgstr ""
+msgstr "Richiesta di altri risultati elaborata; la disponibilità è sconosciuta.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; further requests remain possible.\n"
-msgstr ""
+msgstr "Richiesta di altri risultati elaborata; sono possibili ulteriori richieste.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "No further results can be requested for this search.\n"
-msgstr "Restituisce i risultati della ricerca precedente.\n"
+msgstr "Non è possibile richiedere altri risultati per questa ricerca.\n"
 
 #: src/TextClient.cpp
 msgid "Search stop request processed; retained results were not removed.\n"
-msgstr ""
+msgstr "Richiesta di arresto della ricerca elaborata; i risultati conservati non sono stati rimossi.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9579,7 +9564,6 @@ msgid "Execute a search."
 msgstr "Effettua una ricerca."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -9604,19 +9588,24 @@ msgid ""
 "results for \"linux iso\" of file-type Iso at least 100 MiB.\n"
 msgstr ""
 "È necessario specificare un tipo di ricerca:\n"
-"    GLOBAL\n"
-"    LOCAL\n"
-"    KAD\n"
-"    ALL: tutte le reti (richiede il supporto del demone)\n"
-"Esempio: 'search kad file' eseguirà una ricerca kad per \"file\".\n"
+"GLOBAL\n"
+"LOCAL\n"
+"KAD\n"
+"ALL: tutte le reti (richiede il supporto del demone)\n"
+"Esempio: 'search kad file' esegue una ricerca kad di \"file\".\n"
 "\n"
-"Filtri opzionali possono essere aggiunti prima, dopo o intervallati con\n"
+"Filtri opzionali possono essere aggiunti prima, dopo o tra\n"
 "le parole chiave della ricerca:\n"
-"    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
-"    --extension <est>      (alias: --ext)\n"
-"    --avail <N>            numero minimo di fonti\n"
-"    --min-size <N[KMG]>    dimensione minima del file; K=1024, M=K*1024, G=M*1024\n"
-"    --max-size <N[KMG]>    dimensione massima del file; stessi suffissi\n"
+"--type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
+"--extension (alias: --ext)\n"
+"--avail numero minimo di fonti\n"
+"--min-size <N[KMG]> dimensione minima del file; K=1024, M=K1024, G=M1024\n"
+"--max-size <N[KMG]> dimensione massima del file; stessi suffissi\n"
+"--min-bitrate numero intero, 0-1000000\n"
+"--min-duration numero intero, 0-86400\n"
+"--codec --title --album --artist\n"
+"Racchiudi tra apici i valori di testo multimediali che contengono spazi.\n"
+"Kad applica i filtri multimediali; i server eD2k possono ignorarli.\n"
 "Esempio: 'search global linux iso --type Iso --min-size 100M' restituisce\n"
 "risultati per \"linux iso\" di tipo Iso di almeno 100 MiB.\n"
 
@@ -9638,25 +9627,23 @@ msgstr "Effettua una ricerca su eD2k e Kad"
 
 #: src/TextClient.cpp
 msgid "List retained search IDs and queries."
-msgstr ""
+msgstr "Elenca gli ID e le query delle ricerche conservate."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Stop a search, keeping its results."
-msgstr "Nessuna ricerca aperta contiene questo risultato."
+msgstr "Arresta una ricerca, mantenendone i risultati."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'."
-msgstr ""
+msgstr "Richiede un ID di ricerca ottenuto da 'search list'."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Request more Kad search results."
-msgstr "Totale risultati della ricerca: %i\n"
+msgstr "Richiede altri risultati di ricerca Kad."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
-msgstr ""
+msgstr "Richiede un ID di ricerca ottenuto da 'search list'. Altri risultati non sono garantiti."
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -9911,7 +9898,7 @@ msgstr "Impossibile avviare i lettori dei dischi per gli upload: %s"
 #: src/UploadDiskIOThread.cpp
 #, c-format
 msgid "Upload disk reader error: %s"
-msgstr ""
+msgstr "Errore del lettore su disco per l'upload: %s"
 
 #: src/UploadDiskIOThread.cpp
 #, c-format
@@ -10723,44 +10710,43 @@ msgstr "Kad non è riuscito a salvare un indice. La copia precedente del file è
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not remove legacy ECPassword; cleanup will be retried on restart."
-msgstr ""
+msgstr "Impossibile rimuovere la vecchia ECPassword; la pulizia verrà ritentata al riavvio."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not persist ECPasswordVerifier; using the legacy ECPassword in memory for this run. Migration will be retried on restart."
-msgstr ""
+msgstr "Impossibile salvare ECPasswordVerifier; per questa esecuzione viene usata la vecchia ECPassword in memoria. La migrazione verrà ritentata al riavvio."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "Could not generate ECPasswordVerifier; external connections are disabled."
-msgstr "Password impostata, connessioni esterne abilitate."
+msgstr "Impossibile generare ECPasswordVerifier; le connessioni esterne sono disabilitate."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not generate ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Modifica della password EC rifiutata: impossibile generare ECPasswordVerifier. La credenziale attiva resta invariata."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not persist ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Modifica della password EC rifiutata: impossibile salvare ECPasswordVerifier. La credenziale attiva resta invariata."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "EC password change rejected: could not store ECPasswordVerifier. The active credential is unchanged."
-msgstr ""
+msgstr "Modifica della password EC rifiutata: impossibile memorizzare ECPasswordVerifier. La credenziale attiva resta invariata."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
-msgstr ""
+msgstr "ECPassword contiene un digest non valido o di password vuota. Esegui amuled --ec-config per impostare una nuova password EC."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "ECPasswordVerifier non valido o non supportato; connessioni esterne rifiutate."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Could not compare legacy ECPassword with ECPasswordVerifier; refusing external connections."
-msgstr ""
+msgstr "Impossibile confrontare la vecchia ECPassword con ECPasswordVerifier; connessioni esterne rifiutate."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
-msgstr ""
+msgstr "Migrazione di una vecchia ECPassword modificata dopo un downgrade; il verificatore precedente non autentica più questa esecuzione."
 
 #~ msgid "Currently connected server."
 #~ msgstr "Server attualmente connesso."

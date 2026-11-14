@@ -1084,5 +1084,15 @@
   "stats_tree_diagnostics": "Диагностика",
   "prefs_group_capacity": "Пропускная способность канала (масштабирует только графики скорости)",
   "prefs_field_connection_download_capacity_kibibytes_per_second": "Скорость скачивания (КиБ/с)",
-  "prefs_field_connection_upload_capacity_kibibytes_per_second": "Скорость отдачи (КиБ/с)"
+  "prefs_field_connection_upload_capacity_kibibytes_per_second": "Скорость отдачи (КиБ/с)",
+  "downloads_peer_route_plain": "Соединение через {route}",
+  "downloads_peer_route_fallback": "Соединение через {route}, по резервному маршруту",
+  "downloads_peer_route_unproven": "Соединение через {route}, по непроверенному маршруту",
+  "downloads_peer_route_dial": "прямое соединение",
+  "downloads_peer_route_direct_udp_callback": "прямой обратный вызов",
+  "downloads_peer_route_server_callback": "наш сервер",
+  "downloads_peer_route_kad_buddy": "партнёр Kad",
+  "downloads_peer_route_foreign_nat_callback": "собственный сервер источника",
+  "downloads_peer_route_server_hole_punch": "прокол через сервер",
+  "downloads_peer_route_lugdunum_callback": "обратный вызов Lugdunum"
 }

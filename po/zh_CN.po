@@ -10,12 +10,13 @@
 # Yi Qi <u4781098@anu.edu.au>, 2011.
 # Maria Lee <mariali@users.noreply.hosted.weblate.org>, 2026.
 # Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>, 2026.
+# reducedradius <137701630+flytothehighest@users.noreply.github.com>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-13 08:22+0000\n"
+"PO-Revision-Date: 2026-11-14 10:37+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -2115,53 +2116,47 @@ msgid "Search Result"
 msgstr "搜索结果"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a direct connection"
-msgstr "活跃连接"
+msgstr "直接连接"
 
 #: src/DataToText.cpp
 msgid "a direct callback"
-msgstr ""
+msgstr "直接回馈"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "our server"
-msgstr "删除服务器"
+msgstr "我们的服务器"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the Kad buddy"
-msgstr "寻找搭档"
+msgstr "寻找Kad搭档"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the source's own server"
-msgstr "eD2k：当前服务器"
+msgstr "源自己的服务器"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a server hole punch"
-msgstr "服务器打洞： %s"
+msgstr "服务器打洞"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a Lugdunum callback"
-msgstr "Lugdunum 回馈： %s"
+msgstr "Lugdunum 回馈"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on a fallback route"
-msgstr "通过服务器连接中"
+msgstr "正在备用线路上通过 %s 进行连接"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on an unproven route"
-msgstr "通过服务器连接中"
+msgstr "正在未经验证的线路上通过 %s 进行连接"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s"
-msgstr "正在通过 Kad 连接"
+msgstr "正在通过 %s 连接"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp

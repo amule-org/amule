@@ -4,19 +4,20 @@
 # This file is distributed under the same license as the aMule package.
 # Automatically generated, 2010.
 #
+# Got3nks <got3nks@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
 "POT-Creation-Date: 2026-11-10 06:20+0000\n"
-"PO-Revision-Date: 2026-10-07 16:31+0000\n"
-"Last-Translator: Sebastiano Pistore <SebastianoPistore.info@protonmail.ch>\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2026-11-14 10:37+0000\n"
+"Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Italian <https://hosted.weblate.org/projects/amule/application-man-pages/it/>\n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 2.0.2\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 
 # type: TH
 #. type: TH
@@ -741,22 +742,22 @@ msgstr "Riprende il download specificato da I<E<lt>hashE<gt>> o I<E<lt>numeroE<g
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Lists retained search IDs and queries, including searches started by other clients."
-msgstr ""
+msgstr "Elenca gli ID e le query delle ricerche conservate, comprese le ricerche avviate da altri client."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Stops activity for the specified search while retaining its results."
-msgstr ""
+msgstr "Arresta l'attività della ricerca indicata mantenendone i risultati."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
-msgstr ""
+msgstr "Richiede altri risultati Kad per la ricerca indicata. Altri risultati non sono garantiti. La risposta indica se sono possibili richieste successive, oppure se questa informazione non è disponibile perché il demone è più vecchio."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
-msgstr ""
+msgstr "Questi comandi di gestione richiedono che il demone supporti l'elenco delle ricerche e le ricerche multiple. Usa un ID esplicito ottenuto da B<search list> per stop e more."
 
 # type: Plain text
 #. type: Plain text
@@ -832,49 +833,47 @@ msgstr "Dimensione massima del file da restituire. Stessi suffissi di B<--min-si
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Media filters:"
-msgstr ""
+msgstr "Filtri multimediali:"
 
 # type: Plain text
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
-msgstr "[B<-t> I<E<lt>numeroE<gt>>]"
+msgstr "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum bitrate as a whole number from 0 to 1000000."
-msgstr ""
+msgstr "Bitrate minimo come numero intero da 0 a 1000000."
 
 # type: Plain text
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
-msgstr "[B<-t> I<E<lt>numeroE<gt>>]"
+msgstr "B<--min-duration> I<E<lt>secondiE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum duration as a whole number from 0 to 86400."
-msgstr ""
+msgstr "Durata minima come numero intero da 0 a 86400."
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
-msgstr ""
+msgstr "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>testoE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
-msgstr ""
+msgstr "Ogni opzione accetta un valore testuale. Racchiudi tra apici singoli o doppi i valori che contengono spazi. Quando usi B<-c>, mantieni quegli apici all'interno della stringa di comando passata dalla shell."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
-msgstr ""
+msgstr "I valori multimediali uguali a zero o vuoti non impongono alcun vincolo. I filtri multimediali non vuoti richiedono il supporto del demone. Kad applica questi filtri; i server eD2k possono ignorarli."
 
 # AI-GENERATED — please review.
 #. type: Plain text
@@ -1044,7 +1043,7 @@ msgstr "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
 #. type: Plain text
 #: amulecmd.1.in amuleweb.1.in
 msgid "After daemon credential migration, supply the client password with B<-P> or enter it at the password prompt; the daemon verifier cannot supply it."
-msgstr ""
+msgstr "Dopo la migrazione delle credenziali del demone, fornisci la password del client con B<-P> oppure inseriscila alla richiesta della password; il verificatore del demone non può fornirla."
 
 # type: Plain text
 #. type: Plain text
@@ -1137,26 +1136,25 @@ msgstr "B<[ -t> I<E<lt>numE<gt>>, B<--category>=I<E<lt>numE<gt>> B<]>"
 # type: Plain text
 #. type: TP
 #: amuled.1.in
-#, fuzzy, no-wrap
-#| msgid "I<~/.aMule/remote.conf>"
+#, no-wrap
 msgid "I<~/.aMule/allowed-remote-dirs.dat>"
-msgstr "I<~/.aMule/remote.conf>"
+msgstr "I<~/.aMule/allowed-remote-dirs.dat>"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "The folders a remote EC or amuleapi client may point the incoming, temporary, shared or category download folders at, one absolute path per line. Empty or absent (the default) means every such remote folder change is refused. On a daemon-only install, such as a container or the Android port with no monolithic aMule to edit the list in its GUI, create or edit this file and restart B<amuled> to allow remote folder changes; relative lines are ignored."
-msgstr ""
+msgstr "Le cartelle su cui un client EC o amuleapi remoto può puntare le cartelle di entrata, temporanea, condivise o di categoria, un percorso assoluto per riga. Se vuoto o assente (impostazione predefinita), ogni modifica remota di queste cartelle viene rifiutata. Su un'installazione con il solo demone, come un contenitore o la versione Android senza aMule monolitico per modificare la lista dalla sua interfaccia, crea o modifica questo file e riavvia B per permettere le modifiche remote delle cartelle; le righe con percorsi relativi sono ignorate."
 
 #. type: SH
 #: amuled.1.in
 #, no-wrap
 msgid "MEDIA METADATA"
-msgstr ""
+msgstr "METADATI MULTIMEDIALI"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "B<amuled> runs its bundled B<amule-media-probe> helper on each received file to extract the length, bitrate and codec tags it then publishes to the network. The helper must sit next to the B<amuled> executable. This is on by default (B<Enabled=1> under B<[MediaMetadata]> in I<amule.conf>); set B<Enabled=0> there and restart to turn it off."
-msgstr ""
+msgstr "B<amuled> esegue il programma di supporto integrato B<amule-media-probe> su ogni file ricevuto per estrarre la durata, il bitrate e i tag del codec che poi pubblica sulla rete. Il programma di supporto deve trovarsi accanto all'eseguibile B<amuled>. Questa funzione è attiva in modo predefinito (B<Enabled=1> nella sezione B<[MediaMetadata]> di I<amule.conf>); imposta lì B<Enabled=0> e riavvia per disattivarla."
 
 # type: TH
 #. type: TH
