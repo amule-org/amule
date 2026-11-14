@@ -5,6 +5,7 @@
 #include <muleunit/test.h>
 #include <KadKeywordPublishTimes.h>
 #include <MemFile.h>
+#include <common/DataFileVersion.h>
 #include <protocol/kad/Constants.h>
 
 using namespace muleunit;
@@ -52,7 +53,7 @@ TEST(KadKeywordPublishTimes, DamagedFileKeepsWhatWasRead)
 TEST(KadKeywordPublishTimes, UnknownVersionReadsNothing)
 {
 	CMemFile file;
-	file.WriteUInt8(2);
+	file.WriteUInt8(KADKEYWORDS_VERSION + 1);
 	file.WriteUInt32(0);
 	file.Seek(0);
 	Times read;

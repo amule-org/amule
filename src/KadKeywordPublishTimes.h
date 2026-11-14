@@ -38,6 +38,8 @@ namespace KadKeywordPublishTimes
 {
 using Times = std::map<Kademlia::CUInt128, uint32_t>;
 
+constexpr const char *FileName = "kadkeywords.dat";
+
 void Write(CFileDataIO &file, const Times &times);
 
 //! Drops times already due, and caps the rest at one republish interval from `now`, so a

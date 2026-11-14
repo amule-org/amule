@@ -341,21 +341,30 @@ void CPublishKeywordList::RemoveAllKeywords()
 	SetNextPublishTime(0);
 }
 
+namespace
+{
+CPath KeywordPublishTimesPath()
+{
+	return CPath(thePrefs::GetConfigDir() + KadKeywordPublishTimes::FileName);
+}
+} // namespace
+
 void CPublishKeywordList::LoadPublishTimes(const CPath &path)
 {
 	CFile file;
 	if (!path.FileExists() || !file.Open(path)) {
 		return;
 	}
-	if (!KadKeywordPublishTimes::Read(file, time(NULL), m_savedTimes)) {
-		AddDebugLogLineN(
-			logKnownFiles, "Kad keyword publish times are damaged; keeping what was read");
+	if (!KadKeywordPublishTimes::Read(file, time(nullptr), m_savedTimes)) {
+		AddDebugLogLineN(logKnownFiles,
+			CFormat("%s is damaged or newer; keeping what was read") %
+				KadKeywordPublishTimes::FileName);
 	}
 }
 
 void CPublishKeywordList::SavePublishTimes(const CPath &path) const
 {
-	const uint32 now = time(NULL);
+	const uint32 now = time(nullptr);
 	KadKeywordPublishTimes::Times times;
 	// Keep saved times whose files are not shared now; they may come back.
 	for (const auto &saved : m_savedTimes) {
@@ -375,10 +384,12 @@ void CPublishKeywordList::SavePublishTimes(const CPath &path) const
 	try {
 		KadKeywordPublishTimes::Write(file, times);
 		if (!file.Close()) {
-			throw CIOFailureException("Cannot commit kadkeywords.dat");
+			throw CIOFailureException(
+				wxString("Cannot commit ") + KadKeywordPublishTimes::FileName);
 		}
 	} catch (const CIOFailureException &e) {
-		AddLogLineC(CFormat(_("Error while saving %s file: %s")) % "kadkeywords.dat" % e.what());
+		AddLogLineC(CFormat(_("Error while saving %s file: %s")) % KadKeywordPublishTimes::FileName %
+			    e.what());
 	}
 }
 
@@ -417,7 +428,7 @@ CSharedFileList::CSharedFileList(CKnownFileList *in_filelist)
 	m_lastPublishED2KFlag = true;
 	/* Kad Stuff */
 	m_keywords = new CPublishKeywordList;
-	m_keywords->LoadPublishTimes(CPath(thePrefs::GetConfigDir() + "kadkeywords.dat"));
+	m_keywords->LoadPublishTimes(KeywordPublishTimesPath());
 	m_lastPublishKadSrc = 0;
 	m_lastPublishKadNotes = 0;
 	m_currFileKey = 0;
@@ -1960,7 +1971,7 @@ CSharedFileList::SPublishingState CSharedFileList::GetPublishingState() const
 void CSharedFileList::SaveKeywordPublishTimes()
 {
 	wxMutexLocker lock(list_mut);
-	m_keywords->SavePublishTimes(CPath(thePrefs::GetConfigDir() + "kadkeywords.dat"));
+	m_keywords->SavePublishTimes(KeywordPublishTimesPath());
 }
 
 void CSharedFileList::Publish()

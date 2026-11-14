@@ -59,4 +59,9 @@ enum StoredSearchesFileVersions
 	STOREDSEARCHES_VERSION = 0x01
 };
 
+enum KadKeywordsFileVersions
+{
+	KADKEYWORDS_VERSION = 0x01
+};
+
 #endif // DATAFILEVERSION_H

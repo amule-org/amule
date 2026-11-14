@@ -24,22 +24,18 @@
 
 #include "KadKeywordPublishTimes.h" // Interface declarations
 
+#include <common/DataFileVersion.h> // Needed for KADKEYWORDS_VERSION
 #include <protocol/kad/Constants.h> // Needed for KADEMLIAREPUBLISHTIMEK
 
 #include "SafeFile.h" // Needed for CFileDataIO
 
 #include <algorithm>
 
-namespace
-{
-const uint8_t kVersion = 1;
-}
-
 namespace KadKeywordPublishTimes
 {
 void Write(CFileDataIO &file, const Times &times)
 {
-	file.WriteUInt8(kVersion);
+	file.WriteUInt8(KADKEYWORDS_VERSION);
 	file.WriteUInt32(times.size());
 	for (const auto &time : times) {
 		file.WriteUInt128(time.first);
@@ -50,7 +46,7 @@ void Write(CFileDataIO &file, const Times &times)
 bool Read(const CFileDataIO &file, uint32_t now, Times &times)
 {
 	try {
-		if (file.ReadUInt8() != kVersion) {
+		if (file.ReadUInt8() != KADKEYWORDS_VERSION) {
 			return false;
 		}
 		const uint32_t latest = now + KADEMLIAREPUBLISHTIMEK;
