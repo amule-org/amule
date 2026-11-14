@@ -41,13 +41,6 @@ inline int Find(const std::vector<unsigned> &shown, unsigned page)
 	return it == shown.end() ? -1 : static_cast<int>(it - shown.begin());
 }
 
-//! Row at which @p page goes to keep the sidebar in pages[] order.
-inline unsigned InsertionRow(const std::vector<unsigned> &shown, unsigned page)
-{
-	return static_cast<unsigned>(
-		std::count_if(shown.begin(), shown.end(), [page](unsigned other) { return other < page; }));
-}
-
 } // namespace PrefsPageRows
 
 #endif // AMULE_PREFSPAGEROWS_H

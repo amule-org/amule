@@ -34,7 +34,7 @@
 
 #include <common/Path.h> // Needed for CPath (value members of m_sharedDirRowPaths)
 
-#include <utility>
+#include <map>
 #include <vector>
 
 #include "ProtocolHandlerManager.h" // Needed for HandlerTarget enum
@@ -208,18 +208,16 @@ private:
 	wxStaticText *m_pageTitle = nullptr;
 	WrappingStaticText *m_pageDescription = nullptr;
 	//! Controls drawn in bold because they match the search, with the font each had before.
-	std::vector<std::pair<wxWindow *, wxFont>> m_searchHighlights;
+	std::map<wxWindow *, wxFont> m_searchHighlights;
 
 	//! Swap @a page in as the visible page and name it in the header.
 	void ShowPage(unsigned page);
 	//! Refill the sidebar with the pages that are not hidden and match the search, keep the
 	//! current page if it is among them, and bold the matching options.
 	void RebuildSidebar();
-	void ClearSearchHighlights();
 	//! Whether page @a page matches the search @a terms; adds the controls that do to @a matches.
 	bool PageMatchesSearch(
 		unsigned page, const std::vector<wxString> &terms, std::vector<wxWindow *> &matches) const;
-	bool SearchHasFocus() const;
 	void OnSearchText(wxCommandEvent &event);
 	void OnSearchCancel(wxCommandEvent &event);
 	void OnCharHook(wxKeyEvent &event);

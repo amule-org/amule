@@ -41,7 +41,8 @@ namespace PrefsSearch
 //! wxString::Lower() follows the C library's locale, which may only know ASCII.
 inline wxUniChar BaseLetter(wxUniChar c)
 {
-	if (c.IsAscii()) {
+	// Everything in the table below lies in U+00C0..U+017E.
+	if (c.IsAscii() || c.GetValue() >= 0x180) {
 		return c;
 	}
 	// Escapes rather than the letters themselves: the sources are not all compiled as UTF-8.
@@ -86,25 +87,12 @@ inline wxUniChar BaseLetter(wxUniChar c)
 	return c;
 }
 
-//! @p text lowercased, with accented Latin letters reduced to their base letter, and every run of
-//! whitespace collapsed to one space.
+//! @p text lowercased, with accented Latin letters reduced to their base letter.
 inline wxString Fold(const wxString &text)
 {
-	const wxString lower = text.Lower();
-	wxString folded;
-	folded.reserve(lower.length());
-	bool pendingSpace = false;
-	for (wxString::const_iterator it = lower.begin(); it != lower.end(); ++it) {
-		const wxUniChar c = *it;
-		if (wxIsspace(c)) {
-			pendingSpace = !folded.empty();
-			continue;
-		}
-		if (pendingSpace) {
-			folded += ' ';
-			pendingSpace = false;
-		}
-		folded += BaseLetter(c);
+	wxString folded = text.Lower();
+	for (wxString::iterator it = folded.begin(); it != folded.end(); ++it) {
+		*it = BaseLetter(*it);
 	}
 	return folded;
 }
@@ -113,7 +101,7 @@ inline wxString Fold(const wxString &text)
 inline std::vector<wxString> Terms(const wxString &query)
 {
 	std::vector<wxString> terms;
-	wxStringTokenizer tokens(Fold(query), " ", wxTOKEN_STRTOK);
+	wxStringTokenizer tokens(Fold(query), wxDEFAULT_DELIMITERS, wxTOKEN_STRTOK);
 	while (tokens.HasMoreTokens()) {
 		terms.push_back(tokens.GetNextToken());
 	}

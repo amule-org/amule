@@ -44,19 +44,19 @@ TEST(PrefsSearch, FoldDropsAccents)
 	ASSERT_EQUALS(wxString("zrodlo"), PrefsSearch::Fold(L"\u0179r\u00f3d\u0142o"));
 }
 
-// A label wrapped over several lines must still match a phrase that spans the break.
-TEST(PrefsSearch, FoldCollapsesWhitespace)
-{
-	ASSERT_EQUALS(wxString("start minimized"), PrefsSearch::Fold("  Start\n   minimized \t"));
-}
-
 TEST(PrefsSearch, TermsSplitsOnWhitespace)
 {
-	const std::vector<wxString> terms = PrefsSearch::Terms("  Tray   ICON ");
+	const std::vector<wxString> terms = PrefsSearch::Terms("  Tray \t ICON\n");
 	ASSERT_EQUALS(2u, terms.size());
 	ASSERT_EQUALS(wxString("tray"), terms[0]);
 	ASSERT_EQUALS(wxString("icon"), terms[1]);
 	ASSERT_TRUE(PrefsSearch::Terms(" \t ").empty());
+}
+
+// A label wrapped over several lines must still match a phrase that spans the break.
+TEST(PrefsSearch, MatchesAcrossLineBreaks)
+{
+	ASSERT_TRUE(PrefsSearch::Matches("  Start\n   minimized", PrefsSearch::Terms("start minimized")));
 }
 
 TEST(PrefsSearch, MatchesNeedsEveryTermInAnyOrder)

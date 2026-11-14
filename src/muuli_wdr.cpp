@@ -54,7 +54,6 @@
 #include <wx/valtext.h>
 #include <wx/bmpcbox.h>
 #include <wx/srchctrl.h> // Needed for the preferences search box
-#include <wx/statbmp.h>  // Needed for the icon in PreferencesWarningNotice
 #include <wx/wrapsizer.h> // Needed for the responsive statistics legends
 
 // Euro sign hack of the year
@@ -1386,16 +1385,25 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     return top;
 }
 
+// @p from moved toward @p to by @p amount, from 0 (all @p from) to 1 (all @p to).
+static wxColour MixColours( const wxColour &from, const wxColour &to, double amount )
+{
+    return wxColour( wxColour::AlphaBlend( to.Red(), from.Red(), amount ), wxColour::AlphaBlend( to.Green(), from.Green(), amount ), wxColour::AlphaBlend( to.Blue(), from.Blue(), amount ) );
+}
+
 // Text one step back from the main text, for descriptions and notes: the text colour mixed toward
 // the background. wxSYS_COLOUR_GRAYTEXT is the colour of disabled text, which reads as unavailable
 // and, on a dark background, falls short of a readable contrast; this stays well above 4.5:1 in
 // either appearance.
 static wxColour MutedTextColour( const wxColour &text, const wxColour &background )
 {
-    const auto mix = [&]( unsigned char from, unsigned char to ) {
-        return static_cast<unsigned char>( from + ( to - from ) * 0.36 );
-    };
-    return wxColour( mix( text.Red(), background.Red() ), mix( text.Green(), background.Green() ), mix( text.Blue(), background.Blue() ) );
+    return MixColours( text, background, 0.36 );
+}
+
+// Muted text on the dialog's own background: page descriptions and the notes under fields.
+static void SetMutedText( wxWindow *window )
+{
+    window->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) ) );
 }
 
 wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer )
@@ -1968,7 +1976,7 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
 
     // Notes read as notes: in line with the fields they explain, one step back from the labels.
     wxStaticText *item3_hint = new wxStaticText( parent, -1, SharedFolderHint() );
-    item3_hint->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) ) );
+    SetMutedText( item3_hint );
     item0->Add( item3_hint, 0, 0, 0 );
     wxStaticBox *item6 = new wxStaticBox( parent, -1, _("Folder for temporary download files") );
     wxStaticBoxSizer *item5 = new wxStaticBoxSizer( item6, wxHORIZONTAL );
@@ -1985,7 +1993,7 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     // Remote GUI: the daemon's filesystem isn't ours to browse, so the roots
     // are edited as an explicit path list synced over EC instead of a tree.
     wxStaticText *itemSDHint = new wxStaticText( parent, -1, _("(Folders shared by the core. Enter a path to add one.)") );
-    itemSDHint->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) ) );
+    SetMutedText( itemSDHint );
     item9->Add( itemSDHint, 0, 0, 0 );
 
     wxListCtrl *itemSDList = new wxListCtrl( parent, IDC_SHAREDDIRS_LIST, wxDefaultPosition, wxSize(100,100), wxLC_REPORT|wxLC_SINGLE_SEL|wxSUNKEN_BORDER );
@@ -2005,10 +2013,10 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     item9->Add( itemSDAddRow, wxSizerFlags().Expand().Border(wxTOP, 4) );
 #else
     WrappingStaticText *item11 = new WrappingStaticText( parent, -1, _("Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones.") );
-    item11->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) ) );
+    SetMutedText( item11 );
     item9->Add( item11, wxSizerFlags().Expand() );
     WrappingStaticText *item11b = new WrappingStaticText( parent, -1, _("Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders.") );
-    item11b->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) ) );
+    SetMutedText( item11b );
     item9->Add( item11b, wxSizerFlags().Expand().Border(wxBOTTOM, 2) );
 
     CDirectoryTreeCtrl *item12 = new CDirectoryTreeCtrl( parent, IDC_SHARESELECTOR, wxPoint(0,0), wxSize(100,100), wxSUNKEN_BORDER|wxTR_DEFAULT_STYLE|wxTR_HIDE_ROOT );
@@ -2064,7 +2072,7 @@ wxSizer *PreferencesDirectoriesTab( wxWindow *parent, bool call_fit, bool set_si
     wxStaticBox *itemAR = new wxStaticBox( parent, -1, _("Folders the daemon allows remote changes in") );
     wxStaticBoxSizer *itemARSizer = new wxStaticBoxSizer( itemAR, wxVERTICAL );
     wxStaticText *itemARHint = new wxStaticText( parent, -1, _("(Read-only. Configured on the daemon; if empty, the daemon refuses every remote folder change.)") );
-    itemARHint->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) ) );
+    SetMutedText( itemARHint );
     itemARSizer->Add( itemARHint, 0, 0, 0 );
     wxListBox *itemARList = new wxListBox( parent, IDC_ALLOWED_ROOTS_LIST, wxDefaultPosition, wxSize(100,70), 0, nullptr, wxLB_SINGLE|wxSUNKEN_BORDER );
     itemARSizer->Add( itemARList, wxSizerFlags(1).Expand().CenterVertical() );
@@ -2218,13 +2226,9 @@ wxSizer *PreferencesStatisticsTab( wxWindow *parent, bool call_fit, bool set_siz
 static wxWindow *PreferencesWarningNotice( wxWindow *parent, wxWindowID textId, const wxString &text )
 {
     const wxColour accent( 0xE8, 0xA3, 0x17 );
-    const wxColour base = wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW );
-    const auto mix = [&]( unsigned char from, unsigned char to ) {
-        return static_cast<unsigned char>( from + ( to - from ) * 0.18 );
-    };
 
     wxPanel *notice = new wxPanel( parent, wxID_ANY );
-    notice->SetBackgroundColour( wxColour( mix( base.Red(), accent.Red() ), mix( base.Green(), accent.Green() ), mix( base.Blue(), accent.Blue() ) ) );
+    notice->SetBackgroundColour( MixColours( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ), accent, 0.18 ) );
     wxBoxSizer *row = new wxBoxSizer( wxHORIZONTAL );
 
     wxPanel *bar = new wxPanel( notice, wxID_ANY, wxDefaultPosition, wxSize( notice->FromDIP(4), -1 ) );
@@ -2566,11 +2570,11 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
 
     // The sidebar is one panel in the list's own colour, so the search box, the "no matches" note
     // and the page list read as a single pane rather than a list control dropped on the dialog.
-    wxPanel *sidebar = new wxPanel( parent, ID_PREFS_SIDEBAR );
+    wxPanel *sidebar = new wxPanel( parent, wxID_ANY );
     sidebar->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) );
     wxBoxSizer *sidebarSizer = new wxBoxSizer( wxVERTICAL );
 
-    wxSearchCtrl *search = new wxSearchCtrl( sidebar, ID_PREFS_SEARCH, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+    wxSearchCtrl *search = new wxSearchCtrl( sidebar, ID_PREFS_SEARCH );
     search->SetDescriptiveText( _("Search settings") );
     // The clear button appears once there is something to clear (PrefsUnifiedDlg::OnSearchText).
     search->ShowCancelButton( false );
@@ -2599,7 +2603,7 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     pageColumn->Add( pageTitle, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxTOP, parent->FromDIP(kPrefsPageMargin)) );
     pageColumn->AddSpacer( parent->FromDIP(2) );
     WrappingStaticText *pageDescription = new WrappingStaticText( parent, ID_PREFS_PAGE_DESCRIPTION, wxEmptyString );
-    pageDescription->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) ) );
+    SetMutedText( pageDescription );
     pageColumn->Add( pageDescription, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT, parent->FromDIP(kPrefsPageMargin)) );
     pageColumn->AddSpacer( parent->FromDIP(12) );
     item1->Add( pageColumn, wxSizerFlags(1).Expand() );
@@ -3631,12 +3635,16 @@ item4->SetName("kadWnd");
 wxSizer *IDC_PREFS_EVENTS_PAGE;
 wxSizer *PreferencesEventsTab( wxWindow *parent, bool call_fit, bool set_sizer )
 {
-    wxStaticBox *item1 = new wxStaticBox( parent, -1, _("Event Types") );
-    wxStaticBoxSizer *item0 = new wxStaticBoxSizer( item1, wxVERTICAL );
+    // The list of events, then one panel per event at index event + 1 (PrefsUnifiedDlg shows the
+    // picked one). A plain sizer, so it outlives the group box around the list.
+    wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
     IDC_PREFS_EVENTS_PAGE = item0;
 
+    wxStaticBox *item1 = new wxStaticBox( parent, -1, _("Event Types") );
+    wxStaticBoxSizer *eventTypes = new wxStaticBoxSizer( item1, wxVERTICAL );
     wxListCtrl *item2 = new wxListCtrl( parent, IDC_EVENTLIST, wxDefaultPosition, wxSize(160,120), wxLC_REPORT|wxLC_NO_HEADER|wxLC_SINGLE_SEL|wxSUNKEN_BORDER );
-    item0->Add( item2, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 5) );
+    eventTypes->Add( item2, wxSizerFlags(1).Expand().CenterVertical().Border(wxALL, 5) );
+    item0->Add( eventTypes, wxSizerFlags(1).Expand() );
     if (set_sizer)
     {
         parent->SetSizer( item0 );

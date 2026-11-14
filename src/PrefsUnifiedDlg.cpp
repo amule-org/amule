@@ -129,17 +129,13 @@ public:
 
 bool IsSectionSizer(const wxSizer *sizer)
 {
-	return dynamic_cast<const PrefsSectionSizer *>(sizer) ||
-	       dynamic_cast<const wxStaticBoxSizer *>(sizer);
+	return dynamic_cast<const PrefsSectionSizer *>(sizer) != nullptr;
 }
 
-// Whether a vertical sizer item is a section of its own -- a section, a row of sections, or a
-// radio box, which draws a frame -- rather than a single row.
+// Whether a vertical sizer item is a section of its own, or a row of sections, rather than a
+// single row.
 bool IsPageSection(const wxSizerItem *item)
 {
-	if (item->IsWindow()) {
-		return wxDynamicCast(item->GetWindow(), wxRadioBox) != nullptr;
-	}
 	if (!item->IsSizer()) {
 		return false;
 	}
@@ -156,10 +152,9 @@ bool IsPageSection(const wxSizerItem *item)
 
 // Turns every group box under @p sizer into a heading over the box's rows. Framed boxes, often
 // nested, are what dates a settings page most; a bold heading and some space group the rows as
-// clearly, the way current system settings do. Returns the sizer that replaced @p watched, or
-// @p watched itself when it was not a group box: code that keeps a pointer to a box sizer must
-// follow it to its replacement, which holds the same rows at the same indices.
-wxSizer *ConvertGroupBoxes(wxSizer *sizer, wxSizer *watched = nullptr)
+// clearly, the way current system settings do. The rows keep their indices, now in the section's
+// rows sizer.
+void ConvertGroupBoxes(wxSizer *sizer)
 {
 	for (size_t index = 0; index < sizer->GetItemCount(); ++index) {
 		wxSizerItem *item = sizer->GetItem(index);
@@ -167,12 +162,17 @@ wxSizer *ConvertGroupBoxes(wxSizer *sizer, wxSizer *watched = nullptr)
 			continue;
 		}
 		wxSizer *child = item->GetSizer();
-		watched = ConvertGroupBoxes(child, watched);
+		ConvertGroupBoxes(child);
 		auto *boxSizer = dynamic_cast<wxStaticBoxSizer *>(child);
-		// A box with controls of its own keeps its frame: moving native controls to another
-		// parent breaks some of them on Windows (spin controls vanish, sliders lose their
-		// background). The page builders create every control on the page itself.
-		if (!boxSizer || !boxSizer->GetStaticBox()->GetChildren().empty()) {
+		if (!boxSizer) {
+			continue;
+		}
+		// Moving native controls to another parent breaks some of them on Windows (spin controls
+		// vanish, sliders lose their background), so the page builders create every control on
+		// the page itself, and a box that has controls of its own keeps its frame.
+		if (!boxSizer->GetStaticBox()->GetChildren().empty()) {
+			wxLogDebug("Preferences: group box \"%s\" has child controls and keeps its frame",
+				boxSizer->GetStaticBox()->GetLabelText());
 			continue;
 		}
 		wxStaticBox *box = boxSizer->GetStaticBox();
@@ -225,18 +225,9 @@ wxSizer *ConvertGroupBoxes(wxSizer *sizer, wxSizer *watched = nullptr)
 		section->Add(
 			rows, wxSizerFlags(1).Expand().Border(wxTOP, label.empty() ? 0 : parent->FromDIP(4)));
 
-		const int proportion = item->GetProportion();
-		const int flag = item->GetFlag();
-		const int border = item->GetBorder();
-		sizer->Detach(index);
-		sizer->Insert(index, section, proportion, flag, border);
-		if (watched == boxSizer) {
-			watched = rows;
-		}
-		// Takes the box with it, which no longer has children.
-		delete boxSizer;
+		// Keeps the item's flags, and deletes the box sizer, which takes the empty box with it.
+		sizer->Replace(boxSizer, section);
 	}
-	return watched;
 }
 
 // Give a page's rows room to breathe. The page builders in muuli_wdr.cpp stack most rows and
@@ -280,8 +271,7 @@ wxString SearchableText(wxWindow *window)
 {
 	wxString text;
 	if (wxDynamicCast(window, wxStaticText) || wxDynamicCast(window, wxCheckBox) ||
-		wxDynamicCast(window, wxRadioButton) || wxDynamicCast(window, wxButton) ||
-		wxDynamicCast(window, wxStaticBox) || wxDynamicCast(window, wxRadioBox)) {
+		wxDynamicCast(window, wxRadioButton) || wxDynamicCast(window, wxButton)) {
 		text = static_cast<wxControl *>(window)->GetLabelText();
 	}
 	if (auto *items = dynamic_cast<wxItemContainerImmutable *>(window)) {
@@ -297,8 +287,8 @@ wxString SearchableText(wxWindow *window)
 	return text;
 }
 
-// Whether a matching control can be shown in bold. Not a static box or radio box: their children
-// inherit the font. Not a button either, whose label names an action rather than a setting.
+// Whether a matching control can be shown in bold. Not a button, whose label names an action
+// rather than a setting.
 bool CanHighlight(wxWindow *window)
 {
 	return wxDynamicCast(window, wxStaticText) || wxDynamicCast(window, wxCheckBox) ||
@@ -639,9 +629,9 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	SetEscapeId(ID_PREFS_CANCEL_TOP);
 
 	m_search = CastChild(ID_PREFS_SEARCH, wxSearchCtrl);
-	m_noMatches = dynamic_cast<WrappingStaticText *>(FindWindow(ID_PREFS_NO_MATCHES));
+	m_noMatches = CastChild(ID_PREFS_NO_MATCHES, WrappingStaticText);
 	m_pageTitle = CastChild(ID_PREFS_PAGE_TITLE, wxStaticText);
-	m_pageDescription = dynamic_cast<WrappingStaticText *>(FindWindow(ID_PREFS_PAGE_DESCRIPTION));
+	m_pageDescription = CastChild(ID_PREFS_PAGE_DESCRIPTION, WrappingStaticText);
 	// The list decides how wide the sidebar is; the search box fills whatever that comes to.
 	m_search->SetMinSize(wxSize(FromDIP(80), -1));
 	m_search->Bind(wxEVT_TEXT, &PrefsUnifiedDlg::OnSearchText, this);
@@ -875,8 +865,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		} else if (pages[i].m_function == PreferencesaMuleTweaksTab) {
 			m_aMuleTweaksWidget = Widget;
 			// The warning wraps to the page, so its height follows the page width.
-			if (auto *warning = dynamic_cast<WrappingStaticText *>(
-				    FindWindow(IDC_AMULE_TWEAKS_WARNING))) {
+			if (auto *warning = CastChild(IDC_AMULE_TWEAKS_WARNING, WrappingStaticText)) {
 				warning->SetLayoutCallback([warning, Widget] {
 					Widget->Layout();
 					RefreshPreferencesPage(warning);
@@ -889,9 +878,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			}
 		}
 
-		// The page's own sizer may be a group box (Events), so start from the margins around it.
-		// The events page's sizer is kept in a global, which must follow it.
-		IDC_PREFS_EVENTS_PAGE = ConvertGroupBoxes(Widget->GetSizer(), IDC_PREFS_EVENTS_PAGE);
+		ConvertGroupBoxes(Widget->GetSizer());
 		SpaceOutPageRows(Widget->GetSizer(), Widget);
 
 		// Preserve the controls' natural size as the scrollable content size without
@@ -906,19 +893,10 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		Widget->Show(false);
 	}
 
-	// Default to the General tab
+	// Default to the General tab; ShowPage() below fills in its header.
 	m_CurrentPanel = DefaultWidget;
-	m_currentPage = 0;
 	prefs_sizer->Add(DefaultWidget, wxSizerFlags(1).Expand());
 	m_CurrentPanel->Show(true);
-	m_pageTitle->SetLabelText(wxGetTranslation(pages[0].m_title));
-	m_pageDescription->SetWrappedText(wxGetTranslation(pages[0].m_description));
-
-	// The reset button only applies to the Advanced page; hide it until that
-	// page is selected (ShowPage toggles it thereafter).
-	if (wxButton *resetBtn = CastChild(IDC_TWEAKS_RESET, wxButton)) {
-		resetBtn->Show(false);
-	}
 
 #ifdef CLIENT_GUI
 	// The shared-file exclusion preview counts against the core's in-memory shared list,
@@ -956,8 +934,9 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	// Don't show server prefs if ED2K is disabled
 	m_pageHidden[m_IndexServerTab] = !thePrefs::GetNetworkED2K();
 
-	// Fill the sidebar; this selects the General page shown above.
+	// Fill the sidebar, which selects the General page, then give that page its header.
 	RebuildSidebar();
+	ShowPage(m_currentPage);
 
 	// Store some often used pointers
 	m_ShareSelector = CastChild(IDC_SHARESELECTOR, CDirectoryTreeCtrl);
@@ -1086,19 +1065,8 @@ bool PrefsUnifiedDlg::PageMatchesSearch(
 	return matched;
 }
 
-void PrefsUnifiedDlg::ClearSearchHighlights()
-{
-	for (const auto &highlight : m_searchHighlights) {
-		highlight.first->SetFont(highlight.second);
-	}
-	m_searchHighlights.clear();
-}
-
 void PrefsUnifiedDlg::RebuildSidebar()
 {
-	wxWindowUpdateLocker freeze(this);
-
-	ClearSearchHighlights();
 	const std::vector<wxString> terms = PrefsSearch::Terms(m_search->GetValue());
 	std::vector<unsigned> rows;
 	std::vector<wxWindow *> matches;
@@ -1111,6 +1079,7 @@ void PrefsUnifiedDlg::RebuildSidebar()
 	// Refilling the list resets its scroll position and selection, so only do it when the
 	// set of rows actually changes -- not, say, when a search gains a letter but keeps its pages.
 	if (rows != ShownPages()) {
+		wxWindowUpdateLocker freezeList(m_PrefsIcons);
 		m_PrefsIcons->DeleteAllItems();
 		for (unsigned page : rows) {
 			// Item data is the page's stable pages[] index -- never reordered, only which pages
@@ -1122,43 +1091,60 @@ void PrefsUnifiedDlg::RebuildSidebar()
 			m_PrefsIcons->AppendItem(values, static_cast<wxUIntPtr>(page));
 		}
 	}
+	const bool noteWasShown = m_noMatches->IsShown();
 	if (rows.empty()) {
 		// Quotes what was typed, so a typo shows, and says what to try.
 		m_noMatches->SetWrappedText(
 			CFormat(_("No settings match \"%s\". Try a shorter or different word.")) %
 			m_search->GetValue().Strip(wxString::both));
 	}
-	m_noMatches->Show(rows.empty());
-	m_noMatches->GetParent()->Layout();
+	if (noteWasShown || rows.empty()) {
+		m_noMatches->Show(rows.empty());
+		m_noMatches->GetParent()->Layout();
+	}
 
+	// Only the controls whose match changed get a new font: a short query matches most of the
+	// dialog, and every font change makes its page measure that control again.
+	wxWindowUpdateLocker freezePage(m_CurrentPanel);
+	std::sort(matches.begin(), matches.end());
+	std::vector<wxWindow *> changed;
+	for (auto it = m_searchHighlights.begin(); it != m_searchHighlights.end();) {
+		if (std::binary_search(matches.begin(), matches.end(), it->first)) {
+			++it;
+		} else {
+			it->first->SetFont(it->second);
+			changed.push_back(it->first);
+			it = m_searchHighlights.erase(it);
+		}
+	}
 	for (wxWindow *control : matches) {
-		m_searchHighlights.emplace_back(control, control->GetFont());
-		control->SetFont(control->GetFont().Bold());
+		if (m_searchHighlights.emplace(control, control->GetFont()).second) {
+			control->SetFont(control->GetFont().Bold());
+			changed.push_back(control);
+		}
 	}
 
 	// Stay on the current page while it is listed; otherwise move to the first page that is.
 	// With nothing listed, the current page stays on show, so the dialog is never blank.
-	const int row = PrefsPageRows::Find(rows, m_currentPage);
+	int row = PrefsPageRows::Find(rows, m_currentPage);
+	unsigned page = m_currentPage;
+	if (row < 0 && !rows.empty()) {
+		row = 0;
+		page = rows.front();
+	}
 	if (row >= 0) {
 		m_PrefsIcons->SelectRow(row);
-		ShowPage(m_currentPage);
-	} else if (!rows.empty()) {
-		m_PrefsIcons->SelectRow(0);
-		m_PrefsIcons->EnsureVisible(m_PrefsIcons->RowToItem(0));
-		ShowPage(rows.front());
-	} else {
-		ShowPage(m_currentPage);
+		m_PrefsIcons->EnsureVisible(m_PrefsIcons->RowToItem(row));
 	}
-}
-
-bool PrefsUnifiedDlg::SearchHasFocus() const
-{
-	for (const wxWindow *window = wxWindow::FindFocus(); window; window = window->GetParent()) {
-		if (window == m_search) {
-			return true;
-		}
+	if (page != m_currentPage) {
+		ShowPage(page);
+	} else if (std::any_of(changed.begin(), changed.end(), [this](wxWindow *control) {
+			   return m_CurrentPanel->IsDescendant(control);
+		   })) {
+		// Bold labels are wider than plain ones.
+		m_CurrentPanel->Layout();
+		RefreshPreferencesPage(m_CurrentPanel);
 	}
-	return false;
 }
 
 void PrefsUnifiedDlg::OnSearchText(wxCommandEvent &event)
@@ -1183,7 +1169,7 @@ void PrefsUnifiedDlg::OnCharHook(wxKeyEvent &event)
 		m_search->SelectAll();
 		return;
 	}
-	if (SearchHasFocus()) {
+	if (m_search->IsDescendant(wxWindow::FindFocus())) {
 		// Escape clears a search before it closes the dialog.
 		if (key == WXK_ESCAPE && !m_search->IsEmpty()) {
 			m_search->Clear();
@@ -1226,9 +1212,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	// Each opening starts with the full page list: the dialog is reused, and a search left
 	// over from last time would hide pages for no visible reason.
 	if (!m_search->IsEmpty()) {
-		m_search->ChangeValue(wxEmptyString);
-		m_search->ShowCancelButton(false);
-		RebuildSidebar();
+		// Reported as wxEVT_TEXT, which hides the clear button and refills the sidebar.
+		m_search->Clear();
 	}
 
 	m_ed2kEdit.Reset(thePrefs::GetNetworkED2K());
@@ -3321,8 +3306,8 @@ void PrefsUnifiedDlg::OnRateLimitChanged(wxSpinEvent &event)
 
 void PrefsUnifiedDlg::OnTCPClientPortChange(wxSpinEvent &WXUNUSED(event))
 {
-	// The server page is listed exactly while eD2k is on.
-	const bool ed2k = m_pageHidden.empty() || !m_pageHidden[m_IndexServerTab];
+	const wxCheckBox *ed2kBox = CastChild(IDC_NETWORKED2K, wxCheckBox);
+	const bool ed2k = !ed2kBox || ed2kBox->GetValue();
 	CastChild(ID_TEXT_CLIENT_UDP_PORT, wxStaticText)
 		->SetLabel(ed2k ? (wxString() << (CastChild(IDC_PORT, wxSpinCtrl)->GetValue() + 3))
 				: wxString(_("disabled")));
