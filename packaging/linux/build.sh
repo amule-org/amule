@@ -21,6 +21,11 @@ commands:
   static [arch]              produce a fully static musl daemon tarball
                              (amuled + amulecmd + amuleapi + amule-media-probe) in dist/
                              arch: host (default) | x86_64 | aarch64
+  deb <suite> [channel]      produce native .debs in dist/deb/<suite>/out
+                             for the host arch, with a private wx
+                             suite: debian12 | debian13 | ubuntu22.04 |
+                                    ubuntu24.04 | ubuntu26.04
+                             channel: release (default) | nightly
   validate [arch]            run amuled --version inside a fixed matrix
                              of distro Docker images to catch lib-load
                              regressions. arch: host (default) only —
@@ -372,6 +377,73 @@ build_static() {
     echo "==> Done: ${tarball}"
 }
 
+build_deb() {
+    # Native .debs against the suite's own libraries, except wx: the pinned
+    # wx from versions.env is built as a private library. A release
+    # build takes its version from ClientVersion.h; a nightly appends
+    # +git<date>.<commit count>.<sha>, which sorts above that release and
+    # below the next one. The count keeps two nightlies of one day in order.
+    local suite="${1:-}" channel="${2:-release}"
+    local image tag
+    case "${suite}" in
+        debian12)    image=debian:12;    tag=deb12 ;;
+        debian13)    image=debian:13;    tag=deb13 ;;
+        ubuntu22.04) image=ubuntu:22.04; tag=ubuntu22.04 ;;
+        ubuntu24.04) image=ubuntu:24.04; tag=ubuntu24.04 ;;
+        ubuntu26.04) image=ubuntu:26.04; tag=ubuntu26.04 ;;
+        *) echo "fatal: unsupported suite '${suite}' (choose debian12|debian13|ubuntu22.04|ubuntu24.04|ubuntu26.04)" >&2; exit 1 ;;
+    esac
+
+    local header="${REPO_ROOT}/src/include/common/ClientVersion.h"
+    local upstream
+    upstream="$(sed -n 's/^#define VERSION_MJR \([0-9]*\)$/\1/p' "${header}").$(sed -n 's/^#define VERSION_MIN \([0-9]*\)$/\1/p' "${header}").$(sed -n 's/^#define VERSION_UPDATE \([0-9]*\)$/\1/p' "${header}")"
+    case "${channel}" in
+        release) ;;
+        nightly)
+            if [ "$(git -C "${REPO_ROOT}" rev-parse --is-shallow-repository)" = true ]; then
+                echo "fatal: nightly versions count commits; fetch the full history first" >&2
+                exit 1
+            fi
+            upstream+="+git$(git -C "${REPO_ROOT}" log -1 --format=%cd --date=format:%Y%m%d)"
+            upstream+=".$(git -C "${REPO_ROOT}" rev-list --count HEAD)"
+            upstream+=".$(git -C "${REPO_ROOT}" rev-parse --short=9 HEAD)"
+            ;;
+        *) echo "fatal: unsupported channel '${channel}' (choose release|nightly)" >&2; exit 1 ;;
+    esac
+    local version="1:${upstream}-1~${tag}"
+
+    local work="${REPO_ROOT}/dist/deb/${suite}"
+    rm -rf "${work}"
+    mkdir -p "${work}"
+    # git's own gzip is deterministic, so every suite gets a byte-identical
+    # orig tarball and the repo pool can share one copy.
+    git -C "${REPO_ROOT}" archive --format=tar.gz --prefix="amule-${upstream}/" \
+        -o "${work}/amule_${upstream}.orig.tar.gz" HEAD
+    # The pinned wx goes in as a second orig tarball, so the source package
+    # holds the complete source of the binaries.
+    local wx_tarball="${REPO_ROOT}/dist/deb/wxWidgets-${WX_VERSION}.tar.bz2"
+    if [ ! -f "${wx_tarball}" ]; then
+        curl -fsSL -o "${wx_tarball}.part" "${WX_TARBALL_URL}"
+        mv "${wx_tarball}.part" "${wx_tarball}"
+    fi
+    if ! echo "${WX_SHA256}  ${wx_tarball}" | sha256sum -c - >/dev/null 2>&1 \
+        && ! echo "${WX_SHA256}  ${wx_tarball}" | shasum -a 256 -c - >/dev/null 2>&1; then
+        echo "fatal: ${wx_tarball} does not match WX_SHA256" >&2
+        exit 1
+    fi
+    cp "${wx_tarball}" "${work}/amule_${upstream}.orig-wxwidgets.tar.bz2"
+    cp -r "${SCRIPT_DIR}/deb/debian" "${work}/debian"
+
+    echo "==> Building amule ${version} in ${image}"
+    docker run --rm \
+        -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+        -v "${work}:/work" \
+        -v "${SCRIPT_DIR}/deb/build-in-container.sh:/build-in-container.sh:ro" \
+        "${image}" /build-in-container.sh "${version}"
+
+    echo "==> Packages in ${work}/out"
+}
+
 setup_cross_arch() {
     # tonistiigi/binfmt registers QEMU emulators in the host kernel's
     # binfmt_misc so docker can run / build images for non-native
@@ -537,6 +609,7 @@ case "${target}" in
     appimage)                build_appimage "${1:-}" ;;
     flatpak)                 build_flatpak "${1:-}" ;;
     static)                  build_static "${1:-}" ;;
+    deb)                     build_deb "${1:-}" "${2:-}" ;;
     render-flatpak-manifest) render_flatpak_manifest ;;
     validate)                validate_appimage "${1:-}" ;;
     all)                     build_all ;;

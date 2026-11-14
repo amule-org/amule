@@ -1,0 +1,103 @@
+Source: amule
+Section: net
+Priority: optional
+Maintainer: aMule Team <got3nks@users.noreply.github.com>
+Build-Depends: cmake,
+               debhelper-compat (= 13),
+               gettext,
+               libayatana-appindicator3-dev,
+               libboost-dev,
+               libcrypto++-dev,
+               libcurl4-openssl-dev,
+               libgd-dev,
+               libglib2.0-dev,
+               libgtk-3-dev,
+               libjpeg-dev,
+               libmaxminddb-dev,
+               libnotify-dev,
+               libpcre2-dev,
+               libpng-dev,
+               libreadline-dev,
+               libupnp-dev,
+               ninja-build,
+               pkgconf,
+               po4a,
+               python3,
+               zlib1g-dev,
+Standards-Version: 4.7.0
+Homepage: https://amule-org.github.io
+Vcs-Git: https://github.com/amule-org/amule.git
+Vcs-Browser: https://github.com/amule-org/amule
+Rules-Requires-Root: no
+
+Package: amule
+Architecture: any
+Depends: amule-common (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Recommends: amule-utils,
+Suggests: amule-utils-gui,
+Description: client for the eD2k and Kad networks, like eMule
+ aMule is a peer-to-peer file sharing application for the eDonkey and Kad
+ networks. It has most features of eMule, including source exchange,
+ compressed transfers, secure identification, IP filtering, and searches
+ on servers and in the Kad network.
+ .
+ The amule-daemon package has a version that runs without a graphical
+ session. The amule-utils and amule-utils-gui packages have related
+ utilities, including the ed2k link handler.
+
+Package: amule-common
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+Recommends: wx3.2-i18n,
+Description: common files for the aMule packages
+ This package contains the files that the other aMule packages share:
+ translations, GUI skins, icons, desktop integration for eMule
+ collection files, the media metadata helper, and a private copy of
+ the wxWidgets libraries. Install amule, amule-daemon, amule-utils or
+ amule-utils-gui instead of this package alone.
+
+Package: amule-daemon
+Architecture: any
+Depends: amule-common (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Recommends: amule-utils,
+Description: aMule daemon and REST API, for the eD2k and Kad networks
+ This package contains amuled, a version of aMule that does not need a
+ graphical session. It is normally used on a machine that runs 24/7.
+ .
+ It also contains amuleapi, a REST API server with a web interface that
+ controls amuled or amule. amulecmd (in amule-utils) and amulegui (in
+ amule-utils-gui) can also control the daemon.
+
+Package: amule-utils
+Architecture: any
+Depends: amule-common (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Description: command-line utilities for aMule
+ This package contains command-line utilities for aMule:
+ .
+  * ed2k: sends ed2k:// links to aMule
+  * cas: shows the contents of your aMule online signature
+  * alcc: makes ed2k:// links for the given files
+  * amulecmd: text client that controls aMule or the aMule daemon
+ .
+ The amule-utils-gui package has graphical versions of some of them.
+
+Package: amule-utils-gui
+Architecture: any
+Depends: amule-common (= ${binary:Version}),
+         ${misc:Depends},
+         ${shlibs:Depends},
+Description: graphical utilities for aMule
+ This package contains graphical utilities for aMule:
+ .
+  * amulegui: graphical client that controls aMule or the aMule daemon
+  * wxcas: shows the contents of your aMule online signature
+  * alc: makes ed2k:// links for the given files
+ .
+ The amule-utils package has command-line versions of them.

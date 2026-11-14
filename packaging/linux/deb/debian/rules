@@ -1,0 +1,110 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/architecture.mk
+include /usr/share/dpkg/buildflags.mk
+include /usr/share/dpkg/buildopts.mk
+
+ifeq ($(filter nocheck,$(DEB_BUILD_OPTIONS)),)
+TESTING = YES
+else
+TESTING = NO
+endif
+
+# A private wx, shared by every aMule binary. The literal ${exec_prefix} lets
+# wx-config --prefix point the build at the staged copy.
+WX_BUILD = $(CURDIR)/obj-wx
+WX_STAGE = $(CURDIR)/debian/wx-stage
+WX_LIBDIR = /usr/lib/$(DEB_HOST_MULTIARCH)/amule
+WX_CONFIG = $(WX_STAGE)$(WX_LIBDIR)/wx/config/gtk3-unicode-3.2
+WX_LIBS = baseu-3.2 baseu_net-3.2 gtk3u_core-3.2 gtk3u_stc-3.2
+
+# Only base, net, core and stc are linked. Image, regex and compression
+# libraries come from the system, so their security updates apply.
+WX_CONFIGURE = \
+	--prefix=/usr \
+	--libdir='$${exec_prefix}/lib/$(DEB_HOST_MULTIARCH)/amule' \
+	--with-gtk=3 \
+	--disable-debug \
+	--disable-aui \
+	--disable-debugreport \
+	--disable-html \
+	--disable-mediactrl \
+	--disable-propgrid \
+	--disable-ribbon \
+	--disable-richtext \
+	--disable-secretstore \
+	--disable-sound \
+	--disable-webview \
+	--disable-xrc \
+	--with-libcurl \
+	--with-libjpeg=sys \
+	--with-libnotify \
+	--with-libpng=sys \
+	--with-regex=sys \
+	--with-zlib=sys \
+	--without-expat \
+	--without-libjbig \
+	--without-libmspack \
+	--without-libtiff \
+	--without-opengl \
+	--without-sdl
+
+%:
+	dh $@ --buildsystem=cmake+ninja
+
+execute_before_dh_auto_configure:
+	mkdir -p $(WX_BUILD)
+	cd $(WX_BUILD) && $(CURDIR)/wxwidgets/configure $(WX_CONFIGURE)
+	$(MAKE) -C $(WX_BUILD) -j$(or $(DEB_BUILD_OPTION_PARALLEL),1)
+	$(MAKE) -C $(WX_BUILD) install DESTDIR=$(WX_STAGE)
+
+# ENABLE_BFD is off because libbfd has no stable ABI: the backtrace falls back to addr2line.
+# The version check is off because apt delivers the updates.
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		-DwxWidgets_CONFIG_EXECUTABLE=$(WX_CONFIG) \
+		-DwxWidgets_CONFIG_OPTIONS=--prefix=$(WX_STAGE)/usr \
+		-DCMAKE_INSTALL_RPATH=$(WX_LIBDIR) \
+		-DBUILD_MONOLITHIC=YES \
+		-DBUILD_DAEMON=YES \
+		-DBUILD_REMOTEGUI=YES \
+		-DBUILD_AMULECMD=YES \
+		-DBUILD_AMULEAPI=YES \
+		-DBUILD_ED2K=YES \
+		-DBUILD_CAS=YES \
+		-DBUILD_WXCAS=YES \
+		-DBUILD_ALC=YES \
+		-DBUILD_ALCC=YES \
+		-DENABLE_NLS=YES \
+		-DENABLE_UPNP=YES \
+		-DENABLE_IP2COUNTRY=YES \
+		-DENABLE_BFD=NO \
+		-DENABLE_VERSION_CHECK=NO \
+		-DBUILD_TESTING=$(TESTING)
+
+override_dh_auto_test:
+	LD_LIBRARY_PATH=$(WX_STAGE)$(WX_LIBDIR) dh_auto_test
+
+execute_after_dh_auto_install:
+	mkdir -p debian/tmp$(WX_LIBDIR)
+	cp -a $(foreach l,$(WX_LIBS),$(WX_STAGE)$(WX_LIBDIR)/libwx_$(l).so.*) debian/tmp$(WX_LIBDIR)/
+
+# dh_installchangelogs ships CHANGELOG.md, debian/copyright replaces LICENSE.md, and
+# INSTALL.md is about building from source.
+execute_before_dh_install:
+	cd debian/tmp/usr/share/doc/amule && rm -f CHANGELOG.md INSTALL.md LICENSE.md
+
+override_dh_installchangelogs:
+	dh_installchangelogs docs/CHANGELOG.md
+
+# The libraries are private, so ldconfig never needs to see them.
+override_dh_makeshlibs:
+	dh_makeshlibs --no-scripts
+
+override_dh_shlibdeps:
+	dh_shlibdeps -l$(CURDIR)/debian/amule-common$(WX_LIBDIR)
+
+execute_after_dh_auto_clean:
+	rm -rf $(WX_BUILD) $(WX_STAGE)
