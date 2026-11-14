@@ -40,8 +40,9 @@
 class WrappingStaticText : public wxStaticText
 {
 public:
-	WrappingStaticText(wxWindow *parent, wxWindowID id, const wxString &text)
-	: wxStaticText(parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE)
+	WrappingStaticText(wxWindow *parent, wxWindowID id, const wxString &text, long style = 0)
+	: wxStaticText(
+		  parent, id, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxST_NO_AUTORESIZE | style)
 	, m_text(text)
 	{
 		SetLabelText(m_text);
