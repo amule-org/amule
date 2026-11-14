@@ -26,7 +26,7 @@ ITEM_TAGS = {'EC_OP_GET_SHARED_FILES': 'EC_TAG_KNOWNFILE', 'EC_OP_GET_DLOAD_QUEU
 
 
 class PollingEC(EC):
-    """A single-search client that asked for partial updates, as amuleweb was."""
+    """A single-search client that asked for partial updates."""
 
     def __init__(self, port, **kwargs):
         super().__init__(port, multi_search=False,
