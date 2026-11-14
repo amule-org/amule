@@ -39,6 +39,11 @@ option (BUILD_FILEVIEW "compile aMule file viewer for console (EXPERIMENTAL)")
 option (BUILD_MONOLITHIC "enable building of the monolithic aMule app" ON)
 option (BUILD_REMOTEGUI "compile aMule remote GUI")
 option (BUILD_AMULEAPI "compile aMule REST API daemon")
+# BUILD_EVERYTHING used to cache this ON, so a stale value is the likely cause.
+if (BUILD_WEBSERVER)
+	message (FATAL_ERROR "amuleweb was removed in aMule 3.3.0. Use BUILD_AMULEAPI. "
+		"Clear a cached value with -UBUILD_WEBSERVER.")
+endif()
 option (BUILD_WXCAS "compile aMule GUI Statistics")
 option (BUILD_TESTING "Build unit tests" OFF)
 option (ENABLE_QUIC "compile QUIC transport support" OFF)

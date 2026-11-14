@@ -91,6 +91,11 @@ case "${NAME}" in
     amuled|amulegui|amulecmd|amuleapi|ed2k|cas|wxcas|alc|alcc)
         BIN="${HERE}/usr/bin/${NAME}"
         ;;
+    amuleweb)
+        # An older AppImage made this symlink. Falling back to the GUI would surprise a service.
+        echo "amuleweb was removed in aMule 3.3.0. Use amuleapi." >&2
+        exit 127
+        ;;
     *)
         BIN="${HERE}/usr/bin/amule"
         ;;

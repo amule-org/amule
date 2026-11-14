@@ -2567,7 +2567,7 @@ TEST(Refresher, PreferencesEnumAndNestedRemoteControlsDecode)
 	resp.AddTag(conn);
 
 	CECEmptyTag rc(EC_TAG_PREFS_REMOTECTRL);
-	// The retired web-server tags (0x1501-0x1506), as an older core still sends them.
+	// The retired web-server tags (0x1501-0x1506), as a pre-3.3.0 core sent them.
 	rc.AddTag(CECEmptyTag(static_cast<ec_tagname_t>(0x1501))); // autorun, presence == true
 	rc.AddTag(CECTag(static_cast<ec_tagname_t>(0x1502), static_cast<std::uint32_t>(8080)));
 	rc.AddTag(CECTag(static_cast<ec_tagname_t>(0x1505), static_cast<std::uint32_t>(300)));

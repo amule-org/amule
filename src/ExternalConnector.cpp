@@ -488,9 +488,7 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 				if (m_interactive) {
 					ShowGreet();
 				}
-				Pre_Shell();
 				TextShell(ProgName);
-				Post_Shell();
 				if (m_interactive) {
 					Show(CFormat(_("\nOk, exiting %s...\n")) % ProgName);
 				}

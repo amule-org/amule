@@ -134,8 +134,6 @@ public:
 	~CaMuleExternalConnector();
 
 	// Virtual functions
-	virtual void Pre_Shell() {}
-	virtual void Post_Shell() {}
 	virtual int ProcessCommand(int) { return -1; }
 	virtual void TextShell(const wxString &prompt);
 	virtual void LoadConfigFile();
@@ -173,7 +171,7 @@ public:
 	 * portability by accident, when some other tool happens to have left one behind.
 	 */
 	virtual wxString PortableProbeFile() const { return "remote.conf"; }
-	virtual void LoadAmuleConfig(CECFileConfig &cfg);
+	void LoadAmuleConfig(CECFileConfig &cfg);
 	virtual void OnInitCommandSet();
 	virtual bool OnInit();
 	virtual const wxString GetGreetingTitle() = 0;
@@ -265,7 +263,7 @@ public:
 protected:
 	// Set current locale, if language is not empty.
 	// returns canonical name of set (current) locale
-	virtual wxString SetLocale(const wxString &language);
+	wxString SetLocale(const wxString &language);
 
 	CECFileConfig *m_configFile;
 	wxString m_configDir;

@@ -45,6 +45,9 @@ CECPacket MakePrefs(uint32 maxUpload, bool filterComments, bool guest, bool pass
 	CECEmptyTag connection(EC_TAG_PREFS_CONNECTIONS);
 	connection.AddTag(CECTag(EC_TAG_CONN_MAX_UL, maxUpload));
 	connection.AddTag(CECTag(EC_TAG_CONN_MAX_DL, static_cast<uint32>(500)));
+	if (password) {
+		connection.AddTag(CECTag(EC_TAG_PROXY_PASSWORD, wxString("secret")));
+	}
 	prefs.AddTag(connection);
 
 	CECEmptyTag filter(EC_TAG_PREFS_MESSAGEFILTER);
@@ -55,9 +58,6 @@ CECPacket MakePrefs(uint32 maxUpload, bool filterComments, bool guest, bool pass
 	prefs.AddTag(filter);
 
 	CECEmptyTag remote(EC_TAG_PREFS_REMOTECTRL);
-	if (password) {
-		remote.AddTag(CECTag(EC_TAG_PASSWD_HASH, CMD4Hash()));
-	}
 	if (guest) {
 		CECEmptyTag guestTag(EC_TAG_AMULEAPI_GUEST_PASSWD);
 		guestTag.AddTag(CECTag(EC_TAG_PASSWD_HASH, CMD4Hash()));
@@ -156,8 +156,8 @@ TEST(ECPrefsDiff, GuestSwitchedOffCarriesFalse)
 	ASSERT_EQUALS(0u, guest->GetInt());
 }
 
-// A missing hash means "unchanged", never "clear": it must not be sent at all.
-TEST(ECPrefsDiff, DroppedPasswordHashIsNotSent)
+// A missing password means "unchanged", never "clear": it must not be sent at all.
+TEST(ECPrefsDiff, DroppedPasswordIsNotSent)
 {
 	const std::unique_ptr<CECPacket> diff =
 		MakePrefsDiffPacket(MakePrefs(100, true, true, true), MakePrefs(100, true, true, false));
