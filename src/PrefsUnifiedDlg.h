@@ -30,20 +30,26 @@
 
 #include <wx/bmpbndl.h> // Needed for wxBitmapBundle (m_pageIcons)
 #include <wx/dialog.h>  // Needed for wxDialog
+#include <wx/font.h>    // Needed for wxFont (m_searchHighlights)
 
 #include <common/Path.h> // Needed for CPath (value members of m_sharedDirRowPaths)
 
+#include <utility>
 #include <vector>
 
 #include "ProtocolHandlerManager.h" // Needed for HandlerTarget enum
 
 class Cfg_Base;
 class CDirectoryTreeCtrl;
+class WrappingStaticText;
 
 class wxWindow;
 class wxChoice;
 class wxButton;
 class wxPanel;
+class wxSearchCtrl;
+class wxStaticText;
+class wxKeyEvent;
 class wxDataViewListCtrl;
 class wxDataViewColumn;
 class wxDataViewEvent;
@@ -186,11 +192,37 @@ private:
 
 	//! Pointer to the currently shown preference-page
 	wxPanel *m_CurrentPanel;
+	//! `pages[]` index of m_CurrentPanel.
+	unsigned m_currentPage = 0;
 
 	//! hide/show server tab
 	int m_IndexServerTab;
-	bool m_ServerTabVisible;
 	wxPanel *m_ServerWidget;
+	//! Pages kept out of the sidebar whatever the search says, by `pages[]` index: the server page
+	//! while eD2k is off, and on amulegui the IP2Country page when the core has no GeoIP.
+	std::vector<bool> m_pageHidden;
+
+	//! The sidebar's search box, its "no matches" note, and the header above the page.
+	wxSearchCtrl *m_search = nullptr;
+	WrappingStaticText *m_noMatches = nullptr;
+	wxStaticText *m_pageTitle = nullptr;
+	WrappingStaticText *m_pageDescription = nullptr;
+	//! Controls drawn in bold because they match the search, with the font each had before.
+	std::vector<std::pair<wxWindow *, wxFont>> m_searchHighlights;
+
+	//! Swap @a page in as the visible page and name it in the header.
+	void ShowPage(unsigned page);
+	//! Refill the sidebar with the pages that are not hidden and match the search, keep the
+	//! current page if it is among them, and bold the matching options.
+	void RebuildSidebar();
+	void ClearSearchHighlights();
+	//! Whether page @a page matches the search @a terms; adds the controls that do to @a matches.
+	bool PageMatchesSearch(
+		unsigned page, const std::vector<wxString> &terms, std::vector<wxWindow *> &matches) const;
+	bool SearchHasFocus() const;
+	void OnSearchText(wxCommandEvent &event);
+	void OnSearchCancel(wxCommandEvent &event);
+	void OnCharHook(wxKeyEvent &event);
 #if defined(ENABLE_IP2COUNTRY) || defined(CLIENT_GUI)
 	//! List index of the IP2Country tab, so amulegui can drop it from the menu
 	//! when the connected core has no GeoIP support (#440). -1 if not built.
@@ -204,10 +236,9 @@ private:
 	//! `pages[]` index for every page widget, by that same stable position (only which pages
 	//! are VISIBLE in m_PrefsIcons changes). Each visible row's item data is one of these, so
 	//! OnPrefsPageChange identifies a page by the stable index rather than by the row's live
-	//! position, which shifts whenever the server / IP2Country row is hidden or re-shown.
+	//! position, which shifts whenever a row is hidden or re-shown.
 	std::vector<wxPanel *> m_pageWidgets;
-	//! Page icons, in `pages[]` order -- kept so EnableServerTab can
-	//! re-insert the server row's icon when the tab is re-shown.
+	//! Page icons, in `pages[]` order -- kept so RebuildSidebar can re-create any row.
 	std::vector<wxBitmapBundle> m_pageIcons;
 	//! The sidebar's single icon+text column, kept so its width can be
 	//! replaced with the control's own measurement on first show.

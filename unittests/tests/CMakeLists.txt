@@ -1140,6 +1140,27 @@ target_link_libraries (PrefsPageRowsTest
 	mulecommon
 )
 
+# Matching for the preferences search box: case- and accent-insensitive, every
+# word required. Header-only, so it needs nothing beyond wxBase.
+add_executable (PrefsSearchTest
+	PrefsSearchTest.cpp
+)
+
+add_test (NAME PrefsSearchTest
+	COMMAND PrefsSearchTest
+)
+
+target_include_directories (PrefsSearchTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+
+target_link_libraries (PrefsSearchTest
+	muleunit
+	mulecommon
+)
+
 # The banned-address record. Owns the map CClientList used to keep inline, and
 # reports whether each operation actually changed it -- which is the whole
 # reason it exists, since the caller increments a statistic on that answer.

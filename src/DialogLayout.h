@@ -67,6 +67,19 @@ public:
 
 	void SetLayoutCallback(std::function<void()> callback) { m_layoutCallback = std::move(callback); }
 
+	// Replace the text, wrapped to the current width. SetLabel() would be undone by the next
+	// rewrap, which always starts again from the text given here.
+	void SetWrappedText(const wxString &text)
+	{
+		if (text == m_text) {
+			return;
+		}
+		m_text = text;
+		m_wrapWidth = -1;
+		SetLabelText(m_text);
+		Rewrap();
+	}
+
 	bool SetFont(const wxFont &font) override
 	{
 		const bool changed = wxStaticText::SetFont(font);
@@ -122,7 +135,7 @@ private:
 		}
 	}
 
-	const wxString m_text;
+	wxString m_text;
 	int m_wrapWidth = -1;
 	bool m_layoutPending = false;
 	std::function<void()> m_layoutCallback;

@@ -472,6 +472,14 @@ extern wxSizer *prefs_sizer;
 #define ID_PREFSLISTCTRL 10229
 #define ID_PREFS_OK_TOP 10230
 #define ID_PREFS_CANCEL_TOP 10231
+#define ID_PREFS_SIDEBAR 10535
+#define ID_PREFS_SEARCH 10536
+#define ID_PREFS_NO_MATCHES 10537
+#define ID_PREFS_PAGE_TITLE 10538
+#define ID_PREFS_PAGE_DESCRIPTION 10539
+//! Space, in DIPs, between the edges of the preferences page column and its contents. The page
+//! header and the page body share it, so their left edges line up.
+constexpr int kPrefsPageMargin = 16;
 wxSizer *preferencesDlgTop(wxWindow *parent, bool call_fit = TRUE, bool set_sizer = TRUE);
 
 #define IDC_TITLE 10232
