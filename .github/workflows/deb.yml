@@ -1,0 +1,51 @@
+name: Debian packages
+
+# Trial run of every suite and arch. workflow_dispatch only works once this
+# file is on the default branch, so the branch push starts it for now.
+on:
+  push:
+    branches: [feat/debian-packaging]
+    paths:
+      - 'packaging/linux/build.sh'
+      - 'packaging/linux/versions.env'
+      - 'packaging/linux/deb/**'
+      - '.github/workflows/deb.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deb-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deb:
+    name: ${{ matrix.suite }} ${{ matrix.arch }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    # QEMU arches build wx and aMule, then run the unit tests, emulated.
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [debian12, debian13, ubuntu22.04, ubuntu24.04, ubuntu26.04]
+        arch: [amd64, arm64, i386, armhf, ppc64el, s390x, riscv64]
+        exclude:
+          # Ubuntu has no i386 images, and Debian 12 has no riscv64 port.
+          - { suite: ubuntu22.04, arch: i386 }
+          - { suite: ubuntu24.04, arch: i386 }
+          - { suite: ubuntu26.04, arch: i386 }
+          - { suite: debian12, arch: riscv64 }
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v4
+        if: ${{ !contains(fromJSON('["amd64", "arm64", "i386"]'), matrix.arch) }}
+      - name: Build
+        run: packaging/linux/build.sh deb ${{ matrix.suite }} release ${{ matrix.arch }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deb-${{ matrix.suite }}-${{ matrix.arch }}
+          path: |
+            dist/deb/${{ matrix.suite }}-${{ matrix.arch }}/out/*.deb
+            !dist/deb/${{ matrix.suite }}-${{ matrix.arch }}/out/*-dbgsym_*
+          retention-days: 7
