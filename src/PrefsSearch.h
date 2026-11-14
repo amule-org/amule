@@ -90,9 +90,11 @@ inline wxUniChar BaseLetter(wxUniChar c)
 //! @p text lowercased, with accented Latin letters reduced to their base letter.
 inline wxString Fold(const wxString &text)
 {
-	wxString folded = text.Lower();
-	for (wxString::iterator it = folded.begin(); it != folded.end(); ++it) {
-		*it = BaseLetter(*it);
+	const wxString lower = text.Lower();
+	wxString folded;
+	folded.reserve(lower.length());
+	for (const wxUniChar c : lower) {
+		folded += BaseLetter(c);
 	}
 	return folded;
 }

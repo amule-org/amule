@@ -236,13 +236,13 @@ void ConvertGroupBoxes(wxSizer *sizer)
 // between sections than between rows. Only vertical box sizers are touched: grids set their own
 // gaps, and a horizontal row's spacing is part of its design. Child windows with sizers of their
 // own (composite controls, sub-panels) are laid out by their owners and are left alone too.
-void SpaceOutPageRows(wxSizer *sizer, const wxWindow *page)
+void SpaceOutPageRows(wxSizer &sizer, const wxWindow *page)
 {
-	const auto *box = dynamic_cast<wxBoxSizer *>(sizer);
+	const auto *box = dynamic_cast<wxBoxSizer *>(&sizer);
 	const bool vertical = box && box->GetOrientation() == wxVERTICAL;
-	for (wxSizerItem *item : sizer->GetChildren()) {
+	for (wxSizerItem *item : sizer.GetChildren()) {
 		if (item->IsSizer()) {
-			SpaceOutPageRows(item->GetSizer(), page);
+			SpaceOutPageRows(*item->GetSizer(), page);
 		}
 		if (!vertical || item->IsSpacer() || ((item->GetFlag() & wxALL) && item->GetBorder() > 0)) {
 			continue;
@@ -879,7 +879,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		}
 
 		ConvertGroupBoxes(Widget->GetSizer());
-		SpaceOutPageRows(Widget->GetSizer(), Widget);
+		SpaceOutPageRows(*Widget->GetSizer(), Widget);
 
 		// Preserve the controls' natural size as the scrollable content size without
 		// imposing it on the dialog's minimum size.
@@ -1085,9 +1085,9 @@ void PrefsUnifiedDlg::RebuildSidebar()
 			// Item data is the page's stable pages[] index -- never reordered, only which pages
 			// are visible changes -- not the row's live position, so OnPrefsPageChange can always
 			// identify the selected page.
-			wxVector<wxVariant> values;
-			values.push_back(wxVariant(wxDataViewIconText(
-				wxGetTranslation(pages[page].m_title), m_pageIcons[page])));
+			const wxVector<wxVariant> values(1,
+				wxVariant(wxDataViewIconText(
+					wxGetTranslation(pages[page].m_title), m_pageIcons[page])));
 			m_PrefsIcons->AppendItem(values, static_cast<wxUIntPtr>(page));
 		}
 	}
