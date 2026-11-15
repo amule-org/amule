@@ -2679,13 +2679,15 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     noMatches->Hide();
     sidebarSizer->Add( noMatches, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(8)) );
 
-    // No border: the pane's colour and the divider beside it already set the list apart. Its
-    // highlights line up with the search field above.
+    // No border: the pane's colour and the divider beside it already set the list apart.
     PrefsSidebar *item2 = new PrefsSidebar( sidebar, ID_PREFSLISTCTRL );
     // What screen readers call the list.
     item2->SetLabel( _("Preferences") );
+#ifdef __WXMSW__
+    // Drawn by aMule (PrefsSidebar.h), in the pane's colour; the native lists elsewhere paint their own.
     FollowSystemColours( item2, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ); } );
-    sidebarSizer->Add( item2, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(2)) );
+#endif
+    sidebarSizer->Add( item2, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(PrefsSidebar::kMargin)) );
     sidebar->SetSizer( sidebarSizer );
     item1->Add( sidebar, wxSizerFlags().Expand() );
     item1->Add( new wxStaticLine( parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL ), wxSizerFlags().Expand() );

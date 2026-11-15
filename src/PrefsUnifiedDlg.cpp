@@ -724,9 +724,16 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	}
 
 	// Wide enough for every title, so the list never needs a horizontal scroller.
-	const int sidebarWidth = m_PrefsIcons->WidthFor(labels);
-	m_PrefsIcons->SetMinSize(wxSize(sidebarWidth, -1));
-	m_PrefsIcons->SetMaxSize(wxSize(sidebarWidth, -1));
+	m_PrefsIcons->FitWidth(labels);
+#ifdef __WXMAC__
+	// macOS measures its own rows, but only once they are on screen.
+	Bind(wxEVT_SHOW, [this](wxShowEvent &event) {
+		event.Skip();
+		if (event.IsShown()) {
+			m_PrefsIcons->MeasureWidth();
+		}
+	});
+#endif
 
 	const wxSize minimumPageSize = FromDIP(wxSize(240, 200));
 

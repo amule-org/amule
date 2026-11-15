@@ -26,19 +26,22 @@
 #define AMULE_PREFSSIDEBAR_H
 
 #include <wx/bmpbndl.h>
-#include <wx/control.h> // wxControl::Ellipsize
 #include <wx/dc.h>
 #if wxUSE_GRAPHICS_CONTEXT
 #include <wx/graphics.h>
 #endif
 #include <wx/settings.h>
-#include <wx/utils.h> // wxGetMousePosition
+#ifdef __WXMSW__
+#include <wx/control.h>     // wxControl::Ellipsize
+#include <wx/msw/wrapwin.h> // SystemParametersInfo, for high contrast
+#include <wx/utils.h>       // wxGetMousePosition
 #include <wx/vlbox.h>
 #if wxUSE_ACCESSIBILITY
 #include <wx/access.h>
 #endif
-#ifdef __WXMSW__
-#include <wx/msw/wrapwin.h> // SystemParametersInfo, for high contrast
+#else
+#include <wx/dataview.h>
+#include <wx/wupdlock.h>
 #endif
 
 #include "MuleColour.h" // MixColours
@@ -48,9 +51,9 @@
 #include <utility>
 #include <vector>
 
-// Corner radius, in DIPs, of the selected sidebar row and of the search box above it. Windows 11
-// rounds list items and text boxes by 4 px, macOS its sidebar selection by about 6 points, and
-// KDE's Breeze its controls by 3 to 5 px: 5 sits between them and reads as rounded on all three.
+// Corner radius, in DIPs, of the selected sidebar row and of the search box above it, both drawn
+// by aMule on Windows. Windows 11 rounds list items and text boxes by 4 px, macOS its sidebar
+// selection by about 6 points, and KDE's Breeze its controls by 3 to 5 px: 5 sits between them.
 constexpr int kPrefsCornerRadius = 5;
 //! Size, in DIPs, of the page icons in the sidebar.
 constexpr int kPrefsIconSize = 20;
@@ -110,11 +113,15 @@ inline void FillRounded(wxDC &dc,
 }
 } // namespace PrefsHighlight
 
-//! The preferences dialog's page list: an icon and a title per row, the selected row drawn as a
-//! rounded highlight. Drawn here rather than by the toolkit's list control, which draws a square
-//! selection on Windows and GTK and cannot be asked for anything else. Choosing a row with the
-//! mouse, the keyboard or assistive technology sends wxEVT_LISTBOX; SelectRow() does not. Screen
-//! readers see the rows only on Windows: wx supports accessibility nowhere else.
+// The preferences dialog's page list, an icon and a title per row. Both versions below share an
+// interface: SetRows(), PageAt(), SelectRow() and FitWidth(), and choosing a row with the mouse,
+// the keyboard or assistive technology sends wxEVT_LISTBOX with the row as its selection.
+#ifdef __WXMSW__
+
+//! Windows: drawn by aMule, the selected row as a rounded highlight. wx's list draws a square
+//! selection there and cannot be asked for anything else; it is wx's own generic list on Windows,
+//! so drawing one here costs nothing native, and Accessible below keeps the rows readable to
+//! screen readers. SelectRow() sends no wxEVT_LISTBOX.
 class PrefsSidebar : public wxVListBox
 {
 public:
@@ -124,6 +131,10 @@ public:
 		wxBitmapBundle icon;
 		unsigned page; //!< The `pages[]` index the row stands for.
 	};
+
+	//! Space, in DIPs, to leave around the list. Its highlights are inset by kRowInset more, which
+	//! lines them up with the search field above.
+	static constexpr int kMargin = 2;
 
 	PrefsSidebar(wxWindow *parent, wxWindowID id)
 	: wxVListBox(parent, id, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE)
@@ -197,16 +208,20 @@ public:
 		}
 	}
 
-	//! The width that shows @p labels in full beside their icons. The same sums as OnDrawItem(),
+	//! Sizes the list to show @p labels in full beside their icons: the same sums as OnDrawItem(),
 	//! so the widest title fits to the pixel.
-	int WidthFor(const std::vector<wxString> &labels) const
+	void FitWidth(const std::vector<wxString> &labels)
 	{
 		int text = 0;
 		for (const wxString &label : labels) {
 			text = std::max(text, GetTextExtent(label).GetWidth());
 		}
-		return text + 2 * FromDIP(kRowInset) + 2 * FromDIP(kPadding) +
-		       FromDIP(kPrefsIconSize + kIconGap);
+		// Plus a vertical scroller: a short dialog needs one, and it narrows every row.
+		const int width = text + 2 * FromDIP(kRowInset) + 2 * FromDIP(kPadding) +
+				  FromDIP(kPrefsIconSize + kIconGap) +
+				  wxSystemSettings::GetMetric(wxSYS_VSCROLL_X, this);
+		SetMinSize(wxSize(width, -1));
+		SetMaxSize(wxSize(width, -1));
 	}
 
 	//! An empty list (a search with no matches) has nothing to focus.
@@ -253,7 +268,13 @@ protected:
 			selected ? MixColours(back, highlight, HasFocus() ? 0.38 : 0.22)
 				 : MixColours(
 					   back, wxSystemSettings::GetColour(wxSYS_COLOUR_LISTBOXTEXT), 0.07);
-		PrefsHighlight::FillRounded(dc, Pill(rect), radius, fill);
+		// Outlined like the focused search field, so keyboard focus shows in dark mode too.
+		PrefsHighlight::FillRounded(dc,
+			Pill(rect),
+			radius,
+			fill,
+			selected && HasFocus() ? highlight : wxNullColour,
+			FromDIP(2));
 	}
 
 	void OnDrawItem(wxDC &dc, const wxRect &rect, size_t n) const override
@@ -311,8 +332,8 @@ private:
 		switch (event.GetKeyCode()) {
 		case WXK_RETURN:
 		case WXK_NUMPAD_ENTER:
-			// Nothing to open: a page shows as soon as it is selected. Kept here, or on GTK the
-			// key would go on to press the dialog's default button.
+			// Nothing to open: a page shows as soon as it is selected. Kept here, or the key
+			// would go on to press the dialog's default button.
 			return;
 		case WXK_PAGEUP:
 		case WXK_PAGEDOWN:
@@ -581,5 +602,139 @@ private:
 	};
 #endif
 };
+
+#else // !__WXMSW__
+
+//! macOS and GTK: the toolkit's own list, which screen readers read row by row. wx can expose the
+//! rows of a list it does not draw natively only on Windows. macOS draws the selection rounded and
+//! inset in its row; GTK keeps its square one.
+class PrefsSidebar : public wxDataViewListCtrl
+{
+public:
+	struct Row
+	{
+		wxString label;
+		wxBitmapBundle icon;
+		unsigned page; //!< The `pages[]` index the row stands for.
+	};
+
+	//! Space, in DIPs, to leave around the list.
+	static constexpr int kMargin = 4;
+
+	PrefsSidebar(wxWindow *parent, wxWindowID id)
+	: wxDataViewListCtrl(
+		  parent, id, wxDefaultPosition, wxDefaultSize, wxDV_SINGLE | wxDV_NO_HEADER | wxBORDER_NONE)
+	{
+		// Taller rows than the toolkit's tightest, as in current settings windows: the sidebar is
+		// the dialog's main navigation, not a dense data list. A no-op where the port cannot set it.
+		SetRowHeight(std::max(FromDIP(kPrefsIconSize), GetCharHeight()) + FromDIP(12));
+		m_column = AppendIconTextColumn(
+			wxString(), wxDATAVIEW_CELL_INERT, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, 0);
+		Bind(wxEVT_DATAVIEW_SELECTION_CHANGED, [this](wxDataViewEvent &event) {
+			event.Skip();
+			// Also sent, with no item, when a refill clears the selection.
+			if (event.GetItem().IsOk()) {
+				wxCommandEvent choice(wxEVT_LISTBOX, GetId());
+				choice.SetEventObject(this);
+				choice.SetInt(ItemToRow(event.GetItem()));
+				ProcessWindowEvent(choice);
+			}
+		});
+	}
+
+	//! Replaces the rows, leaving none selected.
+	void SetRows(std::vector<Row> rows)
+	{
+		wxWindowUpdateLocker freeze(this);
+		DeleteAllItems();
+		for (Row &row : rows) {
+			// The page index rides along as the row's item data.
+			const wxVector<wxVariant> values(
+				1, wxVariant(wxDataViewIconText(row.label, row.icon)));
+			AppendItem(values, static_cast<wxUIntPtr>(row.page));
+		}
+	}
+
+	unsigned PageAt(size_t row) const
+	{
+		return static_cast<unsigned>(GetItemData(RowToItem(static_cast<int>(row))));
+	}
+
+	//! Selects @p row and scrolls it into view, which wxDataViewListCtrl::SelectRow() does not.
+	void SelectRow(int row)
+	{
+		wxDataViewListCtrl::SelectRow(static_cast<unsigned>(row));
+		EnsureVisible(RowToItem(row));
+	}
+
+	//! Sizes the list to show @p labels in full beside their icons. An estimate of what the
+	//! toolkit's cells need beyond the text, which only macOS can measure, once the list is on
+	//! screen (MeasureWidth()).
+	void FitWidth(const std::vector<wxString> &labels)
+	{
+		int text = 0;
+		for (const wxString &label : labels) {
+			text = std::max(text, GetTextExtent(label).GetWidth());
+		}
+#ifdef __WXMAC__
+		m_textWidth = text;
+#endif
+		SetColumnWidth(text + FromDIP(kPrefsIconSize + kCellPadding));
+	}
+
+#ifdef __WXMAC__
+	//! Replaces FitWidth()'s estimate with the width the list measures for its rows, cell padding
+	//! included. Call once the list is on screen; only the first call measures.
+	void MeasureWidth()
+	{
+		if (m_measured) {
+			return;
+		}
+		m_measured = true;
+		// The answer is resolved while the list is laid out, after SetWidth() returns.
+		m_column->SetWidth(wxCOL_WIDTH_AUTOSIZE);
+		CallAfter([this]() {
+			const int reported = m_column->GetWidth();
+			// Narrower than the text is no measurement of icon and text: the estimate stands.
+			if (reported > m_textWidth) {
+				// The inset row style pads both ends of every row, out of the label's room,
+				// and the measurement leaves that padding out.
+				SetColumnWidth(reported + FromDIP(16));
+				InvalidateBestSize();
+				wxGetTopLevelParent(this)->Layout();
+			}
+		});
+	}
+#endif
+
+private:
+	// Room, in DIPs, for the gap after the icon and the cell's padding at both ends. Generous on
+	// macOS: what MeasureWidth() reports is bounded by the room the list already has.
+#ifdef __WXMAC__
+	static constexpr int kCellPadding = 48;
+#else
+	static constexpr int kCellPadding = 24;
+#endif
+
+	wxDataViewColumn *m_column = nullptr;
+#ifdef __WXMAC__
+	//! Widest label, as the list's font measures it.
+	int m_textWidth = 0;
+	//! The measurement is a one-off; the dialog is shown more than once.
+	bool m_measured = false;
+#endif
+
+	void SetColumnWidth(int width)
+	{
+		m_column->SetWidth(width);
+		// The list draws its cells a little in from its left edge -- 6 points on macOS, and not
+		// zero elsewhere -- so a list exactly as wide as its column clips the cell on the right.
+		const int listWidth = width + FromDIP(6);
+		SetMinSize(wxSize(listWidth, -1));
+		SetMaxSize(wxSize(listWidth, -1));
+	}
+};
+
+#endif // __WXMSW__
 
 #endif // AMULE_PREFSSIDEBAR_H
