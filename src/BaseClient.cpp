@@ -4103,7 +4103,9 @@ void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID, bool fromKad)
 {
 	m_bBuddyIdUseAmuleLayout = false;
 	m_bBuddyCallbackUnanswered = false;
-	if (pucBuddyID == NULL) {
+	// A source published without a buddy hash reaches us as 16 zero bytes. Accepting that as an
+	// ID sends the buddy route looking up the zero Kad ID, which belongs to no node.
+	if (pucBuddyID == nullptr || CMD4Hash(pucBuddyID).IsEmpty()) {
 		md4clr(m_achBuddyID);
 		m_bBuddyIDValid = false;
 		m_bBuddyIDFromKad = false;
