@@ -29,6 +29,7 @@
 #include "BandwidthRateConversion.h"
 #include "BandwidthRateInput.h"
 #include "PrefsPageRows.h"
+#include "PrefsSearch.h"
 
 #include <common/Constants.h>
 #include <common/Macros.h> // Needed for itemsof()
@@ -46,6 +47,8 @@
 #include <set>           // set-compare of shared roots (session refresh)
 #include <wx/progdlg.h>
 #include <wx/scrolwin.h>               // independently scrollable preference pages
+#include <wx/srchctrl.h>               // the sidebar's search box
+#include <wx/wupdlock.h>               // wxWindowUpdateLocker (sidebar refill)
 #include "SharedFilesReloadProgress.h" // ReloadSharedFilesWithProgress
 
 #include <memory> // std::unique_ptr (progress dialog lifetime)
@@ -110,6 +113,226 @@ void RefreshPreferencesPage(wxWindow *window)
 			return;
 		}
 	}
+}
+
+// A section of a preferences page: a heading, when it has one, over the sizer holding its rows.
+// What muuli_wdr.cpp builds as a group box ends up as one of these (see ConvertGroupBoxes()). A
+// type of its own so the spacing pass can tell sections from rows.
+class PrefsSectionSizer : public wxBoxSizer
+{
+public:
+	PrefsSectionSizer()
+	: wxBoxSizer(wxVERTICAL)
+	{
+	}
+};
+
+bool IsSectionSizer(const wxSizer *sizer)
+{
+	return dynamic_cast<const PrefsSectionSizer *>(sizer) != nullptr;
+}
+
+// Whether a vertical sizer item is a section of its own, or a row of sections, rather than a
+// single row.
+bool IsPageSection(const wxSizerItem *item)
+{
+	if (!item->IsSizer()) {
+		return false;
+	}
+	if (IsSectionSizer(item->GetSizer())) {
+		return true;
+	}
+	for (const wxSizerItem *child : item->GetSizer()->GetChildren()) {
+		if (child->IsSizer() && IsSectionSizer(child->GetSizer())) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// Turns every group box under @p sizer into a heading over the box's rows. Framed boxes, often
+// nested, are what dates a settings page most; a bold heading and some space group the rows as
+// clearly, the way current system settings do. The rows keep their indices, now in the section's
+// rows sizer.
+void ConvertGroupBoxes(wxSizer *sizer)
+{
+	for (size_t index = 0; index < sizer->GetItemCount(); ++index) {
+		wxSizerItem *item = sizer->GetItem(index);
+		if (!item->IsSizer()) {
+			continue;
+		}
+		wxSizer *child = item->GetSizer();
+		ConvertGroupBoxes(child);
+		auto *boxSizer = dynamic_cast<wxStaticBoxSizer *>(child);
+		if (!boxSizer) {
+			continue;
+		}
+		// Moving native controls to another parent breaks some of them on Windows (spin controls
+		// vanish, sliders lose their background), so the page builders create every control on
+		// the page itself, and a box that has controls of its own keeps its frame.
+		if (!boxSizer->GetStaticBox()->GetChildren().empty()) {
+			wxLogDebug("Preferences: group box \"%s\" has child controls and keeps its frame",
+				boxSizer->GetStaticBox()->GetLabelText());
+			continue;
+		}
+		wxStaticBox *box = boxSizer->GetStaticBox();
+		wxWindow *parent = box->GetParent();
+		auto *section = new PrefsSectionSizer();
+
+		const wxString label = box->GetLabelText().Strip(wxString::both);
+		const auto *column = dynamic_cast<wxBoxSizer *>(sizer);
+		if (!label.empty() && index > 0 && column && column->GetOrientation() == wxVERTICAL) {
+			// A heading sits closer to the rows it names than to those above it.
+			section->AddSpacer(parent->FromDIP(8));
+		}
+		if (!label.empty()) {
+			// The heading keeps the box's own id, so code that finds the box to show or hide its
+			// section finds the heading instead, whose containing sizer is the whole section.
+			auto *heading = new wxStaticText(
+				parent, box->GetId() > 0 ? box->GetId() : wxID_ANY, wxEmptyString);
+			heading->SetLabelText(label);
+			heading->SetFont(heading->GetFont().Bold());
+			heading->MoveBeforeInTabOrder(box);
+			// A hidden section (an event's commands, until the event is picked) stays hidden.
+			heading->Show(box->IsShown());
+			section->Add(heading);
+		}
+
+		// Some boxes give their first row a left margin that only kept the rows off the frame.
+		// Without the frame it moves the section right of the others, so every row loses it.
+		const wxSizerItem *first = boxSizer->GetItemCount() ? boxSizer->GetItem(size_t(0)) : nullptr;
+		const int inset = (first && (first->GetFlag() & wxLEFT)) ? first->GetBorder() : 0;
+		auto *rows = new wxBoxSizer(boxSizer->GetOrientation());
+		while (boxSizer->GetItemCount() > 0) {
+			const wxSizerItem *row = boxSizer->GetItem(size_t(0));
+			const int proportion = row->GetProportion();
+			const int flag = row->GetFlag();
+			const int border =
+				(flag & wxLEFT) ? std::max(0, row->GetBorder() - inset) : row->GetBorder();
+			if (row->IsWindow()) {
+				wxWindow *window = row->GetWindow();
+				boxSizer->Detach(0);
+				rows->Add(window, proportion, flag, border);
+			} else if (row->IsSizer()) {
+				wxSizer *rowSizer = row->GetSizer();
+				boxSizer->Detach(0);
+				rows->Add(rowSizer, proportion, flag, border);
+			} else {
+				const wxSize size = row->GetSpacer();
+				boxSizer->Detach(0);
+				rows->Add(size.GetWidth(), size.GetHeight(), proportion, flag, border);
+			}
+		}
+		section->Add(
+			rows, wxSizerFlags(1).Expand().Border(wxTOP, label.empty() ? 0 : parent->FromDIP(4)));
+
+		// Keeps the item's flags, and deletes the box sizer, which takes the empty box with it.
+		sizer->Replace(boxSizer, section);
+	}
+}
+
+// Give a page's rows room to breathe. The page builders in muuli_wdr.cpp stack most rows and
+// sections with no space between them, which reads as cramped beside current toolkits. Items with
+// a margin of their own keep it; those flush against their neighbours get a small gap, wider
+// between sections than between rows. Only vertical box sizers are touched: grids set their own
+// gaps, and a horizontal row's spacing is part of its design. Child windows with sizers of their
+// own (composite controls, sub-panels) are laid out by their owners and are left alone too.
+void SpaceOutPageRows(wxSizer &sizer, const wxWindow *page)
+{
+	const auto *box = dynamic_cast<wxBoxSizer *>(&sizer);
+	const bool vertical = box && box->GetOrientation() == wxVERTICAL;
+	for (wxSizerItem *item : sizer.GetChildren()) {
+		if (item->IsSizer()) {
+			SpaceOutPageRows(*item->GetSizer(), page);
+		}
+		if (!vertical || item->IsSpacer() || ((item->GetFlag() & wxALL) && item->GetBorder() > 0)) {
+			continue;
+		}
+		item->SetFlag((item->GetFlag() & ~wxALL) | wxTOP | wxBOTTOM);
+		item->SetBorder(page->FromDIP(IsPageSection(item) ? 6 : 2));
+	}
+}
+
+// Calls @p visit for every control under @p parent that is shown there: hidden controls, and
+// everything inside a hidden panel, are skipped.
+template <typename Visit> void ForEachShownControl(wxWindow *parent, const Visit &visit)
+{
+	for (wxWindow *child : parent->GetChildren()) {
+		if (child->IsShown() && !child->IsTopLevel()) {
+			visit(child);
+			ForEachShownControl(child, visit);
+		}
+	}
+}
+
+// Lists whose entries are the user's own folders, addresses or interfaces, not setting names.
+bool HoldsUserData(const wxWindow *window)
+{
+	switch (window->GetId()) {
+	case IDC_SHAREDDIRS_LIST:
+	case IDC_PATHMAP_LIST:
+	case IDC_ALLOWED_ROOTS_LIST:
+	case IDC_INTERFACE:
+	case IDC_EXT_CONN_IP:
+	case IDC_EC_INTERFACE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+// What the search looks at in a control: the label of a label-bearing control, the entries of a
+// choice or list, and the tooltip, which often holds the words a user would search for. The text
+// of entry fields is the user's own data, not a description of the setting, so it is left out.
+wxString SearchableText(wxWindow *window)
+{
+	wxString text;
+	if (wxDynamicCast(window, wxStaticText) || wxDynamicCast(window, wxCheckBox) ||
+		wxDynamicCast(window, wxRadioButton) || wxDynamicCast(window, wxButton)) {
+		text = static_cast<wxControl *>(window)->GetLabelText();
+	}
+	if (auto *items = dynamic_cast<wxItemContainerImmutable *>(window); items && !HoldsUserData(window)) {
+		for (unsigned i = 0; i < items->GetCount(); ++i) {
+			text << '\n' << items->GetString(i);
+		}
+	} else if (auto *list = wxDynamicCast(window, wxListCtrl); list && !HoldsUserData(window)) {
+		for (long i = 0; i < list->GetItemCount(); ++i) {
+			text << '\n' << list->GetItemText(i);
+		}
+	}
+	text << '\n' << window->GetToolTipText();
+	return text;
+}
+
+// Whether a matching control can be shown in bold. Not a button, whose label names an action
+// rather than a setting.
+bool CanHighlight(wxWindow *window)
+{
+	return wxDynamicCast(window, wxStaticText) || wxDynamicCast(window, wxCheckBox) ||
+	       wxDynamicCast(window, wxRadioButton);
+}
+
+// What to show in bold for a match in @p window: the control itself, or for a drop-down, spin or
+// field, the label before it in its row. Null when there is neither.
+wxWindow *HighlightTarget(wxWindow *window)
+{
+	if (CanHighlight(window)) {
+		return window;
+	}
+	const wxSizer *row = window->GetContainingSizer();
+	if (!row) {
+		return nullptr;
+	}
+	wxWindow *label = nullptr;
+	for (const wxSizerItem *item : row->GetChildren()) {
+		if (item->GetWindow() == window) {
+			return label;
+		}
+		if (item->IsWindow() && wxDynamicCast(item->GetWindow(), wxStaticText)) {
+			label = item->GetWindow();
+		}
+	}
+	return nullptr;
 }
 
 // Minimize to Tray needs the tray icon, and on GTK an X11 session: Wayland never reports that
@@ -315,8 +538,10 @@ static void SendCheckBoxEvent(wxWindow *parent, int id)
 /** Represents one config tab. */
 struct PrefsPage
 {
-	//! The title of the page, used on the listctrl.
+	//! The title of the page, used on the listctrl and in the header above the page.
 	wxString m_title;
+	//! One line under the title saying what the page is for.
+	wxString m_description;
 	//! Function pointer to the wxDesigner function creating the dialog.
 	wxSizer *(*m_function)(wxWindow *, bool, bool);
 	//! The index of the image used on the list.
@@ -326,31 +551,101 @@ struct PrefsPage
 	const char *m_artName;
 };
 
-PrefsPage pages[] = { { wxTRANSLATE("General"), PreferencesGeneralTab, 13, "prefs_general" },
-	{ wxTRANSLATE("Interface"), PreferencesGuiTweaksTab, 19, "prefs_interface" },
-	{ wxTRANSLATE("Connection"), PreferencesConnectionTab, 14, "prefs_connection" },
-	{ wxTRANSLATE("Proxy"), PreferencesProxyTab, 24, "prefs_proxy" },
-	{ wxTRANSLATE("Servers"), PreferencesServerTab, 15, "prefs_servers" },
-	{ wxTRANSLATE("Directories"), PreferencesDirectoriesTab, 17, "prefs_directories" },
+PrefsPage pages[] = { { wxTRANSLATE("General"),
+			      wxTRANSLATE("Your nickname and language, how aMule starts and closes, and the "
+					  "programs it opens links and previews with."),
+			      PreferencesGeneralTab,
+			      13,
+			      "prefs_general" },
+	{ wxTRANSLATE("Interface"),
+		wxTRANSLATE("Appearance, the window title and how the transfer lists are drawn."),
+		PreferencesGuiTweaksTab,
+		19,
+		"prefs_interface" },
+	{ wxTRANSLATE("Connection"),
+		wxTRANSLATE("Line capacity, bandwidth limits, ports and the networks aMule joins."),
+		PreferencesConnectionTab,
+		14,
+		"prefs_connection" },
+	{ wxTRANSLATE("Proxy"),
+		wxTRANSLATE("Send aMule's connections through a proxy server."),
+		PreferencesProxyTab,
+		24,
+		"prefs_proxy" },
+	{ wxTRANSLATE("Servers"),
+		wxTRANSLATE("How aMule keeps its eD2k server list and chooses the servers it connects to."),
+		PreferencesServerTab,
+		15,
+		"prefs_servers" },
+	{ wxTRANSLATE("Directories"),
+		wxTRANSLATE("Where downloads are stored and which folders you share."),
+		PreferencesDirectoriesTab,
+		17,
+		"prefs_directories" },
 #ifdef CLIENT_GUI
 	// Remote-only (issue #843): mapping a daemon's path space onto this machine's has no
 	// meaning for the monolithic app, which is its own daemon. Placed right after
 	// Directories, the other page about paths.
-	{ wxTRANSLATE("Path Mappings"), PreferencesPathMappingTab, 17, "prefs_pathmapping" },
+	{ wxTRANSLATE("Path Mappings"),
+		wxTRANSLATE("Where the core's folders can be reached from this computer."),
+		PreferencesPathMappingTab,
+		17,
+		"prefs_pathmapping" },
 #endif
-	{ wxTRANSLATE("Files"), PreferencesFilesTab, 16, "prefs_files" },
-	{ wxTRANSLATE("Events"), PreferencesEventsTab, 5, "prefs_events" },
-	{ wxTRANSLATE("Statistics"), PreferencesStatisticsTab, 10, "prefs_statistics" },
-	{ wxTRANSLATE("Filters"), PreferencesFilteringTab, 23, "prefs_filters" },
-	{ wxTRANSLATE("Security"), PreferencesSecurityTab, 22, "prefs_security" },
-	{ wxTRANSLATE("Remote Controls"), PreferencesRemoteControlsTab, 11, "prefs_remote" },
-	{ wxTRANSLATE("Online Signature"), PreferencesOnlineSigTab, 21, "prefs_onlinesig" },
+	{ wxTRANSLATE("Files"),
+		wxTRANSLATE("How downloads and uploads are handled, corruption recovery and media details."),
+		PreferencesFilesTab,
+		16,
+		"prefs_files" },
+	{ wxTRANSLATE("Events"),
+		wxTRANSLATE("Run your own commands when something happens in aMule."),
+		PreferencesEventsTab,
+		5,
+		"prefs_events" },
+	{ wxTRANSLATE("Statistics"),
+		wxTRANSLATE("Graph timing and colors, and what the statistics tree shows."),
+		PreferencesStatisticsTab,
+		10,
+		"prefs_statistics" },
+	{ wxTRANSLATE("Filters"),
+		wxTRANSLATE("Keep spam and unwanted words out of your chat messages and file comments."),
+		PreferencesFilteringTab,
+		23,
+		"prefs_filters" },
+	{ wxTRANSLATE("Security"),
+		wxTRANSLATE("Secure identification, protocol obfuscation, IP filtering and who may browse "
+			    "your shared files."),
+		PreferencesSecurityTab,
+		22,
+		"prefs_security" },
+	{ wxTRANSLATE("Remote Controls"),
+		wxTRANSLATE("Let amulegui, amuleapi, the web interface and other tools control aMule."),
+		PreferencesRemoteControlsTab,
+		11,
+		"prefs_remote" },
+	{ wxTRANSLATE("Online Signature"),
+		wxTRANSLATE("Save aMule's status to a file that other programs can show."),
+		PreferencesOnlineSigTab,
+		21,
+		"prefs_onlinesig" },
 #ifdef GEOIP_GUI
 	// Hidden when ENABLE_IP2COUNTRY is off: builds without libmaxminddb cannot use it.
-	{ wxTRANSLATE("IP2Country"), PreferencesIP2CountryTab, 13, "prefs_ip2country" },
+	{ wxTRANSLATE("IP2Country"),
+		wxTRANSLATE("Show each client's country, looked up in a GeoIP database."),
+		PreferencesIP2CountryTab,
+		13,
+		"prefs_ip2country" },
 #endif
-	{ wxTRANSLATE("Advanced"), PreferencesaMuleTweaksTab, 12, "prefs_advanced" },
-	{ wxTRANSLATE("Debugging"), PreferencesDebug, 25, "prefs_debug" } };
+	{ wxTRANSLATE("Advanced"),
+		wxTRANSLATE("Connection rates, source lookups, buffers and queues, for fine-tuning."),
+		PreferencesaMuleTweaksTab,
+		12,
+		"prefs_advanced" },
+	{ wxTRANSLATE("Debugging"),
+		wxTRANSLATE("Choose which kinds of debug messages are written to the log."),
+		PreferencesDebug,
+		25,
+		"prefs_debug" } };
 
 PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 : wxDialog(parent,
@@ -369,10 +664,27 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	m_sharedDirsLoaded = false;
 #endif
 	preferencesDlgTop(this, false);
+	// Escape means Cancel, as in any other dialog. wx only finds that on its own for a button
+	// with the stock wxID_CANCEL id, so without this Escape did nothing here.
+	SetEscapeId(ID_PREFS_CANCEL_TOP);
+
+	m_search = CastChild(ID_PREFS_SEARCH, wxSearchCtrl);
+	m_noMatches = CastChild(ID_PREFS_NO_MATCHES, WrappingStaticText);
+	m_pageTitle = CastChild(ID_PREFS_PAGE_TITLE, wxStaticText);
+	m_pageDescription = CastChild(ID_PREFS_PAGE_DESCRIPTION, WrappingStaticText);
+	// The list decides how wide the sidebar is; the search box fills whatever that comes to.
+	m_search->SetMinSize(wxSize(FromDIP(80), -1));
+	m_search->Bind(wxEVT_TEXT, &PrefsUnifiedDlg::OnSearchText, this);
+	m_search->Bind(wxEVT_SEARCH_CANCEL, &PrefsUnifiedDlg::OnSearchCancel, this);
+	Bind(wxEVT_CHAR_HOOK, &PrefsUnifiedDlg::OnCharHook, this);
 
 	m_PrefsIcons = CastChild(ID_PREFSLISTCTRL, wxDataViewListCtrl);
-	const int kPrefsIconW = 16;
-	const int kPrefsIconH = 16;
+	const int kPrefsIconW = 20;
+	const int kPrefsIconH = 20;
+	// Taller rows than the toolkit's tightest, as in current settings windows: the sidebar is
+	// the dialog's main navigation, not a dense data list. A no-op where the port cannot set it.
+	m_PrefsIcons->SetRowHeight(
+		std::max(FromDIP(kPrefsIconH), m_PrefsIcons->GetCharHeight()) + FromDIP(12));
 	// Room for the gap after the icon and the cell's left/right padding. On macOS this is
 	// only the width the list is built with, since the measurement below replaces it --
 	// but it has to be generous, because what that measurement reports is bounded by the
@@ -436,16 +748,9 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 				m_pageIcons.push_back(makeIcon(amuleSpecial(pages[i].m_imageidx)));
 			}
 
+		// The rows themselves are added by RebuildSidebar() once every page exists.
 		const wxString label = wxGetTranslation(pages[i].m_title);
 		maxLabelWidth = std::max(maxLabelWidth, m_PrefsIcons->GetTextExtent(label).GetWidth());
-
-		// Add each page to the page list. Item data is this page's stable pages[] index --
-		// never reordered, only which pages are visible changes -- not the row's live
-		// position, so OnPrefsPageChange can always identify the selected page even after a
-		// row has been hidden and re-shown.
-		wxVector<wxVariant> values;
-		values.push_back(wxVariant(wxDataViewIconText(label, m_pageIcons[i])));
-		m_PrefsIcons->AppendItem(values, (wxUIntPtr)i);
 	}
 
 #ifdef __WXMAC__
@@ -480,13 +785,20 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		ConfigureDialogScrolling(Widget);
 		Widget->SetMinSize(minimumPageSize);
 		m_pageWidgets[i] = Widget;
-		pages[i].m_function(Widget, false, true);
+		// The page sits inside the same margin as the header above it, so their left edges
+		// line up. The scrollbar stays at the very edge, outside the margin.
+		wxSizer *pageContent = pages[i].m_function(Widget, false, false);
+		wxBoxSizer *pageMargins = new wxBoxSizer(wxVERTICAL);
+		pageMargins->Add(pageContent,
+			wxSizerFlags(1).Expand().Border(
+				wxLEFT | wxRIGHT | wxBOTTOM, FromDIP(kPrefsPageMargin)));
+		Widget->SetSizer(pageMargins);
 		if (i == 0) {
 			DefaultWidget = Widget;
 		}
 
 		// Add it to the sizer
-		prefs_sizer->Add(Widget, wxSizerFlags().Expand().Expand());
+		prefs_sizer->Add(Widget, wxSizerFlags(1).Expand());
 
 		if (pages[i].m_function == PreferencesGeneralTab) {
 #if defined CLIENT_GUI || !PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
@@ -592,22 +904,22 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 #endif
 		} else if (pages[i].m_function == PreferencesaMuleTweaksTab) {
 			m_aMuleTweaksWidget = Widget;
-			wxStaticText *txt = CastChild(IDC_AMULE_TWEAKS_WARNING, wxStaticText);
-			// Do not wrap this line, Windows _() can't handle wrapped strings
-			wxString warning =
-				_("Do not change these setting unless you know\nwhat you are doing, "
-				  "otherwise you can easily\nmake things worse for yourself.\n\naMule "
-				  "will run fine without adjusting any of\nthese settings.");
-			// wxOSX measures a centred label with an empty line about 20000 px wide, which
-			// widened the whole dialog; a space keeps the gap without the bug.
-			warning.Replace("\n\n", "\n \n");
-			txt->SetLabel(warning);
+			// The warning wraps to the page, so its height follows the page width.
+			if (auto *warning = CastChild(IDC_AMULE_TWEAKS_WARNING, WrappingStaticText)) {
+				warning->SetLayoutCallback([warning, Widget] {
+					Widget->Layout();
+					RefreshPreferencesPage(warning);
+				});
+			}
 		} else if (pages[i].m_function == PreferencesDebug) {
 			wxCheckListBox *list = CastChild(ID_DEBUGCATS, wxCheckListBox);
 			for (int j : OfferedDebugCategories()) {
 				list->Append(theLogger.GetDebugCategory(j).GetName());
 			}
 		}
+
+		ConvertGroupBoxes(Widget->GetSizer());
+		SpaceOutPageRows(*Widget->GetSizer(), Widget);
 
 		// Preserve the controls' natural size as the scrollable content size without
 		// imposing it on the dialog's minimum size.
@@ -621,16 +933,10 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		Widget->Show(false);
 	}
 
-	// Default to the General tab
+	// Default to the General tab; ShowPage() below fills in its header.
 	m_CurrentPanel = DefaultWidget;
-	prefs_sizer->Add(DefaultWidget, wxSizerFlags().Expand().Expand());
+	prefs_sizer->Add(DefaultWidget, wxSizerFlags(1).Expand());
 	m_CurrentPanel->Show(true);
-
-	// The reset button only applies to the Advanced page; hide it until that
-	// page is selected (OnPrefsPageChange toggles it thereafter).
-	if (wxButton *resetBtn = CastChild(IDC_TWEAKS_RESET, wxButton)) {
-		resetBtn->Show(false);
-	}
 
 #ifdef CLIENT_GUI
 	// The shared-file exclusion preview counts against the core's in-memory shared list,
@@ -653,27 +959,24 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	}
 #endif
 
-	// Select the first item
-	m_PrefsIcons->SelectRow(0);
-
+	m_pageHidden.assign(itemsof(pages), false);
 #ifdef CLIENT_GUI
 	// amulegui: drop the IP2Country page from the menu when the connected core has no
 	// GeoIP support -- a 3.1+ core built without ENABLE_IP2COUNTRY, or a pre-3.1 core that
 	// does not know the capability at all. Mirrors how monolithic amule omits the page at
 	// compile time. The page widget stays built but becomes unreachable.
 	if (!thePrefs::IsGeoIPSupported() && m_IndexIP2CountryTab >= 0) {
-		const int row =
-			PrefsPageRows::Find(ShownPages(), static_cast<unsigned>(m_IndexIP2CountryTab));
-		if (row >= 0) {
-			m_PrefsIcons->DeleteItem(row);
-		}
+		m_pageHidden[m_IndexIP2CountryTab] = true;
 		m_IndexIP2CountryTab = -1;
 	}
 #endif
 
 	// Don't show server prefs if ED2K is disabled
-	m_ServerTabVisible = true;
-	EnableServerTab(thePrefs::GetNetworkED2K());
+	m_pageHidden[m_IndexServerTab] = !thePrefs::GetNetworkED2K();
+
+	// Fill the sidebar, which selects the General page, then give that page its header.
+	RebuildSidebar();
+	ShowPage(m_currentPage);
 
 	// Store some often used pointers
 	m_ShareSelector = CastChild(IDC_SHARESELECTOR, CDirectoryTreeCtrl);
@@ -729,9 +1032,12 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	// Allow the viewport to shrink independently of the largest page. Start
 	// with enough room for the content when possible, but leave space for the
 	// desktop panels and window decorations on the parent's display.
+	// Everything beside the page column (sidebar, divider) and above and below the page
+	// (header, footer) comes on top of the largest page's size.
+	const wxSize dialogMinimum = GetSizer()->GetMinSize();
 	FitDialogToDisplay(this,
-		wxSize(width + m_PrefsIcons->GetMinSize().GetWidth() + FromDIP(4),
-			height + GetSizer()->GetMinSize().GetHeight() - minimumPageSize.GetHeight()));
+		wxSize(width + dialogMinimum.GetWidth() - prefs_sizer->GetMinSize().GetWidth(),
+			height + dialogMinimum.GetHeight() - minimumPageSize.GetHeight()));
 	GrowDialogToContent(this, DefaultWidget, wxSize(width, height));
 
 	// Position the dialog.
@@ -740,26 +1046,184 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 
 void PrefsUnifiedDlg::EnableServerTab(bool enable)
 {
-	if (enable && !m_ServerTabVisible) {
-		// Turn the server widget on. Item data is the page's stable pages[] index (see the
-		// constructor), not m_ServerWidget directly -- OnPrefsPageChange looks the widget up
-		// from m_pageWidgets by that index.
-		wxVector<wxVariant> values;
-		values.push_back(wxVariant(wxDataViewIconText(
-			wxGetTranslation(pages[m_IndexServerTab].m_title), m_pageIcons[m_IndexServerTab])));
-		m_PrefsIcons->InsertItem(
-			PrefsPageRows::InsertionRow(ShownPages(), static_cast<unsigned>(m_IndexServerTab)),
-			values,
-			(wxUIntPtr)m_IndexServerTab);
-		m_ServerTabVisible = true;
-	} else if (!enable && m_ServerTabVisible) {
-		// turn server widget off
-		const int row = PrefsPageRows::Find(ShownPages(), static_cast<unsigned>(m_IndexServerTab));
-		if (row >= 0) {
-			m_PrefsIcons->DeleteItem(row);
-		}
-		m_ServerTabVisible = false;
+	if (m_pageHidden[m_IndexServerTab] == enable) {
+		m_pageHidden[m_IndexServerTab] = !enable;
+		RebuildSidebar();
 	}
+}
+
+void PrefsUnifiedDlg::ShowPage(unsigned page)
+{
+	wxPanel *widget = m_pageWidgets[page];
+	if (widget != m_CurrentPanel) {
+		prefs_sizer->Detach(m_CurrentPanel);
+		m_CurrentPanel->Show(false);
+		m_CurrentPanel = widget;
+		if (pages[page].m_function == PreferencesDirectoriesTab) {
+#ifdef CLIENT_GUI
+			// Nothing to initialise: there is no tree here, and the roots are refreshed per
+			// editing session (PrepareSharedDirsForSession) rather than on every page change,
+			// which would discard pending edits when the user navigates away and back.
+#else
+			CastChild(IDC_SHARESELECTOR, CDirectoryTreeCtrl)->Init();
+#endif
+		}
+		prefs_sizer->Add(m_CurrentPanel, wxSizerFlags(1).Expand());
+		m_CurrentPanel->Show(true);
+	}
+	m_currentPage = page;
+
+	// The reset-to-defaults button applies to the current page's controls; keep it to the
+	// Advanced page, whose expert tuning knobs it is meant to undo.
+	if (wxButton *resetBtn = CastChild(IDC_TWEAKS_RESET, wxButton)) {
+		resetBtn->Show(m_CurrentPanel == m_aMuleTweaksWidget);
+	}
+
+	m_pageTitle->SetLabelText(wxGetTranslation(pages[page].m_title));
+	m_pageDescription->SetWrappedText(wxGetTranslation(pages[page].m_description));
+
+	Layout();
+	// The dialog's layout leaves a page whose size did not change as it was, and search
+	// highlighting may have changed the width of its labels.
+	m_CurrentPanel->Layout();
+	RefreshPreferencesPage(m_CurrentPanel);
+}
+
+bool PrefsUnifiedDlg::PageMatchesSearch(
+	unsigned page, const std::vector<wxString> &terms, std::vector<wxWindow *> &matches) const
+{
+	bool matched = PrefsSearch::Matches(wxGetTranslation(pages[page].m_title), terms) ||
+		       PrefsSearch::Matches(wxGetTranslation(pages[page].m_description), terms);
+	ForEachShownControl(m_pageWidgets[page], [&](wxWindow *control) {
+		if (PrefsSearch::Matches(SearchableText(control), terms)) {
+			matched = true;
+			if (wxWindow *target = HighlightTarget(control)) {
+				matches.push_back(target);
+			}
+		}
+	});
+	return matched;
+}
+
+void PrefsUnifiedDlg::RebuildSidebar()
+{
+	const std::vector<wxString> terms = PrefsSearch::Terms(m_search->GetValue());
+	std::vector<unsigned> rows;
+	std::vector<wxWindow *> matches;
+	for (unsigned page = 0; page < m_pageWidgets.size(); ++page) {
+		if (!m_pageHidden[page] && (terms.empty() || PageMatchesSearch(page, terms, matches))) {
+			rows.push_back(page);
+		}
+	}
+
+	// Refilling the list resets its scroll position and selection, so only do it when the
+	// set of rows actually changes -- not, say, when a search gains a letter but keeps its pages.
+	if (rows != ShownPages()) {
+		wxWindowUpdateLocker freezeList(m_PrefsIcons);
+		m_PrefsIcons->DeleteAllItems();
+		for (unsigned page : rows) {
+			// Item data is the page's stable pages[] index -- never reordered, only which pages
+			// are visible changes -- not the row's live position, so OnPrefsPageChange can always
+			// identify the selected page.
+			const wxVector<wxVariant> values(1,
+				wxVariant(wxDataViewIconText(
+					wxGetTranslation(pages[page].m_title), m_pageIcons[page])));
+			m_PrefsIcons->AppendItem(values, static_cast<wxUIntPtr>(page));
+		}
+	}
+	const bool noteWasShown = m_noMatches->IsShown();
+	if (rows.empty()) {
+		// Quotes what was typed, so a typo shows, and says what to try.
+		m_noMatches->SetWrappedText(
+			CFormat(_("No settings match \"%s\". Try a shorter or different word.")) %
+			m_search->GetValue().Strip(wxString::both));
+	}
+	if (noteWasShown || rows.empty()) {
+		m_noMatches->Show(rows.empty());
+		m_noMatches->GetParent()->Layout();
+	}
+
+	// Only the controls whose match changed get a new font: a short query matches most of the
+	// dialog, and every font change makes its page measure that control again.
+	wxWindowUpdateLocker freezePage(m_CurrentPanel);
+	std::sort(matches.begin(), matches.end());
+	std::vector<wxWindow *> changed;
+	for (auto it = m_searchHighlights.begin(); it != m_searchHighlights.end();) {
+		if (std::binary_search(matches.begin(), matches.end(), it->first)) {
+			++it;
+		} else {
+			it->first->SetFont(it->second);
+			changed.push_back(it->first);
+			it = m_searchHighlights.erase(it);
+		}
+	}
+	for (wxWindow *control : matches) {
+		if (m_searchHighlights.emplace(control, control->GetFont()).second) {
+			control->SetFont(control->GetFont().Bold());
+			changed.push_back(control);
+		}
+	}
+
+	// Stay on the current page while it is listed; otherwise move to the first page that is.
+	// With nothing listed, the current page stays on show, so the dialog is never blank.
+	int row = PrefsPageRows::Find(rows, m_currentPage);
+	unsigned page = m_currentPage;
+	if (row < 0 && !rows.empty()) {
+		row = 0;
+		page = rows.front();
+	}
+	if (row >= 0) {
+		m_PrefsIcons->SelectRow(row);
+		m_PrefsIcons->EnsureVisible(m_PrefsIcons->RowToItem(row));
+	}
+	if (page != m_currentPage) {
+		ShowPage(page);
+	} else if (std::any_of(changed.begin(), changed.end(), [this](wxWindow *control) {
+			   return m_CurrentPanel->IsDescendant(control);
+		   })) {
+		// Bold labels are wider than plain ones.
+		m_CurrentPanel->Layout();
+		RefreshPreferencesPage(m_CurrentPanel);
+	}
+}
+
+void PrefsUnifiedDlg::OnSearchText(wxCommandEvent &event)
+{
+	m_search->ShowCancelButton(!m_search->IsEmpty());
+	RebuildSidebar();
+	event.Skip();
+}
+
+void PrefsUnifiedDlg::OnSearchCancel(wxCommandEvent &WXUNUSED(event))
+{
+	// Clear() reports the change as wxEVT_TEXT, which refills the sidebar.
+	m_search->Clear();
+}
+
+void PrefsUnifiedDlg::OnCharHook(wxKeyEvent &event)
+{
+	const int key = event.GetKeyCode();
+	// Ctrl+F (Cmd+F on macOS) goes to the search box from anywhere in the dialog.
+	if (key == 'F' && event.GetModifiers() == wxMOD_CMD) {
+		m_search->SetFocus();
+		m_search->SelectAll();
+		return;
+	}
+	if (m_search->IsDescendant(wxWindow::FindFocus())) {
+		// Escape clears a search before it closes the dialog.
+		if (key == WXK_ESCAPE && !m_search->IsEmpty()) {
+			m_search->Clear();
+			return;
+		}
+		// Enter or Down moves on to the results rather than pressing OK.
+		if (key == WXK_RETURN || key == WXK_NUMPAD_ENTER || key == WXK_DOWN) {
+			if (m_PrefsIcons->GetItemCount() > 0) {
+				m_PrefsIcons->SetFocus();
+			}
+			return;
+		}
+	}
+	event.Skip();
 }
 
 std::vector<unsigned> PrefsUnifiedDlg::ShownPages() const
@@ -785,6 +1249,13 @@ Cfg_Base *PrefsUnifiedDlg::GetCfg(int id)
 
 bool PrefsUnifiedDlg::TransferToWindow()
 {
+	// Each opening starts with the full page list: the dialog is reused, and a search left
+	// over from last time would hide pages for no visible reason.
+	if (!m_search->IsEmpty()) {
+		// Reported as wxEVT_TEXT, which hides the clear button and refills the sidebar.
+		m_search->Clear();
+	}
+
 	m_ed2kEdit.Reset(thePrefs::GetNetworkED2K());
 	m_kadEdit.Reset(thePrefs::GetNetworkKademlia());
 	// Connect the Cfgs with their widgets
@@ -1100,8 +1571,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 #ifdef CLIENT_GUI
 	// A daemon that sent no address-families tag is old or lacks ENABLE_IPV6: nothing to edit.
 	if (wxWindow *box = FindWindow(IDC_ADDRESSFAMILIESBOX)) {
-		// A wxStaticBox's containing sizer is its own wxStaticBoxSizer, which ShowItems() hides
-		// together with the box.
+		// The id is the IPv6 section's heading now (ConvertGroupBoxes), whose containing sizer is
+		// the whole section: ShowItems() hides the heading together with its rows.
 		if (wxSizer *boxSizer = box->GetContainingSizer()) {
 			boxSizer->ShowItems(thePrefs::GetAddressFamiliesTagSupported());
 			RefreshPreferencesPage(box);
@@ -2668,44 +3139,15 @@ void PrefsUnifiedDlg::OnPrefsPageChange(wxDataViewEvent &event)
 {
 	// EVT_DATAVIEW_SELECTION_CHANGED, unlike the old EVT_LIST_ITEM_SELECTED, also fires
 	// when the selection is cleared, in which case GetItem() is not valid and GetItemData()
-	// on it would crash outright. Nothing here currently clears the sidebar's selection, so
-	// this is a guard against future changes rather than a fix for a live bug.
+	// on it would crash outright. RebuildSidebar() clears it whenever it refills the list,
+	// and shows the page it wants itself once it is done.
 	if (!event.GetItem().IsOk()) {
 		return;
 	}
 
-	prefs_sizer->Detach(m_CurrentPanel);
-	m_CurrentPanel->Show(false);
-
-	// Item data is the page's stable pages[] index (set at insertion in the ctor /
-	// EnableServerTab), not the row's live position in the sidebar -- which shifts whenever
-	// the server / IP2Country row is hidden or re-shown, and previously made both this
-	// widget lookup and the pages[] lookup below vulnerable to picking the wrong page.
-	const unsigned int pageIdx = (unsigned int)m_PrefsIcons->GetItemData(event.GetItem());
-	m_CurrentPanel = m_pageWidgets[pageIdx];
-	if (pages[pageIdx].m_function == PreferencesDirectoriesTab) {
-#ifdef CLIENT_GUI
-		// Nothing to initialise: there is no tree here, and the roots are refreshed per editing
-		// session (PrepareSharedDirsForSession) rather than on every page change, which would
-		// discard pending edits when the user navigates away and back.
-#else
-		CastChild(IDC_SHARESELECTOR, CDirectoryTreeCtrl)->Init();
-#endif
-	}
-
-	// The reset-to-defaults button applies to the current page's controls; keep
-	// it to the Advanced page, whose expert tuning knobs it is meant to undo.
-	if (wxButton *resetBtn = CastChild(IDC_TWEAKS_RESET, wxButton)) {
-		// Identify the page by widget, not list index: hiding the server /
-		// IP2Country tab shifts the list index away from the pages[] index.
-		resetBtn->Show(m_CurrentPanel == m_aMuleTweaksWidget);
-	}
-
-	prefs_sizer->Add(m_CurrentPanel, wxSizerFlags().Expand().Expand());
-	m_CurrentPanel->Show(true);
-
-	Layout();
-	RefreshPreferencesPage(m_CurrentPanel);
+	// Item data is the page's stable pages[] index (set in RebuildSidebar), not the row's
+	// live position in the sidebar -- which shifts whenever a row is hidden or re-shown.
+	ShowPage(static_cast<unsigned>(m_PrefsIcons->GetItemData(event.GetItem())));
 
 	event.Skip();
 }
@@ -2904,10 +3346,11 @@ void PrefsUnifiedDlg::OnRateLimitChanged(wxSpinEvent &event)
 
 void PrefsUnifiedDlg::OnTCPClientPortChange(wxSpinEvent &WXUNUSED(event))
 {
+	const wxCheckBox *ed2kBox = CastChild(IDC_NETWORKED2K, wxCheckBox);
+	const bool ed2k = !ed2kBox || ed2kBox->GetValue();
 	CastChild(ID_TEXT_CLIENT_UDP_PORT, wxStaticText)
-		->SetLabel(m_ServerTabVisible
-				   ? (wxString() << (CastChild(IDC_PORT, wxSpinCtrl)->GetValue() + 3))
-				   : wxString(_("disabled")));
+		->SetLabel(ed2k ? (wxString() << (CastChild(IDC_PORT, wxSpinCtrl)->GetValue() + 3))
+				: wxString(_("disabled")));
 	RefreshPreferencesPage(FindWindow(ID_TEXT_CLIENT_UDP_PORT));
 }
 
@@ -2934,7 +3377,7 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 				CUserEvents::GetDisplayName(static_cast<enum CUserEvents::EventType>(idx))));
 	wxStaticBoxSizer *item7 = new wxStaticBoxSizer(item8, wxVERTICAL);
 
-	wxCheckBox *item9 = new wxCheckBox(item8,
+	wxCheckBox *item9 = new wxCheckBox(parent,
 		USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 1,
 		_("Enable command execution on core"),
 		wxDefaultPosition,
@@ -2948,10 +3391,10 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 	item10->Add(20, 20, wxSizerFlags().Center());
 
 	wxStaticText *item11 =
-		new wxStaticText(item8, -1, _("Core command:"), wxDefaultPosition, wxDefaultSize, 0);
+		new wxStaticText(parent, -1, _("Core command:"), wxDefaultPosition, wxDefaultSize, 0);
 	item10->Add(item11, wxSizerFlags().Center().Border(wxALL, 5));
 
-	wxTextCtrl *item12 = new wxTextCtrl(item8,
+	wxTextCtrl *item12 = new wxTextCtrl(parent,
 		USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 2,
 		"",
 		wxDefaultPosition,
@@ -2962,7 +3405,7 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 
 	item7->Add(item10, wxSizerFlags().Expand().CenterVertical().Border(wxALL, 0));
 
-	wxCheckBox *item14 = new wxCheckBox(item8,
+	wxCheckBox *item14 = new wxCheckBox(parent,
 		USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 3,
 		_("Enable command execution on GUI"),
 		wxDefaultPosition,
@@ -2976,10 +3419,10 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 	item15->Add(20, 20, wxSizerFlags().Center());
 
 	wxStaticText *item16 =
-		new wxStaticText(item8, -1, _("GUI command:"), wxDefaultPosition, wxDefaultSize, 0);
+		new wxStaticText(parent, -1, _("GUI command:"), wxDefaultPosition, wxDefaultSize, 0);
 	item15->Add(item16, wxSizerFlags().Center().Border(wxALL, 5));
 
-	wxTextCtrl *item17 = new wxTextCtrl(item8,
+	wxTextCtrl *item17 = new wxTextCtrl(parent,
 		USEREVENTS_FIRST_ID + idx * USEREVENTS_IDS_PER_EVENT + 4,
 		"",
 		wxDefaultPosition,
@@ -2998,7 +3441,7 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 		item17->Disable();
 	}
 	item7->Add(
-		new wxStaticText(item8,
+		new wxStaticText(parent,
 			wxID_ANY,
 			_("Core commands must be configured in the daemon's amule.conf.\n"
 			  "Chat and observed download completions support GUI commands with a remote core.\n"
@@ -3006,7 +3449,7 @@ void PrefsUnifiedDlg::CreateEventPanels(const int idx, const wxString &vars, wxW
 		wxSizerFlags().Border(wxALL, 5));
 #endif
 
-	wxStaticText *item13 = new wxStaticText(item8,
+	wxStaticText *item13 = new wxStaticText(parent,
 		-1,
 		_("The following variables will be replaced:") + vars,
 		wxDefaultPosition,
