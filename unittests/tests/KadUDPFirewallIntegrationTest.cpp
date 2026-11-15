@@ -169,6 +169,16 @@ public:
 		CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer, externalPort);
 		ASSERT_TRUE(CUDPFirewallTester::IsVerified());
 	}
+	void Firewalled()
+	{
+		CUDPFirewallTester::ReCheckFirewallUDP(false);
+		Request(peer + 10);
+		Request(peer + 11);
+		CUDPFirewallTester::SetUDPFWCheckResult(false, false, peer + 10, 0);
+		CUDPFirewallTester::SetUDPFWCheckResult(false, false, peer + 11, 0);
+		ASSERT_TRUE(CUDPFirewallTester::IsVerified());
+		ASSERT_TRUE(CUDPFirewallTester::IsFirewalledUDP(false));
+	}
 	uint64_t LastSuccess() const { return CUDPFirewallTester::m_lastSucceededTime; }
 
 private:
@@ -470,5 +480,138 @@ TEST(KadUDPFirewallIntegration, PortCorrectionMustBelongToCurrentRound)
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer, internalPort);
 	ASSERT_TRUE(CKademlia::GetPrefs()->GetUseExternKadPort());
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, internalPort);
+	ASSERT_FALSE(CKademlia::GetPrefs()->GetUseExternKadPort());
+}
+
+TEST(KadUDPFirewallIntegration, OpenAfterFirewalledNeedsSecondTester)
+{
+	CUDPFirewallTesterFixture fixture;
+	fixture.Firewalled();
+	now += CUDPVerificationExpiry::kRecheckIntervalMs;
+	CUDPFirewallTester::ReCheckFirewallUDP(false);
+	fixture.Request(peer + 1);
+	fixture.Request(peer + 2);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, externalPort);
+	ASSERT_TRUE(CUDPFirewallTester::IsFWCheckUDPRunning());
+	ASSERT_TRUE(CUDPFirewallTester::IsFirewalledUDP(true));
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 2, externalPort);
+	ASSERT_TRUE(CUDPFirewallTester::IsVerified());
+	ASSERT_FALSE(CUDPFirewallTester::IsFirewalledUDP(false));
+}
+
+TEST(KadUDPFirewallIntegration, UnconfirmedOpenEndsFirewalled)
+{
+	CUDPFirewallTesterFixture fixture;
+	fixture.Firewalled();
+	now += CUDPVerificationExpiry::kRecheckIntervalMs;
+	CUDPFirewallTester::ReCheckFirewallUDP(false);
+	fixture.Request(peer + 1);
+	fixture.Request(peer + 2);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, externalPort);
+	CUDPFirewallTester::SetUDPFWCheckResult(false, false, peer + 2, 0);
+	ASSERT_FALSE(CUDPFirewallTester::IsFWCheckUDPRunning());
+	ASSERT_TRUE(CUDPFirewallTester::IsVerified());
+	ASSERT_TRUE(CUDPFirewallTester::IsFirewalledUDP(false));
+}
+
+TEST(KadUDPFirewallIntegration, OpenAfterFailureEndsFirewalled)
+{
+	CUDPFirewallTesterFixture fixture;
+	fixture.Firewalled();
+	now += CUDPVerificationExpiry::kRecheckIntervalMs;
+	CUDPFirewallTester::ReCheckFirewallUDP(false);
+	fixture.Request(peer + 1);
+	fixture.Request(peer + 2);
+	CUDPFirewallTester::SetUDPFWCheckResult(false, false, peer + 1, 0);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 2, externalPort);
+	ASSERT_FALSE(CUDPFirewallTester::IsFWCheckUDPRunning());
+	ASSERT_TRUE(CUDPFirewallTester::IsFirewalledUDP(false));
+}
+
+TEST(KadUDPFirewallIntegration, SameTesterCannotConfirmOpen)
+{
+	CUDPFirewallTesterFixture fixture;
+	fixture.Firewalled();
+	now += CUDPVerificationExpiry::kRecheckIntervalMs;
+	CUDPFirewallTester::ReCheckFirewallUDP(false);
+	fixture.Request(peer + 1);
+	fixture.Request(peer + 2);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, externalPort);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, internalPort);
+	ASSERT_TRUE(CUDPFirewallTester::IsFWCheckUDPRunning());
+	ASSERT_TRUE(CUDPFirewallTester::IsFirewalledUDP(true));
+}
+
+TEST(KadUDPFirewallIntegration, NewSessionTrustsFirstOpen)
+{
+	CUDPFirewallTesterFixture fixture;
+	fixture.Firewalled();
+	CKademlia::Stop();
+	CKademlia::Start(new CPrefs);
+	fixture.Open();
+	ASSERT_FALSE(CUDPFirewallTester::IsFirewalledUDP(false));
+}
+
+TEST(KadUDPFirewallIntegration, OpenAfterTimeoutNeedsSecondTester)
+{
+	CUDPFirewallTesterFixture fixture;
+	CUDPFirewallTester::ReCheckFirewallUDP(false);
+	now += CUDPVerificationExpiry::kRoundTimeoutMs + 1;
+	CUDPFirewallTester::IsFirewalledUDP(true);
+	ASSERT_TRUE(CUDPFirewallTester::IsFirewalledUDP(true));
+	ASSERT_FALSE(CUDPFirewallTester::IsVerified());
+	CUDPFirewallTester::ReCheckFirewallUDP(false);
+	fixture.Request(peer + 1);
+	fixture.Request(peer + 2);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, externalPort);
+	ASSERT_TRUE(CUDPFirewallTester::IsFWCheckUDPRunning());
+	ASSERT_FALSE(CUDPFirewallTester::IsVerified());
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 2, externalPort);
+	ASSERT_TRUE(CUDPFirewallTester::IsVerified());
+	ASSERT_FALSE(CUDPFirewallTester::IsFirewalledUDP(false));
+}
+
+TEST(KadUDPFirewallIntegration, UnconfirmedOpenRoundsExpireVerification)
+{
+	CUDPFirewallTesterFixture fixture;
+	fixture.Firewalled();
+	for (uint32_t round = 1; round <= CUDPVerificationExpiry::kFailedRoundsToExpire; ++round) {
+		now += CUDPVerificationExpiry::kRecheckIntervalMs;
+		CUDPFirewallTester::ReCheckFirewallUDP(false);
+		fixture.Request(peer + round);
+		CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + round, externalPort);
+		now += CUDPVerificationExpiry::kRoundTimeoutMs + 1;
+		ASSERT_TRUE(CUDPFirewallTester::IsFWCheckUDPRunning());
+		ASSERT_TRUE(CUDPFirewallTester::IsFirewalledUDP(false));
+	}
+	ASSERT_FALSE(CUDPFirewallTester::IsVerified());
+}
+
+TEST(KadUDPFirewallIntegration, ConfirmedOpenKeepsUnconfirmedInternPort)
+{
+	CUDPFirewallTesterFixture fixture;
+	fixture.Firewalled();
+	now += CUDPVerificationExpiry::kRecheckIntervalMs;
+	CUDPFirewallTester::ReCheckFirewallUDP(false);
+	fixture.Request(peer + 1);
+	fixture.Request(peer + 2);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, internalPort);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 2, externalPort);
+	ASSERT_FALSE(CUDPFirewallTester::IsFirewalledUDP(false));
+	ASSERT_FALSE(CKademlia::GetPrefs()->GetUseExternKadPort());
+}
+
+TEST(KadUDPFirewallIntegration, ConfirmedOpenKeepsUnconfirmedTestersSecondPacket)
+{
+	CUDPFirewallTesterFixture fixture;
+	fixture.Firewalled();
+	now += CUDPVerificationExpiry::kRecheckIntervalMs;
+	CUDPFirewallTester::ReCheckFirewallUDP(false);
+	fixture.Request(peer + 1);
+	fixture.Request(peer + 2);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, externalPort);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, internalPort);
+	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 2, externalPort);
+	ASSERT_FALSE(CUDPFirewallTester::IsFirewalledUDP(false));
 	ASSERT_FALSE(CKademlia::GetPrefs()->GetUseExternKadPort());
 }
