@@ -107,9 +107,10 @@ public:
 		startFailures += !started;
 		++changes;
 	}
-	void Start()
+	void Start(bool seeded = false)
 	{
 		++starts;
+		seededStarts += seeded;
 		++changes;
 	}
 	void Queued(uint32_t ip, uint64_t now)
@@ -173,7 +174,7 @@ public:
 		reportedPublishIPs = publishRequests.TakeReached();
 		return true;
 	}
-	uint64_t attempts = 0, startFailures = 0, starts = 0;
+	uint64_t attempts = 0, startFailures = 0, starts = 0, seededStarts = 0;
 	uint64_t queued = 0, acknowledged = 0, finished = 0, zeroAcknowledgements = 0, cancelled = 0;
 	uint64_t durationMs = 0, maxDurationMs = 0;
 	// Receivers drop a KADEMLIA2_REQ above 10 a minute and a KADEMLIA2_PUBLISH_SOURCE_REQ above 2.

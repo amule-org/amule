@@ -73,6 +73,7 @@
 #include "CFile.h"                  // Needed for CFile (server.met probe)
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Prefs.h"
+#include "kademlia/kademlia/Search.h" // Needed for CSearch::SavePublishSeeds
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #ifdef ENABLE_IPV6
 #include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::SetConfigured
@@ -429,6 +430,7 @@ int CamuleApp::OnExit()
 	if (sharedfiles) {
 		sharedfiles->SaveKeywordPublishTimes();
 	}
+	Kademlia::CSearch::SavePublishSeeds();
 	// Destroying CDownloadQueue calls destructor for CPartFile
 	// calling CSharedFileList::SafeAddKFile occasionally.
 	delete sharedfiles;
@@ -2562,6 +2564,7 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		// Save Shared Files data
 		knownfiles->Save();
 		sharedfiles->SaveKeywordPublishTimes();
+		Kademlia::CSearch::SavePublishSeeds();
 		msPrevKnownMet = msCur;
 	}
 
@@ -2573,6 +2576,7 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		knownfiles->Save();
 		// This resets the periodic timer too, which would otherwise hold back this save.
 		sharedfiles->SaveKeywordPublishTimes();
+		Kademlia::CSearch::SavePublishSeeds();
 		m_knownMetDirtiedMs = 0;
 		msPrevKnownMet = msCur;
 	}

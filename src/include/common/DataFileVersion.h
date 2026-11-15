@@ -64,4 +64,9 @@ enum KadKeywordsFileVersions
 	KADKEYWORDS_VERSION = 0x01
 };
 
+enum KadSeedsFileVersions
+{
+	KADSEEDS_VERSION = 0x01
+};
+
 #endif // DATAFILEVERSION_H
