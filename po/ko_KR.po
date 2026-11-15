@@ -1457,7 +1457,7 @@ msgid "IO error while reading %s file: %s"
 msgstr "%s 파일을 읽는 중 입출력 오류 발생: %s"
 
 #: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp
+#: src/KnownFileList.cpp src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "%s 파일을 저장하는 중 오류 발생: %s"
@@ -5136,24 +5136,25 @@ msgid "Nick"
 msgstr "별명"
 
 #: src/muuli_wdr.cpp
-msgid "https://amule-org.github.io - the multi-platform Mule"
-msgstr "https://amule-org.github.io - 다중 플랫폼 Mule"
-
-#: src/muuli_wdr.cpp
 msgid "This is the name that other users will see when connecting to you."
 msgstr "이것은 접속했을때 다른 사용자가 볼 수 있는 이름입니다."
+
+#: src/muuli_wdr.cpp
+msgid "https://amule-org.github.io - the multi-platform Mule"
+msgstr "https://amule-org.github.io - 다중 플랫폼 Mule"
 
 #: src/muuli_wdr.cpp
 msgid "Language: "
 msgstr "언어: "
 
 #: src/muuli_wdr.cpp
-msgid "The delay before showing tool-tips."
-msgstr "도구도움이 보여주기 이전의 지연시간."
-
-#: src/muuli_wdr.cpp
 msgid "This specifies the language used on controls."
 msgstr "컨트롤에서 사용하는 언어를 설정합니다."
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Startup"
+msgstr "시작"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5168,27 +5169,17 @@ msgid "Registers a per-user autostart entry with the OS so aMule launches at log
 msgstr "사용자별 자동 시작 항목을 OS에 등록하여 로그인 시 aMule이 실행되도록 합니다. aMule 바이너리를 이동한 경우, 이후 항목을 갱신하려면 수동으로 aMule을 한 번 실행하세요."
 
 #: src/muuli_wdr.cpp
-msgid "Prevent automatic sleep: "
-msgstr ""
+msgid "Start minimized"
+msgstr "최소화된 시작"
+
+#: src/muuli_wdr.cpp
+msgid "Enabling this makes aMule minimize itself upon start."
+msgstr "이것은 어뮬을 시작할때 최소화를 가능하게 합니다."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Off"
-msgstr "끔"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "While downloading"
-msgstr "이미 내려받는중"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "While aMule is running"
-msgstr "어뮬은 실행중입니다."
-
-#: src/muuli_wdr.cpp
-msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgid "Links"
+msgstr "링크"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5203,12 +5194,8 @@ msgid "Opening a collection queues every eD2k link it contains. On Windows this 
 msgstr "컬렉션을 열면 그 안에 포함된 모든 eD2k 링크가 대기열에 추가됩니다. Windows에서는 aMule이 \"연결 프로그램\" 목록에 추가되며, 다른 프로그램이 해당 파일 형식을 선점하지 않은 경우에만 기본값이 됩니다."
 
 #: src/muuli_wdr.cpp
-msgid "Start minimized"
-msgstr "최소화된 시작"
-
-#: src/muuli_wdr.cpp
-msgid "Enabling this makes aMule minimize itself upon start."
-msgstr "이것은 어뮬을 시작할때 최소화를 가능하게 합니다."
+msgid "Behavior"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -5247,6 +5234,29 @@ msgid "Enabling this will make aMule to show notifications when finished downloa
 msgstr "이 옵션을 활성화하면 내려받기가 완료되었을 때 aMule이 알림을 표시합니다."
 
 #: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "끔"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "이미 내려받는중"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "어뮬은 실행중입니다."
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Remember search history"
 msgstr "검색 기록 저장"
 
@@ -5257,6 +5267,10 @@ msgstr "검색 탭의 이름 필드에 이전 검색어의 드롭다운 목록�
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
 msgstr "툴팁 지연 시간: "
+
+#: src/muuli_wdr.cpp
+msgid "The delay before showing tool-tips."
+msgstr "도구도움이 보여주기 이전의 지연시간."
 
 #: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
@@ -5798,8 +5812,20 @@ msgid "Number of Client Versions shown (0=unlimited)"
 msgstr "표시될 클라이언트 버젼의 수 (0=무제한)"
 
 #: src/muuli_wdr.cpp
-msgid "!!! WARNING !!!"
-msgstr "!!! 경고 !!!"
+msgid ""
+"Do not change these setting unless you know\n"
+"what you are doing, otherwise you can easily\n"
+"make things worse for yourself.\n"
+"\n"
+"aMule will run fine without adjusting any of\n"
+"these settings."
+msgstr ""
+"당신이 무엇을 하는지 알때까지 이 설정들을 바꾸지 마세요.\n"
+"당신 스스로 문제를 만들기 쉽습니다.\n"
+"\n"
+"\n"
+"이 설정들을 조정하지 않아도\n"
+"어뮬은 잘 동작할 것입니다."
 
 #: src/muuli_wdr.cpp
 msgid "Max new connections / 5 secs"
@@ -6012,6 +6038,15 @@ msgstr "손님 세션은 상태와 목록을 읽을 수 있지만 아무것도 �
 #: src/muuli_wdr.cpp
 msgid "Guest password"
 msgstr "손님 암호"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Search settings"
+msgstr "검색"
+
+#: src/muuli_wdr.cpp
+msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -7115,56 +7150,126 @@ msgid "KiB/s (%.2f MiB/s)"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
 msgstr "인터페이스"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Appearance, the window title and how the transfer lists are drawn."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
 msgstr "연결"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
 msgstr "프록시"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Send aMule's connections through a proxy server."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "서버"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "폴더"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Where downloads are stored and which folders you share."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Where the core's folders can be reached from this computer."
+msgstr "이전 검색의 결과로 돌아갑니다.\n"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How downloads and uploads are handled, corruption recovery and media details."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Events"
 msgstr "사건들"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Run your own commands when something happens in aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Graph timing and colors, and what the statistics tree shows."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
 msgstr "필터"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Keep spam and unwanted words out of your chat messages and file comments."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Security"
 msgstr "보안"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
 msgstr "원격 조정"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
 msgstr "온라인 서명"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Save aMule's status to a file that other programs can show."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
 msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Show each client's country, looked up in a GeoIP database."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
 msgstr "고급"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "디버깅"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose which kinds of debug messages are written to the log."
+msgstr "로그에 수신된 메시지 표시"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7185,25 +7290,14 @@ msgid "Not available on Wayland: the protocol does not report when a window is m
 msgstr "Wayland에서는 사용할 수 없습니다: 이 프로토콜은 창이 최소화될 때를 알리지 않으므로 이 옵션은 시스템의 최소화 버튼을 가로챌 수 없습니다. 해결 방법: `GDK_BACKEND=x11`로 aMule을 실행하여 대신 XWayland를 사용하세요."
 
 #: src/PrefsUnifiedDlg.cpp
-msgid ""
-"Do not change these setting unless you know\n"
-"what you are doing, otherwise you can easily\n"
-"make things worse for yourself.\n"
-"\n"
-"aMule will run fine without adjusting any of\n"
-"these settings."
-msgstr ""
-"당신이 무엇을 하는지 알때까지 이 설정들을 바꾸지 마세요.\n"
-"당신 스스로 문제를 만들기 쉽습니다.\n"
-"\n"
-"\n"
-"이 설정들을 조정하지 않아도\n"
-"어뮬은 잘 동작할 것입니다."
-
-#: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "ID %d, 키 %s인 위젯에 Cfg를 연결하지 못했습니다"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "No settings match \"%s\". Try a shorter or different word."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -10588,6 +10682,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "!!! WARNING !!!"
+#~ msgstr "!!! 경고 !!!"
 
 #, c-format
 #~ msgid "Terminating amuleweb instance with pid '%d' ... "

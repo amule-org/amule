@@ -1075,5 +1075,15 @@
   "prefs_field_connection_download_capacity_kibibytes_per_second": "Capacidade de download (KiB/s)",
   "prefs_field_connection_upload_capacity_kibibytes_per_second": "Capacidade de upload (KiB/s)",
   "prefs_field_advanced_kad_max_served_buddies": "Nós Kad sob firewall atendidos como amigo",
-  "prefs_field_advanced_kad_max_served_buddies_help": "Para quantos nós Kad sob firewall este nó repassa callbacks. Cada um ocupa uma conexão, por isso no máximo um décimo do limite de conexões é atendido."
+  "prefs_field_advanced_kad_max_served_buddies_help": "Para quantos nós Kad sob firewall este nó repassa callbacks. Cada um ocupa uma conexão, por isso no máximo um décimo do limite de conexões é atendido.",
+  "downloads_peer_route_plain": "Conectando via {route}",
+  "downloads_peer_route_fallback": "Conectando via {route}, em uma rota alternativa",
+  "downloads_peer_route_unproven": "Conectando via {route}, em uma rota não comprovada",
+  "downloads_peer_route_dial": "uma conexão direta",
+  "downloads_peer_route_direct_udp_callback": "um callback direto",
+  "downloads_peer_route_server_callback": "nosso servidor",
+  "downloads_peer_route_kad_buddy": "o amigo do Kad",
+  "downloads_peer_route_foreign_nat_callback": "o próprio servidor da fonte",
+  "downloads_peer_route_server_hole_punch": "um hole punch via servidor",
+  "downloads_peer_route_lugdunum_callback": "um callback Lugdunum"
 }

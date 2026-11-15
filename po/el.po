@@ -1456,7 +1456,7 @@ msgid "IO error while reading %s file: %s"
 msgstr "Σφάλμα εισόδου/εξόδου κατά την ανάγνωση του αρχείου %s: %s"
 
 #: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp
+#: src/KnownFileList.cpp src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Σφάλμα κατά την αποθήκευση του αρχείου %s: %s"
@@ -5136,24 +5136,25 @@ msgid "Nick"
 msgstr "Παρατσούκλι"
 
 #: src/muuli_wdr.cpp
-msgid "https://amule-org.github.io - the multi-platform Mule"
-msgstr "https://amule-org.github.io - το μουλάρι όλων των πλατφόρμων"
-
-#: src/muuli_wdr.cpp
 msgid "This is the name that other users will see when connecting to you."
 msgstr "Αυτό είναι το όνομα που οι άλλοι χρήστες θα βλέπουν όταν είναι συνδεδεμένοι με εσάς."
+
+#: src/muuli_wdr.cpp
+msgid "https://amule-org.github.io - the multi-platform Mule"
+msgstr "https://amule-org.github.io - το μουλάρι όλων των πλατφόρμων"
 
 #: src/muuli_wdr.cpp
 msgid "Language: "
 msgstr "Γλώσσα:"
 
 #: src/muuli_wdr.cpp
-msgid "The delay before showing tool-tips."
-msgstr "Ο χρόνος πριν εμφανιστεί το επεξηγηματικό κείμενο."
-
-#: src/muuli_wdr.cpp
 msgid "This specifies the language used on controls."
 msgstr "Αυτό ορίζει την γλώσσα που χρησιμοποιείται στο γραφικό περιβάλλον."
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Startup"
+msgstr "Εκκίνηση"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5168,27 +5169,17 @@ msgid "Registers a per-user autostart entry with the OS so aMule launches at log
 msgstr "Καταχωρεί μια καταχώρηση αυτόματης εκκίνησης ανά χρήστη στο λειτουργικό σύστημα, ώστε το aMule να εκκινείται κατά τη σύνδεση. Αν μετακινήσετε το δυαδικό αρχείο του aMule, εκκινήστε το aMule χειροκίνητα μία φορά μετά για να ανανεωθεί η καταχώρηση."
 
 #: src/muuli_wdr.cpp
-msgid "Prevent automatic sleep: "
-msgstr ""
+msgid "Start minimized"
+msgstr "Εκκίνηση σαν ελαχιστοποιημένο"
+
+#: src/muuli_wdr.cpp
+msgid "Enabling this makes aMule minimize itself upon start."
+msgstr "Αν ενεργοποιηθεί, το aMule θα ξεκινήσει ελαχιστοποιημένο."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Off"
-msgstr "κλειστό"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "While downloading"
-msgstr "Ήδη κατεβαίνει"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "While aMule is running"
-msgstr "Το aMule τρέχει"
-
-#: src/muuli_wdr.cpp
-msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgid "Links"
+msgstr "Σύνδεσμος"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5203,12 +5194,8 @@ msgid "Opening a collection queues every eD2k link it contains. On Windows this 
 msgstr "Το άνοιγμα μιας συλλογής βάζει στην ουρά κάθε σύνδεσμο eD2k που περιέχει. Στα Windows αυτό προσθέτει το aMule στη λίστα \"Άνοιγμα με\" και γίνεται προεπιλογή μόνο όταν κανένα άλλο πρόγραμμα δεν έχει διεκδικήσει τον τύπο αρχείου."
 
 #: src/muuli_wdr.cpp
-msgid "Start minimized"
-msgstr "Εκκίνηση σαν ελαχιστοποιημένο"
-
-#: src/muuli_wdr.cpp
-msgid "Enabling this makes aMule minimize itself upon start."
-msgstr "Αν ενεργοποιηθεί, το aMule θα ξεκινήσει ελαχιστοποιημένο."
+msgid "Behavior"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -5247,6 +5234,29 @@ msgid "Enabling this will make aMule to show notifications when finished downloa
 msgstr "Η ενεργοποίηση αυτής της επιλογής θα κάνει το aMule να εμφανίζει ειδοποιήσεις όταν ολοκληρώνεται ένα κατέβασμα."
 
 #: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "κλειστό"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Ήδη κατεβαίνει"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "Το aMule τρέχει"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Remember search history"
 msgstr "Απομνημόνευση ιστορικού αναζήτησης"
 
@@ -5257,6 +5267,10 @@ msgstr "Διατηρεί μια αναπτυσσόμενη λίστα με το�
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
 msgstr "Χρόνος καθυστέρησης επεξηγήσεων:"
+
+#: src/muuli_wdr.cpp
+msgid "The delay before showing tool-tips."
+msgstr "Ο χρόνος πριν εμφανιστεί το επεξηγηματικό κείμενο."
 
 #: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
@@ -5798,8 +5812,19 @@ msgid "Number of Client Versions shown (0=unlimited)"
 msgstr "Αριθμός των εμφανιζόμενων εκδόσεων πελάτη (0=απεριόριστος)"
 
 #: src/muuli_wdr.cpp
-msgid "!!! WARNING !!!"
-msgstr "!!! Προειδοποίηση !!!"
+msgid ""
+"Do not change these setting unless you know\n"
+"what you are doing, otherwise you can easily\n"
+"make things worse for yourself.\n"
+"\n"
+"aMule will run fine without adjusting any of\n"
+"these settings."
+msgstr ""
+"Μην αλλάξετε αυτές τις ρυθμίσεις εκτός και αν ξέρετε τι κάνετε,\n"
+"διαφορετικά μπορείτε εύκολα να κάνετε τη ζωή σας δύσκολη. \n"
+"\n"
+"Το aMule θα τρέχει μια χαρά χωρίς την αλλαγή καμιάς από αυτές\n"
+" τις ρυθμίσεις."
 
 #: src/muuli_wdr.cpp
 msgid "Max new connections / 5 secs"
@@ -6012,6 +6037,15 @@ msgstr "Οι συνεδρίες επισκέπτη μπορούν να διαβ�
 #: src/muuli_wdr.cpp
 msgid "Guest password"
 msgstr "Κωδικός επισκέπτη"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Search settings"
+msgstr "Αναζητήσεις"
+
+#: src/muuli_wdr.cpp
+msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -7120,56 +7154,126 @@ msgid "KiB/s (%.2f MiB/s)"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
 msgstr "Περιβάλλον"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Appearance, the window title and how the transfer lists are drawn."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
 msgstr "Σύνδεση"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
 msgstr "Διακομιστής διαμεσολάβησης"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Send aMule's connections through a proxy server."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Διακομιστές"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "Κατάλογοι Αρχείων"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Where downloads are stored and which folders you share."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Where the core's folders can be reached from this computer."
+msgstr "Επιστρέφει τα αποτελέσματα της προηγούμενης αναζήτησης.\n"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How downloads and uploads are handled, corruption recovery and media details."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Events"
 msgstr "Γεγονότα"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Run your own commands when something happens in aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Graph timing and colors, and what the statistics tree shows."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
 msgstr "Φίλτρα"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Keep spam and unwanted words out of your chat messages and file comments."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Security"
 msgstr "Ασφάλεια"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
 msgstr "Τηλεχειρισμός"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
 msgstr "Διασυνδεδεμένη υπογραφή"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Save aMule's status to a file that other programs can show."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
 msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Show each client's country, looked up in a GeoIP database."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
 msgstr "Προχωρημένες"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "Έλεγχος σφαλμάτων προγράμματος"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose which kinds of debug messages are written to the log."
+msgstr "Εμφάνιση των ληφθέντων μηνυμάτων στο αρχείο καταγραφής"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7190,24 +7294,14 @@ msgid "Not available on Wayland: the protocol does not report when a window is m
 msgstr "Δεν είναι διαθέσιμο σε Wayland: το πρωτόκολλο δεν αναφέρει πότε ένα παράθυρο ελαχιστοποιείται, οπότε αυτή η επιλογή δεν μπορεί να παρέμβει στο κουμπί ελαχιστοποίησης του συστήματος. Λύση: εκκινήστε το aMule με `GDK_BACKEND=x11` για να χρησιμοποιήσετε το XWayland."
 
 #: src/PrefsUnifiedDlg.cpp
-msgid ""
-"Do not change these setting unless you know\n"
-"what you are doing, otherwise you can easily\n"
-"make things worse for yourself.\n"
-"\n"
-"aMule will run fine without adjusting any of\n"
-"these settings."
-msgstr ""
-"Μην αλλάξετε αυτές τις ρυθμίσεις εκτός και αν ξέρετε τι κάνετε,\n"
-"διαφορετικά μπορείτε εύκολα να κάνετε τη ζωή σας δύσκολη. \n"
-"\n"
-"Το aMule θα τρέχει μια χαρά χωρίς την αλλαγή καμιάς από αυτές\n"
-" τις ρυθμίσεις."
-
-#: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Αποτυχία σύνδεσης Cfg με το widget με ID %d και κλειδί %s"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "No settings match \"%s\". Try a shorter or different word."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -10600,6 +10694,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "!!! WARNING !!!"
+#~ msgstr "!!! Προειδοποίηση !!!"
 
 #, c-format
 #~ msgid "Terminating amuleweb instance with pid '%d' ... "
