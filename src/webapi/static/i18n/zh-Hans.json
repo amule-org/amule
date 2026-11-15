@@ -61,5 +61,21 @@
   "about_update_status": "状态",
   "app_nav_shared": "共享文件",
   "app_nav_downloads": "下载内容",
-  "app_not_connected": "未连接"
+  "app_not_connected": "未连接",
+  "networks_ed2k_connected": "已连接",
+  "app_loading": "加载中…",
+  "search_error": "错误",
+  "networks_server_toast_connecting": "连接中…",
+  "networks_server_priority": "优先级",
+  "networks_ed2k_connection_type": "连接类型",
+  "networks_server_name_ph": "名称（可选）",
+  "networks_server_version": "版本",
+  "networks_kad_your_ip": "你的IP地址",
+  "search_download": "下载内容",
+  "networks_server_static": "静态",
+  "networks_server_static_yes": "是",
+  "networks_kad_files": "文件",
+  "networks_server_static_no": "否",
+  "networks_server_remove": "移除",
+  "search_empty": "这里啥都没有。"
 }

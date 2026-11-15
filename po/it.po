@@ -21,7 +21,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-14 10:37+0000\n"
+"PO-Revision-Date: 2026-11-14 14:12+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -5607,11 +5607,11 @@ msgstr "Rimuovi"
 
 #: src/muuli_wdr.cpp
 msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
-msgstr ""
+msgstr "Doppio clic: condividi o annulla la condivisione di questa cartella. Clic destro: condividila con tutte le sottocartelle, comprese quelle nuove."
 
 #: src/muuli_wdr.cpp
 msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
-msgstr ""
+msgstr "Grassetto: condivisa. Grassetto corsivo: condivisa con tutte le sottocartelle. Cartella rossa: contiene cartelle condivise."
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -7364,9 +7364,8 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr "macOS non consente a un'applicazione di smettere di essere il gestore predefinito. Per impedire che aMule li apra, imposta un'altra applicazione come predefinita."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The aMule API requires external connections to be enabled."
-msgstr "Il server web e aMule API richiedono che le connessioni esterne siano abilitate."
+msgstr "L’API di aMule richiede che le connessioni esterne siano abilitate."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""

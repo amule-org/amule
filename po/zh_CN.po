@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-14 10:37+0000\n"
+"PO-Revision-Date: 2026-11-15 14:13+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -5597,11 +5597,11 @@ msgstr "删除"
 
 #: src/muuli_wdr.cpp
 msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
-msgstr ""
+msgstr "双击：分享或取消分享这个文件夹。右键单击：分享这个文件夹和所有子文件夹，包括新的子文件夹。"
 
 #: src/muuli_wdr.cpp
 msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
-msgstr ""
+msgstr "粗体：已共享。斜体加粗：包括所有子文件夹在内已共享。红色文件夹：其中包含已共享的文件夹。"
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -7354,9 +7354,8 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr "macOS 不让程序停止成为默认链接处理方。要阻止 aMule 打开这些链接，让另一个程序成为默认处理方。"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The aMule API requires external connections to be enabled."
-msgstr "启用 web 服务器和 aMule API 需要外部连接。"
+msgstr "aMule API 需要启用外部连接。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""

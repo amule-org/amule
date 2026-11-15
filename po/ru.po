@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-14 10:37+0000\n"
+"PO-Revision-Date: 2026-11-15 14:13+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -4880,7 +4880,7 @@ msgstr "Полные источники"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Shared since"
-msgstr "Опубликовано с"
+msgstr "Опубликован с"
 
 #: src/muuli_wdr.cpp src/SharedFilesCtrl.cpp
 msgid "Last upload"
@@ -5635,11 +5635,11 @@ msgstr "Удалить"
 
 #: src/muuli_wdr.cpp
 msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
-msgstr ""
+msgstr "Двойной щелчок: публиковать или снять с публикации эту папку. Правый щелчок: публиковать её вместе со всеми подпапками, включая новые."
 
 #: src/muuli_wdr.cpp
 msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
-msgstr ""
+msgstr "Полужирный: публикуется. Полужирный курсив: публикуется со всеми подпапками. Красная папка: содержит публикуемые папки."
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -7405,9 +7405,8 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr "macOS не позволяет приложению перестать быть обработчиком по умолчанию. Чтобы aMule перестал открывать их, назначьте обработчиком по умолчанию другое приложение."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The aMule API requires external connections to be enabled."
-msgstr "Веб-сервер и aMule API требуют включённых внешних подключений."
+msgstr "Для aMule API необходимо включить внешние подключения."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
