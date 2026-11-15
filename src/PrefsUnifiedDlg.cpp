@@ -195,19 +195,20 @@ void ConvertGroupBoxes(wxSizer *sizer)
 			heading->MoveBeforeInTabOrder(box);
 			// A hidden section (an event's commands, until the event is picked) stays hidden.
 			heading->Show(box->IsShown());
-			// In line with the rows, which carry their own left margin.
-			const wxSizerItem *first =
-				boxSizer->GetItemCount() ? boxSizer->GetItem(size_t(0)) : nullptr;
-			const int indent = (first && (first->GetFlag() & wxLEFT)) ? first->GetBorder() : 0;
-			section->Add(heading, wxSizerFlags().Border(wxLEFT, indent));
+			section->Add(heading);
 		}
 
+		// Some boxes give their first row a left margin that only kept the rows off the frame.
+		// Without the frame it moves the section right of the others, so every row loses it.
+		const wxSizerItem *first = boxSizer->GetItemCount() ? boxSizer->GetItem(size_t(0)) : nullptr;
+		const int inset = (first && (first->GetFlag() & wxLEFT)) ? first->GetBorder() : 0;
 		auto *rows = new wxBoxSizer(boxSizer->GetOrientation());
 		while (boxSizer->GetItemCount() > 0) {
 			const wxSizerItem *row = boxSizer->GetItem(size_t(0));
 			const int proportion = row->GetProportion();
 			const int flag = row->GetFlag();
-			const int border = row->GetBorder();
+			const int border =
+				(flag & wxLEFT) ? std::max(0, row->GetBorder() - inset) : row->GetBorder();
 			if (row->IsWindow()) {
 				wxWindow *window = row->GetWindow();
 				boxSizer->Detach(0);
@@ -264,6 +265,22 @@ template <typename Visit> void ForEachShownControl(wxWindow *parent, const Visit
 	}
 }
 
+// Lists whose entries are the user's own folders, addresses or interfaces, not setting names.
+bool HoldsUserData(const wxWindow *window)
+{
+	switch (window->GetId()) {
+	case IDC_SHAREDDIRS_LIST:
+	case IDC_PATHMAP_LIST:
+	case IDC_ALLOWED_ROOTS_LIST:
+	case IDC_INTERFACE:
+	case IDC_EXT_CONN_IP:
+	case IDC_EC_INTERFACE:
+		return true;
+	default:
+		return false;
+	}
+}
+
 // What the search looks at in a control: the label of a label-bearing control, the entries of a
 // choice or list, and the tooltip, which often holds the words a user would search for. The text
 // of entry fields is the user's own data, not a description of the setting, so it is left out.
@@ -274,11 +291,11 @@ wxString SearchableText(wxWindow *window)
 		wxDynamicCast(window, wxRadioButton) || wxDynamicCast(window, wxButton)) {
 		text = static_cast<wxControl *>(window)->GetLabelText();
 	}
-	if (auto *items = dynamic_cast<wxItemContainerImmutable *>(window)) {
+	if (auto *items = dynamic_cast<wxItemContainerImmutable *>(window); items && !HoldsUserData(window)) {
 		for (unsigned i = 0; i < items->GetCount(); ++i) {
 			text << '\n' << items->GetString(i);
 		}
-	} else if (auto *list = wxDynamicCast(window, wxListCtrl)) {
+	} else if (auto *list = wxDynamicCast(window, wxListCtrl); list && !HoldsUserData(window)) {
 		for (long i = 0; i < list->GetItemCount(); ++i) {
 			text << '\n' << list->GetItemText(i);
 		}
@@ -293,6 +310,29 @@ bool CanHighlight(wxWindow *window)
 {
 	return wxDynamicCast(window, wxStaticText) || wxDynamicCast(window, wxCheckBox) ||
 	       wxDynamicCast(window, wxRadioButton);
+}
+
+// What to show in bold for a match in @p window: the control itself, or for a drop-down, spin or
+// field, the label before it in its row. Null when there is neither.
+wxWindow *HighlightTarget(wxWindow *window)
+{
+	if (CanHighlight(window)) {
+		return window;
+	}
+	const wxSizer *row = window->GetContainingSizer();
+	if (!row) {
+		return nullptr;
+	}
+	wxWindow *label = nullptr;
+	for (const wxSizerItem *item : row->GetChildren()) {
+		if (item->GetWindow() == window) {
+			return label;
+		}
+		if (item->IsWindow() && wxDynamicCast(item->GetWindow(), wxStaticText)) {
+			label = item->GetWindow();
+		}
+	}
+	return nullptr;
 }
 
 // Minimize to Tray needs the tray icon, and on GTK an X11 session: Wayland never reports that
@@ -1057,8 +1097,8 @@ bool PrefsUnifiedDlg::PageMatchesSearch(
 	ForEachShownControl(m_pageWidgets[page], [&](wxWindow *control) {
 		if (PrefsSearch::Matches(SearchableText(control), terms)) {
 			matched = true;
-			if (CanHighlight(control)) {
-				matches.push_back(control);
+			if (wxWindow *target = HighlightTarget(control)) {
+				matches.push_back(target);
 			}
 		}
 	});

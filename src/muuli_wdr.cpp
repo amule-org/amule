@@ -1400,10 +1400,25 @@ static wxColour MutedTextColour( const wxColour &text, const wxColour &backgroun
     return MixColours( text, background, 0.36 );
 }
 
+// Runs @p apply on @p window now and again whenever the system switches between light and dark.
+// The preferences dialog lives as long as aMule, and a colour mixed from the system's is a fixed
+// value that would keep the old appearance.
+template <typename Apply> static void FollowSystemColours( wxWindow *window, const Apply &apply )
+{
+    apply( window );
+    window->Bind( wxEVT_SYS_COLOUR_CHANGED, [window, apply]( wxSysColourChangedEvent &event ) {
+        apply( window );
+        window->Refresh();
+        event.Skip();
+    } );
+}
+
 // Muted text on the dialog's own background: page descriptions and the notes under fields.
 static void SetMutedText( wxWindow *window )
 {
-    window->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) ) );
+    FollowSystemColours( window, []( wxWindow *w ) {
+        w->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_BTNTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE ) ) );
+    } );
 }
 
 wxSizer *PreferencesGeneralTab( wxWindow *parent, bool call_fit, bool set_sizer )
@@ -2228,7 +2243,9 @@ static wxWindow *PreferencesWarningNotice( wxWindow *parent, wxWindowID textId, 
     const wxColour accent( 0xE8, 0xA3, 0x17 );
 
     wxPanel *notice = new wxPanel( parent, wxID_ANY );
-    notice->SetBackgroundColour( MixColours( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ), accent, 0.18 ) );
+    FollowSystemColours( notice, [accent]( wxWindow *w ) {
+        w->SetBackgroundColour( MixColours( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ), accent, 0.18 ) );
+    } );
     wxBoxSizer *row = new wxBoxSizer( wxHORIZONTAL );
 
     wxPanel *bar = new wxPanel( notice, wxID_ANY, wxDefaultPosition, wxSize( notice->FromDIP(4), -1 ) );
@@ -2240,7 +2257,7 @@ static wxWindow *PreferencesWarningNotice( wxWindow *parent, wxWindowID textId, 
     row->Add( icon, wxSizerFlags().Top().Border(wxLEFT|wxTOP|wxBOTTOM, gap) );
 
     WrappingStaticText *label = new WrappingStaticText( notice, textId, text );
-    label->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOWTEXT ) );
+    FollowSystemColours( label, []( wxWindow *w ) { w->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOWTEXT ) ); } );
     row->Add( label, wxSizerFlags(1).CenterVertical().Border(wxALL, gap) );
 
     notice->SetSizer( row );
@@ -2254,10 +2271,27 @@ wxSizer *PreferencesaMuleTweaksTab( wxWindow *parent, bool call_fit, bool set_si
     // The translation keeps the line breaks of the old centred banner. Reflow it into paragraphs
     // and let the label wrap to the page instead.
     wxString warning = _("Do not change these setting unless you know\nwhat you are doing, otherwise you can easily\nmake things worse for yourself.\n\naMule will run fine without adjusting any of\nthese settings.");
+    // Chinese and Japanese have no spaces between words, so a break next to their characters
+    // joins without one. Korean has spaces and is left out.
+    auto unspaced = []( wxUniChar c ) {
+        const wxUint32 v = c.GetValue();
+        return ( v >= 0x2E80 && v < 0xA000 && !( v >= 0x3130 && v < 0x3190 ) ) || ( v >= 0xF900 && v < 0xFB00 ) || ( v >= 0xFF00 && v < 0xFFF0 );
+    };
     warning.Replace( "\r", "" );
-    warning.Replace( "\n\n", "\x01" );
-    warning.Replace( "\n", " " );
-    warning.Replace( "\x01", "\n\n" );
+    wxString reflowed;
+    for ( size_t i = 0; i < warning.length(); ++i ) {
+        if ( warning[i] != '\n' ) {
+            reflowed += warning[i];
+        } else if ( i + 1 < warning.length() && warning[i + 1] == '\n' ) {
+            reflowed += "\n\n";
+            while ( i + 1 < warning.length() && warning[i + 1] == '\n' ) {
+                ++i;
+            }
+        } else if ( !reflowed.EndsWith( " " ) && !( i + 1 < warning.length() && warning[i + 1] == ' ' ) && !( i > 0 && unspaced( warning[i - 1] ) ) && !( i + 1 < warning.length() && unspaced( warning[i + 1] ) ) ) {
+            reflowed += ' ';
+        }
+    }
+    warning = reflowed.Strip( wxString::both );
     item0->Add( PreferencesWarningNotice( parent, IDC_AMULE_TWEAKS_WARNING, warning ), wxSizerFlags().Expand().Border(wxBOTTOM, parent->FromDIP(8)) );
     wxStaticBox *item5 = new wxStaticBox( parent, -1, "" );
     wxStaticBoxSizer *item4 = new wxStaticBoxSizer( item5, wxVERTICAL );
@@ -2571,7 +2605,7 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     // The sidebar is one panel in the list's own colour, so the search box, the "no matches" note
     // and the page list read as a single pane rather than a list control dropped on the dialog.
     wxPanel *sidebar = new wxPanel( parent, wxID_ANY );
-    sidebar->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) );
+    FollowSystemColours( sidebar, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ); } );
     wxBoxSizer *sidebarSizer = new wxBoxSizer( wxVERTICAL );
 
     wxSearchCtrl *search = new wxSearchCtrl( sidebar, ID_PREFS_SEARCH );
@@ -2583,7 +2617,9 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
 
     // Wraps rather than widening the sidebar, which the page list sizes.
     WrappingStaticText *noMatches = new WrappingStaticText( sidebar, ID_PREFS_NO_MATCHES, wxEmptyString );
-    noMatches->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ) );
+    FollowSystemColours( noMatches, []( wxWindow *w ) {
+        w->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ) );
+    } );
     noMatches->Hide();
     sidebarSizer->Add( noMatches, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(8)) );
 
@@ -3054,7 +3090,7 @@ wxSizer *PreferencesSecurityTab( wxWindow *parent, bool call_fit, bool set_sizer
     wxCheckBox *item1 = new wxCheckBox( parent, IDC_SECIDENT, _("Use Secure User Identification"), wxDefaultPosition, wxDefaultSize, 0 );
     item1->SetValue( TRUE );
     item1->SetToolTip( _("It is recommended to enable this option. You will not receive credits if SUI is not enabled.") );
-    item0->Add( item1, wxSizerFlags().CenterVertical().Border(wxLEFT, 5) );
+    item0->Add( item1, wxSizerFlags().CenterVertical() );
     wxStaticBox *item3 = new wxStaticBox( parent, -1, _("Protocol Obfuscation") );
     wxStaticBoxSizer *item2 = new wxStaticBoxSizer( item3, wxVERTICAL );
 
@@ -3084,7 +3120,7 @@ wxSizer *PreferencesSecurityTab( wxWindow *parent, bool call_fit, bool set_sizer
     wxChoice *item7 = new wxChoice( parent, IDC_SEESHARES, wxDefaultPosition, wxDefaultSize, 3, strs7, 0 );
     item7->SetToolTip( _("Select who can request to view a list of your shared files.") );
     seeShares->Add( item7, wxSizerFlags().CenterVertical().Border(wxLEFT, parent->FromDIP(8)) );
-    item0->Add( seeShares, wxSizerFlags().Border(wxALL, 5) );
+    item0->Add( seeShares );
     wxStaticBox *item9 = new wxStaticBox( parent, -1, _("IP-Filtering") );
     wxStaticBoxSizer *item8 = new wxStaticBoxSizer( item9, wxVERTICAL );
 
