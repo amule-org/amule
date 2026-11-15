@@ -2,9 +2,7 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Port mapping results, late services and the autoconnect hold, checked against a fake gateway."""
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import os
-from pathlib import Path
 import re
 import socket
 import struct
@@ -13,6 +11,9 @@ import sys
 import tempfile
 import threading
 import time
+from contextlib import suppress
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 from AllSearchIntegrationTest import free_ports, spawn_daemon, stop_daemon
 from DaemonConfig import write_amule_conf
@@ -90,16 +91,16 @@ def skip_or_fail(reason):
 
 
 def membership(index):
-    return struct.pack('4s4si', socket.inet_aton(SSDP_GROUP), socket.inet_aton('0.0.0.0'), index)
+    # The zero address is the required ip_mreq interface wildcard, not a listener bind.
+    return struct.pack('4s4si', socket.inet_aton(SSDP_GROUP),
+                       socket.inet_aton('0.0.0.0'), index)  # noqa: S104
 
 
 def multicast(sock, data):
     for index, _ in socket.if_nameindex():
-        try:
+        with suppress(OSError):
             sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_IF, membership(index))
             sock.sendto(data, (SSDP_GROUP, SSDP_PORT))
-        except OSError:
-            pass
 
 
 def membership6(index):
@@ -128,10 +129,13 @@ class FakeGateway:
     606, as miniupnpd in secure mode does.
     """
 
-    def __init__(self, services=('ip',), mappings=(), reject=(), answer_delay=0, silent=False,
-                 held=None, ipv6=False):
+    def __init__(self, services=('ip',), mappings=(), reject=(), reject_pinhole_actions=(),
+                 firewall_ipv4_actions=False, answer_delay: float = 0.0, silent=False, held=None,
+                 ipv6=False):
         self.services = services
         self.reject = set(reject)
+        self.reject_pinhole_actions = set(reject_pinhole_actions)
+        self.firewall_ipv4_actions = firewall_ipv4_actions
         self.answer_delay = answer_delay
         self.silent = silent
         self.held = held
@@ -151,15 +155,14 @@ class FakeGateway:
         self.ssdp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.ssdp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            self.ssdp.bind(('', SSDP_PORT))
+            # Multicast replies may arrive on any interface selected by libupnp.
+            self.ssdp.bind(('', SSDP_PORT))  # noqa: S104
         except OSError as error:
             raise Skipped(f'cannot bind SSDP port {SSDP_PORT}: {error}') from error
         # libupnp picks its own interface, so listen on all of them.
         for index, _ in socket.if_nameindex():
-            try:
+            with suppress(OSError):
                 self.ssdp.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, membership(index))
-            except OSError:
-                pass
         self.ipv6_searched = False
         self.http6 = self.ssdp6 = None
         if ipv6:
@@ -266,11 +269,21 @@ class FakeGateway:
                           for arg, var in arguments.items())
             return f'<action><name>{name}</name><argumentList>{xml}</argumentList></action>'
         if service == 'ipv6fw':
-            actions = ''.join(action(name, arguments) for name, arguments in PINHOLE_ACTIONS)
-            variables = ''.join(f'<stateVariable sendEvents="no"><name>{var}</name>'
-                                '<dataType>string</dataType></stateVariable>'
-                                for arguments in (a for _, a in PINHOLE_ACTIONS)
-                                for var in arguments.values())
+            pinhole_actions = ''.join(action(name, arguments) for name, arguments in PINHOLE_ACTIONS)
+            pinhole_variables = ''.join(f'<stateVariable sendEvents="no"><name>{var}</name>'
+                                        '<dataType>string</dataType></stateVariable>'
+                                        for arguments in (a for _, a in PINHOLE_ACTIONS)
+                                        for var in arguments.values())
+            if self.firewall_ipv4_actions:
+                mapping_actions = f'{action(ADD, ADD_ARGS)}{action(DELETE, DELETE_ARGS)}'
+                mapping_variables = ''.join(f'<stateVariable sendEvents="no"><name>{var}</name>'
+                                             '<dataType>string</dataType></stateVariable>'
+                                             for var in ADD_ARGS.values())
+                actions = pinhole_actions + mapping_actions
+                variables = pinhole_variables + mapping_variables
+            else:
+                actions = pinhole_actions
+                variables = pinhole_variables
         else:
             actions = f'{action(ADD, ADD_ARGS)}{action(DELETE, DELETE_ARGS)}'
             variables = ''.join(f'<stateVariable sendEvents="no"><name>{var}</name>'
@@ -286,6 +299,9 @@ class FakeGateway:
         def argument(name):
             found = re.search(f'<{name}[^>]*>([^<]*)<', body)
             return found[1] if found else ''
+        if action in self.reject_pinhole_actions:
+            self.pinhole_actions.append((action, 'rejected'))
+            return 606
         if action == ADD_PINHOLE:
             unique_id = str(self.next_pinhole_id)
             self.next_pinhole_id += 1
@@ -324,7 +340,7 @@ class FakeGateway:
         class Handler(BaseHTTPRequestHandler):
             protocol_version = 'HTTP/1.1'
 
-            def log_message(self, *_):
+            def log_message(self, format, *args):
                 pass
 
             def reply(self, status, body=''):
@@ -384,7 +400,7 @@ def real_gateway_answers():
         while time.monotonic() < deadline:
             try:
                 _, peer = probe.recvfrom(4096)
-            except socket.timeout:
+            except TimeoutError:
                 continue
             return peer[0]
     return None
@@ -401,6 +417,7 @@ class Driver:
                                         stderr=subprocess.PIPE, text=True)
         self.watchdog = threading.Timer(60, self.process.kill)
         self.watchdog.start()
+        assert self.process.stdout is not None
         first = self.process.stdout.readline().strip()
         if first != 'constructed':
             details = self.stop()
@@ -424,6 +441,8 @@ class Driver:
 
     def run(self, count):
         """Returns the results of the next operations."""
+        assert self.process.stdin is not None
+        assert self.process.stdout is not None
         try:
             self.process.stdin.write('\n' * count)
             self.process.stdin.flush()
@@ -536,6 +555,13 @@ def run_pinhole_scenarios(driver, failures):
             record_failure(failures,
                            f'pinhole renew: renewal created an entry, {gateway.pinholes}')
 
+        with FakeGateway(services=('ip', 'ipv6fw'), reject_pinhole_actions=(ADD_PINHOLE,)) as gateway:
+            run_driver(driver, gateway,
+                       ['addpinholeshort', 'renewexpiring-now', 'renewexpiring'])
+        if gateway.pinhole_actions != [(ADD_PINHOLE, 'rejected'), (ADD_PINHOLE, 'rejected')]:
+            record_failure(failures, f'pinhole refusal: unbacked renewal/retry cadence was '
+                                     f'{gateway.pinhole_actions}')
+
         got, gateway = run(['addpinhole', 'deletepinholes'])
         if gateway.pinhole_actions != [(ADD_PINHOLE, '1'), (DELETE_PINHOLE, '1')]:
             record_failure(failures, f'pinhole delete: gateway saw {gateway.pinhole_actions}')
@@ -582,6 +608,26 @@ def run_scenarios(driver, failures):
         # Exact list: also rules out state queries, GetStatusInfo and the disabled mapping.
         if sorted(gateway.requests) != sorted(expected):
             record_failure(failures, f'{name}: gateway saw {gateway.requests}, expected {expected}')
+
+
+def run_ipv4_firewall_filter_scenarios(driver, failures):
+    """An IPv6 firewall is never a WAN mapping service, even if it advertises those actions."""
+    try:
+        with FakeGateway(services=('ip', 'ipv6fw'), firewall_ipv4_actions=True) as gateway:
+            got = run_driver(driver, gateway, ['add', 'delete'])
+        if got != {'add': 'true', 'delete': 'true'}:
+            record_failure(failures, f'firewall filter with WAN service: returned {got}')
+        if any(service != 'ip' for service, _, _ in gateway.requests):
+            record_failure(failures, f'IPv4 mapping action reached IPv6 firewall: {gateway.requests}')
+
+        with FakeGateway(services=('ipv6fw',), firewall_ipv4_actions=True) as gateway:
+            got = run_driver(driver, gateway, ['add', 'delete'])
+        if got != {'add': 'false', 'delete': 'false'}:
+            record_failure(failures, f'firewall counted as WAN mapping service: returned {got}')
+        if gateway.requests:
+            record_failure(failures, f'IPv4 action sent without a WAN service: {gateway.requests}')
+    except ScenarioFailed as error:
+        record_failure(failures, f'IPv6 firewall filtering: {error}')
 
 
 def run_pinhole_late_scenarios(driver, failures):
@@ -744,6 +790,7 @@ def main():
         run_late_scenarios(sys.argv[1], failures)
         run_pinhole_scenarios(sys.argv[1], failures)
         run_pinhole_late_scenarios(sys.argv[1], failures)
+        run_ipv4_firewall_filter_scenarios(sys.argv[1], failures)
         check_discovery_pending(sys.argv[1], failures)
         if len(sys.argv) > 2:
             check_amuled_autoconnect(sys.argv[2], failures)

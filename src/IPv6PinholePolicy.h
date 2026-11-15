@@ -20,12 +20,9 @@ inline bool ShouldRenewIPv6Pinhole(unsigned int remainingLease, unsigned int ren
 	return remainingLease <= renewalMargin;
 }
 
-inline bool IsIPv6PinholeStale(unsigned short currentPort,
-	const std::string &currentAddress,
-	unsigned short pinholePort,
-	const std::string &pinholeAddress)
+inline bool IsIPv6PinholeStale(const std::string &currentAddress, const std::string &pinholeAddress)
 {
-	return currentPort != pinholePort || currentAddress != pinholeAddress;
+	return currentAddress != pinholeAddress;
 }
 
 #endif // IPV6_PINHOLE_POLICY_H

@@ -44,7 +44,7 @@ const int EXIT_SKIP = 77;
 // no renewal is attempted by the timer during the run.
 const char *const PINHOLE_CLIENT = "2001:db8::1";
 const unsigned int PINHOLE_LEASE = 3600;
-const unsigned int PINHOLE_LEASE_SHORT = 1;
+const unsigned int PINHOLE_LEASE_SHORT = 4;
 } // namespace
 
 int main(int argc, char **argv)
@@ -86,13 +86,14 @@ int main(int argc, char **argv)
 					6,
 					PINHOLE_LEASE_SHORT);
 				result = true;
+			} else if (std::strcmp(argv[i], "renewexpiring-now") == 0) {
+				controlPoint.RenewExpiringIPv6Pinholes(PINHOLE_CLIENT);
+				result = true;
 			} else if (std::strcmp(argv[i], "renewexpiring") == 0) {
 				// Driven the way production drives it: the whole renewal pass, not a single
-				// key. The short lease needs its second to elapse before the pass runs, or
-				// the policy correctly decides nothing is near expiry.
-				std::this_thread::sleep_for(std::chrono::seconds(2));
-				controlPoint.RenewExpiringIPv6Pinholes(
-					static_cast<unsigned short>(tcpPort), PINHOLE_CLIENT);
+				// key. The short lease needs time to elapse before the pass runs.
+				std::this_thread::sleep_for(std::chrono::seconds(3));
+				controlPoint.RenewExpiringIPv6Pinholes(PINHOLE_CLIENT);
 				result = true;
 			} else if (std::strcmp(argv[i], "deletepinholes") == 0) {
 				controlPoint.DeleteIPv6Pinholes();

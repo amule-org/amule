@@ -2381,21 +2381,18 @@ static const unsigned int kIPv6PinholeLeaseSeconds = 3600;
 class CIPv6PinholeRenewalTask : public CThreadTask
 {
 public:
-	CIPv6PinholeRenewalTask(
-		CUPnPControlPoint *upnp, unsigned short currentPort, std::string currentClient)
-	: CThreadTask(wxT("IPv6 pinhole renewal"), wxT("Renew or re-add expiring pinholes"))
+	CIPv6PinholeRenewalTask(CUPnPControlPoint *upnp, std::string currentClient)
+	: CThreadTask(wxT("IPv6 pinhole renewal"), wxT("Renew or re-add expiring pinholes"), ETP_High)
 	, m_upnp(upnp)
-	, m_currentPort(currentPort)
 	, m_currentClient(std::move(currentClient))
 	{
 	}
 
 protected:
-	void Entry() override { m_upnp->RenewExpiringIPv6Pinholes(m_currentPort, m_currentClient); }
+	void Entry() override { m_upnp->RenewExpiringIPv6Pinholes(m_currentClient); }
 
 private:
 	CUPnPControlPoint *m_upnp;
-	unsigned short m_currentPort;
 	const std::string m_currentClient;
 };
 #endif
@@ -2441,9 +2438,8 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 #if defined(ENABLE_UPNP) && defined(ENABLE_IPV6)
 		if (m_upnp != nullptr && thePrefs::GetUPnPEnabled()) {
 			const std::optional<CNetworkAddress> local = SelectedLocalIPv6();
-			CThreadScheduler::AddTaskIfNoneOfType(new CIPv6PinholeRenewalTask(m_upnp,
-				thePrefs::GetPort(),
-				local.has_value() ? local->ToString() : std::string()));
+			CThreadScheduler::AddTaskIfNoneOfType(new CIPv6PinholeRenewalTask(
+				m_upnp, local.has_value() ? local->ToString() : std::string()));
 		}
 #endif
 	}

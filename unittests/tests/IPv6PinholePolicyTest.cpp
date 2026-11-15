@@ -4,7 +4,6 @@
 
 #include <muleunit/test.h>
 #include "IPv6PinholePolicy.h"
-#include <IPv6PinholePolicy.h>
 
 using namespace muleunit;
 
@@ -25,9 +24,8 @@ TEST(IPv6PinholePolicy, RenewsAtOrInsideMargin)
 	ASSERT_TRUE(ShouldRenewIPv6Pinhole(59, 60));
 }
 
-TEST(IPv6PinholePolicy, ReplacesWhenPortOrAddressChanges)
+TEST(IPv6PinholePolicy, ReplacesWhenAddressChanges)
 {
-	ASSERT_FALSE(IsIPv6PinholeStale(4662, "2001:db8::1", 4662, "2001:db8::1"));
-	ASSERT_TRUE(IsIPv6PinholeStale(4663, "2001:db8::1", 4662, "2001:db8::1"));
-	ASSERT_TRUE(IsIPv6PinholeStale(4662, "2001:db8::2", 4662, "2001:db8::1"));
+	ASSERT_FALSE(IsIPv6PinholeStale("2001:db8::1", "2001:db8::1"));
+	ASSERT_TRUE(IsIPv6PinholeStale("2001:db8::2", "2001:db8::1"));
 }

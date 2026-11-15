@@ -418,7 +418,7 @@ public:
 	//! Renew or re-add every recorded pinhole whose lease is close to expiry, and replace any that
 	//! no longer names the current client address. Called off the main thread: a slow gateway must
 	//! not stall it.
-	void RenewExpiringIPv6Pinholes(unsigned short currentPort, const std::string &currentClient);
+	void RenewExpiringIPv6Pinholes(const std::string &currentClient);
 	//! Delete every pinhole this control point opened.
 	void DeleteIPv6Pinholes();
 	//! The key a pinhole is stored under: protocol and port, since that is what it names.

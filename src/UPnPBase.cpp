@@ -844,17 +844,30 @@ bool CUPnPControlPoint::DiscoveryPending() const
 		       now < m_searchDeadline + std::chrono::seconds(REGISTRATION_GRACE_SECONDS));
 }
 
+template <typename ServiceMap> static bool HasWANMappingService(const ServiceMap &services)
+{
+	for (const auto &entry : services) {
+		const std::string &type = entry.second->GetServiceType();
+		if (UPnP::TypeMatchesIgnoringVersion(type, UPnP::Service::WAN_IP_Connection) ||
+			UPnP::TypeMatchesIgnoringVersion(type, UPnP::Service::WAN_PPP_Connection)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool CUPnPControlPoint::AddPortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping)
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	if (m_ServiceMap.empty()) {
+	const bool hasWANMappingService = HasWANMappingService(m_ServiceMap);
+	if (!hasWANMappingService) {
 		msg << "CUPnPControlPoint::AddPortMappings: "
 		       "WAN Service not detected yet. Will map when one registers.";
 		AddDebugLogLineC(logUPnP, msg);
 	}
 
-	bool ok = !m_ServiceMap.empty();
+	bool ok = hasWANMappingService;
 	for (const auto &mapping : upnpPortMapping) {
 		if (mapping.getEnabled() == "1") {
 			m_ActivePortMappingsMap[mapping.getKey()] = mapping;
@@ -884,10 +897,14 @@ void CUPnPControlPoint::RefreshPortMappings()
 bool CUPnPControlPoint::ExecuteOnAnyService(
 	const std::string &actionName, const std::vector<CUPnPArgumentValue> &argval)
 {
-	// m_ServiceMap holds every WAN service on every gateway found, and usually only one of them
-	// holds the mapping. Any service on any gateway accepting counts as success.
+	// Any WAN service on any gateway accepting counts as success, except the IPv6 firewall
+	// service, whose SCPD does not implement IPv4 port-mapping actions.
 	bool ok = false;
 	for (const auto &entry : m_ServiceMap) {
+		if (UPnP::TypeMatchesIgnoringVersion(
+			    entry.second->GetServiceType(), UPnP::Service::WAN_IPv6_Firewall_Control)) {
+			continue;
+		}
 		ok = entry.second->Execute(actionName, argval) || ok;
 	}
 	return ok;
@@ -964,6 +981,10 @@ bool CUPnPControlPoint::SendAddPinhole(SIPv6Pinhole &pinhole)
 
 	std::string uniqueId;
 	if (!ExecuteOnIPv6FirewallService("AddPinhole", argval, "UniqueID", &uniqueId) || uniqueId.empty()) {
+		pinhole.uniqueId.clear();
+		const auto retryDelay = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
+			std::chrono::duration<double>(pinhole.lease) / 2.0);
+		pinhole.expiry = std::chrono::steady_clock::now() + retryDelay;
 		return false;
 	}
 	pinhole.uniqueId = uniqueId;
@@ -1031,8 +1052,7 @@ void CUPnPControlPoint::DeleteIPv6Pinholes()
 	m_IPv6Pinholes.clear();
 }
 
-void CUPnPControlPoint::RenewExpiringIPv6Pinholes(
-	unsigned short currentPort, const std::string &currentClient)
+void CUPnPControlPoint::RenewExpiringIPv6Pinholes(const std::string &currentClient)
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	const auto now = std::chrono::steady_clock::now();
@@ -1040,12 +1060,17 @@ void CUPnPControlPoint::RenewExpiringIPv6Pinholes(
 		SIPv6Pinhole &pinhole = entry.second;
 		// A prefix change leaves the pinhole naming an address we no longer hold: replace it
 		// rather than renew it.
-		if (!currentClient.empty() &&
-			IsIPv6PinholeStale(currentPort, currentClient, pinhole.port, pinhole.client)) {
+		if (!currentClient.empty() && IsIPv6PinholeStale(currentClient, pinhole.client)) {
 			SendDeletePinhole(pinhole);
 			pinhole.uniqueId.clear();
 			pinhole.client = currentClient;
 			SendAddPinhole(pinhole);
+			continue;
+		}
+		if (pinhole.uniqueId.empty()) {
+			if (now >= pinhole.expiry) {
+				SendAddPinhole(pinhole);
+			}
 			continue;
 		}
 		const auto left = std::chrono::duration_cast<std::chrono::seconds>(pinhole.expiry - now);
@@ -1060,6 +1085,7 @@ void CUPnPControlPoint::RenewExpiringIPv6Pinholes(
 		// A renewal that the gateway cannot grant - a rebooted router has forgotten the UniqueID -
 		// falls back to asking again, instead of retrying an update forever.
 		if (!SendUpdatePinhole(pinhole)) {
+			pinhole.uniqueId.clear();
 			SendAddPinhole(pinhole);
 		}
 	}
@@ -1098,7 +1124,7 @@ bool CUPnPControlPoint::DeletePortMappings(const std::vector<CUPnPPortMapping> &
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	bool ok = !m_ServiceMap.empty();
+	bool ok = HasWANMappingService(m_ServiceMap);
 	for (const auto &mapping : upnpPortMapping) {
 		if (mapping.getEnabled() == "1") {
 			PortMappingMap::iterator it = m_ActivePortMappingsMap.find(mapping.getKey());
