@@ -63,7 +63,33 @@ amule (${version}) ${VERSION_CODENAME}; urgency=medium
  -- ${maintainer}  $(date -R)
 EOF
 
-apt-get -qq build-dep -y --no-install-recommends ${cross[@]+"${cross[@]}"} "${build}" >/dev/null
+# A security update can reach one arch before the other, and a Multi-Arch:
+# same package must have one version on both. Pin each such package to the
+# newest version both arches have.
+if [ -n "${CROSS_ARCH:-}" ]; then
+    for _ in 1 2 3; do
+        skewed="$(apt-get build-dep -s --no-install-recommends "${cross[@]}" "${build}" 2>&1 |
+            sed -n "s/.* : Depends: \([^ :]*\):${CROSS_ARCH}.*/\1/p" | sort -u)" || true
+        pinned=0
+        for pkg in ${skewed}; do
+            grep -qs "^Package: ${pkg} " /etc/apt/preferences.d/arch-skew && continue
+            apt-cache show "${pkg}:${CROSS_ARCH}" 2>/dev/null |
+                awk '/^Multi-Arch: same/ { same = 1 } END { exit !same }' || continue
+            common="$(comm -12 \
+                <(apt-cache madison "${pkg}:${native}" | awk '{print $3}' | sort -u) \
+                <(apt-cache madison "${pkg}:${CROSS_ARCH}" | awk '{print $3}' | sort -u) |
+                sort -V | tail -n1)"
+            [ -n "${common}" ] || continue
+            echo "Pinning ${pkg} to ${common} for both arches"
+            printf 'Package: %s %s:%s\nPin: version %s\nPin-Priority: 1001\n\n' \
+                "${pkg}" "${pkg}" "${CROSS_ARCH}" "${common}" >> /etc/apt/preferences.d/arch-skew
+            pinned=1
+        done
+        [ "${pinned}" = 1 ] || break
+    done
+fi
+
+apt-get -qq build-dep -y --no-install-recommends --allow-downgrades ${cross[@]+"${cross[@]}"} "${build}" >/dev/null
 
 cd "${build}"
 dpkg-buildpackage -us -uc -j"$(nproc)" ${cross[@]+"${cross[@]}"}
