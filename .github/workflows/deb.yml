@@ -1,7 +1,9 @@
 name: Debian packages
 
-# Trial run of every suite and arch. workflow_dispatch only works once this
-# file is on the default branch, so the branch push starts it for now.
+# Builds every suite and arch and uploads the .debs to Cloudsmith: a
+# published GitHub Release goes to the release repository, everything else to
+# the nightly one. Releases start as drafts, so the tag push is too early.
+# The branch push is for the trial on the fork.
 on:
   push:
     branches: [feat/debian-packaging]
@@ -10,10 +12,17 @@ on:
       - 'packaging/linux/versions.env'
       - 'packaging/linux/deb/**'
       - '.github/workflows/deb.yml'
+  schedule:
+    - cron: '23 2 * * *'
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  CHANNEL: ${{ github.event_name == 'release' && 'release' || 'nightly' }}
 
 concurrency:
   group: deb-${{ github.ref }}
@@ -46,12 +55,38 @@ jobs:
           - { suite: ubuntu22.04, arch: s390x }
     steps:
       - uses: actions/checkout@v7
+        with:
+          # A nightly version counts the commits.
+          fetch-depth: 0
       - name: Build
-        run: packaging/linux/build.sh deb ${{ matrix.suite }} release ${{ matrix.arch }}
+        run: packaging/linux/build.sh deb ${{ matrix.suite }} "${CHANNEL}" ${{ matrix.arch }}
       - uses: actions/upload-artifact@v7
         with:
           name: deb-${{ matrix.suite }}-${{ matrix.arch }}
+          # The .changes file names the suite's codename for the upload.
           path: |
             dist/deb/${{ matrix.suite }}-${{ matrix.arch }}/out/*.deb
+            dist/deb/${{ matrix.suite }}-${{ matrix.arch }}/out/*.changes
             !dist/deb/${{ matrix.suite }}-${{ matrix.arch }}/out/*-dbgsym_*
           retention-days: 7
+
+  publish:
+    needs: deb
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: deb-*
+          path: dist/deb-publish
+      - name: Upload to Cloudsmith
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          REPO: amule-org/${{ env.CHANNEL == 'release' && 'amule' || 'amule-nightly' }}
+        run: |
+          if [ -z "${CLOUDSMITH_API_KEY}" ]; then
+              echo "No CLOUDSMITH_API_KEY secret: nothing to publish."
+              exit 0
+          fi
+          pipx install cloudsmith-cli
+          packaging/linux/deb/publish-cloudsmith.sh "${REPO}" dist/deb-publish

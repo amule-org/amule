@@ -70,3 +70,13 @@ and opens an issue when a release comes out or reaches its end of life.
 To add a suite, add it to `build_deb()` and the usage text in
 `../build.sh`, to the matrix in `.github/workflows/deb.yml`, and to the
 list above. To drop one, remove it from the same places.
+
+## Publishing
+
+`.github/workflows/deb.yml` uploads the packages to Cloudsmith, which builds,
+signs and serves the APT index. A published GitHub Release goes to
+`amule-org/amule`. The nightly schedule goes to `amule-org/amule-nightly`,
+whose retention rule deletes old snapshots. The upload uses the
+`CLOUDSMITH_API_KEY` secret, the API key of a Cloudsmith service account
+with write access to both repositories; without it, the workflow only
+builds.
