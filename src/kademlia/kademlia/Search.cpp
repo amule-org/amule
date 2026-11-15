@@ -127,8 +127,20 @@ KadPublishSeeds::Seeds LoadPublishSeeds()
 	KadPublishSeeds::Seeds seeds;
 	const CPath path = PublishSeedsPath();
 	CFile file;
-	if (path.FileExists() && file.Open(path) &&
-		!KadPublishSeeds::Read(file, static_cast<uint32_t>(time(nullptr)), seeds)) {
+	if (!path.FileExists() || !file.Open(path)) {
+		return seeds;
+	}
+	// CFile reads are unbuffered, so read the file once and parse it from memory.
+	std::vector<uint8_t> data;
+	try {
+		data.resize(file.GetLength());
+		file.Read(data.data(), data.size());
+	} catch (const CSafeIOException &) {
+		data.clear();
+	}
+	if (data.empty() ||
+		!KadPublishSeeds::Read(
+			CMemFile(data.data(), data.size()), static_cast<uint32_t>(time(nullptr)), seeds)) {
 		AddDebugLogLineN(logKadPublish,
 			CFormat("%s is damaged or newer; keeping what was read") % KadPublishSeeds::FileName);
 	}
