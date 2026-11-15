@@ -37,6 +37,12 @@ jobs:
           - { suite: ubuntu24.04, arch: i386 }
           - { suite: ubuntu26.04, arch: i386 }
           - { suite: debian12, arch: riscv64 }
+          # The foreign arch lags the security updates, so multiarch cannot
+          # match versions with amd64.
+          - { suite: debian12, arch: s390x }
+          - { suite: ubuntu22.04, arch: riscv64 }
+          # jammy's debugedit crashes on the cross-built s390x binaries.
+          - { suite: ubuntu22.04, arch: s390x }
     steps:
       - uses: actions/checkout@v7
       - name: Build
