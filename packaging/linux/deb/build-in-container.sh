@@ -15,8 +15,12 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get -qq update
 apt-get -qq install -y --no-install-recommends dpkg-dev lintian >/dev/null
 # uutils chmod fails with EOVERFLOW for 32-bit arm on a 64-bit kernel.
+check=()
 if [ "$(dpkg --print-architecture)" = armhf ] && dpkg -s coreutils-from-uutils >/dev/null 2>&1; then
     apt-get -qq install -y --allow-remove-essential coreutils-from-gnu coreutils-from-uutils- >/dev/null
+    # Ubuntu's dpkg-checkbuilddeps then demands uutils back. build-dep below
+    # has installed the real build deps already.
+    check=(-d)
 fi
 
 # shellcheck disable=SC1091
@@ -92,7 +96,7 @@ fi
 apt-get -qq build-dep -y --no-install-recommends --allow-downgrades ${cross[@]+"${cross[@]}"} "${build}" >/dev/null
 
 cd "${build}"
-dpkg-buildpackage -us -uc -j"$(nproc)" ${cross[@]+"${cross[@]}"}
+dpkg-buildpackage -us -uc -j"$(nproc)" ${check[@]+"${check[@]}"} ${cross[@]+"${cross[@]}"}
 
 cd /build
 lintian --fail-on error --suppress-tags bad-distribution-in-changes-file ./*.changes
