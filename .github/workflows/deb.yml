@@ -29,7 +29,30 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+    steps:
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          build=true
+          # A nightly version ends in the commit, so skip a night with no new one.
+          if [ "${EVENT}" = schedule ]; then
+              latest="$(curl -fsS 'https://api.cloudsmith.io/v1/packages/amule-org/amule-nightly/?query=name:amule&sort=-date&page_size=1' |
+                  jq -r '.[0].version // ""')" || true
+              if [[ "${latest}" == *".${GITHUB_SHA::9}"* ]]; then
+                  echo "${latest} is already published."
+                  build=false
+              fi
+          fi
+          echo "build=${build}" >> "$GITHUB_OUTPUT"
+
   deb:
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
     name: ${{ matrix.suite }} ${{ matrix.arch }}
     # armhf runs natively on the arm64 runner. ppc64el, s390x and riscv64 are
     # cross-built: under QEMU they did not finish in 6 hours.

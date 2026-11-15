@@ -17,11 +17,7 @@ for job in "${dir}"/deb-*/; do
     distro="${suite%%[0-9]*}"
     codename="$(sed -n 's/^Distribution: //p' "${job}"*.changes)"
     for deb in "${job}"*.deb; do
-        # Every job builds the Architecture: all packages, but a suite can
-        # hold only one copy of each.
-        if [[ "${deb}" == *_all.deb && "${job}" != *-amd64/ ]]; then
-            continue
-        fi
-        cloudsmith push deb "${repo}/${distro}/${codename}" "${deb}" --republish
+        printf '%s\0%s\0' "${repo}/${distro}/${codename}" "${deb}"
     done
-done
+# Each push waits about 9 s for Cloudsmith to process the package.
+done | xargs -0 -n 2 -P 8 cloudsmith push deb --republish
