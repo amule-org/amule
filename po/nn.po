@@ -1456,7 +1456,7 @@ msgid "IO error while reading %s file: %s"
 msgstr "IO-feil ved lesing av %s-fila: %s"
 
 #: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp
+#: src/KnownFileList.cpp src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Feil ved lagring av %s-fila: %s"
@@ -5139,24 +5139,25 @@ msgid "Nick"
 msgstr "Kallenamn"
 
 #: src/muuli_wdr.cpp
-msgid "https://amule-org.github.io - the multi-platform Mule"
-msgstr "https://amule-org.github.io - multiplattform-mulen"
-
-#: src/muuli_wdr.cpp
 msgid "This is the name that other users will see when connecting to you."
 msgstr "Dette er namnet andre brukarar vil sjå når dei koplar til  maskina di."
+
+#: src/muuli_wdr.cpp
+msgid "https://amule-org.github.io - the multi-platform Mule"
+msgstr "https://amule-org.github.io - multiplattform-mulen"
 
 #: src/muuli_wdr.cpp
 msgid "Language: "
 msgstr "Språk: "
 
 #: src/muuli_wdr.cpp
-msgid "The delay before showing tool-tips."
-msgstr "Forseinkinga før ein syner verktytips."
-
-#: src/muuli_wdr.cpp
 msgid "This specifies the language used on controls."
 msgstr "Dette vel språket som vert nytta på kontrollane."
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Startup"
+msgstr "Start"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5171,27 +5172,17 @@ msgid "Registers a per-user autostart entry with the OS so aMule launches at log
 msgstr "Registrerer ei autostart-oppføring per brukar hos operativsystemet, slik at aMule startar ved innlogging. Viss du flyttar aMule-programfila, må du starte aMule ein gong manuelt etterpå for å oppdatere oppføringa."
 
 #: src/muuli_wdr.cpp
-msgid "Prevent automatic sleep: "
-msgstr ""
+msgid "Start minimized"
+msgstr "Start minimert"
+
+#: src/muuli_wdr.cpp
+msgid "Enabling this makes aMule minimize itself upon start."
+msgstr "Aktivering av denne minimerer aMule ved oppstart."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Off"
-msgstr "av"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "While downloading"
-msgstr "Lastar allereie ned"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "While aMule is running"
-msgstr "aMule køyrer"
-
-#: src/muuli_wdr.cpp
-msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgid "Links"
+msgstr "Lenkje"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5206,12 +5197,8 @@ msgid "Opening a collection queues every eD2k link it contains. On Windows this 
 msgstr "Å opne ei samling køar alle eD2k-lenkjer ho inneheld. På Windows legg dette aMule til i «Opne med»-lista, og gjer aMule til standard berre viss ingen andre program har kravd filtypen."
 
 #: src/muuli_wdr.cpp
-msgid "Start minimized"
-msgstr "Start minimert"
-
-#: src/muuli_wdr.cpp
-msgid "Enabling this makes aMule minimize itself upon start."
-msgstr "Aktivering av denne minimerer aMule ved oppstart."
+msgid "Behavior"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -5250,6 +5237,29 @@ msgid "Enabling this will make aMule to show notifications when finished downloa
 msgstr "Å aktivere dette vil få aMule til å syne varsel når ei nedlasting er ferdig."
 
 #: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "av"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Lastar allereie ned"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule køyrer"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Remember search history"
 msgstr "Hugs søkjehistorikk"
 
@@ -5260,6 +5270,10 @@ msgstr "Held ei nedtrekksliste over tidlegare søkjeord i namnefeltet på Søk-f
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
 msgstr "Forseinking for verktøytips: "
+
+#: src/muuli_wdr.cpp
+msgid "The delay before showing tool-tips."
+msgstr "Forseinkinga før ein syner verktytips."
 
 #: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
@@ -5801,8 +5815,20 @@ msgid "Number of Client Versions shown (0=unlimited)"
 msgstr "Tal på klienutgåver synt (0=uinnskrenka)"
 
 #: src/muuli_wdr.cpp
-msgid "!!! WARNING !!!"
-msgstr "!!! ÅTVARING !!!"
+msgid ""
+"Do not change these setting unless you know\n"
+"what you are doing, otherwise you can easily\n"
+"make things worse for yourself.\n"
+"\n"
+"aMule will run fine without adjusting any of\n"
+"these settings."
+msgstr ""
+"Ikkje endre desse innstillingane med mindre du veit\n"
+"kva du gjer, ellers kan du fort\n"
+"gjere ting verre for deg sjølv.\n"
+"\n"
+"aMule køyrer fint utan justering av nokon av\n"
+"desse innstillingane."
 
 #: src/muuli_wdr.cpp
 msgid "Max new connections / 5 secs"
@@ -6015,6 +6041,15 @@ msgstr "Gjesteøkter kan lese status og lister, men kan ikkje endre noko. Å sl�
 #: src/muuli_wdr.cpp
 msgid "Guest password"
 msgstr "Gjestepassord"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Search settings"
+msgstr "Søk"
+
+#: src/muuli_wdr.cpp
+msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -7123,56 +7158,126 @@ msgid "KiB/s (%.2f MiB/s)"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
 msgstr "Grensesnitt"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Appearance, the window title and how the transfer lists are drawn."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
 msgstr "Kopling"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
 msgstr "Proxy"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Send aMule's connections through a proxy server."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Tenarar"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "Katalogar"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Where downloads are stored and which folders you share."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Where the core's folders can be reached from this computer."
+msgstr "Returnerer resultata frå det tidlegare søket.\n"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How downloads and uploads are handled, corruption recovery and media details."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Events"
 msgstr "Hendingar"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Run your own commands when something happens in aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Graph timing and colors, and what the statistics tree shows."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
 msgstr "Filter"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Keep spam and unwanted words out of your chat messages and file comments."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Security"
 msgstr "Tryggleik"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
 msgstr "Fjernkontrollar"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
 msgstr "Nettsignatur"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Save aMule's status to a file that other programs can show."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
 msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Show each client's country, looked up in a GeoIP database."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
 msgstr "Avansert"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "Melde om feil"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose which kinds of debug messages are written to the log."
+msgstr "Syne mottekne meldingar i loggen"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7193,25 +7298,14 @@ msgid "Not available on Wayland: the protocol does not report when a window is m
 msgstr "Ikkje tilgjengeleg på Wayland: protokollen rapporterer ikkje når eit vindauge vert minimert, så dette valet kan ikkje fange opp systemets minimer-knapp. Løysing: start aMule med `GDK_BACKEND=x11` for å bruke XWayland i staden."
 
 #: src/PrefsUnifiedDlg.cpp
-msgid ""
-"Do not change these setting unless you know\n"
-"what you are doing, otherwise you can easily\n"
-"make things worse for yourself.\n"
-"\n"
-"aMule will run fine without adjusting any of\n"
-"these settings."
-msgstr ""
-"Ikkje endre desse innstillingane med mindre du veit\n"
-"kva du gjer, ellers kan du fort\n"
-"gjere ting verre for deg sjølv.\n"
-"\n"
-"aMule køyrer fint utan justering av nokon av\n"
-"desse innstillingane."
-
-#: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Greidde ikkje å kople Cfg til widgeten med ID %d og nøkkel %s"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "No settings match \"%s\". Try a shorter or different word."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -10599,6 +10693,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "!!! WARNING !!!"
+#~ msgstr "!!! ÅTVARING !!!"
 
 #, c-format
 #~ msgid "Terminating amuleweb instance with pid '%d' ... "

@@ -1439,7 +1439,7 @@ msgid "IO error while reading %s file: %s"
 msgstr "Lỗi IO khi đọc tệp %s: %s"
 
 #: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp
+#: src/KnownFileList.cpp src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Lỗi khi lưu tệp %s: %s"
@@ -5073,24 +5073,25 @@ msgid "Nick"
 msgstr "Biệt danh"
 
 #: src/muuli_wdr.cpp
-msgid "https://amule-org.github.io - the multi-platform Mule"
-msgstr "https://amule-org.github.io - Mule đa nền tảng"
-
-#: src/muuli_wdr.cpp
 msgid "This is the name that other users will see when connecting to you."
 msgstr "Đây là tên mà những người dùng khác sẽ thấy khi kết nối với bạn."
+
+#: src/muuli_wdr.cpp
+msgid "https://amule-org.github.io - the multi-platform Mule"
+msgstr "https://amule-org.github.io - Mule đa nền tảng"
 
 #: src/muuli_wdr.cpp
 msgid "Language: "
 msgstr "Ngôn ngữ: "
 
 #: src/muuli_wdr.cpp
-msgid "The delay before showing tool-tips."
-msgstr "Thời gian trễ trước khi hiển thị chú giải công cụ."
-
-#: src/muuli_wdr.cpp
 msgid "This specifies the language used on controls."
 msgstr "Chỉ định ngôn ngữ được sử dụng trên các điều khiển."
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Startup"
+msgstr "Bắt đầu"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5105,27 +5106,17 @@ msgid "Registers a per-user autostart entry with the OS so aMule launches at log
 msgstr "Đăng ký một mục tự khởi động cho từng người dùng với hệ điều hành để aMule khởi chạy khi đăng nhập. Nếu bạn di chuyển tệp thực thi aMule, hãy khởi chạy aMule thủ công một lần sau đó để làm mới mục này."
 
 #: src/muuli_wdr.cpp
-msgid "Prevent automatic sleep: "
-msgstr ""
+msgid "Start minimized"
+msgstr "Khởi động ở chế độ thu nhỏ"
+
+#: src/muuli_wdr.cpp
+msgid "Enabling this makes aMule minimize itself upon start."
+msgstr "Bật tùy chọn này sẽ làm aMule tự thu nhỏ khi khởi động."
 
 #: src/muuli_wdr.cpp
 #, fuzzy
-msgid "Off"
-msgstr "tắt"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "While downloading"
-msgstr "Đang tải xuống rồi"
-
-#: src/muuli_wdr.cpp
-#, fuzzy
-msgid "While aMule is running"
-msgstr "aMule đang chạy"
-
-#: src/muuli_wdr.cpp
-msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgid "Links"
+msgstr "Liên kết"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5140,12 +5131,8 @@ msgid "Opening a collection queues every eD2k link it contains. On Windows this 
 msgstr "Mở một bộ sưu tập sẽ đưa vào hàng đợi mọi liên kết eD2k mà nó chứa. Trên Windows, thao tác này thêm aMule vào danh sách \"Mở bằng\" và chỉ trở thành mặc định khi chưa có chương trình nào khác nhận loại tệp này."
 
 #: src/muuli_wdr.cpp
-msgid "Start minimized"
-msgstr "Khởi động ở chế độ thu nhỏ"
-
-#: src/muuli_wdr.cpp
-msgid "Enabling this makes aMule minimize itself upon start."
-msgstr "Bật tùy chọn này sẽ làm aMule tự thu nhỏ khi khởi động."
+msgid "Behavior"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -5184,6 +5171,29 @@ msgid "Enabling this will make aMule to show notifications when finished downloa
 msgstr "Bật tùy chọn này sẽ làm aMule hiển thị thông báo khi tải xuống hoàn tất."
 
 #: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr ""
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Off"
+msgstr "tắt"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While downloading"
+msgstr "Đang tải xuống rồi"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "While aMule is running"
+msgstr "aMule đang chạy"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr ""
+
+#: src/muuli_wdr.cpp
 msgid "Remember search history"
 msgstr "Ghi nhớ lịch sử tìm kiếm"
 
@@ -5194,6 +5204,10 @@ msgstr "Giữ danh sách thả xuống các cụm từ tìm kiếm trước đâ
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
 msgstr "Thời gian trễ chú giải công cụ: "
+
+#: src/muuli_wdr.cpp
+msgid "The delay before showing tool-tips."
+msgstr "Thời gian trễ trước khi hiển thị chú giải công cụ."
 
 #: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
@@ -5733,8 +5747,20 @@ msgid "Number of Client Versions shown (0=unlimited)"
 msgstr "Số phiên bản Client hiển thị (0=không giới hạn)"
 
 #: src/muuli_wdr.cpp
-msgid "!!! WARNING !!!"
-msgstr "!!! CẢNH BÁO !!!"
+msgid ""
+"Do not change these setting unless you know\n"
+"what you are doing, otherwise you can easily\n"
+"make things worse for yourself.\n"
+"\n"
+"aMule will run fine without adjusting any of\n"
+"these settings."
+msgstr ""
+"Đừng thay đổi các cài đặt này trừ khi bạn biết\n"
+"mình đang làm gì, nếu không bạn có thể dễ dàng\n"
+"làm mọi thứ tệ hơn cho chính mình.\n"
+"\n"
+"aMule sẽ chạy tốt mà không cần điều chỉnh bất kỳ\n"
+"cài đặt nào trong số này."
 
 #: src/muuli_wdr.cpp
 msgid "Max new connections / 5 secs"
@@ -5947,6 +5973,15 @@ msgstr "Phiên khách có thể đọc trạng thái và danh sách nhưng khôn
 #: src/muuli_wdr.cpp
 msgid "Guest password"
 msgstr "Mật khẩu khách"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Search settings"
+msgstr "Tìm kiếm"
+
+#: src/muuli_wdr.cpp
+msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -7038,56 +7073,125 @@ msgid "KiB/s (%.2f MiB/s)"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
 msgstr "Giao diện"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Appearance, the window title and how the transfer lists are drawn."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
 msgstr "Kết nối"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
 msgstr "Proxy"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Send aMule's connections through a proxy server."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Máy chủ"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "Thư mục"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Where downloads are stored and which folders you share."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Where the core's folders can be reached from this computer."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How downloads and uploads are handled, corruption recovery and media details."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Events"
 msgstr "Sự kiện"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Run your own commands when something happens in aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Graph timing and colors, and what the statistics tree shows."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
 msgstr "Bộ lọc"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Keep spam and unwanted words out of your chat messages and file comments."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Security"
 msgstr "Bảo mật"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
 msgstr "Điều khiển từ xa"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
 msgstr "Chữ ký trực tuyến"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Save aMule's status to a file that other programs can show."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
 msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Show each client's country, looked up in a GeoIP database."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
 msgstr "Nâng cao"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "Gỡ lỗi"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose which kinds of debug messages are written to the log."
+msgstr "Hiển thị tin nhắn nhận được trong nhật ký"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7108,25 +7212,14 @@ msgid "Not available on Wayland: the protocol does not report when a window is m
 msgstr "Không khả dụng trên Wayland: giao thức không báo cáo khi một cửa sổ được thu nhỏ, vì vậy tùy chọn này không thể chặn nút thu nhỏ của hệ thống. Cách khắc phục: khởi chạy aMule với `GDK_BACKEND=x11` để sử dụng XWayland thay thế."
 
 #: src/PrefsUnifiedDlg.cpp
-msgid ""
-"Do not change these setting unless you know\n"
-"what you are doing, otherwise you can easily\n"
-"make things worse for yourself.\n"
-"\n"
-"aMule will run fine without adjusting any of\n"
-"these settings."
-msgstr ""
-"Đừng thay đổi các cài đặt này trừ khi bạn biết\n"
-"mình đang làm gì, nếu không bạn có thể dễ dàng\n"
-"làm mọi thứ tệ hơn cho chính mình.\n"
-"\n"
-"aMule sẽ chạy tốt mà không cần điều chỉnh bất kỳ\n"
-"cài đặt nào trong số này."
-
-#: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Không thể kết nối Cfg với widget có ID %d và khóa %s"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "No settings match \"%s\". Try a shorter or different word."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -10469,6 +10562,9 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid "!!! WARNING !!!"
+#~ msgstr "!!! CẢNH BÁO !!!"
 
 #, c-format
 #~ msgid "Terminating amuleweb instance with pid '%d' ... "

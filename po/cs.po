@@ -1464,7 +1464,7 @@ msgid "IO error while reading %s file: %s"
 msgstr "Chyba I/O při čtení souboru %s: %s"
 
 #: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp
+#: src/KnownFileList.cpp src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Chyba při ukládání souboru %s: %s"
@@ -5106,24 +5106,25 @@ msgid "Nick"
 msgstr "Přezdívka"
 
 #: src/muuli_wdr.cpp
-msgid "https://amule-org.github.io - the multi-platform Mule"
-msgstr "https://amule-org.github.io - více-platformový Mule"
-
-#: src/muuli_wdr.cpp
 msgid "This is the name that other users will see when connecting to you."
 msgstr "Toto jméno uvidí ostatní uživatelé, kteří se k vám připojí."
+
+#: src/muuli_wdr.cpp
+msgid "https://amule-org.github.io - the multi-platform Mule"
+msgstr "https://amule-org.github.io - více-platformový Mule"
 
 #: src/muuli_wdr.cpp
 msgid "Language: "
 msgstr "Jazyk: "
 
 #: src/muuli_wdr.cpp
-msgid "The delay before showing tool-tips."
-msgstr "Prodleva před zobrazením popisků."
-
-#: src/muuli_wdr.cpp
 msgid "This specifies the language used on controls."
 msgstr "Určuje jazyk používaný v ovládacích prvcích."
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Startup"
+msgstr "Spustit"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5138,24 +5139,17 @@ msgid "Registers a per-user autostart entry with the OS so aMule launches at log
 msgstr "Zaregistruje u operačního systému záznam automatického spouštění pro uživatele, aby se aMule spouštěl při přihlášení. Pokud přesunete binární soubor aMule, spusťte poté aMule jednou ručně, aby se záznam obnovil."
 
 #: src/muuli_wdr.cpp
-msgid "Prevent automatic sleep: "
-msgstr "Předcházet automatickému uspání: "
+msgid "Start minimized"
+msgstr "Minimalizovat po spuštění"
 
 #: src/muuli_wdr.cpp
-msgid "Off"
-msgstr "Vyp."
+msgid "Enabling this makes aMule minimize itself upon start."
+msgstr "Po povolení se aMule při spuštění minimalizuje."
 
 #: src/muuli_wdr.cpp
-msgid "While downloading"
-msgstr "Během stahování"
-
-#: src/muuli_wdr.cpp
-msgid "While aMule is running"
-msgstr "Během provozu aMule"
-
-#: src/muuli_wdr.cpp
-msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr "Během stahování: zůstane vzhůru, dokud je stahování zařazeno do fronty a není pozastaveno, zastaveno nebo nedošlo k chybě, případně dokud se počet nahraných souborů v dané relaci nevyrovná počtu stažených souborů v téže relaci. Během provozu: zůstane vzhůru i v případě nečinnosti, odpojení nebo minimalizace do systémové lišty. Obrazovka se může i tak vypnout."
+#, fuzzy
+msgid "Links"
+msgstr "Odkaz"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5170,12 +5164,8 @@ msgid "Opening a collection queues every eD2k link it contains. On Windows this 
 msgstr "Otevřením kolekce se do fronty zařadí každý eD2k odkaz, který obsahuje. Na Windows to přidá aMule do seznamu „Otevřít pomocí“ a stane se výchozím pouze v případě, že žádný jiný program tento typ souboru nepřevzal."
 
 #: src/muuli_wdr.cpp
-msgid "Start minimized"
-msgstr "Minimalizovat po spuštění"
-
-#: src/muuli_wdr.cpp
-msgid "Enabling this makes aMule minimize itself upon start."
-msgstr "Po povolení se aMule při spuštění minimalizuje."
+msgid "Behavior"
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -5214,6 +5204,26 @@ msgid "Enabling this will make aMule to show notifications when finished downloa
 msgstr "Povolením této volby bude aMule zobrazovat oznámení po dokončení stahování."
 
 #: src/muuli_wdr.cpp
+msgid "Prevent automatic sleep: "
+msgstr "Předcházet automatickému uspání: "
+
+#: src/muuli_wdr.cpp
+msgid "Off"
+msgstr "Vyp."
+
+#: src/muuli_wdr.cpp
+msgid "While downloading"
+msgstr "Během stahování"
+
+#: src/muuli_wdr.cpp
+msgid "While aMule is running"
+msgstr "Během provozu aMule"
+
+#: src/muuli_wdr.cpp
+msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
+msgstr "Během stahování: zůstane vzhůru, dokud je stahování zařazeno do fronty a není pozastaveno, zastaveno nebo nedošlo k chybě, případně dokud se počet nahraných souborů v dané relaci nevyrovná počtu stažených souborů v téže relaci. Během provozu: zůstane vzhůru i v případě nečinnosti, odpojení nebo minimalizace do systémové lišty. Obrazovka se může i tak vypnout."
+
+#: src/muuli_wdr.cpp
 msgid "Remember search history"
 msgstr "Pamatovat historii hledání"
 
@@ -5224,6 +5234,10 @@ msgstr "Uchovává rozevírací seznam vašich předchozích vyhledávaných vý
 #: src/muuli_wdr.cpp
 msgid "Tooltip delay time: "
 msgstr "Doba prodlevy vyskakovacího popisku: "
+
+#: src/muuli_wdr.cpp
+msgid "The delay before showing tool-tips."
+msgstr "Prodleva před zobrazením popisků."
 
 #: src/muuli_wdr.cpp src/SearchMetadataPanel.cpp
 msgid "seconds"
@@ -5770,8 +5784,20 @@ msgid "Number of Client Versions shown (0=unlimited)"
 msgstr "Počet zobrazených verzí klienta (0 = bez omezení)"
 
 #: src/muuli_wdr.cpp
-msgid "!!! WARNING !!!"
-msgstr "!!! VAROVÁNÍ !!!"
+msgid ""
+"Do not change these setting unless you know\n"
+"what you are doing, otherwise you can easily\n"
+"make things worse for yourself.\n"
+"\n"
+"aMule will run fine without adjusting any of\n"
+"these settings."
+msgstr ""
+"Neměňte tato nastavení, pokud nevíte,\n"
+"co děláte. Jinak si můžete snadno\n"
+"způsobit další potíže.\n"
+"\n"
+"aMule bude bez úprav všech těchto\n"
+"nastavení fungovat správně."
 
 #: src/muuli_wdr.cpp
 msgid "Max new connections / 5 secs"
@@ -5984,6 +6010,15 @@ msgstr "Sezení hostů mohou číst stav a seznamy, ale nemohou nic měnit. Vypn
 #: src/muuli_wdr.cpp
 msgid "Guest password"
 msgstr "Heslo hosta"
+
+#: src/muuli_wdr.cpp
+#, fuzzy
+msgid "Search settings"
+msgstr "Vyhledávání"
+
+#: src/muuli_wdr.cpp
+msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
+msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -7086,56 +7121,126 @@ msgid "KiB/s (%.2f MiB/s)"
 msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
 msgstr "Rozhraní"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Appearance, the window title and how the transfer lists are drawn."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
 msgstr "Připojení"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
 msgstr "Proxy"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Send aMule's connections through a proxy server."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
 msgstr "Servery"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
 msgstr "Adresáře"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Where downloads are stored and which folders you share."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Where the core's folders can be reached from this computer."
+msgstr "Kde je stejná složka dostupná z tohoto počítače, např. umístění na které je připojena síťově sdílená složka"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "How downloads and uploads are handled, corruption recovery and media details."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Events"
 msgstr "Události"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Run your own commands when something happens in aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Graph timing and colors, and what the statistics tree shows."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
 msgstr "Filtry"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Keep spam and unwanted words out of your chat messages and file comments."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Security"
 msgstr "Bezpečnost"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
 msgstr "Vzdálené ovládání"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
 msgstr "Online podpis"
+
+#: src/PrefsUnifiedDlg.cpp
+msgid "Save aMule's status to a file that other programs can show."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
 msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Show each client's country, looked up in a GeoIP database."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
 msgstr "Pokročilé"
 
 #: src/PrefsUnifiedDlg.cpp
+msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
+msgstr ""
+
+#: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "Ladění"
+
+#: src/PrefsUnifiedDlg.cpp
+#, fuzzy
+msgid "Choose which kinds of debug messages are written to the log."
+msgstr "Text přijatých zpráv bude také zapsán do logu."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7156,25 +7261,14 @@ msgid "Not available on Wayland: the protocol does not report when a window is m
 msgstr "Není dostupné na Waylandu: protokol nehlásí, kdy je okno minimalizováno, takže tato možnost nemůže zachytit systémové tlačítko minimalizace. Řešení: spusťte aMule s `GDK_BACKEND=x11`, abyste místo toho použili XWayland."
 
 #: src/PrefsUnifiedDlg.cpp
-msgid ""
-"Do not change these setting unless you know\n"
-"what you are doing, otherwise you can easily\n"
-"make things worse for yourself.\n"
-"\n"
-"aMule will run fine without adjusting any of\n"
-"these settings."
-msgstr ""
-"Neměňte tato nastavení, pokud nevíte,\n"
-"co děláte. Jinak si můžete snadno\n"
-"způsobit další potíže.\n"
-"\n"
-"aMule bude bez úprav všech těchto\n"
-"nastavení fungovat správně."
-
-#: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "Failed to connect Cfg to widget with the ID %d and key %s"
 msgstr "Nepodařilo se propojit Cfg s prvkem s ID %d a klíčem %s"
+
+#: src/PrefsUnifiedDlg.cpp
+#, c-format
+msgid "No settings match \"%s\". Try a shorter or different word."
+msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -10567,6 +10661,9 @@ msgstr "Nelze porovnat zastaralé ECPassword s ECPasswordVerifier; odmítám ext
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrace změněného zastaralého ECPassword po přechodu na starší verzi; předchozí ověřovač již tuto relaci neověřuje."
+
+#~ msgid "!!! WARNING !!!"
+#~ msgstr "!!! VAROVÁNÍ !!!"
 
 #, c-format
 #~ msgid "Terminating amuleweb instance with pid '%d' ... "
