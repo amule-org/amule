@@ -29,13 +29,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [debian12, debian13, ubuntu22.04, ubuntu24.04, ubuntu26.04]
+        suite: [debian12, debian13, ubuntu22.04, ubuntu24.04, ubuntu26.04, ubuntu26.10]
         arch: [amd64, arm64, i386, armhf, ppc64el, s390x, riscv64]
         exclude:
           # Ubuntu has no i386 images, and Debian 12 has no riscv64 port.
           - { suite: ubuntu22.04, arch: i386 }
           - { suite: ubuntu24.04, arch: i386 }
           - { suite: ubuntu26.04, arch: i386 }
+          - { suite: ubuntu26.10, arch: i386 }
           - { suite: debian12, arch: riscv64 }
           # The foreign arch lags the security updates, so multiarch cannot
           # match versions with amd64.

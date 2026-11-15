@@ -25,7 +25,7 @@ commands:
                              produce .debs in dist/deb/<suite>[-<arch>]/out,
                              with a private wx
                              suite: debian12 | debian13 | ubuntu22.04 |
-                                    ubuntu24.04 | ubuntu26.04
+                                    ubuntu24.04 | ubuntu26.04 | ubuntu26.10
                              channel: release (default) | nightly
                              arch: host (default) | amd64 | arm64 | i386 |
                                    armhf | ppc64el | s390x | riscv64
@@ -396,7 +396,8 @@ build_deb() {
         ubuntu22.04) image=ubuntu:22.04; tag=ubuntu22.04 ;;
         ubuntu24.04) image=ubuntu:24.04; tag=ubuntu24.04 ;;
         ubuntu26.04) image=ubuntu:26.04; tag=ubuntu26.04 ;;
-        *) echo "fatal: unsupported suite '${suite}' (choose debian12|debian13|ubuntu22.04|ubuntu24.04|ubuntu26.04)" >&2; exit 1 ;;
+        ubuntu26.10) image=ubuntu:26.10; tag=ubuntu26.10 ;;
+        *) echo "fatal: unsupported suite '${suite}' (choose debian12|debian13|ubuntu22.04|ubuntu24.04|ubuntu26.04|ubuntu26.10)" >&2; exit 1 ;;
     esac
 
     local header="${REPO_ROOT}/src/include/common/ClientVersion.h"
