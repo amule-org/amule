@@ -28,6 +28,7 @@ AFTER_DISCOVERY_DEADLINE = 4.5
 PENDING_POLLS = 20
 ADD, DELETE = 'AddPortMapping', 'DeletePortMapping'
 SSDP_GROUP = '239.255.255.250'
+SSDP_GROUP6 = 'ff02::c'
 SSDP_PORT = 1900
 IGD = 'urn:schemas-upnp-org:device:InternetGatewayDevice:1'
 SERVICE_TYPES = {
@@ -54,10 +55,17 @@ FAULT = ('<s:Fault><faultcode>s:Client</faultcode><faultstring>UPnPError</faults
          '<UPnPError xmlns="urn:schemas-upnp-org:control-1-0"><errorCode>%d</errorCode>'
          '<errorDescription>rejected</errorDescription></UPnPError></detail></s:Fault>')
 CONFLICT_IN_MAPPING_ENTRY, NO_SUCH_ENTRY, INVALID_ACTION = 718, 714, 401
+ACTION_NOT_AUTHORIZED = 606
+# How long the IPv4 announcement follows the IPv6 one.
+ANNOUNCE_GAP = 1
 
 
 class Skipped(Exception):
     """This machine or LAN cannot run the test."""
+
+
+class NoIPv6(Exception):
+    """This machine cannot run the IPv6 scenarios."""
 
 
 class ScenarioFailed(Exception):
@@ -85,15 +93,34 @@ def multicast(sock, data):
             pass
 
 
+def membership6(index):
+    return struct.pack('16sI', socket.inet_pton(socket.AF_INET6, SSDP_GROUP6), index)
+
+
+def multicast6(sock, data):
+    for index, _ in socket.if_nameindex():
+        try:
+            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_MULTICAST_IF, index)
+            sock.sendto(data, (SSDP_GROUP6, SSDP_PORT, 0, index))
+        except OSError:
+            pass
+
+
+class ThreadingHTTPServer6(ThreadingHTTPServer):
+    address_family = socket.AF_INET6
+
+
 class FakeGateway:
     """Answers SSDP, description, SCPD, eventing and SOAP. Reject sets hold (service, mapping).
 
     A silent gateway ignores searches and appears through announce(). A held service stalls its
-    SCPD until release is set, which keeps it from registering.
+    SCPD until release is set, which keeps it from registering. An IPv6 gateway also answers and
+    announces over IPv6, first and with an IPv6 location. It refuses each action sent there with
+    606, as miniupnpd in secure mode does.
     """
 
     def __init__(self, services=('ip',), mappings=(), reject=(), answer_delay=0, silent=False,
-                 held=None):
+                 held=None, ipv6=False):
         self.services = services
         self.reject = set(reject)
         self.answer_delay = answer_delay
@@ -118,38 +145,76 @@ class FakeGateway:
                 self.ssdp.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, membership(index))
             except OSError:
                 pass
+        self.ipv6_searched = False
+        self.http6 = self.ssdp6 = None
+        if ipv6:
+            try:
+                self.http6 = ThreadingHTTPServer6(('::1', 0), self.handler())
+                self.ssdp6 = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+                self.ssdp6.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                self.ssdp6.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                self.ssdp6.bind(('::', SSDP_PORT))
+            except OSError as error:
+                self.close()
+                raise NoIPv6(f'cannot listen over IPv6: {error}') from error
+            for index, _ in socket.if_nameindex():
+                try:
+                    self.ssdp6.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, membership6(index))
+                except OSError:
+                    pass
 
     def __enter__(self):
         threading.Thread(target=self.http.serve_forever, daemon=True).start()
-        threading.Thread(target=self.answer_searches, daemon=True).start()
+        threading.Thread(target=self.answer_searches, args=(self.ssdp, self.location(), self.answer_delay),
+                         daemon=True).start()
+        if self.ssdp6:
+            threading.Thread(target=self.http6.serve_forever, daemon=True).start()
+            # At once, so the IPv6 answer comes first.
+            threading.Thread(target=self.answer_searches, args=(self.ssdp6, self.location6(), 0),
+                             daemon=True).start()
         return self
 
     def __exit__(self, *_):
         self.release.set()
-        self.http.shutdown()
-        self.http.server_close()
-        self.ssdp.close()
+        for server in filter(None, (self.http, self.http6)):
+            server.shutdown()
+        self.close()
+
+    def close(self):
+        for server in filter(None, (self.http, self.http6)):
+            server.server_close()
+        for sock in filter(None, (self.ssdp, self.ssdp6)):
+            sock.close()
 
     def location(self):
         return f'http://127.0.0.1:{self.http.server_address[1]}/desc.xml'
 
-    def announce(self):
-        notify = (f'NOTIFY * HTTP/1.1\r\nHOST: {SSDP_GROUP}:{SSDP_PORT}\r\nCACHE-CONTROL: max-age=1800\r\n'
-                  f'LOCATION: {self.location()}\r\nNT: {IGD}\r\nNTS: ssdp:alive\r\n'
-                  f'SERVER: fake/1 UPnP/1.0 fake/1\r\nUSN: uuid:fake-igd::{IGD}\r\n\r\n')
-        multicast(self.ssdp, notify.encode())
+    def location6(self):
+        return f'http://[::1]:{self.http6.server_address[1]}/desc.xml'
 
-    def answer_searches(self):
+    def announce(self):
+        def notify(group, location):
+            return (f'NOTIFY * HTTP/1.1\r\nHOST: {group}:{SSDP_PORT}\r\nCACHE-CONTROL: max-age=1800\r\n'
+                    f'LOCATION: {location}\r\nNT: {IGD}\r\nNTS: ssdp:alive\r\n'
+                    f'SERVER: fake/1 UPnP/1.0 fake/1\r\nUSN: uuid:fake-igd::{IGD}\r\n\r\n').encode()
+        if self.ssdp6:
+            multicast6(self.ssdp6, notify(f'[{SSDP_GROUP6}]', self.location6()))
+            time.sleep(ANNOUNCE_GAP)
+        multicast(self.ssdp, notify(SSDP_GROUP, self.location()))
+
+    def answer_searches(self, sock, location, delay):
         reply = (f'HTTP/1.1 200 OK\r\nCACHE-CONTROL: max-age=1800\r\nEXT:\r\n'
-                 f'LOCATION: {self.location()}\r\nSERVER: fake/1 UPnP/1.0 fake/1\r\nST: {IGD}\r\n'
+                 f'LOCATION: {location}\r\nSERVER: fake/1 UPnP/1.0 fake/1\r\nST: {IGD}\r\n'
                  f'USN: uuid:fake-igd::{IGD}\r\n\r\n')
         while True:
             try:
-                data, peer = self.ssdp.recvfrom(4096)
+                data, peer = sock.recvfrom(4096)
                 if data.startswith(b'M-SEARCH'):
+                    if sock is self.ssdp6:
+                        self.ipv6_searched = True
                     if not self.silent:
-                        time.sleep(self.answer_delay)
-                        self.ssdp.sendto(reply.encode(), peer)
+                        time.sleep(delay)
+                        sock.sendto(reply.encode(), peer)
             except OSError:
                 return
 
@@ -193,12 +258,15 @@ class FakeGateway:
                 f'{action("GetStatusInfo", {})}</actionList><serviceStateTable>{variables}'
                 '</serviceStateTable></scpd>')
 
-    def control(self, service, action, body):
+    def control(self, service, action, body, ipv6):
         """Returns the UPnP error code, or None when the action succeeds."""
         def argument(name):
             found = re.search(f'<{name}[^>]*>([^<]*)<', body)
             return found[1] if found else ''
         mapping = (argument('NewExternalPort'), argument('NewProtocol'))
+        if ipv6:
+            self.requests.append((f'{service} over IPv6', action, mapping))
+            return ACTION_NOT_AUTHORIZED
         self.requests.append((service, action, mapping))
         if action == ADD:
             if (service, mapping) in self.reject:
@@ -249,7 +317,8 @@ class FakeGateway:
                 service = self.path.rsplit('/', 1)[-1]
                 body = self.rfile.read(int(self.headers.get('Content-Length', 0))).decode()
                 action = self.headers.get('SOAPACTION', '').strip('"').rsplit('#', 1)[-1]
-                error = gateway.control(service, action, body)
+                error = gateway.control(service, action, body,
+                                        self.server.address_family == socket.AF_INET6)
                 if error is not None:
                     self.reply(500, ENVELOPE % (FAULT % error))
                 else:
@@ -371,6 +440,9 @@ SCENARIOS = [
     ('one service never held the mapping', {'services': BOTH, 'reject': (('ppp', TCP), ('ppp', UDP))},
      ['add', 'delete'], {'add': 'true', 'delete': 'true'},
      requests(ADD, *BOTH) + requests(DELETE, *BOTH)),
+    # libupnp searches over IPv6 first.
+    ('IPv6 answer first', {'ipv6': True, 'answer_delay': 1}, ['add', 'delete'],
+     {'add': 'true', 'delete': 'true'}, requests(ADD, 'ip') + requests(DELETE, 'ip')),
 ]
 
 # name, gateway arguments, operations before and after, results, requests, final table.
@@ -386,6 +458,8 @@ LATE_SCENARIOS = [
      {'add': 'false', 'delete': 'true'}, requests(ADD, 'ip') + requests(DELETE, 'ip'), set()),
     ('second service registers after the mappings', {'services': BOTH, 'held': 'ppp'}, ['add'], [],
      {'add': 'true'}, requests(ADD, *BOTH), {TCP, UDP}),
+    ('IPv6 announcement first', {'silent': True, 'ipv6': True}, ['add'], [], {'add': 'false'},
+     requests(ADD, 'ip'), {TCP, UDP}),
 ]
 
 
@@ -395,14 +469,32 @@ def record_failure(failures, message):
     failures.append(message)
 
 
+def open_gateway(name, arguments):
+    """Returns None when the scenario needs IPv6 and this machine cannot listen over it."""
+    try:
+        return FakeGateway(**arguments)
+    except NoIPv6 as error:
+        print(f'SKIP: {name}: {error}')
+        return None
+
+
+def note_ipv6(name, arguments, gateway):
+    if arguments.get('ipv6') and not gateway.ipv6_searched:
+        print(f'NOTE: {name}: libupnp did not search over IPv6, so this tested only IPv4')
+
+
 def run_scenarios(driver, failures):
     for name, arguments, operations, results, expected in SCENARIOS:
-        with FakeGateway(**arguments) as gateway:
+        gateway = open_gateway(name, arguments)
+        if gateway is None:
+            continue
+        with gateway:
             try:
                 got = run_driver(driver, gateway, operations)
             except ScenarioFailed as error:
                 record_failure(failures, f'{name}: {error}')
                 continue
+        note_ipv6(name, arguments, gateway)
         if got != results:
             record_failure(failures, f'{name}: returned {got}, expected {results}')
         # Exact list: also rules out state queries, GetStatusInfo and the disabled mapping.
@@ -412,12 +504,16 @@ def run_scenarios(driver, failures):
 
 def run_late_scenarios(driver, failures):
     for name, arguments, before, after, results, expected, table in LATE_SCENARIOS:
-        with FakeGateway(**arguments) as gateway:
+        gateway = open_gateway(name, arguments)
+        if gateway is None:
+            continue
+        with gateway:
             try:
                 got = run_late(driver, gateway, before, after)
             except ScenarioFailed as error:
                 record_failure(failures, f'{name}: {error}')
                 continue
+        note_ipv6(name, arguments, gateway)
         if got != results:
             record_failure(failures, f'{name}: returned {got}, expected {results}')
         if sorted(gateway.requests) != sorted(expected):

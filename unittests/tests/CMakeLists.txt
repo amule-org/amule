@@ -1361,6 +1361,12 @@ add_test (NAME SourceRoutePolicyTest COMMAND SourceRoutePolicyTest)
 target_include_directories (SourceRoutePolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (SourceRoutePolicyTest muleunit mulecommon)
 
+# Which SSDP locations the UPnP control point uses for the port mapping actions.
+add_executable (UPnPLocationPolicyTest UPnPLocationPolicyTest.cpp)
+add_test (NAME UPnPLocationPolicyTest COMMAND UPnPLocationPolicyTest)
+target_include_directories (UPnPLocationPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
+target_link_libraries (UPnPLocationPolicyTest muleunit mulecommon)
+
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
 	UploadQueueAddressPolicyTest.cpp

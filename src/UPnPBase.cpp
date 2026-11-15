@@ -49,6 +49,7 @@
 #endif /* UPNP_MAJOR_VERSION == 17 */
 
 #include "UPnPBase.h"
+#include "UPnPLocationPolicy.h" // Needed for IsIPv6Location
 
 #include <algorithm>          // For transform()
 #include "CCtypeAsciiScope.h" // Needed to pin LC_CTYPE = C around the
@@ -1007,6 +1008,16 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #else
 		const char *location = d_event->Location;
 #endif
+		// Root devices are keyed by UDN, so the first location sets the control URLs. libupnp
+		// searches over IPv6 first, and miniupnpd in secure mode refuses the IPv4 mapping actions
+		// over IPv6.
+		if (UPnP::IsIPv6Location(location ? location : "")) {
+			if (EventType == UPNP_DISCOVERY_SEARCH_RESULT) {
+				msg2 << "Ignoring IPv6 location " << location << ".";
+				AddDebugLogLineN(logUPnP, msg2);
+			}
+			break;
+		}
 		// Passive ALIVE announcements arrive in dense bursts (one per service class, every
 		// few seconds per device), and when the announcing device's HTTP server is
 		// unreachable each fetch blocks a libupnp worker for the full TCP-connect timeout.
