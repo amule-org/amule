@@ -42,6 +42,7 @@
 #include "amuleDlg.h" // Needed for CLIENT_SKIN_SIZE (clientImages' artIds static_assert)
 #include "KadContactHistogram.h"
 #include "DialogLayout.h" // Scrollable details dialogs
+#include "PrefsSidebar.h" // The preferences page list and its rounded highlights
 #include "TextClearButton.h"
 #include "TransferRateLabel.h"
 #include "ConnectionStatusLabel.h"
@@ -2594,6 +2595,40 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     return item0;
 }
 
+#if !wxUSE_NATIVE_SEARCH_CONTROL
+// A rounded field around the generic search box, drawn by @p sidebar with the corner radius of the
+// page list's highlight, and outlined in the accent colour while the box has the focus.
+static void RoundSearchField( wxWindow *sidebar, wxSearchCtrl *search, wxSizer *sidebarSizer )
+{
+    const wxSize pad = sidebar->FromDIP( wxSize( 8, 5 ) );
+    // Room for the field around the box, with the box centred in it.
+    wxBoxSizer *field = new wxBoxSizer( wxHORIZONTAL );
+    field->SetMinSize( -1, search->GetBestSize().GetHeight() + 2 * pad.y );
+    field->Add( search, wxSizerFlags(1).CenterVertical().Border(wxLEFT|wxRIGHT, pad.x) );
+    sidebarSizer->Add( field, wxSizerFlags().Expand().Border(wxALL, sidebar->FromDIP(8)) );
+
+    FollowSystemColours( search, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) ); } );
+    const auto fieldRect = [search, pad]() { return search->GetRect().Inflate( pad ); };
+    sidebar->Bind( wxEVT_PAINT, [sidebar, search, fieldRect]( wxPaintEvent & ) {
+        wxPaintDC dc( sidebar );
+        const bool focused = search->IsDescendant( wxWindow::FindFocus() );
+        const wxColour border = focused ? wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHT ) : PrefsHighlight::Mix( sidebar->GetBackgroundColour(), wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), 0.25 );
+        PrefsHighlight::FillRounded( dc, fieldRect(), sidebar->FromDIP( kPrefsCornerRadius ), search->GetBackgroundColour(), border, sidebar->FromDIP( focused ? 2 : 1 ) );
+    } );
+    // The outline follows the focus into and out of the box, which hands it to its text field.
+    const auto refresh = [sidebar, fieldRect]( wxFocusEvent &event ) {
+        sidebar->RefreshRect( fieldRect() );
+        event.Skip();
+    };
+    search->Bind( wxEVT_SET_FOCUS, refresh );
+    search->Bind( wxEVT_KILL_FOCUS, refresh );
+    for ( wxWindow *child : search->GetChildren() ) {
+        child->Bind( wxEVT_SET_FOCUS, refresh );
+        child->Bind( wxEVT_KILL_FOCUS, refresh );
+    }
+}
+#endif
+
 wxSizer *prefs_sizer;
 wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
 {
@@ -2608,12 +2643,23 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     FollowSystemColours( sidebar, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ); } );
     wxBoxSizer *sidebarSizer = new wxBoxSizer( wxVERTICAL );
 
+#if wxUSE_NATIVE_SEARCH_CONTROL
+    // macOS and GTK draw their own search field, rounded to match the platform.
     wxSearchCtrl *search = new wxSearchCtrl( sidebar, ID_PREFS_SEARCH );
+#else
+    // The generic search box (Windows) draws a square frame: it goes without one, and the sidebar
+    // draws a rounded field around it like the page list's highlight (PrefsSidebar.h).
+    wxSearchCtrl *search = new wxSearchCtrl( sidebar, ID_PREFS_SEARCH, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE );
+#endif
     search->SetDescriptiveText( _("Search settings") );
     // The clear button appears once there is something to clear (PrefsUnifiedDlg::OnSearchText).
     search->ShowCancelButton( false );
     search->SetToolTip( _("Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold.") );
+#if wxUSE_NATIVE_SEARCH_CONTROL
     sidebarSizer->Add( search, wxSizerFlags().Expand().Border(wxALL, parent->FromDIP(8)) );
+#else
+    RoundSearchField( sidebar, search, sidebarSizer );
+#endif
 
     // Wraps rather than widening the sidebar, which the page list sizes.
     WrappingStaticText *noMatches = new WrappingStaticText( sidebar, ID_PREFS_NO_MATCHES, wxEmptyString );
@@ -2623,9 +2669,11 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     noMatches->Hide();
     sidebarSizer->Add( noMatches, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(8)) );
 
-    // No border: the pane's colour and the divider beside it already set the list apart.
-    wxDataViewListCtrl *item2 = new wxDataViewListCtrl( sidebar, ID_PREFSLISTCTRL, wxDefaultPosition, wxDefaultSize, wxDV_SINGLE|wxDV_NO_HEADER|wxBORDER_NONE );
-    sidebarSizer->Add( item2, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(4)) );
+    // No border: the pane's colour and the divider beside it already set the list apart. Its
+    // highlights line up with the search field above.
+    PrefsSidebar *item2 = new PrefsSidebar( sidebar, ID_PREFSLISTCTRL );
+    FollowSystemColours( item2, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ); } );
+    sidebarSizer->Add( item2, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(2)) );
     sidebar->SetSizer( sidebarSizer );
     item1->Add( sidebar, wxSizerFlags().Expand() );
     item1->Add( new wxStaticLine( parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL ), wxSizerFlags().Expand() );

@@ -41,7 +41,6 @@
 #include <wx/config.h>
 #include <wx/colordlg.h>
 #include <wx/combobox.h> // network-interface drop-down (bind-to-interface)
-#include <wx/dataview.h> // the page sidebar (m_PrefsIcons)
 #include <wx/dirdlg.h>   // Browse button on the path-mapping editor (remote GUI)
 #include <wx/listctrl.h> // shared-folders editor (remote GUI)
 #include <set>           // set-compare of shared roots (session refresh)
@@ -74,10 +73,8 @@
 #include <wx/filename.h> // wxFileName for status-line size lookup
 #endif
 #include "CamuleArtProvider.h" // CamuleArtProvider::MakeId for the page-icon bundles
+#include "PrefsSidebar.h"      // The page list (m_PrefsIcons)
 
-#ifdef __WXMAC__
-#include "MacAppHelper.h" // mac_set_table_view_flush
-#endif
 #include "MuleColour.h"
 #include "EditServerListDlg.h"
 #include "SearchDlg.h"      // Needed for CSearchDlg::ApplySearchHistoryPref
@@ -458,7 +455,7 @@ wxBEGIN_EVENT_TABLE(PrefsUnifiedDlg, wxDialog)
 	EVT_CHOICE(IDC_ADDRESSFAMILIES, PrefsUnifiedDlg::OnAddressFamiliesChange)
 #endif
 	EVT_CHOICE(IDC_COLORSELECTOR, PrefsUnifiedDlg::OnColorCategorySelected)
-	EVT_DATAVIEW_SELECTION_CHANGED(ID_PREFSLISTCTRL, PrefsUnifiedDlg::OnPrefsPageChange)
+	EVT_LISTBOX(ID_PREFSLISTCTRL, PrefsUnifiedDlg::OnPrefsPageChange)
 
 	EVT_INIT_DIALOG(PrefsUnifiedDlg::OnInitDialog)
 
@@ -679,24 +676,7 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	m_search->Bind(wxEVT_SEARCH_CANCEL, &PrefsUnifiedDlg::OnSearchCancel, this);
 	Bind(wxEVT_CHAR_HOOK, &PrefsUnifiedDlg::OnCharHook, this);
 
-	m_PrefsIcons = CastChild(ID_PREFSLISTCTRL, wxDataViewListCtrl);
-	const int kPrefsIconW = 20;
-	const int kPrefsIconH = 20;
-	// Taller rows than the toolkit's tightest, as in current settings windows: the sidebar is
-	// the dialog's main navigation, not a dense data list. A no-op where the port cannot set it.
-	m_PrefsIcons->SetRowHeight(
-		std::max(FromDIP(kPrefsIconH), m_PrefsIcons->GetCharHeight()) + FromDIP(12));
-	// Room for the gap after the icon and the cell's left/right padding. On macOS this is
-	// only the width the list is built with, since the measurement below replaces it --
-	// but it has to be generous, because what that measurement reports is bounded by the
-	// room the control already has: ask from a column pinned to a tight estimate and the
-	// answer comes back tight. On GTK and MSW no measurement follows, so this is the width
-	// itself.
-#ifdef __WXMAC__
-	const int kCellPadding = 48;
-#else
-	const int kCellPadding = 24;
-#endif
+	m_PrefsIcons = CastChild(ID_PREFSLISTCTRL, PrefsSidebar);
 
 	// The page art only exists at one (16x16) size. Wrap each icon in a wxBitmapBundle
 	// with a smooth 2x upscale so DPI-aware builds render it at the correct logical size
@@ -711,27 +691,19 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 		return wxBitmapBundle::FromBitmaps(wxBitmap(img), wxBitmap(img2x));
 	};
 
-	// Single icon+text column. Width is computed below from the actual label text once
-	// every page's title is known -- wxDataViewColumn's own auto-size timing is not
-	// reliably immediate across native (GTK/macOS) vs generic (MSW) backends, so this
-	// measures text extents directly.
-	wxDataViewColumn *iconTextCol = m_PrefsIcons->AppendIconTextColumn(
-		"", wxDATAVIEW_CELL_INERT, wxCOL_WIDTH_DEFAULT, wxALIGN_LEFT, 0);
-
 	// Preferred content size, independent of the scrollable viewport minimum.
 	int width = 0;
 	int height = 0;
 
 	// Build the page icons, in page order
-	int maxLabelWidth = 0;
+	const wxSize iconSize(kPrefsIconSize, kPrefsIconSize);
+	std::vector<wxString> labels;
 	for (unsigned int i = 0; i < itemsof(pages); ++i) {
 		// Page icons ship as SVG twins through CamuleArtProvider ("amule:prefs_<name>"),
 		// rasterized by wx at whatever size and DPI the list asks for. The legacy raster art
 		// below stays as the fallback.
-		wxBitmapBundle art =
-			wxArtProvider::GetBitmapBundle(CamuleArtProvider::MakeId(pages[i].m_artName),
-				wxART_LIST,
-				wxSize(kPrefsIconW, kPrefsIconH));
+		wxBitmapBundle art = wxArtProvider::GetBitmapBundle(
+			CamuleArtProvider::MakeId(pages[i].m_artName), wxART_LIST, iconSize);
 		if (art.IsOk()) {
 			m_pageIcons.push_back(art);
 		} else
@@ -739,10 +711,8 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			// Art-provider miss: the IP2Country tab asks the art provider once more for a
 			// plain bitmap, every other tab uses the hardcoded amuleSpecial raster data.
 			if (pages[i].m_function == PreferencesIP2CountryTab) {
-				m_pageIcons.push_back(
-					makeIcon(wxArtProvider::GetBitmap("amule:prefs_ip2country",
-						wxART_OTHER,
-						wxSize(kPrefsIconW, kPrefsIconH))));
+				m_pageIcons.push_back(makeIcon(wxArtProvider::GetBitmap(
+					"amule:prefs_ip2country", wxART_OTHER, iconSize)));
 			} else
 #endif
 			{
@@ -750,30 +720,13 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 			}
 
 		// The rows themselves are added by RebuildSidebar() once every page exists.
-		const wxString label = wxGetTranslation(pages[i].m_title);
-		maxLabelWidth = std::max(maxLabelWidth, m_PrefsIcons->GetTextExtent(label).GetWidth());
+		labels.push_back(wxGetTranslation(pages[i].m_title));
 	}
 
-#ifdef __WXMAC__
-	// macOS 11 made the inset row style the default: it pads both ends of every row -- the
-	// same padding that draws a selected row as a rounded pill inside its cell rather than
-	// filling it -- and that padding comes out of the space the label is drawn in.
-	mac_set_table_view_flush(m_PrefsIcons->GetHandle());
-#endif
-
-	// Set the list width so there are no scrollers. What the cell needs beyond the label
-	// text -- the icon, the gap after it, the cell's own padding -- is the renderer's
-	// business, and only one of the three ports will say what it comes to: wxOSX answers
-	// wxCOL_WIDTH_AUTOSIZE with the width its cells want, while wxGTK and the generic
-	// implementation echo back the column's current allocation. So this estimate is what
-	// MSW and GTK get, and OnShowMeasureSidebar() replaces it on macOS once the control is
-	// laid out.
-	m_sidebarColumn = iconTextCol;
-	SetSidebarWidth(maxLabelWidth + FromDIP(kPrefsIconW + kCellPadding));
-#ifdef __WXMAC__
-	m_sidebarTextWidth = maxLabelWidth;
-	Bind(wxEVT_SHOW, &PrefsUnifiedDlg::OnShowMeasureSidebar, this);
-#endif
+	// Wide enough for every title, so the list never needs a horizontal scroller.
+	const int sidebarWidth = m_PrefsIcons->WidthFor(labels);
+	m_PrefsIcons->SetMinSize(wxSize(sidebarWidth, -1));
+	m_PrefsIcons->SetMaxSize(wxSize(sidebarWidth, -1));
 
 	const wxSize minimumPageSize = FromDIP(wxSize(240, 200));
 
@@ -1127,17 +1080,15 @@ void PrefsUnifiedDlg::RebuildSidebar()
 	// Refilling the list resets its scroll position and selection, so only do it when the
 	// set of rows actually changes -- not, say, when a search gains a letter but keeps its pages.
 	if (rows != ShownPages()) {
-		wxWindowUpdateLocker freezeList(m_PrefsIcons);
-		m_PrefsIcons->DeleteAllItems();
+		// Each row keeps the page's stable pages[] index -- never reordered, only which pages
+		// are visible changes -- not its live position, so OnPrefsPageChange can always identify
+		// the selected page.
+		std::vector<PrefsSidebar::Row> sidebarRows;
 		for (unsigned page : rows) {
-			// Item data is the page's stable pages[] index -- never reordered, only which pages
-			// are visible changes -- not the row's live position, so OnPrefsPageChange can always
-			// identify the selected page.
-			const wxVector<wxVariant> values(1,
-				wxVariant(wxDataViewIconText(
-					wxGetTranslation(pages[page].m_title), m_pageIcons[page])));
-			m_PrefsIcons->AppendItem(values, static_cast<wxUIntPtr>(page));
+			sidebarRows.push_back(
+				{ wxGetTranslation(pages[page].m_title), m_pageIcons[page], page });
 		}
+		m_PrefsIcons->SetRows(std::move(sidebarRows));
 	}
 	const bool noteWasShown = m_noMatches->IsShown();
 	if (rows.empty()) {
@@ -1182,7 +1133,6 @@ void PrefsUnifiedDlg::RebuildSidebar()
 	}
 	if (row >= 0) {
 		m_PrefsIcons->SelectRow(row);
-		m_PrefsIcons->EnsureVisible(m_PrefsIcons->RowToItem(row));
 	}
 	if (page != m_currentPage) {
 		ShowPage(page);
@@ -1237,9 +1187,8 @@ void PrefsUnifiedDlg::OnCharHook(wxKeyEvent &event)
 std::vector<unsigned> PrefsUnifiedDlg::ShownPages() const
 {
 	std::vector<unsigned> shown;
-	for (int row = 0; row < m_PrefsIcons->GetItemCount(); ++row) {
-		shown.push_back(
-			static_cast<unsigned>(m_PrefsIcons->GetItemData(m_PrefsIcons->RowToItem(row))));
+	for (size_t row = 0; row < m_PrefsIcons->GetItemCount(); ++row) {
+		shown.push_back(m_PrefsIcons->PageAt(row));
 	}
 	return shown;
 }
@@ -3096,58 +3045,14 @@ void PrefsUnifiedDlg::UpdateGeoIPStatus()
 }
 #endif // GEOIP_GUI
 
-#ifdef __WXMAC__
-void PrefsUnifiedDlg::OnShowMeasureSidebar(wxShowEvent &event)
+void PrefsUnifiedDlg::OnPrefsPageChange(wxCommandEvent &event)
 {
-	event.Skip();
-	if (m_sidebarMeasured || !event.IsShown() || !m_sidebarColumn) {
-		return;
-	}
-	m_sidebarMeasured = true;
-
-	// Now that the control is on screen it can measure the rows it is actually drawing,
-	// font and cell padding included. The answer is not ready when SetWidth() returns -- it
-	// is resolved while the control is laid out -- so the read-back waits for that.
-	m_sidebarColumn->SetWidth(wxCOL_WIDTH_AUTOSIZE);
-	CallAfter([this]() {
-		// Nothing is added to what comes back: the padding the estimate has to guess at is part
-		// of what was measured. A width narrower than the label text is not a measurement at
-		// all, so the estimate stands.
-		const int reported = m_sidebarColumn->GetWidth();
-		if (reported > m_sidebarTextWidth) {
-			SetSidebarWidth(reported);
-			m_PrefsIcons->InvalidateBestSize();
-			Layout();
-		}
-	});
-}
-#endif // __WXMAC__
-
-void PrefsUnifiedDlg::SetSidebarWidth(int columnWidth)
-{
-	m_sidebarColumn->SetWidth(columnWidth);
-	// The control has to be wider than its column: the table draws its cells at a small
-	// offset from its own left edge -- 6 points on macOS, and the other two are not zero
-	// either -- so sizing it to exactly the column width clips the cell against its right
-	// edge.
-	const int controlWidth = columnWidth + FromDIP(6);
-	m_PrefsIcons->SetMinSize(wxSize(controlWidth, -1));
-	m_PrefsIcons->SetMaxSize(wxSize(controlWidth, -1));
-}
-
-void PrefsUnifiedDlg::OnPrefsPageChange(wxDataViewEvent &event)
-{
-	// EVT_DATAVIEW_SELECTION_CHANGED, unlike the old EVT_LIST_ITEM_SELECTED, also fires
-	// when the selection is cleared, in which case GetItem() is not valid and GetItemData()
-	// on it would crash outright. RebuildSidebar() clears it whenever it refills the list,
-	// and shows the page it wants itself once it is done.
-	if (!event.GetItem().IsOk()) {
-		return;
-	}
-
-	// Item data is the page's stable pages[] index (set in RebuildSidebar), not the row's
+	// Each row holds the page's stable pages[] index (set in RebuildSidebar), not the row's
 	// live position in the sidebar -- which shifts whenever a row is hidden or re-shown.
-	ShowPage(static_cast<unsigned>(m_PrefsIcons->GetItemData(event.GetItem())));
+	const int row = event.GetSelection();
+	if (row >= 0 && static_cast<size_t>(row) < m_PrefsIcons->GetItemCount()) {
+		ShowPage(m_PrefsIcons->PageAt(row));
+	}
 
 	event.Skip();
 }
