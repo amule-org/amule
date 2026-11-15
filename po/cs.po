@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-05 10:40+0000\n"
+"PO-Revision-Date: 2026-11-15 14:13+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
@@ -19,7 +19,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/AboutDialog.cpp
@@ -368,7 +368,7 @@ msgstr "Vynucuje se ukončení instance amuleapi s PID '%d' ... "
 #: src/FileDetailDialog.cpp src/SearchDlg.cpp src/ServerListCtrl.cpp
 #: src/SharedFilesCtrl.cpp
 msgid "Failed"
-msgstr "Nezdařilo se"
+msgstr "Selhání"
 
 #: src/amule.cpp
 msgid "aMule OnExit: Terminating core."
@@ -1766,15 +1766,15 @@ msgstr "Zamaskování"
 #. TRANSLATORS: the upload credit a peer has earned by sending us data.
 #: src/ClientNameCellDrawing.cpp
 msgid "Credits"
-msgstr ""
+msgstr "Kredity"
 
 #: src/ClientNameCellDrawing.cpp
 msgid "Moves up faster in our upload queue"
-msgstr ""
+msgstr "Posouvá se rychleji v naší frontě odesílání"
 
 #: src/ClientNameCellDrawing.cpp
 msgid "Does not support the eMule extended protocol"
-msgstr ""
+msgstr "Nepodporuje rozšířený protokol eMule"
 
 #: src/ClientRef.cpp
 msgid "Not complete"
@@ -2087,53 +2087,47 @@ msgid "Search Result"
 msgstr "Výsledek hledání"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a direct connection"
-msgstr "Aktivní připojení"
+msgstr "přímé spojení"
 
 #: src/DataToText.cpp
 msgid "a direct callback"
-msgstr ""
+msgstr "přímé volání zpět"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "our server"
-msgstr "Odstranit server"
+msgstr "náš server"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the Kad buddy"
-msgstr "Vyhledat kamaráda"
+msgstr "kamarád přes Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the source's own server"
-msgstr "eD2k: Aktuální server"
+msgstr "vlastní server zdroje"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a server hole punch"
-msgstr "Server Hole Punches: %s"
+msgstr "hole punch serveru"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a Lugdunum callback"
-msgstr "Zpětná volání v Lugdunum: %s"
+msgstr "zpětné volání Lugdunum"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on a fallback route"
-msgstr "Připojování přes server"
+msgstr "Připojování přes %s, na záložní trase"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on an unproven route"
-msgstr "Připojování přes server"
+msgstr "Připojování přes %s, na neprokázané trase"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s"
-msgstr "Připojování přes síť Kad"
+msgstr "Připojování přes %s"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -2788,7 +2782,7 @@ msgstr "Extrakce metadat médií je zakázána v nastavení"
 
 #: src/ExternalConn.cpp src/PrefsUnifiedDlg.cpp src/SharedFileList.cpp
 msgid "Media metadata extraction is unavailable: the helper is missing or its OS restrictions failed. See the core log for details."
-msgstr ""
+msgstr "Extrakce metadat z médií není k dispozici: chybí pomocný modul nebo selhaly jeho omezení daná operačním systémem. Podrobnosti najdete v protokolu jádra."
 
 #: src/ExternalConn.cpp
 msgid "File is not eligible for media metadata extraction (not an audio/video file, or an incomplete download)"
@@ -3774,7 +3768,7 @@ msgstr "Kademlia: hledaný výraz je příliš krátký"
 
 #: src/kademlia/kademlia/SearchManager.cpp
 msgid "Kademlia: Search keyword is already on search list: "
-msgstr "Kademlia: Klíčové slovo hledání je již na seznamu hledání: "
+msgstr "Kademlia: Klíčové slovo vyhledávání je již na seznamu vyhledávání: "
 
 #: src/kademlia/routing/RoutingZone.cpp
 msgid "Failed to read nodes.dat file - too old. This version (0) is not supported anymore."
@@ -4274,9 +4268,9 @@ msgid "Media metadata: bundled amule-media-probe helper is unavailable."
 msgstr "Mediální metadata: vestavěný pomocník amule-media-probe není dostupný."
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata: no result for %s: %s"
-msgstr "Mediální metadata: parser selhal u %s"
+msgstr "Mediální metadata: žádný výsledek pro %s: %s"
 
 #: src/MediaProbe.cpp
 #, c-format
@@ -4289,9 +4283,9 @@ msgid "Extracting media metadata: %s"
 msgstr "Extrahování mediálních metadat: %s"
 
 #: src/MediaProbe.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Media metadata extraction disabled until restart: %s"
-msgstr "Extrakce metadat médií je zakázána v nastavení"
+msgstr "Extrakce metadat médií je zakázána až do restartování: %s"
 
 #: src/MediaProbeThread.cpp
 #, c-format
@@ -4601,12 +4595,11 @@ msgstr "Uživatelé připojeni k aktuálnímu serveru a odhad celkového počtu 
 
 #: src/muuli_wdr.cpp
 msgid "Up:"
-msgstr ""
+msgstr "Odesílání:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Down:"
-msgstr "Stahování: "
+msgstr "Stahování:"
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -5146,26 +5139,23 @@ msgstr "Zaregistruje u operačního systému záznam automatického spouštění
 
 #: src/muuli_wdr.cpp
 msgid "Prevent automatic sleep: "
-msgstr ""
+msgstr "Předcházet automatickému uspání: "
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Off"
-msgstr "vypnuto"
+msgstr "Vyp."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While downloading"
-msgstr "Stahování již probíhá"
+msgstr "Během stahování"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "While aMule is running"
-msgstr "aMule běží"
+msgstr "Během provozu aMule"
 
 #: src/muuli_wdr.cpp
 msgid "While downloading: stay awake while a download is queued and not paused, stopped or in error, or until session uploads match session downloads. While running: stay awake even when idle, disconnected or minimized to the tray. The screen can still turn off."
-msgstr ""
+msgstr "Během stahování: zůstane vzhůru, dokud je stahování zařazeno do fronty a není pozastaveno, zastaveno nebo nedošlo k chybě, případně dokud se počet nahraných souborů v dané relaci nevyrovná počtu stažených souborů v téže relaci. Během provozu: zůstane vzhůru i v případě nečinnosti, odpojení nebo minimalizace do systémové lišty. Obrazovka se může i tak vypnout."
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5368,17 +5358,16 @@ msgid "Takes effect after restarting aMule."
 msgstr "Vejde v platnost po restartování aMule."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Advertise my IPv6 address:"
-msgstr "Propagovat mojí IPv6 adresu k jiným peerům"
+msgstr "Propagovat mojí IPv6 adresu:"
 
 #: src/muuli_wdr.cpp
 msgid "When verified"
-msgstr ""
+msgstr "Během ověření"
 
 #: src/muuli_wdr.cpp
 msgid "Always"
-msgstr ""
+msgstr "Vždy"
 
 #: src/muuli_wdr.cpp src/StatTree.cpp
 msgid "Never"
@@ -5585,9 +5574,8 @@ msgid "Extract length / bitrate / codec from shared audio and video files"
 msgstr "Získat délku / datový tok / kodek ze sdílených zvukových a video souborů"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "When enabled, aMule uses its bundled media parser to extract metadata from shared media files."
-msgstr "Pokud je povoleno, aMule používá vestavěný parser MediaInfo pro extrahování metadat ze sdílených mediálních souborů."
+msgstr "Pokud je povoleno, aMule používá vestavěný mediální parser k extrahování metadat ze sdílených mediálních souborů."
 
 #: src/muuli_wdr.cpp
 msgid ""
@@ -5627,11 +5615,11 @@ msgstr "Odebrat"
 
 #: src/muuli_wdr.cpp
 msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
-msgstr ""
+msgstr "Levý klik dvojitý: sdílení/odsdílení složky. Pravý klik: sdílení včetně všech podsložek, i budoucích nových."
 
 #: src/muuli_wdr.cpp
 msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
-msgstr ""
+msgstr "Tučné: sdíleno. Tučná kurzíva: sdíleno vč. podsložek. Červená složka: obsahuje sdílené složky."
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -5795,11 +5783,11 @@ msgstr "Souběžná vyhledávání zdrojů Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Firewalled Kad nodes served as buddy"
-msgstr ""
+msgstr "Kad uzly za firewallem, servírované jako přátelské"
 
 #: src/muuli_wdr.cpp
 msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
-msgstr ""
+msgstr "Počet uzlů Kad za firewallem, pro které tento uzel předává zpětná volání. Každý z nich udržuje jedno připojení, takže je obsluhována nanejvýš desetina limitu připojení."
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
@@ -6043,7 +6031,7 @@ msgstr "Jednorázová URL:"
 
 #: src/muuli_wdr.cpp
 msgid "Download once"
-msgstr "Stáhnout jakmile"
+msgstr "Stáhnout jednorázově"
 
 #: src/muuli_wdr.cpp
 msgid "Add server manually: Name"
@@ -6227,7 +6215,7 @@ msgstr "Použít celosystémový soubor ipfilter.dat, je-li k dispozici"
 
 #: src/muuli_wdr.cpp
 msgid "If there's no local ipfilter.dat found, allow usage of a system-wide ipfilter file."
-msgstr "Není-li nalezen místní soubor ipfilter.dat, umožnit použití celosystémového souboru IP filtru."
+msgstr "Není-li nalezen místní soubor ipfilter.dat, umožnit použití celo-systémového souboru ipfiltru."
 
 #: src/muuli_wdr.cpp
 msgid "Enable Online-Signature"
@@ -7027,12 +7015,11 @@ msgstr "NAT traverzování (QUIC)"
 
 #: src/PeerCapabilities.h
 msgid "Skips unknown source exchange tags"
-msgstr ""
+msgstr "Vynechává neznámé štítky výměny zdrojů"
 
 #: src/Preferences.cpp
-#, fuzzy
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
-msgstr "Mediální metadata: FFProbePath je zastaralý; aMule nyní používá vestavěný parser MediaInfo. Odebírání staré předvolby."
+msgstr "Mediální metadata: FFProbePath je zastaralý; aMule nyní používá vestavěný mediální parser. Odebírání staré předvolby."
 
 #: src/Preferences.cpp
 msgid "Invalid path mapping found, skipping"
@@ -7054,35 +7041,35 @@ msgstr "Bude použit výchozí port (%d)"
 #: src/Preferences.cpp
 #, c-format
 msgid "Moved the shared folders from %s to shareddir-explicit.dat"
-msgstr ""
+msgstr "Přesunuty sdílené složky z %s do shareddir-explicit.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Could not read %s. It is left in place and ignored."
-msgstr ""
+msgstr "Nepodařilo se číst %s. Zůstává na svém místě a je ignorována."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Removing %s: its folders are already in shareddir-explicit.dat and shareddir-recursive.dat"
-msgstr ""
+msgstr "Odebírám %s: její složky jsou již v shareddir-explicit.dat a shareddir-recursive.dat"
 
 #: src/Preferences.cpp
 #, c-format
 msgid "Ignoring %s: shared folders are kept in shareddir-explicit.dat and shareddir-recursive.dat. The file will be removed."
-msgstr ""
+msgstr "Ignoruji %s: sdílené složky jsou ponechány v shareddir-explicit.dat a shareddir-recursive.dat. Soubor bude odebrán."
 
 #: src/Preferences.cpp
 #, c-format
 msgid "%u folder listed only there is not shared:%s"
 msgid_plural "%u folders listed only there are not shared:%s"
-msgstr[0] ""
-msgstr[1] ""
-msgstr[2] ""
+msgstr[0] "%u složka pouze na tomto seznamu, není sdílena:%s"
+msgstr[1] "%u složky pouze na tomto seznamu, nejsou sdíleny:%s"
+msgstr[2] "%u složek pouze na tomto seznamu, není sdíleno:%s"
 
 #: src/Preferences.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not remove %s"
-msgstr "Stažený soubor se nepodařilo přesunout do %s"
+msgstr "Nepodařilo se odebrat %s"
 
 #: src/Preferences.cpp
 #, c-format
@@ -7390,9 +7377,8 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr "macOS neumožňuje aplikaci přestat být výchozím obslužným programem. Abyste zabránili otevírání aMule, nastavte jinou aplikaci jako výchozí."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The aMule API requires external connections to be enabled."
-msgstr "Webový server a aMule API vyžadují povolení externích připojení."
+msgstr "aMule API vyžaduje povolení externích připojení."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7678,7 +7664,7 @@ msgstr "Vyčistit uloženou historii hledání? Toto nelze vrátit zpět."
 
 #: src/SearchDlg.cpp
 msgid "Load into search form"
-msgstr ""
+msgstr "Načíst do vyhledávacího formuláře"
 
 #: src/SearchDlg.cpp
 msgid "Search warning"
@@ -7712,7 +7698,7 @@ msgstr "Vyhledávání probíhá"
 
 #: src/SearchDlg.cpp
 msgid "Enter whole, non-negative sizes and availability within the supported range."
-msgstr ""
+msgstr "Zadejte celé, nezáporné velikosti a dostupnost v rámci podporovaného rozsahu."
 
 #: src/SearchDlg.cpp
 msgid "Min size must be smaller than max size. Max size ignored."
@@ -7724,16 +7710,15 @@ msgstr "Hlavní"
 
 #: src/SearchMetadataPanel.cpp
 msgid "minutes"
-msgstr ""
+msgstr "minut"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Duration unit"
-msgstr ""
+msgstr "Jednotka doby trvání"
 
 #: src/SearchMetadataPanel.cpp
-#, fuzzy
 msgid "Minimum duration"
-msgstr "Minimální doba trvání (minuty)"
+msgstr "Minimální doba trvání"
 
 #: src/SearchMetadataPanel.cpp
 msgid "Minimum bitrate (kbps)"
@@ -8439,14 +8424,13 @@ msgid "Connected to buddy at %s"
 msgstr "Připojeno ke kamarádovi na adrese %s"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Served buddies:"
-msgstr "Seznam serverů"
+msgstr "Servírováno kamarádům:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "%u of %u"
-msgstr ""
+msgstr "%u z %u"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
@@ -9040,9 +9024,8 @@ msgid "Average file size: %s"
 msgstr "Průměrná velikost souboru: %s"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Diagnostics"
-msgstr "Diagnostika hledání"
+msgstr "Diagnostika"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -9127,9 +9110,8 @@ msgstr ""
 "Další nápovědu zobrazíte příkazem 'help search'.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support media search filters.\n"
-msgstr "Připojený daemon nepodporuje Vyhledávání všude.\n"
+msgstr "Připojený daemon nepodporuje mediální filtry vyhledávání.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -9142,13 +9124,12 @@ msgstr ""
 "Další nápovědu zobrazíte příkazem 'help search'.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support search management.\n"
-msgstr "Připojený daemon nepodporuje Vyhledávání všude.\n"
+msgstr "Připojený daemon nepodporuje správu vyhledávání.\n"
 
 #: src/TextClient.cpp
 msgid "A search ID from 'search list' is required.\n"
-msgstr ""
+msgstr "ID vyhledávání ze 'seznamu vyhledávání' je vyžadováno.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9175,7 +9156,7 @@ msgstr "Filtrování IP pro klienty je %s.\n"
 
 #: src/TextClient.cpp
 msgid "OFF"
-msgstr "vypnuto"
+msgstr "VYP."
 
 #: src/TextClient.cpp
 msgid "ON"
@@ -9265,24 +9246,23 @@ msgstr "[Částečný soubor]"
 
 #: src/TextClient.cpp
 msgid "No retained searches.\n"
-msgstr ""
+msgstr "Žádná zachovaná vyhledávání.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; availability is unknown.\n"
-msgstr ""
+msgstr "Zpracován požadavek na více výsledků; dostupnost je neznámá.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; further requests remain possible.\n"
-msgstr ""
+msgstr "Zpracován požadavek na více výsledků; další požadavky jsou možné.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "No further results can be requested for this search.\n"
-msgstr "Zobrazí výsledky posledního vyhledávání.\n"
+msgstr "Není možné požádat o další výsledky tohoto vyhledávání.\n"
 
 #: src/TextClient.cpp
 msgid "Search stop request processed; retained results were not removed.\n"
-msgstr ""
+msgstr "Zpracován požadavek na zastavení vyhledávání; zachované výsledky nebyly odebrány.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9537,7 +9517,6 @@ msgid "Execute a search."
 msgstr "Spustit vyhledávání."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -9575,6 +9554,11 @@ msgstr ""
 "    --avail <N>            minimální počet zdrojů\n"
 "    --min-size <N[KMG]>    nejmenší velikost souboru; K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    největší velikost souboru; stejné přípony\n"
+"    --min-bitrate <kbps>   celé číslo, 0-1000000\n"
+"    --min-duration <sec>   celé číslo, 0-86400\n"
+"    --codec <text> --title <text> --album <text> --artist <text>\n"
+"Textové hodnoty s mezerami dejte do uvozovek.\n"
+"Kad používá mediální filtry; eD2k servery je mohou ignorovat.\n"
 "Příklad: 'search global linux iso --type Iso --min-size 100M' vrátí\n"
 "výsledky pro \"linux iso\" typu souboru iso o velikosti alespoň 100 MiB.\n"
 
@@ -9596,25 +9580,23 @@ msgstr "Spustit vyhledávání v eD2k a Kad"
 
 #: src/TextClient.cpp
 msgid "List retained search IDs and queries."
-msgstr ""
+msgstr "Seznam zachoval ID vyhledávání a dotazy."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Stop a search, keeping its results."
-msgstr "Žádné otevřené hledání nemá tento výsledek."
+msgstr "Zastavit hledání, zachovat jeho výsledky."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'."
-msgstr ""
+msgstr "Vyžaduje ID vyhledávání ze 'seznamu vyhledávání'."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Request more Kad search results."
-msgstr "Počet výsledků vyhledávání: %i\n"
+msgstr "Požádat o další výsledky hledání Kad."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
-msgstr ""
+msgstr "Vyžaduje ID vyhledávání ze 'seznamu vyhledávání'. Další výsledky nejsou zaručeny."
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -10322,7 +10304,7 @@ msgstr " Kad: "
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid "off"
-msgstr "vypnuto"
+msgstr "vyp."
 
 #: src/utils/wxCas/src/wxcasframe.cpp
 msgid " is on "
