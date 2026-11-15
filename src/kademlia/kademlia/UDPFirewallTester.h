@@ -100,6 +100,8 @@ private:
 	static bool m_isFWVerifiedUDP;
 	static bool m_nodeSearchStarted;
 	static bool m_timedOut;
+	// Set after a firewalled verdict: an open answer then needs a second tester to agree.
+	static bool m_openNeedsConfirmation;
 	static uint8_t m_fwChecksRunningUDP;
 	static uint8_t m_fwChecksFinishedUDP;
 	static uint64_t m_testStart;

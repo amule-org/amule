@@ -46,6 +46,7 @@ bool CUDPFirewallTester::m_firewalledLastStateUDP = false;
 bool CUDPFirewallTester::m_isFWVerifiedUDP = false;
 bool CUDPFirewallTester::m_nodeSearchStarted = false;
 bool CUDPFirewallTester::m_timedOut = false;
+bool CUDPFirewallTester::m_openNeedsConfirmation = false;
 uint8_t CUDPFirewallTester::m_fwChecksRunningUDP = 0;
 uint8_t CUDPFirewallTester::m_fwChecksFinishedUDP = 0;
 uint64_t CUDPFirewallTester::m_testStart = 0;
@@ -176,7 +177,14 @@ void CUDPFirewallTester::SetUDPFWCheckResult(
 
 	if (!testCancelled) {
 		m_fwChecksFinishedUDP++;
-		if (succeeded) { // one positive result is enough
+		// One answer can be wrong: a NAT may still hold a mapping for that tester from
+		// earlier Kad traffic. Dropping a working buddy on it costs a long-lived link, so
+		// a change from firewalled to open needs a second tester in the same round.
+		const bool unconfirmed = succeeded && m_openNeedsConfirmation;
+		if (unconfirmed) {
+			m_openNeedsConfirmation = false;
+		}
+		if (succeeded && !unconfirmed) {
 			m_lastSucceededTime = now;
 			m_testStart = 0;
 			m_firewalledUDP = false;
@@ -215,10 +223,15 @@ void CUDPFirewallTester::SetUDPFWCheckResult(
 			CSearchManager::CancelNodeFWCheckUDPSearch(); // cancel firewallnode searches if any
 								      // are still active
 			return;
-		} else
+		} else if (unconfirmed) {
+			AddDebugLogLineN(logKadUdpFwTester,
+				"Kad UDP firewalltest from " + KadIPToString(fromIP) +
+					" result: Open, waiting for a second tester to confirm");
+		} else {
 			AddDebugLogLineN(logKadUdpFwTester,
 				"Kad UDP firewalltest from " + KadIPToString(fromIP) +
 					" result: Firewalled, continue testing");
+		}
 	} else {
 		AddDebugLogLineN(logKadUdpFwTester,
 			"Kad UDP firewalltest from " + KadIPToString(fromIP) + " cancelled");
@@ -258,6 +271,7 @@ void CUDPFirewallTester::ReCheckFirewallUDP(bool setUnverified)
 	m_testStart = now;
 	m_timedOut = false;
 	m_firewalledLastStateUDP = m_firewalledUDP;
+	m_openNeedsConfirmation = m_firewalledUDP;
 	m_isFWVerifiedUDP = (m_isFWVerifiedUDP && !setUnverified);
 	CSearchManager::FindNodeFWCheckUDP(); // start a lookup for a random node to find suitable IPs
 	m_nodeSearchStarted = true;
@@ -284,6 +298,7 @@ void CUDPFirewallTester::Reset()
 	m_isFWVerifiedUDP = false;
 	m_nodeSearchStarted = false;
 	m_timedOut = false;
+	m_openNeedsConfirmation = false;
 	m_fwChecksRunningUDP = 0;
 	m_fwChecksFinishedUDP = 0;
 	m_testStart = 0;
