@@ -2639,18 +2639,33 @@ static void RoundSearchField( wxWindow *sidebar, wxSearchCtrl *search, wxSizer *
 }
 #endif
 
+// The preferences sidebar's colour: the list's, which sets the sidebar apart from the page on
+// @p dialog with no divider between them. Windows' dark mode paints lists and dialogs the same
+// colour, so there the sidebar is lifted a little toward the text, enough to tell the two apart.
+static wxColour PrefsSidebarColour( const wxWindow *dialog )
+{
+    const wxColour list = wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX );
+#ifdef __WXMSW__
+    if ( std::abs( list.GetLuminance() - dialog->GetBackgroundColour().GetLuminance() ) < 0.03 ) {
+        return MixColours( list, wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), 0.06 );
+    }
+#else
+    wxUnusedVar( dialog );
+#endif
+    return list;
+}
+
 wxSizer *prefs_sizer;
 wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
 {
-    wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
-
-    // Sidebar | divider | page column, the layout of current system settings windows.
-    wxBoxSizer *item1 = new wxBoxSizer( wxHORIZONTAL );
+    // Sidebar | page column, the layout of current system settings windows. The sidebar runs the
+    // dialog's full height, set apart by its colour alone; the buttons sit under the page.
+    wxBoxSizer *item0 = new wxBoxSizer( wxHORIZONTAL );
 
     // The sidebar is one panel in the list's own colour, so the search box, the "no matches" note
     // and the page list read as a single pane rather than a list control dropped on the dialog.
     wxPanel *sidebar = new wxPanel( parent, wxID_ANY );
-    FollowSystemColours( sidebar, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ); } );
+    FollowSystemColours( sidebar, [parent]( wxWindow *w ) { w->SetBackgroundColour( PrefsSidebarColour( parent ) ); } );
     wxBoxSizer *sidebarSizer = new wxBoxSizer( wxVERTICAL );
 
 #if wxUSE_NATIVE_SEARCH_CONTROL
@@ -2673,24 +2688,26 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
 
     // Wraps rather than widening the sidebar, which the page list sizes.
     WrappingStaticText *noMatches = new WrappingStaticText( sidebar, ID_PREFS_NO_MATCHES, wxEmptyString );
-    FollowSystemColours( noMatches, []( wxWindow *w ) {
-        w->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ) );
+    FollowSystemColours( noMatches, [parent]( wxWindow *w ) {
+        w->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), PrefsSidebarColour( parent ) ) );
     } );
     noMatches->Hide();
     sidebarSizer->Add( noMatches, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(8)) );
 
-    // No border: the pane's colour and the divider beside it already set the list apart.
+    // No border: the pane's colour already sets the list apart.
     PrefsSidebar *item2 = new PrefsSidebar( sidebar, ID_PREFSLISTCTRL );
     // What screen readers call the list.
     item2->SetLabel( _("Preferences") );
 #ifdef __WXMSW__
     // Drawn by aMule (PrefsSidebar.h), in the pane's colour; the native lists elsewhere paint their own.
-    FollowSystemColours( item2, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ); } );
+    FollowSystemColours( item2, [parent]( wxWindow *w ) { w->SetBackgroundColour( PrefsSidebarColour( parent ) ); } );
 #endif
     sidebarSizer->Add( item2, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(PrefsSidebar::kMargin)) );
     sidebar->SetSizer( sidebarSizer );
-    item1->Add( sidebar, wxSizerFlags().Expand() );
-    item1->Add( new wxStaticLine( parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL ), wxSizerFlags().Expand() );
+    item0->Add( sidebar, wxSizerFlags().Expand() );
+
+    // The page column, then the buttons below it.
+    wxBoxSizer *item1 = new wxBoxSizer( wxVERTICAL );
 
     // The page column: a header naming the current page, above the page itself, which
     // PrefsUnifiedDlg swaps in and out of prefs_sizer. The header stays put while the page scrolls.
@@ -2705,9 +2722,8 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     pageColumn->Add( pageDescription, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT, parent->FromDIP(kPrefsPageMargin)) );
     pageColumn->AddSpacer( parent->FromDIP(12) );
     item1->Add( pageColumn, wxSizerFlags(1).Expand() );
-    item0->Add( item1, wxSizerFlags(1).Expand() );
 
-    item0->Add( new wxStaticLine( parent, wxID_ANY ), wxSizerFlags().Expand() );
+    item1->Add( new wxStaticLine( parent, wxID_ANY ), wxSizerFlags().Expand() );
 
     // Footer. The page-scoped "Reset" button, hidden except on the Advanced page (see
     // PrefsUnifiedDlg), sits at the far left, away from the buttons that close the dialog; OK and
@@ -2728,7 +2744,8 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     item4->SetCancelButton( item6 );
     item4->Realize();
     item3->Add( item4, wxSizerFlags().CenterVertical() );
-    item0->Add( item3, wxSizerFlags().Expand().Border(wxALL, parent->FromDIP(10)) );
+    item1->Add( item3, wxSizerFlags().Expand().Border(wxALL, parent->FromDIP(10)) );
+    item0->Add( item1, wxSizerFlags(1).Expand() );
     if (set_sizer)
     {
         parent->SetSizer( item0 );

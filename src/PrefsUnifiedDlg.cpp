@@ -996,8 +996,8 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	// Allow the viewport to shrink independently of the largest page. Start
 	// with enough room for the content when possible, but leave space for the
 	// desktop panels and window decorations on the parent's display.
-	// Everything beside the page column (sidebar, divider) comes on top of the largest page's
-	// width. It is laid out first: the page description wraps to it, which sets the header's height.
+	// Everything beside the page column (the sidebar) comes on top of the largest page's width.
+	// It is laid out first: the page description wraps to it, which sets the header's height.
 	const int preferredWidth =
 		width + GetSizer()->GetMinSize().GetWidth() - prefs_sizer->GetMinSize().GetWidth();
 	FitDialogToDisplay(this, wxSize(preferredWidth, height));
