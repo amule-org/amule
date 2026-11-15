@@ -102,6 +102,8 @@ private:
 	static bool m_timedOut;
 	// Set after a firewalled verdict: an open answer then needs a second tester to agree.
 	static bool m_openNeedsConfirmation;
+	static uint32_t m_unconfirmedOpenIP;
+	static bool m_unconfirmedOpenInternPort;
 	static uint8_t m_fwChecksRunningUDP;
 	static uint8_t m_fwChecksFinishedUDP;
 	static uint64_t m_testStart;

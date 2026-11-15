@@ -47,6 +47,8 @@ bool CUDPFirewallTester::m_isFWVerifiedUDP = false;
 bool CUDPFirewallTester::m_nodeSearchStarted = false;
 bool CUDPFirewallTester::m_timedOut = false;
 bool CUDPFirewallTester::m_openNeedsConfirmation = false;
+uint32_t CUDPFirewallTester::m_unconfirmedOpenIP = 0;
+bool CUDPFirewallTester::m_unconfirmedOpenInternPort = false;
 uint8_t CUDPFirewallTester::m_fwChecksRunningUDP = 0;
 uint8_t CUDPFirewallTester::m_fwChecksFinishedUDP = 0;
 uint64_t CUDPFirewallTester::m_testStart = 0;
@@ -142,6 +144,10 @@ void CUDPFirewallTester::SetUDPFWCheckResult(
 				// We already received an answer. This may happen since every test
 				// consists of two answer packets, but the answer could also be too
 				// late and already counted as a failure.
+				if (fromIP == m_unconfirmedOpenIP &&
+					incomingPort == CKademlia::GetPrefs()->GetInternKadPort()) {
+					m_unconfirmedOpenInternPort = true;
+				}
 				return;
 			} else {
 				it->answered = true;
@@ -183,6 +189,13 @@ void CUDPFirewallTester::SetUDPFWCheckResult(
 		const bool unconfirmed = succeeded && m_openNeedsConfirmation;
 		if (unconfirmed) {
 			m_openNeedsConfirmation = false;
+			// Keep its port: an open intern port is preferred once a second tester agrees.
+			m_unconfirmedOpenIP = fromIP;
+			m_unconfirmedOpenInternPort =
+				incomingPort == CKademlia::GetPrefs()->GetInternKadPort();
+			AddDebugLogLineN(logKadUdpFwTester,
+				"Kad UDP firewalltest from " + KadIPToString(fromIP) +
+					" result: Open, waiting for a second tester to confirm");
 		}
 		if (succeeded && !unconfirmed) {
 			m_lastSucceededTime = now;
@@ -198,7 +211,8 @@ void CUDPFirewallTester::SetUDPFWCheckResult(
 								      // are still active
 			// if this packet came to our internal port, explicitly set the internal port as used
 			// port from now on
-			if (incomingPort == CKademlia::GetPrefs()->GetInternKadPort()) {
+			if (incomingPort == CKademlia::GetPrefs()->GetInternKadPort() ||
+				m_unconfirmedOpenInternPort) {
 				CKademlia::GetPrefs()->SetUseExternKadPort(false);
 				AddDebugLogLineN(logKadUdpFwTester,
 					"New Kad Firewallstate (UDP): Open, using intern port");
@@ -223,11 +237,7 @@ void CUDPFirewallTester::SetUDPFWCheckResult(
 			CSearchManager::CancelNodeFWCheckUDPSearch(); // cancel firewallnode searches if any
 								      // are still active
 			return;
-		} else if (unconfirmed) {
-			AddDebugLogLineN(logKadUdpFwTester,
-				"Kad UDP firewalltest from " + KadIPToString(fromIP) +
-					" result: Open, waiting for a second tester to confirm");
-		} else {
+		} else if (!unconfirmed) {
 			AddDebugLogLineN(logKadUdpFwTester,
 				"Kad UDP firewalltest from " + KadIPToString(fromIP) +
 					" result: Firewalled, continue testing");
@@ -269,9 +279,12 @@ void CUDPFirewallTester::ReCheckFirewallUDP(bool setUnverified)
 	m_fwChecksRunningUDP = 0;
 	m_fwChecksFinishedUDP = 0;
 	m_testStart = now;
+	// A timed-out round presents as firewalled too, and keeps the buddy.
+	m_openNeedsConfirmation = m_firewalledUDP || m_timedOut;
+	m_unconfirmedOpenIP = 0;
+	m_unconfirmedOpenInternPort = false;
 	m_timedOut = false;
 	m_firewalledLastStateUDP = m_firewalledUDP;
-	m_openNeedsConfirmation = m_firewalledUDP;
 	m_isFWVerifiedUDP = (m_isFWVerifiedUDP && !setUnverified);
 	CSearchManager::FindNodeFWCheckUDP(); // start a lookup for a random node to find suitable IPs
 	m_nodeSearchStarted = true;
@@ -299,6 +312,8 @@ void CUDPFirewallTester::Reset()
 	m_nodeSearchStarted = false;
 	m_timedOut = false;
 	m_openNeedsConfirmation = false;
+	m_unconfirmedOpenIP = 0;
+	m_unconfirmedOpenInternPort = false;
 	m_fwChecksRunningUDP = 0;
 	m_fwChecksFinishedUDP = 0;
 	m_testStart = 0;
