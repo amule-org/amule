@@ -493,6 +493,38 @@ TEST(ECCrypt, StreamedOpenRecoversChunkedBody)
 	}
 }
 
+TEST(ECCrypt, LargeChunkedBodyRoundTrips)
+{
+	for (const uint8_t cipher : SupportedCiphers()) {
+		Session cli, srv, oneshot, dummy;
+		MakePair(cipher, cli, srv);
+		MakePair(cipher, oneshot, dummy);
+
+		// Past the 4 KiB scratch buffer, in chunks that split cipher blocks.
+		std::vector<uint8_t> flat(10000);
+		for (size_t b = 0; b < flat.size(); ++b) {
+			flat[b] = (uint8_t)(b * 7 + 1);
+		}
+		std::vector<uint8_t> buf = flat;
+		uint8_t tag[AEAD_TAG_LEN];
+		ASSERT_TRUE(cli.SealBegin());
+		for (size_t off = 0; off < buf.size(); off += 4099) {
+			ASSERT_TRUE(
+				cli.SealUpdate(buf.data() + off, std::min<size_t>(4099, buf.size() - off)));
+		}
+		ASSERT_TRUE(cli.SealFinal(tag));
+
+		std::vector<uint8_t> ref;
+		ASSERT_TRUE(oneshot.Seal(flat.data(), flat.size(), ref));
+		ASSERT_TRUE(std::memcmp(ref.data(), buf.data(), buf.size()) == 0);
+		ASSERT_TRUE(std::memcmp(ref.data() + buf.size(), tag, AEAD_TAG_LEN) == 0);
+
+		std::vector<uint8_t> opened;
+		ASSERT_TRUE(srv.Open(ref.data(), ref.size(), opened));
+		ASSERT_TRUE(opened == flat);
+	}
+}
+
 TEST(ECCrypt, StreamingCallsRefuseWhenInactive)
 {
 	Session s;

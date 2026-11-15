@@ -84,6 +84,31 @@ std::unique_ptr<CryptoPP::AuthenticatedSymmetricCipher> MakeCipher(uint8_t ciphe
 	}
 }
 
+/**
+ * Encrypts or decrypts @a data in place.
+ *
+ * Crypto++ 8.7 on 32-bit ARM gets AES-GCM wrong when input and output alias,
+ * as ProcessString() makes them, and the tag still verifies. There, go through
+ * a scratch buffer; elsewhere the extra copy only costs speed.
+ */
+void ProcessInPlace(CryptoPP::AuthenticatedSymmetricCipher &cipher, uint8_t *data, size_t len)
+{
+#if !defined(__arm__) && !defined(_M_ARM)
+	cipher.ProcessString(data, len);
+#else
+	uint8_t scratch[4096];
+	const size_t used = std::min(len, sizeof(scratch));
+	while (len > 0) {
+		const size_t n = std::min(len, sizeof(scratch));
+		cipher.ProcessData(scratch, data, n);
+		std::memcpy(data, scratch, n);
+		data += n;
+		len -= n;
+	}
+	CryptoPP::SecureWipeBuffer(scratch, used);
+#endif
+}
+
 } // namespace
 
 bool HasHardwareAES()
@@ -429,7 +454,7 @@ bool Session::SealUpdate(uint8_t *data, size_t len)
 		return true;
 	}
 	try {
-		m_stream->sealer->ProcessString(data, len);
+		ProcessInPlace(*m_stream->sealer, data, len);
 		return true;
 	} catch (const CryptoPP::Exception &) {
 		m_stream->sealer.reset();
@@ -481,7 +506,7 @@ bool Session::OpenUpdate(uint8_t *data, size_t len)
 		return true;
 	}
 	try {
-		m_stream->opener->ProcessString(data, len);
+		ProcessInPlace(*m_stream->opener, data, len);
 		return true;
 	} catch (const CryptoPP::Exception &) {
 		m_stream->opener.reset();
