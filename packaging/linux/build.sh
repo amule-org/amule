@@ -29,7 +29,8 @@ commands:
                              channel: release (default) | nightly
                              arch: host (default) | amd64 | arm64 | i386 |
                                    armhf | ppc64el | s390x | riscv64
-                             (non-native arches need setup-cross-arch)
+                             (armhf and i386 off their native host need
+                             setup-cross-arch; the rest are cross-built)
   validate [arch]            run amuled --version inside a fixed matrix
                              of distro Docker images to catch lib-load
                              regressions. arch: host (default) only —
@@ -388,7 +389,7 @@ build_deb() {
     # +git<date>.<commit count>.<sha>, which sorts above that release and
     # below the next one. The count keeps two nightlies of one day in order.
     local suite="${1:-}" channel="${2:-release}" arch="${3:-}"
-    local image tag platform=() personality=()
+    local image tag platform=() personality=() cross=()
     case "${suite}" in
         debian12)    image=debian:12;    tag=deb12 ;;
         debian13)    image=debian:13;    tag=deb13 ;;
@@ -420,12 +421,11 @@ build_deb() {
         '') ;;
         amd64)   platform=(--platform linux/amd64) ;;
         arm64)   platform=(--platform linux/arm64) ;;
-        # On an x86_64 kernel uname still says x86_64, and wx's configure trusts it.
+        # On a 64-bit kernel uname reports the 64-bit machine without these.
         i386)    platform=(--platform linux/386); personality=(setarch i686) ;;
-        armhf)   platform=(--platform linux/arm/v7) ;;
-        ppc64el) platform=(--platform linux/ppc64le) ;;
-        s390x)   platform=(--platform linux/s390x) ;;
-        riscv64) platform=(--platform linux/riscv64) ;;
+        armhf)   platform=(--platform linux/arm/v7); personality=(setarch linux32) ;;
+        # Too slow under QEMU: cross-built, so the unit tests do not run.
+        ppc64el|s390x|riscv64) cross=(-e "CROSS_ARCH=${arch}") ;;
         *) echo "fatal: unsupported arch '${arch}' (choose amd64|arm64|i386|armhf|ppc64el|s390x|riscv64)" >&2; exit 1 ;;
     esac
 
@@ -454,7 +454,8 @@ build_deb() {
     echo "==> Building amule ${version} in ${image}${arch:+ (${arch})}"
     docker run --rm ${platform[@]+"${platform[@]}"} \
         -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
-        -e DEB_BUILD_OPTIONS="${DEB_BUILD_OPTIONS:-}" \
+        -e DEB_BUILD_OPTIONS="${DEB_BUILD_OPTIONS:-}${cross[@]+ nocheck}" \
+        ${cross[@]+"${cross[@]}"} \
         -v "${work}:/work" \
         -v "${SCRIPT_DIR}/deb/build-in-container.sh:/build-in-container.sh:ro" \
         "${image}" ${personality[@]+"${personality[@]}"} /build-in-container.sh "${version}"

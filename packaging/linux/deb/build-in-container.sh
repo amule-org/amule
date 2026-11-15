@@ -3,6 +3,7 @@
 # that holds the orig tarballs and the debian/ tree.
 #
 # Usage: build-in-container.sh <version>
+# CROSS_ARCH, when set, cross-builds for that Debian architecture.
 
 set -euo pipefail
 
@@ -20,6 +21,31 @@ fi
 
 # shellcheck disable=SC1091
 . /etc/os-release
+
+cross=()
+if [ -n "${CROSS_ARCH:-}" ]; then
+    native="$(dpkg --print-architecture)"
+    dpkg --add-architecture "${CROSS_ARCH}"
+    # Ubuntu keeps amd64 and i386 on the main archive and the other arches on ports.
+    if [ "${ID}" = ubuntu ] && { [ "${native}" = amd64 ] || [ "${native}" = i386 ]; }; then
+        if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sed -i "/^Types:/a Architectures: ${native}" /etc/apt/sources.list.d/ubuntu.sources
+        else
+            sed -i "s/^deb /deb [arch=${native}] /" /etc/apt/sources.list
+        fi
+        cat > /etc/apt/sources.list.d/ports.sources <<EOF
+Types: deb
+URIs: http://ports.ubuntu.com/ubuntu-ports
+Suites: ${VERSION_CODENAME} ${VERSION_CODENAME}-updates ${VERSION_CODENAME}-security
+Components: main universe
+Architectures: ${CROSS_ARCH}
+Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+EOF
+    fi
+    apt-get -qq update
+    apt-get -qq install -y --no-install-recommends "crossbuild-essential-${CROSS_ARCH}" >/dev/null
+    cross=(-a "${CROSS_ARCH}")
+fi
 build="/build/amule-${upstream}"
 mkdir -p "${build}/wxwidgets"
 cp /work/amule_"${upstream}".orig*.tar.* /build/
@@ -37,10 +63,10 @@ amule (${version}) ${VERSION_CODENAME}; urgency=medium
  -- ${maintainer}  $(date -R)
 EOF
 
-apt-get -qq build-dep -y --no-install-recommends "${build}" >/dev/null
+apt-get -qq build-dep -y --no-install-recommends ${cross[@]+"${cross[@]}"} "${build}" >/dev/null
 
 cd "${build}"
-dpkg-buildpackage -us -uc -j"$(nproc)"
+dpkg-buildpackage -us -uc -j"$(nproc)" ${cross[@]+"${cross[@]}"}
 
 cd /build
 lintian --fail-on error --suppress-tags bad-distribution-in-changes-file ./*.changes

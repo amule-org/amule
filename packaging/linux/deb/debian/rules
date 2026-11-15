@@ -17,12 +17,19 @@ endif
 WX_BUILD = $(CURDIR)/obj-wx
 WX_STAGE = $(CURDIR)/debian/wx-stage
 WX_LIBDIR = /usr/lib/$(DEB_HOST_MULTIARCH)/amule
+# A cross-built wx names its config after the host triplet.
+ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
 WX_CONFIG = $(WX_STAGE)$(WX_LIBDIR)/wx/config/gtk3-unicode-3.2
+else
+WX_CONFIG = $(WX_STAGE)$(WX_LIBDIR)/wx/config/$(DEB_HOST_GNU_TYPE)-gtk3-unicode-3.2
+endif
 WX_LIBS = baseu-3.2 baseu_net-3.2 gtk3u_core-3.2 gtk3u_stc-3.2
 
 # Only base, net, core and stc are linked. Image, regex and compression
 # libraries come from the system, so their security updates apply.
 WX_CONFIGURE = \
+	--build=$(DEB_BUILD_GNU_TYPE) \
+	--host=$(DEB_HOST_GNU_TYPE) \
 	--prefix=/usr \
 	--libdir='$${exec_prefix}/lib/$(DEB_HOST_MULTIARCH)/amule' \
 	--with-gtk=3 \

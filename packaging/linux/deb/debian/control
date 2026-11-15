@@ -22,7 +22,7 @@ Build-Depends: cmake,
                ninja-build,
                pkgconf,
                po4a,
-               python3,
+               python3:native,
                zlib1g-dev,
 Standards-Version: 4.7.0
 Homepage: https://amule-org.github.io

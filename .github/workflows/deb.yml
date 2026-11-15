@@ -22,26 +22,23 @@ concurrency:
 jobs:
   deb:
     name: ${{ matrix.suite }} ${{ matrix.arch }}
-    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
-    # QEMU arches build wx and aMule, then run the unit tests, emulated.
-    timeout-minutes: 360
+    # armhf runs natively on the arm64 runner. ppc64el, s390x and riscv64 are
+    # cross-built: under QEMU they did not finish in 6 hours.
+    runs-on: ${{ contains(fromJSON('["arm64", "armhf"]'), matrix.arch) && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
         suite: [debian12, debian13, ubuntu22.04, ubuntu24.04, ubuntu26.04]
         arch: [amd64, arm64, i386, armhf, ppc64el, s390x, riscv64]
         exclude:
-          # Ubuntu has no i386 images. Debian 12 has no riscv64 port and no
-          # s390x image.
+          # Ubuntu has no i386 images, and Debian 12 has no riscv64 port.
           - { suite: ubuntu22.04, arch: i386 }
           - { suite: ubuntu24.04, arch: i386 }
           - { suite: ubuntu26.04, arch: i386 }
           - { suite: debian12, arch: riscv64 }
-          - { suite: debian12, arch: s390x }
     steps:
       - uses: actions/checkout@v7
-      - uses: docker/setup-qemu-action@v4
-        if: ${{ !contains(fromJSON('["amd64", "arm64", "i386"]'), matrix.arch) }}
       - name: Build
         run: packaging/linux/build.sh deb ${{ matrix.suite }} release ${{ matrix.arch }}
       - uses: actions/upload-artifact@v7
