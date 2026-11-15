@@ -34,7 +34,7 @@
 #include <common/Constants.h>
 #include <common/Macros.h> // Needed for itemsof()
 
-#include <algorithm> // std::max (page-sidebar column width), std::sort
+#include <algorithm> // std::max, std::sort
 
 #include <wx/artprov.h> // wxArtProvider::GetBitmapBundle for the page icons
 #include <wx/bmpbndl.h> // wxBitmapBundle for DPI-aware page icons
@@ -47,7 +47,7 @@
 #include <wx/progdlg.h>
 #include <wx/scrolwin.h>               // independently scrollable preference pages
 #include <wx/srchctrl.h>               // the sidebar's search box
-#include <wx/wupdlock.h>               // wxWindowUpdateLocker (sidebar refill)
+#include <wx/wupdlock.h>               // wxWindowUpdateLocker (search highlights)
 #include "SharedFilesReloadProgress.h" // ReloadSharedFilesWithProgress
 
 #include <memory>  // std::unique_ptr (progress dialog lifetime)
@@ -1077,8 +1077,8 @@ void PrefsUnifiedDlg::RebuildSidebar()
 		}
 	}
 
-	// Refilling the list resets its scroll position and selection, so only do it when the
-	// set of rows actually changes -- not, say, when a search gains a letter but keeps its pages.
+	// Refilling the list clears its selection, so only do it when the set of rows actually
+	// changes -- not, say, when a search gains a letter but keeps its pages.
 	if (rows != ShownPages()) {
 		// Each row keeps the page's stable pages[] index -- never reordered, only which pages
 		// are visible changes -- not its live position, so OnPrefsPageChange can always identify

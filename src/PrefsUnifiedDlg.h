@@ -229,9 +229,9 @@ private:
 	wxPanel *m_aMuleTweaksWidget = nullptr;
 	PrefsSidebar *m_PrefsIcons;
 	//! `pages[]` index for every page widget, by that same stable position (only which pages
-	//! are VISIBLE in m_PrefsIcons changes). Each visible row's item data is one of these, so
-	//! OnPrefsPageChange identifies a page by the stable index rather than by the row's live
-	//! position, which shifts whenever a row is hidden or re-shown.
+	//! are VISIBLE in m_PrefsIcons changes). Each visible row holds one of these indices
+	//! (PrefsSidebar::Row::page), so OnPrefsPageChange identifies a page by the stable index
+	//! rather than by the row's live position, which shifts whenever a row is hidden or re-shown.
 	std::vector<wxPanel *> m_pageWidgets;
 	//! Page icons, in `pages[]` order -- kept so RebuildSidebar can re-create any row.
 	std::vector<wxBitmapBundle> m_pageIcons;

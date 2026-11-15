@@ -1386,12 +1386,6 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     return top;
 }
 
-// @p from moved toward @p to by @p amount, from 0 (all @p from) to 1 (all @p to).
-static wxColour MixColours( const wxColour &from, const wxColour &to, double amount )
-{
-    return wxColour( wxColour::AlphaBlend( to.Red(), from.Red(), amount ), wxColour::AlphaBlend( to.Green(), from.Green(), amount ), wxColour::AlphaBlend( to.Blue(), from.Blue(), amount ) );
-}
-
 // Text one step back from the main text, for descriptions and notes: the text colour mixed toward
 // the background. wxSYS_COLOUR_GRAYTEXT is the colour of disabled text, which reads as unavailable
 // and, on a dark background, falls short of a readable contrast; this stays well above 4.5:1 in
@@ -2600,32 +2594,48 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
 // page list's highlight, and outlined in the accent colour while the box has the focus.
 static void RoundSearchField( wxWindow *sidebar, wxSearchCtrl *search, wxSizer *sidebarSizer )
 {
-    const wxSize pad = sidebar->FromDIP( wxSize( 8, 5 ) );
-    // Room for the field around the box, with the box centred in it.
+    // The field's margin around the box, in pixels at the window's current DPI.
+    const auto pad = [sidebar]() { return sidebar->FromDIP( wxSize( 8, 5 ) ); };
+    // Room for the field around the box, with the box centred in it. wx rescales the sizer's
+    // borders and minimum size when the window moves to a screen of another DPI.
     wxBoxSizer *field = new wxBoxSizer( wxHORIZONTAL );
-    field->SetMinSize( -1, search->GetBestSize().GetHeight() + 2 * pad.y );
-    field->Add( search, wxSizerFlags(1).CenterVertical().Border(wxLEFT|wxRIGHT, pad.x) );
+    field->SetMinSize( -1, search->GetBestSize().GetHeight() + 2 * pad().y );
+    field->Add( search, wxSizerFlags(1).CenterVertical().Border(wxLEFT|wxRIGHT, pad().x) );
     sidebarSizer->Add( field, wxSizerFlags().Expand().Border(wxALL, sidebar->FromDIP(8)) );
 
     FollowSystemColours( search, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) ); } );
-    const auto fieldRect = [search, pad]() { return search->GetRect().Inflate( pad ); };
+    const auto fieldRect = [search, pad]() { return search->GetRect().Inflate( pad() ); };
     sidebar->Bind( wxEVT_PAINT, [sidebar, search, fieldRect]( wxPaintEvent & ) {
         wxPaintDC dc( sidebar );
         const bool focused = search->IsDescendant( wxWindow::FindFocus() );
-        const wxColour border = focused ? wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHT ) : PrefsHighlight::Mix( sidebar->GetBackgroundColour(), wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), 0.25 );
+        // A high-contrast theme outlines its fields in the full text colour, which a tint of it would fade.
+        const wxColour text = wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT );
+        const wxColour border = focused ? wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHT ) : PrefsHighlight::HighContrast() ? text : MixColours( sidebar->GetBackgroundColour(), text, 0.25 );
         PrefsHighlight::FillRounded( dc, fieldRect(), sidebar->FromDIP( kPrefsCornerRadius ), search->GetBackgroundColour(), border, sidebar->FromDIP( focused ? 2 : 1 ) );
     } );
-    // The outline follows the focus into and out of the box, which hands it to its text field.
+    // The margin is part of the field: a click there goes to the box, under the box's cursor.
+    sidebar->Bind( wxEVT_LEFT_DOWN, [search, fieldRect]( wxMouseEvent &event ) {
+        if ( fieldRect().Contains( event.GetPosition() ) ) {
+            search->SetFocus();
+        }
+        event.Skip();
+    } );
+    sidebar->Bind( wxEVT_MOTION, [sidebar, fieldRect, inField = false]( wxMouseEvent &event ) mutable {
+        const bool inside = fieldRect().Contains( event.GetPosition() );
+        if ( inside != inField ) {
+            inField = inside;
+            sidebar->SetCursor( inside ? wxCursor( wxCURSOR_IBEAM ) : wxNullCursor );
+        }
+        event.Skip();
+    } );
+    // The outline follows the focus into and out of the box. The generic box hands the focus to
+    // its text field, and passes on that field's focus events as its own.
     const auto refresh = [sidebar, fieldRect]( wxFocusEvent &event ) {
         sidebar->RefreshRect( fieldRect() );
         event.Skip();
     };
     search->Bind( wxEVT_SET_FOCUS, refresh );
     search->Bind( wxEVT_KILL_FOCUS, refresh );
-    for ( wxWindow *child : search->GetChildren() ) {
-        child->Bind( wxEVT_SET_FOCUS, refresh );
-        child->Bind( wxEVT_KILL_FOCUS, refresh );
-    }
 }
 #endif
 
@@ -2672,6 +2682,8 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     // No border: the pane's colour and the divider beside it already set the list apart. Its
     // highlights line up with the search field above.
     PrefsSidebar *item2 = new PrefsSidebar( sidebar, ID_PREFSLISTCTRL );
+    // What screen readers call the list.
+    item2->SetLabel( _("Preferences") );
     FollowSystemColours( item2, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ); } );
     sidebarSizer->Add( item2, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(2)) );
     sidebar->SetSizer( sidebarSizer );
