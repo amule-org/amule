@@ -145,6 +145,19 @@ public:
 			event.Skip();
 		});
 		Bind(wxEVT_KEY_DOWN, &PrefsSidebar::OnKeyDown, this);
+		// The focus outline is for the keyboard, as Windows' own focus rectangles are: a click
+		// hides it, and focus that does not come from a click, or a key pressed in the list,
+		// shows it. wxVListBox takes the focus while handling the click, after this handler.
+		Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent &event) {
+			SetFocusVisible(false);
+			m_clicking = true;
+			CallAfter([this] { m_clicking = false; });
+			event.Skip();
+		});
+		Bind(wxEVT_SET_FOCUS, [this](wxFocusEvent &event) {
+			SetFocusVisible(!m_clicking);
+			event.Skip();
+		});
 		Bind(wxEVT_MOUSEWHEEL, &PrefsSidebar::OnMouseWheel, this);
 		Bind(wxEVT_MOTION, [this](wxMouseEvent &event) {
 			SetHoverAt(event.GetPosition());
@@ -273,7 +286,7 @@ protected:
 			Pill(rect),
 			radius,
 			fill,
-			selected && HasFocus() ? highlight : wxNullColour,
+			selected && HasFocus() && m_focusVisible ? highlight : wxNullColour,
 			FromDIP(2));
 	}
 
@@ -313,6 +326,21 @@ private:
 	int m_hover = wxNOT_FOUND;
 	//! Every row is as tall; worked out once, since wx asks for it on every hit test and paint.
 	wxCoord m_rowHeight = 0;
+	//! Whether the focused selection is outlined: only once the keyboard is in use.
+	bool m_focusVisible = false;
+	//! Set while a click is handled, so the focus it gives the list keeps the outline hidden.
+	bool m_clicking = false;
+
+	void SetFocusVisible(bool visible)
+	{
+		if (visible == m_focusVisible) {
+			return;
+		}
+		m_focusVisible = visible;
+		if (GetSelection() != wxNOT_FOUND) {
+			RefreshRow(GetSelection());
+		}
+	}
 
 	wxRect Pill(const wxRect &row) const
 	{
@@ -329,6 +357,7 @@ private:
 
 	void OnKeyDown(wxKeyEvent &event)
 	{
+		SetFocusVisible(true);
 		switch (event.GetKeyCode()) {
 		case WXK_RETURN:
 		case WXK_NUMPAD_ENTER:
