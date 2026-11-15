@@ -1,17 +1,11 @@
 name: Debian package releases
 
 # Opens one issue when a Debian or Ubuntu release needs a suite added or
-# dropped, keeps it current, and closes it once the suites match. The
-# branch push is for the trial on the fork.
+# dropped, keeps it current, and closes it once the suites match.
 on:
   schedule:
     - cron: '17 6 * * 1'
   workflow_dispatch:
-  push:
-    branches: [feat/debian-packaging]
-    paths:
-      - 'packaging/linux/deb/check-releases.py'
-      - '.github/workflows/deb-releases.yml'
 
 permissions:
   contents: read

@@ -1,19 +1,12 @@
 name: Debian packages
 
 # Builds every suite and arch and uploads the .debs to Cloudsmith: a
-# published GitHub Release goes to the release repository, everything else to
-# the nightly one. Releases start as drafts, so the tag push is too early.
-# The branch push is for the trial on the fork.
+# published GitHub Release goes to the release repository, the nightly
+# schedule and a manual run to the nightly one. Releases start as drafts, so
+# the tag push is too early.
 on:
-  push:
-    branches: [feat/debian-packaging]
-    paths:
-      - 'packaging/linux/build.sh'
-      - 'packaging/linux/versions.env'
-      - 'packaging/linux/deb/**'
-      - '.github/workflows/deb.yml'
   schedule:
-    - cron: '23 2 * * *'
+    - cron: '0 3 * * *'
   release:
     types: [published]
   workflow_dispatch:
