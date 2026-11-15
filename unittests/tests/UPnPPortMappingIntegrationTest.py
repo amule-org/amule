@@ -64,6 +64,10 @@ class Skipped(Exception):
     """This machine or LAN cannot run the test."""
 
 
+class NoIPv6(Exception):
+    """This machine cannot run the IPv6 scenarios."""
+
+
 class ScenarioFailed(Exception):
     pass
 
@@ -100,15 +104,6 @@ def multicast6(sock, data):
             sock.sendto(data, (SSDP_GROUP6, SSDP_PORT, 0, index))
         except OSError:
             pass
-
-
-def ipv6_loopback():
-    try:
-        with socket.socket(socket.AF_INET6, socket.SOCK_STREAM) as probe:
-            probe.bind(('::1', 0))
-        return True
-    except OSError:
-        return False
 
 
 class ThreadingHTTPServer6(ThreadingHTTPServer):
@@ -153,11 +148,15 @@ class FakeGateway:
         self.ipv6_searched = False
         self.http6 = self.ssdp6 = None
         if ipv6:
-            self.http6 = ThreadingHTTPServer6(('::1', 0), self.handler())
-            self.ssdp6 = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-            self.ssdp6.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.ssdp6.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
-            self.ssdp6.bind(('::', SSDP_PORT))
+            try:
+                self.http6 = ThreadingHTTPServer6(('::1', 0), self.handler())
+                self.ssdp6 = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+                self.ssdp6.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                self.ssdp6.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+                self.ssdp6.bind(('::', SSDP_PORT))
+            except OSError as error:
+                self.close()
+                raise NoIPv6(f'cannot listen over IPv6: {error}') from error
             for index, _ in socket.if_nameindex():
                 try:
                     self.ssdp6.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, membership6(index))
@@ -179,6 +178,10 @@ class FakeGateway:
         self.release.set()
         for server in filter(None, (self.http, self.http6)):
             server.shutdown()
+        self.close()
+
+    def close(self):
+        for server in filter(None, (self.http, self.http6)):
             server.server_close()
         for sock in filter(None, (self.ssdp, self.ssdp6)):
             sock.close()
@@ -466,11 +469,13 @@ def record_failure(failures, message):
     failures.append(message)
 
 
-def ipv6_skipped(name, arguments):
-    if arguments.get('ipv6') and not ipv6_loopback():
-        print(f'SKIP: {name}: no IPv6 loopback')
-        return True
-    return False
+def open_gateway(name, arguments):
+    """Returns None when the scenario needs IPv6 and this machine cannot listen over it."""
+    try:
+        return FakeGateway(**arguments)
+    except NoIPv6 as error:
+        print(f'SKIP: {name}: {error}')
+        return None
 
 
 def note_ipv6(name, arguments, gateway):
@@ -480,9 +485,10 @@ def note_ipv6(name, arguments, gateway):
 
 def run_scenarios(driver, failures):
     for name, arguments, operations, results, expected in SCENARIOS:
-        if ipv6_skipped(name, arguments):
+        gateway = open_gateway(name, arguments)
+        if gateway is None:
             continue
-        with FakeGateway(**arguments) as gateway:
+        with gateway:
             try:
                 got = run_driver(driver, gateway, operations)
             except ScenarioFailed as error:
@@ -498,9 +504,10 @@ def run_scenarios(driver, failures):
 
 def run_late_scenarios(driver, failures):
     for name, arguments, before, after, results, expected, table in LATE_SCENARIOS:
-        if ipv6_skipped(name, arguments):
+        gateway = open_gateway(name, arguments)
+        if gateway is None:
             continue
-        with FakeGateway(**arguments) as gateway:
+        with gateway:
             try:
                 got = run_late(driver, gateway, before, after)
             except ScenarioFailed as error:

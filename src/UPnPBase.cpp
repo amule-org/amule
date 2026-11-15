@@ -1008,8 +1008,9 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #else
 		const char *location = d_event->Location;
 #endif
-		// Root devices are keyed by UDN, so the first location to register sets the control
-		// URLs. libupnp searches over IPv6 first, and the IPv4 answer must still win.
+		// Root devices are keyed by UDN, so the first location sets the control URLs. libupnp
+		// searches over IPv6 first, and miniupnpd in secure mode refuses the IPv4 mapping actions
+		// over IPv6.
 		if (UPnP::IsIPv6Location(location ? location : "")) {
 			if (EventType == UPNP_DISCOVERY_SEARCH_RESULT) {
 				msg2 << "Ignoring IPv6 location " << location << ".";

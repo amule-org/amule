@@ -30,12 +30,7 @@
 namespace UPnP
 {
 
-/**
- * Whether an SSDP location names an IPv6 literal host. A gateway that answers the search over IPv4
- * and IPv6 sends one location for each. The port mapping actions map an IPv4 address, and
- * miniupnpd in secure mode refuses them over IPv6, so they must use the IPv4 location. A host name
- * is not resolved here.
- */
+// Whether an SSDP location has an IPv6 literal host. Host names are not resolved.
 inline bool IsIPv6Location(const std::string &location)
 {
 	const std::string::size_type scheme = location.find("://");
