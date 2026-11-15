@@ -78,11 +78,12 @@ there client on the eMule forum..
 #include "../../PeerCapabilities.h" // Needed for DecodeIPv6HexTag
 #include "../../Logger.h"
 #include "../../Preferences.h"
-#include "../../CFile.h"           // Needed for CFile
-#include "../../KadPublishSeeds.h" // Needed for KadPublishSeeds
+#include "../../CFile.h"            // Needed for CFile
+#include "../../IPFilter.h"         // Needed for CIPFilter
+#include "../../KadPublishSeeds.h"  // Needed for KadPublishSeeds
+#include "../../NetworkFunctions.h" // Needed for IsGoodIPPort
 #ifdef ENABLE_KAD_NODE_PROTECTION
-#include "../../GetTickCount.h"     // Needed for GetTickCount64
-#include "../../NetworkFunctions.h" // Needed for KadIPPortToString
+#include "../../GetTickCount.h" // Needed for GetTickCount64
 #endif
 #include "../../GuiEvents.h"
 #include "../../KadBuddyIdLayout.h"
@@ -110,6 +111,15 @@ bool s_publishSeedsChanged = false;
 CPath PublishSeedsPath()
 {
 	return CPath(thePrefs::GetConfigDir() + KadPublishSeeds::FileName);
+}
+
+// The checks every other Kad contact passes, applied when the seed is used so a filter
+// change since the save counts.
+bool IsUsableSeed(const KadPublishSeeds::Seed &seed)
+{
+	const uint32_t ip = wxUINT32_SWAP_ALWAYS(seed.ip);
+	return seed.version > 1 && ::IsGoodIPPort(ip, seed.udpPort, thePrefs::FilterLanIPs()) &&
+	       !theApp->ipfilter->IsFiltered(ip) && !(seed.udpPort == 53 && seed.version <= 5);
 }
 
 KadPublishSeeds::Seeds LoadPublishSeeds()
@@ -286,7 +296,7 @@ void CSearch::Go()
 		// The seeds are near the target already, so ask them all now.
 		for (const CUInt128 &distance : seeds) {
 			if (!m_tried.count(distance)) {
-				CContact *c = m_possible[distance];
+				CContact *c = m_possible.at(distance);
 				m_tried[distance] = c;
 				SendFindValue(c);
 			}
@@ -305,6 +315,9 @@ std::vector<CUInt128> CSearch::AddPublishSeeds()
 	CUInt128 distance(CKademlia::GetPrefs()->GetKadID() ^ m_target);
 	CKademlia::GetRoutingZone()->GetClosestTo(3, m_target, distance, 50, &m_possible, true, true);
 	for (const KadPublishSeeds::Seed &seed : entry->second.seeds) {
+		if (!IsUsableSeed(seed)) {
+			continue;
+		}
 		const CUInt128 seedDistance(seed.id ^ m_target);
 		distances.push_back(seedDistance);
 		if (m_possible.count(seedDistance)) {
@@ -317,7 +330,7 @@ std::vector<CUInt128> CSearch::AddPublishSeeds()
 		m_delete.push_back(c);
 		m_possible[seedDistance] = c;
 	}
-	m_seeded = true;
+	m_seeded = !distances.empty();
 	return distances;
 }
 

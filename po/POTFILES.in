@@ -54,6 +54,7 @@ src/IPFilter.cpp
 src/KadContactHistogram.h
 src/KadDlg.cpp
 src/KadLookupView.h
+src/kademlia/kademlia/Search.cpp
 src/kademlia/kademlia/SearchManager.cpp
 src/kademlia/routing/RoutingZone.cpp
 src/kademlia/utils/LookupDiagnostics.cpp
