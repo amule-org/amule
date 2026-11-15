@@ -1,0 +1,46 @@
+name: Debian package releases
+
+# Opens one issue when a Debian or Ubuntu release needs a suite added or
+# dropped, keeps it current, and closes it once the suites match. The
+# branch push is for the trial on the fork.
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [feat/debian-packaging]
+    paths:
+      - 'packaging/linux/deb/check-releases.py'
+      - '.github/workflows/deb-releases.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: 'Debian packaging: OS releases to handle'
+        run: |
+          body="$(packaging/linux/deb/check-releases.py)"
+          echo "${body:-Every supported release has a suite.}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$(gh api "repos/${GITHUB_REPOSITORY}" --jq .has_issues)" != true ]; then
+              echo "Issues are off in ${GITHUB_REPOSITORY}; the report is in the job summary."
+              exit 0
+          fi
+          number="$(gh issue list --state open --limit 200 --json number,title \
+              --jq ".[] | select(.title == env.TITLE) | .number" | head -n1)"
+          if [ -z "${body}" ]; then
+              if [ -n "${number}" ]; then
+                  gh issue close "${number}" --comment "Every supported release has a suite now."
+              fi
+          elif [ -n "${number}" ]; then
+              gh issue edit "${number}" --body "${body}"
+          else
+              gh issue create --title "${TITLE}" --body "${body}"
+          fi

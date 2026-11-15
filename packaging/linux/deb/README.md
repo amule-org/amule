@@ -1,7 +1,7 @@
 # Debian and Ubuntu packages
 
 Native `.deb` packages for an APT repository. Supported suites: Debian 12
-and 13, Ubuntu 22.04, 24.04 and 26.04.
+and 13, Ubuntu 22.04, 24.04, 26.04 and 26.10.
 
 The packages use each suite's own libraries, except wxWidgets. The distro
 wx is too old on some suites, or built without `wxWebRequest`, so every
@@ -59,3 +59,14 @@ the versions so that a distribution upgrade also upgrades aMule. A nightly
 sorts above the release it follows and below the next one. A nightly build
 needs the full git history, because the commit count orders two nightlies
 of the same day.
+
+## Suites
+
+We build every supported Debian release, until its LTS ends, and every
+supported Ubuntu release, interim releases included. Each week
+`check-releases.py` compares the suites with Debian's `distro-info-data`
+and opens an issue when a release comes out or reaches its end of life.
+
+To add a suite, add it to `build_deb()` and the usage text in
+`../build.sh`, to the matrix in `.github/workflows/deb.yml`, and to the
+list above. To drop one, remove it from the same places.
