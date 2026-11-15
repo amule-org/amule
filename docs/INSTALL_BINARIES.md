@@ -12,6 +12,7 @@ For building from source, see [INSTALL.md](INSTALL.md).
 ## Contents
 
 - [Linux](#linux)
+  - [Debian and Ubuntu (APT repository)](#debian-and-ubuntu-apt-repository)
   - [AppImage (recommended)](#appimage-recommended)
   - [Flatpak](#flatpak)
   - [Static binaries (headless)](#static-binaries-headless)
@@ -25,12 +26,59 @@ For building from source, see [INSTALL.md](INSTALL.md).
   - [Windows NSIS installer](#windows-nsis-installer)
   - [Windows portable .zip](#windows-portable-zip)
   - [macOS .dmg](#macos-dmg)
+  - [Linux APT packages](#linux-apt-packages)
   - [Linux AppImage](#linux-appimage)
   - [Linux Flatpak](#linux-flatpak)
   - [Linux static tarball](#linux-static-tarball)
 
 
 ## Linux
+
+### Debian and Ubuntu (APT repository)
+
+Our APT repository has aMule for Debian 12 and 13 and Ubuntu 22.04,
+24.04, 26.04 and 26.10. `apt upgrade` then keeps aMule current, and
+the packages replace the older aMule from your distro.
+
+1. Add the repository (once):
+
+   ```sh
+   sudo install -d /etc/apt/keyrings
+   sudo curl -fsSLo /etc/apt/keyrings/amule.asc https://dl.cloudsmith.io/public/amule-org/amule/gpg.key
+   . /etc/os-release
+   echo "deb [signed-by=/etc/apt/keyrings/amule.asc] https://dl.cloudsmith.io/public/amule-org/amule/deb/$ID $VERSION_CODENAME main" | sudo tee /etc/apt/sources.list.d/amule.list
+   sudo apt update
+   ```
+
+   If `curl` is missing, install it first: `sudo apt install curl`.
+   On a distro based on Ubuntu, such as Linux Mint or Pop!_OS, write
+   `ubuntu $UBUNTU_CODENAME` instead of `$ID $VERSION_CODENAME`. On
+   LMDE, write `debian $DEBIAN_CODENAME`.
+
+2. Install the packages you need:
+
+   ```sh
+   sudo apt install amule            # desktop client
+   sudo apt install amule-daemon     # amuled and amuleapi, for a headless machine
+   ```
+
+   | Package | Contents |
+   |---|---|
+   | `amule` | The desktop client |
+   | `amule-daemon` | `amuled`, and `amuleapi` with its web interface |
+   | `amule-utils` | `amulecmd`, `ed2k`, `alcc`, `cas` |
+   | `amule-utils-gui` | `amulegui` (remote control), `alc`, `wxcas` |
+
+**Nightly builds:** for testers, a nightly repository has a build of
+the latest development code, kept for 14 days. Use the same commands
+with `amule-nightly` in place of `amule` in both URLs and in the two
+file names. A nightly is newer than the release it follows, so with
+both repositories apt installs the newest of the two.
+
+The packages include no system service: start `amuled` as your own
+user, as shown in [Linux APT packages](#linux-apt-packages).
+
+[![OSS hosting by Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat-square)](https://cloudsmith.com)
 
 ### AppImage (recommended)
 
@@ -313,6 +361,16 @@ sudo ln -s /Applications/aMule.app/Contents/MacOS/amuled       /usr/local/bin/am
 sudo ln -s /Applications/aMule.app/Contents/MacOS/amulecmd     /usr/local/bin/amulecmd
 sudo ln -s /Applications/aMule.app/Contents/MacOS/amuleapi     /usr/local/bin/amuleapi
 sudo ln -s /Applications/aMuleGUI.app/Contents/MacOS/aMuleGUI  /usr/local/bin/amulegui
+```
+
+### Linux APT packages
+
+The packages install every tool on your `$PATH`:
+
+```sh
+amuled                        # start the daemon
+amulecmd                      # drive it from the CLI
+amuleapi                      # REST API + Web UI on http://localhost:4713
 ```
 
 ### Linux AppImage
