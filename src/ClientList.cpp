@@ -976,7 +976,7 @@ void CClientList::Process()
 					// enough to trust that status.
 					const Kademlia::CUInt128 target =
 						Kademlia::BuddySearchTarget(kadPrefs->GetKadID(),
-							m_buddyStats.own.searches == 0,
+							m_buddyHunt.IsFirstSearch(),
 							Kademlia::CUInt128(Kademlia::CUInt128(0u), 0));
 					if (!Kademlia::CSearchManager::PrepareLookup(
 						    Kademlia::CSearch::FINDBUDDY, true, target)) {
@@ -984,6 +984,7 @@ void CClientList::Process()
 						kadPrefs->SetFindBuddy();
 					} else {
 						++m_buddyStats.own.searches;
+						m_buddyHunt.SearchStarted();
 						AddDebugLogLineN(logKadBuddy,
 							"Started a buddy search for " + target.ToHexString());
 					}
@@ -1570,6 +1571,7 @@ void CClientList::ReleaseBuddy()
 	}
 	m_pBuddy.Unlink();
 	m_nBuddyStatus = Disconnected;
+	m_buddyHunt.BuddyLost();
 	Notify_ServerUpdateED2KInfo();
 }
 

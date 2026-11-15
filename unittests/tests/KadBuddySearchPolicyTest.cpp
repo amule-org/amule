@@ -51,3 +51,26 @@ TEST(KadBuddySearchPolicy, OnlyTheFirstSearchLooksUpTheBuddyID)
 	ASSERT_TRUE(BuddySearchTarget(kadID, true, random) == OwnBuddyID(kadID));
 	ASSERT_TRUE(BuddySearchTarget(kadID, false, random) == random);
 }
+
+TEST(KadBuddySearchPolicy, AHuntStartsAtTheBuddyID)
+{
+	CBuddyHunt hunt;
+	ASSERT_TRUE(hunt.IsFirstSearch());
+}
+
+TEST(KadBuddySearchPolicy, RetriesWithinAHuntGoRandom)
+{
+	CBuddyHunt hunt;
+	hunt.SearchStarted();
+	ASSERT_FALSE(hunt.IsFirstSearch());
+	hunt.SearchStarted();
+	ASSERT_FALSE(hunt.IsFirstSearch());
+}
+
+TEST(KadBuddySearchPolicy, LosingABuddyStartsANewHunt)
+{
+	CBuddyHunt hunt;
+	hunt.SearchStarted();
+	hunt.BuddyLost();
+	ASSERT_TRUE(hunt.IsFirstSearch());
+}

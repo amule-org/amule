@@ -30,6 +30,7 @@
 #include "BanRecord.h" // Needed for CBanRecord // Needed for CDeadSourceList
 #include "ClientRef.h"
 #include "KadBuddyRetry.h"
+#include "KadBuddySearchPolicy.h" // Needed for CBuddyHunt
 #include "KadBuddyStats.h"
 #include "ChatSessionStore.h"
 #include "CanonicalPeerIndex.h"
@@ -422,6 +423,7 @@ private:
 	Kademlia::CBuddyRetry m_buddyRetry;
 	Kademlia::CBuddyStats m_buddyStats;
 	bool m_buddySearchHeld = false; // A due buddy search waits for a shared file.
+	Kademlia::CBuddyHunt m_buddyHunt;
 	std::vector<Kademlia::CServedBuddyLink> m_servedLinks;
 	std::map<const CUpDownClient *, CClientRef> m_servedRefs; // Keeps each served client alive.
 	Kademlia::CDepartedBuddies m_departedBuddies;
