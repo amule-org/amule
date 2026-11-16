@@ -72,6 +72,8 @@ public:
 	void RecordStoreAcknowledgements() const;
 	// Writes kadseeds.dat if the seeds changed since the last save.
 	static void SavePublishSeeds();
+	//! Whether a node that stored the file last time has no source store left this minute.
+	static bool PublishSeedsBusy(const CUInt128 &target);
 
 	uint32_t GetSearchID() const noexcept { return m_searchID; }
 	void SetSearchID(uint32_t id) noexcept
@@ -185,6 +187,7 @@ private:
 	// Adds the routing-table contacts and the file's seeds to m_possible. Returns the seeds'
 	// distances, which Go() asks at once.
 	std::vector<CUInt128> AddPublishSeeds();
+	bool StoreBudgetAllows(CPerIPBudget &budget, const CContact &node, uint64_t packets);
 	void KeepPublishSeeds(uint64_t acknowledged) const;
 	void SendFindValue(CContact *contact, bool reaskMore = false);
 	void PrepareToStop() noexcept;

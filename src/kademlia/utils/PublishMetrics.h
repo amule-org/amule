@@ -66,6 +66,12 @@ public:
 		}
 		return changed;
 	}
+	uint64_t Count(uint32_t ip, uint64_t now)
+	{
+		Expire(now);
+		const auto it = m_counts.find(ip);
+		return it == m_counts.end() ? 0 : it->second;
+	}
 	void Expire(uint64_t now)
 	{
 		while (!m_samples.empty() && now - m_samples.front().first >= 60000) {
@@ -90,6 +96,36 @@ private:
 	std::vector<std::set<uint32_t>> m_reached;
 	std::deque<std::pair<uint64_t, uint32_t>> m_samples;
 	std::map<uint32_t, uint64_t> m_counts;
+};
+
+// Our own sends of one flood-checked request kind, kept within a per-IP budget a minute.
+class CPerIPBudget
+{
+public:
+	explicit CPerIPBudget(uint64_t perMinute)
+	: m_perMinute(perMinute)
+	{
+	}
+	bool Allows(uint32_t ip, uint64_t now, uint64_t packets = 1)
+	{
+		return m_rate.Count(ip, now) + packets <= m_perMinute;
+	}
+	void Sent(uint32_t ip, uint64_t now) { m_rate.Add(ip, now); }
+	uint64_t skipped = 0;
+
+private:
+	CPerIPRate m_rate{ {} };
+	uint64_t m_perMinute;
+};
+
+// Main thread only. A lookup skips a node that has no budget left, as if it were dead.
+struct CKadSendBudgets
+{
+	static CKadSendBudgets &Instance();
+	CPerIPBudget lookups, keywordStores, sourceStores;
+	// Source publishes held back at least once because a node that stored the file last time
+	// had no budget.
+	uint64_t deferredStarts = 0;
 };
 
 // Main-thread diagnostics, called only while the Kademlia Publish category is enabled.

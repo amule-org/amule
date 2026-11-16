@@ -21,7 +21,8 @@ from KadSourceTagsECTest import (KADEMLIA2_PUBLISH_SOURCE_REQ, KADEMLIA2_PUBLISH
 KADEMLIA2_PUBLISH_KEY_REQ = 0x43
 
 # More files, and so keywords, than KADEMLIATOTALSTORESRC and KADEMLIATOTALSTOREKEY, so the
-# last lookups wait for a slot.
+# last lookups wait for a slot. Also more than the one peer takes in a minute: 2 source and
+# 3 keyword stores, and 7 requests from us.
 FILES = 4
 
 
@@ -94,15 +95,17 @@ def run(binary):
                     assert not any('[Kademlia Search]' in line for line in lines), 'lookup-step logging enabled'
                     assert all('[Kademlia Publish]' in line for line in lines
                                if 'Kad source publish' in line), 'publication used the wrong category'
-                    assert source_packets == len(targets) == FILES, (source_packets, len(targets))
-                    assert summary['queued'] == FILES, summary
-                    assert summary['acknowledged_ips'] == FILES, summary
+                    # A lookup that finds the peer out of budget ends without a store.
+                    assert 0 < source_packets == len(targets) <= 2, (source_packets, len(targets))
+                    assert summary['queued'] == summary['acknowledged_ips'] == source_packets, summary
                     assert summary['attempts'] == summary['starts'] == FILES, summary
                     assert summary['seeded_starts'] == 0, summary
                     assert summary['start_failures'] == 0, summary
-                    assert summary['zero_ack'] == summary['cancelled'] == 0, summary
-                    assert summary['max_req_per_ip_60s'] > 0 and lookup_packets > 0, summary
-                    assert summary['max_pub_per_ip_60s'] == FILES, summary
+                    assert summary['zero_ack'] == FILES - source_packets, summary
+                    assert summary['cancelled'] == 0, summary
+                    assert summary['skipped_req'] + summary['skipped_src'] >= FILES - source_packets, summary
+                    assert 0 < summary['max_req_per_ip_60s'] <= 7 and lookup_packets > 0, summary
+                    assert summary['max_pub_per_ip_60s'] == source_packets, summary
                     # JumpStart exhausts each single-contact lookup and stops it; it then
                     # lingers 15 s for late replies. A stopping lookup frees its slot, so
                     # the last one starts a few 2 s publish ticks after the first.
@@ -113,25 +116,25 @@ def run(binary):
                     # One keyword per file name. With 2 keyword slots the last publish comes
                     # about 11 s after the first, or about 25 s while a lingering lookup
                     # holds its slot.
-                    assert len(keywords) == FILES, len(keywords)
+                    assert 0 < len(keywords) <= 3, len(keywords)
                     gap = max(keywords.values()) - min(keywords.values())
                     assert gap < 18, f'the last keyword lookup waited {gap:.0f} s for a slot'
                     break
             else:
                 raise AssertionError('No expected Kad2 publication result:\n' + '\n'.join(lines[-100:]))
             assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-        # Shutdown saved when each keyword is due again: a version byte, a count, then
-        # 16-byte keyword hashes as sent, each with a uint32 time about 24 h ahead.
+        # Shutdown saved when each keyword is due again, stored or not: a version byte, a
+        # count, then 16-byte keyword hashes as sent, each with a uint32 time about 24 h ahead.
         saved = (root / 'kadkeywords.dat').read_bytes()
         assert len(saved) == 5 + 20 * FILES and saved[0] == 1, saved[:5]
         assert struct.unpack_from('<I', saved, 1)[0] == FILES, saved[:5]
         due = {saved[5 + 20 * n:21 + 20 * n]: struct.unpack_from('<I', saved, 21 + 20 * n)[0]
                for n in range(FILES)}
-        assert due.keys() == keywords.keys(), (sorted(due), sorted(keywords))
+        assert keywords.keys() <= due.keys(), (sorted(due), sorted(keywords))
         assert all(abs(t - time.time() - 24 * 3600) < 600 for t in due.values()), due
         # The only peer is far from every target, so no publish has seeds to save.
         assert not (root / 'kadseeds.dat').exists()
-    print('PASS: Kad2 queued publication, duplicate acknowledgements, totals and saved keyword times')
+    print('PASS: Kad2 queued publication, per-IP budgets, duplicate acknowledgements, totals and saved keyword times')
 
 
 if __name__ == '__main__':

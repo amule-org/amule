@@ -1974,12 +1974,46 @@ void CSharedFileList::SaveKeywordPublishTimes()
 	m_keywords->SavePublishTimes(KeywordPublishTimesPath());
 }
 
+namespace
+{
+// A due file whose last storing nodes can't take another publish this minute waits, so files
+// that came due together spread apart. It waits at most this long.
+constexpr unsigned int MaxKadSourceDeferral = MIN2S(5);
+
+bool DeferKadSourcePublish(const CKnownFile &file, unsigned int now)
+{
+	// Due files only. A buddy change makes a file due early, and that one never waits.
+	const unsigned int due = file.GetLastPublishTimeKadSrc();
+	if (now < due) {
+		return false;
+	}
+	static std::map<Kademlia::CUInt128, unsigned int> deferredSince;
+	Kademlia::CUInt128 target;
+	target.SetValueBE(file.GetFileHash().GetHash());
+	if (!Kademlia::CSearch::PublishSeedsBusy(target)) {
+		deferredSince.erase(target);
+		return false;
+	}
+	const auto since = deferredSince.emplace(target, now);
+	if (since.second) {
+		++Kademlia::CKadSendBudgets::Instance().deferredStarts;
+		AddDebugLogLineN(
+			logKadPublish, "Kad source publish deferred: target=" + target.ToHexString());
+	} else if (now - since.first->second >= MaxKadSourceDeferral) {
+		deferredSince.erase(since.first);
+		return false;
+	}
+	return true;
+}
+} // namespace
+
 void CSharedFileList::Publish()
 {
 	auto &metrics = Kademlia::CPublishMetrics::Instance();
 	if (theLogger.IsEnabled(logKadPublish) && metrics.ReportDue(::GetTickCount64())) {
 		const auto &lookupIPs = metrics.reportedLookupIPs;
 		const auto &publishIPs = metrics.reportedPublishIPs;
+		const auto &budgets = Kademlia::CKadSendBudgets::Instance();
 		// Busy destinations that are our own contacts point at the first hops of our lookups.
 		uint64_t busyContacts = 0;
 		if (Kademlia::CKademlia::IsRunning()) {
@@ -1997,7 +2031,8 @@ void CSharedFileList::Publish()
 				"max_duration_ms=%llu max_req_per_ip_60s=%llu req_ips_ge6=%zu "
 				"req_ips_ge8=%zu "
 				"req_ips_gt10=%zu req_ips_ge8_contacts=%llu max_pub_per_ip_60s=%llu "
-				"pub_ips_ge2=%zu pub_ips_gt2=%zu omitted_rate_samples=%llu") %
+				"pub_ips_ge2=%zu pub_ips_gt2=%zu omitted_rate_samples=%llu "
+				"skipped_req=%llu skipped_src=%llu skipped_key=%llu deferred_starts=%llu") %
 				metrics.attempts % metrics.startFailures % metrics.starts %
 				metrics.seededStarts % metrics.queued % metrics.acknowledged %
 				metrics.finished % metrics.zeroAcknowledgements % metrics.cancelled %
@@ -2005,7 +2040,9 @@ void CSharedFileList::Publish()
 				lookupIPs[0].size() % lookupIPs[1].size() % lookupIPs[2].size() %
 				busyContacts % metrics.publishRequests.peak % publishIPs[0].size() %
 				publishIPs[1].size() %
-				(metrics.lookupRequests.omitted + metrics.publishRequests.omitted));
+				(metrics.lookupRequests.omitted + metrics.publishRequests.omitted) %
+				budgets.lookups.skipped % budgets.sourceStores.skipped %
+				budgets.keywordStores.skipped % budgets.deferredStarts);
 	}
 
 	// Variables to save cpu.
@@ -2112,6 +2149,9 @@ void CSharedFileList::Publish()
 					CKnownFile *file = GetNextKadFile(m_srcPublishCursor);
 					if (!file) {
 						break;
+					}
+					if (DeferKadSourcePublish(*file, tNow)) {
+						continue;
 					}
 					if (file->PublishSrc()) {
 						pCurKnownFile = file;
