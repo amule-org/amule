@@ -69,12 +69,7 @@ _write_conf() {
 
 _start() {
 	"$BIN" --config-dir="$CONFIG_DIR" --host="$EC_HOST" --port="$EC_PORT" > "$LOG" 2>&1 &
-	local _i
-	for _i in $(seq 1 30); do
-		curl -s -o /dev/null --max-time 1 "$P/health" 2>/dev/null && return 0
-		sleep 0.5
-	done
-	_die "daemon did not come back up (conf: $(grep '^ProxyAuth' "$CONF" | tr '\n' ' '))"
+	_wait_health "$P" 30 || _die "daemon did not come back up (conf: $(grep '^ProxyAuth' "$CONF" | tr '\n' ' '))"
 }
 
 _restart() {

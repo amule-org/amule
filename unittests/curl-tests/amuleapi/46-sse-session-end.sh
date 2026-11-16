@@ -56,6 +56,22 @@ _wait_exit() {
 	return 1
 }
 
+# Args: stream pid, stream file, its size at logout, closed label, quiet label.
+_assert_closed_quietly() {
+	local events
+	if _wait_exit "$1" 20; then
+		_pass "$4"
+	else
+		_fail "$4" "stream still open 20 s after logout"
+	fi
+	events=$(tail -c +$(($3 + 1)) "$2" | grep '^event:' | head -3)
+	if [ -n "$events" ]; then
+		_fail "$5" "$events"
+	else
+		_pass "$5"
+	fi
+}
+
 _preflight
 
 echo "amuleapi 46-sse-session-end smoke @ $HOST"
@@ -82,27 +98,10 @@ AT_LOGOUT=$(wc -c < "$WORK/logout")
 AT_COOKIE_LOGOUT=$(wc -c < "$WORK/cookie-logout")
 
 # The stream notices at its next wake, the heartbeat at the latest.
-if _wait_exit "$LOGOUT_PID" 20; then
-	_pass "logout closes the token's open stream"
-else
-	_fail "logout closes the token's open stream" "stream still open 20 s after logout"
-fi
-if tail -c +$((AT_LOGOUT + 1)) "$WORK/logout" | grep -q '^event:'; then
-	_fail "no event after logout" "$(tail -c +$((AT_LOGOUT + 1)) "$WORK/logout" | grep '^event:' | head -3)"
-else
-	_pass "no event after logout"
-fi
-
-if _wait_exit "$COOKIE_PID" 20; then
-	_pass "logout closes the cookie-authenticated stream"
-else
-	_fail "logout closes the cookie-authenticated stream" "stream still open after logout"
-fi
-if tail -c +$((AT_COOKIE_LOGOUT + 1)) "$WORK/cookie-logout" | grep -q '^event:'; then
-	_fail "no cookie-stream event after logout"
-else
-	_pass "no cookie-stream event after logout"
-fi
+_assert_closed_quietly "$LOGOUT_PID" "$WORK/logout" "$AT_LOGOUT" \
+	"logout closes the token's open stream" "no event after logout"
+_assert_closed_quietly "$COOKIE_PID" "$WORK/cookie-logout" "$AT_COOKIE_LOGOUT" \
+	"logout closes the cookie-authenticated stream" "no cookie-stream event after logout"
 _curl -H "cookie: amuleapi_token=$OTHER_TOKEN" "$API/status"
 _assert_status 200 'stream re-authentication preserves the unrelated session'
 

@@ -114,19 +114,9 @@ run_phase() {
 	# file as-is instead of generating a per-process secret.
 	printf '%s' "$JWT_SECRET" > /tmp/amuleapi-regtest/amuleapi-jwt-secret
 	chmod 600 /tmp/amuleapi-regtest/amuleapi-jwt-secret
-	# The first of these also writes a defaults amuleapi.conf, which the
-	# EC password is seeded into below. Neither connects to amuled -- they
-	# write the credential file and exit -- so no EC settings are needed
-	# here at all.
-	printf '%s\n' adminpass | "$BIN" --config-dir=/tmp/amuleapi-regtest \
-		--set-admin-pass-stdin > /dev/null 2>&1
-	printf '%s\n' guestpass | "$BIN" --config-dir=/tmp/amuleapi-regtest \
-		--set-guest-pass-stdin > /dev/null 2>&1
-	# amuleapi has no --password: it takes the EC credential from the
-	# ephemeral token the core writes when it spawns amuleapi, or from
-	# amuleapi.conf. Nothing spawns it here, so seed the config file.
-	printf '%s\n' "$EC_PASSWORD" | "$BIN" --config-dir=/tmp/amuleapi-regtest \
-		--set-ec-pass-stdin > /dev/null 2>&1
+	# Also writes the defaults amuleapi.conf. Seeding does not connect to
+	# amuled, so no EC settings are needed here.
+	_seed_amuleapi "$BIN" /tmp/amuleapi-regtest adminpass guestpass
 	# 27-static-frontend exercises the static-frontend serve path, and
 	# 40-http-conformance asserts the trailing-slash rule stops at the
 	# API prefix by checking the static root still answers 200 -- which
@@ -164,14 +154,7 @@ run_phase() {
 	# cold-start time. The first EC GET_UPDATE roundtrip can take a
 	# couple of seconds on a slow CI runner, and the cap of 12 leaves
 	# headroom while still failing fast on a genuine bring-up bug.
-	local i
-	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-		if curl -s -o /dev/null --max-time 1 \
-		    http://localhost:4713/api/v1/health 2>/dev/null; then
-			break
-		fi
-		sleep 0.5
-	done
+	_wait_health http://localhost:4713/api/v1
 	# Scripts that bounce the daemon themselves (25-cors.sh rewrites
 	# amuleapi.conf to flip CORS modes) read these envs to know how
 	# to restart cleanly. AMULE_SHARED_DIR lets a phase self-provision

@@ -110,15 +110,20 @@ def generate(source, destination, width, height, menu=False):
                     "--output", str(destination.with_suffix(".png")), str(destination)], check=True)
 
 
-def optimize_png(path):
-    """Recompress PNG image data without changing pixels or ancillary chunks."""
-    data = path.read_bytes()
+def png_chunks(data):
+    """(kind, payload) pairs of a PNG, after the signature."""
     chunks, offset = [], 8
     while offset < len(data):
         length = struct.unpack_from(">I", data, offset)[0]
-        kind = data[offset + 4:offset + 8]
-        chunks.append((kind, data[offset + 8:offset + 8 + length]))
+        chunks.append((data[offset + 4:offset + 8], data[offset + 8:offset + 8 + length]))
         offset += length + 12
+    return chunks
+
+
+def optimize_png(path):
+    """Recompress PNG image data without changing pixels or ancillary chunks."""
+    data = path.read_bytes()
+    chunks = png_chunks(data)
     compressed = zlib.compress(zlib.decompress(b"".join(payload for kind, payload in chunks if kind == b"IDAT")), 9)
     output, written = bytearray(data[:8]), False
     for kind, payload in chunks:

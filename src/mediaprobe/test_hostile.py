@@ -10,6 +10,7 @@ import tempfile
 import unittest
 
 from corpus import save
+from fixtures import chunk, riff, wav
 
 HELPER = str(Path(sys.argv.pop(1)).resolve())
 
@@ -29,8 +30,14 @@ def full(kind, version_flags, *payload):
     return box(kind, struct.pack('>I', version_flags), *payload)
 
 
-def chunk(cid, payload):
-    return cid + struct.pack('<I', len(payload)) + payload + b'\0' * (len(payload) & 1)
+def element(eid, payload):
+    """EBML element with a one-byte size: payloads under 127 bytes."""
+    return eid + bytes((0x80 | len(payload),)) + payload
+
+
+def ogg_page(kind, granule, packet, serial=7):
+    return (b'OggS\0' + bytes((kind,)) + struct.pack('<QIII', granule, serial, 0, 0) +
+            bytes((1, len(packet))) + packet)
 
 
 def pts_bytes(pts):
@@ -114,8 +121,6 @@ class HostileTests(unittest.TestCase):
         self.verdict(b'\x00\x00\x00\x08ftyp' + struct.pack('>I', len(entry) + 8) + b'moov' + entry)
 
     def test_matroska_seekhead_pointing_at_itself(self):
-        def element(eid, payload):  # One-byte EBML size; payloads here are under 127 bytes.
-            return eid + bytes((0x80 | len(payload),)) + payload
         seek = element(b'\x4d\xbb', element(b'\x53\xab', b'\x11\x4d\x9b\x74') + element(b'\x53\xac', b'\x00'))
         seekhead = element(b'\x11\x4d\x9b\x74', seek)
         ebml = element(b'\x1a\x45\xdf\xa3', element(b'\x42\x82', b'matroska'))
@@ -123,10 +128,7 @@ class HostileTests(unittest.TestCase):
         self.verdict(ebml + segment)
 
     def test_truncations_of_a_valid_wav(self):
-        samples = bytes(8000 * 2)
-        fmt = struct.pack('<HHIIHH', 1, 1, 8000, 16000, 2, 16)
-        payload = b'WAVEfmt ' + struct.pack('<I', len(fmt)) + fmt + b'data' + struct.pack('<I', len(samples)) + samples
-        data = b'RIFF' + struct.pack('<I', len(payload)) + payload
+        data = wav(bytes(8000 * 2), 8000, 16)
         for cut in (5, 12, 20, 36, 44, 45, 1000):
             with self.subTest(cut=cut):
                 self.verdict(data[:cut])
@@ -155,8 +157,6 @@ class RealWorldQuirkTests(unittest.TestCase):
         return tuple(self.result[k] for k in fields)
 
     def test_matroska_truncated_segment_and_nul_padded_codec_id(self):
-        def element(eid, payload):
-            return eid + bytes((0x80 | len(payload),)) + payload
         ebml = element(b'\x1a\x45\xdf\xa3', element(b'\x42\x82', b'matroska'))
         info = element(b'\x15\x49\xa9\x66', element(b'\x2a\xd7\xb1', b'\x0f\x42\x40') +
                        element(b'\x44\x89', struct.pack('>f', 2000.0)))
@@ -276,12 +276,10 @@ class RealWorldQuirkTests(unittest.TestCase):
 
     def test_chained_ogg_has_no_duration(self):
         def link(serial, seconds):
-            def page(kind, granule, packet):
-                return (b'OggS\0' + bytes((kind,)) + struct.pack('<QIII', granule, serial, 0, 0) +
-                        bytes((1, len(packet))) + packet)
             head = b'OpusHead\x01\x01' + struct.pack('<HIhB', 0, 48000, 0, 0)
-            return (page(2, 0, head) + page(0, 0, b'OpusTags' + struct.pack('<II', 0, 0)) +
-                    page(4, 48000 * seconds, b'\xf8'))
+            return (ogg_page(2, 0, head, serial) +
+                    ogg_page(0, 0, b'OpusTags' + struct.pack('<II', 0, 0), serial) +
+                    ogg_page(4, 48000 * seconds, b'\xf8', serial))
         self.assertEqual(self.probe(link(7, 5)), (5, 'opus'))
         self.assertEqual(self.probe(link(7, 5) + link(8, 7)), (0, 'opus'))
 
@@ -318,17 +316,13 @@ class RealWorldQuirkTests(unittest.TestCase):
         strl = chunk(b'LIST', b'strl' + chunk(b'strh', strh) + chunk(b'strf', strf))
         odml = chunk(b'LIST', b'odml' + chunk(b'dmlh', struct.pack('<I', 1000) + b'\0' * 244))
         hdrl = chunk(b'LIST', b'hdrl' + chunk(b'avih', avih) + strl + odml)
-        body = b'AVI ' + hdrl + chunk(b'LIST', b'movi')
-        self.assertEqual(self.probe(b'RIFF' + struct.pack('<I', len(body)) + body), (2, 'mpeg4'))
+        self.assertEqual(self.probe(riff(b'AVI ', hdrl, chunk(b'LIST', b'movi'))), (2, 'mpeg4'))
 
     def test_ogm_video_in_a_file_named_avi(self):
-        def page(kind, granule, packet):
-            return (b'OggS\0' + bytes((kind,)) + struct.pack('<QIII', granule, 7, 0, 0) +
-                    bytes((1, len(packet))) + packet)
         # OGM stream header: XviD at 25 fps (400000 x 100 ns per frame).
         header = (b'\x01video\0\0\0XVID' + struct.pack('<IqqIIHH', 0x38, 400000, 1, 0, 0, 24, 0) +
                   struct.pack('<II', 64, 48))
-        data = page(2, 0, header) + page(0, 0, b'\x03') + page(4, 50, b'\x08')
+        data = ogg_page(2, 0, header) + ogg_page(0, 0, b'\x03') + ogg_page(4, 50, b'\x08')
         self.assertEqual(self.probe(data), (2, 'mpeg4'))
 
     def test_realmedia_headers(self):
