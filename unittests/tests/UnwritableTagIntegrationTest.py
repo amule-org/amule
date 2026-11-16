@@ -15,9 +15,9 @@ import tempfile
 import threading
 
 from AllSearchIntegrationTest import (C, exact, free_ports, retry_port_collisions, stop_daemon,
-                                      string, tag)
+                                      string, tag, wait_for)
 from DaemonConfig import write_amule_conf
-from KnownHistoryIntegrationTest import search_statuses, start, wait_for
+from KnownHistoryIntegrationTest import search_statuses, start
 
 RESULT_HASH = bytes(range(16))
 PART_HASH = bytes(range(16, 32))

@@ -8,8 +8,8 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import (C, PortCollision, configure_amuleapi, connect_daemon,
-                                      free_ports, integer, retry_port_collisions, start_amuleapi,
+from AllSearchIntegrationTest import (C, PortCollision, amulecmd, configure_amuleapi,
+                                      connect_daemon, free_ports, integer, retry_port_collisions, start_amuleapi,
                                       start_daemon, stop_daemon, stored_search)
 from DaemonConfig import daemon_env, write_amule_conf
 
@@ -61,11 +61,9 @@ def run(daemon_binary, api_binary, checks):
                 if command.exists():
                     ec = connect_daemon(daemon, port, core, peer_port, udp_port)
                     assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
-                    result = subprocess.run([
-                        str(command), '-h', '127.0.0.1', '-p', str(port),
-                        '--password-stdin', '-c',
-                        'search all offlinecommandregression --type Arc --avail 2'],
-                        check=True, env=env, input='regression\n', capture_output=True, text=True)
+                    result = amulecmd(str(command), port, '-c',
+                                      'search all offlinecommandregression --type Arc --avail 2',
+                                      env=env, check=True)
                     match = re.search(r'Search started \(id (\d+)\)', result.stdout)
                     assert match, result.stdout + result.stderr
                     sid = int(match.group(1))

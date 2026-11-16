@@ -16,12 +16,11 @@ import threading
 import time
 import urllib.error
 import urllib.request
-import zlib
 
-from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, integer,
+from AllSearchIntegrationTest import (C, configure_amuleapi, free_ports, integer,
                                       running_daemon, start_amuleapi, stop_daemon, tag)
 from DaemonConfig import daemon_env, write_amule_conf
-from ECWire import accept  # Preflight in the parent before starting fixtures.
+from ECWire import accept, read_request, send_reply  # Preflight in the parent before starting fixtures.
 
 TOKEN = '0123456789abcdef' * 4
 # A shared-format warning record in the Metrics category.
@@ -104,11 +103,7 @@ class CoreHandler(socketserver.BaseRequestHandler):
         try:
             peer = accept(self.request, server_version=b'metrics-fixture')
             while True:
-                flags, size = struct.unpack('!II', exact(peer, 8))
-                body = exact(peer, size)
-                if flags & 1:
-                    body = zlib.decompress(body)
-                op = body[0]
+                op = read_request(peer)[0]
                 self.server.ops.append(op)
                 if self.server.hold.is_set():
                     self.server.entered.set()
@@ -142,8 +137,7 @@ class CoreHandler(socketserver.BaseRequestHandler):
                         tags = [tag(C['EC_TAG_CLIENT']), tag(C['EC_TAG_SERVER'])]
                 if op == self.server.fail_opcode:
                     reply = C['EC_OP_FAILED']
-                payload = bytes([reply]) + struct.pack('!H', len(tags)) + b''.join(tags)
-                peer.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
+                send_reply(peer, reply, tags)
         except (EOFError, OSError):
             pass
 
