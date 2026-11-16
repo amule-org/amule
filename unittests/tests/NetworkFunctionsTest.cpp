@@ -239,6 +239,20 @@ TEST(NetworkFunctions, SourceHybridID)
 	ASSERT_EQUALS(12345u, SourceHybridID(12345, false));
 }
 
+TEST(NetworkFunctions, IsSourceAddress)
+{
+	// Its hybrid ID is a LowID, but IsGoodIP() must still reject it.
+	const uint32 zeroNet = StringIPtoUint32("0.1.2.3");
+	ASSERT_TRUE(IsLowID(SourceHybridID(zeroNet, false)));
+	ASSERT_TRUE(IsSourceAddress(zeroNet, false));
+	ASSERT_TRUE(IsSourceAddress(zeroNet, true));
+
+	const uint32 dotZero = StringIPtoUint32("10.0.138.0");
+	ASSERT_TRUE(IsSourceAddress(dotZero, true));
+	ASSERT_FALSE(IsSourceAddress(dotZero, false));
+	ASSERT_FALSE(IsSourceAddress(12345, false));
+}
+
 // A server on this machine is reachable once LAN IPs are not filtered; nothing else changes.
 TEST(NetworkFunctions, IsGoodServerIP)
 {

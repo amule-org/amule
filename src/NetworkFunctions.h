@@ -128,6 +128,15 @@ inline uint32 SourceHybridID(uint32 id, bool isIPv4)
 }
 
 /**
+ * True if a source given as for SourceHybridID() names an IPv4 to filter. Not the same as
+ * !IsLowID(SourceHybridID()), which is false for 0.x.x.x.
+ */
+inline bool IsSourceAddress(uint32 id, bool isIPv4)
+{
+	return isIPv4 || !IsLowID(id);
+}
+
+/**
  * True if @a ip is a LAN address. Anti-host order.
  */
 bool IsLanIP(uint32_t ip) noexcept;
