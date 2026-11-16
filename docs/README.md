@@ -172,6 +172,7 @@ If you want aMule running on a NAS, VPS, or always-on home server, use
 # Generate a config dir and EC password (the daemon needs a password
 # for amulegui / amuleapi / amulecmd to connect)
 amuled --set-ec-pass-stdin   # asks for the password, saves it and exits
+# From a script, pipe it in instead: printf '%s\n' "$PW" | amuled --set-ec-pass-stdin
 
 # Then run it daemonised
 amuled --full-daemon
