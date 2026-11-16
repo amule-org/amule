@@ -389,6 +389,24 @@ msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
+msgid "Could not read the EC password: %s"
+msgstr "amuleapi parolası kaydedilemedi: %s"
+
+#: src/amule.cpp src/ExternalConnector.cpp
+#, fuzzy
+msgid "The EC password must not be empty."
+msgstr "- TCP portu değişti.\n"
+
+#: src/amule.cpp
+msgid "Could not save AcceptExternalConnections to amule.conf."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Password set and external connections enabled."
+msgstr "Parola ayarlandı ve dış bağlantılar etkinleştirildi."
+
+#: src/amule.cpp
+#, fuzzy, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr "Tüm ağ trafiği şu arayüze bağlanıyor: %s"
 
@@ -419,22 +437,6 @@ msgstr "Bir yapılandırma değişikliği nedeniyle dil ayarınız 'Sistem Varsa
 #: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Bilgi"
-
-#: src/amule.cpp
-msgid ""
-"\n"
-"EC configuration"
-msgstr ""
-"\n"
-"EC yapılandırması"
-
-#: src/amule.cpp
-msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
-
-#: src/amule.cpp
-msgid "Password set and external connections enabled."
-msgstr "Parola ayarlandı ve dış bağlantılar etkinleştirildi."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -853,15 +855,16 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Kad ağı ayarlarda devre dışı bırakılmış, bağlanılmıyor."
 
 #: src/amuled.cpp
-msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
+#, fuzzy
+msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
 msgstr "HATA: aMule daemon dış bağlantılar devre dışı bırakıldığında kullanılamaz. Dış Bağlantıları etkinleştirmek için ya aMule'yi, --ec-config seçeneği ile birlikte amuledi başlatarak ya da ~/.aMule/amule.conf dosyasındaki \"AcceptExternalConnections\" seçeneğini 1 olarak ayarlayın."
 
 #: src/amuled.cpp
-msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
+msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
 msgstr ""
 
 #: src/amuled.cpp
-msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
+msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr ""
 
 #: src/amuled.cpp
@@ -1457,8 +1460,9 @@ msgstr "UYARI: %s bozulmuş olabilir (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "%s dosyası okumada IO hatası: %s"
 
-#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp src/SharedFileList.cpp
+#: src/HashListFile.cpp src/kademlia/kademlia/Search.cpp
+#: src/kademlia/routing/RoutingZone.cpp src/KnownFileList.cpp
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "%s dosyası kaydedilirken hata: %s"
@@ -2433,6 +2437,19 @@ msgstr[1] "%u bağlantı eklenemedi (teferruatlar için kütüğe bakın)."
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Geçersiz eD2k bağlantısı! HATA: %s"
 
+#: src/ECClientPassword.h
+msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
+msgstr ""
+
+#: src/ECClientPassword.h
+msgid "To replace both, run amulecmd -w --password-stdin."
+msgstr ""
+
+#: src/ECClientPassword.h
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr ""
@@ -2989,16 +3006,10 @@ msgstr ""
 #: src/ExternalConnector.cpp
 msgid ""
 "Cannot connect with an empty password.\n"
-"You must specify a password either in config file\n"
-"or on command-line, or enter one when asked.\n"
+"Set one with --set-ec-pass-stdin.\n"
 "\n"
 "Exiting...\n"
 msgstr ""
-"Boş bir şifreyle bağlanılamaz.\n"
-"Ya yapılandırma dosyasında ya da komut\n"
-"satırında bir şifre olmalı veyahut da istendiğinde girmelisiniz\n"
-"\n"
-"Çıkılıyor…\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3013,8 +3024,8 @@ msgid "aMule's port for External Connection. (default: 4712)"
 msgstr "Dışarıdan bağlantı için aMule portu. (Varsayılan:4712)"
 
 #: src/ExternalConnector.cpp
-msgid "External Connection password."
-msgstr "Dışarıdan bağlantı şifresi."
+msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
+msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3037,10 +3048,6 @@ msgid "Write command line options to config file."
 msgstr "Komut satırı seçeneklerini yapılandırma dosyasına yaz."
 
 #: src/ExternalConnector.cpp
-msgid "Creates config file based on aMule's config file."
-msgstr "aMule'nin yapılandırma dosyasını temel alan yapılandırma dosyası oluşturur."
-
-#: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr "Yazılım sürümünü yazdır."
 
@@ -3057,8 +3064,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "Kütük dosyası yazma; sadece konsolda görüntüle."
 
 #: src/ExternalConnector.cpp
-msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr ""
+#, fuzzy, c-format
+msgid "Cannot read the password: %s\n"
+msgstr "amuleapi parolası kaydedilemedi: %s"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -7210,7 +7218,7 @@ msgid "Remote Controls"
 msgstr "Uzak Denetimler"
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgid "Let amulegui, amuleapi and other tools control aMule."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
@@ -10638,7 +10646,7 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr ""
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
+msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr ""
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
@@ -10652,6 +10660,32 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid ""
+#~ "\n"
+#~ "EC configuration"
+#~ msgstr ""
+#~ "\n"
+#~ "EC yapılandırması"
+
+#~ msgid ""
+#~ "Cannot connect with an empty password.\n"
+#~ "You must specify a password either in config file\n"
+#~ "or on command-line, or enter one when asked.\n"
+#~ "\n"
+#~ "Exiting...\n"
+#~ msgstr ""
+#~ "Boş bir şifreyle bağlanılamaz.\n"
+#~ "Ya yapılandırma dosyasında ya da komut\n"
+#~ "satırında bir şifre olmalı veyahut da istendiğinde girmelisiniz\n"
+#~ "\n"
+#~ "Çıkılıyor…\n"
+
+#~ msgid "External Connection password."
+#~ msgstr "Dışarıdan bağlantı şifresi."
+
+#~ msgid "Creates config file based on aMule's config file."
+#~ msgstr "aMule'nin yapılandırma dosyasını temel alan yapılandırma dosyası oluşturur."
 
 #~ msgid "!!! WARNING !!!"
 #~ msgstr "!!! UYARI !!!"

@@ -399,6 +399,24 @@ msgid "Finishing shutdown..."
 msgstr "Dokončování vypnutí..."
 
 #: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not read the EC password: %s"
+msgstr "Nepodařilo se uložit heslo amuleapi: %s"
+
+#: src/amule.cpp src/ExternalConnector.cpp
+#, fuzzy
+msgid "The EC password must not be empty."
+msgstr "Heslo EC nebylo změněno."
+
+#: src/amule.cpp
+msgid "Could not save AcceptExternalConnections to amule.conf."
+msgstr "Nepodařilo se uložit AcceptExternalConnections do amule.conf."
+
+#: src/amule.cpp
+msgid "Password set and external connections enabled."
+msgstr "Heslo bylo nastaveno a externí připojení povolena."
+
+#: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr "Svazování aMule síťového provozu P2P a HTTP s rozhraním: %s"
@@ -430,22 +448,6 @@ msgstr "Kvůli změně konfigurace bylo jazykové prostředí změněno na vých
 #: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Informace"
-
-#: src/amule.cpp
-msgid ""
-"\n"
-"EC configuration"
-msgstr ""
-"\n"
-"Konfigurace EC"
-
-#: src/amule.cpp
-msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr "Nepodařilo se uložit AcceptExternalConnections do amule.conf."
-
-#: src/amule.cpp
-msgid "Password set and external connections enabled."
-msgstr "Heslo bylo nastaveno a externí připojení povolena."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -859,15 +861,18 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Síť Kad je v nastavení zakázána, připojení nebude navázáno."
 
 #: src/amuled.cpp
-msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
+#, fuzzy
+msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
 msgstr "CHYBA: Démona aMule nelze používat se zakázanými externími připojeními. Externí připojení povolíte pomocí běžné aplikace aMule, spuštěním amuled s přepínačem --ec-config nebo nastavením klíče \"AcceptExternalConnections\" na hodnotu 1 v souboru ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
-msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
+#, fuzzy
+msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
 msgstr "CHYBA: EC heslo je vyžadováno. Spusťte amuled --ec-config pro jeho nastavení."
 
 #: src/amuled.cpp
-msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "CHYBA: Neplatný ECPasswordVerifier v amule.conf. Spusťte amuled --ec-config pro nastavení nového EC hesla."
 
 #: src/amuled.cpp
@@ -1463,8 +1468,9 @@ msgstr "VAROVÁNÍ: %s může být poškozený (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "Chyba I/O při čtení souboru %s: %s"
 
-#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp src/SharedFileList.cpp
+#: src/HashListFile.cpp src/kademlia/kademlia/Search.cpp
+#: src/kademlia/routing/RoutingZone.cpp src/KnownFileList.cpp
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Chyba při ukládání souboru %s: %s"
@@ -2441,6 +2447,19 @@ msgstr[2] "Nelze přidat %u odkazů (podrobnosti viz protokol)."
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Neplatný odkaz eD2k! CHYBA: %s"
 
+#: src/ECClientPassword.h
+msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
+msgstr ""
+
+#: src/ECClientPassword.h
+msgid "To replace both, run amulecmd -w --password-stdin."
+msgstr ""
+
+#: src/ECClientPassword.h
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr "Odmítnut vzdálený požadavek na změnu složky online podpisu: lze jí nastavit pouze ve vlastním nastavení daemona."
@@ -2990,16 +3009,10 @@ msgstr ""
 #: src/ExternalConnector.cpp
 msgid ""
 "Cannot connect with an empty password.\n"
-"You must specify a password either in config file\n"
-"or on command-line, or enter one when asked.\n"
+"Set one with --set-ec-pass-stdin.\n"
 "\n"
 "Exiting...\n"
 msgstr ""
-"Nelze se připojit s prázdným heslem.\n"
-"Heslo musíte zadat buď v konfiguračním souboru,\n"
-"nebo na příkazovém řádku, nebo je zadat na vyžádání.\n"
-"\n"
-"Ukončuji...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3014,8 +3027,8 @@ msgid "aMule's port for External Connection. (default: 4712)"
 msgstr "Port externího připojení aMule. (výchozí: 4712)"
 
 #: src/ExternalConnector.cpp
-msgid "External Connection password."
-msgstr "Heslo externího připojení."
+msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
+msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3038,10 +3051,6 @@ msgid "Write command line options to config file."
 msgstr "Zapsat možnosti příkazového řádku do konfiguračního souboru."
 
 #: src/ExternalConnector.cpp
-msgid "Creates config file based on aMule's config file."
-msgstr "Vytvoří konfigurační soubor na základě konfiguračního souboru aMule."
-
-#: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr "Vypsat verzi programu."
 
@@ -3058,8 +3067,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "Nezapisovat soubor logu; vypisovat jen do konzole."
 
 #: src/ExternalConnector.cpp
-msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr "Ověřovač daemona nemůže dodat heslo klienta. Použijte -P nebo dialog zadání hesla.\n"
+#, fuzzy, c-format
+msgid "Cannot read the password: %s\n"
+msgstr "Nepodařilo se uložit heslo amuleapi: %s"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -7206,7 +7216,7 @@ msgid "Remote Controls"
 msgstr "Vzdálené ovládání"
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgid "Let amulegui, amuleapi and other tools control aMule."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
@@ -10647,7 +10657,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "Zamítnuta změna EC hesla; nepodařilo se uložit ECPasswordVerifier. Aktivní přihlašovací údaj nebyl změněn."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "ECPassword obsahuje digest, který je neplatný nebo má prázdné heslo. Pro nastavení nového EC hesla spusťte amuled --ec-config."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
@@ -10661,6 +10672,35 @@ msgstr "Nelze porovnat zastaralé ECPassword s ECPasswordVerifier; odmítám ext
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrace změněného zastaralého ECPassword po přechodu na starší verzi; předchozí ověřovač již tuto relaci neověřuje."
+
+#~ msgid ""
+#~ "\n"
+#~ "EC configuration"
+#~ msgstr ""
+#~ "\n"
+#~ "Konfigurace EC"
+
+#~ msgid ""
+#~ "Cannot connect with an empty password.\n"
+#~ "You must specify a password either in config file\n"
+#~ "or on command-line, or enter one when asked.\n"
+#~ "\n"
+#~ "Exiting...\n"
+#~ msgstr ""
+#~ "Nelze se připojit s prázdným heslem.\n"
+#~ "Heslo musíte zadat buď v konfiguračním souboru,\n"
+#~ "nebo na příkazovém řádku, nebo je zadat na vyžádání.\n"
+#~ "\n"
+#~ "Ukončuji...\n"
+
+#~ msgid "External Connection password."
+#~ msgstr "Heslo externího připojení."
+
+#~ msgid "Creates config file based on aMule's config file."
+#~ msgstr "Vytvoří konfigurační soubor na základě konfiguračního souboru aMule."
+
+#~ msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
+#~ msgstr "Ověřovač daemona nemůže dodat heslo klienta. Použijte -P nebo dialog zadání hesla.\n"
 
 #~ msgid "!!! WARNING !!!"
 #~ msgstr "!!! VAROVÁNÍ !!!"

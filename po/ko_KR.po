@@ -382,6 +382,24 @@ msgid "Finishing shutdown..."
 msgstr ""
 
 #: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not read the EC password: %s"
+msgstr "amuleapi 암호를 저장할 수 없습니다: %s"
+
+#: src/amule.cpp src/ExternalConnector.cpp
+#, fuzzy
+msgid "The EC password must not be empty."
+msgstr "- TCP 포트가 변경되었습니다.\n"
+
+#: src/amule.cpp
+msgid "Could not save AcceptExternalConnections to amule.conf."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Password set and external connections enabled."
+msgstr "암호가 설정되고 외부 연결이 활성화되었습니다."
+
+#: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr ""
@@ -413,22 +431,6 @@ msgstr "지역정보(로케일)가 설정 변경으로 인해 시스템 기본�
 #: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "정보"
-
-#: src/amule.cpp
-msgid ""
-"\n"
-"EC configuration"
-msgstr ""
-"\n"
-"EC 설정"
-
-#: src/amule.cpp
-msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
-
-#: src/amule.cpp
-msgid "Password set and external connections enabled."
-msgstr "암호가 설정되고 외부 연결이 활성화되었습니다."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -850,15 +852,16 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Kad 네트워크가 환경설정에서 비활성되어, 연결하지 않습니다."
 
 #: src/amuled.cpp
-msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
+#, fuzzy
+msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
 msgstr "오류: 외부 연결이 비활성화된 경우 aMule 데몬을 사용할 수 없습니다. 외부 연결을 활성화하려면 일반 aMule을 사용하거나, --ec-config 옵션으로 amuled를 시작하거나, ~/.aMule/amule.conf 파일에서 \"AcceptExternalConnections\" 키를 1로 설정하세요."
 
 #: src/amuled.cpp
-msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
+msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
 msgstr ""
 
 #: src/amuled.cpp
-msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
+msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr ""
 
 #: src/amuled.cpp
@@ -1456,8 +1459,9 @@ msgstr "경고: %s 파일이 손상되었을 수 있습니다 (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "%s 파일을 읽는 중 입출력 오류 발생: %s"
 
-#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp src/SharedFileList.cpp
+#: src/HashListFile.cpp src/kademlia/kademlia/Search.cpp
+#: src/kademlia/routing/RoutingZone.cpp src/KnownFileList.cpp
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "%s 파일을 저장하는 중 오류 발생: %s"
@@ -2441,6 +2445,19 @@ msgstr[1] "%u개의 링크를 추가할 수 없습니다(자세한 내용은 로
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "잘못된 eD2k 링크입니다! 오류: %s"
 
+#: src/ECClientPassword.h
+msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
+msgstr ""
+
+#: src/ECClientPassword.h
+msgid "To replace both, run amulecmd -w --password-stdin."
+msgstr ""
+
+#: src/ECClientPassword.h
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr ""
@@ -3002,16 +3019,10 @@ msgstr ""
 #: src/ExternalConnector.cpp
 msgid ""
 "Cannot connect with an empty password.\n"
-"You must specify a password either in config file\n"
-"or on command-line, or enter one when asked.\n"
+"Set one with --set-ec-pass-stdin.\n"
 "\n"
 "Exiting...\n"
 msgstr ""
-"빈 암호로 연결할수 없습니다.\n"
-"설정 파일에 암호를 정하거나 \n"
-"또는 명령줄이나 요청시에 입력해야 합니다.\n"
-"\n"
-"종료중...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3026,8 +3037,8 @@ msgid "aMule's port for External Connection. (default: 4712)"
 msgstr "외부연결을 위한 어뮬 포트. (기본: 4712)"
 
 #: src/ExternalConnector.cpp
-msgid "External Connection password."
-msgstr "외부연결 암호"
+msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
+msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3050,10 +3061,6 @@ msgid "Write command line options to config file."
 msgstr "명령줄 설정을 환경설정 파일에 기록합니다."
 
 #: src/ExternalConnector.cpp
-msgid "Creates config file based on aMule's config file."
-msgstr "어뮬의 설정 파일에 기초하여 설정 파일을 생성합니다."
-
-#: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr "프로그램 버전을 출력합니다."
 
@@ -3070,8 +3077,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "로그 파일을 기록하지 않고 콘솔에만 출력합니다."
 
 #: src/ExternalConnector.cpp
-msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr ""
+#, fuzzy, c-format
+msgid "Cannot read the password: %s\n"
+msgstr "amuleapi 암호를 저장할 수 없습니다: %s"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -7235,7 +7243,7 @@ msgid "Remote Controls"
 msgstr "원격 조정"
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgid "Let amulegui, amuleapi and other tools control aMule."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
@@ -10668,7 +10676,7 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr ""
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
+msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr ""
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
@@ -10682,6 +10690,32 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid ""
+#~ "\n"
+#~ "EC configuration"
+#~ msgstr ""
+#~ "\n"
+#~ "EC 설정"
+
+#~ msgid ""
+#~ "Cannot connect with an empty password.\n"
+#~ "You must specify a password either in config file\n"
+#~ "or on command-line, or enter one when asked.\n"
+#~ "\n"
+#~ "Exiting...\n"
+#~ msgstr ""
+#~ "빈 암호로 연결할수 없습니다.\n"
+#~ "설정 파일에 암호를 정하거나 \n"
+#~ "또는 명령줄이나 요청시에 입력해야 합니다.\n"
+#~ "\n"
+#~ "종료중...\n"
+
+#~ msgid "External Connection password."
+#~ msgstr "외부연결 암호"
+
+#~ msgid "Creates config file based on aMule's config file."
+#~ msgstr "어뮬의 설정 파일에 기초하여 설정 파일을 생성합니다."
 
 #~ msgid "!!! WARNING !!!"
 #~ msgstr "!!! 경고 !!!"

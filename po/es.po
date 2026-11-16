@@ -407,6 +407,24 @@ msgid "Finishing shutdown..."
 msgstr "Finalizando el apagado..."
 
 #: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not read the EC password: %s"
+msgstr "No se pudo guardar la contraseña amuleapi: %s"
+
+#: src/amule.cpp src/ExternalConnector.cpp
+#, fuzzy
+msgid "The EC password must not be empty."
+msgstr "La contraseña de EC no se ha cambiado."
+
+#: src/amule.cpp
+msgid "Could not save AcceptExternalConnections to amule.conf."
+msgstr "No se pudo guardar AcceptExternalConnections en amule.conf."
+
+#: src/amule.cpp
+msgid "Password set and external connections enabled."
+msgstr "Contraseña fijada y conexiones externas habilitadas."
+
+#: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr "Vinculando el tráfico peer-to-peer y HTTP de aMule a la interfaz: %s"
@@ -438,22 +456,6 @@ msgstr "Su configuración regional se ha cambiado a la predefinida del sistema d
 #: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Información"
-
-#: src/amule.cpp
-msgid ""
-"\n"
-"EC configuration"
-msgstr ""
-"\n"
-"Configuración de la EC"
-
-#: src/amule.cpp
-msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr "No se pudo guardar AcceptExternalConnections en amule.conf."
-
-#: src/amule.cpp
-msgid "Password set and external connections enabled."
-msgstr "Contraseña fijada y conexiones externas habilitadas."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -867,15 +869,18 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Red Kad deshabilitada en las preferencias, no se conecta."
 
 #: src/amuled.cpp
-msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
+#, fuzzy
+msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
 msgstr "ERROR: el demonio de aMule no se puede usar cuando están desactivadas las conexiones externas. Para activarlas, use un aMule normal, inicie amuled con la opción --ec-config, o bien, establezca \"AcceptExternalConnections\" a 1, en el archivo ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
-msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
+#, fuzzy
+msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
 msgstr "ERROR: Se requiere una contraseña EC. Ejecuta amuled --ec-config para configurarla."
 
 #: src/amuled.cpp
-msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "ERROR: ECPasswordVerifier no válido en amule.conf. Ejecuta amuled --ec-config para establecer una nueva contraseña EC."
 
 #: src/amuled.cpp
@@ -1469,8 +1474,9 @@ msgstr "AVISO: %s puede estar dañado (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "Error de E/S al leer el archivo %s: %s"
 
-#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp src/SharedFileList.cpp
+#: src/HashListFile.cpp src/kademlia/kademlia/Search.cpp
+#: src/kademlia/routing/RoutingZone.cpp src/KnownFileList.cpp
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Error guardando el archivo %s: %s"
@@ -2443,6 +2449,19 @@ msgstr[1] "No se pudieron añadir los enlaces %u (consulte el registro para más
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "¡Enlace eD2k inválido! ERROR: %s"
 
+#: src/ECClientPassword.h
+msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
+msgstr ""
+
+#: src/ECClientPassword.h
+msgid "To replace both, run amulecmd -w --password-stdin."
+msgstr ""
+
+#: src/ECClientPassword.h
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr "Se ha rechazado una solicitud remota para cambiar la carpeta de firmas online: sólo se puede configurar en la propia configuración del demonio."
@@ -2992,16 +3011,10 @@ msgstr ""
 #: src/ExternalConnector.cpp
 msgid ""
 "Cannot connect with an empty password.\n"
-"You must specify a password either in config file\n"
-"or on command-line, or enter one when asked.\n"
+"Set one with --set-ec-pass-stdin.\n"
 "\n"
 "Exiting...\n"
 msgstr ""
-"No se puede hacer la conexión con una contraseña en blanco.\n"
-"Debe especificar una contraseña en el archivo de configuración\n"
-"o en la línea de comandos, o introducir una cuando se le pida.\n"
-"\n"
-"Saliendo...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3016,8 +3029,8 @@ msgid "aMule's port for External Connection. (default: 4712)"
 msgstr "El puerto de aMule para la conexión externa (por defecto: 4712)"
 
 #: src/ExternalConnector.cpp
-msgid "External Connection password."
-msgstr "Contraseña para conexiones externas."
+msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
+msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3040,10 +3053,6 @@ msgid "Write command line options to config file."
 msgstr "Escribir las opciones de la línea de comandos al archivo de configuración."
 
 #: src/ExternalConnector.cpp
-msgid "Creates config file based on aMule's config file."
-msgstr "Crear archivo de configuración basado en el archivo de configuración de aMule."
-
-#: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr "Imprimir la versión del programa."
 
@@ -3060,8 +3069,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "No escribir un archivo de registro; imprimir solo en la consola."
 
 #: src/ExternalConnector.cpp
-msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr "El verificador del demonio no puede proporcionar una contraseña de cliente. Utiliza la opción -P o la solicitud de contraseña.\n"
+#, fuzzy, c-format
+msgid "Cannot read the password: %s\n"
+msgstr "No se pudo guardar la contraseña amuleapi: %s"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -7198,7 +7208,7 @@ msgid "Remote Controls"
 msgstr "Controles remotos"
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgid "Let amulegui, amuleapi and other tools control aMule."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
@@ -10615,7 +10625,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "Se ha rechazado el cambio de contraseña de EC: no se ha podido guardar ECPasswordVerifier. La credencial activa no ha cambiado."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "ECPassword contiene un resumen no válido o correspondiente a una contraseña vacía. Ejecuta «amuled --ec-config» para establecer una nueva contraseña EC."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
@@ -10629,6 +10640,35 @@ msgstr "No se ha podido comparar la contraseña ECPassword heredada con ECPasswo
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrando la clave heredada ECPassword modificada tras degradar la versión; el verificador anterior ya no se utilizará para autenticar esta sesión."
+
+#~ msgid ""
+#~ "\n"
+#~ "EC configuration"
+#~ msgstr ""
+#~ "\n"
+#~ "Configuración de la EC"
+
+#~ msgid ""
+#~ "Cannot connect with an empty password.\n"
+#~ "You must specify a password either in config file\n"
+#~ "or on command-line, or enter one when asked.\n"
+#~ "\n"
+#~ "Exiting...\n"
+#~ msgstr ""
+#~ "No se puede hacer la conexión con una contraseña en blanco.\n"
+#~ "Debe especificar una contraseña en el archivo de configuración\n"
+#~ "o en la línea de comandos, o introducir una cuando se le pida.\n"
+#~ "\n"
+#~ "Saliendo...\n"
+
+#~ msgid "External Connection password."
+#~ msgstr "Contraseña para conexiones externas."
+
+#~ msgid "Creates config file based on aMule's config file."
+#~ msgstr "Crear archivo de configuración basado en el archivo de configuración de aMule."
+
+#~ msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
+#~ msgstr "El verificador del demonio no puede proporcionar una contraseña de cliente. Utiliza la opción -P o la solicitud de contraseña.\n"
 
 #~ msgid "!!! WARNING !!!"
 #~ msgstr "¡¡¡ AVISO !!!"

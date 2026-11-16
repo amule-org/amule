@@ -19,7 +19,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-15 16:31+0000\n"
+"PO-Revision-Date: 2026-11-16 12:37+0000\n"
 "Last-Translator: Marcelo Roberto Jimenez <mrjimenez@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/amule/amule-application/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -406,6 +406,24 @@ msgid "Finishing shutdown..."
 msgstr "Concluindo o encerramento..."
 
 #: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not read the EC password: %s"
+msgstr "Não foi possível salvar a senha do amuleapi: %s"
+
+#: src/amule.cpp src/ExternalConnector.cpp
+#, fuzzy
+msgid "The EC password must not be empty."
+msgstr "A senha EC não foi alterada."
+
+#: src/amule.cpp
+msgid "Could not save AcceptExternalConnections to amule.conf."
+msgstr "Não foi possível salvar AcceptExternalConnections no amule.conf."
+
+#: src/amule.cpp
+msgid "Password set and external connections enabled."
+msgstr "Senha definida e conexões externas habilitadas."
+
+#: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr "Vinculando o tráfego par-a-par e HTTP do aMule à interface: %s"
@@ -437,22 +455,6 @@ msgstr "Seu locale foi alterado para o padrão do Sistema devido a mudança na c
 #: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Info"
-
-#: src/amule.cpp
-msgid ""
-"\n"
-"EC configuration"
-msgstr ""
-"\n"
-"Configuração EC"
-
-#: src/amule.cpp
-msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr "Não foi possível salvar AcceptExternalConnections no amule.conf."
-
-#: src/amule.cpp
-msgid "Password set and external connections enabled."
-msgstr "Senha definida e conexões externas habilitadas."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -867,15 +869,18 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "A rede Kad está desabilitada nas preferências; não será conectada."
 
 #: src/amuled.cpp
-msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
+#, fuzzy
+msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
 msgstr "ERRO: O daemon aMule não pode ser usado quando conexões externas estão desabilitadas. Para habilitar Conexões Externas, use um aMule normal, inicie o amuled com a opção --ec-config ou defina a chave \"AcceptExternalConnections\" como 1 no arquivo ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
-msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
+#, fuzzy
+msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
 msgstr "ERRO: É necessária uma senha EC. Execute amuled --ec-config para defini-la."
 
 #: src/amuled.cpp
-msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "ERRO: ECPasswordVerifier inválido no amule.conf. Execute amuled --ec-config para definir uma nova senha EC."
 
 #: src/amuled.cpp
@@ -1469,8 +1474,9 @@ msgstr "AVISO: %s pode estar corrompido (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "Erro de I/O ao ler arquivo %s: %s"
 
-#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp src/SharedFileList.cpp
+#: src/HashListFile.cpp src/kademlia/kademlia/Search.cpp
+#: src/kademlia/routing/RoutingZone.cpp src/KnownFileList.cpp
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Erro ao salvar arquivo %s: %s"
@@ -2437,6 +2443,19 @@ msgstr[1] "Não foi possível adicionar %u links (veja o log para detalhes)."
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Link eD2k inválido! ERRO: %s"
 
+#: src/ECClientPassword.h
+msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
+msgstr ""
+
+#: src/ECClientPassword.h
+msgid "To replace both, run amulecmd -w --password-stdin."
+msgstr ""
+
+#: src/ECClientPassword.h
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr "Solicitação remota para alterar a pasta da assinatura online recusada: ela só pode ser definida na configuração do próprio daemon."
@@ -2986,16 +3005,10 @@ msgstr ""
 #: src/ExternalConnector.cpp
 msgid ""
 "Cannot connect with an empty password.\n"
-"You must specify a password either in config file\n"
-"or on command-line, or enter one when asked.\n"
+"Set one with --set-ec-pass-stdin.\n"
 "\n"
 "Exiting...\n"
 msgstr ""
-"Não é possível conectar sem senha.\n"
-"Você deve informar uma senha no arquivo de configuração\n"
-"ou na linha de comando, ou digitá-la quando solicitado.\n"
-"\n"
-"Saindo...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3010,8 +3023,8 @@ msgid "aMule's port for External Connection. (default: 4712)"
 msgstr "Porta em que o aMule está esperando Conexões Externas (padrão: 4712)"
 
 #: src/ExternalConnector.cpp
-msgid "External Connection password."
-msgstr "Senha para Conexão Externa."
+msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
+msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3034,10 +3047,6 @@ msgid "Write command line options to config file."
 msgstr "Gravar as opções da linha de comando no arquivo de configuração."
 
 #: src/ExternalConnector.cpp
-msgid "Creates config file based on aMule's config file."
-msgstr "Criar arquivo de configuração baseado no do aMule."
-
-#: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr "Exibir versão do programa."
 
@@ -3054,8 +3063,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "Não escrever um arquivo de log; imprimir apenas no console."
 
 #: src/ExternalConnector.cpp
-msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr "O verificador do daemon não pode fornecer uma senha de cliente. Use -P ou o prompt de senha.\n"
+#, fuzzy, c-format
+msgid "Cannot read the password: %s\n"
+msgstr "Não foi possível salvar a senha do amuleapi: %s"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -5109,9 +5119,8 @@ msgid "This specifies the language used on controls."
 msgstr "Especifica o idioma que será usado no aMule."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Startup"
-msgstr "Iniciar"
+msgstr "Inicialização"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5134,9 +5143,8 @@ msgid "Enabling this makes aMule minimize itself upon start."
 msgstr "Ativando isto deixará o aMule minimizado na inicialização."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Links"
-msgstr "Link"
+msgstr "Links"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5152,7 +5160,7 @@ msgstr "Abrir uma coleção enfileira todos os links eD2k que ela contém. No Wi
 
 #: src/muuli_wdr.cpp
 msgid "Behavior"
-msgstr ""
+msgstr "Comportamento"
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -5999,13 +6007,12 @@ msgid "Guest password"
 msgstr "Senha de convidado"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Search settings"
-msgstr "Buscas"
+msgstr "Buscar configurações"
 
 #: src/muuli_wdr.cpp
 msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
-msgstr ""
+msgstr "Encontre uma configuração pelo nome. As páginas correspondentes permanecem na lista abaixo, e nelas as opções correspondentes aparecem em negrito."
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -7104,7 +7111,7 @@ msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
-msgstr ""
+msgstr "Seu apelido e idioma, como o aMule inicia e fecha, e os programas com os quais ele abre links e pré-visualizações."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -7112,7 +7119,7 @@ msgstr "Interface"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
-msgstr ""
+msgstr "Aparência, o título da janela e como as listas de transferências são desenhadas."
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
@@ -7120,7 +7127,7 @@ msgstr "Conexão"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
-msgstr ""
+msgstr "Capacidade da linha, limites de banda, portas e as redes das quais o aMule participa."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -7128,7 +7135,7 @@ msgstr "Proxy"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Send aMule's connections through a proxy server."
-msgstr ""
+msgstr "Enviar as conexões do aMule através de um servidor proxy."
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -7136,7 +7143,7 @@ msgstr "Servidores"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
-msgstr ""
+msgstr "Como o aMule mantém sua lista de servidores eD2k e escolhe os servidores aos quais se conecta."
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
@@ -7144,16 +7151,15 @@ msgstr "Diretórios"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Where downloads are stored and which folders you share."
-msgstr ""
+msgstr "Onde os downloads são armazenados e quais pastas você compartilha."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Where the core's folders can be reached from this computer."
-msgstr "Onde essa mesma pasta pode ser acessada a partir deste computador, p.ex. um compartilhamento de rede montado"
+msgstr "Onde as pastas do núcleo podem ser acessadas a partir deste computador."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How downloads and uploads are handled, corruption recovery and media details."
-msgstr ""
+msgstr "Como os downloads e uploads são tratados, a recuperação de corrupção e os detalhes de mídia."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Events"
@@ -7161,11 +7167,11 @@ msgstr "Eventos"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Run your own commands when something happens in aMule."
-msgstr ""
+msgstr "Executar seus próprios comandos quando algo acontece no aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Graph timing and colors, and what the statistics tree shows."
-msgstr ""
+msgstr "Intervalos e cores dos gráficos, e o que a árvore de estatísticas exibe."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
@@ -7173,7 +7179,7 @@ msgstr "Filtros"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Keep spam and unwanted words out of your chat messages and file comments."
-msgstr ""
+msgstr "Manter spam e palavras indesejadas fora das suas mensagens de chat e dos comentários de arquivos."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -7181,15 +7187,16 @@ msgstr "Segurança"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
-msgstr ""
+msgstr "Identificação segura, ofuscação de protocolo, filtragem de IP e quem pode ver seus arquivos compartilhados."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
 msgstr "Controles remotos"
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
-msgstr ""
+#, fuzzy
+msgid "Let amulegui, amuleapi and other tools control aMule."
+msgstr "Permitir que o amulegui, o amuleapi, a interface web e outras ferramentas controlem o aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
@@ -7197,7 +7204,7 @@ msgstr "Assinatura Online"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Save aMule's status to a file that other programs can show."
-msgstr ""
+msgstr "Salvar o status do aMule em um arquivo que outros programas podem exibir."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
@@ -7205,7 +7212,7 @@ msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Show each client's country, looked up in a GeoIP database."
-msgstr ""
+msgstr "Mostrar o país de cada cliente, consultado em um banco de dados GeoIP."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
@@ -7213,16 +7220,15 @@ msgstr "Avançado"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
-msgstr ""
+msgstr "Taxas de conexão, consultas de fontes, buffers e filas, para ajustes finos."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "Depuração"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose which kinds of debug messages are written to the log."
-msgstr "O texto das mensagens recebidas também será gravado no log."
+msgstr "Escolher quais tipos de mensagens de depuração são gravados no log."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7250,7 +7256,7 @@ msgstr "Falha ao conectar Cfg ao widget com o ID %d e a chave %s"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "No settings match \"%s\". Try a shorter or different word."
-msgstr ""
+msgstr "Nenhuma configuração corresponde a \"%s\". Tente uma palavra mais curta ou diferente."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -10604,7 +10610,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "Alteração da senha EC rejeitada: não foi possível armazenar o ECPasswordVerifier. A credencial ativa não foi alterada."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "O ECPassword contém um hash inválido ou de senha vazia. Execute amuled --ec-config para definir uma nova senha EC."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
@@ -10618,6 +10625,35 @@ msgstr "Não foi possível comparar o ECPassword legado com o ECPasswordVerifier
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Migrando um ECPassword legado alterado após um downgrade; o verificador anterior não autentica mais esta sessão."
+
+#~ msgid ""
+#~ "\n"
+#~ "EC configuration"
+#~ msgstr ""
+#~ "\n"
+#~ "Configuração EC"
+
+#~ msgid ""
+#~ "Cannot connect with an empty password.\n"
+#~ "You must specify a password either in config file\n"
+#~ "or on command-line, or enter one when asked.\n"
+#~ "\n"
+#~ "Exiting...\n"
+#~ msgstr ""
+#~ "Não é possível conectar sem senha.\n"
+#~ "Você deve informar uma senha no arquivo de configuração\n"
+#~ "ou na linha de comando, ou digitá-la quando solicitado.\n"
+#~ "\n"
+#~ "Saindo...\n"
+
+#~ msgid "External Connection password."
+#~ msgstr "Senha para Conexão Externa."
+
+#~ msgid "Creates config file based on aMule's config file."
+#~ msgstr "Criar arquivo de configuração baseado no do aMule."
+
+#~ msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
+#~ msgstr "O verificador do daemon não pode fornecer uma senha de cliente. Use -P ou o prompt de senha.\n"
 
 #~ msgid "!!! WARNING !!!"
 #~ msgstr "!!! AVISO !!!"

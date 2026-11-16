@@ -1065,5 +1065,15 @@
   "stats_tree_diagnostics": "Diagnostiek",
   "prefs_group_capacity": "Lijncapaciteit (schaalt alleen de snelheidsgrafiek)",
   "prefs_field_connection_download_capacity_kibibytes_per_second": "Downloadcapaciteit (KiB/s)",
-  "prefs_field_connection_upload_capacity_kibibytes_per_second": "Uploadcapaciteit (KiB/s)"
+  "prefs_field_connection_upload_capacity_kibibytes_per_second": "Uploadcapaciteit (KiB/s)",
+  "downloads_peer_route_plain": "Verbinden via {route}",
+  "downloads_peer_route_fallback": "Verbinden via {route} op een terugvalroute",
+  "downloads_peer_route_unproven": "Verbinden via {route} op een onbewezen route",
+  "downloads_peer_route_dial": "een directe verbinding",
+  "downloads_peer_route_direct_udp_callback": "een directe terugroep",
+  "downloads_peer_route_server_callback": "onze server",
+  "downloads_peer_route_kad_buddy": "de Kad-buddy",
+  "downloads_peer_route_foreign_nat_callback": "de eigen server van de bron",
+  "downloads_peer_route_server_hole_punch": "een serverperforator",
+  "downloads_peer_route_lugdunum_callback": "een Lugdunum-terugroep"
 }
