@@ -1645,6 +1645,26 @@ target_include_directories (KadKeywordPublishTimesTest PRIVATE
 )
 target_link_libraries (KadKeywordPublishTimesTest muleunit mulecommon)
 
+# kadseeds.dat, on a CMemFile.
+add_executable (KadPublishSeedsTest
+	KadPublishSeedsTest.cpp
+	${CMAKE_SOURCE_DIR}/src/KadPublishSeeds.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/CFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
+)
+add_test (NAME KadPublishSeedsTest COMMAND KadPublishSeedsTest)
+target_include_directories (KadPublishSeedsTest PRIVATE
+	${CMAKE_BINARY_DIR}
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (KadPublishSeedsTest muleunit mulecommon)
+
 add_executable (PartFileBufferingTest PartFileBufferingTest.cpp)
 add_test (NAME PartFileBufferingTest COMMAND PartFileBufferingTest)
 target_include_directories (PartFileBufferingTest PRIVATE ${CMAKE_SOURCE_DIR}/src)

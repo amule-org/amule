@@ -38,6 +38,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		IPFilter.cpp
 		KadAICHVotes.cpp
 		KadKeywordPublishTimes.cpp
+		KadPublishSeeds.cpp
 		KnownFileList.cpp
 		ListenSocket.cpp
 		MuleUDPSocket.cpp

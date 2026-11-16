@@ -78,9 +78,12 @@ there client on the eMule forum..
 #include "../../PeerCapabilities.h" // Needed for DecodeIPv6HexTag
 #include "../../Logger.h"
 #include "../../Preferences.h"
+#include "../../CFile.h"            // Needed for CFile
+#include "../../IPFilter.h"         // Needed for CIPFilter
+#include "../../KadPublishSeeds.h"  // Needed for KadPublishSeeds
+#include "../../NetworkFunctions.h" // Needed for IsGoodIPPort
 #ifdef ENABLE_KAD_NODE_PROTECTION
-#include "../../GetTickCount.h"     // Needed for GetTickCount64
-#include "../../NetworkFunctions.h" // Needed for KadIPPortToString
+#include "../../GetTickCount.h" // Needed for GetTickCount64
 #endif
 #include "../../GuiEvents.h"
 #include "../../KadBuddyIdLayout.h"
@@ -96,6 +99,61 @@ using namespace Kademlia;
 // together.
 static_assert(
 	Kademlia::KAD_AICH_HASH_SIZE == HASHSIZE, "Kad AICH hash size must match the AICH root hash size");
+
+namespace
+{
+// Fewer acknowledgements than this from a seeded publish mean its seeds have drifted, so the
+// file's next publish is a full lookup.
+constexpr uint64_t MinSeededAcks = 8;
+
+bool s_publishSeedsChanged = false;
+
+CPath PublishSeedsPath()
+{
+	return CPath(thePrefs::GetConfigDir() + KadPublishSeeds::FileName);
+}
+
+// The checks every other Kad contact passes, applied when the seed is used so a filter
+// change since the save counts.
+bool IsUsableSeed(const KadPublishSeeds::Seed &seed)
+{
+	const uint32_t ip = wxUINT32_SWAP_ALWAYS(seed.ip);
+	return seed.version > 1 && ::IsGoodIPPort(ip, seed.udpPort, thePrefs::FilterLanIPs()) &&
+	       !theApp->ipfilter->IsFiltered(ip) && !(seed.udpPort == 53 && seed.version <= 5);
+}
+
+KadPublishSeeds::Seeds LoadPublishSeeds()
+{
+	KadPublishSeeds::Seeds seeds;
+	const CPath path = PublishSeedsPath();
+	CFile file;
+	if (!path.FileExists() || !file.Open(path)) {
+		return seeds;
+	}
+	// CFile reads are unbuffered, so read the file once and parse it from memory.
+	std::vector<uint8_t> data;
+	try {
+		data.resize(file.GetLength());
+		file.Read(data.data(), data.size());
+	} catch (const CSafeIOException &) {
+		data.clear();
+	}
+	if (data.empty() ||
+		!KadPublishSeeds::Read(
+			CMemFile(data.data(), data.size()), static_cast<uint32_t>(time(nullptr)), seeds)) {
+		AddDebugLogLineN(logKadPublish,
+			CFormat("%s is damaged or newer; keeping what was read") % KadPublishSeeds::FileName);
+	}
+	return seeds;
+}
+
+// Loaded on first use, so a save before any publish keeps the file.
+KadPublishSeeds::Seeds &PublishSeeds()
+{
+	static KadPublishSeeds::Seeds seeds = LoadPublishSeeds();
+	return seeds;
+}
+} // namespace
 
 CSearch::CSearch()
 {
@@ -214,9 +272,14 @@ CSearch::~CSearch()
 
 void CSearch::Go()
 {
+	std::vector<CUInt128> seeds;
+	if (m_type == STOREFILE && m_possible.empty()) {
+		seeds = AddPublishSeeds();
+	}
+
 	if (m_type == STOREFILE && !m_publishMeasured && theLogger.IsEnabled(logKadPublish)) {
 		m_publishMeasured = true;
-		CPublishMetrics::Instance().Start();
+		CPublishMetrics::Instance().Start(m_seeded);
 	}
 
 	// Start with a lot of possible contacts, this is a fallback in case search stalls due to dead
@@ -242,7 +305,45 @@ void CSearch::Go()
 			SendFindValue(c);
 			++it;
 		}
+		// The seeds are near the target already, so ask them all now.
+		for (const CUInt128 &distance : seeds) {
+			if (!m_tried.count(distance)) {
+				CContact *c = m_possible.at(distance);
+				m_tried[distance] = c;
+				SendFindValue(c);
+			}
+		}
 	}
+}
+
+std::vector<CUInt128> CSearch::AddPublishSeeds()
+{
+	std::vector<CUInt128> distances;
+	const auto entry = PublishSeeds().find(m_target);
+	if (entry == PublishSeeds().end() ||
+		!KadPublishSeeds::IsCurrent(entry->second, static_cast<uint32_t>(time(nullptr)))) {
+		return distances;
+	}
+	CUInt128 distance(CKademlia::GetPrefs()->GetKadID() ^ m_target);
+	CKademlia::GetRoutingZone()->GetClosestTo(3, m_target, distance, 50, &m_possible, true, true);
+	for (const KadPublishSeeds::Seed &seed : entry->second.seeds) {
+		if (!IsUsableSeed(seed)) {
+			continue;
+		}
+		const CUInt128 seedDistance(seed.id ^ m_target);
+		distances.push_back(seedDistance);
+		if (m_possible.count(seedDistance)) {
+			continue;
+		}
+		CContact *c = new CContact(
+			seed.id, seed.ip, seed.udpPort, seed.tcpPort, seed.version, seed.key, seed.verified);
+		// Balances the release of every m_inUse contact; m_delete then frees it.
+		c->IncUse();
+		m_delete.push_back(c);
+		m_possible[seedDistance] = c;
+	}
+	m_seeded = !distances.empty();
+	return distances;
 }
 
 // If we allow about a 15 sec delay before deleting, we won't miss a lot of delayed returning packets.
@@ -378,6 +479,7 @@ void CSearch::JumpStart()
 		}
 	}
 
+	const uint32_t storesBefore = m_totalRequestAnswers;
 	while (!m_possible.empty()) {
 		CContact *c = m_possible.begin()->second;
 
@@ -387,6 +489,17 @@ void CSearch::JumpStart()
 			}
 			m_possible.erase(m_possible.begin());
 		} else {
+			// A seeded publish that just sent enough stores gives their acknowledgements a
+			// full stall period before asking a node past its seeds. Acknowledgements do not
+			// count as responses, so without this the next tick would ask it.
+			if (m_seeded && m_totalRequestAnswers > storesBefore &&
+				m_totalRequestAnswers > SEARCHSTOREFILE_TOTAL) {
+				m_lastResponse = time(nullptr);
+#ifdef ENABLE_KAD_NODE_PROTECTION
+				m_lastResponseTick = ::GetTickCount64();
+#endif
+				break;
+			}
 			m_tried[m_possible.begin()->first] = c;
 			SendFindValue(c);
 			break;
@@ -593,6 +706,7 @@ void CSearch::RecordStoreAcknowledgements() const
 	}
 	const uint64_t acknowledged = CPublishMetrics::Acknowledged(m_lookupTrace);
 	theStats::AddPublishEvent(EPublishEvent::KadSourceStoreAcknowledged, acknowledged);
+	KeepPublishSeeds(acknowledged);
 	if (!acknowledged) {
 		return;
 	}
@@ -603,6 +717,70 @@ void CSearch::RecordStoreAcknowledgements() const
 		const uint64_t elapsed = (::GetTickCount64() - m_lookupStarted) / 1000;
 		file->SetKadSourceAck(
 			static_cast<uint32_t>(time(nullptr) - elapsed), static_cast<uint32_t>(acknowledged));
+	}
+}
+
+void CSearch::KeepPublishSeeds(uint64_t acknowledged) const
+{
+	// A lookup cut short by a Kad stop says nothing about its seeds.
+	if (!m_publishCompleted) {
+		return;
+	}
+	std::vector<KadPublishSeeds::Seed> next;
+	for (const auto &responded : m_responded) {
+		if (next.size() == KadPublishSeeds::MaxSeeds ||
+			responded.first.Get32BitChunk(0) > SEARCHTOLERANCE) {
+			break;
+		}
+		const auto tried = m_tried.find(responded.first);
+		if (tried == m_tried.end()) {
+			continue;
+		}
+		const CContact *c = tried->second;
+		next.push_back({ c->GetClientID(),
+			c->GetIPAddress(),
+			c->GetUDPPort(),
+			c->GetTCPPort(),
+			c->GetVersion(),
+			c->GetUDPKey(),
+			c->IsIPVerified() });
+	}
+	if (next.empty() || (m_seeded && acknowledged < MinSeededAcks)) {
+		s_publishSeedsChanged |= PublishSeeds().erase(m_target) > 0;
+		return;
+	}
+	PublishSeeds()[m_target] = { static_cast<uint32_t>(time(nullptr)), std::move(next) };
+	s_publishSeedsChanged = true;
+}
+
+void CSearch::SavePublishSeeds()
+{
+	const uint32_t now = static_cast<uint32_t>(time(nullptr));
+	KadPublishSeeds::Seeds &seeds = PublishSeeds();
+	for (auto it = seeds.begin(); it != seeds.end();) {
+		if (KadPublishSeeds::IsCurrent(it->second, now)) {
+			++it;
+		} else {
+			it = seeds.erase(it);
+			s_publishSeedsChanged = true;
+		}
+	}
+	if (!s_publishSeedsChanged) {
+		return;
+	}
+	CFile file(PublishSeedsPath(), CFile::write_safe);
+	if (!file.IsOpened()) {
+		return;
+	}
+	try {
+		KadPublishSeeds::Write(file, seeds, now);
+		if (!file.Close()) {
+			throw CIOFailureException(wxString("Cannot commit ") + KadPublishSeeds::FileName);
+		}
+		s_publishSeedsChanged = false;
+	} catch (const CIOFailureException &e) {
+		AddLogLineC(
+			CFormat(_("Error while saving %s file: %s")) % KadPublishSeeds::FileName % e.what());
 	}
 }
 

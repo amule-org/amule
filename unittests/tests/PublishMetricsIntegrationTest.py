@@ -98,6 +98,7 @@ def run(binary):
                     assert summary['queued'] == FILES, summary
                     assert summary['acknowledged_ips'] == FILES, summary
                     assert summary['attempts'] == summary['starts'] == FILES, summary
+                    assert summary['seeded_starts'] == 0, summary
                     assert summary['start_failures'] == 0, summary
                     assert summary['zero_ack'] == summary['cancelled'] == 0, summary
                     assert summary['max_req_per_ip_60s'] > 0 and lookup_packets > 0, summary
@@ -128,6 +129,8 @@ def run(binary):
                for n in range(FILES)}
         assert due.keys() == keywords.keys(), (sorted(due), sorted(keywords))
         assert all(abs(t - time.time() - 24 * 3600) < 600 for t in due.values()), due
+        # The only peer is far from every target, so no publish has seeds to save.
+        assert not (root / 'kadseeds.dat').exists()
     print('PASS: Kad2 queued publication, duplicate acknowledgements, totals and saved keyword times')
 
 

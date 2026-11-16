@@ -1991,19 +1991,20 @@ void CSharedFileList::Publish()
 		}
 		AddDebugLogLineN(logKadPublish,
 			CFormat("Kad source publish totals: attempts=%llu start_failures=%llu starts=%llu "
-				"queued=%llu "
+				"seeded_starts=%llu queued=%llu "
 				"acknowledged_ips=%llu "
 				"finished=%llu zero_ack=%llu cancelled=%llu duration_ms=%llu "
 				"max_duration_ms=%llu max_req_per_ip_60s=%llu req_ips_ge6=%zu "
 				"req_ips_ge8=%zu "
 				"req_ips_gt10=%zu req_ips_ge8_contacts=%llu max_pub_per_ip_60s=%llu "
 				"pub_ips_ge2=%zu pub_ips_gt2=%zu omitted_rate_samples=%llu") %
-				metrics.attempts % metrics.startFailures % metrics.starts % metrics.queued %
-				metrics.acknowledged % metrics.finished % metrics.zeroAcknowledgements %
-				metrics.cancelled % metrics.durationMs % metrics.maxDurationMs %
-				metrics.lookupRequests.peak % lookupIPs[0].size() % lookupIPs[1].size() %
-				lookupIPs[2].size() % busyContacts % metrics.publishRequests.peak %
-				publishIPs[0].size() % publishIPs[1].size() %
+				metrics.attempts % metrics.startFailures % metrics.starts %
+				metrics.seededStarts % metrics.queued % metrics.acknowledged %
+				metrics.finished % metrics.zeroAcknowledgements % metrics.cancelled %
+				metrics.durationMs % metrics.maxDurationMs % metrics.lookupRequests.peak %
+				lookupIPs[0].size() % lookupIPs[1].size() % lookupIPs[2].size() %
+				busyContacts % metrics.publishRequests.peak % publishIPs[0].size() %
+				publishIPs[1].size() %
 				(metrics.lookupRequests.omitted + metrics.publishRequests.omitted));
 	}
 

@@ -52,11 +52,12 @@ TEST(PublishMetrics, TotalsAndChangedReports)
 	metrics.Finish(trace, true, 20);
 	metrics.Start();
 	metrics.Finish({}, false, 30);
-	metrics.Start();
+	metrics.Start(true);
 	metrics.Finish({}, true, 40);
 	ASSERT_EQUALS(uint64_t(2), metrics.attempts);
 	ASSERT_EQUALS(uint64_t(1), metrics.startFailures);
 	ASSERT_EQUALS(uint64_t(3), metrics.starts);
+	ASSERT_EQUALS(uint64_t(1), metrics.seededStarts);
 	ASSERT_EQUALS(uint64_t(1), metrics.queued);
 	ASSERT_EQUALS(uint64_t(1), metrics.acknowledged);
 	ASSERT_EQUALS(uint64_t(2), metrics.finished);
