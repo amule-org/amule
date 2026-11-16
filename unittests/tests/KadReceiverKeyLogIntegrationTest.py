@@ -77,11 +77,18 @@ def source_publish(file_id, tags):
             file_id + os.urandom(16) + bytes([len(tags)]) + b''.join(tags))
 
 
-def type7_tags(tcp_port):
-    """A "routes in tags" record: one route, no buddy tags, size always present."""
-    return [tag(TAG_SOURCETYPE, 0x09, 7), tag(TAG_SOURCEPORT, 0x08, tcp_port),
+def type7_tags(tcp_port, pointer_repeats=False):
+    """A "routes in tags" record: one route, no buddy tags, size always present.
+
+    With pointer_repeats, a second "bpv" follows the first and is a long string rather than the
+    version byte. Only the first integer may be stored, so the repeat must not come back.
+    """
+    tags = [tag(TAG_SOURCETYPE, 0x09, 7), tag(TAG_SOURCEPORT, 0x08, tcp_port),
             tag(TAG_FILESIZE, 0x03, FILE_SIZE), tag(TAG_ENCRYPTION, 0x09, 3),
             tag(b'ip6', 0x02, b'20010db8' * 4)]
+    if pointer_repeats:
+        tags += [tag(b'bpv', 0x09, 1), tag(b'bpv', 0x02, b'r' * 400)]
+    return tags
 
 
 def drop_unkeyed_requests(binary):
@@ -100,7 +107,7 @@ def drop_unkeyed_requests(binary):
 
             # The keyed type 7 publish is the control: same record, and it is indexed.
             for wrap, (opcode, body), expected in (
-                    (keyed, source_publish(file_id, type7_tags(4101)),
+                    (keyed, source_publish(file_id, type7_tags(4101, pointer_repeats=True)),
                      'Kad2 source publish from 127.0.0.1:{port}: receiver key valid'),
                     (lambda p: p, source_publish(file_id, type7_tags(4102)),
                      'Dropped Kad2 source publish of type 7 from 127.0.0.1:{port}: '
@@ -117,6 +124,9 @@ def drop_unkeyed_requests(binary):
 
             indexed = search(udp_port, file_id)
             assert len(indexed) == 1, f'{len(indexed)} of 1 type 7 publishes were indexed'
+            (stored,) = indexed.values()
+            # The version byte, not the 400-byte repeat that followed it.
+            assert stored.get(b'bpv') == 1, ('a repeated bpv was stored', stored.get(b'bpv'))
 
 
 def run(binary):

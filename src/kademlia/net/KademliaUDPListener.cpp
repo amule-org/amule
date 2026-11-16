@@ -1369,8 +1369,15 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 						delete tag;
 					}
 				} else if (!tag->GetName().Cmp(TAG_BUDDYPOINTER)) {
+					// Kept by name so no unknown-tag flood can evict it, which also puts
+					// it outside that budget: only the first integer is stored, and the
+					// flag is set either way so an unkeyed record still goes.
+					if (!carriesPointerTag && tag->IsInt()) {
+						entry->AddTag(tag, ip);
+					} else {
+						delete tag;
+					}
 					carriesPointerTag = true;
-					entry->AddTag(tag, ip);
 				} else if (!extraFull &&
 					   extraBytes + tagBytes <= KADEMLIAMAXSOURCEEXTRABYTES &&
 					   indexed->HasRoomForExtraTags(extraBytes + tagBytes)) {

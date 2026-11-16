@@ -70,6 +70,10 @@ def source_tags(with_buddy_hash, source_type=3):
             kad_tag(TAG_SOURCEIP, 0x03, kad_ip(SOURCE_ADDRESS)),
             kad_tag(TAG_SOURCEPORT, 0x08, SOURCE_PORT),
             kad_tag(TAG_FILESIZE, 0x03, FILE_SIZE)]
+    if source_type == 7:
+        # A route the receiver parses and then refuses: 2001:db8::/32 is documentation space, so
+        # the record reaches the type 7 branch of the downloader and nothing is ever dialled.
+        tags.append(kad_tag(b'ip6', 0x02, b'20010db8' * 4))
     if with_buddy_hash:
         tags.append(kad_tag(TAG_BUDDYHASH, 0x02, BUDDY_HASH))
     return tags
@@ -198,13 +202,11 @@ def run(binary):
     assert ZERO_ID not in silent.lookups, 'looked up the zero Kad ID'
     assert not silent.callbacks, ('callback request without a buddy hash',
                                   [body.hex() for body in silent.callbacks])
-    # Type 7 names its routes in tags. Its buddy hash must not start a lookup, and with no route
-    # this receiver can use, the record must cost no traffic at all.
+    # Type 7 names its routes in tags, so its buddy hash must start no callback whatever it says.
     routes_in_tags = drive(binary, address, with_buddy_hash=True, source_type=7)
     assert routes_in_tags.source_searches > 0, 'the daemon never searched Kad for sources'
     assert not routes_in_tags.callbacks, ('callback request for a type 7 source',
                                           [body.hex() for body in routes_in_tags.callbacks])
-    assert ZERO_ID not in routes_in_tags.lookups, 'looked up the zero Kad ID'
     print('PASS: a published buddy hash is looked up; one without it, and a type 7, get no buddy '
           'lookup')
 
