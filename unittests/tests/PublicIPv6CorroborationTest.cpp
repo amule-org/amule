@@ -132,10 +132,14 @@ std::vector<Address> Held(const Address &one, const Address &two)
 const uint64_t START_MS = 5000;
 
 // Claims @a claimed from observer networks 1..count.
-void ClaimFrom(CPublicIPv6Corroboration &tracker, unsigned count, const Address &claimed, uint64_t nowMs)
+void ClaimFrom(CPublicIPv6Corroboration &tracker,
+	unsigned count,
+	const Address &claimed,
+	uint64_t nowMs,
+	bool inbound = true)
 {
 	for (unsigned i = 0; i < count; ++i) {
-		tracker.AddClaim(Observer((uint8_t)(i + 1)), claimed.data(), true, nowMs);
+		tracker.AddClaim(Observer((uint8_t)(i + 1)), claimed.data(), inbound, nowMs);
 	}
 }
 
@@ -797,10 +801,8 @@ TEST(PublicIPv6Corroboration, APeerWeDialledStillContradicts)
 	CPublicIPv6Corroboration tracker;
 	const CNetworkAddress stable = AsNetworkAddress(Stable());
 	tracker.SetLocalAddresses(Held(Stable()), START_MS);
-	const Address translated = InPrefix(OTHER_SUBNET, 0x01);
-	for (uint8_t i = 1; i <= PUBLIC_IPV6_CORROBORATION_THRESHOLD; ++i) {
-		tracker.AddClaim(Observer(i), translated.data(), false, START_MS);
-	}
+	ClaimFrom(
+		tracker, PUBLIC_IPV6_CORROBORATION_THRESHOLD, InPrefix(OTHER_SUBNET, 0x01), START_MS, false);
 	ASSERT_TRUE(tracker.IsPrefixVetoed(stable, START_MS));
 }
 

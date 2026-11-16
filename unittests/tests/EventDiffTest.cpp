@@ -237,6 +237,25 @@ std::string EmitStatusAndGetPayload(const StatusSnapshot &next)
 	}
 	return payload;
 }
+
+// Publishes @a client as the first tick and returns its client_added payload.
+std::string EmitClientAndGetPayload(const ClientSnapshot &client)
+{
+	CState state;
+	state.MutateClients([&](std::map<std::uint32_t, ClientSnapshot> &clients) {
+		clients.emplace(client.ecid, client);
+	});
+	CEventBus bus;
+	LastSeenState prev;
+	EmitDiffsAndUpdate(bus, prev, state);
+
+	std::string payload;
+	for (const auto &ev : DrainAll(bus)) {
+		if (ev.name == "client_added")
+			payload = ev.data;
+	}
+	return payload;
+}
 } // namespace
 
 // Each visible field must trigger an update by itself. The same snapshot must give the
@@ -573,20 +592,10 @@ TEST(EventDiff, CollectionIntegerFormattingIgnoresGlobalLocale)
 
 TEST(EventDiff, CollectionStringsUseRestEscapes)
 {
-	CState state;
 	ClientSnapshot client;
 	client.ecid = 1;
 	client.client_name = "服务器 😀\x7f\"\\\n\b\f\r\t\x01";
-	state.MutateClients(
-		[&](std::map<std::uint32_t, ClientSnapshot> &clients) { clients[client.ecid] = client; });
-	CEventBus bus;
-	LastSeenState prev;
-	EmitDiffsAndUpdate(bus, prev, state);
-	std::string payload;
-	for (const auto &event : DrainAll(bus)) {
-		if (event.name == "client_added")
-			payload = event.data;
-	}
+	const std::string payload = EmitClientAndGetPayload(client);
 	CJsonWriter rest;
 	rest.BeginObject();
 	rest.Key("name");
@@ -1446,24 +1455,11 @@ TEST(EventDiff, SearchClosedFiresOnceWhenTheSlotIsFreed)
 // unconditionally, so nothing read the flag and both cases went out as 0.
 TEST(EventDiff, ClientEventEmitsNullAvailablePartsWhenTheMapIsUnreported)
 {
-	CState state;
-	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
-		ClientSnapshot c;
-		c.ecid = 71;
-		c.client_name = "no-map";
-		// has_parts_offered_count stays false: the tag never arrived.
-		clients.emplace(c.ecid, c);
-	});
-
-	CEventBus bus;
-	LastSeenState prev;
-	EmitDiffsAndUpdate(bus, prev, state);
-
-	std::string payload;
-	for (const auto &e : DrainAll(bus)) {
-		if (e.name == "client_added")
-			payload = e.data;
-	}
+	ClientSnapshot c;
+	c.ecid = 71;
+	c.client_name = "no-map";
+	// has_parts_offered_count stays false: the tag never arrived.
+	const std::string payload = EmitClientAndGetPayload(c);
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"parts_offered_count\":null") != std::string::npos);
 }
@@ -1471,25 +1467,12 @@ TEST(EventDiff, ClientEventEmitsNullAvailablePartsWhenTheMapIsUnreported)
 // ...and a peer that did report zero still says zero.
 TEST(EventDiff, ClientEventEmitsZeroAvailablePartsWhenTheMapSaysZero)
 {
-	CState state;
-	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
-		ClientSnapshot c;
-		c.ecid = 72;
-		c.client_name = "empty-map";
-		c.parts_offered_count = 0;
-		c.has_parts_offered_count = true;
-		clients.emplace(c.ecid, c);
-	});
-
-	CEventBus bus;
-	LastSeenState prev;
-	EmitDiffsAndUpdate(bus, prev, state);
-
-	std::string payload;
-	for (const auto &e : DrainAll(bus)) {
-		if (e.name == "client_added")
-			payload = e.data;
-	}
+	ClientSnapshot c;
+	c.ecid = 72;
+	c.client_name = "empty-map";
+	c.parts_offered_count = 0;
+	c.has_parts_offered_count = true;
+	const std::string payload = EmitClientAndGetPayload(c);
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"parts_offered_count\":0") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"parts_offered_count\":null") == std::string::npos);
@@ -1611,23 +1594,10 @@ TEST(EventDiff, ClientEventNullsPartProgressPercentWithNoLinkedFile)
 	// the same rule the REST row follows since #1160 section 1, where an unknown value is null
 	// rather than an absent key. The -1 sentinel is in-process only and must never reach the
 	// wire.
-	CState state;
-	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
-		ClientSnapshot c;
-		c.ecid = 8;
-		c.client_name = "leech";
-		clients.emplace(c.ecid, c);
-	});
-
-	CEventBus bus;
-	LastSeenState prev;
-	EmitDiffsAndUpdate(bus, prev, state);
-
-	std::string payload;
-	for (const auto &e : DrainAll(bus)) {
-		if (e.name == "client_added")
-			payload = e.data;
-	}
+	ClientSnapshot c;
+	c.ecid = 8;
+	c.client_name = "leech";
+	const std::string payload = EmitClientAndGetPayload(c);
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"part_progress_percent\":null") != std::string::npos);
 	ASSERT_TRUE(payload.find("-1") == std::string::npos);
@@ -2226,24 +2196,11 @@ TEST(EventDiff, CommentsUpdatedFiresWhenAFileArrivesMidKadLookup)
 // disagreed with itself. R10 says an unknown value is null and never a sentinel; "" is a sentinel.
 TEST(EventDiff, ClientEventNullsOptionalStringsThatNeverArrived)
 {
-	CState state;
-	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
-		ClientSnapshot c;
-		c.ecid = 73;
-		// Every optional string left at its default: a peer we have seen
-		// but that has told us nothing about itself yet.
-		clients.emplace(c.ecid, c);
-	});
-
-	CEventBus bus;
-	LastSeenState prev;
-	EmitDiffsAndUpdate(bus, prev, state);
-
-	std::string payload;
-	for (const auto &e : DrainAll(bus)) {
-		if (e.name == "client_added")
-			payload = e.data;
-	}
+	ClientSnapshot c;
+	c.ecid = 73;
+	// Every optional string left at its default: a peer we have seen
+	// but that has told us nothing about itself yet.
+	const std::string payload = EmitClientAndGetPayload(c);
 	ASSERT_TRUE(!payload.empty());
 	const char *const nulled[] = { "name",
 		"software",
@@ -2269,25 +2226,12 @@ TEST(EventDiff, ClientEventNullsOptionalStringsThatNeverArrived)
 // express.
 TEST(EventDiff, ClientEventKeepsTheStateEnumsAsStrings)
 {
-	CState state;
-	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
-		ClientSnapshot c;
-		c.ecid = 74;
-		c.upload_state = "uploading";
-		c.download_state = "downloading";
-		c.ident_state = "identified";
-		clients.emplace(c.ecid, c);
-	});
-
-	CEventBus bus;
-	LastSeenState prev;
-	EmitDiffsAndUpdate(bus, prev, state);
-
-	std::string payload;
-	for (const auto &e : DrainAll(bus)) {
-		if (e.name == "client_added")
-			payload = e.data;
-	}
+	ClientSnapshot c;
+	c.ecid = 74;
+	c.upload_state = "uploading";
+	c.download_state = "downloading";
+	c.ident_state = "identified";
+	const std::string payload = EmitClientAndGetPayload(c);
 	ASSERT_TRUE(!payload.empty());
 	ASSERT_TRUE(payload.find("\"upload_state\":\"uploading\"") != std::string::npos);
 	ASSERT_TRUE(payload.find("\"download_state\":\"downloading\"") != std::string::npos);
@@ -2637,27 +2581,14 @@ TEST(EventDiff, SharedCompletenessUpdatesWithoutUploadChanges)
 
 TEST(EventDiff, ClientAddressFieldsFollowRestOrder)
 {
-	CState state;
-	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &clients) {
-		ClientSnapshot c;
-		c.ecid = 1;
-		c.ip = "1.2.3.4";
-		c.port = 4662;
-		c.country_code = "us";
-		clients.emplace(c.ecid, c);
-	});
-	CEventBus bus;
-	LastSeenState prev;
-	EmitDiffsAndUpdate(bus, prev, state);
-	for (const auto &event : DrainAll(bus)) {
-		if (event.name == "client_added") {
-			ASSERT_TRUE(
-				event.data.find("\"ip\":\"1.2.3.4\",\"port\":4662,\"country_code\":\"us\"") !=
-				std::string::npos);
-			return;
-		}
-	}
-	ASSERT_TRUE(false);
+	ClientSnapshot c;
+	c.ecid = 1;
+	c.ip = "1.2.3.4";
+	c.port = 4662;
+	c.country_code = "us";
+	const std::string payload = EmitClientAndGetPayload(c);
+	ASSERT_TRUE(payload.find("\"ip\":\"1.2.3.4\",\"port\":4662,\"country_code\":\"us\"") !=
+		    std::string::npos);
 }
 
 TEST(EventDiff, CaptchaMessageFieldsFollowRestOrder)

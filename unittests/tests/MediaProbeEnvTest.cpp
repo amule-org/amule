@@ -36,6 +36,7 @@
 #include <wx/utils.h>
 
 #include "MediaProbe.h"
+#include "TestScratchDir.h"
 #include "libs/common/Path.h"
 
 using namespace muleunit;
@@ -44,23 +45,17 @@ DECLARE_SIMPLE(MediaProbeEnv)
 
 TEST(MediaProbeEnv, NativeHelperFailuresRespectHeaderAndOutputBudget)
 {
-	const wxString path = wxFileName::CreateTempFileName(wxT("amule-native-exit"));
+	const TestScratchDir scratch("amule-native-exit");
+	const std::string input = scratch.Path() + "/input";
+	const CPath path(scratch.WxPath() + wxFileName::GetPathSeparator() + wxT("input"));
 	const std::atomic<bool> running(true);
 	for (const char mode : { 's', 'e', 'c', 'o', 'd', 'f', 'p' }) {
-		wxFFile input(path, wxT("wb"));
-		ASSERT_TRUE(input.IsOpened());
-		ASSERT_EQUALS(size_t(1), input.Write(&mode, 1));
-		input.Close();
+		ASSERT_TRUE(WriteFile(input, std::string(1, mode)));
 		MediaMetadata info;
 		info.length_seconds = 99;
 		info.codec = wxT("unchanged");
-		const auto outcome = MediaProbe::Probe(wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE),
-			CPath(path),
-			info,
-			5000,
-			running,
-			true,
-			false);
+		const auto outcome = MediaProbe::Probe(
+			wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE), path, info, 5000, running, true, false);
 		if (mode == 'c') {
 			ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::UnreadableFile);
 			ASSERT_TRUE(MediaProbe::IsFileVerdict(outcome));
@@ -71,22 +66,20 @@ TEST(MediaProbeEnv, NativeHelperFailuresRespectHeaderAndOutputBudget)
 		ASSERT_EQUALS(uint32(99), info.length_seconds);
 		ASSERT_EQUALS(wxString(wxT("unchanged")), info.codec);
 	}
-	wxRemoveFile(path);
 }
 
 TEST(MediaProbeEnv, NativeHelperHangIsStoppedWithoutPublishingMetadata)
 {
-	const wxString path = wxFileName::CreateTempFileName(wxT("amule-native-timeout"));
-	wxFFile input(path, wxT("wb"));
-	input.Write("t", 1);
-	input.Close();
+	const TestScratchDir scratch("amule-native-timeout");
+	const std::string input = scratch.Path() + "/input";
+	const CPath path(scratch.WxPath() + wxFileName::GetPathSeparator() + wxT("input"));
+	ASSERT_TRUE(WriteFile(input, "t"));
 	const std::atomic<bool> running(true);
 	MediaMetadata info;
 	info.length_seconds = 99;
 	const auto start = std::chrono::steady_clock::now();
 	const auto result = MediaProbe::Probe(
-		wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE), CPath(path), info, 100, running, true, false);
-	wxRemoveFile(path);
+		wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE), path, info, 100, running, true, false);
 	ASSERT_TRUE(result == MediaProbe::ProbeOutcome::Cancelled);
 	ASSERT_EQUALS(uint32(99), info.length_seconds);
 	ASSERT_TRUE(std::chrono::steady_clock::now() - start < std::chrono::seconds(5));

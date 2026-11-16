@@ -36,22 +36,25 @@ TEST(ServerIPv6Verdict, AbsentStatusIsUnknown)
 
 TEST(ServerIPv6Verdict, AllBitsIsVerified)
 {
-	ASSERT_TRUE(ParseServerIPv6Verdict(0x07) == EServerIPv6Verdict::Verified);
+	ASSERT_TRUE(ParseServerIPv6Verdict(SERVER_IPV6_STATUS_HELD | SERVER_IPV6_STATUS_REACHABLE |
+					   SERVER_IPV6_STATUS_PROBED) == EServerIPv6Verdict::Verified);
 }
 
 TEST(ServerIPv6Verdict, UnreachableProbeIsFailed)
 {
-	ASSERT_TRUE(ParseServerIPv6Verdict(0x05) == EServerIPv6Verdict::Failed);
+	ASSERT_TRUE(ParseServerIPv6Verdict(SERVER_IPV6_STATUS_HELD | SERVER_IPV6_STATUS_PROBED) ==
+		    EServerIPv6Verdict::Failed);
 }
 
 TEST(ServerIPv6Verdict, HeldOnlyIsProbing)
 {
-	ASSERT_TRUE(ParseServerIPv6Verdict(0x01) == EServerIPv6Verdict::Probing);
+	ASSERT_TRUE(ParseServerIPv6Verdict(SERVER_IPV6_STATUS_HELD) == EServerIPv6Verdict::Probing);
 }
 
 TEST(ServerIPv6Verdict, UnprobedReachableIsTrusted)
 {
-	ASSERT_TRUE(ParseServerIPv6Verdict(0x03) == EServerIPv6Verdict::Trusted);
+	ASSERT_TRUE(ParseServerIPv6Verdict(SERVER_IPV6_STATUS_HELD | SERVER_IPV6_STATUS_REACHABLE) ==
+		    EServerIPv6Verdict::Trusted);
 }
 
 TEST(ServerIPv6Verdict, InvalidCombinationsAreUnknown)

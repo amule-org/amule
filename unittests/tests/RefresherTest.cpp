@@ -4275,6 +4275,12 @@ TEST(Refresher, ServedBuddiesCapabilityDoesNotSurviveAnOlderCore)
 	ParsePreferencesFromPacket(&legacy, prefs, cats);
 	ASSERT_FALSE(prefs.advanced.kad_max_served_buddies_supported);
 	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.kad_max_served_buddies);
+
+	ParsePreferencesFromPacket(&modern, prefs, cats);
+	CECPacket empty(EC_OP_SET_PREFERENCES);
+	ParsePreferencesFromPacket(&empty, prefs, cats);
+	ASSERT_FALSE(prefs.advanced.kad_max_served_buddies_supported);
+	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.kad_max_served_buddies);
 }
 
 TEST(Refresher, WriteBufferCapabilityDoesNotSurviveAnOlderCore)

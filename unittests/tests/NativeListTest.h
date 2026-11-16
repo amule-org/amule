@@ -25,6 +25,71 @@
 #ifndef AMULE_NATIVE_LIST_TEST_H
 #define AMULE_NATIVE_LIST_TEST_H
 
+#include <vector>
+
+#include <wx/dataview.h>
+#include <wx/fileconf.h>
+#include <wx/mstream.h>
+
+#include "Preferences.h"
+
 void RunTests();
+
+// An empty in-memory config. Puts the previous global config back on unwind, so
+// wx never deletes this one at cleanup.
+struct ConfigScope
+{
+	ConfigScope()
+	: input("", 0)
+	, config(input)
+	, previous(wxConfigBase::Set(&config))
+	{
+	}
+	~ConfigScope() { wxConfigBase::Set(previous); }
+	wxMemoryInputStream input;
+	wxFileConfig config;
+	wxConfigBase *previous;
+};
+
+// Turns the live-sort preference on and restores it on unwind.
+struct LiveSortScope
+{
+	LiveSortScope()
+	: previous(CPreferences::LiveListSort())
+	{
+		Set(true);
+	}
+	~LiveSortScope() { Set(previous); }
+	static void Set(bool enabled) { Access::s_liveListSort = enabled; }
+	bool previous;
+
+private:
+	struct Access : CPreferences
+	{
+		using CPreferences::s_liveListSort;
+	};
+};
+
+// Records the rows the model reports as changed, and full resets.
+class ModelObserver : public wxDataViewModelNotifier
+{
+public:
+	std::vector<unsigned> changed;
+	unsigned resets = 0;
+	bool ItemChanged(const wxDataViewItem &item) override
+	{
+		changed.push_back(static_cast<wxDataViewListModel *>(GetOwner())->GetRow(item));
+		return true;
+	}
+	bool ItemAdded(const wxDataViewItem &, const wxDataViewItem &) override { return true; }
+	bool ItemDeleted(const wxDataViewItem &, const wxDataViewItem &) override { return true; }
+	bool ValueChanged(const wxDataViewItem &, unsigned) override { return true; }
+	bool Cleared() override
+	{
+		++resets;
+		return true;
+	}
+	void Resort() override {}
+};
 
 #endif // AMULE_NATIVE_LIST_TEST_H
