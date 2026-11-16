@@ -195,7 +195,7 @@ TEST(NetworkFunctions, IsGoodIP)
 	}
 }
 
-// Each special-purpose block is refused from its first address to its last, and nothing past it.
+// Each block in reserved_ranges is refused from its first address to its last, and nothing past it.
 TEST(NetworkFunctions, IsGoodIPSpecialPurposeBlocks)
 {
 	const wxString refused[] = { "0.0.0.0",

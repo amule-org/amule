@@ -95,7 +95,7 @@ struct filter_st
 	uint32 mask; // Mask in anti-host order.
 };
 
-// Special-purpose blocks from the IANA registry (RFC 6890), and multicast. RFC 3330 also listed
+// Some special-purpose blocks from the IANA registry (RFC 6890), and multicast. RFC 3330 also listed
 // 39/8, 128.0/16, 191.255/16 and 223.255.255/24 as reserved, but the RIRs have allocated them since.
 static filter_st reserved_ranges[] = {
 	{ 0x00000000, 0x000000ff }, // 0.0.0.0/8       "This network" [RFC 791]
