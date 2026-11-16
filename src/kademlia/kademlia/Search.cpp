@@ -1319,7 +1319,7 @@ void CSearch::ProcessResult(const CUInt128 &answer, TagPtrList *info, uint32_t f
 	switch (m_type) {
 	case FILE:
 		type = "File";
-		ProcessResultFile(answer, info);
+		ProcessResultFile(answer, info, fromIP, fromPort);
 		break;
 	case KEYWORD:
 		type = "Keyword";
@@ -1333,12 +1333,13 @@ void CSearch::ProcessResult(const CUInt128 &answer, TagPtrList *info, uint32_t f
 	AddDebugLogLineN(logKadSearch, "Got result (" + type + ")");
 }
 
-void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info)
+void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort)
 {
 	// Process a possible source to a file.
 	// Set of data we could receive from the result.
 	uint8_t type = 0;
 	uint32_t ip = 0;
+	bool ipSeen = false;
 	uint16_t tcp = 0;
 	uint16_t udp = 0;
 	uint32_t buddyip = 0;
@@ -1352,6 +1353,15 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info)
 		if (!tag->GetName().Cmp(TAG_SOURCETYPE)) {
 			type = tag->GetInt();
 		} else if (!tag->GetName().Cmp(TAG_SOURCEIP)) {
+			// The storer writes one, from the packet address. Another is the publisher's,
+			// let through by a storer that does not drop it.
+			if (ipSeen) {
+				AddDebugLogLineN(logKadSearch,
+					"Skipping a source result with more than one source IP, from " +
+						KadIPPortToString(fromIP, fromPort));
+				return;
+			}
+			ipSeen = true;
 			ip = tag->GetInt();
 		} else if (!tag->GetName().Cmp(TAG_SOURCEPORT)) {
 			tcp = tag->GetInt();

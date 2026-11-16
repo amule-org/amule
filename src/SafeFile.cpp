@@ -387,7 +387,9 @@ CTag *CFileDataIO::ReadTag(bool bOptUTF8) const
 	uint8_t type = 0;
 	try {
 		type = ReadUInt8();
-		name = ReadString(false);
+		// A written name ends at its first NUL. Cut it there on read too, so name checks
+		// see what is sent: "\xFE\0" would otherwise go out as TAG_SOURCEIP.
+		name = ReadString(false).BeforeFirst(wxT('\0'));
 
 		switch (type) {
 		// This tag data type is accepted and stored only to leave room for a future upgrade

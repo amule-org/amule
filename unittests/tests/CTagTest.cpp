@@ -663,6 +663,25 @@ TEST_M(CTag, KadInt8, "Kad: Read/Write integer  8bit")
 	check_single_kad_tag(packet, sizeof(packet), TAG_FILESIZE, 0x12);
 }
 
+TEST_M(CTag, KadNameStopsAtNul, "Kad: a tag name is read up to the NUL it is written up to")
+{
+	// TAG_SOURCEIP with a NUL and a byte after it. Writing sends only "\xFE".
+	uint8_t packet[] = { 0x03, 0x03, 0x00, 0xFE, 0x00, 0x41, 0x01, 0x02, 0x03, 0x04 };
+	const uint8_t written[] = { 0x03, 0x01, 0x00, 0xFE, 0x01, 0x02, 0x03, 0x04 };
+	CMemFile buf(packet, sizeof(packet));
+	std::unique_ptr<CTag> tag(buf.ReadTag(true));
+	CheckTagData(tag.get(), TAG_SOURCEIP, valid_tag_value(0x04030201));
+	ASSERT_EQUALS(sizeof(packet), buf.GetPosition());
+
+	CMemFile out;
+	out.WriteTag(*tag);
+	ASSERT_EQUALS(sizeof(written), out.GetLength());
+	out.Seek(0, wxFromStart);
+	for (const uint8_t byte : written) {
+		ASSERT_EQUALS(byte, out.ReadUInt8());
+	}
+}
+
 TEST_M(CTag, ReadIntegers, "Kad: Read/Write multiple integers")
 {
 	uint8_t packet[] = {

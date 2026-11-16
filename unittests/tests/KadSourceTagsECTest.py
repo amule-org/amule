@@ -19,10 +19,11 @@ KADEMLIA2_SEARCH_RES = 0x3B
 KADEMLIA2_PUBLISH_SOURCE_REQ = 0x44
 KADEMLIA2_PUBLISH_NOTES_REQ = 0x45
 KADEMLIA2_PUBLISH_RES = 0x4B
-TAG_SOURCETYPE, TAG_SOURCEPORT, TAG_FILESIZE = b'\xff', b'\xfd', b'\x02'
+TAG_SOURCETYPE, TAG_SOURCEIP, TAG_SOURCEPORT, TAG_FILESIZE = b'\xff', b'\xfe', b'\xfd', b'\x02'
 TAG_SERVERIP, TAG_SERVERPORT, TAG_BUDDYHASH, TAG_ENCRYPTION = b'\xfb', b'\xfa', b'\xf8', b'\xf3'
 TAG_FILENAME, TAG_DESCRIPTION = b'\x01', b'\x0b'
 FILE_SIZE = 9728000
+SENDER_IP = 0x7f000001  # 127.0.0.1, as the storer keeps it
 UNICODE_NAME = 'Клим café 東京 서울 中国.bin'.encode('utf-8')
 UNICODE_COMMENT = '¡Maldita! Ñandú — アニメ'.encode('utf-8')
 
@@ -113,6 +114,10 @@ def search(udp_port, file_id, notes=False, repeats=False):
         tags, offset = parse_tags(response, offset + 17, response[offset + 16])
         results[answer] = tags if repeats else dict(tags)
     return results
+
+
+def source_ips(tags):
+    return [value for name, value in tags if name == TAG_SOURCEIP]
 
 
 def wait_ready(ec, proc):
@@ -221,15 +226,33 @@ def run(binary):
             assert note[TAG_FILENAME] == UNICODE_NAME, 'note filename changed on publication'
             assert note[TAG_DESCRIPTION] == UNICODE_COMMENT, 'note comment changed on publication'
 
+            # Only the packet address may become TAG_SOURCEIP: searchers connect to the last one.
+            # Names are sent up to a NUL, so one must not hide a TAG_SOURCEIP or TAG_SOURCEPORT.
+            # The restart clears the limit of two source publishes per minute from one IP.
+            restart_kad(ec, proc)
+            spoof_source = b'\x55' * 16
+            spoofed = tag(TAG_SOURCEIP, 0x03, 0x04030201)
+            hidden = [tag(TAG_SOURCEIP + b'\x00', 0x03, 0x05050505),
+                      tag(TAG_SOURCEPORT + b'\x00x', 0x08, 9999)]
+            publish(udp_port, file_id, spoof_source,
+                    [spoofed] + core_tags(4005) + [spoofed] + hidden)
+            stored = search(udp_port, file_id, repeats=True)[spoof_source]
+            assert source_ips(stored) == [SENDER_IP], ('publisher TAG_SOURCEIP kept', stored)
+            ports = [value for name, value in stored if name == TAG_SOURCEPORT]
+            assert ports == [4005], ('second TAG_SOURCEPORT kept', stored)
+
             # Source tags must survive disk loading without adding an encoding layer.
             for _ in range(3):
                 restart_kad(ec, proc)
-                cached = search(udp_port, file_id)[cache_source]
+                sources = search(udp_port, file_id, repeats=True)
+                cached = dict(sources[cache_source])
                 assert cached[TAG_FILENAME] == UNICODE_NAME, 'source filename changed on reload'
+                assert source_ips(sources[spoof_source]) == [SENDER_IP], 'TAG_SOURCEIP on reload'
             print('PASS: emule-qt cache tags, eMuleAI buddy and IPv6 tags kept; '
                   'extra tags past the per-source budget dropped, the source kept; '
                   'one of each known tag kept, the first usable one; '
-                  'UTF-8 source names and notes preserved, including three source index reloads')
+                  'UTF-8 source names and notes preserved, including three source index reloads; '
+                  'a publisher-sent TAG_SOURCEIP dropped, also behind a NUL in its name')
 
 
 if __name__ == '__main__':

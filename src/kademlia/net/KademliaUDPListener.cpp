@@ -1320,6 +1320,10 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 						// More than one sourcetype tag found.
 						delete tag;
 					}
+				} else if (!tag->GetName().Cmp(TAG_SOURCEIP)) {
+					// Ours is the packet address. Searchers and a reload take the last
+					// one, so a publisher's would point them at any IP.
+					delete tag;
 				} else if (!tag->GetName().Cmp(TAG_FILESIZE)) {
 					if (entry->m_uSize == 0) {
 						if (tag->IsBsob() && tag->GetBsobSize() == 8) {
