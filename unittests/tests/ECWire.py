@@ -35,8 +35,21 @@ def exact(sock,n):
 def tag(name,value=b'',kind=1):
     return struct.pack('!HBI',C[name]*2,kind,len(value))+value
 def packet(op,tags):
-    body=bytes([C[op]])+struct.pack('!H',len(tags))+b''.join(tags)
+    body=bytes([C[op] if isinstance(op,str) else op])+struct.pack('!H',len(tags))+b''.join(tags)
     return struct.pack('!II',0x20,len(body))+body
+def read_request(sock, expand_numbers=None):
+    """The next request body a fake core gets, decompressed.
+
+    expand_numbers rewrites a body sent with EC_FLAG_UTF8_NUMBERS; without it the body is left
+    as sent.
+    """
+    flags,size=struct.unpack('!II',exact(sock,8))
+    body=exact(sock,size)
+    if flags&1: body=zlib.decompress(body)
+    if flags&2 and expand_numbers: body=expand_numbers(body)
+    return body
+def send_reply(sock,op,tags=()):
+    sock.sendall(packet(op,tags))
 def read(sock):
     flags,length=struct.unpack('!II',exact(sock,8))
     body=exact(sock,length)

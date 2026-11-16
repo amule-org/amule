@@ -13,8 +13,7 @@ import tempfile
 import threading
 import time
 
-from AllSearchIntegrationTest import (C, DAEMON_ARGS, EC, tag, connect_daemon, free_ports, running_daemon,
-                                      stop_daemon)
+from AllSearchIntegrationTest import C, DAEMON_ARGS, EC, amulecmd, tag, free_ports, running_daemon
 from DaemonConfig import daemon_env, write_amule_conf
 from ConnectorConfigPathTest import read_config
 import ECWire as W
@@ -164,11 +163,9 @@ def rate_limit_boundary(daemon, cmd, async_probe, root, env):
             for binary in (cmd, async_probe):
                 for _ in range(threshold - 1):
                     abandon_once()
-                args = ([cmd, '-h', '127.0.0.1', '-p', str(port), '--password-stdin',
-                         '-c', 'status'] if binary == cmd else
-                        [async_probe, str(port)])
-                out = subprocess.run(args, env=env, input='regression\n', capture_output=True,
-                                     text=True, timeout=20)
+                out = (amulecmd(cmd, port, '-c', 'status', env=env) if binary == cmd else
+                       subprocess.run([async_probe, str(port)], env=env, input='regression\n',
+                                      capture_output=True, text=True, timeout=20))
                 assert 'Succeeded!' in out.stdout + out.stderr, out
 
             # Allowing the reserved proof must not admit another challenge.
@@ -272,24 +269,16 @@ def set_ec_pass_enables_ec(daemon, cmd):
         saved = read_config(root / 'amule.conf')['ExternalConnect']
         assert saved['AcceptExternalConnections'] == '1', dict(saved)
         verifier = saved['ECPasswordVerifier']
-        with (root / 'console').open('w') as log:
-            proc = subprocess.Popen(base, env=env, stdout=log, stderr=log,
-                                    stdin=subprocess.DEVNULL, start_new_session=True)
-            try:
-                connect_daemon(proc, port, root, peer).sock.close()
-                out = subprocess.run([cmd, '-h', '127.0.0.1', '-p', str(port), '--password-stdin',
-                                      '-c', 'status'],
-                                     env=env, input='regression\n', capture_output=True, text=True,
-                                     timeout=20)
-                assert 'Succeeded!' in out.stdout + out.stderr, out
-                # The running core would write its old verifier back on exit.
-                refused = set_pass(b'other\n')
-                assert refused.returncode == 1, refused
-                assert b'Cannot set the EC password' in refused.stdout + refused.stderr, refused
-                saved = read_config(root / 'amule.conf')['ExternalConnect']
-                assert saved['ECPasswordVerifier'] == verifier, 'verifier changed under the core'
-            finally:
-                stop_daemon(proc)
+        with running_daemon(daemon, root, (port, peer), env=env, console='console') as (_, ec):
+            ec.sock.close()
+            out = amulecmd(cmd, port, '-c', 'status', env=env)
+            assert 'Succeeded!' in out.stdout + out.stderr, out
+            # The running core would write its old verifier back on exit.
+            refused = set_pass(b'other\n')
+            assert refused.returncode == 1, refused
+            assert b'Cannot set the EC password' in refused.stdout + refused.stderr, refused
+            saved = read_config(root / 'amule.conf')['ExternalConnect']
+            assert saved['ECPasswordVerifier'] == verifier, 'verifier changed under the core'
     print('PASS: amuled --set-ec-pass-stdin enables external connections and exits')
 
 def main(daemon,cmd,async_probe):
@@ -311,7 +300,7 @@ def main(daemon,cmd,async_probe):
                 assert record.startswith('ECPasswordVerifier=v1:15:8:1:')
                 if restart: assert record==saved,'restart changed verifier/salt'
                 saved=record
-                out=subprocess.run([cmd,'-h','127.0.0.1','-p',str(port),'--password-stdin','-c','status'],env=env,input='regression\n',capture_output=True,text=True,timeout=20)
+                out=amulecmd(cmd,port,'-c','status',env=env)
                 assert 'Succeeded!' in out.stdout+out.stderr,out
                 out=subprocess.run([async_probe,str(port)],env=env,capture_output=True,text=True,timeout=20)
                 assert out.returncode==0,out
@@ -449,7 +438,7 @@ def main(daemon,cmd,async_probe):
                     W.assert_refused(*W.authenticate(sock,hashlib.md5(b'regression').digest(),proof_mutator=lambda m: W.packet('EC_OP_AUTH_PASSWD',[W.tag('EC_TAG_SRP_M1',saved_m1[0])]))[1:],'EC_AUTH_FAIL_REJECTED')
                 EC(port).sock.close()
                 # The tags must not change what a client prints.
-                out=subprocess.run([cmd,'-h','127.0.0.1','-p',str(port),'--password-stdin','-c','status'],env=env,input='wrong\n',capture_output=True,text=True,timeout=20)
+                out=amulecmd(cmd,port,'-c','status',env=env,password='wrong')
                 assert 'Access denied because: Authentication failed: wrong password.' in out.stdout+out.stderr,out
                 EC(port).sock.close()
                 assert 'Sent error message "Invalid request, please authenticate first."' in (root/'logfile').read_text(), 'refusal not logged'
@@ -468,10 +457,10 @@ def main(daemon,cmd,async_probe):
                     _,op,tags=W.authenticate(sock,hashlib.md5(b'regression').digest(),
                         before_proof=lambda: change_password('regression','rotated'))
                     W.assert_refused(op,tags,'EC_AUTH_FAIL_REJECTED')
-                for args in ([cmd, '-h', '127.0.0.1', '-p', str(port), '--password-stdin', '-c', 'status'],
-                             [async_probe, str(port), 'rotated']):
-                    out = subprocess.run(args, env=env, input='rotated\n', capture_output=True,
-                                         text=True, timeout=20)
+                for out in (amulecmd(cmd, port, '-c', 'status', env=env, password='rotated'),
+                            subprocess.run([async_probe, str(port), 'rotated'], env=env,
+                                           input='rotated\n', capture_output=True, text=True,
+                                           timeout=20)):
                     assert 'Succeeded!' in out.stdout + out.stderr, out
                 rotated = next(line for line in (root/'amule.conf').read_text().splitlines()
                                if line.startswith('ECPasswordVerifier='))
@@ -488,7 +477,7 @@ def main(daemon,cmd,async_probe):
         with FixtureServer(('127.0.0.1',0),OldDaemon) as old:
             old.extra=None
             threading.Thread(target=old.serve_forever,daemon=True).start()
-            out=subprocess.run([cmd,'-h','127.0.0.1','-p',str(old.server_address[1]),'--password-stdin','-c','status'],env=env,input='regression\n',capture_output=True,text=True,timeout=10)
+            out=amulecmd(cmd,old.server_address[1],'-c','status',env=env,timeout=10)
             assert '3.3.0 or later' in out.stdout+out.stderr,out
             old.shutdown()
             assert old.extra==b'',old.extra
@@ -496,7 +485,7 @@ def main(daemon,cmd,async_probe):
             malicious.bad_profile=True;malicious.extra=None
             threading.Thread(target=malicious.serve_forever,daemon=True).start()
             start=time.monotonic()
-            out=subprocess.run([cmd,'-h','127.0.0.1','-p',str(malicious.server_address[1]),'--password-stdin','-c','status'],env=env,input='regression\n',capture_output=True,text=True,timeout=5)
+            out=amulecmd(cmd,malicious.server_address[1],'-c','status',env=env,timeout=5)
             assert 'unsupported profile' in out.stdout+out.stderr,out
             assert time.monotonic()-start<3,'client attempted unbounded KDF'
             malicious.shutdown();assert malicious.extra==b''
@@ -509,13 +498,13 @@ def main(daemon,cmd,async_probe):
                     bad.extra = None
                     bad.error = None
                     threading.Thread(target=bad.serve_forever, daemon=True).start()
-                    args = ([cmd, '-h', '127.0.0.1', '-p', str(bad.server_address[1]),
-                             '--password-stdin', '-c', 'status'] if binary == cmd else
-                            [async_probe, str(bad.server_address[1])])
+                    timeout = 10 if plaintext else 20
                     start = time.monotonic()
-                    out = subprocess.run(args, env=env, input='regression\n', capture_output=True,
-                                         text=True,
-                                         timeout=10 if plaintext else 20)
+                    out = (amulecmd(cmd, bad.server_address[1], '-c', 'status', env=env,
+                                    timeout=timeout) if binary == cmd else
+                           subprocess.run([async_probe, str(bad.server_address[1])], env=env,
+                                          input='regression\n', capture_output=True, text=True,
+                                          timeout=timeout))
                     message = out.stdout + out.stderr
                     assert ('failed to prove' in message or
                             (plaintext and 'unencrypted packet' in message)), out
@@ -529,10 +518,7 @@ def main(daemon,cmd,async_probe):
         with FixtureServer(('127.0.0.1', 0), PlaintextReply) as bad:
             bad.error = None
             threading.Thread(target=bad.serve_forever, daemon=True).start()
-            out = subprocess.run([cmd, '-h', '127.0.0.1', '-p', str(bad.server_address[1]),
-                                  '--password-stdin', '-c', 'status'],
-                                 env=env, input='regression\n', capture_output=True, text=True,
-                                 timeout=5)
+            out = amulecmd(cmd, bad.server_address[1], '-c', 'status', env=env, timeout=5)
             bad.shutdown()
             assert bad.error is None, bad.error
             assert 'injected plaintext response' not in out.stdout + out.stderr, out

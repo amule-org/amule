@@ -8,10 +8,10 @@ import struct
 import sys
 import tempfile
 import threading
-import zlib
 
-from ECWire import accept  # Preflight in the parent before starting fixtures.
-from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, http, integer,
+# Preflight in the parent before starting fixtures.
+from ECWire import accept, read_request, send_reply
+from AllSearchIntegrationTest import (C, configure_amuleapi, free_ports, http, integer,
                                       retry_port_collisions, start_amuleapi, stop_daemon, string,
                                       tag, wait_amuleapi)
 from CompletedFileDeleteIntegrationTest import eventually
@@ -27,11 +27,7 @@ class LegacyCore(socketserver.BaseRequestHandler):
             if self.server.mode != 'legacy': caps.append(tag(C['EC_TAG_CAN_DELETE_COMPLETE']))
             self.request = accept(self.request, capabilities=caps)
             while True:
-                flags, size = struct.unpack('!II', exact(self.request, 8))
-                body = exact(self.request, size)
-                if flags & 1:
-                    body = zlib.decompress(body)
-                op = body[0]
+                op = read_request(self.request)[0]
                 self.server.ops.append(op)
                 if op == C['EC_OP_GET_UPDATE']:
                     children = [tag(C['EC_TAG_PARTFILE_HASH'], bytes.fromhex(FILE_HASH), 9),
@@ -47,8 +43,7 @@ class LegacyCore(socketserver.BaseRequestHandler):
                     reply, tags = C['EC_OP_SHARED_FILES'], []
                 else:
                     reply, tags = C['EC_OP_NOOP'], []
-                payload = bytes([reply]) + struct.pack('!H', len(tags)) + b''.join(tags)
-                self.request.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
+                send_reply(self.request, reply, tags)
         except (EOFError, OSError):
             pass
 

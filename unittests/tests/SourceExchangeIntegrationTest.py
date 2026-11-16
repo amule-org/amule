@@ -10,14 +10,13 @@ import struct
 import sys
 import tempfile
 import time
-import zlib
 
 from AllSearchIntegrationTest import C, free_ports, retry_port_collisions, running_daemon, wait_for
 from CancelCompletedIntegrationTest import md4, part_met
 from DaemonConfig import write_amule_conf
 from ED2KLinkIntegrationTest import add_link
+from OfferFilesInteropPeer import receive
 from ShareWatcherMoveIntegrationTest import wait_shared
-from UploadRefillIntegrationTest import packet
 
 PARTSIZE = 9728000
 
@@ -39,11 +38,6 @@ def local_address():
 
 def send(peer, protocol, opcode, data=b''):
     peer.sendall(struct.pack('<BIB', protocol, len(data) + 1, opcode) + data)
-
-
-def receive(peer):
-    protocol, opcode, data = packet(peer)
-    return opcode, zlib.decompress(data) if protocol == 0xd4 else data
 
 
 class Peer:

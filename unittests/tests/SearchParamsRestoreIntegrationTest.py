@@ -152,13 +152,20 @@ def as_int(raw):
     return int.from_bytes(raw, 'big')
 
 
-def boot(binary, root):
-    for directory in ('Incoming', 'Temp'):
-        (root / directory).mkdir(exist_ok=True)
+def configure(root):
+    """Configure root for boot, and return its (ec, peer, udp) ports.
+
+    Both networks are on, with an empty nodes.dat so the daemon does not download one.
+    """
     ports = free_ports(3, udp_indices=(2,), peer_index=1)
     write_amule_conf(root, ports[0], Port=ports[1], UDPPort=ports[2], ConnectToKad=1,
                      ConnectToED2K=1, FilterLanIPs=0)
     (root / 'nodes.dat').write_bytes(struct.pack('<III', 0, 1, 0))
+    return ports
+
+
+def boot(binary, root):
+    ports = configure(root)
     return start(binary, root, ports), ports
 
 

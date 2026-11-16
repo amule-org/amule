@@ -5,14 +5,12 @@
 from pathlib import Path
 import socketserver
 import struct
-import subprocess
 import sys
 import tempfile
 import threading
-import zlib
 
-from ECWire import accept, tag as capability
-from AllSearchIntegrationTest import C, exact, integer, parse_tags, string, tag
+from ECWire import accept, read_request, send_reply, tag as capability
+from AllSearchIntegrationTest import C, amulecmd, integer, parse_tags, string, tag
 from DaemonConfig import daemon_env
 
 
@@ -67,18 +65,11 @@ class Handler(socketserver.BaseRequestHandler):
             self.request.settimeout(15)
             self.request = accept(self.request, capabilities=self.server.capabilities)
             while True:
-                flags, size = struct.unpack('!II', exact(self.request, 8))
-                body = exact(self.request, size)
-                if flags & 1:
-                    body = zlib.decompress(body)
-                if flags & 2:
-                    body = expand_numbers(body)
+                body = read_request(self.request, expand_numbers)
                 fields, _ = parse_tags(body, 3, struct.unpack_from('!H', body, 1)[0])
                 self.server.requests.append((body[0], fields))
-                op, tags = (self.server.reply(body[0], fields) if callable(self.server.reply)
-                            else self.server.reply)
-                payload = bytes([op]) + struct.pack('!H', len(tags)) + b''.join(tags)
-                self.request.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
+                send_reply(self.request, *(self.server.reply(body[0], fields)
+                                           if callable(self.server.reply) else self.server.reply))
         except (EOFError, ConnectionError):
             pass
         except BaseException as error:
@@ -102,11 +93,9 @@ def run(binary):
 
             def command(text, expected=None, extra=(), interactive=False):
                 server.requests.clear()
-                result = subprocess.run([binary, '-h', '127.0.0.1', '-p',
-                    str(server.server_address[1]), '--password-stdin', *extra, *([] if interactive else ['-c', text])],
-                    # Interactive commands follow the password line on the same stdin.
-                    env=daemon_env(directory), input='regression\n' + (text if interactive else ''),
-                    capture_output=True, text=True, timeout=20)
+                result = amulecmd(binary, server.server_address[1], *extra,
+                                  *([] if interactive else ['-c', text]),
+                                  env=daemon_env(directory), script=text if interactive else '')
                 output = result.stdout + result.stderr
                 assert not server.errors, server.errors
                 assert result.returncode == 0, (text, result.returncode, output)

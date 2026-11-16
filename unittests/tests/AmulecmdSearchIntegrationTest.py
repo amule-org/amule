@@ -4,31 +4,28 @@
 """The real command client records media filters and stops only its named daemon search."""
 from pathlib import Path
 import re
-import subprocess
 import sys
 import tempfile
 
-from AllSearchIntegrationTest import (C, integer, retry_port_collisions, stop_daemon,
+from AllSearchIntegrationTest import (C, amulecmd, integer, retry_port_collisions, running_daemon,
                                       stored_result, stored_search)
 from DaemonConfig import daemon_env
-from SearchParamsRestoreIntegrationTest import boot, search_list
+from SearchParamsRestoreIntegrationTest import configure, search_list
 
 
 def run(daemon, client):
     with tempfile.TemporaryDirectory(prefix='amulecmd-search-daemon-') as directory:
         root = Path(directory)
         (root / 'StoredSearches.met').write_bytes(stored_search([stored_result('retained.bin')]))
-        (proc, ec), ports = boot(daemon, root)
+        ports = configure(root)
 
         def command(text, expected):
-            result = subprocess.run([client, '-h', '127.0.0.1', '-p', str(ports[0]),
-                '--password-stdin', '-c', text], env=daemon_env(directory),
-                input='regression\n', capture_output=True, text=True, timeout=20)
+            result = amulecmd(client, ports[0], '-c', text, env=daemon_env(directory))
             output = result.stdout + result.stderr
             assert expected in output, (text, result.returncode, output)
             return output
 
-        try:
+        with running_daemon(daemon, root, ports, server_udp=True) as (_, ec):
             command('search list', '123\t')
             before = ec.call_list(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], 123)])
             assert before[1], before
@@ -63,20 +60,11 @@ def run(daemon, client):
             command('search stop 123', 'retained results were not removed')
             assert ec.call_list(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], 123)]) == before
             print('PASS: real daemon records all media filters; stop retains results and leaves other searches active')
-        except BaseException:
-            for name in ('console.log', 'logfile'):
-                path = root / name
-                if path.exists():
-                    print(path.read_text(errors='replace'), file=sys.stderr)
-            raise
-        finally:
-            ec.sock.close()
-            stop_daemon(proc, check=sys.exc_info()[0] is None)
 
         # Restart the same configuration: the command client's recorded form and the
         # pre-existing retained result must survive, not only its immediate EC reply.
-        (proc, ec), ports = boot(daemon, root)
-        try:
+        ports = configure(root)
+        with running_daemon(daemon, root, ports, server_udp=True) as (_, ec):
             command('search list', str(sid) + '\tcmdmetadata')
             fields = search_list(ec)[sid]
             assert int.from_bytes(fields[C['EC_TAG_SEARCH_MIN_LENGTH']], 'big') == 3723
@@ -86,9 +74,6 @@ def run(daemon, client):
                 assert fields[C['EC_TAG_SEARCH_' + name]].rstrip(b'\0').decode() == expected
             results = ec.call_list(C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], 123)])
             assert results[1], results
-        finally:
-            ec.sock.close()
-            stop_daemon(proc, check=sys.exc_info()[0] is None)
 
 
 if __name__ == '__main__':

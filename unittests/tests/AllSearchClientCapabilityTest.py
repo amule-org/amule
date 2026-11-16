@@ -2,10 +2,11 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Verify API and command-line guards against a loopback EC peer without All support."""
-import socketserver, struct, subprocess, sys, tempfile, threading, zlib
+import socketserver, struct, sys, tempfile, threading
 from pathlib import Path
-from ECWire import accept  # Preflight in the parent before starting fixtures.
-from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, http, integer,
+# Preflight in the parent before starting fixtures.
+from ECWire import accept, read_request, send_reply
+from AllSearchIntegrationTest import (C, amulecmd, configure_amuleapi, free_ports, http, integer,
                                       retry_port_collisions, start_amuleapi, stop_daemon, string,
                                       tag, wait_amuleapi)
 from DaemonConfig import daemon_env
@@ -15,10 +16,7 @@ class Handler(socketserver.BaseRequestHandler):
         try:
             self.request = accept(self.request)
             while True:
-                flags, size = struct.unpack('!II', exact(self.request, 8))
-                body = exact(self.request, size)
-                if flags & 1: body = zlib.decompress(body)
-                op = body[0]
+                op = read_request(self.request)[0]
                 requests.append(op)
                 if op == C['EC_OP_SEARCH_LIST']:
                     reply = C['EC_OP_SEARCH_LIST']
@@ -29,8 +27,7 @@ class Handler(socketserver.BaseRequestHandler):
                                  integer(C['EC_TAG_SEARCH_AVAILABILITY'], 0)])]
                 else:
                     reply, tags = C['EC_OP_NOOP'], []
-                payload = bytes([reply]) + struct.pack('!H', len(tags)) + b''.join(tags)
-                self.request.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
+                send_reply(self.request, reply, tags)
         except (EOFError, OSError): pass
 class Server(socketserver.ThreadingTCPServer):
     daemon_threads = True
@@ -67,7 +64,7 @@ def run(api, cmd):
                     status, result=http(url, '/status', token)
                     assert status==200 and result['search_all_supported'] is False, (status,result)
                     print('PASS: REST reports absent All capability as false')
-                    out=subprocess.run([cmd, '-h','127.0.0.1','-p',str(port),'--password-stdin','-c','search all legacyguard'], env=env, input='regression\n', capture_output=True, text=True, timeout=15)
+                    out=amulecmd(cmd, port, '-c', 'search all legacyguard', env=env, timeout=15)
                     assert 'does not support All searches' in out.stdout+out.stderr, out
                     assert C['EC_OP_SEARCH_START'] not in requests, requests
                     print('PASS: amulecmd reports unsupported All without sending SEARCH_START')
