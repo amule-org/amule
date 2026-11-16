@@ -20,12 +20,34 @@ DECLARE_SIMPLE(UdpObfuscationPolicy)
 namespace
 {
 constexpr std::uint32_t kPublicIP = 0x0100007F;
+constexpr std::uint32_t kReceiverKey = 0x12345678;
 
 bool Is(EUdpSendForm actual, EUdpSendForm expected)
 {
 	return actual == expected;
 }
 } // namespace
+
+TEST(UdpObfuscationPolicy, AKadPacketIsObfuscatedWithTheCryptLayerTurnedOff)
+{
+	// The receiver key that proves our address to a peer travels in the obfuscation header, so the
+	// user preference must not reach the Kad path (issue #2541).
+	ASSERT_TRUE(ObfuscateQueuedPacket(true, false, true, kReceiverKey, false));
+	ASSERT_TRUE(ObfuscateQueuedPacket(true, true, true, 0, false));
+}
+
+TEST(UdpObfuscationPolicy, AnEd2kPacketStillFollowsTheCryptLayerPreference)
+{
+	ASSERT_TRUE(ObfuscateQueuedPacket(true, true, false, 0, true));
+	ASSERT_FALSE(ObfuscateQueuedPacket(true, true, false, 0, false));
+}
+
+TEST(UdpObfuscationPolicy, APacketWithNoKeyMaterialIsSentPlain)
+{
+	ASSERT_FALSE(ObfuscateQueuedPacket(true, false, true, 0, true));
+	ASSERT_FALSE(ObfuscateQueuedPacket(true, false, false, kReceiverKey, true));
+	ASSERT_FALSE(ObfuscateQueuedPacket(false, true, true, kReceiverKey, true));
+}
 
 TEST(UdpObfuscationPolicy, AnEncryptedClientPacketIsObfuscatedWhileThePublicIPIsKnown)
 {
