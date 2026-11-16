@@ -95,27 +95,18 @@ struct filter_st
 	uint32 mask; // Mask in anti-host order.
 };
 
+// Special-purpose blocks from the IANA registry (RFC 6890), and multicast. RFC 3330 also listed
+// 39/8, 128.0/16, 191.255/16 and 223.255.255/24 as reserved, but the RIRs have allocated them since.
 static filter_st reserved_ranges[] = {
-	// Reserved blocks from RFC 3330 (http://www.rfc-editor.org/rfc/rfc3330.txt):
-	//                                         Address Block      Present Use Reference
-	//-----------------------------------------------------------------------------------------
-	{ 0x00000000, 0x000000ff }, // 0.0.0.0/8          "This" Network [RFC1700, page 4]
-	// Per RFC 3330, 14.* and 24.* must be parsed as normal IPs:
-	// { 0x0000000e, 0x000000ff },	// 14.0.0.0/8   Public-Data Networks    [RFC1700, page 181]
-	// { 0x00000018, 0x000000ff },	// 24.0.0.0/8   Cable Television Networks
-	{ 0x00000027, 0x000000ff }, // 39.0.0.0/8         Reserved but subject to allocation [RFC1797]
-	{ 0x0000007f, 0x000000ff }, // 127.0.0.0/8        Loopback [RFC1700, page 5]
-	{ 0x00000080, 0x0000ffff }, // 128.0.0.0/16       Reserved but subject to allocation --
-	{ 0x0000fea9, 0x0000ffff }, // 169.254.0.0/16     Link Local --
-	{ 0x0000ffbf, 0x0000ffff }, // 191.255.0.0/16     Reserved but subject to allocation --
-	{ 0x000000c0, 0x00ffffff }, // 192.0.0.0/24       Reserved but subject to allocation --
-	{ 0x000200c0, 0x00ffffff }, // 192.0.2.0/24       Test-Net
-	{ 0x006358c0, 0x00ffffff }, // 192.88.99.0/24     6to4 Relay Anycast [RFC3068]
-	{ 0x000012c6,
-		0x0000feff }, // 198.18.0.0/15      Network Interconnect Device Benchmark Testing   [RFC2544]
-	{ 0x00ffffdf, 0x00ffffff }, // 223.255.255.0/24   Reserved but subject to allocation --
-	{ 0x000000e0, 0x000000f0 }, // 224.0.0.0/4        Multicast [RFC3171]
-	{ 0x000000f0, 0x000000f0 }  // 240.0.0.0/4        Reserved for Future Use [RFC1700, page 4]
+	{ 0x00000000, 0x000000ff }, // 0.0.0.0/8       "This network" [RFC 791]
+	{ 0x0000007f, 0x000000ff }, // 127.0.0.0/8     Loopback [RFC 1122]
+	{ 0x0000fea9, 0x0000ffff }, // 169.254.0.0/16  Link local [RFC 3927]
+	{ 0x000000c0, 0x00ffffff }, // 192.0.0.0/24    IETF protocol assignments [RFC 6890]
+	{ 0x000200c0, 0x00ffffff }, // 192.0.2.0/24    TEST-NET-1 [RFC 5737]
+	{ 0x006358c0, 0x00ffffff }, // 192.88.99.0/24  6to4 relay anycast, deprecated [RFC 7526]
+	{ 0x000012c6, 0x0000feff }, // 198.18.0.0/15   Benchmarking [RFC 2544]
+	{ 0x000000e0, 0x000000f0 }, // 224.0.0.0/4     Multicast [RFC 5771]
+	{ 0x000000f0, 0x000000f0 }  // 240.0.0.0/4     Reserved [RFC 1112]
 };
 
 // Private-Use Networks [RFC1918]
