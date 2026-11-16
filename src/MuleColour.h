@@ -50,6 +50,14 @@ static inline bool IsListBackgroundDark(const wxWindow *w)
 	return (bg.Red() * 299 + bg.Green() * 587 + bg.Blue() * 114) / 1000 < 128;
 }
 
+// @p from moved toward @p to by @p amount, from 0 (all @p from) to 1 (all @p to).
+inline wxColour MixColours(const wxColour &from, const wxColour &to, double amount)
+{
+	return wxColour(wxColour::AlphaBlend(to.Red(), from.Red(), amount),
+		wxColour::AlphaBlend(to.Green(), from.Green(), amount),
+		wxColour::AlphaBlend(to.Blue(), from.Blue(), amount));
+}
+
 class CMuleColour
 {
 public:

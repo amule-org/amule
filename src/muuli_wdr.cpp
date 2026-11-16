@@ -42,6 +42,7 @@
 #include "amuleDlg.h" // Needed for CLIENT_SKIN_SIZE (clientImages' artIds static_assert)
 #include "KadContactHistogram.h"
 #include "DialogLayout.h" // Scrollable details dialogs
+#include "PrefsSidebar.h" // The preferences page list and its rounded highlights
 #include "TextClearButton.h"
 #include "TransferRateLabel.h"
 #include "ConnectionStatusLabel.h"
@@ -1385,12 +1386,6 @@ wxSizer *clientDetails( wxWindow *parent, bool call_fit, bool set_sizer )
     return top;
 }
 
-// @p from moved toward @p to by @p amount, from 0 (all @p from) to 1 (all @p to).
-static wxColour MixColours( const wxColour &from, const wxColour &to, double amount )
-{
-    return wxColour( wxColour::AlphaBlend( to.Red(), from.Red(), amount ), wxColour::AlphaBlend( to.Green(), from.Green(), amount ), wxColour::AlphaBlend( to.Blue(), from.Blue(), amount ) );
-}
-
 // Text one step back from the main text, for descriptions and notes: the text colour mixed toward
 // the background. wxSYS_COLOUR_GRAYTEXT is the colour of disabled text, which reads as unavailable
 // and, on a dark background, falls short of a readable contrast; this stays well above 4.5:1 in
@@ -2594,41 +2589,130 @@ wxSizer *PreferencesRemoteControlsTab( wxWindow *parent, bool call_fit, bool set
     return item0;
 }
 
+#if !wxUSE_NATIVE_SEARCH_CONTROL
+// A rounded field around the generic search box, drawn by @p sidebar with the corner radius of the
+// page list's highlight, and outlined in the accent colour while the box has the focus.
+static void RoundSearchField( wxWindow *sidebar, wxSearchCtrl *search, wxSizer *sidebarSizer )
+{
+    // The field's margin around the box, in pixels at the window's current DPI.
+    const auto pad = [sidebar]() { return sidebar->FromDIP( wxSize( 8, 5 ) ); };
+    // Room for the field around the box, with the box centred in it. wx rescales the sizer's
+    // borders and minimum size when the window moves to a screen of another DPI.
+    wxBoxSizer *field = new wxBoxSizer( wxHORIZONTAL );
+    field->SetMinSize( -1, search->GetBestSize().GetHeight() + 2 * pad().y );
+    field->Add( search, wxSizerFlags(1).CenterVertical().Border(wxLEFT|wxRIGHT, pad().x) );
+    sidebarSizer->Add( field, wxSizerFlags().Expand().Border(wxALL, sidebar->FromDIP(8)) );
+
+    FollowSystemColours( search, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) ); } );
+    const auto fieldRect = [search, pad]() { return search->GetRect().Inflate( pad() ); };
+    sidebar->Bind( wxEVT_PAINT, [sidebar, search, fieldRect]( wxPaintEvent & ) {
+        wxPaintDC dc( sidebar );
+        const bool focused = search->IsDescendant( wxWindow::FindFocus() );
+        // A high-contrast theme outlines its fields in the full text colour, which a tint of it would fade.
+        const wxColour text = wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT );
+        const wxColour border = focused ? wxSystemSettings::GetColour( wxSYS_COLOUR_HIGHLIGHT ) : PrefsHighlight::HighContrast() ? text : MixColours( sidebar->GetBackgroundColour(), text, 0.25 );
+        PrefsHighlight::FillRounded( dc, fieldRect(), sidebar->FromDIP( kPrefsCornerRadius ), search->GetBackgroundColour(), border, sidebar->FromDIP( focused ? 2 : 1 ) );
+    } );
+    // The margin is part of the field: a click there goes to the box, under the box's cursor.
+    sidebar->Bind( wxEVT_LEFT_DOWN, [search, fieldRect]( wxMouseEvent &event ) {
+        if ( fieldRect().Contains( event.GetPosition() ) ) {
+            search->SetFocus();
+        }
+        event.Skip();
+    } );
+    sidebar->Bind( wxEVT_MOTION, [sidebar, fieldRect, inField = false]( wxMouseEvent &event ) mutable {
+        const bool inside = fieldRect().Contains( event.GetPosition() );
+        if ( inside != inField ) {
+            inField = inside;
+            sidebar->SetCursor( inside ? wxCursor( wxCURSOR_IBEAM ) : wxNullCursor );
+        }
+        event.Skip();
+    } );
+    // The outline follows the focus into and out of the box. The generic box hands the focus to
+    // its text field, and passes on that field's focus events as its own.
+    const auto refresh = [sidebar, fieldRect]( wxFocusEvent &event ) {
+        sidebar->RefreshRect( fieldRect() );
+        event.Skip();
+    };
+    search->Bind( wxEVT_SET_FOCUS, refresh );
+    search->Bind( wxEVT_KILL_FOCUS, refresh );
+}
+#endif
+
+// The preferences sidebar's colour: the list's, which sets the sidebar apart from the page on
+// @p dialog with no divider between them. Windows' dark mode and macOS paint lists and dialogs the
+// same colour, so there the sidebar is set off a little, enough to tell the two apart.
+static wxColour PrefsSidebarColour( const wxWindow *dialog )
+{
+    const wxColour list = wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX );
+    wxColour page = dialog->GetBackgroundColour();
+    if ( page.Alpha() != wxALPHA_OPAQUE ) {
+        // macOS: the window paints its own background and reports none.
+        page = wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE );
+    }
+    if ( std::abs( list.GetLuminance() - page.GetLuminance() ) < 0.03 ) {
+#ifdef __WXOSX__
+        // Darker, as macOS's own sidebars are. Toward the text would lighten the dark sidebar
+        // toward the window, which macOS draws a little lighter than the colour it reports.
+        return MixColours( list, *wxBLACK, 0.06 );
+#else
+        return MixColours( list, wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), 0.06 );
+#endif
+    }
+    return list;
+}
+
 wxSizer *prefs_sizer;
 wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
 {
-    wxBoxSizer *item0 = new wxBoxSizer( wxVERTICAL );
-
-    // Sidebar | divider | page column, the layout of current system settings windows.
-    wxBoxSizer *item1 = new wxBoxSizer( wxHORIZONTAL );
+    // Sidebar | page column, the layout of current system settings windows. The sidebar runs the
+    // dialog's full height, set apart by its colour alone; the buttons sit under the page.
+    wxBoxSizer *item0 = new wxBoxSizer( wxHORIZONTAL );
 
     // The sidebar is one panel in the list's own colour, so the search box, the "no matches" note
     // and the page list read as a single pane rather than a list control dropped on the dialog.
     wxPanel *sidebar = new wxPanel( parent, wxID_ANY );
-    FollowSystemColours( sidebar, []( wxWindow *w ) { w->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ); } );
+    FollowSystemColours( sidebar, [parent]( wxWindow *w ) { w->SetBackgroundColour( PrefsSidebarColour( parent ) ); } );
     wxBoxSizer *sidebarSizer = new wxBoxSizer( wxVERTICAL );
 
+#if wxUSE_NATIVE_SEARCH_CONTROL
+    // macOS and GTK draw their own search field, rounded to match the platform.
     wxSearchCtrl *search = new wxSearchCtrl( sidebar, ID_PREFS_SEARCH );
+#else
+    // The generic search box (Windows) draws a square frame: it goes without one, and the sidebar
+    // draws a rounded field around it like the page list's highlight (PrefsSidebar.h).
+    wxSearchCtrl *search = new wxSearchCtrl( sidebar, ID_PREFS_SEARCH, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE );
+#endif
     search->SetDescriptiveText( _("Search settings") );
     // The clear button appears once there is something to clear (PrefsUnifiedDlg::OnSearchText).
     search->ShowCancelButton( false );
     search->SetToolTip( _("Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold.") );
+#if wxUSE_NATIVE_SEARCH_CONTROL
     sidebarSizer->Add( search, wxSizerFlags().Expand().Border(wxALL, parent->FromDIP(8)) );
+#else
+    RoundSearchField( sidebar, search, sidebarSizer );
+#endif
 
     // Wraps rather than widening the sidebar, which the page list sizes.
     WrappingStaticText *noMatches = new WrappingStaticText( sidebar, ID_PREFS_NO_MATCHES, wxEmptyString );
-    FollowSystemColours( noMatches, []( wxWindow *w ) {
-        w->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX ) ) );
+    FollowSystemColours( noMatches, [parent]( wxWindow *w ) {
+        w->SetForegroundColour( MutedTextColour( wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), PrefsSidebarColour( parent ) ) );
     } );
     noMatches->Hide();
     sidebarSizer->Add( noMatches, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(8)) );
 
-    // No border: the pane's colour and the divider beside it already set the list apart.
-    wxDataViewListCtrl *item2 = new wxDataViewListCtrl( sidebar, ID_PREFSLISTCTRL, wxDefaultPosition, wxDefaultSize, wxDV_SINGLE|wxDV_NO_HEADER|wxBORDER_NONE );
-    sidebarSizer->Add( item2, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(4)) );
+    // No border: the pane's colour already sets the list apart.
+    PrefsSidebar *item2 = new PrefsSidebar( sidebar, ID_PREFSLISTCTRL );
+    // What screen readers call the list.
+    item2->SetLabel( _("Preferences") );
+    // In the pane's colour. macOS would paint the list in the window's, the page's colour.
+    FollowSystemColours( item2, [parent]( wxWindow *w ) { w->SetBackgroundColour( PrefsSidebarColour( parent ) ); } );
+    sidebarSizer->Add( item2, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(PrefsSidebar::kMargin)) );
     sidebar->SetSizer( sidebarSizer );
-    item1->Add( sidebar, wxSizerFlags().Expand() );
-    item1->Add( new wxStaticLine( parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_VERTICAL ), wxSizerFlags().Expand() );
+    item0->Add( sidebar, wxSizerFlags().Expand() );
+
+    // The page column, then the buttons below it.
+    wxBoxSizer *item1 = new wxBoxSizer( wxVERTICAL );
 
     // The page column: a header naming the current page, above the page itself, which
     // PrefsUnifiedDlg swaps in and out of prefs_sizer. The header stays put while the page scrolls.
@@ -2643,9 +2727,8 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     pageColumn->Add( pageDescription, wxSizerFlags().Expand().Border(wxLEFT|wxRIGHT, parent->FromDIP(kPrefsPageMargin)) );
     pageColumn->AddSpacer( parent->FromDIP(12) );
     item1->Add( pageColumn, wxSizerFlags(1).Expand() );
-    item0->Add( item1, wxSizerFlags(1).Expand() );
 
-    item0->Add( new wxStaticLine( parent, wxID_ANY ), wxSizerFlags().Expand() );
+    item1->Add( new wxStaticLine( parent, wxID_ANY ), wxSizerFlags().Expand() );
 
     // Footer. The page-scoped "Reset" button, hidden except on the Advanced page (see
     // PrefsUnifiedDlg), sits at the far left, away from the buttons that close the dialog; OK and
@@ -2666,7 +2749,8 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     item4->SetCancelButton( item6 );
     item4->Realize();
     item3->Add( item4, wxSizerFlags().CenterVertical() );
-    item0->Add( item3, wxSizerFlags().Expand().Border(wxALL, parent->FromDIP(10)) );
+    item1->Add( item3, wxSizerFlags().Expand().Border(wxALL, parent->FromDIP(10)) );
+    item0->Add( item1, wxSizerFlags(1).Expand() );
     if (set_sizer)
     {
         parent->SetSizer( item0 );
