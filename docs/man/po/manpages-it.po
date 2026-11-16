@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
 "POT-Creation-Date: 2026-11-16 12:10+0100\n"
-"PO-Revision-Date: 2026-11-14 10:37+0000\n"
+"PO-Revision-Date: 2026-11-16 20:31+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/application-man-pages/it/>\n"
 "Language: it\n"
@@ -384,18 +384,14 @@ msgstr "amulecmd - programma in console per controllare aMule"
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
 msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>]"
-msgstr "B<-t> I<E<lt>nomeE<gt>>] [B<-s> I<E<lt>portaE<gt>>]"
+msgstr "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portaE<gt>>]"
 
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "[B<-c> I<E<lt>pathE<gt>>]"
 msgid "[B<-f> I<E<lt>pathE<gt>>]"
-msgstr "[B<-c> I<E<lt>percorsoE<gt>>]"
+msgstr "[B<-f> I<E<lt>percorsoE<gt>>]"
 
 # type: Plain text
 #. type: Plain text
@@ -438,7 +434,7 @@ msgstr "porta di aMule per le connessioni esterne, come impostata nelle preferen
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Read the External Connections password from the first line of stdin. Input is hidden on a terminal. Later lines stay on stdin, where amulecmd reads its commands. With B<-w> it replaces a saved password, even when an older file holds two. Without this option and without a saved password, amulecmd asks for the password the same way, so piped input then also starts with the password."
-msgstr ""
+msgstr "Legge la password delle connessioni esterne dalla prima riga dello stdin. L’input è nascosto su un terminale. Le righe successive restano sullo stdin, dove amulecmd legge i suoi comandi. Con B<-w> sostituisce una password salvata, anche quando un file più vecchio ne contiene due. Senza questa opzione e senza una password salvata, amulecmd chiede la password allo stesso modo, quindi anche l’input inviato tramite pipe inizia con la password."
 
 # type: TP
 #. type: TP
@@ -975,7 +971,7 @@ msgstr "~/.aMule/remote.conf"
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The password is saved as an MD5 digest in [EC]/PasswordMD5, the same key as in amuleapi.conf. An [EC]/Password key from an older file is moved there on load."
-msgstr ""
+msgstr "La password viene salvata come digest MD5 in [EC]/PasswordMD5, la stessa chiave usata in amuleapi.conf. Una chiave [EC]/Password proveniente da un file più vecchio viene spostata lì al caricamento."
 
 # type: SH
 #. type: SH
@@ -993,16 +989,12 @@ msgstr "Di norma amulecmd sarà inizialmente eseguito come:"
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
 msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
-msgstr "B<amulecmd> B<-h> I<nomehost> B<-p> I<portaEC> B<-P> I<passwordEC> B<-w>"
+msgstr "B<amulecmd> B<-h> I<hostname> B<-p> I<ECporta> B<--password-stdin> B<-w>"
 
 # type: Plain text
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgid "This will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgstr "In questo modo la configurazione verrà salvata in I<$HOME/.aMule/remote.conf>, e le volte successive si dovrà solo digitare:"
 
@@ -1073,7 +1065,7 @@ msgstr "Dopo il passaggio in background, crea un file di pid in I<E<lt>percorsoE
 #. type: Plain text
 #: amuled.1.in
 msgid "Set the External Connections password, enable External Connections, then exit without starting the core. Terminal input is hidden and confirmed; redirected stdin supplies one line without confirmation. An empty password is rejected.  Refused while aMule or another amuled uses the same config dir."
-msgstr ""
+msgstr "Imposta la password delle connessioni esterne, abilita le connessioni esterne, poi esce senza avviare il core. L’input da terminale è nascosto e viene confermato; lo stdin reindirizzato fornisce una sola riga senza conferma. Una password vuota viene rifiutata. Rifiutato se aMule o un altro amuled usa la stessa directory di configurazione."
 
 #. type: Plain text
 #: amuled.1.in

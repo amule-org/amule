@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
 "POT-Creation-Date: 2026-11-16 12:10+0100\n"
-"PO-Revision-Date: 2026-11-10 13:48+0000\n"
+"PO-Revision-Date: 2026-11-16 19:37+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/application-man-pages/ru/>\n"
 "Language: ru\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
 #. type: TH
@@ -337,17 +337,13 @@ msgstr "amulecmd - консольная программа для управле
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
 msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>]"
-msgstr "[B<-t> I<E<lt>имяE<gt>>] [B<-s> I<E<lt>портE<gt>>]"
+msgstr "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "[B<-c> I<E<lt>pathE<gt>>]"
 msgid "[B<-f> I<E<lt>pathE<gt>>]"
-msgstr "[B<-c> I<E<lt>путьE<gt>>]"
+msgstr "[B<-f> I<E<lt>pathE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -384,7 +380,7 @@ msgstr "Порт, который использует aMule для внешни�
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Read the External Connections password from the first line of stdin. Input is hidden on a terminal. Later lines stay on stdin, where amulecmd reads its commands. With B<-w> it replaces a saved password, even when an older file holds two. Without this option and without a saved password, amulecmd asks for the password the same way, so piped input then also starts with the password."
-msgstr ""
+msgstr "Читать пароль внешних подключений из первой строки stdin. При вводе с терминала ввод скрывается. Последующие строки остаются в stdin, откуда amulecmd читает свои команды. С параметром B<-w> он заменяет сохранённый пароль, даже если в старом файле хранятся два. Без этого параметра и без сохранённого пароля amulecmd запрашивает пароль тем же способом, поэтому передаваемый через канал ввод тогда тоже начинается с пароля."
 
 #. type: TP
 #: amulecmd.1.in
@@ -847,7 +843,7 @@ msgstr "~/.aMule/remote.conf"
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The password is saved as an MD5 digest in [EC]/PasswordMD5, the same key as in amuleapi.conf. An [EC]/Password key from an older file is moved there on load."
-msgstr ""
+msgstr "Пароль сохраняется в виде дайджеста MD5 в [EC]/PasswordMD5 — тот же ключ, что и в amuleapi.conf. Ключ [EC]/Password из старого файла переносится туда при загрузке."
 
 #. type: SH
 #: amulecmd.1.in
@@ -862,17 +858,13 @@ msgstr "Как правило, в первый раз amulecmd запускае�
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
 msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
-msgstr "B<amulecmd> B<-h> I<имя_хоста> B<-p> I<EC_порт> B<-P> I<EC_пароль> B<-w>"
+msgstr "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgid "This will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
-msgstr "Это сохранит параметры в I<$HOME/.aMule/remote.conf>, и в дальнейшем надо будет только набрать:"
+msgstr "Параметры будут сохранены в I<$HOME/.aMule/remote.conf>, и в дальнейшем достаточно будет набрать:"
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -931,7 +923,7 @@ msgstr "После запуска создать pid-файл по указан�
 #. type: Plain text
 #: amuled.1.in
 msgid "Set the External Connections password, enable External Connections, then exit without starting the core. Terminal input is hidden and confirmed; redirected stdin supplies one line without confirmation. An empty password is rejected.  Refused while aMule or another amuled uses the same config dir."
-msgstr ""
+msgstr "Задать пароль внешних подключений, включить внешние подключения и выйти, не запуская ядро. При вводе с терминала ввод скрывается и подтверждается; перенаправленный stdin подаёт одну строку без подтверждения. Пустой пароль отклоняется.  Операция отклоняется, пока aMule или другой amuled использует тот же каталог конфигурации."
 
 #. type: Plain text
 #: amuled.1.in
