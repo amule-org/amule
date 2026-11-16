@@ -37,7 +37,7 @@ def tag(name, kind, value):
 
 
 def parse_tags(data, offset, count):
-    tags = {}
+    tags = []
     for _ in range(count):
         kind = data[offset]
         length = struct.unpack_from('<H', data, offset + 1)[0]
@@ -45,14 +45,14 @@ def parse_tags(data, offset, count):
         offset += 3 + length
         if kind == 0x02:
             size = struct.unpack_from('<H', data, offset)[0]
-            tags[name] = data[offset + 2:offset + 2 + size]
+            tags.append((name, data[offset + 2:offset + 2 + size]))
             offset += 2 + size
         elif kind == 0x0A:
-            tags[name] = data[offset + 1:offset + 1 + data[offset]]
+            tags.append((name, data[offset + 1:offset + 1 + data[offset]]))
             offset += 1 + data[offset]
         else:
             size = {0x03: 4, 0x08: 2, 0x09: 1, 0x0B: 8}[kind]
-            tags[name] = int.from_bytes(data[offset:offset + size], 'little')
+            tags.append((name, int.from_bytes(data[offset:offset + size], 'little')))
             offset += size
     return tags, offset
 
@@ -94,7 +94,8 @@ def unpack_kad_packet(packet):
     return packet
 
 
-def search(udp_port, file_id, notes=False):
+def search(udp_port, file_id, notes=False, repeats=False):
+    """Tags per source ID: a dict, or with repeats the (name, value) pairs as sent."""
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
         peer.bind(('127.0.0.1', 0))
         peer.settimeout(10)
@@ -110,7 +111,7 @@ def search(udp_port, file_id, notes=False):
     for _ in range(count):
         answer = response[offset:offset + 16]
         tags, offset = parse_tags(response, offset + 17, response[offset + 16])
-        results[answer] = tags
+        results[answer] = tags if repeats else dict(tags)
     return results
 
 
@@ -191,6 +192,26 @@ def run(binary):
             assert b'xb' not in big and b'xc' not in big, 'extra tags past the budget kept'
             assert TAG_ENCRYPTION in big, 'known tag after the budget dropped'
 
+            # Known tags skip the extra-tag budget, so a repeat of one must not be stored.
+            # Unusable ones first: they must not take the slot of the usable one after them.
+            # The restart clears the limit of two source publishes per minute from one IP.
+            restart_kad(ec, proc)
+            repeat_source = b'\x44' * 16
+            unusable = [tag(TAG_SERVERIP, 0x02, b'x'), tag(b'ip6', 0x02, b'f' * 65)]
+            repeats = [tag(TAG_SERVERIP, 0x03, 0x0200007f), tag(TAG_SERVERPORT, 0x08, 4673),
+                       tag(TAG_ENCRYPTION, 0x09, 1), tag(TAG_BUDDYHASH, 0x02, b'cd' * 16),
+                       tag(b'ip6', 0x02, b'20010dba' * 4), tag(b'bi6', 0x02, b'20010dbb' * 4)]
+            publish(udp_port, file_id, repeat_source, unusable + core_tags(4003) + repeats * 20)
+            stored = search(udp_port, file_id, repeats=True)[repeat_source]
+            names = [name for name, _ in stored]
+            for name in (TAG_SERVERIP, TAG_SERVERPORT, TAG_ENCRYPTION, TAG_BUDDYHASH, b'ip6', b'bi6'):
+                assert names.count(name) == 1, ('repeated known tag kept', name, names.count(name))
+            first = dict(stored)
+            assert (first[TAG_SERVERIP], first[TAG_SERVERPORT], first[TAG_ENCRYPTION]) == \
+                (0x0100007f, 4672, 3), first
+            assert (first[TAG_BUDDYHASH], first[b'ip6'], first[b'bi6']) == \
+                (b'ab' * 16, b'20010db8' * 4, b'20010db9' * 4), first
+
             # Notes use a separate publish handler; both the name and comment are UTF-8.
             note_source = b'\x33' * 16
             publish(udp_port, file_id, note_source,
@@ -207,6 +228,7 @@ def run(binary):
                 assert cached[TAG_FILENAME] == UNICODE_NAME, 'source filename changed on reload'
             print('PASS: emule-qt cache tags, eMuleAI buddy and IPv6 tags kept; '
                   'extra tags past the per-source budget dropped, the source kept; '
+                  'one of each known tag kept, the first usable one; '
                   'UTF-8 source names and notes preserved, including three source index reloads')
 
 
