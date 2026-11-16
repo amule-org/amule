@@ -119,8 +119,8 @@ inline bool IsHighIDOf(uint32 id, uint32 ip)
 }
 
 /**
- * The hybrid ID of a peer known by its IPv4, in anti-host order: a HighID, even when the address
- * ends in .0 and its ed2k ID reads as a LowID.
+ * The hybrid ID of a peer known by its IPv4, in anti-host order. A HighID even when the address
+ * ends in .0 and its ed2k ID reads as a LowID; 0.0.0.0/8 still gives a LowID.
  */
 inline uint32 HybridIDOfIPv4(uint32 ip)
 {
