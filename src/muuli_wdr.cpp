@@ -2640,18 +2640,25 @@ static void RoundSearchField( wxWindow *sidebar, wxSearchCtrl *search, wxSizer *
 #endif
 
 // The preferences sidebar's colour: the list's, which sets the sidebar apart from the page on
-// @p dialog with no divider between them. Windows' dark mode paints lists and dialogs the same
-// colour, so there the sidebar is lifted a little toward the text, enough to tell the two apart.
+// @p dialog with no divider between them. Windows' dark mode and macOS paint lists and dialogs the
+// same colour, so there the sidebar is set off a little, enough to tell the two apart.
 static wxColour PrefsSidebarColour( const wxWindow *dialog )
 {
     const wxColour list = wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOX );
-#ifdef __WXMSW__
-    if ( std::abs( list.GetLuminance() - dialog->GetBackgroundColour().GetLuminance() ) < 0.03 ) {
-        return MixColours( list, wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), 0.06 );
+    wxColour page = dialog->GetBackgroundColour();
+    if ( page.Alpha() != wxALPHA_OPAQUE ) {
+        // macOS: the window paints its own background and reports none.
+        page = wxSystemSettings::GetColour( wxSYS_COLOUR_BTNFACE );
     }
+    if ( std::abs( list.GetLuminance() - page.GetLuminance() ) < 0.03 ) {
+#ifdef __WXOSX__
+        // Darker, as macOS's own sidebars are. Toward the text would lighten the dark sidebar
+        // toward the window, which macOS draws a little lighter than the colour it reports.
+        return MixColours( list, *wxBLACK, 0.06 );
 #else
-    wxUnusedVar( dialog );
+        return MixColours( list, wxSystemSettings::GetColour( wxSYS_COLOUR_LISTBOXTEXT ), 0.06 );
 #endif
+    }
     return list;
 }
 
