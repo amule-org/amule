@@ -49,10 +49,13 @@
 #endif /* UPNP_MAJOR_VERSION == 17 */
 
 #include "UPnPBase.h"
-#include "IPv6PinholePolicy.h" // Needed for ShouldRenewIPv6Pinhole
+#include "IPv6PinholePolicy.h"  // Needed for ShouldRenewIPv6Pinhole
 #include "UPnPLocationPolicy.h" // Needed for IsIPv6Location
 
-#include <algorithm>          // For transform()
+#include <algorithm> // For transform()
+#include <boost/asio.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
 #include "CCtypeAsciiScope.h" // Needed to pin LC_CTYPE = C around the
 			      // ASCII-only tolower() comparisons below
 			      // (Turkish-i: tolower('I') = U+0131 under
@@ -262,6 +265,211 @@ static int ResolveURL(const std::string &base, const std::string &rel, std::stri
 		absURL = &buf[0];
 	}
 	return errcode;
+}
+
+namespace http = boost::beast::http;
+
+struct HttpControlURL
+{
+	std::string authority;
+	std::string host;
+	std::string port;
+	std::string target;
+};
+
+static bool ParseHttpControlURL(const std::string &url, HttpControlURL &parsed)
+{
+	const std::string scheme("http://");
+	if (url.compare(0, scheme.length(), scheme) != 0) {
+		return false;
+	}
+
+	const std::string::size_type authorityStart = scheme.length();
+	std::string::size_type authorityEnd = url.find_first_of("/?#", authorityStart);
+	if (authorityEnd == std::string::npos) {
+		authorityEnd = url.length();
+	}
+	const std::string authority = url.substr(authorityStart, authorityEnd - authorityStart);
+	if (authority.empty() || authority.find('@') != std::string::npos) {
+		return false;
+	}
+	parsed.authority = authority;
+	parsed.port = "80";
+
+	if (authority[0] == '[') {
+		const std::string::size_type closingBracket = authority.find(']');
+		if (closingBracket == std::string::npos || closingBracket == 1) {
+			return false;
+		}
+		parsed.host = authority.substr(1, closingBracket - 1);
+		if (closingBracket + 1 < authority.length()) {
+			if (authority[closingBracket + 1] != ':' ||
+				closingBracket + 2 == authority.length()) {
+				return false;
+			}
+			parsed.port = authority.substr(closingBracket + 2);
+		}
+		const std::string::size_type encodedZone = parsed.host.find("%25");
+		if (encodedZone != std::string::npos) {
+			parsed.host.replace(encodedZone, 3, "%");
+		}
+	} else {
+		const std::string::size_type colon = authority.find(':');
+		if (colon != std::string::npos) {
+			if (authority.find(':', colon + 1) != std::string::npos || colon == 0 ||
+				colon + 1 == authority.length()) {
+				return false;
+			}
+			parsed.host = authority.substr(0, colon);
+			parsed.port = authority.substr(colon + 1);
+		} else {
+			parsed.host = authority;
+		}
+	}
+
+	if (parsed.host.empty()) {
+		return false;
+	}
+	parsed.target = authorityEnd == url.length() ? "/" : url.substr(authorityEnd);
+	if (parsed.target[0] == '?') {
+		parsed.target.insert(0, "/");
+	}
+	const std::string::size_type fragment = parsed.target.find('#');
+	if (fragment != std::string::npos) {
+		parsed.target.erase(fragment);
+	}
+	return !parsed.target.empty() && parsed.target[0] == '/';
+}
+
+static int SendBoundSoapAction(const std::string &url,
+	const std::string &sourceAddress,
+	const std::string &serviceType,
+	const std::string &actionName,
+	IXML_Document *actionDocument,
+	IXML_Document **responseDocument)
+{
+	if (responseDocument == nullptr) {
+		return UPNP_E_INVALID_PARAM;
+	}
+	*responseDocument = nullptr;
+
+	HttpControlURL controlURL;
+	if (!ParseHttpControlURL(url, controlURL)) {
+		return UPNP_E_INVALID_PARAM;
+	}
+
+	boost::system::error_code error;
+	const boost::asio::ip::address_v6 localAddress =
+		boost::asio::ip::make_address_v6(sourceAddress, error);
+	if (error) {
+		return UPNP_E_SOCKET_BIND;
+	}
+
+	boost::asio::io_context context;
+	boost::asio::ip::tcp::resolver resolver(context);
+	const boost::asio::ip::tcp::resolver::results_type endpoints =
+		resolver.resolve(controlURL.host, controlURL.port, error);
+	if (error) {
+		return UPNP_E_SOCKET_CONNECT;
+	}
+
+	boost::asio::ip::tcp::endpoint remoteEndpoint;
+	bool hasIPv6Endpoint = false;
+	for (const auto &endpoint : endpoints) {
+		if (endpoint.endpoint().address().is_v6()) {
+			remoteEndpoint = endpoint.endpoint();
+			hasIPv6Endpoint = true;
+			break;
+		}
+	}
+	if (!hasIPv6Endpoint) {
+		return UPNP_E_SOCKET_CONNECT;
+	}
+
+	boost::beast::tcp_stream stream(context);
+	stream.socket().open(boost::asio::ip::tcp::v6(), error);
+	if (error) {
+		return UPNP_E_SOCKET_ERROR;
+	}
+	stream.socket().bind(boost::asio::ip::tcp::endpoint(localAddress, 0), error);
+	if (error) {
+		return UPNP_E_SOCKET_BIND;
+	}
+
+	DOMString actionXML = ixmlPrintNode(reinterpret_cast<IXML_Node *>(actionDocument));
+	if (actionXML == nullptr) {
+		return UPNP_E_SOCKET_READ;
+	}
+	const std::string soapBody =
+		std::string("<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" ") +
+		"s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body>" + actionXML +
+		"</s:Body></s:Envelope>";
+	ixmlFreeDOMString(actionXML);
+
+	http::request<http::string_body> request(http::verb::post, controlURL.target, 11);
+	request.set(http::field::host, controlURL.authority);
+	request.set(http::field::content_type, "text/xml; charset=\"utf-8\"");
+	request.set("SOAPAction", "\"" + serviceType + "#" + actionName + "\"");
+	request.keep_alive(false);
+	request.body() = soapBody;
+	request.prepare_payload();
+
+	boost::beast::flat_buffer buffer;
+	http::response_parser<http::string_body> responseParser;
+	responseParser.body_limit(1024 * 1024);
+	http::response<http::string_body> response;
+	boost::asio::steady_timer timeout(context);
+	timeout.expires_after(std::chrono::seconds(30));
+	int transportError = UPNP_E_SOCKET_CONNECT;
+	timeout.async_wait([&](const boost::system::error_code &timerError) {
+		if (!timerError) {
+			boost::system::error_code ignored;
+			stream.socket().cancel(ignored);
+		}
+	});
+	stream.async_connect(remoteEndpoint, [&](const boost::system::error_code &connectError) {
+		if (connectError) {
+			timeout.cancel();
+			return;
+		}
+		transportError = UPNP_E_SOCKET_WRITE;
+		http::async_write(
+			stream, request, [&](const boost::system::error_code &writeError, std::size_t) {
+				if (writeError) {
+					timeout.cancel();
+					return;
+				}
+				transportError = UPNP_E_SOCKET_READ;
+				http::async_read(stream,
+					buffer,
+					responseParser,
+					[&](const boost::system::error_code &readError, std::size_t) {
+						if (!readError) {
+							response = responseParser.release();
+							transportError = UPNP_E_SUCCESS;
+						}
+						timeout.cancel();
+					});
+			});
+	});
+	context.run();
+	if (transportError != UPNP_E_SUCCESS) {
+		return transportError;
+	}
+
+	const int status = static_cast<int>(response.result_int());
+	if (!response.body().empty()) {
+		const int parseError = ixmlParseBufferEx(response.body().c_str(), responseDocument);
+		if (parseError != IXML_SUCCESS) {
+			IXML::Document::Free(*responseDocument);
+			*responseDocument = nullptr;
+			return status == 200 ? UPNP_E_SOCKET_READ : status;
+		}
+	}
+	if (status != 200) {
+		return status;
+	}
+	return *responseDocument == nullptr ? UPNP_E_SOCKET_READ : UPNP_E_SUCCESS;
 }
 
 } /* namespace UPnP */
@@ -501,10 +709,12 @@ CUPnPService::CUPnPService(
 	    << "\n        absEventSubURL: " << m_absEventSubURL;
 	AddDebugLogLineN(logUPnP, msg);
 
-	// The IGD2 firewall service belongs here too: it is not a port mapper, but it is the only
-	// service that can open an inbound IPv6 pinhole, and a service that never registers here is
-	// one IPv6FirewallDetected() can never find.
-	if (UPnP::IsWANMappingService(m_serviceType) || UPnP::IsIPv6FirewallService(m_serviceType)) {
+	// Keep WAN mappings on IPv4. Register the IPv6 firewall service from both families so a gateway
+	// that refuses IPv6 pinhole actions can use its IPv4 control URL as a fallback.
+	const bool isIPv6ControlURL = UPnP::IsIPv6Location(m_absControlURL);
+	const bool isIPv6Firewall = UPnP::IsIPv6FirewallService(m_serviceType);
+	const bool isWANMapping = UPnP::IsWANMappingService(m_serviceType);
+	if ((isIPv6ControlURL && isIPv6Firewall) || (!isIPv6ControlURL && (isIPv6Firewall || isWANMapping))) {
 #if 0
 	    m_serviceType == UPnP::Service::WAN_PPP_Connection ||
 	    m_serviceType == UPnP::Service::WAN_Common_Interface_Config ||
@@ -543,7 +753,8 @@ CUPnPService::~CUPnPService()
 bool CUPnPService::Execute(const std::string &ActionName,
 	const std::vector<CUPnPArgumentValue> &ArgValue,
 	const char *resultArg,
-	std::string *result) const
+	std::string *result,
+	const std::string *sourceAddress) const
 {
 	std::ostringstream msg;
 	if (m_SCPD.get() == nullptr) {
@@ -648,14 +859,23 @@ bool CUPnPService::Execute(const std::string &ActionName,
 #endif
 
 	IXML_Document *RespDoc = NULL;
-	int ret = UpnpSendAction(m_UPnPControlPoint.GetUPnPClientHandle(),
-		GetAbsControlURL().c_str(),
-		GetServiceType().c_str(),
-		NULL,
-		ActionDoc,
-		&RespDoc);
+	const int ret = sourceAddress == nullptr ? UpnpSendAction(m_UPnPControlPoint.GetUPnPClientHandle(),
+							   GetAbsControlURL().c_str(),
+							   GetServiceType().c_str(),
+							   NULL,
+							   ActionDoc,
+							   &RespDoc)
+						 : UPnP::SendBoundSoapAction(GetAbsControlURL(),
+							   *sourceAddress,
+							   GetServiceType(),
+							   ActionName,
+							   ActionDoc,
+							   &RespDoc);
 	if (ret != UPNP_E_SUCCESS) {
-		UPnP::ProcessErrorMessage("UpnpSendAction", ret, NULL, RespDoc);
+		UPnP::ProcessErrorMessage(sourceAddress == nullptr ? "UpnpSendAction" : "Bound SOAP action",
+			ret,
+			NULL,
+			RespDoc);
 		IXML::Document::Free(ActionDoc);
 		IXML::Document::Free(RespDoc);
 		return false;
@@ -944,26 +1164,30 @@ bool CUPnPControlPoint::IPv6FirewallDetected() const
 
 bool CUPnPControlPoint::ExecuteOnIPv6FirewallService(const std::string &actionName,
 	const std::vector<CUPnPArgumentValue> &argval,
+	const std::string &sourceAddress,
 	const char *resultArg,
 	std::string *result)
 {
-	bool ok = false;
-	for (const auto &entry : m_ServiceMap) {
-		if (!UPnP::IsIPv6FirewallService(entry.second->GetServiceType())) {
-			continue;
-		}
-		std::string value;
-		if (entry.second->Execute(actionName, argval, resultArg, &value)) {
-			// First accepting service wins: a second firewall would only produce a second pinhole
-			// whose UniqueID nobody stores, and a pinhole nobody renews outlives its welcome.
-			ok = true;
-			if (result != nullptr) {
-				*result = value;
+	for (int family = 0; family < 2; ++family) {
+		for (const auto &entry : m_ServiceMap) {
+			if (!UPnP::IsIPv6FirewallService(entry.second->GetServiceType())) {
+				continue;
 			}
-			break;
+			const bool isIPv6ControlURL = UPnP::IsIPv6Location(entry.second->GetAbsControlURL());
+			if (isIPv6ControlURL != (family == 0)) {
+				continue;
+			}
+			std::string value;
+			const std::string *boundSource = isIPv6ControlURL ? &sourceAddress : nullptr;
+			if (entry.second->Execute(actionName, argval, resultArg, &value, boundSource)) {
+				if (result != nullptr) {
+					*result = value;
+				}
+				return true;
+			}
 		}
 	}
-	return ok;
+	return false;
 }
 
 bool CUPnPControlPoint::SendAddPinhole(SIPv6Pinhole &pinhole)
@@ -983,7 +1207,8 @@ bool CUPnPControlPoint::SendAddPinhole(SIPv6Pinhole &pinhole)
 	argval[5].SetValue(Numeric(pinhole.lease));
 
 	std::string uniqueId;
-	if (!ExecuteOnIPv6FirewallService("AddPinhole", argval, "UniqueID", &uniqueId) || uniqueId.empty()) {
+	if (!ExecuteOnIPv6FirewallService("AddPinhole", argval, pinhole.client, "UniqueID", &uniqueId) ||
+		uniqueId.empty()) {
 		pinhole.uniqueId.clear();
 		const auto retryDelay = std::chrono::seconds(pinhole.lease / 2);
 		pinhole.expiry = std::chrono::steady_clock::now() + retryDelay;
@@ -1008,7 +1233,7 @@ bool CUPnPControlPoint::SendUpdatePinhole(SIPv6Pinhole &pinhole)
 	argval[1].SetArgument("NewLeaseTime");
 	argval[1].SetValue(Numeric(pinhole.lease));
 
-	if (!ExecuteOnIPv6FirewallService("UpdatePinhole", argval, nullptr, nullptr)) {
+	if (!ExecuteOnIPv6FirewallService("UpdatePinhole", argval, pinhole.client, nullptr, nullptr)) {
 		return false;
 	}
 	pinhole.expiry = std::chrono::steady_clock::now() + std::chrono::seconds(pinhole.lease);
@@ -1023,7 +1248,7 @@ void CUPnPControlPoint::SendDeletePinhole(const SIPv6Pinhole &pinhole)
 	std::vector<CUPnPArgumentValue> argval(1);
 	argval[0].SetArgument("UniqueID");
 	argval[0].SetValue(pinhole.uniqueId);
-	ExecuteOnIPv6FirewallService("DeletePinhole", argval, nullptr, nullptr);
+	ExecuteOnIPv6FirewallService("DeletePinhole", argval, pinhole.client, nullptr, nullptr);
 }
 
 void CUPnPControlPoint::AddIPv6Pinhole(const std::string &internalClient,
@@ -1232,16 +1457,8 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #else
 		const char *location = d_event->Location;
 #endif
-		// Root devices are keyed by UDN, so the first location sets the control URLs. libupnp
-		// searches over IPv6 first, and miniupnpd in secure mode refuses the IPv4 mapping actions
-		// over IPv6.
-		if (UPnP::IsIPv6Location(location ? location : "")) {
-			if (EventType == UPNP_DISCOVERY_SEARCH_RESULT) {
-				msg2 << "Ignoring IPv6 location " << location << ".";
-				AddDebugLogLineN(logUPnP, msg2);
-			}
-			break;
-		}
+		// Fetch both address-family locations: WAN mappings stay on IPv4, while IPv6 firewall
+		// actions prefer their IPv6 control URL and retain the IPv4 URL as a fallback.
 		// Passive ALIVE announcements arrive in dense bursts (one per service class, every
 		// few seconds per device), and when the announcing device's HTTP server is
 		// unreachable each fetch blocks a libupnp worker for the full TCP-connect timeout.
@@ -1608,14 +1825,14 @@ void CUPnPControlPoint::AddRootDevice(
 	std::string FixedURLBase(OriginalURLBase.empty() ? location : OriginalURLBase);
 
 	std::string UDN(IXML::Element::GetChildValueByTag(rootDevice, "UDN"));
-	RootDeviceMap::iterator it = m_RootDeviceMap.find(UDN);
-	bool alreadyAdded = it != m_RootDeviceMap.end();
-	if (alreadyAdded) {
+	const std::pair<std::string, bool> key(UDN, UPnP::IsIPv6Location(location ? location : ""));
+	RootDeviceMap::iterator it = m_RootDeviceMap.find(key);
+	if (it != m_RootDeviceMap.end()) {
 		it->second->SetExpires(expires);
 	} else {
 		CUPnPRootDevice *upnpRootDevice = new CUPnPRootDevice(
 			*this, rootDevice, OriginalURLBase, FixedURLBase, location, expires);
-		m_RootDeviceMap[upnpRootDevice->GetUDN()] = upnpRootDevice;
+		m_RootDeviceMap[key] = upnpRootDevice;
 	}
 	// Not on a device alone: some switches answer as a gateway and list no services.
 	if (WanServiceDetected()) {
@@ -1627,11 +1844,14 @@ void CUPnPControlPoint::RemoveRootDevice(const char *udn)
 {
 	CUPnPMutexLocker lock(m_RootDeviceListMutex);
 
-	std::string UDN(udn);
-	RootDeviceMap::iterator it = m_RootDeviceMap.find(UDN);
-	if (it != m_RootDeviceMap.end()) {
-		delete it->second;
-		m_RootDeviceMap.erase(UDN);
+	const std::string UDN(udn);
+	for (RootDeviceMap::iterator it = m_RootDeviceMap.begin(); it != m_RootDeviceMap.end();) {
+		if (it->first.first == UDN) {
+			delete it->second;
+			it = m_RootDeviceMap.erase(it);
+		} else {
+			++it;
+		}
 	}
 }
 
@@ -1698,8 +1918,7 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 					service.Execute(
 						"AddPortMapping", AddPortMappingArguments(entry.second));
 				}
-			}
-			else {
+			} else {
 				// Requests recorded before this service registered are replayed here: this is
 				// the point where they can finally be sent.
 				for (auto &entry : m_IPv6Pinholes) {

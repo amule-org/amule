@@ -2,6 +2,7 @@
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Port mapping results, late services and the autoconnect hold, checked against a fake gateway."""
+import ipaddress
 import os
 import re
 import socket
@@ -131,7 +132,7 @@ class FakeGateway:
 
     def __init__(self, services=('ip',), mappings=(), reject=(), reject_pinhole_actions=(),
                  firewall_ipv4_actions=False, answer_delay: float = 0.0, silent=False, held=None,
-                 ipv6=False):
+                 ipv6=False, pinhole_mode=None):
         self.services = services
         self.reject = set(reject)
         self.reject_pinhole_actions = set(reject_pinhole_actions)
@@ -139,6 +140,8 @@ class FakeGateway:
         self.answer_delay = answer_delay
         self.silent = silent
         self.held = held
+        self.ipv6 = ipv6
+        self.pinhole_mode = pinhole_mode
         self.release = threading.Event()
         self.first_registered = threading.Event()
         self.tables = {name: set(mappings) for name in services}
@@ -146,8 +149,11 @@ class FakeGateway:
         # apart, and so must the test, or one could be mistaken for the other.
         self.pinholes = {}
         self.pinhole_actions = []
+        self.pinhole_transports = []
+        self.pinhole_ids = {}
         self.next_pinhole_id = 1
         self.last_pinhole_id = ''
+        self.last_pinhole_client = ''
         self.requests = []
         self.subscribed = set()
         self.registered = threading.Event()
@@ -176,16 +182,14 @@ class FakeGateway:
                 self.close()
                 raise NoIPv6(f'cannot listen over IPv6: {error}') from error
             for index, _ in socket.if_nameindex():
-                try:
+                with suppress(OSError):
                     self.ssdp6.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_JOIN_GROUP, membership6(index))
-                except OSError:
-                    pass
 
     def __enter__(self):
         threading.Thread(target=self.http.serve_forever, daemon=True).start()
         threading.Thread(target=self.answer_searches, args=(self.ssdp, self.location(), self.answer_delay),
                          daemon=True).start()
-        if self.ssdp6:
+        if self.ssdp6 is not None and self.http6 is not None:
             threading.Thread(target=self.http6.serve_forever, daemon=True).start()
             # At once, so the IPv6 answer comes first.
             threading.Thread(target=self.answer_searches, args=(self.ssdp6, self.location6(), 0),
@@ -208,6 +212,8 @@ class FakeGateway:
         return f'http://127.0.0.1:{self.http.server_address[1]}/desc.xml'
 
     def location6(self):
+        if self.http6 is None:
+            raise RuntimeError('IPv6 HTTP server is not configured')
         return f'http://[::1]:{self.http6.server_address[1]}/desc.xml'
 
     def announce(self):
@@ -221,9 +227,11 @@ class FakeGateway:
         multicast(self.ssdp, notify(SSDP_GROUP, self.location()))
 
     def answer_searches(self, sock, location, delay):
-        reply = (f'HTTP/1.1 200 OK\r\nCACHE-CONTROL: max-age=1800\r\nEXT:\r\n'
-                 f'LOCATION: {location}\r\nSERVER: fake/1 UPnP/1.0 fake/1\r\nST: {IGD}\r\n'
-                 f'USN: uuid:fake-igd::{IGD}\r\n\r\n')
+        def reply(answer_location):
+            return (f'HTTP/1.1 200 OK\r\nCACHE-CONTROL: max-age=1800\r\nEXT:\r\n'
+                    f'LOCATION: {answer_location}\r\nSERVER: fake/1 UPnP/1.0 fake/1\r\nST: {IGD}\r\n'
+                    f'USN: uuid:fake-igd::{IGD}\r\n\r\n').encode()
+
         while True:
             try:
                 data, peer = sock.recvfrom(4096)
@@ -232,16 +240,23 @@ class FakeGateway:
                         self.ipv6_searched = True
                     if not self.silent:
                         time.sleep(delay)
-                        sock.sendto(reply.encode(), peer)
+                        locations = [location]
+                        if sock is self.ssdp and self.http6 is not None:
+                            locations.insert(0, self.location6())
+                        for answer_location in locations:
+                            sock.sendto(reply(answer_location), peer)
             except OSError:
                 return
 
-    def on_subscribe(self, service):
+    def on_subscribe(self, service, ipv6):
         # The control point lists and maps a service before it subscribes, so this means it can use
         # them all and has sent the mappings it knows.
-        self.subscribed.add(service)
+        self.subscribed.add((service, ipv6))
         self.first_registered.set()
-        if self.subscribed == set(self.services):
+        expected = {(name, False) for name in self.services}
+        if self.ipv6 and 'ipv6fw' in self.services:
+            expected.add(('ipv6fw', True))
+        if expected.issubset(self.subscribed):
             self.registered.set()
 
     def description(self):
@@ -294,29 +309,84 @@ class FakeGateway:
                 f'{actions}</actionList><serviceStateTable>{variables}'
                 '</serviceStateTable></scpd>')
 
-    def control(self, service, action, body, ipv6):
+    def pinhole_refusal(self, action, ipv6, peer_address, internal_client):
+        if action in self.reject_pinhole_actions:
+            return ACTION_NOT_AUTHORIZED
+        if self.pinhole_mode == 'miniupnpd':
+            if not ipv6:
+                return ACTION_NOT_AUTHORIZED
+            if action == ADD_PINHOLE:
+                try:
+                    peer = ipaddress.ip_address(peer_address.split('%', 1)[0])
+                    client = ipaddress.ip_address(internal_client.split('%', 1)[0])
+                except ValueError:
+                    return ACTION_NOT_AUTHORIZED
+                if peer != client:
+                    return ACTION_NOT_AUTHORIZED
+        elif self.pinhole_mode == 'fritzbox':
+            if action == UPDATE_PINHOLE:
+                return ACTION_NOT_AUTHORIZED if ipv6 else 501
+            if action == DELETE_PINHOLE and ipv6:
+                return ACTION_NOT_AUTHORIZED
+        return None
+
+    def control(self, service, action, body, ipv6, peer_address):
         """Returns the UPnP error code, or None when the action succeeds."""
         def argument(name):
             found = re.search(f'<{name}[^>]*>([^<]*)<', body)
             return found[1] if found else ''
-        if action in self.reject_pinhole_actions:
-            self.pinhole_actions.append((action, 'rejected'))
-            return 606
+
+        family = 'ipv6' if ipv6 else 'ipv4'
         if action == ADD_PINHOLE:
-            unique_id = str(self.next_pinhole_id)
-            self.next_pinhole_id += 1
-            self.pinholes[unique_id] = (argument('InternalClient'), argument('InternalPort'),
-                                        argument('Protocol'))
+            internal_client = argument('InternalClient')
+            error = self.pinhole_refusal(action, ipv6, peer_address, internal_client)
+            if error is not None:
+                self.pinhole_actions.append((action, 'rejected'))
+                self.pinhole_transports.append(
+                    (action, family, peer_address, internal_client, error))
+                return error
+            key = (argument('InternalPort'), argument('Protocol'))
+            if self.pinhole_mode == 'fritzbox' and key in self.pinhole_ids:
+                unique_id = self.pinhole_ids[key]
+            else:
+                unique_id = str(self.next_pinhole_id)
+                self.next_pinhole_id += 1
+                if self.pinhole_mode == 'fritzbox':
+                    self.pinhole_ids[key] = unique_id
+            self.pinholes[unique_id] = (internal_client, key[0], key[1])
+            self.last_pinhole_client = internal_client
             self.pinhole_actions.append((ADD_PINHOLE, unique_id))
+            self.pinhole_transports.append(
+                (action, family, peer_address, internal_client, None))
             self.last_pinhole_id = unique_id
             return None
         if action == UPDATE_PINHOLE:
+            internal_client = self.last_pinhole_client
+            error = self.pinhole_refusal(action, ipv6, peer_address, internal_client)
             unique_id = argument('UniqueID')
-            self.pinhole_actions.append((UPDATE_PINHOLE, unique_id))
-            return None if unique_id in self.pinholes else NO_SUCH_ENTRY
+            if error is None and unique_id not in self.pinholes:
+                error = NO_SUCH_ENTRY
+            if error is not None:
+                self.pinhole_actions.append((action, 'rejected'))
+                self.pinhole_transports.append(
+                    (action, family, peer_address, internal_client, error))
+                return error
+            self.pinhole_actions.append((action, unique_id))
+            self.pinhole_transports.append(
+                (action, family, peer_address, internal_client, None))
+            return None
         if action == DELETE_PINHOLE:
+            internal_client = self.last_pinhole_client
+            error = self.pinhole_refusal(action, ipv6, peer_address, internal_client)
             unique_id = argument('UniqueID')
-            self.pinhole_actions.append((DELETE_PINHOLE, unique_id))
+            if error is not None:
+                self.pinhole_actions.append((action, 'rejected'))
+                self.pinhole_transports.append(
+                    (action, family, peer_address, internal_client, error))
+                return error
+            self.pinhole_actions.append((action, unique_id))
+            self.pinhole_transports.append(
+                (action, family, peer_address, internal_client, None))
             self.pinholes.pop(unique_id, None)
             return None
         mapping = (argument('NewExternalPort'), argument('NewProtocol'))
@@ -360,7 +430,7 @@ class FakeGateway:
 
             def do_SUBSCRIBE(self):
                 service = self.path.rsplit('/', 1)[-1]
-                gateway.on_subscribe(service)
+                gateway.on_subscribe(service, isinstance(self.server, ThreadingHTTPServer6))
                 self.send_response(200)
                 self.send_header('SID', f'uuid:fake-{service}')
                 self.send_header('TIMEOUT', 'Second-1800')
@@ -375,7 +445,8 @@ class FakeGateway:
                 body = self.rfile.read(int(self.headers.get('Content-Length', 0))).decode()
                 action = self.headers.get('SOAPACTION', '').strip('"').rsplit('#', 1)[-1]
                 error = gateway.control(service, action, body,
-                                        self.server.address_family == socket.AF_INET6)
+                                        isinstance(self.server, ThreadingHTTPServer6),
+                                        self.client_address[0])
                 if error is not None:
                     self.reply(500, ENVELOPE % (FAULT % error))
                 else:
@@ -529,7 +600,8 @@ LATE_SCENARIOS = [
 ]
 
 
-PINHOLE_IP = '2001:db8::1'
+PINHOLE_IP = '::1'
+PINHOLE_CLIENT_UNASSIGNED = '2001:db8::1'
 
 
 def run_pinhole_scenarios(driver, failures):
@@ -569,6 +641,58 @@ def run_pinhole_scenarios(driver, failures):
             record_failure(failures, f'pinhole delete: {gateway.pinholes} left behind')
     except ScenarioFailed as error:
         record_failure(failures, f'pinhole: {error}')
+
+
+def run_pinhole_transport_scenarios(driver, failures):
+    """Exercise the two observed IPv6 firewall behaviors and the TCP source binding."""
+    def run(profile, operations):
+        with FakeGateway(services=('ip', 'ipv6fw'), ipv6=True, answer_delay=1,
+                         pinhole_mode=profile) as gateway, Driver(driver, operations) as running:
+            if not gateway.registered.wait(8):
+                raise ScenarioFailed(f'{profile}: registered endpoints were {gateway.subscribed}')
+            return running.run(len(operations)), gateway
+
+    try:
+        got, gateway = run('miniupnpd', ['add', 'addpinhole', 'deletepinholes'])
+        if got != {'add': 'true', 'addpinhole': 'true', 'deletepinholes': 'true'}:
+            record_failure(failures, f'miniupnpd pinholes: returned {got}')
+        if any('over IPv6' in service for service, _, _ in gateway.requests):
+            record_failure(failures, f'miniupnpd WAN mapping used IPv6: {gateway.requests}')
+        expected = [
+            (ADD_PINHOLE, 'ipv6', PINHOLE_IP, PINHOLE_IP, None),
+            (DELETE_PINHOLE, 'ipv6', PINHOLE_IP, PINHOLE_IP, None),
+        ]
+        if gateway.pinhole_transports != expected:
+            record_failure(failures, f'miniupnpd pinhole transport was {gateway.pinhole_transports}, expected {expected}')
+        if gateway.pinholes:
+            record_failure(failures, f'miniupnpd pinhole table not empty after delete: {gateway.pinholes}')
+
+        _, gateway = run('miniupnpd', ['addpinhole-unassigned'])
+        expected = [(ADD_PINHOLE, 'ipv4', '127.0.0.1', PINHOLE_CLIENT_UNASSIGNED,
+                     ACTION_NOT_AUTHORIZED)]
+        if gateway.pinhole_transports != expected:
+            record_failure(failures, f'unassigned pinhole client reached the wrong transport: '
+                           f'{gateway.pinhole_transports}, expected {expected}')
+
+        _, gateway = run('fritzbox',
+                         ['addpinholeshort', 'renewexpiring', 'deletepinholes'])
+        expected = [
+            (ADD_PINHOLE, 'ipv6', PINHOLE_IP, PINHOLE_IP, None),
+            (UPDATE_PINHOLE, 'ipv6', PINHOLE_IP, PINHOLE_IP, ACTION_NOT_AUTHORIZED),
+            (UPDATE_PINHOLE, 'ipv4', '127.0.0.1', PINHOLE_IP, 501),
+            (ADD_PINHOLE, 'ipv6', PINHOLE_IP, PINHOLE_IP, None),
+            (DELETE_PINHOLE, 'ipv6', PINHOLE_IP, PINHOLE_IP, ACTION_NOT_AUTHORIZED),
+            (DELETE_PINHOLE, 'ipv4', '127.0.0.1', PINHOLE_IP, None),
+        ]
+        if gateway.pinhole_transports != expected:
+            record_failure(failures, f'FRITZ!Box pinhole transport was {gateway.pinhole_transports}, expected {expected}')
+        add_ids = [value for action, value in gateway.pinhole_actions if action == ADD_PINHOLE]
+        if add_ids != ['1', '1']:
+            record_failure(failures, f'FRITZ!Box repeated AddPinhole IDs were {add_ids}')
+        if gateway.pinholes:
+            record_failure(failures, f'FRITZ!Box pinhole table not empty after fallback delete: {gateway.pinholes}')
+    except (NoIPv6, ScenarioFailed) as error:
+        record_failure(failures, f'pinhole transport: {error}')
 
 
 def record_failure(failures, message):
@@ -789,6 +913,7 @@ def main():
         run_scenarios(sys.argv[1], failures)
         run_late_scenarios(sys.argv[1], failures)
         run_pinhole_scenarios(sys.argv[1], failures)
+        run_pinhole_transport_scenarios(sys.argv[1], failures)
         run_pinhole_late_scenarios(sys.argv[1], failures)
         run_ipv4_firewall_filter_scenarios(sys.argv[1], failures)
         check_discovery_pending(sys.argv[1], failures)

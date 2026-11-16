@@ -26,7 +26,7 @@
 // a fake gateway. It prints a line when the constructor returns, then waits for a line on stdin
 // before each operation.
 // Usage: UPnPPortMappingDriver <tcp> <udp> (add|delete|pending|wanservice|
-//        addpinholeodd|renewexpiring-retry)...
+//        addpinholeodd|addpinhole-unassigned|renewexpiring-retry)...
 
 #include "config.h"
 #include "UPnPBase.h"
@@ -43,7 +43,8 @@ namespace
 const int EXIT_SKIP = 77;
 // The address the fake gateway should see as the pinhole's inside end, and a lease long enough that
 // no renewal is attempted by the timer during the run.
-const char *const PINHOLE_CLIENT = "2001:db8::1";
+const char *const PINHOLE_CLIENT = "::1";
+const char *const PINHOLE_CLIENT_UNASSIGNED = "2001:db8::1";
 const unsigned int PINHOLE_LEASE = 3600;
 const unsigned int PINHOLE_LEASE_SHORT = 4;
 const unsigned int PINHOLE_LEASE_ODD = 3;
@@ -76,6 +77,12 @@ int main(int argc, char **argv)
 				result = controlPoint.DeletePortMappings(mappings);
 			} else if (std::strcmp(argv[i], "addpinhole") == 0) {
 				controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT,
+					static_cast<unsigned short>(tcpPort),
+					6,
+					PINHOLE_LEASE);
+				result = true;
+			} else if (std::strcmp(argv[i], "addpinhole-unassigned") == 0) {
+				controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT_UNASSIGNED,
 					static_cast<unsigned short>(tcpPort),
 					6,
 					PINHOLE_LEASE);

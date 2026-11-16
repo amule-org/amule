@@ -32,6 +32,7 @@
 #include <map>
 #include <string>
 #include <sstream>
+#include <utility>
 
 #include "UPnPCompatibility.h"
 
@@ -296,7 +297,8 @@ public:
 	bool Execute(const std::string &ActionName,
 		const std::vector<CUPnPArgumentValue> &ArgValue,
 		const char *resultArg = nullptr,
-		std::string *result = nullptr) const;
+		std::string *result = nullptr,
+		const std::string *sourceAddress = nullptr) const;
 };
 
 class CUPnPDevice
@@ -349,7 +351,7 @@ public:
 	void SetExpires(int expires) { m_expires = expires; }
 };
 
-typedef std::map<const std::string, CUPnPRootDevice *> RootDeviceMap;
+typedef std::map<std::pair<std::string, bool>, CUPnPRootDevice *> RootDeviceMap;
 typedef std::map<const std::string, CUPnPService *> ServiceMap;
 typedef std::map<const std::string, CUPnPPortMapping> PortMappingMap;
 
@@ -392,12 +394,11 @@ public:
 	void Subscribe(CUPnPService &service);
 	void Unsubscribe(CUPnPService &service);
 	bool AddPortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping);
-	// IGD2 actions go only to a WANIPv6FirewallControl service: an IPv4 WANIPConnection rejects
-	// them, and sending to every service found would report a pinhole that does not exist. Stops at
-	// the first service that accepts: with two firewalls, accepting both would leave the first
-	// pinhole with an id nobody keeps.
+	// Try source-bound IPv6 control URLs first, then IPv4 firewall services for gateways that refuse
+	// the IPv6 action. Stops at the first accepting firewall because only one UniqueID is retained.
 	bool ExecuteOnIPv6FirewallService(const std::string &actionName,
 		const std::vector<CUPnPArgumentValue> &argval,
+		const std::string &sourceAddress,
 		const char *resultArg,
 		std::string *result);
 	// One helper per SOAP action, so every argument list is built in exactly one place.

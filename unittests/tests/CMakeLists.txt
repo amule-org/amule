@@ -3166,7 +3166,7 @@ if (ENABLE_INTEGRATION_TESTS AND ENABLE_UPNP AND Python3_Interpreter_FOUND AND U
 		${CMAKE_SOURCE_DIR}/src/include
 		${CMAKE_SOURCE_DIR}/src/libs
 	)
-	target_link_libraries (UPnPPortMappingDriver mulecommon wxWidgets::BASE UPNP::Shared)
+	target_link_libraries (UPnPPortMappingDriver mulecommon wxWidgets::BASE UPNP::Shared ${Boost_LIBRARIES})
 	set (UPNP_TEST_BINARIES $<TARGET_FILE:UPnPPortMappingDriver>)
 	if (BUILD_DAEMON)
 		list (APPEND UPNP_TEST_BINARIES $<TARGET_FILE:amuled>)
