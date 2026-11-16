@@ -78,6 +78,8 @@ there client on the eMule forum..
 
 #include <wx/tokenzr.h>
 
+#include <set>
+
 #define CHECK_PACKET_SIZE(OP, SIZE) \
 	if (lenPacket OP(uint32_t)(SIZE)) \
 	throw wxString(CFormat("***NOTE: Received wrong size (%u) packet in %s") % lenPacket % \
@@ -1301,6 +1303,8 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 		// the rest of them.
 		uint32_t extraBytes = 0;
 		bool extraFull = false;
+		// Known tags skip that budget, so each is kept once: the first usable one.
+		std::set<wxString> keptNames;
 		uint32_t tags = bio.ReadUInt8();
 		while (tags > 0) {
 			const uint64_t tagStart = bio.GetPosition();
@@ -1350,7 +1354,7 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 				} else if (!tag->GetName().Cmp(TAG_SERVERIP) ||
 					   !tag->GetName().Cmp(TAG_SERVERPORT) ||
 					   !tag->GetName().Cmp(TAG_ENCRYPTION)) {
-					if (tag->IsInt()) {
+					if (tag->IsInt() && keptNames.insert(tag->GetName()).second) {
 						entry->AddTag(tag, ip);
 					} else {
 						delete tag;
@@ -1359,7 +1363,8 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 					   !tag->GetName().Cmp(TAG_IPV6) ||
 					   !tag->GetName().Cmp(TAG_SERVINGBUDDYIPV6)) {
 					if (tag->IsStr() &&
-						tag->GetStr().length() <= KADEMLIAMAXSOURCESTRLEN) {
+						tag->GetStr().length() <= KADEMLIAMAXSOURCESTRLEN &&
+						keptNames.insert(tag->GetName()).second) {
 						entry->AddTag(tag, ip);
 					} else {
 						delete tag;
