@@ -480,12 +480,16 @@ def real_gateway_answers():
 class Driver:
     """Runs the driver one operation at a time. Entering returns when the constructor has."""
 
-    def __init__(self, driver, operations):
+    def __init__(self, driver, operations, pinhole_client=None):
         self.command = [driver, str(TCP_PORT), str(UDP_PORT), *operations]
+        self.environment = os.environ.copy()
+        self.environment.pop('AMULE_TEST_UPNP_PINHOLE_CLIENT', None)
+        if pinhole_client is not None:
+            self.environment['AMULE_TEST_UPNP_PINHOLE_CLIENT'] = pinhole_client
 
     def __enter__(self):
         self.process = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE, text=True)
+                                        stderr=subprocess.PIPE, text=True, env=self.environment)
         self.watchdog = threading.Timer(60, self.process.kill)
         self.watchdog.start()
         assert self.process.stdout is not None
@@ -530,8 +534,8 @@ def wait_registered(gateway):
         raise ScenarioFailed(f'only {gateway.subscribed} registered')
 
 
-def run_driver(driver, gateway, operations):
-    with Driver(driver, operations) as running:
+def run_driver(driver, gateway, operations, pinhole_client=None):
+    with Driver(driver, operations, pinhole_client=pinhole_client) as running:
         wait_registered(gateway)
         return running.run(len(operations))
 
@@ -619,6 +623,22 @@ def run_pinhole_scenarios(driver, failures):
             record_failure(failures, f'pinhole add: gateway holds {gateway.pinholes}')
         if gateway.tables['ip']:
             record_failure(failures, f'pinhole add: IPv4 table touched, {gateway.tables["ip"]}')
+
+        with FakeGateway(services=('ip', 'ipv6fw'), ipv6=True,
+                         pinhole_mode='miniupnpd') as gateway:
+            got = run_driver(driver, gateway, ['addpinhole'], pinhole_client='2001:db8::1')
+        expected_transport = [(ADD_PINHOLE, 'ipv4', '127.0.0.1', '2001:db8::1',
+                               ACTION_NOT_AUTHORIZED)]
+        if got != {'addpinhole': 'true'}:
+            record_failure(failures, f'pinhole client override: returned {got}')
+        if gateway.pinhole_actions != [(ADD_PINHOLE, 'rejected')]:
+            record_failure(failures, f'pinhole client override: actions were {gateway.pinhole_actions}')
+        if gateway.pinhole_transports != expected_transport:
+            record_failure(failures, f'pinhole client override: transports were '
+                           f'{gateway.pinhole_transports}, expected {expected_transport}')
+        if gateway.pinholes:
+            record_failure(failures, f'pinhole client override: unexpected pinholes '
+                           f'{gateway.pinholes}')
 
         got, gateway = run(['addpinholeshort', 'renewexpiring'])
         if gateway.pinhole_actions != [(ADD_PINHOLE, '1'), (UPDATE_PINHOLE, '1')]:

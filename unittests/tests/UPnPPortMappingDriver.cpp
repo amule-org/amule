@@ -27,6 +27,7 @@
 // before each operation.
 // Usage: UPnPPortMappingDriver <tcp> <udp> (add|delete|pending|wanservice|
 //        addpinholeodd|addpinhole-unassigned|renewexpiring-retry)...
+// Optional: AMULE_TEST_UPNP_PINHOLE_CLIENT overrides the default pinhole client (::1).
 
 #include "config.h"
 #include "UPnPBase.h"
@@ -41,9 +42,12 @@
 namespace
 {
 const int EXIT_SKIP = 77;
-// The address the fake gateway should see as the pinhole's inside end, and a lease long enough that
-// no renewal is attempted by the timer during the run.
-const char *const PINHOLE_CLIENT = "::1";
+// The fake gateway's default pinhole client and a lease long enough that no renewal is attempted
+// by the timer during the run. Integration tests can override the address through the environment.
+const char *const PINHOLE_CLIENT = [] {
+	const char *const client = std::getenv("AMULE_TEST_UPNP_PINHOLE_CLIENT");
+	return client != nullptr && client[0] != '\0' ? client : "::1";
+}();
 const char *const PINHOLE_CLIENT_UNASSIGNED = "2001:db8::1";
 const unsigned int PINHOLE_LEASE = 3600;
 const unsigned int PINHOLE_LEASE_SHORT = 4;
