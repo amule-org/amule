@@ -25,7 +25,8 @@
 // Prints what the real control point returns. UPnPPortMappingIntegrationTest.py runs it against
 // a fake gateway. It prints a line when the constructor returns, then waits for a line on stdin
 // before each operation.
-// Usage: UPnPPortMappingDriver <tcp port> <udp port> (add|delete|pending|addpinholeodd|renewexpiring-retry)...
+// Usage: UPnPPortMappingDriver <tcp> <udp> (add|delete|pending|wanservice|
+//        addpinholeodd|renewexpiring-retry)...
 
 #include "config.h"
 #include "UPnPBase.h"
@@ -109,6 +110,8 @@ int main(int argc, char **argv)
 			} else if (std::strcmp(argv[i], "deletepinholes") == 0) {
 				controlPoint.DeleteIPv6Pinholes();
 				result = true;
+			} else if (std::strcmp(argv[i], "wanservice") == 0) {
+				result = controlPoint.WanServiceDetected();
 			} else {
 				result = controlPoint.DiscoveryPending();
 			}

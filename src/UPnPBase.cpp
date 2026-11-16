@@ -144,6 +144,9 @@ static const std::string WAN_PPP_Connection("urn:schemas-upnp-org:service:WANPPP
 static const std::string WAN_IPv6_Firewall_Control("urn:schemas-upnp-org:service:WANIPv6FirewallControl:1");
 } // namespace Service
 
+static bool IsIPv6FirewallService(const std::string &type);
+static bool IsWANMappingService(const std::string &type);
+
 // Decide whether an SSDP NT/ST is something amule wants to learn about. The whitelist is the IGW
 // family plus upnp:rootdevice, which is opaque from SSDP alone (description.xml has to be fetched
 // to classify it). Anything else is dropped before that fetch, which keeps the libupnp ThreadPool
@@ -168,16 +171,13 @@ static bool IsWANRelatedDeviceType(const std::string &type)
 		"urn:schemas-upnp-org:device:LANDevice:",
 		"urn:schemas-upnp-org:service:Layer3Forwarding:",
 		"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:",
-		"urn:schemas-upnp-org:service:WANIPConnection:",
-		"urn:schemas-upnp-org:service:WANPPPConnection:",
-		"urn:schemas-upnp-org:service:WANIPv6FirewallControl:",
 	};
 	for (const std::string &prefix : prefixes) {
 		if (stdStringStartsWithCI(type, prefix)) {
 			return true;
 		}
 	}
-	return false;
+	return IsWANMappingService(type) || IsIPv6FirewallService(type);
 }
 
 // Case-insensitive match of a device/service type URN against a fully-versioned reference URN,
@@ -194,6 +194,17 @@ static bool TypeMatchesIgnoringVersion(const std::string &type, const std::strin
 		return stdStringIsEqualCI(type, reference);
 	}
 	return stdStringStartsWithCI(type, reference.substr(0, lastColon + 1));
+}
+
+static bool IsIPv6FirewallService(const std::string &type)
+{
+	return TypeMatchesIgnoringVersion(type, Service::WAN_IPv6_Firewall_Control);
+}
+
+static bool IsWANMappingService(const std::string &type)
+{
+	return TypeMatchesIgnoringVersion(type, Service::WAN_IP_Connection) ||
+	       TypeMatchesIgnoringVersion(type, Service::WAN_PPP_Connection);
 }
 
 static std::string ProcessErrorMessage(
@@ -493,9 +504,7 @@ CUPnPService::CUPnPService(
 	// The IGD2 firewall service belongs here too: it is not a port mapper, but it is the only
 	// service that can open an inbound IPv6 pinhole, and a service that never registers here is
 	// one IPv6FirewallDetected() can never find.
-	if (UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_IP_Connection) ||
-		UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_PPP_Connection) ||
-		UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_IPv6_Firewall_Control)) {
+	if (UPnP::IsWANMappingService(m_serviceType) || UPnP::IsIPv6FirewallService(m_serviceType)) {
 #if 0
 	    m_serviceType == UPnP::Service::WAN_PPP_Connection ||
 	    m_serviceType == UPnP::Service::WAN_Common_Interface_Config ||
@@ -844,12 +853,10 @@ bool CUPnPControlPoint::DiscoveryPending() const
 		       now < m_searchDeadline + std::chrono::seconds(REGISTRATION_GRACE_SECONDS));
 }
 
-template <typename ServiceMap> static bool HasWANMappingService(const ServiceMap &services)
+bool CUPnPControlPoint::HasWANMappingService() const
 {
-	for (const auto &entry : services) {
-		const std::string &type = entry.second->GetServiceType();
-		if (UPnP::TypeMatchesIgnoringVersion(type, UPnP::Service::WAN_IP_Connection) ||
-			UPnP::TypeMatchesIgnoringVersion(type, UPnP::Service::WAN_PPP_Connection)) {
+	for (const auto &entry : m_ServiceMap) {
+		if (UPnP::IsWANMappingService(entry.second->GetServiceType())) {
 			return true;
 		}
 	}
@@ -860,7 +867,7 @@ bool CUPnPControlPoint::AddPortMappings(const std::vector<CUPnPPortMapping> &upn
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	const bool hasWANMappingService = HasWANMappingService(m_ServiceMap);
+	const bool hasWANMappingService = HasWANMappingService();
 	if (!hasWANMappingService) {
 		msg << "CUPnPControlPoint::AddPortMappings: "
 		       "WAN Service not detected yet. Will map when one registers.";
@@ -901,17 +908,13 @@ bool CUPnPControlPoint::ExecuteOnAnyService(
 	// service, whose SCPD does not implement IPv4 port-mapping actions.
 	bool ok = false;
 	for (const auto &entry : m_ServiceMap) {
-		if (UPnP::TypeMatchesIgnoringVersion(
-			    entry.second->GetServiceType(), UPnP::Service::WAN_IPv6_Firewall_Control)) {
+		if (UPnP::IsIPv6FirewallService(entry.second->GetServiceType())) {
 			continue;
 		}
 		ok = entry.second->Execute(actionName, argval) || ok;
 	}
 	return ok;
 }
-
-//! IGD:2 service that owns inbound IPv6 rules; version-insensitive match, as the IPv4 URNs are.
-static const std::string IPv6FirewallControlType("urn:schemas-upnp-org:service:WANIPv6FirewallControl:");
 
 //! SOAP arguments are strings, and this file builds its own without a formatting library.
 template <typename T> static std::string Numeric(T value)
@@ -932,7 +935,7 @@ bool CUPnPControlPoint::IPv6FirewallDetected() const
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	for (const auto &entry : m_ServiceMap) {
-		if (stdStringStartsWithCI(entry.second->GetServiceType(), IPv6FirewallControlType)) {
+		if (UPnP::IsIPv6FirewallService(entry.second->GetServiceType())) {
 			return true;
 		}
 	}
@@ -946,7 +949,7 @@ bool CUPnPControlPoint::ExecuteOnIPv6FirewallService(const std::string &actionNa
 {
 	bool ok = false;
 	for (const auto &entry : m_ServiceMap) {
-		if (!stdStringStartsWithCI(entry.second->GetServiceType(), IPv6FirewallControlType)) {
+		if (!UPnP::IsIPv6FirewallService(entry.second->GetServiceType())) {
 			continue;
 		}
 		std::string value;
@@ -1123,7 +1126,7 @@ bool CUPnPControlPoint::DeletePortMappings(const std::vector<CUPnPPortMapping> &
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	bool ok = HasWANMappingService(m_ServiceMap);
+	bool ok = HasWANMappingService();
 	for (const auto &mapping : upnpPortMapping) {
 		if (mapping.getEnabled() == "1") {
 			PortMappingMap::iterator it = m_ActivePortMappingsMap.find(mapping.getKey());
@@ -1690,13 +1693,13 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 			// the mapping on the gateway.
 			CUPnPMutexLocker lock(m_ServiceMapMutex);
 			m_ServiceMap[service.GetAbsEventSubURL()] = &service;
-			if (!stdStringStartsWithCI(service.GetServiceType(), IPv6FirewallControlType)) {
+			if (!UPnP::IsIPv6FirewallService(service.GetServiceType())) {
 				for (const auto &entry : m_ActivePortMappingsMap) {
 					service.Execute(
 						"AddPortMapping", AddPortMappingArguments(entry.second));
 				}
 			}
-			if (stdStringStartsWithCI(service.GetServiceType(), IPv6FirewallControlType)) {
+			else {
 				// Requests recorded before this service registered are replayed here: this is
 				// the point where they can finally be sent.
 				for (auto &entry : m_IPv6Pinholes) {

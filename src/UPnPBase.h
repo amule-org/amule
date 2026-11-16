@@ -432,7 +432,7 @@ public:
 	bool WanServiceDetected() const
 	{
 		CUPnPMutexLocker lock(m_ServiceMapMutex);
-		return !m_ServiceMap.empty();
+		return HasWANMappingService();
 	}
 	// True until a gateway has its mappings or the search has ended, or a little longer for a
 	// gateway still registering. Work that needs the ports reachable, such as a server login, should
@@ -461,6 +461,8 @@ private:
 		IXML_Element *rootDevice, const std::string &urlBase, const char *location, int expires);
 	void RemoveRootDevice(const char *udn);
 	void RefreshPortMappings();
+	// The caller must hold m_ServiceMapMutex.
+	bool HasWANMappingService() const;
 	bool ExecuteOnAnyService(
 		const std::string &actionName, const std::vector<CUPnPArgumentValue> &argval);
 	bool PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMapping);

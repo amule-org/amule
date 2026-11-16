@@ -614,15 +614,15 @@ def run_ipv4_firewall_filter_scenarios(driver, failures):
     """An IPv6 firewall is never a WAN mapping service, even if it advertises those actions."""
     try:
         with FakeGateway(services=('ip', 'ipv6fw'), firewall_ipv4_actions=True) as gateway:
-            got = run_driver(driver, gateway, ['add', 'delete'])
-        if got != {'add': 'true', 'delete': 'true'}:
+            got = run_driver(driver, gateway, ['add', 'delete', 'wanservice'])
+        if got != {'add': 'true', 'delete': 'true', 'wanservice': 'true'}:
             record_failure(failures, f'firewall filter with WAN service: returned {got}')
         if any(service != 'ip' for service, _, _ in gateway.requests):
             record_failure(failures, f'IPv4 mapping action reached IPv6 firewall: {gateway.requests}')
 
         with FakeGateway(services=('ipv6fw',), firewall_ipv4_actions=True) as gateway:
-            got = run_driver(driver, gateway, ['add', 'delete'])
-        if got != {'add': 'false', 'delete': 'false'}:
+            got = run_driver(driver, gateway, ['add', 'delete', 'wanservice'])
+        if got != {'add': 'false', 'delete': 'false', 'wanservice': 'false'}:
             record_failure(failures, f'firewall counted as WAN mapping service: returned {got}')
         if gateway.requests:
             record_failure(failures, f'IPv4 action sent without a WAN service: {gateway.requests}')
