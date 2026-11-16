@@ -51,7 +51,8 @@
 #include <wx/wupdlock.h>               // wxWindowUpdateLocker (sidebar refill)
 #include "SharedFilesReloadProgress.h" // ReloadSharedFilesWithProgress
 
-#include <memory> // std::unique_ptr (progress dialog lifetime)
+#include <memory>  // std::unique_ptr (progress dialog lifetime)
+#include <utility> // std::pair (link-handler rows)
 #include <wx/stdpaths.h>
 #ifdef __WXGTK__
 #include <wx/taskbar.h> // wxTaskBarIcon::IsAvailable (legacy tray availability)
@@ -826,6 +827,9 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 				vc->Hide();
 			}
 #endif
+			// Measure the page with its link rows as they will open: on macOS, those whose links
+			// aMule already handles are hidden.
+			SyncLinkHandlerRows();
 #ifdef __WINDOWS__
 			CastChild(IDC_BROWSERTABS, wxCheckBox)->Enable(false);
 #endif /* __WINDOWS__ */
@@ -1032,12 +1036,22 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	// Allow the viewport to shrink independently of the largest page. Start
 	// with enough room for the content when possible, but leave space for the
 	// desktop panels and window decorations on the parent's display.
-	// Everything beside the page column (sidebar, divider) and above and below the page
-	// (header, footer) comes on top of the largest page's size.
-	const wxSize dialogMinimum = GetSizer()->GetMinSize();
-	FitDialogToDisplay(this,
-		wxSize(width + dialogMinimum.GetWidth() - prefs_sizer->GetMinSize().GetWidth(),
-			height + dialogMinimum.GetHeight() - minimumPageSize.GetHeight()));
+	// Everything beside the page column (sidebar, divider) comes on top of the largest page's
+	// width. The width is set, and laid out, first: the page description wraps to it, so the
+	// header's height is only known once the dialog has its width. Until then the description is
+	// wrapped to the dialog's default width, several lines taller than it will be.
+	const int preferredWidth =
+		width + GetSizer()->GetMinSize().GetWidth() - prefs_sizer->GetMinSize().GetWidth();
+	FitDialogToDisplay(this, wxSize(preferredWidth, height));
+	Layout();
+	// Only what sits above and below the page comes on top of its height: the header over it in
+	// the page column, and the footer under the row of sidebar and page column. The sidebar
+	// stands beside the page, so its minimum height -- which on macOS is what sets the dialog's
+	// -- has no part in it.
+	const int rowMinimum = m_PrefsIcons->GetParent()->GetContainingSizer()->GetMinSize().GetHeight();
+	const int aroundPage = prefs_sizer->GetMinSize().GetHeight() - minimumPageSize.GetHeight() +
+			       GetSizer()->GetMinSize().GetHeight() - rowMinimum;
+	FitDialogToDisplay(this, wxSize(preferredWidth, height + aroundPage));
 	GrowDialogToContent(this, DefaultWidget, wxSize(width, height));
 
 	// Position the dialog.
@@ -1346,39 +1360,8 @@ bool PrefsUnifiedDlg::TransferToWindow()
 		autostartCb->SetValue(AutostartManager::IsEnabled());
 	}
 
-	// URL-scheme handler checkboxes: same live-OS-state model. On macOS, LaunchServices
-	// has no "clear default handler" call, so Disable is a no-op -- toggling an
-	// already-checked box off changes nothing the user can observe. Rather than expose a
-	// dead control, hide the checkbox once aMule is the current handler. If they later
-	// switch away via macOS' native "Change All..." chooser, the checkbox reappears on the
-	// next open.
-	wxCheckBox *ed2kCb = static_cast<wxCheckBox *>(FindWindow(IDC_PROTOCOL_ED2K));
-	if (ed2kCb) {
-		bool enabled = ProtocolHandlerManager::IsEnabled(HandlerTarget::Ed2kScheme);
-		ed2kCb->SetValue(enabled);
-#ifdef __WXMAC__
-		ed2kCb->Show(!enabled);
-#endif
-	}
-	wxCheckBox *magnetCb = static_cast<wxCheckBox *>(FindWindow(IDC_PROTOCOL_MAGNET));
-	if (magnetCb) {
-		bool enabled = ProtocolHandlerManager::IsEnabled(HandlerTarget::MagnetScheme);
-		magnetCb->SetValue(enabled);
-#ifdef __WXMAC__
-		magnetCb->Show(!enabled);
-#endif
-	}
-	wxCheckBox *assocCb = static_cast<wxCheckBox *>(FindWindow(IDC_ASSOC_COLLECTION));
-	if (assocCb) {
-		bool enabled = ProtocolHandlerManager::IsEnabled(HandlerTarget::CollectionFile);
-		assocCb->SetValue(enabled);
-#ifdef __WXMAC__
-		// LaunchServices has no "clear default handler" call, so an already-registered box
-		// could not be unticked; hide it rather than offer a control that cannot work. Same as
-		// the schemes.
-		assocCb->Show(!enabled);
-#endif
-	}
+	// URL-scheme and file-type handler checkboxes: same live-OS-state model.
+	SyncLinkHandlerRows();
 
 #ifdef GEOIP_GUI
 	// Sync the GeoIP source dropdown to the persisted source. The Cfg_ system above
@@ -2371,6 +2354,29 @@ void PrefsUnifiedDlg::OnAutostartToggle(wxCommandEvent &event)
 			_("Autostart"),
 			wxOK | wxICON_WARNING,
 			this);
+	}
+}
+
+void PrefsUnifiedDlg::SyncLinkHandlerRows()
+{
+	const std::pair<int, HandlerTarget> rows[] = {
+		{ IDC_PROTOCOL_ED2K, HandlerTarget::Ed2kScheme },
+		{ IDC_PROTOCOL_MAGNET, HandlerTarget::MagnetScheme },
+		{ IDC_ASSOC_COLLECTION, HandlerTarget::CollectionFile },
+	};
+	for (const auto &[id, target] : rows) {
+		if (auto *box = CastChild(id, wxCheckBox)) {
+			const bool enabled = ProtocolHandlerManager::IsEnabled(target);
+			box->SetValue(enabled);
+#ifdef __WXMAC__
+			// LaunchServices has no "clear default handler" call, so Disable is a no-op --
+			// toggling an already-checked box off changes nothing the user can observe. Rather
+			// than expose a dead control, hide the checkbox once aMule is the current handler.
+			// If they later switch away via macOS' native "Change All..." chooser, the checkbox
+			// reappears on the next open.
+			box->Show(!enabled);
+#endif
+		}
 	}
 }
 

@@ -318,6 +318,9 @@ public:
 	// model as autostart, gated by a confirm dialog when a non-aMule handler is currently in
 	// place.
 	void HandleProtocolToggle(HandlerTarget scheme, int checkboxId, bool wanted);
+	// Reads which links and collection files the OS hands to aMule into their checkboxes, on
+	// every open: the OS is the only store of that state. On macOS a ticked row is hidden.
+	void SyncLinkHandlerRows();
 	void OnPrefsPageChange(wxDataViewEvent &event);
 	void OnScrollBarChange(wxScrollEvent &event);
 	void OnBandwidthCalculator(wxCommandEvent &event);
