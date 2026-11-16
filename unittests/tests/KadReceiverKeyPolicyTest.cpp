@@ -53,3 +53,21 @@ TEST(KadReceiverKeyPolicy, HandlersDoNotShareBuckets)
 	ASSERT_EQUALS(0, counts.GetValid(EKadReceiverKeyHandler::SourcePublish));
 	ASSERT_EQUALS(1, counts.GetMissing(EKadReceiverKeyHandler::SourcePublish));
 }
+
+TEST(KadReceiverKeyPolicy, TheKad2FirewallCheckNeedsAProvenSender)
+{
+	ASSERT_TRUE(DropsWithoutReceiverKey(EKadReceiverKeyHandler::Firewall2Check, false));
+	ASSERT_FALSE(DropsWithoutReceiverKey(EKadReceiverKeyHandler::Firewall2Check, true));
+}
+
+TEST(KadReceiverKeyPolicy, EveryOtherHandlerKeepsRequestsWithoutAKey)
+{
+	for (std::size_t i = 0; i < static_cast<std::size_t>(EKadReceiverKeyHandler::Count); ++i) {
+		const auto handler = static_cast<EKadReceiverKeyHandler>(i);
+		if (handler == EKadReceiverKeyHandler::Firewall2Check) {
+			continue;
+		}
+		ASSERT_FALSE(DropsWithoutReceiverKey(handler, false));
+		ASSERT_FALSE(DropsWithoutReceiverKey(handler, true));
+	}
+}
