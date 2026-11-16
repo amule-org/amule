@@ -570,7 +570,7 @@ bool CamuleRemoteGuiApp::OnInit()
 	InstallMuleExceptionHandler();
 
 	// Parse cmdline arguments.
-	if (!InitCommon(AMULE_APP_BASE::argc, AMULE_APP_BASE::argv)) {
+	if (!InitCommon(AMULE_APP_BASE::argc, AMULE_APP_BASE::argv) || !OpenLogFile()) {
 		return false;
 	}
 

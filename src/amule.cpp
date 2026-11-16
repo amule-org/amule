@@ -848,6 +848,9 @@ bool CamuleApp::OnInit()
 		SetConfigureResult(SetECPassFromStdin());
 		return false;
 	}
+	if (!OpenLogFile()) {
+		return false;
+	}
 
 #ifndef __WINDOWS__
 	if (getuid() == 0) {

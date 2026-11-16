@@ -261,15 +261,22 @@ def set_ec_pass_enables_ec(daemon, cmd):
             return subprocess.run(base + ['--set-ec-pass-stdin'], env=env, input=password,
                                   capture_output=True, timeout=60, start_new_session=True)
 
+        # A one-shot run must not back up the log, or the next start loses this session.
+        log, backup = root / 'logfile', root / 'logfile.bak'
+        previous = b'previous daemon session\n'
+        log.write_bytes(previous)
         for bad in (b'', b'\n'):
             assert set_pass(bad).returncode == 1, bad
         # One-shot: it saves the verifier and exits without starting the core.
         setup = set_pass(b'regression\n')
         assert setup.returncode == 0, setup
+        assert log.read_bytes() == previous, 'one-shot run rotated the log'
+        assert not backup.exists(), 'one-shot run created logfile.bak'
         saved = read_config(root / 'amule.conf')['ExternalConnect']
         assert saved['AcceptExternalConnections'] == '1', dict(saved)
         verifier = saved['ECPasswordVerifier']
         with running_daemon(daemon, root, (port, peer), env=env, console='console') as (_, ec):
+            assert backup.read_bytes() == previous, 'real start did not back up the log'
             ec.sock.close()
             out = amulecmd(cmd, port, '-c', 'status', env=env)
             assert 'Succeeded!' in out.stdout + out.stderr, out
