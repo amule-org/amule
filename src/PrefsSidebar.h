@@ -146,8 +146,9 @@ public:
 		});
 		Bind(wxEVT_KEY_DOWN, &PrefsSidebar::OnKeyDown, this);
 		// The focus outline is for the keyboard, as Windows' own focus rectangles are: a click
-		// hides it, and focus that does not come from a click, or a key pressed in the list,
-		// shows it. wxVListBox takes the focus while handling the click, after this handler.
+		// hides it, and a key pressed in the list, or focus that comes from another control in the
+		// dialog without a click, shows it. wxVListBox takes the focus while handling the click,
+		// after this handler.
 		Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent &event) {
 			SetFocusVisible(false);
 			m_clicking = true;
@@ -155,7 +156,11 @@ public:
 			event.Skip();
 		});
 		Bind(wxEVT_SET_FOCUS, [this](wxFocusEvent &event) {
-			SetFocusVisible(!m_clicking);
+			// Focus that returns with the window, from another one, keeps the outline as it was.
+			wxWindow *from = event.GetWindow();
+			if (from && wxGetTopLevelParent(from) == wxGetTopLevelParent(this)) {
+				SetFocusVisible(!m_clicking);
+			}
 			event.Skip();
 		});
 		Bind(wxEVT_MOUSEWHEEL, &PrefsSidebar::OnMouseWheel, this);

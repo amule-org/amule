@@ -2698,10 +2698,8 @@ wxSizer *preferencesDlgTop( wxWindow *parent, bool call_fit, bool set_sizer )
     PrefsSidebar *item2 = new PrefsSidebar( sidebar, ID_PREFSLISTCTRL );
     // What screen readers call the list.
     item2->SetLabel( _("Preferences") );
-#ifdef __WXMSW__
-    // Drawn by aMule (PrefsSidebar.h), in the pane's colour; the native lists elsewhere paint their own.
+    // In the pane's colour. macOS would paint the list in the window's, the page's colour.
     FollowSystemColours( item2, [parent]( wxWindow *w ) { w->SetBackgroundColour( PrefsSidebarColour( parent ) ); } );
-#endif
     sidebarSizer->Add( item2, wxSizerFlags(1).Expand().Border(wxLEFT|wxRIGHT|wxBOTTOM, parent->FromDIP(PrefsSidebar::kMargin)) );
     sidebar->SetSizer( sidebarSizer );
     item0->Add( sidebar, wxSizerFlags().Expand() );
