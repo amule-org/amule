@@ -3915,10 +3915,8 @@ wxDEFINE_EVENT(wxEVT_CORE_SOURCE_DNS_DONE, wxEvent);
 wxDEFINE_EVENT(wxEVT_CORE_UDP_DNS_DONE, wxEvent);
 wxDEFINE_EVENT(wxEVT_CORE_SERVER_DNS_DONE, wxEvent); // File_checked_for_headers
 
-const ECSRP::Verifier &CamuleApp::GetEcTokenVerifier(uint8_t credential)
+const ECSRP::Verifier &CamuleApp::GetEcTokenVerifier()
 {
-	if (credential != ECSRP::ApiToken)
-		throw std::invalid_argument("Invalid EC token credential");
 	if (!m_ecDummyTokenVerifier.Valid()) {
 		auto random = ECCrypt::RandomBytes(16);
 		m_ecDummyTokenVerifier = ECSRP::Verifier::Create(ECSRP::Hex(random));
