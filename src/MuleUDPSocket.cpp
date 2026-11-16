@@ -338,9 +338,11 @@ bool CMuleUDPSocket::QueuePacket(CPacket *packet,
 	newpending.port = port;
 	newpending.packet = packet;
 	newpending.time = GetTickCount64();
-	newpending.bEncrypt = bEncrypt &&
-			      (pachTargetClientHashORKadID != NULL || (bKad && nReceiverVerifyKey != 0)) &&
-			      thePrefs::IsClientCryptLayerSupported();
+	newpending.bEncrypt = ObfuscateQueuedPacket(bEncrypt,
+		pachTargetClientHashORKadID != nullptr,
+		bKad,
+		nReceiverVerifyKey,
+		thePrefs::IsClientCryptLayerSupported());
 	newpending.bRequireEncrypt = bRequireEncrypt;
 	newpending.bChargedToStream = bChargedToStream;
 	newpending.bKad = bKad;
