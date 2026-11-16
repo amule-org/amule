@@ -162,6 +162,10 @@
 // aMule may dial a firewalled source on its ip6 address; bi6 is unused.
 #define TAG_IPV6 wxT("ip6")             // <string> unfirewalled IPv6
 #define TAG_SERVINGBUDDYIPV6 wxT("bi6") // <string> serving buddy IPv6
+// The pointer route marker: a version byte saying the publisher's buddy can be found at a key
+// derived from its source ID. aMule neither publishes nor resolves it; a storer only recognises it,
+// because a record carrying it is one storers keep solely with a valid receiver key.
+#define TAG_BUDDYPOINTER wxT("bpv") // <uint8> pointer route version
 
 // Media values for FT_FILETYPE
 #define ED2KFTSTR_AUDIO wxT("Audio")

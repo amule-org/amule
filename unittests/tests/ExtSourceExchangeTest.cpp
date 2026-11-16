@@ -539,6 +539,7 @@ SKadSourceFacts DialableApp(uint32 ourHelloID)
 	app.ourHelloID = ourHelloID;
 	app.ipv6Built = true;
 	app.familyPermitted = true;
+	app.haveLocalIPv6 = true;
 	return app;
 }
 } // namespace

@@ -4,8 +4,9 @@
 """A Kad source entry decides whether the buddy route looks the buddy up, or stays unused.
 
 With TAG_BUDDYHASH and no buddy address, the downloader looks the buddy ID up and asks the nodes
-around it to relay a callback. Without the tag, as EKadSourcePublish::IPv6Only publishes, there is
-no buddy ID at all: the route must stay unused, not look up the zero Kad ID.
+around it to relay a callback. Without the tag there is no buddy ID at all: the route must stay
+unused, not look up the zero Kad ID. Records in that shape stay in the network for a republish
+period after a publisher stops making them, so a receiver still has to handle them.
 
 One fake Kad node is the daemon's only contact. It answers the bootstrap, the file lookup and the
 source search, then records the lookups and callback requests the daemon sends next.
@@ -63,15 +64,19 @@ def kad_ip(address):
     return int.from_bytes(socket.inet_aton(address), 'little')
 
 
-def source_tags(with_buddy_hash, forged=False):
-    """A firewalled source with no buddy address, as IPv6Only publishes it.
+def source_tags(with_buddy_hash, source_type=3, forged=False):
+    """A firewalled source with no buddy address, as older publishers sent it.
 
     forged adds a second TAG_SOURCEIP, as a storer that keeps a publisher's one serves it.
     """
-    tags = [kad_tag(TAG_SOURCETYPE, 0x09, 3),
+    tags = [kad_tag(TAG_SOURCETYPE, 0x09, source_type),
             kad_tag(TAG_SOURCEIP, 0x03, kad_ip(SOURCE_ADDRESS)),
             kad_tag(TAG_SOURCEPORT, 0x08, SOURCE_PORT),
             kad_tag(TAG_FILESIZE, 0x03, FILE_SIZE)]
+    if source_type == 7:
+        # A route the receiver parses and then refuses: 2001:db8::/32 is documentation space, so
+        # the record reaches the type 7 branch of the downloader and nothing is ever dialled.
+        tags.append(kad_tag(b'ip6', 0x02, b'20010db8' * 4))
     if with_buddy_hash:
         tags.append(kad_tag(TAG_BUDDYHASH, 0x02, BUDDY_HASH))
     if forged:
@@ -84,9 +89,10 @@ class FakeNode(threading.Thread):
 
     daemon = True
 
-    def __init__(self, address, with_buddy_hash, forged=False):
+    def __init__(self, address, with_buddy_hash, source_type=3, forged=False):
         super().__init__()
         self.with_buddy_hash = with_buddy_hash
+        self.source_type = source_type
         self.forged = forged
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((address, 0))
@@ -130,7 +136,7 @@ class FakeNode(threading.Thread):
         elif opcode == KADEMLIA2_SEARCH_SOURCE_REQ:
             # <target 16><startposition 2><filesize 8>
             self.source_searches += 1
-            tags = source_tags(self.with_buddy_hash, self.forged)
+            tags = source_tags(self.with_buddy_hash, self.source_type, self.forged)
             self.send(peer, KADEMLIA2_SEARCH_RES,
                       NODE_ID + body[:16] + struct.pack('<H', 1) + SOURCE_ID
                       + bytes([len(tags)]) + b''.join(tags))
@@ -143,9 +149,9 @@ class FakeNode(threading.Thread):
         self.sock.close()
 
 
-def drive(binary, address, with_buddy_hash, forged=False):
+def drive(binary, address, with_buddy_hash, source_type=3, forged=False):
     """Feed one daemon a source entry and return the fake node it talked to."""
-    node = FakeNode(address, with_buddy_hash, forged)
+    node = FakeNode(address, with_buddy_hash, source_type, forged)
     node.start()
     try:
         with tempfile.TemporaryDirectory(prefix='kad-source-buddy-') as directory:
@@ -162,7 +168,7 @@ def drive(binary, address, with_buddy_hash, forged=False):
                                [string(C['EC_TAG_STRING'], link)])[0] == C['EC_OP_NOOP']
                 wait_for(proc, 'the daemon to search Kad for sources of the file',
                          lambda: node.source_searches > 0, 180)
-                if with_buddy_hash and not forged:
+                if with_buddy_hash and source_type != 7 and not forged:
                     wait_for(proc, 'a callback request for the published buddy ID',
                              lambda: bool(node.callbacks), 120)
                 else:
@@ -202,14 +208,19 @@ def run(binary):
     assert ZERO_ID not in silent.lookups, 'looked up the zero Kad ID'
     assert not silent.callbacks, ('callback request without a buddy hash',
                                   [body.hex() for body in silent.callbacks])
-
     # The source would get a callback if the searcher took the result.
     forged = drive(binary, address, with_buddy_hash=True, forged=True)
     assert forged.source_searches > 0, 'the daemon never searched Kad for sources'
     assert not forged.callbacks, ('callback request for a result with two source IPs',
                                   [body.hex() for body in forged.callbacks])
+
+    # Type 7 names its routes in tags, so its buddy hash must start no callback whatever it says.
+    routes_in_tags = drive(binary, address, with_buddy_hash=True, source_type=7)
+    assert routes_in_tags.source_searches > 0, 'the daemon never searched Kad for sources'
+    assert not routes_in_tags.callbacks, ('callback request for a type 7 source',
+                                          [body.hex() for body in routes_in_tags.callbacks])
     print('PASS: a published buddy hash is looked up; a source without one gets no buddy lookup; '
-          'a result with two source IPs is skipped')
+          'a result with two source IPs is skipped; a type 7 gets no callback')
 
 
 if __name__ == '__main__':

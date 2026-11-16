@@ -67,7 +67,7 @@ there client on the eMule forum..
 #endif
 #include "../../SharedFileList.h"
 #include "../../Statistics.h"       // Needed for theStats
-#include "../../KadPublishPolicy.h" // Needed for DecideKadSourcePublish
+#include "../../KadPublishPolicy.h" // Needed for DecideKadSourcePublish, KadSourceTypeFor
 #include "../../DownloadQueue.h"
 #include "../../PartFile.h"
 #include "../../SHAHashSet.h" // Needed for CAICHHash on Kad keyword storage
@@ -981,16 +981,13 @@ void CSearch::StorePacket()
 			CUInt128 id(CKademlia::GetPrefs()->GetClientHash());
 			TagPtrList taglist;
 
-			// Source types: 1 HighID, 3 firewalled Kad, 4 >4GB HighID, 5 >4GB
-			// firewalled Kad, 6 firewalled with direct callback (supports >4GB).
-			// 2 cannot be used, as older clients will not work with it.
-
 			const EKadSourcePublish publishAs =
 				DecideKadSourcePublish(CSharedFileList::CurrentKadPublishFacts());
 			if (publishAs == EKadSourcePublish::DirectCallback) {
 				// firewalled, but direct udp callback is possible so no need for
 				// buddies We are not firewalled..
-				taglist.push_back(new CTagVarInt(TAG_SOURCETYPE, 6));
+				taglist.push_back(new CTagVarInt(
+					TAG_SOURCETYPE, KadSourceTypeFor(publishAs, file->IsLargeFile())));
 				taglist.push_back(new CTagVarInt(TAG_SOURCEPORT, thePrefs::GetPort()));
 				if (!CKademlia::GetPrefs()->GetUseExternKadPort()) {
 					taglist.push_back(new CTagInt16(
@@ -1002,7 +999,8 @@ void CSearch::StorePacket()
 			} else if (publishAs == EKadSourcePublish::Buddy) {
 				// We send the ID to our buddy so they can do a callback.
 				const CUInt128 buddyID = OwnBuddyID(CKademlia::GetPrefs()->GetKadID());
-				taglist.push_back(new CTagInt8(TAG_SOURCETYPE, file->IsLargeFile() ? 5 : 3));
+				taglist.push_back(new CTagInt8(
+					TAG_SOURCETYPE, KadSourceTypeFor(publishAs, file->IsLargeFile())));
 				taglist.push_back(new CTagVarInt(
 					TAG_SERVERIP, theApp->clientlist->GetBuddy()->GetIP()));
 				taglist.push_back(new CTagVarInt(
@@ -1024,17 +1022,19 @@ void CSearch::StorePacket()
 					taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
 				}
 			} else if (publishAs == EKadSourcePublish::IPv6Only) {
-				// A firewalled source with no buddy to relay a callback: peers reach us only
-				// at the "ip6" tag added below.
-				taglist.push_back(new CTagInt8(TAG_SOURCETYPE, file->IsLargeFile() ? 5 : 3));
+				// A storer that implements type 7 drops it without our receiver key.
+				if (from->GetUDPKey().GetKeyValue(theApp->GetPublicIP(false)) == 0) {
+					return;
+				}
+				taglist.push_back(new CTagInt8(
+					TAG_SOURCETYPE, KadSourceTypeFor(publishAs, file->IsLargeFile())));
 				taglist.push_back(new CTagVarInt(TAG_SOURCEPORT, thePrefs::GetPort()));
 				if (!CKademlia::GetPrefs()->GetUseExternKadPort()) {
 					taglist.push_back(new CTagInt16(
 						TAG_SOURCEUPORT, CKademlia::GetPrefs()->GetInternKadPort()));
 				}
-				if (from->GetVersion() >= 2) {
-					taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
-				}
+				// Type 7 has no size variant, so the size always goes.
+				taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
 			} else if (publishAs == EKadSourcePublish::None) {
 				// No callback route remains. Let the next shared-file pass retry.
 				file->SetLastPublishTimeKadSrc(0, 0);
@@ -1042,7 +1042,8 @@ void CSearch::StorePacket()
 				break;
 			} else {
 				// We're not firewalled..
-				taglist.push_back(new CTagInt8(TAG_SOURCETYPE, file->IsLargeFile() ? 4 : 1));
+				taglist.push_back(new CTagInt8(
+					TAG_SOURCETYPE, KadSourceTypeFor(publishAs, file->IsLargeFile())));
 				taglist.push_back(new CTagVarInt(TAG_SOURCEPORT, thePrefs::GetPort()));
 				if (!CKademlia::GetPrefs()->GetUseExternKadPort()) {
 					taglist.push_back(new CTagInt16(
@@ -1420,6 +1421,13 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32
 
 	// Process source based on its type. Currently only one method is needed to process all types.
 	switch (type) {
+	case 7:
+		// "Reach me by one of the routes in my tags". With no route we understood, or no port
+		// to dial, there is nothing to contact, so the record goes no further and costs no I/O.
+		if (!publishedIPv6.IsIPv6() || tcp == 0) {
+			break;
+		}
+		[[fallthrough]];
 	case 1:
 	case 3:
 	case 4:

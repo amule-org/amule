@@ -165,4 +165,27 @@ TEST(KadPublishPolicy, AnEntryMustNameTheBuddyWePublishWithNow)
 	ASSERT_FALSE(KadSourceEntriesLive(EKadSourcePublish::None, ack, 0, 0, now, lifetime, 0, 0));
 }
 
+TEST(KadPublishPolicy, EachPublishKindCarriesItsOwnSourceType)
+{
+	ASSERT_EQUALS(1, KadSourceTypeFor(EKadSourcePublish::HighID, false));
+	ASSERT_EQUALS(4, KadSourceTypeFor(EKadSourcePublish::HighID, true));
+	ASSERT_EQUALS(6, KadSourceTypeFor(EKadSourcePublish::DirectCallback, false));
+	ASSERT_EQUALS(6, KadSourceTypeFor(EKadSourcePublish::DirectCallback, true));
+	ASSERT_EQUALS(3, KadSourceTypeFor(EKadSourcePublish::Buddy, false));
+	ASSERT_EQUALS(5, KadSourceTypeFor(EKadSourcePublish::Buddy, true));
+}
+
+// Type 7 says "reach me by one of the routes in my tags", so one value covers every file size.
+TEST(KadPublishPolicy, AnIPv6OnlySourceIsTypeSevenWhateverTheFileSize)
+{
+	ASSERT_EQUALS(7, KadSourceTypeFor(EKadSourcePublish::IPv6Only, false));
+	ASSERT_EQUALS(7, KadSourceTypeFor(EKadSourcePublish::IPv6Only, true));
+}
+
+TEST(KadPublishPolicy, NoRouteBackHasNoSourceTypeToPublish)
+{
+	ASSERT_EQUALS(0, KadSourceTypeFor(EKadSourcePublish::None, false));
+	ASSERT_EQUALS(0, KadSourceTypeFor(EKadSourcePublish::None, true));
+}
+
 // File_checked_for_headers

@@ -41,13 +41,14 @@ SKadSourceFacts ContactableOverIPv6()
 	facts.ourHelloID = 1;
 	facts.ipv6Built = true;
 	facts.familyPermitted = true;
+	facts.haveLocalIPv6 = true;
 	return facts;
 }
 } // namespace
 
 TEST(KadSourceAddressPolicy, AFirewalledSourceIsContactedOnItsPublishedIPv6)
 {
-	for (std::uint8_t sourceType : { 3, 5, 6 }) {
+	for (std::uint8_t sourceType : { 3, 5, 6, 7 }) {
 		SKadSourceFacts facts = ContactableOverIPv6();
 		facts.sourceType = sourceType;
 		ASSERT_TRUE(ShouldContactKadSourceOverIPv6(facts));
@@ -66,7 +67,7 @@ TEST(KadSourceAddressPolicy, AnyNonzeroLowIDOfOursQualifies)
 // Types 1 and 4 are HighID sources that keep their IPv4 route.
 TEST(KadSourceAddressPolicy, OtherSourceTypesAreNotContactedOverIPv6)
 {
-	for (std::uint8_t sourceType : { 0, 1, 2, 4, 7 }) {
+	for (std::uint8_t sourceType : { 0, 1, 2, 4, 8 }) {
 		SKadSourceFacts facts = ContactableOverIPv6();
 		facts.sourceType = sourceType;
 		ASSERT_FALSE(ShouldContactKadSourceOverIPv6(facts));
@@ -94,6 +95,44 @@ TEST(KadSourceAddressPolicy, ABuddylessSourceIsContactedOverIPv6WithAnyNonzeroID
 			facts.ourHelloID = ourHelloID;
 			ASSERT_TRUE(ShouldContactKadSourceOverIPv6(facts));
 		}
+	}
+}
+
+// Type 7 names no buddy, so it is contacted whatever ID we hold, and buddy tags on it are ignored.
+TEST(KadSourceAddressPolicy, ARoutesInTagsSourceIsBuddylessWhateverItsTagsSay)
+{
+	for (bool carriesBuddy : { false, true }) {
+		for (std::uint32_t ourHelloID : { 1u, 16777216u, 0xC0A80001u }) {
+			SKadSourceFacts facts = ContactableOverIPv6();
+			facts.sourceType = 7;
+			facts.carriesBuddy = carriesBuddy;
+			facts.ourHelloID = ourHelloID;
+			ASSERT_TRUE(ShouldContactKadSourceOverIPv6(facts));
+		}
+	}
+}
+
+TEST(KadSourceAddressPolicy, ARoutesInTagsSourceStillNeedsADialableAddress)
+{
+	SKadSourceFacts noAddress = ContactableOverIPv6();
+	noAddress.sourceType = 7;
+	noAddress.publishedIPv6 = CNetworkAddress();
+	ASSERT_FALSE(ShouldContactKadSourceOverIPv6(noAddress));
+
+	SKadSourceFacts notBuilt = ContactableOverIPv6();
+	notBuilt.sourceType = 7;
+	notBuilt.ipv6Built = false;
+	ASSERT_FALSE(ShouldContactKadSourceOverIPv6(notBuilt));
+}
+
+// The record's only route is IPv6, so with no address of our own there is nothing to dial it from.
+TEST(KadSourceAddressPolicy, NoGlobalIPv6OfOursRefusesEveryIPv6Contact)
+{
+	for (std::uint8_t sourceType : { 3, 5, 6, 7 }) {
+		SKadSourceFacts facts = ContactableOverIPv6();
+		facts.sourceType = sourceType;
+		facts.haveLocalIPv6 = false;
+		ASSERT_FALSE(ShouldContactKadSourceOverIPv6(facts));
 	}
 }
 

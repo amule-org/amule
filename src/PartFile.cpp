@@ -58,6 +58,7 @@
 #include "ServerSourceRecords.h" // Needed for ParseServerSourceRecord
 #ifdef ENABLE_IPV6
 #include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::Permits
+#include "AdvertisedIPv6.h"         // Needed for SelectedLocalIPv6
 #include "ServerIPv6SourcePolicy.h" // Needed for ShouldContactServerSourceOverIPv6
 #endif
 
@@ -3525,6 +3526,7 @@ bool ShouldDialExtendedSourceOverIPv6([[maybe_unused]] const ExtSX::SRecord &rec
 	app.ipv6Built = true;
 	app.familyPermitted = AddressFamilyPolicy::Permits(address);
 	app.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+	app.haveLocalIPv6 = SelectedLocalIPv6().has_value();
 	// IsFiltered() counts every match in the statistics, so it only sees an address we would dial.
 	return ExtSX::ShouldDialIPv6(record, app) && !theApp->ipfilter->IsFiltered(address);
 #else

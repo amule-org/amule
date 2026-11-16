@@ -43,17 +43,33 @@ enum class EKadReceiverKeyHandler : std::size_t
 };
 
 /**
- * Whether a request is dropped because its receiver key did not prove the sender.
+ * Whether a whole request is dropped because its receiver key did not prove the sender.
  *
  * Only the Kad2 firewall check. It is sent from a hello exchange, where the peer already holds our
  * key, and the clients that send it always obfuscate, so a missing key means the packet did not
  * come from the address it names. The handler dials that address, so a spoofed one makes us dial a
- * stranger on a port the packet chose. Every other handler still sees honest requests without a
- * key, so gating one would cost more than it protects (#2315).
+ * stranger on a port the packet chose. The other handlers still see honest requests without a key,
+ * so gating one of them wholesale would cost more than it protects (#2315). A source publish is
+ * decided per record instead, by DropsUnkeyedSourcePublish().
  */
 inline bool DropsWithoutReceiverKey(EKadReceiverKeyHandler handler, bool validReceiverKey) noexcept
 {
 	return !validReceiverKey && handler == EKadReceiverKeyHandler::Firewall2Check;
+}
+
+/**
+ * Whether a source publish is dropped because its receiver key did not prove the sender.
+ *
+ * The records defined with this rule: source type 7, anything carrying the pointer route marker,
+ * and a pointer record itself. No publisher of them predates the key, so nothing honest is lost.
+ * Classic types cannot be gated: most of the publishes a live node sees arrive without a key
+ * (#2315). The key proves the publisher receives at the IPv4 we stamp into TAG_SOURCEIP, the field
+ * a receiver compares a pointer against before trusting the buddy it names.
+ */
+inline bool DropsUnkeyedSourcePublish(
+	uint8_t sourceType, bool carriesPointerTag, bool isPointerRecord, bool validReceiverKey) noexcept
+{
+	return !validReceiverKey && (sourceType == 7 || carriesPointerTag || isPointerRecord);
 }
 
 //! Valid and missing receiver keys observed by each handler.

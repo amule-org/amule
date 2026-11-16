@@ -1288,7 +1288,12 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	DEBUG_ONLY(wxString strInfo;)
 	uint8_t load = 0;
 	bool flag = false;
+	uint8_t sourceType = 0;
+	bool carriesPointerTag = false;
 	CUInt128 target = bio.ReadUInt128();
+	// A pointer record is a publish whose key is the bitwise NOT of its own source ID. The NOT
+	// commutes with any byte order, so the test does not depend on how a publisher lays the ID out.
+	const bool isPointerRecord = (file ^ target) == CUInt128(true);
 	Kademlia::CEntry *entry = new Kademlia::CEntry();
 	try {
 		entry->m_uIP = ip;
@@ -1313,6 +1318,9 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 			if (tag) {
 				if (!tag->GetName().Cmp(TAG_SOURCETYPE)) {
 					if (entry->m_bSource == false) {
+						if (tag->IsInt()) {
+							sourceType = static_cast<uint8_t>(tag->GetInt());
+						}
 						entry->AddTag(new CTagVarInt(TAG_SOURCEIP, entry->m_uIP), 0);
 						entry->AddTag(tag, ip);
 						entry->m_bSource = true;
@@ -1369,6 +1377,16 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 					} else {
 						delete tag;
 					}
+				} else if (!tag->GetName().Cmp(TAG_BUDDYPOINTER)) {
+					// Outside the extra-tag budget, so one integer is kept, as for the
+					// names above. The flag is set either way, so an unkeyed record
+					// is dropped.
+					if (tag->IsInt() && keptNames.insert(tag->GetName()).second) {
+						entry->AddTag(tag, ip);
+					} else {
+						delete tag;
+					}
+					carriesPointerTag = true;
 				} else if (!extraFull &&
 					   extraBytes + tagBytes <= KADEMLIAMAXSOURCEEXTRABYTES &&
 					   indexed->HasRoomForExtraTags(extraBytes + tagBytes)) {
@@ -1395,6 +1413,16 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	} catch (...) {
 		delete entry;
 		throw;
+	}
+
+	if (DropsUnkeyedSourcePublish(sourceType, carriesPointerTag, isPointerRecord, validReceiverKey)) {
+		AddDebugLogLineN(logClientKadUDP,
+			CFormat("Dropped Kad2 source publish of type %u%s%s from %s: the receiver key did "
+				"not prove the sender") %
+				sourceType % (carriesPointerTag ? " with a pointer tag" : "") %
+				(isPointerRecord ? " at a pointer key" : "") % KadIPPortToString(ip, port));
+		delete entry;
+		return;
 	}
 
 	if (entry->m_bSource == true) {

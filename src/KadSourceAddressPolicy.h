@@ -40,31 +40,35 @@ struct SKadSourceFacts
 	bool ipv6Built = false;
 	bool familyPermitted = false;
 	bool proxyEnabled = false;
+	bool haveLocalIPv6 = false; // A global IPv6 of our own is selected, so an IPv6 route exists
 };
 
 /**
  * Whether a Kad source result is contacted on the IPv6 address it published.
  *
- * Only sources firewalled on IPv4 qualify: types 3 and 5 are relayed through a serving buddy and 6
- * takes a direct UDP callback, while types 1 and 4 are HighIDs that keep their IPv4 route. Our HELLO
- * must carry a nonzero LowID: eMuleAI keeps such an ID from a peer arriving over IPv6 but replaces
- * any other with one derived from the IPv6 socket, so a HighID would lose its IPv4 callback path at
- * that peer, and 0 is no identity at all. A type 3/5 source published without buddy tags is the
- * exception: with no buddy, its IPv6 is the only way to reach it, so dialling it with any nonzero
- * ID of ours is better than not reaching it, even if a HighID of ours then loses its IPv4 callback
- * path at that peer. The address is reported by a third party through Kad, so it must name a peer
- * across hosts and must not point us at local services. The dial itself goes through the same gate
- * as every native IPv6 contact.
+ * Only sources firewalled on IPv4 qualify: types 3 and 5 are relayed through a serving buddy, 6
+ * takes a direct UDP callback and 7 names its routes in tags, while types 1 and 4 are HighIDs that
+ * keep their IPv4 route. Our HELLO must carry a nonzero LowID: eMuleAI keeps such an ID from a peer
+ * arriving over IPv6 but replaces any other with one derived from the IPv6 socket, so a HighID would
+ * lose its IPv4 callback path at that peer, and 0 is no identity at all. Sources with no buddy at
+ * all are the exception, type 7 always and a type 3/5 published without buddy tags: their IPv6 is
+ * the only way to reach them, so dialling with any nonzero ID of ours is better than not reaching
+ * them, even if a HighID of ours then loses its IPv4 callback path at that peer. The address is
+ * reported by a third party through Kad, so it must name a peer across hosts and must not point us
+ * at local services. The dial itself goes through the same gate as every native IPv6 contact.
  */
 inline bool IsKadSourceFirewalledOnIPv4(const SKadSourceFacts &facts)
 {
-	return facts.sourceType == 3 || facts.sourceType == 5 || facts.sourceType == 6;
+	return facts.sourceType == 3 || facts.sourceType == 5 || facts.sourceType == 6 ||
+	       facts.sourceType == 7;
 }
 
 //! Whether the published IPv6 names a peer we may dial, whatever route is chosen.
 inline bool IsDialableKadSourceIPv6(const SKadSourceFacts &facts)
 {
-	if (!PeerAddressing::IsUsableTagIdentity(facts.publishedIPv6)) {
+	// Without a global address of our own there is no IPv6 route to dial over, whatever the
+	// record says. The same proof the peer-advertised dial asks for (ContactDialPolicy.h).
+	if (!facts.haveLocalIPv6 || !PeerAddressing::IsUsableTagIdentity(facts.publishedIPv6)) {
 		return false;
 	}
 	SContactFacts contact;
@@ -77,7 +81,9 @@ inline bool IsDialableKadSourceIPv6(const SKadSourceFacts &facts)
 
 inline bool ShouldContactKadSourceOverIPv6(const SKadSourceFacts &facts)
 {
-	const bool buddyless = (facts.sourceType == 3 || facts.sourceType == 5) && !facts.carriesBuddy;
+	// Type 7 names no buddy by definition, and a receiver ignores buddy tags should they appear.
+	const bool buddyless = facts.sourceType == 7 ||
+			       ((facts.sourceType == 3 || facts.sourceType == 5) && !facts.carriesBuddy);
 	if (!IsKadSourceFirewalledOnIPv4(facts) || facts.ourHelloID == 0 ||
 		(!buddyless && !IsLowID(facts.ourHelloID))) {
 		return false;
