@@ -119,6 +119,15 @@ inline bool IsHighIDOf(uint32 id, uint32 ip)
 }
 
 /**
+ * The hybrid ID of a source given as an ed2k ID, or as its IPv4 when @a isIPv4. Anti-host order in.
+ * An ed2k link names an address, never a LowID, so one ending in .0 stays a HighID.
+ */
+inline uint32 SourceHybridID(uint32 id, bool isIPv4)
+{
+	return isIPv4 || !IsLowID(id) ? wxUINT32_SWAP_ALWAYS(id) : id;
+}
+
+/**
  * True if @a ip is a LAN address. Anti-host order.
  */
 bool IsLanIP(uint32_t ip) noexcept;
