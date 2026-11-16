@@ -177,7 +177,7 @@ private:
 	void ProcessResponse(
 		uint32 fromIP, uint16 fromPort, const CKadUDPKey &senderKey, ContactList *results);
 	void ProcessResult(const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
-	void ProcessResultFile(const CUInt128 &answer, TagPtrList *info);
+	void ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
 	void ProcessResultKeyword(
 		const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
 	void ProcessResultNotes(const CUInt128 &answer, TagPtrList *info);
