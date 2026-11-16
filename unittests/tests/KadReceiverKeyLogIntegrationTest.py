@@ -61,6 +61,27 @@ def encrypted(packet, kad_id, receiver_key):
     return bytes([MARKER_KAD_NODE_ID]) + random_part + rc4(key, body)
 
 
+def drop_unkeyed_firewall2(binary):
+    """An unkeyed v2 firewall check is dropped before it can make the daemon dial its sender.
+
+    Its own daemon: the per-IP tracker counts both firewall opcodes in one bucket, 2 a minute, and
+    run() spends both.
+    """
+    with tempfile.TemporaryDirectory(prefix='kad-firewall2-drop-') as directory:
+        root = Path(directory)
+        with running_kad_daemon(binary, root, console='stdout.log', VerboseDebug=1, VerboseDebugLogfile=1,
+                                sections={'Debug': {'Cat_Client Kademlia UDP': 1},
+                                          'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, _, udp_port, _unused):
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
+                peer.bind(('127.0.0.1', 0))
+                body = DIAL_PORT + os.urandom(16) + bytes(1)
+                peer.sendto(bytes([0xE4, KADEMLIA_FIREWALLED2_REQ]) + body, ('127.0.0.1', udp_port))
+                line = (f'Dropped Kad firewall2 check from 127.0.0.1:{peer.getsockname()[1]}: '
+                        'the receiver key did not prove the sender\n')
+                wait_for(proc, f'the log line {line!r}',
+                         lambda: line in (root / 'logfile').read_text(errors='replace'), 10, interval=0.05)
+
+
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='kad-publish-key-') as directory:
         root = Path(directory)
@@ -98,7 +119,9 @@ def run(binary):
 
             indexed = search(udp_port, file_id)
             assert len(indexed) == 2, f'{len(indexed)} of 2 publishes were indexed'
-    print('each request logged its result, and both source publishes were indexed')
+    drop_unkeyed_firewall2(binary)
+    print('each request logged its result, the unkeyed firewall2 check was dropped, '
+          'and both source publishes were indexed')
 
 
 if __name__ == '__main__':

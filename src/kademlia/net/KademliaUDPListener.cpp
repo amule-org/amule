@@ -37,7 +37,7 @@ there client on the eMule forum..
 
 #include "KademliaUDPListener.h"
 #include "../utils/PublishMetrics.h"
-#include "KadReceiverKeyPolicy.h" // Needed for CKadReceiverKeyCounts
+#include "KadReceiverKeyPolicy.h" // Needed for DropsWithoutReceiverKey
 #include "SearchExpression.h"
 
 #include <protocol/Protocols.h>
@@ -1611,6 +1611,12 @@ void CKademliaUDPListener::ProcessFirewalled2Request(const uint8_t *packetData,
 	bool validReceiverKey)
 {
 	theStats::AddKadReceiverKeyObservation(EKadReceiverKeyHandler::Firewall2Check, validReceiverKey);
+	if (DropsWithoutReceiverKey(EKadReceiverKeyHandler::Firewall2Check, validReceiverKey)) {
+		AddDebugLogLineN(logClientKadUDP,
+			"Dropped Kad firewall2 check from " + KadIPPortToString(ip, port) +
+				": the receiver key did not prove the sender");
+		return;
+	}
 	CHECK_PACKET_MIN_SIZE(19);
 
 	CMemFile bio(packetData, lenPacket);

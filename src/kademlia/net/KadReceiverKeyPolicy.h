@@ -42,6 +42,20 @@ enum class EKadReceiverKeyHandler : std::size_t
 	Count
 };
 
+/**
+ * Whether a request is dropped because its receiver key did not prove the sender.
+ *
+ * Only the Kad2 firewall check. It is sent from a hello exchange, where the peer already holds our
+ * key, and the clients that send it always obfuscate, so a missing key means the packet did not
+ * come from the address it names. The handler dials that address, so a spoofed one makes us dial a
+ * stranger on a port the packet chose. Every other handler still sees honest requests without a
+ * key, so gating one would cost more than it protects (#2315).
+ */
+inline bool DropsWithoutReceiverKey(EKadReceiverKeyHandler handler, bool validReceiverKey) noexcept
+{
+	return !validReceiverKey && handler == EKadReceiverKeyHandler::Firewall2Check;
+}
+
 //! Valid and missing receiver keys observed by each handler.
 class CKadReceiverKeyCounts
 {
