@@ -219,6 +219,9 @@ protected:
 	wxString m_PidFile;
 
 	bool InitCommon(int argc, wxChar **argv);
+	// Backs up and opens the log. Call it once the run is a real start, so a one-shot run
+	// keeps the previous session's log.
+	bool OpenLogFile();
 
 	/**
 	 * Logs an assertion, with a backtrace, and applies --disable-fatal.

@@ -125,6 +125,13 @@ void CamuleAppCommon::ReportDaemonStartup(bool success, const char *error)
 #endif
 }
 
+static bool LogStartupError(const wxString &message)
+{
+	fprintf(stderr, "%s\n", (const char *)message.utf8_str());
+	CamuleAppCommon::ReportDaemonStartup(false, (const char *)message.utf8_str());
+	return false;
+}
+
 bool CamuleAppCommon::ReportAssertFailure(const wxChar *file,
 	int line,
 	const wxChar *func,
@@ -1000,14 +1007,9 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	}
 #endif
 
-	// Logging starts before the general preferences are loaded. Keep this startup-only
+	// The log path is resolved before the general preferences are loaded. Keep this startup-only
 	// setting in the local config, including remote.conf for amulegui. A CLI override
 	// applies to this run only and must not replace the saved value.
-	const auto logStartupError = [](const wxString &message) {
-		fprintf(stderr, "%s\n", (const char *)message.utf8_str());
-		ReportDaemonStartup(false, (const char *)message.utf8_str());
-		return false;
-	};
 	wxString configuredLogPath;
 	wxConfigBase::Get()->Read("/eMule/LogFilePath", &configuredLogPath, wxEmptyString);
 	wxConfigBase::Get()->Write("/eMule/LogFilePath", configuredLogPath);
@@ -1019,36 +1021,10 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	wxFileName logFile(logPath);
 	if (logPath.IsEmpty() || logFile.GetFullName().IsEmpty() ||
 		!logFile.MakeAbsolute(thePrefs::GetConfigDir()) || wxDirExists(logFile.GetFullPath())) {
-		return logStartupError(
+		return LogStartupError(
 			CFormat("ERROR: invalid log file path '%s': expected a filename") % logPath);
 	}
 	m_logFile = logFile.GetFullPath();
-	CPath logfileName(m_logFile);
-	// A failed backup must not truncate the old log or stop the daemon on a
-	// nearly full RAM disk. Keep the original and append the current session.
-	const bool append = logfileName.FileExists() && !CPath::BackupFile(logfileName, ".bak");
-	if (append) {
-		const wxString warning =
-			CFormat("WARNING: unable to back up log file '%s'; appending to the existing log") %
-			m_logFile;
-		fprintf(stderr, "%s\n", (const char *)warning.utf8_str());
-		AddLogLineN(warning);
-	}
-	if (!theLogger.OpenLogfile(m_logFile, append)) {
-		return logStartupError(CFormat("ERROR: unable to open log file '%s': ensure its parent "
-					       "directory exists and is writable") %
-				       m_logFile);
-	}
-	ReportDaemonStartup(true);
-
-	// Send the abort backtrace to the logfile, which is where EmergencyLog() already puts the
-	// SIGSEGV report, so both crash kinds land in the same place. Not conditional on
-	// --full-daemon: that mode points fd 0/1/2 at /dev/null, but a desktop-launched amule or
-	// amulegui has no useful stderr either. Nothing is given up by arming it: stderrUsable
-	// defaults to true, so a terminal still gets its copy.
-	if (theLogger.CrashFd() >= 0) {
-		SetFatalAbortRedirectFd(theLogger.CrashFd());
-	}
 
 	CPreferences::BuildItemList(thePrefs::GetConfigDir());
 	CPreferences::LoadAllItems(wxConfigBase::Get());
@@ -1066,6 +1042,37 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	// we are the current handler, no-op where we are not.
 	ProtocolHandlerManager::SelfHealOnStartup();
 
+	return true;
+}
+
+bool CamuleAppCommon::OpenLogFile()
+{
+	CPath logfileName(m_logFile);
+	// A failed backup must not truncate the old log or stop the daemon on a
+	// nearly full RAM disk. Keep the original and append the current session.
+	const bool append = logfileName.FileExists() && !CPath::BackupFile(logfileName, ".bak");
+	if (append) {
+		const wxString warning =
+			CFormat("WARNING: unable to back up log file '%s'; appending to the existing log") %
+			m_logFile;
+		fprintf(stderr, "%s\n", (const char *)warning.utf8_str());
+		AddLogLineN(warning);
+	}
+	if (!theLogger.OpenLogfile(m_logFile, append)) {
+		return LogStartupError(CFormat("ERROR: unable to open log file '%s': ensure its parent "
+					       "directory exists and is writable") %
+				       m_logFile);
+	}
+	ReportDaemonStartup(true);
+
+	// Send the abort backtrace to the logfile, which is where EmergencyLog() already puts the
+	// SIGSEGV report, so both crash kinds land in the same place. Not conditional on
+	// --full-daemon: that mode points fd 0/1/2 at /dev/null, but a desktop-launched amule or
+	// amulegui has no useful stderr either. Nothing is given up by arming it: stderrUsable
+	// defaults to true, so a terminal still gets its copy.
+	if (theLogger.CrashFd() >= 0) {
+		SetFatalAbortRedirectFd(theLogger.CrashFd());
+	}
 	return true;
 }
 
