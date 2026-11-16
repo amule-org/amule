@@ -1037,20 +1037,14 @@ PrefsUnifiedDlg::PrefsUnifiedDlg(wxWindow *parent)
 	// with enough room for the content when possible, but leave space for the
 	// desktop panels and window decorations on the parent's display.
 	// Everything beside the page column (sidebar, divider) comes on top of the largest page's
-	// width. The width is set, and laid out, first: the page description wraps to it, so the
-	// header's height is only known once the dialog has its width. Until then the description is
-	// wrapped to the dialog's default width, several lines taller than it will be.
+	// width. It is laid out first: the page description wraps to it, which sets the header's height.
 	const int preferredWidth =
 		width + GetSizer()->GetMinSize().GetWidth() - prefs_sizer->GetMinSize().GetWidth();
 	FitDialogToDisplay(this, wxSize(preferredWidth, height));
 	Layout();
-	// Only what sits above and below the page comes on top of its height: the header over it in
-	// the page column, and the footer under the row of sidebar and page column. The sidebar
-	// stands beside the page, so its minimum height -- which on macOS is what sets the dialog's
-	// -- has no part in it.
-	const int rowMinimum = m_PrefsIcons->GetParent()->GetContainingSizer()->GetMinSize().GetHeight();
-	const int aroundPage = prefs_sizer->GetMinSize().GetHeight() - minimumPageSize.GetHeight() +
-			       GetSizer()->GetMinSize().GetHeight() - rowMinimum;
+	// The page fills what its column leaves, so the rest is the header and the footer. The
+	// sidebar's minimum plays no part.
+	const int aroundPage = GetClientSize().GetHeight() - DefaultWidget->GetSize().GetHeight();
 	FitDialogToDisplay(this, wxSize(preferredWidth, height + aroundPage));
 	GrowDialogToContent(this, DefaultWidget, wxSize(width, height));
 
