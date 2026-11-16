@@ -1923,7 +1923,6 @@ SKadPublishFacts CSharedFileList::CurrentKadPublishFacts()
 #ifdef ENABLE_IPV6
 		facts.advertisesIPv6 = AdvertisedIPv6ForPeers().has_value();
 #endif
-		facts.obfuscationSupported = thePrefs::IsClientCryptLayerSupported();
 	}
 	return facts;
 }

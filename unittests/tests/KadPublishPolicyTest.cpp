@@ -88,7 +88,6 @@ TEST(KadPublishPolicy, OnlyANodeWithNoRouteBackStaysOffKad)
 
 	SKadPublishFacts ipv6 = Firewalled();
 	ipv6.advertisesIPv6 = true;
-	ipv6.obfuscationSupported = true;
 	ASSERT_TRUE(PublishesToKad(ipv6));
 
 	ASSERT_FALSE(PublishesToKad(Firewalled()));
@@ -99,16 +98,7 @@ TEST(KadPublishPolicy, AFirewalledNodeWithoutCallbackPublishesOnItsIPv6)
 {
 	SKadPublishFacts facts = Firewalled();
 	facts.advertisesIPv6 = true;
-	facts.obfuscationSupported = true;
 	ASSERT_TRUE(DecideKadSourcePublish(facts) == EKadSourcePublish::IPv6Only);
-}
-
-// The receiver key rides in the obfuscation header, and a storer keeps type 7 only with one.
-TEST(KadPublishPolicy, WithObfuscationOffAnIPv6OnlyNodeHasNoRouteToPublish)
-{
-	SKadPublishFacts facts = Firewalled();
-	facts.advertisesIPv6 = true;
-	ASSERT_TRUE(DecideKadSourcePublish(facts) == EKadSourcePublish::None);
 }
 
 // Without any route back there is nothing to publish, as before.

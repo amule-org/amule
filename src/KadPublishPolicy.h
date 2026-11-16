@@ -43,7 +43,6 @@ struct SKadPublishFacts
 	bool directCallback = false;
 	bool hasBuddy = false;
 	bool advertisesIPv6 = false;
-	bool obfuscationSupported = false; // Our own setting: without it no packet of ours carries a key
 };
 
 /**
@@ -69,10 +68,7 @@ inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
 	if (facts.hasBuddy) {
 		return EKadSourcePublish::Buddy;
 	}
-	// Type 7 is kept only by a storer that got our receiver key, and the key rides in the
-	// obfuscation header. With obfuscation off there is no way to get the record stored, so this
-	// is no route back rather than one we simply fail to use.
-	if (facts.advertisesIPv6 && facts.obfuscationSupported) {
+	if (facts.advertisesIPv6) {
 		return EKadSourcePublish::IPv6Only;
 	}
 	return EKadSourcePublish::None;
