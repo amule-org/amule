@@ -1378,11 +1378,9 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 						delete tag;
 					}
 				} else if (!tag->GetName().Cmp(TAG_BUDDYPOINTER)) {
-					// Kept by name so no unknown-tag flood can evict it, which also
-					// puts it outside that budget. One is stored, as for the names
-					// above, and a malformed one does not take that place. The flag
-					// is set either way, so an unkeyed record is dropped whatever
-					// its marker looks like.
+					// Outside the extra-tag budget, so one integer is kept, as for the
+					// names above. The flag is set either way, so an unkeyed record
+					// is dropped.
 					if (tag->IsInt() && keptNames.insert(tag->GetName()).second) {
 						entry->AddTag(tag, ip);
 					} else {
