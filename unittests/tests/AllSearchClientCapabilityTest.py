@@ -4,7 +4,8 @@
 """Verify API and command-line guards against a loopback EC peer without All support."""
 import socketserver, struct, sys, tempfile, threading
 from pathlib import Path
-from ECWire import accept, read_request, send_reply  # Preflight in the parent before starting fixtures.
+# Preflight in the parent before starting fixtures.
+from ECWire import accept, read_request, send_reply
 from AllSearchIntegrationTest import (C, amulecmd, configure_amuleapi, free_ports, http, integer,
                                       retry_port_collisions, start_amuleapi, stop_daemon, string,
                                       tag, wait_amuleapi)

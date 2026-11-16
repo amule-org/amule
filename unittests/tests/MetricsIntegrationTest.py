@@ -20,7 +20,8 @@ import urllib.request
 from AllSearchIntegrationTest import (C, configure_amuleapi, free_ports, integer,
                                       running_daemon, start_amuleapi, stop_daemon, tag)
 from DaemonConfig import daemon_env, write_amule_conf
-from ECWire import accept, read_request, send_reply  # Preflight in the parent before starting fixtures.
+# Preflight in the parent before starting fixtures.
+from ECWire import accept, read_request, send_reply
 
 TOKEN = '0123456789abcdef' * 4
 # A shared-format warning record in the Metrics category.

@@ -40,7 +40,8 @@ def packet(op,tags):
 def read_request(sock, expand_numbers=None):
     """The next request body a fake core gets, decompressed.
 
-    expand_numbers rewrites a body sent with EC_FLAG_UTF8_NUMBERS; without it the body is left as sent.
+    expand_numbers rewrites a body sent with EC_FLAG_UTF8_NUMBERS; without it the body is left
+    as sent.
     """
     flags,size=struct.unpack('!II',exact(sock,8))
     body=exact(sock,size)

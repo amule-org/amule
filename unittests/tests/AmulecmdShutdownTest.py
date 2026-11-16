@@ -10,7 +10,8 @@ import tempfile
 import threading
 import unittest
 
-from ECWire import accept, read_request, send_reply  # Preflight in the parent before starting fixtures.
+# Preflight in the parent before starting fixtures.
+from ECWire import accept, read_request, send_reply
 from AllSearchIntegrationTest import C
 from DaemonConfig import daemon_env
 

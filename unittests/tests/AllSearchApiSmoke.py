@@ -9,8 +9,8 @@ import tempfile
 import time
 
 from AllSearchIntegrationTest import (C, PortCollision, amulecmd, configure_amuleapi,
-                                      connect_daemon, free_ports, integer, retry_port_collisions, start_amuleapi,
-                                      start_daemon, stop_daemon, stored_search)
+                                      connect_daemon, free_ports, integer, retry_port_collisions,
+                                      start_amuleapi, start_daemon, stop_daemon, stored_search)
 from DaemonConfig import daemon_env, write_amule_conf
 
 

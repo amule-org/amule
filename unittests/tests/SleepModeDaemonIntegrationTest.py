@@ -27,7 +27,7 @@ def run(binary, new_mode, legacy, expected, scenario):
                          sections={'PowerManagement': power})
         for _ in range(2):
             started = time.monotonic()
-            # daemon_env inherits the isolated bus from the C++ parent, never the user's desktop bus.
+            # daemon_env inherits the isolated bus from the C++ parent, not the desktop bus.
             with running_daemon(binary, root, ports) as (proc, ec):
                 def uptime():
                     op, tags = ec.call(C['EC_OP_STAT_REQ'], [
