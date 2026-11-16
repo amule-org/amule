@@ -49,7 +49,7 @@ class wxFileConfig;
 //
 // `amuleapi-jwt-secret` is auto-generated with 32 random bytes on first run. `amuleapi-passwords`
 // may be empty, in which case the daemon refuses /auth/login until at least one role is set via
-// `amuleapi --set-admin-pass=...`, from amulegui, or over REST. `amuleapi.conf` is created from
+// `amuleapi --set-admin-pass-stdin`, from amulegui, or over REST. `amuleapi.conf` is created from
 // defaults if missing.
 //
 // POSIX: both secret files must be 0600; looser bits make the daemon refuse to start with an
@@ -78,8 +78,7 @@ public:
 	{
 		std::string host = "127.0.0.1";
 		unsigned port = 4712;
-		std::string password;     // plaintext [EC]/Password; never inferred from its shape
-		std::string password_md5; // explicit [EC]/PasswordMD5, sufficient to authenticate
+		std::string password_md5; // [EC]/PasswordMD5, sufficient to authenticate
 	};
 
 	struct Auth
@@ -178,7 +177,7 @@ public:
 	// Validate before using EC credentials, so setup can repair invalid fields.
 	bool ValidateEcPassword();
 
-	// Atomically replace the EC secret with its digest and remove the plaintext key.
+	// Atomically replace the EC secret with its digest and remove any legacy key.
 	bool SetEcPasswordMD5(const std::string &digest);
 
 	// Modification time of amuleapi-passwords, or 0 when there is no file. Used
@@ -224,6 +223,8 @@ private:
 	std::vector<unsigned char> m_jwtSecret;
 	webcommon::Credentials m_credentials;
 
+	// Load() keeps going on two nonempty EC keys, so SetEcPasswordMD5() can repair the file.
+	std::string m_ecKeyConflict;
 	std::string m_lastError;
 };
 

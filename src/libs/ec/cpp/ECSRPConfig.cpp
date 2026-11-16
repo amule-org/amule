@@ -133,7 +133,7 @@ bool LoadCredential(wxConfigBase &cfg, wxString &verifier, wxString &error)
 	const wxString legacy = cfg.Read(LEGACY, wxString());
 	if (!legacy.IsEmpty() && !IsPasswordDigest(std::string(legacy.utf8_str()))) {
 		error = _("ECPassword contains an invalid or empty-password digest. Run amuled "
-			  "--ec-config to set a new EC password.");
+			  "--set-ec-pass-stdin to set a new EC password.");
 		return false;
 	}
 	if (cfg.HasEntry(KEY)) {

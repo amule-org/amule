@@ -63,9 +63,9 @@ def run(daemon_binary, api_binary, checks):
                     assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
                     result = subprocess.run([
                         str(command), '-h', '127.0.0.1', '-p', str(port),
-                        '-P', 'regression', '-c',
+                        '--password-stdin', '-c',
                         'search all offlinecommandregression --type Arc --avail 2'],
-                        check=True, env=env, capture_output=True, text=True)
+                        check=True, env=env, input='regression\n', capture_output=True, text=True)
                     match = re.search(r'Search started \(id (\d+)\)', result.stdout)
                     assert match, result.stdout + result.stderr
                     sid = int(match.group(1))

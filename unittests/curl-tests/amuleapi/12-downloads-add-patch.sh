@@ -42,7 +42,7 @@ echo "amuleapi 12-downloads-add-patch smoke @ $HOST"
 
 ADMIN_TOKEN=$(_login "$ADMIN_PASS")
 [ -n "$ADMIN_TOKEN" ] \
-	|| _die "admin login failed (need --set-admin-pass=$ADMIN_PASS on the daemon)"
+	|| _die "admin login failed (need --set-admin-pass-stdin with $ADMIN_PASS on the daemon)"
 
 GUEST_TOKEN=$(_login "$GUEST_PASS")
 HAVE_GUEST=0

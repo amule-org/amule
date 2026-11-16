@@ -14,10 +14,9 @@
 # numeric `index` anchor on /categories).
 #
 # Bring-up convention (see run-all.sh / 04-read-downloads-shared.sh):
-#   amuleapi --config-dir=/tmp/... --host=127.0.0.1 --port=4712 \
-#            --password=amule --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/... --host=127.0.0.1 --port=4712 \
-#            --password=amule &
+#   printf '%s\n' adminpass | amuleapi --config-dir=/tmp/... --set-admin-pass-stdin
+#   printf '%s\n' amule | amuleapi --config-dir=/tmp/... --set-ec-pass-stdin
+#   amuleapi --config-dir=/tmp/... --host=127.0.0.1 --port=4712 &
 #   ./28-list-pagination-sort.sh
 
 set -u

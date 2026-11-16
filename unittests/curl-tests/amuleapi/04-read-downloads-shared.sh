@@ -15,10 +15,9 @@
 #
 # Bring-up convention:
 #   rm -rf /tmp/amuleapi-04-read-downloads-shared && mkdir -p /tmp/amuleapi-04-read-downloads-shared
-#   amuleapi --config-dir=/tmp/amuleapi-04-read-downloads-shared --host=127.0.0.1 \
-#            --port=4712 --password=amule --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/amuleapi-04-read-downloads-shared --host=127.0.0.1 \
-#            --port=4712 --password=amule &
+#   printf '%s\n' adminpass | amuleapi --config-dir=/tmp/amuleapi-04-read-downloads-shared --set-admin-pass-stdin
+#   printf '%s\n' amule | amuleapi --config-dir=/tmp/amuleapi-04-read-downloads-shared --set-ec-pass-stdin
+#   amuleapi --config-dir=/tmp/amuleapi-04-read-downloads-shared --host=127.0.0.1 --port=4712 &
 #   ./04-read-downloads-shared.sh
 
 set -u

@@ -15,12 +15,6 @@ amuleapi \- the aMule REST API + Server\-Sent Events daemon
 .RB_untranslated [ \-\-foreground ]
 
 .B_untranslated amuleapi
-.RB_untranslated [ \-\-set\-admin\-pass " " \fI<plain> ]
-
-.B_untranslated amuleapi
-.RB_untranslated [ \-\-set\-guest\-pass " " \fI<plain> ]
-
-.B_untranslated amuleapi
 .RB_untranslated [ \-\-version ]
 
 .B_untranslated amuleapi
@@ -79,20 +73,8 @@ EOF does not. Choose exactly one password setter per invocation.
 .B_untranslated [ \-\-set\-ec\-pass\-stdin ]
 Read the existing EC password from stdin (hidden on a terminal, without
 confirmation), write its MD5 digest to [EC]/PasswordMD5 in amuleapi.conf,
-remove the plaintext [EC]/Password key, and exit. Other settings are preserved;
+remove any legacy [EC]/Password key, and exit. Other settings are preserved;
 INI formatting and comments may change. Empty input is rejected.
-.TP
-\fB[ \-\-set\-admin\-pass\fR=\fI<plain>\fR \fB]\fR
-Set the admin password to \fI<plain>\fR, storing it salted and
-stretched in \fIamuleapi\-passwords\fR (mode 0600), then exit. Does
-not start the HTTP server or connect to amuled. A stored password
-cannot be read back, only replaced. Prefer the stdin form: literal passwords
-can be exposed through process arguments and shell history.
-.TP
-\fB[ \-\-set\-guest\-pass\fR=\fI<plain>\fR \fB]\fR
-Set the guest password to \fI<plain>\fR, storing it the same way, then
-exit. An empty \fI<plain>\fR clears the guest password, which is how
-guest access is turned off.
 .TP
 \fB[ \-\-foreground ]\fR
 Stay in the foreground (default). aMule does not ship init\-system
@@ -123,9 +105,9 @@ rate limits and event\-stream sizing. The QUICKSTART document shipped with
 the source has the full reference.
 .IP
 For standalone use, set the EC password with \fB\-\-set\-ec\-pass\-stdin\fR,
-or copy its MD5 digest from [EC]/Password in remote.conf to [EC]/PasswordMD5
-here. Plaintext [EC]/Password is also supported. Set only one: amuleapi refuses
-to start if both are nonempty or PasswordMD5 is not 32 hexadecimal characters.
+or copy [EC]/PasswordMD5 from remote.conf. A plaintext [EC]/Password from an
+older file is replaced by its digest on load. amuleapi refuses to start if both
+keys are nonempty or PasswordMD5 is not 32 hexadecimal characters.
 The digest logs in to amuled just like the password, so keep this file private.
 .IP
 To let a reverse proxy that signs users in itself start sessions, set
@@ -154,7 +136,7 @@ Short\-lived login token, written by \fBamule\fR(1) / \fBamuled\fR(1) when
 they start amuleapi themselves. Created fresh each time, read once and
 deleted straight away, so an auto\-started amuleapi needs no EC password of
 its own. Started by hand, amuleapi finds no token and uses
-\fB[EC]/PasswordMD5\fR (or plaintext \fB[EC]/Password\fR) from \fIamuleapi.conf\fR instead. There is no
+\fB[EC]/PasswordMD5\fR from \fIamuleapi.conf\fR instead. There is no
 \fB\-\-password\fR option: a password given on the command line is visible
 through \fBps\fR(1) for the lifetime of the process, and can persist
 in shell history, service unit files and wrapper scripts.

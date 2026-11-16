@@ -103,8 +103,9 @@ def run(binary):
             def command(text, expected=None, extra=(), interactive=False):
                 server.requests.clear()
                 result = subprocess.run([binary, '-h', '127.0.0.1', '-p',
-                    str(server.server_address[1]), '-P', 'regression', *extra, *([] if interactive else ['-c', text])],
-                    env=daemon_env(directory), input=text if interactive else '',
+                    str(server.server_address[1]), '--password-stdin', *extra, *([] if interactive else ['-c', text])],
+                    # Interactive commands follow the password line on the same stdin.
+                    env=daemon_env(directory), input='regression\n' + (text if interactive else ''),
                     capture_output=True, text=True, timeout=20)
                 output = result.stdout + result.stderr
                 assert not server.errors, server.errors

@@ -347,9 +347,6 @@ int StrLang2wx(const wxString &language);
 /// Converts a wxLANGUAGE id to a string locale name.
 wxString wxLang2Str(const int lang);
 
-/// Generates the MD5 hash of prompted input.
-CMD4Hash GetPassword(bool allowEmptyPassword = false);
-
 #if wxUSE_THREADS
 
 #include <wx/thread.h>

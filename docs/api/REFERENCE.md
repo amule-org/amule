@@ -195,7 +195,7 @@ Four things write it, and all of them mean the same thing by it:
 
 | Entry point | Used by |
 |-------------|---------|
-| `amuleapi --set-admin-pass=` / `--set-guest-pass=` | standalone operator |
+| `amuleapi --set-admin-pass-stdin` / `--set-guest-pass-stdin` | standalone operator |
 | `PATCH /auth/passwords` | REST clients and the web frontend |
 | aMule → *Preferences → Remote Controls* | monolithic aMule |
 | the same panel in amulegui, pushed to amuled over EC | remote GUI |

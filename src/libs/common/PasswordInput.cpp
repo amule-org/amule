@@ -191,6 +191,31 @@ bool ReadTerminalLine(std::string &line)
 	}
 }
 #endif
+
+// Unbuffered, so the rest of stdin stays for the caller: amulecmd reads its commands there.
+bool ReadRedirectedLine(std::string &line)
+{
+	bool any = false;
+	for (;;) {
+		char c = 0;
+#ifdef _WIN32
+		const int count = _read(_fileno(stdin), &c, 1);
+#else
+		const ssize_t count = read(STDIN_FILENO, &c, 1);
+		if (count < 0 && errno == EINTR) {
+			continue;
+		}
+#endif
+		if (count != 1) {
+			return count == 0 && any;
+		}
+		any = true;
+		if (c == '\n') {
+			return true;
+		}
+		line += c;
+	}
+}
 } // namespace
 
 bool mulecommon::ReadPassword(const char *prompt, bool confirm, std::string &password, std::string &error)
@@ -227,7 +252,7 @@ bool mulecommon::ReadPassword(const char *prompt, bool confirm, std::string &pas
 			}
 		}
 	} else {
-		if (!std::getline(std::cin, input) || std::cin.bad()) {
+		if (!ReadRedirectedLine(input)) {
 			error = "cannot read password from stdin (EOF or input error)";
 			return false;
 		}

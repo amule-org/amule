@@ -62,7 +62,6 @@ Port=$HTTP_PORT
 [EC]
 Host=$EC_HOST
 Port=$EC_PORT
-Password=$EC_PASSWORD
 
 [Auth]
 LoginFailureWindowSeconds=60
@@ -72,6 +71,7 @@ LoginLockoutSeconds=300
 [Streaming]
 EventBusRingCapacity=4
 EOF
+printf '%s\n' "$EC_PASSWORD" | "$BIN" --config-dir="$CONFIG_DIR" --set-ec-pass-stdin >/dev/null
 "$BIN" --config-dir="$CONFIG_DIR" \
 	--host="$EC_HOST" --port="$EC_PORT" \
 	> "$LOG" 2>&1 &

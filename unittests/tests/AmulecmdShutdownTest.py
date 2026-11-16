@@ -56,9 +56,12 @@ class ShutdownTest(unittest.TestCase):
                 thread = threading.Thread(target=server.serve_forever, daemon=True)
                 thread.start()
                 process = subprocess.Popen([BINARY, '-h', '127.0.0.1',
-                    '-p', str(server.server_address[1]), '-P', 'regression',
+                    '-p', str(server.server_address[1]), '--password-stdin',
                     '-c', 'shutdown'],
-                    env=daemon_env(directory), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    env=daemon_env(directory), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                # Left open: communicate() closes it, and only the first line is read.
+                process.stdin.write(b'regression\n')
+                process.stdin.flush()
                 try:
                     if not server.received.wait(10):
                         if process.poll() is None:

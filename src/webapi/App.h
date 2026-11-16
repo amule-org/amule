@@ -178,8 +178,6 @@ private:
 	wxString m_cliSetGuestPass;
 	bool m_cliHasBindAddress = false;
 	bool m_cliHasHttpPort = false;
-	bool m_cliHasSetAdminPass = false;
-	bool m_cliHasSetGuestPass = false;
 	bool m_cliSetAdminPassStdin = false;
 	bool m_cliSetGuestPassStdin = false;
 	bool m_cliSetEcPassStdin = false;
@@ -189,12 +187,10 @@ private:
 	bool m_cliHasEcPort = false;
 	/// amuleapi owns amuleapi.conf and must not also read remote.conf: two files describing the
 	/// same EC connection, with load order deciding the winner, is a trap. Turning this off
-	/// drops --config-file, --write-config and --create-config-from too, since all three only
-	/// exist to manage that file.
+	/// drops --config-file and --write-config too, since both only exist to manage that file.
 	bool UsesConnectorConfigFile() const override { return false; }
-	// No -P/--password: it would put the EC secret in argv, where ps exposes it to every local
-	// user. amuleapi gets the credential from the token the core writes when it spawns us, or
-	// from [EC]/PasswordMD5 (or plaintext Password) in amuleapi.conf.
+	// No --password-stdin: amuleapi gets the credential from the token the core writes when it
+	// spawns us, or from [EC]/PasswordMD5 in amuleapi.conf.
 	bool UsesEcPasswordOption() const override { return false; }
 
 	// amuleapi keeps its settings in amuleapi.conf and never reads or writes

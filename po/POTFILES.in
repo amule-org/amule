@@ -33,6 +33,7 @@ src/DataToText.cpp
 src/DirectoryTreeCtrl.cpp
 src/DownloadListCtrl.cpp
 src/DownloadQueue.cpp
+src/ECClientPassword.h
 src/ECSpecialMuleTags.cpp
 src/EditServerListDlg.cpp
 src/ExternalConn.cpp

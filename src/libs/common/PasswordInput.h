@@ -31,8 +31,9 @@ namespace mulecommon
 {
 // Call on the main thread before starting workers: terminal input temporarily owns signal
 // handlers on POSIX. Reads UTF-8 from redirected stdin (one line, including an unterminated
-// final line), or hides terminal input and optionally confirms it. Empty lines are successful;
-// EOF before any input, invalid UTF-8, cancellation and I/O errors fail without changing output.
+// final line, and nothing after it), or hides terminal input and optionally confirms it. Empty
+// lines are successful; EOF before any input, invalid UTF-8, cancellation and I/O errors fail
+// without changing output.
 // Prompts go to stderr. No caller should log the returned password.
 bool ReadPassword(const char *prompt, bool confirm, std::string &password, std::string &error);
 } // namespace mulecommon

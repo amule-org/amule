@@ -69,6 +69,9 @@
 #include "Preferences.h"
 #include "ScopedPtr.h"
 #include "MuleVersion.h" // Needed for GetMuleVersion()
+#ifdef CLIENT_GUI
+#include "ECClientPassword.h"
+#endif
 
 #ifndef CLIENT_GUI
 #include "DownloadQueue.h"
@@ -165,7 +168,7 @@ bool CamuleAppCommon::ReportAssertFailure(const wxChar *file,
 CamuleAppCommon::CamuleAppCommon()
 {
 	m_singleInstance = NULL;
-	ec_config = false;
+	set_ec_pass_stdin = false;
 	m_geometryEnabled = false;
 	m_disableFatal = false;
 	if (IsRemoteGui()) {
@@ -466,7 +469,7 @@ int CamuleAppCommon::ConfigureExitCode()
 
 // The --configure-* options end the run through a failed OnInit(), whose exit status wx fixes at
 // 255 unless told otherwise. wx before 3.2.7 cannot be told; amuled's main() covers it there.
-static void SetConfigureResult(bool ok)
+void CamuleAppCommon::SetConfigureResult(bool ok)
 {
 	s_configureExitCode = ok ? 0 : 1;
 #if wxCHECK_VERSION(3, 2, 7) && wxABI_VERSION >= 30207
@@ -531,7 +534,10 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 #ifdef AMULE_DAEMON
 	cmdline.AddSwitch("f", "full-daemon", "Fork to background.");
 	cmdline.AddOption("p", "pid-file", "After fork, create a pid-file in the given fullname file.");
-	cmdline.AddSwitch("e", "ec-config", "Configure EC (External Connections).");
+	cmdline.AddSwitch("",
+		"set-ec-pass-stdin",
+		"Read the EC password from stdin (hidden and confirmed on a terminal), save it, enable "
+		"external connections, then exit.");
 #else
 
 #ifdef __WINDOWS__
@@ -722,12 +728,13 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 
 	theLogger.SetEnabledStdoutLog(cmdline.Found("log-stdout"));
 #ifdef AMULE_DAEMON
-	enable_daemon_fork = cmdline.Found("full-daemon");
+	set_ec_pass_stdin = cmdline.Found("set-ec-pass-stdin");
+	// main() does not fork for a one-shot run either.
+	enable_daemon_fork = cmdline.Found("full-daemon") && !set_ec_pass_stdin;
 	if (cmdline.Found("pid-file", &m_PidFile)) {
 		if (wxFileExists(m_PidFile))
 			wxRemoveFile(m_PidFile);
 	}
-	ec_config = cmdline.Found("ec-config");
 #else
 	enable_daemon_fork = false;
 
@@ -824,6 +831,19 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	const wxString selfKind = IsDaemon() ? "amuled" : (IsRemoteGui() ? "amulegui" : "amule");
 	InstanceLock::Result lockResult =
 		m_singleInstance->Acquire(lockfile, thePrefs::GetConfigDir(), selfKind);
+	// A running core would keep its old verifier and write it back on exit.
+	if (set_ec_pass_stdin && lockResult == InstanceLock::LOCK_HELD) {
+		AddLogLineCS(CFormat(LOG_PRELOCALE("Cannot set the EC password: another aMule or amuled "
+						   "uses %s. Stop it first.")) %
+			     thePrefs::GetConfigDir());
+		return false;
+	}
+	if (set_ec_pass_stdin && lockResult == InstanceLock::LOCK_ERROR) {
+		AddLogLineCS(CFormat(LOG_PRELOCALE("Cannot set the EC password: could not access the lock "
+						   "file %s%s.")) %
+			     thePrefs::GetConfigDir() % lockfile);
+		return false;
+	}
 	if (lockResult == InstanceLock::LOCK_HELD) {
 		// Neutral: something holds it, and WHAT holds it is decided below. Saying "an
 		// instance is already running" here meant the log asserted it and then contradicted
@@ -929,7 +949,7 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 	}
 
 #ifndef __WINDOWS__
-	if (!cmdline.Found("enable-stdin")) {
+	if (!cmdline.Found("enable-stdin") && !set_ec_pass_stdin) {
 		// The full daemon closes all std file-descriptors itself, so closing here
 		// would instead close the first open file, which is the logfile below.
 		if (!enable_daemon_fork) {
@@ -962,6 +982,26 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 		AddLogLineN(CFormat(_("Restricted permissions on %s to owner-only.")) % m_configFile);
 	}
 	RestrictToOwner(CPath(thePrefs::GetConfigDir() + m_configFile + ".bak"));
+
+#ifdef CLIENT_GUI
+	{
+		wxConfigBase *cfg = wxConfigBase::Get();
+		bool migrated = false;
+		wxString error;
+		if (!ECClientPassword::MigrateLegacyKey(
+			    *cfg, ECClientPassword::LegacyPassword::Digest, migrated, error)) {
+			theApp->ShowAlert(CFormat("%s: %s") % m_configFile % error,
+				_("aMule cannot start"),
+				wxOK | wxICON_ERROR);
+			return false;
+		}
+		if (migrated && !ECClientPassword::FlushQuietly(*cfg)) {
+			AddLogLineC(
+				CFormat(_("Cannot save %s; using its migrated password for this run only.")) %
+				m_configFile);
+		}
+	}
+#endif
 
 	// Logging starts before the general preferences are loaded. Keep this startup-only
 	// setting in the local config, including remote.conf for amulegui. A CLI override

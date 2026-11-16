@@ -24,6 +24,7 @@
 
 #include "AmuleApiConfig.h"
 #include "LogDiagnostic.h"
+#include "ECClientPassword.h"
 
 #include <AtomicFile.h>
 #include <PathPatterns.h>
@@ -122,6 +123,21 @@ wxString JoinPath(const wxString &dir, const wxString &leaf)
 bool WriteFileAtomic0600(const wxString &target_path, const std::string &body)
 {
 	return webcommon::WriteFileAtomic0600(std::string(target_path.utf8_str()), body);
+}
+
+// Empty on success, else the reason.
+std::string SaveConf(wxFileConfig &cfg, const wxString &path)
+{
+	wxMemoryOutputStream output;
+	if (!cfg.Save(output)) {
+		return "cannot serialize amuleapi.conf";
+	}
+	std::string body(output.GetSize(), '\0');
+	output.CopyTo(&body[0], body.size());
+	if (!WriteFileAtomic0600(path, body)) {
+		return "cannot write amuleapi.conf";
+	}
+	return std::string();
 }
 
 } // namespace
@@ -261,12 +277,23 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 	if (cfg.Read("/EC/Port", &n) && n > 0 && n < 65536) {
 		m_ec.port = static_cast<unsigned>(n);
 	}
-	m_ec.password.clear();
 	m_ec.password_md5.clear();
-	if (cfg.Read("/EC/Password", &s)) {
-		m_ec.password = std::string(s.utf8_str());
+	m_ecKeyConflict.clear();
+	bool migrated = false;
+	wxString conflict;
+	// No autosave: a migrated file is written only through the owner-only atomic writer.
+	cfg.DisableAutoSave();
+	if (!ECClientPassword::MigrateLegacyKey(
+		    cfg, ECClientPassword::LegacyPassword::Plaintext, migrated, conflict)) {
+		m_ecKeyConflict = std::string(conflict.utf8_str());
+	} else if (migrated) {
+		const std::string error = SaveConf(cfg, path);
+		if (!error.empty()) {
+			webapi::CLogDiagnostic(LogLevel::Warning)
+				<< error << "; using the migrated [EC]/PasswordMD5 for this run only\n";
+		}
 	}
-	if (cfg.Read("/EC/PasswordMD5", &s)) {
+	if (cfg.Read(ECClientPassword::KEY, &s)) {
 		m_ec.password_md5 = std::string(s.utf8_str());
 	}
 
@@ -417,9 +444,8 @@ bool CAmuleApiConfig::LoadProxyAuth(wxFileConfig &cfg)
 
 bool CAmuleApiConfig::ValidateEcPassword()
 {
-	m_lastError.clear();
-	if (!m_ec.password.empty() && !m_ec.password_md5.empty()) {
-		m_lastError = "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one";
+	m_lastError = m_ecKeyConflict;
+	if (!m_lastError.empty()) {
 		return false;
 	}
 	std::vector<unsigned char> decoded;
@@ -442,20 +468,13 @@ bool CAmuleApiConfig::SetEcPasswordMD5(const std::string &digest)
 	wxFileConfig cfg("", "", path, "", wxCONFIG_USE_LOCAL_FILE | wxCONFIG_USE_RELATIVE_PATH);
 	// Save only through the owner-only atomic writer, never via wxFileConfig's destructor.
 	cfg.DisableAutoSave();
-	cfg.DeleteEntry("/EC/Password");
-	cfg.Write("/EC/PasswordMD5", wxString::FromUTF8(digest.c_str()).Lower());
-	wxMemoryOutputStream output;
-	if (!cfg.Save(output)) {
-		m_lastError = "cannot serialize amuleapi.conf";
+	cfg.DeleteEntry(ECClientPassword::LEGACY_KEY);
+	cfg.Write(ECClientPassword::KEY, wxString::FromUTF8(digest.c_str()).Lower());
+	m_lastError = SaveConf(cfg, path);
+	if (!m_lastError.empty()) {
 		return false;
 	}
-	std::string body(output.GetSize(), '\0');
-	output.CopyTo(&body[0], body.size());
-	if (!WriteFileAtomic0600(path, body)) {
-		m_lastError = "cannot write amuleapi.conf";
-		return false;
-	}
-	m_ec.password.clear();
+	m_ecKeyConflict.clear();
 	m_ec.password_md5 = digest;
 	return true;
 }

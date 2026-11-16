@@ -2453,6 +2453,7 @@ add_test (NAME AmuleApiConfigTest COMMAND AmuleApiConfigTest)
 set_tests_properties (AmuleApiConfigTest PROPERTIES LABELS "slow")
 target_include_directories (AmuleApiConfigTest
 	PRIVATE ${CMAKE_SOURCE_DIR}/src/webapi
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
 )
 target_link_libraries (AmuleApiConfigTest
 	muleunit

@@ -36,19 +36,20 @@ class PasswordInputTest(unittest.TestCase):
     def credentials(self):
         return (self.root / 'amuleapi-passwords').read_bytes()
 
-    def test_admin_and_guest_stdin_and_literal_dash(self):
+    def test_admin_and_guest_stdin(self):
         self.assert_ok(self.run_cli('--set-admin-pass-stdin', data=b'admin secret\n'))
         admin = self.credentials().splitlines()[0]
         self.assertNotIn(b'admin secret', self.credentials())
         self.assert_ok(self.run_cli('--set-guest-pass-stdin', data=b'guest secret\r\n'))
         self.assertEqual(self.credentials().splitlines()[0], admin)
-        self.assert_ok(self.run_cli('--set-guest-pass=-'))
+        self.assert_ok(self.run_cli('--set-guest-pass-stdin', data=b'-\n'))
+        self.assertNotIn(b'guest=\n', self.credentials())
         self.assert_ok(self.run_cli('--set-guest-pass-stdin', data=b'\n'))
         self.assertIn(b'guest=\n', self.credentials())
         self.assertEqual(self.credentials().splitlines()[0], admin)
 
     def test_eof_does_not_clear_guest(self):
-        self.assert_ok(self.run_cli('--set-guest-pass=keep-me'))
+        self.assert_ok(self.run_cli('--set-guest-pass-stdin', data=b'keep-me\n'))
         before = self.credentials()
         result = self.run_cli('--set-guest-pass-stdin', data=b'')
         self.assertNotEqual(result.returncode, 0)
@@ -107,12 +108,18 @@ class PasswordInputTest(unittest.TestCase):
         self.assertEqual((self.root / 'amuleapi.conf').read_bytes(), before)
 
     def test_conflicts_are_explicit_and_fail(self):
-        for args in [('--set-admin-pass-stdin', '--set-admin-pass=literal'),
-                     ('--set-admin-pass-stdin', '--set-guest-pass-stdin'),
-                     ('--set-guest-pass=one', '--set-ec-pass-stdin')]:
+        for args in [('--set-admin-pass-stdin', '--set-guest-pass-stdin'),
+                     ('--set-admin-pass-stdin', '--set-ec-pass-stdin'),
+                     ('--set-guest-pass-stdin', '--set-ec-pass-stdin')]:
             result = self.run_cli(*args)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn(b'exactly one', result.stderr)
+            self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_argv_passwords_are_refused(self):
+        for option in ('--set-admin-pass=literal', '--set-guest-pass=literal'):
+            result = self.run_cli(option)
+            self.assertNotEqual(result.returncode, 0)
             self.assertEqual(list(self.root.iterdir()), [])
 
     def test_setup_repairs_bad_ec_fields_and_role_setup_ignores_them(self):
@@ -123,8 +130,7 @@ class PasswordInputTest(unittest.TestCase):
             conf.write_text(content)
             conf.chmod(0o600)
             token.write_text('must-not-be-consumed\n')
-            for setter in ('--set-admin-pass-stdin', '--set-guest-pass-stdin',
-                           '--set-admin-pass=literal', '--set-guest-pass=literal'):
+            for setter in ('--set-admin-pass-stdin', '--set-guest-pass-stdin'):
                 self.assert_ok(self.run_cli(setter))
                 self.assertEqual(conf.read_text(), content)
             self.assert_ok(self.run_cli('--set-ec-pass-stdin'))

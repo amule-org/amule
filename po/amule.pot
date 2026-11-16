@@ -263,6 +263,11 @@ msgstr ""
 msgid "Restricted permissions on %s to owner-only."
 msgstr ""
 
+#: src/amuleAppCommon.cpp src/ExternalConnector.cpp
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Collection file not found: %s"
@@ -357,6 +362,23 @@ msgstr ""
 
 #: src/amule.cpp
 #, c-format
+msgid "Could not read the EC password: %s"
+msgstr ""
+
+#: src/amule.cpp
+msgid "The EC password must not be empty."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Could not save AcceptExternalConnections to amule.conf."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Password set and external connections enabled."
+msgstr ""
+
+#: src/amule.cpp
+#, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr ""
 
@@ -386,20 +408,6 @@ msgstr ""
 
 #: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
-msgstr ""
-
-#: src/amule.cpp
-msgid ""
-"\n"
-"EC configuration"
-msgstr ""
-
-#: src/amule.cpp
-msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
-
-#: src/amule.cpp
-msgid "Password set and external connections enabled."
 msgstr ""
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
@@ -805,15 +813,15 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr ""
 
 #: src/amuled.cpp
-msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
+msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
 msgstr ""
 
 #: src/amuled.cpp
-msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
+msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
 msgstr ""
 
 #: src/amuled.cpp
-msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
+msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr ""
 
 #: src/amuled.cpp
@@ -2361,6 +2369,10 @@ msgstr[1] ""
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr ""
 
+#: src/ECClientPassword.h
+msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr ""
@@ -2888,8 +2900,7 @@ msgstr ""
 #: src/ExternalConnector.cpp
 msgid ""
 "Cannot connect with an empty password.\n"
-"You must specify a password either in config file\n"
-"or on command-line, or enter one when asked.\n"
+"Set one with --set-ec-pass-stdin.\n"
 "\n"
 "Exiting...\n"
 msgstr ""
@@ -2907,7 +2918,7 @@ msgid "aMule's port for External Connection. (default: 4712)"
 msgstr ""
 
 #: src/ExternalConnector.cpp
-msgid "External Connection password."
+msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
 msgstr ""
 
 #: src/ExternalConnector.cpp
@@ -2931,10 +2942,6 @@ msgid "Write command line options to config file."
 msgstr ""
 
 #: src/ExternalConnector.cpp
-msgid "Creates config file based on aMule's config file."
-msgstr ""
-
-#: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr ""
 
@@ -2951,7 +2958,12 @@ msgid "Do not write a log file; print to the console only."
 msgstr ""
 
 #: src/ExternalConnector.cpp
-msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
+#, c-format
+msgid "Cannot read the password: %s\n"
+msgstr ""
+
+#: src/ExternalConnector.cpp
+msgid "Cannot connect with an empty password.\n"
 msgstr ""
 
 #: src/FileDetailDialog.cpp
@@ -10316,7 +10328,7 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr ""
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
+msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr ""
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp

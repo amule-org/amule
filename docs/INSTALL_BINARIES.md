@@ -266,7 +266,7 @@ Command Prompt and invoke by full path:
 
 ```
 "C:\Program Files\aMule\bin\amuled.exe" --full-daemon
-"C:\Program Files\aMule\bin\amulecmd.exe" -h 127.0.0.1 -p 4712 -P <password>
+"C:\Program Files\aMule\bin\amulecmd.exe" -h 127.0.0.1 -p 4712
 "C:\Program Files\aMule\bin\amulegui.exe"
 "C:\Program Files\aMule\bin\amuleapi.exe"
 ```
@@ -281,7 +281,7 @@ PowerShell or Command Prompt in that folder and run them directly:
 
 ```
 .\amuled.exe --full-daemon
-.\amulecmd.exe -h 127.0.0.1 -p 4712 -P <password>
+.\amulecmd.exe -h 127.0.0.1 -p 4712
 .\amulegui.exe
 .\amuleapi.exe
 ```
@@ -295,7 +295,7 @@ runs to read media metadata; invoke them by full path:
 
 ```sh
 /Applications/aMule.app/Contents/MacOS/amuled --full-daemon
-/Applications/aMule.app/Contents/MacOS/amulecmd -h 127.0.0.1 -p 4712 -P <password>
+/Applications/aMule.app/Contents/MacOS/amulecmd -h 127.0.0.1 -p 4712
 /Applications/aMule.app/Contents/MacOS/amuleapi
 ```
 
@@ -325,7 +325,7 @@ ln -s aMule-3.2.0-Linux-x64.AppImage amuled
 ./amuled --full-daemon
 
 ln -s aMule-3.2.0-Linux-x64.AppImage amulecmd
-./amulecmd -h 127.0.0.1 -p 4712 -P <password>
+./amulecmd -h 127.0.0.1 -p 4712
 
 ln -s aMule-3.2.0-Linux-x64.AppImage amulegui
 ./amulegui
@@ -342,7 +342,7 @@ different binary with `--command=`:
 
 ```sh
 flatpak run --command=amuled    org.amule.aMule --full-daemon
-flatpak run --command=amulecmd  org.amule.aMule -h 127.0.0.1 -p 4712 -P <password>
+flatpak run --command=amulecmd  org.amule.aMule -h 127.0.0.1 -p 4712
 flatpak run --command=amulegui  org.amule.aMule
 flatpak run --command=amuleapi  org.amule.aMule
 ```

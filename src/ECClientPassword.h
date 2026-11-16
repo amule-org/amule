@@ -27,10 +27,54 @@
 
 #include "Types.h"
 #include <wx/config.h>
+#include <wx/intl.h>
+#include <wx/log.h>
 #include <common/MD5Sum.h>
 
 namespace ECClientPassword
 {
+// The only password key of a client config: remote.conf and amuleapi.conf.
+constexpr char KEY[] = "/EC/PasswordMD5";
+// The key it replaces.
+constexpr char LEGACY_KEY[] = "/EC/Password";
+
+// What the replaced [EC]/Password held.
+enum class LegacyPassword
+{
+	Digest,
+	Plaintext
+};
+
+// Moves [EC]/Password to KEY. `changed` says the caller must save. Two nonempty keys fail, since
+// neither can be known to be the current one.
+inline bool MigrateLegacyKey(wxConfigBase &cfg, LegacyPassword legacy, bool &changed, wxString &error)
+{
+	changed = false;
+	error.clear();
+	if (!cfg.HasEntry(LEGACY_KEY)) {
+		return true;
+	}
+	const wxString old = cfg.Read(LEGACY_KEY, wxString());
+	const wxString current = cfg.Read(KEY, wxString());
+	if (!old.IsEmpty() && !current.IsEmpty()) {
+		error = _("[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one");
+		return false;
+	}
+	if (!old.IsEmpty()) {
+		cfg.Write(KEY, legacy == LegacyPassword::Plaintext ? MD5Sum(old).GetHash() : old);
+	}
+	cfg.DeleteEntry(LEGACY_KEY);
+	changed = true;
+	return true;
+}
+
+// The caller explains the failure; wx's own lines would only repeat it.
+inline bool FlushQuietly(wxConfigBase &cfg)
+{
+	wxLogNull quiet;
+	return cfg.Flush();
+}
+
 inline wxString Display(const wxString &pending)
 {
 	return pending.IsEmpty() ? wxString() : wxString("********");
@@ -56,9 +100,9 @@ inline bool Commit(
 {
 	const bool remembered = cfg.Read("/EC/Host", wxString()) == host &&
 				cfg.Read("/EC/Port", 4712L) == port && !sessionPassword.IsEmpty() &&
-				cfg.Read("/EC/Password", wxString()) == sessionPassword;
+				cfg.Read(KEY, wxString()) == sessionPassword;
 	sessionPassword = next;
-	return !remembered || (cfg.Write("/EC/Password", next) && cfg.Flush());
+	return !remembered || (cfg.Write(KEY, next) && cfg.Flush());
 }
 } // namespace ECClientPassword
 
