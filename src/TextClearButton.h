@@ -31,6 +31,9 @@
 #include <wx/bmpbuttn.h>
 #include <wx/sizer.h>
 #include <wx/textentry.h>
+#if defined(__WXOSX__)
+#include "MacAppHelper.h"
+#endif
 
 // Keep the original text control (including the search-history dropdown) and
 // its text events. The clear button stays visible even when the field is empty.
@@ -40,12 +43,17 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 	const wxWindowID inputId = input->GetId();
 	auto *row = new wxBoxSizer(wxHORIZONTAL);
 	row->Add(input, wxSizerFlags(1).CenterVertical());
+	long clearStyle = wxBU_EXACTFIT;
+#if defined(__WXOSX__)
+	// Cocoa's default rounded bezel needs a 40 DIP fitting width for a 16 DIP
+	// bitmap, but this row gives the button 24 DIP. Use the compact square bezel,
+	// whose native fitting size is smaller than the button.
+	clearStyle |= wxBORDER_SIMPLE;
+#endif
 	const int side = input->GetBestSize().y;
 	auto *clear = new wxBitmapButton(
-		parent, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(side, side), wxBU_EXACTFIT);
+		parent, wxID_ANY, wxNullBitmap, wxDefaultPosition, wxSize(side, side), clearStyle);
 	clear->SetToolTip(_("Clear"));
-	// A fixed square keeps the row at the field's height: on macOS the bezel's
-	// best size is taller and would shift neighbouring labels.
 	clear->SetMinSize(wxSize(side, side));
 	const auto updateArtwork = [clear]() {
 		// Bundles take a size at 100% DPI and rasterize the SVG at each scale.
@@ -53,13 +61,17 @@ inline wxSizer *WithTextClearButton(wxWindow *input)
 			"menu_x_lg", wxSize(16, 16), wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT)));
 		clear->SetBitmapDisabled(CamuleArtProvider::GetMenuBitmapBundle(
 			"menu_x_lg", wxSize(16, 16), wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT)));
+#if defined(__WXOSX__)
+		// SetBitmap() resets Cocoa's image position to NSImageLeft.
+		mac_set_button_image_only(clear->GetHandle());
+#endif
 	};
 	updateArtwork();
 	clear->Bind(wxEVT_SYS_COLOUR_CHANGED, [updateArtwork](wxSysColourChangedEvent &event) {
 		updateArtwork();
 		event.Skip();
 	});
-	// Clear of the macOS focus ring, which is drawn outside the field.
+	// Keep clear of the macOS focus ring, which is drawn outside the field.
 	row->Add(clear, wxSizerFlags().CenterVertical().Border(wxLEFT, input->FromDIP(5)));
 	clear->Enable(!dynamic_cast<wxTextEntry *>(input)->GetValue().IsEmpty());
 

@@ -7,6 +7,9 @@
 #include <wx/evtloop.h>
 
 #include "TextClearButton.h"
+#if defined(__WXOSX__)
+#include "MacAppHelper.h"
+#endif
 
 #include <iostream>
 #include <stdexcept>
@@ -117,8 +120,15 @@ void CheckRow(wxWindow *field, wxSizer *outer)
 	const wxSize buttonMin = clear->GetMinSize();
 	Require(buttonMin == wxSize(field->GetBestSize().y, field->GetBestSize().y),
 		"Square button must stay at the field's height");
+#if defined(__WXOSX__)
+	Require((clear->GetWindowStyleFlag() & wxBORDER_MASK) == wxBORDER_SIMPLE,
+		"macOS clear button must use the compact square bezel");
+	Require(mac_button_image_is_centered(clear->GetHandle()),
+		"macOS clear button bitmap must be centered in the native button");
+#else
 	Require((clear->GetWindowStyleFlag() & wxBORDER_MASK) != wxBORDER_NONE,
 		"Clear button must look like a button");
+#endif
 	Require(row->GetItem(clear)->GetBorder() == field->FromDIP(5),
 		"Clear button must keep a gap for the field's focus ring");
 	Require(row->GetMinSize().y == field->GetBestSize().y,
