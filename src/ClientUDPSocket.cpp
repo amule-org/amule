@@ -1769,7 +1769,7 @@ void CClientUDPSocket::ProcessPacket(
 			}
 			if (requester == NULL) {
 				requester = new CUpDownClient(
-					remoteTCPPort, HybridIDOfIPv4(host), 0, 0, NULL, false, true);
+					remoteTCPPort, HybridIDOfIPv4(host), 0, 0, nullptr, false, true);
 				requester->SetUserHash(CMD4Hash(userHash));
 				theApp->clientlist->AddClient(requester);
 			}
