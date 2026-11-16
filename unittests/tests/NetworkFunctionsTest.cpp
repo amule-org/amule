@@ -195,6 +195,63 @@ TEST(NetworkFunctions, IsGoodIP)
 	}
 }
 
+// Each block in reserved_ranges is refused from its first address to its last, and nothing past it.
+TEST(NetworkFunctions, IsGoodIPSpecialPurposeBlocks)
+{
+	const wxString refused[] = { "0.0.0.0",
+		"0.255.255.255",
+		"127.0.0.0",
+		"127.255.255.255",
+		"169.254.0.0",
+		"169.254.255.255",
+		"192.0.0.0",
+		"192.0.0.255",
+		"192.0.2.0",
+		"192.0.2.255",
+		"192.88.99.0",
+		"192.88.99.255",
+		"198.18.0.0",
+		"198.19.255.255",
+		"224.0.0.0",
+		"239.255.255.255",
+		"240.0.0.0",
+		"255.255.255.255" };
+	const wxString good[] = { "1.0.0.0",
+		"126.255.255.255",
+		"169.253.255.255",
+		"169.255.0.0",
+		"192.0.1.0",
+		"192.0.1.255",
+		"192.0.3.0",
+		"192.88.98.255",
+		"192.88.100.0",
+		"198.17.255.255",
+		"198.20.0.0",
+		// RFC 3330 listed these as reserved; they are allocated now.
+		"39.0.0.0",
+		"39.255.255.255",
+		"128.0.0.0",
+		"128.0.255.255",
+		"191.255.0.0",
+		"191.255.255.255",
+		"223.255.255.0",
+		"223.255.255.255" };
+
+	unsigned int ip;
+	for (const auto &address : refused) {
+		CONTEXT(address);
+		ASSERT_TRUE(StringIPtoUint32(address, ip));
+		ASSERT_FALSE(IsGoodIP(ip, false));
+		ASSERT_FALSE(IsGoodIP(ip, true));
+	}
+	for (const auto &address : good) {
+		CONTEXT(address);
+		ASSERT_TRUE(StringIPtoUint32(address, ip));
+		ASSERT_TRUE(IsGoodIP(ip, false));
+		ASSERT_TRUE(IsGoodIP(ip, true));
+	}
+}
+
 TEST(NetworkFunctions, IsGoodIPPort)
 {
 	unsigned int lan;
@@ -265,6 +322,7 @@ TEST(NetworkFunctions, IsGoodServerIP)
 		{ "127.255.0.9", true, false },
 		{ "192.168.1.2", true, false },
 		{ "8.8.4.4", true, true },
+		{ "39.0.0.1", true, true },
 		{ "0.0.0.0", false, false },
 		{ "169.254.1.1", false, false },
 		{ "224.0.0.1", false, false } };
