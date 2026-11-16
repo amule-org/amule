@@ -6,7 +6,6 @@ No installed services, real peers, or user configuration are used.
 """
 import argparse
 import base64
-import hashlib
 import json
 from pathlib import Path
 import socket
@@ -21,8 +20,8 @@ import urllib.request
 
 # Reuse the suite's EC codec, without its daemon-start or English-log helpers.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tests"))
-from AllSearchIntegrationTest import EC, C, integer
-from DaemonConfig import write_amule_conf
+from AllSearchIntegrationTest import EC, C, configure_amuleapi, integer
+from DaemonConfig import EC_PASSWORD, write_amule_conf
 
 
 def unused_port():
@@ -81,13 +80,12 @@ def run(build, work, daemon_override=None, api_override=None):
     # Set the mode at creation so permissive CI umasks cannot expose them.
     (daemon_dir / "amule.conf").touch(mode=0o600, exist_ok=False)
     (api_dir / "amuleapi.conf").touch(mode=0o600, exist_ok=False)
-    write_amule_conf(daemon_dir, ec_port, ec_password='captcha-test', Port=tcp_port,
+    write_amule_conf(daemon_dir, ec_port, Port=tcp_port,
                      UDPEnable=0, FilterLanIPs=0, IncomingDir=daemon_dir / 'incoming',
                      TempDir=daemon_dir / 'temp')
     (api_dir / "amuleapi.conf").write_text(f"""[EC]
 Host=127.0.0.1
 Port={ec_port}
-PasswordMD5={hashlib.md5(b'captcha-test').hexdigest()}
 [Server]
 BindAddress=127.0.0.1
 Port={http_port}
@@ -105,9 +103,7 @@ StaticRoot={Path(__file__).resolve().parents[3] / 'src/webapi/static'}
             log = (work / (executable.name + ".log")).open("w")
             logs.append(log)
             if executable == api:
-                subprocess.run([str(api), "--config-dir", str(api_dir), "--set-admin-pass-stdin"],
-                               input=b"captcha-admin\n", stdout=log, stderr=log, check=True,
-                               timeout=20)
+                configure_amuleapi(api, api_dir, None, log, admin="captcha-admin")
             processes.append(subprocess.Popen([str(executable), "--config-dir", str(directory), *args],
                                                stdout=log, stderr=log))
             if executable == daemon:
@@ -142,7 +138,7 @@ StaticRoot={Path(__file__).resolve().parents[3] / 'src/webapi/static'}
             assert all(current[key] == value for key, value in values.items()), current
         stream = urllib.request.urlopen(urllib.request.Request(root + "/events",
             headers={"Authorization": "Bearer " + token}), timeout=15)
-        ec = EC(ec_port, password="captcha-test")
+        ec = EC(ec_port, password=EC_PASSWORD)
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             listener.listen()

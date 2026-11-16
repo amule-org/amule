@@ -117,10 +117,11 @@ IUtpSocketOperations::Handle Handle()
 	return &marker;
 }
 
-CUtpSocketTransport MakeTransport(FakeOperations &ops, IStreamTransportEvents *events = nullptr)
+CUtpSocketTransport MakeTransport(
+	FakeOperations &ops, IStreamTransportEvents *events = nullptr, bool inbound = false)
 {
 	return CUtpSocketTransport(
-		ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, events, false);
+		ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, events, inbound);
 }
 
 std::vector<uint8_t> Pattern(size_t length, uint8_t seed = 0)
@@ -354,8 +355,7 @@ TEST(UtpSocketTransport, AWindowOpeningFlushesAndUnblocksOnlyWhenItHelps)
 	FakeOperations ops;
 	ops.acceptLimit = 0;
 	FakeEvents events;
-	CUtpSocketTransport transport(
-		ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, &events, false);
+	CUtpSocketTransport transport = MakeTransport(ops, &events);
 
 	// Fill the queue past its bound so the writer is blocked.
 	const std::vector<uint8_t> payload = Pattern(CUtpStream::kDefaultWriteBound + 16, 5);
@@ -905,19 +905,10 @@ TEST(UtpSocketTransport, ObfuscationIsReportedFromTheCryptParametersItWasGiven)
 	ASSERT_FALSE(transport.ObfuscatesStream());
 }
 
-namespace
-{
-CUtpSocketTransport MakeInboundTransport(FakeOperations &ops)
-{
-	return CUtpSocketTransport(
-		ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, nullptr, true);
-}
-} // namespace
-
 TEST(UtpSocketTransport, InboundStreamFromAnObfuscatedSynReportsObfuscation)
 {
 	FakeOperations ops;
-	CUtpSocketTransport transport = MakeInboundTransport(ops);
+	CUtpSocketTransport transport = MakeTransport(ops, nullptr, true);
 	transport.MarkSynObfuscated(true);
 	ASSERT_TRUE(transport.ObfuscatesStream());
 }
@@ -925,7 +916,7 @@ TEST(UtpSocketTransport, InboundStreamFromAnObfuscatedSynReportsObfuscation)
 TEST(UtpSocketTransport, InboundStreamFromAPlainSynDoesNotReportObfuscation)
 {
 	FakeOperations ops;
-	CUtpSocketTransport transport = MakeInboundTransport(ops);
+	CUtpSocketTransport transport = MakeTransport(ops, nullptr, true);
 	transport.MarkSynObfuscated(false);
 	ASSERT_FALSE(transport.ObfuscatesStream());
 }
@@ -933,7 +924,7 @@ TEST(UtpSocketTransport, InboundStreamFromAPlainSynDoesNotReportObfuscation)
 TEST(UtpSocketTransport, CryptParametersReplaceTheSynOrigin)
 {
 	FakeOperations ops;
-	CUtpSocketTransport transport = MakeInboundTransport(ops);
+	CUtpSocketTransport transport = MakeTransport(ops, nullptr, true);
 	transport.MarkSynObfuscated(true);
 	const uint8_t peerHash[16] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
 	transport.SetCryptParameters(false, peerHash);
@@ -955,8 +946,7 @@ TEST(UtpSocketTransport, AnInboundStreamIsHalfOpenUntilItsPeerSendsData)
 	// A SYN proves no source address; the peer's first data acknowledges our SYN-ACK.
 	FakeOperations ops;
 	FakeEvents events;
-	CUtpSocketTransport transport(
-		ops, Handle(), CNetworkAddress::FromString("192.0.2.7"), 4662, &events, true);
+	CUtpSocketTransport transport = MakeTransport(ops, &events, true);
 	ASSERT_FALSE(transport.IsConnected());
 	const auto payload = Pattern(6);
 	transport.OnPayload(payload.data(), payload.size());

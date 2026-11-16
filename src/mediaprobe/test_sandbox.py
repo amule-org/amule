@@ -27,11 +27,11 @@ class SandboxTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def run_action(self, action, argument=None, **kwargs):
-        with self.media.open('rb') as source:
+    def run_action(self, action, argument=None, returncode=0, mode='rb', **kwargs):
+        with self.media.open(mode) as source:
             result = subprocess.run([FIXTURE, action, str(argument or self.secret)],
                                     stdin=source, capture_output=True, timeout=35, **kwargs)
-        self.assertEqual(result.returncode, 0, (action, result.stdout, result.stderr))
+        self.assertEqual(result.returncode, returncode, (action, result.stdout, result.stderr))
         return result
 
     def test_input_read_and_seek_still_work(self):
@@ -43,19 +43,13 @@ class SandboxTests(unittest.TestCase):
     @unittest.skipUnless(os.name == 'nt', 'Windows input handle access reduction')
     def test_writable_input_handle_cannot_modify_the_input(self):
         original = self.media.read_bytes()
-        with self.media.open('r+b') as source:
-            result = subprocess.run([FIXTURE, 'write-input', str(self.secret)],
-                                    stdin=source, capture_output=True, timeout=35)
-        self.assertEqual(result.returncode, 0, (result.stdout, result.stderr))
+        result = self.run_action('write-input', mode='r+b')
         self.assertEqual(result.stdout, b'blocked\n')
         self.assertEqual(self.media.read_bytes(), original)
 
     @unittest.skipUnless(os.name == 'nt', 'Windows launcher confinement setup')
     def test_failed_launcher_confinement_returns_session_failure_without_metadata(self):
-        with self.media.open('rb') as source:
-            result = subprocess.run([FIXTURE, 'launcher-setup-failure', str(self.secret)],
-                                    stdin=source, capture_output=True, timeout=35)
-        self.assertEqual(result.returncode, 13, result.stderr)
+        result = self.run_action('launcher-setup-failure', returncode=13)
         self.assertEqual(result.stdout, b'')
         self.assertIn(b'create private parser desktop failed', result.stderr)
         self.assertIn(b'Windows error', result.stderr)
@@ -64,10 +58,7 @@ class SandboxTests(unittest.TestCase):
     def test_output_handles_cannot_resize_files_and_output_is_bounded(self):
         self.run_action('resize-output')
         for action in ('overflow-output', 'overflow-errors'):
-            with self.media.open('rb') as source:
-                result = subprocess.run([FIXTURE, action, str(self.secret)],
-                                        stdin=source, capture_output=True, timeout=35)
-            self.assertEqual(result.returncode, 12, (action, result.stderr))
+            result = self.run_action(action, returncode=12)
             self.assertLessEqual(len(result.stdout), 65536)
             # The trusted launcher's fixed failure diagnostic follows the relay.
             self.assertLessEqual(len(result.stderr), 8192 + 256)

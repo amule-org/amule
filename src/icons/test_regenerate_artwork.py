@@ -13,7 +13,8 @@ from lxml import etree
 from picosvg.svg_types import SVGPath
 
 from embed_icons import collect_icons, emit, count_packed_arc_flags
-from regenerate_artwork import ROOT, CLIENT_ICONS, client_icon_pixels, mldonkey_camel, normalize_svg
+from regenerate_artwork import (ROOT, CLIENT_ICONS, client_icon_pixels, mldonkey_camel, normalize_svg,
+                                 png_chunks)
 
 
 def png_rgba(path):
@@ -21,12 +22,7 @@ def png_rgba(path):
     data = path.read_bytes()
     width, height, depth, colour = struct.unpack('>IIBB', data[16:26])
     assert (depth, colour) == (8, 6), path.name
-    idat, offset = b'', 8
-    while offset < len(data):
-        length = struct.unpack_from('>I', data, offset)[0]
-        if data[offset + 4:offset + 8] == b'IDAT':
-            idat += data[offset + 8:offset + 8 + length]
-        offset += length + 12
+    idat = b''.join(payload for kind, payload in png_chunks(data) if kind == b'IDAT')
     raw, stride = zlib.decompress(idat), width * 4 + 1
     assert all(raw[y * stride] == 0 for y in range(height)), path.name
     return width, height, b''.join(raw[y * stride + 1:(y + 1) * stride] for y in range(height))

@@ -4,16 +4,15 @@
 """Keep the text client connected until a loopback SRP peer finishes shutdown."""
 from pathlib import Path
 import socketserver
-import struct
 import subprocess
 import sys
 import tempfile
 import threading
 import unittest
-import zlib
 
-from ECWire import accept  # Preflight in the parent before starting fixtures.
-from AllSearchIntegrationTest import C, exact
+# Preflight in the parent before starting fixtures.
+from ECWire import accept, read_request, send_reply
+from AllSearchIntegrationTest import C
 from DaemonConfig import daemon_env
 
 BINARY = str(Path(sys.argv.pop(1)).resolve())
@@ -25,18 +24,12 @@ class Handler(socketserver.BaseRequestHandler):
             self.request.settimeout(10)
             self.request = accept(self.request)
             while True:
-                flags, size = struct.unpack('!II', exact(self.request, 8))
-                body = exact(self.request, size)
-                if flags & 1:
-                    body = zlib.decompress(body)
-                op = body[0]
+                op = read_request(self.request)[0]
                 assert op == C['EC_OP_SHUTDOWN'], 'Unexpected EC operation: ' + str(op)
                 self.server.received.set()
                 if not self.server.release.wait(10) or not self.server.reply:
                     return
-                tags = []
-                payload = bytes([C['EC_OP_NOOP']]) + struct.pack('!H', len(tags)) + b''.join(tags)
-                self.request.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
+                send_reply(self.request, C['EC_OP_NOOP'])
                 return
         except (EOFError, OSError):
             pass

@@ -13,10 +13,9 @@ import struct
 import sys
 import tempfile
 import threading
-import time
 
 from AllSearchIntegrationTest import (C, exact, free_ports, integer, retry_port_collisions,
-                                      running_daemon, start_daemon, string)
+                                      running_daemon, start_daemon, string, wait_for)
 from DaemonConfig import write_amule_conf
 
 FORGOTTEN = bytes(range(16))
@@ -77,13 +76,6 @@ def fake_server():
 
 def start(binary, root, ports):
     return start_daemon(binary, root, ports, server_udp=True)
-
-
-def wait_for(proc, what, check):
-    while not check():
-        if proc.poll() is not None:
-            raise AssertionError(f'daemon exited while waiting for {what}')
-        time.sleep(0.2)
 
 
 def search_statuses(ec, sid):

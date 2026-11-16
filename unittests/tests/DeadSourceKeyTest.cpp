@@ -153,6 +153,16 @@ CDeadSourceKey RecordKey(
 
 const uint32 kHighID = 0x0A0B0C0Du;
 const uint32 kServer = 0x0100007Fu;
+
+SStoredSourceRoute ServerRoute(uint32 id, uint32 server)
+{
+	SStoredSourceRoute route;
+	route.id = id;
+	route.serverIP = server;
+	route.serverPort = 4661;
+	route.tcpPort = 4662;
+	return route;
+}
 } // namespace
 
 TEST(CDeadSourceKey, AStoredHighIDMatchesItsLaterRecord)
@@ -168,11 +178,7 @@ TEST(CDeadSourceKey, AStoredHighIDMatchesItsLaterRecord)
 
 TEST(CDeadSourceKey, AStoredServerRouteMatchesItsLaterRecord)
 {
-	SStoredSourceRoute route;
-	route.id = 0x1235;
-	route.serverIP = kServer;
-	route.serverPort = 4661;
-	route.tcpPort = 4662;
+	const SStoredSourceRoute route = ServerRoute(0x1235, kServer);
 	ASSERT_TRUE(route.DeadKey().Matches(
 		RecordKey(0x1235, CNetworkAddress::Absent(), 4662, kServer, 4661, 0)));
 	// Another server's LowID 0x1235 is another client.
@@ -203,11 +209,7 @@ TEST(CDeadSourceKey, ARouteWhereAnotherHostAnsweredIsNotDead)
 	ASSERT_TRUE(keys[0].Matches(left));
 
 	// Also when the other host answered on a route the source left.
-	SStoredSourceRoute now;
-	now.id = 0x1236;
-	now.serverIP = kServer;
-	now.serverPort = 4661;
-	now.tcpPort = 4662;
+	const SStoredSourceRoute now = ServerRoute(0x1236, kServer);
 	const std::vector<CDeadSourceKey> keysLeft = DeadSourceKeysFor(now, {}, { left }, { left });
 	ASSERT_EQUALS(1u, keysLeft.size());
 	ASSERT_TRUE(
@@ -247,11 +249,7 @@ TEST(CDeadSourceKey, OnlyTheAnsweredRouteLosesItsOtherHostKey)
 
 TEST(CDeadSourceKey, ADeadSourceIsKeyedUnderEveryRoute)
 {
-	SStoredSourceRoute current;
-	current.id = 0x1235;
-	current.serverIP = kServer;
-	current.serverPort = 4661;
-	current.tcpPort = 4662;
+	const SStoredSourceRoute current = ServerRoute(0x1235, kServer);
 	SStoredSourceRoute lastResortIPv6;
 	lastResortIPv6.address = IPv6(7);
 	lastResortIPv6.tcpPort = 4662;
@@ -269,16 +267,6 @@ DECLARE_SIMPLE(CSourceRouteChainStart)
 
 namespace
 {
-SStoredSourceRoute ServerRoute(uint32 id, uint32 server)
-{
-	SStoredSourceRoute route;
-	route.id = id;
-	route.serverIP = server;
-	route.serverPort = 4661;
-	route.tcpPort = 4662;
-	return route;
-}
-
 // A LowID on our server, with a fallback server route and a last-resort HighID.
 SSourceRoutes ChainStartRoutes()
 {
@@ -375,11 +363,6 @@ SSourceRouteMergeFacts FromOurServer()
 	return facts;
 }
 
-void Merge(SSourceRoutes &routes, const SSourceRouteMergeFacts &facts, const SStoredSourceRoute &incoming)
-{
-	MergeSourceRoutes(routes, facts, incoming);
-}
-
 // 192.0.2.0 as an ed2k ID: below 0x1000000, so it reads as a LowID.
 const uint32 kDotZeroIP = 0x000200C0u;
 const uint32 kDotZeroHybrid = 0xC0000200u;
@@ -404,18 +387,17 @@ SSourceRouteMergeFacts ServerLowIDFacts(bool trusted)
 TEST(CSourceRouteMerge, OurServerChangesTheLowIDOnTheStartAndOnTheFallback)
 {
 	const SSourceRoutes start = ChainStartRoutes();
-	SSourceRouteMergeFacts facts = FromOurServer();
-	facts.incomingServerLowID = true;
+	const SSourceRouteMergeFacts facts = ServerLowIDFacts(true);
 	const SStoredSourceRoute incoming = ServerRoute(0x1236, kServer);
 
 	SSourceRoutes onStart = start;
-	Merge(onStart, facts, incoming);
+	MergeSourceRoutes(onStart, facts, incoming);
 	ASSERT_EQUALS(0x1236u, onStart.route.id);
 	ASSERT_EQUALS(kServer, onStart.route.serverIP);
 	ASSERT_TRUE(ServerRouteOf(start.route) == onStart.serverCandidate);
 
 	SSourceRoutes onFallback = OnServerCandidate(start);
-	Merge(onFallback, facts, incoming);
+	MergeSourceRoutes(onFallback, facts, incoming);
 	ASSERT_EQUALS(0x1236u, onFallback.route.id);
 	ASSERT_EQUALS(kServer, onFallback.route.serverIP);
 }
@@ -443,12 +425,12 @@ TEST(CSourceRouteMerge, AnIPv6IdentityOnTheStartIsNotReplacedByAHighID)
 	incoming.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID + 1);
 	incoming.tcpPort = 4662;
 
-	Merge(onFallback, facts, incoming);
+	MergeSourceRoutes(onFallback, facts, incoming);
 	ASSERT_TRUE(incoming.address == onFallback.route.address);
 	ASSERT_FALSE(onFallback.identityFromFallback);
 
 	SSourceRoutes onStart = start;
-	Merge(onStart, facts, incoming);
+	MergeSourceRoutes(onStart, facts, incoming);
 	ASSERT_TRUE(SameRoutes(start, onStart));
 }
 
@@ -465,7 +447,7 @@ TEST(CSourceRouteMerge, AnIPv6IdentityStoresTheHighIDAsItsLastResort)
 	incoming.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID);
 	incoming.tcpPort = 4662;
 
-	Merge(start, facts, incoming);
+	MergeSourceRoutes(start, facts, incoming);
 	ASSERT_TRUE(IPv6(7) == start.route.address);
 	ASSERT_TRUE(incoming == start.lastResortIPv4);
 }
@@ -497,11 +479,8 @@ TEST(CSourceRouteMerge, AnIPv4StartTakesTheAdvertisedIPv6ItsIPv6FallbackWouldNot
 {
 	// An IPv4 LowID on its last-resort IPv6 gets a Kad copy with an IPv6.
 	SSourceRoutes start;
-	start.route.id = 0x1235;
+	start.route = ServerRoute(0x1235, kServer);
 	start.route.address = CNetworkAddress::FromIPv4NetworkOrder(kHighID);
-	start.route.serverIP = kServer;
-	start.route.serverPort = 4661;
-	start.route.tcpPort = 4662;
 	SSourceRoutes onFallback = start;
 	onFallback.route.address = IPv6(7);
 	SSourceRouteMergeFacts facts;
@@ -597,8 +576,7 @@ TEST(CSourceRouteMerge, AServerRouteFromAnotherChannelIsUnproven)
 	SSourceRoutes known;
 	known.route.id = 1;
 	known.route.tcpPort = 4662;
-	SSourceRouteMergeFacts facts;
-	facts.incomingServerLowID = true;
+	const SSourceRouteMergeFacts facts = ServerLowIDFacts(false);
 	const SSourceRouteMerge merge = MergeSourceRoutes(known, facts, ServerRoute(0x1235, kServer));
 	ASSERT_TRUE(merge.takeServerRoute);
 	ASSERT_TRUE(known.routeUnproven);
@@ -625,8 +603,7 @@ TEST(CSourceRouteMerge, AnotherChannelsServerRouteIsOnlyAFallbackBesideTheSource
 {
 	SSourceRoutes known;
 	known.route = ServerRoute(0x1235, kServer);
-	SSourceRouteMergeFacts facts;
-	facts.incomingServerLowID = true;
+	const SSourceRouteMergeFacts facts = ServerLowIDFacts(false);
 	const SSourceRouteMerge merge = MergeSourceRoutes(known, facts, ServerRoute(0x1236, kServer + 1));
 	ASSERT_FALSE(merge.takeServerRoute);
 	ASSERT_TRUE(merge.storeServerCandidate);
@@ -639,8 +616,7 @@ TEST(CSourceRouteMerge, ARouteFromOurServerLeavesTheFlag)
 {
 	SSourceRoutes known;
 	known.route = ServerRoute(0x1235, kServer);
-	SSourceRouteMergeFacts facts = FromOurServer();
-	facts.incomingServerLowID = true;
+	const SSourceRouteMergeFacts facts = ServerLowIDFacts(true);
 	const SSourceRouteMerge merge = MergeSourceRoutes(known, facts, ServerRoute(0x1236, kServer));
 	ASSERT_TRUE(merge.takeServerRoute);
 	ASSERT_FALSE(known.routeUnproven);

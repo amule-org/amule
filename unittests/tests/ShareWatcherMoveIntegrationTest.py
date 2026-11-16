@@ -109,7 +109,7 @@ def run_into_tree(binary, root):
     The new path is seen while the old one is still shared, so the file looks like a duplicate.
     """
     incoming, tv = root / 'Incoming', root / 'tv'
-    for d in (incoming, tv / 'show', root / 'Temp'):
+    for d in (incoming, tv / 'show'):
         d.mkdir(parents=True)
     names = [f'm{i}.bin' for i in range(8)]
     for name in names + ['new.bin', 'renamed.bin']:

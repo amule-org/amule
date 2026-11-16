@@ -179,6 +179,14 @@ public:
 		ASSERT_TRUE(CUDPFirewallTester::IsVerified());
 		ASSERT_TRUE(CUDPFirewallTester::IsFirewalledUDP(false));
 	}
+	// The next recheck, with two testers asked.
+	void StartRecheckRound()
+	{
+		now += CUDPVerificationExpiry::kRecheckIntervalMs;
+		CUDPFirewallTester::ReCheckFirewallUDP(false);
+		Request(peer + 1);
+		Request(peer + 2);
+	}
 	uint64_t LastSuccess() const { return CUDPFirewallTester::m_lastSucceededTime; }
 
 private:
@@ -258,10 +266,7 @@ TEST(KadUDPFirewallIntegration, FirewalledResultRenewsVerification)
 {
 	CUDPFirewallTesterFixture fixture;
 	fixture.Open();
-	now += CUDPVerificationExpiry::kRecheckIntervalMs;
-	CUDPFirewallTester::ReCheckFirewallUDP(false);
-	fixture.Request(peer + 1);
-	fixture.Request(peer + 2);
+	fixture.StartRecheckRound();
 	CUDPFirewallTester::SetUDPFWCheckResult(false, false, peer + 1, 0);
 	CUDPFirewallTester::SetUDPFWCheckResult(false, false, peer + 2, 0);
 	ASSERT_TRUE(CUDPFirewallTester::IsVerified());
@@ -487,10 +492,7 @@ TEST(KadUDPFirewallIntegration, OpenAfterFirewalledNeedsSecondTester)
 {
 	CUDPFirewallTesterFixture fixture;
 	fixture.Firewalled();
-	now += CUDPVerificationExpiry::kRecheckIntervalMs;
-	CUDPFirewallTester::ReCheckFirewallUDP(false);
-	fixture.Request(peer + 1);
-	fixture.Request(peer + 2);
+	fixture.StartRecheckRound();
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, externalPort);
 	ASSERT_TRUE(CUDPFirewallTester::IsFWCheckUDPRunning());
 	ASSERT_TRUE(CUDPFirewallTester::IsFirewalledUDP(true));
@@ -503,10 +505,7 @@ TEST(KadUDPFirewallIntegration, UnconfirmedOpenEndsFirewalled)
 {
 	CUDPFirewallTesterFixture fixture;
 	fixture.Firewalled();
-	now += CUDPVerificationExpiry::kRecheckIntervalMs;
-	CUDPFirewallTester::ReCheckFirewallUDP(false);
-	fixture.Request(peer + 1);
-	fixture.Request(peer + 2);
+	fixture.StartRecheckRound();
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, externalPort);
 	CUDPFirewallTester::SetUDPFWCheckResult(false, false, peer + 2, 0);
 	ASSERT_FALSE(CUDPFirewallTester::IsFWCheckUDPRunning());
@@ -518,10 +517,7 @@ TEST(KadUDPFirewallIntegration, OpenAfterFailureEndsFirewalled)
 {
 	CUDPFirewallTesterFixture fixture;
 	fixture.Firewalled();
-	now += CUDPVerificationExpiry::kRecheckIntervalMs;
-	CUDPFirewallTester::ReCheckFirewallUDP(false);
-	fixture.Request(peer + 1);
-	fixture.Request(peer + 2);
+	fixture.StartRecheckRound();
 	CUDPFirewallTester::SetUDPFWCheckResult(false, false, peer + 1, 0);
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 2, externalPort);
 	ASSERT_FALSE(CUDPFirewallTester::IsFWCheckUDPRunning());
@@ -532,10 +528,7 @@ TEST(KadUDPFirewallIntegration, SameTesterCannotConfirmOpen)
 {
 	CUDPFirewallTesterFixture fixture;
 	fixture.Firewalled();
-	now += CUDPVerificationExpiry::kRecheckIntervalMs;
-	CUDPFirewallTester::ReCheckFirewallUDP(false);
-	fixture.Request(peer + 1);
-	fixture.Request(peer + 2);
+	fixture.StartRecheckRound();
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, externalPort);
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, internalPort);
 	ASSERT_TRUE(CUDPFirewallTester::IsFWCheckUDPRunning());
@@ -591,10 +584,7 @@ TEST(KadUDPFirewallIntegration, ConfirmedOpenKeepsUnconfirmedInternPort)
 {
 	CUDPFirewallTesterFixture fixture;
 	fixture.Firewalled();
-	now += CUDPVerificationExpiry::kRecheckIntervalMs;
-	CUDPFirewallTester::ReCheckFirewallUDP(false);
-	fixture.Request(peer + 1);
-	fixture.Request(peer + 2);
+	fixture.StartRecheckRound();
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, internalPort);
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 2, externalPort);
 	ASSERT_FALSE(CUDPFirewallTester::IsFirewalledUDP(false));
@@ -605,10 +595,7 @@ TEST(KadUDPFirewallIntegration, ConfirmedOpenKeepsUnconfirmedTestersSecondPacket
 {
 	CUDPFirewallTesterFixture fixture;
 	fixture.Firewalled();
-	now += CUDPVerificationExpiry::kRecheckIntervalMs;
-	CUDPFirewallTester::ReCheckFirewallUDP(false);
-	fixture.Request(peer + 1);
-	fixture.Request(peer + 2);
+	fixture.StartRecheckRound();
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, externalPort);
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 1, internalPort);
 	CUDPFirewallTester::SetUDPFWCheckResult(true, false, peer + 2, externalPort);

@@ -13,9 +13,9 @@ import sys
 import tempfile
 import time
 
-from AllSearchIntegrationTest import free_ports, retry_port_collisions, running_daemon
+from AllSearchIntegrationTest import free_ports, retry_port_collisions, running_daemon, wait_for
 from DaemonConfig import write_amule_conf
-from KnownHistoryIntegrationTest import known_met, known_record, wait_for
+from KnownHistoryIntegrationTest import known_met, known_record
 
 ACKED = bytes(range(32, 48))
 FUTURE = bytes(range(48, 64))
@@ -28,8 +28,6 @@ def uint32_tag(name_id, value):
 
 
 def run(binary, root):
-    for d in ('Incoming', 'Temp'):
-        (root / d).mkdir()
     ports = free_ports(3, udp_indices=(2,), peer_index=1)
     ec_port, peer_port, udp_port = ports
     write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port)

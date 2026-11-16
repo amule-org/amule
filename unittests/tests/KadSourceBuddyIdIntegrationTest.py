@@ -16,22 +16,19 @@ import struct
 import sys
 import tempfile
 import threading
-import zlib
 from pathlib import Path
 
 from AllSearchIntegrationTest import C, retry_port_collisions, string, wait_for
-from KadLanModeIntegrationTest import write_private_contacts
-from KadSourceTagsECTest import running_kad_daemon, tag as kad_tag
+from KadLanModeIntegrationTest import (KADEMLIA2_HELLO_REQ, KADEMLIA2_HELLO_RES, KADEMLIA2_REQ,
+                                       KADEMLIA2_RES, kad2_hello, write_private_contacts)
+from KadSourceTagsECTest import (KADEMLIA2_SEARCH_RES, KADEMLIA2_SEARCH_SOURCE_REQ, TAG_BUDDYHASH,
+                                 TAG_FILESIZE, TAG_SOURCEPORT, TAG_SOURCETYPE, running_kad_daemon,
+                                 tag as kad_tag, unpack_kad_packet)
 
 KADEMLIA2_BOOTSTRAP_REQ, KADEMLIA2_BOOTSTRAP_RES = 0x01, 0x09
-KADEMLIA2_HELLO_REQ, KADEMLIA2_HELLO_RES = 0x11, 0x19
-KADEMLIA2_REQ, KADEMLIA2_RES = 0x21, 0x29
-KADEMLIA2_SEARCH_SOURCE_REQ, KADEMLIA2_SEARCH_RES = 0x34, 0x3B
 KADEMLIA2_PING, KADEMLIA2_PONG = 0x60, 0x61
 KADEMLIA_CALLBACK_REQ = 0x52
-
-TAG_SOURCETYPE, TAG_SOURCEPORT, TAG_SOURCEIP = b'\xff', b'\xfd', b'\xfe'
-TAG_FILESIZE, TAG_BUDDYHASH = b'\x02', b'\xf8'
+TAG_SOURCEIP = b'\xfe'
 ZERO_ID = bytes(16)
 # The fake node's Kad ID, as write_private_contacts packs the first contact.
 NODE_ID = struct.pack('<4I', 0xA0000000, 0, 0, 1)
@@ -65,12 +62,6 @@ def private_address():
 def kad_ip(address):
     """An IPv4 address the way Kad carries it: network-order bytes read little-endian."""
     return int.from_bytes(socket.inet_aton(address), 'little')
-
-
-def unpack(packet):
-    if packet[0] == 0xE5:  # OP_KADEMLIAPACKEDPROT
-        return bytes([0xE4, packet[1]]) + zlib.decompress(packet[2:])
-    return packet
 
 
 def source_tags(with_buddy_hash, source_type=3):
@@ -113,7 +104,7 @@ class FakeNode(threading.Thread):
                 continue
             except OSError:
                 return
-            packet = unpack(packet)
+            packet = unpack_kad_packet(packet)
             if packet[:1] == b'\xe4':
                 self.handle(packet[1], packet[2:], peer)
 
@@ -123,7 +114,7 @@ class FakeNode(threading.Thread):
                       NODE_ID + struct.pack('<HBH', SOURCE_PORT, NODE_VERSION, 0))
         elif opcode == KADEMLIA2_HELLO_REQ:
             self.send(peer, KADEMLIA2_HELLO_RES,
-                      NODE_ID + struct.pack('<HBB', SOURCE_PORT, NODE_VERSION, 0))
+                      kad2_hello(peer_id=NODE_ID, tcp_port=SOURCE_PORT, version=NODE_VERSION))
         elif opcode == KADEMLIA2_PING:
             self.send(peer, KADEMLIA2_PONG)
         elif opcode == KADEMLIA2_REQ:

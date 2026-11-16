@@ -458,6 +458,17 @@ def wait_for(proc, what, check, timeout=120, interval=0.2):
     return result
 
 
+def amulecmd(binary, port, *args, env, password='regression', script='', timeout=20,
+             check=False):
+    """Run amulecmd against 127.0.0.1:port and return the CompletedProcess.
+
+    The password goes on stdin; script follows it there, for interactive commands.
+    """
+    return subprocess.run([binary, '-h', '127.0.0.1', '-p', str(port), '--password-stdin', *args],
+                          env=env, input=f'{password}\n{script}', capture_output=True, text=True,
+                          timeout=timeout, check=check)
+
+
 def stop_daemon(proc, timeout=10, check=True, codes=(0,)):
     """Stop proc and reap it. check asserts an exit in codes; pass False on failure paths."""
     if proc.poll() is None:

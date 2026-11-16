@@ -5,11 +5,10 @@
 from datetime import datetime
 from pathlib import Path
 import re
-import subprocess
 import tempfile
 
-from AllSearchIntegrationTest import (C, DAEMON_ARGS, free_ports, retry_port_collisions, running_daemon,
-                                      string, tag)
+from AllSearchIntegrationTest import (C, DAEMON_ARGS, amulecmd, free_ports, retry_port_collisions,
+                                      running_daemon, string, tag)
 from DaemonConfig import daemon_env, write_amule_conf
 
 STAMP = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}'
@@ -17,7 +16,7 @@ STAMP = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{2}:\d{2}'
 SOURCE = r'(?:[^()\r\n]+\(\d+\): )?'
 
 
-def run(binary, amulecmd=None):
+def run(binary, client=None):
     with tempfile.TemporaryDirectory(prefix='amule-logging-format-') as directory:
         root = Path(directory)
         port, peer_port = free_ports(2)
@@ -66,11 +65,8 @@ def run(binary, amulecmd=None):
                     now = datetime.now().astimezone()
                     assert instant.utcoffset() == now.utcoffset(), (instant, now)
                     assert abs((now - instant).total_seconds()) < 30, (instant, now)
-            if amulecmd:
-                result = subprocess.run([amulecmd, '-h', '127.0.0.1', '-p', str(port),
-                                         '--password-stdin', '--command=show log'],
-                                        env=env, input='regression\n', capture_output=True,
-                                        text=True, timeout=30)
+            if client:
+                result = amulecmd(client, port, '--command=show log', env=env, timeout=30)
                 assert result.returncode == 0, (result.stdout, result.stderr)
                 lines = [line for line in result.stdout.splitlines() if 'logging-format-' in line]
                 assert len(lines) >= 3, result.stdout

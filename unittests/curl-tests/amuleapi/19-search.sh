@@ -52,13 +52,6 @@ if [ -x "${AMULEAPI_BIN:-/nonexistent}" ]; then
 else
 	HAVE_SECOND_INSTANCE=0
 fi
-# amuleapi takes no --password, and its defaults amuleapi.conf carries only
-# PasswordMD5, so seed the EC credential the way run-all.sh does.
-_seed_extra_instance() {
-	printf '%s\n' "$ADMIN_PASS" | "$AMULEAPI_BIN" --config-dir="$1" --set-admin-pass-stdin >/dev/null 2>&1
-	printf '%s\n' "$EC_PASSWORD" | "$AMULEAPI_BIN" --config-dir="$1" \
-		--set-ec-pass-stdin >/dev/null 2>&1
-}
 # A query likely to return results on any operator's daemon connected
 # to ed2k. "ubuntu" is a safe choice — well-seeded across the network.
 TEST_QUERY="ubuntu"
@@ -270,16 +263,13 @@ else
 SECOND_HOST="localhost:4714"
 SECOND_CONFIG_DIR=$(mktemp -d -t amuleapi_19_search_second.XXXXXX)
 SECOND_LOG=$(mktemp -t amuleapi_19_search_second_log.XXXXXX)
-_seed_extra_instance "$SECOND_CONFIG_DIR"
+_seed_amuleapi "$AMULEAPI_BIN" "$SECOND_CONFIG_DIR" "$ADMIN_PASS"
 "$AMULEAPI_BIN" --config-dir="$SECOND_CONFIG_DIR" \
 	--host="$EC_HOST" --port="$EC_PORT" \
 	--http-port=4714 >"$SECOND_LOG" 2>&1 &
 SECOND_PID=$!
 
-for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-	curl -s -o /dev/null --max-time 1 "http://$SECOND_HOST/api/v1/health" 2>/dev/null && break
-	sleep 0.5
-done
+_wait_health "http://$SECOND_HOST/api/v1"
 sleep 4
 
 SECOND_TOKEN=$(_login "$ADMIN_PASS" "http://$SECOND_HOST/api/v1")
@@ -1005,15 +995,12 @@ if [ -n "$SID_CLOSE" ] && [ "$SID_CLOSE" != "null" ]; then
 	else
 	SECOND2_CONFIG_DIR=$(mktemp -d -t amuleapi_19_close_second.XXXXXX)
 	SECOND2_LOG=$(mktemp -t amuleapi_19_close_second_log.XXXXXX)
-	_seed_extra_instance "$SECOND2_CONFIG_DIR"
+	_seed_amuleapi "$AMULEAPI_BIN" "$SECOND2_CONFIG_DIR" "$ADMIN_PASS"
 	"$AMULEAPI_BIN" --config-dir="$SECOND2_CONFIG_DIR" \
 		--host="$EC_HOST" --port="$EC_PORT" \
 		--http-port=4715 >"$SECOND2_LOG" 2>&1 &
 	SECOND2_PID=$!
-	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-		curl -s -o /dev/null --max-time 1 "http://localhost:4715/api/v1/health" 2>/dev/null && break
-		sleep 0.5
-	done
+	_wait_health "http://localhost:4715/api/v1"
 	sleep 2
 	SECOND2_TOKEN=$(_login "$ADMIN_PASS" "http://localhost:4715/api/v1")
 	if [ -n "$SECOND2_TOKEN" ]; then
@@ -1054,15 +1041,12 @@ else
 # so the primary at $HOST has never seen the id in its own cache.
 FOREIGN_CONFIG_DIR=$(mktemp -d -t amuleapi_19_foreign.XXXXXX)
 FOREIGN_LOG=$(mktemp -t amuleapi_19_foreign_log.XXXXXX)
-_seed_extra_instance "$FOREIGN_CONFIG_DIR"
+_seed_amuleapi "$AMULEAPI_BIN" "$FOREIGN_CONFIG_DIR" "$ADMIN_PASS"
 "$AMULEAPI_BIN" --config-dir="$FOREIGN_CONFIG_DIR" \
 	--host="$EC_HOST" --port="$EC_PORT" \
 	--http-port=4716 >"$FOREIGN_LOG" 2>&1 &
 FOREIGN_PID=$!
-for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-	curl -s -o /dev/null --max-time 1 "http://localhost:4716/api/v1/health" 2>/dev/null && break
-	sleep 0.5
-done
+_wait_health "http://localhost:4716/api/v1"
 sleep 2
 FOREIGN_TOKEN=$(_login "$ADMIN_PASS" "http://localhost:4716/api/v1")
 
@@ -1487,15 +1471,12 @@ if [ "$HAVE_SECOND_INSTANCE" -eq 1 ]; then
 	THIRD_HOST="localhost:4715"
 	THIRD_CONFIG_DIR=$(mktemp -d -t amuleapi_19_search_third.XXXXXX)
 	THIRD_LOG=$(mktemp -t amuleapi_19_search_third_log.XXXXXX)
-	_seed_extra_instance "$THIRD_CONFIG_DIR"
+	_seed_amuleapi "$AMULEAPI_BIN" "$THIRD_CONFIG_DIR" "$ADMIN_PASS"
 	"$AMULEAPI_BIN" --config-dir="$THIRD_CONFIG_DIR" \
 		--host="$EC_HOST" --port="$EC_PORT" \
 		--http-port=4715 >"$THIRD_LOG" 2>&1 &
 	THIRD_PID=$!
-	for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-		curl -s -o /dev/null --max-time 1 "http://$THIRD_HOST/api/v1/health" 2>/dev/null && break
-		sleep 0.5
-	done
+	_wait_health "http://$THIRD_HOST/api/v1"
 	sleep 3
 
 	THIRD_TOKEN=$(_login "$ADMIN_PASS" "http://$THIRD_HOST/api/v1")

@@ -4,14 +4,12 @@
 """A new API must not claim to change a write budget on an older daemon."""
 from pathlib import Path
 import socketserver
-import struct
 import sys
 import tempfile
 import threading
-import zlib
 
-from ECWire import accept
-from AllSearchIntegrationTest import (C, configure_amuleapi, exact, free_ports, http, integer,
+from ECWire import accept, read_request, send_reply
+from AllSearchIntegrationTest import (C, configure_amuleapi, free_ports, http, integer,
                                       start_amuleapi, stop_daemon, tag, wait_amuleapi)
 from DaemonConfig import daemon_env
 
@@ -23,10 +21,7 @@ class CoreHandler(socketserver.BaseRequestHandler):
         try:
             self.request = accept(self.request)
             while True:
-                flags, size = struct.unpack('!II', exact(self.request, 8))
-                body = exact(self.request, size)
-                if flags & 1:
-                    body = zlib.decompress(body)
+                body = read_request(self.request)
                 op = body[0]
                 reply, tags = C['EC_OP_NOOP'], []
                 if op == C['EC_OP_GET_PREFERENCES']:
@@ -37,8 +32,7 @@ class CoreHandler(socketserver.BaseRequestHandler):
                     tags = [tag(C['EC_TAG_PREFS_CORETWEAKS'], children=fields)]
                 elif op == C['EC_OP_SET_PREFERENCES']:
                     self.server.writes.append(body)
-                payload = bytes([reply]) + struct.pack('!H', len(tags)) + b''.join(tags)
-                self.request.sendall(struct.pack('!II', 0x20, len(payload)) + payload)
+                send_reply(self.request, reply, tags)
         except (EOFError, OSError):
             pass
 

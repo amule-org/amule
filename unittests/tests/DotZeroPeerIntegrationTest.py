@@ -14,9 +14,10 @@ import sys
 import tempfile
 import threading
 
-from AllSearchIntegrationTest import (C, exact, free_ports, retry_port_collisions, start_daemon,
-                                      stop_daemon, string, tag)
-from DaemonConfig import daemon_env, write_amule_conf
+from AllSearchIntegrationTest import C, retry_port_collisions, running_daemon, string, tag
+from DaemonConfig import daemon_env
+from OfferFilesInteropPeer import receive, send
+from SearchParamsRestoreIntegrationTest import configure
 
 # FakePeerConnect sends the daemon's dials to this address to 127.0.0.1. It is not loopback,
 # which a server callback request may not name.
@@ -25,10 +26,6 @@ FAKE_PEER = '10.255.138.0'
 
 def gui_id(address, port):
     return (struct.unpack('<I', socket.inet_aton(address))[0] << 16) + port
-
-
-def ed2k_packet(opcode, body):
-    return struct.pack('<BIB', 0xe3, len(body) + 1, opcode) + body
 
 
 def dialled(listener):
@@ -56,13 +53,11 @@ def low_id_server(callback_port):
     def serve():
         try:
             peer, _ = server.accept()
-            while True:
-                _, length = struct.unpack('<BI', exact(peer, 5))
-                if exact(peer, length)[0] == 0x01:  # OP_LOGINREQUEST
-                    break
-            peer.sendall(ed2k_packet(0x40, struct.pack('<II', 1234, 0))  # OP_IDCHANGE, a LowID
-                         + ed2k_packet(0x35, socket.inet_aton(FAKE_PEER)  # OP_CALLBACKREQUESTED
-                                       + struct.pack('<H', callback_port)))
+            while receive(peer)[0] != 0x01:  # OP_LOGINREQUEST
+                pass
+            send(peer, 0x40, struct.pack('<II', 1234, 0))  # OP_IDCHANGE, a LowID
+            send(peer, 0x35, socket.inet_aton(FAKE_PEER)  # OP_CALLBACKREQUESTED
+                 + struct.pack('<H', callback_port))
             while peer.recv(4096):
                 pass
         except (EOFError, OSError):
@@ -75,16 +70,11 @@ def low_id_server(callback_port):
 def run(binary, shim):
     with tempfile.TemporaryDirectory(prefix='amule-dot-zero-peer-') as directory:
         root = Path(directory)
-        for name in ('Incoming', 'Temp'):
-            (root / name).mkdir()
-        ports = free_ports(3, udp_indices=(2,), peer_index=1)
-        write_amule_conf(root, ports[0], Port=ports[1], UDPPort=ports[2], ConnectToKad=1,
-                         ConnectToED2K=1, FilterLanIPs=0)
+        ports = configure(root)
         preload = ':'.join(filter(None, [os.environ.get('AMULE_TEST_PRELOAD_RUNTIME'), shim]))
         env = daemon_env(root, LD_PRELOAD=preload, AMULE_TEST_FAKE_PEER=FAKE_PEER)
-        proc, ec = start_daemon(binary, root, ports, env=env)
         undialled = []
-        try:
+        with running_daemon(binary, root, ports, env=env) as (_, ec):
             # A direct callback request, accepted while Kad is firewalled.
             assert ec.call(C['EC_OP_KAD_START'])[0] == C['EC_OP_NOOP']
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp, \
@@ -127,12 +117,6 @@ def run(binary, shim):
             assert not undialled, f'.0 peer never dialled after: {", ".join(undialled)}'
             print('PASS: direct callback, chat by hash, chat by address and server callback all '
                   'dial a .0 peer')
-        except BaseException:
-            print((root / 'logfile').read_text(errors='replace')[-6000:], file=sys.stderr)
-            raise
-        finally:
-            ec.sock.close()
-            stop_daemon(proc)
 
 
 if __name__ == '__main__':
