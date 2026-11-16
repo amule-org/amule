@@ -627,7 +627,6 @@ public:
 	// External Connections
 	static bool AcceptExternalConnections() { return s_AcceptExternalConnections; }
 
-	static void EnableExternalConnections(bool val) { s_AcceptExternalConnections = val; }
 	static const wxString &GetECAddress() { return s_ECAddr; }
 	static const wxString &GetECNetworkInterface() { return s_ECNetworkInterface; }
 	static void SetECNetworkInterface(const wxString &val) { s_ECNetworkInterface = val; }

@@ -479,6 +479,7 @@ TEST(AmuleApiConfig, ConflictingEcSecretsAreRejectedUntilSetupRepairsThem)
 		"ec-conflict", "[EC]\nPassword=plain\nPasswordMD5=abcdef0123456789abcdef0123456789", cfg));
 	ASSERT_FALSE(cfg.ValidateEcPassword());
 	ASSERT_TRUE(cfg.LastError().find("cannot both be nonempty") != std::string::npos);
+	ASSERT_TRUE(cfg.LastError().find("amuleapi --set-ec-pass-stdin") != std::string::npos);
 	ASSERT_TRUE(ReadConf(cfg).Find("Password=plain") != wxNOT_FOUND);
 	ASSERT_TRUE(cfg.SetEcPasswordMD5("0123456789abcdef0123456789abcdef"));
 	ASSERT_TRUE(cfg.ValidateEcPassword());

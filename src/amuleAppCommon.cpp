@@ -985,20 +985,17 @@ bool CamuleAppCommon::InitCommon(int argc, wxChar **argv)
 
 #ifdef CLIENT_GUI
 	{
-		wxConfigBase *cfg = wxConfigBase::Get();
-		bool migrated = false;
+		const wxString remoteConf = thePrefs::GetConfigDir() + m_configFile;
 		wxString error;
-		if (!ECClientPassword::MigrateLegacyKey(
-			    *cfg, ECClientPassword::LegacyPassword::Digest, migrated, error)) {
-			theApp->ShowAlert(CFormat("%s: %s") % m_configFile % error,
+		const auto migration = ECClientPassword::MigrateRemoteConf(*wxConfigBase::Get(), error);
+		if (migration == ECClientPassword::Migration::Conflict) {
+			theApp->ShowAlert(ECClientPassword::RemoteConfConflictMessage(remoteConf, error),
 				_("aMule cannot start"),
 				wxOK | wxICON_ERROR);
 			return false;
 		}
-		if (migrated && !ECClientPassword::FlushQuietly(*cfg)) {
-			AddLogLineC(
-				CFormat(_("Cannot save %s; using its migrated password for this run only.")) %
-				m_configFile);
+		if (migration == ECClientPassword::Migration::Unsaved) {
+			AddLogLineC(ECClientPassword::RemoteConfUnsavedMessage(remoteConf));
 		}
 	}
 #endif

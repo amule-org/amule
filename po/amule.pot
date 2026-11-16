@@ -263,11 +263,6 @@ msgstr ""
 msgid "Restricted permissions on %s to owner-only."
 msgstr ""
 
-#: src/amuleAppCommon.cpp src/ExternalConnector.cpp
-#, c-format
-msgid "Cannot save %s; using its migrated password for this run only."
-msgstr ""
-
 #: src/amuleAppCommon.cpp
 #, c-format
 msgid "Collection file not found: %s"
@@ -365,7 +360,7 @@ msgstr ""
 msgid "Could not read the EC password: %s"
 msgstr ""
 
-#: src/amule.cpp
+#: src/amule.cpp src/ExternalConnector.cpp
 msgid "The EC password must not be empty."
 msgstr ""
 
@@ -2373,6 +2368,15 @@ msgstr ""
 msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
 msgstr ""
 
+#: src/ECClientPassword.h
+msgid "To replace both, run amulecmd -w --password-stdin."
+msgstr ""
+
+#: src/ECClientPassword.h
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr ""
@@ -2960,10 +2964,6 @@ msgstr ""
 #: src/ExternalConnector.cpp
 #, c-format
 msgid "Cannot read the password: %s\n"
-msgstr ""
-
-#: src/ExternalConnector.cpp
-msgid "Cannot connect with an empty password.\n"
 msgstr ""
 
 #: src/FileDetailDialog.cpp

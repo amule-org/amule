@@ -10,7 +10,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: es\n"
-"POT-Creation-Date: 2026-11-16 10:44+0100\n"
+"POT-Creation-Date: 2026-11-16 12:10+0100\n"
 "PO-Revision-Date: 2026-11-13 09:25+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/amule/application-man-pages/es/>\n"
@@ -934,7 +934,7 @@ msgstr "Tras el fork, crear un archivo PID en I<E<lt>pathE<gt>>.  I<E<lt>pathE<g
 
 #. type: Plain text
 #: amuled.1.in
-msgid "Set the External Connections password, enable External Connections, then exit without starting the core. Terminal input is hidden and confirmed; redirected stdin supplies one line without confirmation. An empty password is rejected.  Refused while another amuled uses the same config dir."
+msgid "Set the External Connections password, enable External Connections, then exit without starting the core. Terminal input is hidden and confirmed; redirected stdin supplies one line without confirmation. An empty password is rejected.  Refused while aMule or another amuled uses the same config dir."
 msgstr ""
 
 #. type: Plain text

@@ -639,7 +639,6 @@ static void LogAddressFamilies(const wxString &listenerHost)
 }
 #endif
 
-// Application initialization
 // InitCommon() holds the instance lock by now. A running core would keep its old verifier and
 // write it back on exit.
 static bool SetECPassFromStdin()
@@ -668,6 +667,7 @@ static bool SetECPassFromStdin()
 	return true;
 }
 
+// Application initialization
 bool CamuleApp::OnInit()
 {
 #ifdef AMULE_API_RESTART_TEST_HOOK

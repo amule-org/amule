@@ -115,7 +115,8 @@ the transport keys, so an active on-path attacker can seal a forged refusal. Onl
 Legacy ECPassword values containing an empty-password digest, all zeros or invalid
 hex are refused without altering the saved verifier. Run
 `amuled --set-ec-pass-stdin` to set a new EC password before starting external
-connections. It refuses to run while another amuled uses the same config dir.
+connections. It refuses to run while aMule or another amuled uses the same config
+dir.
 
 When the verifier key is absent, the core derives a verifier from the existing
 ECPassword digest, writes and flushes it, then deletes and flushes the old key.

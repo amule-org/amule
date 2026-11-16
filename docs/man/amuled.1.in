@@ -54,7 +54,7 @@ After fork, create a pid-file in the \fI<path>\fR.
 Set the External Connections password, enable External Connections, then exit
 without starting the core. Terminal input is hidden and confirmed; redirected
 stdin supplies one line without confirmation. An empty password is rejected.
-Refused while another amuled uses the same config dir.
+Refused while aMule or another amuled uses the same config dir.
 .TP
 .B_untranslated [ \-o\fR, \fB\-\-log\-stdout ]\fR
 Prints log messages to stdout.

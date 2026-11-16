@@ -29,6 +29,7 @@
 #include <wx/config.h>
 #include <wx/intl.h>
 #include <wx/log.h>
+#include <common/Format.h>
 #include <common/MD5Sum.h>
 
 namespace ECClientPassword
@@ -73,6 +74,38 @@ inline bool FlushQuietly(wxConfigBase &cfg)
 {
 	wxLogNull quiet;
 	return cfg.Flush();
+}
+
+enum class Migration
+{
+	Unchanged,
+	Saved,
+	Unsaved,
+	Conflict
+};
+
+// remote.conf, shared by amulecmd and amulegui. Unsaved: the caller uses the migrated key for
+// this run only.
+inline Migration MigrateRemoteConf(wxConfigBase &cfg, wxString &error)
+{
+	bool changed = false;
+	if (!MigrateLegacyKey(cfg, LegacyPassword::Digest, changed, error)) {
+		return Migration::Conflict;
+	}
+	if (!changed) {
+		return Migration::Unchanged;
+	}
+	return FlushQuietly(cfg) ? Migration::Saved : Migration::Unsaved;
+}
+
+inline wxString RemoteConfConflictMessage(const wxString &path, const wxString &error)
+{
+	return CFormat("%s: %s. %s") % path % error % _("To replace both, run amulecmd -w --password-stdin.");
+}
+
+inline wxString RemoteConfUnsavedMessage(const wxString &path)
+{
+	return CFormat(_("Cannot save %s; using its migrated password for this run only.")) % path;
 }
 
 inline wxString Display(const wxString &pending)

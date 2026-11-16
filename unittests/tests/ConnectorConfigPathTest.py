@@ -6,6 +6,7 @@ import configparser
 import hashlib
 import os
 from pathlib import Path
+import socket
 import subprocess
 import sys
 import tempfile
@@ -31,6 +32,12 @@ def run(binary, root, *args, expect_failure=False, stdin=None):
     else:
         assert result.returncode == 0, (args, output)
     return output
+
+
+def closed_port():
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1', 0))
+        return sock.getsockname()[1]
 
 
 def read_config(path):
@@ -96,7 +103,13 @@ def check_password_config(binary, root):
     remote.write_text(text)
     out = run(binary, root, '--write-config', expect_failure=True)
     assert 'cannot both be nonempty' in out, out
+    assert 'amulecmd -w --password-stdin' in out, ('no repair hint', out)
+    assert 'remote.conf: ' in out, ('no file name', out)
     assert remote.read_text() == text, 'conflicting keys were changed'
+    # --help must still work, and must not touch the file.
+    out = run(binary, root, '--help', expect_failure=None)
+    assert '--password-stdin' in out, ('no usage text', out)
+    assert remote.read_text() == text, '--help changed the file'
     # A new password from stdin replaces both.
     run(binary, root, '--write-config', '--password-stdin', stdin='repaired\n')
     config = read_config(remote)
@@ -108,8 +121,9 @@ def check_password_config(binary, root):
         remote.write_text(f'[EC]\nPassword={DIGEST}\n')
         (root / 'config').chmod(0o500)
         try:
-            # --help exits without connecting, after the config is loaded.
-            out = run(binary, root, '--help', expect_failure=None)
+            # The connection fails, after the config is loaded.
+            out = run(binary, root, '-h', '127.0.0.1', '-p', str(closed_port()), '-c', 'status',
+                      expect_failure=None)
         finally:
             (root / 'config').chmod(0o700)
         assert 'this run only' in out, out

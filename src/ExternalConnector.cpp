@@ -572,6 +572,11 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 		printf("%s %s\n", m_appname, (const char *)GetMuleVersion().utf8_str());
 		return false;
 	}
+	// Before the config load, which can refuse or rewrite remote.conf.
+	if (parser.Found("help")) {
+		parser.Usage();
+		return false;
+	}
 
 	// The config *directory* is resolved either way -- subclasses without a
 	// connector config file still need somewhere to put their own.
@@ -610,11 +615,6 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 
 	parser.Found("locale", &m_language);
 
-	if (parser.Found("help")) {
-		parser.Usage();
-		return false;
-	}
-
 	m_KeepQuiet = parser.Found("quiet");
 	m_Verbose = parser.Found("verbose");
 
@@ -641,7 +641,7 @@ bool CaMuleExternalConnector::ReadEcPassword()
 		return false;
 	}
 	if (password.empty()) {
-		Show(_("Cannot connect with an empty password.\n"));
+		Show(wxString(_("The EC password must not be empty.")) + "\n");
 		return false;
 	}
 	m_password.Decode(MD5Sum(wxString::FromUTF8(password.data(), password.size())).GetHash());
@@ -657,24 +657,20 @@ void CaMuleExternalConnector::LoadConfigFile()
 		// Same reasoning as the core's amule.conf: this file stores the EC
 		// password, and the stored value is what authenticates.
 		RestrictToOwner(CPath(m_configFileName));
-		bool migrated = false;
 		wxString error;
-		if (!ECClientPassword::MigrateLegacyKey(
-			    *m_configFile, ECClientPassword::LegacyPassword::Digest, migrated, error)) {
+		const auto migration = ECClientPassword::MigrateRemoteConf(*m_configFile, error);
+		if (migration == ECClientPassword::Migration::Conflict) {
 			if (!m_replaceEcPassword) {
-				Show(CFormat("%s: %s\n") % m_configFileName % error);
+				Show(ECClientPassword::RemoteConfConflictMessage(m_configFileName, error) +
+					"\n");
 				exit(1);
 			}
 			// The password from stdin replaces both keys when -w saves.
 			m_configFile->DeleteEntry(ECClientPassword::LEGACY_KEY);
-		}
-		if (migrated && !ECClientPassword::FlushQuietly(*m_configFile)) {
+		} else if (migration == ECClientPassword::Migration::Unsaved) {
 			// Exit would only retry it.
 			m_configFile->DisableAutoSave();
-			const wxString warning =
-				CFormat(_("Cannot save %s; using its migrated password for this run only.")) %
-				m_configFileName;
-			Show(warning + "\n");
+			Show(ECClientPassword::RemoteConfUnsavedMessage(m_configFileName) + "\n");
 		}
 		m_language = m_configFile->Read("/Locale", "");
 		// Match the default across amulecmd / amulegui. The literal loopback

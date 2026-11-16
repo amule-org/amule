@@ -118,6 +118,37 @@ int main()
 				Check(cfg.Read(ECClientPassword::KEY, wxString()) == "unrelated",
 					"rotation overwrote a separately saved credential");
 		}
+		// The remote.conf save: unchanged, saved, unsaved, and a conflict saves nothing.
+		{
+			FaultConfig cfg;
+			wxString error;
+			Check(ECClientPassword::MigrateRemoteConf(cfg, error) ==
+						ECClientPassword::Migration::Unchanged &&
+					cfg.calls == 0,
+				"a remote.conf without the legacy key was saved");
+			cfg.Write("/EC/Password", "digest");
+			Check(ECClientPassword::MigrateRemoteConf(cfg, error) ==
+						ECClientPassword::Migration::Saved &&
+					cfg.calls == 1 &&
+					cfg.Read(ECClientPassword::KEY, wxString()) == "digest",
+				"migrated remote.conf was not saved");
+			cfg.Write("/EC/Password", "other");
+			cfg.failAt = 2;
+			Check(ECClientPassword::MigrateRemoteConf(cfg, error) ==
+					ECClientPassword::Migration::Conflict,
+				"conflicting remote.conf keys were merged");
+			Check(cfg.calls == 1, "a conflicting remote.conf was saved");
+			cfg.DeleteEntry(ECClientPassword::KEY);
+			Check(ECClientPassword::MigrateRemoteConf(cfg, error) ==
+						ECClientPassword::Migration::Unsaved &&
+					cfg.Read(ECClientPassword::KEY, wxString()) == "other",
+				"a failed save did not keep the migrated key for this run");
+			const wxString message = ECClientPassword::RemoteConfConflictMessage(
+				"/home/u/.aMule/remote.conf", "x");
+			Check(message.Contains("/home/u/.aMule/remote.conf") &&
+					message.Contains("amulecmd -w --password-stdin"),
+				"conflict message lacks the path or the repair command");
+		}
 		// remote.conf keeps its digest; amuleapi.conf's plaintext is hashed.
 		for (const auto legacy : { ECClientPassword::LegacyPassword::Digest,
 			     ECClientPassword::LegacyPassword::Plaintext }) {

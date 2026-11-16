@@ -285,7 +285,8 @@ bool CAmuleApiConfig::LoadAmuleapiConf(const wxString &path)
 	cfg.DisableAutoSave();
 	if (!ECClientPassword::MigrateLegacyKey(
 		    cfg, ECClientPassword::LegacyPassword::Plaintext, migrated, conflict)) {
-		m_ecKeyConflict = std::string(conflict.utf8_str());
+		m_ecKeyConflict = std::string(conflict.utf8_str()) +
+				  ". To replace both, run amuleapi --set-ec-pass-stdin.";
 	} else if (migrated) {
 		const std::string error = SaveConf(cfg, path);
 		if (!error.empty()) {

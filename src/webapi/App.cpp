@@ -182,8 +182,8 @@ void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
 		  "empty line disables guest access."));
 	parser.AddSwitch("",
 		"set-ec-pass-stdin",
-		_("Read the EC password from stdin (hidden on a terminal), write PasswordMD5 and remove "
-		  "plaintext Password, then exit."));
+		_("Read the EC password from stdin (hidden on a terminal), write PasswordMD5, remove any "
+		  "legacy [EC]/Password key, then exit."));
 	parser.AddSwitch("", "foreground", _("Stay in the foreground; default."), wxCMD_LINE_PARAM_OPTIONAL);
 	AddLogFileOptions(parser);
 	// No --daemon: operators wanting fork-into-background wrap amuleapi in
@@ -264,11 +264,9 @@ bool CamuleapiApp::OnInit()
 		} else {
 			m_cliSetEcPass = plain;
 		}
-	}
-	// Setup never connects to EC or starts the HTTP server, and must not consume the
-	// core's ephemeral token. Keep its prompts and errors out of the daemon log too.
-	// std::exit propagates setup failures; returning false from wx OnInit can exit zero.
-	if (m_cliSetAdminPassStdin || m_cliSetGuestPassStdin || m_cliSetEcPassStdin) {
+		// Setup never connects to EC or starts the HTTP server, and must not consume the
+		// core's ephemeral token. Keep its prompts and errors out of the daemon log too.
+		// std::exit propagates setup failures; returning false from wx OnInit can exit zero.
 		if (!m_apiConfig.Load(config_dir)) {
 			webapi::CLogDiagnostic(LogLevel::Error) << m_apiConfig.LastError() << '\n';
 			std::exit(1);
