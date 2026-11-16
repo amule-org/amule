@@ -102,14 +102,15 @@ def source_publish(file_id, tags):
 def type7_tags(tcp_port, pointer_repeats=False):
     """A "routes in tags" record: one route, no buddy tags, size always present.
 
-    With pointer_repeats, a second "bpv" follows the first and is a long string rather than the
-    version byte. Only the first integer may be stored, so the repeat must not come back.
+    With pointer_repeats, three "bpv" tags go out: a long string, the version byte, another long
+    string. Exactly one integer may be stored and a malformed tag must not take its place, so the
+    version byte is what comes back.
     """
     tags = [tag(TAG_SOURCETYPE, 0x09, 7), tag(TAG_SOURCEPORT, 0x08, tcp_port),
             tag(TAG_FILESIZE, 0x03, FILE_SIZE), tag(TAG_ENCRYPTION, 0x09, 3),
             tag(b'ip6', 0x02, b'20010db8' * 4)]
     if pointer_repeats:
-        tags += [tag(b'bpv', 0x09, 1), tag(b'bpv', 0x02, b'r' * 400)]
+        tags += [tag(b'bpv', 0x02, b'r' * 400), tag(b'bpv', 0x09, 1), tag(b'bpv', 0x02, b's' * 400)]
     return tags
 
 
