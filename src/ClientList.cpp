@@ -142,7 +142,7 @@ CClientRef CClientList::CreateForAddress(const CMD4Hash &hash, uint32 ip, uint16
 		return CClientRef();
 	}
 
-	client = new CUpDownClient(port, ip, 0, 0, nullptr, true, true);
+	client = new CUpDownClient(port, HybridIDOfIPv4(ip), 0, 0, nullptr, false, true);
 	// The ctor only records the address to connect to, leaving GetIP() at 0. Seed it, or
 	// anything that reads the peer's IP back -- a friend record saving itself, a menu deciding
 	// whether it can message -- sees 0.0.0.0.
@@ -1214,8 +1214,13 @@ CClientList::ChatSendResult CClientList::SendChatMessage(
 			const wxString name = session ? session->name : wxString();
 			if (peer.Hash().IsEmpty() && port && address.ToIPv4NetworkOrderOrZero()) {
 				// Reconnect this handle, not a new route-only session at the same endpoint.
-				client = new CUpDownClient(
-					port, address.ToIPv4NetworkOrderOrZero(), 0, 0, nullptr, true, true);
+				client = new CUpDownClient(port,
+					HybridIDOfIPv4(address.ToIPv4NetworkOrderOrZero()),
+					0,
+					0,
+					nullptr,
+					false,
+					true);
 				client->SetIP(address.ToIPv4NetworkOrderOrZero());
 				client->SetUserName(name);
 				client->BindChatPeer(peer);
