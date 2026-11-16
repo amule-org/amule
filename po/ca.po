@@ -941,7 +941,8 @@ msgstr "Missatges"
 msgid "Statistics"
 msgstr "Estadístiques"
 
-#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "Preferències"
 
@@ -6151,7 +6152,8 @@ msgid "Support Protocol Obfuscation"
 msgstr "Suport per a l'ofuscació de protocol"
 
 #: src/muuli_wdr.cpp
-msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
+#, fuzzy
+msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
 msgstr "Habilita l'ofuscació de protocol, i permet a l'aMule acceptar connexions ofuscades d'altres clients."
 
 #: src/muuli_wdr.cpp

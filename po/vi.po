@@ -915,7 +915,8 @@ msgstr "Tin nhắn"
 msgid "Statistics"
 msgstr "Thống kê"
 
-#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "Tùy chọn"
 
@@ -6126,7 +6127,8 @@ msgid "Support Protocol Obfuscation"
 msgstr "Hỗ trợ che giấu giao thức"
 
 #: src/muuli_wdr.cpp
-msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
+#, fuzzy
+msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
 msgstr "Tùy chọn này bật tính năng che giấu giao thức và khiến aMule chấp nhận các kết nối đã bị che giấu từ các client khác."
 
 #: src/muuli_wdr.cpp

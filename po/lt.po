@@ -929,7 +929,8 @@ msgstr "Žinutės"
 msgid "Statistics"
 msgstr "Statistika"
 
-#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "Parinktys"
 
@@ -6219,7 +6220,8 @@ msgid "Support Protocol Obfuscation"
 msgstr "Įjungti protokolo slėpimą"
 
 #: src/muuli_wdr.cpp
-msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
+#, fuzzy
+msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
 msgstr "Ši parinktis įjungia protokolo slėpimą. Tuomet aMule priiminės slepiamus ryšius iš kitų klientų."
 
 #: src/muuli_wdr.cpp

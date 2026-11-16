@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-15 14:13+0000\n"
+"PO-Revision-Date: 2026-11-16 19:37+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
@@ -399,14 +399,13 @@ msgid "Finishing shutdown..."
 msgstr "Dokončování vypnutí..."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not read the EC password: %s"
-msgstr "Nepodařilo se uložit heslo amuleapi: %s"
+msgstr "Nepodařilo se číst heslo EC: %s"
 
 #: src/amule.cpp src/ExternalConnector.cpp
-#, fuzzy
 msgid "The EC password must not be empty."
-msgstr "Heslo EC nebylo změněno."
+msgstr "Heslo EC nesmí být prázdné."
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
@@ -861,19 +860,16 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Síť Kad je v nastavení zakázána, připojení nebude navázáno."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr "CHYBA: Démona aMule nelze používat se zakázanými externími připojeními. Externí připojení povolíte pomocí běžné aplikace aMule, spuštěním amuled s přepínačem --ec-config nebo nastavením klíče \"AcceptExternalConnections\" na hodnotu 1 v souboru ~/.aMule/amule.conf"
+msgstr "CHYBA: Démona aMule nelze používat se zakázanými externími připojeními. Externí připojení povolíte pomocí běžné aplikace aMule, spuštěním amuled jednorázově s přepínačem --set-ec-pass-stdin nebo nastavením klíče \"AcceptExternalConnections\" na hodnotu 1 v souboru ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
-msgstr "CHYBA: EC heslo je vyžadováno. Spusťte amuled --ec-config pro jeho nastavení."
+msgstr "CHYBA: heslo EC je vyžadováno. Spusťte amuled --set-ec-pass-stdin pro jeho nastavení."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "CHYBA: Neplatný ECPasswordVerifier v amule.conf. Spusťte amuled --ec-config pro nastavení nového EC hesla."
+msgstr "CHYBA: Neplatný ECPasswordVerifier v amule.conf. Spusťte amuled --set-ec-pass-stdin pro nastavení nového hesla EC."
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -939,7 +935,8 @@ msgstr "Zprávy"
 msgid "Statistics"
 msgstr "Statistiky"
 
-#: src/amuleDlg.cpp src/PrefsUnifiedDlg.cpp src/utils/wxCas/src/wxcasprefs.cpp
+#: src/amuleDlg.cpp src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
+#: src/utils/wxCas/src/wxcasprefs.cpp
 msgid "Preferences"
 msgstr "Nastavení"
 
@@ -2449,16 +2446,16 @@ msgstr "Neplatný odkaz eD2k! CHYBA: %s"
 
 #: src/ECClientPassword.h
 msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
-msgstr ""
+msgstr "[EC]/Password a [EC]/PasswordMD5 nemohou být vyplněné zároveň; odeberte jedno"
 
 #: src/ECClientPassword.h
 msgid "To replace both, run amulecmd -w --password-stdin."
-msgstr ""
+msgstr "Chcete-li nahradit obě, spusťte amulecmd -w --password-stdin."
 
 #: src/ECClientPassword.h
 #, c-format
 msgid "Cannot save %s; using its migrated password for this run only."
-msgstr ""
+msgstr "Nelze uložit %s; používám jejich migrované heslo pouze pro tento běh."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -3013,6 +3010,10 @@ msgid ""
 "\n"
 "Exiting...\n"
 msgstr ""
+"Nelze se připojit s prázdným heslem.\n"
+"Nastavte jedno pomocí --set-ec-pass-stdin.\n"
+"\n"
+"Ukončování...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3028,7 +3029,7 @@ msgstr "Port externího připojení aMule. (výchozí: 4712)"
 
 #: src/ExternalConnector.cpp
 msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
-msgstr ""
+msgstr "Přečíst heslo externího připojení z první řádky stdin (skryté na terminálu)."
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3067,9 +3068,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "Nezapisovat soubor logu; vypisovat jen do konzole."
 
 #: src/ExternalConnector.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cannot read the password: %s\n"
-msgstr "Nepodařilo se uložit heslo amuleapi: %s"
+msgstr "Nelze číst heslo: %s\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -5132,9 +5133,8 @@ msgid "This specifies the language used on controls."
 msgstr "Určuje jazyk používaný v ovládacích prvcích."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Startup"
-msgstr "Spustit"
+msgstr "Spuštění"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5157,9 +5157,8 @@ msgid "Enabling this makes aMule minimize itself upon start."
 msgstr "Po povolení se aMule při spuštění minimalizuje."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Links"
-msgstr "Odkaz"
+msgstr "Odkazy"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5175,7 +5174,7 @@ msgstr "Otevřením kolekce se do fronty zařadí každý eD2k odkaz, který obs
 
 #: src/muuli_wdr.cpp
 msgid "Behavior"
-msgstr ""
+msgstr "Chování"
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -6022,13 +6021,12 @@ msgid "Guest password"
 msgstr "Heslo hosta"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Search settings"
-msgstr "Vyhledávání"
+msgstr "Nastavení vyhledávání"
 
 #: src/muuli_wdr.cpp
 msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
-msgstr ""
+msgstr "Najít volbu podle názvu. Odpovídající stránky zůstávají v seznamu níže, a na nich odpovídající volby jsou zobrazeny tučným písmem."
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -6156,19 +6154,20 @@ msgstr "Doporučuje se tuto možnost povolit. Pokud SUI není povoleno, nebudete
 
 #: src/muuli_wdr.cpp
 msgid "Protocol Obfuscation"
-msgstr "Obfuskace protokolu"
+msgstr "Zamaskování protokolu"
 
 #: src/muuli_wdr.cpp
 msgid "Support Protocol Obfuscation"
-msgstr "Podporovat obfuskaci protokolu"
+msgstr "Podporovat zamaskování protokolu"
 
 #: src/muuli_wdr.cpp
-msgid "This option enabled Protocol Obfuscation, and makes aMule accept obfuscated connections from other clients."
+#, fuzzy
+msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
 msgstr "Tato možnost zapíná zamaskování protokolu a nastavuje aMule tak, aby přijímal zamaskovaná připojení od ostatních klientů."
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"
-msgstr "Používat obfuskaci protokolu pro odchozí připojení"
+msgstr "Používat zamaskování protokolu pro odchozí připojení"
 
 #: src/muuli_wdr.cpp
 msgid "This option makes aMule use Protocol Obfuscation when connecting other clients/servers."
@@ -7132,7 +7131,7 @@ msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
-msgstr ""
+msgstr "Vaše přezdívka a jazyk, jak je aMule spouštěn a ukončován, a programy, ve kterých otevírá odkazy a náhledy."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -7140,7 +7139,7 @@ msgstr "Rozhraní"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
-msgstr ""
+msgstr "Vzhled, název okna a jak jsou vykresleny seznamy přenosů."
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
@@ -7148,7 +7147,7 @@ msgstr "Připojení"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
-msgstr ""
+msgstr "Kapacita linky, omezení šířky pásma, porty a sítě ke kterým se aMule připojí."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -7156,7 +7155,7 @@ msgstr "Proxy"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Send aMule's connections through a proxy server."
-msgstr ""
+msgstr "Odeslat připojení aMule skrze proxy server."
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -7164,7 +7163,7 @@ msgstr "Servery"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
-msgstr ""
+msgstr "Jak aMule udržuje seznam serverů eD2k a vybírá servery, ke kterým se připojí."
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
@@ -7172,16 +7171,15 @@ msgstr "Adresáře"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Where downloads are stored and which folders you share."
-msgstr ""
+msgstr "Kde jsou stažené soubory ukládány a které složky jsou sdíleny."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Where the core's folders can be reached from this computer."
-msgstr "Kde je stejná složka dostupná z tohoto počítače, např. umístění na které je připojena síťově sdílená složka"
+msgstr "Kde lze najít složky jádra z tohoto počítače."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How downloads and uploads are handled, corruption recovery and media details."
-msgstr ""
+msgstr "Jak jsou řešena stahování a odesílání, obnova porušených dat a detaily médií."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Events"
@@ -7189,11 +7187,11 @@ msgstr "Události"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Run your own commands when something happens in aMule."
-msgstr ""
+msgstr "Spusťte své vlastní příkazy, když se něco stane v aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Graph timing and colors, and what the statistics tree shows."
-msgstr ""
+msgstr "Načasování grafů a barvy, a co ukazuje strom statistik."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
@@ -7201,7 +7199,7 @@ msgstr "Filtry"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Keep spam and unwanted words out of your chat messages and file comments."
-msgstr ""
+msgstr "Zbavte se nechtěných slov ve zprávách chatu a v komentářích u souborů."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -7209,7 +7207,7 @@ msgstr "Bezpečnost"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
-msgstr ""
+msgstr "Bezpečná identifikace, zamaskování protokolu, filtrování IP a kdo může procházet vaše sdílené soubory."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
@@ -7217,7 +7215,7 @@ msgstr "Vzdálené ovládání"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Let amulegui, amuleapi and other tools control aMule."
-msgstr ""
+msgstr "Nechte amulegui, amuleapi a další nástroje ovládat aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
@@ -7225,7 +7223,7 @@ msgstr "Online podpis"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Save aMule's status to a file that other programs can show."
-msgstr ""
+msgstr "Uložte stav aMule do souboru, který mohou jiné programy zobrazit."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
@@ -7233,7 +7231,7 @@ msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Show each client's country, looked up in a GeoIP database."
-msgstr ""
+msgstr "Zobrazit zemi každého z klientů, která je zjištěna pomocí databáze GeoIP."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
@@ -7241,16 +7239,15 @@ msgstr "Pokročilé"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
-msgstr ""
+msgstr "Míry připojení, hledání zdrojů, mezipaměti a fronty, pro jemné ladění."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "Ladění"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose which kinds of debug messages are written to the log."
-msgstr "Text přijatých zpráv bude také zapsán do logu."
+msgstr "Vyberte druhy zpráv ladění, které budou zapisovány do logu."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7278,7 +7275,7 @@ msgstr "Nepodařilo se propojit Cfg s prvkem s ID %d a klíčem %s"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "No settings match \"%s\". Try a shorter or different word."
-msgstr ""
+msgstr "Žádné volby neodpovídají \"%s\". Zkuste kratší nebo jiný slovo."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -7364,7 +7361,7 @@ msgstr "- Rozhraní externího připojení bylo změněno.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Protocol obfuscation support changed.\n"
-msgstr "- Podpora obfuskace protokolu byla změněna.\n"
+msgstr "- Podpora zamaskování protokolu byla změněna.\n"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "- Proxy settings changed (needed for HTTP transfers).\n"
@@ -8416,7 +8413,7 @@ msgstr "IP adresa serveru %s (%s) je filtrovaná. Připojení nebude navázáno.
 
 #: src/ServerSocket.cpp
 msgid "using protocol obfuscation."
-msgstr "s použitím obfuskace protokolu."
+msgstr "s použitím zamaskování protokolu."
 
 #: src/ServerSocket.cpp
 #, c-format
@@ -10657,9 +10654,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "Zamítnuta změna EC hesla; nepodařilo se uložit ECPasswordVerifier. Aktivní přihlašovací údaj nebyl změněn."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "ECPassword obsahuje digest, který je neplatný nebo má prázdné heslo. Pro nastavení nového EC hesla spusťte amuled --ec-config."
+msgstr "ECPassword obsahuje digest, který je neplatný nebo má prázdné heslo. Pro nastavení nového EC hesla spusťte amuled --set-ec-pass-stdin."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."
