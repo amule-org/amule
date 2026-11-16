@@ -91,6 +91,53 @@ def type7_tags(tcp_port, pointer_repeats=False):
     return tags
 
 
+def pointer_record(file_id, tcp_port):
+    """A publish whose key is the bitwise NOT of its own source ID, which is what marks a pointer.
+
+    The key stays the daemon's own Kad ID, so the publish still passes the store tolerance.
+    """
+    tags = [tag(TAG_SOURCETYPE, 0x09, 3), tag(TAG_SOURCEPORT, 0x08, tcp_port),
+            tag(TAG_FILESIZE, 0x03, FILE_SIZE)]
+    source_id = bytes(~b & 0xFF for b in file_id)
+    return (KADEMLIA2_PUBLISH_SOURCE_REQ,
+            file_id + source_id + bytes([len(tags)]) + b''.join(tags))
+
+
+def pointer_tagged_record(file_id, tcp_port):
+    """A classic type 3 record carrying the pointer marker, which storers keep only with a key."""
+    tags = [tag(TAG_SOURCETYPE, 0x09, 3), tag(TAG_SOURCEPORT, 0x08, tcp_port),
+            tag(TAG_FILESIZE, 0x03, FILE_SIZE), tag(b'bpv', 0x09, 1)]
+    return source_publish(file_id, tags)
+
+
+def drop_unkeyed_pointer_records(binary):
+    """Neither the pointer marker nor a pointer key survives a publish that proves no sender.
+
+    Its own daemon again: the publish bucket is 2 a minute per IP, and these are two more. The log
+    line is the whole assertion: it is written where the handler returns, before anything is
+    indexed and before a response goes back, and a search with nothing stored simply never answers.
+    """
+    with tempfile.TemporaryDirectory(prefix='kad-pointer-drop-') as directory:
+        root = Path(directory)
+        with running_kad_daemon(binary, root, console='stdout.log', VerboseDebug=1, VerboseDebugLogfile=1,
+                                sections={'Debug': {'Cat_Client Kademlia UDP': 1},
+                                          'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, ec, udp_port, _unused):
+            file_id = kad_id(ec, proc, root)
+            for (opcode, body), expected in (
+                    (pointer_tagged_record(file_id, 4201),
+                     'Dropped Kad2 source publish of type 3 with a pointer tag from 127.0.0.1:{port}: '
+                     'the receiver key did not prove the sender'),
+                    (pointer_record(file_id, 4202),
+                     'Dropped Kad2 source publish of type 3 at a pointer key from 127.0.0.1:{port}: '
+                     'the receiver key did not prove the sender')):
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
+                    peer.bind(('127.0.0.1', 0))
+                    peer.sendto(bytes([0xE4, opcode]) + body, ('127.0.0.1', udp_port))
+                    line = expected.format(port=peer.getsockname()[1]) + '\n'
+                    wait_for(proc, f'the log line {line!r}',
+                             lambda: line in (root / 'logfile').read_text(errors='replace'), 10, interval=0.05)
+
+
 def drop_unkeyed_requests(binary):
     """What must prove its sender is dropped when the receiver key does not, and nothing else is.
 
@@ -162,8 +209,9 @@ def run(binary):
             indexed = search(udp_port, file_id)
             assert len(indexed) == 2, f'{len(indexed)} of 2 publishes were indexed'
     drop_unkeyed_requests(binary)
-    print('each request logged its result, the unkeyed firewall2 check and type 7 publish were '
-          'dropped, and the keyed publishes were indexed')
+    drop_unkeyed_pointer_records(binary)
+    print('each request logged its result, the unkeyed firewall2 check and the type 7, pointer-tag '
+          'and pointer-key publishes were dropped, and the keyed publishes were indexed')
 
 
 if __name__ == '__main__':
