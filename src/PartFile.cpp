@@ -2022,11 +2022,11 @@ void CPartFile::AddSources(CMemFile &sources,
 		return;
 	}
 
-	const auto logIgnoredSource = [this](uint32 hybridID, uint16 port, const char *reason) {
+	const auto logIgnoredSource = [this](uint32 userid, bool isAddress, uint16 port, const char *reason) {
 		AddDebugLogLineN(logPartFile,
 			CFormat("Ignored source %s:%u of '%s': %s") %
-				(IsLowID(hybridID) ? wxString(CFormat("LowID %u") % hybridID)
-						   : Uint32toStringIP(wxUINT32_SWAP_ALWAYS(hybridID))) %
+				(isAddress ? Uint32toStringIP(userid)
+					   : wxString(CFormat("LowID %u") % userid)) %
 				port % GetFileName().GetPrintable() % reason);
 	};
 
@@ -2094,6 +2094,8 @@ void CPartFile::AddSources(CMemFile &sources,
 #endif
 
 		const uint32 userid = parsed.record.userid;
+		// A link names an address; a server record may be a LowID.
+		const bool isAddress = origin == SF_LINK || !IsLowID(userid);
 		const uint32 hybridID = SourceHybridID(userid, origin == SF_LINK);
 		const uint16 port = parsed.record.port;
 		const uint8 byCryptOptions = parsed.record.cryptOptions;
@@ -2122,15 +2124,17 @@ void CPartFile::AddSources(CMemFile &sources,
 		}
 
 		// "Filter LAN IPs" and "IPfilter" the received sources IP addresses
-		if (!IsLowID(hybridID)) {
+		if (isAddress) {
 			// check for 0-IP, localhost and optionally for LAN addresses
 			if (!IsGoodIP(userid, thePrefs::FilterLanIPs())) {
-				logIgnoredSource(
-					hybridID, port, "invalid, or a LAN address while FilterLanIPs is on");
+				logIgnoredSource(userid,
+					true,
+					port,
+					"invalid, or a LAN address while FilterLanIPs is on");
 				continue;
 			}
 			if (theApp->ipfilter->IsFiltered(userid)) {
-				logIgnoredSource(hybridID, port, "IP filtered");
+				logIgnoredSource(userid, true, port, "IP filtered");
 				continue;
 			}
 		}
@@ -2142,7 +2146,8 @@ void CPartFile::AddSources(CMemFile &sources,
 			    &debug_lowiddropped,
 			    false,
 			    keepLowIdSources)) {
-			logIgnoredSource(hybridID,
+			logIgnoredSource(userid,
+				isAddress,
 				port,
 				"our own address, a LowID of 0, or a LowID while we are firewalled");
 			continue;
