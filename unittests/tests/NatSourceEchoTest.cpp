@@ -25,6 +25,8 @@
 
 #include "NatSourceEcho.h"
 
+#include <protocol/Protocols.h>
+
 using namespace muleunit;
 using namespace NatSourceEcho;
 
@@ -70,7 +72,12 @@ TEST(NatSourceEcho, OnlyADatagramThatFailedEveryKeyCounts)
 	ASSERT_FALSE(FailedEveryKey(0x01, 20, true));
 	ASSERT_FALSE(FailedEveryKey(0x01, kCryptHeaderBytes, false));
 	// DecryptReceivedClient() passes these through untried, so they are no failed key.
-	for (std::uint8_t plain : { 0xC5, 0xE5, 0xE4, 0xA3, 0xB2, 0xD4 }) {
+	for (std::uint8_t plain : { OP_EMULEPROT,
+		     OP_KADEMLIAPACKEDPROT,
+		     OP_KADEMLIAHEADER,
+		     OP_UDPRESERVEDPROT1,
+		     OP_UDPRESERVEDPROT2,
+		     OP_PACKEDPROT }) {
 		ASSERT_FALSE(FailedEveryKey(plain, 20, false));
 	}
 }
@@ -97,7 +104,7 @@ TEST(NatSourceEcho, EchoesOncePerWindowToAPunchedSourceWithAHash)
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 20).has_value());
 	// A plain datagram or one that decoded never triggers one.
 	punched.EchoNotSent(kSplit, 4672, 20);
-	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0xC5, 20, false, 30).has_value());
+	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, OP_EMULEPROT, 20, false, 30).has_value());
 	ASSERT_FALSE(punched.TakeEcho(kSplit, 4672, 0x01, 20, true, 30).has_value());
 	ASSERT_TRUE(punched.TakeEcho(kSplit, 4672, 0x01, 20, false, 30).has_value());
 	// The window closes 30 s after the punch.

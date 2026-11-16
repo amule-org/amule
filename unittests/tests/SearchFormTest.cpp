@@ -31,30 +31,40 @@ DECLARE_SIMPLE(SearchForm)
 
 namespace
 {
-CECTag RecordedForm()
+// A search from a daemon that predates recorded forms.
+CECTag LegacyForm(const wxString &name)
 {
 	CECTag entry(EC_TAG_SEARCH_ID, uint32_t(42));
-	entry.AddTag(EC_TAG_SEARCH_NAME, wxString::FromUTF8("曲 AND OR NOT (12)"));
-	entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND, uint64_t(AllSearch));
+	entry.AddTag(EC_TAG_SEARCH_NAME, name);
+	entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND, uint64_t(GlobalSearch));
+	return entry;
+}
+
+CECTag RecordedForm(
+	const wxString &name = wxString::FromUTF8("曲 AND OR NOT (12)"), uint64_t kind = AllSearch)
+{
+	CECTag entry(EC_TAG_SEARCH_ID, uint32_t(42));
+	entry.AddTag(EC_TAG_SEARCH_NAME, name);
+	entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND, kind);
 	entry.AddTag(EC_TAG_SEARCH_MIN_SIZE, uint64_t(0));
 	entry.AddTag(EC_TAG_SEARCH_MAX_SIZE, uint64_t(0));
 	entry.AddTag(EC_TAG_SEARCH_AVAILABILITY, uint32_t(0));
 	return entry;
 }
 
-CECTag WithoutField(ec_tagname_t omitted)
+CECTag WithoutField(ec_tagname_t omitted, const CECTag &form = RecordedForm())
 {
 	CECTag entry(EC_TAG_SEARCH_ID, uint32_t(42));
-	for (const auto &field : RecordedForm()) {
+	for (const auto &field : form) {
 		if (field.GetTagName() != omitted)
 			entry.AddTag(field);
 	}
 	return entry;
 }
 
-CECTag WithField(const CECTag &field)
+CECTag WithField(const CECTag &field, const CECTag &form = RecordedForm())
 {
-	auto entry = WithoutField(field.GetTagName());
+	auto entry = WithoutField(field.GetTagName(), form);
 	entry.AddTag(field);
 	return entry;
 }
@@ -120,10 +130,7 @@ TEST(SearchForm, RejectOverflowAndInvalidNumbers)
 
 TEST(SearchForm, DefaultsAreRecordedButLegacySearchesAreNot)
 {
-	CECTag legacy(EC_TAG_SEARCH_ID, uint32_t(42));
-	legacy.AddTag(EC_TAG_SEARCH_NAME, wxString("query"));
-	legacy.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND, uint64_t(GlobalSearch));
-	ASSERT_TRUE(!DecodeSearchForm(legacy).has_value());
+	ASSERT_TRUE(!DecodeSearchForm(LegacyForm("query")).has_value());
 	const auto form = DecodeSearchForm(RecordedForm());
 	ASSERT_TRUE(form.has_value());
 	ASSERT_TRUE(!SearchFormHasFilters(form->params));
@@ -175,33 +182,16 @@ TEST(SearchForm, RejectWrongTypesAndOutOfRangeMedia)
 	entry = RecordedForm();
 	entry.AddTag(EC_TAG_SEARCH_MIN_BITRATE, wxString("320"));
 	ASSERT_TRUE(!DecodeSearchForm(entry).has_value());
-	CECTag malformed(EC_TAG_SEARCH_ID, uint32_t(42));
-	malformed.AddTag(EC_TAG_SEARCH_NAME, wxString("query"));
-	malformed.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND, uint64_t(GlobalSearch));
-	malformed.AddTag(EC_TAG_SEARCH_MIN_SIZE, wxString("0"));
-	malformed.AddTag(EC_TAG_SEARCH_MAX_SIZE, uint64_t(0));
-	malformed.AddTag(EC_TAG_SEARCH_AVAILABILITY, uint32_t(0));
+	const auto malformed =
+		WithField(CECTag(EC_TAG_SEARCH_MIN_SIZE, wxString("0")), RecordedForm("query", GlobalSearch));
 	ASSERT_TRUE(!DecodeSearchForm(malformed).has_value());
 }
 
 TEST(SearchForm, BrowseAndRelatedAreNotSearchForms)
 {
-	CECTag entry(EC_TAG_SEARCH_ID, uint32_t(42));
-	entry.AddTag(EC_TAG_SEARCH_NAME, wxString("related::0123456789ABCDEF"));
-	entry.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND, uint64_t(KadSearch));
-	entry.AddTag(EC_TAG_SEARCH_MIN_SIZE, uint64_t(0));
-	entry.AddTag(EC_TAG_SEARCH_MAX_SIZE, uint64_t(0));
-	entry.AddTag(EC_TAG_SEARCH_AVAILABILITY, uint32_t(0));
-	ASSERT_TRUE(!DecodeSearchForm(entry).has_value());
-	for (const uint64_t type : { uint64_t(BrowseSearch), uint64_t(3) }) {
-		CECTag browse(EC_TAG_SEARCH_ID, uint32_t(42));
-		browse.AddTag(EC_TAG_SEARCH_NAME, wxString("peer"));
-		browse.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND, uint64_t(type));
-		browse.AddTag(EC_TAG_SEARCH_MIN_SIZE, uint64_t(0));
-		browse.AddTag(EC_TAG_SEARCH_MAX_SIZE, uint64_t(0));
-		browse.AddTag(EC_TAG_SEARCH_AVAILABILITY, uint32_t(0));
-		ASSERT_TRUE(!DecodeSearchForm(browse).has_value());
-	}
+	ASSERT_TRUE(!DecodeSearchForm(RecordedForm("related::0123456789ABCDEF", KadSearch)).has_value());
+	for (const uint64_t type : { uint64_t(BrowseSearch), uint64_t(3) })
+		ASSERT_TRUE(!DecodeSearchForm(RecordedForm("peer", type)).has_value());
 }
 
 TEST(SearchForm, FullListingRefreshesExistingAndDropsMissingForms)
@@ -224,11 +214,8 @@ TEST(SearchForm, FullListingRefreshesExistingAndDropsMissingForms)
 			     .SameRequest(CSearchRequest(cache.Get(42)->type, cache.Get(42)->params)));
 	ASSERT_EQUALS(session, cache.GetSession());
 	// A legacy form for the same ID must remove, rather than retain, old filters.
-	CECTag legacy(EC_TAG_SEARCH_ID, uint32_t(42));
-	legacy.AddTag(EC_TAG_SEARCH_NAME, wxString("legacy"));
-	legacy.AddTag(EC_TAG_SEARCH_LIFECYCLE_KIND, uint64_t(GlobalSearch));
 	CECEmptyTag oldDaemon(0);
-	oldDaemon.AddTag(legacy);
+	oldDaemon.AddTag(LegacyForm("legacy"));
 	cache.Replace(oldDaemon);
 	ASSERT_TRUE(cache.Get(42) == nullptr);
 	cache.Replace(listing);

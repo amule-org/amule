@@ -23,12 +23,9 @@
 //
 
 #include <wx/wx.h>
-#include <wx/fileconf.h>
-#include <wx/mstream.h>
 #include "MuleVirtualDataViewCtrl.h"
 #include "GuiTestDiagnostics.h"
 #include "NativeListTest.h"
-#include "Preferences.h"
 
 namespace
 {
@@ -68,54 +65,6 @@ protected:
 	}
 };
 
-class Observer : public wxDataViewModelNotifier
-{
-public:
-	std::vector<unsigned> changed;
-	unsigned resets = 0;
-	bool ItemChanged(const wxDataViewItem &item) override
-	{
-		changed.push_back(static_cast<wxDataViewListModel *>(GetOwner())->GetRow(item));
-		return true;
-	}
-	bool ItemAdded(const wxDataViewItem &, const wxDataViewItem &) override { return true; }
-	bool ItemDeleted(const wxDataViewItem &, const wxDataViewItem &) override { return true; }
-	bool ValueChanged(const wxDataViewItem &, unsigned) override { return true; }
-	bool Cleared() override
-	{
-		++resets;
-		return true;
-	}
-	void Resort() override {}
-};
-struct TestPreferences : CPreferences
-{
-	static void SetLiveSort(bool enabled) { s_liveListSort = enabled; }
-};
-struct LiveSortScope
-{
-	LiveSortScope()
-	: previous(CPreferences::LiveListSort())
-	{
-		TestPreferences::SetLiveSort(true);
-	}
-	~LiveSortScope() { TestPreferences::SetLiveSort(previous); }
-	bool previous;
-};
-
-struct ConfigScope
-{
-	ConfigScope()
-	: input("", 0)
-	, config(input)
-	, previous(wxConfigBase::Set(&config))
-	{
-	}
-	~ConfigScope() { wxConfigBase::Set(previous); }
-	wxMemoryInputStream input;
-	wxFileConfig config;
-	wxConfigBase *previous;
-};
 } // namespace
 
 void RunTests()
@@ -144,7 +93,7 @@ void RunTests()
 	Check(list->GetVisibleRowRange(initialFirst, initialLast) && initialLast >= 3,
 		"Native viewport was not laid out");
 	Check(list->ItemAt(0) == 1 && list->ItemAt(3) == 4, "Fixture is not ascending");
-	auto *observer = new Observer;
+	auto *observer = new ModelObserver;
 	list->GetModel()->AddNotifier(observer); // Owned by the model.
 	auto *model = static_cast<wxDataViewVirtualListModel *>(list->GetModel());
 	list->SetSelectedItemData({ 2 });
@@ -307,7 +256,7 @@ void RunTests()
 		list->values[4] = -1;
 		list->RefreshItemData(4);
 		wxTheApp->ProcessPendingEvents();
-		TestPreferences::SetLiveSort(false);
+		LiveSortScope::Set(false);
 		list->EndBatchUpdate(false);
 		wxTheApp->ProcessPendingEvents();
 		Check(list->ItemAt(0) == 1, "Deferred sort ignored the disabled live-sort preference");

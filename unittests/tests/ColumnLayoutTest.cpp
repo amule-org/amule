@@ -23,8 +23,6 @@
 //
 
 #include <wx/wx.h>
-#include <wx/fileconf.h>
-#include <wx/mstream.h>
 #include <wx/menu.h>
 #include "MuleVirtualDataViewCtrl.h"
 #include "GuiTestDiagnostics.h"
@@ -82,20 +80,6 @@ protected:
 		++widthChanges;
 		CMuleDataViewCtrl::OnColumnWidthsChanged();
 	}
-};
-class ConfigScope
-{
-public:
-	ConfigScope()
-	: input("", 0)
-	, config(input)
-	, previous(wxConfigBase::Set(&config))
-	{
-	}
-	~ConfigScope() { wxConfigBase::Set(previous); }
-	wxMemoryInputStream input;
-	wxFileConfig config;
-	wxConfigBase *previous;
 };
 } // namespace
 

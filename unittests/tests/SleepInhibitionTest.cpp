@@ -56,7 +56,11 @@ void PumpLogs()
 	}
 }
 
-template <typename Predicate> void WaitFor(Predicate predicate, const char *message, unsigned seconds = 12)
+template <typename Predicate>
+void WaitFor(Predicate predicate,
+	const char *message,
+	unsigned seconds = 12,
+	std::chrono::milliseconds poll = std::chrono::milliseconds(10))
 {
 	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(seconds);
 	while (std::chrono::steady_clock::now() < deadline) {
@@ -64,7 +68,7 @@ template <typename Predicate> void WaitFor(Predicate predicate, const char *mess
 		if (predicate()) {
 			return;
 		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		std::this_thread::sleep_for(poll);
 	}
 	Check(false, message);
 }
@@ -364,19 +368,18 @@ private:
 	std::vector<GDBusMethodInvocation *> pending;
 };
 
+// Each poll asks again, as the core's timer does.
 void WaitForRecovery(Service &service, bool portal)
 {
-	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(12);
-	while (std::chrono::steady_clock::now() < deadline) {
-		PlatformSpecific::PreventSleepMode();
-		PumpLogs();
-		const State state = service.Read();
-		if ((portal ? state.portal : state.direct).size() == 1) {
-			return;
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(50));
-	}
-	Check(false, "sleep inhibition did not recover without a policy toggle");
+	WaitFor(
+		[&] {
+			PlatformSpecific::PreventSleepMode();
+			const State state = service.Read();
+			return (portal ? state.portal : state.direct).size() == 1;
+		},
+		"sleep inhibition did not recover without a policy toggle",
+		12,
+		std::chrono::milliseconds(50));
 }
 
 void RestartService(Service &service, const char *address, bool portal)

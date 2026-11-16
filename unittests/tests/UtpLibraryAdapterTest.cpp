@@ -1466,12 +1466,14 @@ void DeliverSyn(SLoopback &loop, const uint8_t *preHelloKey)
 }
 
 //! The client sends one byte so the server's socket leaves SYN_RECV and acknowledges it.
-void ClientSendsAByte(SLoopback &loop)
+//! Returns what utp_writev() took.
+ssize_t ClientSendsAByte(SLoopback &loop)
 {
 	const uint8_t payload = 0xA5;
 	utp_iovec vector{ const_cast<uint8_t *>(&payload), 1 };
-	utp_writev(loop.clientSocket, &vector, 1);
+	const ssize_t written = utp_writev(loop.clientSocket, &vector, 1);
 	Pump(loop);
+	return written;
 }
 } // namespace
 
@@ -1670,10 +1672,7 @@ TEST(UtpLibraryAdapter, AnAcceptedStreamIsHalfOpenUntilItsPeerSendsData)
 	loop.server->ProcessDatagram(syn.data(), syn.size(), kPeerIp, kPeerPort + 7, loop.nowMs);
 	ASSERT_EQUALS(1, (int)acceptor.lastHalfOpen);
 
-	uint8_t payload = 0x5A;
-	utp_iovec vector{ &payload, 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
+	ASSERT_EQUALS(1, (int)ClientSendsAByte(loop));
 	ASSERT_TRUE(first->IsConnected());
 	ASSERT_FALSE(acceptor.accepted->IsConnected());
 	Teardown(loop);
@@ -1768,10 +1767,7 @@ TEST(UtpLibraryAdapter, AHalfOpenStreamIsEndedAtTheFirstSynAfterItsLimit)
 	Pump(loop);
 	const std::unique_ptr<IStreamTransport> honest = std::move(acceptor.accepted);
 	ASSERT_TRUE(honest != nullptr);
-	uint8_t payload = 0x5A;
-	utp_iovec vector{ &payload, 1 };
-	ASSERT_EQUALS(1, (int)utp_writev(loop.clientSocket, &vector, 1));
-	Pump(loop);
+	ASSERT_EQUALS(1, (int)ClientSendsAByte(loop));
 	ASSERT_TRUE(honest->IsConnected());
 
 	// Its SYN-ACK goes nowhere, so its peer never speaks.

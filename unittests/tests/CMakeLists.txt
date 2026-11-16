@@ -55,11 +55,18 @@ foreach (logger_test IN ITEMS LoggerRuntimeTest LoggerConsoleRuntimeTest)
 	add_test (NAME ${logger_test} COMMAND ${logger_test})
 endforeach ()
 
+# A muleunit test of one source file plus any production sources it needs.
+function (add_muleunit_test name)
+	add_executable (${name} ${name}.cpp ${ARGN})
+	target_include_directories (${name} PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+	)
+	target_link_libraries (${name} muleunit mulecommon)
+	add_test (NAME ${name} COMMAND ${name})
+endfunction ()
+
 # Config migration, downgrade compatibility and the shared core sleep policy.
-add_executable (PowerManagementTest PowerManagementTest.cpp)
-target_include_directories (PowerManagementTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries (PowerManagementTest muleunit mulecommon)
-add_test (NAME PowerManagementTest COMMAND PowerManagementTest)
+add_muleunit_test (PowerManagementTest)
 
 # Shared application anchors for headless tests that link production core code.
 function (add_application_test_stubs target)
@@ -266,27 +273,13 @@ target_include_directories (KadBuddyRetryTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (KadBuddyRetryTest muleunit mulecommon)
 
 # Buddy counter peaks and the relay log summary.
-add_executable (KadBuddyStatsTest KadBuddyStatsTest.cpp)
-add_test (NAME KadBuddyStatsTest COMMAND KadBuddyStatsTest)
-target_include_directories (KadBuddyStatsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries (KadBuddyStatsTest muleunit mulecommon)
+add_muleunit_test (KadBuddyStatsTest)
 
 # How many buddies a node serves, the NAT-T slots and who is admitted.
-add_executable (KadServedBuddyPolicyTest KadServedBuddyPolicyTest.cpp)
-add_test (NAME KadServedBuddyPolicyTest COMMAND KadServedBuddyPolicyTest)
-target_include_directories (KadServedBuddyPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries (KadServedBuddyPolicyTest muleunit mulecommon)
+add_muleunit_test (KadServedBuddyPolicyTest)
 
 # When a firewalled node searches for a buddy and which target it looks up.
-add_executable (KadBuddySearchPolicyTest
-	KadBuddySearchPolicyTest.cpp
-	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
-)
-add_test (NAME KadBuddySearchPolicyTest COMMAND KadBuddySearchPolicyTest)
-target_include_directories (KadBuddySearchPolicyTest PRIVATE
-	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
-)
-target_link_libraries (KadBuddySearchPolicyTest muleunit mulecommon)
+add_muleunit_test (KadBuddySearchPolicyTest ${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp)
 
 # The Kad firewall state across an hourly recheck, with the clock passed in.
 add_executable (KadFirewallRecheckTest KadFirewallRecheckTest.cpp)
@@ -399,15 +392,9 @@ add_test (NAME AdvertisedIPv6Test COMMAND AdvertisedIPv6Test)
 target_include_directories (AdvertisedIPv6Test PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (AdvertisedIPv6Test muleunit mulecommon)
 
-add_executable (IPv6ReachabilityProofTest IPv6ReachabilityProofTest.cpp)
-add_test (NAME IPv6ReachabilityProofTest COMMAND IPv6ReachabilityProofTest)
-target_include_directories (IPv6ReachabilityProofTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries (IPv6ReachabilityProofTest muleunit mulecommon)
+add_muleunit_test (IPv6ReachabilityProofTest)
 
-add_executable (ServerIPv6VerdictTest ServerIPv6VerdictTest.cpp)
-add_test (NAME ServerIPv6VerdictTest COMMAND ServerIPv6VerdictTest)
-target_include_directories (ServerIPv6VerdictTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries (ServerIPv6VerdictTest muleunit mulecommon)
+add_muleunit_test (ServerIPv6VerdictTest)
 
 
 # Credit identity and wait ownership run without the application. The test supplies
@@ -519,11 +506,7 @@ target_compile_features (NatKeyFrameTest PRIVATE cxx_std_17)
 target_link_libraries (NatKeyFrameTest muleunit mulecommon)
 add_test (NAME NatKeyFrameTest COMMAND NatKeyFrameTest)
 
-add_executable (NatSourceEchoTest NatSourceEchoTest.cpp)
-target_include_directories (NatSourceEchoTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
-target_compile_features (NatSourceEchoTest PRIVATE cxx_std_17)
-target_link_libraries (NatSourceEchoTest muleunit mulecommon)
-add_test (NAME NatSourceEchoTest COMMAND NatSourceEchoTest)
+add_muleunit_test (NatSourceEchoTest)
 
 add_executable (UdpObfuscationPolicyTest UdpObfuscationPolicyTest.cpp)
 target_include_directories (UdpObfuscationPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR})
@@ -1142,24 +1125,7 @@ target_link_libraries (PrefsPageRowsTest
 
 # Matching for the preferences search box: case- and accent-insensitive, every
 # word required. Header-only, so it needs nothing beyond wxBase.
-add_executable (PrefsSearchTest
-	PrefsSearchTest.cpp
-)
-
-add_test (NAME PrefsSearchTest
-	COMMAND PrefsSearchTest
-)
-
-target_include_directories (PrefsSearchTest
-	PRIVATE ${CMAKE_BINARY_DIR}
-	PRIVATE ${CMAKE_SOURCE_DIR}/src
-	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
-)
-
-target_link_libraries (PrefsSearchTest
-	muleunit
-	mulecommon
-)
+add_muleunit_test (PrefsSearchTest)
 
 # The banned-address record. Owns the map CClientList used to keep inline, and
 # reports whether each operation actually changed it -- which is the whole
@@ -1359,34 +1325,19 @@ target_include_directories (ServerIPv6UpdateTest PRIVATE ${CMAKE_SOURCE_DIR}/src
 target_link_libraries (ServerIPv6UpdateTest muleunit mulecommon)
 
 # What a Kad request without a receiver key means, without the listener or the application.
-add_executable (KadReceiverKeyPolicyTest KadReceiverKeyPolicyTest.cpp)
-add_test (NAME KadReceiverKeyPolicyTest COMMAND KadReceiverKeyPolicyTest)
-target_include_directories (KadReceiverKeyPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
-target_link_libraries (KadReceiverKeyPolicyTest muleunit mulecommon)
+add_muleunit_test (KadReceiverKeyPolicyTest)
 
 # Which copy of a duplicate source keeps the Kad buddy (#2455).
-add_executable (KadBuddyMergePolicyTest KadBuddyMergePolicyTest.cpp)
-add_test (NAME KadBuddyMergePolicyTest COMMAND KadBuddyMergePolicyTest)
-target_include_directories (KadBuddyMergePolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
-target_link_libraries (KadBuddyMergePolicyTest muleunit mulecommon)
+add_muleunit_test (KadBuddyMergePolicyTest)
 
 # Whether a client found by address and port is another peer behind the same NAT.
-add_executable (ClientMatchPolicyTest ClientMatchPolicyTest.cpp)
-add_test (NAME ClientMatchPolicyTest COMMAND ClientMatchPolicyTest)
-target_include_directories (ClientMatchPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
-target_link_libraries (ClientMatchPolicyTest muleunit mulecommon)
+add_muleunit_test (ClientMatchPolicyTest)
 
 # The order a download source's contact routes are tried in, and moving on after a failure.
-add_executable (SourceRoutePolicyTest SourceRoutePolicyTest.cpp)
-add_test (NAME SourceRoutePolicyTest COMMAND SourceRoutePolicyTest)
-target_include_directories (SourceRoutePolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
-target_link_libraries (SourceRoutePolicyTest muleunit mulecommon)
+add_muleunit_test (SourceRoutePolicyTest)
 
 # Which SSDP locations the UPnP control point uses for the port mapping actions.
-add_executable (UPnPLocationPolicyTest UPnPLocationPolicyTest.cpp)
-add_test (NAME UPnPLocationPolicyTest COMMAND UPnPLocationPolicyTest)
-target_include_directories (UPnPLocationPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
-target_link_libraries (UPnPLocationPolicyTest muleunit mulecommon)
+add_muleunit_test (UPnPLocationPolicyTest)
 
 # Canonical address matching for upload-queue UDP lookups, without the application.
 add_executable (UploadQueueAddressPolicyTest
@@ -1625,10 +1576,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	target_compile_definitions (FileAreaTest PRIVATE AMULE_TEST_WRAP_MSYNC=1)
 endif ()
 
-# kadkeywords.dat, on a CMemFile.
-add_executable (KadKeywordPublishTimesTest
-	KadKeywordPublishTimesTest.cpp
-	${CMAKE_SOURCE_DIR}/src/KadKeywordPublishTimes.cpp
+# The tagged files under kadkeywords.dat and kadseeds.dat.
+set (KAD_PUBLISH_FILE_SOURCES
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/CFile.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
@@ -1637,33 +1586,12 @@ add_executable (KadKeywordPublishTimesTest
 	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
 	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
 )
-add_test (NAME KadKeywordPublishTimesTest COMMAND KadKeywordPublishTimesTest)
-target_include_directories (KadKeywordPublishTimesTest PRIVATE
-	${CMAKE_BINARY_DIR}
-	${CMAKE_SOURCE_DIR}/src
-	${CMAKE_SOURCE_DIR}/src/include
-)
-target_link_libraries (KadKeywordPublishTimesTest muleunit mulecommon)
+
+# kadkeywords.dat, on a CMemFile.
+add_muleunit_test (KadKeywordPublishTimesTest ${CMAKE_SOURCE_DIR}/src/KadKeywordPublishTimes.cpp ${KAD_PUBLISH_FILE_SOURCES})
 
 # kadseeds.dat, on a CMemFile.
-add_executable (KadPublishSeedsTest
-	KadPublishSeedsTest.cpp
-	${CMAKE_SOURCE_DIR}/src/KadPublishSeeds.cpp
-	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
-	${CMAKE_SOURCE_DIR}/src/CFile.cpp
-	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
-	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
-	${CMAKE_SOURCE_DIR}/src/Tag.cpp
-	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
-	${CMAKE_SOURCE_DIR}/src/libs/common/Path.cpp
-)
-add_test (NAME KadPublishSeedsTest COMMAND KadPublishSeedsTest)
-target_include_directories (KadPublishSeedsTest PRIVATE
-	${CMAKE_BINARY_DIR}
-	${CMAKE_SOURCE_DIR}/src
-	${CMAKE_SOURCE_DIR}/src/include
-)
-target_link_libraries (KadPublishSeedsTest muleunit mulecommon)
+add_muleunit_test (KadPublishSeedsTest ${CMAKE_SOURCE_DIR}/src/KadPublishSeeds.cpp ${KAD_PUBLISH_FILE_SOURCES})
 
 add_executable (PartFileBufferingTest PartFileBufferingTest.cpp)
 add_test (NAME PartFileBufferingTest COMMAND PartFileBufferingTest)
@@ -2745,6 +2673,18 @@ target_link_libraries (BrowseStoreTest
 )
 
 if (TARGET wxWidgets::CORE)
+    # A one-file wx GUI test; it exits 77 when there is no display.
+    function (add_gui_test name)
+        add_executable (${name} ${name}.cpp)
+        if (WIN32)
+            target_sources (${name} PRIVATE DialogLayoutTest.rc)
+        endif()
+        target_include_directories (${name} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+        target_link_libraries (${name} PRIVATE wxWidgets::CORE)
+        add_test (NAME ${name} COMMAND ${name})
+        set_tests_properties (${name} PROPERTIES SKIP_RETURN_CODE 77)
+    endfunction()
+
     function (add_native_list_test name)
         add_executable (${name}
             ${name}.cpp
@@ -3616,32 +3556,11 @@ if (TARGET wxWidgets::CORE)
 	add_test (NAME SearchMetadataPanelTest COMMAND SearchMetadataPanelTest)
 	set_tests_properties (SearchMetadataPanelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
 
-	add_executable (ConnectionStatusLabelTest ConnectionStatusLabelTest.cpp)
-	if (WIN32)
-		target_sources (ConnectionStatusLabelTest PRIVATE DialogLayoutTest.rc)
-	endif()
-	target_include_directories (ConnectionStatusLabelTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-	target_link_libraries (ConnectionStatusLabelTest PRIVATE wxWidgets::CORE)
-	add_test (NAME ConnectionStatusLabelTest COMMAND ConnectionStatusLabelTest)
-	set_tests_properties (ConnectionStatusLabelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
-
-	add_executable (TransferRateLabelTest TransferRateLabelTest.cpp)
-	if (WIN32)
-		target_sources (TransferRateLabelTest PRIVATE DialogLayoutTest.rc)
-	endif()
-	target_include_directories (TransferRateLabelTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-	target_link_libraries (TransferRateLabelTest PRIVATE wxWidgets::CORE)
-	add_test (NAME TransferRateLabelTest COMMAND TransferRateLabelTest)
-	set_tests_properties (TransferRateLabelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
-
-	add_executable (DownloadPercentageDrawingTest DownloadPercentageDrawingTest.cpp)
-	if (WIN32)
-		target_sources (DownloadPercentageDrawingTest PRIVATE DialogLayoutTest.rc)
-	endif()
-	target_include_directories (DownloadPercentageDrawingTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-	target_link_libraries (DownloadPercentageDrawingTest PRIVATE wxWidgets::CORE)
-	add_test (NAME DownloadPercentageDrawingTest COMMAND DownloadPercentageDrawingTest)
-	set_tests_properties (DownloadPercentageDrawingTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
+	add_gui_test (ConnectionStatusLabelTest)
+	add_gui_test (TransferRateLabelTest)
+	add_gui_test (DownloadPercentageDrawingTest)
+	set_tests_properties (ConnectionStatusLabelTest TransferRateLabelTest
+		DownloadPercentageDrawingTest PROPERTIES LABELS "gui")
 
 	add_executable (DialogLayoutTest DialogLayoutTest.cpp)
 	if (WIN32)
@@ -3666,14 +3585,7 @@ if (TARGET wxWidgets::CORE)
 	target_link_libraries (EditServerListDlgTest PRIVATE wxWidgets::CORE)
 	add_test (NAME EditServerListDlgTest COMMAND EditServerListDlgTest)
 	set_tests_properties (EditServerListDlgTest PROPERTIES SKIP_RETURN_CODE 77)
-	add_executable (BandwidthLimitSliderTest BandwidthLimitSliderTest.cpp)
-	if (WIN32)
-		target_sources (BandwidthLimitSliderTest PRIVATE DialogLayoutTest.rc)
-	endif()
-	target_include_directories (BandwidthLimitSliderTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-	target_link_libraries (BandwidthLimitSliderTest PRIVATE wxWidgets::CORE)
-	add_test (NAME BandwidthLimitSliderTest COMMAND BandwidthLimitSliderTest)
-	set_tests_properties (BandwidthLimitSliderTest PROPERTIES SKIP_RETURN_CODE 77)
+	add_gui_test (BandwidthLimitSliderTest)
 endif()
 
 # Shutdown repainting must not dispatch callbacks against partially destroyed core objects.
@@ -4277,7 +4189,4 @@ if (BUILD_WXCAS)
 	set_tests_properties (WxCasStatsPanelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
 endif ()
 
-add_executable (PublishMetricsTest PublishMetricsTest.cpp)
-add_test (NAME PublishMetricsTest COMMAND PublishMetricsTest)
-target_include_directories (PublishMetricsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
-target_link_libraries (PublishMetricsTest muleunit mulecommon)
+add_muleunit_test (PublishMetricsTest)

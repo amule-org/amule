@@ -25,36 +25,11 @@
 #include "GuiTestDiagnostics.h"
 #include "NativeListTest.h"
 #include "MuleVirtualDataViewCtrl.h"
-#include "Preferences.h"
 
 #include <wx/wx.h>
-#include <wx/fileconf.h>
-#include <wx/mstream.h>
 
 namespace
 {
-class TestPreferences : public CPreferences
-{
-public:
-	static void SetLiveSort(bool enabled) { s_liveListSort = enabled; }
-};
-
-class ChangeObserver : public wxDataViewModelNotifier
-{
-public:
-	unsigned changes = 0;
-	bool ItemAdded(const wxDataViewItem &, const wxDataViewItem &) override { return true; }
-	bool ItemDeleted(const wxDataViewItem &, const wxDataViewItem &) override { return true; }
-	bool ItemChanged(const wxDataViewItem &) override
-	{
-		++changes;
-		return true;
-	}
-	bool ValueChanged(const wxDataViewItem &, unsigned) override { return true; }
-	bool Cleared() override { return true; }
-	void Resort() override {}
-};
-
 class TestList : public CMuleVirtualDataViewCtrl
 {
 public:
@@ -183,17 +158,11 @@ void TestUnpublishedRefresh()
 {
 	wxFrame frame(nullptr, wxID_ANY, "Unpublished refresh test", wxDefaultPosition, wxSize(600, 350));
 	auto *list = new TestList(&frame, true, true);
-	auto *observer = new ChangeObserver;
+	auto *observer = new ModelObserver;
 	list->GetModel()->AddNotifier(observer); // The model owns the notifier.
 	frame.Show();
 	Settle(frame, *list);
-	// Restored on unwind too: a failed Check() throws.
-	struct RestoreLiveSort
-	{
-		bool previous = CPreferences::LiveListSort();
-		~RestoreLiveSort() { TestPreferences::SetLiveSort(previous); }
-	} restoreLiveSort;
-	TestPreferences::SetLiveSort(true);
+	LiveSortScope liveSort;
 
 	for (unsigned i = 1; i <= 200; ++i) {
 		list->AppendItemData(i);
@@ -201,7 +170,7 @@ void TestUnpublishedRefresh()
 	list->RefreshItemData(1);
 	list->RefreshItemData(200);
 	Settle(frame, *list);
-	Check(observer->changes == 0, "Unpublished rows emitted model changes");
+	Check(observer->changed.empty(), "Unpublished rows emitted model changes");
 	Check(list->comparisons == 0, "Unpublished refresh scheduled a live sort");
 	list->FinishBulkLoad();
 	Settle(frame, *list);
@@ -212,7 +181,7 @@ void TestUnpublishedRefresh()
 	list->unknownViewport = true;
 	list->RefreshItemData(201);
 	list->unknownViewport = false;
-	Check(observer->changes == 0, "Unpublished tail row emitted a model change");
+	Check(observer->changed.empty(), "Unpublished tail row emitted a model change");
 	list->FinishBulkLoad();
 	Settle(frame, *list);
 	Check(list->PublishedCount() == 201, "Bulk completion lost the tail row");
@@ -222,14 +191,7 @@ void TestUnpublishedRefresh()
 
 void RunTests()
 {
-	wxMemoryInputStream input("", 0);
-	wxFileConfig config(input);
-	// wx deletes the global config at cleanup, so restore it even when a Check() throws.
-	struct RestoreConfig
-	{
-		wxConfigBase *previous;
-		~RestoreConfig() { wxConfigBase::Set(previous); }
-	} restoreConfig{ wxConfigBase::Set(&config) };
+	ConfigScope config;
 	for (bool generic : { true, false }) {
 		for (bool reverse : { true, false }) {
 			std::cout << "generic empty viewport=" << generic << ", reverse sort=" << reverse
