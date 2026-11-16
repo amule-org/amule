@@ -25,7 +25,7 @@
 // Prints what the real control point returns. UPnPPortMappingIntegrationTest.py runs it against
 // a fake gateway. It prints a line when the constructor returns, then waits for a line on stdin
 // before each operation.
-// Usage: UPnPPortMappingDriver <tcp port> <udp port> (add|delete|pending)...
+// Usage: UPnPPortMappingDriver <tcp port> <udp port> (add|delete|pending|addpinholeodd|renewexpiring-retry)...
 
 #include "config.h"
 #include "UPnPBase.h"
@@ -45,6 +45,7 @@ const int EXIT_SKIP = 77;
 const char *const PINHOLE_CLIENT = "2001:db8::1";
 const unsigned int PINHOLE_LEASE = 3600;
 const unsigned int PINHOLE_LEASE_SHORT = 4;
+const unsigned int PINHOLE_LEASE_ODD = 3;
 } // namespace
 
 int main(int argc, char **argv)
@@ -86,6 +87,12 @@ int main(int argc, char **argv)
 					6,
 					PINHOLE_LEASE_SHORT);
 				result = true;
+			} else if (std::strcmp(argv[i], "addpinholeodd") == 0) {
+				controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT,
+					static_cast<unsigned short>(tcpPort),
+					6,
+					PINHOLE_LEASE_ODD);
+				result = true;
 			} else if (std::strcmp(argv[i], "renewexpiring-now") == 0) {
 				controlPoint.RenewExpiringIPv6Pinholes(PINHOLE_CLIENT);
 				result = true;
@@ -93,6 +100,10 @@ int main(int argc, char **argv)
 				// Driven the way production drives it: the whole renewal pass, not a single
 				// key. The short lease needs time to elapse before the pass runs.
 				std::this_thread::sleep_for(std::chrono::seconds(3));
+				controlPoint.RenewExpiringIPv6Pinholes(PINHOLE_CLIENT);
+				result = true;
+			} else if (std::strcmp(argv[i], "renewexpiring-retry") == 0) {
+				std::this_thread::sleep_for(std::chrono::seconds(PINHOLE_LEASE_ODD / 2));
 				controlPoint.RenewExpiringIPv6Pinholes(PINHOLE_CLIENT);
 				result = true;
 			} else if (std::strcmp(argv[i], "deletepinholes") == 0) {

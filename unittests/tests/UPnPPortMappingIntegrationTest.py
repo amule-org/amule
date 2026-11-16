@@ -557,7 +557,7 @@ def run_pinhole_scenarios(driver, failures):
 
         with FakeGateway(services=('ip', 'ipv6fw'), reject_pinhole_actions=(ADD_PINHOLE,)) as gateway:
             run_driver(driver, gateway,
-                       ['addpinholeshort', 'renewexpiring-now', 'renewexpiring'])
+                       ['addpinholeodd', 'renewexpiring-now', 'renewexpiring-retry'])
         if gateway.pinhole_actions != [(ADD_PINHOLE, 'rejected'), (ADD_PINHOLE, 'rejected')]:
             record_failure(failures, f'pinhole refusal: unbacked renewal/retry cadence was '
                                      f'{gateway.pinhole_actions}')

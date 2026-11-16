@@ -982,8 +982,7 @@ bool CUPnPControlPoint::SendAddPinhole(SIPv6Pinhole &pinhole)
 	std::string uniqueId;
 	if (!ExecuteOnIPv6FirewallService("AddPinhole", argval, "UniqueID", &uniqueId) || uniqueId.empty()) {
 		pinhole.uniqueId.clear();
-		const auto retryDelay = std::chrono::duration_cast<std::chrono::steady_clock::duration>(
-			std::chrono::duration<double>(pinhole.lease) / 2.0);
+		const auto retryDelay = std::chrono::seconds(pinhole.lease / 2);
 		pinhole.expiry = std::chrono::steady_clock::now() + retryDelay;
 		return false;
 	}
