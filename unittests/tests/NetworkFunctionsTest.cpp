@@ -225,6 +225,34 @@ TEST(NetworkFunctions, IsHighIDOf)
 	ASSERT_FALSE(IsHighIDOf(0, 0));
 }
 
+TEST(NetworkFunctions, SourceHybridID)
+{
+	const uint32 dotZero = StringIPtoUint32("10.0.138.0");
+	ASSERT_EQUALS(wxUINT32_SWAP_ALWAYS(dotZero), SourceHybridID(dotZero, true));
+	ASSERT_FALSE(IsLowID(SourceHybridID(dotZero, true)));
+	// A server's record cannot tell a .0 HighID from a LowID.
+	ASSERT_EQUALS(dotZero, SourceHybridID(dotZero, false));
+
+	const uint32 ip = StringIPtoUint32("192.0.2.1");
+	ASSERT_EQUALS(wxUINT32_SWAP_ALWAYS(ip), SourceHybridID(ip, false));
+	ASSERT_EQUALS(wxUINT32_SWAP_ALWAYS(ip), SourceHybridID(ip, true));
+	ASSERT_EQUALS(12345u, SourceHybridID(12345, false));
+}
+
+TEST(NetworkFunctions, IsSourceAddress)
+{
+	// Its hybrid ID is a LowID, but IsGoodIP() must still reject it.
+	const uint32 zeroNet = StringIPtoUint32("0.1.2.3");
+	ASSERT_TRUE(IsLowID(SourceHybridID(zeroNet, false)));
+	ASSERT_TRUE(IsSourceAddress(zeroNet, false));
+	ASSERT_TRUE(IsSourceAddress(zeroNet, true));
+
+	const uint32 dotZero = StringIPtoUint32("10.0.138.0");
+	ASSERT_TRUE(IsSourceAddress(dotZero, true));
+	ASSERT_FALSE(IsSourceAddress(dotZero, false));
+	ASSERT_FALSE(IsSourceAddress(12345, false));
+}
+
 // A server on this machine is reachable once LAN IPs are not filtered; nothing else changes.
 TEST(NetworkFunctions, IsGoodServerIP)
 {

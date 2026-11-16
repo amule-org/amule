@@ -2022,11 +2022,12 @@ void CPartFile::AddSources(CMemFile &sources,
 		return;
 	}
 
-	const auto logIgnoredSource = [this](uint32 userid, uint16 port, const char *reason) {
+	const bool isLink = origin == SF_LINK;
+	const auto logIgnoredSource = [this, isLink](uint32 userid, uint16 port, const char *reason) {
 		AddDebugLogLineN(logPartFile,
 			CFormat("Ignored source %s:%u of '%s': %s") %
-				(IsLowID(userid) ? wxString(CFormat("LowID %u") % userid)
-						 : Uint32toStringIP(userid)) %
+				(IsSourceAddress(userid, isLink) ? Uint32toStringIP(userid)
+								 : wxString(CFormat("LowID %u") % userid)) %
 				port % GetFileName().GetPrintable() % reason);
 	};
 
@@ -2094,6 +2095,7 @@ void CPartFile::AddSources(CMemFile &sources,
 #endif
 
 		const uint32 userid = parsed.record.userid;
+		const uint32 hybridID = SourceHybridID(userid, isLink);
 		const uint16 port = parsed.record.port;
 		const uint8 byCryptOptions = parsed.record.cryptOptions;
 
@@ -2121,7 +2123,7 @@ void CPartFile::AddSources(CMemFile &sources,
 		}
 
 		// "Filter LAN IPs" and "IPfilter" the received sources IP addresses
-		if (!IsLowID(userid)) {
+		if (IsSourceAddress(userid, isLink)) {
 			// check for 0-IP, localhost and optionally for LAN addresses
 			if (!IsGoodIP(userid, thePrefs::FilterLanIPs())) {
 				logIgnoredSource(
@@ -2134,12 +2136,12 @@ void CPartFile::AddSources(CMemFile &sources,
 			}
 		}
 
-		if (!CanAddSource(userid,
+		if (!CanAddSource(hybridID,
 			    port,
 			    serverip,
 			    serverport,
 			    &debug_lowiddropped,
-			    true,
+			    false,
 			    keepLowIdSources)) {
 			logIgnoredSource(userid,
 				port,
@@ -2150,7 +2152,7 @@ void CPartFile::AddSources(CMemFile &sources,
 		if (thePrefs::GetMaxSourcePerFile() > GetSourceCount()) {
 			++debug_possiblesources;
 			CUpDownClient *newsource =
-				new CUpDownClient(port, userid, serverip, serverport, this, true, true);
+				new CUpDownClient(port, hybridID, serverip, serverport, this, false, true);
 
 			newsource->SetSourceFrom((ESourceFrom)origin);
 			newsource->SetConnectOptions(byCryptOptions, true, false);

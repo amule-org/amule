@@ -824,7 +824,8 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				}
 
 				if (!client) {
-					client = new CUpDownClient(nPort, dwIP, 0, 0, 0, true, true);
+					client = new CUpDownClient(
+						nPort, HybridIDOfIPv4(dwIP), 0, 0, nullptr, false, true);
 					theApp->clientlist->AddClient(client);
 				}
 				if (size >= 23 && client->HasValidHash()) {

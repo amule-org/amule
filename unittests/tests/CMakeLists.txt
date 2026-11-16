@@ -3227,6 +3227,14 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 						$<TARGET_FILE:amuled> $<TARGET_FILE:UploadReadDelay> --stage ${diagnostic_stage})
 				set_tests_properties (UploadRead-${diagnostic_stage} PROPERTIES TIMEOUT 120 LABELS "integration")
 			endforeach ()
+			# 127.x.y.0 is local only on Linux.
+			add_library (FakePeerConnect MODULE FakePeerConnect.cpp)
+			target_link_libraries (FakePeerConnect ${CMAKE_DL_LIBS})
+			add_test (NAME DotZeroPeerIntegrationTest
+				COMMAND ${Python3_EXECUTABLE} -u
+					${CMAKE_CURRENT_SOURCE_DIR}/DotZeroPeerIntegrationTest.py
+					$<TARGET_FILE:amuled> $<TARGET_FILE:FakePeerConnect>)
+			set_tests_properties (DotZeroPeerIntegrationTest PROPERTIES LABELS "integration")
 			add_test (NAME DisplayRatesIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/DisplayRatesIntegrationTest.py $<TARGET_FILE:amuled>
@@ -4176,6 +4184,7 @@ foreach (ec_wire_test IN ITEMS
 	CompletedFileDeleteIntegrationTest
 	DebugSettingsIntegrationTest
 	DisplayRatesIntegrationTest
+	DotZeroPeerIntegrationTest
 	DownloadDisplayRatesIntegrationTest
 	DownloadLimitHelloIntegrationTest
 	DownloadPathIndexIntegrationTest

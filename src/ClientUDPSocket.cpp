@@ -1102,7 +1102,7 @@ bool CClientUDPSocket::DialLowIdHolePunchPeer(
 	}
 	// This temporary client is not a download source. OP_HELLO, not server-supplied
 	// INFO fields, decides which existing LowID source the new stream belongs to.
-	CUpDownClient *client = new CUpDownClient(tcpPort, ip, 0, 0, nullptr, true, false);
+	CUpDownClient *client = new CUpDownClient(tcpPort, HybridIDOfIPv4(ip), 0, 0, nullptr, false, false);
 	// The server-vouched punch dial needs HasValidHash() for the CAPS probe and the QUIC
 	// selection in TryServerVouchedLowIdUtpDial(); set it before AddClient() so the client
 	// list indexes it immediately, matching the OP_DIRECTCALLBACKREQ pattern. An all-zero hash
@@ -1768,7 +1768,8 @@ void CClientUDPSocket::ProcessPacket(
 				}
 			}
 			if (requester == NULL) {
-				requester = new CUpDownClient(remoteTCPPort, host, 0, 0, NULL, true, true);
+				requester = new CUpDownClient(
+					remoteTCPPort, HybridIDOfIPv4(host), 0, 0, nullptr, false, true);
 				requester->SetUserHash(CMD4Hash(userHash));
 				theApp->clientlist->AddClient(requester);
 			}
