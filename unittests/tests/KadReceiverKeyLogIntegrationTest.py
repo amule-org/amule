@@ -102,8 +102,8 @@ def source_publish(file_id, tags):
 def type7_tags(tcp_port, pointer_repeats=False):
     """A "routes in tags" record: one route, no buddy tags, size always present.
 
-    With pointer_repeats, five "bpv" tags go out: a long string, the version byte, a second
-    integer, and two more long strings. Exactly one integer may be stored and a malformed tag must
+    With pointer_repeats, four "bpv" tags go out: a long string, the version byte, a second
+    integer and another long string. Exactly one integer may be stored and a malformed tag must
     not take its place, so only the version byte comes back.
     """
     tags = [tag(TAG_SOURCETYPE, 0x09, 7), tag(TAG_SOURCEPORT, 0x08, tcp_port),
