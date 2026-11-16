@@ -52,9 +52,10 @@
 
 #include <ec/cpp/ECFileConfig.h> // Needed for CECFileConfig
 #include <common/MD5Sum.h>
-#include "Logger.h"         // for theLogger.SetVerbose
-#include "OtherFunctions.h" // Needed for GetPassword()
-#include "MuleVersion.h"    // Needed for GetMuleVersion()
+#include <common/PasswordInput.h>
+#include "ECClientPassword.h"
+#include "Logger.h"      // for theLogger.SetVerbose
+#include "MuleVersion.h" // Needed for GetMuleVersion()
 
 #ifdef _MSC_VER // silly warnings about deprecated functions
 #pragma warning(disable : 4996)
@@ -448,12 +449,8 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 	Show(CFormat(_("This is %s %s\n")) % wxString::FromAscii(m_appname) % VERSION);
 #endif
 
-	if (m_password.IsEmpty()) {
-		m_password = GetPassword(true);
-		// MD5 hash for an empty string, according to rfc1321.
-		if (m_password.Encode() == "D41D8CD98F00B204E9800998ECF8427E") {
-			m_password.Clear();
-		}
+	if (m_password.IsEmpty() && UsesEcPasswordOption() && !ReadEcPassword()) {
+		exit(1);
 	}
 
 	if (!m_password.IsEmpty()) {
@@ -496,8 +493,8 @@ void CaMuleExternalConnector::ConnectAndRun(const wxString &ProgName, const wxSt
 		}
 		m_ECClient->DestroySocket();
 	} else {
-		Show(_("Cannot connect with an empty password.\nYou must specify a password either in config "
-		       "file\nor on command-line, or enter one when asked.\n\nExiting...\n"));
+		Show(_("Cannot connect with an empty password.\nSet one with "
+		       "--set-ec-pass-stdin.\n\nExiting...\n"));
 	}
 }
 
@@ -518,10 +515,10 @@ void CaMuleExternalConnector::OnInitCmdLine(wxCmdLineParser &parser, const char 
 		wxCMD_LINE_VAL_NUMBER,
 		wxCMD_LINE_PARAM_OPTIONAL);
 	if (UsesEcPasswordOption()) {
-		parser.AddOption("P",
-			"password",
-			_("External Connection password."),
-			wxCMD_LINE_VAL_STRING,
+		parser.AddSwitch("",
+			"password-stdin",
+			_("Read the External Connection password from the first line of stdin (hidden on "
+			  "a terminal)."),
 			wxCMD_LINE_PARAM_OPTIONAL);
 	}
 	if (UsesConnectorConfigFile()) {
@@ -543,11 +540,6 @@ void CaMuleExternalConnector::OnInitCmdLine(wxCmdLineParser &parser, const char 
 		parser.AddSwitch("w",
 			"write-config",
 			_("Write command line options to config file."),
-			wxCMD_LINE_PARAM_OPTIONAL);
-		parser.AddOption("",
-			"create-config-from",
-			_("Creates config file based on aMule's config file."),
-			wxCMD_LINE_VAL_STRING,
 			wxCMD_LINE_PARAM_OPTIONAL);
 	}
 	parser.AddSwitch("", "version", _("Print program version."), wxCMD_LINE_PARAM_OPTIONAL);
@@ -580,6 +572,11 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 		printf("%s %s\n", m_appname, (const char *)GetMuleVersion().utf8_str());
 		return false;
 	}
+	// Before the config load, which can refuse or rewrite remote.conf.
+	if (parser.Found("help")) {
+		parser.Usage();
+		return false;
+	}
 
 	// The config *directory* is resolved either way -- subclasses without a
 	// connector config file still need somewhere to put their own.
@@ -591,45 +588,10 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 	m_configDir = GetConfigDir(PortableProbeFile());
 	m_configFileName = FinalizeFilename(m_configFileName, m_configDir);
 
-	wxString aMuleConfigFile;
-	const bool createConfig =
-		UsesConnectorConfigFile() && parser.Found("create-config-from", &aMuleConfigFile);
-	if (createConfig) {
-		aMuleConfigFile = FinalizeFilename(aMuleConfigFile);
-		if (!::wxFileExists(aMuleConfigFile)) {
-			fprintf(stderr,
-				"%s\n",
-				(const char *)(wxString("FATAL ERROR: File does not exist: ") +
-					       aMuleConfigFile)
-					.utf8_str());
-			exit(1);
-		}
-		// Preserve saved connector-only settings and the client credential when
-		// the daemon now stores only a verifier. Explicit -P below still wins.
+	if (UsesConnectorConfigFile()) {
+		m_replaceEcPassword = UsesEcPasswordOption() && parser.Found("password-stdin") &&
+				      parser.Found("write-config");
 		LoadConfigFile();
-		CECFileConfig aMuleConfig(aMuleConfigFile);
-		LoadAmuleConfig(aMuleConfig);
-	} else if (UsesConnectorConfigFile()) {
-		LoadConfigFile();
-	}
-
-	if (UsesEcPasswordOption()) {
-		wxString pass_plain;
-		if (parser.Found("password", &pass_plain)) {
-			if (!pass_plain.IsEmpty()) {
-				m_password.Decode(MD5Sum(pass_plain).GetHash());
-			} else {
-				m_password.Clear();
-			}
-		}
-	}
-
-	if (createConfig) {
-		if (m_password.IsEmpty())
-			Show(_("The daemon verifier cannot supply a client password. Use -P or the password "
-			       "prompt.\n"));
-		SaveConfigFile();
-		exit(FlushConfigFile() ? 0 : 1);
 	}
 
 	if (!parser.Found("host", &m_host)) {
@@ -653,33 +615,37 @@ bool CaMuleExternalConnector::OnCmdLineParsed(wxCmdLineParser &parser)
 
 	parser.Found("locale", &m_language);
 
-	if (parser.Found("help")) {
-		parser.Usage();
-		return false;
-	}
-
 	m_KeepQuiet = parser.Found("quiet");
 	m_Verbose = parser.Found("verbose");
 
 	// Wire --verbose to the console logger gate, so AddDebugLogLine* output obeys the CLI flag
-	// the way amuled obeys its VerboseDebug pref. LoadAmuleConfig may already have set the
-	// gate; --verbose overrides it.
+	// the way amuled obeys its VerboseDebug pref.
 	if (m_Verbose) {
 		theLogger.SetVerbose(true);
+	}
+
+	// Last, so --help and a bad option never wait for input.
+	if (UsesEcPasswordOption() && parser.Found("password-stdin") && !ReadEcPassword()) {
+		exit(1);
 	}
 
 	return true;
 }
 
-void CaMuleExternalConnector::LoadAmuleConfig(CECFileConfig &cfg)
+bool CaMuleExternalConnector::ReadEcPassword()
 {
-	m_host = "127.0.0.1";
-	m_port = cfg.Read("/ExternalConnect/ECPort", 4712l);
-	if (!cfg.HasEntry("/ExternalConnect/ECPasswordVerifier")) {
-		cfg.ReadHash("/ExternalConnect/ECPassword", &m_password);
+	std::string password;
+	std::string error;
+	if (!mulecommon::ReadPassword("EC password: ", false, password, error)) {
+		Show(CFormat(_("Cannot read the password: %s\n")) % wxString::FromUTF8(error.c_str()));
+		return false;
 	}
-	m_language = cfg.Read("/eMule/Language", "");
-	theLogger.SetVerbose(cfg.Read("/eMule/VerboseDebug", 0l) != 0);
+	if (password.empty()) {
+		Show(wxString(_("The EC password must not be empty.")) + "\n");
+		return false;
+	}
+	m_password.Decode(MD5Sum(wxString::FromUTF8(password.data(), password.size())).GetHash());
+	return true;
 }
 
 void CaMuleExternalConnector::LoadConfigFile()
@@ -691,6 +657,21 @@ void CaMuleExternalConnector::LoadConfigFile()
 		// Same reasoning as the core's amule.conf: this file stores the EC
 		// password, and the stored value is what authenticates.
 		RestrictToOwner(CPath(m_configFileName));
+		wxString error;
+		const auto migration = ECClientPassword::MigrateRemoteConf(*m_configFile, error);
+		if (migration == ECClientPassword::Migration::Conflict) {
+			if (!m_replaceEcPassword) {
+				Show(ECClientPassword::RemoteConfConflictMessage(m_configFileName, error) +
+					"\n");
+				exit(1);
+			}
+			// The password from stdin replaces both keys when -w saves.
+			m_configFile->DeleteEntry(ECClientPassword::LEGACY_KEY);
+		} else if (migration == ECClientPassword::Migration::Unsaved) {
+			// Exit would only retry it.
+			m_configFile->DisableAutoSave();
+			Show(ECClientPassword::RemoteConfUnsavedMessage(m_configFileName) + "\n");
+		}
 		m_language = m_configFile->Read("/Locale", "");
 		// Match the default across amulecmd / amulegui. The literal loopback
 		// address rather than "localhost": on Windows those lookups can fail intermittently
@@ -700,7 +681,7 @@ void CaMuleExternalConnector::LoadConfigFile()
 		// path.
 		m_host = m_configFile->Read("/EC/Host", "127.0.0.1");
 		m_port = m_configFile->Read("/EC/Port", 4712l);
-		m_configFile->ReadHash("/EC/Password", &m_password);
+		m_configFile->ReadHash(ECClientPassword::KEY, &m_password);
 		m_ZLIB = m_configFile->Read("/EC/ZLIB", 1l) != 0;
 		m_forceZLIB = m_configFile->Read("/EC/ForceZLIB", 0l) != 0;
 	}
@@ -715,7 +696,7 @@ void CaMuleExternalConnector::SaveConfigFile()
 		m_configFile->Write("/Locale", m_language);
 		m_configFile->Write("/EC/Host", m_host);
 		m_configFile->Write("/EC/Port", m_port);
-		m_configFile->WriteHash("/EC/Password", m_password);
+		m_configFile->WriteHash(ECClientPassword::KEY, m_password);
 		// ZLIB was read in LoadConfigFile but never written here, so toggling --disable-
 		// zlib did not persist and any value in the config file silently reset to the
 		// enabled default on every save (#817).

@@ -22,8 +22,8 @@ def run(daemon, client):
 
         def command(text, expected):
             result = subprocess.run([client, '-h', '127.0.0.1', '-p', str(ports[0]),
-                '-P', 'regression', '-c', text], env=daemon_env(directory),
-                stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=20)
+                '--password-stdin', '-c', text], env=daemon_env(directory),
+                input='regression\n', capture_output=True, text=True, timeout=20)
             output = result.stdout + result.stderr
             assert expected in output, (text, result.returncode, output)
             return output

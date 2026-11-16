@@ -15,12 +15,10 @@
 #
 # Bring-up convention (matches the README in the parent dir):
 #   rm -rf /tmp/amuleapi-02b && mkdir -p /tmp/amuleapi-02b
-#   amuleapi --config-dir=/tmp/amuleapi-02b --host=127.0.0.1 \
-#            --port=4712 --password=amule --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/amuleapi-02b --host=127.0.0.1 \
-#            --port=4712 --password=amule --set-guest-pass=guestpass
-#   amuleapi --config-dir=/tmp/amuleapi-02b --host=127.0.0.1 \
-#            --port=4712 --password=amule &
+#   printf '%s\n' adminpass | amuleapi --config-dir=/tmp/amuleapi-02b --set-admin-pass-stdin
+#   printf '%s\n' guestpass | amuleapi --config-dir=/tmp/amuleapi-02b --set-guest-pass-stdin
+#   printf '%s\n' amule | amuleapi --config-dir=/tmp/amuleapi-02b --set-ec-pass-stdin
+#   amuleapi --config-dir=/tmp/amuleapi-02b --host=127.0.0.1 --port=4712 &
 #   ./02b-auth-lockout-isolation.sh
 #
 # Environment:

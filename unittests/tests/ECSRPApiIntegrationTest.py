@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 aMule Team. SPDX-License-Identifier: GPL-2.0-or-later
 """Real amuleapi password and spawned-token logins against an offline core."""
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -25,8 +26,9 @@ def run(daemon_binary, api_binary, token):
         # production child uses its token rather than silently falling back.
         (root / 'amuleapi.conf').write_text(
             '[Server]\nBindAddress=127.0.0.1\nPort=' + str(http) + '\n'
-            '[EC]\nHost=127.0.0.1\nPort=' + str(port) + '\nPassword=' +
-            ('wrong-password' if token else 'regression') + '\nEncryption=0\n')
+            '[EC]\nHost=127.0.0.1\nPort=' + str(port) + '\nPasswordMD5=' +
+            hashlib.md5(b'wrong-password' if token else b'regression').hexdigest() +
+            '\nEncryption=0\n')
         (root / 'amuleapi.conf').chmod(0o600)
         processes = []
         try:

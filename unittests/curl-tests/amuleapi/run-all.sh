@@ -118,10 +118,10 @@ run_phase() {
 	# EC password is seeded into below. Neither connects to amuled -- they
 	# write the credential file and exit -- so no EC settings are needed
 	# here at all.
-	"$BIN" --config-dir=/tmp/amuleapi-regtest \
-		--set-admin-pass=adminpass > /dev/null 2>&1
-	"$BIN" --config-dir=/tmp/amuleapi-regtest \
-		--set-guest-pass=guestpass > /dev/null 2>&1
+	printf '%s\n' adminpass | "$BIN" --config-dir=/tmp/amuleapi-regtest \
+		--set-admin-pass-stdin > /dev/null 2>&1
+	printf '%s\n' guestpass | "$BIN" --config-dir=/tmp/amuleapi-regtest \
+		--set-guest-pass-stdin > /dev/null 2>&1
 	# amuleapi has no --password: it takes the EC credential from the
 	# ephemeral token the core writes when it spawns amuleapi, or from
 	# amuleapi.conf. Nothing spawns it here, so seed the config file.

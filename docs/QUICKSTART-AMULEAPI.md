@@ -49,10 +49,14 @@ amuleapi --set-ec-pass-stdin
 
 It asks for the password without echoing it, stores its MD5 digest as
 `[EC]/PasswordMD5` in `amuleapi.conf`, and exits. Then just run `amuleapi`.
-You can also copy the digest from `[EC]/Password` in `remote.conf`, or put the
-plain password in `[EC]/Password` instead. Set only one of the two: amuleapi
-refuses to start if both are nonempty. The digest logs in to amuled just like the
-password, so keep the file private.
+You can also copy `[EC]/PasswordMD5` from `remote.conf`, the file amulecmd and
+amulegui use: the key means the same in both files. The digest logs in to
+amuled just like the password, so keep the file private.
+
+An older `amuleapi.conf` with a plaintext `[EC]/Password` is changed to
+`[EC]/PasswordMD5` when amuleapi loads it. If it can't be saved, for example
+in a read-only directory, the digest is used for that run only. amuleapi refuses
+to start if both keys are nonempty; `--set-ec-pass-stdin` repairs that.
 
 There is no `--password` option. A password on the command line stays visible
 through `ps` for as long as amuleapi runs, and ends up in shell history, unit
@@ -82,9 +86,6 @@ pipe it in instead, with no confirmation:
 ```sh
 printf '%s\n' "$PW" | amuleapi --set-admin-pass-stdin
 ```
-
-`--set-admin-pass=<plain>` and `--set-guest-pass=<plain>` also work, but expose
-the password in process arguments and shell history.
 
 An empty guest password turns guest access off; EOF or failed input leaves it
 unchanged. Passwords are stored so they cannot be read back, only replaced.

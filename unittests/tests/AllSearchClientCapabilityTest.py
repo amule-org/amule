@@ -67,7 +67,7 @@ def run(api, cmd):
                     status, result=http(url, '/status', token)
                     assert status==200 and result['search_all_supported'] is False, (status,result)
                     print('PASS: REST reports absent All capability as false')
-                    out=subprocess.run([cmd, '-h','127.0.0.1','-p',str(port),'-P','regression','-c','search all legacyguard'], env=env, capture_output=True, text=True, timeout=15)
+                    out=subprocess.run([cmd, '-h','127.0.0.1','-p',str(port),'--password-stdin','-c','search all legacyguard'], env=env, input='regression\n', capture_output=True, text=True, timeout=15)
                     assert 'does not support All searches' in out.stdout+out.stderr, out
                     assert C['EC_OP_SEARCH_START'] not in requests, requests
                     print('PASS: amulecmd reports unsupported All without sending SEARCH_START')

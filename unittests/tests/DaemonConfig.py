@@ -76,7 +76,7 @@ def write_remote_conf(root, ec_port, *, ec_password=EC_PASSWORD, **emule):
         'EC': {
             'Host': '127.0.0.1',
             'Port': ec_port,
-            'Password': hashlib.md5(ec_password.encode()).hexdigest(),
+            'PasswordMD5': hashlib.md5(ec_password.encode()).hexdigest(),
         },
         'eMule': dict(Language=OFFLINE['Language'], **emule),
     })

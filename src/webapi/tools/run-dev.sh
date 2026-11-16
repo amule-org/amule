@@ -167,13 +167,13 @@ PY
 
 # --- amuleapi passwords and config ---
 echo "==> Setting amuleapi passwords (admin/guest)"
-"$AMULEAPI" --config-dir="$CONFIG_DIR" --set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1 || true
-"$AMULEAPI" --config-dir="$CONFIG_DIR" --set-guest-pass="$GUEST_PASS" >/dev/null 2>&1 || true
+printf '%s\n' "$ADMIN_PASS" | "$AMULEAPI" --config-dir="$CONFIG_DIR" --set-admin-pass-stdin >/dev/null 2>&1 || true
+printf '%s\n' "$GUEST_PASS" | "$AMULEAPI" --config-dir="$CONFIG_DIR" --set-guest-pass-stdin >/dev/null 2>&1 || true
 
 echo "==> Configuring amuleapi.conf (StaticRoot, HTTP port, EC connection)"
-python3 - "$CONFIG_DIR/amuleapi.conf" "$STATIC_DIR" "$HTTP_PORT" "$EC_PASS" "$EC_PORT" <<'PY'
+python3 - "$CONFIG_DIR/amuleapi.conf" "$STATIC_DIR" "$HTTP_PORT" "$EC_PORT" <<'PY'
 import sys, os, configparser
-conf, front, port, ecpass, ecport = sys.argv[1:6]
+conf, front, port, ecport = sys.argv[1:5]
 cfg = configparser.ConfigParser()
 cfg.optionxform = str
 if os.path.exists(conf):
@@ -182,11 +182,12 @@ for sec in ('Server', 'EC'):
     if not cfg.has_section(sec):
         cfg.add_section(sec)
 cfg['Server'].update({'BindAddress': '127.0.0.1', 'Port': port, 'StaticRoot': front})
-cfg['EC'].update({'Host': '127.0.0.1', 'Port': ecport, 'Password': ecpass})
+cfg['EC'].update({'Host': '127.0.0.1', 'Port': ecport})
 with open(conf, 'w') as f:
     cfg.write(f, space_around_delimiters=False)
 os.chmod(conf, 0o600)
 PY
+printf '%s\n' "$EC_PASS" | "$AMULEAPI" --config-dir="$CONFIG_DIR" --set-ec-pass-stdin >/dev/null
 
 # --- launch ---
 trap stop_all EXIT INT TERM

@@ -6,6 +6,7 @@ No installed services, real peers, or user configuration are used.
 """
 import argparse
 import base64
+import hashlib
 import json
 from pathlib import Path
 import socket
@@ -86,7 +87,7 @@ def run(build, work, daemon_override=None, api_override=None):
     (api_dir / "amuleapi.conf").write_text(f"""[EC]
 Host=127.0.0.1
 Port={ec_port}
-Password=captcha-test
+PasswordMD5={hashlib.md5(b'captcha-test').hexdigest()}
 [Server]
 BindAddress=127.0.0.1
 Port={http_port}
@@ -104,9 +105,9 @@ StaticRoot={Path(__file__).resolve().parents[3] / 'src/webapi/static'}
             log = (work / (executable.name + ".log")).open("w")
             logs.append(log)
             if executable == api:
-                subprocess.run([str(api), "--config-dir", str(api_dir),
-                                "--set-admin-pass", "captcha-admin"],
-                               stdout=log, stderr=log, check=True, timeout=20)
+                subprocess.run([str(api), "--config-dir", str(api_dir), "--set-admin-pass-stdin"],
+                               input=b"captcha-admin\n", stdout=log, stderr=log, check=True,
+                               timeout=20)
             processes.append(subprocess.Popen([str(executable), "--config-dir", str(directory), *args],
                                                stdout=log, stderr=log))
             if executable == daemon:

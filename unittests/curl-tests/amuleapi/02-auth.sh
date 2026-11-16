@@ -9,10 +9,9 @@
 #
 # Bring-up convention (matches the README in the parent dir):
 #   rm -rf /tmp/amuleapi-02-auth && mkdir -p /tmp/amuleapi-02-auth
-#   amuleapi --config-dir=/tmp/amuleapi-02-auth --host=127.0.0.1 \
-#            --port=4712 --password=amule --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/amuleapi-02-auth --host=127.0.0.1 \
-#            --port=4712 --password=amule &
+#   printf '%s\n' adminpass | amuleapi --config-dir=/tmp/amuleapi-02-auth --set-admin-pass-stdin
+#   printf '%s\n' amule | amuleapi --config-dir=/tmp/amuleapi-02-auth --set-ec-pass-stdin
+#   amuleapi --config-dir=/tmp/amuleapi-02-auth --host=127.0.0.1 --port=4712 &
 #   ./02-auth.sh
 #
 # Environment:

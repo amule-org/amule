@@ -191,8 +191,8 @@ public:
 	 */
 	void OpenCollectionFiles(const wxArrayString &fileNames);
 
-	// Exit status of a one-shot --configure-* run: 0 or 1, and -1 when none ran. Static because
-	// amuled's main() reads it after wxEntry() has destroyed the app.
+	// Exit status of a one-shot run (--configure-*, --set-ec-pass-stdin): 0 or 1, and -1 when
+	// none ran. Static because amuled's main() reads it after wxEntry() has destroyed the app.
 	static int ConfigureExitCode();
 
 	// The POSIX daemon launcher waits for a log-open result from its child. Other
@@ -201,11 +201,14 @@ public:
 	static void ReportDaemonStartup(bool success, const char *error = nullptr);
 
 protected:
+	// Ends a one-shot run with exit status 0 or 1; the caller then fails OnInit().
+	static void SetConfigureResult(bool ok);
+
 	wxString FullMuleVersion;
 	wxString OSDescription;
 	wxString OSType;
 	bool enable_daemon_fork;
-	bool ec_config;
+	bool set_ec_pass_stdin;
 	bool m_skipConnectionDialog;
 	bool m_geometryEnabled;
 	bool m_disableFatal;

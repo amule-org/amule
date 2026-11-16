@@ -439,27 +439,84 @@ TEST(AmuleApiConfig, ExplicitEcDigestIsNotHashedAgain)
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(LoadHandWrittenConf("ec-md5", "[EC]\nPasswordMD5=ABCDEF0123456789ABCDEF0123456789", cfg));
 	ASSERT_TRUE(cfg.ValidateEcPassword());
-	ASSERT_TRUE(cfg.EcCfg().password.empty());
 	ASSERT_EQUALS(std::string("ABCDEF0123456789ABCDEF0123456789"), cfg.EcCfg().password_md5);
 }
 
-TEST(AmuleApiConfig, HexPlaintextRemainsPlaintext)
+wxString ReadConf(const CAmuleApiConfig &cfg)
 {
+	wxFile file(cfg.ConfigDir() + "/amuleapi.conf");
+	wxString text;
+	file.ReadAll(&text);
+	return text;
+}
+
+TEST(AmuleApiConfig, LegacyPlaintextIsMigratedOnLoad)
+{
+	// Hex-shaped on purpose: the legacy key is plaintext whatever it looks like.
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(LoadHandWrittenConf("ec-plain", "[EC]\nPassword=abcdef0123456789abcdef0123456789", cfg));
 	ASSERT_TRUE(cfg.ValidateEcPassword());
-	ASSERT_EQUALS(std::string("abcdef0123456789abcdef0123456789"), cfg.EcCfg().password);
-	ASSERT_TRUE(cfg.EcCfg().password_md5.empty());
+	ASSERT_EQUALS(std::string("1abfa913e32e021d2183b3b5bb0b8aa1"), cfg.EcCfg().password_md5);
+	const wxString text = ReadConf(cfg);
+	ASSERT_TRUE(text.Find("PasswordMD5=1abfa913e32e021d2183b3b5bb0b8aa1") != wxNOT_FOUND);
+	ASSERT_TRUE(text.Find("abcdef0123456789abcdef0123456789") == wxNOT_FOUND);
 }
 
-TEST(AmuleApiConfig, ConflictingEcSecretsAreRejected)
+TEST(AmuleApiConfig, EmptyLegacyKeyIsDropped)
+{
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(LoadHandWrittenConf(
+		"ec-empty-legacy", "[EC]\nPassword=\nPasswordMD5=abcdef0123456789abcdef0123456789", cfg));
+	ASSERT_TRUE(cfg.ValidateEcPassword());
+	ASSERT_EQUALS(std::string("abcdef0123456789abcdef0123456789"), cfg.EcCfg().password_md5);
+	ASSERT_TRUE(ReadConf(cfg).Find("\nPassword=") == wxNOT_FOUND);
+}
+
+TEST(AmuleApiConfig, ConflictingEcSecretsAreRejectedUntilSetupRepairsThem)
 {
 	CAmuleApiConfig cfg;
 	ASSERT_TRUE(LoadHandWrittenConf(
 		"ec-conflict", "[EC]\nPassword=plain\nPasswordMD5=abcdef0123456789abcdef0123456789", cfg));
 	ASSERT_FALSE(cfg.ValidateEcPassword());
 	ASSERT_TRUE(cfg.LastError().find("cannot both be nonempty") != std::string::npos);
+	ASSERT_TRUE(cfg.LastError().find("amuleapi --set-ec-pass-stdin") != std::string::npos);
+	ASSERT_TRUE(ReadConf(cfg).Find("Password=plain") != wxNOT_FOUND);
+	ASSERT_TRUE(cfg.SetEcPasswordMD5("0123456789abcdef0123456789abcdef"));
+	ASSERT_TRUE(cfg.ValidateEcPassword());
+	CAmuleApiConfig loaded;
+	ASSERT_TRUE(loaded.Load(cfg.ConfigDir()));
+	ASSERT_TRUE(loaded.ValidateEcPassword());
+	ASSERT_TRUE(ReadConf(loaded).Find("Password=plain") == wxNOT_FOUND);
 }
+
+#ifndef _WIN32
+TEST(AmuleApiConfig, UnwritableConfMigratesInMemory)
+{
+	// Root writes into a read-only directory anyway.
+	if (geteuid() == 0) {
+		return;
+	}
+	CAmuleApiConfig cfg;
+	ASSERT_TRUE(LoadHandWrittenConf("ec-readonly", "[EC]\nPassword=", cfg));
+	const std::string dir(cfg.ConfigDir().utf8_str());
+	const std::string conf = dir + "/amuleapi.conf";
+	{
+		wxFile f(conf, wxFile::write);
+		const std::string body = "[EC]\nPassword=legacy-secret\n";
+		f.Write(body.c_str(), body.size());
+	}
+	::chmod(conf.c_str(), S_IRUSR | S_IWUSR);
+	::chmod(dir.c_str(), S_IRUSR | S_IXUSR);
+	CAmuleApiConfig loaded;
+	const bool ok = loaded.Load(cfg.ConfigDir());
+	const wxString text = ReadConf(loaded);
+	::chmod(dir.c_str(), S_IRWXU);
+	ASSERT_TRUE(ok);
+	ASSERT_TRUE(loaded.ValidateEcPassword());
+	ASSERT_EQUALS(std::string("e4addf3e8343181e3aa070105ba27366"), loaded.EcCfg().password_md5);
+	ASSERT_TRUE(text.Find("Password=legacy-secret") != wxNOT_FOUND);
+}
+#endif
 
 TEST(AmuleApiConfig, MalformedEcDigestIsRejected)
 {
@@ -485,7 +542,6 @@ TEST(AmuleApiConfig, EcSetupMigratesPlaintextAndPreservesSettings)
 	CAmuleApiConfig loaded;
 	ASSERT_TRUE(loaded.Load(cfg.ConfigDir()));
 	ASSERT_EQUALS(digest, loaded.EcCfg().password_md5);
-	ASSERT_TRUE(loaded.EcCfg().password.empty());
 	ASSERT_EQUALS(std::string("example.invalid"), loaded.EcCfg().host);
 	ASSERT_EQUALS(static_cast<unsigned>(1234), loaded.EcCfg().port);
 	wxFile file(cfg.ConfigDir() + "/amuleapi.conf");

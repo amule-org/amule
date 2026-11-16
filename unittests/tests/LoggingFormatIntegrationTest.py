@@ -68,8 +68,9 @@ def run(binary, amulecmd=None):
                     assert abs((now - instant).total_seconds()) < 30, (instant, now)
             if amulecmd:
                 result = subprocess.run([amulecmd, '-h', '127.0.0.1', '-p', str(port),
-                                         '-P', 'regression', '--command=show log'],
-                                        env=env, capture_output=True, text=True, timeout=30)
+                                         '--password-stdin', '--command=show log'],
+                                        env=env, input='regression\n', capture_output=True,
+                                        text=True, timeout=30)
                 assert result.returncode == 0, (result.stdout, result.stderr)
                 lines = [line for line in result.stdout.splitlines() if 'logging-format-' in line]
                 assert len(lines) >= 3, result.stdout

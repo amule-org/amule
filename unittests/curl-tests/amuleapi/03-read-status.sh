@@ -9,10 +9,9 @@
 #
 # Bring-up convention:
 #   rm -rf /tmp/amuleapi-03-read-status && mkdir -p /tmp/amuleapi-03-read-status
-#   amuleapi --config-dir=/tmp/amuleapi-03-read-status --host=127.0.0.1 \
-#            --port=4712 --password=amule --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/amuleapi-03-read-status --host=127.0.0.1 \
-#            --port=4712 --password=amule &
+#   printf '%s\n' adminpass | amuleapi --config-dir=/tmp/amuleapi-03-read-status --set-admin-pass-stdin
+#   printf '%s\n' amule | amuleapi --config-dir=/tmp/amuleapi-03-read-status --set-ec-pass-stdin
+#   amuleapi --config-dir=/tmp/amuleapi-03-read-status --host=127.0.0.1 --port=4712 &
 #   ./03-read-status.sh
 #
 # Environment:

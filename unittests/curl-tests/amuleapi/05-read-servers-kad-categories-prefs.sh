@@ -7,10 +7,9 @@
 # content.
 #
 # Bring-up:
-#   amuleapi --config-dir=/tmp/amuleapi-05-read-servers-kad-categories-prefs \
-#            --host=127.0.0.1 --port=4712 --password=amule \
-#            --set-admin-pass=adminpass
-#   amuleapi --config-dir=/tmp/amuleapi-05-read-servers-kad-categories-prefs ... &
+#   printf '%s\n' adminpass | amuleapi --config-dir=/tmp/amuleapi-05-read-servers-kad-categories-prefs --set-admin-pass-stdin
+#   printf '%s\n' amule | amuleapi --config-dir=/tmp/amuleapi-05-read-servers-kad-categories-prefs --set-ec-pass-stdin
+#   amuleapi --config-dir=/tmp/amuleapi-05-read-servers-kad-categories-prefs --host=127.0.0.1 --port=4712 &
 #   ./05-read-servers-kad-categories-prefs.sh
 
 set -u

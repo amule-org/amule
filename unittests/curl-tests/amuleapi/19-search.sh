@@ -55,7 +55,7 @@ fi
 # amuleapi takes no --password, and its defaults amuleapi.conf carries only
 # PasswordMD5, so seed the EC credential the way run-all.sh does.
 _seed_extra_instance() {
-	"$AMULEAPI_BIN" --config-dir="$1" --set-admin-pass="$ADMIN_PASS" >/dev/null 2>&1
+	printf '%s\n' "$ADMIN_PASS" | "$AMULEAPI_BIN" --config-dir="$1" --set-admin-pass-stdin >/dev/null 2>&1
 	printf '%s\n' "$EC_PASSWORD" | "$AMULEAPI_BIN" --config-dir="$1" \
 		--set-ec-pass-stdin >/dev/null 2>&1
 }

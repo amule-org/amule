@@ -39,7 +39,9 @@
 		    //   HAVE_SYS_RESOURCE_H, HAVE_SYS_STATVFS_H, VERSION
 		    //   and ENABLE_NLS
 #include <common/ClientVersion.h>
+#include <common/MD5Sum.h>
 #include <common/MuleDebug.h> // Needed for SuppressNextAbortBacktrace
+#include <common/PasswordInput.h>
 
 #include <wx/cmdline.h> // Needed for wxCmdLineParser
 #ifndef AMULE_DAEMON
@@ -637,6 +639,34 @@ static void LogAddressFamilies(const wxString &listenerHost)
 }
 #endif
 
+// InitCommon() holds the instance lock by now. A running core would keep its old verifier and
+// write it back on exit.
+static bool SetECPassFromStdin()
+{
+	std::string password;
+	std::string error;
+	if (!mulecommon::ReadPassword("New EC password: ", true, password, error)) {
+		AddLogLineCS(
+			CFormat(_("Could not read the EC password: %s")) % wxString::FromUTF8(error.c_str()));
+		return false;
+	}
+	if (password.empty()) {
+		AddLogLineCS(_("The EC password must not be empty."));
+		return false;
+	}
+	if (!thePrefs::SetECPass(MD5Sum(wxString::FromUTF8(password.data(), password.size())).GetHash())) {
+		return false;
+	}
+	// SetECPass() saves only the verifier.
+	wxConfigBase *cfg = wxConfigBase::Get();
+	if (!cfg->Write("/ExternalConnect/AcceptExternalConnections", true) || !cfg->Flush()) {
+		AddLogLineCS(_("Could not save AcceptExternalConnections to amule.conf."));
+		return false;
+	}
+	AddLogLineNS(_("Password set and external connections enabled."));
+	return true;
+}
+
 // Application initialization
 bool CamuleApp::OnInit()
 {
@@ -715,6 +745,9 @@ bool CamuleApp::OnInit()
 	InstallMuleExceptionHandler();
 
 	if (!InitCommon(AMULE_APP_BASE::argc, AMULE_APP_BASE::argv)) {
+		if (set_ec_pass_stdin) {
+			SetConfigureResult(false);
+		}
 		return false;
 	}
 
@@ -811,19 +844,9 @@ bool CamuleApp::OnInit()
 	}
 #endif
 
-	// Configure EC for amuled when invoked with ec-config
-	if (ec_config) {
-		AddLogLineNS(_("\nEC configuration"));
-		if (!thePrefs::SetECPass(GetPassword(false).Encode()))
-			return false;
-		thePrefs::EnableExternalConnections(true);
-		// SetECPass() saves only the verifier.
-		wxConfigBase *cfg = wxConfigBase::Get();
-		if (!cfg->Write("/ExternalConnect/AcceptExternalConnections", true) || !cfg->Flush()) {
-			AddLogLineCS(_("Could not save AcceptExternalConnections to amule.conf."));
-			return false;
-		}
-		AddLogLineNS(_("Password set and external connections enabled."));
+	if (set_ec_pass_stdin) {
+		SetConfigureResult(SetECPassFromStdin());
+		return false;
 	}
 
 #ifndef __WINDOWS__

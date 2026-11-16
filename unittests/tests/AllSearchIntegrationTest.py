@@ -330,8 +330,8 @@ def configure_amuleapi(api, config_dir, env, log, *, admin='adminpass', guest=No
     command = [str(api), f'--config-dir={config_dir}']
     for role, password in (('admin', admin), ('guest', guest)):
         if password is not None:
-            subprocess.run(command + [f'--set-{role}-pass={password}'], env=env, check=True,
-                           stdout=log, stderr=subprocess.STDOUT, timeout=20)
+            subprocess.run(command + [f'--set-{role}-pass-stdin'], input=(password + '\n').encode(),
+                           env=env, check=True, stdout=log, stderr=subprocess.STDOUT, timeout=20)
     subprocess.run(command + ['--set-ec-pass-stdin'], input=(EC_PASSWORD + '\n').encode(),
                    env=env, check=True, stdout=log, stderr=subprocess.STDOUT, timeout=20)
 

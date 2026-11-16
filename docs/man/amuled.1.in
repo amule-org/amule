@@ -9,7 +9,6 @@ amuled \- the all\-platform eMule p2p client \- daemonized version
 .RB_untranslated [ \-\-log\-file " " \fI<file> ]
 .RB_untranslated [ \-f ]
 .RB [ \-p " " \fI<path> ]
-.RB_untranslated [ \-e ]
 .RB_untranslated [ \-o ]
 .RB_untranslated [ \-r ]
 .RB_untranslated [ \-\-configure\-autostart " " \fI<on|off> ]
@@ -19,6 +18,10 @@ amuled \- the all\-platform eMule p2p client \- daemonized version
 .RB_untranslated [ \-i ]
 .RB [ \-t " " \fI<num> ]
 .RI [ eD2k-link | collection-file ]
+
+.B_untranslated amuled
+.RB [ \-c " " \fI<path> ]
+.RB_untranslated [ \-\-set\-ec\-pass\-stdin ]
 
 .B_untranslated amuled
 .RB_untranslated [ \-v ]
@@ -47,8 +50,11 @@ Forks to background.
 After fork, create a pid-file in the \fI<path>\fR.
 \fI<path>\fR has to contain the filename.
 .TP
-.B_untranslated [ \-e\fR, \fB\-\-ec\-config ]\fR
-Configure EC (External Connections).
+.B_untranslated [ \-\-set\-ec\-pass\-stdin ]\fR
+Set the External Connections password, enable External Connections, then exit
+without starting the core. Terminal input is hidden and confirmed; redirected
+stdin supplies one line without confirmation. An empty password is rejected.
+Refused while aMule or another amuled uses the same config dir.
 .TP
 .B_untranslated [ \-o\fR, \fB\-\-log\-stdout ]\fR
 Prints log messages to stdout.

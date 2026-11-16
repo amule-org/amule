@@ -102,7 +102,7 @@ CEConnectDlg::CEConnectDlg()
 	// 127.0.0.1 is portable, and is the same default amulecmd uses (#822).
 	wxConfig::Get()->Read("/EC/Host", &pref_host, "127.0.0.1");
 	wxConfig::Get()->Read("/EC/Port", &pref_port, "4712");
-	wxConfig::Get()->Read("/EC/Password", &pwd_hash);
+	wxConfig::Get()->Read(ECClientPassword::KEY, &pwd_hash);
 	long pref_force_zlib;
 	wxConfig::Get()->Read("/EC/ForceZLIB", &pref_force_zlib, 0);
 
@@ -1132,7 +1132,7 @@ void CamuleRemoteGuiApp::Startup()
 	if (dialog->SaveUserPass()) {
 		wxConfig::Get()->Write("/EC/Host", dialog->Host());
 		wxConfig::Get()->Write("/EC/Port", dialog->Port());
-		wxConfig::Get()->Write("/EC/Password", dialog->PassHash());
+		wxConfig::Get()->Write(ECClientPassword::KEY, dialog->PassHash());
 		wxConfig::Get()->Write("/EC/ForceZLIB", dialog->ForceZlib() ? 1l : 0l);
 		wxConfig::Get()->DeleteEntry("/EC/Encryption");
 	}

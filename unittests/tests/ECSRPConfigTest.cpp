@@ -95,7 +95,7 @@ int main()
 			cfg.Write("/EC/Host", scenario == 1 ? "other-host" : "localhost");
 			cfg.Write("/EC/Port", scenario == 2 ? 4713L : 4712L);
 			if (scenario != 3)
-				cfg.Write("/EC/Password", scenario == 5 ? "unrelated" : "old");
+				cfg.Write(ECClientPassword::KEY, scenario == 5 ? "unrelated" : "old");
 			if (scenario == 4)
 				cfg.failAt = 1;
 			wxString session = "old";
@@ -106,16 +106,73 @@ int main()
 			Check(cfg.calls == ((scenario == 0 || scenario == 4) ? 1 : 0),
 				"rotation changed an unrelated or unsaved credential");
 			if (scenario == 1 || scenario == 2)
-				Check(cfg.Read("/EC/Password", wxString()) == "old",
+				Check(cfg.Read(ECClientPassword::KEY, wxString()) == "old",
 					"rotation overwrote another endpoint's password");
 			if (scenario == 3)
-				Check(!cfg.HasEntry("/EC/Password"), "rotation enabled password saving");
+				Check(!cfg.HasEntry(ECClientPassword::KEY),
+					"rotation enabled password saving");
 			if (scenario == 0)
-				Check(cfg.Read("/EC/Password", wxString()) == "new",
+				Check(cfg.Read(ECClientPassword::KEY, wxString()) == "new",
 					"remembered password was not updated");
 			if (scenario == 5)
-				Check(cfg.Read("/EC/Password", wxString()) == "unrelated",
+				Check(cfg.Read(ECClientPassword::KEY, wxString()) == "unrelated",
 					"rotation overwrote a separately saved credential");
+		}
+		// The remote.conf save: unchanged, saved, unsaved, and a conflict saves nothing.
+		{
+			FaultConfig cfg;
+			wxString error;
+			Check(ECClientPassword::MigrateRemoteConf(cfg, error) ==
+						ECClientPassword::Migration::Unchanged &&
+					cfg.calls == 0,
+				"a remote.conf without the legacy key was saved");
+			cfg.Write("/EC/Password", "digest");
+			Check(ECClientPassword::MigrateRemoteConf(cfg, error) ==
+						ECClientPassword::Migration::Saved &&
+					cfg.calls == 1 &&
+					cfg.Read(ECClientPassword::KEY, wxString()) == "digest",
+				"migrated remote.conf was not saved");
+			cfg.Write("/EC/Password", "other");
+			cfg.failAt = 2;
+			Check(ECClientPassword::MigrateRemoteConf(cfg, error) ==
+					ECClientPassword::Migration::Conflict,
+				"conflicting remote.conf keys were merged");
+			Check(cfg.calls == 1, "a conflicting remote.conf was saved");
+			cfg.DeleteEntry(ECClientPassword::KEY);
+			Check(ECClientPassword::MigrateRemoteConf(cfg, error) ==
+						ECClientPassword::Migration::Unsaved &&
+					cfg.Read(ECClientPassword::KEY, wxString()) == "other",
+				"a failed save did not keep the migrated key for this run");
+			const wxString message = ECClientPassword::RemoteConfConflictMessage(
+				"/home/u/.aMule/remote.conf", "x");
+			Check(message.Contains("/home/u/.aMule/remote.conf") &&
+					message.Contains("amulecmd -w --password-stdin"),
+				"conflict message lacks the path or the repair command");
+		}
+		// remote.conf keeps its digest; amuleapi.conf's plaintext is hashed.
+		for (const auto legacy : { ECClientPassword::LegacyPassword::Digest,
+			     ECClientPassword::LegacyPassword::Plaintext }) {
+			const bool plain = legacy == ECClientPassword::LegacyPassword::Plaintext;
+			wxFileConfig cfg(wxEmptyString, wxEmptyString, wxEmptyString, wxEmptyString, 0);
+			bool changed = true;
+			wxString error;
+			Check(ECClientPassword::MigrateLegacyKey(cfg, legacy, changed, error) && !changed,
+				"a config without the legacy key changed");
+			cfg.Write("/EC/Password", "secret");
+			Check(ECClientPassword::MigrateLegacyKey(cfg, legacy, changed, error) && changed &&
+					!cfg.HasEntry("/EC/Password") &&
+					cfg.Read(ECClientPassword::KEY, wxString()) ==
+						(plain ? MD5Sum("secret").GetHash() : wxString("secret")),
+				"legacy key was not moved to PasswordMD5");
+			cfg.Write("/EC/Password", "");
+			Check(ECClientPassword::MigrateLegacyKey(cfg, legacy, changed, error) && changed &&
+					!cfg.HasEntry("/EC/Password") && cfg.HasEntry(ECClientPassword::KEY),
+				"empty legacy key was kept or replaced the digest");
+			cfg.Write("/EC/Password", "other");
+			Check(!ECClientPassword::MigrateLegacyKey(cfg, legacy, changed, error) && !changed &&
+					error.Contains("cannot both be nonempty") &&
+					cfg.Read("/EC/Password", wxString()) == "other",
+				"conflicting keys were merged");
 		}
 		for (const auto &digest : { std::string(),
 			     std::string(32, '0'),
@@ -151,7 +208,7 @@ int main()
 				Check(!LoadCredential(cfg, active, warning),
 					"unusable legacy credential migrated");
 				Check(warning.Contains("ECPassword contains") &&
-						warning.Contains("--ec-config") &&
+						warning.Contains("--set-ec-pass-stdin") &&
 						!warning.Contains("Could not generate"),
 					"invalid legacy digest did not name the setting and recovery "
 					"command");

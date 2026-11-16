@@ -173,18 +173,6 @@ void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
 		_("Path to amuleapi config dir (default: per-platform aMule data dir)."),
 		wxCMD_LINE_VAL_STRING,
 		wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddOption("",
-		"set-admin-pass",
-		_("Set the amuleapi admin password to <plain>, storing it salted and stretched in "
-		  "amuleapi-passwords (mode 0600), then exit."),
-		wxCMD_LINE_VAL_STRING,
-		wxCMD_LINE_PARAM_OPTIONAL);
-	parser.AddOption("",
-		"set-guest-pass",
-		_("Set the amuleapi guest password to <plain>, storing it salted and stretched in "
-		  "amuleapi-passwords (mode 0600), then exit. An empty <plain> turns guest access off."),
-		wxCMD_LINE_VAL_STRING,
-		wxCMD_LINE_PARAM_OPTIONAL);
 	parser.AddSwitch("",
 		"set-admin-pass-stdin",
 		_("Set the admin password from stdin (hidden and confirmed on a terminal), then exit."));
@@ -194,8 +182,8 @@ void CamuleapiApp::OnInitCmdLine(wxCmdLineParser &parser)
 		  "empty line disables guest access."));
 	parser.AddSwitch("",
 		"set-ec-pass-stdin",
-		_("Read the EC password from stdin (hidden on a terminal), write PasswordMD5 and remove "
-		  "plaintext Password, then exit."));
+		_("Read the EC password from stdin (hidden on a terminal), write PasswordMD5, remove any "
+		  "legacy [EC]/Password key, then exit."));
 	parser.AddSwitch("", "foreground", _("Stay in the foreground; default."), wxCMD_LINE_PARAM_OPTIONAL);
 	AddLogFileOptions(parser);
 	// No --daemon: operators wanting fork-into-background wrap amuleapi in
@@ -215,26 +203,17 @@ bool CamuleapiApp::OnCmdLineParsed(wxCmdLineParser &parser)
 	parser.Found("config-dir", &m_cliConfigDirOverride);
 	parser.Found("log-file", &m_logFile);
 	m_noLogFile = parser.Found("no-log-file");
-	if (parser.Found("set-admin-pass", &m_cliSetAdminPass)) {
-		m_cliHasSetAdminPass = true;
-	}
-	if (parser.Found("set-guest-pass", &m_cliSetGuestPass)) {
-		m_cliHasSetGuestPass = true;
-	}
 	m_cliSetAdminPassStdin = parser.Found("set-admin-pass-stdin");
 	m_cliSetGuestPassStdin = parser.Found("set-guest-pass-stdin");
 	m_cliSetEcPassStdin = parser.Found("set-ec-pass-stdin");
-	const unsigned setters =
-		static_cast<unsigned>(m_cliHasSetAdminPass) + static_cast<unsigned>(m_cliHasSetGuestPass) +
-		static_cast<unsigned>(m_cliSetAdminPassStdin) +
-		static_cast<unsigned>(m_cliSetGuestPassStdin) + static_cast<unsigned>(m_cliSetEcPassStdin);
+	const unsigned setters = static_cast<unsigned>(m_cliSetAdminPassStdin) +
+				 static_cast<unsigned>(m_cliSetGuestPassStdin) +
+				 static_cast<unsigned>(m_cliSetEcPassStdin);
 	if (setters > 1) {
 		webapi::CLogDiagnostic(LogLevel::Error)
 			<< "choose exactly one password setter per invocation\n";
 		std::exit(1);
 	}
-	m_cliHasSetAdminPass = m_cliHasSetAdminPass || m_cliSetAdminPassStdin;
-	m_cliHasSetGuestPass = m_cliHasSetGuestPass || m_cliSetGuestPassStdin;
 	// The base class reads --host / --port but offers no explicit-option predicates. m_host
 	// defaults to "127.0.0.1" unconditionally. Polling the parser directly lets
 	// LoadAmuleapiConfig() tell an explicit --host=127.0.0.1 apart from the base class's
@@ -285,18 +264,16 @@ bool CamuleapiApp::OnInit()
 		} else {
 			m_cliSetEcPass = plain;
 		}
-	}
-	// Setup never connects to EC or starts the HTTP server, and must not consume the
-	// core's ephemeral token. Keep its prompts and errors out of the daemon log too.
-	// std::exit propagates setup failures; returning false from wx OnInit can exit zero.
-	if (m_cliHasSetAdminPass || m_cliHasSetGuestPass || m_cliSetEcPassStdin) {
+		// Setup never connects to EC or starts the HTTP server, and must not consume the
+		// core's ephemeral token. Keep its prompts and errors out of the daemon log too.
+		// std::exit propagates setup failures; returning false from wx OnInit can exit zero.
 		if (!m_apiConfig.Load(config_dir)) {
 			webapi::CLogDiagnostic(LogLevel::Error) << m_apiConfig.LastError() << '\n';
 			std::exit(1);
 		}
 		const int rc = m_cliSetEcPassStdin
 				       ? RunSetEcPass()
-				       : (m_cliHasSetAdminPass ? RunSetAdminPass() : RunSetGuestPass());
+				       : (m_cliSetAdminPassStdin ? RunSetAdminPass() : RunSetGuestPass());
 		std::exit(rc);
 	}
 
@@ -389,9 +366,6 @@ bool CamuleapiApp::LoadAmuleapiConfig()
 	}
 	if (!m_apiConfig.EcCfg().password_md5.empty()) {
 		m_password.Decode(wxString::FromUTF8(m_apiConfig.EcCfg().password_md5.c_str()));
-	} else if (!m_apiConfig.EcCfg().password.empty()) {
-		const wxString plain = wxString::FromUTF8(m_apiConfig.EcCfg().password.c_str());
-		m_password.Decode(MD5Sum(plain).GetHash());
 	}
 
 	// Ephemeral EC token, if the aMule core that spawned us left one. Both sides derive the
@@ -424,7 +398,7 @@ int CamuleapiApp::RunSetAdminPass()
 {
 	const wxString hashed = MD5Sum(m_cliSetAdminPass).GetHash();
 	if (!m_apiConfig.SetPassword(webcommon::kAdminCredential, std::string(hashed.Lower().utf8_str()))) {
-		Show(CFormat("--set-admin-pass failed: %s\n") %
+		Show(CFormat("--set-admin-pass-stdin failed: %s\n") %
 			wxString::FromUTF8(m_apiConfig.LastError().c_str()));
 		return 1;
 	}
@@ -441,7 +415,7 @@ int CamuleapiApp::RunSetGuestPass()
 		digest = std::string(MD5Sum(m_cliSetGuestPass).GetHash().Lower().utf8_str());
 	}
 	if (!m_apiConfig.SetPassword(webcommon::kGuestCredential, digest)) {
-		Show(CFormat("--set-guest-pass failed: %s\n") %
+		Show(CFormat("--set-guest-pass-stdin failed: %s\n") %
 			wxString::FromUTF8(m_apiConfig.LastError().c_str()));
 		return 1;
 	}
@@ -457,7 +431,7 @@ int CamuleapiApp::RunSetEcPass()
 			<< "--set-ec-pass-stdin failed: " << m_apiConfig.LastError() << '\n';
 		return 1;
 	}
-	Show("EC PasswordMD5 updated; plaintext Password removed.\n");
+	Show("EC PasswordMD5 updated.\n");
 	return 0;
 }
 
@@ -548,7 +522,7 @@ void CamuleapiApp::TextShell(const wxString & /*prompt*/)
 	// Bind-time hard gate against the "listening publicly with no password configured" footgun:
 	// a daemon bound to a routable interface before the operator runs `amuleapi --set-admin-
 	// pass` would still answer the unauth surface. Loopback bind + empty passwords is fine --
-	// the first-run flow IS "start on loopback, then run --set-admin-pass".
+	// the first-run flow IS "start on loopback, then run --set-admin-pass-stdin".
 	const bool non_loopback = (bind != "127.0.0.1" && bind != "::1" && bind != "localhost");
 	if (non_loopback && !m_apiConfig.HasAnyCredential()) {
 		Show(CFormat(_("refusing to start with BindAddress=%s and no "

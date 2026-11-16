@@ -349,7 +349,7 @@ class DaemonConfigUnitTest(unittest.TestCase):
             config.read(root / 'remote.conf', encoding='utf-8')
         self.assertEqual(config['EC']['Host'], '127.0.0.1')
         self.assertEqual(config['EC']['Port'], '4712')
-        self.assertEqual(config['EC']['Password'],
+        self.assertEqual(config['EC']['PasswordMD5'],
                          hashlib.md5(DaemonConfig.EC_PASSWORD.encode()).hexdigest())
         self.assertEqual(config['eMule']['Language'], DaemonConfig.OFFLINE['Language'])
 

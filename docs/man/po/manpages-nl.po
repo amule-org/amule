@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-11-14 10:33+0100\n"
+"POT-Creation-Date: 2026-11-16 12:10+0100\n"
 "PO-Revision-Date: 2026-11-10 17:52+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/application-man-pages/nl/>\n"
@@ -335,18 +335,22 @@ msgstr "amulecmd - Console-gebaseerd programma om aMule to besturen"
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>] [B<-P> I<E<lt>passwordE<gt>>] [B<-f> I<E<lt>pathE<gt>>]"
-msgstr "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>poortE<gt>>] [B<-P> I<E<lt>wachtwoordE<gt>>] [B<-f> I<E<lt>padE<gt>>]"
+#, fuzzy
+#| msgid "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
+msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>]"
+msgstr "[B<-t> I<E<lt>naamE<gt>>] [B<-s> I<E<lt>poortE<gt>>]"
+
+#. type: Plain text
+#: amulecmd.1.in
+#, fuzzy
+#| msgid "[B<-c> I<E<lt>pathE<gt>>]"
+msgid "[B<-f> I<E<lt>pathE<gt>>]"
+msgstr "[B<-c> I<E<lt>padE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "[B<-l> I<E<lt>langE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> I<E<lt>commandE<gt>>]B< >}"
 msgstr "[B<-l> I<E<lt>taalE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> I<E<lt>commandoE<gt>>]B< >}"
-
-#. type: Plain text
-#: amulecmd.1.in
-msgid "[B<--create-config-from>=I<E<lt>pathE<gt>>]"
-msgstr "[B<--create-config-from>=I<E<lt>padE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -375,16 +379,10 @@ msgstr "B<[ -p> I<E<lt>poortE<gt>>, B<--port>=I<E<lt>poortE<gt>> B<]>"
 msgid "aMule's port for External Connections, as set in Preferences-E<gt>Remote Controls (default: I<4712>)"
 msgstr "De poort die aMule gebruikt voor Externe Verbindingen, zoals ingesteld in Voorkeuren-E<gt>Externe Controle (standaard: I<4712>)"
 
-#. type: TP
-#: amulecmd.1.in
-#, no-wrap
-msgid "B<[ -P> I<E<lt>passwordE<gt>>, B<--password>=I<E<lt>passwordE<gt>> B<]>"
-msgstr "B<[ -P> I<E<lt>wachtwoordE<gt>>, B<--password>=I<E<lt>wachtwoordE<gt>> B<]>"
-
 #. type: Plain text
 #: amulecmd.1.in
-msgid "External Connections password."
-msgstr "Wachtwoord voor Externe Verbindingen."
+msgid "Read the External Connections password from the first line of stdin. Input is hidden on a terminal. Later lines stay on stdin, where amulecmd reads its commands. With B<-w> it replaces a saved password, even when an older file holds two. Without this option and without a saved password, amulecmd asks for the password the same way, so piped input then also starts with the password."
+msgstr ""
 
 #. type: TP
 #: amulecmd.1.in
@@ -433,17 +431,6 @@ msgstr "B<[ -c> I<E<lt>commandoE<gt>>, B<--command>=I<E<lt>commandoE<gt>> B<]>"
 #: amulecmd.1.in
 msgid "Execute I<E<lt>commandE<gt>> as if it was entered at amulecmd's prompt and exit."
 msgstr "Voer I<E<lt>commandoE<gt>> uit alsof het was ingetoetst in amulecmd's prompt en sluit af."
-
-#. type: TP
-#: amulecmd.1.in
-#, no-wrap
-msgid "B<[ --create-config-from>=I<E<lt>pathE<gt>> B<]>"
-msgstr "B<[ --create-config-from>=I<E<lt>padE<gt>> B<]>"
-
-#. type: Plain text
-#: amulecmd.1.in
-msgid "Create config file based upon I<E<lt>pathE<gt>>, which must point to a valid aMule config file, and then exit."
-msgstr "Maak configuratiebestand op basis van I<E<lt>padE<gt>>, wat naar een geldig aMule configuratiebestand moet verwijzen, en sluit dan af."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -855,6 +842,11 @@ msgstr "Als geen regio is gedefiniëerd in de commandoregel of in het configurat
 msgid "~/.aMule/remote.conf"
 msgstr "~/.aMule/remote.conf"
 
+#. type: Plain text
+#: amulecmd.1.in
+msgid "The password is saved as an MD5 digest in [EC]/PasswordMD5, the same key as in amuleapi.conf. An [EC]/Password key from an older file is moved there on load."
+msgstr ""
+
 #. type: SH
 #: amulecmd.1.in
 #, no-wrap
@@ -868,27 +860,16 @@ msgstr "Over het algemeen wordt amulecmd voor het eerst uitgevoerd als:"
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
+#, fuzzy
+#| msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
+msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
 msgstr "B<amulecmd> B<-h> I<hostnaam> B<-p> I<EV-port> B<-P> I<EV-wachtwoord> B<-w>"
 
 #. type: Plain text
 #: amulecmd.1.in
-msgid "or"
-msgstr "of"
-
-#. type: Plain text
-#: amulecmd.1.in
-msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
-msgstr "B<amulecmd> B<--create-config-from>=I</home/Gebruikersnaam/.aMule/amule.conf>"
-
-#. type: Plain text
-#: amulecmd.1.in
-msgid "After daemon credential migration, supply the client password with B<-P> or enter it at the password prompt; the daemon verifier cannot supply it."
-msgstr "Na migratie van inloggegevens naar de daemon voert u het client-wachtwoord in met B<-P> of voert u het in het wachtwoordprompt in. De daemonverificatie kan het niet aanleveren."
-
-#. type: Plain text
-#: amulecmd.1.in
-msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
+#, fuzzy
+#| msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
+msgid "This will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgstr "Dit zal instellingen opslaan naar I<$HOME/.aMule/remote.conf> en later hoeft u alleen nog het volgende te typen:"
 
 #. type: Plain text
@@ -947,8 +928,8 @@ msgstr "Na overschakelen, maakt een pid-bestand in het I<E<lt>padE<gt>>.  I<E<lt
 
 #. type: Plain text
 #: amuled.1.in
-msgid "Configure EC (External Connections)."
-msgstr "Stel EV in (Externe Verbindingen)."
+msgid "Set the External Connections password, enable External Connections, then exit without starting the core. Terminal input is hidden and confirmed; redirected stdin supplies one line without confirmation. An empty password is rejected.  Refused while aMule or another amuled uses the same config dir."
+msgstr ""
 
 #. type: Plain text
 #: amuled.1.in
@@ -1307,6 +1288,38 @@ msgstr "B<wxcas> is een programma om de inhoud van uw online handtekeningsbestan
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 msgstr "Gebaseerd op Pedro de Oliveira's B<cas>(1).  B<wxcas> is geschreven door ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 
+#~ msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>] [B<-P> I<E<lt>passwordE<gt>>] [B<-f> I<E<lt>pathE<gt>>]"
+#~ msgstr "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>poortE<gt>>] [B<-P> I<E<lt>wachtwoordE<gt>>] [B<-f> I<E<lt>padE<gt>>]"
+
+#~ msgid "[B<--create-config-from>=I<E<lt>pathE<gt>>]"
+#~ msgstr "[B<--create-config-from>=I<E<lt>padE<gt>>]"
+
+#, no-wrap
+#~ msgid "B<[ -P> I<E<lt>passwordE<gt>>, B<--password>=I<E<lt>passwordE<gt>> B<]>"
+#~ msgstr "B<[ -P> I<E<lt>wachtwoordE<gt>>, B<--password>=I<E<lt>wachtwoordE<gt>> B<]>"
+
+#~ msgid "External Connections password."
+#~ msgstr "Wachtwoord voor Externe Verbindingen."
+
+#, no-wrap
+#~ msgid "B<[ --create-config-from>=I<E<lt>pathE<gt>> B<]>"
+#~ msgstr "B<[ --create-config-from>=I<E<lt>padE<gt>> B<]>"
+
+#~ msgid "Create config file based upon I<E<lt>pathE<gt>>, which must point to a valid aMule config file, and then exit."
+#~ msgstr "Maak configuratiebestand op basis van I<E<lt>padE<gt>>, wat naar een geldig aMule configuratiebestand moet verwijzen, en sluit dan af."
+
+#~ msgid "or"
+#~ msgstr "of"
+
+#~ msgid "B<amulecmd> B<--create-config-from>=I</home/username/.aMule/amule.conf>"
+#~ msgstr "B<amulecmd> B<--create-config-from>=I</home/Gebruikersnaam/.aMule/amule.conf>"
+
+#~ msgid "After daemon credential migration, supply the client password with B<-P> or enter it at the password prompt; the daemon verifier cannot supply it."
+#~ msgstr "Na migratie van inloggegevens naar de daemon voert u het client-wachtwoord in met B<-P> of voert u het in het wachtwoordprompt in. De daemonverificatie kan het niet aanleveren."
+
+#~ msgid "Configure EC (External Connections)."
+#~ msgstr "Stel EV in (Externe Verbindingen)."
+
 #~ msgid "[B<-w> I<E<lt>pathE<gt>>]"
 #~ msgstr "[B<-w> I<E<lt>padE<gt>>]"
 
@@ -1330,9 +1343,6 @@ msgstr "Gebaseerd op Pedro de Oliveira's B<cas>(1).  B<wxcas> is geschreven door
 
 #~ msgid "[B<-l> I<E<lt>langE<gt>>]"
 #~ msgstr "[B<-l> I<E<lt>taalE<gt>>]"
-
-#~ msgid "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
-#~ msgstr "[B<-t> I<E<lt>naamE<gt>>] [B<-s> I<E<lt>poortE<gt>>]"
 
 #~ msgid "[B<-U> I<E<lt>portE<gt>>]"
 #~ msgstr "[B<-U> I<E<lt>poortE<gt>>]"

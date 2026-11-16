@@ -139,15 +139,20 @@ IMPLEMENT_APP_NO_MAIN(CamuleDaemonApp)
 // of being orphaned by a mid-init fork (#849). Windows never forks.
 static bool AmuledWantsDaemonFork(int argc, char **argv)
 {
+	bool fork = false;
 	for (int i = 1; i < argc; ++i) {
 		if (strcmp(argv[i], "--") == 0) {
 			break; // end-of-options marker
 		}
 		if (strcmp(argv[i], "-f") == 0 || strcmp(argv[i], "--full-daemon") == 0) {
-			return true;
+			fork = true;
+		}
+		// The fork detaches stdin, which this one-shot run reads.
+		if (strcmp(argv[i], "--set-ec-pass-stdin") == 0) {
+			return false;
 		}
 	}
-	return false;
+	return fork;
 }
 
 static void AmuledDaemonizeEarly()
@@ -295,23 +300,26 @@ static BOOL CtrlHandler(DWORD fdwCtrlType)
 int CamuleDaemonApp::OnRun()
 {
 	if (!thePrefs::AcceptExternalConnections()) {
-		AddLogLineCS(_("ERROR: aMule daemon cannot be used when external connections are disabled. "
-			       "To enable External Connections, use either a normal aMule, start amuled with "
-			       "the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in "
-			       "the file ~/.aMule/amule.conf"));
+		AddLogLineCS(_(
+			"ERROR: aMule daemon cannot be used when external connections are disabled. "
+			"To enable External Connections, use either a normal aMule, run amuled once with "
+			"the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in "
+			"the file ~/.aMule/amule.conf"));
 		return 0;
 	} else if (!thePrefs::ECPasswordLoadError().IsEmpty()) {
 		AddLogLineCS(thePrefs::ECPasswordLoadError());
 		return 1;
 	} else if (thePrefs::ECPasswordVerifier().IsEmpty()) {
-		AddLogLineCS(_("ERROR: An EC password is required. Run amuled --ec-config to set it."));
+		AddLogLineCS(
+			_("ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."));
 		return 0;
 	}
 	try {
 		ECSRP::Verifier::Decode(std::string(thePrefs::ECPasswordVerifier().utf8_str()));
 	} catch (const std::exception &) {
-		AddLogLineCS(_("ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to "
-			       "set a new EC password."));
+		AddLogLineCS(_(
+			"ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to "
+			"set a new EC password."));
 		return 1;
 	}
 

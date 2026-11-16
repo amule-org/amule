@@ -145,22 +145,16 @@ public:
 	 * True for amulecmd, which has no config file of its own. amuleapi returns
 	 * false: it owns amuleapi.conf, and reading remote.conf as well gave two files describing
 	 * the same EC connection, with the winner decided by load order. When false the base class
-	 * registers neither --config-file, --write-config nor --create-config-from, and loads
-	 * nothing -- the subclass is the only source of configuration.
+	 * registers neither --config-file nor --write-config, and loads nothing -- the subclass is
+	 * the only source of configuration.
 	 */
 	virtual bool UsesConnectorConfigFile() const { return true; }
 
 	/**
-	 * Whether this connector offers -P / --password on the command line.
+	 * Whether this connector offers --password-stdin and asks for a missing password.
 	 *
-	 * amuleapi returns false. A password passed there lands in argv, which any local user can
-	 * read out of ps, and amuleapi has two ways to get the credential that do not: the
-	 * ephemeral token the core writes when it spawns amuleapi, and [EC]/Password in its own
-	 * amuleapi.conf. Keeping the option registered would keep offering the one route that
-	 * leaks.
-	 *
-	 * amulecmd keeps it. It is commonly run by hand, and owns no config file that could hold
-	 * the value instead.
+	 * amuleapi returns false: it takes the ephemeral token the core writes when it spawns
+	 * amuleapi, or [EC]/PasswordMD5 from amuleapi.conf, which --set-ec-pass-stdin writes.
 	 */
 	virtual bool UsesEcPasswordOption() const { return true; }
 
@@ -171,7 +165,8 @@ public:
 	 * portability by accident, when some other tool happens to have left one behind.
 	 */
 	virtual wxString PortableProbeFile() const { return "remote.conf"; }
-	void LoadAmuleConfig(CECFileConfig &cfg);
+	// Reads the password with mulecommon::ReadPassword(). False after reporting why.
+	bool ReadEcPassword();
 	virtual void OnInitCommandSet();
 	virtual bool OnInit();
 	virtual const wxString GetGreetingTitle() = 0;
@@ -305,6 +300,8 @@ private:
 	CRemoteConnect *m_ECClient;
 	char *m_InputLine;
 	bool m_NeedsConfigSave;
+	// -w --password-stdin: replace a saved password even if both keys are set.
+	bool m_replaceEcPassword = false;
 	wxString m_language;
 	wxLocale *m_locale;
 	char *m_strFullVersion;
