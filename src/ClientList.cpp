@@ -1821,9 +1821,8 @@ bool CClientList::DoRequestFirewallCheckUDP(const Kademlia::CContact &contact)
 	if (IsIPAlreadyKnown(wxUINT32_SWAP_ALWAYS(contact.GetIPAddress()))) {
 		return false;
 	}
-	// Just create the client object, set the state and wait. TODO: we do not know the client's
-	// userhash, so no obfuscated connection can be built and the check does not work under
-	// "Require Obfuscation". The only somewhat acceptable fix is to use the KadID instead.
+	// Just create the client object, set the state and wait. We do not know the client's
+	// userhash, so the connection can only be plain (see CryptSettingsForbidDial()).
 	CUpDownClient *pNewClient =
 		new CUpDownClient(contact.GetTCPPort(), contact.GetIPAddress(), 0, 0, NULL, false, true);
 	pNewClient->SetKadState(KS_QUEUED_FWCHECK_UDP);
