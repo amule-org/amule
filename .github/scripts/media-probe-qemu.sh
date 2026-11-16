@@ -39,7 +39,7 @@ test -n "$kernel"
 sha256sum "$kernel" >> media-probe-vm/provenance.txt
 
 sudo mkdir -p "$root/tests" "$root/proc" "$root/sys" "$root/dev"
-sudo cp src/mediaprobe/test_*.py src/mediaprobe/corpus.py \
+sudo cp src/mediaprobe/test_*.py src/mediaprobe/corpus.py src/mediaprobe/fixtures.py \
   build-probe/src/amule-media-probe build-probe/media-probe-sandbox-test "$root/tests/"
 sudo tee "$root/init" > /dev/null <<'GUEST'
 #!/bin/sh

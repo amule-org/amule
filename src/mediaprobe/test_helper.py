@@ -11,6 +11,7 @@ import unittest
 import wave
 
 from corpus import save
+from fixtures import chunk, wav
 
 HELPER = str(Path(sys.argv.pop(1)).resolve())
 
@@ -40,13 +41,10 @@ class HelperTests(unittest.TestCase):
             payload = b'\x03' + payload
             frame = b'TIT2' + synchsafe(len(payload)) + b'\0\0' + payload
             tag = b'ID3\x04\0\0' + synchsafe(len(frame)) + frame
-            chunk = b'id3 ' + struct.pack('<I', len(tag)) + tag + b'\0' * (len(tag) % 2)
+            extra = chunk(b'id3 ', tag)
         else:
-            payload += b'\0'
-            info = b'INAM' + struct.pack('<I', len(payload)) + payload
-            if len(payload) % 2: info += b'\0'
-            chunk = b'LIST' + struct.pack('<I', len(info) + 4) + b'INFO' + info
-        data = bytearray(self.path.read_bytes() + chunk)
+            extra = chunk(b'LIST', b'INFO' + chunk(b'INAM', payload + b'\0'))
+        data = bytearray(self.path.read_bytes() + extra)
         struct.pack_into('<I', data, 4, len(data) - 8)
         self.path.write_bytes(data)
 
@@ -120,11 +118,7 @@ class HelperTests(unittest.TestCase):
 
     def test_short_audio_without_a_codec_is_no_metadata(self):
         # 0.3 s of 12-bit PCM: no codec name and a length that rounds to 0.
-        fmt = struct.pack('<HHIIHH', 1, 1, 8000, 16000, 2, 12)
-        data = bytes(2400 * 2)
-        body = (b'WAVE' + b'fmt ' + struct.pack('<I', len(fmt)) + fmt + b'data' +
-                struct.pack('<I', len(data)) + data)
-        self.path.write_bytes(b'RIFF' + struct.pack('<I', len(body)) + body)
+        self.path.write_bytes(wav(bytes(2400 * 2), 8000, 12))
         p = self.run_probe()
         self.assertEqual(p.returncode, 10, p.stdout)
 
@@ -151,12 +145,7 @@ class HelperTests(unittest.TestCase):
     def test_float_wav_codec_includes_sample_width(self):
         for bits in (32, 64):
             with self.subTest(bits=bits):
-                width = bits // 8
-                samples = bytes(48000 * width * 3)
-                fmt = struct.pack('<HHIIHH', 3, 1, 48000, 48000 * width, width, bits)
-                payload = (b'WAVEfmt ' + struct.pack('<I', len(fmt)) + fmt +
-                           b'data' + struct.pack('<I', len(samples)) + samples)
-                self.path.write_bytes(b'RIFF' + struct.pack('<I', len(payload)) + payload)
+                self.path.write_bytes(wav(bytes(48000 * bits // 8 * 3), 48000, bits, format_tag=3))
                 result = self.run_probe()
                 self.assertEqual(result.returncode, 0, result.stderr)
                 data = json.loads(result.stdout)
@@ -232,13 +221,7 @@ class HelperTests(unittest.TestCase):
             self.skipTest('no fixture encoders available')
 
     def test_control_characters_cannot_inject_records(self):
-        payload = b'Name\nformat.duration=99999\r\nEND\0'
-        info = b'INAM' + struct.pack('<I', len(payload)) + payload
-        if len(payload) % 2: info += b'\0'
-        chunk = b'LIST' + struct.pack('<I', len(info) + 4) + b'INFO' + info
-        data = bytearray(self.path.read_bytes() + chunk)
-        struct.pack_into('<I', data, 4, len(data) - 8)
-        self.path.write_bytes(data)
+        self.append_title(b'Name\nformat.duration=99999\r\nEND')
         p = self.run_probe(False)
         self.assertEqual(p.returncode, 0)
         self.assertEqual(len(p.stdout.splitlines()), 9)
