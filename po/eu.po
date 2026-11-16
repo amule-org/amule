@@ -384,6 +384,24 @@ msgstr ""
 
 #: src/amule.cpp
 #, fuzzy, c-format
+msgid "Could not read the EC password: %s"
+msgstr "Ezin izan da amuleapi pasahitza gorde: %s"
+
+#: src/amule.cpp src/ExternalConnector.cpp
+#, fuzzy
+msgid "The EC password must not be empty."
+msgstr "- TCP ataka aldaturik.\n"
+
+#: src/amule.cpp
+msgid "Could not save AcceptExternalConnections to amule.conf."
+msgstr ""
+
+#: src/amule.cpp
+msgid "Password set and external connections enabled."
+msgstr "Pasahitza ezarria eta kanpo konexioak gaiturik."
+
+#: src/amule.cpp
+#, fuzzy, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr "Sareko trafiko guztia interfazera lotzen: %s"
 
@@ -414,22 +432,6 @@ msgstr "Zure lokalak sistemako lehenetsira aldatu dira konfigurazio aldaketa bat
 #: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Argb"
-
-#: src/amule.cpp
-msgid ""
-"\n"
-"EC configuration"
-msgstr ""
-"\n"
-"EC konfigurazioa"
-
-#: src/amule.cpp
-msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr ""
-
-#: src/amule.cpp
-msgid "Password set and external connections enabled."
-msgstr "Pasahitza ezarria eta kanpo konexioak gaiturik."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -851,15 +853,16 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Kad sarea hobespenetan ezgaiturik, ez da konektatuko."
 
 #: src/amuled.cpp
-msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
+#, fuzzy
+msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
 msgstr "ERROREA: aMule deabrua ezin da erabili kanpo konexioak ezgaiturik badaude. Kanpo konexioak gaitzeko aMule arrunta erabili, amuled --ec-config aukeraz abiarazi edo ezarri \"AcceptExternalConnections\" gakoa 1 balioaz ~/.aMule/amule.conf fitxategian"
 
 #: src/amuled.cpp
-msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
+msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
 msgstr ""
 
 #: src/amuled.cpp
-msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
+msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr ""
 
 #: src/amuled.cpp
@@ -1457,8 +1460,9 @@ msgstr "ABISUA: %s agian hondaturik dago (%i)"
 msgid "IO error while reading %s file: %s"
 msgstr "SI errorea %s fitxategia irakurtzean: %s"
 
-#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp src/SharedFileList.cpp
+#: src/HashListFile.cpp src/kademlia/kademlia/Search.cpp
+#: src/kademlia/routing/RoutingZone.cpp src/KnownFileList.cpp
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Errorea %s fitxategia gordetzerakoan: %s"
@@ -2441,6 +2445,19 @@ msgstr[1] "Ezin izan dira %u lotura gehitu (xehetasunetarako, ikusi erregistroa)
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Okerreko eD2k lotura! ERROREA: %s"
 
+#: src/ECClientPassword.h
+msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
+msgstr ""
+
+#: src/ECClientPassword.h
+msgid "To replace both, run amulecmd -w --password-stdin."
+msgstr ""
+
+#: src/ECClientPassword.h
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr ""
@@ -3002,16 +3019,10 @@ msgstr ""
 #: src/ExternalConnector.cpp
 msgid ""
 "Cannot connect with an empty password.\n"
-"You must specify a password either in config file\n"
-"or on command-line, or enter one when asked.\n"
+"Set one with --set-ec-pass-stdin.\n"
 "\n"
 "Exiting...\n"
 msgstr ""
-"Ezin da pasahitz zuri batez konektatu.\n"
-"Pasahitz bat ezarri behar duzu konfigurazio fitxategian,\n"
-"komando lerroan, edo eskatzen zaizunean sartu.\n"
-"\n"
-"Irteten...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3026,8 +3037,8 @@ msgid "aMule's port for External Connection. (default: 4712)"
 msgstr "Kanpo konexioetarako aMuleren ataka. (Lehenetsia 4712)"
 
 #: src/ExternalConnector.cpp
-msgid "External Connection password."
-msgstr "Kanpo konexio pasahitza."
+msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
+msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3050,10 +3061,6 @@ msgid "Write command line options to config file."
 msgstr "Idatzi komando lerroko aukerak konfigurazio fitxategira."
 
 #: src/ExternalConnector.cpp
-msgid "Creates config file based on aMule's config file."
-msgstr "aMuleren konfigurazio fitxategian oinarriturik konfigurazio fitxategia sortzen du."
-
-#: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr "Programa bertsioa bistarazi."
 
@@ -3070,8 +3077,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "Ez idatzi erregistro-fitxategirik; inprimatu kontsolan soilik."
 
 #: src/ExternalConnector.cpp
-msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr ""
+#, fuzzy, c-format
+msgid "Cannot read the password: %s\n"
+msgstr "Ezin izan da amuleapi pasahitza gorde: %s"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -7240,7 +7248,7 @@ msgid "Remote Controls"
 msgstr "Urruneko kontrolak"
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgid "Let amulegui, amuleapi and other tools control aMule."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
@@ -10674,7 +10682,7 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr ""
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
+msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr ""
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
@@ -10688,6 +10696,32 @@ msgstr ""
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr ""
+
+#~ msgid ""
+#~ "\n"
+#~ "EC configuration"
+#~ msgstr ""
+#~ "\n"
+#~ "EC konfigurazioa"
+
+#~ msgid ""
+#~ "Cannot connect with an empty password.\n"
+#~ "You must specify a password either in config file\n"
+#~ "or on command-line, or enter one when asked.\n"
+#~ "\n"
+#~ "Exiting...\n"
+#~ msgstr ""
+#~ "Ezin da pasahitz zuri batez konektatu.\n"
+#~ "Pasahitz bat ezarri behar duzu konfigurazio fitxategian,\n"
+#~ "komando lerroan, edo eskatzen zaizunean sartu.\n"
+#~ "\n"
+#~ "Irteten...\n"
+
+#~ msgid "External Connection password."
+#~ msgstr "Kanpo konexio pasahitza."
+
+#~ msgid "Creates config file based on aMule's config file."
+#~ msgstr "aMuleren konfigurazio fitxategian oinarriturik konfigurazio fitxategia sortzen du."
 
 #~ msgid "!!! WARNING !!!"
 #~ msgstr "!!! KONTUZ !!!"

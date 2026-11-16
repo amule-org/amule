@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-15 14:13+0000\n"
+"PO-Revision-Date: 2026-11-16 12:37+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -402,6 +402,24 @@ msgid "Finishing shutdown..."
 msgstr "正在完成关闭…"
 
 #: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not read the EC password: %s"
+msgstr "无法保存 amuleapi 密码：%s"
+
+#: src/amule.cpp src/ExternalConnector.cpp
+#, fuzzy
+msgid "The EC password must not be empty."
+msgstr "EC 密码未更改。"
+
+#: src/amule.cpp
+msgid "Could not save AcceptExternalConnections to amule.conf."
+msgstr "无法保存 AcceptExternalConnections 到 amule.conf。"
+
+#: src/amule.cpp
+msgid "Password set and external connections enabled."
+msgstr "密码已设置，启用远程连接。"
+
+#: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr "绑定 aMule 的 P2P 和 HTTP 流量到接口：%s"
@@ -433,22 +451,6 @@ msgstr "对不起，由于配置变动，您的地区设置已经变为系统默
 #: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "信息"
-
-#: src/amule.cpp
-msgid ""
-"\n"
-"EC configuration"
-msgstr ""
-"\n"
-"EC 配置"
-
-#: src/amule.cpp
-msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr "无法保存 AcceptExternalConnections 到 amule.conf。"
-
-#: src/amule.cpp
-msgid "Password set and external connections enabled."
-msgstr "密码已设置，启用远程连接。"
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -862,15 +864,18 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Kad 网络在首选项中被禁用了，没有连接。"
 
 #: src/amuled.cpp
-msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
+#, fuzzy
+msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
 msgstr "错误：当远程连接被禁用的时，aMule 服务程序无法使用。要启用远程连接，请使用普通的 aMule，或使用 --ec-config选项启动 amuled 或在文件 ~/aMule/amule.conf 中设置选项\"AcceptExternalConnections\"为1"
 
 #: src/amuled.cpp
-msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
+#, fuzzy
+msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
 msgstr "错误：需要 EC 密码。运行 amuled --ec-config 来设置它。"
 
 #: src/amuled.cpp
-msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "错误：amule.conf 中的 ECPasswordVerifier 无效。运行 amuled --ec-config 来设置新的 EC 密码。"
 
 #: src/amuled.cpp
@@ -1464,8 +1469,9 @@ msgstr "警告：%s可能已损坏（%i）"
 msgid "IO error while reading %s file: %s"
 msgstr "读取 %s 文件时发生 IO 错误：%s"
 
-#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp src/SharedFileList.cpp
+#: src/HashListFile.cpp src/kademlia/kademlia/Search.cpp
+#: src/kademlia/routing/RoutingZone.cpp src/KnownFileList.cpp
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "保存 %s 文件时发生错误：%s"
@@ -2432,6 +2438,19 @@ msgstr[1] "无法添加 %u 个链接（详情请查看日志）"
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "非法 eD2k 链接！错误: %s"
 
+#: src/ECClientPassword.h
+msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
+msgstr ""
+
+#: src/ECClientPassword.h
+msgid "To replace both, run amulecmd -w --password-stdin."
+msgstr ""
+
+#: src/ECClientPassword.h
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr "拒绝了更改在线签名文件夹的远程请求：它只能在 daemon 程序自己的配置中设置。"
@@ -2981,16 +3000,10 @@ msgstr ""
 #: src/ExternalConnector.cpp
 msgid ""
 "Cannot connect with an empty password.\n"
-"You must specify a password either in config file\n"
-"or on command-line, or enter one when asked.\n"
+"Set one with --set-ec-pass-stdin.\n"
 "\n"
 "Exiting...\n"
 msgstr ""
-"不能使用空密码连接，\n"
-"您必须在配置文件\n"
-"或在命令行设置一个，或者在询问时输入。\n"
-"\n"
-"退出...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3005,8 +3018,8 @@ msgid "aMule's port for External Connection. (default: 4712)"
 msgstr "aMule 的远程连接端口。(默认：4712)"
 
 #: src/ExternalConnector.cpp
-msgid "External Connection password."
-msgstr "远程连接密码。"
+msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
+msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3029,10 +3042,6 @@ msgid "Write command line options to config file."
 msgstr "把命令行参数写入设置文件。"
 
 #: src/ExternalConnector.cpp
-msgid "Creates config file based on aMule's config file."
-msgstr "基于 aMule 的设置文件建立新设置文件。"
-
-#: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr "输出程序版本。"
 
@@ -3049,8 +3058,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "不写入日志文件；只打印到控制台。"
 
 #: src/ExternalConnector.cpp
-msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr "daemon 程序验证器无法提供客户端密码。使用 -P 或密码提示。\n"
+#, fuzzy, c-format
+msgid "Cannot read the password: %s\n"
+msgstr "无法保存 amuleapi 密码：%s"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -5104,9 +5114,8 @@ msgid "This specifies the language used on controls."
 msgstr "这用来指定控制语言。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Startup"
-msgstr "开始"
+msgstr "启动"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5129,7 +5138,6 @@ msgid "Enabling this makes aMule minimize itself upon start."
 msgstr "启用后会使 aMule 在启动时立即最小化。"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Links"
 msgstr "链接"
 
@@ -5147,7 +5155,7 @@ msgstr "打开链接集合会查询其所包含的每个 eD2k 链接。在 Windo
 
 #: src/muuli_wdr.cpp
 msgid "Behavior"
-msgstr ""
+msgstr "行为"
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -5994,13 +6002,12 @@ msgid "Guest password"
 msgstr "访客密码"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Search settings"
-msgstr "搜索"
+msgstr "搜索设置"
 
 #: src/muuli_wdr.cpp
 msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
-msgstr ""
+msgstr "根据名称寻找设置。匹配的页面留在下方列表中，这些页面中匹配的选项以粗体显示。"
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -7099,7 +7106,7 @@ msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
-msgstr ""
+msgstr "昵称和语言、aMule 如何启动和关闭、用来打开链接和进行预览的程序。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -7107,7 +7114,7 @@ msgstr "界面"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
-msgstr ""
+msgstr "外观、窗口标题和如何绘制传输列表。"
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
@@ -7115,7 +7122,7 @@ msgstr "连接"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
-msgstr ""
+msgstr "行容量、带宽限制、端口和 aMule 加入的网络。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -7123,7 +7130,7 @@ msgstr "代理"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Send aMule's connections through a proxy server."
-msgstr ""
+msgstr "通过代理服务器发送 aMule 的连接。"
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -7131,7 +7138,7 @@ msgstr "服务器"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
-msgstr ""
+msgstr "aMule 如何保存其 eD2k 服务器列表并选择连接的服务器。"
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
@@ -7139,16 +7146,15 @@ msgstr "目录"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Where downloads are stored and which folders you share."
-msgstr ""
+msgstr "存储下载项的位置和你分享的文件夹。"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Where the core's folders can be reached from this computer."
-msgstr "可以从这台电脑访问到同一个文件夹的地方，如已挂载的网络共享"
+msgstr "可以从这台电脑连上核心的文件夹的地方。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How downloads and uploads are handled, corruption recovery and media details."
-msgstr ""
+msgstr "如何处理上传和下载、损坏恢复和媒体详情。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Events"
@@ -7156,11 +7162,11 @@ msgstr "事件"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Run your own commands when something happens in aMule."
-msgstr ""
+msgstr "当 aMule 发生了什么时运行你自己的命令。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Graph timing and colors, and what the statistics tree shows."
-msgstr ""
+msgstr "图表的时序和颜色，以及统计树显示的内容。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
@@ -7168,7 +7174,7 @@ msgstr "过滤"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Keep spam and unwanted words out of your chat messages and file comments."
-msgstr ""
+msgstr "将垃圾信息和不想要的单词排除在聊天消息和文件注释外。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -7176,15 +7182,16 @@ msgstr "安全"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
-msgstr ""
+msgstr "安全的身份证明、协议混淆、IP 过滤和谁能浏览你共享的文件。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
 msgstr "远程控制"
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
-msgstr ""
+#, fuzzy
+msgid "Let amulegui, amuleapi and other tools control aMule."
+msgstr "让 amulegui、amuleapi、web 界面和其他工具控制 aMule。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
@@ -7192,7 +7199,7 @@ msgstr "在线签名"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Save aMule's status to a file that other programs can show."
-msgstr ""
+msgstr "将 aMule 状态保存到其他程序可显示的文件。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
@@ -7200,7 +7207,7 @@ msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Show each client's country, looked up in a GeoIP database."
-msgstr ""
+msgstr "显示每个客户端的地区，通过 GeoIP 数据库进行查询。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
@@ -7208,16 +7215,15 @@ msgstr "高级"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
-msgstr ""
+msgstr "连接速率、来源查询、缓冲和队列，用于精细调整。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "调试"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose which kinds of debug messages are written to the log."
-msgstr "接收到的消息文本将被写入日志。"
+msgstr "选择写入日志的调试信息类型。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7245,7 +7251,7 @@ msgstr "使用ID %d和密匙%s连接Cfg到小插件失败"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "No settings match \"%s\". Try a shorter or different word."
-msgstr ""
+msgstr "没有设置匹配 \"%s\"。尝试更短的单词或不一样的单词。"
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -10596,7 +10602,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "EC 密码更改被拒绝：无法存储 ECPasswordVerifier。活动的凭据未更改。"
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "ECPassword 包含无效或空密码摘要。运行 amuled --ec-config 来设置新的 EC 密码。"
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
@@ -10610,6 +10617,35 @@ msgstr "无法将旧的 ECPassword 和 ECPasswordVerifier 进行比较；拒绝�
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "降级后迁移已更改的旧的 ECPassword；之前的验证器不再对本次运行进行身份认证。"
+
+#~ msgid ""
+#~ "\n"
+#~ "EC configuration"
+#~ msgstr ""
+#~ "\n"
+#~ "EC 配置"
+
+#~ msgid ""
+#~ "Cannot connect with an empty password.\n"
+#~ "You must specify a password either in config file\n"
+#~ "or on command-line, or enter one when asked.\n"
+#~ "\n"
+#~ "Exiting...\n"
+#~ msgstr ""
+#~ "不能使用空密码连接，\n"
+#~ "您必须在配置文件\n"
+#~ "或在命令行设置一个，或者在询问时输入。\n"
+#~ "\n"
+#~ "退出...\n"
+
+#~ msgid "External Connection password."
+#~ msgstr "远程连接密码。"
+
+#~ msgid "Creates config file based on aMule's config file."
+#~ msgstr "基于 aMule 的设置文件建立新设置文件。"
+
+#~ msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
+#~ msgstr "daemon 程序验证器无法提供客户端密码。使用 -P 或密码提示。\n"
 
 #~ msgid "!!! WARNING !!!"
 #~ msgstr "！！！警告！！！"

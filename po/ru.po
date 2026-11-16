@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-15 14:13+0000\n"
+"PO-Revision-Date: 2026-11-16 12:37+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -404,6 +404,24 @@ msgid "Finishing shutdown..."
 msgstr "Завершение выключения…"
 
 #: src/amule.cpp
+#, fuzzy, c-format
+msgid "Could not read the EC password: %s"
+msgstr "Не удалось сохранить пароль amuleapi: %s"
+
+#: src/amule.cpp src/ExternalConnector.cpp
+#, fuzzy
+msgid "The EC password must not be empty."
+msgstr "EC-пароль не был изменён."
+
+#: src/amule.cpp
+msgid "Could not save AcceptExternalConnections to amule.conf."
+msgstr "Не удалось сохранить AcceptExternalConnections в amule.conf."
+
+#: src/amule.cpp
+msgid "Password set and external connections enabled."
+msgstr "Пароль задан и внешние соединения разрешены."
+
+#: src/amule.cpp
 #, c-format
 msgid "Binding aMule's peer-to-peer and HTTP traffic to interface: %s"
 msgstr "Привязка пирингового и HTTP-трафика aMule к интерфейсу: %s"
@@ -435,22 +453,6 @@ msgstr "В связи со сменой версии, значение ваше�
 #: src/amule.cpp src/CatDialog.cpp src/ServerListCtrl.cpp
 msgid "Info"
 msgstr "Сведения"
-
-#: src/amule.cpp
-msgid ""
-"\n"
-"EC configuration"
-msgstr ""
-"\n"
-"EC конфигурация"
-
-#: src/amule.cpp
-msgid "Could not save AcceptExternalConnections to amule.conf."
-msgstr "Не удалось сохранить AcceptExternalConnections в amule.conf."
-
-#: src/amule.cpp
-msgid "Password set and external connections enabled."
-msgstr "Пароль задан и внешние соединения разрешены."
 
 #: src/amule.cpp src/KadDlg.cpp src/PrefsUnifiedDlg.cpp src/SharedFilesCtrl.cpp
 msgid "WARNING"
@@ -868,15 +870,18 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Сеть Kad отключена в настройках. Отменяю соединение."
 
 #: src/amuled.cpp
-msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, start amuled with the option --ec-config or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
+#, fuzzy
+msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
 msgstr "ОШИБКА: демон aMule нельзя использовать при отключённых внешних подключениях. Включите их: запустите обычный aMule, запустите amuled с --ec-config или задайте «AcceptExternalConnections» = 1 в ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
-msgid "ERROR: An EC password is required. Run amuled --ec-config to set it."
+#, fuzzy
+msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
 msgstr "ОШИБКА: требуется EC-пароль. Запустите amuled --ec-config, чтобы задать его."
 
 #: src/amuled.cpp
-msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "ОШИБКА: недопустимый ECPasswordVerifier в amule.conf. Запустите amuled --ec-config, чтобы задать новый EC-пароль."
 
 #: src/amuled.cpp
@@ -1472,8 +1477,9 @@ msgstr "ПРЕДУПРЕЖДЕНИЕ: %s возможно поврежден (%i
 msgid "IO error while reading %s file: %s"
 msgstr "Ошибка ввода/вывода при чтении файла %s: %s"
 
-#: src/HashListFile.cpp src/kademlia/routing/RoutingZone.cpp
-#: src/KnownFileList.cpp src/SharedFileList.cpp
+#: src/HashListFile.cpp src/kademlia/kademlia/Search.cpp
+#: src/kademlia/routing/RoutingZone.cpp src/KnownFileList.cpp
+#: src/SharedFileList.cpp
 #, c-format
 msgid "Error while saving %s file: %s"
 msgstr "Ошибка при сохранении файла %s: %s"
@@ -2454,6 +2460,19 @@ msgstr[2] "Не удалось добавить %u ссылок (подробн�
 msgid "Invalid eD2k link! ERROR: %s"
 msgstr "Неверная ссылка eD2k! ОШИБКА: %s"
 
+#: src/ECClientPassword.h
+msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
+msgstr ""
+
+#: src/ECClientPassword.h
+msgid "To replace both, run amulecmd -w --password-stdin."
+msgstr ""
+
+#: src/ECClientPassword.h
+#, c-format
+msgid "Cannot save %s; using its migrated password for this run only."
+msgstr ""
+
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
 msgstr "Отклонён удалённый запрос на изменение папки сетевой подписи: её можно задать только в собственной конфигурации демона."
@@ -3004,16 +3023,10 @@ msgstr ""
 #: src/ExternalConnector.cpp
 msgid ""
 "Cannot connect with an empty password.\n"
-"You must specify a password either in config file\n"
-"or on command-line, or enter one when asked.\n"
+"Set one with --set-ec-pass-stdin.\n"
 "\n"
 "Exiting...\n"
 msgstr ""
-"Невозможно подключиться без пароля.\n"
-"Вы должны указать пароль либо в конфигурационном файле,\n"
-"либо используя командную строку.\n"
-"\n"
-"Завершение работы...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3028,8 +3041,8 @@ msgid "aMule's port for External Connection. (default: 4712)"
 msgstr "Порт aMule для внешних соединений (по умолчанию: 4712)"
 
 #: src/ExternalConnector.cpp
-msgid "External Connection password."
-msgstr "Пароль для внешнего соединения."
+msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
+msgstr ""
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3052,10 +3065,6 @@ msgid "Write command line options to config file."
 msgstr "Записать параметры командной строки в конфигурационный файл."
 
 #: src/ExternalConnector.cpp
-msgid "Creates config file based on aMule's config file."
-msgstr "Создает конфигурационный файл на основе оного из aMule."
-
-#: src/ExternalConnector.cpp
 msgid "Print program version."
 msgstr "Вывести версию программы."
 
@@ -3072,8 +3081,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "Не записывать файл журнала; выводить только в консоль."
 
 #: src/ExternalConnector.cpp
-msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
-msgstr "Верификатор демона не может предоставить пароль клиента. Используйте -P или запрос пароля.\n"
+#, fuzzy, c-format
+msgid "Cannot read the password: %s\n"
+msgstr "Не удалось сохранить пароль amuleapi: %s"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -5141,9 +5151,8 @@ msgid "This specifies the language used on controls."
 msgstr "Указывает язык, используемый для элементов управления."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Startup"
-msgstr "Начать"
+msgstr "Запуск"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5166,9 +5175,8 @@ msgid "Enabling this makes aMule minimize itself upon start."
 msgstr "Сразу после запуска aMule будет свёрнут."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Links"
-msgstr "Ссылка"
+msgstr "Ссылки"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5184,7 +5192,7 @@ msgstr "Открытие коллекции ставит в очередь вс�
 
 #: src/muuli_wdr.cpp
 msgid "Behavior"
-msgstr ""
+msgstr "Поведение"
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -6035,13 +6043,12 @@ msgid "Guest password"
 msgstr "Гостевой пароль"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Search settings"
-msgstr "Поиск"
+msgstr "Настройки поиска"
 
 #: src/muuli_wdr.cpp
 msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
-msgstr ""
+msgstr "Поиск настройки по названию. Совпавшие страницы остаются в списке ниже, а совпавшие параметры на них выделяются полужирным."
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -7150,7 +7157,7 @@ msgstr "КиБ/с (%.2f МиБ/с)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
-msgstr ""
+msgstr "Ваш псевдоним и язык, порядок запуска и закрытия aMule, а также программы, которыми она открывает ссылки и предпросмотр."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -7158,7 +7165,7 @@ msgstr "Интерфейс"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
-msgstr ""
+msgstr "Внешний вид, заголовок окна и отрисовка списков передач."
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
@@ -7166,7 +7173,7 @@ msgstr "Соединение"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
-msgstr ""
+msgstr "Пропускная способность канала, ограничения полосы, порты и сети, к которым подключается aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -7174,7 +7181,7 @@ msgstr "Прокси"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Send aMule's connections through a proxy server."
-msgstr ""
+msgstr "Передавать соединения aMule через прокси-сервер."
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -7182,7 +7189,7 @@ msgstr "Серверы"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
-msgstr ""
+msgstr "Как aMule ведёт список серверов eD2k и выбирает серверы для подключения."
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
@@ -7190,16 +7197,15 @@ msgstr "Каталоги"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Where downloads are stored and which folders you share."
-msgstr ""
+msgstr "Где хранятся скачанные файлы и какие папки вы публикуете."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Where the core's folders can be reached from this computer."
-msgstr "Где эта же папка доступна с этого компьютера, напр. смонтированный сетевой ресурс"
+msgstr "Где папки ядра доступны с этого компьютера."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How downloads and uploads are handled, corruption recovery and media details."
-msgstr ""
+msgstr "Как обрабатываются скачивания и отдача, восстановление повреждений и сведения о медиафайлах."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Events"
@@ -7207,11 +7213,11 @@ msgstr "События"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Run your own commands when something happens in aMule."
-msgstr ""
+msgstr "Выполнять собственные команды при событиях в aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Graph timing and colors, and what the statistics tree shows."
-msgstr ""
+msgstr "Периоды и цвета графиков, а также состав дерева статистики."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
@@ -7219,7 +7225,7 @@ msgstr "Фильтры"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Keep spam and unwanted words out of your chat messages and file comments."
-msgstr ""
+msgstr "Не допускать спам и нежелательные слова в сообщения чата и комментарии к файлам."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -7227,15 +7233,16 @@ msgstr "Безопасность"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
-msgstr ""
+msgstr "Безопасная идентификация, обфускация протокола, фильтрация IP и круг лиц, которым разрешён просмотр публикуемых файлов."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
 msgstr "Удалённое управление"
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
-msgstr ""
+#, fuzzy
+msgid "Let amulegui, amuleapi and other tools control aMule."
+msgstr "Разрешить amulegui, amuleapi, веб-интерфейсу и другим инструментам управлять aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
@@ -7243,7 +7250,7 @@ msgstr "Сетевая подпись"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Save aMule's status to a file that other programs can show."
-msgstr ""
+msgstr "Сохранять состояние aMule в файл, который могут показывать другие программы."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
@@ -7251,7 +7258,7 @@ msgstr "Страна по IP"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Show each client's country, looked up in a GeoIP database."
-msgstr ""
+msgstr "Показывать страну каждого клиента по базе GeoIP."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
@@ -7259,16 +7266,15 @@ msgstr "Дополнительно"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
-msgstr ""
+msgstr "Скорости соединений, поиск источников, буферы и очереди для тонкой настройки."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "Отладчик"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose which kinds of debug messages are written to the log."
-msgstr "Текст полученных сообщений также будет записываться в журнал."
+msgstr "Выбрать, какие виды отладочных сообщений записываются в журнал."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7296,7 +7302,7 @@ msgstr "Не удалось подключить Cfg к widget с ID %d и кл�
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "No settings match \"%s\". Try a shorter or different word."
-msgstr ""
+msgstr "Нет настроек, соответствующих «%s». Попробуйте более короткое или другое слово."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -10685,7 +10691,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "Изменение EC-пароля отклонено: не удалось записать ECPasswordVerifier. Действующие учётные данные не изменены."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-msgid "ECPassword contains an invalid or empty-password digest. Run amuled --ec-config to set a new EC password."
+#, fuzzy
+msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
 msgstr "ECPassword содержит недопустимый дайджест или дайджест пустого пароля. Запустите amuled --ec-config, чтобы задать новый EC-пароль."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
@@ -10699,6 +10706,35 @@ msgstr "Не удалось сравнить устаревший ECPassword с 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Migrating a changed legacy ECPassword after downgrade; the previous verifier no longer authenticates this run."
 msgstr "Выполняется миграция изменённого устаревшего ECPassword после отката версии; предыдущий верификатор больше не действует в этом запуске."
+
+#~ msgid ""
+#~ "\n"
+#~ "EC configuration"
+#~ msgstr ""
+#~ "\n"
+#~ "EC конфигурация"
+
+#~ msgid ""
+#~ "Cannot connect with an empty password.\n"
+#~ "You must specify a password either in config file\n"
+#~ "or on command-line, or enter one when asked.\n"
+#~ "\n"
+#~ "Exiting...\n"
+#~ msgstr ""
+#~ "Невозможно подключиться без пароля.\n"
+#~ "Вы должны указать пароль либо в конфигурационном файле,\n"
+#~ "либо используя командную строку.\n"
+#~ "\n"
+#~ "Завершение работы...\n"
+
+#~ msgid "External Connection password."
+#~ msgstr "Пароль для внешнего соединения."
+
+#~ msgid "Creates config file based on aMule's config file."
+#~ msgstr "Создает конфигурационный файл на основе оного из aMule."
+
+#~ msgid "The daemon verifier cannot supply a client password. Use -P or the password prompt.\n"
+#~ msgstr "Верификатор демона не может предоставить пароль клиента. Используйте -P или запрос пароля.\n"
 
 #~ msgid "!!! WARNING !!!"
 #~ msgstr "!!! ВНИМАНИЕ !!!"
