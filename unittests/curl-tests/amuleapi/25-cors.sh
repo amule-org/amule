@@ -83,18 +83,11 @@ LoginFailureWindowSeconds=60
 LoginFailureThreshold=5
 LoginLockoutSeconds=300
 EOF
-	printf '%s\n' "$EC_PASSWORD" | "$BIN" --config-dir="$CONFIG_DIR" --set-ec-pass-stdin >/dev/null
+	_seed_amuleapi "$BIN" "$CONFIG_DIR"
 	"$BIN" --config-dir="$CONFIG_DIR" \
 		--host="$EC_HOST" --port="$EC_PORT" \
 		> "$LOG" 2>&1 &
-	# Wait for /health to respond.
-	for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-		if curl -s -o /dev/null --max-time 1 "$API/health" 2>/dev/null; then
-			return 0
-		fi
-		sleep 0.5
-	done
-	_die "daemon did not come back up after restart (allow=$allow allowlist=$allowlist)"
+	_wait_health "$API" 15 || _die "daemon did not come back up after restart (allow=$allow allowlist=$allowlist)"
 }
 
 # Helper: capture status + headers + body of an arbitrary curl.
