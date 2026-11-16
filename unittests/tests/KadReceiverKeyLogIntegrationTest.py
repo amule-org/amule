@@ -16,7 +16,9 @@ import tempfile
 from pathlib import Path
 
 from AllSearchIntegrationTest import retry_port_collisions, wait_for
-from KadSourceTagsECTest import KADEMLIA2_PUBLISH_SOURCE_REQ, core_tags, kad_id, running_kad_daemon, search
+from KadSourceTagsECTest import (FILE_SIZE, KADEMLIA2_PUBLISH_SOURCE_REQ, TAG_ENCRYPTION, TAG_FILESIZE,
+                                 TAG_SOURCEPORT, TAG_SOURCETYPE, core_tags, kad_id, running_kad_daemon,
+                                 search, tag)
 
 UDP_KEY_SECRET = 0x5eed1234
 MAGIC_UDP_SYNC_CLIENT = 0x395F2EC1
@@ -61,25 +63,50 @@ def encrypted(packet, kad_id, receiver_key):
     return bytes([MARKER_KAD_NODE_ID]) + random_part + rc4(key, body)
 
 
-def drop_unkeyed_firewall2(binary):
-    """An unkeyed v2 firewall check is dropped before it can make the daemon dial its sender.
+def type7_tags(tcp_port):
+    """A "routes in tags" record: one route, no buddy tags, size always present."""
+    return [tag(TAG_SOURCETYPE, 0x09, 7), tag(TAG_SOURCEPORT, 0x08, tcp_port),
+            tag(TAG_FILESIZE, 0x03, FILE_SIZE), tag(TAG_ENCRYPTION, 0x09, 3),
+            tag(b'ip6', 0x02, b'20010db8' * 4)]
 
-    Its own daemon: the per-IP tracker counts both firewall opcodes in one bucket, 2 a minute, and
-    run() spends both.
+
+def drop_unkeyed_requests(binary):
+    """What must prove its sender is dropped when the receiver key does not, and nothing else is.
+
+    Its own daemon for two reasons: the per-IP tracker counts both firewall opcodes in one bucket
+    of 2 a minute and run() spends both, and the publish bucket is 2 a minute as well.
     """
-    with tempfile.TemporaryDirectory(prefix='kad-firewall2-drop-') as directory:
+    with tempfile.TemporaryDirectory(prefix='kad-unkeyed-drop-') as directory:
         root = Path(directory)
         with running_kad_daemon(binary, root, console='stdout.log', VerboseDebug=1, VerboseDebugLogfile=1,
                                 sections={'Debug': {'Cat_Client Kademlia UDP': 1},
-                                          'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, _, udp_port, _unused):
-            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
-                peer.bind(('127.0.0.1', 0))
-                body = DIAL_PORT + os.urandom(16) + bytes(1)
-                peer.sendto(bytes([0xE4, KADEMLIA_FIREWALLED2_REQ]) + body, ('127.0.0.1', udp_port))
-                line = (f'Dropped Kad firewall2 check from 127.0.0.1:{peer.getsockname()[1]}: '
-                        'the receiver key did not prove the sender\n')
-                wait_for(proc, f'the log line {line!r}',
-                         lambda: line in (root / 'logfile').read_text(errors='replace'), 10, interval=0.05)
+                                          'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, ec, udp_port, _unused):
+            file_id = kad_id(ec, proc, root)
+            keyed = lambda p: encrypted(p, file_id, verify_key('127.0.0.1'))
+
+            def publish(tcp_port):
+                tags = type7_tags(tcp_port)
+                return (KADEMLIA2_PUBLISH_SOURCE_REQ,
+                        file_id + os.urandom(16) + bytes([len(tags)]) + b''.join(tags))
+
+            # The keyed type 7 publish is the control: same record, and it is indexed.
+            for wrap, (opcode, body), expected in (
+                    (keyed, publish(4101), 'Kad2 source publish from 127.0.0.1:{port}: receiver key valid'),
+                    (lambda p: p, publish(4102),
+                     'Dropped Kad2 source publish of type 7 from 127.0.0.1:{port}: '
+                     'the receiver key did not prove the sender'),
+                    (lambda p: p, (KADEMLIA_FIREWALLED2_REQ, DIAL_PORT + os.urandom(16) + bytes(1)),
+                     'Dropped Kad firewall2 check from 127.0.0.1:{port}: '
+                     'the receiver key did not prove the sender')):
+                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
+                    peer.bind(('127.0.0.1', 0))
+                    peer.sendto(wrap(bytes([0xE4, opcode]) + body), ('127.0.0.1', udp_port))
+                    line = expected.format(port=peer.getsockname()[1]) + '\n'
+                    wait_for(proc, f'the log line {line!r}',
+                             lambda: line in (root / 'logfile').read_text(errors='replace'), 10, interval=0.05)
+
+            indexed = search(udp_port, file_id)
+            assert len(indexed) == 1, f'{len(indexed)} of 1 type 7 publishes were indexed'
 
 
 def run(binary):
@@ -119,9 +146,9 @@ def run(binary):
 
             indexed = search(udp_port, file_id)
             assert len(indexed) == 2, f'{len(indexed)} of 2 publishes were indexed'
-    drop_unkeyed_firewall2(binary)
-    print('each request logged its result, the unkeyed firewall2 check was dropped, '
-          'and both source publishes were indexed')
+    drop_unkeyed_requests(binary)
+    print('each request logged its result, the unkeyed firewall2 check and type 7 publish were '
+          'dropped, and the keyed publishes were indexed')
 
 
 if __name__ == '__main__':

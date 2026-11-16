@@ -4,8 +4,9 @@
 """A Kad source entry decides whether the buddy route looks the buddy up, or stays unused.
 
 With TAG_BUDDYHASH and no buddy address, the downloader looks the buddy ID up and asks the nodes
-around it to relay a callback. Without the tag, as EKadSourcePublish::IPv6Only publishes, there is
-no buddy ID at all: the route must stay unused, not look up the zero Kad ID.
+around it to relay a callback. Without the tag there is no buddy ID at all: the route must stay
+unused, not look up the zero Kad ID. Records in that shape stay in the network for a republish
+period after a publisher stops making them, so a receiver still has to handle them.
 
 One fake Kad node is the daemon's only contact. It answers the bootstrap, the file lookup and the
 source search, then records the lookups and callback requests the daemon sends next.
@@ -73,7 +74,7 @@ def unpack(packet):
 
 
 def source_tags(with_buddy_hash):
-    """A firewalled source with no buddy address, as IPv6Only publishes it."""
+    """A firewalled source with no buddy address, as older publishers sent it."""
     tags = [kad_tag(TAG_SOURCETYPE, 0x09, 3),
             kad_tag(TAG_SOURCEIP, 0x03, kad_ip(SOURCE_ADDRESS)),
             kad_tag(TAG_SOURCEPORT, 0x08, SOURCE_PORT),

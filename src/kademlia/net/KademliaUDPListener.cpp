@@ -1286,6 +1286,7 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	DEBUG_ONLY(wxString strInfo;)
 	uint8_t load = 0;
 	bool flag = false;
+	uint8_t sourceType = 0;
 	CUInt128 target = bio.ReadUInt128();
 	Kademlia::CEntry *entry = new Kademlia::CEntry();
 	try {
@@ -1309,6 +1310,9 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 			if (tag) {
 				if (!tag->GetName().Cmp(TAG_SOURCETYPE)) {
 					if (entry->m_bSource == false) {
+						if (tag->IsInt()) {
+							sourceType = static_cast<uint8_t>(tag->GetInt());
+						}
 						entry->AddTag(new CTagVarInt(TAG_SOURCEIP, entry->m_uIP), 0);
 						entry->AddTag(tag, ip);
 						entry->m_bSource = true;
@@ -1386,6 +1390,15 @@ void CKademliaUDPListener::Process2PublishSourceRequest(const uint8_t *packetDat
 	} catch (...) {
 		delete entry;
 		throw;
+	}
+
+	if (DropsUnkeyedSourcePublish(sourceType, validReceiverKey)) {
+		AddDebugLogLineN(logClientKadUDP,
+			CFormat("Dropped Kad2 source publish of type %u from %s: the receiver key did not "
+				"prove the sender") %
+				sourceType % KadIPPortToString(ip, port));
+		delete entry;
+		return;
 	}
 
 	if (entry->m_bSource == true) {

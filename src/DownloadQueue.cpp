@@ -1823,6 +1823,16 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		uint8_t cID[16];
 		pcontactID->ToByteArray(cID);
 		ctemp->SetUserHash(CMD4Hash(cID));
+		break;
+	}
+	case 7: {
+		// The branch above takes a type 7 record whose route we can dial. Reaching here means
+		// we could not: no IPv6 in this build, none of our own, a filtered or unusable address.
+		// The type carries no address of its own to fall back on.
+		AddDebugLogLineN(logKadSearch,
+			CFormat("Ignored Kad source type 7 with no usable route (%s)") %
+				Uint32toStringIP(ED2KID));
+		break;
 	}
 	}
 

@@ -33,7 +33,7 @@ enum class EKadSourcePublish
 	HighID,         // Types 1/4: peers dial our IPv4 address
 	DirectCallback, // Type 6: firewalled, but peers can ask for a UDP callback directly
 	Buddy,          // Types 3/5: firewalled, peers ask our buddy to relay a callback
-	IPv6Only,       // Types 3/5 without a buddy: peers can only dial the IPv6 we advertise
+	IPv6Only,       // Type 7: no IPv4 route left, peers reach us by a tag, here the IPv6 one
 	None            // No route back to us; publishing would only waste peers' attempts
 };
 
@@ -50,16 +50,31 @@ struct SKadPublishFacts
  *
  * The IPv4 callback routes come first because they also reach peers without an IPv6 route, and the
  * "ip6" tag rides along with every kind. IPv6Only is the case those routes leave out: firewalled on
- * IPv4 with neither callback, yet reachable at the IPv6 address we advertise. It is published as a
- * firewalled source with no buddy tags, which aMule (#1817) and eMuleAI add by its "ip6" tag alone.
+ * IPv4 with neither callback, yet reachable at the IPv6 address we advertise.
  *
- * Neither eMuleAI nor emule-qt publishes in the IPv6Only case: eMuleAI's StorePacket() stops when
- * firewalled with no direct callback and no serving buddy, and emule-qt holds that a published source
- * nobody can reach is worse than none. Older receivers (eMule 0.70b, aMule up to 3.1) ignore the
- * "ip6" tag and accept a type 3/5 source without buddy tags, store a zero buddy ID and spend a Kad
- * buddy lookup on it. We publish anyway because the case needs an ENABLE_IPV6 build and the
- * IPv6 advertising mode, and IPv6-capable eMuleAI, emule-qt and aMule peers can dial the source.
+ * It goes out as source type 7, "reach me by one of the routes in my tags". Sent as a type 3/5 with
+ * no buddy tags it was worse than useless to a receiver that cannot read "ip6": it read the absent
+ * buddy hash as a zero buddy ID and spent a Kad lookup on it (#2521). A type that receiver does not
+ * know costs it nothing instead.
  */
+//! The FT_SOURCETYPE value a publish of this kind carries. 2 is unusable: older clients misread it.
+inline uint8_t KadSourceTypeFor(EKadSourcePublish mode, bool largeFile) noexcept
+{
+	switch (mode) {
+	case EKadSourcePublish::HighID:
+		return largeFile ? 4 : 1;
+	case EKadSourcePublish::DirectCallback:
+		return 6;
+	case EKadSourcePublish::Buddy:
+		return largeFile ? 5 : 3;
+	case EKadSourcePublish::IPv6Only:
+		return 7; // One value for every size; the size travels in FT_FILESIZE.
+	case EKadSourcePublish::None:
+		break;
+	}
+	return 0;
+}
+
 inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
 {
 	if (!facts.firewalled) {
