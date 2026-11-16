@@ -7017,7 +7017,7 @@ msgid "Remote Controls"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
-msgid "Let amulegui, amuleapi, the web interface and other tools control aMule."
+msgid "Let amulegui, amuleapi and other tools control aMule."
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp

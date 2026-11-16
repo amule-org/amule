@@ -540,13 +540,6 @@ public:
 		bool FilterFromUnknownClients,
 		bool FilterByKeyword,
 		wxString Keywords);
-	void SetPreferencesRemoteCrtl(bool RunOnStartup,
-		uint16 Port,
-		bool Guest,
-		CMD4Hash GuestPasswdHash,
-		bool UseGzip,
-		uint32 RefreshInterval,
-		wxString Template);
 	void SetPreferencesOnlineSig(bool Enabled);
 	void SetPreferencesServers(bool RemoveDeadServers,
 		uint16 RetriesDeadServers,

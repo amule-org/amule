@@ -1133,9 +1133,11 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 						ECSRP::Field(*request, EC_TAG_SRP_CREDENTIAL, 1).at(0);
 					if (m_aeadCipher == ECCrypt::Cipher_None)
 						throw std::invalid_argument("Encryption required");
+					if (credential > ECSRP::ApiToken)
+						throw std::invalid_argument("Unknown SRP credential");
 					const auto verifier =
-						credential != ECSRP::Password
-							? theApp->GetEcTokenVerifier(credential)
+						credential == ECSRP::ApiToken
+							? theApp->GetEcTokenVerifier()
 							: ECSRP::Verifier::Decode(std::string(
 								  thePrefs::ECPasswordVerifier().utf8_str()));
 					const auto B = m_srp.Start(verifier, credential, A, m_aeadTranscript);
@@ -1260,8 +1262,8 @@ const CECPacket *CECServerSocket::Authenticate(const CECPacket *request)
 			// A password change or child-token revocation invalidates even a
 			// handshake that received its challenge before the change.
 			const std::string current =
-				m_srpCredential != ECSRP::Password
-					? theApp->GetEcTokenVerifier(m_srpCredential).Encode()
+				m_srpCredential == ECSRP::ApiToken
+					? theApp->GetEcTokenVerifier().Encode()
 					: ECSRP::Verifier::Decode(
 						  std::string(thePrefs::ECPasswordVerifier().utf8_str()))
 						  .Encode();

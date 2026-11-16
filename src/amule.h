@@ -632,7 +632,7 @@ public:
 	void OnAmuleApiTerminated(int pid, int status);
 
 	// The amuleapi child verifier, or the dummy when revoked.
-	const ECSRP::Verifier &GetEcTokenVerifier(uint8_t credential = 1);
+	const ECSRP::Verifier &GetEcTokenVerifier();
 
 #ifdef ENABLE_VERSION_CHECK
 	// Result of the last completed version check, relayed over EC to
