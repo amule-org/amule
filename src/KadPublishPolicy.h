@@ -43,6 +43,7 @@ struct SKadPublishFacts
 	bool directCallback = false;
 	bool hasBuddy = false;
 	bool advertisesIPv6 = false;
+	bool obfuscationSupported = false; // Our own setting: without it no packet of ours carries a key
 };
 
 /**
@@ -57,6 +58,26 @@ struct SKadPublishFacts
  * buddy hash as a zero buddy ID and spent a Kad lookup on it (#2521). A type that receiver does not
  * know costs it nothing instead.
  */
+inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
+{
+	if (!facts.firewalled) {
+		return EKadSourcePublish::HighID;
+	}
+	if (facts.directCallback) {
+		return EKadSourcePublish::DirectCallback;
+	}
+	if (facts.hasBuddy) {
+		return EKadSourcePublish::Buddy;
+	}
+	// Type 7 is kept only by a storer that got our receiver key, and the key rides in the
+	// obfuscation header. With obfuscation off there is no way to get the record stored, so this
+	// is no route back rather than one we simply fail to use.
+	if (facts.advertisesIPv6 && facts.obfuscationSupported) {
+		return EKadSourcePublish::IPv6Only;
+	}
+	return EKadSourcePublish::None;
+}
+
 //! The FT_SOURCETYPE value a publish of this kind carries. 2 is unusable: older clients misread it.
 inline uint8_t KadSourceTypeFor(EKadSourcePublish mode, bool largeFile) noexcept
 {
@@ -73,23 +94,6 @@ inline uint8_t KadSourceTypeFor(EKadSourcePublish mode, bool largeFile) noexcept
 		break;
 	}
 	return 0;
-}
-
-inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
-{
-	if (!facts.firewalled) {
-		return EKadSourcePublish::HighID;
-	}
-	if (facts.directCallback) {
-		return EKadSourcePublish::DirectCallback;
-	}
-	if (facts.hasBuddy) {
-		return EKadSourcePublish::Buddy;
-	}
-	if (facts.advertisesIPv6) {
-		return EKadSourcePublish::IPv6Only;
-	}
-	return EKadSourcePublish::None;
 }
 
 //! Whether Kad publishing runs at all; the same decision StorePacket() takes per source.

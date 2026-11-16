@@ -41,6 +41,7 @@ SKadSourceFacts ContactableOverIPv6()
 	facts.ourHelloID = 1;
 	facts.ipv6Built = true;
 	facts.familyPermitted = true;
+	facts.haveLocalIPv6 = true;
 	return facts;
 }
 } // namespace
@@ -122,6 +123,17 @@ TEST(KadSourceAddressPolicy, ARoutesInTagsSourceStillNeedsADialableAddress)
 	notBuilt.sourceType = 7;
 	notBuilt.ipv6Built = false;
 	ASSERT_FALSE(ShouldContactKadSourceOverIPv6(notBuilt));
+}
+
+// The record's only route is IPv6, so with no address of our own there is nothing to dial it from.
+TEST(KadSourceAddressPolicy, NoGlobalIPv6OfOursRefusesEveryIPv6Contact)
+{
+	for (std::uint8_t sourceType : { 3, 5, 6, 7 }) {
+		SKadSourceFacts facts = ContactableOverIPv6();
+		facts.sourceType = sourceType;
+		facts.haveLocalIPv6 = false;
+		ASSERT_FALSE(ShouldContactKadSourceOverIPv6(facts));
+	}
 }
 
 TEST(KadSourceAddressPolicy, ABuddylessSourceStillNeedsAnIDOfOursAndAPermittedDial)

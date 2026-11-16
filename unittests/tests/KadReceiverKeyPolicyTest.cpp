@@ -74,14 +74,23 @@ TEST(KadReceiverKeyPolicy, NoOtherHandlerDropsAWholeRequestWithoutAKey)
 
 TEST(KadReceiverKeyPolicy, AnUnkeyedTypeSevenPublishIsDropped)
 {
-	ASSERT_TRUE(DropsUnkeyedSourcePublish(7, false));
-	ASSERT_FALSE(DropsUnkeyedSourcePublish(7, true));
+	ASSERT_TRUE(DropsUnkeyedSourcePublish(7, false, false, false));
+	ASSERT_FALSE(DropsUnkeyedSourcePublish(7, false, false, true));
+}
+
+// The pointer route travels on a classic record, and its own record is a type 3 at a derived key.
+TEST(KadReceiverKeyPolicy, AnUnkeyedPointerTagOrPointerRecordIsDropped)
+{
+	ASSERT_TRUE(DropsUnkeyedSourcePublish(3, true, false, false));
+	ASSERT_TRUE(DropsUnkeyedSourcePublish(5, false, true, false));
+	ASSERT_FALSE(DropsUnkeyedSourcePublish(3, true, false, true));
+	ASSERT_FALSE(DropsUnkeyedSourcePublish(5, false, true, true));
 }
 
 TEST(KadReceiverKeyPolicy, ClassicSourcePublishesAreKeptWithoutAKey)
 {
 	for (uint8_t sourceType : { 0, 1, 2, 3, 4, 5, 6, 8 }) {
-		ASSERT_FALSE(DropsUnkeyedSourcePublish(sourceType, false));
-		ASSERT_FALSE(DropsUnkeyedSourcePublish(sourceType, true));
+		ASSERT_FALSE(DropsUnkeyedSourcePublish(sourceType, false, false, false));
+		ASSERT_FALSE(DropsUnkeyedSourcePublish(sourceType, false, false, true));
 	}
 }

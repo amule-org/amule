@@ -60,14 +60,16 @@ inline bool DropsWithoutReceiverKey(EKadReceiverKeyHandler handler, bool validRe
 /**
  * Whether a source publish is dropped because its receiver key did not prove the sender.
  *
- * Only source type 7, which carries the rule from the day it was defined, so no publisher of it
- * predates the key. Classic types cannot be gated: most of the publishes a live node sees arrive
- * without a key (#2315). The key proves the publisher receives at the IPv4 we stamp into
- * TAG_SOURCEIP, the field a receiver compares a record against.
+ * The records defined with this rule: source type 7, anything carrying the pointer route marker,
+ * and a pointer record itself. No publisher of them predates the key, so nothing honest is lost.
+ * Classic types cannot be gated: most of the publishes a live node sees arrive without a key
+ * (#2315). The key proves the publisher receives at the IPv4 we stamp into TAG_SOURCEIP, the field
+ * a receiver compares a pointer against before trusting the buddy it names.
  */
-inline bool DropsUnkeyedSourcePublish(uint8_t sourceType, bool validReceiverKey) noexcept
+inline bool DropsUnkeyedSourcePublish(
+	uint8_t sourceType, bool carriesPointerTag, bool isPointerRecord, bool validReceiverKey) noexcept
 {
-	return !validReceiverKey && sourceType == 7;
+	return !validReceiverKey && (sourceType == 7 || carriesPointerTag || isPointerRecord);
 }
 
 //! Valid and missing receiver keys observed by each handler.

@@ -67,7 +67,7 @@ there client on the eMule forum..
 #endif
 #include "../../SharedFileList.h"
 #include "../../Statistics.h"       // Needed for theStats
-#include "../../KadPublishPolicy.h" // Needed for KadSourceTypeFor
+#include "../../KadPublishPolicy.h" // Needed for DecideKadSourcePublish, KadSourceTypeFor
 #include "../../DownloadQueue.h"
 #include "../../PartFile.h"
 #include "../../SHAHashSet.h" // Needed for CAICHHash on Kad keyword storage
@@ -981,10 +981,6 @@ void CSearch::StorePacket()
 			CUInt128 id(CKademlia::GetPrefs()->GetClientHash());
 			TagPtrList taglist;
 
-			// Source types: 1 HighID, 3 firewalled Kad, 4 >4GB HighID, 5 >4GB
-			// firewalled Kad, 6 firewalled with direct callback (supports >4GB).
-			// 2 cannot be used, as older clients will not work with it.
-
 			const EKadSourcePublish publishAs =
 				DecideKadSourcePublish(CSharedFileList::CurrentKadPublishFacts());
 			if (publishAs == EKadSourcePublish::DirectCallback) {
@@ -1026,15 +1022,10 @@ void CSearch::StorePacket()
 					taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
 				}
 			} else if (publishAs == EKadSourcePublish::IPv6Only) {
-				// A storer that implements type 7 keeps it only with a valid receiver key,
-				// which we hold for a contact that answered this lookup. Skip the ones we
-				// have no key for rather than spend a publish they would drop.
+				// A storer that implements type 7 drops it without our receiver key.
 				if (from->GetUDPKey().GetKeyValue(theApp->GetPublicIP(false)) == 0) {
 					return;
 				}
-				// Type 7 means "reach me by one of the routes in my tags", here the "ip6"
-				// tag added below, since no buddy relays a callback for us. Sent as 3/5 it
-				// left legacy receivers looking up an all-zero buddy ID (#2521).
 				taglist.push_back(new CTagInt8(
 					TAG_SOURCETYPE, KadSourceTypeFor(publishAs, file->IsLargeFile())));
 				taglist.push_back(new CTagVarInt(TAG_SOURCEPORT, thePrefs::GetPort()));
@@ -1042,8 +1033,7 @@ void CSearch::StorePacket()
 					taglist.push_back(new CTagInt16(
 						TAG_SOURCEUPORT, CKademlia::GetPrefs()->GetInternKadPort()));
 				}
-				// The usual gate is the peer's version, which only decides whether it
-				// reads the tag. Here the tag is what tells a reader the size at all.
+				// Type 7 has no size variant, so the size always goes.
 				taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
 			} else if (publishAs == EKadSourcePublish::None) {
 				// No callback route remains. Let the next shared-file pass retry.

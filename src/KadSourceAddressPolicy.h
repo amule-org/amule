@@ -40,6 +40,7 @@ struct SKadSourceFacts
 	bool ipv6Built = false;
 	bool familyPermitted = false;
 	bool proxyEnabled = false;
+	bool haveLocalIPv6 = false; // A global IPv6 of our own is selected, so an IPv6 route exists
 };
 
 /**
@@ -65,7 +66,9 @@ inline bool IsKadSourceFirewalledOnIPv4(const SKadSourceFacts &facts)
 //! Whether the published IPv6 names a peer we may dial, whatever route is chosen.
 inline bool IsDialableKadSourceIPv6(const SKadSourceFacts &facts)
 {
-	if (!PeerAddressing::IsUsableTagIdentity(facts.publishedIPv6)) {
+	// Without a global address of our own there is no IPv6 route to dial over, whatever the
+	// record says. The same proof the peer-advertised dial asks for (ContactDialPolicy.h).
+	if (!facts.haveLocalIPv6 || !PeerAddressing::IsUsableTagIdentity(facts.publishedIPv6)) {
 		return false;
 	}
 	SContactFacts contact;

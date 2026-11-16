@@ -63,6 +63,20 @@ def encrypted(packet, kad_id, receiver_key):
     return bytes([MARKER_KAD_NODE_ID]) + random_part + rc4(key, body)
 
 
+def keyed_for(packet, file_id):
+    """Obfuscated to the daemon's Kad ID and carrying the key it hands out to 127.0.0.1."""
+    return encrypted(packet, file_id, verify_key('127.0.0.1'))
+
+
+def source_publish(file_id, tags):
+    """A publish at the daemon's own Kad ID, so it passes the store tolerance.
+
+    Callers give each record a different TCP port: one with the same IP and port replaces the last.
+    """
+    return (KADEMLIA2_PUBLISH_SOURCE_REQ,
+            file_id + os.urandom(16) + bytes([len(tags)]) + b''.join(tags))
+
+
 def type7_tags(tcp_port):
     """A "routes in tags" record: one route, no buddy tags, size always present."""
     return [tag(TAG_SOURCETYPE, 0x09, 7), tag(TAG_SOURCEPORT, 0x08, tcp_port),
@@ -82,17 +96,13 @@ def drop_unkeyed_requests(binary):
                                 sections={'Debug': {'Cat_Client Kademlia UDP': 1},
                                           'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, ec, udp_port, _unused):
             file_id = kad_id(ec, proc, root)
-            keyed = lambda p: encrypted(p, file_id, verify_key('127.0.0.1'))
-
-            def publish(tcp_port):
-                tags = type7_tags(tcp_port)
-                return (KADEMLIA2_PUBLISH_SOURCE_REQ,
-                        file_id + os.urandom(16) + bytes([len(tags)]) + b''.join(tags))
+            keyed = lambda p: keyed_for(p, file_id)
 
             # The keyed type 7 publish is the control: same record, and it is indexed.
             for wrap, (opcode, body), expected in (
-                    (keyed, publish(4101), 'Kad2 source publish from 127.0.0.1:{port}: receiver key valid'),
-                    (lambda p: p, publish(4102),
+                    (keyed, source_publish(file_id, type7_tags(4101)),
+                     'Kad2 source publish from 127.0.0.1:{port}: receiver key valid'),
+                    (lambda p: p, source_publish(file_id, type7_tags(4102)),
                      'Dropped Kad2 source publish of type 7 from 127.0.0.1:{port}: '
                      'the receiver key did not prove the sender'),
                     (lambda p: p, (KADEMLIA_FIREWALLED2_REQ, DIAL_PORT + os.urandom(16) + bytes(1)),
@@ -116,18 +126,13 @@ def run(binary):
                                 sections={'Debug': {'Cat_Client Kademlia UDP': 1},
                                           'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, ec, udp_port, _):
             file_id = kad_id(ec, proc, root)
-
-            keyed = lambda p: encrypted(p, file_id, verify_key('127.0.0.1'))
-
-            def source_publish(tcp_port):
-                # A different TCP port each: a source with the same IP and port would replace the last.
-                tags = core_tags(tcp_port)
-                return (KADEMLIA2_PUBLISH_SOURCE_REQ,
-                        file_id + os.urandom(16) + bytes([len(tags)]) + b''.join(tags))
+            keyed = lambda p: keyed_for(p, file_id)
 
             for name, wrap, expected, (opcode, body) in (
-                    ('Kad2 source publish', lambda p: p, 'not valid', source_publish(4001)),
-                    ('Kad2 source publish', keyed, 'valid', source_publish(4002)),
+                    ('Kad2 source publish', lambda p: p, 'not valid',
+                     source_publish(file_id, core_tags(4001))),
+                    ('Kad2 source publish', keyed, 'valid',
+                     source_publish(file_id, core_tags(4002))),
                     ('Kad2 keyword publish', keyed, 'valid', (KADEMLIA2_PUBLISH_KEY_REQ, file_id + bytes(2))),
                     ('Kad2 notes publish', keyed, 'valid',
                      (KADEMLIA2_PUBLISH_NOTES_REQ, file_id + os.urandom(16) + bytes(1))),

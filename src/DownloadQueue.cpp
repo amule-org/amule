@@ -64,6 +64,7 @@
 
 #ifdef ENABLE_IPV6
 #include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::Permits
+#include "AdvertisedIPv6.h"         // Needed for SelectedLocalIPv6
 #include "KadSourceAddressPolicy.h" // Needed for ShouldContactKadSourceOverIPv6
 #endif
 #include "kademlia/kademlia/Kademlia.h"
@@ -1731,6 +1732,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 	facts.ipv6Built = true;
 	facts.familyPermitted = AddressFamilyPolicy::Permits(publishedIPv6);
 	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+	facts.haveLocalIPv6 = SelectedLocalIPv6().has_value();
 	// IsFiltered() counts every match in the statistics, so it only sees an address we would dial.
 	if (ShouldContactKadSourceOverIPv6(facts) && !theApp->ipfilter->IsFiltered(publishedIPv6)) {
 		// No IPv4 address and no buddy: either would arm an IPv4 callback or a buddy UDP reask
@@ -1826,9 +1828,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		break;
 	}
 	case 7: {
-		// The branch above takes a type 7 record whose route we can dial. Reaching here means
-		// we could not: no IPv6 in this build, none of our own, a filtered or unusable address.
-		// The type carries no address of its own to fall back on.
+		// The IPv6 route above was refused. FT_SOURCEIP must not be dialled.
 		AddDebugLogLineN(logKadSearch,
 			CFormat("Ignored Kad source type 7 with no usable route (%s)") %
 				Uint32toStringIP(ED2KID));
