@@ -19,7 +19,7 @@ TEST(MediaProbeDisable, FailedRestrictionsDisableFurtherProbesWithoutFileVerdict
 {
 	const TestScratchDir scratch("amule-restriction-failure");
 	const std::string input = scratch.Path() + "/input";
-	const CPath path(wxString(input.c_str(), wxConvFile));
+	const CPath path(scratch.WxPath() + wxFileName::GetPathSeparator() + wxT("input"));
 	const std::atomic<bool> running(true);
 #if defined(__WXMSW__) && defined(AMULE_MEDIA_HELPER_TEST)
 	// Prevent the production launcher's private desktop from being created.

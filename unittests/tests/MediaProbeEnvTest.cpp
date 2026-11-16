@@ -47,19 +47,15 @@ TEST(MediaProbeEnv, NativeHelperFailuresRespectHeaderAndOutputBudget)
 {
 	const TestScratchDir scratch("amule-native-exit");
 	const std::string input = scratch.Path() + "/input";
+	const CPath path(scratch.WxPath() + wxFileName::GetPathSeparator() + wxT("input"));
 	const std::atomic<bool> running(true);
 	for (const char mode : { 's', 'e', 'c', 'o', 'd', 'f', 'p' }) {
 		ASSERT_TRUE(WriteFile(input, std::string(1, mode)));
 		MediaMetadata info;
 		info.length_seconds = 99;
 		info.codec = wxT("unchanged");
-		const auto outcome = MediaProbe::Probe(wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE),
-			CPath(wxString(input.c_str(), wxConvFile)),
-			info,
-			5000,
-			running,
-			true,
-			false);
+		const auto outcome = MediaProbe::Probe(
+			wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE), path, info, 5000, running, true, false);
 		if (mode == 'c') {
 			ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::UnreadableFile);
 			ASSERT_TRUE(MediaProbe::IsFileVerdict(outcome));
@@ -76,18 +72,14 @@ TEST(MediaProbeEnv, NativeHelperHangIsStoppedWithoutPublishingMetadata)
 {
 	const TestScratchDir scratch("amule-native-timeout");
 	const std::string input = scratch.Path() + "/input";
-	WriteFile(input, "t");
+	const CPath path(scratch.WxPath() + wxFileName::GetPathSeparator() + wxT("input"));
+	ASSERT_TRUE(WriteFile(input, "t"));
 	const std::atomic<bool> running(true);
 	MediaMetadata info;
 	info.length_seconds = 99;
 	const auto start = std::chrono::steady_clock::now();
-	const auto result = MediaProbe::Probe(wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE),
-		CPath(wxString(input.c_str(), wxConvFile)),
-		info,
-		100,
-		running,
-		true,
-		false);
+	const auto result = MediaProbe::Probe(
+		wxString::FromUTF8(AMULE_MEDIA_EXIT_FIXTURE), path, info, 100, running, true, false);
 	ASSERT_TRUE(result == MediaProbe::ProbeOutcome::Cancelled);
 	ASSERT_EQUALS(uint32(99), info.length_seconds);
 	ASSERT_TRUE(std::chrono::steady_clock::now() - start < std::chrono::seconds(5));

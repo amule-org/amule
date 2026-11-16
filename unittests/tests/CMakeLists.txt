@@ -2674,7 +2674,9 @@ target_link_libraries (BrowseStoreTest
 
 if (TARGET wxWidgets::CORE)
     # A one-file wx GUI test; it exits 77 when there is no display.
+    # add_gui_test (name [LABELS labels...])
     function (add_gui_test name)
+        cmake_parse_arguments (PARSE_ARGV 1 gui "" "" "LABELS")
         add_executable (${name} ${name}.cpp)
         if (WIN32)
             target_sources (${name} PRIVATE DialogLayoutTest.rc)
@@ -2683,6 +2685,9 @@ if (TARGET wxWidgets::CORE)
         target_link_libraries (${name} PRIVATE wxWidgets::CORE)
         add_test (NAME ${name} COMMAND ${name})
         set_tests_properties (${name} PROPERTIES SKIP_RETURN_CODE 77)
+        if (gui_LABELS)
+            set_tests_properties (${name} PROPERTIES LABELS "${gui_LABELS}")
+        endif()
     endfunction()
 
     function (add_native_list_test name)
@@ -3556,11 +3561,9 @@ if (TARGET wxWidgets::CORE)
 	add_test (NAME SearchMetadataPanelTest COMMAND SearchMetadataPanelTest)
 	set_tests_properties (SearchMetadataPanelTest PROPERTIES SKIP_RETURN_CODE 77 LABELS "gui")
 
-	add_gui_test (ConnectionStatusLabelTest)
-	add_gui_test (TransferRateLabelTest)
-	add_gui_test (DownloadPercentageDrawingTest)
-	set_tests_properties (ConnectionStatusLabelTest TransferRateLabelTest
-		DownloadPercentageDrawingTest PROPERTIES LABELS "gui")
+	add_gui_test (ConnectionStatusLabelTest LABELS gui)
+	add_gui_test (TransferRateLabelTest LABELS gui)
+	add_gui_test (DownloadPercentageDrawingTest LABELS gui)
 
 	add_executable (DialogLayoutTest DialogLayoutTest.cpp)
 	if (WIN32)

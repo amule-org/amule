@@ -35,8 +35,8 @@
 
 void RunTests();
 
-// An empty in-memory config. wx deletes the global config at cleanup, so the
-// old one comes back even when a Check() throws.
+// An empty in-memory config. Puts the previous global config back on unwind, so
+// wx never deletes this one at cleanup.
 struct ConfigScope
 {
 	ConfigScope()
