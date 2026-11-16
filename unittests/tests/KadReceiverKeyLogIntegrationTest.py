@@ -7,6 +7,7 @@ A plain and a keyed source publish each log their own result, and both are still
 the per-IP limit lets through in a minute. The other requests share the logging, so one keyed packet
 each is enough, and the callback limit allows only one.
 """
+import contextlib
 import hashlib
 import os
 import socket
@@ -63,6 +64,27 @@ def encrypted(packet, kad_id, receiver_key):
     return bytes([MARKER_KAD_NODE_ID]) + random_part + rc4(key, body)
 
 
+@contextlib.contextmanager
+def logging_daemon(binary, prefix):
+    """A daemon whose Kad UDP log reaches the logfile, and whose UDP key secret we know."""
+    with tempfile.TemporaryDirectory(prefix=prefix) as directory:
+        root = Path(directory)
+        with running_kad_daemon(binary, root, console='stdout.log', VerboseDebug=1, VerboseDebugLogfile=1,
+                                sections={'Debug': {'Cat_Client Kademlia UDP': 1},
+                                          'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, ec, udp_port, _):
+            yield root, proc, ec, udp_port
+
+
+def send_expecting(root, proc, udp_port, packet, expected):
+    """Send one packet from a fresh port and wait for its log line; {port} is that port."""
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
+        peer.bind(('127.0.0.1', 0))
+        peer.sendto(packet, ('127.0.0.1', udp_port))
+        line = expected.format(port=peer.getsockname()[1]) + '\n'
+        wait_for(proc, f'the log line {line!r}',
+                 lambda: line in (root / 'logfile').read_text(errors='replace'), 10, interval=0.05)
+
+
 def keyed_for(packet, file_id):
     """Obfuscated to the daemon's Kad ID and carrying the key it hands out to 127.0.0.1."""
     return encrypted(packet, file_id, verify_key('127.0.0.1'))
@@ -117,25 +139,16 @@ def drop_unkeyed_pointer_records(binary):
     line is the whole assertion: it is written where the handler returns, before anything is
     indexed and before a response goes back, and a search with nothing stored simply never answers.
     """
-    with tempfile.TemporaryDirectory(prefix='kad-pointer-drop-') as directory:
-        root = Path(directory)
-        with running_kad_daemon(binary, root, console='stdout.log', VerboseDebug=1, VerboseDebugLogfile=1,
-                                sections={'Debug': {'Cat_Client Kademlia UDP': 1},
-                                          'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, ec, udp_port, _unused):
-            file_id = kad_id(ec, proc, root)
-            for (opcode, body), expected in (
-                    (pointer_tagged_record(file_id, 4201),
-                     'Dropped Kad2 source publish of type 3 with a pointer tag from 127.0.0.1:{port}: '
-                     'the receiver key did not prove the sender'),
-                    (pointer_record(file_id, 4202),
-                     'Dropped Kad2 source publish of type 3 at a pointer key from 127.0.0.1:{port}: '
-                     'the receiver key did not prove the sender')):
-                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
-                    peer.bind(('127.0.0.1', 0))
-                    peer.sendto(bytes([0xE4, opcode]) + body, ('127.0.0.1', udp_port))
-                    line = expected.format(port=peer.getsockname()[1]) + '\n'
-                    wait_for(proc, f'the log line {line!r}',
-                             lambda: line in (root / 'logfile').read_text(errors='replace'), 10, interval=0.05)
+    with logging_daemon(binary, 'kad-pointer-drop-') as (root, proc, ec, udp_port):
+        file_id = kad_id(ec, proc, root)
+        for (opcode, body), expected in (
+                (pointer_tagged_record(file_id, 4201),
+                 'Dropped Kad2 source publish of type 3 with a pointer tag from 127.0.0.1:{port}: '
+                 'the receiver key did not prove the sender'),
+                (pointer_record(file_id, 4202),
+                 'Dropped Kad2 source publish of type 3 at a pointer key from 127.0.0.1:{port}: '
+                 'the receiver key did not prove the sender')):
+            send_expecting(root, proc, udp_port, bytes([0xE4, opcode]) + body, expected)
 
 
 def drop_unkeyed_requests(binary):
@@ -144,70 +157,53 @@ def drop_unkeyed_requests(binary):
     Its own daemon for two reasons: the per-IP tracker counts both firewall opcodes in one bucket
     of 2 a minute and run() spends both, and the publish bucket is 2 a minute as well.
     """
-    with tempfile.TemporaryDirectory(prefix='kad-unkeyed-drop-') as directory:
-        root = Path(directory)
-        with running_kad_daemon(binary, root, console='stdout.log', VerboseDebug=1, VerboseDebugLogfile=1,
-                                sections={'Debug': {'Cat_Client Kademlia UDP': 1},
-                                          'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, ec, udp_port, _unused):
-            file_id = kad_id(ec, proc, root)
-            keyed = lambda p: keyed_for(p, file_id)
+    with logging_daemon(binary, 'kad-unkeyed-drop-') as (root, proc, ec, udp_port):
+        file_id = kad_id(ec, proc, root)
+        keyed = lambda p: keyed_for(p, file_id)
 
-            # The keyed type 7 publish is the control: same record, and it is indexed.
-            for wrap, (opcode, body), expected in (
-                    (keyed, source_publish(file_id, type7_tags(4101, pointer_repeats=True)),
-                     'Kad2 source publish from 127.0.0.1:{port}: receiver key valid'),
-                    (lambda p: p, source_publish(file_id, type7_tags(4102)),
-                     'Dropped Kad2 source publish of type 7 from 127.0.0.1:{port}: '
-                     'the receiver key did not prove the sender'),
-                    (lambda p: p, (KADEMLIA_FIREWALLED2_REQ, DIAL_PORT + os.urandom(16) + bytes(1)),
-                     'Dropped Kad firewall2 check from 127.0.0.1:{port}: '
-                     'the receiver key did not prove the sender')):
-                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
-                    peer.bind(('127.0.0.1', 0))
-                    peer.sendto(wrap(bytes([0xE4, opcode]) + body), ('127.0.0.1', udp_port))
-                    line = expected.format(port=peer.getsockname()[1]) + '\n'
-                    wait_for(proc, f'the log line {line!r}',
-                             lambda: line in (root / 'logfile').read_text(errors='replace'), 10, interval=0.05)
+        # The keyed type 7 publish is the control: same record, and it is indexed.
+        for wrap, (opcode, body), expected in (
+                (keyed, source_publish(file_id, type7_tags(4101, pointer_repeats=True)),
+                 'Kad2 source publish from 127.0.0.1:{port}: receiver key valid'),
+                (lambda p: p, source_publish(file_id, type7_tags(4102)),
+                 'Dropped Kad2 source publish of type 7 from 127.0.0.1:{port}: '
+                 'the receiver key did not prove the sender'),
+                (lambda p: p, (KADEMLIA_FIREWALLED2_REQ, DIAL_PORT + os.urandom(16) + bytes(1)),
+                 'Dropped Kad firewall2 check from 127.0.0.1:{port}: '
+                 'the receiver key did not prove the sender')):
+            send_expecting(root, proc, udp_port, wrap(bytes([0xE4, opcode]) + body), expected)
 
-            indexed = search(udp_port, file_id)
-            assert len(indexed) == 1, f'{len(indexed)} of 1 type 7 publishes were indexed'
-            (stored,) = indexed.values()
-            # The version byte, not the 400-byte repeat that followed it.
-            assert stored.get(b'bpv') == 1, ('a repeated bpv was stored', stored.get(b'bpv'))
+        indexed = search(udp_port, file_id)
+        assert len(indexed) == 1, f'{len(indexed)} of 1 type 7 publishes were indexed'
+        (stored,) = indexed.values()
+        # The version byte, not the 400-byte repeat that followed it.
+        assert stored.get(b'bpv') == 1, ('a repeated bpv was stored', stored.get(b'bpv'))
 
 
 def run(binary):
-    with tempfile.TemporaryDirectory(prefix='kad-publish-key-') as directory:
-        root = Path(directory)
-        with running_kad_daemon(binary, root, console='stdout.log', VerboseDebug=1, VerboseDebugLogfile=1,
-                                sections={'Debug': {'Cat_Client Kademlia UDP': 1},
-                                          'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (proc, ec, udp_port, _):
-            file_id = kad_id(ec, proc, root)
-            keyed = lambda p: keyed_for(p, file_id)
+    with logging_daemon(binary, 'kad-publish-key-') as (root, proc, ec, udp_port):
+        file_id = kad_id(ec, proc, root)
+        keyed = lambda p: keyed_for(p, file_id)
 
-            for name, wrap, expected, (opcode, body) in (
-                    ('Kad2 source publish', lambda p: p, 'not valid',
-                     source_publish(file_id, core_tags(4001))),
-                    ('Kad2 source publish', keyed, 'valid',
-                     source_publish(file_id, core_tags(4002))),
-                    ('Kad2 keyword publish', keyed, 'valid', (KADEMLIA2_PUBLISH_KEY_REQ, file_id + bytes(2))),
-                    ('Kad2 notes publish', keyed, 'valid',
-                     (KADEMLIA2_PUBLISH_NOTES_REQ, file_id + os.urandom(16) + bytes(1))),
-                    ('Kad firewall check', keyed, 'valid', (KADEMLIA_FIREWALLED_REQ, DIAL_PORT)),
-                    ('Kad firewall2 check', keyed, 'valid',
-                     (KADEMLIA_FIREWALLED2_REQ, DIAL_PORT + os.urandom(16) + bytes(1))),
-                    ('Kad find buddy request', keyed, 'valid',
-                     (KADEMLIA_FINDBUDDY_REQ, os.urandom(32) + DIAL_PORT)),
-                    ('Kad callback request', keyed, 'valid', (KADEMLIA_CALLBACK_REQ, os.urandom(34)))):
-                with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
-                    peer.bind(('127.0.0.1', 0))
-                    peer.sendto(wrap(bytes([0xE4, opcode]) + body), ('127.0.0.1', udp_port))
-                    line = f'{name} from 127.0.0.1:{peer.getsockname()[1]}: receiver key {expected}\n'
-                    wait_for(proc, f'the log line {line!r}',
-                             lambda: line in (root / 'logfile').read_text(errors='replace'), 10, interval=0.05)
+        for name, wrap, expected, (opcode, body) in (
+                ('Kad2 source publish', lambda p: p, 'not valid',
+                 source_publish(file_id, core_tags(4001))),
+                ('Kad2 source publish', keyed, 'valid',
+                 source_publish(file_id, core_tags(4002))),
+                ('Kad2 keyword publish', keyed, 'valid', (KADEMLIA2_PUBLISH_KEY_REQ, file_id + bytes(2))),
+                ('Kad2 notes publish', keyed, 'valid',
+                 (KADEMLIA2_PUBLISH_NOTES_REQ, file_id + os.urandom(16) + bytes(1))),
+                ('Kad firewall check', keyed, 'valid', (KADEMLIA_FIREWALLED_REQ, DIAL_PORT)),
+                ('Kad firewall2 check', keyed, 'valid',
+                 (KADEMLIA_FIREWALLED2_REQ, DIAL_PORT + os.urandom(16) + bytes(1))),
+                ('Kad find buddy request', keyed, 'valid',
+                 (KADEMLIA_FINDBUDDY_REQ, os.urandom(32) + DIAL_PORT)),
+                ('Kad callback request', keyed, 'valid', (KADEMLIA_CALLBACK_REQ, os.urandom(34)))):
+            send_expecting(root, proc, udp_port, wrap(bytes([0xE4, opcode]) + body),
+                           f'{name} from 127.0.0.1:{{port}}: receiver key {expected}')
 
-            indexed = search(udp_port, file_id)
-            assert len(indexed) == 2, f'{len(indexed)} of 2 publishes were indexed'
+        indexed = search(udp_port, file_id)
+        assert len(indexed) == 2, f'{len(indexed)} of 2 publishes were indexed'
     drop_unkeyed_requests(binary)
     drop_unkeyed_pointer_records(binary)
     print('each request logged its result, the unkeyed firewall2 check and the type 7, pointer-tag '
