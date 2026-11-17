@@ -22,7 +22,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-16 19:37+0000\n"
+"PO-Revision-Date: 2026-11-17 22:57+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -6154,9 +6154,8 @@ msgid "Support Protocol Obfuscation"
 msgstr "Supporta offuscamento del protocollo"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
-msgstr "Questa opzione abilita l'offuscamento del protocollo, e fa sì che aMule accetti connessioni offuscate dagli altri client."
+msgstr "Questa opzione abilita l'offuscamento del protocollo per i client e i server ed2k, e fa sì che aMule accetti connessioni offuscate. L'UDP di Kad è sempre offuscato, perché la chiave che dimostra a un peer il tuo indirizzo viaggia nell'intestazione di offuscamento."
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"

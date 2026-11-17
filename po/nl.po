@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-16 12:37+0000\n"
+"PO-Revision-Date: 2026-11-17 22:57+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -399,14 +399,13 @@ msgid "Finishing shutdown..."
 msgstr "Afsluiten voltooien..."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not read the EC password: %s"
-msgstr "Kon het amuleapi-wachtwoord niet opslaan: %s"
+msgstr "Kon het EV-wachtwoord niet lezen: %s"
 
 #: src/amule.cpp src/ExternalConnector.cpp
-#, fuzzy
 msgid "The EC password must not be empty."
-msgstr "Het EV-wachtwoord is niet veranderd."
+msgstr "Het EV-wachtwoord mag niet leeg zijn."
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
@@ -861,19 +860,16 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Kad-netwerk is uitgeschakeld in voorkeuren, wordt niet mee verbonden."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr "FOUT: aMule daemon kan niet gebruikt worden wanneer externe verbindingen uitgeschakeld zijn. Gebruik, om Externe Verbindingen in te schakelen, of een normale aMule, start amuled met de optie --ec-config of stel de waarde van \"AcceptExternalConnections\" in op 1 in het bestand ~/.aMule/amule.conf"
+msgstr "FOUT: aMule daemon kan niet gebruikt worden wanneer externe verbindingen uitgeschakeld zijn. Gebruik, om Externe Verbindingen in te schakelen, een normale aMule en start amuled met de optie --set-ec-pass-stdin, of stel de waarde van \"AcceptExternalConnections\" in op 1 in het bestand ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
-msgstr "FOUT: Een EV-wachtwoord is vereist. Voer amuled --ec-config uit om dat in te stellen."
+msgstr "FOUT: Een EV-wachtwoord is vereist. Voer amuled --set-ec-pass-stdin uit om dat in te stellen."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "FOUT: Ongeldig ECPasswordVerifier in amule.conf. Voer amuled --ec-config uit om een nieuw EV-wachtwoord in te stellen."
+msgstr "FOUT: Ongeldig ECPasswordVerifier in amule.conf. Voer amuled --set-ec-pass-stdin uit om een nieuw EV-wachtwoord in te stellen."
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -2439,16 +2435,16 @@ msgstr "Ongeldige eD2k-link! FOUT: %s"
 
 #: src/ECClientPassword.h
 msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
-msgstr ""
+msgstr "[EC]/Wachtwoord en [EC]/PasswordMD5 kunnen niet allebij gegevens bevatten. Verwijder er één"
 
 #: src/ECClientPassword.h
 msgid "To replace both, run amulecmd -w --password-stdin."
-msgstr ""
+msgstr "Om beide te vervangen voert u amulecmd -w --password-stdin uit."
 
 #: src/ECClientPassword.h
 #, c-format
 msgid "Cannot save %s; using its migrated password for this run only."
-msgstr ""
+msgstr "Kan %s niet opslaan. Gemigreerd wachtwoord wordt gebruikt voor alleen deze uitvoer."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -3003,6 +2999,10 @@ msgid ""
 "\n"
 "Exiting...\n"
 msgstr ""
+"Kan niet verbinden met een leeg wachtwoord.\n"
+"Stel er een in met --set-ec-pass-stdin.\n"
+"\n"
+"Afsluiten...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3018,7 +3018,7 @@ msgstr "aMules poort voor externe verbindingen. (standaard: 4712)"
 
 #: src/ExternalConnector.cpp
 msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
-msgstr ""
+msgstr "Lees het Externe Verbindingen-wachtwoord vanuit de eerste regel van stdin (verborgen op een terminal)."
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3057,9 +3057,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "Schrijf geen logbestand; alleen weergeven op de console."
 
 #: src/ExternalConnector.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cannot read the password: %s\n"
-msgstr "Kon het amuleapi-wachtwoord niet opslaan: %s"
+msgstr "Kan het wachtwoord niet lezen: %s\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -6142,9 +6142,8 @@ msgid "Support Protocol Obfuscation"
 msgstr "Ondersteun protocol-obfuscatie"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
-msgstr "Deze optie schakelt Protocol Obfuscatie in, en zorgt er voor dat aMule geobfusceerde verbindingen van andere clients accepteert."
+msgstr "Deze optie schakelt Protocolobfuscatie in op ed2k-clients en -servers, en zorgt ervoor dat aMule geobfusceerde verbindingen accepteert. Kad-UDP is altijd geobfusceerd omdat de sleutel die uw adres bewijst aan peers meereist in de obfuscatie-koptekst."
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"
@@ -7190,9 +7189,8 @@ msgid "Remote Controls"
 msgstr "Besturing op afstand"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Let amulegui, amuleapi and other tools control aMule."
-msgstr "Laat amulegui, amuleapi, de web-interface en andere hulpprogramma's aMule besturen."
+msgstr "Laat amulegui, amuleapi en andere hulpprogramma's aMule besturen."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
@@ -10610,9 +10608,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "Verandering van EV-wachtwoord afgewezen: kon ECPasswordVerifier niet opslaan. De actieve inloggegevens zijn niet veranderd."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "ECPassword bevat een digest van een ongeldig of leeg wachtwoord. Voer amuled --ec-config uit om een nieuw EV-wachtwoord in te stellen."
+msgstr "ECPassword bevat een digest van een ongeldig of leeg wachtwoord. Voer amuled --set-ec-pass-stdin uit om een nieuw EV-wachtwoord in te stellen."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."

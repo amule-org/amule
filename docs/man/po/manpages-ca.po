@@ -1,20 +1,20 @@
 # SOME DESCRIPTIVE TITLE
 # Copyright (C) YEAR Free Software Foundation, Inc.
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# Kisnov <kisnov@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-11-16 12:10+0100\n"
-"PO-Revision-Date: 2026-11-01 10:29+0000\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2026-11-17 22:57+0000\n"
+"Last-Translator: Kisnov <kisnov@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Catalan <https://hosted.weblate.org/projects/amule/application-man-pages/ca/>\n"
 "Language: ca\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 
 #. type: TH
 #: amule.1.in
@@ -335,17 +335,13 @@ msgstr "amulecmd - programa de consola per controlar l'aMule"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
 msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>]"
-msgstr "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
+msgstr "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "[B<-c> I<E<lt>pathE<gt>>]"
 msgid "[B<-f> I<E<lt>pathE<gt>>]"
-msgstr "[B<-c> I<E<lt>pathE<gt>>]"
+msgstr "[B<-f> I<E<lt>pathE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -382,7 +378,7 @@ msgstr "Port de l'aMule per a connexions externes, tal com s'ha definit a Prefer
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Read the External Connections password from the first line of stdin. Input is hidden on a terminal. Later lines stay on stdin, where amulecmd reads its commands. With B<-w> it replaces a saved password, even when an older file holds two. Without this option and without a saved password, amulecmd asks for the password the same way, so piped input then also starts with the password."
-msgstr ""
+msgstr "Llegeix la contrasenya de les connexions externes de la primera línia de stdin. En un terminal, l'entrada no es mostra. Les línies següents es queden a stdin, d'on amulecmd llegeix les ordres. Amb B<-w> substitueix una contrasenya desada, fins i tot quan un fitxer antic en conté dues. Sense aquesta opció i sense cap contrasenya desada, amulecmd demana la contrasenya de la mateixa manera, de manera que l'entrada per canonada també ha de començar amb la contrasenya."
 
 #. type: TP
 #: amulecmd.1.in
@@ -611,22 +607,22 @@ msgstr "Reprèn la baixada especificada per I<E<lt>hashE<gt>> o I<E<lt>numberE<g
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Lists retained search IDs and queries, including searches started by other clients."
-msgstr ""
+msgstr "Llista els identificadors i les consultes de les cerques conservades, incloses les cerques iniciades per altres clients."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Stops activity for the specified search while retaining its results."
-msgstr ""
+msgstr "Atura l'activitat de la cerca especificada i en conserva els resultats."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
-msgstr ""
+msgstr "Sol·licita més resultats de Kad per a la cerca especificada. No es garanteixen més resultats.  La resposta indica si encara es poden fer sol·licituds posteriors o si aquesta informació no està disponible perquè el dimoni és antic."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
-msgstr ""
+msgstr "Aquestes ordres de gestió requereixen que el dimoni admeti el llistat de cerques i les cerques múltiples.  Feu servir un identificador explícit de B<search list> per a les ordres stop i more."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -691,47 +687,45 @@ msgstr "Mida de fitxer màxima que es retorna. Mateixos sufixos que B<--min-size
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Media filters:"
-msgstr ""
+msgstr "Filtres multimèdia:"
 
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
-msgstr "[B<-t> I<E<lt>numE<gt>>]"
+msgstr "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum bitrate as a whole number from 0 to 1000000."
-msgstr ""
+msgstr "Taxa de bits mínima, com a nombre enter de 0 a 1000000."
 
 #. type: TP
 #: amulecmd.1.in
-#, fuzzy, no-wrap
-#| msgid "[B<-t> I<E<lt>numE<gt>>]"
+#, no-wrap
 msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
-msgstr "[B<-t> I<E<lt>numE<gt>>]"
+msgstr "B<--min-duration> I<E<lt>secondsE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum duration as a whole number from 0 to 86400."
-msgstr ""
+msgstr "Durada mínima, com a nombre enter de 0 a 86400."
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
-msgstr ""
+msgstr "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
-msgstr ""
+msgstr "Cada opció accepta un valor de text. Poseu entre cometes simples o dobles els valors que continguin espais.  Quan feu servir B<-c>, conserveu aquestes cometes dins de la cadena d'ordres que passa l'intèrpret d'ordres."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
-msgstr ""
+msgstr "Els valors multimèdia zero o buits no imposen cap restricció. Els filtres multimèdia no buits requereixen que el dimoni els admeti. Kad aplica aquests filtres; els servidors eD2k poden ignorar-los."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -847,7 +841,7 @@ msgstr "~/.aMule/remote.conf"
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The password is saved as an MD5 digest in [EC]/PasswordMD5, the same key as in amuleapi.conf. An [EC]/Password key from an older file is moved there on load."
-msgstr ""
+msgstr "La contrasenya es desa com a resum MD5 a [EC]/PasswordMD5, la mateixa clau que a amuleapi.conf. Una clau [EC]/Password d'un fitxer antic s'hi trasllada en carregar-lo."
 
 #. type: SH
 #: amulecmd.1.in
@@ -862,15 +856,11 @@ msgstr "Normalment amulecmd s'executarà primer així:"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
 msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
-msgstr "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
+msgstr "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgid "This will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgstr "Això desarà la configuració a I<$HOME/.aMule/remote.conf>, i després només caldrà que escriviu:"
 
@@ -931,7 +921,7 @@ msgstr "Després de bifurcar, crea un fitxer pid a I<E<lt>pathE<gt>>.  I<E<lt>pa
 #. type: Plain text
 #: amuled.1.in
 msgid "Set the External Connections password, enable External Connections, then exit without starting the core. Terminal input is hidden and confirmed; redirected stdin supplies one line without confirmation. An empty password is rejected.  Refused while aMule or another amuled uses the same config dir."
-msgstr ""
+msgstr "Estableix la contrasenya de les connexions externes, habilita les connexions externes i surt sense iniciar el nucli. En un terminal, l'entrada no es mostra i s'ha de confirmar; un stdin redirigit proporciona una sola línia sense confirmació. Es rebutja una contrasenya buida.  Es rebutja si l'aMule o un altre amuled fan servir el mateix directori de configuració."
 
 #. type: Plain text
 #: amuled.1.in
