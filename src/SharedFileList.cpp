@@ -420,6 +420,44 @@ void CPublishKeywordList::PurgeUnreferencedKeywords()
 	}
 }
 
+// Starts the publish of a due keyword. Returns false when it cannot start now: a lookup for it
+// is running, its nodes reported high load, or it has no complete files.
+static bool StartKeywordPublish(CPublishKeyword *pPubKw, uint32 now)
+{
+	Kademlia::CSearch *pSearch = Kademlia::CSearchManager::PrepareLookup(
+		Kademlia::CSearch::STOREKEYWORD, false, pPubKw->GetKadID());
+	if (!pSearch) {
+		return false;
+	}
+	// Shows the keyword in the GUI.
+	pSearch->SetFileName(pPubKw->GetKeyword());
+
+	const KnownFileArray &aFiles = pPubKw->GetReferences();
+	uint32 count = 0;
+	for (unsigned int f = 0; f < aFiles.size(); ++f) {
+		// Only publish complete files: someone else should have the full file to publish these
+		// keywords. As a side effect this may help reduce people finding incomplete files on
+		// the network.
+		if (!aFiles[f]->IsPartFile()) {
+			count++;
+			pSearch->AddFileID(Kademlia::CUInt128(aFiles[f]->GetFileHash().GetHash()));
+			if (count > 150) {
+				// Publish up to 150 files per keyword publish, then rotate the list.
+				pPubKw->RotateReferences(f);
+				break;
+			}
+		}
+	}
+	if (!count) {
+		delete pSearch;
+		return false;
+	}
+	pPubKw->SetNextPublishTime(now + KADEMLIAREPUBLISHTIMEK);
+	pPubKw->IncPublishedCount();
+	Kademlia::CSearchManager::StartSearch(pSearch);
+	return true;
+}
+
 CSharedFileList::CSharedFileList(CKnownFileList *in_filelist)
 {
 	filelist = in_filelist;
@@ -2076,75 +2114,19 @@ void CSharedFileList::Publish()
 
 			// We are not at the max simultaneous keyword publishes
 			if (tNow >= m_keywords->GetNextPublishTime()) {
-
-				// Enough time has passed since last keyword publish
-
-				// Get the next keyword which has to be (re)-published
-				CPublishKeyword *pPubKw = m_keywords->GetNextKeyword();
-				if (pPubKw) {
-
-					// We have the next keyword to check if it can be published
-
-					// Debug check to make sure things are going well.
+				// Pass over keywords that are not due, or cannot publish now, in this tick,
+				// rather than one per KADEMLIAPUBLISHTIME. Keywords come due in list order,
+				// so checking one per tick reaches most of them a whole pass late, in bursts.
+				const int maxChecks = std::min(100, m_keywords->GetCount());
+				for (int i = 0; i < maxChecks; ++i) {
+					CPublishKeyword *pPubKw = m_keywords->GetNextKeyword();
+					if (!pPubKw) {
+						break;
+					}
 					wxASSERT(pPubKw->GetRefCount() != 0);
-
-					if (tNow >= pPubKw->GetNextPublishTime()) {
-						// This keyword can be published.
-						Kademlia::CSearch *pSearch =
-							Kademlia::CSearchManager::PrepareLookup(
-								Kademlia::CSearch::STOREKEYWORD,
-								false,
-								pPubKw->GetKadID());
-						if (pSearch) {
-							// pSearch was created, so no search was already
-							// being done with this HashID -- which also means
-							// network load was checked.
-
-							// This sets the filename into the search object so we
-							// can show it in the gui.
-							pSearch->SetFileName(pPubKw->GetKeyword());
-
-							// Add all file IDs which relate to the current
-							// keyword to be published
-							const KnownFileArray &aFiles =
-								pPubKw->GetReferences();
-							uint32 count = 0;
-							for (unsigned int f = 0; f < aFiles.size(); ++f) {
-
-								// Only publish complete files: someone else
-								// should have the full file to publish these
-								// keywords. As a side effect this may help
-								// reduce people finding incomplete files on
-								// the network.
-								if (!aFiles[f]->IsPartFile()) {
-									count++;
-									pSearch->AddFileID(Kademlia::CUInt128(
-										aFiles[f]
-											->GetFileHash()
-											.GetHash()));
-									if (count > 150) {
-										// Publish up to 150 files per
-										// keyword publish, then
-										// rotate the list.
-										pPubKw->RotateReferences(f);
-										break;
-									}
-								}
-							}
-
-							if (count) {
-								// Start our keyword publish
-								pPubKw->SetNextPublishTime(
-									tNow + (KADEMLIAREPUBLISHTIMEK));
-								pPubKw->IncPublishedCount();
-								Kademlia::CSearchManager::StartSearch(
-									pSearch);
-							} else {
-								// There were no valid files to publish with
-								// this keyword.
-								delete pSearch;
-							}
-						}
+					if (tNow >= pPubKw->GetNextPublishTime() &&
+						StartKeywordPublish(pPubKw, tNow)) {
+						break;
 					}
 				}
 				m_keywords->SetNextPublishTime(KADEMLIAPUBLISHTIME + tNow);
