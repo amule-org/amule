@@ -76,3 +76,19 @@ TEST(SourceRetryPolicy, PacedRetryDoesNotBypassAggressiveRequestGuard)
 		}
 	}
 }
+TEST(SourceRetryPolicy, SourceWaitingForItsAskSurvivesDisconnect)
+{
+	// A failed rehash leaves every source in DS_NONE until its paced ask. An idle socket
+	// closing in that wait must not drop the source.
+	ASSERT_TRUE(KeepOnDisconnect(DS_NONE, true));
+	ASSERT_FALSE(KeepOnDisconnect(DS_NONE, false));
+	for (const uint8_t state : { DS_ONQUEUE, DS_TOOMANYCONNS, DS_NONEEDEDPARTS, DS_LOWTOLOWIP }) {
+		ASSERT_TRUE(KeepOnDisconnect(state, true));
+		ASSERT_TRUE(KeepOnDisconnect(state, false));
+	}
+	// A source that did not answer is still given up.
+	for (const uint8_t state :
+		{ DS_CONNECTING, DS_CONNECTED, DS_WAITCALLBACK, DS_ERROR, DS_BANNED, DS_DOWNLOADING }) {
+		ASSERT_FALSE(KeepOnDisconnect(state, true));
+	}
+}

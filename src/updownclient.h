@@ -654,7 +654,8 @@ public:
 	uint64 GetLastAskedTime() const { return m_dwLastAskedTime; }
 	void ResetLastAskedTime() { m_dwLastAskedTime = 0; }
 	// Ask over TCP as soon as the source would not count it as aggressive (see RequestPacing.h).
-	void AskAgainSoon();
+	// Unpaced asks on the next tick, unless this source already had an early ask recently.
+	void AskAgainSoon(bool paced = true);
 
 	// The source has a part the requested file still misses.
 	bool HasPartWeNeed() const;
@@ -1239,6 +1240,7 @@ private:
 	bool m_skipQuicDial = false;
 #endif
 	uint64 m_lastPacedRequest; // last OP_STARTUPLOADREQ, OP_REASKFILEPING or OP_AICHREQUEST sent
+	uint64 m_lastEarlyAsk;     // last ask let through before its paced time
 	wxString m_clientFilename;
 	uint64 m_nTransferredDown;
 	uint16 m_lastDownloadingPart; // last Part that was downloading

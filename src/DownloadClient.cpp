@@ -169,11 +169,15 @@ void CUpDownClient::SendStartupLoadReq()
 	m_lastPacedRequest = ::GetTickCount64();
 }
 
-void CUpDownClient::AskAgainSoon()
+void CUpDownClient::AskAgainSoon(bool paced)
 {
 	SetDownloadState(DS_NONE);
-	m_dwLastAskedTime =
-		PacedLastAskedTime(::GetTickCount64(), m_lastPacedRequest, thePrefs::GetSourceReaskTime());
+	const uint64 now = ::GetTickCount64();
+	m_dwLastAskedTime = PacedLastAskedTime(now, m_lastPacedRequest, thePrefs::GetSourceReaskTime());
+	if (!paced && m_dwLastAskedTime != 0 && MayAskEarly(now, m_lastEarlyAsk)) {
+		m_dwLastAskedTime = 0;
+		m_lastEarlyAsk = now;
+	}
 }
 
 bool CUpDownClient::HasPartWeNeed() const

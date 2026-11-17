@@ -39,5 +39,12 @@ inline uint64_t PacedLastAskedTime(uint64_t now, uint64_t lastPacedRequest, uint
 	return askAt > reaskTime ? askAt - reaskTime : 1;
 }
 
+// eMule and aMule ban after four early requests in a row and forgive one per polite request.
+// One early request per MIN_REQUESTTIME keeps that count at one at most.
+inline bool MayAskEarly(uint64_t now, uint64_t lastEarlyAsk)
+{
+	return lastEarlyAsk == 0 || now - lastEarlyAsk >= MIN_REQUESTTIME;
+}
+
 #endif // REQUESTPACING_H
 // File_checked_for_headers

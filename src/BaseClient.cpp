@@ -109,6 +109,7 @@
 #include "kademlia/routing/RoutingZone.h"
 #include "KadBuddyIdLayout.h"    // Needed for ConvertBuddyIdLayout (#1835)
 #include "KadBuddyMergePolicy.h" // Needed for DecideKadBuddyMerge
+#include "SourceRetryPolicy.h"   // Needed for KeepOnDisconnect
 #include "SourceRoutePolicy.h"   // Needed for NextSourceRoute
 #include "ExtSourceExchange.h"   // Needed for ExtSX::SRecord
 #ifdef ENABLE_NATT_SERVER_COORDINATION
@@ -231,6 +232,7 @@ void CUpDownClient::Init()
 	m_nPartCount = 0;
 	m_dwLastAskedTime = 0;
 	m_lastPacedRequest = 0;
+	m_lastEarlyAsk = 0;
 	m_nDownloadState = DS_NONE;
 	m_dwUploadTime = 0;
 	m_nTransferredDown = 0;
@@ -1665,16 +1667,12 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 		break;
 	};
 
-	switch (m_nDownloadState) {
-	case DS_ONQUEUE:
+	if (m_nDownloadState == DS_ONQUEUE) {
 		source_type = A4AF_SOURCE; // Will be checked.
-	/* fall through */
-	case DS_TOOMANYCONNS:
-	case DS_NONEEDEDPARTS:
-	case DS_LOWTOLOWIP:
+	}
+	if (SourceRetryPolicy::KeepOnDisconnect(m_nDownloadState, m_reqfile != NULL)) {
 		bDelete = false;
-		break;
-	};
+	}
 
 	switch (m_nUploadState) {
 	case US_CONNECTING:

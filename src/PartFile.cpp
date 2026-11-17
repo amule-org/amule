@@ -1465,7 +1465,9 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 		SetStatus(m_completionAwaitsHashset ? PS_EMPTY : PS_READY);
 		SavePartFile();
 		// Sources asked during the rehash found nothing to download; the gaps are open now.
-		AskQueuedSourcesAgain();
+		// A corrupt part is asked for at once (see MayAskEarly). A wait for the hashset can
+		// re-ask after each unanswered request, so it stays paced.
+		AskQueuedSourcesAgain(m_completionAwaitsHashset);
 		// A part can pass its per-part hash during download yet fail this final full-file
 		// re-hash -- a block rewritten after the part completed, as happens when endgame
 		// source rotation splices a block across two sources. AddGap() above re-opens the
@@ -2839,13 +2841,13 @@ void CPartFile::Delete()
 	delete this;
 }
 
-void CPartFile::AskQueuedSourcesAgain()
+void CPartFile::AskQueuedSourcesAgain(bool paced)
 {
 	for (const CClientRef &ref : m_SrcList) {
 		CUpDownClient *cur_src = ref.GetClient();
 		const uint8 state = cur_src->GetDownloadState();
 		if (state == DS_ONQUEUE || state == DS_NONEEDEDPARTS) {
-			cur_src->AskAgainSoon();
+			cur_src->AskAgainSoon(paced);
 		}
 	}
 }

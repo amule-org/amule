@@ -594,7 +594,7 @@ public:
 	void SetHashSetNeeded(bool value) { m_hashsetneeded = value; }
 	void HashsetRequested();
 	// Sources asked while there was nothing to download are asked again now.
-	void AskQueuedSourcesAgain();
+	void AskQueuedSourcesAgain(bool paced = true);
 	void HashsetReceived();
 
 	uint64 GetCompletedSize() const { return completedsize; }

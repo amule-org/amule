@@ -74,3 +74,11 @@ TEST(RequestPacing, EarlyUptimeDoesNotWrap)
 	// Right after boot the tick count can be below the reask time.
 	ASSERT_EQUALS(1u, PacedLastAskedTime(1000, 500, 10 * MIN_REQUESTTIME));
 }
+
+TEST(RequestPacing, OneEarlyAskPerMinRequestTime)
+{
+	ASSERT_TRUE(MayAskEarly(kNow, 0));
+	ASSERT_FALSE(MayAskEarly(kNow, kNow - 1));
+	ASSERT_FALSE(MayAskEarly(kNow, kNow - MIN_REQUESTTIME + 1));
+	ASSERT_TRUE(MayAskEarly(kNow, kNow - MIN_REQUESTTIME));
+}
