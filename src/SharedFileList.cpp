@@ -65,7 +65,7 @@
 #include "kademlia/routing/RoutingZone.h"
 #include "ClientList.h"
 #include "updownclient.h"                        // Needed for CUpDownClient (buddy route)
-#include "KadCallbackPolicy.h"                   // Needed for DirectCallbackAvailable
+#include "KadCallbackPolicy.h"                   // Needed for the Kad source publish policy
 #include "kademlia/kademlia/UDPFirewallTester.h" // Needed for CUDPFirewallTester
 #include "KadKeywordPublishTimes.h"              // Needed for KadKeywordPublishTimes::Times
 #ifdef ENABLE_IPV6
@@ -1993,43 +1993,30 @@ bool KadSourcePublishWaits(const CKnownFile &file, uint32 now, uint32 waitingSin
 
 CKnownFile *CSharedFileList::NextKadSourcePublish(uint32 now)
 {
-	// Waiting files come first, every tick: the cursor reaches a file again only a pass later.
-	for (auto it = m_kadSourceWaits.begin(); it != m_kadSourceWaits.end();) {
-		CKnownFile *file = GetFileByID(it->first);
-		if (file && KadSourcePublishWaits(*file, now, it->second)) {
-			++it;
-			continue;
+	struct SFiles
+	{
+		CSharedFileList &list;
+		CKnownFile *Find(const CMD4Hash &hash) { return list.GetFileByID(hash); }
+		CKnownFile *Next() { return list.GetNextKadFile(list.m_srcPublishCursor); }
+		static const CMD4Hash &Key(const CKnownFile &file) { return file.GetFileHash(); }
+		static bool Waits(const CKnownFile &file, uint32 now, uint32 waitingSince)
+		{
+			return KadSourcePublishWaits(file, now, waitingSince);
 		}
-		it = m_kadSourceWaits.erase(it);
-		if (file && file->PublishSrc()) {
-			return file;
-		}
-	}
-	// Pass over files published in the last 5 h in this tick, rather than one per
-	// KADEMLIAPUBLISHTIME. The bound caps the work when few files are due.
-	const size_t maxChecks = std::min<size_t>(100, GetCount());
-	for (size_t i = 0; i < maxChecks; ++i) {
-		CKnownFile *file = GetNextKadFile(m_srcPublishCursor);
-		if (!file) {
-			break;
-		}
-		if (m_kadSourceWaits.count(file->GetFileHash())) {
-			continue;
-		}
-		if (KadSourcePublishWaits(*file, now, 0)) {
-			m_kadSourceWaits.emplace(file->GetFileHash(), now);
+		static void Waited(const CKnownFile &file)
+		{
 			++Kademlia::CKadSendBudgets::Instance().deferredStarts;
 			Kademlia::CUInt128 target;
-			target.SetValueBE(file->GetFileHash().GetHash());
+			target.SetValueBE(file.GetFileHash().GetHash());
 			AddDebugLogLineN(
 				logKadPublish, "Kad source publish deferred: target=" + target.ToHexString());
-			continue;
 		}
-		if (file->PublishSrc()) {
-			return file;
-		}
-	}
-	return nullptr;
+		static bool Publish(CKnownFile &file) { return file.PublishSrc(); }
+	} files{ *this };
+	// Pass over files published in the last 5 h in this tick, rather than one per
+	// KADEMLIAPUBLISHTIME. The bound caps the work when few files are due.
+	return Kademlia::NextKadSourcePublish(
+		m_kadSourceWaits, now, std::min<size_t>(100, GetCount()), files);
 }
 
 void CSharedFileList::Publish()

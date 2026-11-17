@@ -5,6 +5,9 @@
 #include <muleunit/test.h>
 #include <KadCallbackPolicy.h>
 
+#include <map>
+#include <vector>
+
 using namespace muleunit;
 
 DECLARE_SIMPLE(KadCallbackPolicy)
@@ -119,4 +122,95 @@ TEST(KadCallbackPolicy, ASourcePublishWaitsAtMostMaxWait)
 	bool asked = false;
 	ASSERT_FALSE(Waits(1000, 1000 + MaxWait, 1000, true, &asked));
 	ASSERT_FALSE(asked);
+}
+
+namespace
+{
+// Shared files, each due or not, and with a seed out of budget or not.
+struct SFakeFiles
+{
+	struct SFile
+	{
+		int key;
+		bool due;
+		bool seedOutOfBudget;
+	};
+	std::vector<SFile> shared;
+	std::vector<int> cursor; // Keys the cursor returns, in order.
+	size_t next = 0;
+	int waited = 0;
+
+	SFile *Find(int key)
+	{
+		for (SFile &file : shared) {
+			if (file.key == key) {
+				return &file;
+			}
+		}
+		return nullptr;
+	}
+	SFile *Next() { return next < cursor.size() ? Find(cursor[next++]) : nullptr; }
+	static int Key(const SFile &file) { return file.key; }
+	static bool Waits(const SFile &file, uint32_t now, uint32_t waitingSince)
+	{
+		return Kademlia::KadSourcePublishWaits(
+			file.due ? 0 : now + 1, now, waitingSince, MaxWait, [&file] {
+				return file.seedOutOfBudget;
+			});
+	}
+	void Waited(const SFile &) { ++waited; }
+	static bool Publish(const SFile &file) { return file.due; }
+};
+
+int NextKey(std::map<int, uint32_t> &waits, uint32_t now, SFakeFiles &files)
+{
+	const SFakeFiles::SFile *file = Kademlia::NextKadSourcePublish(waits, now, 100, files);
+	return file ? file->key : 0;
+}
+} // namespace
+
+TEST(KadCallbackPolicy, AWaitingFileIsCheckedFirstOnTheNextTick)
+{
+	SFakeFiles files;
+	files.shared = { { 1, true, false }, { 2, true, false } };
+	files.cursor = { 2 };
+	std::map<int, uint32_t> waits = { { 1, 1000 } };
+	// File 1's seeds take stores again: it goes before the cursor's file 2.
+	ASSERT_EQUALS(1, NextKey(waits, 1010, files));
+	ASSERT_TRUE(waits.empty());
+}
+
+TEST(KadCallbackPolicy, AWaitingFileNoLongerSharedIsDropped)
+{
+	SFakeFiles files;
+	files.shared = { { 2, true, false } };
+	files.cursor = { 2 };
+	std::map<int, uint32_t> waits = { { 1, 1000 } };
+	ASSERT_EQUALS(2, NextKey(waits, 1010, files));
+	ASSERT_TRUE(waits.empty());
+}
+
+TEST(KadCallbackPolicy, TheCursorStepsOverAWaitingFile)
+{
+	SFakeFiles files;
+	files.shared = { { 1, true, true }, { 2, true, false } };
+	files.cursor = { 1, 2 };
+	std::map<int, uint32_t> waits = { { 1, 1000 } };
+	ASSERT_EQUALS(2, NextKey(waits, 1010, files));
+	ASSERT_EQUALS(1u, waits.size());
+	ASSERT_EQUALS(1000u, waits[1]);
+	ASSERT_EQUALS(0, files.waited);
+}
+
+TEST(KadCallbackPolicy, AWaitCountsOnce)
+{
+	SFakeFiles files;
+	files.shared = { { 1, true, true } };
+	files.cursor = { 1, 1 };
+	std::map<int, uint32_t> waits;
+	ASSERT_EQUALS(0, NextKey(waits, 1000, files));
+	ASSERT_EQUALS(1000u, waits[1]);
+	ASSERT_EQUALS(0, NextKey(waits, 1100, files));           // Still waiting, not counted again.
+	ASSERT_EQUALS(1, NextKey(waits, 1000 + MaxWait, files)); // Its 5 minutes are up.
+	ASSERT_EQUALS(1, files.waited);
 }
