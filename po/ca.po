@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-10 13:01+0000\n"
+"PO-Revision-Date: 2026-11-17 22:57+0000\n"
 "Last-Translator: Kisnov <kisnov@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Catalan <https://hosted.weblate.org/projects/amule/amule-application/ca/>\n"
 "Language: ca\n"
@@ -23,7 +23,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 
 #: src/AboutDialog.cpp
 msgid "About aMule"
@@ -401,14 +401,13 @@ msgid "Finishing shutdown..."
 msgstr "S'està acabant l'aturada..."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not read the EC password: %s"
-msgstr "No s'ha pogut desar la contrasenya d'amuleapi: %s"
+msgstr "No s'ha pogut llegir la contrasenya d'EC: %s"
 
 #: src/amule.cpp src/ExternalConnector.cpp
-#, fuzzy
 msgid "The EC password must not be empty."
-msgstr "No s'ha canviat la contrasenya d'EC."
+msgstr "La contrasenya d'EC no pot ser buida."
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
@@ -863,19 +862,16 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "La xarxa Kad està inhabilitada a les preferències, no es connectarà."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr "ERROR: no es pot usar el dimoni aMule quan les connexions externes estan inhabilitades. Per a activar les connexions externes, feu servir l'aMule normal, inicieu l'amuled amb la opció --ec-config o establiu el paràmetre \"AcceptExternalConnections\" a 1 al fitxer ~/.aMule/amule.conf"
+msgstr "ERROR: no es pot fer servir el dimoni de l'aMule quan les connexions externes estan desactivades. Per activar les connexions externes, feu servir l'aMule normal, executeu l'amuled una vegada amb l'opció --set-ec-pass-stdin o establiu la clau «AcceptExternalConnections» a 1 al fitxer ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
-msgstr "ERROR: cal una contrasenya d'EC. Executeu amuled --ec-config per definir-la."
+msgstr "ERROR: cal una contrasenya d'EC. Executeu amuled --set-ec-pass-stdin per definir-la."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "ERROR: l'ECPasswordVerifier de l'amule.conf no és vàlid. Executeu amuled --ec-config per definir una contrasenya d'EC nova."
+msgstr "ERROR: l'ECPasswordVerifier de l'amule.conf no és vàlid. Executeu amuled --set-ec-pass-stdin per definir una contrasenya d'EC nova."
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -2086,53 +2082,47 @@ msgid "Search Result"
 msgstr "Resultat de la cerca"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a direct connection"
-msgstr "Connexions actives"
+msgstr "una connexió directa"
 
 #: src/DataToText.cpp
 msgid "a direct callback"
-msgstr ""
+msgstr "una retrotrucada directa"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "our server"
-msgstr "Esborra el servidor"
+msgstr "el nostre servidor"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the Kad buddy"
-msgstr "Cerca d'amic"
+msgstr "l'amic de Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "the source's own server"
-msgstr "eD2k: Servidor actual"
+msgstr "el servidor propi de la font"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a server hole punch"
-msgstr "Perforacions de NAT amb servidor: %s"
+msgstr "una perforació de NAT amb servidor"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "a Lugdunum callback"
-msgstr "Retrotrucades de Lugdunum: %s"
+msgstr "una retrotrucada de Lugdunum"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on a fallback route"
-msgstr "S'està connectant via servidor"
+msgstr "S'està connectant via %s, per una ruta de reserva"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s, on an unproven route"
-msgstr "S'està connectant via servidor"
+msgstr "S'està connectant via %s, per una ruta no comprovada"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Connecting via %s"
-msgstr "S'està connectant via Kad"
+msgstr "S'està connectant via %s"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -2446,16 +2436,16 @@ msgstr "Enllaç eD2k invàlid! ERROR: %s"
 
 #: src/ECClientPassword.h
 msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
-msgstr ""
+msgstr "[EC]/Password i [EC]/PasswordMD5 no poden tenir valor alhora; elimineu-ne un"
 
 #: src/ECClientPassword.h
 msgid "To replace both, run amulecmd -w --password-stdin."
-msgstr ""
+msgstr "Per substituir-los tots dos, executeu amulecmd -w --password-stdin."
 
 #: src/ECClientPassword.h
 #, c-format
 msgid "Cannot save %s; using its migrated password for this run only."
-msgstr ""
+msgstr "No es pot desar %s; la contrasenya migrada s'utilitza només per a aquesta execució."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -3010,6 +3000,10 @@ msgid ""
 "\n"
 "Exiting...\n"
 msgstr ""
+"No es pot connectar amb una contrasenya buida.\n"
+"Definiu-ne una amb --set-ec-pass-stdin.\n"
+"\n"
+"S'està sortint...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3025,7 +3019,7 @@ msgstr "Port de l'aMule per a connexions externes. (per defecte: 4712)"
 
 #: src/ExternalConnector.cpp
 msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
-msgstr ""
+msgstr "Llegeix la contrasenya de connexió externa de la primera línia de stdin (oculta en un terminal)."
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3064,9 +3058,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "No escriguis cap fitxer de registre; mostra-ho només per consola."
 
 #: src/ExternalConnector.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cannot read the password: %s\n"
-msgstr "No s'ha pogut desar la contrasenya d'amuleapi: %s"
+msgstr "No es pot llegir la contrasenya: %s\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -4593,12 +4587,11 @@ msgstr "Usuaris connectats al servidor actual i una estimació del nombre total 
 
 #: src/muuli_wdr.cpp
 msgid "Up:"
-msgstr ""
+msgstr "Pujada:"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Down:"
-msgstr "Baixant: "
+msgstr "Baixada:"
 
 #: src/muuli_wdr.cpp
 msgid "Displays the connected status and active transfers. Red arrows signifies that you are currently not connected, yellow arrows signify that you have low ID (firewalled) and green arrows signify that you have high ID (The optimal connection type)."
@@ -5121,9 +5114,8 @@ msgid "This specifies the language used on controls."
 msgstr "Açò especifica la llengua que s'usarà."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Startup"
-msgstr "Inicia"
+msgstr "Inici"
 
 #: src/muuli_wdr.cpp
 msgid "Periodically check for a new version"
@@ -5146,9 +5138,8 @@ msgid "Enabling this makes aMule minimize itself upon start."
 msgstr "L'aMule es minimitzarà automàticament a l'inici."
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Links"
-msgstr "Enllaç"
+msgstr "Enllaços"
 
 #: src/muuli_wdr.cpp packaging/windows/installer_strings.c
 msgid "Makes aMule the default handler for ed2k:// links so clicking one in your browser or file manager opens it here."
@@ -5164,7 +5155,7 @@ msgstr "En obrir una col·lecció s'encuen tots els enllaços eD2k que conté. A
 
 #: src/muuli_wdr.cpp
 msgid "Behavior"
-msgstr ""
+msgstr "Comportament"
 
 #: src/muuli_wdr.cpp
 msgid "Prompt on exit"
@@ -5628,11 +5619,11 @@ msgstr "Esborra"
 
 #: src/muuli_wdr.cpp
 msgid "Double-click: share or unshare this folder. Right-click: share it with all subfolders, including new ones."
-msgstr ""
+msgstr "Doble clic: comparteix o deixa de compartir aquesta carpeta. Clic dret: la comparteix amb totes les subcarpetes, incloses les noves."
 
 #: src/muuli_wdr.cpp
 msgid "Bold: shared. Bold italic: shared with all subfolders. Red folder: contains shared folders."
-msgstr ""
+msgstr "Negreta: compartida. Negreta i cursiva: compartida amb totes les subcarpetes. Carpeta vermella: conté carpetes compartides."
 
 #: src/muuli_wdr.cpp
 msgid "Share hidden files"
@@ -5808,11 +5799,11 @@ msgstr "Cerques simultànies de fonts a Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Firewalled Kad nodes served as buddy"
-msgstr ""
+msgstr "Nodes Kad amb tallafoc atesos com a company"
 
 #: src/muuli_wdr.cpp
 msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
-msgstr ""
+msgstr "Nombre de nodes Kad amb tallafoc per als quals aquest node retransmet les crides de retorn. Cadascun ocupa una connexió, de manera que, com a màxim, se n'atén una desena part del límit de connexions."
 
 #: src/muuli_wdr.cpp
 msgid "Kad source re-search interval (minutes)"
@@ -6011,13 +6002,12 @@ msgid "Guest password"
 msgstr "Contrasenya de convidat"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "Search settings"
-msgstr "Cerques"
+msgstr "Cerca a la configuració"
 
 #: src/muuli_wdr.cpp
 msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
-msgstr ""
+msgstr "Cerqueu una opció pel nom. Les pàgines que hi coincideixen es mantenen a la llista de sota, i les opcions que hi coincideixen s'hi mostren en negreta."
 
 #: src/muuli_wdr.cpp
 msgid "Reset page to defaults"
@@ -6152,9 +6142,8 @@ msgid "Support Protocol Obfuscation"
 msgstr "Suport per a l'ofuscació de protocol"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
-msgstr "Habilita l'ofuscació de protocol, i permet a l'aMule acceptar connexions ofuscades d'altres clients."
+msgstr "Aquesta opció activa l'ofuscació del protocol per als clients i servidors ed2k, i fa que l'aMule accepti connexions ofuscades. L'UDP de Kad sempre està ofuscat, perquè la clau que demostra la vostra adreça a un parell viatja a la capçalera d'ofuscació."
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"
@@ -7046,7 +7035,7 @@ msgstr "Travessia de NAT (QUIC)"
 
 #: src/PeerCapabilities.h
 msgid "Skips unknown source exchange tags"
-msgstr ""
+msgstr "Omet les etiquetes desconegudes de l'intercanvi de fonts"
 
 #: src/Preferences.cpp
 msgid "Media metadata: FFProbePath is obsolete; aMule now uses its bundled media parser. Removing the old setting."
@@ -7117,7 +7106,7 @@ msgstr "KiB/s (%.2f MiB/s)"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Your nickname and language, how aMule starts and closes, and the programs it opens links and previews with."
-msgstr ""
+msgstr "El vostre sobrenom i idioma, com s'inicia i es tanca l'aMule, i els programes amb què obre els enllaços i les vistes prèvies."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Interface"
@@ -7125,7 +7114,7 @@ msgstr "Interfície"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
-msgstr ""
+msgstr "Aparença, títol de la finestra i com es dibuixen les llistes de transferències."
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Connection"
@@ -7133,7 +7122,7 @@ msgstr "Connexió"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."
-msgstr ""
+msgstr "Capacitat de la línia, límits d'amplada de banda, ports i les xarxes a què es connecta l'aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Proxy"
@@ -7141,7 +7130,7 @@ msgstr "Servidor intermediari"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Send aMule's connections through a proxy server."
-msgstr ""
+msgstr "Envia les connexions de l'aMule a través d'un servidor intermediari."
 
 #: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
 msgid "Servers"
@@ -7149,7 +7138,7 @@ msgstr "Servidors"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How aMule keeps its eD2k server list and chooses the servers it connects to."
-msgstr ""
+msgstr "Com manté l'aMule la llista de servidors eD2k i com tria els servidors als quals es connecta."
 
 #: src/PrefsUnifiedDlg.cpp src/SearchListCtrl.cpp
 msgid "Directories"
@@ -7157,16 +7146,15 @@ msgstr "Directoris"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Where downloads are stored and which folders you share."
-msgstr ""
+msgstr "On es desen les baixades i quines carpetes compartiu."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Where the core's folders can be reached from this computer."
-msgstr "On és accessible aquesta mateixa carpeta des d'aquest ordinador, per exemple una compartició de xarxa muntada"
+msgstr "On són accessibles les carpetes del nucli des d'aquest ordinador."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "How downloads and uploads are handled, corruption recovery and media details."
-msgstr ""
+msgstr "Com es gestionen les baixades i les pujades, la recuperació de dades malmeses i els detalls multimèdia."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Events"
@@ -7174,11 +7162,11 @@ msgstr "Esdeveniments"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Run your own commands when something happens in aMule."
-msgstr ""
+msgstr "Executa ordres pròpies quan passa alguna cosa a l'aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Graph timing and colors, and what the statistics tree shows."
-msgstr ""
+msgstr "Temporització i colors dels gràfics, i què mostra l'arbre d'estadístiques."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Filters"
@@ -7186,7 +7174,7 @@ msgstr "Filtres"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Keep spam and unwanted words out of your chat messages and file comments."
-msgstr ""
+msgstr "Evita el contingut brossa i les paraules no desitjades als vostres missatges de xat i als comentaris dels fitxers."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Security"
@@ -7194,7 +7182,7 @@ msgstr "Seguretat"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Secure identification, protocol obfuscation, IP filtering and who may browse your shared files."
-msgstr ""
+msgstr "Identificació segura, ofuscació del protocol, filtratge d'IP i qui pot explorar els vostres fitxers compartits."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Remote Controls"
@@ -7202,7 +7190,7 @@ msgstr "Control remot"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Let amulegui, amuleapi and other tools control aMule."
-msgstr ""
+msgstr "Permet que l'amulegui, l'amuleapi i altres eines controlin l'aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
@@ -7210,7 +7198,7 @@ msgstr "Signatura en línia"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Save aMule's status to a file that other programs can show."
-msgstr ""
+msgstr "Desa l'estat de l'aMule en un fitxer que altres programes poden mostrar."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "IP2Country"
@@ -7218,7 +7206,7 @@ msgstr "IP2Country"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Show each client's country, looked up in a GeoIP database."
-msgstr ""
+msgstr "Mostra el país de cada client, consultat en una base de dades GeoIP."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Advanced"
@@ -7226,16 +7214,15 @@ msgstr "Avançat"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Connection rates, source lookups, buffers and queues, for fine-tuning."
-msgstr ""
+msgstr "Freqüències de connexió, cerques de fonts, memòries intermèdies i cues, per a l'ajust fi."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Debugging"
 msgstr "Depuració"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Choose which kinds of debug messages are written to the log."
-msgstr "El text dels missatges rebuts també s'escriurà al registre."
+msgstr "Trieu quins tipus de missatges de depuració s'escriuen al registre."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -7263,7 +7250,7 @@ msgstr "Connexió fallida entre Cfg i el giny amb ID %d i clau %s"
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "No settings match \"%s\". Try a shorter or different word."
-msgstr ""
+msgstr "Cap opció coincideix amb «%s». Proveu una paraula més curta o diferent."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
@@ -7466,9 +7453,8 @@ msgid "macOS does not let an application stop being the default handler. To stop
 msgstr "El macOS no permet que una aplicació deixi de ser el gestor predeterminat. Perquè l'aMule deixi d'obrir aquests enllaços, feu que una altra aplicació sigui la predeterminada."
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "The aMule API requires external connections to be enabled."
-msgstr "El servidor web i l'API de l'aMule requereixen que les connexions externes estiguin activades."
+msgstr "L'API de l'aMule requereix que les connexions externes estiguin activades."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid ""
@@ -8503,14 +8489,13 @@ msgid "Connected to buddy at %s"
 msgstr "Connectat amb l'amic a %s"
 
 #: src/ServerWnd.cpp
-#, fuzzy
 msgid "Served buddies:"
-msgstr "Llista de servidors"
+msgstr "Companys atesos:"
 
 #: src/ServerWnd.cpp
 #, c-format
 msgid "%u of %u"
-msgstr ""
+msgstr "%u de %u"
 
 #: src/ServerWnd.cpp
 msgid "IP address:"
@@ -9090,9 +9075,8 @@ msgid "Average file size: %s"
 msgstr "Mida mitjana de fitxer: %s"
 
 #: src/Statistics.cpp
-#, fuzzy
 msgid "Diagnostics"
-msgstr "Diagnòstic de cerques"
+msgstr "Diagnòstic"
 
 #: src/Statistics.cpp
 msgid "Operating System"
@@ -9177,9 +9161,8 @@ msgstr ""
 "Escriviu «help search» per obtenir més ajuda.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support media search filters.\n"
-msgstr "El dimoni connectat no admet la cerca a totes les xarxes.\n"
+msgstr "El dimoni connectat no admet els filtres de cerca multimèdia.\n"
 
 #. TRANSLATORS:
 #. 'help search' is a command to the program, do not translate it.
@@ -9192,13 +9175,12 @@ msgstr ""
 "Escriviu 'help search' per obtenir més ajuda.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "The connected daemon does not support search management.\n"
-msgstr "El dimoni connectat no admet la cerca a totes les xarxes.\n"
+msgstr "El dimoni connectat no admet la gestió de cerques.\n"
 
 #: src/TextClient.cpp
 msgid "A search ID from 'search list' is required.\n"
-msgstr ""
+msgstr "Cal un ID de cerca de «search list».\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9315,24 +9297,23 @@ msgstr "[Fitxer de parts]"
 
 #: src/TextClient.cpp
 msgid "No retained searches.\n"
-msgstr ""
+msgstr "No hi ha cap cerca conservada.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; availability is unknown.\n"
-msgstr ""
+msgstr "S'ha processat la sol·licitud de més resultats; es desconeix la disponibilitat.\n"
 
 #: src/TextClient.cpp
 msgid "More-results request processed; further requests remain possible.\n"
-msgstr ""
+msgstr "S'ha processat la sol·licitud de més resultats; encara se'n poden fer més sol·licituds.\n"
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "No further results can be requested for this search.\n"
-msgstr "Retorna els resultats de la cerca anterior.\n"
+msgstr "No es poden sol·licitar més resultats per a aquesta cerca.\n"
 
 #: src/TextClient.cpp
 msgid "Search stop request processed; retained results were not removed.\n"
-msgstr ""
+msgstr "S'ha processat la sol·licitud d'aturar la cerca; no s'han eliminat els resultats conservats.\n"
 
 #: src/TextClient.cpp
 #, c-format
@@ -9587,7 +9568,6 @@ msgid "Execute a search."
 msgstr "Realitza una cerca."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid ""
 "A search type has to be specified by giving the type:\n"
 "    GLOBAL\n"
@@ -9615,7 +9595,7 @@ msgstr ""
 "    GLOBAL\n"
 "    LOCAL\n"
 "    KAD\n"
-"    ALL: totes les xarxes (cal que el dimoni ho admeti)\n"
+"    ALL: Totes les xarxes (cal que el dimoni ho admeti)\n"
 "Exemple: «search kad fitxer» farà una cerca kad de «fitxer».\n"
 "\n"
 "Es poden afegir filtres opcionals abans, després o intercalats amb\n"
@@ -9625,6 +9605,11 @@ msgstr ""
 "    --avail <N>            nombre mínim de fonts\n"
 "    --min-size <N[KMG]>    mida de fitxer mínima; K=1024, M=K*1024, G=M*1024\n"
 "    --max-size <N[KMG]>    mida de fitxer màxima; mateixos sufixos\n"
+"    --min-bitrate <kbps>   nombre enter, 0-1000000\n"
+"    --min-duration <sec>   nombre enter, 0-86400\n"
+"    --codec <text> --title <text> --album <text> --artist <text>\n"
+"Poseu entre cometes els valors de text multimèdia que continguin espais.\n"
+"Kad aplica els filtres multimèdia; els servidors eD2k poden ignorar-los.\n"
 "Exemple: «search global linux iso --type Iso --min-size 100M» retorna\n"
 "resultats de «linux iso» del tipus Iso de com a mínim 100 MiB.\n"
 
@@ -9646,25 +9631,23 @@ msgstr "Realitza una cerca a eD2k i Kad"
 
 #: src/TextClient.cpp
 msgid "List retained search IDs and queries."
-msgstr ""
+msgstr "Llista els ID i les consultes de les cerques conservades."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Stop a search, keeping its results."
-msgstr "Cap cerca oberta no conté aquest resultat."
+msgstr "Atura una cerca i en conserva els resultats."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'."
-msgstr ""
+msgstr "Requereix un ID de cerca de «search list»."
 
 #: src/TextClient.cpp
-#, fuzzy
 msgid "Request more Kad search results."
-msgstr "Número de resultats de la cerca: %i\n"
+msgstr "Sol·licita més resultats de cerca de Kad."
 
 #: src/TextClient.cpp
 msgid "Requires a search ID from 'search list'. Further results are not guaranteed."
-msgstr ""
+msgstr "Requereix un ID de cerca de «search list». No es garanteix que n'hi hagi més resultats."
 
 #: src/TextClient.cpp
 msgid "Show the results of a search."
@@ -10621,9 +10604,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "S'ha rebutjat el canvi de contrasenya d'EC: no s'ha pogut emmagatzemar l'ECPasswordVerifier. La credencial activa no ha canviat."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "L'ECPassword conté un resum no vàlid o de contrasenya buida. Executeu amuled --ec-config per definir una contrasenya d'EC nova."
+msgstr "L'ECPassword conté un resum no vàlid o de contrasenya buida. Executeu amuled --set-ec-pass-stdin per definir una contrasenya d'EC nova."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."

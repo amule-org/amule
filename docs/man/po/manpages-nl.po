@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-11-16 12:10+0100\n"
-"PO-Revision-Date: 2026-11-10 17:52+0000\n"
+"PO-Revision-Date: 2026-11-17 22:57+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/application-man-pages/nl/>\n"
 "Language: nl\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 2026.11.2.dev0\n"
+"X-Generator: Weblate 2026.12.dev0\n"
 
 #. type: TH
 #: amule.1.in
@@ -335,17 +335,13 @@ msgstr "amulecmd - Console-gebaseerd programma om aMule to besturen"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "[B<-t> I<E<lt>nameE<gt>>] [B<-s> I<E<lt>portE<gt>>]"
 msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>]"
-msgstr "[B<-t> I<E<lt>naamE<gt>>] [B<-s> I<E<lt>poortE<gt>>]"
+msgstr "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>poortE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "[B<-c> I<E<lt>pathE<gt>>]"
 msgid "[B<-f> I<E<lt>pathE<gt>>]"
-msgstr "[B<-c> I<E<lt>padE<gt>>]"
+msgstr "[B<-f> I<E<lt>padE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -382,7 +378,7 @@ msgstr "De poort die aMule gebruikt voor Externe Verbindingen, zoals ingesteld i
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Read the External Connections password from the first line of stdin. Input is hidden on a terminal. Later lines stay on stdin, where amulecmd reads its commands. With B<-w> it replaces a saved password, even when an older file holds two. Without this option and without a saved password, amulecmd asks for the password the same way, so piped input then also starts with the password."
-msgstr ""
+msgstr "Lees het wachtwoord voor Externe Verbindingen vanuit de eerste regel van stdin. Invoer is verborgen op een terminal. Latere regels blijven in stdin, vanwaar amulecmd opdrachten leest. Met B<-w> vervangt het een opgeslagen wachtwoord, zelfs als een ouder bestand er twee bevat. Zonder deze optie en zonder opgeslagen wachtwoord vraagt amulecmd op dezelfde manier naar het wachtwoord, waar aangevoerde invoer dus ook moet beginnen met het wachtwoord."
 
 #. type: TP
 #: amulecmd.1.in
@@ -845,7 +841,7 @@ msgstr "~/.aMule/remote.conf"
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The password is saved as an MD5 digest in [EC]/PasswordMD5, the same key as in amuleapi.conf. An [EC]/Password key from an older file is moved there on load."
-msgstr ""
+msgstr "Het wachtwoord is opgeslagen als een MD5-digest in [EV]/PasswordMD5 dezelfde sleutel als in amuleapi.conf. Een [EV]/Wachtwoordsleutel vanuit een ouder bestand wordt bij het inladen verplaatst."
 
 #. type: SH
 #: amulecmd.1.in
@@ -860,15 +856,11 @@ msgstr "Over het algemeen wordt amulecmd voor het eerst uitgevoerd als:"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<-P> I<ECpassword> B<-w>"
 msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
-msgstr "B<amulecmd> B<-h> I<hostnaam> B<-p> I<EV-port> B<-P> I<EV-wachtwoord> B<-w>"
+msgstr "B<amulecmd> B<-h> I<hostnaam> B<-p> I<EV-poort> B<--password-stdin> B<-w>"
 
 #. type: Plain text
 #: amulecmd.1.in
-#, fuzzy
-#| msgid "These will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgid "This will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
 msgstr "Dit zal instellingen opslaan naar I<$HOME/.aMule/remote.conf> en later hoeft u alleen nog het volgende te typen:"
 
@@ -929,7 +921,7 @@ msgstr "Na overschakelen, maakt een pid-bestand in het I<E<lt>padE<gt>>.  I<E<lt
 #. type: Plain text
 #: amuled.1.in
 msgid "Set the External Connections password, enable External Connections, then exit without starting the core. Terminal input is hidden and confirmed; redirected stdin supplies one line without confirmation. An empty password is rejected.  Refused while aMule or another amuled uses the same config dir."
-msgstr ""
+msgstr "Stel het wachtwoord voor Externe Verbindingen in, schakel Externe Verbindingen in en sluit daarna af zonder de kern te starten. Terminal-invoer is verborgen en goedgekeurd. Doorverwezen stdin levert één regel aan zonder bevestiging. Een leeg wachtwoord wordt afgekeurd.  Dit wordt afgekeurd als aMule of een andere amuled dezelfde configuratiemap gebruikt."
 
 #. type: Plain text
 #: amuled.1.in

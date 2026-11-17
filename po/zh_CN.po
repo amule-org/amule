@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-16 12:37+0000\n"
+"PO-Revision-Date: 2026-11-17 22:57+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -402,14 +402,13 @@ msgid "Finishing shutdown..."
 msgstr "正在完成关闭…"
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not read the EC password: %s"
-msgstr "无法保存 amuleapi 密码：%s"
+msgstr "无法读取 EC 密码：%s"
 
 #: src/amule.cpp src/ExternalConnector.cpp
-#, fuzzy
 msgid "The EC password must not be empty."
-msgstr "EC 密码未更改。"
+msgstr "EC 密码不能为空。"
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
@@ -864,19 +863,16 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "Kad 网络在首选项中被禁用了，没有连接。"
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr "错误：当远程连接被禁用的时，aMule 服务程序无法使用。要启用远程连接，请使用普通的 aMule，或使用 --ec-config选项启动 amuled 或在文件 ~/aMule/amule.conf 中设置选项\"AcceptExternalConnections\"为1"
+msgstr "错误：当外部连接被禁用的时，aMule daemon程序无法使用。要启用外部连接，请使用普通的 aMule，或使用 --set-ec-pass-stdin 选项启动 amuled 一次或在文件 ~/aMule/amule.conf 中设置AcceptExternalConnections 键为1"
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
-msgstr "错误：需要 EC 密码。运行 amuled --ec-config 来设置它。"
+msgstr "错误：需要 EC 密码。运行 amuled --set-ec-pass-stdin 来设置它。"
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "错误：amule.conf 中的 ECPasswordVerifier 无效。运行 amuled --ec-config 来设置新的 EC 密码。"
+msgstr "错误：amule.conf 中的 ECPasswordVerifier 无效。运行 amuled --set-ec-pass-stdin 来设置新的 EC 密码。"
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -2441,16 +2437,16 @@ msgstr "非法 eD2k 链接！错误: %s"
 
 #: src/ECClientPassword.h
 msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
-msgstr ""
+msgstr "[EC]/Password 和 [EC]/PasswordMD5 不能都为空；删除一个"
 
 #: src/ECClientPassword.h
 msgid "To replace both, run amulecmd -w --password-stdin."
-msgstr ""
+msgstr "要两个都替换，运行 amulecmd -w --password-stdin。"
 
 #: src/ECClientPassword.h
 #, c-format
 msgid "Cannot save %s; using its migrated password for this run only."
-msgstr ""
+msgstr "无法保存 %s; 仅本次运行后用其已迁移的密码。"
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -3005,6 +3001,10 @@ msgid ""
 "\n"
 "Exiting...\n"
 msgstr ""
+"无法用空密码连接。\n"
+"用 --set-ec-pass-stdin 设置一个。\n"
+"\n"
+"正在退出...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3020,7 +3020,7 @@ msgstr "aMule 的远程连接端口。(默认：4712)"
 
 #: src/ExternalConnector.cpp
 msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
-msgstr ""
+msgstr "从 stdin 第一行读取外部连接密码（在终端上处于隐藏状态）。"
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3059,9 +3059,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "不写入日志文件；只打印到控制台。"
 
 #: src/ExternalConnector.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cannot read the password: %s\n"
-msgstr "无法保存 amuleapi 密码：%s"
+msgstr "无法读取密码：%s\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -6143,9 +6143,8 @@ msgid "Support Protocol Obfuscation"
 msgstr "支持模糊协议"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
-msgstr "此选项启用了协议混淆，可让aMule接受来自其他客户端的混淆连接。"
+msgstr "此选项为 ed2k 客户端和服务器启用协议混淆，并使 aMule 接受混淆连接。Kad UDP 始终混淆，因为用于向对等方证明你的地址的密钥包含在混淆头中。"
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"
@@ -7191,9 +7190,8 @@ msgid "Remote Controls"
 msgstr "远程控制"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Let amulegui, amuleapi and other tools control aMule."
-msgstr "让 amulegui、amuleapi、web 界面和其他工具控制 aMule。"
+msgstr "让 amulegui、amuleapi 和其他工具控制 aMule。"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
@@ -10604,9 +10602,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "EC 密码更改被拒绝：无法存储 ECPasswordVerifier。活动的凭据未更改。"
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "ECPassword 包含无效或空密码摘要。运行 amuled --ec-config 来设置新的 EC 密码。"
+msgstr "ECPassword 包含无效或空密码摘要。运行 amuled --set-ec-pass-stdin 来设置新的 EC 密码。"
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."
