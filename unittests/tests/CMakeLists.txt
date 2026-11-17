@@ -67,6 +67,8 @@ endfunction ()
 
 # PCP MAP wire encoding and response validation.
 add_muleunit_test (PCPProtocolTest ${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp)
+add_muleunit_test (PCPGatewayTest ${CMAKE_SOURCE_DIR}/src/PCPGateway.cpp
+	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp)
 
 # Config migration, downgrade compatibility and the shared core sleep policy.
 add_muleunit_test (PowerManagementTest)
