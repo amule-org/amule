@@ -188,4 +188,20 @@ TEST(KadPublishPolicy, NoRouteBackHasNoSourceTypeToPublish)
 	ASSERT_EQUALS(0, KadSourceTypeFor(EKadSourcePublish::None, true));
 }
 
+TEST(KadPublishPolicy, AKeywordNodeAnswersOncePerFiftyFiles)
+{
+	ASSERT_EQUALS(7u, AnsweringNodes(7, 0));
+	ASSERT_EQUALS(7u, AnsweringNodes(7, 1));
+	ASSERT_EQUALS(7u, AnsweringNodes(7, 50));
+	ASSERT_EQUALS(7u, AnsweringNodes(14, 51));
+	ASSERT_EQUALS(7u, AnsweringNodes(21, 150));
+}
+
+// The publisher adds a 151st file ID before it stops, but a node is sent at most 150 files.
+TEST(KadPublishPolicy, AKeywordNodeIsSentAtMostThreePackets)
+{
+	ASSERT_EQUALS(7u, AnsweringNodes(21, 151));
+	ASSERT_EQUALS(7u, AnsweringNodes(21, 1000));
+}
+
 // File_checked_for_headers
