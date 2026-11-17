@@ -30,8 +30,10 @@
 #include <atomic>
 #include <chrono>
 #include <map>
+#include <optional>
 #include <string>
 #include <sstream>
+#include <utility>
 
 #include "UPnPCompatibility.h"
 
@@ -290,7 +292,14 @@ public:
 	bool IsSubscribed() const { return m_SCPD.get() != NULL; }
 	void SetSCPD(CUPnPSCPD *SCPD) { m_SCPD.reset(SCPD); }
 
-	bool Execute(const std::string &ActionName, const std::vector<CUPnPArgumentValue> &ArgValue) const;
+	//! Send an action. When resultArg names an output argument, its value is copied into result;
+	//! the IGD2 pinhole actions answer with a UniqueID that is the only handle for renewing and
+	//! deleting, so a bare success flag would lose it.
+	bool Execute(const std::string &ActionName,
+		const std::vector<CUPnPArgumentValue> &ArgValue,
+		const char *resultArg = nullptr,
+		std::string *result = nullptr,
+		const std::string *sourceAddress = nullptr) const;
 };
 
 class CUPnPDevice
@@ -343,7 +352,7 @@ public:
 	void SetExpires(int expires) { m_expires = expires; }
 };
 
-typedef std::map<const std::string, CUPnPRootDevice *> RootDeviceMap;
+typedef std::map<std::pair<std::string, bool>, CUPnPRootDevice *> RootDeviceMap;
 typedef std::map<const std::string, CUPnPService *> ServiceMap;
 typedef std::map<const std::string, CUPnPPortMapping> PortMappingMap;
 
@@ -361,6 +370,28 @@ private:
 	// first.
 	ServiceMap m_ServiceMap;
 	PortMappingMap m_ActivePortMappingsMap;
+	// Guarded by m_ServiceMapMutex. One entry per pinhole: the request as we made it, the UniqueID
+	// the gateway answered with, and when the granted lease runs out. Keyed by PinholeKey().
+	struct SIPv6Pinhole
+	{
+		std::string client;
+		unsigned short port;
+		int protocol;
+		unsigned int lease;
+		std::string uniqueId; // Empty until a gateway accepted the pinhole.
+		std::chrono::steady_clock::time_point expiry;
+	};
+	std::map<std::string, SIPv6Pinhole> m_IPv6Pinholes;
+	// The TCP pinhole the node wants. Its own mutex, so the main thread never waits for a SOAP
+	// call to set it. Unset until SetIPv6PinholeTarget(), so pinholes from AddIPv6Pinhole() stay.
+	struct SIPv6PinholeTarget
+	{
+		std::string client; // Empty when the node wants no pinhole.
+		unsigned short port;
+		unsigned int lease;
+	};
+	std::optional<SIPv6PinholeTarget> m_IPv6PinholeTarget;
+	CUPnPMutex m_IPv6PinholeTargetMutex;
 	CUPnPMutex m_RootDeviceListMutex;
 	bool m_IGWDeviceDetected;
 	mutable CUPnPMutex m_ServiceMapMutex;
@@ -374,6 +405,40 @@ public:
 	void Subscribe(CUPnPService &service);
 	void Unsubscribe(CUPnPService &service);
 	bool AddPortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping);
+	// Try source-bound IPv6 control URLs first, then IPv4 firewall services for gateways that refuse
+	// the IPv6 action. Stops at the first accepting firewall because only one UniqueID is retained.
+	bool ExecuteOnIPv6FirewallService(const std::string &actionName,
+		const std::vector<CUPnPArgumentValue> &argval,
+		const std::string &sourceAddress,
+		const char *resultArg,
+		std::string *result);
+	// One helper per SOAP action, so every argument list is built in exactly one place.
+	bool SendAddPinhole(SIPv6Pinhole &pinhole);
+	bool SendUpdatePinhole(SIPv6Pinhole &pinhole);
+	void SendDeletePinhole(const SIPv6Pinhole &pinhole);
+
+	//! Whether a gateway exposes IGD2 WANIPv6FirewallControl, which is what an inbound IPv6
+	//! pinhole needs; a gateway that only maps IPv4 ports cannot open one.
+	bool IPv6FirewallDetected() const;
+	//! Record an inbound pinhole request and immediately try to send it. Recording comes first:
+	//! discovery is asynchronous, so a request made before the gateway's firewall service registers
+	//! is replayed by the registration path rather than lost.
+	void AddIPv6Pinhole(const std::string &internalClient,
+		unsigned short internalPort,
+		int protocol,
+		unsigned int leaseSeconds);
+	//! Set the TCP pinhole the node wants: its address and port, or an empty address for none. The
+	//! next RenewExpiringIPv6Pinholes() opens, moves or drops pinholes to match.
+	void SetIPv6PinholeTarget(const std::string &client, unsigned short port, unsigned int leaseSeconds);
+	//! Match the pinholes to the target, then renew or re-add every recorded pinhole whose lease is
+	//! close to expiry, and replace any that no longer names the current client address. Called off
+	//! the main thread: a slow gateway must not stall it.
+	void RenewExpiringIPv6Pinholes(const std::string &currentClient);
+	//! Delete every pinhole this control point opened, and clear the target so that no later pass
+	//! opens them again.
+	void DeleteIPv6Pinholes();
+	//! The key a pinhole is stored under: protocol and port, since that is what it names.
+	static std::string PinholeKey(int protocol, unsigned short port);
 	bool DeletePortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping);
 
 	UpnpClient_Handle GetUPnPClientHandle() const { return m_UPnPClientHandle; }
@@ -383,7 +448,7 @@ public:
 	bool WanServiceDetected() const
 	{
 		CUPnPMutexLocker lock(m_ServiceMapMutex);
-		return !m_ServiceMap.empty();
+		return HasWANMappingService();
 	}
 	// True until a gateway has its mappings or the search has ended, or a little longer for a
 	// gateway still registering. Work that needs the ports reachable, such as a server login, should
@@ -412,6 +477,10 @@ private:
 		IXML_Element *rootDevice, const std::string &urlBase, const char *location, int expires);
 	void RemoveRootDevice(const char *udn);
 	void RefreshPortMappings();
+	// The caller must hold m_ServiceMapMutex.
+	bool HasWANMappingService() const;
+	// The caller must hold m_ServiceMapMutex.
+	void ApplyIPv6PinholeTarget(const SIPv6PinholeTarget &target);
 	bool ExecuteOnAnyService(
 		const std::string &actionName, const std::vector<CUPnPArgumentValue> &argval);
 	bool PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMapping);

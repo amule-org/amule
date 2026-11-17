@@ -49,9 +49,13 @@
 #endif /* UPNP_MAJOR_VERSION == 17 */
 
 #include "UPnPBase.h"
+#include "IPv6PinholePolicy.h"  // Needed for ShouldRenewIPv6Pinhole
 #include "UPnPLocationPolicy.h" // Needed for IsIPv6Location
 
-#include <algorithm>          // For transform()
+#include <algorithm> // For transform()
+#include <boost/asio.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
 #include "CCtypeAsciiScope.h" // Needed to pin LC_CTYPE = C around the
 			      // ASCII-only tolower() comparisons below
 			      // (Turkish-i: tolower('I') = U+0131 under
@@ -140,7 +144,11 @@ static const std::string WAN_Common_Interface_Config(
 	"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:1");
 static const std::string WAN_IP_Connection("urn:schemas-upnp-org:service:WANIPConnection:1");
 static const std::string WAN_PPP_Connection("urn:schemas-upnp-org:service:WANPPPConnection:1");
+static const std::string WAN_IPv6_Firewall_Control("urn:schemas-upnp-org:service:WANIPv6FirewallControl:1");
 } // namespace Service
+
+static bool IsIPv6FirewallService(const std::string &type);
+static bool IsWANMappingService(const std::string &type);
 
 // Decide whether an SSDP NT/ST is something amule wants to learn about. The whitelist is the IGW
 // family plus upnp:rootdevice, which is opaque from SSDP alone (description.xml has to be fetched
@@ -166,15 +174,13 @@ static bool IsWANRelatedDeviceType(const std::string &type)
 		"urn:schemas-upnp-org:device:LANDevice:",
 		"urn:schemas-upnp-org:service:Layer3Forwarding:",
 		"urn:schemas-upnp-org:service:WANCommonInterfaceConfig:",
-		"urn:schemas-upnp-org:service:WANIPConnection:",
-		"urn:schemas-upnp-org:service:WANPPPConnection:",
 	};
 	for (const std::string &prefix : prefixes) {
 		if (stdStringStartsWithCI(type, prefix)) {
 			return true;
 		}
 	}
-	return false;
+	return IsWANMappingService(type) || IsIPv6FirewallService(type);
 }
 
 // Case-insensitive match of a device/service type URN against a fully-versioned reference URN,
@@ -191,6 +197,17 @@ static bool TypeMatchesIgnoringVersion(const std::string &type, const std::strin
 		return stdStringIsEqualCI(type, reference);
 	}
 	return stdStringStartsWithCI(type, reference.substr(0, lastColon + 1));
+}
+
+static bool IsIPv6FirewallService(const std::string &type)
+{
+	return TypeMatchesIgnoringVersion(type, Service::WAN_IPv6_Firewall_Control);
+}
+
+static bool IsWANMappingService(const std::string &type)
+{
+	return TypeMatchesIgnoringVersion(type, Service::WAN_IP_Connection) ||
+	       TypeMatchesIgnoringVersion(type, Service::WAN_PPP_Connection);
 }
 
 static std::string ProcessErrorMessage(
@@ -248,6 +265,227 @@ static int ResolveURL(const std::string &base, const std::string &rel, std::stri
 		absURL = &buf[0];
 	}
 	return errcode;
+}
+
+namespace http = boost::beast::http;
+
+struct HttpControlURL
+{
+	std::string authority;
+	std::string host;
+	std::string port;
+	std::string target;
+};
+
+static bool ParseHttpControlURL(const std::string &url, HttpControlURL &parsed)
+{
+	const std::string scheme("http://");
+	if (url.compare(0, scheme.length(), scheme) != 0) {
+		return false;
+	}
+
+	const std::string::size_type authorityStart = scheme.length();
+	std::string::size_type authorityEnd = url.find_first_of("/?#", authorityStart);
+	if (authorityEnd == std::string::npos) {
+		authorityEnd = url.length();
+	}
+	const std::string authority = url.substr(authorityStart, authorityEnd - authorityStart);
+	if (authority.empty() || authority.find('@') != std::string::npos) {
+		return false;
+	}
+	parsed.authority = authority;
+	parsed.port = "80";
+
+	if (authority[0] == '[') {
+		const std::string::size_type closingBracket = authority.find(']');
+		if (closingBracket == std::string::npos || closingBracket == 1) {
+			return false;
+		}
+		parsed.host = authority.substr(1, closingBracket - 1);
+		if (closingBracket + 1 < authority.length()) {
+			if (authority[closingBracket + 1] != ':' ||
+				closingBracket + 2 == authority.length()) {
+				return false;
+			}
+			parsed.port = authority.substr(closingBracket + 2);
+		}
+		const std::string::size_type encodedZone = parsed.host.find("%25");
+		if (encodedZone != std::string::npos) {
+			parsed.host.replace(encodedZone, 3, "%");
+		}
+	} else {
+		const std::string::size_type colon = authority.find(':');
+		if (colon != std::string::npos) {
+			if (authority.find(':', colon + 1) != std::string::npos || colon == 0 ||
+				colon + 1 == authority.length()) {
+				return false;
+			}
+			parsed.host = authority.substr(0, colon);
+			parsed.port = authority.substr(colon + 1);
+		} else {
+			parsed.host = authority;
+		}
+	}
+
+	if (parsed.host.empty()) {
+		return false;
+	}
+	parsed.target = authorityEnd == url.length() ? "/" : url.substr(authorityEnd);
+	if (parsed.target[0] == '?') {
+		parsed.target.insert(0, "/");
+	}
+	const std::string::size_type fragment = parsed.target.find('#');
+	if (fragment != std::string::npos) {
+		parsed.target.erase(fragment);
+	}
+	return !parsed.target.empty() && parsed.target[0] == '/';
+}
+
+static int SendBoundSoapAction(const std::string &url,
+	const std::string &sourceAddress,
+	const std::string &serviceType,
+	const std::string &actionName,
+	IXML_Document *actionDocument,
+	IXML_Document **responseDocument)
+{
+	if (responseDocument == nullptr) {
+		return UPNP_E_INVALID_PARAM;
+	}
+	*responseDocument = nullptr;
+
+	HttpControlURL controlURL;
+	if (!ParseHttpControlURL(url, controlURL)) {
+		return UPNP_E_INVALID_PARAM;
+	}
+
+	boost::system::error_code error;
+	const boost::asio::ip::address_v6 localAddress =
+		boost::asio::ip::make_address_v6(sourceAddress, error);
+	if (error) {
+		return UPNP_E_SOCKET_BIND;
+	}
+
+	boost::asio::io_context context;
+	boost::asio::ip::tcp::resolver resolver(context);
+	const boost::asio::ip::tcp::resolver::results_type endpoints =
+		resolver.resolve(controlURL.host, controlURL.port, error);
+	if (error) {
+		return UPNP_E_SOCKET_CONNECT;
+	}
+
+	boost::asio::ip::tcp::endpoint remoteEndpoint;
+	bool hasIPv6Endpoint = false;
+	for (const auto &endpoint : endpoints) {
+		if (endpoint.endpoint().address().is_v6()) {
+			remoteEndpoint = endpoint.endpoint();
+			hasIPv6Endpoint = true;
+			break;
+		}
+	}
+	if (!hasIPv6Endpoint) {
+		return UPNP_E_SOCKET_CONNECT;
+	}
+
+	boost::beast::tcp_stream stream(context);
+	stream.socket().open(boost::asio::ip::tcp::v6(), error);
+	if (error) {
+		return UPNP_E_SOCKET_ERROR;
+	}
+	stream.socket().bind(boost::asio::ip::tcp::endpoint(localAddress, 0), error);
+	if (error) {
+		return UPNP_E_SOCKET_BIND;
+	}
+
+	DOMString actionXML = ixmlPrintNode(reinterpret_cast<IXML_Node *>(actionDocument));
+	if (actionXML == nullptr) {
+		return UPNP_E_SOCKET_READ;
+	}
+	const std::string soapBody =
+		std::string("<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" ") +
+		"s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body>" + actionXML +
+		"</s:Body></s:Envelope>";
+	ixmlFreeDOMString(actionXML);
+
+	http::request<http::string_body> request(http::verb::post, controlURL.target, 11);
+	request.set(http::field::host, controlURL.authority);
+	request.set(http::field::content_type, "text/xml; charset=\"utf-8\"");
+	request.set("SOAPAction", "\"" + serviceType + "#" + actionName + "\"");
+	request.keep_alive(false);
+	request.body() = soapBody;
+	request.prepare_payload();
+
+	boost::beast::flat_buffer buffer;
+	http::response_parser<http::string_body> responseParser;
+	responseParser.body_limit(1024 * 1024);
+	http::response<http::string_body> response;
+	boost::asio::steady_timer timeout(context);
+	timeout.expires_after(std::chrono::seconds(30));
+	int transportError = UPNP_E_SOCKET_CONNECT;
+	timeout.async_wait([&](const boost::system::error_code &timerError) {
+		if (!timerError) {
+			boost::system::error_code ignored;
+			stream.socket().cancel(ignored);
+		}
+	});
+	stream.async_connect(remoteEndpoint, [&](const boost::system::error_code &connectError) {
+		if (connectError) {
+			timeout.cancel();
+			return;
+		}
+		transportError = UPNP_E_SOCKET_WRITE;
+		http::async_write(
+			stream, request, [&](const boost::system::error_code &writeError, std::size_t) {
+				if (writeError) {
+					timeout.cancel();
+					return;
+				}
+				transportError = UPNP_E_SOCKET_READ;
+				http::async_read(stream,
+					buffer,
+					responseParser,
+					[&](const boost::system::error_code &readError, std::size_t) {
+						if (!readError) {
+							response = responseParser.release();
+							transportError = UPNP_E_SUCCESS;
+						}
+						timeout.cancel();
+					});
+			});
+	});
+	context.run();
+	if (transportError != UPNP_E_SUCCESS) {
+		return transportError;
+	}
+
+	const int status = static_cast<int>(response.result_int());
+	if (!response.body().empty()) {
+		const int parseError = ixmlParseBufferEx(response.body().c_str(), responseDocument);
+		if (parseError != IXML_SUCCESS) {
+			IXML::Document::Free(*responseDocument);
+			*responseDocument = nullptr;
+			return status == 200 ? UPNP_E_SOCKET_READ : status;
+		}
+	}
+	if (status != 200) {
+		// Hand back the UPnPError element alone, as UpnpSendAction() does: CUPnPError reads
+		// errorCode from the root.
+		IXML_Document *error = nullptr;
+		IXML_NodeList *nodes = nullptr;
+		if (*responseDocument != nullptr) {
+			nodes = ixmlDocument_getElementsByTagName(*responseDocument, "UPnPError");
+		}
+		IXML_Node *node = nodes != nullptr ? ixmlNodeList_item(nodes, 0) : nullptr;
+		DOMString errorXML = node != nullptr ? ixmlPrintNode(node) : nullptr;
+		if (errorXML != nullptr && ixmlParseBufferEx(errorXML, &error) != IXML_SUCCESS) {
+			error = nullptr;
+		}
+		ixmlFreeDOMString(errorXML);
+		ixmlNodeList_free(nodes);
+		IXML::Document::Free(*responseDocument);
+		*responseDocument = error;
+		return status;
+	}
+	return *responseDocument == nullptr ? UPNP_E_SOCKET_READ : UPNP_E_SUCCESS;
 }
 
 } /* namespace UPnP */
@@ -487,8 +725,12 @@ CUPnPService::CUPnPService(
 	    << "\n        absEventSubURL: " << m_absEventSubURL;
 	AddDebugLogLineN(logUPnP, msg);
 
-	if (UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_IP_Connection) ||
-		UPnP::TypeMatchesIgnoringVersion(m_serviceType, UPnP::Service::WAN_PPP_Connection)) {
+	// Keep WAN mappings on IPv4. Register the IPv6 firewall service from both families so a gateway
+	// that refuses IPv6 pinhole actions can use its IPv4 control URL as a fallback.
+	const bool isIPv6ControlURL = UPnP::IsIPv6Location(m_absControlURL);
+	const bool isIPv6Firewall = UPnP::IsIPv6FirewallService(m_serviceType);
+	const bool isWANMapping = UPnP::IsWANMappingService(m_serviceType);
+	if ((isIPv6ControlURL && isIPv6Firewall) || (!isIPv6ControlURL && (isIPv6Firewall || isWANMapping))) {
 #if 0
 	    m_serviceType == UPnP::Service::WAN_PPP_Connection ||
 	    m_serviceType == UPnP::Service::WAN_Common_Interface_Config ||
@@ -524,8 +766,11 @@ CUPnPService::~CUPnPService()
 	const_cast<CUPnPControlPoint &>(m_UPnPControlPoint).ForgetService(this);
 }
 
-bool CUPnPService::Execute(
-	const std::string &ActionName, const std::vector<CUPnPArgumentValue> &ArgValue) const
+bool CUPnPService::Execute(const std::string &ActionName,
+	const std::vector<CUPnPArgumentValue> &ArgValue,
+	const char *resultArg,
+	std::string *result,
+	const std::string *sourceAddress) const
 {
 	std::ostringstream msg;
 	if (m_SCPD.get() == nullptr) {
@@ -630,14 +875,23 @@ bool CUPnPService::Execute(
 #endif
 
 	IXML_Document *RespDoc = NULL;
-	int ret = UpnpSendAction(m_UPnPControlPoint.GetUPnPClientHandle(),
-		GetAbsControlURL().c_str(),
-		GetServiceType().c_str(),
-		NULL,
-		ActionDoc,
-		&RespDoc);
+	const int ret = sourceAddress == nullptr ? UpnpSendAction(m_UPnPControlPoint.GetUPnPClientHandle(),
+							   GetAbsControlURL().c_str(),
+							   GetServiceType().c_str(),
+							   nullptr,
+							   ActionDoc,
+							   &RespDoc)
+						 : UPnP::SendBoundSoapAction(GetAbsControlURL(),
+							   *sourceAddress,
+							   GetServiceType(),
+							   ActionName,
+							   ActionDoc,
+							   &RespDoc);
 	if (ret != UPNP_E_SUCCESS) {
-		UPnP::ProcessErrorMessage("UpnpSendAction", ret, NULL, RespDoc);
+		UPnP::ProcessErrorMessage(sourceAddress == nullptr ? "UpnpSendAction" : "Bound SOAP action",
+			ret,
+			nullptr,
+			RespDoc);
 		IXML::Document::Free(ActionDoc);
 		IXML::Document::Free(RespDoc);
 		return false;
@@ -645,6 +899,21 @@ bool CUPnPService::Execute(
 	IXML::Document::Free(ActionDoc);
 
 	UPnP::ProcessActionResponse(RespDoc, action.GetName());
+
+	if (resultArg != nullptr && result != nullptr) {
+		// SOAP response, so the value is found by tag name rather than by position: gateways
+		// order their output arguments as they please.
+		IXML_NodeList *nodes = ixmlDocument_getElementsByTagName(RespDoc, resultArg);
+		if (nodes != nullptr) {
+			IXML_Node *node = ixmlNodeList_item(nodes, 0);
+			IXML_Node *text = (node != nullptr) ? ixmlNode_getFirstChild(node) : nullptr;
+			const char *value = (text != nullptr) ? ixmlNode_getNodeValue(text) : nullptr;
+			if (value != nullptr) {
+				*result = value;
+			}
+			ixmlNodeList_free(nodes);
+		}
+	}
 
 	IXML::Document::Free(RespDoc);
 
@@ -820,17 +1089,28 @@ bool CUPnPControlPoint::DiscoveryPending() const
 		       now < m_searchDeadline + std::chrono::seconds(REGISTRATION_GRACE_SECONDS));
 }
 
+bool CUPnPControlPoint::HasWANMappingService() const
+{
+	for (const auto &entry : m_ServiceMap) {
+		if (UPnP::IsWANMappingService(entry.second->GetServiceType())) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool CUPnPControlPoint::AddPortMappings(const std::vector<CUPnPPortMapping> &upnpPortMapping)
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	if (m_ServiceMap.empty()) {
+	const bool hasWANMappingService = HasWANMappingService();
+	if (!hasWANMappingService) {
 		msg << "CUPnPControlPoint::AddPortMappings: "
 		       "WAN Service not detected yet. Will map when one registers.";
 		AddDebugLogLineC(logUPnP, msg);
 	}
 
-	bool ok = !m_ServiceMap.empty();
+	bool ok = hasWANMappingService;
 	for (const auto &mapping : upnpPortMapping) {
 		if (mapping.getEnabled() == "1") {
 			m_ActivePortMappingsMap[mapping.getKey()] = mapping;
@@ -860,13 +1140,243 @@ void CUPnPControlPoint::RefreshPortMappings()
 bool CUPnPControlPoint::ExecuteOnAnyService(
 	const std::string &actionName, const std::vector<CUPnPArgumentValue> &argval)
 {
-	// m_ServiceMap holds every WAN service on every gateway found, and usually only one of them
-	// holds the mapping. Any service on any gateway accepting counts as success.
+	// Any WAN service on any gateway accepting counts as success, except the IPv6 firewall
+	// service, whose SCPD does not implement IPv4 port-mapping actions.
 	bool ok = false;
 	for (const auto &entry : m_ServiceMap) {
+		if (UPnP::IsIPv6FirewallService(entry.second->GetServiceType())) {
+			continue;
+		}
 		ok = entry.second->Execute(actionName, argval) || ok;
 	}
 	return ok;
+}
+
+//! SOAP arguments are strings, and this file builds its own without a formatting library.
+template <typename T> static std::string Numeric(T value)
+{
+	std::ostringstream text;
+	text << value;
+	return text.str();
+}
+
+std::string CUPnPControlPoint::PinholeKey(int protocol, unsigned short port)
+{
+	std::ostringstream key;
+	key << protocol << ":" << static_cast<unsigned int>(port);
+	return key.str();
+}
+
+bool CUPnPControlPoint::IPv6FirewallDetected() const
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	for (const auto &entry : m_ServiceMap) {
+		if (UPnP::IsIPv6FirewallService(entry.second->GetServiceType())) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool CUPnPControlPoint::ExecuteOnIPv6FirewallService(const std::string &actionName,
+	const std::vector<CUPnPArgumentValue> &argval,
+	const std::string &sourceAddress,
+	const char *resultArg,
+	std::string *result)
+{
+	for (int family = 0; family < 2; ++family) {
+		for (const auto &entry : m_ServiceMap) {
+			if (!UPnP::IsIPv6FirewallService(entry.second->GetServiceType())) {
+				continue;
+			}
+			const bool isIPv6ControlURL = UPnP::IsIPv6Location(entry.second->GetAbsControlURL());
+			if (isIPv6ControlURL != (family == 0)) {
+				continue;
+			}
+			std::string value;
+			const std::string *boundSource = isIPv6ControlURL ? &sourceAddress : nullptr;
+			if (entry.second->Execute(actionName, argval, resultArg, &value, boundSource)) {
+				if (result != nullptr) {
+					*result = value;
+				}
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool CUPnPControlPoint::SendAddPinhole(SIPv6Pinhole &pinhole)
+{
+	std::vector<CUPnPArgumentValue> argval(6);
+	argval[0].SetArgument("RemoteHost");
+	argval[0].SetValue("");
+	argval[1].SetArgument("RemotePort");
+	argval[1].SetValue("0");
+	argval[2].SetArgument("InternalClient");
+	argval[2].SetValue(pinhole.client);
+	argval[3].SetArgument("InternalPort");
+	argval[3].SetValue(Numeric(pinhole.port));
+	argval[4].SetArgument("Protocol");
+	argval[4].SetValue(Numeric(pinhole.protocol));
+	argval[5].SetArgument("LeaseTime");
+	argval[5].SetValue(Numeric(pinhole.lease));
+
+	std::string uniqueId;
+	if (!ExecuteOnIPv6FirewallService("AddPinhole", argval, pinhole.client, "UniqueID", &uniqueId) ||
+		uniqueId.empty()) {
+		pinhole.uniqueId.clear();
+		const auto retryDelay = std::chrono::seconds(pinhole.lease / 2);
+		pinhole.expiry = std::chrono::steady_clock::now() + retryDelay;
+		return false;
+	}
+	pinhole.uniqueId = uniqueId;
+	pinhole.expiry = std::chrono::steady_clock::now() + std::chrono::seconds(pinhole.lease);
+	std::ostringstream msg;
+	msg << "IPv6 pinhole for " << pinhole.client << " (protocol " << pinhole.protocol
+	    << ") got unique id " << uniqueId;
+	AddDebugLogLineN(logUPnP, msg);
+	return true;
+}
+
+bool CUPnPControlPoint::SendUpdatePinhole(SIPv6Pinhole &pinhole)
+{
+	// IGD2 names this argument NewLeaseTime: an argument the SCPD does not list is refused before
+	// it ever reaches the gateway.
+	std::vector<CUPnPArgumentValue> argval(2);
+	argval[0].SetArgument("UniqueID");
+	argval[0].SetValue(pinhole.uniqueId);
+	argval[1].SetArgument("NewLeaseTime");
+	argval[1].SetValue(Numeric(pinhole.lease));
+
+	if (!ExecuteOnIPv6FirewallService("UpdatePinhole", argval, pinhole.client, nullptr, nullptr)) {
+		return false;
+	}
+	pinhole.expiry = std::chrono::steady_clock::now() + std::chrono::seconds(pinhole.lease);
+	return true;
+}
+
+void CUPnPControlPoint::SendDeletePinhole(const SIPv6Pinhole &pinhole)
+{
+	if (pinhole.uniqueId.empty()) {
+		return;
+	}
+	std::vector<CUPnPArgumentValue> argval(1);
+	argval[0].SetArgument("UniqueID");
+	argval[0].SetValue(pinhole.uniqueId);
+	ExecuteOnIPv6FirewallService("DeletePinhole", argval, pinhole.client, nullptr, nullptr);
+}
+
+void CUPnPControlPoint::AddIPv6Pinhole(const std::string &internalClient,
+	unsigned short internalPort,
+	int protocol,
+	unsigned int leaseSeconds)
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	const std::string key = PinholeKey(protocol, internalPort);
+	SIPv6Pinhole &pinhole = m_IPv6Pinholes[key];
+	// Recorded before it is sent: if the firewall service has not registered yet, this entry is
+	// what the registration path replays.
+	pinhole.client = internalClient;
+	pinhole.port = internalPort;
+	pinhole.protocol = protocol;
+	pinhole.lease = leaseSeconds;
+	SendAddPinhole(pinhole);
+}
+
+void CUPnPControlPoint::SetIPv6PinholeTarget(
+	const std::string &client, unsigned short port, unsigned int leaseSeconds)
+{
+	CUPnPMutexLocker lock(m_IPv6PinholeTargetMutex);
+	m_IPv6PinholeTarget = SIPv6PinholeTarget{ client, port, leaseSeconds };
+}
+
+void CUPnPControlPoint::ApplyIPv6PinholeTarget(const SIPv6PinholeTarget &target)
+{
+	const int tcp = 6;
+	const std::string wanted = target.client.empty() ? std::string() : PinholeKey(tcp, target.port);
+	for (auto it = m_IPv6Pinholes.begin(); it != m_IPv6Pinholes.end();) {
+		if (it->first == wanted) {
+			++it;
+		} else {
+			SendDeletePinhole(it->second);
+			it = m_IPv6Pinholes.erase(it);
+		}
+	}
+	if (!wanted.empty() && m_IPv6Pinholes.find(wanted) == m_IPv6Pinholes.end()) {
+		SIPv6Pinhole &pinhole = m_IPv6Pinholes[wanted];
+		pinhole.client = target.client;
+		pinhole.port = target.port;
+		pinhole.protocol = tcp;
+		pinhole.lease = target.lease;
+		SendAddPinhole(pinhole);
+	}
+}
+
+void CUPnPControlPoint::DeleteIPv6Pinholes()
+{
+	{
+		CUPnPMutexLocker targetLock(m_IPv6PinholeTargetMutex);
+		m_IPv6PinholeTarget.reset();
+	}
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	for (auto &entry : m_IPv6Pinholes) {
+		SendDeletePinhole(entry.second);
+	}
+	// Forgotten whether or not the gateway acknowledged: the leases expire by themselves, and a
+	// kept id would only let a later renewal claim a lease that no longer exists.
+	m_IPv6Pinholes.clear();
+}
+
+void CUPnPControlPoint::RenewExpiringIPv6Pinholes(const std::string &currentClient)
+{
+	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	std::optional<SIPv6PinholeTarget> target;
+	{
+		// Read under the service map lock: DeleteIPv6Pinholes() clears the target before it takes
+		// that lock, so a pass cannot reopen what it deletes.
+		CUPnPMutexLocker targetLock(m_IPv6PinholeTargetMutex);
+		target = m_IPv6PinholeTarget;
+	}
+	if (target.has_value()) {
+		ApplyIPv6PinholeTarget(*target);
+	}
+	// The target is newer than the address this pass was queued with.
+	const std::string &client = target.has_value() ? target->client : currentClient;
+	const auto now = std::chrono::steady_clock::now();
+	for (auto &entry : m_IPv6Pinholes) {
+		SIPv6Pinhole &pinhole = entry.second;
+		// A prefix change leaves the pinhole naming an address we no longer hold: replace it
+		// rather than renew it.
+		if (!client.empty() && IsIPv6PinholeStale(client, pinhole.client)) {
+			SendDeletePinhole(pinhole);
+			pinhole.uniqueId.clear();
+			pinhole.client = client;
+			SendAddPinhole(pinhole);
+			continue;
+		}
+		if (pinhole.uniqueId.empty()) {
+			if (now >= pinhole.expiry) {
+				SendAddPinhole(pinhole);
+			}
+			continue;
+		}
+		const auto left = std::chrono::duration_cast<std::chrono::seconds>(pinhole.expiry - now);
+		// Half the granted lease is the margin: room to retry on the next tick if this attempt
+		// fails, without renewing so eagerly that a gateway sees a flood of updates.
+		const unsigned int margin = pinhole.lease / 2;
+		const unsigned int remaining =
+			(left.count() > 0) ? static_cast<unsigned int>(left.count()) : 0;
+		if (!ShouldRenewIPv6Pinhole(remaining, margin)) {
+			continue;
+		}
+		// A renewal that the gateway cannot grant - a rebooted router has forgotten the UniqueID -
+		// falls back to asking again, instead of retrying an update forever.
+		if (!SendUpdatePinhole(pinhole)) {
+			pinhole.uniqueId.clear();
+			SendAddPinhole(pinhole);
+		}
+	}
 }
 
 static std::vector<CUPnPArgumentValue> AddPortMappingArguments(const CUPnPPortMapping &upnpPortMapping)
@@ -902,7 +1412,7 @@ bool CUPnPControlPoint::DeletePortMappings(const std::vector<CUPnPPortMapping> &
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	std::ostringstream msg;
-	bool ok = !m_ServiceMap.empty();
+	bool ok = HasWANMappingService();
 	for (const auto &mapping : upnpPortMapping) {
 		if (mapping.getEnabled() == "1") {
 			PortMappingMap::iterator it = m_ActivePortMappingsMap.find(mapping.getKey());
@@ -1008,16 +1518,6 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #else
 		const char *location = d_event->Location;
 #endif
-		// Root devices are keyed by UDN, so the first location sets the control URLs. libupnp
-		// searches over IPv6 first, and miniupnpd in secure mode refuses the IPv4 mapping actions
-		// over IPv6.
-		if (UPnP::IsIPv6Location(location ? location : "")) {
-			if (EventType == UPNP_DISCOVERY_SEARCH_RESULT) {
-				msg2 << "Ignoring IPv6 location " << location << ".";
-				AddDebugLogLineN(logUPnP, msg2);
-			}
-			break;
-		}
 		// Passive ALIVE announcements arrive in dense bursts (one per service class, every
 		// few seconds per device), and when the announcing device's HTTP server is
 		// unreachable each fetch blocks a libupnp worker for the full TCP-connect timeout.
@@ -1384,14 +1884,14 @@ void CUPnPControlPoint::AddRootDevice(
 	std::string FixedURLBase(OriginalURLBase.empty() ? location : OriginalURLBase);
 
 	std::string UDN(IXML::Element::GetChildValueByTag(rootDevice, "UDN"));
-	RootDeviceMap::iterator it = m_RootDeviceMap.find(UDN);
-	bool alreadyAdded = it != m_RootDeviceMap.end();
-	if (alreadyAdded) {
+	const std::pair<std::string, bool> key(UDN, UPnP::IsIPv6Location(location ? location : ""));
+	RootDeviceMap::iterator it = m_RootDeviceMap.find(key);
+	if (it != m_RootDeviceMap.end()) {
 		it->second->SetExpires(expires);
 	} else {
 		CUPnPRootDevice *upnpRootDevice = new CUPnPRootDevice(
 			*this, rootDevice, OriginalURLBase, FixedURLBase, location, expires);
-		m_RootDeviceMap[upnpRootDevice->GetUDN()] = upnpRootDevice;
+		m_RootDeviceMap[key] = upnpRootDevice;
 	}
 	// Not on a device alone: some switches answer as a gateway and list no services.
 	if (WanServiceDetected()) {
@@ -1403,11 +1903,14 @@ void CUPnPControlPoint::RemoveRootDevice(const char *udn)
 {
 	CUPnPMutexLocker lock(m_RootDeviceListMutex);
 
-	std::string UDN(udn);
-	RootDeviceMap::iterator it = m_RootDeviceMap.find(UDN);
-	if (it != m_RootDeviceMap.end()) {
-		delete it->second;
-		m_RootDeviceMap.erase(UDN);
+	const std::string UDN(udn);
+	for (RootDeviceMap::iterator it = m_RootDeviceMap.begin(); it != m_RootDeviceMap.end();) {
+		if (it->first.first == UDN) {
+			delete it->second;
+			it = m_RootDeviceMap.erase(it);
+		} else {
+			++it;
+		}
 	}
 }
 
@@ -1469,8 +1972,18 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 			// the mapping on the gateway.
 			CUPnPMutexLocker lock(m_ServiceMapMutex);
 			m_ServiceMap[service.GetAbsEventSubURL()] = &service;
-			for (const auto &entry : m_ActivePortMappingsMap) {
-				service.Execute("AddPortMapping", AddPortMappingArguments(entry.second));
+			if (!UPnP::IsIPv6FirewallService(service.GetServiceType())) {
+				for (const auto &entry : m_ActivePortMappingsMap) {
+					service.Execute(
+						"AddPortMapping", AddPortMappingArguments(entry.second));
+				}
+			} else {
+				// Requests recorded before this service registered are replayed here: this is
+				// the point where they can finally be sent.
+				for (auto &entry : m_IPv6Pinholes) {
+					SendDeletePinhole(entry.second);
+					SendAddPinhole(entry.second);
+				}
 			}
 		}
 		msg << "Successfully retrieved SCPD Document for service " << service.GetServiceType()

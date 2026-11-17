@@ -25,19 +25,35 @@
 // Prints what the real control point returns. UPnPPortMappingIntegrationTest.py runs it against
 // a fake gateway. It prints a line when the constructor returns, then waits for a line on stdin
 // before each operation.
-// Usage: UPnPPortMappingDriver <tcp port> <udp port> (add|delete|pending)...
+// Usage: UPnPPortMappingDriver <tcp> <udp> (add|delete|pending|wanservice|
+//        addpinholeodd|addpinhole-unassigned|renewexpiring-retry|target|target-moved|
+//        target-none)...
+// Optional: AMULE_TEST_UPNP_PINHOLE_CLIENT overrides the default pinhole client (::1).
 
 #include "config.h"
 #include "UPnPBase.h"
 
+#include <chrono>
 #include <cstdio>
+#include <thread>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <vector>
 
 namespace
 {
 const int EXIT_SKIP = 77;
+// The fake gateway's default pinhole client and a lease long enough that no renewal is attempted
+// by the timer during the run. Integration tests can override the address through the environment.
+const char *const PINHOLE_CLIENT = [] {
+	const char *const client = std::getenv("AMULE_TEST_UPNP_PINHOLE_CLIENT");
+	return client != nullptr && client[0] != '\0' ? client : "::1";
+}();
+const char *const PINHOLE_CLIENT_UNASSIGNED = "2001:db8::1";
+const unsigned int PINHOLE_LEASE = 3600;
+const unsigned int PINHOLE_LEASE_SHORT = 4;
+const unsigned int PINHOLE_LEASE_ODD = 3;
 } // namespace
 
 int main(int argc, char **argv)
@@ -65,6 +81,62 @@ int main(int argc, char **argv)
 				result = controlPoint.AddPortMappings(mappings);
 			} else if (std::strcmp(argv[i], "delete") == 0) {
 				result = controlPoint.DeletePortMappings(mappings);
+			} else if (std::strcmp(argv[i], "addpinhole") == 0) {
+				controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT,
+					static_cast<unsigned short>(tcpPort),
+					6,
+					PINHOLE_LEASE);
+				result = true;
+			} else if (std::strcmp(argv[i], "addpinhole-unassigned") == 0) {
+				controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT_UNASSIGNED,
+					static_cast<unsigned short>(tcpPort),
+					6,
+					PINHOLE_LEASE);
+				result = true;
+			} else if (std::strcmp(argv[i], "addpinholeshort") == 0) {
+				// A lease already inside the renewal margin, so the production pass renews it
+				// instead of skipping it.
+				controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT,
+					static_cast<unsigned short>(tcpPort),
+					6,
+					PINHOLE_LEASE_SHORT);
+				result = true;
+			} else if (std::strcmp(argv[i], "addpinholeodd") == 0) {
+				controlPoint.AddIPv6Pinhole(PINHOLE_CLIENT,
+					static_cast<unsigned short>(tcpPort),
+					6,
+					PINHOLE_LEASE_ODD);
+				result = true;
+			} else if (std::strcmp(argv[i], "renewexpiring-now") == 0) {
+				controlPoint.RenewExpiringIPv6Pinholes(PINHOLE_CLIENT);
+				result = true;
+			} else if (std::strcmp(argv[i], "renewexpiring") == 0) {
+				// Driven the way production drives it: the whole renewal pass, not a single
+				// key. The short lease needs time to elapse before the pass runs.
+				std::this_thread::sleep_for(std::chrono::seconds(3));
+				controlPoint.RenewExpiringIPv6Pinholes(PINHOLE_CLIENT);
+				result = true;
+			} else if (std::strcmp(argv[i], "renewexpiring-retry") == 0) {
+				std::this_thread::sleep_for(std::chrono::seconds(PINHOLE_LEASE_ODD / 2));
+				controlPoint.RenewExpiringIPv6Pinholes(PINHOLE_CLIENT);
+				result = true;
+			} else if (std::strcmp(argv[i], "deletepinholes") == 0) {
+				controlPoint.DeleteIPv6Pinholes();
+				result = true;
+			} else if (std::strcmp(argv[i], "target") == 0 ||
+				   std::strcmp(argv[i], "target-moved") == 0 ||
+				   std::strcmp(argv[i], "target-none") == 0) {
+				// As amuled drives it: set the target, then run the renewal pass.
+				const bool none = std::strcmp(argv[i], "target-none") == 0;
+				const bool moved = std::strcmp(argv[i], "target-moved") == 0;
+				const std::string client = none ? std::string() : std::string(PINHOLE_CLIENT);
+				controlPoint.SetIPv6PinholeTarget(client,
+					static_cast<unsigned short>(tcpPort + (moved ? 1 : 0)),
+					PINHOLE_LEASE);
+				controlPoint.RenewExpiringIPv6Pinholes(client);
+				result = true;
+			} else if (std::strcmp(argv[i], "wanservice") == 0) {
+				result = controlPoint.WanServiceDetected();
 			} else {
 				result = controlPoint.DiscoveryPending();
 			}
