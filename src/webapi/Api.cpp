@@ -2634,6 +2634,8 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueString(wxString::FromUTF8(c.upload_state.c_str()));
 	w.Key("download_state");
 	w.ValueString(wxString::FromUTF8(c.download_state.c_str()));
+	// When an "idle" source waiting for its next ask is asked; null when none is scheduled.
+	WriteIntOrNull(w, "next_ask_at", c.next_ask_at != 0, static_cast<std::int64_t>(c.next_ask_at));
 	w.Key("ident_state");
 	w.ValueString(wxString::FromUTF8(c.ident_state.c_str()));
 	WriteStringOrNull(w, "download_file_name", !c.download_file_name.empty(), c.download_file_name);

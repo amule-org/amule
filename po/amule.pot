@@ -1969,6 +1969,11 @@ msgid "Remote Queue Full"
 msgstr ""
 
 #: src/DataToText.cpp
+#, c-format
+msgid "Waiting to ask (%s)"
+msgstr ""
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr ""
 

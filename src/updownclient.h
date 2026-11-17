@@ -661,6 +661,8 @@ public:
 	bool MaySendPacedRequest();
 	unsigned GetRequestScore() const { return m_requestScore; }
 	uint64 GetLastPacedRequest() const { return m_lastPacedRequest; }
+	// Unix time of the next ask while the source waits in DS_NONE for it, else 0.
+	uint64 GetNextAskTime() const;
 
 	// The source has a part the requested file still misses.
 	bool HasPartWeNeed() const;

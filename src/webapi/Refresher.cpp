@@ -846,6 +846,13 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 		}
 	}
 	{
+		// Absent on a core older than the tag: the guard leaves 0, no ask scheduled.
+		std::uint64_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_NEXT_ASK_AT, v)) {
+			cs.next_ask_at = v;
+		}
+	}
+	{
 		std::uint8_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_IDENT_STATE, v)) {
 			cs.ident_state = ClientIdentStateName(v);

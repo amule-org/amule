@@ -304,6 +304,7 @@ std::string ToJson(const ClientSnapshot &c)
 	  // answers, and an unrecognised answer is the "unknown" member.
 	  << ",\"upload_state\":\"" << EscJson(c.upload_state) << "\""
 	  << ",\"download_state\":\"" << EscJson(c.download_state) << "\""
+	  << ",\"next_ask_at\":" << (c.next_ask_at != 0 ? std::to_string(c.next_ask_at) : std::string("null"))
 	  << ",\"ident_state\":\"" << EscJson(c.ident_state) << "\""
 	  << ",\"download_file_name\":" << JsonStrOrNull(!c.download_file_name.empty(), c.download_file_name)
 	  << ",\"upload_file_name\":" << JsonStrOrNull(!c.upload_file_name.empty(), c.upload_file_name)
@@ -459,9 +460,9 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.country_code == b.country_code && a.port == b.port && a.software == b.software &&
 	       a.software_version == b.software_version && a.reported_os == b.reported_os &&
 	       a.upload_state == b.upload_state && a.download_state == b.download_state &&
-	       a.ident_state == b.ident_state && a.download_file_name == b.download_file_name &&
-	       a.upload_file_name == b.upload_file_name && a.upload_file_hash == b.upload_file_hash &&
-	       a.download_file_hash == b.download_file_hash &&
+	       a.next_ask_at == b.next_ask_at && a.ident_state == b.ident_state &&
+	       a.download_file_name == b.download_file_name && a.upload_file_name == b.upload_file_name &&
+	       a.upload_file_hash == b.upload_file_hash && a.download_file_hash == b.download_file_hash &&
 	       a.uploaded_bytes_session == b.uploaded_bytes_session &&
 	       a.downloaded_bytes_session == b.downloaded_bytes_session &&
 	       a.uploaded_bytes_total == b.uploaded_bytes_total &&

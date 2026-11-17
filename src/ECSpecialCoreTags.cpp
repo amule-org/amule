@@ -468,6 +468,7 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 
 	AddDiffTag(this, EC_TAG_CLIENT_UPLOAD_STATE, client->GetUploadState(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_DOWNLOAD_STATE, client->GetDownloadState(), valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_NEXT_ASK_AT, client->GetNextAskTime(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_IDENT_STATE, (uint64)client->GetCurrentIdentState(), valuemap);
 	// Whether a socket to this peer is actually up, as opposed to a client object merely
 	// existing for it. A consumer inferring "online" from the ECID alone called a peer online

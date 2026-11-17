@@ -598,6 +598,8 @@ public:
 	{
 		return AssignIfExist(EC_TAG_CLIENT_DOWNLOAD_STATE, target);
 	}
+	//! Unix time of the next ask, 0 if none; absent on a core older than the tag.
+	bool GetNextAskTime(uint64 &target) const { return AssignIfExist(EC_TAG_CLIENT_NEXT_ASK_AT, target); }
 
 	// uint32 WaitTime(uint32 *target = 0) const { return AssignIfExist(EC_TAG_CLIENT_WAIT_TIME, target);
 	// } uint32 XferTime(uint32 *target = 0) const { return AssignIfExist(EC_TAG_CLIENT_XFER_TIME,

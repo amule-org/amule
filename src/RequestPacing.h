@@ -42,6 +42,17 @@ inline uint64_t PacedLastAskedTime(uint64_t now, uint64_t lastPacedRequest, uint
 	return askAt > reaskTime ? askAt - reaskTime : 1;
 }
 
+// When CPartFile::Process() asks a source next, from the last-asked time it keeps for it: 0 if
+// that is on its next tick.
+inline uint64_t NextAskTick(uint64_t lastAsked, uint64_t reaskTime, uint64_t now)
+{
+	if (lastAsked == 0) {
+		return 0;
+	}
+	const uint64_t askAt = lastAsked + reaskTime;
+	return askAt > now ? askAt : 0;
+}
+
 // How long before its TCP ask CPartFile::Process() sends a queued source the UDP reask.
 const uint64_t UDP_REASK_LEAD = 20000; // ms
 

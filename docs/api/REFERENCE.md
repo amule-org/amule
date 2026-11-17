@@ -1334,6 +1334,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
       "reported_os": "Linux",
       "upload_state": "uploading",
       "download_state": "idle",
+      "next_ask_at": null,
       "ident_state": "identified",
       "download_file_name": null,
       "upload_file_name": "example-distribution.iso",
@@ -1395,6 +1396,8 @@ Every one of them falls back to `"unknown"` for a code the daemon does not map, 
 
 `connected` says whether a socket to this peer is up right now. A row existing in this list does not answer that: the daemon holds a client object from the first contact attempt, so a peer it is still trying to reach - or can never reach - appears here with `connected: false`. It is `null` on a daemon that does not report peer connectivity. [`GET /friends`](#get-apiv1friends), [`GET /chats`](#get-apiv1chats) and [`GET /known_clients`](#get-apiv1known_clients) carry the same fact under the same key, so joining any of them against this list does not meet it under a second name.
 
+`next_ask_at` is the unix time at which the daemon asks an `"idle"` source again, while it waits for that ask: after a failed completion rehash, or while a request would push the peer's aggressive-client score past the daemon's limit. It is `null` when no ask is scheduled, including for every source that is not `"idle"`, and on a daemon that does not report it. The time is the daemon's clock, and it moves only when the ask is rescheduled, so a countdown is the caller's to draw.
+
 `friend` is `true` when the peer is in your friends list (`CUpDownClient::IsFriend()`). It is **distinct** from `friend_slot`, the *reserved upload slot*, which can be granted to a peer that is not a friend - a row carries either flag without the other, and a front-end that renders one as the other will mislabel both. Grant and clear the slot through [`PATCH /friends/{ecid}`](#patch-apiv1friendsecid); neither flag is writable here. Both read `false` against a daemon predating the EC tags that carry them.
 
 `credit_ratio` is the credit modifier the core computes for this peer from its transfer history (`CClientCredits::GetCreditRatio()`), the value the desktop labels "DL/UP modifier" and both peer lists show as their Ratio column. It runs from `1` to `10`: a peer you have downloaded under 1 MB from reads `1`, and the value climbs with how much you have taken from it relative to what you sent back. It is **not** `downloaded_bytes_total / uploaded_bytes_total` - do not re-derive it, and do not expect the two to agree. [`GET /known_clients`](#get-apiv1known_clients) carries the same key computed the same way, so a peer reads the same number online or offline. `null` on a daemon that does not send it, and for a peer whose hello has not attached a credit record yet, which is not the same as a peer whose history earns exactly `1`.
@@ -1435,6 +1438,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
   "reported_os": "Linux",
   "upload_state": "uploading",
   "download_state": "idle",
+  "next_ask_at": null,
   "ident_state": "identified",
   "download_file_name": null,
   "upload_file_hash": "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",

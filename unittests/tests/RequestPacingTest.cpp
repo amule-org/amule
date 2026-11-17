@@ -78,6 +78,17 @@ TEST(RequestPacing, EarlyUptimeDoesNotWrap)
 	ASSERT_EQUALS(1u, PacedLastAskedTime(1000, 500, 10 * MIN_REQUESTTIME));
 }
 
+TEST(RequestPacing, NextAskTickFollowsProcess)
+{
+	ASSERT_EQUALS(0u, NextAskTick(0, kReask, kNow)); // asked on the next tick
+	ASSERT_EQUALS(kNow + 1000, NextAskTick(kNow + 1000 - kReask, kReask, kNow));
+	ASSERT_EQUALS(0u, NextAskTick(kNow - kReask, kReask, kNow)); // due now
+	// AskAgainSoon() waits for the request before it to stop being early.
+	const uint64_t last = kNow - 60 * 1000;
+	ASSERT_EQUALS(
+		last + MIN_REQUESTTIME, NextAskTick(PacedLastAskedTime(kNow, last, kReask), kReask, kNow));
+}
+
 TEST(RequestPacing, AggressiveScoreFollowsCheckForAggressive)
 {
 	ASSERT_EQUALS(0u, AggressiveScoreAfter(0, kNow, 0)); // no earlier request

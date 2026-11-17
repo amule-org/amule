@@ -33,7 +33,8 @@
 #include <common/Constants.h>
 
 #include <zlib.h>
-#include <cmath> // Needed for std:exp
+#include <chrono> // Needed for std::chrono::system_clock
+#include <cmath>  // Needed for std:exp
 
 #include "ClientCredits.h"   // Needed for CClientCredits
 #include "ClientList.h"      // Needed for CClientList
@@ -210,6 +211,32 @@ bool CUpDownClient::MaySendPacedRequest()
 {
 	RecallRequestScore();
 	return FitsRequestBudget(m_requestScore, ::GetTickCount64(), m_lastPacedRequest);
+}
+
+// The offset is taken once, so a deadline that does not move keeps one value, and EC sends it once.
+static uint64 TickToUnixTime(uint64 tick)
+{
+	using namespace std::chrono;
+	static const int64 offsetMs =
+		static_cast<int64>(
+			duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) -
+		static_cast<int64>(::GetTickCount64());
+	return static_cast<uint64>((static_cast<int64>(tick) + offsetMs + 999) / 1000);
+}
+
+uint64 CUpDownClient::GetNextAskTime() const
+{
+	if (m_nDownloadState != DS_NONE || m_reqfile == nullptr) {
+		return 0;
+	}
+	// CPartFile::Process() asks only for an active file, and only while we are connected.
+	const uint8 status = m_reqfile->GetStatus();
+	if ((status != PS_READY && status != PS_EMPTY) || !theApp->IsConnected()) {
+		return 0;
+	}
+	const uint64 askAt =
+		NextAskTick(m_dwLastAskedTime, thePrefs::GetSourceReaskTime(), ::GetTickCount64());
+	return askAt ? TickToUnixTime(askAt) : 0;
 }
 
 bool CUpDownClient::HasPartWeNeed() const

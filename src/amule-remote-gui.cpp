@@ -3455,6 +3455,11 @@ void CUpDownClientListRem::ProcessItemUpdate(const CEC_UpDownClient_Tag *tag, CC
 		client->m_sourceFromMask = originMask;
 	}
 
+	uint64 nextAskTime = 0;
+	if (tag->GetNextAskTime(nextAskTime)) {
+		client->m_nextAskTime = nextAskTime;
+	}
+
 	uint8 contactRoute = 0;
 	if (tag->GetContactRoute(contactRoute)) {
 		client->SetContactRoute(contactRoute);

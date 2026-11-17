@@ -514,6 +514,7 @@ Identical to the REST [`/api/v1/clients`](REFERENCE.md#get-apiv1clients) list-it
   "reported_os":                "Linux",
   "upload_state":           "uploading",
   "download_state":         "idle",
+  "next_ask_at":            null,
   "ident_state":            "identified",
   "upload_file_hash":       "8b54a3c20fae9e4b9f7e0c2c8c01b6b1",
   "download_file_hash":     null,
@@ -537,7 +538,7 @@ Identical to the REST [`/api/v1/clients`](REFERENCE.md#get-apiv1clients) list-it
   "part_progress_percent":  75.0
 }
 ```
-Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv1clients) list row, including `source_origin`, `source_origins`, `contact_route`, `route_unproven`, `route_from_fallback`, `route_ipv6`, `protocol_extensions`, `parts_offered_count`, `client_mod_name` and `shared_files_browsable`. `friend` is friends-list membership and `friend_slot` is the reserved upload slot: a peer carries either without the other, and `client_updated` fires when either moves. `credit_ratio` is the core's credit modifier, `null` on a daemon that does not send it or before the peer's hello attaches a credit record; it moves as the peer's totals move, so an active peer updates through this event rather than needing a re-GET.
+Carries the same field set as the [`/clients`](REFERENCE.md#get-apiv1clients) list row, including `source_origin`, `source_origins`, `next_ask_at`, `contact_route`, `route_unproven`, `route_from_fallback`, `route_ipv6`, `protocol_extensions`, `parts_offered_count`, `client_mod_name` and `shared_files_browsable`. `friend` is friends-list membership and `friend_slot` is the reserved upload slot: a peer carries either without the other, and `client_updated` fires when either moves. `credit_ratio` is the core's credit modifier, `null` on a daemon that does not send it or before the peer's hello attaches a credit record; it moves as the peer's totals move, so an active peer updates through this event rather than needing a re-GET.
 
 `part_progress_percent` follows the same rule as on the REST row: it is how much of the file we are downloading **from** this client the client already holds, and it is `null` when there is no such file, rather than sent as a negative sentinel. It is derived from `parts_offered_count` and the linked download's part count, so it moves when `parts_offered_count` does, and goes back to `null` if that download goes away. The key is always present -- see [REFERENCE.md's unknown-value rule](REFERENCE.md#unknown-values), under which `null` means "no value" and an absent key means "not reported".
 

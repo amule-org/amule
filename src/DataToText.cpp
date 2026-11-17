@@ -103,6 +103,14 @@ wxString DownloadStateToStr(int state, bool queueFull)
 	return _("Unknown");
 }
 
+wxString WaitingToAskToStr(uint64 secondsLeft)
+{
+	const wxString clock = CFormat("%02u:%02u:%02u") % static_cast<unsigned>(secondsLeft / 3600) %
+			       static_cast<unsigned>(secondsLeft / 60 % 60) %
+			       static_cast<unsigned>(secondsLeft % 60);
+	return CFormat(_("Waiting to ask (%s)")) % clock;
+}
+
 const wxString GetSoftName(unsigned int software_ident)
 {
 	switch (software_ident) {

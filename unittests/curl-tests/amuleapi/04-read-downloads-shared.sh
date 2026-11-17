@@ -738,5 +738,20 @@ else
 	_skip "/clients: no rows, cannot check source_origins"
 fi
 
+# --- 13. next_ask_at is a unix time on an "idle" source waiting for its next
+# ask, and null on every other row. Reads only, appended at the end for the same
+# reason as 8.
+_curl -H "Authorization: Bearer $TOKEN" "$API/clients"
+if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
+	_assert_json_eq '[.clients[] | select(has("next_ask_at") | not)] | length' 0 \
+		"/clients: next_ask_at is present on every row"
+	_assert_json_eq '[.clients[] | select(.next_ask_at != null and ((.next_ask_at|type) != "number" or .next_ask_at <= 0))] | length' 0 \
+		"/clients: next_ask_at is null or a positive unix time"
+	_assert_json_eq '[.clients[] | select(.next_ask_at != null and .download_state != "idle")] | length' 0 \
+		"/clients: next_ask_at is set only on idle sources"
+else
+	_skip "/clients: no rows, cannot check next_ask_at"
+fi
+
 # --- Summary. -----------------------------------------------------
 _summary

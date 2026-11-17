@@ -333,6 +333,8 @@ struct ClientSnapshot
 	// into wire strings so consumers don't reach into amule's enums.
 	std::string upload_state;   // "uploading" | "queued" | "banned" | "connecting" | "idle" | ...
 	std::string download_state; // "downloading" | "queued" | "no_needed_parts" | ... | "idle"
+	// Unix seconds of the next ask while "idle"; 0 => none.
+	std::uint64_t next_ask_at = 0;
 	// Complete set, see ClientIdentStateName() in Refresher.cpp:
 	std::string ident_state; // "not_available" | "id_needed" | "identified" | "id_failed" | "bad_guy" |
 				 // "unknown"
