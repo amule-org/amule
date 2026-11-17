@@ -2427,9 +2427,10 @@ private:
 };
 #endif
 
+#ifdef ENABLE_UPNP
 void CamuleApp::RequestIPv6Pinholes()
 {
-#if defined(ENABLE_UPNP) && defined(ENABLE_IPV6)
+#ifdef ENABLE_IPV6
 	if (m_upnp == nullptr || !thePrefs::GetUPnPEnabled()) {
 		return;
 	}
@@ -2451,6 +2452,7 @@ void CamuleApp::RequestIPv6Pinholes()
 	CThreadScheduler::AddTaskIfNoneOfType(new CIPv6PinholeRenewalTask(m_upnp, client));
 #endif
 }
+#endif
 
 void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 {
