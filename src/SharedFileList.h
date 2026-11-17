@@ -259,6 +259,7 @@ private:
 
 	bool AddFile(CKnownFile *pFile);
 	CKnownFile *GetNextKadFile(CKadPublishCursor<CMD4Hash> &cursor);
+	CKnownFile *NextKadSourcePublish(uint32 now);
 
 	// Re-key m_pathIndex for an already-shared file whose on-disk path changed. A partfile
 	// shared while downloading is keyed under Temp (or "" before SetFilePath ran) and moves to
@@ -448,6 +449,8 @@ private:
 	/* Kad Stuff */
 	CPublishKeywordList *m_keywords;
 	CKadPublishCursor<CMD4Hash> m_srcPublishCursor;
+	//! Due files waiting for their last storing nodes, with when each first waited.
+	std::map<CMD4Hash, uint32> m_kadSourceWaits;
 	CKadPublishCursor<CMD4Hash> m_notesPublishCursor;
 	unsigned int m_currFileKey;
 	uint32 m_lastPublishKadSrc;

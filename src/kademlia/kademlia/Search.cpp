@@ -1721,6 +1721,11 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 		CPerIPBudget &budget = CKadSendBudgets::Instance().lookups;
 		if (!budget.Allows(contact->GetIPAddress(), ::GetTickCount64())) {
 			++budget.skipped;
+			// Else JumpStart's dead-nodes fallback picks this contact again every second, and
+			// the lookup sends nothing else.
+			if (reaskMore) {
+				m_requestedMoreNodes.insert(contact->GetClientID());
+			}
 			AddDebugLogLineN(logKadSearch,
 				"Kad lookup skips " + KadIPToString(contact->GetIPAddress()) +
 					": no requests left for it this minute");

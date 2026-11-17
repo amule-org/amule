@@ -1976,36 +1976,61 @@ void CSharedFileList::SaveKeywordPublishTimes()
 
 namespace
 {
-// A due file whose last storing nodes can't take another publish this minute waits, so files
-// that came due together spread apart. It waits at most this long.
+// A due file whose last storing nodes can't take another publish this minute waits, at most this
+// long, while files due after it go first.
 constexpr unsigned int MaxKadSourceDeferral = MIN2S(5);
 
-bool DeferKadSourcePublish(const CKnownFile &file, unsigned int now)
+bool KadSourcePublishWaits(const CKnownFile &file, uint32 now, uint32 waitingSince)
 {
-	// Due files only. A buddy change makes a file due early, and that one never waits.
-	const unsigned int due = file.GetLastPublishTimeKadSrc();
-	if (now < due) {
-		return false;
-	}
-	static std::map<Kademlia::CUInt128, unsigned int> deferredSince;
-	Kademlia::CUInt128 target;
-	target.SetValueBE(file.GetFileHash().GetHash());
-	if (!Kademlia::CSearch::PublishSeedsBusy(target)) {
-		deferredSince.erase(target);
-		return false;
-	}
-	const auto since = deferredSince.emplace(target, now);
-	if (since.second) {
-		++Kademlia::CKadSendBudgets::Instance().deferredStarts;
-		AddDebugLogLineN(
-			logKadPublish, "Kad source publish deferred: target=" + target.ToHexString());
-	} else if (now - since.first->second >= MaxKadSourceDeferral) {
-		deferredSince.erase(since.first);
-		return false;
-	}
-	return true;
+	return Kademlia::KadSourcePublishWaits(
+		file.GetLastPublishTimeKadSrc(), now, waitingSince, MaxKadSourceDeferral, [&file] {
+			Kademlia::CUInt128 target;
+			target.SetValueBE(file.GetFileHash().GetHash());
+			return Kademlia::CSearch::PublishSeedsBusy(target);
+		});
 }
 } // namespace
+
+CKnownFile *CSharedFileList::NextKadSourcePublish(uint32 now)
+{
+	// Waiting files come first, every tick: the cursor reaches a file again only a pass later.
+	for (auto it = m_kadSourceWaits.begin(); it != m_kadSourceWaits.end();) {
+		CKnownFile *file = GetFileByID(it->first);
+		if (file && KadSourcePublishWaits(*file, now, it->second)) {
+			++it;
+			continue;
+		}
+		it = m_kadSourceWaits.erase(it);
+		if (file && file->PublishSrc()) {
+			return file;
+		}
+	}
+	// Pass over files published in the last 5 h in this tick, rather than one per
+	// KADEMLIAPUBLISHTIME. The bound caps the work when few files are due.
+	const size_t maxChecks = std::min<size_t>(100, GetCount());
+	for (size_t i = 0; i < maxChecks; ++i) {
+		CKnownFile *file = GetNextKadFile(m_srcPublishCursor);
+		if (!file) {
+			break;
+		}
+		if (m_kadSourceWaits.count(file->GetFileHash())) {
+			continue;
+		}
+		if (KadSourcePublishWaits(*file, now, 0)) {
+			m_kadSourceWaits.emplace(file->GetFileHash(), now);
+			++Kademlia::CKadSendBudgets::Instance().deferredStarts;
+			Kademlia::CUInt128 target;
+			target.SetValueBE(file->GetFileHash().GetHash());
+			AddDebugLogLineN(
+				logKadPublish, "Kad source publish deferred: target=" + target.ToHexString());
+			continue;
+		}
+		if (file->PublishSrc()) {
+			return file;
+		}
+	}
+	return nullptr;
+}
 
 void CSharedFileList::Publish()
 {
@@ -2141,22 +2166,7 @@ void CSharedFileList::Publish()
 
 		if (Kademlia::CKademlia::GetTotalStoreSrc() < KADEMLIATOTALSTORESRC) {
 			if (tNow >= m_lastPublishKadSrc) {
-				// Pass over files published in the last 5 h in this tick, rather than one
-				// per KADEMLIAPUBLISHTIME. The bound caps the work when few files are due.
-				const size_t maxChecks = std::min<size_t>(100, GetCount());
-				CKnownFile *pCurKnownFile = nullptr;
-				for (size_t i = 0; i < maxChecks && !pCurKnownFile; ++i) {
-					CKnownFile *file = GetNextKadFile(m_srcPublishCursor);
-					if (!file) {
-						break;
-					}
-					if (DeferKadSourcePublish(*file, tNow)) {
-						continue;
-					}
-					if (file->PublishSrc()) {
-						pCurKnownFile = file;
-					}
-				}
+				CKnownFile *pCurKnownFile = NextKadSourcePublish(tNow);
 				if (pCurKnownFile) {
 					Kademlia::CUInt128 kadFileID;
 					kadFileID.SetValueBE(pCurKnownFile->GetFileHash().GetHash());

@@ -77,3 +77,46 @@ TEST(KadCallbackPolicy, RepublishBoundaryAndAbortedPublishRetry)
 	ASSERT_TRUE(Kademlia::CanPublishSource(false, 0, 0, 0, 1000, 0, 0));
 	ASSERT_TRUE(Kademlia::CanPublishSource(true, 123, 0, 0, 1000, 4665, 0));
 }
+
+namespace
+{
+constexpr uint32_t MaxWait = 300;
+
+bool Waits(uint32_t nextPublish,
+	uint32_t now,
+	uint32_t waitingSince,
+	bool seedOutOfBudget,
+	bool *asked = nullptr)
+{
+	return Kademlia::KadSourcePublishWaits(nextPublish, now, waitingSince, MaxWait, [&] {
+		if (asked) {
+			*asked = true;
+		}
+		return seedOutOfBudget;
+	});
+}
+} // namespace
+
+TEST(KadCallbackPolicy, ADueSourcePublishWaitsOnlyForASeedOutOfBudget)
+{
+	ASSERT_TRUE(Waits(1000, 1000, 0, true));
+	ASSERT_FALSE(Waits(1000, 1000, 0, false));
+	// Seeds that have budget again end the wait.
+	ASSERT_FALSE(Waits(1000, 1100, 1000, false));
+}
+
+// A file due early after a buddy change publishes its new route at once, without asking the seeds.
+TEST(KadCallbackPolicy, AFileNotDueNeverWaits)
+{
+	bool asked = false;
+	ASSERT_FALSE(Waits(5000, 1000, 0, true, &asked));
+	ASSERT_FALSE(asked);
+}
+
+TEST(KadCallbackPolicy, ASourcePublishWaitsAtMostMaxWait)
+{
+	ASSERT_TRUE(Waits(1000, 1000 + MaxWait - 1, 1000, true));
+	bool asked = false;
+	ASSERT_FALSE(Waits(1000, 1000 + MaxWait, 1000, true, &asked));
+	ASSERT_FALSE(asked);
+}

@@ -1967,7 +1967,8 @@ bool CKademliaUDPListener::SendPacket(const CMemFile &data,
 
 CKadSendBudgets &CKadSendBudgets::Instance()
 {
-	// eMule 0.70b's flood check can stop requests at about 7 a minute, below the 10 here.
+	// eMule 0.70b looks up the wrong per-opcode entry (== for !=), so all our request kinds can
+	// share one 60 s bucket, often a HELLO_REQ's. After a HELLO_REQ it drops the 7th in a burst.
 	static CKadSendBudgets budgets{ CPerIPBudget(7),
 		CPerIPBudget(CPacketTracking::InTrackListAllowedPerMinute(KADEMLIA2_PUBLISH_KEY_REQ)),
 		CPerIPBudget(CPacketTracking::InTrackListAllowedPerMinute(KADEMLIA2_PUBLISH_SOURCE_REQ)) };

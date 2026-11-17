@@ -58,6 +58,22 @@ inline bool CanPublishSource(bool needsBuddy,
 	return routeBuddyIP != lastBuddyIP || routeBuddyPort != lastBuddyPort || now >= nextPublishTime;
 }
 
+// A due source publish waits while a node it last stored on has no source store left this minute,
+// for at most `maxWait` seconds from `waitingSince` (0 before its first wait). A file due early
+// after a buddy change never waits. `seedOutOfBudget` is called only for a due file.
+template <typename SeedOutOfBudget>
+inline bool KadSourcePublishWaits(uint32_t nextPublishTime,
+	uint32_t now,
+	uint32_t waitingSince,
+	uint32_t maxWait,
+	const SeedOutOfBudget &seedOutOfBudget)
+{
+	if (now < nextPublishTime || (waitingSince != 0 && now - waitingSince >= maxWait)) {
+		return false;
+	}
+	return seedOutOfBudget();
+}
+
 } // namespace Kademlia
 
 #endif // KAD_CALLBACK_POLICY_H
