@@ -2117,18 +2117,27 @@ void CSharedFileList::Publish()
 				// Pass over keywords that are not due, or cannot publish now, in this tick,
 				// rather than one per KADEMLIAPUBLISHTIME. Keywords come due in list order,
 				// so checking one per tick reaches most of them a whole pass late, in bursts.
-				const int maxChecks = std::min(100, m_keywords->GetCount());
-				for (int i = 0; i < maxChecks; ++i) {
-					CPublishKeyword *pPubKw = m_keywords->GetNextKeyword();
-					if (!pPubKw) {
-						break;
+				struct SKeywords
+				{
+					CPublishKeywordList &list;
+					CPublishKeyword *Next()
+					{
+						CPublishKeyword *keyword = list.GetNextKeyword();
+						wxASSERT(!keyword || keyword->GetRefCount() != 0);
+						return keyword;
 					}
-					wxASSERT(pPubKw->GetRefCount() != 0);
-					if (tNow >= pPubKw->GetNextPublishTime() &&
-						StartKeywordPublish(pPubKw, tNow)) {
-						break;
+					static bool Due(const CPublishKeyword &keyword, uint32 now)
+					{
+						return now >= keyword.GetNextPublishTime();
 					}
-				}
+					static bool Start(CPublishKeyword &keyword, uint32 now)
+					{
+						return StartKeywordPublish(&keyword, now);
+					}
+				} keywords{ *m_keywords };
+				Kademlia::NextKeywordPublish(tNow,
+					std::min<size_t>(100, static_cast<size_t>(m_keywords->GetCount())),
+					keywords);
 				m_keywords->SetNextPublishTime(KADEMLIAPUBLISHTIME + tNow);
 			}
 		}

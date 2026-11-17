@@ -115,6 +115,23 @@ auto NextKadSourcePublish(std::map<Key, uint32_t> &waits, uint32_t now, size_t m
 	return nullptr;
 }
 
+// The next due keyword whose publish starts, checking at most `maxChecks` from the list cursor, or
+// nullptr. `keywords` gives Next() from the cursor, Due(keyword, now) and Start(keyword, now).
+template <typename Keywords>
+auto NextKeywordPublish(uint32_t now, size_t maxChecks, Keywords &keywords) -> decltype(keywords.Next())
+{
+	for (size_t i = 0; i < maxChecks; ++i) {
+		auto *keyword = keywords.Next();
+		if (!keyword) {
+			break;
+		}
+		if (keywords.Due(*keyword, now) && keywords.Start(*keyword, now)) {
+			return keyword;
+		}
+	}
+	return nullptr;
+}
+
 } // namespace Kademlia
 
 #endif // KAD_CALLBACK_POLICY_H
