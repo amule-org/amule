@@ -94,7 +94,8 @@ export const COLS = [
       : c.parts_offered_count == null ? "—"
       : formatInt(c.parts_offered_count) + (c.partsTotal ? " / " + formatInt(c.partsTotal) : "") },
 
-  { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", sortable: true,
+  // Wide enough for "Waiting to ask (00:00:00)".
+  { key: "dl_state", th: "downloads_peer_col_dl_state", width: "190px", sortable: true,
     sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state, c) },
   { key: "dl_speed", th: "downloads_peer_col_dl_speed", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.download_speed_bytes_per_second || 0, cell: (c) => formatSpeed(c.download_speed_bytes_per_second) },
