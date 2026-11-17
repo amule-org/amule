@@ -49,9 +49,9 @@ const uint64_t UDP_REASK_LEAD = 20000; // ms
 const unsigned EARLY_REQUEST_SCORE = 3;
 
 // How high our requests may lift a source's score: two early requests in a row. aMule bans at 10,
-// so one early request we no longer know about, such as one sent before a restart, stays below
-// it. eMule counts only OP_STARTUPLOADREQ, 1 for each early one, and bans at 4; its count stays at
-// 2 or less.
+// so one early request we did not count stays below it. eMule counts only OP_STARTUPLOADREQ, 1 for
+// each early one, and bans at 4; its count stays at 2 or less. Our copy is not saved, so right
+// after a restart a source can still hold up to this much from before it.
 const unsigned REQUEST_SCORE_BUDGET = 6;
 
 inline bool IsEarlyRequest(uint64_t now, uint64_t lastPacedRequest)
