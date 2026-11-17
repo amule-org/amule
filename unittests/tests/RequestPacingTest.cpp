@@ -154,7 +154,8 @@ TEST(RequestPacing, AICHAfterAFailedRehashWaitsAtMostTwoMinRequestTimes)
 	ASSERT_FALSE(MayRequestAICH(score, pacedAsk + MIN_REQUESTTIME - 1, pacedAsk));
 	ASSERT_TRUE(MayRequestAICH(score, pacedAsk + MIN_REQUESTTIME, pacedAsk));
 	const unsigned early = AggressiveScoreAfter(0, kNow, lastAsk);
-	ASSERT_FALSE(MayRequestAICH(early, kNow + kReask, kNow));
+	const unsigned afterReask = AggressiveScoreAfter(early, kNow + kReask, kNow);
+	ASSERT_FALSE(MayRequestAICH(afterReask, kNow + kReask + MIN_REQUESTTIME, kNow + kReask));
 }
 
 TEST(RequestPacing, PacedAICHRequestsStayBelowTheBan)

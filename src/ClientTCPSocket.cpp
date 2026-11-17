@@ -861,7 +861,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		if (m_client->GetRequestFile() && !m_client->GetRequestFile()->IsStopped() &&
 			(m_client->GetRequestFile()->GetStatus() == PS_READY ||
 				m_client->GetRequestFile()->GetStatus() == PS_EMPTY)) {
-			if (m_client->GetDownloadState() == DS_ONQUEUE) {
+			// A source waiting in DS_NONE for its paced ask still has us in its queue.
+			const uint8 state = m_client->GetDownloadState();
+			if (state == DS_ONQUEUE || state == DS_NONE) {
 				m_client->SetDownloadState(DS_DOWNLOADING);
 				m_client->SetLastPartAsked(
 					0xffff); // Reset current downloaded Chunk // Maella -Enhanced Chunk

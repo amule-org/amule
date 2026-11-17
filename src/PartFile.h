@@ -384,6 +384,8 @@ private:
 	// False once the file has as many sources as it may take.
 	bool AddExtendedSource(const ExtSX::SRecord &record, unsigned nSourceFrom);
 	CUpDownClient *FindSourceByBuddyID(const uint8_t *buddyID) const;
+	// The source has our trusted AICH master hash, so it can answer an OP_AICHREQUEST.
+	bool HasOurAICHHash(const CUpDownClient *src) const;
 
 #ifndef CLIENT_GUI
 	// partfile handle (opened on demand)
@@ -571,8 +573,6 @@ private:
 	// Corrupt parts whose AICH sources may not be asked yet, retried at m_aichRetryAt.
 	std::set<uint16> m_aichWaitingParts;
 	uint64 m_aichRetryAt = 0;
-	// The source has our trusted AICH master hash, so it can answer an OP_AICHREQUEST.
-	bool HasOurAICHHash(const CUpDownClient *src) const;
 	uint64 m_lastsearchtime;
 	bool m_localSrcReqQueued;
 
