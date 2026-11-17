@@ -2279,6 +2279,7 @@ bool CUpDownClient::StartKadBuddyCallback()
 {
 	if (GetBuddyIP() && GetBuddyPort()) {
 		// One form per request: eMule's flood protection allows about one request per minute (#1835).
+		m_bBuddyOtherLayoutTried = m_bBuddyOtherLayoutTried || m_bBuddyCallbackUnanswered;
 		m_bBuddyIdUseAmuleLayout = Kademlia::NextBuddyIdUsesAmuleLayout(
 			m_bBuddyIdUseAmuleLayout, m_bBuddyCallbackUnanswered);
 		uint8_t buddyIDToSend[16];
@@ -2332,6 +2333,16 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 	}
 	// A fallback buddy leaves the buddy route untried.
 	if (m_sourceRoute == ESourceRoute::KadBuddy && SwitchToBuddyCandidate()) {
+		return true;
+	}
+	// The socket waited out eMule's flood interval, so the next tick may ask the same buddy.
+	if (m_sourceRoute == ESourceRoute::KadBuddy && GetBuddyIP() && GetBuddyPort() &&
+		Kademlia::RetriesBuddyInOtherLayout(m_bBuddyCallbackUnanswered, m_bBuddyOtherLayoutTried)) {
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Kad buddy %s of source %s did not pass on a callback, asking it again in "
+				"the other buddy ID layout") %
+				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) %
+				GetUserHash().Encode());
 		return true;
 	}
 	if ((m_refreshedSourceRoutes & SourceRouteBit(m_sourceRoute)) != 0) {
@@ -3034,6 +3045,7 @@ void CUpDownClient::ConnectionEstablished()
 	case DS_WAITCALLBACK:
 	case DS_WAITCALLBACKKAD:
 		m_bBuddyCallbackUnanswered = false;
+		m_bBuddyOtherLayoutTried = false;
 		m_bReaskPending = false;
 		SetDownloadState(DS_CONNECTED);
 		SendFileRequest();
@@ -4101,6 +4113,7 @@ void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID, bool fromKad)
 {
 	m_bBuddyIdUseAmuleLayout = false;
 	m_bBuddyCallbackUnanswered = false;
+	m_bBuddyOtherLayoutTried = false;
 	// A source published without a buddy hash reaches us as 16 zero bytes. Accepting that as an
 	// ID sends the buddy route looking up the zero Kad ID, which belongs to no node.
 	if (pucBuddyID == nullptr || CMD4Hash(pucBuddyID).IsEmpty()) {
@@ -4365,6 +4378,7 @@ bool CUpDownClient::SwitchToBuddyCandidate()
 	m_nBuddyCandidatePort = 0;
 	// The first try through the new buddy keeps the current buddy ID layout (#1835).
 	m_bBuddyCallbackUnanswered = false;
+	m_bBuddyOtherLayoutTried = false;
 	return true;
 }
 

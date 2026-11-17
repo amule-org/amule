@@ -1318,6 +1318,8 @@ private:
 	bool m_bBuddyIdUseAmuleLayout = false;
 	// A KADEMLIA_CALLBACK_REQ was sent and the source has not called back since.
 	bool m_bBuddyCallbackUnanswered = false;
+	// The current buddy was already asked in the other layout.
+	bool m_bBuddyOtherLayoutTried = false;
 	bool m_bServedBuddy = false;
 	bool m_bServedBuddyNatT = false;
 	uint32 m_nBuddyIP;

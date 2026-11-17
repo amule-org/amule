@@ -64,6 +64,22 @@ inline bool NextBuddyIdUsesAmuleLayout(bool usesAmuleLayout, bool previousReques
 	return previousRequestUnanswered ? !usesAmuleLayout : usesAmuleLayout;
 }
 
+// eMule's Kad flood protection takes one KADEMLIA_CALLBACK_REQ per minute from an IP. A callback is
+// counted as unanswered only after this, so a second request to the same buddy is not dropped.
+constexpr uint64_t KAD_CALLBACK_ANSWER_MS = 60000;
+
+inline uint64_t KadCallbackTimeout(uint64_t socketTimeout) noexcept
+{
+	return socketTimeout > KAD_CALLBACK_ANSWER_MS ? socketTimeout : KAD_CALLBACK_ANSWER_MS;
+}
+
+// An unanswered callback is asked of the same buddy once more, in the other layout, before the
+// route counts as failed.
+inline bool RetriesBuddyInOtherLayout(bool requestUnanswered, bool otherLayoutTried) noexcept
+{
+	return requestUnanswered && !otherLayoutTried;
+}
+
 } // namespace Kademlia
 
 #endif // KAD_BUDDY_ID_LAYOUT_H

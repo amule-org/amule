@@ -98,3 +98,17 @@ TEST(KadBuddyIdLayout, AnUnansweredRequestSwitchesTheForm)
 	ASSERT_TRUE(NextBuddyIdUsesAmuleLayout(false, true));
 	ASSERT_FALSE(NextBuddyIdUsesAmuleLayout(true, true));
 }
+
+// A shorter wait would send the second request inside eMule's one-per-minute limit, where it is dropped.
+TEST(KadBuddyIdLayout, ACallbackWaitsOutTheFloodInterval)
+{
+	ASSERT_EQUALS(KAD_CALLBACK_ANSWER_MS, KadCallbackTimeout(40000));
+	ASSERT_EQUALS(static_cast<uint64_t>(80000), KadCallbackTimeout(80000));
+}
+
+TEST(KadBuddyIdLayout, AnUnansweredCallbackIsRetriedOnceInTheOtherLayout)
+{
+	ASSERT_TRUE(RetriesBuddyInOtherLayout(true, false));
+	ASSERT_FALSE(RetriesBuddyInOtherLayout(true, true));
+	ASSERT_FALSE(RetriesBuddyInOtherLayout(false, false));
+}
