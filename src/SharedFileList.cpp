@@ -65,7 +65,7 @@
 #include "kademlia/routing/RoutingZone.h"
 #include "ClientList.h"
 #include "updownclient.h"                        // Needed for CUpDownClient (buddy route)
-#include "KadCallbackPolicy.h"                   // Needed for the Kad source publish policy
+#include "KadCallbackPolicy.h"                   // Needed for the Kad publish policies
 #include "kademlia/kademlia/UDPFirewallTester.h" // Needed for CUDPFirewallTester
 #include "KadKeywordPublishTimes.h"              // Needed for KadKeywordPublishTimes::Times
 #ifdef ENABLE_IPV6
