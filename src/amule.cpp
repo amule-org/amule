@@ -1743,6 +1743,10 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	// where a changed bind address or a first-run wizard can leave us on a different
 	// interface entirely.
 	RefreshLocalPublicIPv6Addresses();
+#ifdef ENABLE_UPNP
+	// After the refresh: the pinhole names the address it chooses.
+	RequestIPv6Pinholes();
+#endif
 
 	return ok;
 }
@@ -1893,10 +1897,8 @@ bool CamuleApp::RebindP2PSockets(bool tcpPortChanged, bool udpPortChanged, uint1
 			if (!changedMappings.empty()) {
 				m_upnp->AddPortMappings(changedMappings);
 			}
-			if (tcpPortChanged || udpPortChanged) {
-				// A pinhole names a port: after a change the old ones point at nothing, so
-				// drop them and ask again for the ports we now listen on.
-				m_upnp->DeleteIPv6Pinholes();
+			if (tcpPortChanged) {
+				// The renewal pass moves the pinhole to the port we now listen on.
 				RequestIPv6Pinholes();
 			}
 		}
@@ -2400,25 +2402,25 @@ private:
 void CamuleApp::RequestIPv6Pinholes()
 {
 #if defined(ENABLE_UPNP) && defined(ENABLE_IPV6)
-	if (m_upnp == nullptr) {
+	if (m_upnp == nullptr || !thePrefs::GetUPnPEnabled()) {
 		return;
 	}
 	// The same condition the advertising decision uses: without a listener on [::] there is nothing
 	// for an inbound connection to reach.
 	const bool listenerTakesIPv6 = listensocket != nullptr && listensocket->BoundHost() == "[::]";
-	if (!ShouldRequestIPv6Pinhole(true, listenerTakesIPv6)) {
-		return;
-	}
 	const std::optional<CNetworkAddress> local = SelectedLocalIPv6();
-	if (!local.has_value()) {
-		return;
-	}
-	// A pinhole names a host, so it needs the address rather than a wildcard.
+	// A pinhole names a host, so it needs the address rather than a wildcard. Without one, the
+	// empty target drops the pinhole.
 	// TCP only: aMule's UDP sockets are IPv4-only today, so a UDP pinhole would open a port where
 	// nothing of ours listens over IPv6 and expose whatever else binds there. They come back when
 	// IPv6 UDP does.
-	const std::string client = local->ToString();
-	m_upnp->AddIPv6Pinhole(client, thePrefs::GetPort(), 6, kIPv6PinholeLeaseSeconds);
+	const std::string client = ShouldRequestIPv6Pinhole(true, listenerTakesIPv6) && local.has_value()
+					   ? local->ToString()
+					   : std::string();
+	m_upnp->SetIPv6PinholeTarget(client, thePrefs::GetPort(), kIPv6PinholeLeaseSeconds);
+	// Queued, not run: the pass sends SOAP and holds the service map mutex, and a slow gateway must
+	// not stall the main loop.
+	CThreadScheduler::AddTaskIfNoneOfType(new CIPv6PinholeRenewalTask(m_upnp, client));
 #endif
 }
 
@@ -2430,17 +2432,13 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	TheTime = msCur / 1000;
 
 	// Pinhole leases expire whether or not anything else happens, so a renewal is queued here
-	// rather than left to an event that may never come. Queued, not run: renewal sends SOAP and
-	// holds the service map mutex, and a slow gateway must not stall the main loop.
+	// rather than left to an event that may never come. This also opens the pinhole for an address
+	// chosen after start.
 	static uint64 msPrevPinhole;
 	if (msCur - msPrevPinhole >= 30000) {
 		msPrevPinhole = msCur;
-#if defined(ENABLE_UPNP) && defined(ENABLE_IPV6)
-		if (m_upnp != nullptr && thePrefs::GetUPnPEnabled()) {
-			const std::optional<CNetworkAddress> local = SelectedLocalIPv6();
-			CThreadScheduler::AddTaskIfNoneOfType(new CIPv6PinholeRenewalTask(
-				m_upnp, local.has_value() ? local->ToString() : std::string()));
-		}
+#ifdef ENABLE_UPNP
+		RequestIPv6Pinholes();
 #endif
 	}
 

@@ -467,6 +467,22 @@ static int SendBoundSoapAction(const std::string &url,
 		}
 	}
 	if (status != 200) {
+		// Hand back the UPnPError element alone, as UpnpSendAction() does: CUPnPError reads
+		// errorCode from the root.
+		IXML_Document *error = nullptr;
+		IXML_NodeList *nodes = nullptr;
+		if (*responseDocument != nullptr) {
+			nodes = ixmlDocument_getElementsByTagName(*responseDocument, "UPnPError");
+		}
+		IXML_Node *node = nodes != nullptr ? ixmlNodeList_item(nodes, 0) : nullptr;
+		DOMString errorXML = node != nullptr ? ixmlPrintNode(node) : nullptr;
+		if (errorXML != nullptr && ixmlParseBufferEx(errorXML, &error) != IXML_SUCCESS) {
+			error = nullptr;
+		}
+		ixmlFreeDOMString(errorXML);
+		ixmlNodeList_free(nodes);
+		IXML::Document::Free(*responseDocument);
+		*responseDocument = error;
 		return status;
 	}
 	return *responseDocument == nullptr ? UPNP_E_SOCKET_READ : UPNP_E_SUCCESS;
@@ -1268,8 +1284,41 @@ void CUPnPControlPoint::AddIPv6Pinhole(const std::string &internalClient,
 	SendAddPinhole(pinhole);
 }
 
+void CUPnPControlPoint::SetIPv6PinholeTarget(
+	const std::string &client, unsigned short port, unsigned int leaseSeconds)
+{
+	CUPnPMutexLocker lock(m_IPv6PinholeTargetMutex);
+	m_IPv6PinholeTarget = SIPv6PinholeTarget{ client, port, leaseSeconds };
+}
+
+void CUPnPControlPoint::ApplyIPv6PinholeTarget(const SIPv6PinholeTarget &target)
+{
+	const int tcp = 6;
+	const std::string wanted = target.client.empty() ? std::string() : PinholeKey(tcp, target.port);
+	for (auto it = m_IPv6Pinholes.begin(); it != m_IPv6Pinholes.end();) {
+		if (it->first == wanted) {
+			++it;
+		} else {
+			SendDeletePinhole(it->second);
+			it = m_IPv6Pinholes.erase(it);
+		}
+	}
+	if (!wanted.empty() && m_IPv6Pinholes.find(wanted) == m_IPv6Pinholes.end()) {
+		SIPv6Pinhole &pinhole = m_IPv6Pinholes[wanted];
+		pinhole.client = target.client;
+		pinhole.port = target.port;
+		pinhole.protocol = tcp;
+		pinhole.lease = target.lease;
+		SendAddPinhole(pinhole);
+	}
+}
+
 void CUPnPControlPoint::DeleteIPv6Pinholes()
 {
+	{
+		CUPnPMutexLocker targetLock(m_IPv6PinholeTargetMutex);
+		m_IPv6PinholeTarget.reset();
+	}
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
 	for (auto &entry : m_IPv6Pinholes) {
 		SendDeletePinhole(entry.second);
@@ -1282,15 +1331,27 @@ void CUPnPControlPoint::DeleteIPv6Pinholes()
 void CUPnPControlPoint::RenewExpiringIPv6Pinholes(const std::string &currentClient)
 {
 	CUPnPMutexLocker lock(m_ServiceMapMutex);
+	std::optional<SIPv6PinholeTarget> target;
+	{
+		// Read under the service map lock: DeleteIPv6Pinholes() clears the target before it takes
+		// that lock, so a pass cannot reopen what it deletes.
+		CUPnPMutexLocker targetLock(m_IPv6PinholeTargetMutex);
+		target = m_IPv6PinholeTarget;
+	}
+	if (target.has_value()) {
+		ApplyIPv6PinholeTarget(*target);
+	}
+	// The target is newer than the address this pass was queued with.
+	const std::string &client = target.has_value() ? target->client : currentClient;
 	const auto now = std::chrono::steady_clock::now();
 	for (auto &entry : m_IPv6Pinholes) {
 		SIPv6Pinhole &pinhole = entry.second;
 		// A prefix change leaves the pinhole naming an address we no longer hold: replace it
 		// rather than renew it.
-		if (!currentClient.empty() && IsIPv6PinholeStale(currentClient, pinhole.client)) {
+		if (!client.empty() && IsIPv6PinholeStale(client, pinhole.client)) {
 			SendDeletePinhole(pinhole);
 			pinhole.uniqueId.clear();
-			pinhole.client = currentClient;
+			pinhole.client = client;
 			SendAddPinhole(pinhole);
 			continue;
 		}
@@ -1457,8 +1518,6 @@ int CUPnPControlPoint::Callback(Upnp_EventType EventType, void *Event, void * /*
 #else
 		const char *location = d_event->Location;
 #endif
-		// Fetch both address-family locations: WAN mappings stay on IPv4, while IPv6 firewall
-		// actions prefer their IPv6 control URL and retain the IPv4 URL as a fallback.
 		// Passive ALIVE announcements arrive in dense bursts (one per service class, every
 		// few seconds per device), and when the announcing device's HTTP server is
 		// unreachable each fetch blocks a libupnp worker for the full TCP-connect timeout.

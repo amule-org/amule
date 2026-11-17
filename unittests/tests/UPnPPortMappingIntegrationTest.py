@@ -315,14 +315,14 @@ class FakeGateway:
         if self.pinhole_mode == 'miniupnpd':
             if not ipv6:
                 return ACTION_NOT_AUTHORIZED
-            if action == ADD_PINHOLE:
-                try:
-                    peer = ipaddress.ip_address(peer_address.split('%', 1)[0])
-                    client = ipaddress.ip_address(internal_client.split('%', 1)[0])
-                except ValueError:
-                    return ACTION_NOT_AUTHORIZED
-                if peer != client:
-                    return ACTION_NOT_AUTHORIZED
+            # Every pinhole action, as PinholeVerification() does: the sender must be the client.
+            try:
+                peer = ipaddress.ip_address(peer_address.split('%', 1)[0])
+                client = ipaddress.ip_address(internal_client.split('%', 1)[0])
+            except ValueError:
+                return ACTION_NOT_AUTHORIZED
+            if peer != client:
+                return ACTION_NOT_AUTHORIZED
         elif self.pinhole_mode == 'fritzbox':
             if action == UPDATE_PINHOLE:
                 return ACTION_NOT_AUTHORIZED if ipv6 else 501
@@ -361,9 +361,10 @@ class FakeGateway:
             self.last_pinhole_id = unique_id
             return None
         if action == UPDATE_PINHOLE:
-            internal_client = self.last_pinhole_client
-            error = self.pinhole_refusal(action, ipv6, peer_address, internal_client)
             unique_id = argument('UniqueID')
+            stored = self.pinholes.get(unique_id)
+            internal_client = stored[0] if stored else self.last_pinhole_client
+            error = self.pinhole_refusal(action, ipv6, peer_address, internal_client)
             if error is None and unique_id not in self.pinholes:
                 error = NO_SUCH_ENTRY
             if error is not None:
@@ -376,9 +377,10 @@ class FakeGateway:
                 (action, family, peer_address, internal_client, None))
             return None
         if action == DELETE_PINHOLE:
-            internal_client = self.last_pinhole_client
-            error = self.pinhole_refusal(action, ipv6, peer_address, internal_client)
             unique_id = argument('UniqueID')
+            stored = self.pinholes.get(unique_id)
+            internal_client = stored[0] if stored else self.last_pinhole_client
+            error = self.pinhole_refusal(action, ipv6, peer_address, internal_client)
             if error is not None:
                 self.pinhole_actions.append((action, 'rejected'))
                 self.pinhole_transports.append(
@@ -686,6 +688,16 @@ def run_pinhole_transport_scenarios(driver, failures):
             record_failure(failures, f'miniupnpd pinhole transport was {gateway.pinhole_transports}, expected {expected}')
         if gateway.pinholes:
             record_failure(failures, f'miniupnpd pinhole table not empty after delete: {gateway.pinholes}')
+
+        # The pass opens the target once, moves it with the port, and drops it with the address.
+        got, gateway = run('miniupnpd', ['target', 'target', 'target-moved', 'target-none'])
+        if set(got.values()) != {'true'}:
+            record_failure(failures, f'pinhole target: returned {got}')
+        expected = [(ADD_PINHOLE, '1'), (DELETE_PINHOLE, '1'), (ADD_PINHOLE, '2'), (DELETE_PINHOLE, '2')]
+        if gateway.pinhole_actions != expected:
+            record_failure(failures, f'pinhole target: gateway saw {gateway.pinhole_actions}, expected {expected}')
+        if gateway.pinholes:
+            record_failure(failures, f'pinhole target: {gateway.pinholes} left behind')
 
         _, gateway = run('miniupnpd', ['addpinhole-unassigned'])
         expected = [(ADD_PINHOLE, 'ipv4', '127.0.0.1', PINHOLE_CLIENT_UNASSIGNED,

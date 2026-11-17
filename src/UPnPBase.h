@@ -30,6 +30,7 @@
 #include <atomic>
 #include <chrono>
 #include <map>
+#include <optional>
 #include <string>
 #include <sstream>
 #include <utility>
@@ -381,6 +382,16 @@ private:
 		std::chrono::steady_clock::time_point expiry;
 	};
 	std::map<std::string, SIPv6Pinhole> m_IPv6Pinholes;
+	// The TCP pinhole the node wants. Its own mutex, so the main thread never waits for a SOAP
+	// call to set it. Unset until SetIPv6PinholeTarget(), so pinholes from AddIPv6Pinhole() stay.
+	struct SIPv6PinholeTarget
+	{
+		std::string client; // Empty when the node wants no pinhole.
+		unsigned short port;
+		unsigned int lease;
+	};
+	std::optional<SIPv6PinholeTarget> m_IPv6PinholeTarget;
+	CUPnPMutex m_IPv6PinholeTargetMutex;
 	CUPnPMutex m_RootDeviceListMutex;
 	bool m_IGWDeviceDetected;
 	mutable CUPnPMutex m_ServiceMapMutex;
@@ -416,11 +427,15 @@ public:
 		unsigned short internalPort,
 		int protocol,
 		unsigned int leaseSeconds);
-	//! Renew or re-add every recorded pinhole whose lease is close to expiry, and replace any that
-	//! no longer names the current client address. Called off the main thread: a slow gateway must
-	//! not stall it.
+	//! Set the TCP pinhole the node wants: its address and port, or an empty address for none. The
+	//! next RenewExpiringIPv6Pinholes() opens, moves or drops pinholes to match.
+	void SetIPv6PinholeTarget(const std::string &client, unsigned short port, unsigned int leaseSeconds);
+	//! Match the pinholes to the target, then renew or re-add every recorded pinhole whose lease is
+	//! close to expiry, and replace any that no longer names the current client address. Called off
+	//! the main thread: a slow gateway must not stall it.
 	void RenewExpiringIPv6Pinholes(const std::string &currentClient);
-	//! Delete every pinhole this control point opened.
+	//! Delete every pinhole this control point opened, and clear the target so that no later pass
+	//! opens them again.
 	void DeleteIPv6Pinholes();
 	//! The key a pinhole is stored under: protocol and port, since that is what it names.
 	static std::string PinholeKey(int protocol, unsigned short port);
@@ -464,6 +479,8 @@ private:
 	void RefreshPortMappings();
 	// The caller must hold m_ServiceMapMutex.
 	bool HasWANMappingService() const;
+	// The caller must hold m_ServiceMapMutex.
+	void ApplyIPv6PinholeTarget(const SIPv6PinholeTarget &target);
 	bool ExecuteOnAnyService(
 		const std::string &actionName, const std::vector<CUPnPArgumentValue> &argval);
 	bool PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMapping);

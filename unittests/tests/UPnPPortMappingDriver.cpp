@@ -26,7 +26,8 @@
 // a fake gateway. It prints a line when the constructor returns, then waits for a line on stdin
 // before each operation.
 // Usage: UPnPPortMappingDriver <tcp> <udp> (add|delete|pending|wanservice|
-//        addpinholeodd|addpinhole-unassigned|renewexpiring-retry)...
+//        addpinholeodd|addpinhole-unassigned|renewexpiring-retry|target|target-moved|
+//        target-none)...
 // Optional: AMULE_TEST_UPNP_PINHOLE_CLIENT overrides the default pinhole client (::1).
 
 #include "config.h"
@@ -37,6 +38,7 @@
 #include <thread>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <vector>
 
 namespace
@@ -120,6 +122,18 @@ int main(int argc, char **argv)
 				result = true;
 			} else if (std::strcmp(argv[i], "deletepinholes") == 0) {
 				controlPoint.DeleteIPv6Pinholes();
+				result = true;
+			} else if (std::strcmp(argv[i], "target") == 0 ||
+				   std::strcmp(argv[i], "target-moved") == 0 ||
+				   std::strcmp(argv[i], "target-none") == 0) {
+				// As amuled drives it: set the target, then run the renewal pass.
+				const bool none = std::strcmp(argv[i], "target-none") == 0;
+				const bool moved = std::strcmp(argv[i], "target-moved") == 0;
+				const std::string client = none ? std::string() : std::string(PINHOLE_CLIENT);
+				controlPoint.SetIPv6PinholeTarget(client,
+					static_cast<unsigned short>(tcpPort + (moved ? 1 : 0)),
+					PINHOLE_LEASE);
+				controlPoint.RenewExpiringIPv6Pinholes(client);
 				result = true;
 			} else if (std::strcmp(argv[i], "wanservice") == 0) {
 				result = controlPoint.WanServiceDetected();
