@@ -36,6 +36,7 @@
 #include <cmath> // Needed for std:exp
 
 #include "ClientCredits.h"   // Needed for CClientCredits
+#include "ClientList.h"      // Needed for CClientList
 #include "ClientUDPSocket.h" // Needed for CClientUDPSocket
 #include "DownloadQueue.h"   // Needed for CDownloadQueue
 #include "Preferences.h"     // Needed for thePrefs
@@ -134,6 +135,12 @@ bool CUpDownClient::Compare(const CUpDownClient *tocomp, bool bIgnoreUserhash) c
 
 bool CUpDownClient::AskForDownload()
 {
+	if (!MaySendPacedRequest()) {
+		// Its OP_STARTUPLOADREQ would not fit the request budget; ask once it does.
+		m_dwLastAskedTime = PacedLastAskedTime(
+			::GetTickCount64(), m_lastPacedRequest, thePrefs::GetSourceReaskTime());
+		return true;
+	}
 	if (theApp->listensocket->TooManySockets()) {
 		if (!m_socket) {
 			if (GetDownloadState() != DS_TOOMANYCONNS) {
@@ -159,6 +166,11 @@ void CUpDownClient::SendStartupLoadReq()
 	if (m_socket == NULL || m_reqfile == NULL) {
 		return;
 	}
+	// The score recalled with the user hash can rule out an ask that AskForDownload() allowed.
+	if (!MaySendPacedRequest()) {
+		AskAgainSoon();
+		return;
+	}
 	SetDownloadState(DS_ONQUEUE);
 	CMemFile dataStartupLoadReq(16);
 	dataStartupLoadReq.WriteHash(m_reqfile->GetFileHash());
@@ -174,21 +186,30 @@ void CUpDownClient::AskAgainSoon(bool paced)
 	SetDownloadState(DS_NONE);
 	m_dwLastAskedTime =
 		PacedLastAskedTime(::GetTickCount64(), m_lastPacedRequest, thePrefs::GetSourceReaskTime());
-	if (!paced && MayAskEarly(m_requestScore)) {
+	if (!paced && MaySendPacedRequest()) {
 		m_dwLastAskedTime = 0;
+	}
+}
+
+void CUpDownClient::RecallRequestScore()
+{
+	if (HasValidHash()) {
+		theApp->clientlist->RecallRequestScore(GetUserHash(), m_requestScore, m_lastPacedRequest);
 	}
 }
 
 void CUpDownClient::RecordPacedRequest()
 {
+	RecallRequestScore();
 	const uint64 now = ::GetTickCount64();
 	m_requestScore = AggressiveScoreAfter(m_requestScore, now, m_lastPacedRequest);
 	m_lastPacedRequest = now;
 }
 
-bool CUpDownClient::MayRequestAICH() const
+bool CUpDownClient::MaySendPacedRequest()
 {
-	return ::MayRequestAICH(m_requestScore, ::GetTickCount64(), m_lastPacedRequest);
+	RecallRequestScore();
+	return FitsRequestBudget(m_requestScore, ::GetTickCount64(), m_lastPacedRequest);
 }
 
 bool CUpDownClient::HasPartWeNeed() const
@@ -1371,6 +1392,13 @@ void CUpDownClient::UDPReaskForDownload()
 	if (m_nUDPPort != 0 && !theApp->IsFirewalled() && !IsConnected()) {
 		// don't use udp to ask for sources
 		if (IsSourceRequestAllowed()) {
+			return;
+		}
+		if (!MaySendPacedRequest()) {
+			// Reask once it fits the request budget, with the TCP ask still UDP_REASK_LEAD later.
+			m_dwLastAskedTime = PacedLastAskedTime(::GetTickCount64(),
+				m_lastPacedRequest + UDP_REASK_LEAD,
+				thePrefs::GetSourceReaskTime());
 			return;
 		}
 

@@ -20,6 +20,9 @@
 
 #include <muleunit/test.h>
 #include "RequestPacing.h"
+#include "SourceRetryPolicy.h"
+
+#include <algorithm>
 
 using namespace muleunit;
 
@@ -86,7 +89,7 @@ TEST(RequestPacing, AggressiveScoreFollowsCheckForAggressive)
 
 TEST(RequestPacing, RepeatedEarlyAsksStayBelowTheBan)
 {
-	// An early ask after every polite request that MayAskEarly allows, as repeated rehash
+	// An early ask after every polite request where the budget allows one, as repeated rehash
 	// failures cause. One early ask per MIN_REQUESTTIME reached aMule's ban at the fifth.
 	unsigned score = 0;
 	unsigned earlyAsks = 0;
@@ -95,15 +98,15 @@ TEST(RequestPacing, RepeatedEarlyAsksStayBelowTheBan)
 		const uint64_t now = last + MIN_REQUESTTIME;
 		score = AggressiveScoreAfter(score, now, last);
 		last = now;
-		if (MayAskEarly(score)) {
+		if (FitsRequestBudget(score, last + 1000, last)) {
 			score = AggressiveScoreAfter(score, last + 1000, last);
 			last += 1000;
 			++earlyAsks;
 		}
-		ASSERT_TRUE(score <= 3);
+		ASSERT_TRUE(score <= REQUEST_SCORE_BUDGET);
 	}
-	// Three polite requests clear each early ask.
-	ASSERT_EQUALS(33u, earlyAsks);
+	// After the first two, three polite requests clear each early ask.
+	ASSERT_EQUALS(34u, earlyAsks);
 }
 
 TEST(RequestPacing, AskTimedBeforeTheAICHRequestIsEarly)
@@ -133,63 +136,174 @@ TEST(RequestPacing, UnpacedAICHRequestsReachTheBan)
 	}
 }
 
-TEST(RequestPacing, AICHRequestLeavesRoomForAnEarlyAsk)
+TEST(RequestPacing, BudgetAllowsTwoEarlyRequests)
 {
-	ASSERT_TRUE(MayRequestAICH(0, kNow, 0));
-	ASSERT_TRUE(MayRequestAICH(1, kNow, kNow - MIN_REQUESTTIME));
-	ASSERT_FALSE(MayRequestAICH(0, kNow, kNow - MIN_REQUESTTIME + 1));
-	ASSERT_FALSE(MayRequestAICH(2, kNow, kNow - MIN_REQUESTTIME));
+	const uint64_t recent = kNow - MIN_REQUESTTIME + 1;
+	ASSERT_TRUE(FitsRequestBudget(3, kNow, recent));
+	ASSERT_FALSE(FitsRequestBudget(4, kNow, recent));
+	static_assert(REQUEST_SCORE_BUDGET + EARLY_REQUEST_SCORE < 10,
+		"one early request we did not count must stay below aMule's ban at 10");
+	ASSERT_TRUE(FitsRequestBudget(0, kNow, 0)); // no earlier request
+	// A polite request lowers the score, so it fits even above the budget.
+	ASSERT_TRUE(FitsRequestBudget(9, kNow, kNow - MIN_REQUESTTIME));
 }
 
-TEST(RequestPacing, AICHAfterAFailedRehashWaitsAtMostTwoMinRequestTimes)
+TEST(RequestPacing, AICHRequestAndAskGoAtOnceAfterAFailedRehash)
 {
-	// The only AICH source was asked 5 minutes before the rehash failed, so the AICH request
-	// waits. Asked paced, the source has a polite slot for it MIN_REQUESTTIME after that ask.
-	// Asked early, it would still not qualify after its next reask.
+	// The only AICH source was asked 5 minutes before the rehash failed. The AICH request and the
+	// early ask after it both go at once. A third early request waits until MIN_REQUESTTIME
+	// after the ask.
 	const uint64_t lastAsk = kNow - 5 * 60 * 1000;
-	ASSERT_FALSE(MayRequestAICH(0, kNow, lastAsk));
-	const uint64_t pacedAsk = AskAt(PacedLastAskedTime(kNow, lastAsk, kReask));
-	ASSERT_EQUALS(lastAsk + MIN_REQUESTTIME, pacedAsk);
-	const unsigned score = AggressiveScoreAfter(0, pacedAsk, lastAsk);
-	ASSERT_FALSE(MayRequestAICH(score, pacedAsk + MIN_REQUESTTIME - 1, pacedAsk));
-	ASSERT_TRUE(MayRequestAICH(score, pacedAsk + MIN_REQUESTTIME, pacedAsk));
-	const unsigned early = AggressiveScoreAfter(0, kNow, lastAsk);
-	const unsigned afterReask = AggressiveScoreAfter(early, kNow + kReask, kNow);
-	ASSERT_FALSE(MayRequestAICH(afterReask, kNow + kReask + MIN_REQUESTTIME, kNow + kReask));
+	ASSERT_TRUE(FitsRequestBudget(0, kNow, lastAsk));
+	unsigned score = AggressiveScoreAfter(0, kNow, lastAsk);
+	ASSERT_TRUE(FitsRequestBudget(score, kNow + 1000, kNow));
+	score = AggressiveScoreAfter(score, kNow + 1000, kNow);
+	ASSERT_EQUALS(6u, score);
+	ASSERT_FALSE(FitsRequestBudget(score, kNow + 2000, kNow + 1000));
+	ASSERT_TRUE(FitsRequestBudget(score, kNow + 1000 + MIN_REQUESTTIME, kNow + 1000));
 }
 
-TEST(RequestPacing, PacedAICHRequestsStayBelowTheBan)
+TEST(RequestPacing, BudgetedAICHRequestsStayBelowTheBan)
 {
-	// The same four parts with MayRequestAICH. A part waits and retries each minute, and the
-	// source's regular asks, each kReask, can come early after an AICH request.
+	// The same four parts. A part waits and retries each minute, before the source's regular ask,
+	// as in CPartFile::Process(). A regular ask that would not fit waits as well.
 	const uint64_t minute = 60 * 1000;
-	const uint64_t lastAsk = kNow - minute;
 	unsigned score = 0;
-	uint64_t last = lastAsk;
-	uint64_t nextAsk = lastAsk + kReask;
+	uint64_t last = kNow - minute;
+	uint64_t nextAsk = last + kReask;
 	unsigned waiting = 0;
 	uint64_t firstSent = 0;
 	unsigned sent = 0;
 	for (uint64_t now = kNow; now < kNow + 3 * 60 * minute; now += minute) {
-		if (now == nextAsk) {
-			score = AggressiveScoreAfter(score, now, last);
-			last = now;
-			nextAsk += kReask;
-		}
 		if (now < kNow + 8 * minute && (now - kNow) % (2 * minute) == 0) {
 			++waiting;
 		}
-		if (waiting > 0 && MayRequestAICH(score, now, last)) {
+		if (waiting > 0 && FitsRequestBudget(score, now, last)) {
 			score = AggressiveScoreAfter(score, now, last);
 			last = now;
 			firstSent = firstSent ? firstSent : now;
 			--waiting;
 			++sent;
 		}
-		ASSERT_TRUE(score <= 3);
+		if (now >= nextAsk) {
+			if (FitsRequestBudget(score, now, last)) {
+				score = AggressiveScoreAfter(score, now, last);
+				last = now;
+				nextAsk = now + kReask;
+			} else {
+				nextAsk = last + MIN_REQUESTTIME;
+			}
+		}
+		ASSERT_TRUE(score <= REQUEST_SCORE_BUDGET);
 	}
 	ASSERT_EQUALS(4u, sent);
-	// The first request waits only until it is no longer early.
-	ASSERT_TRUE(firstSent >= lastAsk + MIN_REQUESTTIME);
-	ASSERT_TRUE(firstSent < lastAsk + MIN_REQUESTTIME + minute);
+	ASSERT_EQUALS(kNow, firstSent);
+}
+
+TEST(RequestPacing, DeferredReaskKeepsTheTCPAskBehindIt)
+{
+	// UDPReaskForDownload() defers a reask that would not fit. CPartFile::Process() then sends it
+	// once it is polite, and the TCP ask for an unanswered one UDP_REASK_LEAD later.
+	const uint64_t last = kNow - 60 * 1000;
+	const uint64_t lastAsked = PacedLastAskedTime(kNow, last + UDP_REASK_LEAD, kReask);
+	ASSERT_EQUALS(last + MIN_REQUESTTIME, lastAsked + kReask - UDP_REASK_LEAD);
+	ASSERT_EQUALS(last + MIN_REQUESTTIME + UDP_REASK_LEAD, AskAt(lastAsked));
+}
+
+namespace
+{
+// A queued source whose OP_REASKFILEPING arrives but is never answered, so CPartFile::Process()
+// follows each one with a TCP ask UDP_REASK_LEAD later. Returns the highest score, and the
+// longest time between two TCP asks.
+unsigned UnansweredReasks(bool budgeted, uint64_t duration, uint64_t &longestGap)
+{
+	const uint64_t second = 1000;
+	unsigned score = 0;
+	unsigned highest = 0;
+	uint64_t last = kNow - 60 * second;
+	uint64_t lastAsked = last;
+	uint64_t lastTCPAsk = last;
+	bool udpPending = false;
+	longestGap = 0;
+	for (uint64_t now = kNow; now < kNow + duration; now += second) {
+		using SourceRetryPolicy::IsDue;
+		if (!udpPending && IsDue(now, lastAsked, kReask - UDP_REASK_LEAD)) {
+			if (!budgeted || FitsRequestBudget(score, now, last)) {
+				score = AggressiveScoreAfter(score, now, last);
+				last = now;
+				udpPending = true;
+			} else {
+				lastAsked = PacedLastAskedTime(now, last + UDP_REASK_LEAD, kReask);
+			}
+		}
+		if (IsDue(now, lastAsked, kReask)) {
+			if (!budgeted || FitsRequestBudget(score, now, last)) {
+				score = AggressiveScoreAfter(score, now, last);
+				last = now;
+				lastAsked = now;
+				udpPending = false;
+				longestGap = std::max(longestGap, now - lastTCPAsk);
+				lastTCPAsk = now;
+			} else {
+				lastAsked = PacedLastAskedTime(now, last, kReask);
+			}
+		}
+		highest = std::max(highest, score);
+	}
+	return highest;
+}
+} // namespace
+
+TEST(RequestPacing, UnansweredReasksReachTheBan)
+{
+	uint64_t longestGap = 0;
+	ASSERT_TRUE(UnansweredReasks(false, 6 * kReask, longestGap) >= 10);
+}
+
+TEST(RequestPacing, BudgetedUnansweredReasksStayBelowTheBan)
+{
+	uint64_t longestGap = 0;
+	ASSERT_TRUE(UnansweredReasks(true, 24 * 60 * 60 * 1000, longestGap) <= REQUEST_SCORE_BUDGET);
+	// A TCP ask waits at most until the reask before it is no longer early.
+	ASSERT_TRUE(longestGap <= kReask + MIN_REQUESTTIME);
+}
+
+TEST(RequestPacing, MemoryKeepsOnlyWhatAFreshClientWouldMiss)
+{
+	CRequestScoreMemory<int> memory;
+	memory.Remember(1, 3, kNow - 1000, kNow);
+	memory.Remember(2, 0, kNow - 1000, kNow);            // the next request would be early
+	memory.Remember(3, 0, kNow - MIN_REQUESTTIME, kNow); // a fresh client scores it the same
+	memory.Remember(4, 2, 0, kNow);                      // no request
+	ASSERT_EQUALS(2u, memory.Size());
+	unsigned score = 0;
+	uint64_t last = 0;
+	memory.Recall(1, kNow, score, last);
+	ASSERT_EQUALS(3u, score);
+	ASSERT_EQUALS(kNow - 1000, last);
+	ASSERT_EQUALS(1u, memory.Size());
+}
+
+TEST(RequestPacing, MemoryMergesAndExpires)
+{
+	CRequestScoreMemory<int> memory;
+	memory.Remember(1, 3, kNow - 1000, kNow);
+	unsigned score = 5;
+	uint64_t last = kNow - 5000;
+	memory.Recall(1, kNow, score, last);
+	ASSERT_EQUALS(5u, score);
+	ASSERT_EQUALS(kNow - 1000, last);
+
+	memory.Remember(2, 3, kNow, kNow);
+	score = 0;
+	last = 0;
+	memory.Recall(2, kNow + REQUEST_SCORE_MEMORY, score, last);
+	ASSERT_EQUALS(0u, score);
+	ASSERT_EQUALS(0u, memory.Size());
+
+	memory.Remember(3, 3, kNow, kNow);
+	memory.Prune(kNow + REQUEST_SCORE_MEMORY - 1);
+	ASSERT_EQUALS(1u, memory.Size());
+	memory.Prune(kNow + REQUEST_SCORE_MEMORY);
+	ASSERT_EQUALS(0u, memory.Size());
 }

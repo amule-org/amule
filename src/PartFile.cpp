@@ -28,6 +28,7 @@
 #include "PartFile.h"            // Interface declarations.
 #include "PartFileBuffering.h"   // Needed for ordered buffered writes
 #include "SourceRetryPolicy.h"   // Needed for source reask eligibility
+#include "RequestPacing.h"       // Needed for UDP_REASK_LEAD
 #include "BlockReservation.h"    // Needed for selecting unreserved block intervals
 #include "PartFileWriteThread.h" // Needed for PB_READY etc.
 #include "PartMetWriter.h"       // Needed for CPartMetWriter
@@ -1478,9 +1479,9 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 			RequestAICHRecovery(*it);
 		}
 		// Sources asked during the rehash found nothing to download; the gaps are open now.
-		// After a corrupt part, sources are asked at once where MayAskEarly allows it. A wait
-		// for the hashset can re-ask after each unanswered request, so it stays paced. Asked
-		// after the AICH requests, so the sources they use or wait for are asked paced.
+		// After a corrupt part, sources are asked at once where the request budget allows it. A
+		// wait for the hashset can re-ask after each unanswered request, so it stays paced.
+		// Asked after the AICH requests, so those come first in each source's budget.
 		AskQueuedSourcesAgain(m_completionAwaitsHashset);
 		return;
 	}
@@ -1770,8 +1771,9 @@ uint32 CPartFile::Process(uint8 m_icounter)
 				// well.
 				const uint64 reask = thePrefs::GetSourceReaskTime();
 				if (theApp->IsConnected() && cur_src->GetLastAskedTime() != 0 &&
-					SourceRetryPolicy::IsDue(
-						dwCurTick, cur_src->GetLastAskedTime(), reask - 20000)) {
+					SourceRetryPolicy::IsDue(dwCurTick,
+						cur_src->GetLastAskedTime(),
+						reask - UDP_REASK_LEAD)) {
 					cur_src->UDPReaskForDownload();
 				}
 
@@ -2860,11 +2862,7 @@ void CPartFile::AskQueuedSourcesAgain(bool paced)
 		CUpDownClient *cur_src = ref.GetClient();
 		const uint8 state = cur_src->GetDownloadState();
 		if (state == DS_ONQUEUE || state == DS_NONEEDEDPARTS) {
-			// An early ask would be scored right after a pending OP_AICHREQUEST, or would take
-			// the polite slot that a waiting part needs to send one.
-			const bool aichNeedsSource = cur_src->IsAICHReqPending() ||
-						     (!m_aichWaitingParts.empty() && HasOurAICHHash(cur_src));
-			cur_src->AskAgainSoon(paced || aichNeedsSource);
+			cur_src->AskAgainSoon(paced);
 		}
 	}
 }
@@ -4427,7 +4425,7 @@ void CPartFile::RequestAICHRecovery(uint16 nPart)
 
 	wxASSERT(nPart < GetPartCount());
 	// Ask a random source that has our AICH master hash, a HighID one if possible. If none may
-	// be asked yet (see MayRequestAICH) or each has a request pending, the part waits for
+	// be asked yet (see FitsRequestBudget) or each has a request pending, the part waits for
 	// Process() to retry it.
 	std::vector<CUpDownClient *> highID;
 	std::vector<CUpDownClient *> lowID;
@@ -4437,7 +4435,7 @@ void CPartFile::RequestAICHRecovery(uint16 nPart)
 		if (!HasOurAICHHash(pCurClient)) {
 			continue;
 		}
-		if (pCurClient->IsAICHReqPending() || !pCurClient->MayRequestAICH()) {
+		if (pCurClient->IsAICHReqPending() || !pCurClient->MaySendPacedRequest()) {
 			sourceWaits = true;
 		} else {
 			(pCurClient->HasLowID() ? lowID : highID).push_back(pCurClient);

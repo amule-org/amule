@@ -193,6 +193,12 @@ void CClientList::RemoveClient(CUpDownClient *client)
 	if (theApp->browsemanager) {
 		theApp->browsemanager->Forget(client);
 	}
+	if (client->HasValidHash()) {
+		m_requestScores.Remember(client->GetUserHash(),
+			client->GetRequestScore(),
+			client->GetLastPacedRequest(),
+			::GetTickCount64());
+	}
 
 	if (RemoveIDFromList(client)) {
 		RemoveIPFromList(client);
@@ -1130,6 +1136,11 @@ bool CClientList::IsDeadSource(const CUpDownClient *client)
 	return m_deadSources.IsDeadSource(client);
 }
 
+void CClientList::RecallRequestScore(const CMD4Hash &userHash, unsigned &score, uint64 &lastPacedRequest)
+{
+	m_requestScores.Recall(userHash, ::GetTickCount64(), score, lastPacedRequest);
+}
+
 CUpDownClient *CClientList::FindChatClient(const CChatPeer &peer) const
 {
 	if (peer.IsEmpty()) {
@@ -1844,6 +1855,7 @@ void CClientList::CleanUpClientList()
 	const uint64 cur_tick = ::GetTickCount64();
 	if (m_dwLastClientCleanUp + CLIENTLIST_CLEANUP_TIME < cur_tick) {
 		m_dwLastClientCleanUp = cur_tick;
+		m_requestScores.Prune(cur_tick);
 		DEBUG_ONLY(uint32 cDeleted = 0;)
 		IDMap::iterator current_it = m_clientList.begin();
 		while (current_it != m_clientList.end()) {

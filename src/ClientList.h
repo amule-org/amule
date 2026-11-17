@@ -33,6 +33,7 @@
 #include "KadBuddySearchPolicy.h" // Needed for CBuddyHunt
 #include "KadBuddyStats.h"
 #include "ChatSessionStore.h"
+#include "RequestPacing.h" // Needed for CRequestScoreMemory
 #include "CanonicalPeerIndex.h"
 #include "TrackedClientRecord.h"
 #include "kademlia/kademlia/FirewallCheckRequests.h"
@@ -256,6 +257,9 @@ public:
 	 */
 	bool IsDeadSource(const CUpDownClient *client);
 
+	// Raises score and lastPacedRequest to those of the deleted client with this user hash.
+	void RecallRequestScore(const CMD4Hash &userHash, unsigned &score, uint64 &lastPacedRequest);
+
 	/**
 	 * Sends to a stable peer hash. Unavailable is distinct from queued while connecting.
 	 */
@@ -415,6 +419,9 @@ private:
 
 	//! List of unusable sources.
 	CDeadSourceList m_deadSources;
+
+	//! The request scores of deleted clients, by user hash.
+	CRequestScoreMemory<CMD4Hash> m_requestScores;
 
 	/* Kad Stuff */
 	CClientRefSet m_KadSources;

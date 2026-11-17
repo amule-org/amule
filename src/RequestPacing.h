@@ -24,7 +24,10 @@
 #include "Types.h"                   // Needed for uint64, needed by Constants.h
 #include <protocol/ed2k/Constants.h> // Needed for MIN_REQUESTTIME
 
+#include <algorithm>
 #include <cstdint>
+#include <iterator>
+#include <map>
 
 // A source's CheckForAggressive() scores an OP_STARTUPLOADREQ, OP_REASKFILEPING or OP_AICHREQUEST
 // sent less than MIN_REQUESTTIME after the previous one, and bans at 10. Returns the last-asked
@@ -39,30 +42,94 @@ inline uint64_t PacedLastAskedTime(uint64_t now, uint64_t lastPacedRequest, uint
 	return askAt > reaskTime ? askAt - reaskTime : 1;
 }
 
-// The source's CheckForAggressive() score after one more request: 3 more if it comes less than
-// MIN_REQUESTTIME after the previous one, else 1 less. eMule's AddRequestCount() adds and takes
-// 1, so its count never exceeds this score.
+// How long before its TCP ask CPartFile::Process() sends a queued source the UDP reask.
+const uint64_t UDP_REASK_LEAD = 20000; // ms
+
+// What CheckForAggressive() adds for an early request.
+const unsigned EARLY_REQUEST_SCORE = 3;
+
+// How high our requests may lift a source's score: two early requests in a row. aMule bans at 10,
+// so one early request we no longer know about, such as one sent before a restart, stays below
+// it. eMule counts only OP_STARTUPLOADREQ, 1 for each early one, and bans at 4; its count stays at
+// 2 or less.
+const unsigned REQUEST_SCORE_BUDGET = 6;
+
+inline bool IsEarlyRequest(uint64_t now, uint64_t lastPacedRequest)
+{
+	return lastPacedRequest != 0 && now - lastPacedRequest < MIN_REQUESTTIME;
+}
+
+// The source's CheckForAggressive() score after one more request.
 inline unsigned AggressiveScoreAfter(unsigned score, uint64_t now, uint64_t lastPacedRequest)
 {
-	if (lastPacedRequest != 0 && now - lastPacedRequest < MIN_REQUESTTIME) {
-		return score + 3;
+	if (IsEarlyRequest(now, lastPacedRequest)) {
+		return score + EARLY_REQUEST_SCORE;
 	}
 	return score > 0 ? score - 1 : 0;
 }
 
-// An early ask adds 3. Asking early only at 0 keeps our early asks from lifting aMule's score
-// above 3 (ban at 10) or eMule's count above 1 (ban at 4).
-inline bool MayAskEarly(unsigned score)
+// Every OP_STARTUPLOADREQ, OP_REASKFILEPING and OP_AICHREQUEST we send must pass this. A request
+// that is not early always may: it lowers the score.
+inline bool FitsRequestBudget(unsigned score, uint64_t now, uint64_t lastPacedRequest)
 {
-	return score == 0;
+	return !IsEarlyRequest(now, lastPacedRequest) || score + EARLY_REQUEST_SCORE <= REQUEST_SCORE_BUDGET;
 }
 
-// An OP_AICHREQUEST comes between two asks, so the next ask can be early. Send one only where
-// MayAskEarly would still allow that ask.
-inline bool MayRequestAICH(unsigned score, uint64_t now, uint64_t lastPacedRequest)
+// An aMule source drops a waiting client MAX_PURGEQUEUETIME after its last request. Its client
+// list cleanup then deletes the client, and the score, within CLIENTLIST_CLEANUP_TIME.
+const uint64_t REQUEST_SCORE_MEMORY = MAX_PURGEQUEUETIME + CLIENTLIST_CLEANUP_TIME;
+
+// The scores of deleted clients, so that a client found again does not start at 0.
+template <typename Key> class CRequestScoreMemory
 {
-	return MayAskEarly(AggressiveScoreAfter(score, now, lastPacedRequest));
-}
+public:
+	void Remember(const Key &key, unsigned score, uint64_t lastPacedRequest, uint64_t now)
+	{
+		if (lastPacedRequest == 0 || (score == 0 && !IsEarlyRequest(now, lastPacedRequest))) {
+			return; // a new client gets the same score for its next request
+		}
+		SEntry &entry = m_entries[key];
+		entry.score = std::max(entry.score, score);
+		entry.lastPacedRequest = std::max(entry.lastPacedRequest, lastPacedRequest);
+	}
+
+	// Raises score and lastPacedRequest to what was remembered for the key, and forgets it.
+	void Recall(const Key &key, uint64_t now, unsigned &score, uint64_t &lastPacedRequest)
+	{
+		const auto it = m_entries.find(key);
+		if (it == m_entries.end()) {
+			return;
+		}
+		if (!IsExpired(it->second, now)) {
+			score = std::max(score, it->second.score);
+			lastPacedRequest = std::max(lastPacedRequest, it->second.lastPacedRequest);
+		}
+		m_entries.erase(it);
+	}
+
+	void Prune(uint64_t now)
+	{
+		for (auto it = m_entries.begin(); it != m_entries.end();) {
+			it = IsExpired(it->second, now) ? m_entries.erase(it) : std::next(it);
+		}
+	}
+
+	size_t Size() const { return m_entries.size(); }
+
+private:
+	struct SEntry
+	{
+		unsigned score = 0;
+		uint64_t lastPacedRequest = 0;
+	};
+
+	static bool IsExpired(const SEntry &entry, uint64_t now)
+	{
+		return now - entry.lastPacedRequest >= REQUEST_SCORE_MEMORY;
+	}
+
+	std::map<Key, SEntry> m_entries;
+};
 
 #endif // REQUESTPACING_H
 // File_checked_for_headers

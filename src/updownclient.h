@@ -654,8 +654,13 @@ public:
 	uint64 GetLastAskedTime() const { return m_dwLastAskedTime; }
 	void ResetLastAskedTime() { m_dwLastAskedTime = 0; }
 	// Ask over TCP as soon as the source would not count it as aggressive (see RequestPacing.h).
-	// With paced false, asks on the next tick if MayAskEarly allows it.
+	// With paced false, asks on the next tick if the request budget allows it.
 	void AskAgainSoon(bool paced = true);
+	// Whether an OP_STARTUPLOADREQ, OP_REASKFILEPING or OP_AICHREQUEST sent now fits the source's
+	// request budget (see FitsRequestBudget).
+	bool MaySendPacedRequest();
+	unsigned GetRequestScore() const { return m_requestScore; }
+	uint64 GetLastPacedRequest() const { return m_lastPacedRequest; }
 
 	// The source has a part the requested file still misses.
 	bool HasPartWeNeed() const;
@@ -756,8 +761,6 @@ public:
 	CAICHHash *GetReqFileAICHHash() const { return m_pReqFileAICHHash; }
 	bool IsSupportingAICH() const { return m_fSupportsAICH & 0x01; }
 	void SendAICHRequest(CPartFile *pForFile, uint16 nPart);
-	// See RequestPacing.h.
-	bool MayRequestAICH() const;
 	bool IsAICHReqPending() const { return m_fAICHRequested; }
 	void ProcessAICHAnswer(const uint8_t *packet, uint32 size);
 	void ProcessAICHRequest(const uint8_t *packet, uint32 size);
@@ -1076,6 +1079,8 @@ private:
 	void RefreshObfuscationState();
 	// Call for each request m_lastPacedRequest tracks.
 	void RecordPacedRequest();
+	// Takes over the score the client list kept for a deleted client with this user hash.
+	void RecallRequestScore();
 
 	CClientCredits *credits;
 	CFriend *m_Friend;
