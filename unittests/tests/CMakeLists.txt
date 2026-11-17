@@ -69,6 +69,10 @@ endfunction ()
 add_muleunit_test (PCPProtocolTest ${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp)
 add_muleunit_test (PCPGatewayTest ${CMAKE_SOURCE_DIR}/src/PCPGateway.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp)
+add_muleunit_test (PCPClientTest ${CMAKE_SOURCE_DIR}/src/PCPClient.cpp
+	${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp)
+target_link_libraries (PCPClientTest CRYPTOPP::CRYPTOPP ${Boost_LIBRARIES})
+set_tests_properties (PCPClientTest PROPERTIES LABELS "slow")
 
 # Config migration, downgrade compatibility and the shared core sleep policy.
 add_muleunit_test (PowerManagementTest)
