@@ -65,7 +65,42 @@ function (add_muleunit_test name)
 	add_test (NAME ${name} COMMAND ${name})
 endfunction ()
 
-# PCP MAP wire encoding and response validation.
+# Forwarding-capability seam shared by the real CEC_Prefs_Packet constructor (emission)
+# and its CLIENT_GUI apply path (decoding), exercised against the real ec library with
+# actual CECPacket wire round-trips. See ECPcpCapabilityTest.cpp for the seam contract.
+add_executable (ECPcpCapabilityTest ECPcpCapabilityTest.cpp
+	# As for ECIdDiffTest: libec.a references DoECLogLine / theLogger
+	# unconditionally in Debug, so the no-op definitions have to be linked in.
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+target_include_directories (ECPcpCapabilityTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+	${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+target_link_libraries (ECPcpCapabilityTest muleunit ec mulecommon)
+add_test (NAME ECPcpCapabilityTest COMMAND ECPcpCapabilityTest)
+
+# The same seam in a capable core-build shape: IPv6 forced on, UPnP only when the tree
+# does not already provide it (config.h defines would otherwise collide), no CLIENT_GUI.
+# Expectations are derived from the compiled configuration inside the test itself.
+add_executable (ECPcpCapabilityEnabledTest ECPcpCapabilityTest.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+target_compile_definitions (ECPcpCapabilityEnabledTest PRIVATE
+	ENABLE_IPV6
+	$<$<NOT:$<BOOL:${ENABLE_UPNP}>>:ENABLE_UPNP>)
+target_include_directories (ECPcpCapabilityEnabledTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+	${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+	${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+)
+target_link_libraries (ECPcpCapabilityEnabledTest muleunit ec mulecommon)
+add_test (NAME ECPcpCapabilityEnabledTest COMMAND ECPcpCapabilityEnabledTest)
+
+# Forwarding-capability boolean contract and the PCP application target gate.
+add_muleunit_test (ForwardingCapabilityTest)
+add_muleunit_test (PCPApplicationPolicyTest)
 add_muleunit_test (PCPProtocolTest ${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp)
 add_muleunit_test (PCPGatewayTest ${CMAKE_SOURCE_DIR}/src/PCPGateway.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp)

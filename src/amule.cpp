@@ -83,6 +83,8 @@
 #include "IPv6ReachabilityProof.h"  // Needed for clearing inbound proof on address changes
 #include "IPv6ChangeNotification.h" // Needed for ShouldMarkIPv6ChangeNotification
 #include "IPv6PinholePolicy.h"      // Needed for pinhole request and renewal policy
+#include "PCPApplicationPolicy.h"   // Needed for PCP target gating
+#include "PCPManager.h"             // Needed for PCP gateway mapping lifecycle
 #endif
 #include "HashListFile.h"
 #include "ClientCreditsList.h"    // Needed for CClientCreditsList
@@ -293,6 +295,10 @@ CamuleApp::CamuleApp()
 
 CamuleApp::~CamuleApp()
 {
+#ifdef ENABLE_IPV6
+	delete m_pcpManager;
+	m_pcpManager = nullptr;
+#endif
 	// Headless GeoIP resolver (owned by the core; NULL when GeoIP is
 	// disabled/unsupported). Frees the mmap'd MaxMind DB handle.
 	delete m_IP2Country;
@@ -1776,6 +1782,13 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	// After the refresh: the pinhole names the address it chooses.
 	RequestIPv6Pinholes();
 #endif
+#ifdef ENABLE_IPV6
+	// ReinitializeNetwork runs after the daemon fork; the manager owns its worker thread.
+	if (!m_pcpManager) {
+		m_pcpManager = new pcp::PCPManager();
+	}
+	RequestPCPPinhole();
+#endif
 
 	return ok;
 }
@@ -1932,6 +1945,9 @@ bool CamuleApp::RebindP2PSockets(bool tcpPortChanged, bool udpPortChanged, uint1
 			}
 		}
 	}
+#endif
+#ifdef ENABLE_IPV6
+	RequestPCPPinhole();
 #endif
 
 	AddLogLineC(_("P2P listening sockets rebound; established peer connections "
@@ -2463,6 +2479,31 @@ void CamuleApp::RequestIPv6Pinholes()
 #endif
 }
 #endif
+#ifdef ENABLE_IPV6
+void CamuleApp::RequestPCPPinhole()
+{
+	if (!m_pcpManager) {
+		return;
+	}
+	const auto local = SelectedLocalIPv6();
+	std::optional<boost::asio::ip::address_v6> address;
+	if (local) {
+		boost::system::error_code error;
+		const auto parsed = boost::asio::ip::make_address_v6(local->ToString(), error);
+		if (!error) {
+			address = parsed;
+		}
+	}
+	const bool listening = listensocket && listensocket->BoundHost() == "[::]";
+	const auto target =
+		pcp::ApplicationTarget(thePrefs::GetUPnPEnabled(), listening, address, thePrefs::GetPort());
+	if (target) {
+		m_pcpManager->SetTarget(*target, thePrefs::GetPort());
+	} else {
+		m_pcpManager->ClearTarget();
+	}
+}
+#endif
 
 void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 {
@@ -2479,6 +2520,9 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 		msPrevPinhole = msCur;
 #ifdef ENABLE_UPNP
 		RequestIPv6Pinholes();
+#endif
+#ifdef ENABLE_IPV6
+		RequestPCPPinhole();
 #endif
 	}
 
@@ -3245,6 +3289,13 @@ void CamuleApp::ShutDown()
 
 	ReportShutdownStatus(_("Stopping network services..."));
 
+#ifdef ENABLE_IPV6
+	if (m_pcpManager) {
+		m_pcpManager->Stop();
+		delete m_pcpManager;
+		m_pcpManager = nullptr;
+	}
+#endif
 	// Stop ASIO thread
 	m_AsioService->Stop();
 

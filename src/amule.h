@@ -94,6 +94,12 @@ class CIPFilter;
 class UploadBandwidthThrottler;
 class CUploadDiskIOThread;
 class CAsioService;
+#ifdef ENABLE_IPV6
+namespace pcp
+{
+class PCPManager;
+}
+#endif
 #ifdef ENABLE_UPNP
 class CUPnPControlPoint;
 class CUPnPPortMapping;
@@ -480,6 +486,10 @@ public:
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
 	CUploadDiskIOThread *uploadDiskIOThread; // eMule ref: emule.h:92
 	CAsioService *m_AsioService;
+#ifdef ENABLE_IPV6
+	pcp::PCPManager *m_pcpManager = nullptr;
+	void RequestPCPPinhole();
+#endif
 #ifdef ENABLE_UPNP
 	CUPnPControlPoint *m_upnp;
 #ifdef ENABLE_IPV6

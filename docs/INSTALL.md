@@ -164,6 +164,8 @@ Common `-D` options (`YES` / `NO` unless noted otherwise):
 | `USE_SYSTEM_PICOJSON`    | OFF     | use a system-installed `picojson.h` instead of the bundled copy           |
 | `DOWNLOAD_AND_BUILD_DEPS` | OFF    | download and build missing dependencies. Needs Git and CMake 3.14       |
 
+With `ENABLE_IPV6`, the existing UPnP forwarding preference also permits PCP to request an IPv6 TCP firewall pinhole. PCP does not require `ENABLE_UPNP` or an IGD2 gateway. A mapping alone does not prove inbound reachability.
+
 Sharing and using file repair hashes (AICH) over Kad is enabled by default
 whenever `KadProtocol10` has not been saved in `amule.conf`, including
 configurations upgraded from aMule 3.1.0. An explicitly saved choice is

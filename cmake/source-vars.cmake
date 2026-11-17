@@ -72,6 +72,9 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		ThreadTasks.cpp
 	)
 
+	if (ENABLE_IPV6)
+		list (APPEND CORE_SOURCES PCPManager.cpp PCPClient.cpp PCPProtocol.cpp PCPGateway.cpp)
+	endif()
 	if (ENABLE_UTP)
 		list (APPEND CORE_SOURCES UtpLibraryAdapter.cpp UtpStreamAcceptor.cpp)
 	endif()
