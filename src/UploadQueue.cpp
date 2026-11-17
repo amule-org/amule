@@ -184,8 +184,8 @@ void CUploadQueue::SortGetBestClient(CClientRef *bestClient)
 		CClientRefList::iterator it2 = it++;
 		CUpDownClient *cur_client = it2->GetClient();
 		cur_client->SetUploadQueueWaitingPosition(rank++);
-		if (bestClientFound) {
-			// There's a better high id client
+		if (bestClientFound || cur_client->IsBanned()) {
+			// There's a better high id client, or this one may not upload
 			cur_client->m_bAddNextConnect = false;
 		} else {
 			const bool waitsForConnect = cur_client->HasLowID() && !cur_client->IsConnected() &&
@@ -903,9 +903,7 @@ void CUploadQueue::RemoveFromWaitingQueue(CClientRefList::iterator pos)
 	CUpDownClient *todelete = pos->GetClient();
 	m_waitinglist.erase(pos);
 	theStats::RemoveWaitingClient();
-	if (todelete->IsBanned()) {
-		todelete->UnBan();
-	}
+	// A ban stays on the address for its full time; leaving the queue does not lift it.
 	todelete->SetUploadState(US_NONE);
 	todelete->ClearScore();
 	todelete->SetUploadQueueWaitingPosition(0);

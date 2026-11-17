@@ -3237,6 +3237,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					${CMAKE_CURRENT_SOURCE_DIR}/UploadSlotLogStateIntegrationTest.py $<TARGET_FILE:amuled>
 			)
 			set_tests_properties (UploadSlotLogStateIntegrationTest PROPERTIES LABELS "integration")
+			add_test (NAME ClientBanLifetimeIntegrationTest
+				COMMAND ${Python3_EXECUTABLE} -u
+					${CMAKE_CURRENT_SOURCE_DIR}/ClientBanLifetimeIntegrationTest.py $<TARGET_FILE:amuled>
+			)
+			set_tests_properties (ClientBanLifetimeIntegrationTest PROPERTIES LABELS "integration")
 			# Two loopback peer addresses (127.0.0.2, 127.0.0.3) need Linux.
 			add_test (NAME UploadSlotScopeIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
@@ -4100,6 +4105,7 @@ foreach (ec_wire_test IN ITEMS
 	CategoryTagECTest
 	ChatCaptchaIntegrationTest
 	ChatSpamFilterIntegrationTest
+	ClientBanLifetimeIntegrationTest
 	CompletedFileDeleteCapabilityTest
 	CompletedFileDeleteIntegrationTest
 	DebugSettingsIntegrationTest
