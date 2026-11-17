@@ -74,6 +74,12 @@ add_muleunit_test (PCPClientTest ${CMAKE_SOURCE_DIR}/src/PCPClient.cpp
 target_link_libraries (PCPClientTest CRYPTOPP::CRYPTOPP ${Boost_LIBRARIES})
 set_tests_properties (PCPClientTest PROPERTIES LABELS "slow")
 
+# Asynchronous PCP target reconciliation through injected discovery and client seams.
+add_muleunit_test (PCPManagerTest ${CMAKE_SOURCE_DIR}/src/PCPManager.cpp
+	${CMAKE_SOURCE_DIR}/src/PCPClient.cpp ${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp
+	${CMAKE_SOURCE_DIR}/src/PCPGateway.cpp ${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp)
+target_link_libraries (PCPManagerTest CRYPTOPP::CRYPTOPP ${Boost_LIBRARIES})
+
 # Config migration, downgrade compatibility and the shared core sleep policy.
 add_muleunit_test (PowerManagementTest)
 
