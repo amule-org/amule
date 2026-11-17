@@ -65,6 +65,9 @@ function (add_muleunit_test name)
 	add_test (NAME ${name} COMMAND ${name})
 endfunction ()
 
+# PCP MAP wire encoding and response validation.
+add_muleunit_test (PCPProtocolTest ${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp)
+
 # Config migration, downgrade compatibility and the shared core sleep policy.
 add_muleunit_test (PowerManagementTest)
 
