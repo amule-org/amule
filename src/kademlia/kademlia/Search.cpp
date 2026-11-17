@@ -346,6 +346,32 @@ std::vector<CUInt128> CSearch::AddPublishSeeds()
 	return distances;
 }
 
+bool CSearch::StoreBudgetAllows(CPerIPBudget &budget, const CContact &node, uint64_t packets)
+{
+	if (budget.Allows(node.GetIPAddress(), ::GetTickCount64(), packets)) {
+		return true;
+	}
+	++budget.skipped;
+	AddDebugLogLineN(logKadPublish,
+		CFormat("Kad publish skips %s for target=%s: no stores left for it this minute") %
+			KadIPToString(node.GetIPAddress()) % m_target.ToHexString());
+	return false;
+}
+
+bool CSearch::PublishSeedsBusy(const CUInt128 &target)
+{
+	const auto entry = PublishSeeds().find(target);
+	if (entry == PublishSeeds().end() ||
+		!KadPublishSeeds::IsCurrent(entry->second, static_cast<uint32_t>(time(nullptr)))) {
+		return false;
+	}
+	CPerIPBudget &budget = CKadSendBudgets::Instance().sourceStores;
+	const uint64_t now = ::GetTickCount64();
+	return std::any_of(entry->second.seeds.begin(),
+		entry->second.seeds.end(),
+		[&](const KadPublishSeeds::Seed &seed) { return !budget.Allows(seed.ip, now); });
+}
+
 // If we allow about a 15 sec delay before deleting, we won't miss a lot of delayed returning packets.
 void CSearch::PrepareToStop() noexcept
 {
@@ -970,6 +996,9 @@ void CSearch::StorePacket()
 			PrepareToStop();
 			break;
 		}
+		if (!StoreBudgetAllows(CKadSendBudgets::Instance().sourceStores, *from, 1)) {
+			break;
+		}
 
 		uint8_t fileid[16];
 		m_target.ToByteArray(fileid);
@@ -1096,6 +1125,10 @@ void CSearch::StorePacket()
 			break;
 		} else if (count > 150) {
 			count = 150;
+		}
+		// A node gets one packet per 50 files.
+		if (!StoreBudgetAllows(CKadSendBudgets::Instance().keywordStores, *from, (count + 49) / 50)) {
+			break;
 		}
 
 		UIntList::const_iterator itListFileID = m_fileIDs.begin();
@@ -1701,6 +1734,19 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 {
 	try {
 		if (m_stopping) {
+			return;
+		}
+		CPerIPBudget &budget = CKadSendBudgets::Instance().lookups;
+		if (!budget.Allows(contact->GetIPAddress(), ::GetTickCount64())) {
+			++budget.skipped;
+			// Else JumpStart's dead-nodes fallback picks this contact again every second, and
+			// the lookup sends nothing else.
+			if (reaskMore) {
+				m_requestedMoreNodes.insert(contact->GetClientID());
+			}
+			AddDebugLogLineN(logKadSearch,
+				"Kad lookup skips " + KadIPToString(contact->GetIPAddress()) +
+					": no requests left for it this minute");
 			return;
 		}
 

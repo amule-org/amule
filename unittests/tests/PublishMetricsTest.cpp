@@ -116,3 +116,18 @@ TEST(PublishMetrics, PerIPThresholdsSinceLastReport)
 	ASSERT_EQUALS(size_t(1), metrics.reportedPublishIPs[1].count(3));
 	ASSERT_EQUALS(uint64_t(3), metrics.publishRequests.peak);
 }
+
+TEST(PublishMetrics, PerIPBudget)
+{
+	CPerIPBudget budget(2);
+	ASSERT_TRUE(budget.Allows(1, 0));
+	ASSERT_TRUE(budget.Allows(1, 0, 2));
+	ASSERT_FALSE(budget.Allows(1, 0, 3));
+	budget.Sent(1, 0);
+	budget.Sent(1, 30000);
+	ASSERT_FALSE(budget.Allows(1, 59999));
+	ASSERT_TRUE(budget.Allows(2, 59999)); // Each IP has its own budget.
+	ASSERT_TRUE(budget.Allows(1, 60000)); // The first send left the window.
+	ASSERT_FALSE(budget.Allows(1, 60000, 2));
+	ASSERT_TRUE(budget.Allows(1, 90000, 2));
+}

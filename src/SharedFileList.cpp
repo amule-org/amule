@@ -65,7 +65,7 @@
 #include "kademlia/routing/RoutingZone.h"
 #include "ClientList.h"
 #include "updownclient.h"                        // Needed for CUpDownClient (buddy route)
-#include "KadCallbackPolicy.h"                   // Needed for DirectCallbackAvailable
+#include "KadCallbackPolicy.h"                   // Needed for the Kad source publish policy
 #include "kademlia/kademlia/UDPFirewallTester.h" // Needed for CUDPFirewallTester
 #include "KadKeywordPublishTimes.h"              // Needed for KadKeywordPublishTimes::Times
 #ifdef ENABLE_IPV6
@@ -1974,12 +1974,58 @@ void CSharedFileList::SaveKeywordPublishTimes()
 	m_keywords->SavePublishTimes(KeywordPublishTimesPath());
 }
 
+namespace
+{
+// A due file whose last storing nodes can't take another publish this minute waits, at most this
+// long, while files due after it go first.
+constexpr unsigned int MaxKadSourceDeferral = MIN2S(5);
+
+bool KadSourcePublishWaits(const CKnownFile &file, uint32 now, uint32 waitingSince)
+{
+	return Kademlia::KadSourcePublishWaits(
+		file.GetLastPublishTimeKadSrc(), now, waitingSince, MaxKadSourceDeferral, [&file] {
+			Kademlia::CUInt128 target;
+			target.SetValueBE(file.GetFileHash().GetHash());
+			return Kademlia::CSearch::PublishSeedsBusy(target);
+		});
+}
+} // namespace
+
+CKnownFile *CSharedFileList::NextKadSourcePublish(uint32 now)
+{
+	struct SFiles
+	{
+		CSharedFileList &list;
+		CKnownFile *Find(const CMD4Hash &hash) { return list.GetFileByID(hash); }
+		CKnownFile *Next() { return list.GetNextKadFile(list.m_srcPublishCursor); }
+		static const CMD4Hash &Key(const CKnownFile &file) { return file.GetFileHash(); }
+		static bool Waits(const CKnownFile &file, uint32 now, uint32 waitingSince)
+		{
+			return KadSourcePublishWaits(file, now, waitingSince);
+		}
+		static void Waited(const CKnownFile &file)
+		{
+			++Kademlia::CKadSendBudgets::Instance().deferredStarts;
+			Kademlia::CUInt128 target;
+			target.SetValueBE(file.GetFileHash().GetHash());
+			AddDebugLogLineN(
+				logKadPublish, "Kad source publish deferred: target=" + target.ToHexString());
+		}
+		static bool Publish(CKnownFile &file) { return file.PublishSrc(); }
+	} files{ *this };
+	// Pass over files published in the last 5 h in this tick, rather than one per
+	// KADEMLIAPUBLISHTIME. The bound caps the work when few files are due.
+	return Kademlia::NextKadSourcePublish(
+		m_kadSourceWaits, now, std::min<size_t>(100, GetCount()), files);
+}
+
 void CSharedFileList::Publish()
 {
 	auto &metrics = Kademlia::CPublishMetrics::Instance();
 	if (theLogger.IsEnabled(logKadPublish) && metrics.ReportDue(::GetTickCount64())) {
 		const auto &lookupIPs = metrics.reportedLookupIPs;
 		const auto &publishIPs = metrics.reportedPublishIPs;
+		const auto &budgets = Kademlia::CKadSendBudgets::Instance();
 		// Busy destinations that are our own contacts point at the first hops of our lookups.
 		uint64_t busyContacts = 0;
 		if (Kademlia::CKademlia::IsRunning()) {
@@ -1997,7 +2043,8 @@ void CSharedFileList::Publish()
 				"max_duration_ms=%llu max_req_per_ip_60s=%llu req_ips_ge6=%zu "
 				"req_ips_ge8=%zu "
 				"req_ips_gt10=%zu req_ips_ge8_contacts=%llu max_pub_per_ip_60s=%llu "
-				"pub_ips_ge2=%zu pub_ips_gt2=%zu omitted_rate_samples=%llu") %
+				"pub_ips_ge2=%zu pub_ips_gt2=%zu omitted_rate_samples=%llu "
+				"skipped_req=%llu skipped_src=%llu skipped_key=%llu deferred_starts=%llu") %
 				metrics.attempts % metrics.startFailures % metrics.starts %
 				metrics.seededStarts % metrics.queued % metrics.acknowledged %
 				metrics.finished % metrics.zeroAcknowledgements % metrics.cancelled %
@@ -2005,7 +2052,9 @@ void CSharedFileList::Publish()
 				lookupIPs[0].size() % lookupIPs[1].size() % lookupIPs[2].size() %
 				busyContacts % metrics.publishRequests.peak % publishIPs[0].size() %
 				publishIPs[1].size() %
-				(metrics.lookupRequests.omitted + metrics.publishRequests.omitted));
+				(metrics.lookupRequests.omitted + metrics.publishRequests.omitted) %
+				budgets.lookups.skipped % budgets.sourceStores.skipped %
+				budgets.keywordStores.skipped % budgets.deferredStarts);
 	}
 
 	// Variables to save cpu.
@@ -2104,19 +2153,7 @@ void CSharedFileList::Publish()
 
 		if (Kademlia::CKademlia::GetTotalStoreSrc() < KADEMLIATOTALSTORESRC) {
 			if (tNow >= m_lastPublishKadSrc) {
-				// Pass over files published in the last 5 h in this tick, rather than one
-				// per KADEMLIAPUBLISHTIME. The bound caps the work when few files are due.
-				const size_t maxChecks = std::min<size_t>(100, GetCount());
-				CKnownFile *pCurKnownFile = nullptr;
-				for (size_t i = 0; i < maxChecks && !pCurKnownFile; ++i) {
-					CKnownFile *file = GetNextKadFile(m_srcPublishCursor);
-					if (!file) {
-						break;
-					}
-					if (file->PublishSrc()) {
-						pCurKnownFile = file;
-					}
-				}
+				CKnownFile *pCurKnownFile = NextKadSourcePublish(tNow);
 				if (pCurKnownFile) {
 					Kademlia::CUInt128 kadFileID;
 					kadFileID.SetValueBE(pCurKnownFile->GetFileHash().GetHash());

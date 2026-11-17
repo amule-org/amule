@@ -1985,10 +1985,37 @@ bool CKademliaUDPListener::SendPacket(const CMemFile &data,
 		cryptKey,
 		true,
 		targetKey.GetKeyValue(theApp->GetPublicIP(false)));
-	if (queued && opcode == KADEMLIA2_REQ && theLogger.IsEnabled(logKadPublish)) {
-		CPublishMetrics::Instance().LookupQueued(destinationHost, ::GetTickCount64());
+	if (queued) {
+		const uint64_t now = ::GetTickCount64();
+		CKadSendBudgets &budgets = CKadSendBudgets::Instance();
+		switch (opcode) {
+		case KADEMLIA2_REQ:
+			budgets.lookups.Sent(destinationHost, now);
+			if (theLogger.IsEnabled(logKadPublish)) {
+				CPublishMetrics::Instance().LookupQueued(destinationHost, now);
+			}
+			break;
+		case KADEMLIA2_PUBLISH_KEY_REQ:
+			budgets.keywordStores.Sent(destinationHost, now);
+			break;
+		case KADEMLIA2_PUBLISH_SOURCE_REQ:
+			budgets.sourceStores.Sent(destinationHost, now);
+			break;
+		default:
+			break;
+		}
 	}
 	return queued;
+}
+
+CKadSendBudgets &CKadSendBudgets::Instance()
+{
+	// eMule 0.70b looks up the wrong per-opcode entry (== for !=), so all our request kinds can
+	// share one 60 s bucket, often a HELLO_REQ's. After a HELLO_REQ it drops the 7th in a burst.
+	static CKadSendBudgets budgets{ CPerIPBudget(7),
+		CPerIPBudget(CPacketTracking::InTrackListAllowedPerMinute(KADEMLIA2_PUBLISH_KEY_REQ)),
+		CPerIPBudget(CPacketTracking::InTrackListAllowedPerMinute(KADEMLIA2_PUBLISH_SOURCE_REQ)) };
+	return budgets;
 }
 
 #if 0
