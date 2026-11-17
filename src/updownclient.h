@@ -654,7 +654,7 @@ public:
 	uint64 GetLastAskedTime() const { return m_dwLastAskedTime; }
 	void ResetLastAskedTime() { m_dwLastAskedTime = 0; }
 	// Ask over TCP as soon as the source would not count it as aggressive (see RequestPacing.h).
-	// Unpaced asks on the next tick, unless this source already had an early ask recently.
+	// With paced false, asks on the next tick if MayAskEarly allows it.
 	void AskAgainSoon(bool paced = true);
 
 	// The source has a part the requested file still misses.
@@ -1072,6 +1072,8 @@ private:
 	// Sends OP_MESSAGE on the open connection, without SendChatMessage()'s chat bookkeeping.
 	void SendChatPacket(const wxString &message);
 	void RefreshObfuscationState();
+	// Call for each request m_lastPacedRequest tracks.
+	void RecordPacedRequest();
 
 	CClientCredits *credits;
 	CFriend *m_Friend;
@@ -1240,7 +1242,7 @@ private:
 	bool m_skipQuicDial = false;
 #endif
 	uint64 m_lastPacedRequest; // last OP_STARTUPLOADREQ, OP_REASKFILEPING or OP_AICHREQUEST sent
-	uint64 m_lastEarlyAsk;     // last ask let through before its paced time
+	unsigned m_requestScore;   // what those requests score in the source's CheckForAggressive()
 	wxString m_clientFilename;
 	uint64 m_nTransferredDown;
 	uint16 m_lastDownloadingPart; // last Part that was downloading

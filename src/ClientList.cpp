@@ -1854,9 +1854,11 @@ void CClientList::CleanUpClientList()
 			if (pCurClient->GetSourceFrom() == SF_SOURCE_SEEDS &&
 				cur_tick - theStats::GetStartTime() < MIN2MS(10))
 				continue;
+			// A source keeps its request file while it waits in DS_NONE for its next ask.
 			if ((pCurClient->GetUploadState() == US_NONE ||
 				    (pCurClient->GetUploadState() == US_BANNED && !pCurClient->IsBanned())) &&
 				pCurClient->GetDownloadState() == DS_NONE &&
+				pCurClient->GetRequestFile() == nullptr &&
 				pCurClient->GetChatState() == MS_NONE &&
 				pCurClient->GetKadState() == KS_NONE && pCurClient->GetSocket() == NULL) {
 				DEBUG_ONLY(cDeleted++;)

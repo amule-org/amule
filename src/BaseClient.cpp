@@ -232,7 +232,7 @@ void CUpDownClient::Init()
 	m_nPartCount = 0;
 	m_dwLastAskedTime = 0;
 	m_lastPacedRequest = 0;
-	m_lastEarlyAsk = 0;
+	m_requestScore = 0;
 	m_nDownloadState = DS_NONE;
 	m_dwUploadTime = 0;
 	m_nTransferredDown = 0;
@@ -1670,7 +1670,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	if (m_nDownloadState == DS_ONQUEUE) {
 		source_type = A4AF_SOURCE; // Will be checked.
 	}
-	if (SourceRetryPolicy::KeepOnDisconnect(m_nDownloadState, m_reqfile != NULL)) {
+	if (SourceRetryPolicy::KeepOnDisconnect(m_nDownloadState, m_reqfile != nullptr)) {
 		bDelete = false;
 	}
 

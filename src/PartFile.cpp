@@ -1465,8 +1465,8 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 		SetStatus(m_completionAwaitsHashset ? PS_EMPTY : PS_READY);
 		SavePartFile();
 		// Sources asked during the rehash found nothing to download; the gaps are open now.
-		// A corrupt part is asked for at once (see MayAskEarly). A wait for the hashset can
-		// re-ask after each unanswered request, so it stays paced.
+		// After a corrupt part, sources are asked at once where MayAskEarly allows it. A wait
+		// for the hashset can re-ask after each unanswered request, so it stays paced.
 		AskQueuedSourcesAgain(m_completionAwaitsHashset);
 		// A part can pass its per-part hash during download yet fail this final full-file
 		// re-hash -- a block rewritten after the part completed, as happens when endgame

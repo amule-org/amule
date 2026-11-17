@@ -75,10 +75,33 @@ TEST(RequestPacing, EarlyUptimeDoesNotWrap)
 	ASSERT_EQUALS(1u, PacedLastAskedTime(1000, 500, 10 * MIN_REQUESTTIME));
 }
 
-TEST(RequestPacing, OneEarlyAskPerMinRequestTime)
+TEST(RequestPacing, AggressiveScoreFollowsCheckForAggressive)
 {
-	ASSERT_TRUE(MayAskEarly(kNow, 0));
-	ASSERT_FALSE(MayAskEarly(kNow, kNow - 1));
-	ASSERT_FALSE(MayAskEarly(kNow, kNow - MIN_REQUESTTIME + 1));
-	ASSERT_TRUE(MayAskEarly(kNow, kNow - MIN_REQUESTTIME));
+	ASSERT_EQUALS(0u, AggressiveScoreAfter(0, kNow, 0)); // no earlier request
+	ASSERT_EQUALS(3u, AggressiveScoreAfter(0, kNow, kNow - 1));
+	ASSERT_EQUALS(6u, AggressiveScoreAfter(3, kNow, kNow - MIN_REQUESTTIME + 1));
+	ASSERT_EQUALS(2u, AggressiveScoreAfter(3, kNow, kNow - MIN_REQUESTTIME));
+	ASSERT_EQUALS(0u, AggressiveScoreAfter(0, kNow, kNow - MIN_REQUESTTIME));
+}
+
+TEST(RequestPacing, RepeatedEarlyAsksStayBelowTheBan)
+{
+	// An early ask after every polite request that MayAskEarly allows, as repeated rehash
+	// failures cause. One early ask per MIN_REQUESTTIME reached aMule's ban at the fifth.
+	unsigned score = 0;
+	unsigned earlyAsks = 0;
+	uint64_t last = kNow;
+	for (int polite = 0; polite < 99; ++polite) {
+		const uint64_t now = last + MIN_REQUESTTIME;
+		score = AggressiveScoreAfter(score, now, last);
+		last = now;
+		if (MayAskEarly(score)) {
+			score = AggressiveScoreAfter(score, last + 1000, last);
+			last += 1000;
+			++earlyAsks;
+		}
+		ASSERT_TRUE(score <= 3);
+	}
+	// Three polite requests clear each early ask.
+	ASSERT_EQUALS(33u, earlyAsks);
 }

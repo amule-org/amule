@@ -39,11 +39,22 @@ inline uint64_t PacedLastAskedTime(uint64_t now, uint64_t lastPacedRequest, uint
 	return askAt > reaskTime ? askAt - reaskTime : 1;
 }
 
-// eMule and aMule ban after four early requests in a row and forgive one per polite request.
-// One early request per MIN_REQUESTTIME keeps that count at one at most.
-inline bool MayAskEarly(uint64_t now, uint64_t lastEarlyAsk)
+// The source's CheckForAggressive() score after one more request: 3 more if it comes less than
+// MIN_REQUESTTIME after the previous one, else 1 less. eMule's AddRequestCount() adds and takes
+// 1, so its count never exceeds this score.
+inline unsigned AggressiveScoreAfter(unsigned score, uint64_t now, uint64_t lastPacedRequest)
 {
-	return lastEarlyAsk == 0 || now - lastEarlyAsk >= MIN_REQUESTTIME;
+	if (lastPacedRequest != 0 && now - lastPacedRequest < MIN_REQUESTTIME) {
+		return score + 3;
+	}
+	return score > 0 ? score - 1 : 0;
+}
+
+// An early ask adds 3. Asking early only at 0 keeps our early asks from lifting aMule's score
+// above 3 (ban at 10) or eMule's count above 1 (ban at 4).
+inline bool MayAskEarly(unsigned score)
+{
+	return score == 0;
 }
 
 #endif // REQUESTPACING_H

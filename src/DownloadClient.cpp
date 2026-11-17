@@ -166,18 +166,24 @@ void CUpDownClient::SendStartupLoadReq()
 	theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_STARTUPLOADREQ to " + GetFullIP());
 	SendPacket(packet, true, true);
-	m_lastPacedRequest = ::GetTickCount64();
+	RecordPacedRequest();
 }
 
 void CUpDownClient::AskAgainSoon(bool paced)
 {
 	SetDownloadState(DS_NONE);
-	const uint64 now = ::GetTickCount64();
-	m_dwLastAskedTime = PacedLastAskedTime(now, m_lastPacedRequest, thePrefs::GetSourceReaskTime());
-	if (!paced && m_dwLastAskedTime != 0 && MayAskEarly(now, m_lastEarlyAsk)) {
+	m_dwLastAskedTime =
+		PacedLastAskedTime(::GetTickCount64(), m_lastPacedRequest, thePrefs::GetSourceReaskTime());
+	if (!paced && MayAskEarly(m_requestScore)) {
 		m_dwLastAskedTime = 0;
-		m_lastEarlyAsk = now;
 	}
+}
+
+void CUpDownClient::RecordPacedRequest()
+{
+	const uint64 now = ::GetTickCount64();
+	m_requestScore = AggressiveScoreAfter(m_requestScore, now, m_lastPacedRequest);
+	m_lastPacedRequest = now;
 }
 
 bool CUpDownClient::HasPartWeNeed() const
@@ -1382,7 +1388,7 @@ void CUpDownClient::UDPReaskForDownload()
 
 		CPacket *response = new CPacket(data, OP_EMULEPROT, OP_REASKFILEPING);
 		AddDebugLogLineN(logClientUDP, "Client UDP socket: send OP_REASKFILEPING");
-		m_lastPacedRequest = ::GetTickCount64();
+		RecordPacedRequest();
 		theStats::AddUpOverheadFileRequest(response->GetPacketSize());
 		theApp->clientudp->SendPacket(response,
 			GetConnectIP(),
@@ -1688,7 +1694,7 @@ void CUpDownClient::SendAICHRequest(CPartFile *pForFile, uint16 nPart)
 	pForFile->GetAICHHashset()->GetMasterHash().Write(&data);
 	CPacket *packet = new CPacket(data, OP_EMULEPROT, OP_AICHREQUEST);
 	theStats::AddUpOverheadOther(packet->GetPacketSize());
-	m_lastPacedRequest = ::GetTickCount64();
+	RecordPacedRequest();
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_AICHREQUEST to" + GetFullIP());
 	SafeSendPacket(packet);
 }
