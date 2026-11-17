@@ -1480,7 +1480,7 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 		// Sources asked during the rehash found nothing to download; the gaps are open now.
 		// After a corrupt part, sources are asked at once where MayAskEarly allows it. A wait
 		// for the hashset can re-ask after each unanswered request, so it stays paced. Asked
-		// after the AICH requests, so the pacing counts them.
+		// after the AICH requests, so a source that got one waits.
 		AskQueuedSourcesAgain(m_completionAwaitsHashset);
 		return;
 	}
@@ -2860,7 +2860,8 @@ void CPartFile::AskQueuedSourcesAgain(bool paced)
 		CUpDownClient *cur_src = ref.GetClient();
 		const uint8 state = cur_src->GetDownloadState();
 		if (state == DS_ONQUEUE || state == DS_NONEEDEDPARTS) {
-			cur_src->AskAgainSoon(paced);
+			// An ask right after an OP_AICHREQUEST would be early, so that source waits.
+			cur_src->AskAgainSoon(paced || cur_src->IsAICHReqPending());
 		}
 	}
 }
