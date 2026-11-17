@@ -103,6 +103,8 @@
 
 // How long a source may hold a hashset request before another source is asked.
 static const uint64 HASHSET_REQUEST_TIMEOUT = 60000; // ms
+// How often a corrupt part retries an AICH request that waits for its sources.
+static const uint64 AICH_REQUEST_RETRY = 60000; // ms
 
 SFileRating::SFileRating(const wxString &u, const wxString &f, sint16 r, const wxString &c)
 : UserName(u)
@@ -1464,10 +1466,6 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 	} else {
 		SetStatus(m_completionAwaitsHashset ? PS_EMPTY : PS_READY);
 		SavePartFile();
-		// Sources asked during the rehash found nothing to download; the gaps are open now.
-		// After a corrupt part, sources are asked at once where MayAskEarly allows it. A wait
-		// for the hashset can re-ask after each unanswered request, so it stays paced.
-		AskQueuedSourcesAgain(m_completionAwaitsHashset);
 		// A part can pass its per-part hash during download yet fail this final full-file
 		// re-hash -- a block rewritten after the part completed, as happens when endgame
 		// source rotation splices a block across two sources. AddGap() above re-opens the
@@ -1479,6 +1477,11 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 			++it) {
 			RequestAICHRecovery(*it);
 		}
+		// Sources asked during the rehash found nothing to download; the gaps are open now.
+		// After a corrupt part, sources are asked at once where MayAskEarly allows it. A wait
+		// for the hashset can re-ask after each unanswered request, so it stays paced. Asked
+		// after the AICH requests, so the pacing counts them.
+		AskQueuedSourcesAgain(m_completionAwaitsHashset);
 		return;
 	}
 	SetStatus(PS_READY);
@@ -1637,6 +1640,16 @@ uint32 CPartFile::Process(uint8 m_icounter)
 			m_hashsetneeded = true;
 			if (m_completionAwaitsHashset) {
 				AskQueuedSourcesAgain();
+			}
+		}
+	}
+
+	if (!m_aichWaitingParts.empty() && dwCurTick >= m_aichRetryAt) {
+		std::set<uint16> parts;
+		parts.swap(m_aichWaitingParts);
+		for (const uint16 part : parts) {
+			if (!IsComplete(part)) {
+				RequestAICHRecovery(part);
 			}
 		}
 	}
@@ -4403,60 +4416,46 @@ void CPartFile::RequestAICHRecovery(uint16 nPart)
 	}
 
 	wxASSERT(nPart < GetPartCount());
-	// find some random client which support AICH to ask for the blocks
-	// first lets see how many we have at all, we prefer high id very much
-	uint32 cAICHClients = 0;
-	uint32 cAICHLowIDClients = 0;
-	for (SourceSet::iterator it = m_SrcList.begin(); it != m_SrcList.end(); ++it) {
-		CUpDownClient *pCurClient = it->GetClient();
-		if (pCurClient->IsSupportingAICH() && pCurClient->GetReqFileAICHHash() != NULL &&
-			!pCurClient->IsAICHReqPending() &&
-			(*pCurClient->GetReqFileAICHHash()) == m_pAICHHashSet->GetMasterHash()) {
-			if (pCurClient->HasLowID()) {
-				++cAICHLowIDClients;
-			} else {
-				++cAICHClients;
-			}
+	// Ask a random source that has our AICH master hash, a HighID one if possible. If none may
+	// be asked yet (see MayRequestAICH), the part waits for Process() to retry it.
+	std::vector<CUpDownClient *> highID;
+	std::vector<CUpDownClient *> lowID;
+	bool sourceWaits = false;
+	for (const CClientRef &ref : m_SrcList) {
+		CUpDownClient *pCurClient = ref.GetClient();
+		if (!pCurClient->IsSupportingAICH() || pCurClient->GetReqFileAICHHash() == nullptr ||
+			pCurClient->IsAICHReqPending() ||
+			*pCurClient->GetReqFileAICHHash() != m_pAICHHashSet->GetMasterHash()) {
+			continue;
+		}
+		if (!pCurClient->MayRequestAICH()) {
+			sourceWaits = true;
+		} else {
+			(pCurClient->HasLowID() ? lowID : highID).push_back(pCurClient);
 		}
 	}
-	if ((cAICHClients | cAICHLowIDClients) == 0) {
-		AddDebugLogLineN(logAICHRecovery,
-			"Unable to request AICH Recoverydata because found no client who supports it and has "
-			"the same hash as the trusted one");
-		return;
-	}
-	uint32 nSeclectedClient;
-	if (cAICHClients > 0) {
-		nSeclectedClient = (rand() % cAICHClients) + 1;
-	} else {
-		nSeclectedClient = (rand() % cAICHLowIDClients) + 1;
-	}
-	CUpDownClient *pClient = NULL;
-	for (SourceSet::iterator it = m_SrcList.begin(); it != m_SrcList.end(); ++it) {
-		CUpDownClient *pCurClient = it->GetClient();
-		if (pCurClient->IsSupportingAICH() && pCurClient->GetReqFileAICHHash() != NULL &&
-			!pCurClient->IsAICHReqPending() &&
-			(*pCurClient->GetReqFileAICHHash()) == m_pAICHHashSet->GetMasterHash()) {
-			if (cAICHClients > 0) {
-				if (!pCurClient->HasLowID())
-					nSeclectedClient--;
-			} else {
-				wxASSERT(pCurClient->HasLowID());
-				nSeclectedClient--;
+	const std::vector<CUpDownClient *> &candidates = highID.empty() ? lowID : highID;
+	if (candidates.empty()) {
+		if (sourceWaits) {
+			if (m_aichWaitingParts.empty()) {
+				m_aichRetryAt = ::GetTickCount64() + AICH_REQUEST_RETRY;
 			}
-			if (nSeclectedClient == 0) {
-				pClient = pCurClient;
-				break;
-			}
+			m_aichWaitingParts.insert(nPart);
+			AddDebugLogLineN(logAICHRecovery,
+				CFormat("AICH request for part %u waits: no source may be asked yet") %
+					nPart);
+		} else {
+			AddDebugLogLineN(logAICHRecovery,
+				"Unable to request AICH Recoverydata because found no client who supports it "
+				"and has the same hash as the trusted one");
 		}
-	}
-	if (pClient == NULL) {
-		wxFAIL;
 		return;
 	}
+	CUpDownClient *pClient = candidates[static_cast<size_t>(rand()) % candidates.size()];
+	m_aichWaitingParts.erase(nPart);
 
 	AddDebugLogLineN(logAICHRecovery,
-		CFormat("Requesting AICH Hash (%s) form client %s") % (cAICHClients ? "HighId" : "LowID") %
+		CFormat("Requesting AICH Hash (%s) from client %s") % (highID.empty() ? "LowID" : "HighId") %
 			pClient->GetClientFullInfo());
 	pClient->SendAICHRequest(this, nPart);
 }

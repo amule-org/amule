@@ -57,5 +57,12 @@ inline bool MayAskEarly(unsigned score)
 	return score == 0;
 }
 
+// An OP_AICHREQUEST comes between two asks, so the next ask can be early. Send one only where
+// MayAskEarly would still allow that ask.
+inline bool MayRequestAICH(unsigned score, uint64_t now, uint64_t lastPacedRequest)
+{
+	return MayAskEarly(AggressiveScoreAfter(score, now, lastPacedRequest));
+}
+
 #endif // REQUESTPACING_H
 // File_checked_for_headers

@@ -186,6 +186,11 @@ void CUpDownClient::RecordPacedRequest()
 	m_lastPacedRequest = now;
 }
 
+bool CUpDownClient::MayRequestAICH() const
+{
+	return ::MayRequestAICH(m_requestScore, ::GetTickCount64(), m_lastPacedRequest);
+}
+
 bool CUpDownClient::HasPartWeNeed() const
 {
 	for (uint16 i = 0; i < m_nPartCount; ++i) {

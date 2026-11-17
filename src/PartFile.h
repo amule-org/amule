@@ -35,6 +35,7 @@
 #include <map>        // Needed for std::multimap (m_BufferedData_list)
 #include <memory>     // Needed for std::shared_ptr (m_metSave)
 #include <mutex>      // Needed for std::mutex (m_hpartfileMutex)
+#include <set>        // Needed for std::set (m_aichWaitingParts)
 
 #include "OtherStructs.h"   // Needed for Requested_Block_Struct
 #include "DeadSourceList.h" // Needed for CDeadSourceList
@@ -567,6 +568,9 @@ private:
 	// The downloaded data failed the whole-file hash and there was no part hashset to tell
 	// which part is bad, so completion waits for one.
 	bool m_completionAwaitsHashset = false;
+	// Corrupt parts whose AICH sources may not be asked yet, retried at m_aichRetryAt.
+	std::set<uint16> m_aichWaitingParts;
+	uint64 m_aichRetryAt = 0;
 	uint64 m_lastsearchtime;
 	bool m_localSrcReqQueued;
 

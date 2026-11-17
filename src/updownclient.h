@@ -756,6 +756,8 @@ public:
 	CAICHHash *GetReqFileAICHHash() const { return m_pReqFileAICHHash; }
 	bool IsSupportingAICH() const { return m_fSupportsAICH & 0x01; }
 	void SendAICHRequest(CPartFile *pForFile, uint16 nPart);
+	// See RequestPacing.h.
+	bool MayRequestAICH() const;
 	bool IsAICHReqPending() const { return m_fAICHRequested; }
 	void ProcessAICHAnswer(const uint8_t *packet, uint32 size);
 	void ProcessAICHRequest(const uint8_t *packet, uint32 size);
