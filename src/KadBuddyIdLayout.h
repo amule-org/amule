@@ -64,20 +64,31 @@ inline bool NextBuddyIdUsesAmuleLayout(bool usesAmuleLayout, bool previousReques
 	return previousRequestUnanswered ? !usesAmuleLayout : usesAmuleLayout;
 }
 
-// eMule's Kad flood protection takes one KADEMLIA_CALLBACK_REQ per minute from an IP. A callback is
-// counted as unanswered only after this, so a second request to the same buddy is not dropped.
-constexpr uint64_t KAD_CALLBACK_ANSWER_MS = 60000;
+// eMule's Kad flood protection lets a second KADEMLIA_CALLBACK_REQ from an IP through only after more
+// than a minute, and counts a dropped one too (PacketTracking.cpp).
+constexpr uint64_t KAD_CALLBACK_REQ_INTERVAL_MS = 60000;
+// How long a callback waits when the next request goes to the same buddy IP. The margin covers the
+// time the request spends in our UDP send queue.
+constexpr uint64_t KAD_CALLBACK_SAME_BUDDY_WAIT_MS = 65000;
 
-inline uint64_t KadCallbackTimeout(uint64_t socketTimeout) noexcept
+inline uint64_t KadCallbackTimeout(uint64_t socketTimeout, bool nextGoesToSameBuddyIP) noexcept
 {
-	return socketTimeout > KAD_CALLBACK_ANSWER_MS ? socketTimeout : KAD_CALLBACK_ANSWER_MS;
+	return nextGoesToSameBuddyIP && socketTimeout < KAD_CALLBACK_SAME_BUDDY_WAIT_MS
+		       ? KAD_CALLBACK_SAME_BUDDY_WAIT_MS
+		       : socketTimeout;
 }
 
-// An unanswered callback is asked of the same buddy once more, in the other layout, before the
-// route counts as failed.
-inline bool RetriesBuddyInOtherLayout(bool requestUnanswered, bool otherLayoutTried) noexcept
+// Whether the buddy that left a callback unanswered has the other layout left to try (#1835).
+inline bool HasOtherBuddyIdLayoutLeft(bool requestUnanswered, bool otherLayoutTried) noexcept
 {
 	return requestUnanswered && !otherLayoutTried;
+}
+
+// A contact that ends sooner than the timeout, for any reason, must not send a request the buddy
+// would drop.
+inline bool MayAskSameBuddyAgain(uint64_t sinceRequestMs) noexcept
+{
+	return sinceRequestMs >= KAD_CALLBACK_REQ_INTERVAL_MS;
 }
 
 } // namespace Kademlia

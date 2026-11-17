@@ -124,10 +124,10 @@ TEST(KadBuddyMergePolicy, NoSwitchWithoutACandidate)
 	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(false, true, false, false));
 }
 
-// The candidate goes first; the other layout on the current buddy waits for it.
-TEST(KadBuddyMergePolicy, ANewCandidateGoesBeforeTheOtherLayout)
+// A new candidate goes first, and also after the current buddy has had both layouts.
+TEST(KadBuddyMergePolicy, ANewCandidateDoesNotWaitForTheLayouts)
 {
-	ASSERT_TRUE(ShouldSwitchToBuddyCandidate(true, true, false, false));
+	ASSERT_TRUE(ShouldSwitchToBuddyCandidate(true, true, false, true));
 }
 
 TEST(KadBuddyMergePolicy, AFormerBuddyWaitsUntilBothLayoutsFailed)

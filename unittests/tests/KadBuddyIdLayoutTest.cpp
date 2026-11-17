@@ -100,15 +100,30 @@ TEST(KadBuddyIdLayout, AnUnansweredRequestSwitchesTheForm)
 }
 
 // A shorter wait would send the second request inside eMule's one-per-minute limit, where it is dropped.
-TEST(KadBuddyIdLayout, ACallbackWaitsOutTheFloodInterval)
+TEST(KadBuddyIdLayout, ACallbackToTheSameBuddyWaitsOutTheFloodInterval)
 {
-	ASSERT_EQUALS(KAD_CALLBACK_ANSWER_MS, KadCallbackTimeout(40000));
-	ASSERT_EQUALS(static_cast<uint64_t>(80000), KadCallbackTimeout(80000));
+	ASSERT_EQUALS(KAD_CALLBACK_SAME_BUDDY_WAIT_MS, KadCallbackTimeout(40000, true));
+	ASSERT_TRUE(KAD_CALLBACK_SAME_BUDDY_WAIT_MS > KAD_CALLBACK_REQ_INTERVAL_MS);
+	ASSERT_EQUALS(static_cast<uint64_t>(80000), KadCallbackTimeout(80000, true));
 }
 
-TEST(KadBuddyIdLayout, AnUnansweredCallbackIsRetriedOnceInTheOtherLayout)
+// Another buddy, or no further request: no flood interval to wait for.
+TEST(KadBuddyIdLayout, ACallbackToAnotherBuddyKeepsTheSocketTimeout)
 {
-	ASSERT_TRUE(RetriesBuddyInOtherLayout(true, false));
-	ASSERT_FALSE(RetriesBuddyInOtherLayout(true, true));
-	ASSERT_FALSE(RetriesBuddyInOtherLayout(false, false));
+	ASSERT_EQUALS(static_cast<uint64_t>(40000), KadCallbackTimeout(40000, false));
+}
+
+TEST(KadBuddyIdLayout, AnUnansweredCallbackHasTheOtherLayoutLeftOnce)
+{
+	ASSERT_TRUE(HasOtherBuddyIdLayoutLeft(true, false));
+	ASSERT_FALSE(HasOtherBuddyIdLayoutLeft(true, true));
+	ASSERT_FALSE(HasOtherBuddyIdLayoutLeft(false, false));
+}
+
+// A contact that ended early must not send a request the buddy drops, and counts.
+TEST(KadBuddyIdLayout, TheSameBuddyIsAskedAgainOnlyAfterTheFloodInterval)
+{
+	ASSERT_FALSE(MayAskSameBuddyAgain(5000));
+	ASSERT_FALSE(MayAskSameBuddyAgain(KAD_CALLBACK_REQ_INTERVAL_MS - 1));
+	ASSERT_TRUE(MayAskSameBuddyAgain(KAD_CALLBACK_REQ_INTERVAL_MS));
 }

@@ -1,16 +1,20 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 aMule Team
+# SPDX-License-Identifier: GPL-2.0-or-later
 """An unanswered callback through a source's buddy is retried in the other buddy ID layout.
 
 A source published before #1993 by aMule wrote TAG_BUDDYHASH in another byte order, and an eMule
 family buddy only relays the ID it registered. So when a KADEMLIA_CALLBACK_REQ goes unanswered,
 the downloader asks the same buddy once more with the other reading of the hash. eMule's Kad flood
-protection takes one KADEMLIA_CALLBACK_REQ per minute from an IP, so no request follows the
-previous one sooner. Once every buddy has had both layouts, the route has failed and no further
-request follows.
+protection takes one KADEMLIA_CALLBACK_REQ per minute from an IP, so no buddy gets a second
+request sooner; a switch to another buddy does not wait. Once every buddy has had both layouts, the
+route has failed and no further request follows.
 
 With a second copy of the source naming another buddy, that buddy is tried first, in both layouts,
 and then the first one in the layout it was not asked in.
 
 One fake Kad node is the daemon's only contact and also the source's buddy. Neither buddy relays.
+The argument after the daemon picks the case, so each fits the CI time limit: 'one' or 'two'.
 """
 import socket
 import struct
@@ -31,9 +35,13 @@ from KadSourceTagsECTest import (KADEMLIA2_SEARCH_RES, KADEMLIA2_SEARCH_SOURCE_R
 
 # No 4-byte group is a palindrome, so the two layouts differ.
 BUDDY_HASH = b'00112233445566778899aabbccddeeff'
+# eMule drops a second request from an IP unless more than a minute has passed.
 FLOOD_INTERVAL = 60
-# A further request would follow the last one's timeout and the next process tick.
-SETTLE_SECONDS = 80
+# A wrong request to the same buddy would follow the last one by its 65 s wait. Only the one-buddy
+# case waits for it: the two-buddy case needs three such waits already, and its last request ends
+# the route the same way.
+SETTLE_SECONDS = 75
+SHORT_SETTLE_SECONDS = 20
 
 
 def other_layout(buddy_id):
@@ -103,7 +111,7 @@ class SilentBuddy(FakeNode):
             super().handle(opcode, body, peer)
 
 
-def drive(binary, address, expected, with_second):
+def drive(binary, address, expected, with_second, settle):
     """Feed one daemon the source and return the callback requests as (time, buddy, ID)."""
     second = SecondBuddy(address, []) if with_second else None
     node = SilentBuddy(address, second)
@@ -121,14 +129,16 @@ def drive(binary, address, expected, with_second):
                 link = f'ed2k://|file|callback-retry.bin|{FILE_SIZE}|{FILE_HASH}|/'
                 assert ec.call(C['EC_OP_ADD_LINK'],
                                [string(C['EC_TAG_STRING'], link)])[0] == C['EC_OP_NOOP']
+                added = time.monotonic()
                 wait_for(proc, 'a callback request through the published buddy',
                          lambda: bool(node.requests), 180)
+                print(f'first callback request {node.requests[0][0] - added:.1f} s after the link')
                 for count in range(2, expected + 1):
                     wait_for(proc, f'callback request {count} of {expected}',
-                             lambda: len(node.requests) >= count, FLOOD_INTERVAL + 60)
+                             lambda: len(node.requests) >= count, FLOOD_INTERVAL + 30)
                 try:
                     wait_for(proc, 'a callback request after every layout was tried',
-                             lambda: len(node.requests) > expected, SETTLE_SECONDS)
+                             lambda: len(node.requests) > expected, settle)
                 except AssertionError:
                     pass
     finally:
@@ -139,35 +149,44 @@ def drive(binary, address, expected, with_second):
 
 def check(requests, expected):
     """Every buddy is asked in both layouts, never twice within a minute, and then no more."""
+    print('requests:', ', '.join(f'{t - requests[0][0]:.1f} s {buddy} {ident[:4].hex()}'
+                                 for t, buddy, ident in requests))
     assert len(requests) == expected, ('not every buddy and layout tried exactly once',
                                        [(buddy, ident.hex()) for _, buddy, ident in requests])
     first_id = requests[0][2]
     buddies = {buddy for _, buddy, _ in requests}
     pairs = {(buddy, ident) for _, buddy, ident in requests}
     assert pairs == {(b, i) for b in buddies for i in (first_id, other_layout(first_id))}, pairs
-    for previous, current in zip(requests, requests[1:]):
-        gap = current[0] - previous[0]
-        assert gap >= FLOOD_INTERVAL - 1, f'a request {gap:.1f} s after the previous one'
+    for buddy in buddies:
+        times = [t for t, b, _ in requests if b == buddy]
+        for previous, current in zip(times, times[1:]):
+            assert current - previous > FLOOD_INTERVAL, (
+                f'buddy {buddy} asked again {current - previous:.1f} s after its last request')
 
 
-def run(binary):
+def run(binary, case):
     address = private_address()
     if address is None:
         print('SKIP: no private non-loopback IPv4 for the fake Kad contact')
         sys.exit(77)
 
-    one_buddy = drive(binary, address, 2, with_second=False)
-    check(one_buddy, 2)
+    if case == 'one':
+        check(drive(binary, address, 2, with_second=False, settle=SETTLE_SECONDS), 2)
+        print('PASS: one buddy is asked in both layouts, a minute apart, and then no more')
+        return
 
     # The buddy asked first is the stored one; the copy naming the other is the candidate.
-    two_buddies = drive(binary, address, 4, with_second=True)
+    # Both buddies share our address, so even a switch waits out the flood interval.
+    two_buddies = drive(binary, address, 4, with_second=True, settle=SHORT_SETTLE_SECONDS)
     check(two_buddies, 4)
     order = [buddy for _, buddy, _ in two_buddies]
     assert order[0] == order[3] and order[1] == order[2] != order[0], order
     assert two_buddies[1][2] == two_buddies[0][2], 'the candidate was not asked in the same layout'
-    print('PASS: one buddy is asked in both layouts; with a candidate, the candidate in both and '
-          'then the first buddy in the other layout; never twice within a minute')
+    print('PASS: with a candidate, the candidate in both layouts and then the first buddy in the '
+          'other one; no buddy twice within a minute')
 
 
 if __name__ == '__main__':
-    retry_port_collisions(run, str(Path(sys.argv[1]).resolve()))
+    if len(sys.argv) != 3 or sys.argv[2] not in ('one', 'two'):
+        sys.exit(f'usage: {sys.argv[0]} AMULED one|two')
+    retry_port_collisions(run, str(Path(sys.argv[1]).resolve()), sys.argv[2])

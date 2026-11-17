@@ -910,6 +910,9 @@ public:
 	{
 		m_failedSourceRoutes = 0;
 		m_refreshedSourceRoutes = 0;
+		// The next round asks the buddy in both layouts again, starting with the last one.
+		m_bBuddyCallbackUnanswered = false;
+		m_bBuddyOtherLayoutTried = false;
 		m_lastContactRoute = EContactRouteReport::None;
 		m_lastContactOverIPv6 = false;
 	}
@@ -933,6 +936,9 @@ public:
 	bool IsRouteAnsweredByOtherHost() const;
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
+	// While a Kad callback is pending: the request that follows if it goes unanswered goes to the
+	// same buddy IP, so it must wait out eMule's flood interval.
+	bool NextKadCallbackGoesToSameBuddyIP() const;
 	// This source as an Extended Source Exchange record, sanitized with `filter`.
 	ExtSX::SRecord GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const;
 	/* Role: we serve this buddy, or it serves us */
@@ -1329,6 +1335,8 @@ private:
 	uint16 m_nBuddyCandidatePort = 0;
 	// The candidate is the buddy we switched away from, asked in one layout only.
 	bool m_bBuddyCandidateIsFormer = false;
+	// When the last KADEMLIA_CALLBACK_REQ was sent.
+	uint64_t m_kadCallbackSentTime = 0;
 	// The route of the contact in flight, and the routes that failed since the last hello.
 	ESourceRoute m_sourceRoute{};
 	// The same route, kept after the attempt ends so the source list can show it, plus the two

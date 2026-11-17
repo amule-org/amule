@@ -3322,11 +3322,16 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/KadSourceBuddyIdIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (KadSourceBuddyIdIntegrationTest PROPERTIES LABELS "integration")
-		add_test (NAME KadBuddyCallbackRetryIntegrationTest
-			COMMAND ${Python3_EXECUTABLE}
-				${CMAKE_CURRENT_SOURCE_DIR}/KadBuddyCallbackRetryIntegrationTest.py $<TARGET_FILE:amuled>
-		)
-		set_tests_properties (KadBuddyCallbackRetryIntegrationTest PROPERTIES LABELS "integration")
+		# One case per entry, so each fits the CI time limit.
+		foreach (buddies IN ITEMS one two)
+			add_test (NAME KadBuddyCallbackRetryIntegrationTest-${buddies}
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/KadBuddyCallbackRetryIntegrationTest.py
+					$<TARGET_FILE:amuled> ${buddies}
+			)
+			set_tests_properties (KadBuddyCallbackRetryIntegrationTest-${buddies}
+				PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
+		endforeach ()
 		add_test (NAME KadBuddyLifecycleIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadBuddyLifecycleIntegrationTest.py $<TARGET_FILE:amuled>
@@ -4129,7 +4134,6 @@ foreach (ec_wire_test IN ITEMS
 	HashingCancelIntegrationTest
 	HashsetAnswerIntegrationTest
 	IntegrationFixtureUnitTest
-	KadBuddyCallbackRetryIntegrationTest
 	KadBuddyLifecycleIntegrationTest
 	KadDistributionECTest
 	KadIndexLifecycleECTest

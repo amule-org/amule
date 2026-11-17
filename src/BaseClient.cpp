@@ -2289,6 +2289,7 @@ bool CUpDownClient::StartKadBuddyCallback()
 			md4cpy(buddyIDToSend, GetBuddyID());
 		}
 		m_bBuddyCallbackUnanswered = true;
+		m_kadCallbackSentTime = ::GetTickCount64();
 		CMemFile bio(34);
 		bio.WriteUInt128(Kademlia::CUInt128(buddyIDToSend));
 		bio.WriteUInt128(Kademlia::CUInt128(m_reqfile->GetFileHash().GetHash()));
@@ -2331,19 +2332,23 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 	if (m_sourceRoute == ESourceRoute::None || m_reqfile == nullptr) {
 		return false;
 	}
-	// A fallback buddy leaves the buddy route untried.
-	if (m_sourceRoute == ESourceRoute::KadBuddy && SwitchToBuddyCandidate()) {
-		return true;
-	}
-	// The socket waited out eMule's flood interval, so the next tick may ask the same buddy.
-	if (m_sourceRoute == ESourceRoute::KadBuddy && GetBuddyIP() && GetBuddyPort() &&
-		Kademlia::RetriesBuddyInOtherLayout(m_bBuddyCallbackUnanswered, m_bBuddyOtherLayoutTried)) {
-		AddDebugLogLineN(logKadBuddy,
-			CFormat("Kad buddy %s of source %s did not pass on a callback, asking it again in "
-				"the other buddy ID layout") %
-				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) %
-				GetUserHash().Encode());
-		return true;
+	if (m_sourceRoute == ESourceRoute::KadBuddy) {
+		const bool waited =
+			Kademlia::MayAskSameBuddyAgain(::GetTickCount64() - m_kadCallbackSentTime);
+		// A fallback buddy leaves the buddy route untried.
+		if ((waited || m_nBuddyCandidateIP != GetBuddyIP()) && SwitchToBuddyCandidate()) {
+			return true;
+		}
+		if (waited && GetBuddyIP() && GetBuddyPort() &&
+			Kademlia::HasOtherBuddyIdLayoutLeft(
+				m_bBuddyCallbackUnanswered, m_bBuddyOtherLayoutTried)) {
+			AddDebugLogLineN(logKadBuddy,
+				CFormat("Kad buddy %s of source %s did not pass on a callback, asking it "
+					"again in the other buddy ID layout") %
+					Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) %
+					GetUserHash().Encode());
+			return true;
+		}
 	}
 	if ((m_refreshedSourceRoutes & SourceRouteBit(m_sourceRoute)) != 0) {
 		m_refreshedSourceRoutes &= ~SourceRouteBit(m_sourceRoute);
@@ -4363,6 +4368,20 @@ ExtSX::SAddressFilter MakeExtendedSourceAddressFilter()
 		       !theApp->clientlist->IsBannedClient(address);
 	};
 	return filter;
+}
+
+bool CUpDownClient::NextKadCallbackGoesToSameBuddyIP() const
+{
+	if (m_sourceRoute != ESourceRoute::KadBuddy || !GetBuddyIP() || !GetBuddyPort()) {
+		return false;
+	}
+	if (ShouldSwitchToBuddyCandidate(m_nBuddyCandidateIP != 0,
+		    m_bBuddyCallbackUnanswered,
+		    m_bBuddyCandidateIsFormer,
+		    m_bBuddyOtherLayoutTried)) {
+		return m_nBuddyCandidateIP == GetBuddyIP();
+	}
+	return Kademlia::HasOtherBuddyIdLayoutLeft(m_bBuddyCallbackUnanswered, m_bBuddyOtherLayoutTried);
 }
 
 bool CUpDownClient::SwitchToBuddyCandidate()
