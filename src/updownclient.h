@@ -983,7 +983,7 @@ public:
 	/// Checks that a client isn't aggressively re-asking for files. Call on every file request:
 	/// a gap below MIN_REQUESTTIME adds 3 to m_Aggressiveness, a longer one subtracts 1, and
 	/// the client is banned at 10. Read the verdict with IsClientAggressive(). Currently called
-	/// for OP_STARTUPLOADREQ and OP_REASKFILEPING.
+	/// for OP_STARTUPLOADREQ, OP_REASKFILEPING and OP_AICHREQUEST.
 	void CheckForAggressive();
 
 	const wxString &GetClientModString() const { return m_strModVersion; }

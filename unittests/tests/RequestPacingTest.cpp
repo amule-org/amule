@@ -141,6 +141,22 @@ TEST(RequestPacing, AICHRequestLeavesRoomForAnEarlyAsk)
 	ASSERT_FALSE(MayRequestAICH(2, kNow, kNow - MIN_REQUESTTIME));
 }
 
+TEST(RequestPacing, AICHAfterAFailedRehashWaitsAtMostTwoMinRequestTimes)
+{
+	// The only AICH source was asked 5 minutes before the rehash failed, so the AICH request
+	// waits. Asked paced, the source has a polite slot for it MIN_REQUESTTIME after that ask.
+	// Asked early, it would still not qualify after its next reask.
+	const uint64_t lastAsk = kNow - 5 * 60 * 1000;
+	ASSERT_FALSE(MayRequestAICH(0, kNow, lastAsk));
+	const uint64_t pacedAsk = AskAt(PacedLastAskedTime(kNow, lastAsk, kReask));
+	ASSERT_EQUALS(lastAsk + MIN_REQUESTTIME, pacedAsk);
+	const unsigned score = AggressiveScoreAfter(0, pacedAsk, lastAsk);
+	ASSERT_FALSE(MayRequestAICH(score, pacedAsk + MIN_REQUESTTIME - 1, pacedAsk));
+	ASSERT_TRUE(MayRequestAICH(score, pacedAsk + MIN_REQUESTTIME, pacedAsk));
+	const unsigned early = AggressiveScoreAfter(0, kNow, lastAsk);
+	ASSERT_FALSE(MayRequestAICH(early, kNow + kReask, kNow));
+}
+
 TEST(RequestPacing, PacedAICHRequestsStayBelowTheBan)
 {
 	// The same four parts with MayRequestAICH. A part waits and retries each minute, and the

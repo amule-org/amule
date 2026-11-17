@@ -1480,7 +1480,7 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 		// Sources asked during the rehash found nothing to download; the gaps are open now.
 		// After a corrupt part, sources are asked at once where MayAskEarly allows it. A wait
 		// for the hashset can re-ask after each unanswered request, so it stays paced. Asked
-		// after the AICH requests, so a source that got one waits.
+		// after the AICH requests, so the sources they use or wait for are asked paced.
 		AskQueuedSourcesAgain(m_completionAwaitsHashset);
 		return;
 	}
@@ -2860,8 +2860,11 @@ void CPartFile::AskQueuedSourcesAgain(bool paced)
 		CUpDownClient *cur_src = ref.GetClient();
 		const uint8 state = cur_src->GetDownloadState();
 		if (state == DS_ONQUEUE || state == DS_NONEEDEDPARTS) {
-			// An ask right after an OP_AICHREQUEST would be early, so that source waits.
-			cur_src->AskAgainSoon(paced || cur_src->IsAICHReqPending());
+			// An early ask would be scored right after a pending OP_AICHREQUEST, or would take
+			// the polite slot that a waiting part needs to send one.
+			const bool aichNeedsSource = cur_src->IsAICHReqPending() ||
+						     (!m_aichWaitingParts.empty() && HasOurAICHHash(cur_src));
+			cur_src->AskAgainSoon(paced || aichNeedsSource);
 		}
 	}
 }
@@ -4392,6 +4395,12 @@ void CPartFile::SetStatus(uint8 in)
 	}
 }
 
+bool CPartFile::HasOurAICHHash(const CUpDownClient *src) const
+{
+	return src->IsSupportingAICH() && src->GetReqFileAICHHash() != nullptr &&
+	       *src->GetReqFileAICHHash() == m_pAICHHashSet->GetMasterHash();
+}
+
 void CPartFile::RequestAICHRecovery(uint16 nPart)
 {
 
@@ -4418,18 +4427,17 @@ void CPartFile::RequestAICHRecovery(uint16 nPart)
 
 	wxASSERT(nPart < GetPartCount());
 	// Ask a random source that has our AICH master hash, a HighID one if possible. If none may
-	// be asked yet (see MayRequestAICH), the part waits for Process() to retry it.
+	// be asked yet (see MayRequestAICH) or each has a request pending, the part waits for
+	// Process() to retry it.
 	std::vector<CUpDownClient *> highID;
 	std::vector<CUpDownClient *> lowID;
 	bool sourceWaits = false;
 	for (const CClientRef &ref : m_SrcList) {
 		CUpDownClient *pCurClient = ref.GetClient();
-		if (!pCurClient->IsSupportingAICH() || pCurClient->GetReqFileAICHHash() == nullptr ||
-			pCurClient->IsAICHReqPending() ||
-			*pCurClient->GetReqFileAICHHash() != m_pAICHHashSet->GetMasterHash()) {
+		if (!HasOurAICHHash(pCurClient)) {
 			continue;
 		}
-		if (!pCurClient->MayRequestAICH()) {
+		if (pCurClient->IsAICHReqPending() || !pCurClient->MayRequestAICH()) {
 			sourceWaits = true;
 		} else {
 			(pCurClient->HasLowID() ? lowID : highID).push_back(pCurClient);
