@@ -5,7 +5,8 @@ IPv6 extension agreed between eMuleQt, eNode-go and this project: advertising a
 client's IPv6 address at login, and receiving IPv6 sources in
 `OP_FOUNDSOURCES` / `OP_FOUNDSOURCES_OBFU`. It does not cover connecting to a
 server over an IPv6 transport, which is out of scope, nor `OP_SERVERIDENT`'s
-`ST_IPV6` / `ST_IPV6_STATUS` tags, which this implementation does not read.
+`ST_IPV6` tag, which this implementation does not read. It reads
+`ST_IPV6_STATUS`, the probe verdict (below).
 
 ## Availability
 
@@ -31,8 +32,9 @@ A server that does not announce the probe receives what the peers decision allow
 already proved, such as one confirmed by an inbound hello in the last 24 h, still reaches it;
 announcing the probe is what gets a server the chosen local address, through `OP_IPV6_UPDATE`,
 once per real change: it needs the address to test it, and it does not publish anything it has not
-reached. The server caps dial-back attempts, not updates: four per session, the login's own address
-included.
+reached. The login cannot carry that address, so a probing server also needs `0x4000` and
+`0x8000` (below), or the address never reaches it. The server caps dial-back attempts, not
+updates: four per session, the login's own address included.
 
 ## Login: advertising our IPv6 address
 
@@ -45,6 +47,9 @@ listener, and no proxy) adds a `CT_MOD_IP_V6` (`0xAE`) tag to
 (`src/BaseClient.cpp`, `SendHelloTypePacket`). The tag alone tells the server
 that we parse IPv6 source records; `ed2k-server` keys on nothing else. The
 decision is made in `DecideServerLoginIPv6()` (`src/ServerLoginIPv6.h`). The
+login comes before `OP_IDCHANGE`, so it cannot know whether the server probes:
+it carries only what peers may see, and a probing server gets the address it
+has to test right after `OP_IDCHANGE`, in `OP_IPV6_UPDATE` (below). The
 address this login advertised is remembered per server connection
 (`CServerSocket::GetLoginIPv6()`), because it is also the condition under
 which a sentinel source record (below) is expected, and it identifies our own
@@ -123,13 +128,14 @@ it now sends the sentinel only to a LowID requester
 ## Keeping the server current: `OP_IPV6_UPDATE`
 
 On a connection where the server set `0x4000` and `0x8000`, aMule sends `OP_IPV6_UPDATE`
-(opcode `0x63`): 16 raw bytes, all zeros to withdraw, no reply, same rules as
-the login tag. It is sent whenever `AdvertisedIPv6ForPeers()` changes, stops,
-or starts after login -- the same change detection that drives
-`OP_CHANGE_CLIENT_IP` to peers (`src/amule.cpp`) -- and also right after an
-`OP_IDCHANGE` carrying both bits, in case the address changed between the
-login and that reply. The decision is `DecideServerIPv6Update()`
-(`src/ServerIPv6Update.h`); the send path is
+(opcode `0x63`): 16 raw bytes, all zeros to withdraw, no reply. It carries
+`ServerAddressToSend()` (`src/AdvertisedIPv6.h`): for a server that sets
+`0x400000`, the chosen local address for it to test; for any other, what peers
+are told. It is sent right after an `OP_IDCHANGE` carrying both bits, and from
+`AdvertisedIPv6ForPeers()` (`src/amule.cpp`), which the interface refresh,
+hellos and Kad call, each time only when that address differs from the last one
+sent. The decision is `DecideServerIPv6Update()` (`src/ServerIPv6Update.h`);
+the send path is
 `CServerConnect::UpdateAdvertisedIPv6()`, which keeps
 `CServerSocket::GetLoginIPv6()` -- the own-record check address -- in step
 with whatever was actually sent.
@@ -148,5 +154,5 @@ the next login, even after it changed or advertising stopped.
 ## Scope
 
 Out of scope: connecting to a server over an IPv6 transport; `OP_SERVERIDENT`
-`ST_IPV6` / `ST_IPV6_STATUS`; any change to the UDP ping/search/source path,
-which stays IPv4 only.
+`ST_IPV6`; any change to the UDP ping/search/source path, which stays IPv4
+only.
