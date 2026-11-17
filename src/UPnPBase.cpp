@@ -862,7 +862,7 @@ bool CUPnPService::Execute(const std::string &ActionName,
 	const int ret = sourceAddress == nullptr ? UpnpSendAction(m_UPnPControlPoint.GetUPnPClientHandle(),
 							   GetAbsControlURL().c_str(),
 							   GetServiceType().c_str(),
-							   NULL,
+							   nullptr,
 							   ActionDoc,
 							   &RespDoc)
 						 : UPnP::SendBoundSoapAction(GetAbsControlURL(),
@@ -874,7 +874,7 @@ bool CUPnPService::Execute(const std::string &ActionName,
 	if (ret != UPNP_E_SUCCESS) {
 		UPnP::ProcessErrorMessage(sourceAddress == nullptr ? "UpnpSendAction" : "Bound SOAP action",
 			ret,
-			NULL,
+			nullptr,
 			RespDoc);
 		IXML::Document::Free(ActionDoc);
 		IXML::Document::Free(RespDoc);
