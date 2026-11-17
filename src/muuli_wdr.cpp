@@ -1661,7 +1661,7 @@ wxSizer *PreferencesConnectionTab( wxWindow *parent, bool call_fit, bool set_siz
     item21->SetToolTip( _("This UDP port is used for extended eD2k requests and Kad network") );
     item15->Add( item21, wxSizerFlags().Center() );
 
-    wxCheckBox *item22 = new wxCheckBox( parent, IDC_UPNP_ENABLED, _("Enable UPnP for router port forwarding"), wxDefaultPosition, wxDefaultSize, 0 );
+    wxCheckBox *item22 = new wxCheckBox( parent, IDC_UPNP_ENABLED, _("Enable automatic router port forwarding (UPnP or PCP)"), wxDefaultPosition, wxDefaultSize, 0 );
     item15->Add( item22, wxSizerFlags().CenterVertical() );
 
     item15->Add( 20, 20, wxSizerFlags().Center().Border(wxALL, 5) );
