@@ -84,9 +84,20 @@ inline SKadBuddyMerge DecideKadBuddyMerge(const SKadBuddyMergeFacts &facts)
  * answer is matched by the exact IP and UDP port, so a source behind a NAT that changes the port
  * looks silent through a working buddy.
  */
-inline bool ShouldSwitchToBuddyCandidate(bool hasCandidate, bool callbackUnanswered)
+inline bool ShouldSwitchToBuddyCandidate(
+	bool hasCandidate, bool callbackUnanswered, bool candidateIsFormer, bool otherLayoutTried)
 {
-	return hasCandidate && callbackUnanswered;
+	// A former buddy was asked in one layout only: it waits until the current one has had both.
+	return hasCandidate && callbackUnanswered && (!candidateIsFormer || otherLayoutTried);
+}
+
+/**
+ * Whether a switch keeps the buddy it leaves as the candidate. It is kept while it has a buddy ID
+ * layout left to try (#1835), and only once, so two buddies are not tried in turn for ever.
+ */
+inline bool KeepsFormerBuddy(bool returningToFormer, bool otherLayoutTried)
+{
+	return !returningToFormer && !otherLayoutTried;
 }
 
 #endif // KAD_BUDDY_MERGE_POLICY_H

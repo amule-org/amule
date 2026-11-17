@@ -115,11 +115,32 @@ TEST(KadBuddyMergePolicy, SourceExchangeIDNeverReplacesAnID)
 
 TEST(KadBuddyMergePolicy, SwitchesOnlyAfterAFailedCallback)
 {
-	ASSERT_TRUE(ShouldSwitchToBuddyCandidate(true, true));
-	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(true, false));
+	ASSERT_TRUE(ShouldSwitchToBuddyCandidate(true, true, false, false));
+	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(true, false, false, false));
 }
 
 TEST(KadBuddyMergePolicy, NoSwitchWithoutACandidate)
 {
-	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(false, true));
+	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(false, true, false, false));
+}
+
+// The candidate goes first; the other layout on the current buddy waits for it.
+TEST(KadBuddyMergePolicy, ANewCandidateGoesBeforeTheOtherLayout)
+{
+	ASSERT_TRUE(ShouldSwitchToBuddyCandidate(true, true, false, false));
+}
+
+TEST(KadBuddyMergePolicy, AFormerBuddyWaitsUntilBothLayoutsFailed)
+{
+	ASSERT_FALSE(ShouldSwitchToBuddyCandidate(true, true, true, false));
+	ASSERT_TRUE(ShouldSwitchToBuddyCandidate(true, true, true, true));
+}
+
+TEST(KadBuddyMergePolicy, TheBuddyLeftIsKeptOnlyWithALayoutLeft)
+{
+	ASSERT_TRUE(KeepsFormerBuddy(false, false));
+	// Asked in both layouts already.
+	ASSERT_FALSE(KeepsFormerBuddy(false, true));
+	// Going back to the former buddy: the one left has had both layouts.
+	ASSERT_FALSE(KeepsFormerBuddy(true, false));
 }

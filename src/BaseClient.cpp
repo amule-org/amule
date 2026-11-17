@@ -4168,12 +4168,14 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 		SetBuddyPort(duplicate.GetBuddyPort());
 		m_nBuddyCandidateIP = 0;
 		m_nBuddyCandidatePort = 0;
+		m_bBuddyCandidateIsFormer = false;
 	}
 	// One Kad search returns the same fallback from several nodes.
 	if (merge.storeCandidate && (m_nBuddyCandidateIP != duplicate.GetBuddyIP() ||
 					    m_nBuddyCandidatePort != duplicate.GetBuddyPort())) {
 		m_nBuddyCandidateIP = duplicate.GetBuddyIP();
 		m_nBuddyCandidatePort = duplicate.GetBuddyPort();
+		m_bBuddyCandidateIsFormer = false;
 		AddDebugLogLineN(logKadBuddy,
 			CFormat("Kad buddy %s kept as a fallback for source %s, which uses %s") %
 				Uint32_16toStringIP_Port(m_nBuddyCandidateIP, m_nBuddyCandidatePort) %
@@ -4365,20 +4367,30 @@ ExtSX::SAddressFilter MakeExtendedSourceAddressFilter()
 
 bool CUpDownClient::SwitchToBuddyCandidate()
 {
-	if (!ShouldSwitchToBuddyCandidate(m_nBuddyCandidateIP != 0, m_bBuddyCallbackUnanswered)) {
+	if (!ShouldSwitchToBuddyCandidate(m_nBuddyCandidateIP != 0,
+		    m_bBuddyCallbackUnanswered,
+		    m_bBuddyCandidateIsFormer,
+		    m_bBuddyOtherLayoutTried)) {
 		return false;
 	}
+	const bool returning = m_bBuddyCandidateIsFormer;
 	AddDebugLogLineN(logKadBuddy,
-		CFormat("Kad buddy %s of source %s did not pass on a callback, switching to %s") %
+		CFormat("Kad buddy %s of source %s did not pass on a callback, switching %s %s") %
 			Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) % GetUserHash().Encode() %
+			(returning ? "back to" : "to") %
 			Uint32_16toStringIP_Port(m_nBuddyCandidateIP, m_nBuddyCandidatePort));
+	const uint32 leftIP = GetBuddyIP();
+	const uint16 leftPort = GetBuddyPort();
 	SetBuddyIP(m_nBuddyCandidateIP);
 	SetBuddyPort(m_nBuddyCandidatePort);
-	m_nBuddyCandidateIP = 0;
-	m_nBuddyCandidatePort = 0;
-	// The first try through the new buddy keeps the current buddy ID layout (#1835).
+	const bool keepLeft = KeepsFormerBuddy(returning, m_bBuddyOtherLayoutTried);
+	m_nBuddyCandidateIP = keepLeft ? leftIP : 0;
+	m_nBuddyCandidatePort = keepLeft ? leftPort : 0;
+	m_bBuddyCandidateIsFormer = keepLeft;
+	// The first try through the new buddy keeps the current buddy ID layout (#1835). Back on the
+	// former buddy, that is the layout it was not asked in, and the last one left.
 	m_bBuddyCallbackUnanswered = false;
-	m_bBuddyOtherLayoutTried = false;
+	m_bBuddyOtherLayoutTried = returning;
 	return true;
 }
 

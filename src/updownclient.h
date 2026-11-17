@@ -1327,6 +1327,8 @@ private:
 	// A different buddy address from a Kad result, held back while the stored one answers.
 	uint32 m_nBuddyCandidateIP = 0;
 	uint16 m_nBuddyCandidatePort = 0;
+	// The candidate is the buddy we switched away from, asked in one layout only.
+	bool m_bBuddyCandidateIsFormer = false;
 	// The route of the contact in flight, and the routes that failed since the last hello.
 	ESourceRoute m_sourceRoute{};
 	// The same route, kept after the attempt ends so the source list can show it, plus the two
