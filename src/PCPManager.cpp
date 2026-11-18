@@ -62,6 +62,8 @@ struct PCPManager::State
 			const auto version = revision;
 			if (current && (!desired || !(*current == *desired))) {
 				auto old = std::move(client);
+				// The handle is moved-from now; record that so no later path reads it.
+				client = nullptr;
 				current.reset();
 				currentGateway.reset();
 				lock.unlock();
@@ -87,6 +89,7 @@ struct PCPManager::State
 						gateway->endpoint != currentGateway->endpoint ||
 						gateway->localAddress != currentGateway->localAddress)) {
 					auto old = std::move(client);
+					client = nullptr;
 					current.reset();
 					currentGateway.reset();
 					lock.unlock();

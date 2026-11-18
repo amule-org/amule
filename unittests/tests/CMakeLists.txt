@@ -102,6 +102,10 @@ add_test (NAME ECPcpCapabilityEnabledTest COMMAND ECPcpCapabilityEnabledTest)
 add_muleunit_test (ForwardingCapabilityTest)
 add_muleunit_test (PCPApplicationPolicyTest)
 add_muleunit_test (PCPProtocolTest ${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp)
+if (WIN32)
+	# PCPApplicationPolicyTest links Asio address parsing, which needs WinSock on Windows.
+	target_link_libraries (PCPApplicationPolicyTest ws2_32)
+endif ()
 add_muleunit_test (PCPGatewayTest ${CMAKE_SOURCE_DIR}/src/PCPGateway.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp)
 if (WIN32)

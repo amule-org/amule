@@ -16,7 +16,8 @@ TEST(PCPApplicationPolicy, RequiresEnabledIPv6ListenerAddressAndTCPPort)
 	ASSERT_FALSE(pcp::ApplicationTarget(true, true, std::nullopt, 4662).has_value());
 	ASSERT_FALSE(pcp::ApplicationTarget(true, true, selected, 0).has_value());
 	ASSERT_FALSE(pcp::ApplicationTarget(true, true, boost::asio::ip::address_v6{}, 4662).has_value());
-	ASSERT_FALSE(pcp::ApplicationTarget(true, true, boost::asio::ip::make_address_v6("ff02::1"), 4662)
+	ASSERT_FALSE(
+		pcp::ApplicationTarget(true, true, boost::asio::ip::make_address_v6("ff02::1"), 4662)
 			.has_value());
 	ASSERT_TRUE(*selected == address);
 }
