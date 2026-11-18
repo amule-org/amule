@@ -523,7 +523,8 @@ void CSearch::JumpStart()
 			// A seeded publish that just sent enough stores gives their acknowledgements a
 			// full stall period before asking a node past its seeds. Acknowledgements do not
 			// count as responses, so without this the next tick would ask it.
-			if (m_seeded && m_storePackets > storesBefore && m_storePackets > StoreTotal()) {
+			if (m_seeded && m_storePackets > storesBefore &&
+				AnsweringNodes(m_storePackets, m_fileIDs.size()) > StoreTotal()) {
 				m_lastResponse = time(nullptr);
 #ifdef ENABLE_KAD_NODE_PROTECTION
 				m_lastResponseTick = ::GetTickCount64();
@@ -732,8 +733,8 @@ void CSearch::ProcessResponse(
 void CSearch::RecordStoreAcknowledgements() const
 {
 	if (m_type == STOREKEYWORD) {
-		// A node answers each keyword packet, and these answers are what end the lookup.
-		KeepPublishSeeds(m_answers);
+		// Keyword answers, counted per node, are what end the lookup.
+		KeepPublishSeeds(GetAnswers());
 		return;
 	}
 	if (m_type != STOREFILE) {
