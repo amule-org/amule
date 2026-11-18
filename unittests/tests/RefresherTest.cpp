@@ -2308,6 +2308,10 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	hi.AddTag(CECTag(EC_TAG_CLIENT_CONTACT_ROUTE,
 		static_cast<std::uint64_t>(
 			PackContactRoute(EContactRouteReport::KadBuddy, true, true, false))));
+	// Connected by our callback through the Kad buddy, over uTP on IPv6.
+	hi.AddTag(CECTag(EC_TAG_CLIENT_CONNECTION_ROUTE,
+		static_cast<std::uint64_t>(PackConnectionRoute(
+			EConnectionRoute::KadBuddyCallback, EConnectionTransport::UTP, true, false))));
 	hi.AddTag(CECTag(EC_TAG_PARTFILE_NAME, wxString::FromUTF8("upload.iso")));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_AVAILABLE_PARTS, static_cast<std::uint32_t>(7)));
 	hi.AddTag(CECTag(EC_TAG_CLIENT_MOD_VERSION, wxString::FromUTF8("mod-x")));
@@ -2354,6 +2358,10 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_EQUALS(std::string("kad_buddy"), cs.contact_route);
 	ASSERT_TRUE(cs.route_unproven);
 	ASSERT_TRUE(cs.route_from_fallback);
+	ASSERT_EQUALS(std::string("kad_buddy_callback"), cs.connection_route);
+	ASSERT_EQUALS(std::string("utp"), cs.connection_transport);
+	ASSERT_TRUE(cs.connection_ipv6);
+	ASSERT_TRUE(!cs.connection_proxied);
 	ASSERT_EQUALS(std::string("upload.iso"), cs.upload_file_name);
 	ASSERT_TRUE(cs.has_parts_offered_count);
 	ASSERT_EQUALS(static_cast<std::uint32_t>(7), cs.parts_offered_count);
@@ -2370,6 +2378,9 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_TRUE(!it2->second.has_parts_offered_count);
 	// No tag: no ask scheduled, as on a core older than the tag.
 	ASSERT_EQUALS(static_cast<std::uint64_t>(0), it2->second.next_ask_at);
+	// Never connected, as on a core older than the tag.
+	ASSERT_TRUE(it2->second.connection_route.empty());
+	ASSERT_TRUE(it2->second.connection_transport.empty());
 	// #423 fields absent on the wire => defaults preserved.
 	ASSERT_TRUE(!it2->second.is_friend);
 	ASSERT_TRUE(it2->second.credit_ratio == 0.0);
@@ -2378,6 +2389,41 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	const auto it3 = cache.find(52);
 	ASSERT_TRUE(it3 != cache.end());
 	ASSERT_TRUE(!it3->second.has_credit_ratio);
+}
+
+// Every connection route has its own token, and one this build does not know reads as none.
+TEST(Refresher, ConnectionRouteNameMapsEveryRoute)
+{
+	const std::pair<EConnectionRoute, const char *> routes[] = {
+		{ EConnectionRoute::Dial, "dial" },
+		{ EConnectionRoute::Inbound, "inbound" },
+		{ EConnectionRoute::ServerCallback, "server_callback" },
+		{ EConnectionRoute::KadBuddyCallback, "kad_buddy_callback" },
+		{ EConnectionRoute::DirectUdpCallback, "direct_udp_callback" },
+		{ EConnectionRoute::ForeignNatCallback, "foreign_nat_callback" },
+		{ EConnectionRoute::ServerHolePunch, "server_hole_punch" },
+		{ EConnectionRoute::LugdunumCallback, "lugdunum_callback" },
+		{ EConnectionRoute::AnsweredServerCallback, "answered_server_callback" },
+		{ EConnectionRoute::AnsweredKadCallback, "answered_kad_buddy_callback" },
+		{ EConnectionRoute::AnsweredDirectCallback, "answered_direct_udp_callback" },
+		{ EConnectionRoute::AnsweredLugdunumCallback, "answered_lugdunum_callback" },
+	};
+	for (const auto &route : routes) {
+		const std::uint8_t packed =
+			PackConnectionRoute(route.first, EConnectionTransport::TCP, false, false);
+		ASSERT_EQUALS(std::string(route.second), webapi::ConnectionRouteName(packed));
+	}
+	ASSERT_TRUE(webapi::ConnectionRouteName(0).empty());
+	ASSERT_TRUE(webapi::ConnectionRouteName(0x0F).empty());
+	ASSERT_EQUALS(std::string("tcp"),
+		webapi::ConnectionTransportName(
+			PackConnectionRoute(EConnectionRoute::Dial, EConnectionTransport::TCP, false, true)));
+	ASSERT_EQUALS(std::string("utp"),
+		webapi::ConnectionTransportName(PackConnectionRoute(
+			EConnectionRoute::Dial, EConnectionTransport::UTP, false, false)));
+	ASSERT_EQUALS(std::string("quic"),
+		webapi::ConnectionTransportName(PackConnectionRoute(
+			EConnectionRoute::Dial, EConnectionTransport::QUIC, false, false)));
 }
 
 // Every origin the GUI tells apart stays apart on the API, local and remote server included.

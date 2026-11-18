@@ -2721,6 +2721,13 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueBool(c.route_from_fallback);
 	w.Key("route_ipv6");
 	w.ValueBool(c.route_ipv6);
+	// null before the first connection, and on a daemon older than the tag.
+	WriteStringOrNull(w, "connection_route", !c.connection_route.empty(), c.connection_route);
+	WriteStringOrNull(w, "connection_transport", !c.connection_transport.empty(), c.connection_transport);
+	w.Key("connection_ipv6");
+	w.ValueBool(c.connection_ipv6);
+	w.Key("connection_proxied");
+	w.ValueBool(c.connection_proxied);
 	// Gated on the flag the refresher sets when the tag actually arrives: emitted
 	// unconditionally, a peer that never reported its part map was indistinguishable
 	// from one reporting zero, and zero is a real answer.

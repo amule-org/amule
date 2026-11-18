@@ -1075,6 +1075,20 @@ public:
 		m_pending.erase(match);
 		return path;
 	}
+	//! The path of the latest live rendezvous with @a ip, left in place for its hello.
+	std::optional<RendezvousPath> LatestPath(std::uint32_t ip, std::uint64_t now) const
+	{
+		const auto match =
+			std::find_if(m_pending.rbegin(), m_pending.rend(), [ip, now](const Entry &entry) {
+				return entry.ip == ip &&
+				       !(now >= entry.notedAt &&
+					       now - entry.notedAt >= kRendezvousOutcomeTtlMs);
+			});
+		if (match == m_pending.rend()) {
+			return std::nullopt;
+		}
+		return match->path;
+	}
 	std::size_t Size() const { return m_pending.size(); }
 
 private:

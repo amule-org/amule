@@ -451,3 +451,161 @@ TEST(SourceRoutePolicy, AnUnknownPackedRouteReadsAsNone)
 	ASSERT_TRUE(ContactRouteIsUnproven(packed));
 	ASSERT_TRUE(ContactRouteFromFallback(packed));
 }
+
+// EC_TAG_CLIENT_CONNECTION_ROUTE packs the route, the transport and two flags into one byte.
+TEST(SourceRoutePolicy, AConnectionRouteSurvivesItsPacking)
+{
+	for (unsigned r = 0; r <= static_cast<unsigned>(EConnectionRoute::AnsweredLugdunumCallback); ++r) {
+		const auto route = static_cast<EConnectionRoute>(r);
+		for (EConnectionTransport transport : { EConnectionTransport::TCP,
+			     EConnectionTransport::UTP,
+			     EConnectionTransport::QUIC }) {
+			for (int flags = 0; flags < 4; ++flags) {
+				const bool overIPv6 = (flags & 1) != 0;
+				const bool viaProxy = (flags & 2) != 0;
+				const std::uint8_t packed =
+					PackConnectionRoute(route, transport, overIPv6, viaProxy);
+				ASSERT_TRUE(UnpackConnectionRoute(packed) == route);
+				ASSERT_TRUE(UnpackConnectionTransport(packed) == transport);
+				ASSERT_EQUALS(overIPv6, ConnectionOverIPv6(packed));
+				ASSERT_EQUALS(viaProxy, ConnectionViaProxy(packed));
+			}
+		}
+	}
+	// A route or transport a newer daemon knows reads as none and TCP.
+	ASSERT_TRUE(UnpackConnectionRoute(0x0F) == EConnectionRoute::None);
+	ASSERT_TRUE(UnpackConnectionTransport(0x30) == EConnectionTransport::TCP);
+}
+
+// A socket we opened names its own reason; a socket we accepted is the answer to the contact in
+// flight, or a peer that came on its own.
+TEST(SourceRoutePolicy, AConnectionRouteFollowsWhoOpenedIt)
+{
+	SConnectionRouteFacts facts;
+	facts.contactInFlight = true;
+	facts.attempt = EContactRouteReport::ServerCallback;
+
+	const std::pair<EConnectionOpener, EConnectionRoute> opened[] = {
+		{ EConnectionOpener::Dial, EConnectionRoute::Dial },
+		{ EConnectionOpener::AnswerServerCallback, EConnectionRoute::AnsweredServerCallback },
+		{ EConnectionOpener::AnswerKadCallback, EConnectionRoute::AnsweredKadCallback },
+		{ EConnectionOpener::AnswerDirectCallback, EConnectionRoute::AnsweredDirectCallback },
+		{ EConnectionOpener::HolePunchDial, EConnectionRoute::ServerHolePunch },
+		{ EConnectionOpener::LugdunumCallbackDial, EConnectionRoute::LugdunumCallback },
+		{ EConnectionOpener::AnswerLugdunumCallback, EConnectionRoute::AnsweredLugdunumCallback },
+	};
+	for (const auto &entry : opened) {
+		facts.opener = entry.first;
+		ASSERT_TRUE(DecideConnectionRoute(facts) == entry.second);
+	}
+
+	facts.opener = EConnectionOpener::Accepted;
+	const std::pair<EContactRouteReport, EConnectionRoute> answered[] = {
+		{ EContactRouteReport::ServerCallback, EConnectionRoute::ServerCallback },
+		{ EContactRouteReport::KadBuddy, EConnectionRoute::KadBuddyCallback },
+		{ EContactRouteReport::DirectUdpCallback, EConnectionRoute::DirectUdpCallback },
+		{ EContactRouteReport::ForeignNatCallback, EConnectionRoute::ForeignNatCallback },
+		{ EContactRouteReport::ServerHolePunch, EConnectionRoute::ServerHolePunch },
+		{ EContactRouteReport::LugdunumCallback, EConnectionRoute::LugdunumCallback },
+		// Our dial was in flight, but the peer reached us first.
+		{ EContactRouteReport::Dial, EConnectionRoute::Inbound },
+		{ EContactRouteReport::None, EConnectionRoute::Inbound },
+	};
+	for (const auto &entry : answered) {
+		facts.attempt = entry.first;
+		ASSERT_TRUE(DecideConnectionRoute(facts) == entry.second);
+	}
+
+	// A stream from a peer a rendezvous announced is that NAT-T meeting, named by our own step.
+	facts.opener = EConnectionOpener::AcceptedRendezvous;
+	facts.attempt = EContactRouteReport::LugdunumCallback;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::LugdunumCallback);
+	facts.attempt = EContactRouteReport::ForeignNatCallback;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ForeignNatCallback);
+	facts.attempt = EContactRouteReport::ServerHolePunch;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ServerHolePunch);
+	// Without a step of ours, we answered the peer's hole punch or Lugdunum callback.
+	facts.contactInFlight = false;
+	facts.attempt = EContactRouteReport::None;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ServerHolePunch);
+	facts.opener = EConnectionOpener::AcceptedLugdunumRendezvous;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::AnsweredLugdunumCallback);
+	facts.contactInFlight = true;
+	facts.attempt = EContactRouteReport::LugdunumCallback;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::LugdunumCallback);
+	// Our dial on a path our cross-server request opened is that request.
+	facts.opener = EConnectionOpener::HolePunchDial;
+	facts.attempt = EContactRouteReport::ForeignNatCallback;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ForeignNatCallback);
+	facts.contactInFlight = false;
+	facts.opener = EConnectionOpener::Accepted;
+	facts.contactInFlight = true;
+
+	// A callback we asked for long ago does not explain a peer that dials us now.
+	facts.contactInFlight = false;
+	facts.attempt = EContactRouteReport::ServerCallback;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::Inbound);
+}
+
+// The callback request a socket answers names it; only without one do the NAT-T dial flags.
+TEST(SourceRoutePolicy, AnAnsweredCallbackNamesTheSocket)
+{
+	ASSERT_TRUE(
+		ResolveConnectionOpener(EConnectionOpener::Dial, false, false) == EConnectionOpener::Dial);
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::Dial, false, true) ==
+		    EConnectionOpener::HolePunchDial);
+	// A Lugdunum dial is a hole-punch dial too; the Lugdunum flag is the more specific one.
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::Dial, true, true) ==
+		    EConnectionOpener::LugdunumCallbackDial);
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::AnswerLugdunumCallback, true, true) ==
+		    EConnectionOpener::AnswerLugdunumCallback);
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::AnswerServerCallback, false, false) ==
+		    EConnectionOpener::AnswerServerCallback);
+}
+
+// A LowID-to-LowID wait is ours only while a NAT-T step is out; the other contact states always are.
+TEST(SourceRoutePolicy, AContactIsInFlightOnlyWhileOursIsAwaited)
+{
+	for (std::uint8_t state : { DS_CONNECTING, DS_WAITCALLBACK, DS_WAITCALLBACKKAD }) {
+		ASSERT_TRUE(IsContactInFlight(state, US_NONE, EContactRouteReport::None));
+	}
+	for (EContactRouteReport step : { EContactRouteReport::ForeignNatCallback,
+		     EContactRouteReport::ServerHolePunch,
+		     EContactRouteReport::LugdunumCallback }) {
+		ASSERT_TRUE(IsContactInFlight(DS_LOWTOLOWIP, US_NONE, step));
+	}
+	// No step was sent this round, or the route is an older attempt's.
+	ASSERT_FALSE(IsContactInFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::None));
+	ASSERT_FALSE(IsContactInFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::ServerCallback));
+	ASSERT_FALSE(IsContactInFlight(DS_ONQUEUE, US_NONE, EContactRouteReport::ServerCallback));
+	ASSERT_FALSE(IsContactInFlight(DS_NONE, US_NONE, EContactRouteReport::Dial));
+	// An upload connect is a contact of ours as well.
+	ASSERT_TRUE(IsContactInFlight(DS_NONE, US_CONNECTING, EContactRouteReport::None));
+}
+
+// Channels merge into a set; only a set that already had one counts the gain.
+TEST(SourceRoutePolicy, SourceOriginsMergeAndCountOnlyLaterChannels)
+{
+	unsigned mask = 0;
+	ASSERT_FALSE(MergeSourceOrigins(mask, SourceFromBit(SF_KADEMLIA)));
+	ASSERT_EQUALS(SourceFromBit(SF_KADEMLIA), mask);
+	ASSERT_FALSE(MergeSourceOrigins(mask, SourceFromBit(SF_KADEMLIA)));
+	ASSERT_TRUE(MergeSourceOrigins(mask, SourceFromBit(SF_LOCAL_SERVER)));
+	ASSERT_EQUALS(SourceFromBit(SF_KADEMLIA) | SourceFromBit(SF_LOCAL_SERVER), mask);
+	ASSERT_FALSE(MergeSourceOrigins(mask, 0));
+}
+
+// A swap takes the target file's own origin and leaves the current one only for a target without.
+TEST(SourceRoutePolicy, ASwapTakesTheTargetFilesOrigin)
+{
+	const SSourceOrigin current{ SF_KADEMLIA, SourceFromBit(SF_KADEMLIA) };
+	const SSourceOrigin target{ SF_PASSIVE,
+		SourceFromBit(SF_PASSIVE) | SourceFromBit(SF_SOURCE_EXCHANGE) };
+	const SSourceOrigin swapped = OriginAfterSwap(current, target);
+	ASSERT_TRUE(swapped.from == SF_PASSIVE);
+	ASSERT_EQUALS(target.mask, swapped.mask);
+
+	const SSourceOrigin kept = OriginAfterSwap(current, SSourceOrigin{});
+	ASSERT_TRUE(kept.from == SF_KADEMLIA);
+	ASSERT_EQUALS(current.mask, kept.mask);
+}

@@ -753,5 +753,26 @@ else
 	_skip "/clients: no rows, cannot check next_ask_at"
 fi
 
+# --- 14. connection_route says how the current or last connection came about:
+# a documented token or null, with connection_transport set exactly when it is,
+# and the two connection flags always present booleans. Reads only, appended at
+# the end for the same reason as 8.
+CONNECTION_TOKENS='["dial","inbound","server_callback","kad_buddy_callback","direct_udp_callback","foreign_nat_callback","server_hole_punch","lugdunum_callback","answered_server_callback","answered_kad_buddy_callback","answered_direct_udp_callback","answered_lugdunum_callback"]'
+_curl -H "Authorization: Bearer $TOKEN" "$API/clients"
+if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
+	_assert_json_eq "[.clients[].connection_route | select(. != null)] - $CONNECTION_TOKENS | length" 0 \
+		"/clients: every connection_route is a documented token"
+	_assert_json_eq '[.clients[] | select(has("connection_route") | not)] | length' 0 \
+		"/clients: connection_route is present on every row"
+	_assert_json_eq '[.clients[] | select((.connection_route == null) != (.connection_transport == null))] | length' 0 \
+		"/clients: connection_transport is set exactly when connection_route is"
+	_assert_json_eq '[.clients[].connection_transport | select(. != null)] - ["tcp","utp","quic"] | length' 0 \
+		"/clients: every connection_transport is a documented token"
+	_assert_json_eq '[.clients[] | select((.connection_ipv6|type) != "boolean" or (.connection_proxied|type) != "boolean")] | length' 0 \
+		"/clients: the two connection flags are booleans on every row"
+else
+	_skip "/clients: no rows, cannot check connection_route"
+fi
+
 # --- Summary. -----------------------------------------------------
 _summary

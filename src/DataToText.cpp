@@ -273,6 +273,68 @@ wxString ContactRouteStatus(unsigned int route, bool unproven, bool fromFallback
 	return CFormat(_("Connecting via %s")) % name;
 }
 
+wxString ConnectionRouteToText(unsigned int packed)
+{
+	const auto byte = static_cast<std::uint8_t>(packed);
+	wxString route;
+	switch (UnpackConnectionRoute(byte)) {
+	case EConnectionRoute::Dial:
+		route = _("Direct");
+		break;
+	case EConnectionRoute::Inbound:
+		route = _("Incoming");
+		break;
+	case EConnectionRoute::ServerCallback:
+		route = _("Server callback");
+		break;
+	case EConnectionRoute::KadBuddyCallback:
+		route = _("Kad buddy callback");
+		break;
+	case EConnectionRoute::DirectUdpCallback:
+		route = _("Direct UDP callback");
+		break;
+	case EConnectionRoute::ForeignNatCallback:
+		route = _("Callback by the source's server");
+		break;
+	case EConnectionRoute::ServerHolePunch:
+		route = _("Server hole punch");
+		break;
+	case EConnectionRoute::LugdunumCallback:
+		route = _("Lugdunum callback");
+		break;
+	case EConnectionRoute::AnsweredServerCallback:
+		route = _("Answered server callback");
+		break;
+	case EConnectionRoute::AnsweredKadCallback:
+		route = _("Answered Kad buddy callback");
+		break;
+	case EConnectionRoute::AnsweredDirectCallback:
+		route = _("Answered direct UDP callback");
+		break;
+	case EConnectionRoute::AnsweredLugdunumCallback:
+		route = _("Answered Lugdunum callback");
+		break;
+	case EConnectionRoute::None:
+		return wxEmptyString;
+	}
+	wxString transport = "TCP";
+	switch (UnpackConnectionTransport(byte)) {
+	case EConnectionTransport::UTP:
+		transport = "uTP";
+		break;
+	case EConnectionTransport::QUIC:
+		transport = "QUIC";
+		break;
+	case EConnectionTransport::TCP:
+		break;
+	}
+	wxString details = transport + ", " + (ConnectionOverIPv6(byte) ? "IPv6" : "IPv4");
+	if (ConnectionViaProxy(byte)) {
+		details += ", " + wxString(_("proxy"));
+	}
+	return CFormat("%s (%s)") % route % details;
+}
+
 wxString GetConversionState(unsigned int state)
 {
 	switch (state) {

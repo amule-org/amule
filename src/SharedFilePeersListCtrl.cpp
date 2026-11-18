@@ -36,6 +36,7 @@ CGenericClientListCtrlColumn s_sources_column_info[] = { { ColumnUserName, wxTRA
 	{ ColumnUserQueueRankLocal, wxTRANSLATE("Upload Status"), 70 },
 	{ ColumnUserQueueRankRemote, wxTRANSLATE("Download Status"), 70 },
 	{ ColumnUserOrigin, wxTRANSLATE("Origin"), 110 },
+	{ ColumnUserConnectionRoute, wxTRANSLATE("Connection"), 170 },
 	{ ColumnUserFileNameUpload, wxTRANSLATE("Local File Name"), 200 },
 	{ ColumnUserSharedFiles, wxTRANSLATE("Shares File List"), 100 } };
 } // namespace

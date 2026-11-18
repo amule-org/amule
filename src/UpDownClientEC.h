@@ -135,6 +135,8 @@ public:
 	bool IsIdentityFromFallback() const { return m_identityFromFallback; }
 	bool IsRouteUnproven() const { return m_routeUnproven; }
 	bool IsContactOverIPv6() const { return m_contactOverIPv6; }
+	//! EC_TAG_CLIENT_CONNECTION_ROUTE as the core packed it.
+	int GetConnectionRoute() const { return m_connectionRoute; }
 	uint64 GetTransferredDown() const { return m_nTransferredDown; }
 	uint64 GetTransferredUp() const { return m_nTransferredUp; }
 	uint32 GetUploadDatarate() const { return m_nUpDatarate; }
@@ -219,6 +221,8 @@ private:
 	bool m_identityFromFallback = false;
 	bool m_routeUnproven = false;
 	bool m_contactOverIPv6 = false;
+	// Zero on a core that does not send it.
+	int m_connectionRoute = 0;
 	uint64 m_nTransferredDown;
 	uint64 m_nTransferredUp;
 	uint32 m_nUpDatarate;

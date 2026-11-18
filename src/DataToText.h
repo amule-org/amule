@@ -74,6 +74,12 @@ wxString ContactRouteToText(unsigned int route);
  */
 wxString ContactRouteStatus(unsigned int route, bool unproven, bool fromFallback);
 
+/**
+ * How a client's connection came about, already translated: "Server callback (TCP, IPv4)". Takes
+ * PackConnectionRoute()'s byte; empty before the first connection.
+ */
+wxString ConnectionRouteToText(unsigned int packed);
+
 /// @return The textual representation of a partfile conversion state.
 wxString GetConversionState(unsigned int state);
 

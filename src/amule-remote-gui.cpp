@@ -3465,6 +3465,11 @@ void CUpDownClientListRem::ProcessItemUpdate(const CEC_UpDownClient_Tag *tag, CC
 		client->SetContactRoute(contactRoute);
 	}
 
+	uint8 connectionRoute = 0;
+	if (tag->GetConnectionRoute(connectionRoute)) {
+		client->m_connectionRoute = connectionRoute;
+	}
+
 	tag->RemoteFilename(client->m_clientFilename);
 	tag->DisableViewShared(client->m_fNoViewSharedFiles);
 	tag->Version(client->m_nClientVersion);

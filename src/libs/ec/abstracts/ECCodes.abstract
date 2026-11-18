@@ -531,6 +531,13 @@ EC_TAG_CLIENT                             0x0600
 # so it stays out of most updates. Additive: a missing tag means an older
 # daemon, which reads as no ask scheduled.
 	EC_TAG_CLIENT_NEXT_ASK_AT                 0x0636
+
+# How the connection a client is on, or was last on, came about, packed into one
+# byte: the low nibble is the EConnectionRoute value (SourceRoutePolicy.h), bits
+# 4-5 the EConnectionTransport, bit 6 says the peer is on IPv6 and bit 7 that a
+# proxy carried the dial. Decided once per connection, at its first hello.
+# Additive: a missing tag reads as never connected.
+	EC_TAG_CLIENT_CONNECTION_ROUTE            0x0637
 EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_TYPE                        0x0701
 	EC_TAG_SEARCH_NAME                        0x0702

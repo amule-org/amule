@@ -80,6 +80,9 @@ export const COLS = [
     cell: (c) => (c.source_origins || []).length
       ? c.source_origins.map((o) => t("downloads_peer_origin_" + o)).join(" + ")
       : c.source_origin ? t("downloads_peer_origin_" + c.source_origin) : "—" },
+  // How the current or last connection came about, the desktop's Connection column.
+  { key: "connection", th: "downloads_peer_col_connection", width: "190px", sortable: true,
+    sortVal: (c) => connectionLabel(c).toLowerCase(), cell: (c) => connectionLabel(c) },
   { key: "file", th: "downloads_peer_col_file", cls: "name", sortable: true,
     sortVal: (c) => fileNameOf(c).toLowerCase(),
     // A4AF row: the peer-advertised name belongs to the other file it is parked
@@ -163,7 +166,16 @@ export const COLS = [
 
 // Raw-detail columns no consumer leads with; each adds its own defaultHidden set
 // on top of these.
-export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident", "origin", "ratio"];
+export const HIDDEN_EVERYWHERE = ["address", "os", "user_hash", "ident", "origin", "connection", "ratio"];
+
+const TRANSPORTS = { tcp: "TCP", utp: "uTP", quic: "QUIC" };
+// "Server callback (TCP, IPv4)"; a dash before the first connection.
+export function connectionLabel(c) {
+  if (!c || !c.connection_route) return "—";
+  const details = [TRANSPORTS[c.connection_transport] || "TCP", c.connection_ipv6 ? "IPv6" : "IPv4"];
+  if (c.connection_proxied) details.push(t("downloads_peer_conn_proxy"));
+  return t("downloads_peer_conn_" + c.connection_route) + " (" + details.join(", ") + ")";
+}
 
 // 1:1 with ClientIdentStateName() in src/webapi/Refresher.cpp.
 export const IDENT_STATES = ["identified", "not_available", "id_needed", "id_failed", "bad_guy", "unknown"];

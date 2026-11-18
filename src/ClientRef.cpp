@@ -136,7 +136,8 @@ uint16 WRAPC(GetServerPort) const wxString &WRAPC(GetSoftStr) const wxString &WR
 	GetSourceFrom)
 unsigned WRAPC(GetSourceOriginMask)
 uint64 WRAPC(GetNextAskTime)
-int WRAPC(GetContactRoute) bool WRAPC(IsIdentityFromFallback) bool WRAPC(IsRouteUnproven) bool WRAPC(
+int WRAPC(GetContactRoute)
+int WRAPC(GetConnectionRoute) bool WRAPC(IsIdentityFromFallback) bool WRAPC(IsRouteUnproven) bool WRAPC(
 	IsContactOverIPv6) uint64 WRAPC(GetTransferredDown)
 uint64 WRAPC(GetTransferredUp)
 uint32 WRAPC(GetUploadDatarate)

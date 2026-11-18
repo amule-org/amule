@@ -59,6 +59,7 @@ CClientsListCtrl::CClientsListCtrl(
 	// detail dialog already labels this way, with a 2x on the downloaded side, so "Ratio"
 	// invited reading it as uploaded-vs-downloaded.
 	AddTextColumn(_("DL/UP modifier"), COLUMN_CLIENTS_RATIO, "R", 120, wxALIGN_LEFT, colFlags);
+	AddTextColumn(_("Connection"), COLUMN_CLIENTS_CONNECTION_ROUTE, "C", 170, wxALIGN_LEFT, colFlags);
 
 	AppendSpacerColumn(COLUMN_CLIENTS_SPACER);
 
@@ -219,6 +220,9 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		// hint -- the lookup has to happen here, the way the download list's source column
 		// already does it.
 		return wxGetTranslation(OriginToText(row->sourceFrom));
+
+	case COLUMN_CLIENTS_CONNECTION_ROUTE:
+		return ConnectionRouteToText(row->connectionRoute);
 
 	case COLUMN_CLIENTS_FILES:
 		return row->files;

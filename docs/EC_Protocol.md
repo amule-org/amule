@@ -767,6 +767,30 @@ The tag is additive and follows the usual convention: a reply without it
 means an older daemon, which is a **third state**, distinct from a
 source no contact has been attempted for yet (route `0`).
 
+### Connection route of a client
+
+| Tag | Code | Type | Meaning |
+| --- | ---- | ---- | ------- |
+| `EC_TAG_CLIENT_CONNECTION_ROUTE` | `0x0637` | `uint8` | How the client's current or last connection came about |
+
+A child of `EC_TAG_CLIENT`. Where `EC_TAG_CLIENT_CONTACT_ROUTE` names the
+attempt, this names the connection. It is decided once per connection,
+at its first hello, from who opened the socket and why, and from the
+contact in flight when an accepted socket answers one of ours. A
+connection on a NAT-T path takes the name of our own NAT-T request while
+one is out; otherwise it is the other side's request we answered.
+
+| Bits | Meaning |
+| ---- | ------- |
+| 0-3 | The route: `0` none, `1` we dialled, `2` the peer dialled us unasked, `3` server callback, `4` Kad buddy callback, `5` direct UDP callback, `6` foreign-server NAT callback, `7` server hole punch, `8` Lugdunum callback, `9` we answered a server callback request, `10` we answered a Kad buddy callback request, `11` we answered a direct UDP callback request, `12` we answered a Lugdunum or cross-server callback request our server forwarded |
+| 4-5 | The transport: `0` TCP, `1` uTP, `2` QUIC |
+| 6 | The connection is to the peer's IPv6 address |
+| 7 | A proxy carried the dial |
+
+A route value this build does not know reads as none, and a transport it
+does not know reads as TCP. A reply without the tag reads as a client
+that has not connected yet.
+
 ### Combined network searches
 
 `EC_SEARCH_ALL` (`5`) starts a global eD2k search and a Kad keyword search

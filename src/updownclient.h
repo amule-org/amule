@@ -698,7 +698,8 @@ public:
 	void SendHashsetRequest();
 	void SendFileRequest();
 	void ProcessHashSet(const uint8_t *packet, uint32 size);
-	bool AddRequestForAnotherFile(CPartFile *file);
+	//! @a from: the channel that offered this client for @a file.
+	bool AddRequestForAnotherFile(CPartFile *file, ESourceFrom from);
 	bool DeleteFileRequest(CPartFile *file);
 	void DeleteAllFileRequests();
 	void SendBlockRequests();
@@ -885,6 +886,14 @@ public:
 	//! Takes a channel this source was seen on: its own, or those of a duplicate copy before
 	//! that copy is deleted. Counts every channel beyond the first.
 	void AdoptSourceOrigins(unsigned mask);
+	//! As AdoptSourceOrigins(), for the copy found for @a file: an A4AF file keeps its own.
+	void AdoptSourceOriginsFor(const CPartFile *file, unsigned mask);
+	//! A known client that becomes a source again: the channels of its last file are not this one's.
+	void RestartSourceOrigin(ESourceFrom val)
+	{
+		m_sourceFromMask = 0;
+		SetSourceFrom(val);
+	}
 
 	/* Kad buddy support */
 	// ID
@@ -922,6 +931,13 @@ public:
 	int GetContactRoute() const { return static_cast<int>(m_lastContactRoute); }
 	//! That route is a dial to the peer's IPv6 address.
 	bool IsContactOverIPv6() const { return m_lastContactOverIPv6; }
+	//! How the current connection came about, or the last one: PackConnectionRoute(), 0 before
+	//! the first.
+	int GetConnectionRoute() const { return m_connectionRoute; }
+	//! The next socket this client opens answers a callback request, not a contact of ours.
+	void NoteCallbackAnswer(EConnectionOpener opener) { m_answerOpener = opener; }
+	//! Why a socket opened for this client now is opened. Read once, by its constructor.
+	EConnectionOpener TakeConnectionOpener();
 	// One key per address this source can be reached on, so a later copy under any of them is
 	// known dead once this one is.
 	std::vector<CDeadSourceKey> DeadSourceKeys() const;
@@ -1121,6 +1137,9 @@ private:
 		bool NeededParts;
 		//! This is set when we wish to avoid swapping to this file for a while.
 		uint64 timestamp;
+		//! The origin for this file, taken over by a swap to it.
+		ESourceFrom sourceFrom = SF_NONE;
+		unsigned sourceFromMask = 0;
 	};
 
 	//! I typedef in the name of readability!
@@ -1346,6 +1365,8 @@ private:
 	// The same route, kept after the attempt ends so the source list can show it, plus the two
 	// NAT-T steps the chain does not pick.
 	EContactRouteReport m_lastContactRoute{};
+	EConnectionOpener m_answerOpener = EConnectionOpener::Dial;
+	std::uint8_t m_connectionRoute = 0;
 	// The route is a dial to the peer's IPv6 address.
 	bool m_lastContactOverIPv6 = false;
 	unsigned m_failedSourceRoutes = 0;

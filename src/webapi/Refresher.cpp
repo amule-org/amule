@@ -148,6 +148,54 @@ std::string ContactRouteName(std::uint8_t packed)
 	return std::string();
 }
 
+// Map the route nibble of EC_TAG_CLIENT_CONNECTION_ROUTE (EConnectionRoute, SourceRoutePolicy.h)
+// to a stable lowercase token. Empty before the first connection, which reads as null.
+std::string ConnectionRouteName(std::uint8_t packed)
+{
+	switch (UnpackConnectionRoute(packed)) {
+	case EConnectionRoute::Dial:
+		return "dial";
+	case EConnectionRoute::Inbound:
+		return "inbound";
+	case EConnectionRoute::ServerCallback:
+		return "server_callback";
+	case EConnectionRoute::KadBuddyCallback:
+		return "kad_buddy_callback";
+	case EConnectionRoute::DirectUdpCallback:
+		return "direct_udp_callback";
+	case EConnectionRoute::ForeignNatCallback:
+		return "foreign_nat_callback";
+	case EConnectionRoute::ServerHolePunch:
+		return "server_hole_punch";
+	case EConnectionRoute::LugdunumCallback:
+		return "lugdunum_callback";
+	case EConnectionRoute::AnsweredServerCallback:
+		return "answered_server_callback";
+	case EConnectionRoute::AnsweredKadCallback:
+		return "answered_kad_buddy_callback";
+	case EConnectionRoute::AnsweredDirectCallback:
+		return "answered_direct_udp_callback";
+	case EConnectionRoute::AnsweredLugdunumCallback:
+		return "answered_lugdunum_callback";
+	case EConnectionRoute::None:
+		break;
+	}
+	return std::string();
+}
+
+std::string ConnectionTransportName(std::uint8_t packed)
+{
+	switch (UnpackConnectionTransport(packed)) {
+	case EConnectionTransport::UTP:
+		return "utp";
+	case EConnectionTransport::QUIC:
+		return "quic";
+	case EConnectionTransport::TCP:
+		break;
+	}
+	return "tcp";
+}
+
 namespace
 {
 
@@ -1042,6 +1090,18 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 			cs.route_unproven = ContactRouteIsUnproven(v);
 			cs.route_from_fallback = ContactRouteFromFallback(v);
 			cs.route_ipv6 = ContactRouteOverIPv6(v);
+		}
+	}
+	{
+		// Absent on a core older than the tag: the guard leaves the defaults.
+		std::uint8_t v = 0;
+		if (c->AssignIfExist(EC_TAG_CLIENT_CONNECTION_ROUTE, v)) {
+			cs.connection_route = ConnectionRouteName(v);
+			// The rest describe a connection, so they wait for one.
+			const bool known = !cs.connection_route.empty();
+			cs.connection_transport = known ? ConnectionTransportName(v) : std::string();
+			cs.connection_ipv6 = known && ConnectionOverIPv6(v);
+			cs.connection_proxied = known && ConnectionViaProxy(v);
 		}
 	}
 	// PARTFILE_NAME rides inside the client tag only while the peer is

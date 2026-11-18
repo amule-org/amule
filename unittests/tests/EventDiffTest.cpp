@@ -2214,6 +2214,9 @@ TEST(EventDiff, ClientEventNullsOptionalStringsThatNeverArrived)
 		"source_origin",
 		// null until a contact has been attempted, and on a daemon older than the tag.
 		"contact_route",
+		// null before the first connection, and on a daemon older than the tag.
+		"connection_route",
+		"connection_transport",
 		"client_mod_name" };
 	for (const char *key : nulled) {
 		ASSERT_TRUE(payload.find(std::string("\"") + key + "\":null") != std::string::npos);

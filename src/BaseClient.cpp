@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <array>
+#include <utility> // Needed for std::exchange
 
 #include "updownclient.h"   // Needed for CUpDownClient
 #include "SharedFileList.h" // Needed for CSharedFileList
@@ -2562,6 +2563,9 @@ void CUpDownClient::SetLastResortIPv6(const CNetworkAddress &address)
 
 EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 {
+	// Only the socket this attempt opens answers the callback request: a refusal below must not
+	// leave it for a later dial of ours.
+	const EConnectionOpener answer = std::exchange(m_answerOpener, EConnectionOpener::Dial);
 	// Kad reviewed
 	if (theApp->listensocket->TooManySockets() && !bIgnoreMaxCon) {
 		if (!(m_socket && m_socket->IsConnected())) {
@@ -2600,6 +2604,8 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		if (!theApp->CanDoCallback(GetServerIP(), GetServerPort())) {
 			// We cannot do a callback!
 			if (GetDownloadState() == DS_CONNECTING) {
+				// A step of an earlier round is not awaited any more.
+				NoteContactStep(EContactRouteReport::None);
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 				// Sent once per source: a DS_LOWTOLOWIP source is not asked again.
 				if (TrySendForeignNatCallbackRequest()) {
@@ -2647,6 +2653,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		if (m_socket) {
 			m_socket->Safe_Delete();
 		}
+		m_answerOpener = answer;
 		m_socket = new CClientTCPSocket(this, thePrefs::GetProxyData());
 	} else {
 		ConnectionEstablished();
@@ -2962,10 +2969,28 @@ void CUpDownClient::RefreshObfuscationState()
 	m_hasbeenobfuscatinglately = m_socket && m_socket->IsConnected() && m_socket->IsObfusicating();
 }
 
+EConnectionOpener CUpDownClient::TakeConnectionOpener()
+{
+	const EConnectionOpener answer = std::exchange(m_answerOpener, EConnectionOpener::Dial);
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	return ResolveConnectionOpener(answer, IsLugdunumCallbackDial(), IsLowIdHolePunchDial());
+#else
+	return ResolveConnectionOpener(answer, false, false);
+#endif
+}
+
 void CUpDownClient::ConnectionEstablished()
 {
 	// Kry - First thing, check if this client was just used to retrieve info. That is some
 	// debug thing for myself -- check the connection_reason definition.
+
+	// Before anything below moves the states that say a contact of ours was in flight.
+	if (m_socket != nullptr) {
+		m_connectionRoute = m_socket->ConnectionRoute(
+			IsContactInFlight(GetDownloadState(), GetUploadState(), m_lastContactRoute),
+			m_lastContactRoute);
+	}
+	m_answerOpener = EConnectionOpener::Dial;
 
 	RefreshObfuscationState();
 #ifdef ENABLE_IPV6
@@ -4152,17 +4177,31 @@ void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID, bool fromKad)
 	md4cpy(m_achBuddyID, pucBuddyID);
 }
 
+namespace
+{
+void MergeCountedSourceOrigins(unsigned &into, unsigned mask)
+{
+	if (MergeSourceOrigins(into, mask)) {
+		theStats::AddSourceRouteEvent(ESourceRouteEvent::OriginGained);
+	}
+}
+} // namespace
+
 void CUpDownClient::AdoptSourceOrigins(unsigned mask)
 {
-	const unsigned added = mask & ~m_sourceFromMask;
-	if (added == 0) {
+	MergeCountedSourceOrigins(m_sourceFromMask, mask);
+}
+
+void CUpDownClient::AdoptSourceOriginsFor(const CPartFile *file, unsigned mask)
+{
+	if (file == nullptr || m_reqfile == nullptr || file == m_reqfile) {
+		AdoptSourceOrigins(mask);
 		return;
 	}
-	// A source gains its first channel on the way in, which is not a second sighting.
-	const bool hadChannel = m_sourceFromMask != 0;
-	m_sourceFromMask |= added;
-	if (hadChannel) {
-		theStats::AddSourceRouteEvent(ESourceRouteEvent::OriginGained);
+	// No entry: this client is not queued for that file, so the channel is not this one's.
+	const auto it = m_A4AF_list.find(const_cast<CPartFile *>(file));
+	if (it != m_A4AF_list.end()) {
+		MergeCountedSourceOrigins(it->second.sourceFromMask, mask);
 	}
 }
 
@@ -4171,7 +4210,7 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	// Every merge ends in Safe_Delete() of the duplicate, and an incoming hello takes only this
 	// much of it, so the channels it was seen on are taken here rather than with the routes.
 	// This copy keeps its own ESourceFrom: the mask is the set, the field is where it came from.
-	AdoptSourceOrigins(duplicate.GetSourceOriginMask());
+	AdoptSourceOriginsFor(duplicate.GetRequestFile(), duplicate.GetSourceOriginMask());
 
 	SKadBuddyMergeFacts facts;
 	facts.incomingHasID = duplicate.HasValidBuddyID();

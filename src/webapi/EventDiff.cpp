@@ -333,7 +333,13 @@ std::string ToJson(const ClientSnapshot &c)
 	  << ",\"contact_route\":" << JsonStrOrNull(!c.contact_route.empty(), c.contact_route)
 	  << ",\"route_unproven\":" << (c.route_unproven ? "true" : "false")
 	  << ",\"route_from_fallback\":" << (c.route_from_fallback ? "true" : "false")
-	  << ",\"route_ipv6\":" << (c.route_ipv6 ? "true" : "false") << ",\"parts_offered_count\":"
+	  << ",\"route_ipv6\":" << (c.route_ipv6 ? "true" : "false")
+	  << ",\"connection_route\":" << JsonStrOrNull(!c.connection_route.empty(), c.connection_route)
+	  << ",\"connection_transport\":"
+	  << JsonStrOrNull(!c.connection_transport.empty(), c.connection_transport)
+	  << ",\"connection_ipv6\":" << (c.connection_ipv6 ? "true" : "false")
+	  << ",\"connection_proxied\":" << (c.connection_proxied ? "true" : "false")
+	  << ",\"parts_offered_count\":"
 	  << (c.has_parts_offered_count ? std::to_string(c.parts_offered_count) : std::string("null"))
 	  << ",\"client_mod_name\":" << JsonStrOrNull(!c.client_mod_name.empty(), c.client_mod_name)
 	  << ",\"shared_files_browsable\":" << (c.view_shared_disabled ? "false" : "true");
@@ -478,6 +484,8 @@ bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 	       a.source_origin == b.source_origin && a.source_origins_mask == b.source_origins_mask &&
 	       a.contact_route == b.contact_route && a.route_unproven == b.route_unproven &&
 	       a.route_from_fallback == b.route_from_fallback && a.route_ipv6 == b.route_ipv6 &&
+	       a.connection_route == b.connection_route && a.connection_transport == b.connection_transport &&
+	       a.connection_ipv6 == b.connection_ipv6 && a.connection_proxied == b.connection_proxied &&
 	       a.parts_offered_count == b.parts_offered_count &&
 	       // Without the flag, null -> 0 (the part map arriving and reporting
 	       // zero) compares equal and the row never updates.
