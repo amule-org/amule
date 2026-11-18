@@ -537,9 +537,7 @@ TEST(SourceRoutePolicy, AConnectionRouteFollowsWhoOpenedIt)
 	facts.opener = EConnectionOpener::HolePunchDial;
 	facts.attempt = EContactRouteReport::ForeignNatCallback;
 	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ForeignNatCallback);
-	facts.contactInFlight = false;
 	facts.opener = EConnectionOpener::Accepted;
-	facts.contactInFlight = true;
 
 	// A callback we asked for long ago does not explain a peer that dials us now.
 	facts.contactInFlight = false;

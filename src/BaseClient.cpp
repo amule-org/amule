@@ -2241,8 +2241,14 @@ void CUpDownClient::RetryLugdunumCallbackAwaitingServerKey(uint64 now)
 	if (theApp->serverconnect != nullptr && !theApp->serverconnect->TakeLugdunumCallbackRetrySlot(now)) {
 		return;
 	}
-	TrySendLugdunumNatCallbackRequest();
+	// The step's answer window starts when the request goes out, not when it was deferred.
+	if (TrySendLugdunumNatCallbackRequest()) {
+		NoteContactStep(EContactRouteReport::LugdunumCallback);
+	}
 }
+
+static_assert(kNatStepAnswerWindowMs == NatServerHolePunch::kRendezvousOutcomeTtlMs,
+	"a NAT-T step explains a connection for as long as its rendezvous does");
 #endif
 #endif
 
