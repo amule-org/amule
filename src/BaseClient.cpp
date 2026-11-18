@@ -1645,8 +1645,11 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 
 	// A source is given up only once every route it offers has failed.
 	bool restoredChainStart = false;
+	// A Kad callback to the same buddy IP waits out eMule's flood interval as "Waiting to ask".
+	bool waitsForKadCallback = false;
 	if (KeepForNextRoute(failedAdvertisedIPv6)) {
-		SetDownloadState(DS_ONQUEUE);
+		waitsForKadCallback = !IsKadCallbackRetryDue(::GetTickCount64());
+		SetDownloadState(waitsForKadCallback ? DS_NONE : DS_ONQUEUE);
 		m_bReaskPending = true;
 		// The source never got our request, so it is asked on the next tick, not at the next reask.
 		ResetLastAskedTime();
@@ -1667,7 +1670,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 		break;
 	};
 
-	if (m_nDownloadState == DS_ONQUEUE) {
+	if (m_nDownloadState == DS_ONQUEUE || waitsForKadCallback) {
 		source_type = A4AF_SOURCE; // Will be checked.
 	}
 	if (SourceRetryPolicy::KeepOnDisconnect(m_nDownloadState, m_reqfile != nullptr)) {
@@ -2348,8 +2351,8 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 			askAgain = true;
 		}
 		if (askAgain) {
-			// Kept on the queue rather than in the callback socket while eMule's flood interval
-			// runs out.
+			// The source waits to ask while eMule's flood interval runs out, not in the
+			// callback socket.
 			m_kadCallbackRetryTime = Kademlia::KadCallbackRetryTime(
 				m_kadCallbackSentTime, GetBuddyIP() == askedIP);
 			return true;
@@ -3044,10 +3047,16 @@ void CUpDownClient::ConnectionEstablished()
 	}
 
 	if (m_kadCallbackRetryTime != 0) {
-		// The source called back late, while its next request waited on the queue.
+		// The source called back late, while its next request waited. The reask below skips a
+		// source waiting to ask, so it gets its file request here.
 		m_kadCallbackRetryTime = 0;
 		m_bBuddyCallbackUnanswered = false;
 		m_bBuddyOtherLayoutTried = false;
+		if (GetDownloadState() == DS_NONE) {
+			m_bReaskPending = false;
+			SetDownloadState(DS_CONNECTED);
+			SendFileRequest();
+		}
 	}
 	switch (GetDownloadState()) {
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)

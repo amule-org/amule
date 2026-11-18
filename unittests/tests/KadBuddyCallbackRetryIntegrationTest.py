@@ -5,12 +5,12 @@
 
 A source published before #1993 by aMule wrote TAG_BUDDYHASH in another byte order. The ID must
 match on the way: emule-qt relays only an ID it serves, and the LowID drops a callback that is not
-its own. So when a KADEMLIA_CALLBACK_REQ goes unanswered,
-the downloader asks the same buddy once more with the other reading of the hash. eMule's Kad flood
-protection takes one KADEMLIA_CALLBACK_REQ per minute from an IP, so no IP gets a second request
-sooner; a switch to another buddy IP does not wait. The callback socket still times out after 40 s:
-the source waits on the download queue, not in a socket. Once every buddy has had both layouts, the
-route has failed and no further request follows.
+its own. So when a KADEMLIA_CALLBACK_REQ goes unanswered, the downloader asks the same buddy once
+more with the other reading of the hash. eMule's Kad flood protection takes one
+KADEMLIA_CALLBACK_REQ per minute from an IP, so no IP gets a second request sooner; a switch to
+another buddy IP does not wait. The callback socket still times out after 40 s: the source waits
+to ask, not in a socket. Once every buddy has had both layouts, the route has failed and no further
+request follows.
 
 With a second copy of the source naming another buddy, that buddy is tried first, in both layouts,
 and then the first one in the layout it was not asked in.
@@ -26,7 +26,7 @@ import threading
 import time
 from pathlib import Path
 
-from AllSearchIntegrationTest import C, retry_port_collisions, string, wait_for
+from AllSearchIntegrationTest import C, integer, retry_port_collisions, string, wait_for
 from KadLanModeIntegrationTest import write_private_contacts
 from KadSourceBuddyIdIntegrationTest import (FILE_HASH, FILE_SIZE, KADEMLIA_CALLBACK_REQ, NODE_ID,
                                              NODE_VERSION, SOURCE_ID, SOURCE_PORT, FakeNode,
@@ -43,6 +43,10 @@ FLOOD_INTERVAL = 60
 # case waits for it: the two-buddy case needs three such waits already, and its last request ends
 # the route the same way.
 SETTLE_SECONDS = 75
+# The next request to the same IP goes out this long after the last one; the socket gives up at 40 s.
+SAME_IP_WAIT = 65
+SOCKET_TIMEOUT = 40
+DS_NONE = 13
 SHORT_SETTLE_SECONDS = 20
 
 
@@ -113,6 +117,34 @@ class SilentBuddy(FakeNode):
             super().handle(opcode, body, peer)
 
 
+def poll_sources(ec, sources):
+    """Merge the clients of one incremental EC update into sources: id -> {tag: value}."""
+    opcode, tags = ec.call_list(C['EC_OP_GET_UPDATE'], [
+        integer(C['EC_TAG_DETAIL_LEVEL'], C['EC_DETAIL_INC_UPDATE'])])
+    assert opcode == C['EC_OP_SHARED_FILES'], opcode
+    for name, _, children in tags:
+        if name == C['EC_TAG_CLIENT']:
+            for _, client_id, fields in children:
+                sources.setdefault(int.from_bytes(client_id, 'big'), {}).update(
+                    {key: int.from_bytes(data, 'big') for key, data, _ in fields
+                     if key in (C['EC_TAG_CLIENT_DOWNLOAD_STATE'], C['EC_TAG_CLIENT_NEXT_ASK_AT'])})
+
+
+def check_waits_to_ask(proc, ec, first_request):
+    """Between the socket timeout and the next request, the source waits to ask, until then."""
+    sent_at = time.time() - (time.monotonic() - first_request)
+    time.sleep(max(0.0, first_request + SOCKET_TIMEOUT + 6 - time.monotonic()))
+    sources = {}
+    poll_sources(ec, sources)
+    waiting = [fields for fields in sources.values()
+               if fields.get(C['EC_TAG_CLIENT_DOWNLOAD_STATE']) == DS_NONE]
+    assert waiting, ('the source does not wait to ask after its callback socket timed out', sources)
+    ask_at = waiting[0].get(C['EC_TAG_CLIENT_NEXT_ASK_AT'], 0)
+    assert abs(ask_at - (sent_at + SAME_IP_WAIT)) < 3, (
+        'the next ask is not the retry time', ask_at - sent_at)
+    print(f'waiting to ask {ask_at - sent_at:.1f} s after the first request')
+
+
 def drive(binary, address, expected, with_second, settle):
     """Feed one daemon the source and return the callback requests as (time, buddy, ID)."""
     second = SecondBuddy(address, []) if with_second else None
@@ -135,6 +167,7 @@ def drive(binary, address, expected, with_second, settle):
                 wait_for(proc, 'a callback request through the published buddy',
                          lambda: bool(node.requests), 180)
                 print(f'first callback request {node.requests[0][0] - added:.1f} s after the link')
+                check_waits_to_ask(proc, ec, node.requests[0][0])
                 for count in range(2, expected + 1):
                     wait_for(proc, f'callback request {count} of {expected}',
                              lambda: len(node.requests) >= count, FLOOD_INTERVAL + 30)
