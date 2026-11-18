@@ -80,6 +80,14 @@ public:
 		});
 	}
 
+	void ReplyWith(const Packet &request, std::vector<std::uint8_t> response)
+	{
+		boost::asio::post(m_io, [this, response = std::move(response), peer = request.sender] {
+			boost::system::error_code error;
+			m_socket.send_to(boost::asio::buffer(response), peer, 0, error);
+		});
+	}
+
 private:
 	void Receive()
 	{
@@ -109,6 +117,24 @@ auto Local()
 {
 	return boost::asio::ip::address_v6::loopback();
 }
+// The client no longer owns its event loop: the caller supplies the io_context. This runner
+// drains posted client cleanup on destruction, so a stopped client's delete is always sent.
+struct IoRunner
+{
+	boost::asio::io_context io;
+	boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{
+		boost::asio::make_work_guard(io)
+	};
+	std::thread thread{ [this] { io.run(); } };
+	IoRunner() = default;
+	IoRunner(const IoRunner &) = delete;
+	IoRunner &operator=(const IoRunner &) = delete;
+	~IoRunner()
+	{
+		work.reset();
+		thread.join();
+	}
+};
 bool Active(const pcp::Client &client, bool wanted, std::chrono::milliseconds timeout = 1000ms)
 {
 	const auto end = std::chrono::steady_clock::now() + timeout;
@@ -129,11 +155,14 @@ bool SameNonce(const Packet &a, const Packet &b)
 TEST(PCPClient, RequestsRenewsGrantedLeaseAndClears)
 {
 	Server server;
-	pcp::Client client(server.Endpoint(), Local());
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
 	client.SetMapping(4662, Local(), 4662);
 	const auto initial = server.Next();
 	ASSERT_TRUE(initial.has_value());
-	ASSERT_EQUALS(64U, initial->bytes.size());
+	// 60 bytes: header and MAP payload only, no trailing PREFER_FAILURE option (RFC 6887
+	// section 13.2: never necessary for a client managing its own mappings).
+	ASSERT_EQUALS(60U, initial->bytes.size());
 	ASSERT_TRUE(initial->sender.address() == Local());
 	ASSERT_TRUE(std::equal(
 		initial->bytes.begin() + 8, initial->bytes.begin() + 24, Local().to_bytes().begin()));
@@ -157,7 +186,8 @@ TEST(PCPClient, RequestsRenewsGrantedLeaseAndClears)
 TEST(PCPClient, RejectsWrongSourceAndNonceWithoutChangingState)
 {
 	Server server;
-	pcp::Client client(server.Endpoint(), Local());
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
 	client.SetMapping(4662, Local(), 4662);
 	const auto request = server.Next();
 	ASSERT_TRUE(request.has_value());
@@ -178,7 +208,8 @@ TEST(PCPClient, RejectsWrongSourceAndNonceWithoutChangingState)
 TEST(PCPClient, RefusalBackoffReplacementAndStop)
 {
 	Server server;
-	pcp::Client client(server.Endpoint(), Local());
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
 	client.SetMapping(4662, Local(), 4662);
 	const auto first = server.Next();
 	ASSERT_TRUE(first.has_value());
@@ -214,7 +245,8 @@ TEST(PCPClient, RefusalBackoffReplacementAndStop)
 TEST(PCPClient, ConcurrentStopRejectsLaterUpdates)
 {
 	Server server;
-	pcp::Client client(server.Endpoint(), Local());
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
 	std::atomic<bool> start{ false };
 	std::thread updater([&] {
 		while (!start.load()) {
@@ -238,10 +270,11 @@ TEST(PCPClient, ConcurrentStopRejectsLaterUpdates)
 	ASSERT_FALSE(server.Next(250ms).has_value());
 }
 
-TEST(PCPClient, RecreatesAfterGatewayEpochRollsBack)
+TEST(PCPClient, AcceptsGrantEvenWhenGatewayEpochRollsBack)
 {
 	Server server;
-	pcp::Client client(server.Endpoint(), Local());
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
 	client.SetMapping(4662, Local(), 4662);
 	const auto first = server.Next();
 	ASSERT_TRUE(first.has_value());
@@ -249,10 +282,55 @@ TEST(PCPClient, RecreatesAfterGatewayEpochRollsBack)
 	ASSERT_TRUE(Active(client, true));
 	const auto renewal = server.Next();
 	ASSERT_TRUE(renewal.has_value());
+	// For a one-mapping client the epoch-back grant is the recreated mapping itself: it is
+	// accepted without spending a round trip on re-creation.
 	server.Reply(*renewal, 0, 1, 1);
-	const auto recreated = server.Next();
-	ASSERT_TRUE(recreated.has_value());
-	ASSERT_TRUE(SameNonce(*first, *recreated));
-	server.Reply(*recreated, 0, 2, 1);
 	ASSERT_TRUE(Active(client, true));
+	ASSERT_FALSE(server.Next(100ms).has_value());
+}
+
+TEST(PCPClient, DeletesAndRefusesGrantWithDifferentPort)
+{
+	Server server;
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
+	client.SetMapping(4662, Local(), 4662);
+	const auto request = server.Next();
+	ASSERT_TRUE(request.has_value());
+	// The server granted a different external port than the one requested.
+	auto grant = Server::Response(*request);
+	grant[42] = 0x12;
+	grant[43] = 0x37;
+	server.ReplyWith(*request, std::move(grant));
+	// A mapping we did not ask for is not used: it is deleted (lifetime 0) and refused.
+	ASSERT_TRUE(Active(client, false));
+	const auto deletion = server.Next();
+	ASSERT_TRUE(deletion.has_value());
+	ASSERT_EQUALS(0U, pcp::ReadNetwork32(deletion->bytes, 4));
+	ASSERT_TRUE(SameNonce(*request, *deletion));
+	ASSERT_FALSE(server.Next(1250ms).has_value());
+}
+
+TEST(PCPClient, RetransmitsAtLeastFourSecondsApart)
+{
+	Server server;
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
+	client.SetMapping(4662, Local(), 4662);
+	const auto first = server.Next();
+	ASSERT_TRUE(first.has_value());
+	const auto firstAt = std::chrono::steady_clock::now();
+	// RFC 6887 section 11.2.1: retransmissions are at least 4 seconds apart, with bounded growth.
+	// The floor in the client is exactly 4 s and the measurement is packet arrival on loopback,
+	// so a 50 ms tolerance absorbs arrival jitter without losing the contract (the old 3 s
+	// backoff failed this assertion).
+	const auto retry = server.Next(6000ms);
+	ASSERT_TRUE(retry.has_value());
+	ASSERT_TRUE(std::chrono::steady_clock::now() - firstAt >= 3950ms);
+	const auto retryAt = std::chrono::steady_clock::now();
+	const auto secondRetry = server.Next(12000ms);
+	ASSERT_TRUE(secondRetry.has_value());
+	// Growth stays bounded: the second gap is the jittered 6 s step (5.4--6.6 s), never
+	// as small as the 4 s floor.
+	ASSERT_TRUE(std::chrono::steady_clock::now() - retryAt >= 5350ms);
 }

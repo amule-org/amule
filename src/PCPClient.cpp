@@ -16,10 +16,12 @@ using Clock = std::chrono::steady_clock;
 
 struct Client::State : std::enable_shared_from_this<Client::State>
 {
-	State(const udp::endpoint &gateway, const boost::asio::ip::address_v6 &local)
-	: work(boost::asio::make_work_guard(context))
-	, socket(context)
-	, timer(context)
+	State(const udp::endpoint &gateway,
+		const boost::asio::ip::address_v6 &local,
+		boost::asio::io_context &ioContext)
+	: context(ioContext)
+	, socket(ioContext)
+	, timer(ioContext)
 	, localAddress(local)
 	{
 		boost::system::error_code error;
@@ -44,7 +46,6 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		if (ready) {
 			Receive();
 		}
-		thread = std::thread([self = shared_from_this()] { self->context.run(); });
 	}
 
 	void Receive()
@@ -70,23 +71,26 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 
 	void Accept(const Response &response)
 	{
-		if (haveEpoch && static_cast<std::uint64_t>(response.epoch) + 2 < lastEpoch) {
-			lastEpoch = response.epoch;
-			Publish(false, 0);
-			retryExponent = 0;
-			Send();
-			return;
-		}
 		if (response.result == 0 && (!response.mapping || response.mapping->lifetime == 0)) {
 			return;
 		}
-		haveEpoch = true;
-		lastEpoch = response.epoch;
 		if (response.result != 0) {
 			Arm(std::chrono::seconds(response.lifetime == 0 ? 30 : response.lifetime));
 			return;
 		}
-		const auto granted = response.mapping->lifetime;
+		const auto &mapping = *response.mapping;
+		if (mapping.externalPort != request->suggestedExternalPort ||
+			mapping.externalAddress != request->suggestedExternalAddress) {
+			// The server granted a mapping we did not ask for. Without PREFER_FAILURE
+			// (RFC 6887 section 13.2: never necessary for self-managed mappings) this is
+			// how a server says so: delete the unwanted mapping and do not use it. The
+			// retry keeps the same pacing as a retransmission.
+			Delete();
+			Publish(false, 0);
+			ScheduleRetry();
+			return;
+		}
+		const auto granted = mapping.lifetime;
 		Publish(true, granted);
 		retryExponent = 0;
 		// The server's grant, not the requested hour, controls renewal (RFC 6887 section 11.2.1).
@@ -127,9 +131,17 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		auto bytes = std::make_shared<std::vector<std::uint8_t>>(*encoded);
 		socket.async_send(boost::asio::buffer(*bytes),
 			[self = shared_from_this(), bytes](boost::system::error_code, std::size_t) {});
+		ScheduleRetry();
+	}
+
+	void ScheduleRetry()
+	{
 		const auto seconds = std::min<std::uint64_t>(3ULL << std::min(retryExponent, 10U), 1024);
 		retryExponent = std::min(retryExponent + 1, 10U);
-		Arm(std::chrono::milliseconds(seconds * random.GenerateWord32(900, 1100)));
+		// RFC 6887 section 11.2.1: retransmissions are at least 4 seconds apart, so the
+		// jittered exponential backoff is floored and keeps its bounded growth.
+		Arm(std::max(std::chrono::milliseconds(seconds * random.GenerateWord32(900, 1100)),
+			std::chrono::milliseconds(4000)));
 	}
 
 	void Delete()
@@ -152,7 +164,6 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		timer.cancel();
 		Delete();
 		request.reset();
-		haveEpoch = false;
 		retryExponent = 0;
 		++generation;
 		Publish(false, 0);
@@ -185,7 +196,6 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		desired.internalPort = port;
 		desired.suggestedExternalPort = externalPort;
 		desired.lifetime = 3600;
-		desired.preferFailure = true;
 		request = desired;
 		Publish(false, 0);
 		Send();
@@ -194,43 +204,40 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 	void Stop()
 	{
 		std::lock_guard<std::mutex> lock(stopMutex);
-		if (!thread.joinable()) {
+		if (stopped.exchange(true)) {
 			return;
 		}
-		stopped.store(true);
+		// The io_context belongs to the owner (the manager or a test runner); posting the
+		// cleanup there keeps the delete best-effort and leaves no thread to join.
 		boost::asio::post(context, [self = shared_from_this()] {
 			self->Drop();
 			boost::system::error_code error;
 			self->socket.cancel(error);
 			self->socket.close(error);
-			self->work.reset();
 		});
-		thread.join();
 	}
 
-	boost::asio::io_context context;
-	boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work;
+	boost::asio::io_context &context;
 	udp::socket socket;
 	boost::asio::steady_timer timer;
 	const boost::asio::ip::address_v6 localAddress;
 	CryptoPP::AutoSeededRandomPool random;
 	std::array<std::uint8_t, 1100> buffer{};
 	std::optional<Request> request;
-	std::uint32_t lastEpoch = 0;
 	std::uint64_t generation = 0;
 	unsigned retryExponent = 0;
-	bool haveEpoch = false;
 	bool ready = false;
 	std::atomic<bool> stopped{ false };
 	mutable std::mutex snapshotMutex;
 	LeaseSnapshot snapshot;
 	Clock::time_point expires;
 	std::mutex stopMutex;
-	std::thread thread;
 };
 
-Client::Client(const udp::endpoint &gateway, const boost::asio::ip::address_v6 &localAddress)
-: m_state(std::make_shared<State>(gateway, localAddress))
+Client::Client(const udp::endpoint &gateway,
+	const boost::asio::ip::address_v6 &localAddress,
+	boost::asio::io_context &ioContext)
+: m_state(std::make_shared<State>(gateway, localAddress, ioContext))
 {
 	m_state->Start();
 }
@@ -268,6 +275,13 @@ LeaseSnapshot Client::Snapshot() const
 		snapshot.active = false;
 	}
 	return snapshot;
+}
+
+bool Client::Ready() const
+{
+	// ready is fixed at construction and stopped is atomic, so both reads are safe
+	// without holding a lock.
+	return m_state->ready && !m_state->stopped.load();
 }
 
 void Client::Stop()

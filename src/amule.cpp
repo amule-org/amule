@@ -2455,14 +2455,19 @@ void CamuleApp::RequestIPv6Pinholes()
 	// for an inbound connection to reach.
 	const bool listenerTakesIPv6 = listensocket != nullptr && listensocket->BoundHost() == "[::]";
 	const std::optional<CNetworkAddress> local = SelectedLocalIPv6();
+	// One pinhole owner: while PCP holds a lease, the IGD2 rule must go (an empty target deletes
+	// it); when the lease lapses, a later pass opens the IGD2 pinhole again. With ENABLE_UPNP off
+	// PCP is the only path and this whole function is compiled out.
+	const bool pcpOwnsPinhole = m_pcpManager && m_pcpManager->LeaseState().active;
 	// A pinhole names a host, so it needs the address rather than a wildcard. Without one, the
 	// empty target drops the pinhole.
 	// TCP only: aMule's UDP sockets are IPv4-only today, so a UDP pinhole would open a port where
 	// nothing of ours listens over IPv6 and expose whatever else binds there. They come back when
 	// IPv6 UDP does.
-	const std::string client = ShouldRequestIPv6Pinhole(true, listenerTakesIPv6) && local.has_value()
-					   ? local->ToString()
-					   : std::string();
+	const std::string client =
+		!pcpOwnsPinhole && ShouldRequestIPv6Pinhole(true, listenerTakesIPv6) && local.has_value()
+			? local->ToString()
+			: std::string();
 	m_upnp->SetIPv6PinholeTarget(client, thePrefs::GetPort(), kIPv6PinholeLeaseSeconds);
 	// A pinhole that opened after the server's dial-back failed is of no use until it dials again.
 	const unsigned int openings = m_upnp->IPv6PinholeOpenings();
@@ -2487,12 +2492,10 @@ void CamuleApp::RequestPCPPinhole()
 	}
 	const auto local = SelectedLocalIPv6();
 	std::optional<boost::asio::ip::address_v6> address;
-	if (local) {
-		boost::system::error_code error;
-		const auto parsed = boost::asio::ip::make_address_v6(local->ToString(), error);
-		if (!error) {
-			address = parsed;
-		}
+	// Built straight from the stored octets: a text round-trip through make_address_v6 adds
+	// nothing but an error path.
+	if (local && local->IsIPv6()) {
+		address = boost::asio::ip::address_v6(local->GetOctets());
 	}
 	const bool listening = listensocket && listensocket->BoundHost() == "[::]";
 	const auto target =

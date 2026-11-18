@@ -1,4 +1,5 @@
 #pragma once
+#include "PCPClient.h"
 #include "PCPGateway.h"
 #include <chrono>
 #include <functional>
@@ -14,6 +15,12 @@ public:
 	virtual void SetMapping(
 		std::uint16_t port, boost::asio::ip::address_v6 address, std::uint16_t externalPort) = 0;
 	virtual void Stop() = 0;
+	// Current lease state of the underlying client, for callers that must know whether
+	// the pinhole is currently owned by PCP.
+	virtual LeaseSnapshot Snapshot() const = 0;
+	// False when the underlying client never became usable (for example bind() failed);
+	// the manager's due pass replaces such a client.
+	virtual bool Ready() const = 0;
 };
 
 class PCPManager
@@ -29,8 +36,10 @@ public:
 	PCPManager &operator=(const PCPManager &) = delete;
 	void SetTarget(const boost::asio::ip::address_v6 &address, std::uint16_t port);
 	void ClearTarget();
-	void RefreshRoute();
 	void Stop();
+	// Whether a lease for the current target is currently held. While this returns true
+	// the pinhole has exactly one owner (PCP); the IGD2 fallback must stand down.
+	LeaseSnapshot LeaseState() const;
 
 private:
 	struct State;

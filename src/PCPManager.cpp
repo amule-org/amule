@@ -1,5 +1,4 @@
 #include "PCPManager.h"
-#include "PCPClient.h"
 
 #include <condition_variable>
 #include <mutex>
@@ -13,8 +12,8 @@ namespace
 class ClientAdapter final : public MappingClient
 {
 public:
-	explicit ClientAdapter(const Gateway &gateway)
-	: client(gateway.endpoint, gateway.localAddress)
+	ClientAdapter(const Gateway &gateway, boost::asio::io_context &io)
+	: client(gateway.endpoint, gateway.localAddress, io)
 	{
 	}
 	void SetMapping(
@@ -23,6 +22,8 @@ public:
 		client.SetMapping(port, address, externalPort);
 	}
 	void Stop() override { client.Stop(); }
+	LeaseSnapshot Snapshot() const override { return client.Snapshot(); }
+	bool Ready() const override { return client.Ready(); }
 
 private:
 	Client client;
@@ -40,8 +41,8 @@ struct PCPManager::State
 {
 	State(Discovery discover, Factory create, std::chrono::milliseconds interval)
 	: discovery(discover ? std::move(discover) : Discovery{ DiscoverGateway })
-	, factory(create ? std::move(create) : Factory{ [](const Gateway &gateway) {
-		return std::make_unique<ClientAdapter>(gateway);
+	, factory(create ? std::move(create) : Factory{ [this](const Gateway &gateway) {
+		return std::make_unique<ClientAdapter>(gateway, clientIo);
 	} })
 	, retryInterval(interval > std::chrono::milliseconds::zero() ? interval : std::chrono::seconds(30))
 	{
@@ -52,7 +53,6 @@ struct PCPManager::State
 		std::unique_lock<std::mutex> lock(mutex);
 		std::optional<Target> current;
 		std::optional<Gateway> currentGateway;
-		std::unique_ptr<MappingClient> client;
 		bool due = false;
 		for (;;) {
 			if (stopping) {
@@ -99,6 +99,19 @@ struct PCPManager::State
 						continue;
 					}
 				}
+				if (current && client && !client->Ready()) {
+					// A client whose bind() failed never becomes usable and stays dead
+					// forever; the due pass recreates it against the same gateway.
+					auto old = std::move(client);
+					client = nullptr;
+					current.reset();
+					lock.unlock();
+					old->Stop();
+					lock.lock();
+					if (stopping || revision != version) {
+						continue;
+					}
+				}
 				if (gateway && !current) {
 					lock.unlock();
 					auto next = factory(*gateway);
@@ -126,10 +139,17 @@ struct PCPManager::State
 					}
 				}
 			}
-			if (!changed.wait_for(
-				    lock, retryInterval, [&] { return stopping || revision != version; })) {
-				due = true;
+			// The loop owns the only thread that services the shared io_context, so posted
+			// client work runs here, in bounded slices between the waits.
+			const auto deadline = std::chrono::steady_clock::now() + retryInterval;
+			bool woken = false;
+			while (!woken && std::chrono::steady_clock::now() < deadline) {
+				clientIo.poll();
+				woken = changed.wait_for(lock, std::chrono::milliseconds(50), [&] {
+					return stopping || revision != version;
+				});
 			}
+			due = !woken;
 		}
 		lock.unlock();
 		if (client) {
@@ -140,12 +160,17 @@ struct PCPManager::State
 	Discovery discovery;
 	Factory factory;
 	std::chrono::milliseconds retryInterval;
+	// One event loop for every client this manager creates; its thread is the manager's
+	// own worker, which also services the clients between passes.
+	boost::asio::io_context clientIo;
 	std::mutex mutex;
 	std::mutex stopMutex;
 	std::condition_variable changed;
 	std::optional<Target> target;
 	std::uint64_t revision = 0;
 	std::uint64_t appliedRevision = 0;
+	// Guarded by mutex; non-null only while a client is applied to the current target.
+	std::unique_ptr<MappingClient> client;
 	bool stopping = false;
 	std::thread thread;
 };
@@ -186,14 +211,14 @@ void PCPManager::ClearTarget()
 	SetTarget({}, 0);
 }
 
-void PCPManager::RefreshRoute()
+LeaseSnapshot PCPManager::LeaseState() const
 {
 	const auto state = m_state;
 	std::lock_guard<std::mutex> lock(state->mutex);
-	if (!state->stopping && state->target) {
-		++state->revision;
-		state->changed.notify_one();
+	if (!state->client) {
+		return LeaseSnapshot{};
 	}
+	return state->client->Snapshot();
 }
 
 void PCPManager::Stop()
@@ -208,6 +233,10 @@ void PCPManager::Stop()
 	state->changed.notify_one();
 	if (state->thread.joinable()) {
 		state->thread.join();
+	}
+	// Client teardown posts onto the shared loop; drain it here so the best-effort delete
+	// and the socket close complete before the manager disappears.
+	while (state->clientIo.poll() > 0) {
 	}
 }
 } // namespace pcp

@@ -22,8 +22,11 @@ struct LeaseSnapshot
 class Client
 {
 public:
+	// The client runs on a caller-owned io_context: the PCP manager owns one event loop
+	// serviced by a single thread for every client it creates.
 	Client(const boost::asio::ip::udp::endpoint &gateway,
-		const boost::asio::ip::address_v6 &localAddress);
+		const boost::asio::ip::address_v6 &localAddress,
+		boost::asio::io_context &ioContext);
 	~Client();
 	Client(const Client &) = delete;
 	Client &operator=(const Client &) = delete;
@@ -34,6 +37,9 @@ public:
 		std::uint16_t externalPort);
 	void ClearMapping();
 	LeaseSnapshot Snapshot() const;
+	// False when the socket never became usable (for example bind() failed while the
+	// address was still tentative); the manager recreates such a client on its due pass.
+	bool Ready() const;
 	void Stop();
 
 private:

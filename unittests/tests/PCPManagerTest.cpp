@@ -14,11 +14,16 @@ namespace
 {
 struct FakeClient final : pcp::MappingClient
 {
-	FakeClient(int id, std::vector<int> &events, std::mutex &mutex, std::condition_variable &changed)
+	FakeClient(int id,
+		std::vector<int> &events,
+		std::mutex &mutex,
+		std::condition_variable &changed,
+		bool ready = true)
 	: id(id)
 	, events(events)
 	, mutex(mutex)
 	, changed(changed)
+	, ready(ready)
 	{
 	}
 	void SetMapping(std::uint16_t, boost::asio::ip::address_v6, std::uint16_t) override
@@ -33,10 +38,22 @@ struct FakeClient final : pcp::MappingClient
 		events.push_back(-id);
 		changed.notify_all();
 	}
+	pcp::LeaseSnapshot Snapshot() const override
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		return lease;
+	}
+	bool Ready() const override
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		return ready;
+	}
 	int id;
 	std::vector<int> &events;
 	std::mutex &mutex;
 	std::condition_variable &changed;
+	bool ready;
+	pcp::LeaseSnapshot lease;
 };
 
 struct Harness
@@ -47,6 +64,8 @@ struct Harness
 	bool available = true;
 	std::vector<int> events;
 	std::thread::id discoveryThread;
+	bool leaseActive = false;
+	bool nextClientReady = true;
 
 	pcp::PCPManager Make()
 	{
@@ -64,7 +83,10 @@ struct Harness
 			[this](const pcp::Gateway &gateway) -> std::unique_ptr<pcp::MappingClient> {
 				std::lock_guard<std::mutex> lock(mutex);
 				const int id = gateway.endpoint.address().to_v6().to_bytes()[15];
-				return std::make_unique<FakeClient>(id, events, mutex, changed);
+				auto client = std::make_unique<FakeClient>(
+					id, events, mutex, changed, nextClientReady);
+				client->lease.active = leaseActive;
+				return client;
 			},
 			std::chrono::milliseconds(20));
 	}
@@ -77,6 +99,43 @@ struct Harness
 
 const auto local = boost::asio::ip::make_address_v6("2001:db8::2");
 } // namespace
+
+TEST(PCPManagerTest, LeaseStateTracksClientLease)
+{
+	Harness h;
+	h.leaseActive = true;
+	auto manager = h.Make();
+	ASSERT_FALSE(manager.LeaseState().active);
+	manager.SetTarget(local, 4662);
+	ASSERT_TRUE(h.Wait([&] { return h.events.size() >= 1; }));
+	// The lease of the applied client is what the IGD2 fallback must defer to.
+	ASSERT_TRUE(manager.LeaseState().active);
+	manager.ClearTarget();
+	ASSERT_TRUE(h.Wait([&] { return h.events.size() >= 2; }));
+	ASSERT_FALSE(manager.LeaseState().active);
+	manager.Stop();
+}
+
+TEST(PCPManagerTest, ReplacesBindFailedClientOnDuePass)
+{
+	Harness h;
+	h.nextClientReady = false;
+	auto manager = h.Make();
+	manager.SetTarget(local, 4662);
+	// The first client cannot bind: it is adopted but never becomes ready. The manager
+	// must replace it on the due pass instead of leaving it dead forever.
+	ASSERT_TRUE(h.Wait([&] { return h.events.size() >= 1; }));
+	h.nextClientReady = true;
+	ASSERT_TRUE(h.Wait([&] { return h.events.size() >= 3; }));
+	{
+		std::lock_guard<std::mutex> lock(h.mutex);
+		ASSERT_EQUALS(1, h.events[0]);
+		ASSERT_EQUALS(-1, h.events[1]);
+		ASSERT_EQUALS(1, h.events[2]);
+	}
+	// Not under the harness mutex: the worker's discovery and factory callbacks take it.
+	manager.Stop();
+}
 
 TEST(PCPManagerTest, DiscoversAndAppliesOffCallerThread)
 {
