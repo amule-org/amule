@@ -2035,6 +2035,11 @@ msgid "Remote Queue Full"
 msgstr "Externe Wachtrij Vol"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Wachtende uploads: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Oude MLDonkey"
 

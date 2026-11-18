@@ -2038,6 +2038,11 @@ msgid "Remote Queue Full"
 msgstr "队列已满"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "等待上传: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "旧版 MLDonkey"
 

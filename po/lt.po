@@ -2054,6 +2054,11 @@ msgid "Remote Queue Full"
 msgstr "Nutolusi eilė pilna"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Laukiantys išsiuntimai: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Senasis MLDonkey"
 

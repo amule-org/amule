@@ -2039,6 +2039,11 @@ msgid "Remote Queue Full"
 msgstr "قائمة الانتظار البعيدة ممتلئة"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "عمليات الرفع المنتظرة: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "MLDonkey قديم"
 

@@ -2042,6 +2042,11 @@ msgid "Remote Queue Full"
 msgstr "Η απομακρυσμένη ουρά είναι γεμάτη"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Ανεβάσματα σε αναμονή: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Παλιό MLDonkey"
 

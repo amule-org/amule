@@ -2042,6 +2042,11 @@ msgid "Remote Queue Full"
 msgstr "원격 대기열이 가득참"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "대기중인 올려주기: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "오래된 MLDonkey"
 

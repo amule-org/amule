@@ -2041,6 +2041,11 @@ msgid "Remote Queue Full"
 msgstr "Cola remota enllena"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Xubíes n'espera: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Antiguu MLDonkey"
 

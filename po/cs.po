@@ -2045,6 +2045,11 @@ msgid "Remote Queue Full"
 msgstr "Vzdálená fronta je plná"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Klienti čekající na odesílání: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Starý MLDonkey"
 
