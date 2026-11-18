@@ -2034,6 +2034,11 @@ msgid "Remote Queue Full"
 msgstr "Uzaktaki Sıra Dolu"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Bekleyen Gönderimler: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Eski MLDonkey"
 

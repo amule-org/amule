@@ -2018,6 +2018,11 @@ msgid "Remote Queue Full"
 msgstr "Remote Queue Full"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Waiting Uploads: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Old MLDonkey"
 

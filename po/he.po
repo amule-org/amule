@@ -2043,6 +2043,11 @@ msgid "Remote Queue Full"
 msgstr "התור המרוחק מלא"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "העלאות בהמתנה: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "חמורML ישן"
 

@@ -2042,6 +2042,11 @@ msgid "Remote Queue Full"
 msgstr "Urruneko ilara betea"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Igoerak zain: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "MLDonkey zaharra"
 

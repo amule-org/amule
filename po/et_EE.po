@@ -2041,6 +2041,11 @@ msgid "Remote Queue Full"
 msgstr "KaugJärjekord täis"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Ootel saatmised: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Vana MLDonkey"
 

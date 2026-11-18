@@ -2051,6 +2051,11 @@ msgid "Remote Queue Full"
 msgstr "Etäjono Täysi"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Lähetyksiä odottamassa: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Vanha MLDonkey"
 

@@ -2036,6 +2036,11 @@ msgid "Remote Queue Full"
 msgstr "Távoli várólista betelt"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Várakozó feltöltések: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Régi MLDonkey"
 

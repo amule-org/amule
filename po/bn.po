@@ -2017,6 +2017,11 @@ msgid "Remote Queue Full"
 msgstr "রিমোট সারি পূর্ণ"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "অপেক্ষমাণ আপলোড: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "পুরনো MLDonkey"
 

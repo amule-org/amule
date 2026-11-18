@@ -2034,6 +2034,11 @@ msgid "Remote Queue Full"
 msgstr "Fjärrkö full"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Väntande uppladdningar: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Gammal MLDonkey"
 

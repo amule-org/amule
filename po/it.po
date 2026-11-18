@@ -2048,6 +2048,11 @@ msgid "Remote Queue Full"
 msgstr "Coda remota piena"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Upload in attesa: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Vecchio MLDonkey"
 

@@ -2054,6 +2054,11 @@ msgid "Remote Queue Full"
 msgstr "Zdalna kolejka pełna"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Oczekujące wysyłanie: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Stary MLDonkey"
 

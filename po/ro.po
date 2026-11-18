@@ -2045,6 +2045,11 @@ msgid "Remote Queue Full"
 msgstr "Coadă distantă este plină"
 
 #: src/DataToText.cpp
+#, fuzzy, c-format
+msgid "Waiting to ask (%s)"
+msgstr "Încărcări în așteptare: %s"
+
+#: src/DataToText.cpp
 msgid "Old MLDonkey"
 msgstr "Vechiul MLDonkey"
 
