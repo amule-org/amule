@@ -1077,8 +1077,7 @@ int CGenericClientListCtrl::CompareByCid(
 		return CmpAny(client1.GetSourceFrom(), client2.GetSourceFrom());
 
 	case ColumnUserConnectionRoute:
-		return ConnectionRouteToText(client1.GetConnectionRoute())
-			.CmpNoCase(ConnectionRouteToText(client2.GetConnectionRoute()));
+		return CmpAny(client1.GetConnectionRoute(), client2.GetConnectionRoute());
 
 	case ColumnUserFileNameDownload: {
 		wxString buffer1, buffer2;

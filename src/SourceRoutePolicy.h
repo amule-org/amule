@@ -207,25 +207,51 @@ inline EConnectionOpener ResolveConnectionOpener(
 	return holePunchDial ? EConnectionOpener::HolePunchDial : EConnectionOpener::Dial;
 }
 
-/**
- * Whether a contact of ours is in flight. DS_LOWTOLOWIP counts only with a NAT-T step as the
- * attempt: the state is also set when no step could be sent, and then nothing of ours is awaited.
- */
-inline bool IsContactInFlight(
-	std::uint8_t downloadState, std::uint8_t uploadState, EContactRouteReport attempt)
+//! How long a NAT-T step of ours explains a new connection: the window its rendezvous has.
+constexpr std::uint64_t kNatStepAnswerWindowMs = 60'000;
+
+struct SContactInFlightFacts
 {
-	switch (downloadState) {
+	std::uint8_t downloadState = DS_NONE;
+	std::uint8_t uploadState = US_NONE;
+	//! The route of our last download contact, and how long ago its NAT-T step went out.
+	EContactRouteReport attempt = EContactRouteReport::None;
+	std::uint64_t natStepAgeMs = 0;
+	//! An upload callback of ours waits for its answer, and the route it went out on.
+	bool uploadCallbackInFlight = false;
+	EContactRouteReport uploadCallbackRoute = EContactRouteReport::None;
+};
+
+/**
+ * The contact of ours a new connection may answer: its route, or none when nothing of ours is
+ * awaited. DS_LOWTOLOWIP counts only with a NAT-T step still in its answer window: the state is
+ * also set when no step could be sent, and it lasts as long as we stay LowID.
+ */
+inline std::optional<EContactRouteReport> ContactInFlight(const SContactInFlightFacts &facts)
+{
+	switch (facts.downloadState) {
 	case DS_CONNECTING:
 	case DS_WAITCALLBACK:
 	case DS_WAITCALLBACKKAD:
-		return true;
+		return facts.attempt;
 	case DS_LOWTOLOWIP:
-		return attempt == EContactRouteReport::ForeignNatCallback ||
-		       attempt == EContactRouteReport::ServerHolePunch ||
-		       attempt == EContactRouteReport::LugdunumCallback;
+		if ((facts.attempt == EContactRouteReport::ForeignNatCallback ||
+			    facts.attempt == EContactRouteReport::ServerHolePunch ||
+			    facts.attempt == EContactRouteReport::LugdunumCallback) &&
+			facts.natStepAgeMs < kNatStepAnswerWindowMs) {
+			return facts.attempt;
+		}
+		break;
 	default:
-		return uploadState == US_CONNECTING;
+		break;
 	}
+	if (facts.uploadState == US_CONNECTING) {
+		return facts.attempt;
+	}
+	if (facts.uploadCallbackInFlight) {
+		return facts.uploadCallbackRoute;
+	}
+	return std::nullopt;
 }
 
 struct SConnectionRouteFacts

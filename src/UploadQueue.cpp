@@ -96,6 +96,7 @@ bool CUploadQueue::TryStartUploadCallback(
 	// CanDoCallback() alone is also true for a peer on another server and for a Kad-only
 	// session, and TryToContact() checks both for the same reason: a LowID is valid only on its
 	// own server, so the request would wake a different client on ours.
+	EContactRouteReport route = EContactRouteReport::ServerCallback;
 	if (theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort()) &&
 		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort())) {
 		client->SendClassicCallbackRequest();
@@ -104,16 +105,20 @@ bool CUploadQueue::TryStartUploadCallback(
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 		// Each route reports whether it actually sent: with no route, or with the NAT-T
 		// settings off, the peer must not be marked spent nor fill the in-flight ceiling.
-		if (!client->TrySendForeignNatCallbackRequest(kUploadCallbackForeignTargetShare) &&
-			!client->TrySendLowIdHolePunchRequest() &&
-			!client->TrySendLugdunumNatCallbackRequest()) {
+		if (client->TrySendForeignNatCallbackRequest(kUploadCallbackForeignTargetShare)) {
+			route = EContactRouteReport::ForeignNatCallback;
+		} else if (client->TrySendLowIdHolePunchRequest()) {
+			route = EContactRouteReport::ServerHolePunch;
+		} else if (client->TrySendLugdunumNatCallbackRequest()) {
+			route = EContactRouteReport::LugdunumCallback;
+		} else {
 			return false;
 		}
 #else
 		return false;
 #endif
 	}
-	client->NoteUploadCallbackSent(now);
+	client->NoteUploadCallbackSent(now, route);
 	client->MarkUploadCallbackSpent();
 	return true;
 }

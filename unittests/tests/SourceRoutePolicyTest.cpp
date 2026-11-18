@@ -563,24 +563,50 @@ TEST(SourceRoutePolicy, AnAnsweredCallbackNamesTheSocket)
 		    EConnectionOpener::AnswerServerCallback);
 }
 
-// A LowID-to-LowID wait is ours only while a NAT-T step is out; the other contact states always are.
+// A LowID-to-LowID wait is ours only while a NAT-T step is fresh; the other contact states always
+// are, and an upload callback of ours names the answer with its own route.
 TEST(SourceRoutePolicy, AContactIsInFlightOnlyWhileOursIsAwaited)
 {
+	const auto inFlight = [](std::uint8_t downloadState,
+				      std::uint8_t uploadState,
+				      EContactRouteReport attempt,
+				      std::uint64_t stepAgeMs = 0) {
+		SContactInFlightFacts facts;
+		facts.downloadState = downloadState;
+		facts.uploadState = uploadState;
+		facts.attempt = attempt;
+		facts.natStepAgeMs = stepAgeMs;
+		return ContactInFlight(facts);
+	};
 	for (std::uint8_t state : { DS_CONNECTING, DS_WAITCALLBACK, DS_WAITCALLBACKKAD }) {
-		ASSERT_TRUE(IsContactInFlight(state, US_NONE, EContactRouteReport::None));
+		ASSERT_TRUE(inFlight(state, US_NONE, EContactRouteReport::None).has_value());
 	}
 	for (EContactRouteReport step : { EContactRouteReport::ForeignNatCallback,
 		     EContactRouteReport::ServerHolePunch,
 		     EContactRouteReport::LugdunumCallback }) {
-		ASSERT_TRUE(IsContactInFlight(DS_LOWTOLOWIP, US_NONE, step));
+		ASSERT_TRUE(inFlight(DS_LOWTOLOWIP, US_NONE, step) == step);
+		// The step was answered or lost long ago: the state outlives it while we stay LowID.
+		ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, step, kNatStepAnswerWindowMs).has_value());
 	}
 	// No step was sent this round, or the route is an older attempt's.
-	ASSERT_FALSE(IsContactInFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::None));
-	ASSERT_FALSE(IsContactInFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::ServerCallback));
-	ASSERT_FALSE(IsContactInFlight(DS_ONQUEUE, US_NONE, EContactRouteReport::ServerCallback));
-	ASSERT_FALSE(IsContactInFlight(DS_NONE, US_NONE, EContactRouteReport::Dial));
+	ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::None).has_value());
+	ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::ServerCallback).has_value());
+	ASSERT_FALSE(inFlight(DS_ONQUEUE, US_NONE, EContactRouteReport::ServerCallback).has_value());
+	ASSERT_FALSE(inFlight(DS_NONE, US_NONE, EContactRouteReport::Dial).has_value());
 	// An upload connect is a contact of ours as well.
-	ASSERT_TRUE(IsContactInFlight(DS_NONE, US_CONNECTING, EContactRouteReport::None));
+	ASSERT_TRUE(inFlight(DS_NONE, US_CONNECTING, EContactRouteReport::None).has_value());
+
+	// A queued uploader we asked to call us back: its answer is that callback, not a peer that
+	// came on its own.
+	SContactInFlightFacts facts;
+	facts.uploadState = US_ONUPLOADQUEUE;
+	facts.uploadCallbackInFlight = true;
+	facts.uploadCallbackRoute = EContactRouteReport::ServerHolePunch;
+	ASSERT_TRUE(ContactInFlight(facts) == EContactRouteReport::ServerHolePunch);
+	// Our download contact, when one is out, comes first.
+	facts.downloadState = DS_WAITCALLBACK;
+	facts.attempt = EContactRouteReport::KadBuddy;
+	ASSERT_TRUE(ContactInFlight(facts) == EContactRouteReport::KadBuddy);
 }
 
 // Channels merge into a set; only a set that already had one counts the gain.

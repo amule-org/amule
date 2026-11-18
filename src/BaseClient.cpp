@@ -2986,9 +2986,17 @@ void CUpDownClient::ConnectionEstablished()
 
 	// Before anything below moves the states that say a contact of ours was in flight.
 	if (m_socket != nullptr) {
+		const uint64 now = ::GetTickCount64();
+		SContactInFlightFacts facts;
+		facts.downloadState = GetDownloadState();
+		facts.uploadState = GetUploadState();
+		facts.attempt = m_lastContactRoute;
+		facts.natStepAgeMs = now >= m_contactStepAt ? now - m_contactStepAt : 0;
+		facts.uploadCallbackInFlight = HasUploadCallbackInFlight(now);
+		facts.uploadCallbackRoute = m_uploadCallbackRoute;
+		const std::optional<EContactRouteReport> inFlight = ContactInFlight(facts);
 		m_connectionRoute = m_socket->ConnectionRoute(
-			IsContactInFlight(GetDownloadState(), GetUploadState(), m_lastContactRoute),
-			m_lastContactRoute);
+			inFlight.has_value(), inFlight.value_or(EContactRouteReport::None));
 	}
 	m_answerOpener = EConnectionOpener::Dial;
 
@@ -4194,7 +4202,11 @@ void CUpDownClient::AdoptSourceOrigins(unsigned mask)
 
 void CUpDownClient::AdoptSourceOriginsFor(const CPartFile *file, unsigned mask)
 {
-	if (file == nullptr || m_reqfile == nullptr || file == m_reqfile) {
+	// A client with no file restarts its origin when it takes this one (RestartSourceOrigin()).
+	if (file != nullptr && m_reqfile == nullptr) {
+		return;
+	}
+	if (file == nullptr || file == m_reqfile) {
 		AdoptSourceOrigins(mask);
 		return;
 	}

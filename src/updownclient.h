@@ -395,6 +395,7 @@ private:
 	{
 		m_lastContactRoute = step;
 		m_lastContactOverIPv6 = false;
+		m_contactStepAt = ::GetTickCount64();
 	}
 	//! The callback through the Kad buddy, or the search for its address. Whether a request went out.
 	bool StartKadBuddyCallback();
@@ -619,10 +620,12 @@ public:
 		ClearUploadCallbackRecord();
 	}
 	uint64 GetLastUpRequest() const { return m_dwLastUpRequest; }
-	void NoteUploadCallbackSent(uint64 now)
+	//! @a route: how the request went out, which names the connection that answers it.
+	void NoteUploadCallbackSent(uint64 now, EContactRouteReport route)
 	{
 		m_uploadCallbackSentAt = now;
 		m_uploadCallbackExpected = true;
+		m_uploadCallbackRoute = route;
 	}
 	bool HasUploadCallbackInFlight(uint64 now) const
 	{
@@ -1365,6 +1368,8 @@ private:
 	// The same route, kept after the attempt ends so the source list can show it, plus the two
 	// NAT-T steps the chain does not pick.
 	EContactRouteReport m_lastContactRoute{};
+	uint64 m_contactStepAt = 0;
+	EContactRouteReport m_uploadCallbackRoute{};
 	EConnectionOpener m_answerOpener = EConnectionOpener::Dial;
 	std::uint8_t m_connectionRoute = 0;
 	// The route is a dial to the peer's IPv6 address.
