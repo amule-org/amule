@@ -33,6 +33,7 @@
 #include <common/Constants.h>
 
 #include <zlib.h>
+#include <atomic> // Needed for std::atomic
 #include <chrono> // Needed for std::chrono::system_clock
 #include <cmath>  // Needed for std:exp
 
@@ -213,15 +214,18 @@ bool CUpDownClient::MaySendPacedRequest()
 	return FitsRequestBudget(m_requestScore, ::GetTickCount64(), m_lastPacedRequest);
 }
 
-// The offset is taken once, so a deadline that does not move keeps one value, and EC sends it once.
 static uint64 TickToUnixTime(uint64 tick)
 {
 	using namespace std::chrono;
-	static const int64 offsetMs =
-		static_cast<int64>(
+	// int64_t, not int64: aMule's int64 is unsigned.
+	static std::atomic<int64_t> offsetMs{ 0 };
+	const int64_t current =
+		static_cast<int64_t>(
 			duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) -
-		static_cast<int64>(::GetTickCount64());
-	return static_cast<uint64>((static_cast<int64>(tick) + offsetMs + 999) / 1000);
+		static_cast<int64_t>(::GetTickCount64());
+	const int64_t offset = TickClockOffset(offsetMs.load(std::memory_order_relaxed), current);
+	offsetMs.store(offset, std::memory_order_relaxed);
+	return static_cast<uint64>((static_cast<int64_t>(tick) + offset + 999) / 1000);
 }
 
 uint64 CUpDownClient::GetNextAskTime() const

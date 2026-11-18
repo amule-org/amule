@@ -53,6 +53,17 @@ inline uint64_t NextAskTick(uint64_t lastAsked, uint64_t reaskTime, uint64_t now
 	return askAt > now ? askAt : 0;
 }
 
+// How far the clock may move against the tick count before the offset between them is taken again.
+const int64_t CLOCK_STEP_TOLERANCE = 2000; // ms
+
+// The offset to turn a tick count into unix time: the stored one, so a deadline that does not move
+// keeps one value, unless the clock was stepped since, as NTP does after start-up. 0 is none.
+inline int64_t TickClockOffset(int64_t stored, int64_t current)
+{
+	const int64_t drift = current > stored ? current - stored : stored - current;
+	return stored == 0 || drift > CLOCK_STEP_TOLERANCE ? current : stored;
+}
+
 // How long before its TCP ask CPartFile::Process() sends a queued source the UDP reask.
 const uint64_t UDP_REASK_LEAD = 20000; // ms
 
@@ -62,7 +73,8 @@ const unsigned EARLY_REQUEST_SCORE = 3;
 // How high our requests may lift a source's score: two early requests in a row. aMule bans at 10,
 // so one early request we did not count stays below it. eMule counts only OP_STARTUPLOADREQ, 1 for
 // each early one, and bans at 4; its count stays at 2 or less. Our copy is not saved, so right
-// after a restart a source can still hold up to this much from before it.
+// after a restart a source can still hold up to this much from before it, and one or two early
+// requests can then reach a ban.
 const unsigned REQUEST_SCORE_BUDGET = 6;
 
 inline bool IsEarlyRequest(uint64_t now, uint64_t lastPacedRequest)

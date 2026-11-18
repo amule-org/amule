@@ -89,6 +89,17 @@ TEST(RequestPacing, NextAskTickFollowsProcess)
 		last + MIN_REQUESTTIME, NextAskTick(PacedLastAskedTime(kNow, last, kReask), kReask, kNow));
 }
 
+TEST(RequestPacing, TickClockOffsetFollowsAClockStep)
+{
+	const int64_t offset = 1783675590000;
+	ASSERT_EQUALS(offset, TickClockOffset(0, offset));                             // none yet
+	ASSERT_EQUALS(offset, TickClockOffset(offset, offset + CLOCK_STEP_TOLERANCE)); // jitter
+	ASSERT_EQUALS(offset, TickClockOffset(offset, offset - CLOCK_STEP_TOLERANCE));
+	// NTP setting a clock that started in 1970.
+	ASSERT_EQUALS(offset, TickClockOffset(5000, offset));
+	ASSERT_EQUALS(offset - 3600000, TickClockOffset(offset, offset - 3600000));
+}
+
 TEST(RequestPacing, AggressiveScoreFollowsCheckForAggressive)
 {
 	ASSERT_EQUALS(0u, AggressiveScoreAfter(0, kNow, 0)); // no earlier request
