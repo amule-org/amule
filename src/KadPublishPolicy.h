@@ -25,6 +25,8 @@
 #ifndef KAD_PUBLISH_POLICY_H
 #define KAD_PUBLISH_POLICY_H
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 
 //! How we publish ourselves as a Kad source, in order of preference.
@@ -128,6 +130,16 @@ inline bool KeepsLookupResponderKey(
 	bool ownedBySearch, uint8_t contactVersion, uint32_t currentKey, uint32_t answerKey)
 {
 	return ownedBySearch && contactVersion >= 6 && currentKey == 0 && answerKey != 0;
+}
+
+/**
+ * How many nodes `answers` lookup answers stand for. A keyword store sends each node one packet per
+ * 50 files, for at most 150 files, and every packet gets its own answer.
+ */
+inline uint32_t AnsweringNodes(uint32_t answers, size_t fileIDs) noexcept
+{
+	const auto packets = static_cast<uint32_t>((std::min<size_t>(fileIDs, 150) + 49) / 50);
+	return packets ? answers / packets : answers;
 }
 
 #endif // KAD_PUBLISH_POLICY_H

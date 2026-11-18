@@ -1114,7 +1114,7 @@ void CSearch::StorePacket()
 		AddDebugLogLineN(logKadSearch, "Search request type: StoreKeyword");
 		// Try to store keywords to a Node.
 		// As a safeguard, check to see if we already stored to the max nodes.
-		if (m_answers > SEARCHSTOREKEYWORD_TOTAL) {
+		if (GetAnswers() > SEARCHSTOREKEYWORD_TOTAL) {
 			PrepareToStop();
 			break;
 		}

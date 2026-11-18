@@ -43,6 +43,7 @@ there client on the eMule forum..
 #include <vector>
 
 #include "SearchManager.h"
+#include "../../KadPublishPolicy.h" // Needed for AnsweringNodes
 #include "../utils/LookupTrace.h"
 #include "../utils/PublishMetrics.h"
 
@@ -94,10 +95,7 @@ public:
 	void SetTargetID(const CUInt128 &val) noexcept { m_target = val; }
 	CUInt128 GetTarget() const noexcept { return m_target; }
 
-	uint32_t GetAnswers() const noexcept
-	{
-		return m_fileIDs.size() ? m_answers / ((m_fileIDs.size() + 49) / 50) : m_answers;
-	}
+	uint32_t GetAnswers() const noexcept { return AnsweringNodes(m_answers, m_fileIDs.size()); }
 	uint32_t GetRequestAnswer() const noexcept { return m_totalRequestAnswers; }
 
 	const wxString &GetFileName(void) const noexcept { return m_fileName; }
