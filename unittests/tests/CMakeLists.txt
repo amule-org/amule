@@ -104,6 +104,10 @@ add_muleunit_test (PCPApplicationPolicyTest)
 add_muleunit_test (PCPProtocolTest ${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp)
 add_muleunit_test (PCPGatewayTest ${CMAKE_SOURCE_DIR}/src/PCPGateway.cpp
 	${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp)
+if (WIN32)
+	# Native Windows route lookup needs the IP Helper API; Asio socket helpers need WinSock.
+	target_link_libraries (PCPGatewayTest iphlpapi ws2_32)
+endif ()
 add_muleunit_test (PCPClientTest ${CMAKE_SOURCE_DIR}/src/PCPClient.cpp
 	${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp)
 target_link_libraries (PCPClientTest CRYPTOPP::CRYPTOPP ${Boost_LIBRARIES})
@@ -114,6 +118,9 @@ add_muleunit_test (PCPManagerTest ${CMAKE_SOURCE_DIR}/src/PCPManager.cpp
 	${CMAKE_SOURCE_DIR}/src/PCPClient.cpp ${CMAKE_SOURCE_DIR}/src/PCPProtocol.cpp
 	${CMAKE_SOURCE_DIR}/src/PCPGateway.cpp ${CMAKE_SOURCE_DIR}/src/NetworkInterfaces.cpp)
 target_link_libraries (PCPManagerTest CRYPTOPP::CRYPTOPP ${Boost_LIBRARIES})
+if (WIN32)
+	target_link_libraries (PCPManagerTest iphlpapi)
+endif ()
 
 # Config migration, downgrade compatibility and the shared core sleep policy.
 add_muleunit_test (PowerManagementTest)

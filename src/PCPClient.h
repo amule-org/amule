@@ -22,14 +22,15 @@ struct LeaseSnapshot
 class Client
 {
 public:
-	Client(boost::asio::ip::udp::endpoint gateway, boost::asio::ip::address_v6 localAddress);
+	Client(const boost::asio::ip::udp::endpoint &gateway,
+		const boost::asio::ip::address_v6 &localAddress);
 	~Client();
 	Client(const Client &) = delete;
 	Client &operator=(const Client &) = delete;
 
 	// Replace the desired TCP mapping. A zero target port disables mapping.
 	void SetMapping(std::uint16_t internalPort,
-		boost::asio::ip::address_v6 externalAddress,
+		const boost::asio::ip::address_v6 &externalAddress,
 		std::uint16_t externalPort);
 	void ClearMapping();
 	LeaseSnapshot Snapshot() const;

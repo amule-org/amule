@@ -16,7 +16,7 @@ using Clock = std::chrono::steady_clock;
 
 struct Client::State : std::enable_shared_from_this<Client::State>
 {
-	State(udp::endpoint gateway, boost::asio::ip::address_v6 local)
+	State(const udp::endpoint &gateway, const boost::asio::ip::address_v6 &local)
 	: work(boost::asio::make_work_guard(context))
 	, socket(context)
 	, timer(context)
@@ -158,7 +158,8 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		Publish(false, 0);
 	}
 
-	void Apply(std::uint16_t port, boost::asio::ip::address_v6 external, std::uint16_t externalPort)
+	void Apply(
+		std::uint16_t port, const boost::asio::ip::address_v6 &external, std::uint16_t externalPort)
 	{
 		if (!ready || stopped.load()) {
 			return;
@@ -228,7 +229,7 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 	std::thread thread;
 };
 
-Client::Client(udp::endpoint gateway, boost::asio::ip::address_v6 localAddress)
+Client::Client(const udp::endpoint &gateway, const boost::asio::ip::address_v6 &localAddress)
 : m_state(std::make_shared<State>(gateway, localAddress))
 {
 	m_state->Start();
@@ -239,8 +240,9 @@ Client::~Client()
 	Stop();
 }
 
-void Client::SetMapping(
-	std::uint16_t internalPort, boost::asio::ip::address_v6 externalAddress, std::uint16_t externalPort)
+void Client::SetMapping(std::uint16_t internalPort,
+	const boost::asio::ip::address_v6 &externalAddress,
+	std::uint16_t externalPort)
 {
 	const auto state = m_state;
 	// Serialize admission with Stop so no callback retains State after its event loop has exited.

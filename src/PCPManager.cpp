@@ -115,6 +115,9 @@ struct PCPManager::State
 						next->SetMapping(
 							desired->port, desired->address, desired->port);
 						client = std::move(next);
+						// Reset the moved-from handle so a later iteration cannot
+						// re-adopt it.
+						next = nullptr;
 						current = desired;
 						currentGateway = gateway;
 					}
@@ -156,7 +159,7 @@ PCPManager::~PCPManager()
 	Stop();
 }
 
-void PCPManager::SetTarget(boost::asio::ip::address_v6 address, std::uint16_t port)
+void PCPManager::SetTarget(const boost::asio::ip::address_v6 &address, std::uint16_t port)
 {
 	const auto state = m_state;
 	std::lock_guard<std::mutex> lock(state->mutex);

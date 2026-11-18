@@ -27,7 +27,7 @@ public:
 	~PCPManager();
 	PCPManager(const PCPManager &) = delete;
 	PCPManager &operator=(const PCPManager &) = delete;
-	void SetTarget(boost::asio::ip::address_v6 address, std::uint16_t port);
+	void SetTarget(const boost::asio::ip::address_v6 &address, std::uint16_t port);
 	void ClearTarget();
 	void RefreshRoute();
 	void Stop();
