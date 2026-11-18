@@ -88,7 +88,8 @@ there client on the eMule forum..
 #include "../../GuiEvents.h"
 #include "../../KadBuddyIdLayout.h"
 #include "../../KadBuddySearchPolicy.h" // Needed for OwnBuddyID
-#include "../../KadPointerPolicy.h"     // Needed for SendsKadPointer, KAD_POINTER_VERSION
+#include "../../KadPointerPolicy.h"     // Needed for SendsKadPointer
+#include "../../KadSourceRecordTags.h"  // Needed for AddKadBuddyRecordTags
 
 ////////////////////////////////////////
 using namespace Kademlia;
@@ -887,23 +888,19 @@ bool HoldsReceiverKey(const CContact &storer)
 	return storer.GetUDPKey().GetKeyValue(theApp->GetPublicIP(false)) != 0;
 }
 
-// The route through our buddy, shared by a type 3/5 record and our pointer record.
-void AddBuddyRouteTags(TagPtrList &taglist, const CUpDownClient &buddy)
+// The route through our buddy, for a type 3/5 record and our pointer record.
+SKadBuddyRoute CurrentBuddyRoute(const CUpDownClient &buddy)
 {
+	SKadBuddyRoute route;
+	route.buddyIP = buddy.GetIP();
+	route.buddyUDPPort = buddy.GetUDPPort();
 	// We send the ID to our buddy so they can do a callback.
-	const CUInt128 buddyID = OwnBuddyID(CKademlia::GetPrefs()->GetKadID());
-	taglist.push_back(new CTagVarInt(TAG_SERVERIP, buddy.GetIP()));
-	taglist.push_back(new CTagVarInt(TAG_SERVERPORT, buddy.GetUDPPort()));
-	uint8_t hashBytes[16];
-	buddyID.ToByteArray(hashBytes);
-	// eMule, emule-qt and eMuleAI all publish TAG_BUDDYHASH in their own layout (#1835).
-	uint8_t emuleLayout[16];
-	ConvertBuddyIdLayout(hashBytes, emuleLayout);
-	taglist.push_back(new CTagString(TAG_BUDDYHASH, CMD4Hash(emuleLayout).Encode()));
-	taglist.push_back(new CTagVarInt(TAG_SOURCEPORT, thePrefs::GetPort()));
+	OwnBuddyID(CKademlia::GetPrefs()->GetKadID()).ToByteArray(route.buddyID);
+	route.tcpPort = thePrefs::GetPort();
 	if (!CKademlia::GetPrefs()->GetUseExternKadPort()) {
-		taglist.push_back(new CTagInt16(TAG_SOURCEUPORT, CKademlia::GetPrefs()->GetInternKadPort()));
+		route.kadPort = CKademlia::GetPrefs()->GetInternKadPort();
 	}
+	return route;
 }
 } // namespace
 
@@ -1123,19 +1120,13 @@ void CSearch::StorePacket()
 					taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
 				}
 			} else if (publishAs == EKadSourcePublish::Buddy) {
-				taglist.push_back(new CTagInt8(
-					TAG_SOURCETYPE, KadSourceTypeFor(publishAs, file->IsLargeFile())));
-				AddBuddyRouteTags(taglist, *theApp->clientlist->GetBuddy());
-				if (from->GetVersion() >= 2) {
-					taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
-				}
-				// The pointer route: a receiver that finds this buddy gone looks up where
-				// our pointer says we are now (#2513).
+				// The pointer route goes only to a storer that keeps it (#2513).
 				const bool keyed = HoldsReceiverKey(*from);
-				if (SendsKadPointer(thePrefs::IsKadBuddyPointerEnabled(), keyed)) {
-					taglist.push_back(
-						new CTagInt8(TAG_BUDDYPOINTER, KAD_POINTER_VERSION));
-				}
+				AddKadBuddyRecordTags(taglist,
+					CurrentBuddyRoute(*theApp->clientlist->GetBuddy()),
+					KadSourceTypeFor(publishAs, file->IsLargeFile()),
+					from->GetVersion() >= 2 ? file->GetFileSize() : 0,
+					SendsKadPointer(thePrefs::IsKadBuddyPointerEnabled(), keyed));
 				if (thePrefs::IsKadBuddyPointerEnabled() &&
 					theLogger.IsEnabled(logKadPublish)) {
 					CPublishMetrics::Instance().PointerMarker(keyed);
@@ -1224,10 +1215,9 @@ void CSearch::StorePacket()
 		// by that alone. Type 3 with the buddy fields, so a receiver reads it like a file record.
 		const CUInt128 id(CKademlia::GetPrefs()->GetClientHash());
 		TagPtrList taglist;
-		taglist.push_back(new CTagInt8(TAG_SOURCETYPE, KadSourceTypeFor(publishAs, false)));
-		AddBuddyRouteTags(taglist, *theApp->clientlist->GetBuddy());
-		taglist.push_back(new CTagInt8(TAG_BUDDYPOINTER, KAD_POINTER_VERSION));
-		taglist.push_back(new CTagInt8(TAG_ENCRYPTION, CPrefs::GetMyConnectOptions(true, true)));
+		AddKadPointerRecordTags(taglist,
+			CurrentBuddyRoute(*theApp->clientlist->GetBuddy()),
+			CPrefs::GetMyConnectOptions(true, true));
 		if (CKademlia::GetUDPListener()->SendPublishSourcePacket(*from, m_target, id, taglist)) {
 			m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
 			if (theLogger.IsEnabled(logKadPublish)) {

@@ -376,6 +376,22 @@ add_test (NAME KadPointerPolicyTest COMMAND KadPointerPolicyTest)
 target_include_directories (KadPointerPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (KadPointerPolicyTest muleunit mulecommon)
 
+# The tags of our type 3/5 records and of our buddy pointer record (#2513).
+add_executable (KadSourceRecordTagsTest
+	KadSourceRecordTagsTest.cpp
+	${CMAKE_SOURCE_DIR}/src/KadSourceRecordTags.cpp
+	${CMAKE_SOURCE_DIR}/src/Tag.cpp
+	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
+	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
+	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
+	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+)
+add_test (NAME KadSourceRecordTagsTest COMMAND KadSourceRecordTagsTest)
+target_include_directories (KadSourceRecordTagsTest PRIVATE
+	${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (KadSourceRecordTagsTest muleunit mulecommon)
+
 add_executable (KadPublishPolicyTest KadPublishPolicyTest.cpp)
 add_test (NAME KadPublishPolicyTest COMMAND KadPublishPolicyTest)
 target_include_directories (KadPublishPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
