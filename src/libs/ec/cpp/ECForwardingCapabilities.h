@@ -68,9 +68,10 @@ inline bool PcpAvailable()
 
 /**
  * Adds the UPnP and PCP availability tags to a GENERAL preferences tag. Both tags are
- * always emitted as bools by 3.1+ daemons, so a client can tell "compiled out" (false)
- * from an old daemon predating the tag (absent). The two tags stay distinct signals:
- * UPnP-specific controls gate on the UPnP tag alone.
+ * always emitted as bools, so a client can tell "compiled out" (false) from a daemon
+ * predating the tag (absent). Only the UPnP tag goes back to 3.1+ daemons: the PCP tag
+ * is new in this protocol revision and older daemons never send it. The two tags stay
+ * distinct signals: UPnP-specific controls gate on the UPnP tag alone.
  */
 inline void AddCapabilityTags(CECTag &generalPrefs)
 {
@@ -80,8 +81,9 @@ inline void AddCapabilityTags(CECTag &generalPrefs)
 
 /**
  * Reads the capability tags of a received GENERAL preferences tag and reports each
- * result through the matching setter. Legacy semantics: a pre-3.1 daemon omits the
- * tags, so absence means unavailable and only an explicit true enables. The setters
+ * result through the matching setter. Legacy semantics: a daemon predating a tag
+ * omits it (3.1+ daemons already send the UPnP tag; the PCP tag is new here), so
+ * absence means unavailable and only an explicit true enables. The setters
  * are called exactly once per capability, in every case.
  */
 inline void ApplyCapabilityTags(

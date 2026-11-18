@@ -1,4 +1,26 @@
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
+// If not, see <https://www.gnu.org/licenses/>.
+//
+
 #include "PCPClient.h"
+#include "Logger.h"
 #include "PCPProtocol.h"
 #include "CryptoPP_Inc.h"
 
@@ -7,6 +29,7 @@
 #include <atomic>
 #include <chrono>
 #include <mutex>
+#include <sstream>
 #include <thread>
 
 namespace pcp
@@ -75,6 +98,10 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 			return;
 		}
 		if (response.result != 0) {
+			std::ostringstream msg;
+			msg << "IPv6 PCP: gateway refused mapping with result code " << response.result
+			    << ", retrying in " << (response.lifetime == 0 ? 30 : response.lifetime) << " s";
+			AddDebugLogLineN(logUPnP, msg);
 			Arm(std::chrono::seconds(response.lifetime == 0 ? 30 : response.lifetime));
 			return;
 		}
@@ -91,6 +118,10 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 			return;
 		}
 		const auto granted = mapping.lifetime;
+		std::ostringstream msg;
+		msg << "IPv6 PCP: mapping for TCP port " << request->internalPort << " granted, lifetime "
+		    << granted << " s";
+		AddDebugLogLineN(logUPnP, msg);
 		Publish(true, granted);
 		retryExponent = 0;
 		// The server's grant, not the requested hour, controls renewal (RFC 6887 section 11.2.1).
@@ -156,6 +187,9 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 			// Best effort on a nonblocking socket: shutdown never waits for a gateway reply.
 			boost::system::error_code error;
 			socket.send(boost::asio::buffer(*bytes), 0, error);
+			std::ostringstream msg;
+			msg << "IPv6 PCP: deleting mapping for TCP port " << request->internalPort;
+			AddDebugLogLineN(logUPnP, msg);
 		}
 	}
 

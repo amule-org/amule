@@ -7,6 +7,11 @@
 
 #include <cstring>
 
+#ifdef __APPLE__
+#include <net/route.h>
+#include <netinet/in.h>
+#endif
+
 using namespace muleunit;
 using namespace pcp;
 
@@ -155,3 +160,52 @@ TEST(PCPGateway, RejectsMalformedInterruptedAndIncompleteLinuxDumpsWithoutMutati
 		ASSERT_EQUALS(100U, routes[0].metric);
 	}
 }
+
+#ifdef __APPLE__
+namespace
+{
+// One PF_ROUTE message: a default route whose destination is the full 28-byte
+// sockaddr_in6 the kernel emits. XNU packs sockaddrs on 4-byte boundaries, so the
+// gateway that follows must be parsed immediately after those 28 bytes; rounding
+// the length up to sizeof(long) would advance 4 bytes too far and misread it.
+std::vector<std::uint8_t> MacRouteWith28ByteDestination()
+{
+	std::vector<std::uint8_t> bytes(sizeof(rt_msghdr), 0);
+	auto *header = reinterpret_cast<rt_msghdr *>(bytes.data());
+	header->rtm_version = RTM_VERSION;
+	header->rtm_type = RTM_GET;
+	header->rtm_index = 3;
+	header->rtm_flags = RTF_UP | RTF_GATEWAY; // No RTF_HOST: a network default route.
+	header->rtm_addrs = RTA_DST | RTA_GATEWAY;
+
+	sockaddr_in6 destination{};
+	destination.sin6_len = sizeof(destination); // 28 bytes.
+	destination.sin6_family = AF_INET6;         // Unspecified address: the default route.
+	sockaddr_in6 gatewaySockaddr{};
+	gatewaySockaddr.sin6_len = sizeof(gatewaySockaddr);
+	gatewaySockaddr.sin6_family = AF_INET6;
+	std::memcpy(&gatewaySockaddr.sin6_addr, RouterA.data(), RouterA.size());
+
+	const auto append = [&bytes](const sockaddr_in6 &sockaddr) {
+		const auto *raw = reinterpret_cast<const std::uint8_t *>(&sockaddr);
+		bytes.insert(bytes.end(), raw, raw + sizeof(sockaddr));
+	};
+	append(destination);
+	append(gatewaySockaddr);
+	// Re-take the header pointer: the inserts above may have reallocated the buffer.
+	reinterpret_cast<rt_msghdr *>(bytes.data())->rtm_msglen = static_cast<u_short>(bytes.size());
+	return bytes;
+}
+} // namespace
+
+TEST(PCPGateway, ParsesGatewayAfterPacked28ByteMacDestination)
+{
+	std::vector<Route> routes;
+	std::vector<std::uint8_t> dump = MacRouteWith28ByteDestination();
+	ASSERT_TRUE(detail::ParseMacRouteDump(dump, routes));
+	ASSERT_EQUALS(1U, routes.size());
+	ASSERT_TRUE(routes[0].gateway == RouterA);
+	ASSERT_EQUALS(3U, routes[0].interfaceIndex);
+	ASSERT_TRUE(routes[0].isDefault);
+}
+#endif

@@ -1,3 +1,24 @@
+//
+// This file is part of the aMule Project.
+//
+// Copyright (c) 2003-2026 aMule Team ( https://amule-org.github.io )
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA.
+// If not, see <https://www.gnu.org/licenses/>.
+//
+
 #include "PCPGateway.h"
 #include "NetworkInterfaces.h"
 #include <algorithm>
@@ -22,6 +43,9 @@
 #include <iphlpapi.h>
 #endif
 
+// Discovery deadlines (the bounded netlink poll) assume a monotonic clock.
+static_assert(std::chrono::steady_clock::is_steady, "discovery deadlines need a steady clock");
+
 namespace pcp
 {
 namespace
@@ -38,17 +62,17 @@ constexpr std::uint8_t RouteUnicast = 1;
 namespace
 {
 using Bytes = std::array<std::uint8_t, 16>;
-bool Zero(const Bytes &b)
+bool Zero(const Bytes &bytes)
 {
-	return std::all_of(b.begin(), b.end(), [](auto x) { return x == 0; });
+	return std::all_of(bytes.begin(), bytes.end(), [](auto x) { return x == 0; });
 }
-bool Multicast(const Bytes &b)
+bool Multicast(const Bytes &bytes)
 {
-	return b[0] == 0xff;
+	return bytes[0] == 0xff;
 }
-bool LinkLocal(const Bytes &b)
+bool LinkLocal(const Bytes &bytes)
 {
-	return b[0] == 0xfe && (b[1] & 0xc0) == 0x80;
+	return bytes[0] == 0xfe && (bytes[1] & 0xc0) == 0x80;
 }
 } // namespace
 
@@ -56,93 +80,175 @@ namespace detail
 {
 namespace
 {
-template <typename T> bool Read(const std::vector<std::uint8_t> &b, std::size_t o, T &v)
+template <typename T> bool Read(const std::vector<std::uint8_t> &buffer, std::size_t offset, T &value)
 {
-	if (o > b.size() || b.size() - o < sizeof(T))
+	if (offset > buffer.size() || buffer.size() - offset < sizeof(T))
 		return false;
-	std::memcpy(&v, b.data() + o, sizeof(T));
+	std::memcpy(&value, buffer.data() + offset, sizeof(T));
 	return true;
 }
 } // namespace
-bool ParseLinuxRouteDump(const std::vector<std::uint8_t> &b, std::uint32_t seq, std::vector<Route> &out)
+bool ParseLinuxRouteDump(
+	const std::vector<std::uint8_t> &dump, std::uint32_t sequence, std::vector<Route> &routes)
 {
 	std::vector<Route> parsed;
 	std::size_t offset = 0;
 	bool done = false;
-	while (offset < b.size()) {
+	while (offset < dump.size()) {
 		std::uint32_t length = 0;
 		std::uint16_t type = 0, flags = 0;
-		std::uint32_t msgseq = 0;
-		if (!Read(b, offset, length) || !Read(b, offset + 4, type) || !Read(b, offset + 6, flags) ||
-			!Read(b, offset + 8, msgseq) || length < 16 || length > b.size() - offset)
+		std::uint32_t messageSequence = 0;
+		if (!Read(dump, offset, length) || !Read(dump, offset + 4, type) ||
+			!Read(dump, offset + 6, flags) || !Read(dump, offset + 8, messageSequence) ||
+			length < 16 || length > dump.size() - offset)
 			return false;
-		if (msgseq == seq && (flags & 0x10) != 0) { // NLM_F_DUMP_INTR.
+		if (messageSequence == sequence && (flags & 0x10) != 0) { // NLM_F_DUMP_INTR.
 			return false;
 		}
-		if (msgseq == seq && type == NetlinkDone) {
+		if (messageSequence == sequence && type == NetlinkDone) {
 			std::int32_t status = 0;
-			if (length != 16 && (length < 20 || !Read(b, offset + 16, status) || status != 0)) {
+			if (length != 16 &&
+				(length < 20 || !Read(dump, offset + 16, status) || status != 0)) {
 				return false;
 			}
 			done = true;
 			offset += length;
 			break;
 		}
-		if (msgseq == seq && type == NetlinkError)
+		if (messageSequence == sequence && type == NetlinkError)
 			return false;
-		if (msgseq == seq && type == RouteNew) {
+		if (messageSequence == sequence && type == RouteNew) {
 			if (length < 28)
 				return false;
-			const auto *p = b.data() + offset + 16;
+			const auto *payload = dump.data() + offset + 16;
 			// Netlink's address-family and attribute values are Linux ABI, not the host's BSD
 			// values.
-			if (p[0] == 10 && p[1] == 0 && p[2] == 0 && p[7] == RouteUnicast) {
-				Route r{};
-				r.isDefault = true;
-				std::size_t a = offset + 28;
-				while (a < offset + length) {
-					std::uint16_t alen = 0, atype = 0;
-					if (!Read(b, a, alen) || !Read(b, a + 2, atype) || alen < 4 ||
-						alen > offset + length - a)
+			if (payload[0] == 10 && payload[1] == 0 && payload[2] == 0 &&
+				payload[7] == RouteUnicast) {
+				Route route{};
+				route.isDefault = true;
+				std::size_t attrOffset = offset + 28;
+				while (attrOffset < offset + length) {
+					std::uint16_t attrLength = 0, attrType = 0;
+					if (!Read(dump, attrOffset, attrLength) ||
+						!Read(dump, attrOffset + 2, attrType) || attrLength < 4 ||
+						attrLength > offset + length - attrOffset)
 						return false;
-					const auto n = alen - 4;
-					if (atype == RouteGateway) {
-						if (n != 16)
+					const auto attrPayload = attrLength - 4;
+					if (attrType == RouteGateway) {
+						if (attrPayload != 16)
 							return false;
-						std::memcpy(r.gateway.data(), b.data() + a + 4, 16);
+						std::memcpy(route.gateway.data(),
+							dump.data() + attrOffset + 4,
+							16);
 					}
-					if (atype == RouteOif) {
-						if (n != 4)
+					if (attrType == RouteOif) {
+						if (attrPayload != 4)
 							return false;
-						std::memcpy(&r.interfaceIndex, b.data() + a + 4, 4);
+						std::memcpy(&route.interfaceIndex,
+							dump.data() + attrOffset + 4,
+							4);
 					}
-					if (atype == RoutePriority) {
-						if (n != 4)
+					if (attrType == RoutePriority) {
+						if (attrPayload != 4)
 							return false;
-						std::memcpy(&r.metric, b.data() + a + 4, 4);
+						std::memcpy(&route.metric, dump.data() + attrOffset + 4, 4);
 					}
-					a += (alen + 3u) & ~std::size_t(3);
-					if (a > offset + length)
+					attrOffset += (attrLength + 3u) & ~std::size_t(3);
+					if (attrOffset > offset + length)
 						return false;
 				}
-				if (r.interfaceIndex && !Zero(r.gateway))
-					parsed.push_back(r);
+				if (route.interfaceIndex && !Zero(route.gateway))
+					parsed.push_back(route);
 			}
 		}
 		const std::size_t aligned = (static_cast<std::size_t>(length) + 3u) & ~std::size_t(3);
-		if (aligned > b.size() - offset) {
-			if (offset + length == b.size())
+		if (aligned > dump.size() - offset) {
+			if (offset + length == dump.size())
 				offset += length;
 			else
 				return false;
 		} else
 			offset += aligned;
 	}
-	if (!done || offset != b.size())
+	if (!done || offset != dump.size())
 		return false;
-	out.insert(out.end(), parsed.begin(), parsed.end());
+	routes.insert(routes.end(), parsed.begin(), parsed.end());
 	return true;
 }
+
+#if defined(__APPLE__)
+// Parse a native macOS PF_ROUTE sysctl route dump; invalid dumps do not mutate routes.
+bool ParseMacRouteDump(std::vector<unsigned char> &dump, std::vector<Route> &routes)
+{
+	for (auto *message = dump.data(), *dumpEnd = message + dump.size(); message < dumpEnd;) {
+		if (static_cast<std::size_t>(dumpEnd - message) < sizeof(rt_msghdr))
+			return false;
+		auto *header = reinterpret_cast<rt_msghdr *>(message);
+		if (header->rtm_msglen < sizeof(*header) || header->rtm_msglen > dumpEnd - message)
+			return false;
+		if (header->rtm_version == RTM_VERSION && (header->rtm_flags & RTF_GATEWAY) &&
+			(header->rtm_flags & RTF_UP) && !(header->rtm_flags & RTF_HOST)) {
+			auto *sockaddrs = message + sizeof(*header);
+			auto *messageEnd = message + header->rtm_msglen;
+			const sockaddr_in6 *destination = nullptr, *gateway = nullptr;
+			bool defaultMask = true;
+			unsigned int addressFlag = 1;
+			for (int slot = 0; slot < RTAX_MAX; ++slot, addressFlag <<= 1)
+				if (header->rtm_addrs & addressFlag) {
+					if (sockaddrs >= messageEnd)
+						return false;
+					auto *sockaddr = reinterpret_cast<::sockaddr *>(sockaddrs);
+					if (static_cast<std::size_t>(messageEnd - sockaddrs) < 2)
+						return false;
+					// XNU packs sockaddrs on 4-byte boundaries (ROUNDUP32), not on the
+					// ABI's sizeof(long); rounding to 8 bytes misreads every sockaddr
+					// that follows a 28-byte sockaddr_in6.
+					std::size_t roundedLength =
+						sockaddr->sa_len
+							? ((sockaddr->sa_len + sizeof(std::uint32_t) - 1) &
+								  ~(sizeof(std::uint32_t) - 1))
+							: sizeof(std::uint32_t);
+					if (roundedLength > static_cast<std::size_t>(messageEnd - sockaddrs))
+						return false;
+					if (sockaddr->sa_family == AF_INET6 &&
+						sockaddr->sa_len >= sizeof(sockaddr_in6)) {
+						if (slot == RTAX_DST)
+							destination =
+								reinterpret_cast<sockaddr_in6 *>(sockaddr);
+						if (slot == RTAX_GATEWAY)
+							gateway = reinterpret_cast<sockaddr_in6 *>(sockaddr);
+					}
+					if (slot == RTAX_NETMASK) {
+						for (std::size_t byte = 8;
+							byte < std::min<std::size_t>(sockaddr->sa_len, 24);
+							++byte) {
+							defaultMask = defaultMask && sockaddrs[byte] == 0;
+						}
+					}
+					sockaddrs += roundedLength;
+				}
+			if (destination && gateway && defaultMask &&
+				IN6_IS_ADDR_UNSPECIFIED(&destination->sin6_addr)) {
+				Route route{};
+				memcpy(route.gateway.data(), &gateway->sin6_addr, 16);
+				if (LinkLocal(route.gateway)) {
+					// BSD embeds the scope in address bytes; Asio needs a clean address
+					// plus scope_id.
+					route.gateway[2] = 0;
+					route.gateway[3] = 0;
+				}
+				route.interfaceIndex = header->rtm_index;
+				route.metric = static_cast<std::uint32_t>(header->rtm_rmx.rmx_hopcount);
+				route.isDefault = true;
+				routes.push_back(route);
+			}
+		}
+		message += header->rtm_msglen;
+	}
+	return true;
+}
+#endif
 } // namespace detail
 
 std::optional<Gateway> SelectGateway(
@@ -151,17 +257,19 @@ std::optional<Gateway> SelectGateway(
 	if (Zero(selected) || Multicast(selected))
 		return std::nullopt;
 	std::optional<unsigned int> index;
-	for (const auto &a : addresses)
-		if (a.address == selected && a.interfaceIndex && (!index || a.interfaceIndex < *index))
-			index = a.interfaceIndex;
+	for (const auto &localAddress : addresses)
+		if (localAddress.address == selected && localAddress.interfaceIndex &&
+			(!index || localAddress.interfaceIndex < *index))
+			index = localAddress.interfaceIndex;
 	if (!index)
 		return std::nullopt;
 	const Route *best = nullptr;
-	for (const auto &r : routes)
-		if (r.isDefault && r.interfaceIndex == *index && !Zero(r.gateway) && !Multicast(r.gateway) &&
-			(!best || r.metric < best->metric ||
-				(r.metric == best->metric && r.gateway < best->gateway)))
-			best = &r;
+	for (const auto &route : routes)
+		if (route.isDefault && route.interfaceIndex == *index && !Zero(route.gateway) &&
+			!Multicast(route.gateway) &&
+			(!best || route.metric < best->metric ||
+				(route.metric == best->metric && route.gateway < best->gateway)))
+			best = &route;
 	if (!best)
 		return std::nullopt;
 	auto gw = boost::asio::ip::address_v6(best->gateway);
@@ -175,27 +283,34 @@ namespace
 {
 bool ReadLinuxRoutes(std::vector<Route> &routes)
 {
-	int fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
-	if (fd < 0)
+	int socketFd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+	if (socketFd < 0)
 		return false;
 	struct
 	{
-		nlmsghdr h;
-		rtmsg r;
-	} req{};
-	req.h.nlmsg_len = NLMSG_LENGTH(sizeof(rtmsg));
-	req.h.nlmsg_type = RTM_GETROUTE;
-	req.h.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
-	req.h.nlmsg_seq = 1;
-	req.r.rtm_family = AF_INET6;
+		nlmsghdr header;
+		rtmsg routeMessage;
+	} request{};
+	request.header.nlmsg_len = NLMSG_LENGTH(sizeof(rtmsg));
+	request.header.nlmsg_type = RTM_GETROUTE;
+	request.header.nlmsg_flags = NLM_F_REQUEST | NLM_F_DUMP;
+	request.header.nlmsg_seq = 1;
+	request.routeMessage.rtm_family = AF_INET6;
 	sockaddr_nl kernel{};
 	kernel.nl_family = AF_NETLINK;
-	if (sendto(fd, &req, req.h.nlmsg_len, 0, reinterpret_cast<sockaddr *>(&kernel), sizeof(kernel)) !=
-		static_cast<ssize_t>(req.h.nlmsg_len)) {
-		close(fd);
+	if (sendto(socketFd,
+		    &request,
+		    request.header.nlmsg_len,
+		    0,
+		    reinterpret_cast<sockaddr *>(&kernel),
+		    sizeof(kernel)) != static_cast<ssize_t>(request.header.nlmsg_len)) {
+		close(socketFd);
 		return false;
 	}
 	std::vector<std::uint8_t> dump;
+	// Receive into heap storage: a 64 KiB buffer must not sit on a worker thread's
+	// stack (musl's default thread stack is 128 KiB).
+	std::vector<std::uint8_t> buffer(65536);
 	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
 	bool done = false, ok = true;
 	while (!done && ok) {
@@ -206,16 +321,15 @@ bool ReadLinuxRoutes(std::vector<Route> &routes)
 			ok = false;
 			break;
 		}
-		pollfd ready{ fd, POLLIN, 0 };
+		pollfd ready{ socketFd, POLLIN, 0 };
 		if (poll(&ready, 1, static_cast<int>(left)) <= 0 ||
 			(ready.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0) {
 			ok = false;
 			break;
 		}
-		std::array<std::uint8_t, 65536> buffer{};
 		sockaddr_nl sender{};
 		socklen_t senderLength = sizeof(sender);
-		const auto count = recvfrom(fd,
+		const auto count = recvfrom(socketFd,
 			buffer.data(),
 			buffer.size(),
 			MSG_DONTWAIT,
@@ -251,7 +365,7 @@ bool ReadLinuxRoutes(std::vector<Route> &routes)
 		}
 		dump.insert(dump.end(), buffer.begin(), buffer.begin() + size);
 	}
-	close(fd);
+	close(socketFd);
 	return ok && done && detail::ParseLinuxRouteDump(dump, 1, routes);
 }
 } // namespace
@@ -261,70 +375,13 @@ namespace
 bool ReadMacRoutes(std::vector<Route> &routes)
 {
 	int mib[6] = { CTL_NET, PF_ROUTE, 0, AF_INET6, NET_RT_DUMP, 0 };
-	size_t n = 0;
-	if (sysctl(mib, 6, nullptr, &n, nullptr, 0) || !n)
+	std::size_t dumpSize = 0;
+	if (sysctl(mib, 6, nullptr, &dumpSize, nullptr, 0) || !dumpSize)
 		return false;
-	std::vector<unsigned char> b(n);
-	if (sysctl(mib, 6, b.data(), &n, nullptr, 0))
+	std::vector<unsigned char> dump(dumpSize);
+	if (sysctl(mib, 6, dump.data(), &dumpSize, nullptr, 0))
 		return false;
-	for (auto *p = b.data(), *end = p + n; p < end;) {
-		if (static_cast<size_t>(end - p) < sizeof(rt_msghdr))
-			return false;
-		auto *m = reinterpret_cast<rt_msghdr *>(p);
-		if (m->rtm_msglen < sizeof(*m) || m->rtm_msglen > end - p)
-			return false;
-		if (m->rtm_version == RTM_VERSION && (m->rtm_flags & RTF_GATEWAY) &&
-			(m->rtm_flags & RTF_UP) && !(m->rtm_flags & RTF_HOST)) {
-			auto *q = p + sizeof(*m);
-			auto *e = p + m->rtm_msglen;
-			const sockaddr_in6 *d = nullptr, *g = nullptr;
-			bool defaultMask = true;
-			unsigned int bit = 1;
-			for (int i = 0; i < RTAX_MAX; ++i, bit <<= 1)
-				if (m->rtm_addrs & bit) {
-					if (q >= e)
-						return false;
-					auto *sa = reinterpret_cast<sockaddr *>(q);
-					if (static_cast<size_t>(e - q) < 2)
-						return false;
-					size_t z = sa->sa_len ? ((sa->sa_len + sizeof(long) - 1) &
-									~(sizeof(long) - 1))
-							      : sizeof(long);
-					if (z > static_cast<size_t>(e - q))
-						return false;
-					if (sa->sa_family == AF_INET6 && sa->sa_len >= sizeof(sockaddr_in6)) {
-						if (i == RTAX_DST)
-							d = reinterpret_cast<sockaddr_in6 *>(sa);
-						if (i == RTAX_GATEWAY)
-							g = reinterpret_cast<sockaddr_in6 *>(sa);
-					}
-					if (i == RTAX_NETMASK) {
-						for (std::size_t byte = 8;
-							byte < std::min<std::size_t>(sa->sa_len, 24);
-							++byte) {
-							defaultMask = defaultMask && q[byte] == 0;
-						}
-					}
-					q += z;
-				}
-			if (d && g && defaultMask && IN6_IS_ADDR_UNSPECIFIED(&d->sin6_addr)) {
-				Route r{};
-				memcpy(r.gateway.data(), &g->sin6_addr, 16);
-				if (LinkLocal(r.gateway)) {
-					// BSD embeds the scope in address bytes; Asio needs a clean address
-					// plus scope_id.
-					r.gateway[2] = 0;
-					r.gateway[3] = 0;
-				}
-				r.interfaceIndex = m->rtm_index;
-				r.metric = static_cast<std::uint32_t>(m->rtm_rmx.rmx_hopcount);
-				r.isDefault = true;
-				routes.push_back(r);
-			}
-		}
-		p += m->rtm_msglen;
-	}
-	return true;
+	return detail::ParseMacRouteDump(dump, routes);
 }
 } // namespace
 #elif defined(_WIN32)
@@ -359,21 +416,21 @@ bool ReadWindowsRoutes(std::vector<Route> &routes)
 
 std::optional<Gateway> DiscoverGateway(const boost::asio::ip::address_v6 &selected)
 {
-	std::vector<Route> r;
-	std::vector<LocalAddress> a;
+	std::vector<Route> routes;
+	std::vector<LocalAddress> localAddresses;
 	bool ok = false;
 #if defined(__linux__)
-	ok = ReadLinuxRoutes(r);
+	ok = ReadLinuxRoutes(routes);
 #elif defined(__APPLE__)
-	ok = ReadMacRoutes(r);
+	ok = ReadMacRoutes(routes);
 #elif defined(_WIN32)
-	ok = ReadWindowsRoutes(r);
+	ok = ReadWindowsRoutes(routes);
 #endif
 	if (!ok)
 		return std::nullopt;
-	for (const auto &i : DetectNetworkInterfaces())
-		for (const auto &v : i.ipv6)
-			a.push_back({ v.bytes, i.index });
-	return SelectGateway(r, a, selected.to_bytes());
+	for (const auto &networkInterface : DetectNetworkInterfaces())
+		for (const auto &ipv6Address : networkInterface.ipv6)
+			localAddresses.push_back({ ipv6Address.bytes, networkInterface.index });
+	return SelectGateway(routes, localAddresses, selected.to_bytes());
 }
 } // namespace pcp

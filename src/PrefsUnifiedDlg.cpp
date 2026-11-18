@@ -95,7 +95,8 @@
 #include "ServerList.h"
 #include "Statistics.h"
 #include "UserEvents.h"
-#include "PlatformSpecific.h" // Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+#include "PlatformSpecific.h"                // Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+#include <ec/cpp/ECForwardingCapabilities.h> // Needed for forwarding capability availability
 #if defined(ENABLE_IPV6) && !defined(CLIENT_GUI)
 #include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
 #endif
@@ -1476,21 +1477,19 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	// Automatic router forwarding uses the existing preference for UPnP and PCP. Keep the
 	// UPnP-specific port and EC controls gated by UPnP support alone.
 #ifdef CLIENT_GUI
-	FindWindow(IDC_UPNP_ENABLED)->Enable(thePrefs::CanForwardPorts());
 	const bool upnpAvailable = thePrefs::GetUPnPAvailable();
+	const bool pcpAvailable = thePrefs::GetPCPAvailable();
+	// The value belongs to the daemon; do not clobber it locally.
 #else
-#ifdef ENABLE_UPNP
-	const bool upnpAvailable = true;
-#else
-	const bool upnpAvailable = false;
-#endif
-#if defined(ENABLE_IPV6) && (defined(__linux__) || defined(__APPLE__) || defined(_WIN32))
-	const bool pcpAvailable = true;
-#else
-	const bool pcpAvailable = false;
+	const bool upnpAvailable = ECForwardingCapabilities::UpnpAvailable();
+	const bool pcpAvailable = ECForwardingCapabilities::PcpAvailable();
+	// In a build that cannot forward at all, reset the preference so a saved true is
+	// not advertised to EC clients.
+	if (!upnpAvailable && !pcpAvailable) {
+		thePrefs::SetUPnPEnabled(false);
+	}
 #endif
 	FindWindow(IDC_UPNP_ENABLED)->Enable(upnpAvailable || pcpAvailable);
-#endif
 	FindWindow(IDC_UPNPTCPPORT)->Enable(upnpAvailable && thePrefs::GetUPnPEnabled());
 	FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(upnpAvailable && thePrefs::GetUPnPEnabled());
 #ifndef CLIENT_GUI
