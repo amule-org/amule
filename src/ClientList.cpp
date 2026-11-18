@@ -193,6 +193,12 @@ void CClientList::RemoveClient(CUpDownClient *client)
 	if (theApp->browsemanager) {
 		theApp->browsemanager->Forget(client);
 	}
+	if (client->HasValidHash()) {
+		m_requestScores.Remember(client->GetUserHash(),
+			client->GetRequestScore(),
+			client->GetLastPacedRequest(),
+			::GetTickCount64());
+	}
 
 	if (RemoveIDFromList(client)) {
 		RemoveIPFromList(client);
@@ -1130,6 +1136,11 @@ bool CClientList::IsDeadSource(const CUpDownClient *client)
 	return m_deadSources.IsDeadSource(client);
 }
 
+void CClientList::RecallRequestScore(const CMD4Hash &userHash, unsigned &score, uint64 &lastPacedRequest)
+{
+	m_requestScores.Recall(userHash, ::GetTickCount64(), score, lastPacedRequest);
+}
+
 CUpDownClient *CClientList::FindChatClient(const CChatPeer &peer) const
 {
 	if (peer.IsEmpty()) {
@@ -1844,6 +1855,7 @@ void CClientList::CleanUpClientList()
 	const uint64 cur_tick = ::GetTickCount64();
 	if (m_dwLastClientCleanUp + CLIENTLIST_CLEANUP_TIME < cur_tick) {
 		m_dwLastClientCleanUp = cur_tick;
+		m_requestScores.Prune(cur_tick);
 		DEBUG_ONLY(uint32 cDeleted = 0;)
 		IDMap::iterator current_it = m_clientList.begin();
 		while (current_it != m_clientList.end()) {
@@ -1854,9 +1866,11 @@ void CClientList::CleanUpClientList()
 			if (pCurClient->GetSourceFrom() == SF_SOURCE_SEEDS &&
 				cur_tick - theStats::GetStartTime() < MIN2MS(10))
 				continue;
+			// A source keeps its request file while it waits in DS_NONE for its next ask.
 			if ((pCurClient->GetUploadState() == US_NONE ||
 				    (pCurClient->GetUploadState() == US_BANNED && !pCurClient->IsBanned())) &&
 				pCurClient->GetDownloadState() == DS_NONE &&
+				pCurClient->GetRequestFile() == nullptr &&
 				pCurClient->GetChatState() == MS_NONE &&
 				pCurClient->GetKadState() == KS_NONE && pCurClient->GetSocket() == NULL) {
 				DEBUG_ONLY(cDeleted++;)

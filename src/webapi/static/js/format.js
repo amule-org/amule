@@ -74,6 +74,13 @@ export const formatTimestamp = (s) => s ? new Date(s * 1000).toLocaleString() : 
 // file_type token -> its label (i18n keys are search_ftype_<token>).
 export const fileTypeLabel = (token) => token ? t("search_ftype_" + token) : "—";
 
+// Seconds -> "hh:mm:ss", as the desktop's "Waiting to ask" countdown shows it.
+export function formatClock(s) {
+  s = Math.max(0, Math.floor(Number(s) || 0));
+  const pad = (n) => String(n).padStart(2, "0");
+  return pad(Math.floor(s / 3600)) + ":" + pad(Math.floor((s % 3600) / 60)) + ":" + pad(s % 60);
+}
+
 // Seconds -> human duration, mirroring CastSecondsToHM (src/OtherFunctions.cpp).
 export function formatDuration(s) {
   s = Math.floor(Number(s) || 0);

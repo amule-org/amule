@@ -150,6 +150,7 @@ public:
 	const wxString &GetSoftVerStr() const;
 	int GetSourceFrom() const; // ESourceFrom
 	unsigned GetSourceOriginMask() const;
+	uint64 GetNextAskTime() const;
 	int GetContactRoute() const; // ESourceRoute
 	bool IsIdentityFromFallback() const;
 	bool IsRouteUnproven() const;

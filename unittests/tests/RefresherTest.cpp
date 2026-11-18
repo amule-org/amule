@@ -2317,6 +2317,8 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	hi.AddTag(CECTag(EC_TAG_CLIENT_SCORE_RATIO, static_cast<double>(2.5)));
 	// #439 peer country ISO code resolved daemon-side.
 	hi.AddTag(CECTag(EC_TAG_CLIENT_COUNTRY, wxString::FromUTF8("de")));
+	// Waiting in DS_NONE for an ask the core has scheduled.
+	hi.AddTag(CECTag(EC_TAG_CLIENT_NEXT_ASK_AT, static_cast<std::uint64_t>(1783675590)));
 	container.AddTag(hi);
 
 	// A LowID peer (hybrid id < 0x1000000) with no section-B tags.
@@ -2360,11 +2362,14 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_TRUE(cs.is_friend);
 	ASSERT_TRUE(cs.has_credit_ratio);
 	ASSERT_TRUE(cs.credit_ratio > 2.4 && cs.credit_ratio < 2.6);
+	ASSERT_EQUALS(static_cast<std::uint64_t>(1783675590), cs.next_ask_at);
 
 	const auto it2 = cache.find(51);
 	ASSERT_TRUE(it2 != cache.end());
 	ASSERT_TRUE(!it2->second.high_id);
 	ASSERT_TRUE(!it2->second.has_parts_offered_count);
+	// No tag: no ask scheduled, as on a core older than the tag.
+	ASSERT_EQUALS(static_cast<std::uint64_t>(0), it2->second.next_ask_at);
 	// #423 fields absent on the wire => defaults preserved.
 	ASSERT_TRUE(!it2->second.is_friend);
 	ASSERT_TRUE(it2->second.credit_ratio == 0.0);

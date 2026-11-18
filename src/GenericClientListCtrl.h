@@ -131,6 +131,8 @@ public:
 
 	/// Updates the state of client @a toupdate of @a type, possibly causing a redraw.
 	void UpdateItem(uint32 toupdate, SourceItemType type);
+	// Repaints the sources waiting for a scheduled ask, so their countdown moves.
+	void RefreshWaitingSources();
 
 	void SetShowing(bool status) { m_showing = status; }
 	bool GetShowing() const { return m_showing; }

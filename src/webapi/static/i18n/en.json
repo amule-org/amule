@@ -794,6 +794,7 @@
   "downloads_peer_soft_compat": "Compatible",
   "downloads_peer_soft_unknown": "Unknown",
   "downloads_peer_state_idle": "Idle",
+  "downloads_peer_state_waiting_to_ask": "Waiting to ask ({time})",
   "downloads_peer_route_plain": "Connecting via {route}",
   "downloads_peer_route_fallback": "Connecting via {route}, on a fallback route",
   "downloads_peer_route_unproven": "Connecting via {route}, on an unproven route",

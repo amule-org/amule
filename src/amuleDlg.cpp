@@ -1951,6 +1951,11 @@ void CamuleDlg::OnGUITimer(wxTimerEvent &WXUNUSED(evt))
 		}
 #endif
 		ShowTransferRate();
+		if (m_transferwnd && m_transferwnd->clientlistctrl &&
+			m_activewnd == static_cast<wxWindow *>(m_transferwnd) &&
+			m_transferwnd->clientlistctrl->GetShowing()) {
+			m_transferwnd->clientlistctrl->RefreshWaitingSources();
+		}
 
 		// The clients page shows live speeds and transfer totals, so it wants a per-second
 		// refresh -- and no more. This timer fires at 10 Hz, so outside this block the whole

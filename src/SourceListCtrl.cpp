@@ -40,7 +40,8 @@ static CGenericClientListCtrlColumn s_sources_column_info[] = {
 	{ ColumnUserUploaded, wxTRANSLATE("Uploaded"), 65 },
 	{ ColumnUserProgress, wxTRANSLATE("Part Status"), 170 },
 	{ ColumnUserVersion, wxTRANSLATE("Version"), 50 },
-	{ ColumnUserQueueRankRemote, wxTRANSLATE("Download Status"), 55 },
+	// Wide enough for "Waiting to ask (00:00:00)".
+	{ ColumnUserQueueRankRemote, wxTRANSLATE("Download Status"), 170 },
 	{ ColumnUserOrigin, wxTRANSLATE("Origin"), 110 },
 	{ ColumnUserFileNameDownload, wxTRANSLATE("Local File Name"), 200 },
 	{ ColumnUserFileNameDownloadRemote, wxTRANSLATE("Remote File Name"), 200 },

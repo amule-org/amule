@@ -35,6 +35,7 @@
 #include <map>        // Needed for std::multimap (m_BufferedData_list)
 #include <memory>     // Needed for std::shared_ptr (m_metSave)
 #include <mutex>      // Needed for std::mutex (m_hpartfileMutex)
+#include <set>        // Needed for std::set (m_aichWaitingParts)
 
 #include "OtherStructs.h"   // Needed for Requested_Block_Struct
 #include "DeadSourceList.h" // Needed for CDeadSourceList
@@ -383,6 +384,8 @@ private:
 	// False once the file has as many sources as it may take.
 	bool AddExtendedSource(const ExtSX::SRecord &record, unsigned nSourceFrom);
 	CUpDownClient *FindSourceByBuddyID(const uint8_t *buddyID) const;
+	// The source has our trusted AICH master hash, so it can answer an OP_AICHREQUEST.
+	bool HasOurAICHHash(const CUpDownClient *src) const;
 
 #ifndef CLIENT_GUI
 	// partfile handle (opened on demand)
@@ -567,6 +570,9 @@ private:
 	// The downloaded data failed the whole-file hash and there was no part hashset to tell
 	// which part is bad, so completion waits for one.
 	bool m_completionAwaitsHashset = false;
+	// Corrupt parts whose AICH sources may not be asked yet, retried at m_aichRetryAt.
+	std::set<uint16> m_aichWaitingParts;
+	uint64 m_aichRetryAt = 0;
 	uint64 m_lastsearchtime;
 	bool m_localSrcReqQueued;
 
@@ -594,7 +600,7 @@ public:
 	void SetHashSetNeeded(bool value) { m_hashsetneeded = value; }
 	void HashsetRequested();
 	// Sources asked while there was nothing to download are asked again now.
-	void AskQueuedSourcesAgain();
+	void AskQueuedSourcesAgain(bool paced = true);
 	void HashsetReceived();
 
 	uint64 GetCompletedSize() const { return completedsize; }

@@ -33,9 +33,12 @@
 #include <common/Constants.h>
 
 #include <zlib.h>
-#include <cmath> // Needed for std:exp
+#include <atomic> // Needed for std::atomic
+#include <chrono> // Needed for std::chrono::system_clock
+#include <cmath>  // Needed for std:exp
 
 #include "ClientCredits.h"   // Needed for CClientCredits
+#include "ClientList.h"      // Needed for CClientList
 #include "ClientUDPSocket.h" // Needed for CClientUDPSocket
 #include "DownloadQueue.h"   // Needed for CDownloadQueue
 #include "Preferences.h"     // Needed for thePrefs
@@ -134,6 +137,12 @@ bool CUpDownClient::Compare(const CUpDownClient *tocomp, bool bIgnoreUserhash) c
 
 bool CUpDownClient::AskForDownload()
 {
+	if (!MaySendPacedRequest()) {
+		// Its OP_STARTUPLOADREQ would not fit the request budget; ask once it does.
+		m_dwLastAskedTime = PacedLastAskedTime(
+			::GetTickCount64(), m_lastPacedRequest, thePrefs::GetSourceReaskTime());
+		return true;
+	}
 	if (theApp->listensocket->TooManySockets()) {
 		if (!m_socket) {
 			if (GetDownloadState() != DS_TOOMANYCONNS) {
@@ -159,6 +168,11 @@ void CUpDownClient::SendStartupLoadReq()
 	if (m_socket == NULL || m_reqfile == NULL) {
 		return;
 	}
+	// The score recalled with the user hash can rule out an ask that AskForDownload() allowed.
+	if (!MaySendPacedRequest()) {
+		AskAgainSoon();
+		return;
+	}
 	SetDownloadState(DS_ONQUEUE);
 	CMemFile dataStartupLoadReq(16);
 	dataStartupLoadReq.WriteHash(m_reqfile->GetFileHash());
@@ -166,14 +180,67 @@ void CUpDownClient::SendStartupLoadReq()
 	theStats::AddUpOverheadFileRequest(packet->GetPacketSize());
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_STARTUPLOADREQ to " + GetFullIP());
 	SendPacket(packet, true, true);
-	m_lastPacedRequest = ::GetTickCount64();
+	RecordPacedRequest();
 }
 
-void CUpDownClient::AskAgainSoon()
+void CUpDownClient::AskAgainSoon(bool paced)
 {
 	SetDownloadState(DS_NONE);
 	m_dwLastAskedTime =
 		PacedLastAskedTime(::GetTickCount64(), m_lastPacedRequest, thePrefs::GetSourceReaskTime());
+	if (!paced && MaySendPacedRequest()) {
+		m_dwLastAskedTime = 0;
+	}
+}
+
+void CUpDownClient::RecallRequestScore()
+{
+	if (HasValidHash()) {
+		theApp->clientlist->RecallRequestScore(GetUserHash(), m_requestScore, m_lastPacedRequest);
+	}
+}
+
+void CUpDownClient::RecordPacedRequest()
+{
+	RecallRequestScore();
+	const uint64 now = ::GetTickCount64();
+	m_requestScore = AggressiveScoreAfter(m_requestScore, now, m_lastPacedRequest);
+	m_lastPacedRequest = now;
+}
+
+bool CUpDownClient::MaySendPacedRequest()
+{
+	RecallRequestScore();
+	return FitsRequestBudget(m_requestScore, ::GetTickCount64(), m_lastPacedRequest);
+}
+
+static uint64 TickToUnixTime(uint64 tick)
+{
+	using namespace std::chrono;
+	// int64_t, not int64: aMule's int64 is unsigned.
+	static std::atomic<int64_t> offsetMs{ 0 };
+	const int64_t current =
+		static_cast<int64_t>(
+			duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count()) -
+		static_cast<int64_t>(::GetTickCount64());
+	const int64_t offset = TickClockOffset(offsetMs.load(std::memory_order_relaxed), current);
+	offsetMs.store(offset, std::memory_order_relaxed);
+	return static_cast<uint64>((static_cast<int64_t>(tick) + offset + 999) / 1000);
+}
+
+uint64 CUpDownClient::GetNextAskTime() const
+{
+	if (m_nDownloadState != DS_NONE || m_reqfile == nullptr) {
+		return 0;
+	}
+	// CPartFile::Process() asks only for an active file, and only while we are connected.
+	const uint8 status = m_reqfile->GetStatus();
+	if ((status != PS_READY && status != PS_EMPTY) || !theApp->IsConnected()) {
+		return 0;
+	}
+	const uint64 askAt =
+		NextAskTick(m_dwLastAskedTime, thePrefs::GetSourceReaskTime(), ::GetTickCount64());
+	return askAt ? TickToUnixTime(askAt) : 0;
 }
 
 bool CUpDownClient::HasPartWeNeed() const
@@ -1358,6 +1425,13 @@ void CUpDownClient::UDPReaskForDownload()
 		if (IsSourceRequestAllowed()) {
 			return;
 		}
+		if (!MaySendPacedRequest()) {
+			// Reask once it fits the request budget, with the TCP ask still UDP_REASK_LEAD later.
+			m_dwLastAskedTime = PacedLastAskedTime(::GetTickCount64(),
+				m_lastPacedRequest + UDP_REASK_LEAD,
+				thePrefs::GetSourceReaskTime());
+			return;
+		}
 
 		m_bUDPPending = true;
 
@@ -1378,7 +1452,7 @@ void CUpDownClient::UDPReaskForDownload()
 
 		CPacket *response = new CPacket(data, OP_EMULEPROT, OP_REASKFILEPING);
 		AddDebugLogLineN(logClientUDP, "Client UDP socket: send OP_REASKFILEPING");
-		m_lastPacedRequest = ::GetTickCount64();
+		RecordPacedRequest();
 		theStats::AddUpOverheadFileRequest(response->GetPacketSize());
 		theApp->clientudp->SendPacket(response,
 			GetConnectIP(),
@@ -1684,7 +1758,7 @@ void CUpDownClient::SendAICHRequest(CPartFile *pForFile, uint16 nPart)
 	pForFile->GetAICHHashset()->GetMasterHash().Write(&data);
 	CPacket *packet = new CPacket(data, OP_EMULEPROT, OP_AICHREQUEST);
 	theStats::AddUpOverheadOther(packet->GetPacketSize());
-	m_lastPacedRequest = ::GetTickCount64();
+	RecordPacedRequest();
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_AICHREQUEST to" + GetFullIP());
 	SafeSendPacket(packet);
 }

@@ -23,6 +23,8 @@
 
 #include <cstdint>
 
+#include "Constants.h" // Needed for EDownloadState
+
 // Keep retry policy independent of clients, sockets and the application clock.
 // Shareaza's source lifecycle inspired this separation; these are aMule's
 // existing eD2k intervals, not Shareaza's exponential backoff.
@@ -42,6 +44,24 @@ inline uint64_t DeadSourceDelay(bool global, bool lowID)
 inline uint64_t DeadSourceDeadline(uint64_t now, bool global, bool lowID)
 {
 	return now + DeadSourceDelay(global, lowID);
+}
+
+// Whether a client in this download state is kept when its connection closes. A source
+// waiting for its next ask (DS_NONE) is kept like a queued one: an idle socket timing out
+// while it waits says nothing about the source.
+inline bool KeepOnDisconnect(uint8_t downloadState, bool hasRequestFile)
+{
+	switch (downloadState) {
+	case DS_ONQUEUE:
+	case DS_TOOMANYCONNS:
+	case DS_NONEEDEDPARTS:
+	case DS_LOWTOLOWIP:
+		return true;
+	case DS_NONE:
+		return hasRequestFile;
+	default:
+		return false;
+	}
 }
 } // namespace SourceRetryPolicy
 #endif

@@ -654,7 +654,15 @@ public:
 	uint64 GetLastAskedTime() const { return m_dwLastAskedTime; }
 	void ResetLastAskedTime() { m_dwLastAskedTime = 0; }
 	// Ask over TCP as soon as the source would not count it as aggressive (see RequestPacing.h).
-	void AskAgainSoon();
+	// With paced false, asks on the next tick if the request budget allows it.
+	void AskAgainSoon(bool paced = true);
+	// Whether an OP_STARTUPLOADREQ, OP_REASKFILEPING or OP_AICHREQUEST sent now fits the source's
+	// request budget (see FitsRequestBudget).
+	bool MaySendPacedRequest();
+	unsigned GetRequestScore() const { return m_requestScore; }
+	uint64 GetLastPacedRequest() const { return m_lastPacedRequest; }
+	// Unix time of the next ask while the source waits in DS_NONE for it, else 0.
+	uint64 GetNextAskTime() const;
 
 	// The source has a part the requested file still misses.
 	bool HasPartWeNeed() const;
@@ -980,7 +988,7 @@ public:
 	/// Checks that a client isn't aggressively re-asking for files. Call on every file request:
 	/// a gap below MIN_REQUESTTIME adds 3 to m_Aggressiveness, a longer one subtracts 1, and
 	/// the client is banned at 10. Read the verdict with IsClientAggressive(). Currently called
-	/// for OP_STARTUPLOADREQ and OP_REASKFILEPING.
+	/// for OP_STARTUPLOADREQ, OP_REASKFILEPING and OP_AICHREQUEST.
 	void CheckForAggressive();
 
 	const wxString &GetClientModString() const { return m_strModVersion; }
@@ -1071,6 +1079,10 @@ private:
 	// Sends OP_MESSAGE on the open connection, without SendChatMessage()'s chat bookkeeping.
 	void SendChatPacket(const wxString &message);
 	void RefreshObfuscationState();
+	// Call for each request m_lastPacedRequest tracks.
+	void RecordPacedRequest();
+	// Takes over the score the client list kept for a deleted client with this user hash.
+	void RecallRequestScore();
 
 	CClientCredits *credits;
 	CFriend *m_Friend;
@@ -1239,6 +1251,7 @@ private:
 	bool m_skipQuicDial = false;
 #endif
 	uint64 m_lastPacedRequest; // last OP_STARTUPLOADREQ, OP_REASKFILEPING or OP_AICHREQUEST sent
+	unsigned m_requestScore;   // what those requests score in the source's CheckForAggressive()
 	wxString m_clientFilename;
 	uint64 m_nTransferredDown;
 	uint16 m_lastDownloadingPart; // last Part that was downloading

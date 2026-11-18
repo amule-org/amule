@@ -11,7 +11,7 @@ import { Badge, listPlaceholder, CountryCell, toast } from "../components.js";
 import { searches } from "../searches.js";
 import { chats } from "../chats.js";
 import { VirtualTable, sortRows, textMatcher, useTablePrefs, ColumnPicker, ipNum } from "../table.js";
-import { formatBytes, formatSpeed, formatInt, formatTimestamp } from "../format.js";
+import { formatBytes, formatSpeed, formatInt, formatTimestamp, formatClock } from "../format.js";
 import { Icon } from "../icons.js";
 import { t, terr } from "../i18n.js";
 
@@ -94,7 +94,8 @@ export const COLS = [
       : c.parts_offered_count == null ? "—"
       : formatInt(c.parts_offered_count) + (c.partsTotal ? " / " + formatInt(c.partsTotal) : "") },
 
-  { key: "dl_state", th: "downloads_peer_col_dl_state", width: "120px", sortable: true,
+  // Wide enough for "Waiting to ask (00:00:00)".
+  { key: "dl_state", th: "downloads_peer_col_dl_state", width: "190px", sortable: true,
     sortVal: (c) => c.download_state || "", cell: (c) => stateBadge(c.download_state, c) },
   { key: "dl_speed", th: "downloads_peer_col_dl_speed", num: true, width: "100px", sortable: true,
     sortVal: (c) => c.download_speed_bytes_per_second || 0, cell: (c) => formatSpeed(c.download_speed_bytes_per_second) },
@@ -284,7 +285,21 @@ function routeNote(c) {
   return html`<span class="route-note">${t(key, { route: name })}</span>`;
 }
 
+// The countdown to a waiting source's next ask, redrawn every second.
+function WaitingToAsk({ at }) {
+  const [now, setNow] = useState(() => Date.now() / 1000);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now() / 1000), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return html`<${Badge} kind="waiting">${t("downloads_peer_state_waiting_to_ask", { time: formatClock(at - now) })}<//>`;
+}
+
 export function stateBadge(s, c) {
+  // An idle source with a scheduled ask has a known time, not an unknown state.
+  if (s === "idle" && c && c.next_ask_at && c.next_ask_at > Date.now() / 1000) {
+    return html`<${WaitingToAsk} at=${c.next_ask_at} />${routeNote(c)}`;
+  }
   const kind = !s || s === "idle" ? ""
     : s === "downloading" || s === "uploading" ? "downloading"
     : s === "banned" || s === "error" ? "paused" : "waiting";

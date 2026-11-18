@@ -314,6 +314,16 @@ void CGenericClientListCtrl::RemoveSource(uint32 source, const CKnownFile *owner
 	ShowSourcesCount((-1) * removedItems);
 }
 
+void CGenericClientListCtrl::RefreshWaitingSources()
+{
+	// A waiting source sends no update until it is asked, so nothing else repaints it.
+	for (const ListItemsPair &entry : m_ListItems) {
+		if (entry.second->GetSource().GetNextAskTime() != 0) {
+			RefreshItemData(reinterpret_cast<wxUIntPtr>(entry.second));
+		}
+	}
+}
+
 void CGenericClientListCtrl::UpdateItem(uint32 toupdate, SourceItemType type)
 {
 	ListIteratorPair rangeIt = m_ListItems.equal_range(toupdate);
@@ -756,6 +766,14 @@ wxString CGenericClientListCtrl::GetItemColumnText(wxUIntPtr data, unsigned colu
 					client.IsIdentityFromFallback());
 				if (!route.IsEmpty()) {
 					return route;
+				}
+			}
+			if (state == DS_NONE) {
+				// The ask time is known, so "Unknown" would mislead.
+				const uint64 askAt = client.GetNextAskTime();
+				const uint64 now = static_cast<uint64>(time(nullptr));
+				if (askAt > now) {
+					return WaitingToAskToStr(askAt - now);
 				}
 			}
 			return DownloadStateToStr(state, client.IsRemoteQueueFull());

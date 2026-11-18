@@ -525,6 +525,12 @@ EC_TAG_CLIENT                             0x0600
 # copies came from are lost with them. Additive: a missing tag means an older
 # daemon, which is a distinct third state from "seen on no channel".
 	EC_TAG_CLIENT_FROM_MASK                   0x0635
+
+# Unix time at which a download source waiting in DS_NONE for its next ask is
+# asked, 0 when none is scheduled. It moves only when the ask is rescheduled,
+# so it stays out of most updates. Additive: a missing tag means an older
+# daemon, which reads as no ask scheduled.
+	EC_TAG_CLIENT_NEXT_ASK_AT                 0x0636
 EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_TYPE                        0x0701
 	EC_TAG_SEARCH_NAME                        0x0702

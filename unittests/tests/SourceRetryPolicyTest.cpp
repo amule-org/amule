@@ -76,3 +76,18 @@ TEST(SourceRetryPolicy, PacedRetryDoesNotBypassAggressiveRequestGuard)
 		}
 	}
 }
+TEST(SourceRetryPolicy, SourceWaitingForItsAskSurvivesDisconnect)
+{
+	// A source waiting for its paced ask is in DS_NONE. An idle socket closing in that wait
+	// must not drop it.
+	ASSERT_TRUE(KeepOnDisconnect(DS_NONE, true));
+	ASSERT_FALSE(KeepOnDisconnect(DS_NONE, false));
+	for (const uint8_t state : { DS_ONQUEUE, DS_TOOMANYCONNS, DS_NONEEDEDPARTS, DS_LOWTOLOWIP }) {
+		ASSERT_TRUE(KeepOnDisconnect(state, true));
+		ASSERT_TRUE(KeepOnDisconnect(state, false));
+	}
+	// The other states are still given up.
+	for (const uint8_t state : { DS_CONNECTING, DS_CONNECTED, DS_WAITCALLBACK, DS_ERROR, DS_BANNED }) {
+		ASSERT_FALSE(KeepOnDisconnect(state, true));
+	}
+}

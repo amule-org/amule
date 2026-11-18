@@ -27,11 +27,15 @@
 
 #include <wx/string.h>
 
+#include "Types.h" // Needed for uint64
+
 // Returns the textual representation of a priority value
 wxString PriorityToStr(int priority, bool isAuto);
 
 // Returns the textual representation of download states
 wxString DownloadStateToStr(int state, bool queueFull);
+// "Waiting to ask (hh:mm:ss)" for a source whose next ask is secondsLeft away.
+wxString WaitingToAskToStr(uint64 secondsLeft);
 
 /// @return Human-readable client software name.
 const wxString GetSoftName(unsigned int software_ident);
