@@ -114,6 +114,10 @@ public:
 		}
 	}
 	const CNetworkAddress &GetLoginIPv6() const { return m_loginIPv6; }
+	// A pinhole opened in this session and no update answered it yet. Per session: a later login is
+	// probed with the pinhole already open.
+	void SetIPv6ReprobeWanted(bool wanted) { m_ipv6ReprobeWanted = wanted; }
+	bool IsIPv6ReprobeWanted() const { return m_ipv6ReprobeWanted; }
 
 	// Every IPv6 this server session advertised: the server sends no reply to OP_IPV6_UPDATE, so
 	// an OP_FOUNDSOURCES built before a withdrawal or a renumber can still name a former one. It
@@ -151,6 +155,7 @@ private:
 #endif
 #ifdef ENABLE_IPV6
 	CNetworkAddress m_loginIPv6;
+	bool m_ipv6ReprobeWanted = false;
 	// The server dials an advertised address at most 4 times a session, so few are ever sent.
 	static constexpr std::size_t MaxSentIPv6 = 8;
 	std::vector<CNetworkAddress> m_sentIPv6;

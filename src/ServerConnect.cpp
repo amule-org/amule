@@ -742,8 +742,21 @@ void CServerConnect::UpdateAdvertisedIPv6(const std::optional<CNetworkAddress> &
 	const std::optional<CNetworkAddress> lastSent =
 		lastSentAddress.IsPresent() ? std::optional<CNetworkAddress>(lastSentAddress) : std::nullopt;
 
-	const SServerIPv6UpdateDecision decision =
+	SServerIPv6UpdateDecision decision =
 		DecideServerIPv6Update(server->SupportsIPv6Updates(), lastSent, advertised);
+	if (!decision.send && ShouldRepeatIPv6ForReprobe(connectedsocket->IsIPv6ReprobeWanted(),
+				      server->SupportsIPv6Updates(),
+				      server->SupportsIPv6Probe(),
+				      server->GetIPv6Verdict(),
+				      server->GetIPv6VerdictAddress(),
+				      lastSent,
+				      advertised)) {
+		decision.send = true;
+		advertised->ToIPv6Bytes(decision.payload);
+		AddLogLineN(CFormat("Asking the server to test %s again: an IPv6 pinhole opened after "
+				    "its last test failed") %
+			    advertised->ToWxString());
+	}
 	if (!decision.send) {
 		return;
 	}
@@ -756,6 +769,15 @@ void CServerConnect::UpdateAdvertisedIPv6(const std::optional<CNetworkAddress> &
 	SendPacket(packet, true, connectedsocket);
 
 	connectedsocket->SetLoginIPv6(advertised.value_or(CNetworkAddress::Absent()));
+	// Any update answers the pinhole: a new address gets its own dial.
+	connectedsocket->SetIPv6ReprobeWanted(false);
+}
+
+void CServerConnect::NoteIPv6PinholeOpened()
+{
+	if (GetCurrentServer() && connectedsocket) {
+		connectedsocket->SetIPv6ReprobeWanted(true);
+	}
 }
 #endif
 

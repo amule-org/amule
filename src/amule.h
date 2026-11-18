@@ -482,6 +482,10 @@ public:
 	CAsioService *m_AsioService;
 #ifdef ENABLE_UPNP
 	CUPnPControlPoint *m_upnp;
+#ifdef ENABLE_IPV6
+	// IPv6PinholeOpenings() at the last RequestIPv6Pinholes() pass.
+	unsigned int m_IPv6PinholeOpeningsSeen = 0;
+#endif
 	std::vector<CUPnPPortMapping> m_upnpMappings;
 	//! Ask the gateway's IGD2 firewall service for the inbound IPv6 pinholes the node needs. A
 	//! no-op without an IPv6 listener or without that service.

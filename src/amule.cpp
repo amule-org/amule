@@ -2447,6 +2447,15 @@ void CamuleApp::RequestIPv6Pinholes()
 					   ? local->ToString()
 					   : std::string();
 	m_upnp->SetIPv6PinholeTarget(client, thePrefs::GetPort(), kIPv6PinholeLeaseSeconds);
+	// A pinhole that opened after the server's dial-back failed is of no use until it dials again.
+	const unsigned int openings = m_upnp->IPv6PinholeOpenings();
+	if (openings != m_IPv6PinholeOpeningsSeen) {
+		m_IPv6PinholeOpeningsSeen = openings;
+		if (serverconnect) {
+			serverconnect->NoteIPv6PinholeOpened();
+			AdvertisedIPv6ForPeers();
+		}
+	}
 	// Queued, not run: the pass sends SOAP and holds the service map mutex, and a slow gateway must
 	// not stall the main loop.
 	CThreadScheduler::AddTaskIfNoneOfType(new CIPv6PinholeRenewalTask(m_upnp, client));
