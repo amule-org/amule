@@ -98,3 +98,28 @@ TEST(KadBuddyIdLayout, AnUnansweredRequestSwitchesTheForm)
 	ASSERT_TRUE(NextBuddyIdUsesAmuleLayout(false, true));
 	ASSERT_FALSE(NextBuddyIdUsesAmuleLayout(true, true));
 }
+
+// A sooner request would fall inside eMule's one-per-minute limit, where it is dropped.
+TEST(KadBuddyIdLayout, TheSameBuddyIPIsAskedAgainAfterTheFloodInterval)
+{
+	ASSERT_EQUALS(100000 + KAD_CALLBACK_SAME_BUDDY_WAIT_MS, KadCallbackRetryTime(100000, true));
+	ASSERT_TRUE(KAD_CALLBACK_SAME_BUDDY_WAIT_MS > KAD_CALLBACK_REQ_INTERVAL_MS);
+	const uint64_t retryAt = KadCallbackRetryTime(100000, true);
+	ASSERT_FALSE(IsKadCallbackRetryDue(100000 + 40000, retryAt));
+	ASSERT_FALSE(IsKadCallbackRetryDue(retryAt - 1, retryAt));
+	ASSERT_TRUE(IsKadCallbackRetryDue(retryAt, retryAt));
+}
+
+// Another buddy IP has no flood interval to wait for, and a source that never waited is due.
+TEST(KadBuddyIdLayout, AnotherBuddyIPIsAskedAtOnce)
+{
+	ASSERT_EQUALS(static_cast<uint64_t>(0), KadCallbackRetryTime(100000, false));
+	ASSERT_TRUE(IsKadCallbackRetryDue(100000 + 40000, KadCallbackRetryTime(100000, false)));
+}
+
+TEST(KadBuddyIdLayout, AnUnansweredCallbackHasTheOtherLayoutLeftOnce)
+{
+	ASSERT_TRUE(HasOtherBuddyIdLayoutLeft(true, false));
+	ASSERT_FALSE(HasOtherBuddyIdLayoutLeft(true, true));
+	ASSERT_FALSE(HasOtherBuddyIdLayoutLeft(false, false));
+}

@@ -1645,8 +1645,11 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 
 	// A source is given up only once every route it offers has failed.
 	bool restoredChainStart = false;
+	// A Kad callback to the same buddy IP waits out eMule's flood interval as "Waiting to ask".
+	bool waitsForKadCallback = false;
 	if (KeepForNextRoute(failedAdvertisedIPv6)) {
-		SetDownloadState(DS_ONQUEUE);
+		waitsForKadCallback = !IsKadCallbackRetryDue(::GetTickCount64());
+		SetDownloadState(waitsForKadCallback ? DS_NONE : DS_ONQUEUE);
 		m_bReaskPending = true;
 		// The source never got our request, so it is asked on the next tick, not at the next reask.
 		ResetLastAskedTime();
@@ -1667,7 +1670,7 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 		break;
 	};
 
-	if (m_nDownloadState == DS_ONQUEUE) {
+	if (m_nDownloadState == DS_ONQUEUE || waitsForKadCallback) {
 		source_type = A4AF_SOURCE; // Will be checked.
 	}
 	if (SourceRetryPolicy::KeepOnDisconnect(m_nDownloadState, m_reqfile != nullptr)) {
@@ -2279,6 +2282,7 @@ bool CUpDownClient::StartKadBuddyCallback()
 {
 	if (GetBuddyIP() && GetBuddyPort()) {
 		// One form per request: eMule's flood protection allows about one request per minute (#1835).
+		m_bBuddyOtherLayoutTried = m_bBuddyOtherLayoutTried || m_bBuddyCallbackUnanswered;
 		m_bBuddyIdUseAmuleLayout = Kademlia::NextBuddyIdUsesAmuleLayout(
 			m_bBuddyIdUseAmuleLayout, m_bBuddyCallbackUnanswered);
 		uint8_t buddyIDToSend[16];
@@ -2288,6 +2292,8 @@ bool CUpDownClient::StartKadBuddyCallback()
 			md4cpy(buddyIDToSend, GetBuddyID());
 		}
 		m_bBuddyCallbackUnanswered = true;
+		m_kadCallbackSentTime = ::GetTickCount64();
+		m_kadCallbackRetryTime = 0;
 		CMemFile bio(34);
 		bio.WriteUInt128(Kademlia::CUInt128(buddyIDToSend));
 		bio.WriteUInt128(Kademlia::CUInt128(m_reqfile->GetFileHash().GetHash()));
@@ -2330,9 +2336,27 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 	if (m_sourceRoute == ESourceRoute::None || m_reqfile == nullptr) {
 		return false;
 	}
-	// A fallback buddy leaves the buddy route untried.
-	if (m_sourceRoute == ESourceRoute::KadBuddy && SwitchToBuddyCandidate()) {
-		return true;
+	if (m_sourceRoute == ESourceRoute::KadBuddy) {
+		const uint32 askedIP = GetBuddyIP();
+		// A fallback buddy leaves the buddy route untried.
+		bool askAgain = SwitchToBuddyCandidate();
+		if (!askAgain && GetBuddyIP() && GetBuddyPort() &&
+			Kademlia::HasOtherBuddyIdLayoutLeft(
+				m_bBuddyCallbackUnanswered, m_bBuddyOtherLayoutTried)) {
+			AddDebugLogLineN(logKadBuddy,
+				CFormat("Kad buddy %s of source %s did not pass on a callback, asking it "
+					"again in the other buddy ID layout") %
+					Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) %
+					GetUserHash().Encode());
+			askAgain = true;
+		}
+		if (askAgain) {
+			// The source waits to ask while eMule's flood interval runs out, not in the
+			// callback socket.
+			m_kadCallbackRetryTime = Kademlia::KadCallbackRetryTime(
+				m_kadCallbackSentTime, GetBuddyIP() == askedIP);
+			return true;
+		}
 	}
 	if ((m_refreshedSourceRoutes & SourceRouteBit(m_sourceRoute)) != 0) {
 		m_refreshedSourceRoutes &= ~SourceRouteBit(m_sourceRoute);
@@ -3022,6 +3046,18 @@ void CUpDownClient::ConnectionEstablished()
 		m_pendingMessage.Clear();
 	}
 
+	if (m_kadCallbackRetryTime != 0) {
+		// The source called back late, while its next request waited. The reask below skips a
+		// source waiting to ask, so it gets its file request here.
+		m_kadCallbackRetryTime = 0;
+		m_bBuddyCallbackUnanswered = false;
+		m_bBuddyOtherLayoutTried = false;
+		if (GetDownloadState() == DS_NONE) {
+			m_bReaskPending = false;
+			SetDownloadState(DS_CONNECTED);
+			SendFileRequest();
+		}
+	}
 	switch (GetDownloadState()) {
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	case DS_LOWTOLOWIP:
@@ -3034,6 +3070,7 @@ void CUpDownClient::ConnectionEstablished()
 	case DS_WAITCALLBACK:
 	case DS_WAITCALLBACKKAD:
 		m_bBuddyCallbackUnanswered = false;
+		m_bBuddyOtherLayoutTried = false;
 		m_bReaskPending = false;
 		SetDownloadState(DS_CONNECTED);
 		SendFileRequest();
@@ -4101,6 +4138,7 @@ void CUpDownClient::SetBuddyID(const uint8_t *pucBuddyID, bool fromKad)
 {
 	m_bBuddyIdUseAmuleLayout = false;
 	m_bBuddyCallbackUnanswered = false;
+	m_bBuddyOtherLayoutTried = false;
 	// A source published without a buddy hash reaches us as 16 zero bytes. Accepting that as an
 	// ID sends the buddy route looking up the zero Kad ID, which belongs to no node.
 	if (pucBuddyID == nullptr || CMD4Hash(pucBuddyID).IsEmpty()) {
@@ -4155,12 +4193,14 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 		SetBuddyPort(duplicate.GetBuddyPort());
 		m_nBuddyCandidateIP = 0;
 		m_nBuddyCandidatePort = 0;
+		m_bBuddyCandidateIsFormer = false;
 	}
 	// One Kad search returns the same fallback from several nodes.
 	if (merge.storeCandidate && (m_nBuddyCandidateIP != duplicate.GetBuddyIP() ||
 					    m_nBuddyCandidatePort != duplicate.GetBuddyPort())) {
 		m_nBuddyCandidateIP = duplicate.GetBuddyIP();
 		m_nBuddyCandidatePort = duplicate.GetBuddyPort();
+		m_bBuddyCandidateIsFormer = false;
 		AddDebugLogLineN(logKadBuddy,
 			CFormat("Kad buddy %s kept as a fallback for source %s, which uses %s") %
 				Uint32_16toStringIP_Port(m_nBuddyCandidateIP, m_nBuddyCandidatePort) %
@@ -4352,19 +4392,30 @@ ExtSX::SAddressFilter MakeExtendedSourceAddressFilter()
 
 bool CUpDownClient::SwitchToBuddyCandidate()
 {
-	if (!ShouldSwitchToBuddyCandidate(m_nBuddyCandidateIP != 0, m_bBuddyCallbackUnanswered)) {
+	if (!ShouldSwitchToBuddyCandidate(m_nBuddyCandidateIP != 0,
+		    m_bBuddyCallbackUnanswered,
+		    m_bBuddyCandidateIsFormer,
+		    m_bBuddyOtherLayoutTried)) {
 		return false;
 	}
+	const bool returning = m_bBuddyCandidateIsFormer;
 	AddDebugLogLineN(logKadBuddy,
-		CFormat("Kad buddy %s of source %s did not pass on a callback, switching to %s") %
+		CFormat("Kad buddy %s of source %s did not pass on a callback, switching %s %s") %
 			Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) % GetUserHash().Encode() %
+			(returning ? "back to" : "to") %
 			Uint32_16toStringIP_Port(m_nBuddyCandidateIP, m_nBuddyCandidatePort));
+	const uint32 leftIP = GetBuddyIP();
+	const uint16 leftPort = GetBuddyPort();
 	SetBuddyIP(m_nBuddyCandidateIP);
 	SetBuddyPort(m_nBuddyCandidatePort);
-	m_nBuddyCandidateIP = 0;
-	m_nBuddyCandidatePort = 0;
-	// The first try through the new buddy keeps the current buddy ID layout (#1835).
+	const bool keepLeft = KeepsFormerBuddy(returning, m_bBuddyOtherLayoutTried);
+	m_nBuddyCandidateIP = keepLeft ? leftIP : 0;
+	m_nBuddyCandidatePort = keepLeft ? leftPort : 0;
+	m_bBuddyCandidateIsFormer = keepLeft;
+	// The first try through the new buddy keeps the current buddy ID layout (#1835). Back on the
+	// former buddy, that is the layout it was not asked in, and the last one left.
 	m_bBuddyCallbackUnanswered = false;
+	m_bBuddyOtherLayoutTried = returning;
 	return true;
 }
 

@@ -238,8 +238,12 @@ uint64 CUpDownClient::GetNextAskTime() const
 	if ((status != PS_READY && status != PS_EMPTY) || !theApp->IsConnected()) {
 		return 0;
 	}
-	const uint64 askAt =
-		NextAskTick(m_dwLastAskedTime, thePrefs::GetSourceReaskTime(), ::GetTickCount64());
+	const uint64 now = ::GetTickCount64();
+	// A Kad callback to the same buddy IP waits out eMule's flood interval.
+	if (!IsKadCallbackRetryDue(now)) {
+		return TickToUnixTime(m_kadCallbackRetryTime);
+	}
+	const uint64 askAt = NextAskTick(m_dwLastAskedTime, thePrefs::GetSourceReaskTime(), now);
 	return askAt ? TickToUnixTime(askAt) : 0;
 }
 

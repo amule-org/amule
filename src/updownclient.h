@@ -56,6 +56,7 @@
 #include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
+#include "KadBuddyIdLayout.h" // Needed for IsKadCallbackRetryDue
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "NatServerHolePunch.h" // Needed for callback request policy
 #if defined(AMULE_UTP_TRANSPORT)
@@ -910,6 +911,9 @@ public:
 	{
 		m_failedSourceRoutes = 0;
 		m_refreshedSourceRoutes = 0;
+		// The next round asks the buddy in both layouts again, starting with the last one.
+		m_bBuddyCallbackUnanswered = false;
+		m_bBuddyOtherLayoutTried = false;
 		m_lastContactRoute = EContactRouteReport::None;
 		m_lastContactOverIPv6 = false;
 	}
@@ -933,6 +937,11 @@ public:
 	bool IsRouteAnsweredByOtherHost() const;
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
+	// A kept source asks for its next Kad callback only once this is true.
+	bool IsKadCallbackRetryDue(uint64 now) const
+	{
+		return Kademlia::IsKadCallbackRetryDue(now, m_kadCallbackRetryTime);
+	}
 	// This source as an Extended Source Exchange record, sanitized with `filter`.
 	ExtSX::SRecord GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const;
 	/* Role: we serve this buddy, or it serves us */
@@ -1318,6 +1327,8 @@ private:
 	bool m_bBuddyIdUseAmuleLayout = false;
 	// A KADEMLIA_CALLBACK_REQ was sent and the source has not called back since.
 	bool m_bBuddyCallbackUnanswered = false;
+	// The current buddy was already asked in the other layout.
+	bool m_bBuddyOtherLayoutTried = false;
 	bool m_bServedBuddy = false;
 	bool m_bServedBuddyNatT = false;
 	uint32 m_nBuddyIP;
@@ -1325,6 +1336,11 @@ private:
 	// A different buddy address from a Kad result, held back while the stored one answers.
 	uint32 m_nBuddyCandidateIP = 0;
 	uint16 m_nBuddyCandidatePort = 0;
+	// The candidate is the buddy we switched away from, asked in one layout only.
+	bool m_bBuddyCandidateIsFormer = false;
+	// When the last KADEMLIA_CALLBACK_REQ was sent, and when the next one may go, 0 for at once.
+	uint64_t m_kadCallbackSentTime = 0;
+	uint64_t m_kadCallbackRetryTime = 0;
 	// The route of the contact in flight, and the routes that failed since the last hello.
 	ESourceRoute m_sourceRoute{};
 	// The same route, kept after the attempt ends so the source list can show it, plus the two
