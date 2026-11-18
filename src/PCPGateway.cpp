@@ -363,7 +363,8 @@ bool ReadLinuxRoutes(std::vector<Route> &routes)
 			}
 			offset += aligned;
 		}
-		dump.insert(dump.end(), buffer.begin(), buffer.begin() + size);
+		auto received = std::next(buffer.begin(), static_cast<std::ptrdiff_t>(size));
+		dump.insert(dump.end(), buffer.begin(), received);
 	}
 	close(socketFd);
 	return ok && done && detail::ParseLinuxRouteDump(dump, 1, routes);
