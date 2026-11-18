@@ -26,6 +26,7 @@
 #define SERVER_IPV6_UPDATE_H
 
 #include "NetworkAddress.h"
+#include "ServerIPv6Verdict.h"
 #include <protocol/ed2k/Client2Server/TCP.h> // Needed for SRV_TCPFLG_IPV6*
 
 #include <cstdint>
@@ -65,6 +66,27 @@ inline SServerIPv6UpdateDecision DecideServerIPv6Update(bool serverAcceptsUpdate
 		advertised->ToIPv6Bytes(decision.payload);
 	}
 	return decision;
+}
+
+//! Whether to send the address the server already holds once more, so that it dials it again.
+//!
+//! A pinhole that opens after a failed dial-back helps only once the server dials again. A probing
+//! server dials a repeat of an address whose verdict failed. A repeat while a dial runs, or after
+//! one passed, starts nothing, so only Failed qualifies.
+//!
+//! @param pinholeOpened  A pinhole opened during this server session and was not yet answered.
+//! @param verdictAddress The address the verdict is about.
+inline bool ShouldRepeatIPv6ForReprobe(bool pinholeOpened,
+	bool serverAcceptsUpdates,
+	bool serverProbes,
+	EServerIPv6Verdict verdict,
+	const CNetworkAddress &verdictAddress,
+	const std::optional<CNetworkAddress> &lastSent,
+	const std::optional<CNetworkAddress> &advertised)
+{
+	return pinholeOpened && serverAcceptsUpdates && serverProbes && advertised.has_value() &&
+	       advertised == lastSent && verdict == EServerIPv6Verdict::Failed &&
+	       verdictAddress == *advertised;
 }
 
 #endif // SERVER_IPV6_UPDATE_H

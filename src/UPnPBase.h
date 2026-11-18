@@ -397,6 +397,7 @@ private:
 	mutable CUPnPMutex m_ServiceMapMutex;
 	std::atomic<bool> m_gatewayMapped;
 	std::atomic<int> m_registering;
+	std::atomic<unsigned int> m_IPv6PinholeOpenings{ 0 };
 	std::chrono::steady_clock::time_point m_searchDeadline;
 
 public:
@@ -420,6 +421,9 @@ public:
 	//! Whether a gateway exposes IGD2 WANIPv6FirewallControl, which is what an inbound IPv6
 	//! pinhole needs; a gateway that only maps IPv4 ports cannot open one.
 	bool IPv6FirewallDetected() const;
+	//! How many AddPinhole requests a gateway granted. A re-add after a failed renewal counts too: a
+	//! router restart may have closed the pinhole meanwhile. Read by the main thread.
+	unsigned int IPv6PinholeOpenings() const { return m_IPv6PinholeOpenings.load(); }
 	//! Record an inbound pinhole request and immediately try to send it. Recording comes first:
 	//! discovery is asynchronous, so a request made before the gateway's firewall service registers
 	//! is replayed by the registration path rather than lost.

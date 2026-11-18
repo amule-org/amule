@@ -1231,6 +1231,7 @@ bool CUPnPControlPoint::SendAddPinhole(SIPv6Pinhole &pinhole)
 		return false;
 	}
 	pinhole.uniqueId = uniqueId;
+	++m_IPv6PinholeOpenings;
 	pinhole.expiry = std::chrono::steady_clock::now() + std::chrono::seconds(pinhole.lease);
 	std::ostringstream msg;
 	msg << "IPv6 pinhole for " << pinhole.client << " (protocol " << pinhole.protocol

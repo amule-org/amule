@@ -680,6 +680,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					}
 #endif
 				}
+#ifdef ENABLE_IPV6
+				// A failed verdict may be the one an opened pinhole waits for.
+				AdvertisedIPv6ForPeers();
+#endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 				// The login keepalive went out before this ident. Sent after the loop, as the
 				// proof tag may follow the token.

@@ -222,6 +222,9 @@ public:
 	//! Sends OP_IPV6_UPDATE on the current server connection when DecideServerIPv6Update() says
 	//! to, and keeps CServerSocket::GetLoginIPv6() in step with what was actually sent.
 	void UpdateAdvertisedIPv6(const std::optional<CNetworkAddress> &advertised);
+	//! A gateway opened an inbound IPv6 pinhole. If the server's dial-back of our address already
+	//! failed, the next UpdateAdvertisedIPv6() sends the same address again so that it dials once more.
+	void NoteIPv6PinholeOpened();
 #endif
 
 private:

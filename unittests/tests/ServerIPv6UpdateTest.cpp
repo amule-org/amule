@@ -110,3 +110,64 @@ TEST(ServerIPv6Update, OnlyAServerWithBothIPv6FlagsAcceptsUpdates)
 	ASSERT_FALSE(ServerAcceptsIPv6Updates(0x00004000u));
 	ASSERT_FALSE(ServerAcceptsIPv6Updates(0));
 }
+
+namespace
+{
+bool Reprobe(bool opened,
+	EServerIPv6Verdict verdict,
+	const CNetworkAddress &verdictAddress,
+	const std::optional<CNetworkAddress> &lastSent,
+	const std::optional<CNetworkAddress> &advertised,
+	bool acceptsUpdates = true,
+	bool probes = true)
+{
+	return ShouldRepeatIPv6ForReprobe(
+		opened, acceptsUpdates, probes, verdict, verdictAddress, lastSent, advertised);
+}
+} // namespace
+
+TEST(ServerIPv6Update, PinholeAfterFailedProbeRepeatsTheAddress)
+{
+	const CNetworkAddress address = MakeAddress(0x88);
+	ASSERT_TRUE(Reprobe(true, EServerIPv6Verdict::Failed, address, address, address));
+}
+
+TEST(ServerIPv6Update, NoPinholeNoRepeat)
+{
+	const CNetworkAddress address = MakeAddress(0x88);
+	ASSERT_FALSE(Reprobe(false, EServerIPv6Verdict::Failed, address, address, address));
+}
+
+// A repeat while a dial runs, or of a published address, starts nothing on the server.
+TEST(ServerIPv6Update, OnlyAFailedVerdictRepeats)
+{
+	const CNetworkAddress address = MakeAddress(0x88);
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Probing, address, address, address));
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Verified, address, address, address));
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Trusted, address, address, address));
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Unknown, address, address, address));
+}
+
+TEST(ServerIPv6Update, FailedVerdictAboutAnotherAddressDoesNotRepeat)
+{
+	const CNetworkAddress address = MakeAddress(0x88);
+	const CNetworkAddress other = MakeAddress(0x99);
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Failed, other, address, address));
+}
+
+// A new address or a withdrawal goes out as a normal update; a repeat is only for the same one.
+TEST(ServerIPv6Update, RepeatNeedsTheAddressAlreadySent)
+{
+	const CNetworkAddress address = MakeAddress(0x88);
+	const CNetworkAddress other = MakeAddress(0x99);
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Failed, address, other, address));
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Failed, address, std::nullopt, address));
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Failed, address, address, std::nullopt));
+}
+
+TEST(ServerIPv6Update, RepeatNeedsAProbingServerThatTakesUpdates)
+{
+	const CNetworkAddress address = MakeAddress(0x88);
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Failed, address, address, address, false, true));
+	ASSERT_FALSE(Reprobe(true, EServerIPv6Verdict::Failed, address, address, address, true, false));
+}
