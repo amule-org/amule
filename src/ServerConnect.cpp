@@ -754,7 +754,7 @@ void CServerConnect::UpdateAdvertisedIPv6(const std::optional<CNetworkAddress> &
 		decision.send = true;
 		advertised->ToIPv6Bytes(decision.payload);
 		AddLogLineN(CFormat("Asking the server to test %s again: an IPv6 pinhole opened after "
-				    "its first test failed") %
+				    "its last test failed") %
 			    advertised->ToWxString());
 	}
 	if (!decision.send) {

@@ -140,6 +140,15 @@ the send path is
 `CServerSocket::GetLoginIPv6()` -- the own-record check address -- in step
 with whatever was actually sent.
 
+One repeat is sent on purpose. A pinhole that opens after a failed dial-back
+(`0x05`) helps only once the server dials again, and `ed2k-server` 0.9.90 and
+later dial a repeat of a failed address. So after a gateway grants a UPnP IGD2
+pinhole, aMule sends the same address once more if the server's verdict on it
+failed (`ShouldRepeatIPv6ForReprobe()`, same header). The check runs again when
+an `OP_SERVERIDENT` brings a new verdict, for a pinhole that opened during the
+first dial. A repeat while a dial runs, or after one passed, starts nothing, so
+aMule does not send one then. Each repeat uses one of the server's four dials.
+
 Because the server sends no reply, an `OP_FOUNDSOURCES` built while we were
 still capable can still arrive after a withdrawal. Sentinel parsing is
 therefore sticky for the rest of the server session once any IPv6 was
