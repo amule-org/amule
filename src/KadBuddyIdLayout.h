@@ -64,8 +64,8 @@ inline bool NextBuddyIdUsesAmuleLayout(bool usesAmuleLayout, bool previousReques
 	return previousRequestUnanswered ? !usesAmuleLayout : usesAmuleLayout;
 }
 
-// eMule's Kad flood protection lets a second KADEMLIA_CALLBACK_REQ from an IP through only after more
-// than a minute, and counts a dropped one too (PacketTracking.cpp).
+// eMule's Kad flood protection drops a second KADEMLIA_CALLBACK_REQ from an IP within a minute of the
+// last one, and counts a dropped one too (PacketTracking.cpp).
 constexpr uint64_t KAD_CALLBACK_REQ_INTERVAL_MS = 60000;
 // How long a callback waits when the next request goes to the same buddy IP. The margin covers the
 // time the request spends in our UDP send queue.

@@ -3,8 +3,9 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """An unanswered callback through a source's buddy is retried in the other buddy ID layout.
 
-A source published before #1993 by aMule wrote TAG_BUDDYHASH in another byte order, and an eMule
-family buddy only relays the ID it registered. So when a KADEMLIA_CALLBACK_REQ goes unanswered,
+A source published before #1993 by aMule wrote TAG_BUDDYHASH in another byte order. The ID must
+match on the way: emule-qt relays only an ID it serves, and the LowID drops a callback that is not
+its own. So when a KADEMLIA_CALLBACK_REQ goes unanswered,
 the downloader asks the same buddy once more with the other reading of the hash. eMule's Kad flood
 protection takes one KADEMLIA_CALLBACK_REQ per minute from an IP, so no buddy gets a second
 request sooner; a switch to another buddy does not wait. Once every buddy has had both layouts, the
@@ -35,7 +36,7 @@ from KadSourceTagsECTest import (KADEMLIA2_SEARCH_RES, KADEMLIA2_SEARCH_SOURCE_R
 
 # No 4-byte group is a palindrome, so the two layouts differ.
 BUDDY_HASH = b'00112233445566778899aabbccddeeff'
-# eMule drops a second request from an IP unless more than a minute has passed.
+# eMule drops a second request from an IP within a minute of the last one.
 FLOOD_INTERVAL = 60
 # A wrong request to the same buddy would follow the last one by its 65 s wait. Only the one-buddy
 # case waits for it: the two-buddy case needs three such waits already, and its last request ends
@@ -157,11 +158,11 @@ def check(requests, expected):
     buddies = {buddy for _, buddy, _ in requests}
     pairs = {(buddy, ident) for _, buddy, ident in requests}
     assert pairs == {(b, i) for b in buddies for i in (first_id, other_layout(first_id))}, pairs
-    for buddy in buddies:
-        times = [t for t, b, _ in requests if b == buddy]
-        for previous, current in zip(times, times[1:]):
-            assert current - previous > FLOOD_INTERVAL, (
-                f'buddy {buddy} asked again {current - previous:.1f} s after its last request')
+    # Both buddies share one IP, and eMule's limit is per IP.
+    times = [t for t, _, _ in requests]
+    for previous, current in zip(times, times[1:]):
+        assert current - previous > FLOOD_INTERVAL, (
+            f'the buddy IP was asked again {current - previous:.1f} s after its last request')
 
 
 def run(binary, case):
