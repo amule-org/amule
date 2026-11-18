@@ -3273,7 +3273,7 @@ msgstr ""
 msgid "Extended UDP port (Kad / global search) "
 msgstr ""
 
-#: src/FirstRunWizard.cpp
+#: src/FirstRunWizard.cpp src/muuli_wdr.cpp
 msgid "Enable UPnP for router port forwarding"
 msgstr ""
 
@@ -5255,10 +5255,6 @@ msgstr ""
 
 #: src/muuli_wdr.cpp
 msgid "This UDP port is used for extended eD2k requests and Kad network"
-msgstr ""
-
-#: src/muuli_wdr.cpp
-msgid "Enable automatic router port forwarding (UPnP or PCP)"
 msgstr ""
 
 #: src/muuli_wdr.cpp
