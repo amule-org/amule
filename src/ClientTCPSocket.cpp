@@ -257,10 +257,6 @@ bool CClientTCPSocket::CheckTimeOut()
 		if (m_client->GetChatState() != MS_NONE) {
 			uTimeout += CONNECTION_TIMEOUT;
 		}
-		if (m_client->GetDownloadState() == DS_WAITCALLBACKKAD) {
-			uTimeout = Kademlia::KadCallbackTimeout(
-				uTimeout, m_client->NextKadCallbackGoesToSameBuddyIP());
-		}
 	}
 
 	uint64 now = ::GetTickCount64();

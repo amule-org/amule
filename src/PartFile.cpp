@@ -1786,9 +1786,11 @@ uint32 CPartFile::Process(uint8 m_icounter)
 			case DS_NONE:
 			case DS_WAITCALLBACK:
 			case DS_WAITCALLBACKKAD: {
-				if (theApp->IsConnected() && SourceRetryPolicy::IsDue(dwCurTick,
-								     cur_src->GetLastAskedTime(),
-								     thePrefs::GetSourceReaskTime())) {
+				if (theApp->IsConnected() &&
+					SourceRetryPolicy::IsDue(dwCurTick,
+						cur_src->GetLastAskedTime(),
+						thePrefs::GetSourceReaskTime()) &&
+					cur_src->IsKadCallbackRetryDue(dwCurTick)) {
 					if (!cur_src->AskForDownload()) {
 						// I left this break here just as a reminder
 						// just in case re rearange things..

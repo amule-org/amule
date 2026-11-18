@@ -99,18 +99,22 @@ TEST(KadBuddyIdLayout, AnUnansweredRequestSwitchesTheForm)
 	ASSERT_FALSE(NextBuddyIdUsesAmuleLayout(true, true));
 }
 
-// A shorter wait would send the second request inside eMule's one-per-minute limit, where it is dropped.
-TEST(KadBuddyIdLayout, ACallbackToTheSameBuddyWaitsOutTheFloodInterval)
+// A sooner request would fall inside eMule's one-per-minute limit, where it is dropped.
+TEST(KadBuddyIdLayout, TheSameBuddyIPIsAskedAgainAfterTheFloodInterval)
 {
-	ASSERT_EQUALS(KAD_CALLBACK_SAME_BUDDY_WAIT_MS, KadCallbackTimeout(40000, true));
+	ASSERT_EQUALS(100000 + KAD_CALLBACK_SAME_BUDDY_WAIT_MS, KadCallbackRetryTime(100000, true));
 	ASSERT_TRUE(KAD_CALLBACK_SAME_BUDDY_WAIT_MS > KAD_CALLBACK_REQ_INTERVAL_MS);
-	ASSERT_EQUALS(static_cast<uint64_t>(80000), KadCallbackTimeout(80000, true));
+	const uint64_t retryAt = KadCallbackRetryTime(100000, true);
+	ASSERT_FALSE(IsKadCallbackRetryDue(100000 + 40000, retryAt));
+	ASSERT_FALSE(IsKadCallbackRetryDue(retryAt - 1, retryAt));
+	ASSERT_TRUE(IsKadCallbackRetryDue(retryAt, retryAt));
 }
 
-// Another buddy, or no further request: no flood interval to wait for.
-TEST(KadBuddyIdLayout, ACallbackToAnotherBuddyKeepsTheSocketTimeout)
+// Another buddy IP has no flood interval to wait for, and a source that never waited is due.
+TEST(KadBuddyIdLayout, AnotherBuddyIPIsAskedAtOnce)
 {
-	ASSERT_EQUALS(static_cast<uint64_t>(40000), KadCallbackTimeout(40000, false));
+	ASSERT_EQUALS(static_cast<uint64_t>(0), KadCallbackRetryTime(100000, false));
+	ASSERT_TRUE(IsKadCallbackRetryDue(100000 + 40000, KadCallbackRetryTime(100000, false)));
 }
 
 TEST(KadBuddyIdLayout, AnUnansweredCallbackHasTheOtherLayoutLeftOnce)
@@ -118,12 +122,4 @@ TEST(KadBuddyIdLayout, AnUnansweredCallbackHasTheOtherLayoutLeftOnce)
 	ASSERT_TRUE(HasOtherBuddyIdLayoutLeft(true, false));
 	ASSERT_FALSE(HasOtherBuddyIdLayoutLeft(true, true));
 	ASSERT_FALSE(HasOtherBuddyIdLayoutLeft(false, false));
-}
-
-// A contact that ended early must not send a request the buddy drops, and counts.
-TEST(KadBuddyIdLayout, TheSameBuddyIsAskedAgainOnlyAfterTheFloodInterval)
-{
-	ASSERT_FALSE(MayAskSameBuddyAgain(5000));
-	ASSERT_FALSE(MayAskSameBuddyAgain(KAD_CALLBACK_REQ_INTERVAL_MS - 1));
-	ASSERT_TRUE(MayAskSameBuddyAgain(KAD_CALLBACK_REQ_INTERVAL_MS));
 }

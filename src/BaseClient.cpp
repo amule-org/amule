@@ -2290,6 +2290,7 @@ bool CUpDownClient::StartKadBuddyCallback()
 		}
 		m_bBuddyCallbackUnanswered = true;
 		m_kadCallbackSentTime = ::GetTickCount64();
+		m_kadCallbackRetryTime = 0;
 		CMemFile bio(34);
 		bio.WriteUInt128(Kademlia::CUInt128(buddyIDToSend));
 		bio.WriteUInt128(Kademlia::CUInt128(m_reqfile->GetFileHash().GetHash()));
@@ -2333,13 +2334,10 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 		return false;
 	}
 	if (m_sourceRoute == ESourceRoute::KadBuddy) {
-		const bool waited =
-			Kademlia::MayAskSameBuddyAgain(::GetTickCount64() - m_kadCallbackSentTime);
+		const uint32 askedIP = GetBuddyIP();
 		// A fallback buddy leaves the buddy route untried.
-		if ((waited || m_nBuddyCandidateIP != GetBuddyIP()) && SwitchToBuddyCandidate()) {
-			return true;
-		}
-		if (waited && GetBuddyIP() && GetBuddyPort() &&
+		bool askAgain = SwitchToBuddyCandidate();
+		if (!askAgain && GetBuddyIP() && GetBuddyPort() &&
 			Kademlia::HasOtherBuddyIdLayoutLeft(
 				m_bBuddyCallbackUnanswered, m_bBuddyOtherLayoutTried)) {
 			AddDebugLogLineN(logKadBuddy,
@@ -2347,6 +2345,13 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 					"again in the other buddy ID layout") %
 					Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) %
 					GetUserHash().Encode());
+			askAgain = true;
+		}
+		if (askAgain) {
+			// Kept on the queue rather than in the callback socket while eMule's flood interval
+			// runs out.
+			m_kadCallbackRetryTime = Kademlia::KadCallbackRetryTime(
+				m_kadCallbackSentTime, GetBuddyIP() == askedIP);
 			return true;
 		}
 	}
@@ -3038,6 +3043,12 @@ void CUpDownClient::ConnectionEstablished()
 		m_pendingMessage.Clear();
 	}
 
+	if (m_kadCallbackRetryTime != 0) {
+		// The source called back late, while its next request waited on the queue.
+		m_kadCallbackRetryTime = 0;
+		m_bBuddyCallbackUnanswered = false;
+		m_bBuddyOtherLayoutTried = false;
+	}
 	switch (GetDownloadState()) {
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	case DS_LOWTOLOWIP:
@@ -4368,20 +4379,6 @@ ExtSX::SAddressFilter MakeExtendedSourceAddressFilter()
 		       !theApp->clientlist->IsBannedClient(address);
 	};
 	return filter;
-}
-
-bool CUpDownClient::NextKadCallbackGoesToSameBuddyIP() const
-{
-	if (m_sourceRoute != ESourceRoute::KadBuddy || !GetBuddyIP() || !GetBuddyPort()) {
-		return false;
-	}
-	if (ShouldSwitchToBuddyCandidate(m_nBuddyCandidateIP != 0,
-		    m_bBuddyCallbackUnanswered,
-		    m_bBuddyCandidateIsFormer,
-		    m_bBuddyOtherLayoutTried)) {
-		return m_nBuddyCandidateIP == GetBuddyIP();
-	}
-	return Kademlia::HasOtherBuddyIdLayoutLeft(m_bBuddyCallbackUnanswered, m_bBuddyOtherLayoutTried);
 }
 
 bool CUpDownClient::SwitchToBuddyCandidate()

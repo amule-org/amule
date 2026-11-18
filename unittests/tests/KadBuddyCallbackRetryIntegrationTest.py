@@ -7,8 +7,9 @@ A source published before #1993 by aMule wrote TAG_BUDDYHASH in another byte ord
 match on the way: emule-qt relays only an ID it serves, and the LowID drops a callback that is not
 its own. So when a KADEMLIA_CALLBACK_REQ goes unanswered,
 the downloader asks the same buddy once more with the other reading of the hash. eMule's Kad flood
-protection takes one KADEMLIA_CALLBACK_REQ per minute from an IP, so no buddy gets a second
-request sooner; a switch to another buddy does not wait. Once every buddy has had both layouts, the
+protection takes one KADEMLIA_CALLBACK_REQ per minute from an IP, so no IP gets a second request
+sooner; a switch to another buddy IP does not wait. The callback socket still times out after 40 s:
+the source waits on the download queue, not in a socket. Once every buddy has had both layouts, the
 route has failed and no further request follows.
 
 With a second copy of the source naming another buddy, that buddy is tried first, in both layouts,
@@ -184,7 +185,7 @@ def run(binary, case):
     assert order[0] == order[3] and order[1] == order[2] != order[0], order
     assert two_buddies[1][2] == two_buddies[0][2], 'the candidate was not asked in the same layout'
     print('PASS: with a candidate, the candidate in both layouts and then the first buddy in the '
-          'other one; no buddy twice within a minute')
+          'other one; no IP twice within a minute')
 
 
 if __name__ == '__main__':

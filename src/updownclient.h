@@ -56,6 +56,7 @@
 #include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
+#include "KadBuddyIdLayout.h" // Needed for IsKadCallbackRetryDue
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "NatServerHolePunch.h" // Needed for callback request policy
 #if defined(AMULE_UTP_TRANSPORT)
@@ -936,9 +937,11 @@ public:
 	bool IsRouteAnsweredByOtherHost() const;
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
-	// While a Kad callback is pending: the request that follows if it goes unanswered goes to the
-	// same buddy IP, so it must wait out eMule's flood interval.
-	bool NextKadCallbackGoesToSameBuddyIP() const;
+	// A kept source asks for its next Kad callback only once this is true.
+	bool IsKadCallbackRetryDue(uint64 now) const
+	{
+		return Kademlia::IsKadCallbackRetryDue(now, m_kadCallbackRetryTime);
+	}
 	// This source as an Extended Source Exchange record, sanitized with `filter`.
 	ExtSX::SRecord GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const;
 	/* Role: we serve this buddy, or it serves us */
@@ -1335,8 +1338,9 @@ private:
 	uint16 m_nBuddyCandidatePort = 0;
 	// The candidate is the buddy we switched away from, asked in one layout only.
 	bool m_bBuddyCandidateIsFormer = false;
-	// When the last KADEMLIA_CALLBACK_REQ was sent.
+	// When the last KADEMLIA_CALLBACK_REQ was sent, and when the next one may go, 0 for at once.
 	uint64_t m_kadCallbackSentTime = 0;
+	uint64_t m_kadCallbackRetryTime = 0;
 	// The route of the contact in flight, and the routes that failed since the last hello.
 	ESourceRoute m_sourceRoute{};
 	// The same route, kept after the attempt ends so the source list can show it, plus the two
