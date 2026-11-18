@@ -39,8 +39,10 @@
 #include "UtpDialPolicy.h" // Needed for the incoming SYN winner token
 #endif
 #include "SessionTrafficStats.h" // Needed for AMULE_SESSION_TRAFFIC_STATS
+#include "SourceRoutePolicy.h"   // Needed for EConnectionOpener
 
 #include <atomic>
+#include <optional>
 
 class CProxyData;
 
@@ -94,6 +96,15 @@ public:
 
 	bool CheckTimeOut();
 
+	//! An accepted stream from a peer a rendezvous announced: a server punch or a Lugdunum callback.
+	void MarkRendezvousStream(bool lugdunum)
+	{
+		m_opener = lugdunum ? EConnectionOpener::AcceptedLugdunumRendezvous
+				    : EConnectionOpener::AcceptedRendezvous;
+	}
+	//! PackConnectionRoute() for this connection, decided at its first hello and kept after.
+	std::uint8_t ConnectionRoute(bool contactInFlight, EContactRouteReport attempt);
+
 	void Safe_Delete();
 	void Safe_Delete_Client();
 
@@ -136,6 +147,9 @@ protected:
 private:
 	CUpDownClient *m_client;
 	bool m_connectionCountPending = false;
+	EConnectionOpener m_opener = EConnectionOpener::Accepted;
+	bool m_viaProxy = false;
+	std::optional<std::uint8_t> m_connectionRoute;
 #ifdef AMULE_SESSION_TRAFFIC_STATS
 	//! A hello was processed: classify the session's traffic and complete a rendezvous with it.
 	void NoteHelloForStatistics();

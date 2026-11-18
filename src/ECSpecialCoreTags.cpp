@@ -452,6 +452,7 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 			client->IsIdentityFromFallback(),
 			client->IsContactOverIPv6()),
 		valuemap);
+	AddDiffTag(this, EC_TAG_CLIENT_CONNECTION_ROUTE, (uint64)client->GetConnectionRoute(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_SERVER_IP, client->GetServerIP(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_SERVER_PORT, client->GetServerPort(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_SERVER_NAME, client->GetServerName(), valuemap);

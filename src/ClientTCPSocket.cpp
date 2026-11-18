@@ -63,6 +63,7 @@
 #include "IPFilter.h"                   // Needed for CIPFilter
 #include "ListenSocket.h"               // Needed for CListenSocket
 #include "GuiEvents.h"                  // Needed for Notify_*
+#include "Proxy.h"                      // Needed for CProxyData
 
 // #define __PACKET_RECV_DUMP__
 
@@ -77,6 +78,9 @@ CClientTCPSocket::CClientTCPSocket(
 	SetClient(in_client);
 	if (in_client) {
 		m_remoteip = wxUINT32_SWAP_ALWAYS(in_client->GetUserIDHybrid());
+		m_opener = in_client->TakeConnectionOpener();
+		// Asked here: the socket forgets its proxy once the proxy has connected it.
+		m_viaProxy = ProxyData != nullptr && ProxyData->m_proxyEnable;
 	} else {
 		m_remoteip = 0;
 	}
@@ -109,6 +113,28 @@ CClientTCPSocket::CClientTCPSocket(
 	} else {
 		m_connectionCountPending = true;
 	}
+}
+
+std::uint8_t CClientTCPSocket::ConnectionRoute(bool contactInFlight, EContactRouteReport attempt)
+{
+	if (!m_connectionRoute) {
+		SConnectionRouteFacts facts;
+		facts.opener = m_opener;
+		facts.contactInFlight = contactInFlight;
+		facts.attempt = attempt;
+		EConnectionTransport transport = EConnectionTransport::TCP;
+		if (HasTransport()) {
+			transport = GetTransport()->IsUtp() ? EConnectionTransport::UTP
+							    : EConnectionTransport::QUIC;
+		}
+		const CNetworkAddress peer = GetPeerAddress();
+		const bool overIPv6 = peer.IsIPv6() && !peer.IsIPv4Mapped();
+		m_connectionRoute = PackConnectionRoute(DecideConnectionRoute(facts),
+			transport,
+			overIPv6,
+			m_viaProxy && transport == EConnectionTransport::TCP);
+	}
+	return *m_connectionRoute;
 }
 
 CClientTCPSocket::~CClientTCPSocket()
@@ -1955,6 +1981,7 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			callback = new CUpDownClient(tcp, ip, 0, 0, NULL, false, false);
 			theApp->clientlist->AddClient(callback);
 		}
+		callback->NoteCallbackAnswer(EConnectionOpener::AnswerKadCallback);
 		callback->TryToConnect(true);
 		break;
 	}

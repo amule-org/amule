@@ -92,6 +92,8 @@ public:
 	IUtpContext *GetUtpContext() { return &m_utp; }
 	//! Whether a rendezvous announced this endpoint in the last 30 s, so its SYN is one we asked for.
 	bool IsExpectedUtpPeer(uint32_t ip, uint16_t port) const;
+	//! Whether the latest rendezvous with @a ip is a Lugdunum callback rather than a server punch.
+	bool IsLugdunumRendezvousPeer(uint32_t ip) const;
 	UtpDialFailureMemory &UtpDialFailures() { return m_utpDialFailures; }
 #if defined(ENABLE_NATT_SERVER_COORDINATION)
 	bool DialLowIdHolePunchPeer(

@@ -43,9 +43,10 @@
 #define COLUMN_CLIENTS_TOTAL_UP 10
 #define COLUMN_CLIENTS_TOTAL_DOWN 11
 #define COLUMN_CLIENTS_RATIO 12
+#define COLUMN_CLIENTS_CONNECTION_ROUTE 13
 //! Always empty. Absorbs the macOS trailing-column sizing; see
 //! CMuleDataViewCtrl::AppendSpacerColumn().
-#define COLUMN_CLIENTS_SPACER 13
+#define COLUMN_CLIENTS_SPACER 14
 
 /**
  * Every peer we are currently talking to, once each.
@@ -99,6 +100,8 @@ public:
 		uint32 ip = 0;
 		uint16 port = 0;
 		uint8 sourceFrom = 0;
+		//! PackConnectionRoute(), 0 before the first connection.
+		uint8 connectionRoute = 0;
 		//! The file(s) this peer is on, by name. A peer holds at most one download and one
 		//! upload, so this is one name or two -- which is what the column used to render as
 		//! the digits 0, 1 and 2.
@@ -122,7 +125,8 @@ public:
 		{
 			return nameCell == other.nameCell && name == other.name &&
 			       software == other.software && version == other.version && ip == other.ip &&
-			       port == other.port && sourceFrom == other.sourceFrom && files == other.files &&
+			       port == other.port && sourceFrom == other.sourceFrom &&
+			       connectionRoute == other.connectionRoute && files == other.files &&
 			       upSpeed == other.upSpeed && downSpeed == other.downSpeed &&
 			       sessionUp == other.sessionUp && sessionDown == other.sessionDown &&
 			       totalUp == other.totalUp && totalDown == other.totalDown &&

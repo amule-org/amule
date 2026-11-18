@@ -25,7 +25,9 @@
 #ifndef SOURCE_ROUTE_POLICY_H
 #define SOURCE_ROUTE_POLICY_H
 
+#include "Constants.h" // Needed for the download and upload states
 #include <cstdint>
+#include <optional>
 
 //! The ways a download source is contacted. An advertised IPv6 is not one of them: an unanswered
 //! one is remembered by its address and the next dial falls back to IPv4 (ContactDialPolicy.h).
@@ -136,6 +138,244 @@ inline bool ContactRouteFromFallback(std::uint8_t packed)
 inline bool ContactRouteOverIPv6(std::uint8_t packed)
 {
 	return (packed & ContactRouteIPv6Bit) != 0;
+}
+
+/**
+ * How the connection a client is on, or was last on, came about. Unlike EContactRouteReport, which
+ * names the attempt, this is decided once per connection, from its first hello.
+ */
+enum class EConnectionRoute : std::uint8_t
+{
+	None = 0,
+	//! We dialled the peer.
+	Dial = 1,
+	//! The peer dialled us, not in answer to anything we asked.
+	Inbound = 2,
+	//! The peer dialled us in answer to our callback request through our server.
+	ServerCallback = 3,
+	KadBuddyCallback = 4,
+	DirectUdpCallback = 5,
+	ForeignNatCallback = 6,
+	ServerHolePunch = 7,
+	LugdunumCallback = 8,
+	//! We dialled the peer because our server asked us to.
+	AnsweredServerCallback = 9,
+	//! We dialled the peer because its request reached us through our Kad buddy.
+	AnsweredKadCallback = 10,
+	AnsweredDirectCallback = 11,
+	//! We dialled the peer because our server forwarded its Lugdunum callback request.
+	AnsweredLugdunumCallback = 12,
+};
+
+enum class EConnectionTransport : std::uint8_t
+{
+	TCP = 0,
+	UTP = 1,
+	QUIC = 2,
+};
+
+//! Why a client socket was opened: by us, for one of these, or accepted.
+enum class EConnectionOpener : std::uint8_t
+{
+	Accepted,
+	Dial,
+	AnswerServerCallback,
+	AnswerKadCallback,
+	AnswerDirectCallback,
+	HolePunchDial,
+	LugdunumCallbackDial,
+	AnswerLugdunumCallback,
+	//! Accepted from a peer a server punch announced.
+	AcceptedRendezvous,
+	//! Accepted from a peer a Lugdunum callback announced.
+	AcceptedLugdunumRendezvous,
+};
+
+/**
+ * Why a socket a client opens now is opened: a callback request it answers, else what the NAT-T
+ * dial flags of a temporary client say, else our own dial.
+ */
+inline EConnectionOpener ResolveConnectionOpener(
+	EConnectionOpener answer, bool lugdunumCallbackDial, bool holePunchDial)
+{
+	if (answer != EConnectionOpener::Dial) {
+		return answer;
+	}
+	if (lugdunumCallbackDial) {
+		return EConnectionOpener::LugdunumCallbackDial;
+	}
+	return holePunchDial ? EConnectionOpener::HolePunchDial : EConnectionOpener::Dial;
+}
+
+//! How long a NAT-T step of ours explains a new connection: the window its rendezvous has.
+constexpr std::uint64_t kNatStepAnswerWindowMs = 60'000;
+
+struct SContactInFlightFacts
+{
+	std::uint8_t downloadState = DS_NONE;
+	std::uint8_t uploadState = US_NONE;
+	//! The route of our last download contact, and how long ago its NAT-T step went out.
+	EContactRouteReport attempt = EContactRouteReport::None;
+	std::uint64_t natStepAgeMs = 0;
+	//! An upload callback of ours waits for its answer, and the route it went out on.
+	bool uploadCallbackInFlight = false;
+	EContactRouteReport uploadCallbackRoute = EContactRouteReport::None;
+};
+
+/**
+ * The contact of ours a new connection may answer: its route, or none when nothing of ours is
+ * awaited. DS_LOWTOLOWIP counts only with a NAT-T step still in its answer window: the state is
+ * also set when no step could be sent, and it lasts as long as we stay LowID.
+ */
+inline std::optional<EContactRouteReport> ContactInFlight(const SContactInFlightFacts &facts)
+{
+	switch (facts.downloadState) {
+	case DS_CONNECTING:
+	case DS_WAITCALLBACK:
+	case DS_WAITCALLBACKKAD:
+		return facts.attempt;
+	case DS_LOWTOLOWIP:
+		if ((facts.attempt == EContactRouteReport::ForeignNatCallback ||
+			    facts.attempt == EContactRouteReport::ServerHolePunch ||
+			    facts.attempt == EContactRouteReport::LugdunumCallback) &&
+			facts.natStepAgeMs < kNatStepAnswerWindowMs) {
+			return facts.attempt;
+		}
+		break;
+	default:
+		break;
+	}
+	if (facts.uploadState == US_CONNECTING) {
+		return facts.attempt;
+	}
+	if (facts.uploadCallbackInFlight) {
+		return facts.uploadCallbackRoute;
+	}
+	return std::nullopt;
+}
+
+struct SConnectionRouteFacts
+{
+	EConnectionOpener opener = EConnectionOpener::Accepted;
+	//! A contact of ours was in flight when the hello came: a download or upload connect, a
+	//! callback wait or a NAT-T step.
+	bool contactInFlight = false;
+	//! The route that contact went out on.
+	EContactRouteReport attempt = EContactRouteReport::None;
+};
+
+//! The NAT-T step of ours that a connection on a punched path answers, if one is out.
+inline std::optional<EConnectionRoute> OwnNatStep(const SConnectionRouteFacts &facts)
+{
+	if (!facts.contactInFlight) {
+		return std::nullopt;
+	}
+	switch (facts.attempt) {
+	case EContactRouteReport::ForeignNatCallback:
+		return EConnectionRoute::ForeignNatCallback;
+	case EContactRouteReport::ServerHolePunch:
+		return EConnectionRoute::ServerHolePunch;
+	case EContactRouteReport::LugdunumCallback:
+		return EConnectionRoute::LugdunumCallback;
+	default:
+		return std::nullopt;
+	}
+}
+
+inline EConnectionRoute DecideConnectionRoute(const SConnectionRouteFacts &facts)
+{
+	// A punched path serves whichever side asked: our own step names it, else the path's kind.
+	switch (facts.opener) {
+	case EConnectionOpener::Dial:
+		return EConnectionRoute::Dial;
+	case EConnectionOpener::AnswerServerCallback:
+		return EConnectionRoute::AnsweredServerCallback;
+	case EConnectionOpener::AnswerKadCallback:
+		return EConnectionRoute::AnsweredKadCallback;
+	case EConnectionOpener::AnswerDirectCallback:
+		return EConnectionRoute::AnsweredDirectCallback;
+	case EConnectionOpener::AnswerLugdunumCallback:
+		return EConnectionRoute::AnsweredLugdunumCallback;
+	case EConnectionOpener::HolePunchDial:
+	case EConnectionOpener::AcceptedRendezvous:
+		return OwnNatStep(facts).value_or(EConnectionRoute::ServerHolePunch);
+	case EConnectionOpener::LugdunumCallbackDial:
+		return OwnNatStep(facts).value_or(EConnectionRoute::LugdunumCallback);
+	case EConnectionOpener::AcceptedLugdunumRendezvous:
+		return OwnNatStep(facts).value_or(EConnectionRoute::AnsweredLugdunumCallback);
+	case EConnectionOpener::Accepted:
+		break;
+	}
+	// Accepted: the answer to a callback we asked for, or a peer that came on its own.
+	if (!facts.contactInFlight) {
+		return EConnectionRoute::Inbound;
+	}
+	switch (facts.attempt) {
+	case EContactRouteReport::ServerCallback:
+		return EConnectionRoute::ServerCallback;
+	case EContactRouteReport::KadBuddy:
+		return EConnectionRoute::KadBuddyCallback;
+	case EContactRouteReport::DirectUdpCallback:
+		return EConnectionRoute::DirectUdpCallback;
+	case EContactRouteReport::ForeignNatCallback:
+		return EConnectionRoute::ForeignNatCallback;
+	case EContactRouteReport::ServerHolePunch:
+		return EConnectionRoute::ServerHolePunch;
+	case EContactRouteReport::LugdunumCallback:
+		return EConnectionRoute::LugdunumCallback;
+	case EContactRouteReport::Dial:
+	case EContactRouteReport::None:
+		break;
+	}
+	return EConnectionRoute::Inbound;
+}
+
+//! EC_TAG_CLIENT_CONNECTION_ROUTE: the route in the low nibble, the transport in bits 4-5.
+constexpr std::uint8_t ConnectionRouteMask = 0x0F;
+constexpr std::uint8_t ConnectionTransportShift = 4;
+constexpr std::uint8_t ConnectionTransportMask = 0x30;
+constexpr std::uint8_t ConnectionIPv6Bit = 0x40;
+constexpr std::uint8_t ConnectionProxyBit = 0x80;
+
+inline std::uint8_t PackConnectionRoute(
+	EConnectionRoute route, EConnectionTransport transport, bool overIPv6, bool viaProxy)
+{
+	static_assert(
+		static_cast<unsigned>(EConnectionRoute::AnsweredLugdunumCallback) <= ConnectionRouteMask,
+		"every route must fit in the low nibble");
+	return static_cast<std::uint8_t>(static_cast<std::uint8_t>(route) |
+					 (static_cast<std::uint8_t>(transport) << ConnectionTransportShift) |
+					 (overIPv6 ? ConnectionIPv6Bit : 0) |
+					 (viaProxy ? ConnectionProxyBit : 0));
+}
+
+//! None for a route a newer daemon knows and this build does not.
+inline EConnectionRoute UnpackConnectionRoute(std::uint8_t packed)
+{
+	const std::uint8_t route = packed & ConnectionRouteMask;
+	return route <= static_cast<std::uint8_t>(EConnectionRoute::AnsweredLugdunumCallback)
+		       ? static_cast<EConnectionRoute>(route)
+		       : EConnectionRoute::None;
+}
+
+//! TCP for a transport a newer daemon knows and this build does not.
+inline EConnectionTransport UnpackConnectionTransport(std::uint8_t packed)
+{
+	const auto transport =
+		static_cast<std::uint8_t>((packed & ConnectionTransportMask) >> ConnectionTransportShift);
+	return transport <= static_cast<std::uint8_t>(EConnectionTransport::QUIC)
+		       ? static_cast<EConnectionTransport>(transport)
+		       : EConnectionTransport::TCP;
+}
+
+inline bool ConnectionOverIPv6(std::uint8_t packed)
+{
+	return (packed & ConnectionIPv6Bit) != 0;
+}
+
+inline bool ConnectionViaProxy(std::uint8_t packed)
+{
+	return (packed & ConnectionProxyBit) != 0;
 }
 
 struct SSourceRouteFacts
@@ -338,6 +578,29 @@ inline unsigned FailedAfterFallback(ESourceFallback fallback, unsigned failed)
 	}
 	return failed &
 	       ~(SourceRouteBit(ESourceRoute::Dial) | SourceRouteBit(ESourceRoute::DirectUdpCallback));
+}
+
+//! Adds @a mask to the channels in @a into. True when a set that had a channel gains another: the
+//! first channel comes with the source and is not a second sighting.
+inline bool MergeSourceOrigins(unsigned &into, unsigned mask)
+{
+	const unsigned added = mask & ~into;
+	const bool counted = added != 0 && into != 0;
+	into |= added;
+	return counted;
+}
+
+//! Where a source was found, for the file it is a source for.
+struct SSourceOrigin
+{
+	ESourceFrom from = SF_NONE;
+	unsigned mask = 0;
+};
+
+//! The origin a client takes when it swaps to an A4AF file: that file's own, when it has one.
+inline SSourceOrigin OriginAfterSwap(const SSourceOrigin &current, const SSourceOrigin &target)
+{
+	return target.from != SF_NONE ? target : current;
 }
 
 #endif // SOURCE_ROUTE_POLICY_H

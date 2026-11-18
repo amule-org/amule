@@ -410,6 +410,7 @@ void CClientsWnd::UpdateAll()
 		row.ip = c->GetIP();
 		row.port = c->GetUserPort();
 		row.sourceFrom = static_cast<uint8>(c->GetSourceFrom());
+		row.connectionRoute = static_cast<uint8>(c->GetConnectionRoute());
 		row.upSpeed = c->GetDisplayUploadDatarate();
 		row.downSpeed = c->GetDisplayKBpsDown();
 		row.sessionUp = c->GetTransferredUp();

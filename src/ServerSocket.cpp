@@ -849,6 +849,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					client->SetConnectOptions(byCryptOptions, true, false);
 				}
 
+				client->NoteCallbackAnswer(EConnectionOpener::AnswerServerCallback);
 				client->TryToConnect();
 			}
 			break;

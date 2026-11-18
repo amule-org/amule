@@ -617,6 +617,11 @@ public:
 	{
 		return AssignIfExist(EC_TAG_CLIENT_CONTACT_ROUTE, target);
 	}
+	//! Packed by PackConnectionRoute(); absent on a core older than the tag.
+	bool GetConnectionRoute(uint8 &target) const
+	{
+		return AssignIfExist(EC_TAG_CLIENT_CONNECTION_ROUTE, target);
+	}
 
 	bool UserIP(uint32 &target) const { return AssignIfExist(EC_TAG_CLIENT_USER_IP, target); }
 	uint16 UserPort(uint16 *target = 0) const { return AssignIfExist(EC_TAG_CLIENT_USER_PORT, target); }

@@ -151,7 +151,8 @@ public:
 	int GetSourceFrom() const; // ESourceFrom
 	unsigned GetSourceOriginMask() const;
 	uint64 GetNextAskTime() const;
-	int GetContactRoute() const; // ESourceRoute
+	int GetContactRoute() const;    // ESourceRoute
+	int GetConnectionRoute() const; // PackConnectionRoute()
 	bool IsIdentityFromFallback() const;
 	bool IsRouteUnproven() const;
 	bool IsContactOverIPv6() const;

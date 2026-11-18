@@ -697,7 +697,8 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 			if (file) {
 				// Is the found source queued for something else?
 				if (file != sender) {
-					if (it->GetClient()->AddRequestForAnotherFile(sender)) {
+					if (it->GetClient()->AddRequestForAnotherFile(
+						    sender, source->GetSourceFrom())) {
 						Notify_SourceCtrlAddSource(sender, *it, A4AF_SOURCE);
 					}
 				}
@@ -719,14 +720,14 @@ void CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 		if (source->GetRequestFile()) {
 			// If we're already queued for the right file, then there's nothing to do
 			if (sender != source->GetRequestFile()) {
-				source->AddRequestForAnotherFile(sender);
+				source->AddRequestForAnotherFile(sender, nSourceFrom);
 			}
 		} else {
 			// Source was known, but reqfile NULL. No contact runs for it, so every route is
 			// untried.
 			source->ResetContactRoutes();
 			source->SetRequestFile(sender);
-			source->SetSourceFrom(nSourceFrom);
+			source->RestartSourceOrigin(nSourceFrom);
 			sender->AddSource(source);
 			if (source->GetFileRating() || !source->GetFileComment().IsEmpty()) {
 				sender->UpdateFileRatingCommentAvail();
@@ -795,7 +796,7 @@ void CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *so
 	// Check if the file is already queued for something else
 	if (file) {
 		if (file != sender) {
-			if (source->AddRequestForAnotherFile(sender)) {
+			if (source->AddRequestForAnotherFile(sender, SF_PASSIVE)) {
 				Notify_SourceCtrlAddSource(sender,
 					CCLIENTREF(source,
 						"CDownloadQueue::CheckAndAddKnownSource "
@@ -812,7 +813,7 @@ void CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *so
 			sender->UpdateFileRatingCommentAvail();
 		}
 
-		source->SetSourceFrom(SF_PASSIVE);
+		source->RestartSourceOrigin(SF_PASSIVE);
 		sender->AddSource(source);
 		Notify_SourceCtrlAddSource(sender,
 			CCLIENTREF(source,

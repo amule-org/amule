@@ -143,6 +143,9 @@ wxString CGenericClientListCtrl::TranslateCIDToName(GenericColumnEnum cid)
 	case ColumnUserSharedFiles:
 		name = "m";
 		break;
+	case ColumnUserConnectionRoute:
+		name = "C";
+		break;
 	case ColumnInvalid:
 	default:
 		wxFAIL;
@@ -804,6 +807,9 @@ wxString CGenericClientListCtrl::GetItemColumnText(wxUIntPtr data, unsigned colu
 		// offered again over Kad was reached two ways, and the merge keeps only the first.
 		return OriginsToText(client.GetSourceOriginMask(), client.GetSourceFrom());
 
+	case ColumnUserConnectionRoute:
+		return ConnectionRouteToText(client.GetConnectionRoute());
+
 	case ColumnUserFileNameDownload:
 		if (const CPartFile *pf = client.GetRequestFile()) {
 			return pf->GetFileName().GetPrintable();
@@ -1069,6 +1075,9 @@ int CGenericClientListCtrl::CompareByCid(
 
 	case ColumnUserOrigin:
 		return CmpAny(client1.GetSourceFrom(), client2.GetSourceFrom());
+
+	case ColumnUserConnectionRoute:
+		return CmpAny(client1.GetConnectionRoute(), client2.GetConnectionRoute());
 
 	case ColumnUserFileNameDownload: {
 		wxString buffer1, buffer2;

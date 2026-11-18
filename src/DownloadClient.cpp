@@ -557,17 +557,19 @@ void CUpDownClient::ProcessFileStatus(bool bUdpPacket, const CMemFile *data, con
 	m_reqfile->UpdatePartsInfo();
 }
 
-bool CUpDownClient::AddRequestForAnotherFile(CPartFile *file)
+bool CUpDownClient::AddRequestForAnotherFile(CPartFile *file, ESourceFrom from)
 {
-	if (m_A4AF_list.find(file) == m_A4AF_list.end()) {
-		// When we access a non-existing entry entry, it will be zeroed by default,
-		// so we have to set NeededParts. All in one go.
-		m_A4AF_list[file].NeededParts = true;
-		file->AddA4AFSource(this);
-		return true;
-	} else {
+	const unsigned bit = from != SF_NONE ? SourceFromBit(from) : 0;
+	if (m_A4AF_list.find(file) != m_A4AF_list.end()) {
+		AdoptSourceOriginsFor(file, bit);
 		return false;
 	}
+	A4AFStamp &stamp = m_A4AF_list[file];
+	stamp.NeededParts = true;
+	stamp.sourceFrom = from;
+	stamp.sourceFromMask = bit;
+	file->AddA4AFSource(this);
+	return true;
 }
 
 bool CUpDownClient::DeleteFileRequest(CPartFile *file)
@@ -1645,10 +1647,13 @@ bool CUpDownClient::SwapToAnotherFile(
 			if (!bRemoveCompletely) {
 				m_reqfile->AddA4AFSource(this);
 
-				m_A4AF_list[m_reqfile].NeededParts = (GetDownloadState() != DS_NONEEDEDPARTS);
+				A4AFStamp &left = m_A4AF_list[m_reqfile];
+				left.NeededParts = (GetDownloadState() != DS_NONEEDEDPARTS);
 
 				// Avoid swapping to this file for a while
-				m_A4AF_list[m_reqfile].timestamp = ::GetTickCount64();
+				left.timestamp = ::GetTickCount64();
+				left.sourceFrom = m_nSourceFrom;
+				left.sourceFromMask = m_sourceFromMask;
 
 				Notify_SourceCtrlAddSource(m_reqfile,
 					CCLIENTREF(this,
@@ -1668,6 +1673,12 @@ bool CUpDownClient::SwapToAnotherFile(
 			m_reqfile->UpdatePartsInfo();
 
 			SetRequestFile(SwapTo);
+
+			// Between DelSource() and AddSource(), so the statistics count each file's origin.
+			const SSourceOrigin origin = OriginAfterSwap({ m_nSourceFrom, m_sourceFromMask },
+				{ target->second.sourceFrom, target->second.sourceFromMask });
+			m_nSourceFrom = origin.from;
+			m_sourceFromMask = origin.mask;
 
 			SwapTo->AddSource(this);
 

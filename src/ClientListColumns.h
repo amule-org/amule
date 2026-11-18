@@ -47,6 +47,7 @@ enum GenericColumnEnum
 	ColumnUserFileNameUpload,
 	ColumnUserFileNameDownloadRemote,
 	ColumnUserSharedFiles,
+	ColumnUserConnectionRoute,
 	ColumnInvalid
 };
 

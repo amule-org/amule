@@ -24,6 +24,7 @@
 #include "QuicStreamAcceptor.h"
 
 #include "ClientTCPSocket.h"
+#include "ClientUDPSocket.h"
 #include "ClientList.h"
 #include "IPFilter.h"
 #include "ListenSocket.h"
@@ -65,6 +66,13 @@ bool CQuicStreamAcceptor::AcceptStream(
 	}
 
 	auto *socket = new CClientTCPSocket();
+#ifdef AMULE_UTP_TRANSPORT
+	// As in the uTP acceptor: a stream from a peer a rendezvous announced is that NAT-T meeting.
+	const uint32_t ip = address.ToIPv4NetworkOrderOrZero();
+	if (ip != 0 && theApp->clientudp != nullptr && theApp->clientudp->IsExpectedUtpPeer(ip, port)) {
+		socket->MarkRendezvousStream(theApp->clientudp->IsLugdunumRendezvousPeer(ip));
+	}
+#endif
 	// AttachTransport() installs the event sink before it takes ownership, so an early
 	// callback always has somewhere to deliver.
 	socket->AttachTransport(std::move(transport));

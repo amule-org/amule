@@ -100,6 +100,12 @@ inline std::vector<std::string> SourceOriginNames(std::uint32_t mask)
 //! The route nibble of EC_TAG_CLIENT_CONTACT_ROUTE (ESourceRoute) to a token, empty for none.
 std::string ContactRouteName(std::uint8_t packed);
 
+//! The route nibble of EC_TAG_CLIENT_CONNECTION_ROUTE (EConnectionRoute) to a token, empty for none.
+std::string ConnectionRouteName(std::uint8_t packed);
+
+//! The transport bits of EC_TAG_CLIENT_CONNECTION_ROUTE to a token.
+std::string ConnectionTransportName(std::uint8_t packed);
+
 } // namespace webapi
 
 #endif // WEBAPI_CLIENTTAGNAMES_H

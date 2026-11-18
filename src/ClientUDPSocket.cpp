@@ -543,6 +543,16 @@ bool CClientUDPSocket::IsExpectedUtpPeer(uint32_t ip, uint16_t port) const
 	return m_utpExpectedPeers.IsExpectedAllowingMovedPort(ip, port, ::GetTickCount64());
 }
 
+bool CClientUDPSocket::IsLugdunumRendezvousPeer([[maybe_unused]] uint32_t ip) const
+{
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	return m_rendezvousOutcomes.LatestPath(ip, ::GetTickCount64()) ==
+	       NatServerHolePunch::RendezvousPath::LugdunumCallback;
+#else
+	return false;
+#endif
+}
+
 void CClientUDPSocket::OnUtpStreamMoved()
 {
 	theStats::AddUtpStreamMove();
@@ -1442,12 +1452,16 @@ bool CClientUDPSocket::DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::F
 	client->SetUDPPort(target.udpPort);
 	client->MarkLowIdHolePunchDial();
 	client->MarkLugdunumCallbackDial(failureKey);
+	const bool ownRequest = m_requestedCallbackTargets.Take(callback.requesterId, ::GetTickCount64());
+	if (!ownRequest) {
+		client->NoteCallbackAnswer(EConnectionOpener::AnswerLugdunumCallback);
+	}
 	// A reverse callback for our own request still records the rendezvous, for its success, but
 	// the request already counted the attempt.
 	NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath::LugdunumCallback,
 		target.ip,
 		callback.hasObfuscation ? &callback.userHash : nullptr,
-		!m_requestedCallbackTargets.Take(callback.requesterId, ::GetTickCount64()));
+		!ownRequest);
 	const bool started = LugdunumNatTraversal::RunCallbackDialApplication(
 		failureKey,
 		[client]() { return client->TryServerVouchedLowIdUtpDial(); },
@@ -1779,6 +1793,7 @@ void CClientUDPSocket::ProcessPacket(
 			requester->SetUserPort(remoteTCPPort);
 			AddDebugLogLineN(logClientUDP,
 				"Accepting incoming DirectCallback Request from " + Uint32toStringIP(host));
+			requester->NoteCallbackAnswer(EConnectionOpener::AnswerDirectCallback);
 			requester->TryToConnect();
 		} else {
 			AddDebugLogLineN(logClientUDP,
