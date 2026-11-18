@@ -296,6 +296,7 @@ bool CPreferences::s_QuicNatTEnabled;
 bool CPreferences::s_LugdunumNatCallbackEnabled;
 bool CPreferences::s_LowIdHolePunchEnabled;
 #endif
+bool CPreferences::s_KadBuddyPointerEnabled;
 
 wxArrayString CPreferences::s_serverListURLs;
 wxString CPreferences::s_KadURL;
@@ -1549,6 +1550,9 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	// the Lugdunum setting -- a server speaks one protocol or the other, never both.
 	s_MiscList.push_back(new Cfg_Bool("/eMule/LowIdHolePunch", s_LowIdHolePunchEnabled, false));
 #endif
+	// Temporary off switch for our Kad buddy pointer (#2513), no widget; see
+	// IsKadBuddyPointerEnabled().
+	s_MiscList.push_back(new Cfg_Bool("/eMule/KadBuddyPointer", s_KadBuddyPointerEnabled, true));
 
 	NewCfgItem(IDC_ED2K_ACCELERATED_PUBLICATION,
 		(new Cfg_Bool("/eMule/ED2KAcceleratedPublication", s_ED2KAcceleratedPublication, true)));

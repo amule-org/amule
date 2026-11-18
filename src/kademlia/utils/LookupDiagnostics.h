@@ -53,6 +53,7 @@ enum class LookupType : uint32_t
 	FindSource = 9,
 	SpecialNode = 10,
 	UDPFirewallCheck = 11,
+	PublishPointer = 12,
 	Unknown = 0xffffffff
 };
 struct LookupPeer

@@ -415,7 +415,8 @@ void CSearchManager::JumpStart()
 			}
 			break;
 		}
-		case CSearch::STOREFILE: {
+		case CSearch::STOREFILE:
+		case CSearch::STOREPOINTER: {
 			if (current_it->second->m_created + SEARCHSTOREFILE_LIFETIME < now) {
 				current_it->second->m_publishCompleted = true;
 				DeleteSearch(current_it);
@@ -479,7 +480,8 @@ void CSearchManager::UpdateStats() noexcept
 			m_totalFile++;
 			break;
 		}
-		case CSearch::STOREFILE: {
+		case CSearch::STOREFILE:
+		case CSearch::STOREPOINTER: {
 			// A stopping lookup asks no more nodes; it only waits for late replies.
 			if (!it->second->Stopping()) {
 				m_totalStoreSrc++;
@@ -546,6 +548,7 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &target,
 		break;
 	}
 	case CSearch::STOREFILE:
+	case CSearch::STOREPOINTER:
 		s->m_lookupTrace.ItemReply({ fromIP, fromPort });
 		break;
 	case CSearch::STORENOTES:

@@ -27,6 +27,7 @@
 #define SHAREDFILELIST_H
 
 #include "KadPublishCursor.h"
+#include "KadPointerPolicy.h" // Needed for SKadPointerState
 #include "KadPublishPolicy.h" // Needed for SKadPublishFacts
 #include "MD4Hash.h"
 #include "SharedFilesReloadLatch.h" // Needed for CSharedFilesReloadLatch
@@ -211,6 +212,8 @@ public:
 		uint16 buddyPort = 0;
 	};
 	static SKadSourceRoute CurrentKadSourceRoute();
+	//! A pointer lookup ended, with `acknowledged` storers keeping the record.
+	void KadPointerFinished(uint32 acknowledged);
 	struct SPublishingState
 	{
 		uint64 shared = 0;
@@ -260,6 +263,8 @@ private:
 	bool AddFile(CKnownFile *pFile);
 	CKnownFile *GetNextKadFile(CKadPublishCursor<CMD4Hash> &cursor);
 	CKnownFile *NextKadSourcePublish(uint32 now);
+	// Starts our buddy pointer publish if it is due; true if it took this publish slot.
+	bool PublishKadPointer(uint32 now);
 
 	// Re-key m_pathIndex for an already-shared file whose on-disk path changed. A partfile
 	// shared while downloading is keyed under Temp (or "" before SetFilePath ran) and moves to
@@ -449,6 +454,8 @@ private:
 	/* Kad Stuff */
 	CPublishKeywordList *m_keywords;
 	CKadPublishCursor<CMD4Hash> m_srcPublishCursor;
+	//! The buddy our last pointer named, and when it is due again (#2513).
+	SKadPointerState m_kadPointer;
 	//! Due files waiting for their last storing nodes, with when each first waited.
 	std::map<CMD4Hash, uint32> m_kadSourceWaits;
 	CKadPublishCursor<CMD4Hash> m_notesPublishCursor;

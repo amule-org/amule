@@ -183,6 +183,30 @@ public:
 		durationMs += elapsed;
 		maxDurationMs = std::max(maxDurationMs, elapsed);
 	}
+	// Our buddy pointer (#2513), apart from the file counters above. Its stores count toward the
+	// per-IP publish rate, since a receiver limits every source publish from one sender alike.
+	void PointerMarker(bool keyed)
+	{
+		++(keyed ? pointerMarked : pointerUnkeyed);
+		++changes;
+	}
+	void PointerStart()
+	{
+		++pointerStarts;
+		++changes;
+	}
+	void PointerQueued(uint32_t ip, uint64_t now)
+	{
+		++pointerQueued;
+		++changes;
+		publishRequests.Add(ip, now);
+	}
+	void PointerFinish(uint64_t replies)
+	{
+		pointerAcknowledged += replies;
+		pointerZeroAcknowledgements += replies == 0;
+		++changes;
+	}
 	void LookupQueued(uint32_t ip, uint64_t now)
 	{
 		if (lookupRequests.Add(ip, now)) {
@@ -213,6 +237,8 @@ public:
 	uint64_t attempts = 0, startFailures = 0, starts = 0, seededStarts = 0;
 	uint64_t queued = 0, acknowledged = 0, finished = 0, zeroAcknowledgements = 0, cancelled = 0;
 	uint64_t durationMs = 0, maxDurationMs = 0;
+	uint64_t pointerStarts = 0, pointerQueued = 0, pointerAcknowledged = 0;
+	uint64_t pointerZeroAcknowledgements = 0, pointerMarked = 0, pointerUnkeyed = 0;
 	// Receivers drop a KADEMLIA2_REQ above 10 a minute and a KADEMLIA2_PUBLISH_SOURCE_REQ above 2.
 	CPerIPRate lookupRequests{ { 6, 8, 11 } };
 	CPerIPRate publishRequests{ { 2, 3 } };

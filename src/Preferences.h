@@ -924,6 +924,10 @@ public:
 	// server sources from such a server. amule.conf-only, off by default -- no widget, no EC tag.
 	static bool IsLowIdHolePunchEnabled() { return s_LowIdHolePunchEnabled; }
 #endif
+	// Our Kad buddy pointer (#2513): the pointer record and the `bpv` marker on our type 3/5
+	// records. amule.conf-only, on by default -- no widget, no EC tag. Temporary: the key goes
+	// once pointer hits are non-trivial on a live node. Storers keep the #2540 rule regardless.
+	static bool IsKadBuddyPointerEnabled() { return s_KadBuddyPointerEnabled; }
 
 	static void SetClientCryptLayerSupported(bool v) { s_IsClientCryptLayerSupported = v; }
 	static void SetClientCryptLayerRequested(bool v) { s_bCryptLayerRequested = v; }
@@ -1296,6 +1300,7 @@ protected:
 	static bool s_LugdunumNatCallbackEnabled;
 	static bool s_LowIdHolePunchEnabled;
 #endif
+	static bool s_KadBuddyPointerEnabled;
 
 	// GeoIP / IP2Country
 	static bool s_GeoIPEnabled;

@@ -370,6 +370,12 @@ add_test (NAME ChatStateTest COMMAND ChatStateTest)
 target_include_directories (ChatStateTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (ChatStateTest muleunit mulecommon)
 
+# When our Kad buddy pointer goes out, its key, and which storers get it (#2513).
+add_executable (KadPointerPolicyTest KadPointerPolicyTest.cpp)
+add_test (NAME KadPointerPolicyTest COMMAND KadPointerPolicyTest)
+target_include_directories (KadPointerPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (KadPointerPolicyTest muleunit mulecommon)
+
 add_executable (KadPublishPolicyTest KadPublishPolicyTest.cpp)
 add_test (NAME KadPublishPolicyTest COMMAND KadPublishPolicyTest)
 target_include_directories (KadPublishPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)

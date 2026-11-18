@@ -88,6 +88,7 @@ there client on the eMule forum..
 #include "../../GuiEvents.h"
 #include "../../KadBuddyIdLayout.h"
 #include "../../KadBuddySearchPolicy.h" // Needed for OwnBuddyID
+#include "../../KadPointerPolicy.h"     // Needed for SendsKadPointer, KAD_POINTER_VERSION
 
 ////////////////////////////////////////
 using namespace Kademlia;
@@ -187,6 +188,7 @@ CSearch::~CSearch()
 	case STOREFILE:
 	case STOREKEYWORD:
 	case STORENOTES:
+	case STOREPOINTER:
 	case FINDSOURCE: // maybe also exclude
 		if (m_closestDistantFound != 0) {
 			CKademlia::StatsAddClosestDistance(m_closestDistantFound);
@@ -407,6 +409,7 @@ void CSearch::PrepareToStop() noexcept
 		baseTime = SEARCHNOTES_LIFETIME;
 		break;
 	case STOREFILE:
+	case STOREPOINTER:
 		baseTime = SEARCHSTOREFILE_LIFETIME;
 		break;
 	case STOREKEYWORD:
@@ -441,7 +444,8 @@ void CSearch::JumpStart()
 	//
 	// Background store operations keep the fixed 3 seconds: nobody is waiting on a publish, and
 	// a tight deadline would only add republish traffic.
-	const uint32_t maxPending = (m_type == STOREFILE || m_type == STOREKEYWORD || m_type == STORENOTES)
+	const uint32_t maxPending = (m_type == STOREFILE || m_type == STOREKEYWORD || m_type == STORENOTES ||
+					    m_type == STOREPOINTER)
 					    ? SEC2MS(3)
 					    : fastKad.GetEstMaxResponseTime();
 
@@ -745,6 +749,17 @@ void CSearch::RecordStoreAcknowledgements() const
 		}
 		return;
 	}
+	if (m_type == STOREPOINTER) {
+		const uint64_t acknowledged = CPublishMetrics::Acknowledged(m_lookupTrace);
+		if (theLogger.IsEnabled(logKadPublish)) {
+			CPublishMetrics::Instance().PointerFinish(acknowledged);
+		}
+		AddDebugLogLineN(logKadPublish,
+			CFormat("Kad buddy pointer publish finished: target=%s acknowledged=%llu") %
+				m_target.ToHexString() % acknowledged);
+		theApp->sharedfiles->KadPointerFinished(static_cast<uint32_t>(acknowledged));
+		return;
+	}
 	if (m_type != STOREFILE) {
 		return;
 	}
@@ -863,6 +878,34 @@ void CSearch::SavePublishSeeds()
 			CFormat(_("Error while saving %s file: %s")) % KadPublishSeeds::FileName % e.what());
 	}
 }
+
+namespace
+{
+// A storer that implements the type 7 and pointer rules (#2540) drops such a record without it.
+bool HoldsReceiverKey(const CContact &storer)
+{
+	return storer.GetUDPKey().GetKeyValue(theApp->GetPublicIP(false)) != 0;
+}
+
+// The route through our buddy, shared by a type 3/5 record and our pointer record.
+void AddBuddyRouteTags(TagPtrList &taglist, const CUpDownClient &buddy)
+{
+	// We send the ID to our buddy so they can do a callback.
+	const CUInt128 buddyID = OwnBuddyID(CKademlia::GetPrefs()->GetKadID());
+	taglist.push_back(new CTagVarInt(TAG_SERVERIP, buddy.GetIP()));
+	taglist.push_back(new CTagVarInt(TAG_SERVERPORT, buddy.GetUDPPort()));
+	uint8_t hashBytes[16];
+	buddyID.ToByteArray(hashBytes);
+	// eMule, emule-qt and eMuleAI all publish TAG_BUDDYHASH in their own layout (#1835).
+	uint8_t emuleLayout[16];
+	ConvertBuddyIdLayout(hashBytes, emuleLayout);
+	taglist.push_back(new CTagString(TAG_BUDDYHASH, CMD4Hash(emuleLayout).Encode()));
+	taglist.push_back(new CTagVarInt(TAG_SOURCEPORT, thePrefs::GetPort()));
+	if (!CKademlia::GetPrefs()->GetUseExternKadPort()) {
+		taglist.push_back(new CTagInt16(TAG_SOURCEUPORT, CKademlia::GetPrefs()->GetInternKadPort()));
+	}
+}
+} // namespace
 
 void CSearch::StorePacket()
 {
@@ -1080,29 +1123,22 @@ void CSearch::StorePacket()
 					taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
 				}
 			} else if (publishAs == EKadSourcePublish::Buddy) {
-				// We send the ID to our buddy so they can do a callback.
-				const CUInt128 buddyID = OwnBuddyID(CKademlia::GetPrefs()->GetKadID());
 				taglist.push_back(new CTagInt8(
 					TAG_SOURCETYPE, KadSourceTypeFor(publishAs, file->IsLargeFile())));
-				taglist.push_back(new CTagVarInt(
-					TAG_SERVERIP, theApp->clientlist->GetBuddy()->GetIP()));
-				taglist.push_back(new CTagVarInt(
-					TAG_SERVERPORT, theApp->clientlist->GetBuddy()->GetUDPPort()));
-				uint8_t hashBytes[16];
-				buddyID.ToByteArray(hashBytes);
-				// eMule, emule-qt and eMuleAI all publish TAG_BUDDYHASH in their own layout
-				// (#1835).
-				uint8_t emuleLayout[16];
-				ConvertBuddyIdLayout(hashBytes, emuleLayout);
-				taglist.push_back(
-					new CTagString(TAG_BUDDYHASH, CMD4Hash(emuleLayout).Encode()));
-				taglist.push_back(new CTagVarInt(TAG_SOURCEPORT, thePrefs::GetPort()));
-				if (!CKademlia::GetPrefs()->GetUseExternKadPort()) {
-					taglist.push_back(new CTagInt16(
-						TAG_SOURCEUPORT, CKademlia::GetPrefs()->GetInternKadPort()));
-				}
+				AddBuddyRouteTags(taglist, *theApp->clientlist->GetBuddy());
 				if (from->GetVersion() >= 2) {
 					taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
+				}
+				// The pointer route: a receiver that finds this buddy gone looks up where
+				// our pointer says we are now (#2513).
+				const bool keyed = HoldsReceiverKey(*from);
+				if (SendsKadPointer(thePrefs::IsKadBuddyPointerEnabled(), keyed)) {
+					taglist.push_back(
+						new CTagInt8(TAG_BUDDYPOINTER, KAD_POINTER_VERSION));
+				}
+				if (thePrefs::IsKadBuddyPointerEnabled() &&
+					theLogger.IsEnabled(logKadPublish)) {
+					CPublishMetrics::Instance().PointerMarker(keyed);
 				}
 			} else if (publishAs == EKadSourcePublish::IPv6Only) {
 				// A storer that implements type 7 drops it without our receiver key.
@@ -1163,6 +1199,44 @@ void CSearch::StorePacket()
 		} else {
 			PrepareToStop();
 		}
+		break;
+	}
+	case STOREPOINTER: {
+		AddDebugLogLineN(logKadSearch, "Search request type: StorePointer");
+		if (m_answers > SEARCHSTOREFILE_TOTAL) {
+			PrepareToStop();
+			break;
+		}
+		// The buddy may have gone since the lookup started; the next pointer names the new one.
+		const EKadSourcePublish publishAs =
+			DecideKadSourcePublish(CSharedFileList::CurrentKadPublishFacts());
+		if (!thePrefs::IsKadBuddyPointerEnabled() || publishAs != EKadSourcePublish::Buddy) {
+			PrepareToStop();
+			break;
+		}
+		if (!SendsKadPointer(true, HoldsReceiverKey(*from))) {
+			break;
+		}
+		if (!StoreBudgetAllows(CKadSendBudgets::Instance().sourceStores, *from, 1)) {
+			break;
+		}
+		// fileID = NOT our source ID, sourceID = our source ID: a storer tells a pointer record
+		// by that alone. Type 3 with the buddy fields, so a receiver reads it like a file record.
+		const CUInt128 id(CKademlia::GetPrefs()->GetClientHash());
+		TagPtrList taglist;
+		taglist.push_back(new CTagInt8(TAG_SOURCETYPE, KadSourceTypeFor(publishAs, false)));
+		AddBuddyRouteTags(taglist, *theApp->clientlist->GetBuddy());
+		taglist.push_back(new CTagInt8(TAG_BUDDYPOINTER, KAD_POINTER_VERSION));
+		taglist.push_back(new CTagInt8(TAG_ENCRYPTION, CPrefs::GetMyConnectOptions(true, true)));
+		if (CKademlia::GetUDPListener()->SendPublishSourcePacket(*from, m_target, id, taglist)) {
+			m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
+			if (theLogger.IsEnabled(logKadPublish)) {
+				CPublishMetrics::Instance().PointerQueued(
+					from->GetIPAddress(), ::GetTickCount64());
+			}
+		}
+		m_totalRequestAnswers++;
+		deleteTagPtrListEntries(&taglist);
 		break;
 	}
 	case STOREKEYWORD: {
@@ -1887,6 +1961,11 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 				DebugSendF(
 					"Kad2Req(StoreFile)", contact->GetIPAddress(), contact->GetUDPPort());
 				break;
+			case STOREPOINTER:
+				DebugSendF("Kad2Req(StorePointer)",
+					contact->GetIPAddress(),
+					contact->GetUDPPort());
+				break;
 			case STOREKEYWORD:
 				DebugSendF("Kad2Req(StoreKeyword)",
 					contact->GetIPAddress(),
@@ -2101,6 +2180,7 @@ uint8_t CSearch::GetRequestContactCount() const
 	case STOREFILE:
 	case STOREKEYWORD:
 	case STORENOTES:
+	case STOREPOINTER:
 		return KADEMLIA_STORE;
 	default:
 		AddDebugLogLineN(logKadSearch, "Invalid search type. (CSearch::GetRequestContactCount())");
