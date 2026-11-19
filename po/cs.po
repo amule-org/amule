@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-16 19:37+0000\n"
+"PO-Revision-Date: 2026-11-18 23:45+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
@@ -1813,6 +1813,11 @@ msgstr "Odesláno"
 msgid "Downloaded"
 msgstr "Staženo"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Připojení"
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr "Stahování od"
@@ -2045,9 +2050,9 @@ msgid "Remote Queue Full"
 msgstr "Vzdálená fronta je plná"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Waiting to ask (%s)"
-msgstr "Klienti čekající na odesílání: %s"
+msgstr "Čekání na dotaz (%s)"
 
 #: src/DataToText.cpp
 msgid "Old MLDonkey"
@@ -2136,6 +2141,69 @@ msgstr "Připojování přes %s, na neprokázané trase"
 #, c-format
 msgid "Connecting via %s"
 msgstr "Připojování přes %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "Adresáře"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "Příchozí adresář"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "přímé volání zpět"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "zpětné volání Lugdunum"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct UDP callback"
+msgstr "přímé volání zpět"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "vlastní server zdroje"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "hole punch serveru"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "zpětné volání Lugdunum"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered direct UDP callback"
+msgstr "přímé volání zpět"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "zpětné volání Lugdunum"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "Proxy"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -6166,9 +6234,8 @@ msgid "Support Protocol Obfuscation"
 msgstr "Podporovat zamaskování protokolu"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
-msgstr "Tato možnost zapíná zamaskování protokolu a nastavuje aMule tak, aby přijímal zamaskovaná připojení od ostatních klientů."
+msgstr "Tato možnost zapíná zamaskování protokolu pro ed2k klienty a servery a způsobí, že aMule bude přijímat zamaskovaná připojení. Kad UDP je vždy zamaskovaný, protože klíč který prokazuje vaší adresu peerovi, je přenášen v zamaskované hlavičce."
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"
@@ -7145,10 +7212,6 @@ msgstr "Rozhraní"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr "Vzhled, název okna a jak jsou vykresleny seznamy přenosů."
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Připojení"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

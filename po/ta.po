@@ -1739,6 +1739,11 @@ msgstr ""
 msgid "Downloaded"
 msgstr ""
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr ""
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr ""
@@ -2060,6 +2065,58 @@ msgstr ""
 #: src/DataToText.cpp
 #, c-format
 msgid "Connecting via %s"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Direct"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Incoming"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Callback by the source's server"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Server hole punch"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Lugdunum callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Lugdunum callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "proxy"
 msgstr ""
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
@@ -6961,10 +7018,6 @@ msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
-msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
 msgstr ""
 
 #: src/PrefsUnifiedDlg.cpp

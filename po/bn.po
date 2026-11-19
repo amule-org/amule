@@ -1786,6 +1786,11 @@ msgstr "আপলোড হয়েছে"
 msgid "Downloaded"
 msgstr "ডাউনলোড করা হয়েছে"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "সংযোগ"
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr ""
@@ -2114,6 +2119,67 @@ msgstr "সার্ভারের মাধ্যমে সংযোগ কর
 #, fuzzy, c-format
 msgid "Connecting via %s"
 msgstr "Kad-এর মাধ্যমে সংযোগ করা হচ্ছে"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "ডিরেক্টরি"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "ইনকামিং ফাইল"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "সার্ভারের নাম"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "%s সফলভাবে আপডেট করা হয়েছে"
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "eD2k সার্ভার তালিকা (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "সার্ভার ওভারহেড (প্যাকেট): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "%s সফলভাবে আপডেট করা হয়েছে"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "%s সফলভাবে আপডেট করা হয়েছে"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "প্রক্সি"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7125,10 +7191,6 @@ msgstr "ইন্টারফেস"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "সংযোগ"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

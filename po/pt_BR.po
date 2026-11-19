@@ -1816,6 +1816,11 @@ msgstr "Enviado"
 msgid "Downloaded"
 msgstr "Baixado"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Conexão"
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr "Baixando de"
@@ -2138,6 +2143,69 @@ msgstr "Conectando via %s, em uma rota não comprovada"
 #, c-format
 msgid "Connecting via %s"
 msgstr "Conectando via %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "Diretórios"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "Pasta de entrada"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "um callback direto"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "um callback Lugdunum"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct UDP callback"
+msgstr "um callback direto"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "o próprio servidor da fonte"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "um hole punch via servidor"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "um callback Lugdunum"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered direct UDP callback"
+msgstr "um callback direto"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "um callback Lugdunum"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "Proxy"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7127,10 +7195,6 @@ msgstr "Interface"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr "Aparência, o título da janela e como as listas de transferências são desenhadas."
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Conexão"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

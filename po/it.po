@@ -22,7 +22,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-17 22:57+0000\n"
+"PO-Revision-Date: 2026-11-18 23:45+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -1817,6 +1817,11 @@ msgstr "Inviato"
 msgid "Downloaded"
 msgstr "Scaricato"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Connessione"
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr "In download da"
@@ -2048,9 +2053,9 @@ msgid "Remote Queue Full"
 msgstr "Coda remota piena"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Waiting to ask (%s)"
-msgstr "Upload in attesa: %s"
+msgstr "In attesa di richiesta (%s)"
 
 #: src/DataToText.cpp
 msgid "Old MLDonkey"
@@ -2140,6 +2145,70 @@ msgstr "Connessione tramite %s, su un percorso non verificato"
 #, c-format
 msgid "Connecting via %s"
 msgstr "Connessione tramite %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "Directory"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "Directory file scaricati"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "una callback diretta"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "una callback Lugdunum"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct UDP callback"
+msgstr "una callback diretta"
+
+# AI-GENERATED — please review.
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "il server della fonte"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "un hole punch del server"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "una callback Lugdunum"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered direct UDP callback"
+msgstr "una callback diretta"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "una callback Lugdunum"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "Proxy"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7132,10 +7201,6 @@ msgstr "Interfaccia"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr "Aspetto, titolo della finestra e come vengono disegnate le liste dei trasferimenti."
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Connessione"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

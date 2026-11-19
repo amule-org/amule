@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-17 22:57+0000\n"
+"PO-Revision-Date: 2026-11-19 11:57+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -1807,6 +1807,11 @@ msgstr "已上传"
 msgid "Downloaded"
 msgstr "已下载"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "连接"
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr "当前下载源"
@@ -2038,9 +2043,9 @@ msgid "Remote Queue Full"
 msgstr "队列已满"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Waiting to ask (%s)"
-msgstr "等待上传: %s"
+msgstr "正等待询问 (%s)"
 
 #: src/DataToText.cpp
 msgid "Old MLDonkey"
@@ -2129,6 +2134,58 @@ msgstr "正在未经验证的线路上通过 %s 进行连接"
 #, c-format
 msgid "Connecting via %s"
 msgstr "正在通过 %s 连接"
+
+#: src/DataToText.cpp
+msgid "Direct"
+msgstr "传出目录"
+
+#: src/DataToText.cpp
+msgid "Incoming"
+msgstr "下载目录"
+
+#: src/DataToText.cpp
+msgid "Server callback"
+msgstr "服务器回馈"
+
+#: src/DataToText.cpp
+msgid "Kad buddy callback"
+msgstr "Kad 搭档回馈"
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr "直接 UDP 回馈"
+
+#: src/DataToText.cpp
+msgid "Callback by the source's server"
+msgstr "源服务器的回馈"
+
+#: src/DataToText.cpp
+msgid "Server hole punch"
+msgstr "服务器打洞"
+
+#: src/DataToText.cpp
+msgid "Lugdunum callback"
+msgstr "Lugdunum 回馈"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr "回应了服务器回馈"
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr "回应了 Kad 搭档回馈"
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr "回应了直接 UDP 回馈"
+
+#: src/DataToText.cpp
+msgid "Answered Lugdunum callback"
+msgstr "回应了 Lugdunum 回馈"
+
+#: src/DataToText.cpp
+msgid "proxy"
+msgstr "代理"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7121,10 +7178,6 @@ msgstr "界面"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr "外观、窗口标题和如何绘制传输列表。"
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "连接"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

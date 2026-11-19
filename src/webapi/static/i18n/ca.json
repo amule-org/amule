@@ -1085,5 +1085,21 @@
   "downloads_peer_route_kad_buddy": "l'amic de Kad",
   "downloads_peer_route_foreign_nat_callback": "el servidor propi de la font",
   "downloads_peer_route_server_hole_punch": "una perforació de NAT amb servidor",
-  "downloads_peer_route_lugdunum_callback": "una retrotrucada de Lugdunum"
+  "downloads_peer_route_lugdunum_callback": "una retrotrucada de Lugdunum",
+  "downloads_peer_state_waiting_to_ask": "Esperant per demanar ({time})",
+  "downloads_peer_col_connection": "Connexió",
+  "client_detail_connection": "Connexió",
+  "downloads_peer_conn_dial": "Directa",
+  "downloads_peer_conn_inbound": "Entrant",
+  "downloads_peer_conn_server_callback": "Retrotrucada del servidor",
+  "downloads_peer_conn_kad_buddy_callback": "Retrotrucada de l'amic de Kad",
+  "downloads_peer_conn_direct_udp_callback": "Retrotrucada UDP directa",
+  "downloads_peer_conn_foreign_nat_callback": "Retrotrucada del servidor de la font",
+  "downloads_peer_conn_server_hole_punch": "Perforació de NAT amb servidor",
+  "downloads_peer_conn_lugdunum_callback": "Retrotrucada de Lugdunum",
+  "downloads_peer_conn_answered_server_callback": "Retrotrucada del servidor contestada",
+  "downloads_peer_conn_answered_kad_buddy_callback": "Retrotrucada de l'amic de Kad contestada",
+  "downloads_peer_conn_answered_direct_udp_callback": "Retrotrucada UDP directa contestada",
+  "downloads_peer_conn_answered_lugdunum_callback": "Retrotrucada de Lugdunum contestada",
+  "downloads_peer_conn_proxy": "proxy"
 }
