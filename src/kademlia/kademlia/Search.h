@@ -64,8 +64,13 @@ class CSearch
 	bool m_publishCompleted = false;
 	// A source or keyword publish that started from the nodes of the target's last publish.
 	bool m_seeded = false;
+	uint32_t m_seedAge = 0; // Seconds since the seeds were saved.
 	// Store packets sent. Each gets one answer, and the answers end a publish.
 	uint32_t m_storePackets = 0;
+	// For the publish log line: the seeds asked at the start, and when the lookup stopped.
+	std::vector<CUInt128> m_seedDistances;
+	uint64_t m_stopTick = 0;
+	void LogPublishLookup(uint64_t acknowledged) const;
 
 public:
 	const CLookupTrace &GetLookupTrace() const noexcept { return m_lookupTrace; }

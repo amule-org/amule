@@ -542,6 +542,7 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &target,
 		if (loadResponse) {
 			s->UpdateNodeLoad(load);
 		}
+		s->m_lookupTrace.ItemReply({ fromIP, fromPort });
 		break;
 	}
 	case CSearch::STOREFILE:

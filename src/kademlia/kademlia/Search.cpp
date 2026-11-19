@@ -275,6 +275,9 @@ void CSearch::Go()
 	std::vector<CUInt128> seeds;
 	if ((m_type == STOREFILE || m_type == STOREKEYWORD) && m_possible.empty()) {
 		seeds = AddPublishSeeds();
+		if (theLogger.IsEnabled(logKadPublish)) {
+			m_seedDistances = seeds;
+		}
 	}
 
 	if (m_type == STOREFILE && !m_publishMeasured && theLogger.IsEnabled(logKadPublish)) {
@@ -324,9 +327,9 @@ uint32_t CSearch::StoreTotal() const noexcept
 std::vector<CUInt128> CSearch::AddPublishSeeds()
 {
 	std::vector<CUInt128> distances;
+	const uint32_t now = static_cast<uint32_t>(time(nullptr));
 	const auto entry = PublishSeeds().find(m_target);
-	if (entry == PublishSeeds().end() ||
-		!KadPublishSeeds::IsCurrent(entry->second, static_cast<uint32_t>(time(nullptr)))) {
+	if (entry == PublishSeeds().end() || !KadPublishSeeds::IsCurrent(entry->second, now)) {
 		return distances;
 	}
 	CUInt128 distance(CKademlia::GetPrefs()->GetKadID() ^ m_target);
@@ -348,6 +351,7 @@ std::vector<CUInt128> CSearch::AddPublishSeeds()
 		m_possible[seedDistance] = c;
 	}
 	m_seeded = !distances.empty();
+	m_seedAge = now > entry->second.saved ? now - entry->second.saved : 0;
 	return distances;
 }
 
@@ -383,6 +387,7 @@ void CSearch::PrepareToStop() noexcept
 	if (m_stopping) {
 		return;
 	}
+	m_stopTick = ::GetTickCount64();
 
 	uint32_t baseTime = 0;
 	switch (m_type) {
@@ -735,6 +740,9 @@ void CSearch::RecordStoreAcknowledgements() const
 	if (m_type == STOREKEYWORD) {
 		// Keyword answers, counted per node, are what end the lookup.
 		KeepPublishSeeds(GetAnswers());
+		if (theLogger.IsEnabled(logKadPublish)) {
+			LogPublishLookup(CPublishMetrics::Acknowledged(m_lookupTrace));
+		}
 		return;
 	}
 	if (m_type != STOREFILE) {
@@ -743,6 +751,9 @@ void CSearch::RecordStoreAcknowledgements() const
 	const uint64_t acknowledged = CPublishMetrics::Acknowledged(m_lookupTrace);
 	theStats::AddPublishEvent(EPublishEvent::KadSourceStoreAcknowledged, acknowledged);
 	KeepPublishSeeds(acknowledged);
+	if (theLogger.IsEnabled(logKadPublish)) {
+		LogPublishLookup(acknowledged);
+	}
 	if (!acknowledged) {
 		return;
 	}
@@ -787,6 +798,39 @@ void CSearch::KeepPublishSeeds(uint64_t acknowledged) const
 	}
 	PublishSeeds()[m_target] = { static_cast<uint32_t>(time(nullptr)), std::move(next) };
 	s_publishSeedsChanged = true;
+}
+
+void CSearch::LogPublishLookup(uint64_t acknowledged) const
+{
+	std::set<CLookupTrace::ID> seeds;
+	for (const CUInt128 &distance : m_seedDistances) {
+		CLookupTrace::ID id;
+		distance.ToByteArray(id.data());
+		seeds.insert(id);
+	}
+	uint32_t requests = 0, queried = 0, farHops = 0, seedsReplied = 0;
+	for (const auto &peer : m_lookupTrace.Peers()) {
+		const CLookupTrace::Peer &row = peer.second;
+		if (!row.requests) {
+			continue;
+		}
+		requests += row.requests;
+		++queried;
+		// Outside SEARCHTOLERANCE: the top 8 distance bits are not zero.
+		farHops += row.distance[0] != 0 ? 1 : 0;
+		seedsReplied += row.replies && seeds.count(row.distance) ? 1 : 0;
+	}
+	const uint64_t end = m_stopTick ? m_stopTick : ::GetTickCount64();
+	AddDebugLogLineN(logKadPublish,
+		CFormat("Kad publish lookup: target=%s type=%s seeded=%u seeds=%u seeds_replied=%u "
+			"requests=%u queried=%u far=%u acked=%llu answers=%u files=%u ms=%llu "
+			"completed=%u next=%s seed_age=%u") %
+			m_target.ToHexString() % (m_type == STOREKEYWORD ? "keyword" : "source") %
+			(m_seeded ? 1u : 0u) % static_cast<uint32_t>(seeds.size()) % seedsReplied % requests %
+			queried % farHops % acknowledged % m_answers %
+			static_cast<uint32_t>(m_type == STOREKEYWORD ? m_fileIDs.size() : 1) %
+			(end - m_lookupStarted) % (m_publishCompleted ? 1u : 0u) %
+			(PublishSeeds().count(m_target) ? "seeded" : "full") % m_seedAge);
 }
 
 void CSearch::SavePublishSeeds()
@@ -1191,6 +1235,7 @@ void CSearch::StorePacket()
 			}
 			m_storePackets++;
 		}
+		m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
 		m_totalRequestAnswers++;
 		break;
 	}
