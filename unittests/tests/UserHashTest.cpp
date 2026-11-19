@@ -19,6 +19,7 @@
 #include "UserHash.h"
 
 #include <set>
+#include <string>
 
 using namespace muleunit;
 
@@ -71,4 +72,11 @@ TEST(UserHash, NewHashesDiffer)
 		CreateUserHash(hash);
 		ASSERT_TRUE(seen.insert(hash).second);
 	}
+}
+
+TEST(UserHash, TheHashManyPeersShareIsBad)
+{
+	CMD4Hash shared;
+	ASSERT_TRUE(shared.Decode(std::string("00000000000E00000000000000006F00")));
+	ASSERT_TRUE(IsBadUserHash(shared));
 }

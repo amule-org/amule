@@ -51,6 +51,7 @@
 #include "SharedFileList.h" // Needed for CSharedFileList
 #include "IPFilter.h"       // Needed for CIPFIlter
 #include "updownclient.h"   // Needed for CUpDownClient
+#include "UserHash.h"       // Needed for IsBadUserHash
 #include "Preferences.h"    // Needed for thePrefs
 #include "Statistics.h"     // Needed for theStats
 #include "Logger.h"
@@ -234,7 +235,7 @@ void CClientList::UpdateClientHash(CUpDownClient *client, const CMD4Hash &newHas
 
 	RemoveHashFromList(client);
 
-	if (!newHash.IsEmpty()) {
+	if (!IsBadUserHash(newHash)) {
 		m_hashList.insert(HashMapPair(newHash, CCLIENTREF(client, "CClientList::UpdateClientHash")));
 	}
 }
