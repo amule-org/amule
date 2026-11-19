@@ -76,7 +76,7 @@ void HandleLowIdHolePunchInfo(
 	if (info.peerId.has_value()) {
 		// The 0x61 a wake was waiting for, even one the guards below keep us from acting on: the
 		// requester already has its 0x61, so the wake's Lugdunum fallback must not dial it.
-		serverconnect->HolePunchExtensionWakes().Resolve(*info.peerId);
+		serverconnect->PendingWakes().Resolve(*info.peerId);
 	}
 	const uint32 peerIP = PeekUInt32(info.peerIP.data());
 	if (!CClientUDPSocket::IsRendezvousPeerAllowed(peerIP)) {
@@ -375,9 +375,9 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					AddDebugLogLineN(logServer,
 						"OP_IDCHANGE: server accepts LowID hole punch requests");
 				}
-				if (cur_server->SupportsHolePunchExtension()) {
+				if (cur_server->WaitsForWakeKeepalive()) {
 					AddDebugLogLineN(logServer,
-						"OP_IDCHANGE: server runs the hole-punch extension");
+						"OP_IDCHANGE: server waits for a woken target's keepalive");
 				}
 #endif
 				// copy TCP flags into the server in the server list

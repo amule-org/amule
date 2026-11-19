@@ -255,7 +255,7 @@ private:
 	//! server's key, whether or not it matched a pending request.
 	bool TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, size_t length);
 	void HandleLowIdHolePunch(uint32 host, uint16 port);
-	bool AnswerHolePunchExtensionWake(const LugdunumNatTraversal::ForwardedCallback &callback);
+	bool AnswerWakeWithKeepalive(const LugdunumNatTraversal::ForwardedCallback &callback);
 	void SendLugdunumNatCallbackRequest(const LugdunumNatTraversal::CallbackFailureKey &key);
 	void TickLugdunumCallbackRendezvous();
 #endif

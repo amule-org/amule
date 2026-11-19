@@ -37,16 +37,27 @@ with its field.
 | `0xA7` | `OP_NAT_CALLBACKREQUESTED_UDP` | Server UDP, server to client | Callback or cross-server answer |
 | `0xF9` | `CT_EMULE_UDPPORTS` | Login tag | Our UDP ports, so a `0x60` can name us |
 | `0x20` | `CT_SERVER_FLAGS` | Login tag | Bits below; bits 9-11 are our crypt options |
-| `0x1000` | `SRVCAP_NATTRAVERSAL` | `CT_SERVER_FLAGS` bit | Lugdunum callback opt-in |
-| `0x100000` | `SRVCAP_HOLEPUNCH_EXTENSION` | `CT_SERVER_FLAGS` bit | Hole-punch extension opt-in |
-| `0x1000` | `SRV_TCPFLG_NATTRAVERSAL` | `OP_IDCHANGE` TCP flag | Lugdunum callback support |
+| `0x1000` | `SRVCAP_LUGDUNUM_CALLBACK` | `CT_SERVER_FLAGS` bit | Lugdunum callback opt-in |
+| `0x100000` | `SRVCAP_WAKE_KEEPALIVE` | `CT_SERVER_FLAGS` bit | We answer a wake with a `0x9F` burst (hole-punch extension opt-in) |
+| `0x1000` | `SRV_TCPFLG_LUGDUNUM_CALLBACK` | `OP_IDCHANGE` TCP flag | Lugdunum callback support |
 | `0x20000` | `SRV_TCPFLG_LOWID_HOLEPUNCH` | `OP_IDCHANGE` TCP flag | ed2k-server hole punch support |
-| `0x100000` | `SRV_TCPFLG_HOLEPUNCH_EXTENSION` | `OP_IDCHANGE` TCP flag | Hole-punch extension support |
+| `0x100000` | `SRV_TCPFLG_PUNCH_WAKE` | `OP_IDCHANGE` TCP flag | A `0x60` wakes the target first and waits for its `0x9F` (hole-punch extension) |
 | `0x100000` | `SRV_UDPFLG_FOREIGN_NAT_CALLBACK` | Server status UDP flag | Takes a cross-server callback; on eNode-go also extension support |
 | `0xAC` | `ST_NATT_TOKEN` | `OP_SERVERIDENT` tag | Session token, new at every login; never on UDP |
 | `0xA9` | `ST_NATT_PROOF` | `OP_SERVERIDENT` tag | u32 = 1: the server takes a proof `0x9F` |
 | `0x92` | `ST_UDPFLAGS` | `OP_SERVERIDENT` tag | The server's UDP flags, the same word as in its status answer |
 | `0xAA` | `CT_MOD_MISCOPTIONS` | Hello tag | Bit 1 (`0x02`, `MOD_MISCOPT_NAT_TRAVERSAL`) uTP NAT-T, bit 4 (`0x10`, `MOD_MISCOPT_NAT_TRAVERSAL_QUIC`) QUIC NAT-T |
+
+aMule names the server flags after what they do. The servers' own sources use other names:
+
+| Value | Field | aMule | ed2k-server | eNode-go |
+| --- | --- | --- | --- | --- |
+| `0x1000` | `CT_SERVER_FLAGS` bit | `SRVCAP_LUGDUNUM_CALLBACK` | `CAPABLE_IPV6` (an old name; the bit is Lugdunum's) | `SrvCapNatTraversal` |
+| `0x1000` | `OP_IDCHANGE` TCP flag | `SRV_TCPFLG_LUGDUNUM_CALLBACK` | none (its comments say `SRVCAP_NATTRAVERSAL`) | `FlagNatCallback` |
+| `0x20000` | `OP_IDCHANGE` TCP flag | `SRV_TCPFLG_LOWID_HOLEPUNCH` | `SRVFLG_LOWID_HOLEPUNCH` | not set |
+| `0x100000` | `CT_SERVER_FLAGS` bit | `SRVCAP_WAKE_KEEPALIVE` | `SRVFLG_HOLEPUNCH_EXT` | `SrvCapHolePunchExt` |
+| `0x100000` | `OP_IDCHANGE` TCP flag | `SRV_TCPFLG_PUNCH_WAKE` | `SRVFLG_HOLEPUNCH_EXT` | not set |
+| `0x100000` | Server status UDP flag | `SRV_UDPFLG_FOREIGN_NAT_CALLBACK` | `SRVFLG_HOLEPUNCH_EXT` | `FlagForeignCallback` |
 
 The server takes a plain `0x9F` at its TCP port + 4, and the server-way obfuscated datagrams at
 the obfuscation UDP port it advertises.
@@ -457,27 +468,29 @@ rest), so no thread is added.
 
 ### Hole-punch extension (ed2k-server 0.9.85)
 
+aMule calls this the wake keepalive (`SRVCAP_WAKE_KEEPALIVE`, `SRV_TCPFLG_PUNCH_WAKE`), after what
+it does: a woken target sends a fresh `0x9F` (`OP_NATT_KEEPALIVE`), and the server waits for it.
 The extension (andrey23127/ed2k-server#39) lets the server hand out the UDP port from a fresh `0x9F`
 (`OP_NATT_KEEPALIVE`) at punch time, not from the last standing keepalive. It applies only between
-two clients that announced it to a server that sets `0x100000` (`SRV_TCPFLG_HOLEPUNCH_EXTENSION`) in
+two clients that announced it to a server that sets `0x100000` (`SRV_TCPFLG_PUNCH_WAKE`) in
 its `OP_IDCHANGE` TCP flags; every other pair gets the punch above unchanged. eNode-go sets
 `0x100000` (`SRV_UDPFLG_FOREIGN_NAT_CALLBACK`) only in its UDP flags and runs no `0x60`
 (`OP_LOWID_HOLEPUNCH_REQUEST`), but it also waits for the woken target's `0x9F` (`OP_NATT_KEEPALIVE`),
 so aMule takes the bit from either word
-(`NatServerHolePunch::ServerOffersHolePunchExtension()`). The connection's copy of the server
+(`NatServerHolePunch::ServerWaitsForWakeKeepalive()`). The connection's copy of the server
 (`cur_server`) is taken before the login, and a status answer updates only the server-list entry,
 so aMule also reads the UDP word from `0x92` (`ST_UDPFLAGS`) in `OP_SERVERIDENT`, which
 ed2k-server and eNode-go send.
 
-- announcing: `CT_SERVER_FLAGS` carries `0x100000` (`SRVCAP_HOLEPUNCH_EXTENSION`), always with
-  Lugdunum's `0x1000` (`SRVCAP_NATTRAVERSAL`), only when both `LowIdHolePunch` and
+- announcing: `CT_SERVER_FLAGS` carries `0x100000` (`SRVCAP_WAKE_KEEPALIVE`), always with
+  Lugdunum's `0x1000` (`SRVCAP_LUGDUNUM_CALLBACK`), only when both `LowIdHolePunch` and
   `LugdunumNatCallback` are on and uTP is built
-  (`NatServerHolePunch::ShouldAnnounceHolePunchExtension()`). The server wakes an extension target
+  (`NatServerHolePunch::ShouldAnnounceWakeKeepalive()`). The server wakes such a target
   with Lugdunum's `0x37` (`OP_NAT_CALLBACKREQUESTED`), which only the Lugdunum path serves. The
   session uses the extension when the server also set `0x100000` in either word
-  (`SRV_TCPFLG_HOLEPUNCH_EXTENSION` or `SRV_UDPFLG_FOREIGN_NAT_CALLBACK`) and answered our
-  `0x1000` (`SRVCAP_NATTRAVERSAL`) opt-in
-  (`CServerConnect::IsHolePunchExtensionActive()`);
+  (`SRV_TCPFLG_PUNCH_WAKE` or `SRV_UDPFLG_FOREIGN_NAT_CALLBACK`) and answered our
+  `0x1000` (`SRVCAP_LUGDUNUM_CALLBACK`) opt-in
+  (`CServerConnect::IsWakeKeepaliveActive()`);
 - `0x9F`: on such a server every `0x9F`, the standing keepalive included, is obfuscated the
   server way once its UDP key is known, and sent to its obfuscation UDP port from the client UDP
   socket. The server ignores a session's plain `0x9F` after its first obfuscated one, unless it
@@ -558,10 +571,10 @@ The runtime setting remains off by default.
 
 Lugdunum servers relay a NAT callback between two LowID clients on the same
 server (eMule wiki, "NatT protocol", section "eServer (Lugdunum)"). A client
-opts in with `CT_SERVER_FLAGS` bit `0x1000` (`SRVCAP_NATTRAVERSAL`); the
+opts in with `CT_SERVER_FLAGS` bit `0x1000` (`SRVCAP_LUGDUNUM_CALLBACK`); the
 server then assigns an odd LowID and appends a "your port" field to
 `OP_IDCHANGE`. The server announces support with TCP flag `0x1000`
-(`SRV_TCPFLG_NATTRAVERSAL`). That bit alone is not proof: another server uses
+(`SRV_TCPFLG_LUGDUNUM_CALLBACK`). That bit alone is not proof: another server uses
 `0x1000`/`0x2000` unofficially in its flags, so the 24-byte `OP_IDCHANGE`
 answering an opt-in is the stronger signal. The wiki also lists a UDP flag,
 `0x00010000`, but public Lugdunum servers do not set it (they report `0x17FB`),
@@ -591,7 +604,7 @@ runtime setting below:
   builds) does not enrol a build on a live server. Receiving and logging `0x37` needs no gate: it
   only arrives after opting in. A server-way `0xA7` is decrypted only when the current server's
   callback is active and the datagram comes from that server;
-- login opt-in: `CT_SERVER_FLAGS` ORs in `SRVCAP_NATTRAVERSAL` (`ServerConnect.cpp`);
+- login opt-in: `CT_SERVER_FLAGS` ORs in `SRVCAP_LUGDUNUM_CALLBACK` (`ServerConnect.cpp`);
 - callback-active state for the session: `CServer::IsLugdunumNatCallbackActive()`, set only
   when one `OP_IDCHANGE` both comes in the 24-byte form and carries the `0x1000` TCP flag
   (`LugdunumNatTraversal::IsNatCallbackActive()`). `CServer::SupportsLugdunumNatCallback()`

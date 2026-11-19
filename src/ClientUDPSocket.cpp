@@ -817,8 +817,8 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 			// we asked for a callback ourselves just before; anywhere else it is a reverse
 			// callback. Every other 0xA7 answers our own 0xA6 and is dialled at once.
 			if (forwarded.requesterId == 0 && theApp->serverconnect != nullptr &&
-				theApp->serverconnect->IsHolePunchExtensionActive()) {
-				AnswerHolePunchExtensionWake(forwarded);
+				theApp->serverconnect->IsWakeKeepaliveActive()) {
+				AnswerWakeWithKeepalive(forwarded);
 			} else {
 				DialLugdunumNatCallbackPeer(forwarded);
 			}
@@ -1355,14 +1355,14 @@ void CClientUDPSocket::TickLugdunumCallbackRendezvous()
 
 void CClientUDPSocket::HandleForwardedCallback(const LugdunumNatTraversal::ForwardedCallback &callback)
 {
-	if (theApp->serverconnect != nullptr && theApp->serverconnect->IsHolePunchExtensionActive()) {
-		AnswerHolePunchExtensionWake(callback);
+	if (theApp->serverconnect != nullptr && theApp->serverconnect->IsWakeKeepaliveActive()) {
+		AnswerWakeWithKeepalive(callback);
 	} else {
 		DialLugdunumNatCallbackPeer(callback);
 	}
 }
 
-bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::ForwardedCallback &callback)
+bool CClientUDPSocket::AnswerWakeWithKeepalive(const LugdunumNatTraversal::ForwardedCallback &callback)
 {
 	CServerConnect *connect = theApp->serverconnect;
 	CServer *server = connect->GetCurrentServer();
@@ -1376,8 +1376,8 @@ bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::
 	// A wake already waiting for this requester's 0x61 gets its 0x9F burst again, since the 0x9F is
 	// what releases the 0x61, but no second punch: that would spend the action budget the other
 	// rendezvous share.
-	if (connect->HolePunchExtensionWakes().Contains(callback.requesterId)) {
-		connect->StartHolePunchExtensionKeepalives();
+	if (connect->PendingWakes().Contains(callback.requesterId)) {
+		connect->StartWakeKeepalives();
 		return true;
 	}
 	const std::uint64_t now = ::GetTickCount64();
@@ -1389,14 +1389,14 @@ bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::
 	ExpectNatTPeer(target.ip, target.udpPort, callback.hasObfuscation ? &callback.userHash : nullptr);
 	// Punch now and refresh our port; the dial waits for the 0x61's role, as on any extension
 	// server, and no reverse callback is needed when the 0x61 gives both sides the endpoints.
-	connect->HolePunchExtensionWakes().Add(callback.requesterId, callback, now);
+	connect->PendingWakes().Add(callback.requesterId, callback, now);
 	if (callback.requesterId == 0) {
 		// A cross-server requester dials us and no 0x61 follows: its hello is this rendezvous's
 		// success.
 		NoteRendezvousAttempt(
 			NatServerHolePunch::RendezvousPath::LugdunumCallback, target.ip, nullptr);
 	}
-	connect->StartHolePunchExtensionKeepalives();
+	connect->StartWakeKeepalives();
 	NatServerHolePunch::IPv4 targetIP{};
 	PokeUInt32(targetIP.data(), target.ip);
 	std::optional<NatServerHolePunch::Hash> vouched;
@@ -1405,7 +1405,7 @@ bool CClientUDPSocket::AnswerHolePunchExtensionWake(const LugdunumNatTraversal::
 	}
 	connect->StartLowIdHolePunchSchedule(targetIP, target.udpPort, now, vouched);
 	AddDebugLogLineN(logClientUDP,
-		CFormat("Hole-punch extension wake from requester %u: OP_HOLEPUNCH at 0, 0.5, 1 "
+		CFormat("Wake keepalive for requester %u: OP_HOLEPUNCH at 0, 0.5, 1 "
 			"and 2 s to %s") %
 			callback.requesterId % Uint32_16toStringIP_Port(target.ip, target.udpPort));
 	return true;

@@ -2123,7 +2123,7 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 	theApp->serverconnect->LowIdHolePunchPendingRequests().OnSent(GetUserIDHybrid(), ::GetTickCount64());
 	m_holePunchFallback.OnPunchSent(::GetTickCount64());
 	// On an extension server one 0x9F goes with each 0x60, so the 0x61 carries our current port.
-	if (theApp->serverconnect->IsHolePunchExtensionActive()) {
+	if (theApp->serverconnect->IsWakeKeepaliveActive()) {
 		theApp->serverconnect->TrySendLowIdHolePunchKeepalive();
 	}
 	return true;
@@ -2143,7 +2143,7 @@ CServer *CUpDownClient::ForeignNatCallbackServer() const
 	facts.sourceId = GetUserIDHybrid();
 	facts.sourceServerIsOurs = connect->IsLocalServer(GetServerIP(), GetServerPort());
 	facts.serverTakesForeignCallback = server != nullptr;
-	facts.extensionAnnounced = NatServerHolePunch::ShouldAnnounceHolePunchExtension(
+	facts.wakeKeepaliveAnnounced = NatServerHolePunch::ShouldAnnounceWakeKeepalive(
 		thePrefs::IsLowIdHolePunchEnabled(), thePrefs::IsLugdunumNatCallbackEnabled(), true);
 	facts.ourUdpPort = thePrefs::GetEffectiveUDPPort();
 	facts.weSupportCryptLayer = thePrefs::IsClientCryptLayerSupported();

@@ -31,7 +31,7 @@
 
 #include "ArchSpecific.h"
 #include "NetworkFunctions.h"                // Needed for IsLowID
-#include <protocol/ed2k/Client2Server/TCP.h> // Needed for SRV_TCPFLG_NATTRAVERSAL
+#include <protocol/ed2k/Client2Server/TCP.h> // Needed for SRV_TCPFLG_LUGDUNUM_CALLBACK
 
 #include <algorithm>
 #include <array>
@@ -98,7 +98,8 @@ inline IdChangeFields ParseIdChangeFields(const std::uint8_t *data, std::size_t 
 // answering our opt-in and the server's 0x1000 TCP flag are present.
 inline bool IsNatCallbackActive(const IdChangeFields &fields)
 {
-	return fields.hasYourPort && fields.hasTcpFlags && (fields.tcpFlags & SRV_TCPFLG_NATTRAVERSAL) != 0;
+	return fields.hasYourPort && fields.hasTcpFlags &&
+	       (fields.tcpFlags & SRV_TCPFLG_LUGDUNUM_CALLBACK) != 0;
 }
 
 struct CallbackRequest

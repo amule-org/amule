@@ -187,9 +187,9 @@ TEST(NatServerHolePunch, SendsKeepaliveOnlyWhileConnectedToACapableServerWithThe
 	ASSERT_FALSE(ShouldSendKeepalive(notCapable));
 
 	// eNode-go: no LowID hole punch, but the extension waits for our 0x9F after a wake.
-	KeepaliveFacts extensionOnly = notCapable;
-	extensionOnly.extensionActive = true;
-	ASSERT_TRUE(ShouldSendKeepalive(extensionOnly));
+	KeepaliveFacts wakeKeepaliveOnly = notCapable;
+	wakeKeepaliveOnly.wakeKeepaliveActive = true;
+	ASSERT_TRUE(ShouldSendKeepalive(wakeKeepaliveOnly));
 
 	// ed2k-server refuses a HighID target (FAIL_TARGET_IS_HIGHID): a HighID client gains
 	// nothing from sending the keepalive.
@@ -534,13 +534,13 @@ TEST(NatServerHolePunch, KeepsALowIdSourceOfAnotherServerThatTakesCrossServerReq
 {
 	LowIdServerSourceFacts facts;
 	facts.weAreLowId = true;
-	facts.extensionAnnounced = true;
+	facts.wakeKeepaliveAnnounced = true;
 	facts.sourceServerTakesForeignCallback = true;
 	// From source exchange or another server's answer: neither origin nor server is ours.
 	ASSERT_TRUE(ShouldKeepLowIdServerSource(facts));
 
 	LowIdServerSourceFacts settingOff = facts;
-	settingOff.extensionAnnounced = false;
+	settingOff.wakeKeepaliveAnnounced = false;
 	ASSERT_FALSE(ShouldKeepLowIdServerSource(settingOff));
 
 	LowIdServerSourceFacts serverDoesNotTakeThem = facts;
@@ -589,44 +589,44 @@ TEST(NatServerHolePunch, AServerTakesCrossServerRequestsOnlyWithItsFlagAndAKey)
 	ASSERT_FALSE(ServerTakesForeignCallback(cryptOff));
 }
 
-TEST(NatServerHolePunch, OnlyAServerWithTheExtensionFlagOffersTheExtension)
+TEST(NatServerHolePunch, OnlyAServerWithThePunchWakeFlagWaitsForTheWakeKeepalive)
 {
-	ASSERT_TRUE(ServerOffersHolePunchExtension(0x100000, 0));
-	ASSERT_TRUE(ServerOffersHolePunchExtension(0x100000 | 0x20000 | 0x1000, 0x100000));
-	ASSERT_FALSE(ServerOffersHolePunchExtension(0x20000 | 0x1000, 0));
-	ASSERT_FALSE(ServerOffersHolePunchExtension(0, 0));
+	ASSERT_TRUE(ServerWaitsForWakeKeepalive(0x100000, 0));
+	ASSERT_TRUE(ServerWaitsForWakeKeepalive(0x100000 | 0x20000 | 0x1000, 0x100000));
+	ASSERT_FALSE(ServerWaitsForWakeKeepalive(0x20000 | 0x1000, 0));
+	ASSERT_FALSE(ServerWaitsForWakeKeepalive(0, 0));
 }
 
-TEST(NatServerHolePunch, AnEnodeServerOffersTheExtensionInItsUdpWordOnly)
+TEST(NatServerHolePunch, AnEnodeServerWaitsForTheWakeKeepaliveInItsUdpWordOnly)
 {
 	// eNode-go: Lugdunum's callback in both words, the extension in the UDP word only.
-	ASSERT_TRUE(ServerOffersHolePunchExtension(0x1000, 0x1000 | 0x100000));
+	ASSERT_TRUE(ServerWaitsForWakeKeepalive(0x1000, 0x1000 | 0x100000));
 	// Lugdunum's UDP word has no 0x100000.
-	ASSERT_FALSE(ServerOffersHolePunchExtension(0x1000, 0x17FB));
+	ASSERT_FALSE(ServerWaitsForWakeKeepalive(0x1000, 0x17FB));
 }
 
-TEST(NatServerHolePunch, AnnouncesTheExtensionOnlyWithBothServerPathsAndUtp)
+TEST(NatServerHolePunch, AnnouncesTheWakeKeepaliveOnlyWithBothServerPathsAndUtp)
 {
-	ASSERT_TRUE(ShouldAnnounceHolePunchExtension(true, true, true));
+	ASSERT_TRUE(ShouldAnnounceWakeKeepalive(true, true, true));
 	// The extension wakes the target with Lugdunum's 0x37, which only that path serves.
-	ASSERT_FALSE(ShouldAnnounceHolePunchExtension(true, false, true));
-	ASSERT_FALSE(ShouldAnnounceHolePunchExtension(false, true, true));
-	ASSERT_FALSE(ShouldAnnounceHolePunchExtension(true, true, false));
+	ASSERT_FALSE(ShouldAnnounceWakeKeepalive(true, false, true));
+	ASSERT_FALSE(ShouldAnnounceWakeKeepalive(false, true, true));
+	ASSERT_FALSE(ShouldAnnounceWakeKeepalive(true, true, false));
 }
 
-TEST(NatServerHolePunch, ObfuscatesTheKeepaliveOnlyOnAnExtensionServerWithItsUdpKey)
+TEST(NatServerHolePunch, ObfuscatesTheKeepaliveOnlyWithAWakeKeepaliveAndAUdpKey)
 {
 	KeepaliveCryptFacts facts;
-	facts.extensionActive = true;
+	facts.wakeKeepaliveActive = true;
 	facts.cryptLayerUdpEnabled = true;
 	facts.serverKeyUdp = 42;
 	facts.serverSupportsObfuscationUdp = true;
 	ASSERT_TRUE(ShouldObfuscateKeepalive(facts));
 
 	// An older ed2k-server reads only a plain 0x9F.
-	KeepaliveCryptFacts noExtension = facts;
-	noExtension.extensionActive = false;
-	ASSERT_FALSE(ShouldObfuscateKeepalive(noExtension));
+	KeepaliveCryptFacts noWakeKeepalive = facts;
+	noWakeKeepalive.wakeKeepaliveActive = false;
+	ASSERT_FALSE(ShouldObfuscateKeepalive(noWakeKeepalive));
 
 	// Without the key it stays plain, which the server still accepts until a first obfuscated one.
 	KeepaliveCryptFacts noKey = facts;
@@ -643,7 +643,7 @@ TEST(NatServerHolePunch, ObfuscatesTheKeepaliveOnlyOnAnExtensionServerWithItsUdp
 TEST(NatServerHolePunch, AProofKeepaliveStaysPlainAndAwaitsNoKey)
 {
 	KeepaliveCryptFacts facts;
-	facts.extensionActive = true;
+	facts.wakeKeepaliveActive = true;
 	facts.cryptLayerUdpEnabled = true;
 	facts.serverKeyUdp = 42;
 	facts.serverSupportsObfuscationUdp = true;
@@ -907,12 +907,12 @@ TEST(NatServerHolePunch, RequestsACrossServerCallbackOnlyForAnOddLowIdOnAServerT
 	facts.sourceId = 201;
 	facts.sourceServerIsOurs = false;
 	facts.serverTakesForeignCallback = true;
-	facts.extensionAnnounced = true;
+	facts.wakeKeepaliveAnnounced = true;
 	facts.ourUdpPort = 4672;
 	ASSERT_TRUE(ShouldRequestForeignCallback(facts));
 
 	ForeignRequestFacts settingOff = facts;
-	settingOff.extensionAnnounced = false;
+	settingOff.wakeKeepaliveAnnounced = false;
 	ASSERT_FALSE(ShouldRequestForeignCallback(settingOff));
 
 	ForeignRequestFacts sameServer = facts;
@@ -1080,7 +1080,7 @@ TEST(NatServerHolePunch, NoCrossServerRequestWhenOneSideRequiresTheCryptLayerThe
 	ForeignRequestFacts facts;
 	facts.sourceId = 201;
 	facts.serverTakesForeignCallback = true;
-	facts.extensionAnnounced = true;
+	facts.wakeKeepaliveAnnounced = true;
 	facts.ourUdpPort = 4672;
 	ASSERT_TRUE(ShouldRequestForeignCallback(facts));
 
@@ -1161,10 +1161,10 @@ TEST(NatServerHolePunch, AListedFlaggedServerWithoutAKeyNeedsOnlyItsKey)
 	ASSERT_FALSE(ForeignCallbackServerAwaitsKey(cryptOff));
 }
 
-TEST(NatServerHolePunch, AnExtensionKeepaliveWithoutTheKeyAwaitsIt)
+TEST(NatServerHolePunch, AWakeKeepaliveWithoutTheKeyAwaitsIt)
 {
 	KeepaliveCryptFacts facts;
-	facts.extensionActive = true;
+	facts.wakeKeepaliveActive = true;
 	facts.cryptLayerUdpEnabled = true;
 	facts.serverKeyUdp = 0;
 	facts.serverSupportsObfuscationUdp = true;
@@ -1174,9 +1174,9 @@ TEST(NatServerHolePunch, AnExtensionKeepaliveWithoutTheKeyAwaitsIt)
 	keyed.serverKeyUdp = 42;
 	ASSERT_FALSE(KeepaliveAwaitsServerKey(keyed));
 
-	KeepaliveCryptFacts noExtension = facts;
-	noExtension.extensionActive = false;
-	ASSERT_FALSE(KeepaliveAwaitsServerKey(noExtension));
+	KeepaliveCryptFacts noWakeKeepalive = facts;
+	noWakeKeepalive.wakeKeepaliveActive = false;
+	ASSERT_FALSE(KeepaliveAwaitsServerKey(noWakeKeepalive));
 
 	KeepaliveCryptFacts cryptOff = facts;
 	cryptOff.cryptLayerUdpEnabled = false;

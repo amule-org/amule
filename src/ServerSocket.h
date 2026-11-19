@@ -93,7 +93,7 @@ public:
 	{
 		return m_nattSessionToken;
 	}
-	// Set by ST_NATT_PROOF: each OP_SERVER_NATT_KEEPALIVE then proves the token instead.
+	// Set by ST_NATT_PROOF: each OP_NATT_KEEPALIVE then proves the token instead.
 	bool UsesNattKeepaliveProof() const { return m_nattKeepaliveProof; }
 	// The server takes a proof only with a counter above the last it accepted in this login.
 	uint32 NextNattKeepaliveCounter() { return ++m_nattKeepaliveCounter; }

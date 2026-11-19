@@ -207,18 +207,18 @@ struct KeepaliveFacts
 	std::uint16_t udpPort = 0;
 	// Without uTP, advertising support would enrol a client that cannot act on a punch.
 	bool utpAvailable = false;
-	// The hole-punch extension is active (CServerConnect::IsHolePunchExtensionActive()). eNode-go
-	// runs it without SRV_TCPFLG_LOWID_HOLEPUNCH and still waits for our 0x9F after a wake.
-	bool extensionActive = false;
+	// The wake keepalive is active (CServerConnect::IsWakeKeepaliveActive()). eNode-go waits for
+	// it without SRV_TCPFLG_LOWID_HOLEPUNCH.
+	bool wakeKeepaliveActive = false;
 };
 
-// Whether to send OP_SERVER_NATT_KEEPALIVE now: connected to a server that announced
-// SRV_TCPFLG_LOWID_HOLEPUNCH or runs the extension, with the runtime setting on, while we are
+// Whether to send OP_NATT_KEEPALIVE now: connected to a server that announced
+// SRV_TCPFLG_LOWID_HOLEPUNCH or waits for our wake keepalive, with the runtime setting on, while we are
 // LowID with UDP enabled and the build can act on it.
 inline bool ShouldSendKeepalive(const KeepaliveFacts &facts)
 {
 	return facts.settingEnabled && facts.connected &&
-	       (facts.serverAnnouncesHolePunch || facts.extensionActive) && facts.weAreLowId &&
+	       (facts.serverAnnouncesHolePunch || facts.wakeKeepaliveActive) && facts.weAreLowId &&
 	       facts.udpPort != 0 && facts.utpAvailable;
 }
 
@@ -259,8 +259,8 @@ struct LowIdServerSourceFacts
 	bool weAreLowId = false;
 	bool serverAnnouncesHolePunch = false;
 	bool settingEnabled = false;
-	// We announce the hole-punch extension (ShouldAnnounceHolePunchExtension()).
-	bool extensionAnnounced = false;
+	// We announce the wake keepalive (ShouldAnnounceWakeKeepalive()).
+	bool wakeKeepaliveAnnounced = false;
 	// The source's server is not ours but takes a cross-server request (ServerTakesForeignCallback()).
 	bool sourceServerTakesForeignCallback = false;
 };
@@ -295,7 +295,7 @@ inline bool ForeignCallbackServerAwaitsKey(const ForeignServerFacts &facts)
 // 0.9.86 (ed2k-server#49) a LowID requester with NAT traversal gets only LowID sources that have it
 // too, and aMule qualifies through the UDP port it sends at login while LowIdHolePunch is on. Kept
 // are sources from our own hole-punch-capable server, and sources of another server that takes a
-// cross-server request, which we can ask while we announce the extension.
+// cross-server request, which we can ask while we announce the wake keepalive.
 inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
 {
 	if (!facts.weAreLowId) {
@@ -304,7 +304,7 @@ inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
 	if (facts.sourceServerIsOurCurrentServer) {
 		return facts.settingEnabled && facts.originIsLocalServer && facts.serverAnnouncesHolePunch;
 	}
-	return facts.extensionAnnounced && facts.sourceServerTakesForeignCallback;
+	return facts.wakeKeepaliveAnnounced && facts.sourceServerTakesForeignCallback;
 }
 
 // Server-coordinated punch state.
@@ -889,19 +889,18 @@ private:
 	std::vector<Address> m_addresses;
 	std::deque<std::uint64_t> m_recent;
 };
-// Hole-punch extension. The server wakes the target with Lugdunum's 0x37 and waits for its fresh
-// 0x9F before it hands out the target's port: in a 30-byte 0x61 after a 0x60 (ed2k-server 0.9.85),
-// or in a 0xA7 to a requester on another server. ed2k-server sets 0x100000 in both flag words;
+// Wake keepalive (ed2k-server's hole-punch extension). The server wakes the target with Lugdunum's 0x37 and
+// waits for its fresh 0x9F before it hands out the target's port: in a 30-byte 0x61 after a 0x60 (ed2k-server
+// 0.9.85), or in a 0xA7 to a requester on another server. ed2k-server sets 0x100000 in both flag words;
 // eNode-go sets it only in the UDP word and runs no 0x60.
-inline bool ServerOffersHolePunchExtension(std::uint32_t tcpFlags, std::uint32_t udpFlags)
+inline bool ServerWaitsForWakeKeepalive(std::uint32_t tcpFlags, std::uint32_t udpFlags)
 {
-	return (tcpFlags & SRV_TCPFLG_HOLEPUNCH_EXTENSION) != 0 ||
-	       (udpFlags & SRV_UDPFLG_FOREIGN_NAT_CALLBACK) != 0;
+	return (tcpFlags & SRV_TCPFLG_PUNCH_WAKE) != 0 || (udpFlags & SRV_UDPFLG_FOREIGN_NAT_CALLBACK) != 0;
 }
 
-// The extension needs Lugdunum's opt-in too: its 0x1000 enrols us for 0x37 forwards, which only
+// The wake keepalive needs Lugdunum's opt-in too: its 0x1000 enrols us for 0x37 forwards, which only
 // the Lugdunum path serves.
-inline bool ShouldAnnounceHolePunchExtension(
+inline bool ShouldAnnounceWakeKeepalive(
 	bool holePunchEnabled, bool lugdunumCallbackEnabled, bool utpAvailable)
 {
 	return holePunchEnabled && lugdunumCallbackEnabled && utpAvailable;
@@ -909,7 +908,7 @@ inline bool ShouldAnnounceHolePunchExtension(
 
 struct KeepaliveCryptFacts
 {
-	bool extensionActive = false;
+	bool wakeKeepaliveActive = false;
 	bool cryptLayerUdpEnabled = false;
 	std::uint32_t serverKeyUdp = 0;
 	bool serverSupportsObfuscationUdp = false;
@@ -922,7 +921,7 @@ struct KeepaliveCryptFacts
 // only plain ones.
 inline bool ShouldObfuscateKeepalive(const KeepaliveCryptFacts &facts)
 {
-	return !facts.keepaliveProof && facts.extensionActive && facts.cryptLayerUdpEnabled &&
+	return !facts.keepaliveProof && facts.wakeKeepaliveActive && facts.cryptLayerUdpEnabled &&
 	       facts.serverKeyUdp != 0 && facts.serverSupportsObfuscationUdp;
 }
 
@@ -1228,8 +1227,8 @@ struct ForeignRequestFacts
 	std::uint32_t sourceId = 0;
 	bool sourceServerIsOurs = false;
 	bool serverTakesForeignCallback = false;
-	// We announce the hole-punch extension (ShouldAnnounceHolePunchExtension()).
-	bool extensionAnnounced = false;
+	// We announce the wake keepalive (ShouldAnnounceWakeKeepalive()).
+	bool wakeKeepaliveAnnounced = false;
 	std::uint16_t ourUdpPort = 0;
 	bool weSupportCryptLayer = false;
 	bool weRequireCryptLayer = false;
@@ -1245,9 +1244,9 @@ inline bool ShouldRequestForeignCallback(const ForeignRequestFacts &facts)
 	// The server answers nothing when one side requires the crypt layer and the other lacks it.
 	const bool cryptMismatch = (facts.weRequireCryptLayer && !facts.sourceSupportsCryptLayer) ||
 				   (facts.sourceRequiresCryptLayer && !facts.weSupportCryptLayer);
-	return facts.extensionAnnounced && !facts.sourceServerIsOurs && facts.serverTakesForeignCallback &&
-	       facts.ourUdpPort != 0 && !cryptMismatch && IsLowID(facts.sourceId) &&
-	       (facts.sourceId & 1) != 0;
+	return facts.wakeKeepaliveAnnounced && !facts.sourceServerIsOurs &&
+	       facts.serverTakesForeignCallback && facts.ourUdpPort != 0 && !cryptMismatch &&
+	       IsLowID(facts.sourceId) && (facts.sourceId & 1) != 0;
 }
 
 // Each server allows a burst of 10, then 1/s per source IP, and 60 targets per IP in 10 min; we stay

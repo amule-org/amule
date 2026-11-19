@@ -121,7 +121,7 @@ public:
 	bool IsConnectedObfuscated() const;
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	//! Sends OP_SERVER_NATT_KEEPALIVE from the client UDP socket when connected to a server that
+	//! Sends OP_NATT_KEEPALIVE from the client UDP socket when connected to a server that
 	//! announced SRV_TCPFLG_LOWID_HOLEPUNCH and the runtime setting is on. Called every ~60 s
 	//! from CamuleApp::OnCoreTimer -- no new thread.
 	void TrySendLowIdHolePunchKeepalive();
@@ -156,23 +156,23 @@ public:
 	//! Paces the Lugdunum requests that waited for the server's UDP key, which all become
 	//! sendable when it arrives.
 	bool TakeLugdunumCallbackRetrySlot(uint64 now) { return m_lugdunumCallbackRetryPacer.TryTake(now); }
-	//! We announced the hole-punch extension at login and this server runs it, having also
+	//! We announced the wake keepalive at login and this server waits for it, having also
 	//! answered our Lugdunum opt-in, whose 0x37 it wakes a target with.
-	bool IsHolePunchExtensionActive();
+	bool IsWakeKeepaliveActive();
 	//! 0x37 wakes on an extension server, each waiting for the 0x61 that names its requester.
-	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> &HolePunchExtensionWakes()
+	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> &PendingWakes()
 	{
-		return m_holePunchExtensionWakes;
+		return m_pendingWakes;
 	}
 	//! A woken target sends 0x9F at 0, 0.5 and 1 s so the server learns its current UDP port.
-	void StartHolePunchExtensionKeepalives();
+	void StartWakeKeepalives();
 #ifdef AMULE_UTP_TRANSPORT
 	//! Dials back each punched peer whose delay ran out without a stream from it. Called about
 	//! once a second from CamuleApp::OnCoreTimer.
 	void ProcessLowIdHolePunchDialBacks();
 	//! Sends the due wake keepalives, and dials the Lugdunum way for each wake no 0x61 answered.
 	//! Called from every CamuleApp::OnCoreTimer tick, which the 0.5 s burst needs.
-	void ProcessHolePunchExtension();
+	void ProcessPunchesAndWakes();
 	//! Starts the punch schedule for one peer and sends what is already due: the punch to the
 	//! endpoint a 0x61, a cross-server 0xA7 answer or an extension wake named, then its repeats at
 	//! 0.5, 1 and 2 s, with the port sweep at 0.5 s. @a peerHash, when the rendezvous vouched for
@@ -253,7 +253,7 @@ private:
 	NatServerHolePunch::DuplicateInfoSuppressor m_lowIdHolePunchDuplicates;
 	NatServerHolePunch::ActionRateLimiter m_lowIdHolePunchActionLimiter;
 	NatServerHolePunch::ExpectedEndpointRegistry m_lowIdHolePunchExpectedEndpoints;
-	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> m_holePunchExtensionWakes;
+	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> m_pendingWakes;
 	NatServerHolePunch::KeepaliveBurst m_holePunchKeepaliveBurst;
 	NatServerHolePunch::ServerRequestPacer m_lugdunumCallbackRetryPacer;
 #ifdef AMULE_UTP_TRANSPORT
@@ -266,7 +266,7 @@ private:
 	//! Sends the keepalive again, obfuscated, once the server's missing UDP key arrives.
 	void RetryKeepaliveAwaitingServerKey();
 	// Fixed at login, so a setting changed mid-session cannot claim what the server was not told.
-	bool m_announcedHolePunchExtension = false;
+	bool m_announcedWakeKeepalive = false;
 #endif
 };
 
