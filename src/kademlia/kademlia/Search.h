@@ -176,7 +176,9 @@ public:
 		// find new unknown IPs for a UDP firewallcheck
 		NODEFWCHECKUDP,
 		// store our buddy pointer at the NOT of our source ID (#2513)
-		STOREPOINTER
+		STOREPOINTER,
+		// look up a source's buddy pointer at the NOT of its source ID (#2513)
+		FINDPOINTER
 	};
 
 	CSearch();
@@ -188,6 +190,7 @@ private:
 		uint32 fromIP, uint16 fromPort, const CKadUDPKey &senderKey, ContactList *results);
 	void ProcessResult(const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
 	void ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
+	void ProcessResultPointer(const CUInt128 &answer, TagPtrList *info);
 	void ProcessResultKeyword(
 		const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
 	void ProcessResultNotes(const CUInt128 &answer, TagPtrList *info);

@@ -1786,6 +1786,11 @@ uint32 CPartFile::Process(uint8 m_icounter)
 			case DS_NONE:
 			case DS_WAITCALLBACK:
 			case DS_WAITCALLBACKKAD: {
+				// A source waiting for its Kad buddy pointer (#2513) left with no route.
+				if (!cur_src->UpdateKadPointerWait()) {
+					RemoveSource(cur_src);
+					break;
+				}
 				if (theApp->IsConnected() &&
 					SourceRetryPolicy::IsDue(dwCurTick,
 						cur_src->GetLastAskedTime(),

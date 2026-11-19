@@ -25,6 +25,7 @@
 
 #include "DownloadQueue.h" // Interface declarations
 #include "DiskSpaceResumeBudget.h"
+#include "KadPointerPolicy.h" // Needed for KAD_POINTER_VERSION
 
 #include <protocol/Protocols.h>
 #include <algorithm> // Needed for std::find
@@ -1692,7 +1693,8 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 	uint32_t buddyip,
 	uint16_t buddyport,
 	uint8_t byCryptOptions,
-	const CNetworkAddress &publishedIPv6)
+	const CNetworkAddress &publishedIPv6,
+	uint8_t pointerVersion)
 {
 	AddDebugLogLineN(logKadSearch, CFormat("Search result sources (type %i)") % type);
 
@@ -1802,6 +1804,10 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		ctemp->SetBuddyID(cID, true);
 		ctemp->SetBuddyIP(buddyip);
 		ctemp->SetBuddyPort(buddyport);
+		// A marked record has a pointer behind it, published from the IP the storer recorded.
+		if (pointerVersion == KAD_POINTER_VERSION) {
+			ctemp->SetKadPointerRoute(ip);
+		}
 		break;
 	}
 	case 6: {
