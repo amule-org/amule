@@ -966,6 +966,15 @@ private:
 // A 0x37 on an extension server may also come from a Lugdunum 0xA6, which no 0x61 follows. The
 // server sends 0x61 within 3 s of the wake (resends at +1.2 s and +3 s); 5 s covers that.
 constexpr std::uint64_t kWakeInfoTimeoutMs = 5'000;
+
+// Whether a TCP 0x37 is a wake to answer with our 0x9F. Requester ID 0 is a cross-server wake on
+// every wake-keepalive server. Any other ID can be a 0x60 wake only on a server that runs 0x60; on
+// eNode-go it is a plain Lugdunum callback, dialled at once.
+inline bool ShouldAnswerWakeWithKeepalive(
+	bool wakeKeepaliveActive, std::uint32_t requesterId, bool serverAcceptsHolePunchRequest)
+{
+	return wakeKeepaliveActive && (requesterId == 0 || serverAcceptsHolePunchRequest);
+}
 constexpr std::size_t kMaxPendingWakes = 16;
 
 // Wakes waiting for the 0x61 that names their requester; an unanswered one is handed back.

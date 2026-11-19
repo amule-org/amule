@@ -1355,7 +1355,12 @@ void CClientUDPSocket::TickLugdunumCallbackRendezvous()
 
 void CClientUDPSocket::HandleForwardedCallback(const LugdunumNatTraversal::ForwardedCallback &callback)
 {
-	if (theApp->serverconnect != nullptr && theApp->serverconnect->IsWakeKeepaliveActive()) {
+	CServerConnect *connect = theApp->serverconnect;
+	const CServer *server = connect != nullptr ? connect->GetCurrentServer() : nullptr;
+	if (server != nullptr &&
+		NatServerHolePunch::ShouldAnswerWakeWithKeepalive(connect->IsWakeKeepaliveActive(),
+			callback.requesterId,
+			server->SupportsLowIdHolePunch())) {
 		AnswerWakeWithKeepalive(callback);
 	} else {
 		DialLugdunumNatCallbackPeer(callback);

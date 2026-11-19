@@ -680,6 +680,19 @@ TEST(NatServerHolePunch, KeepaliveBurstsStayBounded)
 	ASSERT_TRUE(burst.TakeDue(10000) <= kMaxPendingBurstKeepalives);
 }
 
+TEST(NatServerHolePunch, OnlyAServerThatRunsTheLowIdPunchWakesWithARequesterId)
+{
+	// Requester ID 0 is a cross-server wake on ed2k-server and on eNode-go.
+	ASSERT_TRUE(ShouldAnswerWakeWithKeepalive(true, 0, true));
+	ASSERT_TRUE(ShouldAnswerWakeWithKeepalive(true, 0, false));
+	// ed2k-server: a 0x37 with a requester ID can be a 0x60 wake, so it waits for the 0x61.
+	ASSERT_TRUE(ShouldAnswerWakeWithKeepalive(true, 6204633, true));
+	// eNode-go runs no 0x60: the same 0x37 is a Lugdunum callback, dialled at once.
+	ASSERT_FALSE(ShouldAnswerWakeWithKeepalive(true, 6204633, false));
+	// Without an active wake keepalive every 0x37 is dialled.
+	ASSERT_FALSE(ShouldAnswerWakeWithKeepalive(false, 0, true));
+}
+
 TEST(NatServerHolePunch, AForeignWakeWaitsToBeDialledAndIsNeverHandedBack)
 {
 	// Requester ID 0 on an extension server is a cross-server request: no 0x61 follows, and the

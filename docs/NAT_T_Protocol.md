@@ -365,8 +365,7 @@ without `ENABLE_UTP`, since every rendezvous ends in a uTP dial:
   link) to the server's IP at TCP port + 4, plain, or obfuscated to its obfuscation UDP port on an
   extension server (see below), only to a server that sets `0x20000` (`SRV_TCPFLG_LOWID_HOLEPUNCH`)
   or runs the extension with us, and only while we are LowID and `thePrefs::GetEffectiveUDPPort()`
-  is nonzero
-  (`NatServerHolePunch::ShouldSendKeepalive()`)
+  is nonzero (`NatServerHolePunch::ShouldSendKeepalive()`)
   -- ed2k-server refuses a HighID target (`FAIL_TARGET_IS_HIGHID`), and a disabled UDP port has
   no socket to send from;
 - keepalive proof: ed2k-server sends a session token, `0xAC` (`ST_NATT_TOKEN`, 16 bytes), in
@@ -504,7 +503,11 @@ ed2k-server and eNode-go send.
   `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) that follows (30 bytes, with `peer_crypt`) decides who dials,
   as above. A `0x37` can also come from a Lugdunum `0xA6` (`OP_NAT_CALLBACKREQUEST`), which no
   `0x61` follows: if none names the requester within 5 s (the server waits 3 s, then resends at
-  +1.2 s and +3 s), aMule dials the Lugdunum way, as it would on any Lugdunum server. Any `0x61` that
+  +1.2 s and +3 s), aMule dials the Lugdunum way, as it would on any Lugdunum server. Only a server
+  that sets `0x20000` (`SRV_TCPFLG_LOWID_HOLEPUNCH`) runs `0x60` (`OP_LOWID_HOLEPUNCH_REQUEST`), so
+  on any other server, eNode-go included, a `0x37` (`OP_NAT_CALLBACKREQUESTED`) with a requester ID
+  is a Lugdunum callback and is dialled at once
+  (`NatServerHolePunch::ShouldAnswerWakeWithKeepalive()`). Any `0x61` that
   names the requester answers the wake, even one the action limit or the duplicate window keeps us
   from acting on. At most 16 wakes wait at once (`NatServerHolePunch::PendingWakeSet`). A second
   wake for a requester whose wake still waits sends the `0x9F` burst again, since the `0x9F`
