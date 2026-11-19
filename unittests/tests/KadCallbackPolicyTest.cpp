@@ -214,3 +214,75 @@ TEST(KadCallbackPolicy, AWaitCountsOnce)
 	ASSERT_EQUALS(1, NextKey(waits, 1000 + MaxWait, files)); // Its 5 minutes are up.
 	ASSERT_EQUALS(1, files.waited);
 }
+
+namespace
+{
+// Keywords in list order, each due or not, and whose publish starts or not.
+struct SFakeKeywords
+{
+	struct SKeyword
+	{
+		int key;
+		bool due;
+		bool starts;
+	};
+	std::vector<SKeyword> list;
+	size_t cursor = 0;
+	int started = 0;
+
+	SKeyword *Next()
+	{
+		if (list.empty()) {
+			return nullptr;
+		}
+		SKeyword *keyword = &list[cursor];
+		cursor = (cursor + 1) % list.size();
+		return keyword;
+	}
+	static bool Due(const SKeyword &keyword, uint32_t) { return keyword.due; }
+	bool Start(const SKeyword &keyword, uint32_t)
+	{
+		started += keyword.starts ? 1 : 0;
+		return keyword.starts;
+	}
+};
+
+int NextKeyword(SFakeKeywords &keywords, size_t maxChecks = 100)
+{
+	const SFakeKeywords::SKeyword *keyword = Kademlia::NextKeywordPublish(1000, maxChecks, keywords);
+	return keyword ? keyword->key : 0;
+}
+} // namespace
+
+TEST(KadCallbackPolicy, AKeywordPublishPassesOverKeywordsNotDue)
+{
+	SFakeKeywords keywords;
+	keywords.list = { { 1, false, true }, { 2, false, true }, { 3, true, true } };
+	ASSERT_EQUALS(3, NextKeyword(keywords));
+}
+
+// A lookup for it is running, its nodes reported high load, or it has no complete files.
+TEST(KadCallbackPolicy, AKeywordPublishPassesOverDueKeywordsThatCannotStart)
+{
+	SFakeKeywords keywords;
+	keywords.list = { { 1, true, false }, { 2, true, true } };
+	ASSERT_EQUALS(2, NextKeyword(keywords));
+}
+
+TEST(KadCallbackPolicy, AKeywordPublishStartsOnePerTickAndResumesAfterIt)
+{
+	SFakeKeywords keywords;
+	keywords.list = { { 1, true, true }, { 2, true, true }, { 3, false, true } };
+	ASSERT_EQUALS(1, NextKeyword(keywords));
+	ASSERT_EQUALS(1, keywords.started);
+	ASSERT_EQUALS(2, NextKeyword(keywords));
+	ASSERT_EQUALS(2, keywords.started);
+}
+
+TEST(KadCallbackPolicy, AKeywordPublishChecksAtMostMaxChecks)
+{
+	SFakeKeywords keywords;
+	keywords.list = { { 1, false, true }, { 2, false, true }, { 3, true, true } };
+	ASSERT_EQUALS(0, NextKeyword(keywords, 2));
+	ASSERT_EQUALS(3, NextKeyword(keywords, 2)); // The next tick goes on from keyword 3.
+}

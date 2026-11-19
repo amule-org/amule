@@ -62,14 +62,17 @@ class CSearch
 	friend class CSearchManager;
 	bool m_publishMeasured = false;
 	bool m_publishCompleted = false;
-	// A source publish that started from the nodes of the file's last publish.
+	// A source or keyword publish that started from the nodes of the target's last publish.
 	bool m_seeded = false;
+	// Store packets sent. Each gets one answer, and the answers end a publish.
+	uint32_t m_storePackets = 0;
 
 public:
 	const CLookupTrace &GetLookupTrace() const noexcept { return m_lookupTrace; }
 	uint64_t GetLookupStarted() const noexcept { return m_lookupStarted; }
-	// For a finished source publish: counts the nodes that stored our entry, records them on
-	// the file, and keeps the nodes that answered as the next publish's seeds.
+	// For a finished source publish: counts the nodes that stored our entry and records them on
+	// the file. For a finished source or keyword publish: keeps the nodes that answered as the
+	// next publish's seeds.
 	void RecordStoreAcknowledgements() const;
 	// Writes kadseeds.dat if the seeds changed since the last save.
 	static void SavePublishSeeds();
@@ -182,9 +185,10 @@ private:
 		const CUInt128 &answer, TagPtrList *info, uint32_t fromIP, uint16_t fromPort);
 	void ProcessResultNotes(const CUInt128 &answer, TagPtrList *info);
 	void JumpStart();
-	// Adds the routing-table contacts and the file's seeds to m_possible. Returns the seeds'
+	// Adds the routing-table contacts and the target's seeds to m_possible. Returns the seeds'
 	// distances, which Go() asks at once.
 	std::vector<CUInt128> AddPublishSeeds();
+	uint32_t StoreTotal() const noexcept;
 	bool StoreBudgetAllows(CPerIPBudget &budget, const CContact &node, uint64_t packets);
 	void KeepPublishSeeds(uint64_t acknowledged) const;
 	void SendFindValue(CContact *contact, bool reaskMore = false);

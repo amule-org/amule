@@ -103,7 +103,7 @@ static_assert(
 namespace
 {
 // Fewer acknowledgements than this from a seeded publish mean its seeds have drifted, so the
-// file's next publish is a full lookup.
+// target's next publish is a full lookup.
 constexpr uint64_t MinSeededAcks = 8;
 
 bool s_publishSeedsChanged = false;
@@ -273,7 +273,7 @@ CSearch::~CSearch()
 void CSearch::Go()
 {
 	std::vector<CUInt128> seeds;
-	if (m_type == STOREFILE && m_possible.empty()) {
+	if ((m_type == STOREFILE || m_type == STOREKEYWORD) && m_possible.empty()) {
 		seeds = AddPublishSeeds();
 	}
 
@@ -314,6 +314,11 @@ void CSearch::Go()
 			}
 		}
 	}
+}
+
+uint32_t CSearch::StoreTotal() const noexcept
+{
+	return m_type == STOREKEYWORD ? SEARCHSTOREKEYWORD_TOTAL : SEARCHSTOREFILE_TOTAL;
 }
 
 std::vector<CUInt128> CSearch::AddPublishSeeds()
@@ -505,7 +510,7 @@ void CSearch::JumpStart()
 		}
 	}
 
-	const uint32_t storesBefore = m_totalRequestAnswers;
+	const uint32_t storesBefore = m_storePackets;
 	while (!m_possible.empty()) {
 		CContact *c = m_possible.begin()->second;
 
@@ -518,8 +523,8 @@ void CSearch::JumpStart()
 			// A seeded publish that just sent enough stores gives their acknowledgements a
 			// full stall period before asking a node past its seeds. Acknowledgements do not
 			// count as responses, so without this the next tick would ask it.
-			if (m_seeded && m_totalRequestAnswers > storesBefore &&
-				m_totalRequestAnswers > SEARCHSTOREFILE_TOTAL) {
+			if (m_seeded && m_storePackets > storesBefore &&
+				AnsweringNodes(m_storePackets, m_fileIDs.size()) > StoreTotal()) {
 				m_lastResponse = time(nullptr);
 #ifdef ENABLE_KAD_NODE_PROTECTION
 				m_lastResponseTick = ::GetTickCount64();
@@ -727,6 +732,11 @@ void CSearch::ProcessResponse(
 
 void CSearch::RecordStoreAcknowledgements() const
 {
+	if (m_type == STOREKEYWORD) {
+		// Keyword answers, counted per node, are what end the lookup.
+		KeepPublishSeeds(GetAnswers());
+		return;
+	}
 	if (m_type != STOREFILE) {
 		return;
 	}
@@ -1103,6 +1113,7 @@ void CSearch::StorePacket()
 						from->GetIPAddress(), ::GetTickCount64());
 				}
 			}
+			m_storePackets++;
 			m_totalRequestAnswers++;
 			deleteTagPtrListEntries(&taglist);
 		} else {
@@ -1178,6 +1189,7 @@ void CSearch::StorePacket()
 			} else {
 				wxFAIL;
 			}
+			m_storePackets++;
 		}
 		m_totalRequestAnswers++;
 		break;

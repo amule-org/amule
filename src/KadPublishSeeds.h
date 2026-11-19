@@ -36,8 +36,8 @@
 
 class CFileDataIO;
 
-//! kadseeds.dat: the nodes near each file that answered its last Kad source publish. The next
-//! publish asks them first, which saves most of the lookup.
+//! kadseeds.dat: the nodes near each file or keyword that answered its last Kad publish. The
+//! next publish asks them first, which saves most of the lookup.
 namespace KadPublishSeeds
 {
 struct Seed
@@ -61,8 +61,9 @@ using Seeds = std::map<Kademlia::CUInt128, Entry>;
 
 constexpr const char *FileName = "kadseeds.dat";
 constexpr size_t MaxSeeds = 20;
-//! Most seeds still answer after a day; older sets cost more requests than they save.
-constexpr uint32_t MaxAge = HR2S(24);
+//! Keywords publish once a day, so their seeds are a day old when used again. Older sets have lost
+//! more nodes, and a lookup from them misses more of the closest nodes than a full lookup.
+constexpr uint32_t MaxAge = HR2S(30);
 
 inline bool IsCurrent(const Entry &entry, uint32_t now)
 {

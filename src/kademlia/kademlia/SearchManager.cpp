@@ -429,6 +429,7 @@ void CSearchManager::JumpStart()
 		}
 		case CSearch::STOREKEYWORD: {
 			if (current_it->second->m_created + SEARCHSTOREKEYWORD_LIFETIME < now) {
+				current_it->second->m_publishCompleted = true;
 				DeleteSearch(current_it);
 			} else if (current_it->second->GetAnswers() > SEARCHSTOREKEYWORD_TOTAL ||
 				   current_it->second->m_created + SEARCHSTOREKEYWORD_LIFETIME - SEC(20) <
