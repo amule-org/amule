@@ -1818,6 +1818,11 @@ msgstr "Вивантажено"
 msgid "Downloaded"
 msgstr "Звантажені"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "З'єднання"
+
 #: src/ClientsWnd.cpp
 #, fuzzy
 msgid "Downloading from"
@@ -2154,6 +2159,67 @@ msgstr "З'єднується через сервер"
 #, fuzzy, c-format
 msgid "Connecting via %s"
 msgstr "З'єднується через Kad"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "Теки"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "Вхідна тека"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "Назва сервера"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "Успішно оновлено %s"
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "Перелік серверів eD2k (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "Трафік з сервером (пакети): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "Успішно оновлено %s"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "Успішно оновлено %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "Проксі"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7216,10 +7282,6 @@ msgstr "Зовнішній вигляд"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "З'єднання"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

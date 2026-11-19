@@ -1803,6 +1803,11 @@ msgstr "Gönderilen"
 msgid "Downloaded"
 msgstr "İndirildi"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Bağlantı"
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr "Şundan indiriliyor:"
@@ -2131,6 +2136,67 @@ msgstr "Sunucu yoluyla bağlanıyor"
 #, fuzzy, c-format
 msgid "Connecting via %s"
 msgstr "Kad yoluyla bağlanıyor"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "Dizinler"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "Gelen Dosyalar Dizini"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "Sunucu ismi"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "%s başarıyla güncellendi."
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "eD2k sunucu listesi (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "Sunucu Ek Yükü (Paket):%s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "%s başarıyla güncellendi."
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "%s başarıyla güncellendi."
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "Vekil sunucu"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7150,10 +7216,6 @@ msgstr "Arayüz"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Bağlantı"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

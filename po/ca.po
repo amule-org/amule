@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-17 22:57+0000\n"
+"PO-Revision-Date: 2026-11-19 11:56+0000\n"
 "Last-Translator: Kisnov <kisnov@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Catalan <https://hosted.weblate.org/projects/amule/amule-application/ca/>\n"
 "Language: ca\n"
@@ -1806,6 +1806,11 @@ msgstr "Transferit"
 msgid "Downloaded"
 msgstr "Baixat"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Connexió"
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr "S'està baixant de"
@@ -2037,9 +2042,9 @@ msgid "Remote Queue Full"
 msgstr "Cua remota plena"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Waiting to ask (%s)"
-msgstr "Pujades en espera: %s"
+msgstr "Esperant per demanar (%s)"
 
 #: src/DataToText.cpp
 msgid "Old MLDonkey"
@@ -2128,6 +2133,58 @@ msgstr "S'està connectant via %s, per una ruta no comprovada"
 #, c-format
 msgid "Connecting via %s"
 msgstr "S'està connectant via %s"
+
+#: src/DataToText.cpp
+msgid "Direct"
+msgstr "Directa"
+
+#: src/DataToText.cpp
+msgid "Incoming"
+msgstr "Entrant"
+
+#: src/DataToText.cpp
+msgid "Server callback"
+msgstr "Retrotrucada del servidor"
+
+#: src/DataToText.cpp
+msgid "Kad buddy callback"
+msgstr "Retrotrucada de l'amic de Kad"
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr "Retrotrucada UDP directa"
+
+#: src/DataToText.cpp
+msgid "Callback by the source's server"
+msgstr "Retrotrucada del servidor de la font"
+
+#: src/DataToText.cpp
+msgid "Server hole punch"
+msgstr "Perforació de NAT amb servidor"
+
+#: src/DataToText.cpp
+msgid "Lugdunum callback"
+msgstr "Retrotrucada de Lugdunum"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr "Retrotrucada del servidor contestada"
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr "Retrotrucada de l'amic de Kad contestada"
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr "Retrotrucada UDP directa contestada"
+
+#: src/DataToText.cpp
+msgid "Answered Lugdunum callback"
+msgstr "Retrotrucada de Lugdunum contestada"
+
+#: src/DataToText.cpp
+msgid "proxy"
+msgstr "servidor intermediari"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7120,10 +7177,6 @@ msgstr "Interfície"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr "Aparença, títol de la finestra i com es dibuixen les llistes de transferències."
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Connexió"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

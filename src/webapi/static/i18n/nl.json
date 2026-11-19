@@ -1075,5 +1075,21 @@
   "downloads_peer_route_kad_buddy": "de Kad-buddy",
   "downloads_peer_route_foreign_nat_callback": "de eigen server van de bron",
   "downloads_peer_route_server_hole_punch": "een serverperforator",
-  "downloads_peer_route_lugdunum_callback": "een Lugdunum-terugroep"
+  "downloads_peer_route_lugdunum_callback": "een Lugdunum-terugroep",
+  "downloads_peer_state_waiting_to_ask": "Wachten om te vragen ({time})",
+  "downloads_peer_conn_server_callback": "Server-terugroep",
+  "downloads_peer_conn_kad_buddy_callback": "Kad-buddy-terugroep",
+  "downloads_peer_conn_direct_udp_callback": "Directe UDP-terugroep",
+  "downloads_peer_conn_foreign_nat_callback": "Terugroep door de bronserver",
+  "downloads_peer_conn_server_hole_punch": "Serverperforator",
+  "downloads_peer_conn_lugdunum_callback": "Lugdunum-terugroep",
+  "downloads_peer_conn_answered_server_callback": "Beantwoorde server-terugroep",
+  "downloads_peer_conn_answered_kad_buddy_callback": "Beantwoorde Kad-buddy-terugroep",
+  "downloads_peer_conn_answered_direct_udp_callback": "Beantwoorde directe UDP-terugroep",
+  "downloads_peer_conn_answered_lugdunum_callback": "Beantwoorde Lugdunum-terugroep",
+  "downloads_peer_conn_proxy": "proxy",
+  "downloads_peer_col_connection": "Verbinding",
+  "client_detail_connection": "Verbinding",
+  "downloads_peer_conn_dial": "Direct",
+  "downloads_peer_conn_inbound": "Binnenkomend"
 }

@@ -1817,6 +1817,11 @@ msgstr "Lähetetty"
 msgid "Downloaded"
 msgstr "Ladattu"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Yhteys"
+
 #: src/ClientsWnd.cpp
 #, fuzzy
 msgid "Downloading from"
@@ -2148,6 +2153,67 @@ msgstr "Yhdistetään serverin kautta"
 #, fuzzy, c-format
 msgid "Connecting via %s"
 msgstr "Yhdistetään Kadilla"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "Kansiot"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "Saapuvien kansio"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "Palvelimen nimi"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "Tiedoston %s päivitys onnistui"
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "eD2k-palvelinlista (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "Palvelimen otsikkoja (Paketteja): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "Tiedoston %s päivitys onnistui"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "Tiedoston %s päivitys onnistui"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "Välityspalvelin"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7183,10 +7249,6 @@ msgstr "Käyttöliittymä"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Yhteys"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

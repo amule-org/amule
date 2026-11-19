@@ -1808,6 +1808,11 @@ msgstr "تم رفعه"
 msgid "Downloaded"
 msgstr "تم التحميل"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "اتصال"
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr "جارٍ التحميل من"
@@ -2136,6 +2141,67 @@ msgstr "اتصال من خلال خادم"
 #, fuzzy, c-format
 msgid "Connecting via %s"
 msgstr "جارٍ الاتصال عبر Kad"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "مجلدات"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "مجلد الملفات الواردة"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "اسم الخادم"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "تم تحديث %s بنجاح"
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "قائمة خوادم eD2k (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "نفقات الخادم الإضافية (الحزم): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "تم تحديث %s بنجاح"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "تم تحديث %s بنجاح"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "الخادم الوكيل"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7140,10 +7206,6 @@ msgstr "الواجهة"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "اتصال"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

@@ -1806,6 +1806,11 @@ msgstr "I ngarkuar"
 msgid "Downloaded"
 msgstr "I shkarkuar"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Lidhje"
+
 #: src/ClientsWnd.cpp
 #, fuzzy
 msgid "Downloading from"
@@ -2137,6 +2142,67 @@ msgstr "Lidhje nepermjet serverit"
 #, fuzzy, c-format
 msgid "Connecting via %s"
 msgstr "Lidhje nepermjet Kad"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "Direktorite"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "Direktoria e Hyrjeve"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "Emri i Serverit"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "%s u përditësua me sukses"
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "Lista e serverëve eD2k (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "Overhead-i i Serverit (Paketa): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "%s u përditësua me sukses"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "%s u përditësua me sukses"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "Proksi"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7178,10 +7244,6 @@ msgstr "Ndërfaqja"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Lidhje"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

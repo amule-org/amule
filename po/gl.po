@@ -1822,6 +1822,11 @@ msgstr "Enviado"
 msgid "Downloaded"
 msgstr "Descargado"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Conexión"
+
 #: src/ClientsWnd.cpp
 #, fuzzy
 msgid "Downloading from"
@@ -2153,6 +2158,67 @@ msgstr "Conectando vía servidor"
 #, fuzzy, c-format
 msgid "Connecting via %s"
 msgstr "Conectando vía Kad"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "Cartafoles"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "Cartafol de descargas"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "Nome do servidor"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "%s actualizado con éxito"
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "Lista de servidores eD2k (server.met)"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "Sobrecarga nos servidores (Paquetes): %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "%s actualizado con éxito"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "%s actualizado con éxito"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "Proxy"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7193,10 +7259,6 @@ msgstr "Interface"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr ""
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Conexión"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

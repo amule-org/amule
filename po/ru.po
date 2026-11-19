@@ -1824,6 +1824,11 @@ msgstr "Отдано"
 msgid "Downloaded"
 msgstr "Загружено"
 
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Соединение"
+
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
 msgstr "С кого загружается"
@@ -2148,6 +2153,69 @@ msgstr "Соединение через %s, по непроверенному м
 #, c-format
 msgid "Connecting via %s"
 msgstr "Соединение через %s"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct"
+msgstr "Каталоги"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Incoming"
+msgstr "Каталог загрузок"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server callback"
+msgstr "прямой обратный вызов"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Kad buddy callback"
+msgstr "обратный вызов Lugdunum"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Direct UDP callback"
+msgstr "прямой обратный вызов"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Callback by the source's server"
+msgstr "собственный сервер источника"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Server hole punch"
+msgstr "прокол через сервер"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Lugdunum callback"
+msgstr "обратный вызов Lugdunum"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr ""
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered direct UDP callback"
+msgstr "прямой обратный вызов"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "Answered Lugdunum callback"
+msgstr "обратный вызов Lugdunum"
+
+#: src/DataToText.cpp
+#, fuzzy
+msgid "proxy"
+msgstr "Прокси"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -7172,10 +7240,6 @@ msgstr "Интерфейс"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr "Внешний вид, заголовок окна и отрисовка списков передач."
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Соединение"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

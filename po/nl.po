@@ -13,7 +13,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-17 22:57+0000\n"
+"PO-Revision-Date: 2026-11-19 11:57+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/amule-application/nl/>\n"
 "Language: nl\n"
@@ -1756,7 +1756,7 @@ msgstr "Veilige identiteit"
 
 #: src/ClientNameCellDrawing.cpp src/muuli_wdr.cpp
 msgid "Obfuscation"
-msgstr "Verduistering"
+msgstr "Obfuscatie"
 
 #. TRANSLATORS: the upload credit a peer has earned by sending us data.
 #: src/ClientNameCellDrawing.cpp
@@ -1803,6 +1803,11 @@ msgstr "Geüpload"
 #: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp
 msgid "Downloaded"
 msgstr "Gedownload"
+
+#: src/ClientsListCtrl.cpp src/PrefsUnifiedDlg.cpp
+#: src/SharedFilePeersListCtrl.cpp src/SourceListCtrl.cpp src/Statistics.cpp
+msgid "Connection"
+msgstr "Verbinding"
 
 #: src/ClientsWnd.cpp
 msgid "Downloading from"
@@ -2035,9 +2040,9 @@ msgid "Remote Queue Full"
 msgstr "Externe Wachtrij Vol"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Waiting to ask (%s)"
-msgstr "Wachtende uploads: %s"
+msgstr "Wachtende vragen (%s)"
 
 #: src/DataToText.cpp
 msgid "Old MLDonkey"
@@ -2126,6 +2131,58 @@ msgstr "Verbinden via %s op een onbewezen route"
 #, c-format
 msgid "Connecting via %s"
 msgstr "Verbinding via %s"
+
+#: src/DataToText.cpp
+msgid "Direct"
+msgstr "Direct"
+
+#: src/DataToText.cpp
+msgid "Incoming"
+msgstr "Binnenkomend"
+
+#: src/DataToText.cpp
+msgid "Server callback"
+msgstr "Server-terugroep"
+
+#: src/DataToText.cpp
+msgid "Kad buddy callback"
+msgstr "Kad-buddy-terugroep"
+
+#: src/DataToText.cpp
+msgid "Direct UDP callback"
+msgstr "Directe UDP-terugroep"
+
+#: src/DataToText.cpp
+msgid "Callback by the source's server"
+msgstr "Terugroep door de bronserver"
+
+#: src/DataToText.cpp
+msgid "Server hole punch"
+msgstr "Serverperforator"
+
+#: src/DataToText.cpp
+msgid "Lugdunum callback"
+msgstr "Lugdunum-terugroep"
+
+#: src/DataToText.cpp
+msgid "Answered server callback"
+msgstr "Beantwoorde server-terugroep"
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy callback"
+msgstr "Beantwoorde Kad-buddy-terugroep"
+
+#: src/DataToText.cpp
+msgid "Answered direct UDP callback"
+msgstr "Beantwoorde directe UDP-terugroep"
+
+#: src/DataToText.cpp
+msgid "Answered Lugdunum callback"
+msgstr "Beantwoorde Lugdunum-terugroep"
+
+#: src/DataToText.cpp
+msgid "proxy"
+msgstr "proxy"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -3497,7 +3554,7 @@ msgstr "Al om een ander bestand gevraagd"
 
 #: src/GenericClientListCtrl.cpp
 msgid "Waiting for upload slot"
-msgstr "Wachtende op upload-slot"
+msgstr "Wachtend op upload-slot"
 
 #: src/GenericClientListCtrl.cpp
 #, c-format
@@ -7120,10 +7177,6 @@ msgstr "Interface"
 #: src/PrefsUnifiedDlg.cpp
 msgid "Appearance, the window title and how the transfer lists are drawn."
 msgstr "Uiterlijk, de venstertitel en hoe overdrachtslijsten worden getoond."
-
-#: src/PrefsUnifiedDlg.cpp src/Statistics.cpp
-msgid "Connection"
-msgstr "Verbinding"
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Line capacity, bandwidth limits, ports and the networks aMule joins."

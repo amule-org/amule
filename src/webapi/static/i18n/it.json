@@ -1085,5 +1085,6 @@
   "prefs_field_connection_download_capacity_kibibytes_per_second": "Capacità di download (KiB/s)",
   "prefs_field_connection_upload_capacity_kibibytes_per_second": "Capacità di upload (KiB/s)",
   "prefs_field_advanced_kad_max_served_buddies": "Nodi Kad dietro firewall serviti come amico",
-  "prefs_field_advanced_kad_max_served_buddies_help": "Per quanti nodi Kad dietro firewall questo nodo inoltra le callback. Ognuno occupa una connessione, quindi viene servito al massimo un decimo del limite di connessioni."
+  "prefs_field_advanced_kad_max_served_buddies_help": "Per quanti nodi Kad dietro firewall questo nodo inoltra le callback. Ognuno occupa una connessione, quindi viene servito al massimo un decimo del limite di connessioni.",
+  "downloads_peer_state_waiting_to_ask": "In attesa di richiesta ({time})"
 }
