@@ -38,6 +38,7 @@
 #include "Constants.h"    // Needed for ESourceFrom
 #include "GetTickCount.h" // Needed for GetTickCount64
 #include "MD4Hash.h"
+#include "UserHash.h" // Needed for IsBadUserHash
 #include "ChatSessionStore.h"
 #include <common/StringFunctions.h>
 #include <common/Macros.h>
@@ -325,7 +326,8 @@ public:
 	void SetServerPort(uint16 nPort) { m_nServerPort = nPort; }
 	const CMD4Hash &GetUserHash() const { return m_UserHash; }
 	void SetUserHash(const CMD4Hash &userhash);
-	void ValidateHash() { m_HasValidHash = !m_UserHash.IsEmpty(); }
+	// Many peers send the eMule marker with no other bytes: a hash shared by all of them.
+	void ValidateHash() { m_HasValidHash = !IsBadUserHash(m_UserHash); }
 	bool HasValidHash() const { return m_HasValidHash; }
 	CChatPeer GetChatPeer() const { return m_chatPeer.IsEmpty() ? CChatPeer(GetUserHash()) : m_chatPeer; }
 	void BindChatPeer(const CChatPeer &peer) { m_chatPeer = peer; }
