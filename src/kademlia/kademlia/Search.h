@@ -174,7 +174,9 @@ public:
 		// the IP of a given NodeID
 		NODESPECIAL,
 		// find new unknown IPs for a UDP firewallcheck
-		NODEFWCHECKUDP
+		NODEFWCHECKUDP,
+		// store our buddy pointer at the NOT of our source ID (#2513)
+		STOREPOINTER
 	};
 
 	CSearch();

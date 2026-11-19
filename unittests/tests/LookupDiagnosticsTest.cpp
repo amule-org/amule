@@ -152,7 +152,8 @@ TEST(LookupDiagnostics, MapsEveryCoreSearchType)
 		{ CSearch::FINDBUDDY, LookupType::FindBuddy },
 		{ CSearch::FINDSOURCE, LookupType::FindSource },
 		{ CSearch::NODESPECIAL, LookupType::SpecialNode },
-		{ CSearch::NODEFWCHECKUDP, LookupType::UDPFirewallCheck } };
+		{ CSearch::NODEFWCHECKUDP, LookupType::UDPFirewallCheck },
+		{ CSearch::STOREPOINTER, LookupType::PublishPointer } };
 	for (const auto &type : types) {
 		ASSERT_TRUE(LookupTypeFromSearch(type.first) == type.second);
 	}

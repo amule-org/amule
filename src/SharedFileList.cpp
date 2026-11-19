@@ -2062,6 +2062,43 @@ CKnownFile *CSharedFileList::NextKadSourcePublish(uint32 now)
 		m_kadSourceWaits, now, std::min<size_t>(100, GetCount()), files);
 }
 
+bool CSharedFileList::PublishKadPointer(uint32 now)
+{
+	const SKadSourceRoute route = CurrentKadSourceRoute();
+	if (!IsKadPointerDue(thePrefs::IsKadBuddyPointerEnabled(),
+		    route.mode,
+		    route.buddyIP,
+		    route.buddyPort,
+		    m_kadPointer,
+		    now)) {
+		return false;
+	}
+	uint8_t sourceID[16];
+	uint8_t key[16];
+	Kademlia::CKademlia::GetPrefs()->GetClientHash().ToByteArray(sourceID);
+	KadPointerKey(sourceID, key);
+	const Kademlia::CUInt128 target(key);
+	// A lookup still running for an older buddy keeps the slot for the files; it is tried again.
+	const bool started = Kademlia::CSearchManager::PrepareLookup(
+				     Kademlia::CSearch::STOREPOINTER, true, target) != nullptr;
+	if (!started) {
+		return false;
+	}
+	if (theLogger.IsEnabled(logKadPublish)) {
+		Kademlia::CPublishMetrics::Instance().PointerStart();
+	}
+	AddDebugLogLineN(logKadPublish,
+		CFormat("Kad buddy pointer publish started: target=%s buddy=%s") % target.ToHexString() %
+			Uint32_16toStringIP_Port(route.buddyIP, route.buddyPort));
+	m_kadPointer = KadPointerStarted(route.buddyIP, route.buddyPort, now, KADEMLIAREPUBLISHTIMES);
+	return true;
+}
+
+void CSharedFileList::KadPointerFinished(uint32 acknowledged)
+{
+	::KadPointerFinished(m_kadPointer, acknowledged, static_cast<uint32>(time(nullptr)));
+}
+
 void CSharedFileList::Publish()
 {
 	auto &metrics = Kademlia::CPublishMetrics::Instance();
@@ -2087,7 +2124,9 @@ void CSharedFileList::Publish()
 				"req_ips_ge8=%zu "
 				"req_ips_gt10=%zu req_ips_ge8_contacts=%llu max_pub_per_ip_60s=%llu "
 				"pub_ips_ge2=%zu pub_ips_gt2=%zu omitted_rate_samples=%llu "
-				"skipped_req=%llu skipped_src=%llu skipped_key=%llu deferred_starts=%llu") %
+				"skipped_req=%llu skipped_src=%llu skipped_key=%llu deferred_starts=%llu "
+				"pointer_starts=%llu pointer_queued=%llu pointer_acknowledged=%llu "
+				"pointer_zero_ack=%llu bpv_marked=%llu bpv_unkeyed=%llu") %
 				metrics.attempts % metrics.startFailures % metrics.starts %
 				metrics.seededStarts % metrics.queued % metrics.acknowledged %
 				metrics.finished % metrics.zeroAcknowledgements % metrics.cancelled %
@@ -2097,7 +2136,10 @@ void CSharedFileList::Publish()
 				publishIPs[1].size() %
 				(metrics.lookupRequests.omitted + metrics.publishRequests.omitted) %
 				budgets.lookups.skipped % budgets.sourceStores.skipped %
-				budgets.keywordStores.skipped % budgets.deferredStarts);
+				budgets.keywordStores.skipped % budgets.deferredStarts %
+				metrics.pointerStarts % metrics.pointerQueued % metrics.pointerAcknowledged %
+				metrics.pointerZeroAcknowledgements % metrics.pointerMarked %
+				metrics.pointerUnkeyed);
 	}
 
 	// Variables to save cpu.
@@ -2148,6 +2190,10 @@ void CSharedFileList::Publish()
 		}
 
 		if (Kademlia::CKademlia::GetTotalStoreSrc() < KADEMLIATOTALSTORESRC) {
+			// The pointer goes ahead of the files, in the same slot and under the same limits.
+			if (tNow >= m_lastPublishKadSrc && PublishKadPointer(tNow)) {
+				m_lastPublishKadSrc = KADEMLIAPUBLISHTIME + tNow;
+			}
 			if (tNow >= m_lastPublishKadSrc) {
 				CKnownFile *pCurKnownFile = NextKadSourcePublish(tNow);
 				if (pCurKnownFile) {
