@@ -38,7 +38,7 @@
 #include "Timer.h"            // Needed for CTimer
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "NatServerHolePunch.h"   // Needed for the 0x61 policy state
-#include "LugdunumNatTraversal.h" // Needed for ForwardedCallback in the extension's wakes
+#include "LugdunumNatTraversal.h" // Needed for ForwardedCallback in the pending wakes
 #endif
 
 #include <map> // Needed for std::map
@@ -159,7 +159,7 @@ public:
 	//! We announced the wake keepalive at login and this server waits for it, having also
 	//! answered our Lugdunum opt-in, whose 0x37 it wakes a target with.
 	bool IsWakeKeepaliveActive();
-	//! 0x37 wakes on an extension server, each waiting for the 0x61 that names its requester.
+	//! 0x37 wakes answered with our keepalive, each waiting for the 0x61 that names its requester.
 	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> &PendingWakes()
 	{
 		return m_pendingWakes;
@@ -174,7 +174,7 @@ public:
 	//! Called from every CamuleApp::OnCoreTimer tick, which the 0.5 s burst needs.
 	void ProcessPunchesAndWakes();
 	//! Starts the punch schedule for one peer and sends what is already due: the punch to the
-	//! endpoint a 0x61, a cross-server 0xA7 answer or an extension wake named, then its repeats at
+	//! endpoint a 0x61, a cross-server 0xA7 answer or a keepalive wake named, then its repeats at
 	//! 0.5, 1 and 2 s, with the port sweep at 0.5 s. @a peerHash, when the rendezvous vouched for
 	//! one, lets the peer's hello end the schedule.
 	void StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP,

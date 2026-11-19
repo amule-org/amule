@@ -52,8 +52,8 @@ aMule names the server flags after what they do. The servers' own sources use ot
 
 | Value | Field | aMule | ed2k-server | eNode-go |
 | --- | --- | --- | --- | --- |
-| `0x1000` | `CT_SERVER_FLAGS` bit | `SRVCAP_LUGDUNUM_CALLBACK` | `CAPABLE_IPV6` (an old name; the bit is Lugdunum's) | `SrvCapNatTraversal` |
-| `0x1000` | `OP_IDCHANGE` TCP flag | `SRV_TCPFLG_LUGDUNUM_CALLBACK` | none (its comments say `SRVCAP_NATTRAVERSAL`) | `FlagNatCallback` |
+| `0x1000` | `CT_SERVER_FLAGS` bit | `SRVCAP_LUGDUNUM_CALLBACK` | `SRVCAP_NATTRAVERSAL` | `SrvCapNatTraversal` |
+| `0x1000` | `OP_IDCHANGE` TCP flag | `SRV_TCPFLG_LUGDUNUM_CALLBACK` | `SRVCAP_NATTRAVERSAL` | `FlagNatCallback` |
 | `0x20000` | `OP_IDCHANGE` TCP flag | `SRV_TCPFLG_LOWID_HOLEPUNCH` | `SRVFLG_LOWID_HOLEPUNCH` | not set |
 | `0x100000` | `CT_SERVER_FLAGS` bit | `SRVCAP_WAKE_KEEPALIVE` | `SRVFLG_HOLEPUNCH_EXT` | `SrvCapHolePunchExt` |
 | `0x100000` | `OP_IDCHANGE` TCP flag | `SRV_TCPFLG_PUNCH_WAKE` | `SRVFLG_HOLEPUNCH_EXT` | not set |

@@ -673,7 +673,7 @@ private:
 };
 
 // Server punch schedule. Every punch a server path sends (the 0x61, the cross-server 0xA7 answer
-// and the extension wake) goes to the endpoint the server gave at 0, 0.5, 1 and 2 s, the wake's
+// and the keepalive wake) goes to the endpoint the server gave at 0, 0.5, 1 and 2 s, the wake's
 // 0x9F offsets plus one. Lugdunum's CCallbackRendezvous keeps its own 3 s resends on a different
 // server family, so the two never run for one peer.
 constexpr std::array<std::uint64_t, 4> kServerPunchOffsetsMs{ 0, 500, 1'000, 2'000 };
@@ -915,7 +915,7 @@ struct KeepaliveCryptFacts
 	bool keepaliveProof = false;
 };
 
-// An extension server ignores a session's plain 0x9F once it has sent an obfuscated one, so a
+// A wake-keepalive server ignores a session's plain 0x9F once it has sent an obfuscated one, so a
 // 0x9F is obfuscated once the key exists: that also keeps the token off the path. A proof needs
 // neither, and stays plain so no key derived from our address can fail it. An older server reads
 // only plain ones.
@@ -963,9 +963,10 @@ private:
 	std::vector<std::uint64_t> m_dueAt;
 };
 
-// A 0x37 on an extension server may also come from a Lugdunum 0xA6, which no 0x61 follows. The
+// A 0x37 on a server that runs 0x60 may also come from a Lugdunum 0xA6, which no 0x61 follows. The
 // server sends 0x61 within 3 s of the wake (resends at +1.2 s and +3 s); 5 s covers that.
 constexpr std::uint64_t kWakeInfoTimeoutMs = 5'000;
+constexpr std::size_t kMaxPendingWakes = 16;
 
 // Whether a TCP 0x37 is a wake to answer with our 0x9F. Requester ID 0 is a cross-server wake on
 // every wake-keepalive server. Any other ID can be a 0x60 wake only on a server that runs 0x60; on
@@ -975,7 +976,6 @@ inline bool ShouldAnswerWakeWithKeepalive(
 {
 	return wakeKeepaliveActive && (requesterId == 0 || serverAcceptsHolePunchRequest);
 }
-constexpr std::size_t kMaxPendingWakes = 16;
 
 // Wakes waiting for the 0x61 that names their requester; an unanswered one is handed back.
 // Requester ID 0 is a cross-server request: no 0x61 follows, and the target waits to be dialled.

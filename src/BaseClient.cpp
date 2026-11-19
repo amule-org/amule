@@ -2122,7 +2122,7 @@ bool CUpDownClient::TrySendLowIdHolePunchRequest()
 	theApp->serverconnect->SendPacket(packet);
 	theApp->serverconnect->LowIdHolePunchPendingRequests().OnSent(GetUserIDHybrid(), ::GetTickCount64());
 	m_holePunchFallback.OnPunchSent(::GetTickCount64());
-	// On an extension server one 0x9F goes with each 0x60, so the 0x61 carries our current port.
+	// With the wake keepalive one 0x9F goes with each 0x60, so the 0x61 carries our current port.
 	if (theApp->serverconnect->IsWakeKeepaliveActive()) {
 		theApp->serverconnect->TrySendLowIdHolePunchKeepalive();
 	}

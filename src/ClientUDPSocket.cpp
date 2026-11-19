@@ -813,8 +813,8 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 			LugdunumNatTraversal::LogForwardedCallback(
 				logClientUDP, "OP_NAT_CALLBACKREQUESTED_UDP", forwarded);
 #ifdef AMULE_UTP_TRANSPORT
-			// Requester ID 0 means a cross-server wake on an extension server, sent by UDP when
-			// we asked for a callback ourselves just before; anywhere else it is a reverse
+			// Requester ID 0 means a cross-server wake on a wake-keepalive server, sent by UDP
+			// when we asked for a callback ourselves just before; anywhere else it is a reverse
 			// callback. Every other 0xA7 answers our own 0xA6 and is dialled at once.
 			if (forwarded.requesterId == 0 && theApp->serverconnect != nullptr &&
 				theApp->serverconnect->IsWakeKeepaliveActive()) {
@@ -1392,7 +1392,7 @@ bool CClientUDPSocket::AnswerWakeWithKeepalive(const LugdunumNatTraversal::Forwa
 	const LugdunumNatTraversal::CallbackDialTarget target =
 		LugdunumNatTraversal::BuildCallbackDialTarget(callback);
 	ExpectNatTPeer(target.ip, target.udpPort, callback.hasObfuscation ? &callback.userHash : nullptr);
-	// Punch now and refresh our port; the dial waits for the 0x61's role, as on any extension
+	// Punch now and refresh our port; the dial waits for the 0x61's role, as on any wake-keepalive
 	// server, and no reverse callback is needed when the 0x61 gives both sides the endpoints.
 	connect->PendingWakes().Add(callback.requesterId, callback, now);
 	if (callback.requesterId == 0) {

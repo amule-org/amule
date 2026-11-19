@@ -377,7 +377,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				}
 				if (cur_server->WaitsForWakeKeepalive()) {
 					AddDebugLogLineN(logServer,
-						"OP_IDCHANGE: server waits for a woken target's keepalive");
+						"OP_IDCHANGE: server waits for our wake keepalive");
 				}
 #endif
 				// copy TCP flags into the server in the server list
@@ -620,6 +620,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				uint32 nTags = data.ReadUInt32();
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 				bool nattKeepaliveChanged = false;
+				const bool waitedForWakeKeepalive = cur_server->WaitsForWakeKeepalive();
 #endif
 #ifdef ENABLE_IPV6
 				// A server that omits the tag has no verdict for us; the previous answer must
@@ -680,17 +681,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					} else if (tag.GetNameID() == ST_UDPFLAGS && tag.IsInt()) {
 						// cur_server is copied before the login, and a status
 						// answer updates only the list entry.
-						const bool waitedBefore = cur_server->WaitsForWakeKeepalive();
 						const uint32 udpFlags = static_cast<uint32>(tag.GetInt());
 						cur_server->SetUDPFlags(udpFlags);
 						if (update) {
 							update->SetUDPFlags(udpFlags);
-						}
-						if (!waitedBefore && cur_server->WaitsForWakeKeepalive()) {
-							AddDebugLogLineN(logServer,
-								"OP_SERVERIDENT: server waits for a woken "
-								"target's "
-								"keepalive");
 						}
 					}
 #endif
@@ -700,6 +694,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				AdvertisedIPv6ForPeers();
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+				if (!waitedForWakeKeepalive && cur_server->WaitsForWakeKeepalive()) {
+					AddDebugLogLineN(logServer,
+						"OP_SERVERIDENT: server waits for our wake keepalive");
+				}
 				// The login keepalive went out before this ident. Sent after the loop, as the
 				// proof tag may follow the token.
 				if (nattKeepaliveChanged && m_nattSessionToken && m_nattKeepaliveProof) {

@@ -183,7 +183,7 @@ struct ServerWayKeyCandidates
 	std::size_t count = 0;
 };
 
-// The challenge authenticates only the status-ping reply. A callback or extension wake uses the
+// The challenge authenticates only the status-ping reply. A callback or keepalive wake uses the
 // established server key, so try the challenge first and the distinct established key second.
 inline ServerWayKeyCandidates ServerWayKeys(
 	bool cryptPingReplyPending, std::uint32_t challenge, std::uint32_t serverKeyUdp)
