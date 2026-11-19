@@ -186,6 +186,11 @@ TEST(NatServerHolePunch, SendsKeepaliveOnlyWhileConnectedToACapableServerWithThe
 	notCapable.serverAnnouncesHolePunch = false;
 	ASSERT_FALSE(ShouldSendKeepalive(notCapable));
 
+	// eNode-go: no LowID hole punch, but the extension waits for our 0x9F after a wake.
+	KeepaliveFacts extensionOnly = notCapable;
+	extensionOnly.extensionActive = true;
+	ASSERT_TRUE(ShouldSendKeepalive(extensionOnly));
+
 	// ed2k-server refuses a HighID target (FAIL_TARGET_IS_HIGHID): a HighID client gains
 	// nothing from sending the keepalive.
 	KeepaliveFacts highId = facts;
@@ -586,10 +591,18 @@ TEST(NatServerHolePunch, AServerTakesCrossServerRequestsOnlyWithItsFlagAndAKey)
 
 TEST(NatServerHolePunch, OnlyAServerWithTheExtensionFlagOffersTheExtension)
 {
-	ASSERT_TRUE(ServerOffersHolePunchExtension(0x100000));
-	ASSERT_TRUE(ServerOffersHolePunchExtension(0x100000 | 0x20000 | 0x1000));
-	ASSERT_FALSE(ServerOffersHolePunchExtension(0x20000 | 0x1000));
-	ASSERT_FALSE(ServerOffersHolePunchExtension(0));
+	ASSERT_TRUE(ServerOffersHolePunchExtension(0x100000, 0));
+	ASSERT_TRUE(ServerOffersHolePunchExtension(0x100000 | 0x20000 | 0x1000, 0x100000));
+	ASSERT_FALSE(ServerOffersHolePunchExtension(0x20000 | 0x1000, 0));
+	ASSERT_FALSE(ServerOffersHolePunchExtension(0, 0));
+}
+
+TEST(NatServerHolePunch, AnEnodeServerOffersTheExtensionInItsUdpWordOnly)
+{
+	// eNode-go: Lugdunum's callback in both words, the extension in the UDP word only.
+	ASSERT_TRUE(ServerOffersHolePunchExtension(0x1000, 0x1000 | 0x100000));
+	// Lugdunum's UDP word has no 0x100000.
+	ASSERT_FALSE(ServerOffersHolePunchExtension(0x1000, 0x17FB));
 }
 
 TEST(NatServerHolePunch, AnnouncesTheExtensionOnlyWithBothServerPathsAndUtp)

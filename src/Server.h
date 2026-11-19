@@ -186,10 +186,11 @@ public:
 	{
 		return NatServerHolePunch::ServerAcceptsHolePunchRequest(GetTCPFlags());
 	}
-	// ed2k-server's hole-punch extension (0.9.85): 0x60 wakes the target with 0x37.
+	// The hole-punch extension: the server waits for a woken target's 0x9F. ed2k-server (0.9.85)
+	// also wakes it for a 0x60; eNode-go only for a cross-server 0xA6.
 	bool SupportsHolePunchExtension() const
 	{
-		return NatServerHolePunch::ServerOffersHolePunchExtension(GetTCPFlags());
+		return NatServerHolePunch::ServerOffersHolePunchExtension(GetTCPFlags(), GetUDPFlags());
 	}
 	// This session's OP_IDCHANGE came in the 24-byte form that answers our opt-in. Kept apart from
 	// GetSeenTcpPort(), which may legitimately be 0.

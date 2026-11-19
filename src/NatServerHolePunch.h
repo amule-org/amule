@@ -207,15 +207,19 @@ struct KeepaliveFacts
 	std::uint16_t udpPort = 0;
 	// Without uTP, advertising support would enrol a client that cannot act on a punch.
 	bool utpAvailable = false;
+	// The hole-punch extension is active (CServerConnect::IsHolePunchExtensionActive()). eNode-go
+	// runs it without SRV_TCPFLG_LOWID_HOLEPUNCH and still waits for our 0x9F after a wake.
+	bool extensionActive = false;
 };
 
 // Whether to send OP_SERVER_NATT_KEEPALIVE now: connected to a server that announced
-// SRV_TCPFLG_LOWID_HOLEPUNCH, with the runtime setting on, while we are LowID with UDP enabled
-// and the build can act on it.
+// SRV_TCPFLG_LOWID_HOLEPUNCH or runs the extension, with the runtime setting on, while we are
+// LowID with UDP enabled and the build can act on it.
 inline bool ShouldSendKeepalive(const KeepaliveFacts &facts)
 {
-	return facts.settingEnabled && facts.connected && facts.serverAnnouncesHolePunch &&
-	       facts.weAreLowId && facts.udpPort != 0 && facts.utpAvailable;
+	return facts.settingEnabled && facts.connected &&
+	       (facts.serverAnnouncesHolePunch || facts.extensionActive) && facts.weAreLowId &&
+	       facts.udpPort != 0 && facts.utpAvailable;
 }
 
 // Do not enrol a build that cannot serve the uTP connection after the punch.
@@ -885,12 +889,14 @@ private:
 	std::vector<Address> m_addresses;
 	std::deque<std::uint64_t> m_recent;
 };
-// Hole-punch extension (ed2k-server 0.9.85). Between two clients that both announced it, a 0x60
-// wakes the target with Lugdunum's 0x37; the target's fresh 0x9F then releases a 30-byte 0x61.
-
-inline bool ServerOffersHolePunchExtension(std::uint32_t tcpFlags)
+// Hole-punch extension. The server wakes the target with Lugdunum's 0x37 and waits for its fresh
+// 0x9F before it hands out the target's port: in a 30-byte 0x61 after a 0x60 (ed2k-server 0.9.85),
+// or in a 0xA7 to a requester on another server. ed2k-server sets 0x100000 in both flag words;
+// eNode-go sets it only in the UDP word and runs no 0x60.
+inline bool ServerOffersHolePunchExtension(std::uint32_t tcpFlags, std::uint32_t udpFlags)
 {
-	return (tcpFlags & SRV_TCPFLG_HOLEPUNCH_EXTENSION) != 0;
+	return (tcpFlags & SRV_TCPFLG_HOLEPUNCH_EXTENSION) != 0 ||
+	       (udpFlags & SRV_UDPFLG_FOREIGN_NAT_CALLBACK) != 0;
 }
 
 // The extension needs Lugdunum's opt-in too: its 0x1000 enrols us for 0x37 forwards, which only

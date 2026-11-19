@@ -1027,7 +1027,7 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 	if (theApp->clientudp == nullptr) {
 		return;
 	}
-	// The TCP flags live on cur_server; the keepalive needs no server-UDP fields.
+	// The flag words live on cur_server; the keepalive needs no other server-UDP fields.
 	CServer *server = GetCurrentServer();
 	if (server == nullptr) {
 		return;
@@ -1042,7 +1042,8 @@ void CServerConnect::TrySendLowIdHolePunchKeepalive()
 		server->SupportsLowIdHolePunch(),
 		::IsLowID(GetClientID()),
 		thePrefs::GetEffectiveUDPPort(),
-		lowIdHolePunchUtpAvailable };
+		lowIdHolePunchUtpAvailable,
+		IsHolePunchExtensionActive() };
 	if (!NatServerHolePunch::ShouldSendKeepalive(facts)) {
 		return;
 	}

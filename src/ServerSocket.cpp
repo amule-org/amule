@@ -677,6 +677,14 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 							logServer, "Server: NAT-T keepalive proof offered");
 						m_nattKeepaliveProof = true;
 						nattKeepaliveChanged = true;
+					} else if (tag.GetNameID() == ST_UDPFLAGS && tag.IsInt()) {
+						// cur_server is copied before the login, and a status
+						// answer updates only the list entry.
+						const uint32 udpFlags = static_cast<uint32>(tag.GetInt());
+						cur_server->SetUDPFlags(udpFlags);
+						if (update) {
+							update->SetUDPFlags(udpFlags);
+						}
 					}
 #endif
 				}
