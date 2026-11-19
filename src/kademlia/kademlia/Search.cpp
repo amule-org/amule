@@ -1205,7 +1205,7 @@ void CSearch::StorePacket()
 			PrepareToStop();
 			break;
 		}
-		if (!SendsKadPointer(true, HoldsReceiverKey(*from))) {
+		if (!HoldsReceiverKey(*from)) {
 			break;
 		}
 		if (!StoreBudgetAllows(CKadSendBudgets::Instance().sourceStores, *from, 1)) {
