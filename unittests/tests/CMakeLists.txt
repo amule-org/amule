@@ -383,8 +383,6 @@ add_executable (KadSourceRecordTagsTest
 	${CMAKE_SOURCE_DIR}/src/Tag.cpp
 	${CMAKE_SOURCE_DIR}/src/SafeFile.cpp
 	${CMAKE_SOURCE_DIR}/src/MemFile.cpp
-	${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
-	${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
 )
 add_test (NAME KadSourceRecordTagsTest COMMAND KadSourceRecordTagsTest)
 target_include_directories (KadSourceRecordTagsTest PRIVATE
