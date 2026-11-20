@@ -25,6 +25,7 @@
 #ifndef KAD_POINTER_CACHE_H
 #define KAD_POINTER_CACHE_H
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <map>
@@ -40,6 +41,8 @@ constexpr unsigned KAD_POINTER_MAX_BUDDIES = 3;
 constexpr uint32_t KAD_POINTER_LOOKUP_SECONDS = 45;
 //! How long a lookup that found a pointer is reused.
 constexpr uint32_t KAD_POINTER_HIT_SECONDS = 3600;
+//! Pointer lookups run at once at most, as eMuleQt does (§5.6.1).
+constexpr unsigned KAD_POINTER_MAX_RUNNING = 5;
 
 //! A buddy a pointer names. The ID is in the layout the source's other records give it.
 struct SKadPointerBuddy
@@ -87,8 +90,8 @@ inline EKadPointerVerdict CheckKadPointerRecord(const SKadPointerRecord &record,
 	if (record.sourceIPs != 1 || record.sourceIP != recordIP) {
 		return EKadPointerVerdict::OtherSourceIP;
 	}
-	const bool zeroID = std::all_of(
-		record.buddy.id.begin(), record.buddy.id.end(), [](uint8_t b) { return b == 0; });
+	const bool zeroID =
+		std::all_of(record.buddy.id.begin(), record.buddy.id.end(), [](uint8_t b) { return b == 0; });
 	if (!record.hasBuddyID || zeroID || record.buddy.ip == 0 || record.buddy.port == 0) {
 		return EKadPointerVerdict::NoBuddyRoute;
 	}
@@ -228,6 +231,14 @@ public:
 	}
 
 	size_t Size() const noexcept { return m_entries.size(); }
+
+	//! Lookups started and not yet finished.
+	unsigned Running() const noexcept
+	{
+		return static_cast<unsigned>(std::count_if(m_entries.begin(),
+			m_entries.end(),
+			[](const std::pair<const Key, SEntry> &item) { return item.second.running; }));
+	}
 
 private:
 	struct SEntry

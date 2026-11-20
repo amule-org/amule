@@ -80,6 +80,9 @@ TEST(KadPointerCache, AnyOtherRecordIsRefused)
 	ASSERT_TRUE(CheckKadPointerRecord(Pointer(0), RECORD_IP) == EKadPointerVerdict::NoBuddyRoute);
 	ASSERT_TRUE(
 		CheckKadPointerRecord(Pointer(BUDDY_IP, 0), RECORD_IP) == EKadPointerVerdict::NoBuddyRoute);
+	record = Pointer();
+	record.buddy.id.fill(0);
+	ASSERT_TRUE(CheckKadPointerRecord(record, RECORD_IP) == EKadPointerVerdict::NoBuddyRoute);
 }
 
 // §5.6.2: the storer recorded the IP the pointer came from; it must be the record's.
@@ -217,4 +220,18 @@ TEST(KadPointerCache, PruneDropsOnlyWhatExpired)
 	ASSERT_EQUALS(1u, cache.Size());
 	ASSERT_TRUE(
 		cache.Next(other, 0, DEAD_BUDDY_IP, BUDDY_PORT, NOW + MISS).step == EKadPointerStep::Wait);
+}
+
+// Start() refuses a lookup while KAD_POINTER_MAX_RUNNING run; a finished one frees its place.
+TEST(KadPointerCache, OnlyRunningLookupsAreCounted)
+{
+	CKadPointerCache cache;
+	for (uint8_t i = 0; i < KAD_POINTER_MAX_RUNNING; ++i) {
+		cache.Started(CKadPointerCache::Key{ { i } }, RECORD_IP);
+	}
+	ASSERT_EQUALS(KAD_POINTER_MAX_RUNNING, cache.Running());
+	cache.Finished(CKadPointerCache::Key{ { 0 } }, NOW, MISS);
+	ASSERT_EQUALS(KAD_POINTER_MAX_RUNNING - 1, cache.Running());
+	cache.Prune(NOW + MISS);
+	ASSERT_EQUALS(KAD_POINTER_MAX_RUNNING - 1, cache.Running());
 }

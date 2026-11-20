@@ -85,6 +85,13 @@ CKadPointerCache::Key KadPointerLookup::KeyOf(const CMD4Hash &userHash)
 bool KadPointerLookup::Start(const CMD4Hash &userHash, uint32_t recordIP)
 {
 	Cache().Prune(static_cast<uint32_t>(time(nullptr)));
+	// Each lookup is a 45 s Kad search: records with many publishers must not start one each.
+	if (Cache().Running() >= KAD_POINTER_MAX_RUNNING) {
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Kad buddy pointer lookup for source %s not started: %u already running") %
+				userHash.Encode() % KAD_POINTER_MAX_RUNNING);
+		return false;
+	}
 	uint8_t target[16];
 	KadPointerKey(userHash.GetHash(), target);
 	if (!Kademlia::CSearchManager::PrepareLookup(
