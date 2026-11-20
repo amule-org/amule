@@ -115,11 +115,12 @@ enum ServerCapabilites
 	SRVCAP_SUPPORTCRYPT = 0x0200,
 	SRVCAP_REQUESTCRYPT = 0x0400,
 	SRVCAP_REQUIRECRYPT = 0x0800,
-	// Lugdunum's NAT callback opt-in (#1991): Lugdunum then hands out odd LowIDs and forwards
+	// Lugdunum's NAT callback opt-in: Lugdunum then hands out odd LowIDs and forwards
 	// callbacks. Sent only under ENABLE_NATT_SERVER_COORDINATION; see docs/NAT_T_Protocol.md.
-	SRVCAP_NATTRAVERSAL = 0x1000,
-	// ed2k-server's hole-punch extension, always sent together with SRVCAP_NATTRAVERSAL.
-	SRVCAP_HOLEPUNCH_EXTENSION = 0x100000
+	SRVCAP_LUGDUNUM_CALLBACK = 0x1000,
+	// We answer a 0x37 wake with a 0x9F burst (ed2k-server's hole-punch extension); always sent
+	// together with SRVCAP_LUGDUNUM_CALLBACK.
+	SRVCAP_WAKE_KEEPALIVE = 0x100000
 };
 
 // aMule used to use these names

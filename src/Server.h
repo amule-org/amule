@@ -180,16 +180,20 @@ public:
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	// Lugdunum's NAT callback (eserver 17.15+). The bit alone is not proof: other servers use 0x1000
 	// unofficially in their flags.
-	bool SupportsLugdunumNatCallback() const { return (GetTCPFlags() & SRV_TCPFLG_NATTRAVERSAL) != 0; }
+	bool SupportsLugdunumNatCallback() const
+	{
+		return (GetTCPFlags() & SRV_TCPFLG_LUGDUNUM_CALLBACK) != 0;
+	}
 	// ed2k-server's LowID hole punch (OP_LOWID_HOLEPUNCH_REQUEST).
 	bool SupportsLowIdHolePunch() const
 	{
 		return NatServerHolePunch::ServerAcceptsHolePunchRequest(GetTCPFlags());
 	}
-	// ed2k-server's hole-punch extension (0.9.85): 0x60 wakes the target with 0x37.
-	bool SupportsHolePunchExtension() const
+	// The wake keepalive: the server waits for a woken target's 0x9F. ed2k-server (0.9.85)
+	// also wakes it for a 0x60; eNode-go only for a cross-server 0xA6.
+	bool WaitsForWakeKeepalive() const
 	{
-		return NatServerHolePunch::ServerOffersHolePunchExtension(GetTCPFlags());
+		return NatServerHolePunch::ServerWaitsForWakeKeepalive(GetTCPFlags(), GetUDPFlags());
 	}
 	// This session's OP_IDCHANGE came in the 24-byte form that answers our opt-in. Kept apart from
 	// GetSeenTcpPort(), which may legitimately be 0.

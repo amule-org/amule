@@ -920,7 +920,7 @@ public:
 	// default -- no widget, no EC tag.
 	static bool IsLugdunumNatCallbackEnabled() { return s_LugdunumNatCallbackEnabled; }
 	// Runtime opt-in for ed2k-server's LowID hole punch: gates the CT_EMULE_UDPPORTS login tag,
-	// the OP_SERVER_NATT_KEEPALIVE send, the OP_LOWID_HOLEPUNCH_REQUEST send and keeping LowID
+	// the OP_NATT_KEEPALIVE send, the OP_LOWID_HOLEPUNCH_REQUEST send and keeping LowID
 	// server sources from such a server. amule.conf-only, off by default -- no widget, no EC tag.
 	static bool IsLowIdHolePunchEnabled() { return s_LowIdHolePunchEnabled; }
 #endif

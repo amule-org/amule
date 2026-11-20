@@ -76,7 +76,7 @@ void HandleLowIdHolePunchInfo(
 	if (info.peerId.has_value()) {
 		// The 0x61 a wake was waiting for, even one the guards below keep us from acting on: the
 		// requester already has its 0x61, so the wake's Lugdunum fallback must not dial it.
-		serverconnect->HolePunchExtensionWakes().Resolve(*info.peerId);
+		serverconnect->PendingWakes().Resolve(*info.peerId);
 	}
 	const uint32 peerIP = PeekUInt32(info.peerIP.data());
 	if (!CClientUDPSocket::IsRendezvousPeerAllowed(peerIP)) {
@@ -375,9 +375,9 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					AddDebugLogLineN(logServer,
 						"OP_IDCHANGE: server accepts LowID hole punch requests");
 				}
-				if (cur_server->SupportsHolePunchExtension()) {
+				if (cur_server->WaitsForWakeKeepalive()) {
 					AddDebugLogLineN(logServer,
-						"OP_IDCHANGE: server runs the hole-punch extension");
+						"OP_IDCHANGE: server waits for our wake keepalive");
 				}
 #endif
 				// copy TCP flags into the server in the server list
@@ -620,6 +620,7 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				uint32 nTags = data.ReadUInt32();
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 				bool nattKeepaliveChanged = false;
+				const bool waitedForWakeKeepalive = cur_server->WaitsForWakeKeepalive();
 #endif
 #ifdef ENABLE_IPV6
 				// A server that omits the tag has no verdict for us; the previous answer must
@@ -677,6 +678,14 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 							logServer, "Server: NAT-T keepalive proof offered");
 						m_nattKeepaliveProof = true;
 						nattKeepaliveChanged = true;
+					} else if (tag.GetNameID() == ST_UDPFLAGS && tag.IsInt()) {
+						// cur_server is copied before the login, and a status
+						// answer updates only the list entry.
+						const uint32 udpFlags = static_cast<uint32>(tag.GetInt());
+						cur_server->SetUDPFlags(udpFlags);
+						if (update) {
+							update->SetUDPFlags(udpFlags);
+						}
 					}
 #endif
 				}
@@ -685,6 +694,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				AdvertisedIPv6ForPeers();
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+				if (!waitedForWakeKeepalive && cur_server->WaitsForWakeKeepalive()) {
+					AddDebugLogLineN(logServer,
+						"OP_SERVERIDENT: server waits for our wake keepalive");
+				}
 				// The login keepalive went out before this ident. Sent after the loop, as the
 				// proof tag may follow the token.
 				if (nattKeepaliveChanged && m_nattSessionToken && m_nattKeepaliveProof) {

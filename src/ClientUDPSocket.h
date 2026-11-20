@@ -99,8 +99,8 @@ public:
 	bool DialLowIdHolePunchPeer(
 		uint32 ip, uint16 tcpPort, uint16 udpPort, const NatServerHolePunch::VouchedPeer &peer);
 	bool DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::ForwardedCallback &callback);
-	//! A TCP 0x37 forward: on a hole-punch extension server it is a wake that waits for the 0x61,
-	//! anywhere else Lugdunum's callback, dialled at once.
+	//! A TCP 0x37 forward: a wake answered with our keepalive when ShouldAnswerWakeWithKeepalive()
+	//! says so, anywhere else Lugdunum's callback, dialled at once.
 	void HandleForwardedCallback(const LugdunumNatTraversal::ForwardedCallback &callback);
 	bool IsLugdunumNatCallbackCoolingDown(const LugdunumNatTraversal::CallbackFailureKey &key);
 	void RecordLugdunumNatCallbackFailure(const LugdunumNatTraversal::CallbackFailureKey &key);
@@ -255,7 +255,7 @@ private:
 	//! server's key, whether or not it matched a pending request.
 	bool TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, size_t length);
 	void HandleLowIdHolePunch(uint32 host, uint16 port);
-	bool AnswerHolePunchExtensionWake(const LugdunumNatTraversal::ForwardedCallback &callback);
+	bool AnswerWakeWithKeepalive(const LugdunumNatTraversal::ForwardedCallback &callback);
 	void SendLugdunumNatCallbackRequest(const LugdunumNatTraversal::CallbackFailureKey &key);
 	void TickLugdunumCallbackRendezvous();
 #endif

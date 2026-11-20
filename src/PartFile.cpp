@@ -2007,10 +2007,10 @@ bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	holePunchFacts.weAreLowId = weAreLowId;
 	holePunchFacts.serverAnnouncesHolePunch = current != nullptr && current->SupportsLowIdHolePunch();
 	holePunchFacts.settingEnabled = thePrefs::IsLowIdHolePunchEnabled();
-	holePunchFacts.extensionAnnounced = NatServerHolePunch::ShouldAnnounceHolePunchExtension(
+	holePunchFacts.wakeKeepaliveAnnounced = NatServerHolePunch::ShouldAnnounceWakeKeepalive(
 		thePrefs::IsLowIdHolePunchEnabled(), thePrefs::IsLugdunumNatCallbackEnabled(), utpAvailable);
 	holePunchFacts.sourceServerTakesForeignCallback =
-		!sourceServerIsOurCurrentServer && holePunchFacts.extensionAnnounced && weAreLowId &&
+		!sourceServerIsOurCurrentServer && holePunchFacts.wakeKeepaliveAnnounced && weAreLowId &&
 		theApp->serverconnect->ForeignCallbackServer(serverip, serverport) != nullptr;
 
 	return LugdunumNatTraversal::ShouldKeepLowIdServerSource(lugdunumFacts) ||

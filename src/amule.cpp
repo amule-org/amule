@@ -2552,7 +2552,7 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	// be reached with a null pointer.
 	clientudp->TickUtp();
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	serverconnect->ProcessHolePunchExtension();
+	serverconnect->ProcessPunchesAndWakes();
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
