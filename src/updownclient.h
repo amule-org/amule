@@ -976,7 +976,6 @@ public:
 		m_kadPointerMarked = true;
 		m_kadRecordIP = recordIP;
 	}
-	bool HasKadPointerRoute() const { return m_kadPointerMarked; }
 	// The source waits for its pointer lookup. Once that has a buddy, the source asks it; once it
 	// ends without one, the source moves on to its next route. False when it has none left.
 	bool UpdateKadPointerWait();

@@ -87,7 +87,9 @@ inline EKadPointerVerdict CheckKadPointerRecord(const SKadPointerRecord &record,
 	if (record.sourceIPs != 1 || record.sourceIP != recordIP) {
 		return EKadPointerVerdict::OtherSourceIP;
 	}
-	if (!record.hasBuddyID || record.buddy.ip == 0 || record.buddy.port == 0) {
+	const bool zeroID = std::all_of(
+		record.buddy.id.begin(), record.buddy.id.end(), [](uint8_t b) { return b == 0; });
+	if (!record.hasBuddyID || zeroID || record.buddy.ip == 0 || record.buddy.port == 0) {
 		return EKadPointerVerdict::NoBuddyRoute;
 	}
 	return EKadPointerVerdict::Accepted;
