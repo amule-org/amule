@@ -25,6 +25,7 @@
 
 #include "KadCallbackPolicy.h"
 #include "UploadCallbackPolicy.h"
+#include "RequestPacing.h" // Needed for LastAskedTimeToAskAt
 #include <wx/wx.h>
 #include <wx/mstream.h>
 #include <wx/tokenzr.h>
@@ -2624,10 +2625,11 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 	if (!dialIPv6) {
 		m_preparedDialAddress = CNetworkAddress::Absent();
 	}
+	// Our own request still in flight is waited for below, as before.
 	const SSourceRouteChoice choice = ChooseSourceRoute(SourceRouteFacts(HasLowID() && !dialIPv6),
-		IsDirectCallbackThrottled(m_lastDirectCallbackRequest,
-			::GetTickCount64(),
-			PeerAddressing::kCallbackRequestThrottleMs));
+		m_dwDirectCallbackTimeout == 0 && IsDirectCallbackThrottled(m_lastDirectCallbackRequest,
+							  ::GetTickCount64(),
+							  PeerAddressing::kCallbackRequestThrottleMs));
 	const ESourceRoute route = choice.route;
 	if (choice.directHeld) {
 		AddDebugLogLineN(logClient,
@@ -2690,12 +2692,16 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		}
 	}
 
-	// With no other route left, the source is asked again on reask rather than given up.
+	// With no other route left, the source is asked again when the peer takes a request from us
+	// again, rather than given up.
 	if (choice.directHeld && route == ESourceRoute::None && GetUploadState() != US_CONNECTING &&
 		!(m_socket && m_socket->IsConnected())) {
 		if (GetDownloadState() == DS_CONNECTING) {
 			m_bReaskPending = true;
 			SetDownloadState(DS_ONQUEUE);
+			m_dwLastAskedTime = LastAskedTimeToAskAt(::GetTickCount64(),
+				m_lastDirectCallbackRequest + PeerAddressing::kCallbackRequestThrottleMs,
+				thePrefs::GetSourceReaskTime());
 		}
 		return EContactResult::Declined;
 	}

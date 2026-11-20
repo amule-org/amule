@@ -29,17 +29,23 @@
 #include <iterator>
 #include <map>
 
+// The last-asked time that makes CPartFile::Process() ask at askAt: 0 when that is now or past.
+inline uint64_t LastAskedTimeToAskAt(uint64_t now, uint64_t askAt, uint64_t reaskTime)
+{
+	if (askAt <= now) {
+		return 0; // Process() asks on its next tick
+	}
+	return askAt > reaskTime ? askAt - reaskTime : 1;
+}
+
 // A source's CheckForAggressive() scores an OP_STARTUPLOADREQ, OP_REASKFILEPING or OP_AICHREQUEST
 // sent less than MIN_REQUESTTIME after the previous one, and bans at 10. Returns the last-asked
 // time that makes CPartFile::Process(), which asks reaskTime after it, ask at the first moment
 // that is not scored: now, or MIN_REQUESTTIME after lastPacedRequest (0 if there was none).
 inline uint64_t PacedLastAskedTime(uint64_t now, uint64_t lastPacedRequest, uint64_t reaskTime)
 {
-	const uint64_t askAt = lastPacedRequest ? lastPacedRequest + MIN_REQUESTTIME : 0;
-	if (askAt <= now) {
-		return 0; // Process() asks on its next tick
-	}
-	return askAt > reaskTime ? askAt - reaskTime : 1;
+	return LastAskedTimeToAskAt(
+		now, lastPacedRequest ? lastPacedRequest + MIN_REQUESTTIME : 0, reaskTime);
 }
 
 // When CPartFile::Process() asks a source next, from the last-asked time it keeps for it: 0 if

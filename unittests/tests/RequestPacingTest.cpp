@@ -329,3 +329,10 @@ TEST(RequestPacing, MemoryMergesAndExpires)
 	memory.Prune(kNow + REQUEST_SCORE_MEMORY);
 	ASSERT_EQUALS(0u, memory.Size());
 }
+
+TEST(RequestPacing, AsksAtAChosenTime)
+{
+	ASSERT_EQUALS(kNow + 60000, AskAt(LastAskedTimeToAskAt(kNow, kNow + 60000, kReask)));
+	ASSERT_EQUALS(0u, LastAskedTimeToAskAt(kNow, kNow, kReask));
+	ASSERT_EQUALS(0u, LastAskedTimeToAskAt(kNow, kNow - 1, kReask));
+}
