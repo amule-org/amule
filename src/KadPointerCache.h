@@ -39,6 +39,15 @@
 constexpr unsigned KAD_POINTER_MAX_BUDDIES = 3;
 //! How long a pointer lookup runs (SEARCHFILE_LIFETIME).
 constexpr uint32_t KAD_POINTER_LOOKUP_SECONDS = 45;
+//! Reasks in a row a source whose pointer gave no buddy is kept for: about an hour by default, the
+//! median time a LowID spent without a buddy in our logs.
+constexpr unsigned KAD_POINTER_MAX_MISSES = 4;
+
+//! Whether a source whose pointer gave no buddy `misses` times in a row is kept for another try.
+inline bool ShouldRetryKadPointer(unsigned misses) noexcept
+{
+	return misses < KAD_POINTER_MAX_MISSES;
+}
 //! How long a lookup that found a pointer is reused.
 constexpr uint32_t KAD_POINTER_HIT_SECONDS = 3600;
 //! Pointer lookups run at once at most, as eMuleQt does (§5.6.1).
@@ -194,6 +203,8 @@ public:
 
 	struct SOutcome
 	{
+		//! A lookup for this key was running.
+		bool ran = false;
 		bool found = false;
 		unsigned buddies = 0;
 		unsigned accepted = 0;
@@ -210,6 +221,7 @@ public:
 		}
 		SEntry &entry = it->second;
 		entry.running = false;
+		outcome.ran = true;
 		outcome.found = !entry.buddies.empty();
 		entry.expires = now + (outcome.found ? KAD_POINTER_HIT_SECONDS : missSeconds);
 		outcome.buddies = static_cast<unsigned>(entry.buddies.size());

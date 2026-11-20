@@ -12,7 +12,8 @@ dead buddy is not asked again in the other one.
 
 hit:  the pointer names a second buddy on the same IP, which gets the next request once eMule's
       flood interval allows, and nothing follows it.
-miss: no pointer is found; after the lookup the route has failed and no request follows.
+miss: no pointer is found; no request follows. The source is kept to look the pointer up again at
+      its next reask, after this test's window.
 
 One fake Kad node is the daemon's only contact, the storer of both records and the dead buddy.
 """

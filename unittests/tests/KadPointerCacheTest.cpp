@@ -235,3 +235,21 @@ TEST(KadPointerCache, OnlyRunningLookupsAreCounted)
 	cache.Prune(NOW + MISS);
 	ASSERT_EQUALS(KAD_POINTER_MAX_RUNNING - 1, cache.Running());
 }
+
+// A source whose pointer gave no buddy is kept for a few reasks: its publisher may get one.
+TEST(KadPointerCache, AMissIsRetriedAFewReasksOnly)
+{
+	ASSERT_TRUE(ShouldRetryKadPointer(0));
+	ASSERT_TRUE(ShouldRetryKadPointer(KAD_POINTER_MAX_MISSES - 1));
+	ASSERT_FALSE(ShouldRetryKadPointer(KAD_POINTER_MAX_MISSES));
+}
+
+TEST(KadPointerCache, OnlyALookupThatRanHasAnOutcome)
+{
+	CKadPointerCache cache;
+	ASSERT_FALSE(cache.Finished(SOURCE, NOW, MISS).ran);
+	cache.Started(SOURCE, RECORD_IP);
+	const CKadPointerCache::SOutcome outcome = cache.Finished(SOURCE, NOW, MISS);
+	ASSERT_TRUE(outcome.ran);
+	ASSERT_FALSE(outcome.found);
+}

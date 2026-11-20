@@ -1636,9 +1636,12 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32
 	// Process source based on its type. Currently only one method is needed to process all types.
 	switch (type) {
 	case 7:
-		// "Reach me by one of the routes in my tags". With no route we understood, or no port
-		// to dial, there is nothing to contact, so the record goes no further and costs no I/O.
-		if (!publishedIPv6.IsIPv6() || tcp == 0) {
+		// "Reach me by one of the routes in my tags": here "ip6", or the pointer route (#2513).
+		// With no route we understood, or no port to dial, there is nothing to contact, so the
+		// record goes no further and costs no I/O.
+		if ((!publishedIPv6.IsIPv6() && !(pointerVersion == KAD_POINTER_VERSION &&
+							thePrefs::IsKadBuddyPointerEnabled())) ||
+			tcp == 0) {
 			break;
 		}
 		[[fallthrough]];

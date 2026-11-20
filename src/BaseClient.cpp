@@ -2299,7 +2299,8 @@ SSourceRouteFacts CUpDownClient::SourceRouteFacts(bool callbackOnly) const
 	SSourceRouteFacts facts;
 	facts.callbackOnly = callbackOnly;
 	facts.directCallback = IsDirectCallbackPossible();
-	facts.hasBuddyID = HasValidBuddyID();
+	// A source with the pointer route has a buddy to ask once its pointer names one.
+	facts.hasBuddyID = HasValidBuddyID() || UsesKadPointerRoute();
 	facts.kadConnected = Kademlia::CKademlia::IsConnected();
 	// Also asked from Disconnected(), which runs during shutdown.
 	if (theApp->serverconnect != nullptr) {
@@ -2391,11 +2392,15 @@ bool CUpDownClient::KeepForNextRoute(bool failedAdvertisedIPv6)
 		}
 		if (!askAgain && viaPointer && m_bBuddyCallbackUnanswered) {
 			askAgain = TakeKadPointerRoute();
+			// Its pointer may have moved on since: look it up again at the next reask.
+			if (!askAgain && KeepForKadPointerRetry()) {
+				return true;
+			}
 		}
 		if (askAgain) {
 			// The source waits to ask while eMule's flood interval runs out, not in the
 			// callback socket. One waiting for its pointer lookup waits for that instead.
-			if (!m_kadPointerWaiting) {
+			if (!m_kadPointerWaiting && GetBuddyIP() != 0) {
 				m_kadCallbackRetryTime = Kademlia::KadCallbackRetryTime(
 					m_kadCallbackSentTime, GetBuddyIP() == askedIP);
 			}
@@ -2692,6 +2697,33 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			}
 			// Nothing was sent and nothing will arrive: this peer cannot be
 			// reached while we cannot call back.
+			return EContactResult::Declined;
+		}
+	}
+
+	// A source with no buddy of its own but the pointer route (type 7) asks the buddy its pointer
+	// names. The route needs us reachable, as below.
+	if (route == ESourceRoute::KadBuddy && !GetBuddyIP() && !GetBuddyPort() && UsesKadPointerRoute() &&
+		m_reqfile != nullptr && GetDownloadState() == DS_CONNECTING) {
+		switch (TakeKadPointerRouteFirst()) {
+		case EKadPointerFirst::Ask:
+			break;
+		case EKadPointerFirst::Deferred:
+			return EContactResult::Declined;
+		case EKadPointerFirst::Waiting:
+			// Asked on the tick its pointer names a buddy (UpdateKadPointerWait()).
+			SetDownloadState(DS_NONE);
+			ResetLastAskedTime();
+			return EContactResult::Declined;
+		case EKadPointerFirst::None:
+			if (KeepForKadPointerRetry()) {
+				return EContactResult::Declined;
+			}
+			theApp->downloadqueue->RemoveSource(this);
+			if (Disconnected("Kad source with no buddy from its pointer")) {
+				Safe_Delete();
+				return EContactResult::ClientDeleted;
+			}
 			return EContactResult::Declined;
 		}
 	}
@@ -3134,6 +3166,16 @@ void CUpDownClient::ConnectionEstablished()
 		m_pendingMessage.Clear();
 	}
 
+	if (m_kadPointerBuddyAsked &&
+		(GetDownloadState() == DS_WAITCALLBACKKAD || m_kadCallbackRetryTime != 0)) {
+		// The callback came through the buddy the pointer named (#2513).
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Kad source %s reached through buddy %s from its pointer, record type %u") %
+				GetUserHash().Encode() %
+				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) % m_kadRecordType);
+		m_kadPointerBuddyAsked = false;
+		m_kadPointerMisses = 0;
+	}
 	if (m_kadCallbackRetryTime != 0) {
 		// The source called back late, while its next request waited. The reask below skips a
 		// source waiting to ask, so it gets its file request here.
@@ -4322,8 +4364,9 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()));
 	}
 	// Only a Kad record carries the pointer route; the copy we keep may have come another way.
-	if (duplicate.m_kadPointerMarked && !m_kadPointerMarked) {
-		SetKadPointerRoute(duplicate.m_kadRecordIP);
+	// A copy whose buddy is taken also gives the record the route now comes from.
+	if (duplicate.m_kadPointerMarked && (!m_kadPointerMarked || merge.takeAddress)) {
+		SetKadPointerRoute(duplicate.m_kadRecordIP, duplicate.m_kadRecordType);
 	}
 	if (merge.takeID || merge.takeAddress) {
 		m_failedSourceRoutes &= ~SourceRouteBit(ESourceRoute::KadBuddy);
@@ -4555,7 +4598,7 @@ bool CUpDownClient::TakeKadPointerRoute()
 	switch (next.step) {
 	case EKadPointerStep::Look:
 		if (!KadPointerLookup::Start(GetUserHash(), m_kadRecordIP)) {
-			return false;
+			return DeferKadPointerLookup();
 		}
 		[[fallthrough]];
 	case EKadPointerStep::Wait:
@@ -4580,14 +4623,22 @@ bool CUpDownClient::TakeKadPointerRoute()
 
 void CUpDownClient::UseKadPointerBuddy(const SKadPointerBuddy &buddy, uint32 askedIP)
 {
-	AddDebugLogLineN(logKadBuddy,
-		CFormat("Kad buddy %s of source %s did not pass on a callback, asking %s from its "
-			"pointer") %
-			Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) % GetUserHash().Encode() %
-			Uint32_16toStringIP_Port(buddy.ip, buddy.port));
+	if (GetBuddyIP() == 0) {
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Kad source %s, record type %u, asking %s from its pointer") %
+				GetUserHash().Encode() % m_kadRecordType %
+				Uint32_16toStringIP_Port(buddy.ip, buddy.port));
+	} else {
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Kad buddy %s of source %s did not pass on a callback, asking %s from its "
+				"pointer") %
+				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()) %
+				GetUserHash().Encode() % Uint32_16toStringIP_Port(buddy.ip, buddy.port));
+	}
 	SetBuddyIP(buddy.ip);
 	SetBuddyPort(buddy.port);
 	SetBuddyID(buddy.id.data(), true);
+	m_kadPointerBuddyAsked = true;
 	m_bBuddyIdUseAmuleLayout = false;
 	m_bBuddyCallbackUnanswered = false;
 	m_bBuddyOtherLayoutTried = false;
@@ -4616,10 +4667,14 @@ bool CUpDownClient::UpdateKadPointerWait()
 		UseKadPointerBuddy(next.buddy, GetBuddyIP());
 		return true;
 	}
-	// The lookup ended with no buddy to ask: the buddy route has failed, as after any other.
+	// The lookup ended with no buddy to ask. The publisher may have none yet: look again later.
+	m_kadCallbackRetryTime = 0;
+	if (KeepForKadPointerRetry()) {
+		return true;
+	}
+	// Or the buddy route has failed, as after any other.
 	AddDebugLogLineN(logKadBuddy,
 		"No buddy from the pointer of source " + GetUserHash().Encode() + ", its buddy route failed");
-	m_kadCallbackRetryTime = 0;
 	m_sourceRoute = ESourceRoute::KadBuddy;
 	const bool keep = KeepAfterRouteFailed();
 	if (!keep) {
@@ -4628,6 +4683,84 @@ bool CUpDownClient::UpdateKadPointerWait()
 	}
 	m_sourceRoute = ESourceRoute::None;
 	return keep;
+}
+
+CUpDownClient::EKadPointerFirst CUpDownClient::TakeKadPointerRouteFirst()
+{
+	const SKadPointerNext next = KadPointerLookup::Cache().Next(KadPointerLookup::KeyOf(GetUserHash()),
+		m_kadPointerNext,
+		0,
+		0,
+		static_cast<uint32_t>(time(nullptr)));
+	switch (next.step) {
+	case EKadPointerStep::Look:
+		if (!KadPointerLookup::Start(GetUserHash(), m_kadRecordIP)) {
+			DeferKadPointerLookup();
+			return EKadPointerFirst::Deferred;
+		}
+		[[fallthrough]];
+	case EKadPointerStep::Wait:
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Kad source %s has no buddy of its own, record type %u: waiting for its "
+				"pointer") %
+				GetUserHash().Encode() % m_kadRecordType);
+		m_kadPointerWaiting = true;
+		m_kadCallbackRetryTime = ::GetTickCount64() + SEC2MS(KAD_POINTER_LOOKUP_SECONDS);
+		return EKadPointerFirst::Waiting;
+	case EKadPointerStep::Use:
+		m_kadPointerNext = next.next;
+		UseKadPointerBuddy(next.buddy, 0);
+		return EKadPointerFirst::Ask;
+	case EKadPointerStep::Exhausted:
+		break;
+	}
+	return EKadPointerFirst::None;
+}
+
+bool CUpDownClient::KeepForKadPointerRetry()
+{
+	if (!UsesKadPointerRoute() || !ShouldRetryKadPointer(m_kadPointerMisses)) {
+		return false;
+	}
+	++m_kadPointerMisses;
+	AddDebugLogLineN(logKadBuddy,
+		CFormat("No buddy from the pointer of source %s, record type %u: looking it up again at "
+			"its next reask (%u of %u)") %
+			GetUserHash().Encode() % m_kadRecordType % m_kadPointerMisses %
+			KAD_POINTER_MAX_MISSES);
+	// The reask interval is also how long a miss is cached (KadPointerLookup::Finished()), so
+	// the next lookup can start then.
+	WaitForKadPointerLookup(thePrefs::GetSourceReaskTime());
+	return true;
+}
+
+bool CUpDownClient::DeferKadPointerLookup()
+{
+	AddDebugLogLineN(logKadBuddy,
+		CFormat("Pointer lookup for source %s not started now, record type %u: trying again in "
+			"%u s") %
+			GetUserHash().Encode() % m_kadRecordType % KAD_POINTER_LOOKUP_SECONDS);
+	// About when a running lookup ends and leaves room for this one. Not a miss.
+	WaitForKadPointerLookup(SEC2MS(KAD_POINTER_LOOKUP_SECONDS));
+	return true;
+}
+
+void CUpDownClient::WaitForKadPointerLookup(uint64 delayMs)
+{
+	// Every route is tried again then, and the pointer before the buddy the record named, which
+	// has not passed on a callback.
+	ResetContactRoutes();
+	SetBuddyIP(0);
+	SetBuddyPort(0);
+	m_nBuddyCandidateIP = 0;
+	m_nBuddyCandidatePort = 0;
+	m_bBuddyCandidateIsFormer = false;
+	m_kadPointerBuddyAsked = false;
+	m_sourceRoute = ESourceRoute::None;
+	SetDownloadState(DS_NONE);
+	ResetLastAskedTime();
+	// Shown as "Waiting to ask".
+	m_kadCallbackRetryTime = ::GetTickCount64() + delayMs;
 }
 
 // Kad added by me
