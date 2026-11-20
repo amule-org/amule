@@ -91,15 +91,17 @@ bool CUploadQueue::TryStartUploadCallback(
 	if (!client->m_bAddNextConnect || !MayStartUploadCallback(client->m_uploadCallbackSpent)) {
 		return false;
 	}
-	if (inFlight >= inFlightCeiling) {
+	// A request still in flight gets its whole window before the next route is tried.
+	if (inFlight >= inFlightCeiling || client->HasUploadCallbackInFlight(now)) {
 		return false;
 	}
 	SUploadCallbackRouteFacts facts;
 	facts.canTakeCallback = theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort());
 	facts.directCallback = client->IsDirectCallbackPossible();
-	// A request the peer drops would hold an in-flight place and spend the peer for nothing.
+	// A request the peer drops would hold an in-flight place for nothing.
 	facts.directThrottled = IsDirectCallbackThrottled(
 		client->GetLastDirectCallbackRequest(), now, PeerAddressing::kCallbackRequestThrottleMs);
+	facts.directTried = client->m_uploadDirectCallbackTried;
 	facts.onOurServer =
 		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort());
 	EContactRouteReport route = UploadCallbackRoute(facts);
@@ -128,7 +130,9 @@ bool CUploadQueue::TryStartUploadCallback(
 #endif
 	}
 	client->NoteUploadCallbackSent(now, route);
-	client->MarkUploadCallbackSpent();
+	if (UploadCallbackSpendsPeer(route)) {
+		client->MarkUploadCallbackSpent();
+	}
 	return true;
 }
 
@@ -557,6 +561,8 @@ void CUploadQueue::AdmitUploadCallbackAnswer(CUpDownClient *client)
 	if (!client->IsUploadCallbackExpected(::GetTickCount64())) {
 		return;
 	}
+	// One answered callback per request interval, whatever its route.
+	client->MarkUploadCallbackSpent();
 	// A banned peer never gets a slot, and one that already left the queue has nothing to admit:
 	// the exemption lasts 30 s, longer than the queue does.
 	if (client->IsBanned() || !IsOnUploadQueue(client)) {

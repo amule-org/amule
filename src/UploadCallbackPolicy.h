@@ -66,24 +66,34 @@ struct SUploadCallbackRouteFacts
 	//! CUpDownClient::IsDirectCallbackPossible().
 	bool directCallback = false;
 	bool directThrottled = false;
+	//! A direct request went out in this request interval and was not answered.
+	bool directTried = false;
 	bool onOurServer = false;
 };
 
 /**
  * The upload callback route that needs no NAT-T server support, or None.
  *
- * The order is TryToContact()'s. The server callback needs the peer on our server: a LowID is valid
- * only on its own server, so the request would wake a different client on ours.
+ * The order is TryToContact()'s: an unanswered direct request moves on to the next route. The server
+ * callback needs the peer on our server: a LowID is valid only on its own server, so the request
+ * would wake a different client on ours.
  */
 inline EContactRouteReport UploadCallbackRoute(const SUploadCallbackRouteFacts &facts)
 {
 	if (!facts.canTakeCallback) {
 		return EContactRouteReport::None;
 	}
-	if (facts.directCallback && !facts.directThrottled) {
+	if (facts.directCallback && !facts.directThrottled && !facts.directTried) {
 		return EContactRouteReport::DirectUdpCallback;
 	}
 	return facts.onOurServer ? EContactRouteReport::ServerCallback : EContactRouteReport::None;
+}
+
+//! Whether a request on @a route spends the peer when it is sent. A direct request spends it only
+//! when answered: the peer ignores one it will not take, and the next route is still worth a try.
+inline bool UploadCallbackSpendsPeer(EContactRouteReport route)
+{
+	return route != EContactRouteReport::DirectUdpCallback;
 }
 
 #endif // UPLOAD_CALLBACK_POLICY_H

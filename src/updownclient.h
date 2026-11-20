@@ -628,6 +628,9 @@ public:
 		m_uploadCallbackSentAt = now;
 		m_uploadCallbackExpected = true;
 		m_uploadCallbackRoute = route;
+		if (route == EContactRouteReport::DirectUdpCallback) {
+			m_uploadDirectCallbackTried = true;
+		}
 	}
 	bool HasUploadCallbackInFlight(uint64 now) const
 	{
@@ -648,6 +651,7 @@ public:
 	{
 		ClearUploadCallbackInFlight();
 		m_uploadCallbackSpent = false;
+		m_uploadDirectCallbackTried = false;
 	}
 	size_t GetUpPartCount() const { return m_upPartStatus.size(); }
 
@@ -1248,6 +1252,7 @@ private:
 	//! Our last OP_DIRECTCALLBACKREQ to this peer, from either side.
 	uint64 m_lastDirectCallbackRequest = 0;
 	bool m_uploadCallbackSpent = false;
+	bool m_uploadDirectCallbackTried = false;
 	bool m_uploadCallbackExpected = false;
 	uint32 m_nCurSessionUp;
 	uint16 m_nUpPartCount;

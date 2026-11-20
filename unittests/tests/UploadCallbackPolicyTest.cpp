@@ -70,3 +70,22 @@ TEST(UploadCallbackPolicy, NoRouteWhenThePeerCannotReachUs)
 	facts.canTakeCallback = false;
 	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
 }
+
+TEST(UploadCallbackPolicy, UnansweredDirectCallbackFallsBackToTheServer)
+{
+	SUploadCallbackRouteFacts facts = PeerWithBothRoutes();
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::DirectUdpCallback);
+	facts.directTried = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::ServerCallback);
+	facts.onOurServer = false;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
+}
+
+TEST(UploadCallbackPolicy, OnlyTheDirectRouteLeavesThePeerUnspent)
+{
+	ASSERT_FALSE(UploadCallbackSpendsPeer(EContactRouteReport::DirectUdpCallback));
+	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ServerCallback));
+	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ForeignNatCallback));
+	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ServerHolePunch));
+	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::LugdunumCallback));
+}
