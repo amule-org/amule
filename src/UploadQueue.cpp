@@ -26,6 +26,7 @@
 #include "UploadQueue.h" // Interface declarations
 #include "UploadQueueAddressPolicy.h"
 #include "UploadCallbackPolicy.h"
+#include "PeerAddressing.h" // Needed for kCallbackRequestThrottleMs
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
@@ -90,15 +91,25 @@ bool CUploadQueue::TryStartUploadCallback(
 	if (!client->m_bAddNextConnect || !MayStartUploadCallback(client->m_uploadCallbackSpent)) {
 		return false;
 	}
-	if (inFlight >= inFlightCeiling) {
+	// A request still in flight gets its whole window before the next route is tried.
+	if (inFlight >= inFlightCeiling || client->HasUploadCallbackInFlight(now)) {
 		return false;
 	}
-	// CanDoCallback() alone is also true for a peer on another server and for a Kad-only
-	// session, and TryToContact() checks both for the same reason: a LowID is valid only on its
-	// own server, so the request would wake a different client on ours.
-	EContactRouteReport route = EContactRouteReport::ServerCallback;
-	if (theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort()) &&
-		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort())) {
+	SUploadCallbackRouteFacts facts;
+	facts.canTakeCallback = theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort());
+	facts.directCallback = client->IsDirectCallbackPossible();
+	// A request the peer drops would hold an in-flight place for nothing.
+	facts.directThrottled = IsDirectCallbackThrottled(
+		client->GetLastDirectCallbackRequest(), now, PeerAddressing::kCallbackRequestThrottleMs);
+	facts.directTried = client->m_uploadDirectCallbackTried;
+	facts.onOurServer =
+		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort());
+	EContactRouteReport route = UploadCallbackRoute(facts);
+	if (route == EContactRouteReport::DirectUdpCallback) {
+		client->SendDirectCallbackRequest();
+		AddDebugLogLineN(
+			logLocalClient, "Started direct UDP upload callback to " + client->GetFullIP());
+	} else if (route == EContactRouteReport::ServerCallback) {
 		client->SendClassicCallbackRequest();
 		AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
 	} else {
@@ -119,7 +130,9 @@ bool CUploadQueue::TryStartUploadCallback(
 #endif
 	}
 	client->NoteUploadCallbackSent(now, route);
-	client->MarkUploadCallbackSpent();
+	if (UploadCallbackSpendsPeer(route)) {
+		client->MarkUploadCallbackSpent();
+	}
 	return true;
 }
 
@@ -548,6 +561,8 @@ void CUploadQueue::AdmitUploadCallbackAnswer(CUpDownClient *client)
 	if (!client->IsUploadCallbackExpected(::GetTickCount64())) {
 		return;
 	}
+	// One answered callback per request interval, whatever its route.
+	client->MarkUploadCallbackSpent();
 	// A banned peer never gets a slot, and one that already left the queue has nothing to admit:
 	// the exemption lasts 30 s, longer than the queue does.
 	if (client->IsBanned() || !IsOnUploadQueue(client)) {

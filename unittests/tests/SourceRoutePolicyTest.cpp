@@ -633,3 +633,47 @@ TEST(SourceRoutePolicy, ASwapTakesTheTargetFilesOrigin)
 	ASSERT_TRUE(kept.from == SF_KADEMLIA);
 	ASSERT_EQUALS(current.mask, kept.mask);
 }
+
+TEST(SourceRoutePolicy, DirectCallbackThrottleBoundary)
+{
+	ASSERT_FALSE(IsDirectCallbackThrottled(0, 100, 1000));
+	ASSERT_TRUE(IsDirectCallbackThrottled(100, 100, 1000));
+	ASSERT_TRUE(IsDirectCallbackThrottled(100, 100 + 999, 1000));
+	ASSERT_FALSE(IsDirectCallbackThrottled(100, 100 + 1000, 1000));
+	ASSERT_FALSE(IsDirectCallbackThrottled(100, 99, 1000));
+}
+
+TEST(SourceRoutePolicy, UnthrottledDirectCallbackIsChosen)
+{
+	const SSourceRouteChoice choice = ChooseSourceRoute(LowIDWithEveryRoute(), false);
+	ASSERT_TRUE(choice.route == ESourceRoute::DirectUdpCallback);
+	ASSERT_FALSE(choice.directHeld);
+}
+
+// A direct request went out lately, from either side: the download side tries the next route.
+TEST(SourceRoutePolicy, ThrottledDirectCallbackMovesOnWithoutFailing)
+{
+	SSourceRouteFacts facts = LowIDWithEveryRoute();
+	SSourceRouteChoice choice = ChooseSourceRoute(facts, true);
+	ASSERT_TRUE(choice.route == ESourceRoute::ServerCallback);
+	ASSERT_TRUE(choice.directHeld);
+	ASSERT_EQUALS(0U, facts.failed);
+	facts.onOurServer = false;
+	facts.hasBuddyID = false;
+	facts.foreignNatCallback = false;
+	choice = ChooseSourceRoute(facts, true);
+	ASSERT_TRUE(choice.route == ESourceRoute::None);
+	ASSERT_TRUE(choice.directHeld);
+}
+
+TEST(SourceRoutePolicy, ThrottleHoldsOnlyAnUntriedDirectCallback)
+{
+	SSourceRouteFacts facts = LowIDWithEveryRoute();
+	Fail(facts, ESourceRoute::DirectUdpCallback);
+	SSourceRouteChoice choice = ChooseSourceRoute(facts, true);
+	ASSERT_TRUE(choice.route == ESourceRoute::ServerCallback);
+	ASSERT_FALSE(choice.directHeld);
+	choice = ChooseSourceRoute(HighID(), true);
+	ASSERT_TRUE(choice.route == ESourceRoute::Dial);
+	ASSERT_FALSE(choice.directHeld);
+}
