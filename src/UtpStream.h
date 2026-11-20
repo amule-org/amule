@@ -53,11 +53,13 @@ public:
 
 	//! One datagram's worth: how far short of the bound a stalled stream sits.
 	static constexpr size_t kWindowSlackBytes = 2048;
+	//! A bound too small for a full slack keeps this share of itself.
+	static constexpr size_t kWindowSlackDivisor = 8;
 
 	//! A datagram's worth, or a proportion when the bound is smaller than one.
 	size_t WindowSlack() const
 	{
-		const size_t proportional = m_readBound / 8;
+		const size_t proportional = m_readBound / kWindowSlackDivisor;
 		return proportional < kWindowSlackBytes ? proportional : kWindowSlackBytes;
 	}
 
@@ -91,7 +93,8 @@ public:
 	static constexpr size_t kDefaultReadBound = 256 * 1024;
 	// A smaller slack is less than a packet: occupancy stalls a packet short of the bound, never
 	// reaches the high-water mark, and the read-drained edge never fires.
-	static_assert(kDefaultReadBound / 8 >= kWindowSlackBytes, "read bound too small for a full slack");
+	static_assert(kDefaultReadBound / kWindowSlackDivisor >= kWindowSlackBytes,
+		"read bound too small for a full slack");
 
 	//! An honest peer overshoots the bound by at most the window in flight when it shrank, plus
 	//! what libutp releases at once from its reorder buffer when a gap fills.
