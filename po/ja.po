@@ -3927,6 +3927,15 @@ msgid "UDP firewall check"
 msgstr "ファイアウォールされています"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
+msgid "Publish buddy pointer"
+msgstr ""
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "仲間がありません"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
 msgstr ""

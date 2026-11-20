@@ -3893,6 +3893,16 @@ msgid "UDP firewall check"
 msgstr "檢查 UDP 防火牆"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Publish buddy pointer"
+msgstr "發布註記"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "發布註記"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
 msgstr "類型 %u"

@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-17 22:57+0000\n"
+"PO-Revision-Date: 2026-11-20 09:13+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -2062,9 +2062,9 @@ msgid "Remote Queue Full"
 msgstr "Удалённая очередь полна"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Waiting to ask (%s)"
-msgstr "Ожидающие отдачи: %s"
+msgstr "Ожидание запроса (%s)"
 
 #: src/DataToText.cpp
 msgid "Old MLDonkey"
@@ -2155,67 +2155,56 @@ msgid "Connecting via %s"
 msgstr "Соединение через %s"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Direct"
-msgstr "Каталоги"
+msgstr "Прямое"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Incoming"
-msgstr "Каталог загрузок"
+msgstr "Входящее"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Server callback"
-msgstr "прямой обратный вызов"
+msgstr "Обратный вызов сервера"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Kad buddy callback"
-msgstr "обратный вызов Lugdunum"
+msgstr "Обратный вызов партнёра Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Direct UDP callback"
-msgstr "прямой обратный вызов"
+msgstr "Прямой обратный вызов UDP"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Callback by the source's server"
-msgstr "собственный сервер источника"
+msgstr "Обратный вызов сервером источника"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Server hole punch"
-msgstr "прокол через сервер"
+msgstr "Прокол через сервер"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Lugdunum callback"
-msgstr "обратный вызов Lugdunum"
+msgstr "Обратный вызов Lugdunum"
 
 #: src/DataToText.cpp
 msgid "Answered server callback"
-msgstr ""
+msgstr "Отвеченный обратный вызов сервера"
 
 #: src/DataToText.cpp
 msgid "Answered Kad buddy callback"
-msgstr ""
+msgstr "Отвеченный обратный вызов партнёра Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Answered direct UDP callback"
-msgstr "прямой обратный вызов"
+msgstr "Отвеченный прямой обратный вызов UDP"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Answered Lugdunum callback"
-msgstr "обратный вызов Lugdunum"
+msgstr "Отвеченный обратный вызов Lugdunum"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "proxy"
-msgstr "Прокси"
+msgstr "прокси"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -3947,6 +3936,16 @@ msgstr "Особый узел"
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "UDP firewall check"
 msgstr "Проверка UDP-фаервола"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Publish buddy pointer"
+msgstr "Публикация заметок"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "Публикация заметок"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
@@ -6102,7 +6101,7 @@ msgstr "Пароль администратора"
 
 #: src/muuli_wdr.cpp src/PrefsUnifiedDlg.cpp
 msgid "A password is set."
-msgstr "Пароль установлен."
+msgstr "Пароль задан."
 
 #: src/muuli_wdr.cpp
 msgid "Enable guest access"
@@ -6118,7 +6117,7 @@ msgstr "Гостевой пароль"
 
 #: src/muuli_wdr.cpp
 msgid "Search settings"
-msgstr "Настройки поиска"
+msgstr "Поиск настроек"
 
 #: src/muuli_wdr.cpp
 msgid "Find a setting by name. Matching pages stay in the list below, and the matching options on them are shown in bold."
@@ -7371,7 +7370,7 @@ msgstr "Не удалось подключить Cfg к widget с ID %d и кл�
 #: src/PrefsUnifiedDlg.cpp
 #, c-format
 msgid "No settings match \"%s\". Try a shorter or different word."
-msgstr "Нет настроек, соответствующих «%s». Попробуйте более короткое или другое слово."
+msgstr "Нет подходящих настроек для «%s». Попробуйте другое или более короткое слово."
 
 #: src/PrefsUnifiedDlg.cpp
 #, c-format

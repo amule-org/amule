@@ -3950,6 +3950,15 @@ msgid "UDP firewall check"
 msgstr "방화벽됨"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
+msgid "Publish buddy pointer"
+msgstr ""
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "친구가 없음"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
 msgstr ""

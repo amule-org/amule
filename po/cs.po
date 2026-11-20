@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-18 23:45+0000\n"
+"PO-Revision-Date: 2026-11-20 15:06+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
@@ -2143,67 +2143,56 @@ msgid "Connecting via %s"
 msgstr "Připojování přes %s"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Direct"
-msgstr "Adresáře"
+msgstr "Přímé"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Incoming"
-msgstr "Příchozí adresář"
+msgstr "Příchozí"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Server callback"
-msgstr "přímé volání zpět"
+msgstr "Zpětné volání serveru"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Kad buddy callback"
-msgstr "zpětné volání Lugdunum"
+msgstr "Zpětné volání kamaráda přes Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Direct UDP callback"
-msgstr "přímé volání zpět"
+msgstr "Přímé zpětné volání UDP"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Callback by the source's server"
-msgstr "vlastní server zdroje"
+msgstr "Zpětné volání serveru zdroje"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Server hole punch"
-msgstr "hole punch serveru"
+msgstr "Hole punch serveru"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Lugdunum callback"
-msgstr "zpětné volání Lugdunum"
+msgstr "Zpětné volání Lugdunum"
 
 #: src/DataToText.cpp
 msgid "Answered server callback"
-msgstr ""
+msgstr "Odpovězeno na zpětné volání serveru"
 
 #: src/DataToText.cpp
 msgid "Answered Kad buddy callback"
-msgstr ""
+msgstr "Odpovězeno na zpětné volání kamaráda z Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Answered direct UDP callback"
-msgstr "přímé volání zpět"
+msgstr "Odpovězeno na přímé zpětné volání UDP"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Answered Lugdunum callback"
-msgstr "zpětné volání Lugdunum"
+msgstr "Odpovězeno na zpětné volání Lugdunum"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "proxy"
-msgstr "Proxy"
+msgstr "proxy"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -3935,6 +3924,15 @@ msgid "UDP firewall check"
 msgstr "UDP kontrola firewallu"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
+msgid "Publish buddy pointer"
+msgstr "Zveřejnit ukazatel kamaráda"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "Zveřejnit ukazatel kamaráda"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
 msgstr "typ %u"
@@ -5475,7 +5473,7 @@ msgstr "Odstranit nefunkční server po"
 
 #: src/muuli_wdr.cpp
 msgid "Static servers are never removed, even when unreachable."
-msgstr "Stálé servery nejsou nikdy odebrány, ani když jsou nedostupné."
+msgstr "Statické servery nejsou nikdy odebrány, ani když jsou nedostupné."
 
 #: src/muuli_wdr.cpp
 msgid "retries"
@@ -8103,7 +8101,7 @@ msgstr "Přímé koncové body klienta: %u"
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated static servers listed. Making another pass without obfuscation."
-msgstr "Selhalo připojení ke všem stálým serverům se zamaskováním, které jsou na seznamu. Zkouším to znovu bez zamaskování."
+msgstr "Selhalo připojení ke všem statickým serverům se zamaskováním, které jsou na seznamu. Zkouším to znovu bez zamaskování."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all obfuscated servers listed. Making another pass without obfuscation."
@@ -8111,7 +8109,7 @@ msgstr "Selhalo připojení ke všem uvedeným serverům se zamaskováním. Nás
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all static servers listed."
-msgstr "Selhalo připojení ke všem stálým serverům na seznamu."
+msgstr "Selhalo připojení ke všem statickým serverům na seznamu."
 
 #: src/ServerConnect.cpp
 msgid "Failed to connect to all servers listed."
@@ -8315,7 +8313,7 @@ msgstr "Max. uživatelů"
 
 #: src/ServerListCtrl.cpp
 msgid "Static"
-msgstr "Stálý"
+msgstr "Statický"
 
 #: src/ServerListCtrl.cpp
 msgid "Soft Files"

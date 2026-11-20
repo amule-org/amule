@@ -3936,6 +3936,15 @@ msgid "UDP firewall check"
 msgstr "via brandvägg"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
+msgid "Publish buddy pointer"
+msgstr ""
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "Ingen kompis"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
 msgstr ""

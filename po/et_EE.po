@@ -3948,6 +3948,15 @@ msgid "UDP firewall check"
 msgstr "tulemüüriga"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
+msgid "Publish buddy pointer"
+msgstr ""
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "Semu puudub"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
 msgstr ""

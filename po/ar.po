@@ -3931,6 +3931,16 @@ msgid "UDP firewall check"
 msgstr "التحقق من جدار حماية UDP"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Publish buddy pointer"
+msgstr "نشر ملاحظات"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "نشر ملاحظات"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
 msgstr "صنف %u"

@@ -3948,6 +3948,16 @@ msgid "UDP firewall check"
 msgstr "Vérification de pare-feu UDP"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Publish buddy pointer"
+msgstr "Publier les notes"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "Publier les notes"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
 msgstr "type %u"
