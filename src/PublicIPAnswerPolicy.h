@@ -35,16 +35,9 @@
 /**
  * Our public IPv4 as peers report it in OP_PUBLICIP_ANSWER (0x98).
  *
- * Only a client with no IP from its ID, its server or Kad asks. One peer must not decide the
- * answer: once our IP is set we stop asking, and a wrong one stays in our UDP obfuscation keys
- * until we leave the server.
- *
- * Votes are keyed on the /16 of the socket the answer came on, never on anything the peer
- * declares, and each /16 holds only its latest answer. A disagreeing answer is a vote of its own:
- * one wrong peer can neither set our IP nor stop two others that agree.
- *
- * A peer at a non-public address is on our side of the NAT and sees our LAN address, so it does
- * not vote. Nor does a non-public or LowID-shaped value.
+ * Once our IP is set we stop asking, so one peer must not decide it. Votes are keyed on the
+ * peer's /16 as our socket sees it, never on what the peer declares. A peer at a non-public
+ * address is on our side of the NAT and sees our LAN address, so it does not vote.
  */
 
 //! How many answering /16s must agree.
@@ -87,6 +80,7 @@ public:
 
 	std::size_t VoteCount() const noexcept { return m_votes.size(); }
 
+private:
 	static bool CountsAsVote(std::uint32_t answerer, std::uint32_t claimed)
 	{
 		return CNetworkAddress::FromIPv4NetworkOrder(answerer).IsGloballyRoutableIPv4() &&
@@ -94,7 +88,6 @@ public:
 		       CNetworkAddress::FromIPv4NetworkOrder(claimed).IsGloballyRoutableIPv4();
 	}
 
-private:
 	struct SVote
 	{
 		std::uint16_t net;
