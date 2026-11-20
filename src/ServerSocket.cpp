@@ -50,8 +50,9 @@
 #include "SharedFileList.h"   // Needed for CSharedFileList
 #include "NetworkFunctions.h" // Needed for IsGoodIP
 #include "GuiEvents.h"        // Needed for Notify_*
+#include "ServerIdChange.h"   // Needed for ParseIdChangeFields
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-#include "LugdunumNatTraversal.h"   // Needed for ParseIdChangeFields
+#include "LugdunumNatTraversal.h"   // Needed for IsNatCallbackActive
 #include "LugdunumNatCallbackLog.h" // Needed for LogForwardedCallback
 #include "NatServerHolePunch.h"     // Needed for ParseInfo, ParseFailure
 #include "NatServerHolePunchLog.h"  // Needed for LogInfo, LogFailure
@@ -333,9 +334,8 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				throw wxString("Corrupt or invalid loginanswer from server received");
 			}
 
-			CMemFile data(packet, size);
-
-			uint32 new_id = data.ReadUInt32();
+			const IdChangeFields idChange = ParseIdChangeFields(packet, size);
+			uint32 new_id = idChange.id;
 
 			// save TCP flags in 'cur_server'
 			wxASSERT(cur_server);
@@ -345,12 +345,12 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				uint32 rport = cur_server->GetConnPort();
 				pServer = theApp->serverlist->GetServerByAddress(
 					cur_server->GetAddress(), rport);
-				if (size >= 4 + 4 /* uint32 (ID) + uint32 (TCP flags)*/) {
-					cur_server->SetTCPFlags(data.ReadUInt32());
-					if (size >= 4+4+4 /* uint32 (ID) + uint32 (TCP flags) + uint32 (aux port) */) {
+				if (idChange.hasTcpFlags) {
+					cur_server->SetTCPFlags(idChange.tcpFlags);
+					if (idChange.hasAuxPort) {
 						// aux port login : we should use the 'standard' port of this
 						// server to advertise to other clients
-						ConnPort = data.ReadUInt32();
+						ConnPort = idChange.auxPort;
 						cur_server->SetPort(ConnPort);
 						if (cur_server->GetAuxPortsList().IsEmpty()) {
 							cur_server->SetAuxPortsList(CFormat("%u") % rport);
@@ -396,9 +396,8 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			}
 
 			uint32 dwServerReportedIP = 0;
-			if (size >=
-				4 + 4 + 4 + 4 + 4 /* All of the above + reported ip + obfuscation port */) {
-				dwServerReportedIP = data.ReadUInt32();
+			if (idChange.hasReportedIp) {
+				dwServerReportedIP = idChange.reportedIp;
 				if (::IsLowID(dwServerReportedIP)) {
 					AddDebugLogLineN(logServer,
 						CFormat(wxT("OP_IDCHANGE: server-reported IP %u is a "
@@ -413,21 +412,18 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 							    "match assigned HighID %u; ignoring")) %
 							dwServerReportedIP % new_id);
 				}
-				uint32 dwObfuscationTCPPort = data.ReadUInt32();
-				if (dwObfuscationTCPPort != 0) {
-					if (cur_server != NULL) {
-						cur_server->SetObfuscationPortTCP(dwObfuscationTCPPort);
-					}
-					if (pServer != NULL) {
-						pServer->SetObfuscationPortTCP(dwObfuscationTCPPort);
-					}
+			}
+			if (idChange.obfuscationPortTcp != 0) {
+				if (cur_server != nullptr) {
+					cur_server->SetObfuscationPortTCP(idChange.obfuscationPortTcp);
+				}
+				if (pServer != nullptr) {
+					pServer->SetObfuscationPortTCP(idChange.obfuscationPortTcp);
 				}
 			}
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 			if (cur_server != nullptr) {
-				const LugdunumNatTraversal::IdChangeFields idChange =
-					LugdunumNatTraversal::ParseIdChangeFields(packet, size);
 				const uint16 seenTcpPort =
 					idChange.hasYourPort ? static_cast<uint16>(idChange.yourPort) : 0;
 				cur_server->SetSeenTcpPort(seenTcpPort);
