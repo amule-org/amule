@@ -1966,6 +1966,7 @@ SKadPublishFacts CSharedFileList::CurrentKadPublishFacts()
 #ifdef ENABLE_IPV6
 		facts.advertisesIPv6 = AdvertisedIPv6ForPeers().has_value();
 #endif
+		facts.pointerEnabled = thePrefs::IsKadBuddyPointerEnabled();
 	}
 	return facts;
 }
@@ -1987,6 +1988,9 @@ CSharedFileList::SPublishingState CSharedFileList::GetPublishingState() const
 	const SKadSourceRoute route = CurrentKadSourceRoute();
 	const uint32 now = static_cast<uint32>(time(nullptr));
 	SPublishingState state;
+	state.kadPointerLive =
+		route.mode == EKadSourcePublish::Buddy &&
+		IsKadPointerLive(m_kadPointer, route.buddyIP, route.buddyPort, now, KADEMLIAREPUBLISHTIMES);
 	wxMutexLocker lock(list_mut);
 	for (const auto &entry : m_Files_map) {
 		const CKnownFile *file = entry.second;
@@ -2006,6 +2010,13 @@ CSharedFileList::SPublishingState CSharedFileList::GetPublishingState() const
 			if (file->GetKadSourceAckNodes() >= 5) {
 				++state.kadPublishedWell;
 			}
+		}
+		if (KadSourceReachableByPointer(state.kadPointerLive,
+			    file->GetKadSourceAckTime(),
+			    file->IsKadSourceAckMarked(),
+			    now,
+			    KADEMLIAREPUBLISHTIMES)) {
+			++state.kadPointerReachable;
 		}
 	}
 	return state;
@@ -2034,11 +2045,47 @@ bool KadSourcePublishWaits(const CKnownFile &file, uint32 now, uint32 waitingSin
 }
 } // namespace
 
+void CSharedFileList::CountKadUnreachedDue(const SKadSourceRoute &route, bool pointerLive, uint32 now)
+{
+	if (m_kadUnreachedDueCounted != 0 && now - m_kadUnreachedDueCounted < 60) {
+		return;
+	}
+	m_kadUnreachedDueCounted = now;
+	uint64 unreached = 0;
+	// Only a live pointer makes some files wait.
+	if (pointerLive) {
+		wxMutexLocker lock(list_mut);
+		for (const auto &entry : m_Files_map) {
+			const CKnownFile *file = entry.second;
+			if (file->IsKadSourcePublishDue(route.mode, route.buddyIP, route.buddyPort, now) &&
+				!file->IsKadSourceReachableByPointer(pointerLive, now)) {
+				++unreached;
+			}
+		}
+	}
+	if ((unreached == 0) != (m_kadUnreachedDue == 0)) {
+		AddDebugLogLineN(logKadPublish,
+			unreached ? CFormat("Kad source publish order: %llu due files lead nowhere, files "
+					    "reachable through our pointer wait") %
+					    unreached
+				  : CFormat("Kad source publish order: no due file leads nowhere, files "
+					    "reachable through our pointer go out"));
+	}
+	m_kadUnreachedDue = unreached;
+}
+
 CKnownFile *CSharedFileList::NextKadSourcePublish(uint32 now)
 {
+	const SKadSourceRoute route = CurrentKadSourceRoute();
+	const bool pointerLive =
+		route.mode == EKadSourcePublish::Buddy &&
+		IsKadPointerLive(m_kadPointer, route.buddyIP, route.buddyPort, now, KADEMLIAREPUBLISHTIMES);
+	CountKadUnreachedDue(route, pointerLive, now);
 	struct SFiles
 	{
 		CSharedFileList &list;
+		bool pointerLive;
+		uint64 unreachedDue;
 		CKnownFile *Find(const CMD4Hash &hash) { return list.GetFileByID(hash); }
 		CKnownFile *Next() { return list.GetNextKadFile(list.m_srcPublishCursor); }
 		static const CMD4Hash &Key(const CKnownFile &file) { return file.GetFileHash(); }
@@ -2054,8 +2101,8 @@ CKnownFile *CSharedFileList::NextKadSourcePublish(uint32 now)
 			AddDebugLogLineN(
 				logKadPublish, "Kad source publish deferred: target=" + target.ToHexString());
 		}
-		static bool Publish(CKnownFile &file) { return file.PublishSrc(); }
-	} files{ *this };
+		bool Publish(CKnownFile &file) const { return file.PublishSrc(pointerLive, unreachedDue); }
+	} files{ *this, pointerLive, m_kadUnreachedDue };
 	// Pass over files published in the last 5 h in this tick, rather than one per
 	// KADEMLIAPUBLISHTIME. The bound caps the work when few files are due.
 	return Kademlia::NextKadSourcePublish(
@@ -2090,7 +2137,8 @@ bool CSharedFileList::PublishKadPointer(uint32 now)
 	AddDebugLogLineN(logKadPublish,
 		CFormat("Kad buddy pointer publish started: target=%s buddy=%s") % target.ToHexString() %
 			Uint32_16toStringIP_Port(route.buddyIP, route.buddyPort));
-	m_kadPointer = KadPointerStarted(route.buddyIP, route.buddyPort, now, KADEMLIAREPUBLISHTIMES);
+	m_kadPointer =
+		KadPointerStarted(m_kadPointer, route.buddyIP, route.buddyPort, now, KADEMLIAREPUBLISHTIMES);
 	return true;
 }
 
@@ -2145,11 +2193,13 @@ void CSharedFileList::Publish()
 	// Variables to save cpu.
 	unsigned int tNow = time(NULL);
 
-	if (Kademlia::CKademlia::IsConnected() && PublishesToKad(CurrentKadPublishFacts()) && GetCount() &&
+	const SKadPublishFacts publishFacts = CurrentKadPublishFacts();
+	if (Kademlia::CKademlia::IsConnected() && PublishesToKad(publishFacts) && GetCount() &&
 		Kademlia::CKademlia::GetPublish()) {
 		// We are connected to Kad with a route back to us, and Kad is ready to start publishing.
+		const bool keywords = PublishesKadKeywords(publishFacts);
 
-		if (Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY) {
+		if (keywords && Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY) {
 
 			// list_mut serialises CPublishKeywordList access against CUploadDiskIOThread's
 			// RemoveFile -> RemoveKeywords path, which mutates pPubKw->references and ref counts
@@ -2223,7 +2273,7 @@ void CSharedFileList::Publish()
 			}
 		}
 
-		if (Kademlia::CKademlia::GetTotalStoreNotes() < KADEMLIATOTALSTORENOTES) {
+		if (keywords && Kademlia::CKademlia::GetTotalStoreNotes() < KADEMLIATOTALSTORENOTES) {
 			if (tNow >= m_lastPublishKadNotes) {
 				CKnownFile *pCurKnownFile = GetNextKadFile(m_notesPublishCursor);
 				if (pCurKnownFile) {

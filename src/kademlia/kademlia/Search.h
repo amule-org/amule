@@ -201,6 +201,8 @@ private:
 	uint32_t StoreTotal() const noexcept;
 	bool StoreBudgetAllows(CPerIPBudget &budget, const CContact &node, uint64_t packets);
 	void KeepPublishSeeds(uint64_t acknowledged) const;
+	//! Whether a node that acknowledged this source publish got the pointer route (#2513).
+	bool AcknowledgedWithPointer() const;
 	void SendFindValue(CContact *contact, bool reaskMore = false);
 	void PrepareToStop() noexcept;
 	void StorePacket();
@@ -261,6 +263,8 @@ private:
 	ContactMap m_possible;
 	ContactMap m_tried;
 	RespondedMap m_responded;
+	//! The storers this source publish sent `bpv` to.
+	std::set<uint32_t> m_markedStoreIPs;
 	ContactMap m_best;
 	ContactList m_delete;
 	ContactMap m_inUse;

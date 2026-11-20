@@ -781,9 +781,20 @@ void CSearch::RecordStoreAcknowledgements() const
 	if (CKnownFile *file = theApp->sharedfiles->GetFileByID(CMD4Hash(fileID))) {
 		// Nodes keep the entry from when they stored it, so date it from the lookup start.
 		const uint64_t elapsed = (::GetTickCount64() - m_lookupStarted) / 1000;
-		file->SetKadSourceAck(
-			static_cast<uint32_t>(time(nullptr) - elapsed), static_cast<uint32_t>(acknowledged));
+		file->SetKadSourceAck(static_cast<uint32_t>(time(nullptr) - elapsed),
+			static_cast<uint32_t>(acknowledged),
+			AcknowledgedWithPointer());
 	}
+}
+
+bool CSearch::AcknowledgedWithPointer() const
+{
+	for (const auto &peer : m_lookupTrace.Peers()) {
+		if (peer.second.itemReplies && m_markedStoreIPs.count(peer.first.first) != 0) {
+			return true;
+		}
+	}
+	return false;
 }
 
 void CSearch::KeepPublishSeeds(uint64_t acknowledged) const
@@ -1147,18 +1158,24 @@ void CSearch::StorePacket()
 			} else if (publishAs == EKadSourcePublish::Buddy) {
 				// The pointer route goes only to a storer that keeps it (#2513).
 				const bool keyed = HoldsReceiverKey(*from);
+				const bool marked =
+					SendsKadPointer(thePrefs::IsKadBuddyPointerEnabled(), keyed);
 				AddKadBuddyRecordTags(taglist,
 					CurrentBuddyRoute(*theApp->clientlist->GetBuddy()),
 					KadSourceTypeFor(publishAs, file->IsLargeFile()),
 					from->GetVersion() >= 2 ? file->GetFileSize() : 0,
-					SendsKadPointer(thePrefs::IsKadBuddyPointerEnabled(), keyed));
+					marked);
+				if (marked) {
+					m_markedStoreIPs.insert(from->GetIPAddress());
+				}
 				if (thePrefs::IsKadBuddyPointerEnabled() &&
 					theLogger.IsEnabled(logKadPublish)) {
 					CPublishMetrics::Instance().PointerMarker(keyed);
 				}
-			} else if (publishAs == EKadSourcePublish::IPv6Only) {
+			} else if (publishAs == EKadSourcePublish::IPv6Only ||
+				   publishAs == EKadSourcePublish::PointerOnly) {
 				// A storer that implements type 7 drops it without our receiver key.
-				if (from->GetUDPKey().GetKeyValue(theApp->GetPublicIP(false)) == 0) {
+				if (!HoldsReceiverKey(*from)) {
 					return;
 				}
 				taglist.push_back(new CTagInt8(
@@ -1170,6 +1187,12 @@ void CSearch::StorePacket()
 				}
 				// Type 7 has no size variant, so the size always goes.
 				taglist.push_back(new CTagVarInt(TAG_FILESIZE, file->GetFileSize()));
+				// The pointer route, for when we have a buddy again (§5.6.1).
+				if (Type7CarriesKadPointer(publishAs, thePrefs::IsKadBuddyPointerEnabled())) {
+					taglist.push_back(
+						new CTagInt8(TAG_BUDDYPOINTER, KAD_POINTER_VERSION));
+					m_markedStoreIPs.insert(from->GetIPAddress());
+				}
 			} else if (publishAs == EKadSourcePublish::None) {
 				// No callback route remains. Let the next shared-file pass retry.
 				file->SetLastPublishTimeKadSrc(0, 0);

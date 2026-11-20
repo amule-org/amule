@@ -219,6 +219,9 @@ public:
 		uint64 shared = 0;
 		uint64 kadPublished = 0;
 		uint64 kadPublishedWell = 0; // Acknowledged by 5 or more nodes.
+		// Our pointer names our buddy, and these files have a live entry with `bpv` (#2513).
+		bool kadPointerLive = false;
+		uint64 kadPointerReachable = 0;
 		uint64 ed2kOffered = 0;
 	};
 	SPublishingState GetPublishingState() const;
@@ -456,6 +459,11 @@ private:
 	CKadPublishCursor<CMD4Hash> m_srcPublishCursor;
 	//! The buddy our last pointer named, and when it is due again (#2513).
 	SKadPointerState m_kadPointer;
+	// Due source publishes whose entries lead nowhere, counted at most once a minute; while there
+	// are any, files reachable through our pointer wait (DefersKadSourcePublish()).
+	uint64 m_kadUnreachedDue = 0;
+	uint32 m_kadUnreachedDueCounted = 0;
+	void CountKadUnreachedDue(const SKadSourceRoute &route, bool pointerLive, uint32 now);
 	//! Due files waiting for their last storing nodes, with when each first waited.
 	std::map<CMD4Hash, uint32> m_kadSourceWaits;
 	CKadPublishCursor<CMD4Hash> m_notesPublishCursor;
