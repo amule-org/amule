@@ -93,9 +93,8 @@ public:
 	//! The connection-level flow-control window this handle advertised to the peer at
 	//! creation (ngtcp2_transport_params::initial_max_data). 0 if no connection.
 	virtual uint64_t GetAdvertisedReadWindow(Handle) const = 0;
-	//! Bytes received so far on the peer's first opened stream, and clears them. There is
-	//! exactly one stream per connection by design (see QuicSocketTransport.h): eD2k always
-	//! replies on the peer's own stream and never opens one of its own.
+	//! Bytes received so far on the stream the peer writes on, and clears them. An accepted
+	//! connection writes back on that stream; a dial writes on its own.
 	virtual std::vector<uint8_t> DrainStreamData(Handle) = 0;
 	//! Reopens @p bytes of stream- and connection-level flow control, as the application
 	//! drains what DrainStreamData() returned (ngtcp2_conn_extend_max_stream_offset() +
@@ -106,8 +105,8 @@ public:
 	//! the timer handling was fatal (e.g. the idle timeout elapsed): the caller must then close
 	//! the connection rather than keep ticking it.
 	virtual bool Tick(Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t nowMs) = 0;
-	//! True once the peer has opened its one stream (QuicSocketTransport.h). The point at which
-	//! a connection has something worth handing to the rest of aMule.
+	//! True once the stream we write on is open: the peer's on an accepted connection, our own
+	//! on a dial. The point at which a connection has something worth handing to the rest of aMule.
 	virtual bool HasOpenStream(Handle) const = 0;
 	//! Opens the single local bidirectional stream used by an outbound authenticated dial.
 	//! Inbound connections never call this operation; their peer stream remains the admission trigger.
@@ -144,9 +143,9 @@ public:
 	//! connection's one stream ending is distinct from an application error in the first place.
 	virtual void CloseStreamGracefully(
 		Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t nowMs) = 0;
-	//! True once this connection's one stream has ended -- cleanly (ngtcp2's stream_close) or by
-	//! reset (stream_reset), from either side. With exactly one stream per connection by design
-	//! (QuicSocketTransport.h), there is nothing left to use the connection for past this point.
+	//! True once the session's stream, ours or the peer's, has ended -- cleanly (ngtcp2's
+	//! stream_close) or by reset (stream_reset), from either side. There is nothing left to use the
+	//! connection for past this point.
 	virtual bool IsStreamEnded(Handle) const = 0;
 	//! Sends CONNECTION_CLOSE and destroys the connection, in one call: ngtcp2 forbids calling
 	//! ngtcp2_conn_write_connection_close() from inside a callback, so this cannot be folded into

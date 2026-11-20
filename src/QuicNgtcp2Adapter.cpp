@@ -451,9 +451,9 @@ private:
 		return m_streamClosingSinceMs && nowMs - *m_streamClosingSinceMs >= kClosedStreamLingerMs;
 	}
 
-	// The point a connection has something worth handing to the rest of aMule: either side's
-	// one stream has opened (QuicSocketTransport.h) -- the peer's, for an inbound connection, or
-	// this side's own, for an outbound dial, once OnExtendMaxLocalStreamsBidi() lets it open.
+	// The point a connection has something worth handing to the rest of aMule: the stream we
+	// write on has opened -- the peer's, for an inbound connection, or this side's own, for an
+	// outbound dial, once OnExtendMaxLocalStreamsBidi() lets it open.
 	// Checked after every successful ProcessDatagram() and from Tick(), since either is a place
 	// a stream can newly open.
 	void OfferStreamIfJustOpened()
@@ -616,13 +616,12 @@ private:
 		return true;
 	}
 
-	//! With exactly one stream per connection by design (QuicSocketTransport.h), that stream
-	//! ending -- cleanly (stream_close) or by reset (stream_reset), from either side -- leaves
-	//! nothing left to use this connection for. Without this, a connection whose stream ended
-	//! stays alive doing nothing until CQuicContext::kIdleTimeoutMs finally reclaims it: every
-	//! finished eD2k session would hold one of CQuicContext::kMaxConnectionsPerScope's slots for
-	//! up to a minute after it had nothing left to do. Through Close(), so a stream that ends
-	//! before it is offered still reports the dial as failed.
+	//! The session's stream ending -- cleanly (stream_close) or by reset (stream_reset), from
+	//! either side -- leaves nothing left to use this connection for. Without this, a connection whose
+	//! stream ended stays alive doing nothing until CQuicContext::kIdleTimeoutMs finally reclaims it:
+	//! every finished eD2k session would hold one of CQuicContext::kMaxConnectionsPerScope's slots for up
+	//! to a minute after it had nothing left to do. Through Close(), so a stream that ends before it is
+	//! offered still reports the dial as failed.
 	void EndConnectionIfStreamEnded()
 	{
 		if (!m_closed && m_engine->IsStreamEnded(m_handle)) {
@@ -678,16 +677,16 @@ public:
 		}
 	}
 
-	// There is exactly one application stream per connection by design: eD2k always replies on
-	// the peer's own stream and never opens one of its own (QuicSocketTransport.h). The first
-	// stream id seen, from either callback, is the only one this engine ever tracks; recv_stream
-	// data for a later, different stream id is silently ignored rather than accepted into a
-	// second stream's place, since nothing above this layer could tell the two apart anyway.
+	// One eD2k byte stream per connection. An accepted connection reads and writes on the
+	// peer's stream. A dial writes on its own stream and reads the first stream the peer sends
+	// on: aMule answers on the dialler's stream, eMuleAI and eMuleQt on one of their own. Data on
+	// any other stream is ignored.
 	static int OnStreamOpen(ngtcp2_conn *conn, int64_t streamId, void *userData)
 	{
 		auto *engine = static_cast<CProductionNgtcp2Engine *>(userData);
 		auto it = engine->m_connections.find(conn);
-		if (it != engine->m_connections.end() && it->second.streamId < 0) {
+		if (it != engine->m_connections.end() && it->second.streamId < 0 &&
+			ngtcp2_conn_is_server(conn)) {
 			it->second.streamId = streamId;
 		}
 		return 0;
@@ -707,10 +706,16 @@ public:
 		if (it == engine->m_connections.end()) {
 			return 0;
 		}
-		if (it->second.streamId < 0) {
+		if (it->second.streamId < 0 && ngtcp2_conn_is_server(conn)) {
 			it->second.streamId = streamId;
 		}
-		if (it->second.streamId != streamId) {
+		if (it->second.readStreamId < 0) {
+			it->second.readStreamId = streamId;
+		}
+		if (it->second.readStreamId != streamId) {
+			// Unread, but its credit goes back: it must not use up the connection window.
+			ngtcp2_conn_extend_max_stream_offset(conn, streamId, datalen);
+			ngtcp2_conn_extend_max_offset(conn, datalen);
 			return 0;
 		}
 		// Once a transport is attached (AttachTransport()), bytes go straight to it: buffering
@@ -739,7 +744,7 @@ public:
 	{
 		auto *engine = static_cast<CProductionNgtcp2Engine *>(userData);
 		auto it = engine->m_connections.find(conn);
-		if (it != engine->m_connections.end() && it->second.streamId == streamId) {
+		if (it != engine->m_connections.end() && it->second.IsSessionStream(streamId)) {
 			it->second.streamEnded = true;
 		}
 		return 0;
@@ -750,7 +755,7 @@ public:
 	{
 		auto *engine = static_cast<CProductionNgtcp2Engine *>(userData);
 		auto it = engine->m_connections.find(conn);
-		if (it != engine->m_connections.end() && it->second.streamId == streamId) {
+		if (it != engine->m_connections.end() && it->second.IsSessionStream(streamId)) {
 			it->second.streamEnded = true;
 		}
 		return 0;
@@ -874,15 +879,14 @@ public:
 		params.max_idle_timeout = NanosecondsFromMs(kIdleTimeoutMs);
 		params.original_dcid = originalDcid;
 		params.original_dcid_present = 1;
-		// Only the remote-initiated windows matter: eD2k always replies on the peer's own
-		// stream, never opens one of its own (see QuicSocketTransport.h). ExtendReadWindow()
-		// reopens these as the application drains its read buffer, once a real stream exists.
+		// As the acceptor aMule replies on the dialler's stream and opens none of its own, so
+		// only the remote-initiated windows matter. ExtendReadWindow() reopens these as the
+		// application drains its read buffer, once a real stream exists.
 		params.initial_max_stream_data_bidi_remote = CQuicSocketTransport::kReadWindow;
 		params.initial_max_stream_data_uni = CQuicSocketTransport::kReadWindow;
 		params.initial_max_data = CQuicSocketTransport::kReadWindow;
 		// ngtcp2_transport_params_default() leaves this at 0, meaning "the peer may open no
-		// bidirectional stream at all". Exactly one is the design (QuicSocketTransport.h): the
-		// peer's own stream, never a second.
+		// bidirectional stream at all". The dialler needs exactly one.
 		params.initial_max_streams_bidi = 1;
 
 		ngtcp2_conn *conn = nullptr;
@@ -941,11 +945,10 @@ public:
 		ngtcp2_transport_params_default(&params);
 		params.max_udp_payload_size = kMaxUdpPayload;
 		params.max_idle_timeout = NanosecondsFromMs(kIdleTimeoutMs);
-		// This endpoint is the one that will open the connection's one stream (see this method's
-		// own comment above): _bidi_local, not _bidi_remote, is therefore the window that governs
-		// what it can receive back on it -- the mirror image of CreateServer()'s own
-		// initial_max_stream_data_bidi_remote for that same stream.
+		// The peer answers on our stream (_bidi_local) or on one stream of its own (_bidi_remote).
 		params.initial_max_stream_data_bidi_local = CQuicSocketTransport::kReadWindow;
+		params.initial_max_stream_data_bidi_remote = CQuicSocketTransport::kReadWindow;
+		params.initial_max_streams_bidi = 1;
 		params.initial_max_data = CQuicSocketTransport::kReadWindow;
 
 		ngtcp2_conn *conn = nullptr;
@@ -1079,10 +1082,15 @@ public:
 	void ExtendStreamReadWindow(Handle handle, size_t bytes) override
 	{
 		auto it = m_connections.find(handle);
-		if (it == m_connections.end() || it->second.streamId < 0) {
+		if (it == m_connections.end()) {
 			return;
 		}
-		ngtcp2_conn_extend_max_stream_offset(it->second.conn, it->second.streamId, bytes);
+		const int64_t readStream =
+			it->second.readStreamId >= 0 ? it->second.readStreamId : it->second.streamId;
+		if (readStream < 0) {
+			return;
+		}
+		ngtcp2_conn_extend_max_stream_offset(it->second.conn, readStream, bytes);
 		ngtcp2_conn_extend_max_offset(it->second.conn, bytes);
 	}
 
@@ -1261,7 +1269,10 @@ private:
 		//! struct cares which.
 		std::unique_ptr<IQuicNgtcp2TlsSession> tlsSession;
 		ngtcp2_crypto_conn_ref connRef{};
+		//! The stream we write on: the peer's on an accepted connection, our own on a dial.
 		int64_t streamId = -1;
+		//! The stream the peer writes on: the first one it sends data on.
+		int64_t readStreamId = -1;
 		std::vector<uint8_t> receivedData;
 		//! Non-owning: set by AttachTransport() once the caller has handed the stream off. The
 		//! caller is responsible for keeping it alive and for calling AttachTransport(handle,
@@ -1281,7 +1292,7 @@ private:
 		size_t frontChunkAcked = 0; //!< Bytes of unackedSendChunks.front() acked_stream_data_offset()
 					    //!< already confirmed.
 		//! Set by OnRecvStreamData()'s FIN flag, OnStreamClose(), or OnStreamReset() -- whichever
-		//! notices first that the one stream this connection will ever have is done.
+		//! notices first that the session's stream is done.
 		bool streamEnded = false;
 		//! The fatal ngtcp2 error from Read() or Tick(), or 0; EndConnection() reports it.
 		int closeError = 0;
@@ -1295,6 +1306,11 @@ private:
 		//! ngtcp2_conn_update_pkt_tx_time(). See NoteBurstWrite().
 		bool burstOpen = false;
 		ngtcp2_tstamp burstTs = 0;
+
+		bool IsSessionStream(int64_t id) const
+		{
+			return id >= 0 && (id == streamId || id == readStreamId);
+		}
 	};
 
 	static ngtcp2_callbacks MakeCallbacks()

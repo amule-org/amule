@@ -174,6 +174,7 @@ struct SUtpHelloAttachmentDecision
 
 inline SUtpHelloAttachmentDecision DecideUtpHelloAttachment(bool incomingSynWinnerMatches,
 	bool foundInbound,
+	bool foundConnected,
 	bool hashesValid,
 	const uint8_t *localHash,
 	const uint8_t *peerHash)
@@ -182,7 +183,11 @@ inline SUtpHelloAttachmentDecision DecideUtpHelloAttachment(bool incomingSynWinn
 		return { false, true };
 	}
 	if (hashesValid && localHash != nullptr && peerHash != nullptr) {
-		const bool keepFound = ShouldKeepFoundUtp(foundInbound, localHash, peerHash);
+		// The hash order breaks a tie between two live streams. A dial still in its handshake
+		// loses to the stream that brought the hello: the peer may never answer it (eMuleQt has
+		// no uTP).
+		const bool keepFound =
+			foundConnected && ShouldKeepFoundUtp(foundInbound, localHash, peerHash);
 		return { keepFound, !keepFound };
 	}
 	return { true, false };
@@ -215,6 +220,7 @@ struct SUtpHelloAttachmentResult
 template <typename NoteFileRequestLost, typename CloseFoundSocket, typename AttachIncomingSocket>
 inline SUtpHelloAttachmentResult AttachUtpSocketAfterVerifiedHello(bool winnerMatchesVerifiedPeer,
 	bool foundInbound,
+	bool foundConnected,
 	bool hashesValid,
 	const uint8_t *localHash,
 	const uint8_t *peerHash,
@@ -224,7 +230,7 @@ inline SUtpHelloAttachmentResult AttachUtpSocketAfterVerifiedHello(bool winnerMa
 	AttachIncomingSocket &&attachIncomingSocket)
 {
 	const SUtpHelloAttachmentDecision decision = DecideUtpHelloAttachment(
-		winnerMatchesVerifiedPeer, foundInbound, hashesValid, localHash, peerHash);
+		winnerMatchesVerifiedPeer, foundInbound, foundConnected, hashesValid, localHash, peerHash);
 	const bool socketAttached = ApplyUtpHelloSocketSwap(decision,
 		downloadConnected,
 		std::forward<NoteFileRequestLost>(noteFileRequestLost),

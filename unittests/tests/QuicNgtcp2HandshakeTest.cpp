@@ -149,6 +149,75 @@ struct CollectingSink : IQuicDatagramSink
 	}
 };
 
+constexpr size_t kTestMaxUdpPayload = 1452;
+constexpr int kMaxPacketsPerPump = 16;
+
+//! Everything @p conn currently has to send, as separate datagrams, in order.
+std::vector<std::vector<uint8_t>> PumpDatagrams(ngtcp2_conn *conn, uint64_t nowMs)
+{
+	std::vector<std::vector<uint8_t>> out;
+	const ngtcp2_tstamp ts = nowMs * UINT64_C(1000000);
+	for (int round = 0; round < kMaxPacketsPerPump; ++round) {
+		uint8_t buf[kTestMaxUdpPayload];
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+		ngtcp2_pkt_info pi = {};
+		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(
+			conn, &path.path, &pi, buf, sizeof(buf), nullptr, 0, -1, nullptr, 0, ts);
+		if (written <= 0) {
+			break;
+		}
+		out.emplace_back(buf, buf + written);
+	}
+	return out;
+}
+
+//! Sends what fits of @p payload on @p streamId, as separate datagrams; @p accepted is how much.
+std::vector<std::vector<uint8_t>> SendStreamData(ngtcp2_conn *conn,
+	int64_t streamId,
+	const std::vector<uint8_t> &payload,
+	uint64_t nowMs,
+	bool fin,
+	size_t *accepted = nullptr)
+{
+	std::vector<std::vector<uint8_t>> out;
+	const ngtcp2_tstamp ts = nowMs * UINT64_C(1000000);
+	const uint32_t flags = fin ? NGTCP2_WRITE_STREAM_FLAG_FIN : NGTCP2_WRITE_STREAM_FLAG_NONE;
+	size_t sent = 0;
+	bool dataSent = payload.empty();
+	for (int round = 0; round < kMaxPacketsPerPump; ++round) {
+		uint8_t buf[kTestMaxUdpPayload];
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+		ngtcp2_pkt_info pi = {};
+		const ngtcp2_vec vec{ const_cast<uint8_t *>(payload.data()) + sent, payload.size() - sent };
+		ngtcp2_ssize dataLen = 0;
+		const ngtcp2_ssize written = ngtcp2_conn_writev_stream(conn,
+			&path.path,
+			&pi,
+			buf,
+			sizeof(buf),
+			&dataLen,
+			flags,
+			streamId,
+			dataSent ? nullptr : &vec,
+			dataSent ? 0 : 1,
+			ts);
+		if (written <= 0) {
+			break;
+		}
+		if (dataLen > 0) {
+			sent += static_cast<size_t>(dataLen);
+			dataSent = sent == payload.size();
+		}
+		out.emplace_back(buf, buf + written);
+	}
+	if (accepted != nullptr) {
+		*accepted = sent;
+	}
+	return out;
+}
+
 // The minimal QUIC client this codebase otherwise has none of: real GnuTLS session and
 // credentials, real ngtcp2_conn, driven only far enough to prove a handshake with the real
 // server engine completes.
@@ -274,24 +343,7 @@ public:
 	}
 
 	//! Everything this client currently has to send, as separate datagrams, in order.
-	std::vector<std::vector<uint8_t>> Pump(uint64_t nowMs)
-	{
-		std::vector<std::vector<uint8_t>> out;
-		const ngtcp2_tstamp ts = nowMs * UINT64_C(1000000);
-		for (int round = 0; round < kMaxPacketsPerPump; ++round) {
-			uint8_t buf[kMaxUdpPayload];
-			ngtcp2_path_storage path;
-			InitZeroPath(path);
-			ngtcp2_pkt_info pi = {};
-			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(
-				m_conn, &path.path, &pi, buf, sizeof(buf), nullptr, 0, -1, nullptr, 0, ts);
-			if (written <= 0) {
-				break;
-			}
-			out.emplace_back(buf, buf + written);
-		}
-		return out;
-	}
+	std::vector<std::vector<uint8_t>> Pump(uint64_t nowMs) { return PumpDatagrams(m_conn, nowMs); }
 
 	bool Receive(const std::vector<uint8_t> &datagram, uint64_t nowMs)
 	{
@@ -313,37 +365,7 @@ public:
 		if (m_streamId < 0 && ngtcp2_conn_open_bidi_stream(m_conn, &m_streamId, nullptr) != 0) {
 			return {};
 		}
-		std::vector<std::vector<uint8_t>> out;
-		const ngtcp2_tstamp ts = nowMs * UINT64_C(1000000);
-		const ngtcp2_vec vec{ const_cast<uint8_t *>(payload.data()), payload.size() };
-		const uint32_t flags = fin ? NGTCP2_WRITE_STREAM_FLAG_FIN : NGTCP2_WRITE_STREAM_FLAG_NONE;
-		bool dataSent = payload.empty();
-		for (int round = 0; round < kMaxPacketsPerPump; ++round) {
-			uint8_t buf[kMaxUdpPayload];
-			ngtcp2_path_storage path;
-			InitZeroPath(path);
-			ngtcp2_pkt_info pi = {};
-			ngtcp2_ssize dataLen = 0;
-			const ngtcp2_ssize written = ngtcp2_conn_writev_stream(m_conn,
-				&path.path,
-				&pi,
-				buf,
-				sizeof(buf),
-				&dataLen,
-				flags,
-				m_streamId,
-				dataSent ? nullptr : &vec,
-				dataSent ? 0 : 1,
-				ts);
-			if (written <= 0) {
-				break;
-			}
-			if (dataLen > 0) {
-				dataSent = true;
-			}
-			out.emplace_back(buf, buf + written);
-		}
-		return out;
+		return SendStreamData(m_conn, m_streamId, payload, nowMs, fin);
 	}
 
 	bool HandshakeConfirmed() const { return m_handshakeConfirmed; }
@@ -361,15 +383,151 @@ public:
 	}
 
 private:
-	static constexpr size_t kMaxUdpPayload = 1452;
-	static constexpr int kMaxPacketsPerPump = 16;
-
 	gnutls_certificate_credentials_t m_credentials = nullptr;
 	gnutls_session_t m_session = nullptr;
 	ngtcp2_conn *m_conn = nullptr;
 	ngtcp2_crypto_conn_ref m_connRef{};
 	bool m_handshakeConfirmed = false;
 	int64_t m_streamId = -1;
+	std::vector<uint8_t> m_received;
+};
+
+// A raw ngtcp2 server that answers a dial the way eMuleAI and eMuleQt do: its proof and data go
+// on a stream it opens itself, and it reads the dialler's stream.
+class CTestOwnStreamServer
+{
+public:
+	bool Accept(const std::vector<uint8_t> &initial, uint64_t nowMs)
+	{
+		ngtcp2_pkt_hd header;
+		if (m_credentials.NativeGnuTlsCredentials() == nullptr ||
+			ngtcp2_accept(&header, initial.data(), initial.size()) != 0) {
+			return false;
+		}
+		const auto *alpn = reinterpret_cast<const uint8_t *>(QuicNatt::QUIC_NATT_ALPN);
+		if (!m_tls.ConfigureTls13Alpn(
+			    m_credentials, nullptr, alpn, sizeof(QuicNatt::QUIC_NATT_ALPN) - 1, true) ||
+			ngtcp2_crypto_gnutls_configure_server_session(m_tls.NativeGnuTlsSession()) != 0) {
+			return false;
+		}
+		ngtcp2_cid scid = {};
+		scid.datalen = 8;
+		Ngtcp2Random(scid.data, scid.datalen, nullptr);
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+
+		ngtcp2_callbacks callbacks = {};
+		callbacks.recv_client_initial = ngtcp2_crypto_recv_client_initial_cb;
+		callbacks.recv_crypto_data = ngtcp2_crypto_recv_crypto_data_cb;
+		callbacks.encrypt = ngtcp2_crypto_encrypt_cb;
+		callbacks.decrypt = ngtcp2_crypto_decrypt_cb;
+		callbacks.hp_mask = ngtcp2_crypto_hp_mask_cb;
+		callbacks.rand = Ngtcp2Random;
+		callbacks.get_new_connection_id = Ngtcp2NewConnectionId;
+		callbacks.update_key = ngtcp2_crypto_update_key_cb;
+		callbacks.delete_crypto_aead_ctx = ngtcp2_crypto_delete_crypto_aead_ctx_cb;
+		callbacks.delete_crypto_cipher_ctx = ngtcp2_crypto_delete_crypto_cipher_ctx_cb;
+		callbacks.get_path_challenge_data = ngtcp2_crypto_get_path_challenge_data_cb;
+		callbacks.handshake_completed = [](ngtcp2_conn *, void *userData) -> int {
+			static_cast<CTestOwnStreamServer *>(userData)->m_handshakeDone = true;
+			return 0;
+		};
+		callbacks.recv_stream_data = [](ngtcp2_conn *,
+						     uint32_t,
+						     int64_t streamId,
+						     uint64_t,
+						     const uint8_t *data,
+						     size_t datalen,
+						     void *userData,
+						     void *) -> int {
+			auto *self = static_cast<CTestOwnStreamServer *>(userData);
+			self->m_receivedOn = streamId;
+			self->m_received.insert(self->m_received.end(), data, data + datalen);
+			return 0;
+		};
+
+		ngtcp2_settings settings = {};
+		ngtcp2_settings_default(&settings);
+		settings.initial_ts = nowMs * UINT64_C(1000000);
+		ngtcp2_transport_params params = {};
+		ngtcp2_transport_params_default(&params);
+		params.initial_max_streams_bidi = 1;
+		params.initial_max_stream_data_bidi_remote = CQuicSocketTransport::kReadWindow;
+		params.initial_max_data = CQuicSocketTransport::kReadWindow;
+		params.original_dcid = header.dcid;
+		params.original_dcid_present = 1;
+		if (ngtcp2_conn_server_new(&m_conn,
+			    &header.scid,
+			    &scid,
+			    &path.path,
+			    header.version,
+			    &callbacks,
+			    &settings,
+			    &params,
+			    nullptr,
+			    this) != 0) {
+			return false;
+		}
+		ngtcp2_conn_set_tls_native_handle(m_conn, m_tls.NativeGnuTlsSession());
+		m_connRef.get_conn = GetConnFromRef;
+		m_connRef.user_data = m_conn;
+		gnutls_session_set_ptr(m_tls.NativeGnuTlsSession(), &m_connRef);
+		return Receive(initial, nowMs);
+	}
+
+	~CTestOwnStreamServer()
+	{
+		if (m_conn != nullptr) {
+			ngtcp2_conn_del(m_conn);
+		}
+	}
+
+	bool Receive(const std::vector<uint8_t> &datagram, uint64_t nowMs)
+	{
+		ngtcp2_path_storage path;
+		InitZeroPath(path);
+		return ngtcp2_conn_read_pkt(m_conn,
+			       &path.path,
+			       nullptr,
+			       datagram.data(),
+			       datagram.size(),
+			       nowMs * UINT64_C(1000000)) == 0;
+	}
+
+	std::vector<std::vector<uint8_t>> Pump(uint64_t nowMs) { return PumpDatagrams(m_conn, nowMs); }
+
+	//! Opens this server's own stream on first use. Empty if the dialler allows it no stream.
+	std::vector<std::vector<uint8_t>> SendOnOwnStream(const std::vector<uint8_t> &payload,
+		uint64_t nowMs,
+		bool fin = false,
+		size_t *accepted = nullptr)
+	{
+		if (m_streamId < 0 && ngtcp2_conn_open_bidi_stream(m_conn, &m_streamId, nullptr) != 0) {
+			return {};
+		}
+		return SendStreamData(m_conn, m_streamId, payload, nowMs, fin, accepted);
+	}
+
+	//! The dialler's stream, which a dial does not read.
+	std::vector<std::vector<uint8_t>> SendOnDiallerStream(
+		const std::vector<uint8_t> &payload, uint64_t nowMs, size_t *accepted)
+	{
+		return SendStreamData(m_conn, 0, payload, nowMs, false, accepted);
+	}
+
+	bool HandshakeDone() const { return m_handshakeDone; }
+	int64_t OwnStream() const { return m_streamId; }
+	int64_t ReceivedOn() const { return m_receivedOn; }
+	const std::vector<uint8_t> &Received() const { return m_received; }
+
+private:
+	CQuicEphemeralCredentials m_credentials;
+	CQuicGnuTlsSession m_tls;
+	ngtcp2_conn *m_conn = nullptr;
+	ngtcp2_crypto_conn_ref m_connRef{};
+	bool m_handshakeDone = false;
+	int64_t m_streamId = -1;
+	int64_t m_receivedOn = -1;
 	std::vector<uint8_t> m_received;
 };
 
@@ -1100,6 +1258,139 @@ TEST(QuicNgtcp2Handshake, RealClientDialsARealServerAndCompletesTheHandoff)
 	const uint32_t readBytes2 = handedOffRaw->Read(buf2, sizeof(buf2));
 	ASSERT_EQUALS(static_cast<uint32_t>(serverToClient.size()), readBytes2);
 	ASSERT_TRUE(std::vector<uint8_t>(buf2, buf2 + readBytes2) == serverToClient);
+
+	QuicClientRefTestForget(owner);
+}
+
+// eMuleAI and eMuleQt answer a dial on a stream they open themselves. The dial must allow that
+// stream, take the proof and data from it, extend its read window, and end when it ends.
+TEST(QuicNgtcp2Handshake, RealClientReadsAServerThatAnswersOnItsOwnStream)
+{
+	uint64_t nowMs = 0;
+	CQuicTlsPolicy clientPolicy{ nullptr };
+	auto clientSink = std::make_shared<CollectingSink>();
+	auto clientEngine = CreateProductionQuicNgtcp2Engine();
+	std::unique_ptr<IStreamTransport> handedOff;
+	CQuicSocketTransport *handedOffRaw = nullptr;
+	CQuicNgtcp2Factory clientFactory(
+		clientPolicy,
+		clientSink,
+		clientEngine,
+		kTestClientIdentity,
+		[&nowMs] { return nowMs; },
+		[&](CUpDownClient *, std::unique_ptr<IStreamTransport> transport) {
+			handedOffRaw = static_cast<CQuicSocketTransport *>(transport.get());
+			handedOff = std::move(transport);
+			return handedOffRaw;
+		});
+	auto *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
+	std::unique_ptr<IQuicConnection> clientConnection =
+		clientFactory.CreateOutboundForClient(kPeer, 4672, kTestServerIdentity, nowMs, owner);
+	ASSERT_TRUE(clientConnection != nullptr);
+
+	CTestOwnStreamServer server;
+	bool accepted = false;
+	bool proofSent = false;
+	const auto proof = QuicNatt::BuildEaqn1Proof(kTestServerIdentity, &kTestClientIdentity);
+	const auto toClient = [&](const std::vector<std::vector<uint8_t>> &datagrams) {
+		for (const auto &datagram : datagrams) {
+			ASSERT_TRUE(
+				clientConnection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+		}
+	};
+	const auto toServer = [&]() {
+		for (const auto &datagram : clientSink->sent) {
+			if (accepted) {
+				ASSERT_TRUE(server.Receive(datagram, nowMs));
+			} else {
+				accepted = server.Accept(datagram, nowMs);
+				ASSERT_TRUE(accepted);
+			}
+		}
+		clientSink->sent.clear();
+	};
+	for (int round = 0; round < 40 && !handedOff; ++round, nowMs += 10) {
+		clientConnection->Tick(nowMs);
+		toServer();
+		toClient(server.Pump(nowMs));
+		if (server.HandshakeDone() && !proofSent) {
+			const auto datagrams = server.SendOnOwnStream(
+				std::vector<uint8_t>(proof.begin(), proof.end()), nowMs);
+			proofSent = !datagrams.empty();
+			toClient(datagrams);
+		}
+	}
+	ASSERT_TRUE(proofSent);
+	ASSERT_TRUE(handedOff != nullptr);
+	ASSERT_TRUE(server.OwnStream() == 1);
+	ASSERT_TRUE(server.ReceivedOn() == 0);
+	ASSERT_TRUE(QuicNatt::ValidateEaqn1Proof(server.Received().data(),
+		server.Received().size(),
+		kTestServerIdentity,
+		&kTestClientIdentity));
+
+	const std::vector<uint8_t> hello{ 'h', 'i' };
+	ASSERT_EQUALS(static_cast<uint32_t>(hello.size()),
+		handedOffRaw->Write(hello.data(), static_cast<uint32_t>(hello.size())));
+	handedOffRaw->Flush();
+	toServer();
+	const auto proofEnd =
+		server.Received().begin() + static_cast<std::ptrdiff_t>(QuicNatt::EAQN1_PROOF_SIZE);
+	ASSERT_TRUE(std::vector<uint8_t>(proofEnd, server.Received().end()) == hello);
+
+	// Bytes on the dialler's stream are ignored, but their credit must come back: a window of
+	// them would otherwise use up the connection window.
+	const std::vector<uint8_t> ignored(CQuicSocketTransport::kReadWindow, 0x5A);
+	size_t ignoredSent = 0;
+	for (int round = 0; round < 200 && ignoredSent < ignored.size(); ++round, nowMs += 10) {
+		size_t taken = 0;
+		toClient(server.SendOnDiallerStream(
+			std::vector<uint8_t>(
+				ignored.begin() + static_cast<std::ptrdiff_t>(ignoredSent), ignored.end()),
+			nowMs,
+			&taken));
+		ignoredSent += taken;
+		clientConnection->Tick(nowMs);
+		toServer();
+		toClient(server.Pump(nowMs));
+	}
+	ASSERT_TRUE(ignoredSent == ignored.size());
+
+	// More than one read window: the dial must reopen credit on the server's stream.
+	std::vector<uint8_t> bulk(CQuicSocketTransport::kReadWindow + 4096);
+	for (size_t i = 0; i < bulk.size(); ++i) {
+		bulk[i] = static_cast<uint8_t>(i * 7);
+	}
+	size_t offered = 0;
+	std::vector<uint8_t> got;
+	for (int round = 0; round < 400 && got.size() < bulk.size(); ++round, nowMs += 10) {
+		if (offered < bulk.size()) {
+			size_t taken = 0;
+			toClient(server.SendOnOwnStream(
+				std::vector<uint8_t>(
+					bulk.begin() + static_cast<std::ptrdiff_t>(offered), bulk.end()),
+				nowMs,
+				false,
+				&taken));
+			offered += taken;
+		}
+		uint8_t buf[16384];
+		for (;;) {
+			const uint32_t n = handedOffRaw->Read(buf, sizeof(buf));
+			if (n == 0) {
+				break;
+			}
+			got.insert(got.end(), buf, buf + n);
+		}
+		clientConnection->Tick(nowMs);
+		toServer();
+		toClient(server.Pump(nowMs));
+	}
+	ASSERT_TRUE(got == bulk);
+
+	toClient(server.SendOnOwnStream({}, nowMs, /*fin=*/true));
+	clientConnection->Tick(nowMs);
+	ASSERT_TRUE(clientConnection->IsClosed());
 
 	QuicClientRefTestForget(owner);
 }
