@@ -49,6 +49,7 @@
 #include "EncryptedDatagramSocket.h"
 #include "RandomFunctions.h"
 #include "ServerConnect.h"
+#include "UdpObfuscationPolicy.h" // Needed for ServerUdpReceiveKeys
 
 // (TCP+3) UDP socket
 
@@ -70,22 +71,21 @@ void CServerUDPSocket::OnPacketReceived(
 	size_t nPayLoadLen = length;
 	uint8_t *pBuffer = buffer;
 	CServer *pServer = theApp->serverlist->GetServerByIPUDP(serverip, serverport, true);
-	if (pServer && thePrefs::IsServerCryptLayerUDPEnabled() &&
-		((pServer->GetServerKeyUDP() != 0 && pServer->SupportsObfuscationUDP()) ||
-			(pServer->GetCryptPingReplyPending() && pServer->GetChallenge() != 0))) {
-		// eMule TODO
-		uint32 dwKey = 0;
-		if (pServer->GetCryptPingReplyPending() &&
-			pServer->GetChallenge() !=
-				0 /* && pServer->GetPort() == ntohs(sockAddr.sin_port) - 12 */) {
-			dwKey = pServer->GetChallenge();
-		} else {
-			dwKey = pServer->GetServerKeyUDP();
-		}
-
-		wxASSERT(dwKey != 0);
-		nPayLoadLen = CEncryptedDatagramSocket::DecryptReceivedServer(
-			buffer, length, &pBuffer, dwKey, serverip);
+	ServerUdpKeyCandidates keys;
+	if (pServer != nullptr && thePrefs::IsServerCryptLayerUDPEnabled()) {
+		// Unlike eMule, also try the server key while the crypt ping is pending: the challenge keys
+		// only the ping reply.
+		keys = ServerUdpReceiveKeys(pServer->GetCryptPingReplyPending(),
+			pServer->GetChallenge(),
+			pServer->SupportsObfuscationUDP() ? pServer->GetServerKeyUDP() : 0);
+	}
+	if (keys.count != 0) {
+		const int bufLen = static_cast<int>(length);
+		const int decryptedLen = DecryptWithServerUdpKeys(keys, bufLen, [&](std::uint32_t key) {
+			return CEncryptedDatagramSocket::DecryptReceivedServer(
+				buffer, bufLen, &pBuffer, key, serverip);
+		});
+		nPayLoadLen = static_cast<size_t>(decryptedLen);
 #ifdef __DEBUG__
 		if (nPayLoadLen == length) {
 			AddDebugLogLineN(logServerUDP,

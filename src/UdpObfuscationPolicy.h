@@ -12,6 +12,8 @@
 #ifndef UDPOBFUSCATIONPOLICY_H
 #define UDPOBFUSCATIONPOLICY_H
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 
 enum class EUdpSendForm
@@ -53,6 +55,46 @@ inline EUdpSendForm DecideUdpSendForm(bool encrypt, bool requireObfuscation, boo
 		return EUdpSendForm::Obfuscated;
 	}
 	return requireObfuscation ? EUdpSendForm::Drop : EUdpSendForm::Plain;
+}
+
+struct ServerUdpKeyCandidates
+{
+	std::array<std::uint32_t, 2> keys{};
+	std::size_t count = 0;
+};
+
+/**
+ * The keys to try on an obfuscated datagram from a server, in order. The crypt ping challenge keys
+ * only the status ping reply. Everything else the server sends while that reply is pending, such as
+ * a source or search answer or a NAT callback, uses its UDP key.
+ */
+inline ServerUdpKeyCandidates ServerUdpReceiveKeys(
+	bool cryptPingReplyPending, std::uint32_t challenge, std::uint32_t serverKeyUdp)
+{
+	ServerUdpKeyCandidates candidates;
+	if (cryptPingReplyPending && challenge != 0) {
+		candidates.keys[candidates.count++] = challenge;
+	}
+	if (serverKeyUdp != 0 && (candidates.count == 0 || candidates.keys[0] != serverKeyUdp)) {
+		candidates.keys[candidates.count++] = serverKeyUdp;
+	}
+	return candidates;
+}
+
+/**
+ * The result of the first key that decrypts, or bufLen when none does. decrypt(key) must return
+ * bufLen and leave the buffer unchanged when it fails, as DecryptReceivedServer() does.
+ */
+template <typename Decrypt>
+int DecryptWithServerUdpKeys(const ServerUdpKeyCandidates &candidates, int bufLen, Decrypt decrypt)
+{
+	for (std::size_t index = 0; index != candidates.count; ++index) {
+		const int result = decrypt(candidates.keys[index]);
+		if (result < bufLen) {
+			return result;
+		}
+	}
+	return bufLen;
 }
 
 #endif // UDPOBFUSCATIONPOLICY_H
