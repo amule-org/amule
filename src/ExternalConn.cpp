@@ -558,8 +558,8 @@ private:
 	// contiguous arrays -- where the set cost a tree insertion per file to build and a
 	// lookup per file to diff, on every poll.
 	//
-	// The other two keep the set: their handlers iterate a CopyFileList snapshot, which
-	// is neither ECID-ordered nor necessarily the whole list.
+	// The other two keep the set because their CopyFileList snapshots are not ECID-ordered.
+	// Only unfiltered polls update these sets.
 	std::vector<uint32> m_lastSentFileIds;
 	std::set<uint32> m_lastSentSharedFileIds;
 	std::set<uint32> m_lastSentPartFileIds;
@@ -587,8 +587,8 @@ private:
 	// destroyed with its file, and a re-created one starts at zero -- exactly the
 	// "re-send full detail" state wanted.
 	//
-	// The GET_SHARED_FILES and GET_DLOAD_QUEUE paths keep their sets, for the reason given
-	// on m_lastSentFileIds above.
+	// The GET_SHARED_FILES and GET_DLOAD_QUEUE paths track detail separately, clearing an
+	// entry when their respective list reports it removed.
 	std::set<uint32> m_sentWithDetailIdsShared;
 	std::set<uint32> m_sentWithDetailIdsPart;
 };
@@ -1931,61 +1931,52 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 	return response;
 }
 
-static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
+template <typename File, typename FileTag, ec_tagname_t QueryTag, typename FileList>
+static CECPacket *Get_EC_FileListResponse(const CECPacket *request,
+	ec_opcode_t responseOpcode,
+	const FileList &files,
 	CFileEncoderMap &encoders,
 	uint64 &io_lastEcGenSeen,
 	bool partial_update_active,
 	std::set<uint32> &io_lastSentFileIds,
 	std::set<uint32> &io_sentWithDetailIds)
 {
-	wxASSERT(request->GetOpCode() == EC_OP_GET_SHARED_FILES);
+	CECPacket *response = new CECPacket(responseOpcode);
 
-	CECPacket *response = new CECPacket(EC_OP_SHARED_FILES);
-
-	EC_DETAIL_LEVEL detail_level = request->GetDetailLevel();
-	//
-	// request can contain list of queried items
-	CTagSet<uint32, EC_TAG_KNOWNFILE> queryitems(request);
+	const EC_DETAIL_LEVEL detail_level = request->GetDetailLevel();
+	const CTagSet<uint32, QueryTag> queryitems(request);
 
 	encoders.UpdateEncoders();
 
 	// Skip-unchanged + EC_TAG_FILE_REMOVED is wired only for the EC_DETAIL_UPDATE
 	// polling path, and only when the client opted into the
-	// partial-update protocol at auth. EC_DETAIL_FULL callers (amulecmd `show shared`,
-	// any one-shot query) still get every alive file in full.
+	// partial-update protocol at auth.
 	const bool skip_unchanged_path = partial_update_active && detail_level == EC_DETAIL_UPDATE;
-	const uint64 ec_snapshot = skip_unchanged_path ? CKnownFile::GetGlobalECGen() : 0;
+	// A targeted query cannot establish removals or advance the whole list's generation.
+	const bool track_membership = skip_unchanged_path && queryitems.empty();
+	const uint64 ec_snapshot = track_membership ? CKnownFile::GetGlobalECGen() : 0;
 	const uint64 ec_threshold = io_lastEcGenSeen;
 
-	// Snapshot the shared-file list once. GetFileByIndex() does an O(N) std::advance
-	// over the underlying std::map and re-acquires list_mut on every call -- looping it
-	// N times is O(N^2) and pegs the main thread for tens of minutes on users with tens
-	// of thousands of shared files.
-	std::vector<CKnownFile *> snapshot;
-	theApp->sharedfiles->CopyFileList(snapshot);
+	// Copy the list under its lock once instead of looking up each file separately.
+	std::vector<File *> snapshot;
+	files.CopyFileList(snapshot);
 
-	// Snapshot the alive set for the partial-update removal diff below.
 	std::set<uint32> current_file_ids;
-
-	for (std::vector<CKnownFile *>::const_iterator it = snapshot.begin(); it != snapshot.end(); ++it) {
-		const CKnownFile *cur_file = *it;
-
+	for (const File *cur_file : snapshot) {
 		if (!cur_file || (!queryitems.empty() && !queryitems.count(cur_file->ECID()))) {
 			continue;
 		}
 		const uint32 ecid = cur_file->ECID();
-		if (skip_unchanged_path) {
+		if (track_membership) {
 			current_file_ids.insert(ecid);
-			if (cur_file->GetECGen() <= ec_threshold && io_sentWithDetailIds.count(ecid)) {
-				// Client already has the latest exported view of this file; absence
-				// here is "no change", not "deleted" -- see the EC_TAG_FILE_REMOVED
-				// emission below. The sent-with-detail gate prevents silently skipping
-				// ECIDs the client has never received in full.
-				continue;
-			}
+		}
+		if (skip_unchanged_path && cur_file->GetECGen() <= ec_threshold &&
+			io_sentWithDetailIds.count(ecid)) {
+			// Only skip files already sent on this polling path.
+			continue;
 		}
 
-		CEC_SharedFile_Tag filetag(cur_file, detail_level);
+		FileTag filetag(cur_file, detail_level);
 		CKnownFile_Encoder *enc = encoders[ecid];
 		if (!enc) {
 			// UpdateEncoders reads the list generations unlocked, so a file added on a
@@ -2000,19 +1991,18 @@ static CECPacket *Get_EC_Response_GetSharedFiles(const CECPacket *request,
 		}
 		enc->Encode(&filetag);
 		response->AddTag(filetag);
-		if (skip_unchanged_path) {
+		if (track_membership) {
 			io_sentWithDetailIds.insert(ecid);
 		}
 	}
 
-	if (skip_unchanged_path) {
+	if (track_membership) {
 		// One EC_TAG_FILE_REMOVED per file that was in the previous
 		// response but is no longer alive on the server.
-		for (std::set<uint32>::const_iterator it = io_lastSentFileIds.begin();
-			it != io_lastSentFileIds.end();
-			++it) {
-			if (!current_file_ids.count(*it)) {
-				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, *it));
+		for (const uint32 ecid : io_lastSentFileIds) {
+			if (!current_file_ids.count(ecid)) {
+				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, ecid));
+				io_sentWithDetailIds.erase(ecid);
 			}
 		}
 		io_lastSentFileIds.swap(current_file_ids);
@@ -2261,86 +2251,6 @@ static CECPacket *Get_EC_Response_GetClientQueue(const CECPacket *request, CObjT
 		response->AddTag(cli_tag);
 	}
 
-	return response;
-}
-
-static CECPacket *Get_EC_Response_GetDownloadQueue(const CECPacket *request,
-	CFileEncoderMap &encoders,
-	uint64 &io_lastEcGenSeen,
-	bool partial_update_active,
-	std::set<uint32> &io_lastSentFileIds,
-	std::set<uint32> &io_sentWithDetailIds)
-{
-	CECPacket *response = new CECPacket(EC_OP_DLOAD_QUEUE);
-
-	EC_DETAIL_LEVEL detail_level = request->GetDetailLevel();
-	//
-	// request can contain list of queried items
-	CTagSet<uint32, EC_TAG_PARTFILE> queryitems(request);
-
-	encoders.UpdateEncoders();
-
-	// Skip-unchanged + EC_TAG_FILE_REMOVED is wired only for the EC_DETAIL_UPDATE
-	// polling path, and only when the client opted into the
-	// partial-update protocol at auth. Other callers get every alive file.
-	const bool skip_unchanged_path = partial_update_active && detail_level == EC_DETAIL_UPDATE;
-	const uint64 ec_snapshot = skip_unchanged_path ? CKnownFile::GetGlobalECGen() : 0;
-	const uint64 ec_threshold = io_lastEcGenSeen;
-
-	// Snapshot once to avoid re-locking downloadqueue's mutex on every iteration
-	// -- see Get_EC_Response_GetSharedFiles for the matching shared-files fix.
-	std::vector<CPartFile *> snapshot;
-	theApp->downloadqueue->CopyFileList(snapshot);
-
-	std::set<uint32> current_file_ids;
-
-	for (std::vector<CPartFile *>::const_iterator it = snapshot.begin(); it != snapshot.end(); ++it) {
-		CPartFile *cur_file = *it;
-
-		if (!queryitems.empty() && !queryitems.count(cur_file->ECID())) {
-			continue;
-		}
-		const uint32 ecid = cur_file->ECID();
-		if (skip_unchanged_path) {
-			current_file_ids.insert(ecid);
-			if (cur_file->GetECGen() <= ec_threshold && io_sentWithDetailIds.count(ecid)) {
-				// Client already has the latest exported view of this partfile; absence
-				// here is "no change", not "deleted" -- see the EC_TAG_FILE_REMOVED
-				// emission below. The sent-with-detail gate prevents silently skipping
-				// ECIDs the client has never received in full.
-				continue;
-			}
-		}
-
-		CEC_PartFile_Tag filetag(cur_file, detail_level);
-
-		CPartFile_Encoder *enc = static_cast<CPartFile_Encoder *>(encoders[ecid]);
-		if (!enc) {
-			// See the matching note in Get_EC_Response_GetSharedFiles.
-			continue;
-		}
-		if (detail_level != EC_DETAIL_UPDATE) {
-			enc->ResetEncoder();
-		}
-		enc->Encode(&filetag);
-
-		response->AddTag(filetag);
-		if (skip_unchanged_path) {
-			io_sentWithDetailIds.insert(ecid);
-		}
-	}
-
-	if (skip_unchanged_path) {
-		for (std::set<uint32>::const_iterator it = io_lastSentFileIds.begin();
-			it != io_lastSentFileIds.end();
-			++it) {
-			if (!current_file_ids.count(*it)) {
-				response->AddTag(CECTag(EC_TAG_FILE_REMOVED, *it));
-			}
-		}
-		io_lastSentFileIds.swap(current_file_ids);
-		io_lastEcGenSeen = ec_snapshot;
-	}
 	return response;
 }
 
@@ -3879,7 +3789,10 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			return NULL;
 		}
 		if (request->GetDetailLevel() != EC_DETAIL_INC_UPDATE) {
-			response = Get_EC_Response_GetSharedFiles(request,
+			response = Get_EC_FileListResponse<CKnownFile, CEC_SharedFile_Tag, EC_TAG_KNOWNFILE>(
+				request,
+				EC_OP_SHARED_FILES,
+				*theApp->sharedfiles,
 				m_FileEncoder,
 				m_lastEcGenSeenShared,
 				m_partialUpdateActive,
@@ -3911,12 +3824,15 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			return NULL;
 		}
 		if (request->GetDetailLevel() != EC_DETAIL_INC_UPDATE) {
-			response = Get_EC_Response_GetDownloadQueue(request,
-				m_FileEncoder,
-				m_lastEcGenSeenPart,
-				m_partialUpdateActive,
-				m_lastSentPartFileIds,
-				m_sentWithDetailIdsPart);
+			response =
+				Get_EC_FileListResponse<CPartFile, CEC_PartFile_Tag, EC_TAG_PARTFILE>(request,
+					EC_OP_DLOAD_QUEUE,
+					*theApp->downloadqueue,
+					m_FileEncoder,
+					m_lastEcGenSeenPart,
+					m_partialUpdateActive,
+					m_lastSentPartFileIds,
+					m_sentWithDetailIdsPart);
 		}
 		break;
 	case EC_OP_GET_CLIENT_HISTORY:

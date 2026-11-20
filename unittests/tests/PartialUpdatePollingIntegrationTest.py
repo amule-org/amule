@@ -8,8 +8,8 @@ EC_TAG_FILE_REMOVED for an item that went away. Such a client reads a missing it
 change", so without the tombstone a removed item would stay in its list. Offline: shared files
 in Incoming, a download from an ed2k link and a stored search supply the items.
 """
+from contextlib import closing
 from pathlib import Path
-import struct
 import sys
 import tempfile
 
@@ -23,6 +23,8 @@ LEGACY_SEARCH = 0xffffffff
 DOWNLOADS = [bytes([n]) * 16 for n in (0xa1, 0xa2)]
 ITEM_TAGS = {'EC_OP_GET_SHARED_FILES': 'EC_TAG_KNOWNFILE', 'EC_OP_GET_DLOAD_QUEUE': 'EC_TAG_PARTFILE',
              'EC_OP_SEARCH_RESULTS': 'EC_TAG_SEARCHFILE'}
+REPLY_OPS = {'EC_OP_GET_SHARED_FILES': 'EC_OP_SHARED_FILES', 'EC_OP_GET_DLOAD_QUEUE': 'EC_OP_DLOAD_QUEUE',
+             'EC_OP_SEARCH_RESULTS': 'EC_OP_SEARCH_RESULTS'}
 
 
 class PollingEC(EC):
@@ -34,10 +36,13 @@ class PollingEC(EC):
         assert C['EC_TAG_CAN_PARTIAL_UPDATE'] in self.auth_tags, self.auth_tags
 
 
-def poll(ec, op, detail):
+def poll(ec, op, detail, ecid=None):
     """(item ECIDs sent, ECIDs reported removed) for one request at the given detail level."""
-    opcode, tags = ec.call_list(C[op], [integer(C['EC_TAG_DETAIL_LEVEL'], C[detail])])
-    assert opcode != C['EC_OP_FAILED'], (op, tags)
+    query = [integer(C['EC_TAG_DETAIL_LEVEL'], C[detail])]
+    if ecid is not None:
+        query.append(integer(C[ITEM_TAGS[op]], ecid))
+    opcode, tags = ec.call_list(C[op], query)
+    assert opcode == C[REPLY_OPS[op]], (op, opcode, tags)
     items = {int.from_bytes(value, 'big') for name, value, _ in tags if name == C[ITEM_TAGS[op]]}
     removed = {int.from_bytes(value, 'big') for name, value, _ in tags
                if name == C['EC_TAG_FILE_REMOVED']}
@@ -61,23 +66,30 @@ def ecids(ec, op, item, key):
     return found
 
 
-def check_skip_and_tombstone(proc, ec, op, remove, survivor_count):
+def check_skip_and_tombstone(proc, ec, legacy, op, remove, survivor_count):
     full, removed = poll(ec, op, 'EC_DETAIL_UPDATE')
     assert len(full) == survivor_count + 1 and not removed, (op, full, removed)
+    selected = min(full)
+    assert poll(ec, op, 'EC_DETAIL_FULL', selected) == ({selected}, set()), op
+    for detail in ('EC_DETAIL_CMD', 'EC_DETAIL_FULL', 'EC_DETAIL_UPDATE'):
+        assert poll(legacy, op, detail) == (full, set()), (op, detail)
+    assert poll(legacy, op, 'EC_DETAIL_UPDATE', selected)[0] == {selected}, op
     settled(proc, ec, op)
     gone = remove()
+    survivors = full - {gone}
 
-    def tombstoned():
-        items, removed = poll(ec, op, 'EC_DETAIL_UPDATE')
-        assert not items & removed, (op, items, removed)
-        return removed or None
-    removed = wait_for(proc, f'{op} to report the removal', tombstoned, timeout=30)
-    assert removed == {gone}, (op, removed, gone)
+    wait_for(proc, f'{op} full list to reflect the removal',
+             lambda: poll(legacy, op, 'EC_DETAIL_FULL') == (survivors, set()), timeout=30)
+    # Query the removed ECID before polling the whole list. This must neither report
+    # unrelated survivors as removed nor consume the pending removal of the selected file.
+    assert poll(ec, op, 'EC_DETAIL_UPDATE', gone) == (set(), set()), op
+    items, removed = poll(ec, op, 'EC_DETAIL_UPDATE')
+    assert items <= survivors and removed == {gone}, (op, items, removed, gone)
     # Reported once: the next poll no longer knows the item.
     assert gone not in poll(ec, op, 'EC_DETAIL_UPDATE')[1], op
     # The full-detail control: every item, no tombstones, whatever this connection was sent.
     items, removed = poll(ec, op, 'EC_DETAIL_FULL')
-    assert len(items) == survivor_count and gone not in items and not removed, (op, items, removed)
+    assert items == survivors and not removed, (op, items, removed)
     print(f'PASS: {op}: unchanged items left out, removal reported once')
 
 
@@ -102,7 +114,9 @@ def run(binary):
                 (incoming / 'drop.bin').unlink()
                 assert ec.call(C['EC_OP_SHAREDFILES_RELOAD'])[0] == C['EC_OP_NOOP']
                 return shared_ids[b'drop.bin\0']
-            check_skip_and_tombstone(proc, ec, 'EC_OP_GET_SHARED_FILES', unshare, 1)
+            legacy = EC(port, multi_search=False)
+            with closing(legacy.sock):
+                check_skip_and_tombstone(proc, ec, legacy, 'EC_OP_GET_SHARED_FILES', unshare, 1)
 
             links = [string(C['EC_TAG_STRING'], f'ed2k://|file|{h.hex()}.bin|4096|{h.hex()}|/')
                      for h in DOWNLOADS]
@@ -117,7 +131,9 @@ def run(binary):
                 assert ec.call(C['EC_OP_PARTFILE_DELETE'],
                                [tag(C['EC_TAG_PARTFILE'], DOWNLOADS[1], 9)])[0] == C['EC_OP_NOOP']
                 return download_ids[DOWNLOADS[1]]
-            check_skip_and_tombstone(proc, ec, 'EC_OP_GET_DLOAD_QUEUE', cancel, 1)
+            legacy = EC(port, multi_search=False)
+            with closing(legacy.sock):
+                check_skip_and_tombstone(proc, ec, legacy, 'EC_OP_GET_DLOAD_QUEUE', cancel, 1)
 
             # Search results have no skip: each poll resends them all, and closing the
             # search tombstones each one.
