@@ -572,8 +572,13 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
   also cools down for 10 minutes, so a dial that fails is not asked again at once. An answer the
   action limit refuses is not taken, so the server's resend can still be used.
 
-The upload-side callback this path also allows (`OP_HELLO` carries the peer's server address and
-ID) is not implemented.
+The upload side sends this request too, when a slot frees for a queued LowID peer
+(`CUploadQueue::TryStartUploadCallback()`). It tries the direct `0x95` (`OP_DIRECTCALLBACKREQ`)
+and the `0x1C` (`OP_CALLBACKREQUEST`) server callback first. A peer on another server then gets the
+`0xA6` (`OP_NAT_CALLBACKREQUEST`), before the `0x60` (`OP_LOWID_HOLEPUNCH_REQUEST`) and the
+Lugdunum callback. The peer's server address and ID come from its `OP_HELLO`, and the server is
+chosen as above. The upload side adds a new target only while that server has fewer than 15 of its
+30 targets, so the download side keeps at least half.
 
 The runtime setting remains off by default.
 
