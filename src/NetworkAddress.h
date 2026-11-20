@@ -66,6 +66,8 @@ inline constexpr IPv6ExcludedPrefix kIPv6ExcludedPrefixes[] = { { {}, 128, "Unsp
 	{ { 0x20, 0x01 }, 23, "IETF Protocol Assignments" },
 	{ { 0x20, 0x01, 0x0d, 0xb8 }, 32, "Documentation" },
 	{ { 0x20, 0x02 }, 16, "6to4" },
+	// The second documentation block, next to 2001:db8::/32 (RFC 9637, 2024).
+	{ { 0x3f, 0xff }, 20, "Documentation" },
 	{ { 0x5f, 0x00 }, 16, "Segment routing SIDs" },
 	{ { 0xfc }, 7, "Unique-local" },
 	{ { 0xfe, 0x80 }, 10, "Link-local" },

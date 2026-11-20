@@ -308,7 +308,7 @@ uint32 CServer::GetServerKeyUDP(bool bForce) const
 
 void CServer::SetServerKeyUDP(uint32 dwServerKeyUDP)
 {
-	wxASSERT(theApp->GetPublicIP() != 0 || dwServerKeyUDP == 0);
+	// ed2k-server sends a key before we know our IP; GetServerKeyUDP() never uses it then.
 	m_dwServerKeyUDP = dwServerKeyUDP;
 	m_dwIPServerKeyUDP = theApp->GetPublicIP();
 }

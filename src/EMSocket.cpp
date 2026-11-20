@@ -526,11 +526,13 @@ SocketSentBytes CEMSocket::Send(
 
 		lastCalledSend = now;
 
+		// Write() returns 0 while the encryption layer is not ready, which would spin these
+		// loops, so both check it again and not only on entry.
 		while (sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall <
 				maxNumberOfBytesToSend &&
 			anErrorHasOccured == false && // don't send more than allowed. Also, there should have
 						      // been no error in earlier loop
-			streamIsGone == false &&
+			streamIsGone == false && IsEncryptionLayerReady() &&
 			(!m_control_queue.empty() || !m_standard_queue.empty() ||
 				sendbuffer != NULL) &&              // there must exist something to send
 			(onlyAllowedToSendControlPacket == false || // this means we are allowed to send both
@@ -617,7 +619,8 @@ SocketSentBytes CEMSocket::Send(
 					(sentStandardPacketBytesThisCall + sentControlPacketBytesThisCall) %
 							minFragSize !=
 						0) &&
-				anErrorHasOccured == false && streamIsGone == false) {
+				anErrorHasOccured == false && streamIsGone == false &&
+				IsEncryptionLayerReady()) {
 				uint32 tosend = sendblen - sent;
 				if (!onlyAllowedToSendControlPacket || m_currentPacket_is_controlpacket) {
 					if (maxNumberOfBytesToSend >=
@@ -659,14 +662,15 @@ SocketSentBytes CEMSocket::Send(
 
 				lastSent = ::GetTickCount64();
 
-				uint32 result = CEncryptedStreamSocket::Write(sendbuffer + sent, tosend);
+				const int written = CEncryptedStreamSocket::Write(sendbuffer + sent, tosend);
 
 				// Advance 'sent' before checking BlocksWrite(), which reflects "any
 				// async_write currently in flight" rather than "did this Write()
 				// succeed": a previous iteration's pending write may still be in
 				// flight when the current one succeeds, so advancing first keeps
 				// 'sent' from lagging and the same bytes from being re-sent.
-				if (result > 0) {
+				if (written > 0) {
+					const uint32 result = static_cast<uint32>(written);
 					m_hasSent = true;
 					sent += result;
 					if (m_currentPacket_is_controlpacket == false) {
@@ -707,18 +711,6 @@ SocketSentBytes CEMSocket::Send(
 					// between Write() returning and BlocksWrite() being read.
 					// A clean end is not an error, so leave without claiming
 					// one and let the lost notification tear the socket down.
-					//
-					// Inert until the acceptor routes this call. IsOk() is not
-					// virtual anywhere in CLibSocket, CEncryptedStreamSocket or
-					// here, so it resolves statically to CLibSocket::IsOk(),
-					// whose m_OK is true for the whole life of a connected
-					// socket: this arm cannot fire for CClientTCPSocket or
-					// CServerSocket, which is why adding it changes nothing
-					// today. The uTP transport answers the same question on
-					// IStreamTransport, a separate hierarchy, so whatever wires
-					// a transport into CEMSocket must route IsOk() to it as
-					// well. Miss that and the arm stays dead after wiring, and
-					// the spin it exists to stop comes back silently.
 					m_bBusy = false;
 					streamIsGone = true;
 					break;

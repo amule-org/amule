@@ -875,8 +875,8 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 		case OP_NAT_CALLBACKREQUESTED: {
 			AddDebugLogLineN(logServer, "Server: OP_NAT_CALLBACKREQUESTED");
 			theStats::AddDownOverheadServer(size);
-			// Logged only, as the wiki describes: no reply, no punch. Shares a handler
-			// with the UDP 0xA7 path (ClientUDPSocket.cpp), as NeoMule does.
+			// Shares the parser and the dispatch with the UDP 0xA7 path
+			// (ClientUDPSocket.cpp), as NeoMule does.
 			const LugdunumNatTraversal::ForwardedCallback callback =
 				LugdunumNatTraversal::ParseForwardedCallback(packet, size);
 			LugdunumNatTraversal::DispatchForwardedCallback(

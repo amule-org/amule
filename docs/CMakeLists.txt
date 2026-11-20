@@ -6,6 +6,7 @@ install (FILES
 	CHANGELOG-1.x.md
 	EC_Protocol.md
 	EC_SRP.md
+	IPv6.md
 	IPv6_Server_Sources.md
 	NAT_T_Protocol.md
 	INSTALL.md

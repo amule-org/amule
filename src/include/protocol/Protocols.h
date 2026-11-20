@@ -59,9 +59,10 @@ enum Protocols
 // separate namespace from Protocols above -- OP_NATT_FRAME_UTP and OP_MLDONKEYPROT are both 0x00
 // and mean unrelated things at different offsets.
 //
-// aMule implements none of the transports behind them yet; it recognises them so an eMuleAI peer's
-// NAT traversal traffic is dropped as a known frame it cannot serve rather than treated as
-// malformed. See src/ReservedProtocolFrames.h.
+// aMule serves the uTP and QUIC frames in builds with ENABLE_UTP and ENABLE_QUIC, with the CAPS and
+// key frames. A build without a transport still recognises its frames, so an eMuleAI peer's NAT
+// traversal traffic is dropped as a known frame rather than treated as malformed. See
+// src/ReservedProtocolFrames.h.
 enum ReservedProt2FrameTypes
 {
 	//! Legacy uTP NAT-T frame.

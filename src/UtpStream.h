@@ -75,8 +75,7 @@ public:
 	 * libutp itself delivers in-order data whatever window it advertised, so a peer that ignores
 	 * the window is stopped by kReadOverrunFactor and kReadOverrunSlackBytes instead.
 	 *
-	 * Inert until the acceptor wires that callback. It is decided here so the acceptor inherits
-	 * a value rather than inventing one, and so both directions are bounded: an unbounded read
+	 * It bounds the read side as kDefaultWriteBound bounds the write side: an unbounded read
 	 * buffer is how a peer that sends faster than the application reads grows memory without
 	 * limit.
 	 *
@@ -90,6 +89,9 @@ public:
 	 * (eMuleAI/UtpSocket.cpp), which is the interoperability argument for it as well.
 	 */
 	static constexpr size_t kDefaultReadBound = 256 * 1024;
+	// A smaller slack is less than a packet: occupancy stalls a packet short of the bound, never
+	// reaches the high-water mark, and the read-drained edge never fires.
+	static_assert(kDefaultReadBound / 8 >= kWindowSlackBytes, "read bound too small for a full slack");
 
 	//! An honest peer overshoots the bound by at most the window in flight when it shrank, plus
 	//! what libutp releases at once from its reorder buffer when a gap fills.
