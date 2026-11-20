@@ -194,6 +194,17 @@ enum class EPublishEvent
 	Count
 };
 
+// What our pointer lookups for sources did this session (#2513), in tree order.
+enum class EKadPointerEvent
+{
+	LookupStarted,
+	LookupFound,
+	LookupMissed,
+	LookupRefusedBusy,
+	SourceReached,
+	Count
+};
+
 #ifdef ENABLE_IPV6
 // IPv6 events counted under Diagnostics, in tree order.
 enum class EIPv6Event
@@ -475,6 +486,10 @@ public:
 	{
 		++(*s_sourceRouteEvents[static_cast<std::size_t>(event)]);
 	}
+	static void AddKadPointerEvent(EKadPointerEvent event)
+	{
+		++(*s_kadPointerEvents[static_cast<std::size_t>(event)]);
+	}
 	static void AddPublishEvent(EPublishEvent event, uint64_t count = 1)
 	{
 		*s_publishEvents[static_cast<std::size_t>(event)] += count;
@@ -732,6 +747,9 @@ private:
 	static CStatTreeItemCounter *s_publishEvents[static_cast<std::size_t>(EPublishEvent::Count)];
 	static CStatTreeItemSimple *s_kadPublishedNow;
 	static CStatTreeItemSimple *s_kadPublishedShare;
+	static CStatTreeItemSimple *s_kadPointerReachableNow;
+	static CStatTreeItemSimple *s_kadPointerReachableShare;
+	static CStatTreeItemCounter *s_kadPointerEvents[static_cast<std::size_t>(EKadPointerEvent::Count)];
 	static CStatTreeItemSimple *s_kadPublishedWellNow;
 	static CStatTreeItemSimple *s_ed2kOfferedNow;
 	static CStatTreeItemSimple *s_ed2kOfferedShare;

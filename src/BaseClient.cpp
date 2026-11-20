@@ -3169,6 +3169,7 @@ void CUpDownClient::ConnectionEstablished()
 	if (m_kadPointerBuddyAsked &&
 		(GetDownloadState() == DS_WAITCALLBACKKAD || m_kadCallbackRetryTime != 0)) {
 		// The callback came through the buddy the pointer named (#2513).
+		theStats::AddKadPointerEvent(EKadPointerEvent::SourceReached);
 		AddDebugLogLineN(logKadBuddy,
 			CFormat("Kad source %s reached through buddy %s from its pointer, record type %u") %
 				GetUserHash().Encode() %
