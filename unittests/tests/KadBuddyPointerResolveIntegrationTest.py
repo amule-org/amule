@@ -16,80 +16,30 @@ miss: no pointer is found; after the lookup the route has failed and no request 
 
 One fake Kad node is the daemon's only contact, the storer of both records and the dead buddy.
 """
-import socket
 import struct
 import sys
 import tempfile
-import threading
 import time
 from pathlib import Path
 
 from AllSearchIntegrationTest import C, retry_port_collisions, string, wait_for
+from KadBuddyCallbackRetryIntegrationTest import (FLOOD_INTERVAL, SETTLE_SECONDS, SOCKET_TIMEOUT,
+                                                  SecondBuddy, record)
 from KadLanModeIntegrationTest import write_private_contacts
-from KadSourceBuddyIdIntegrationTest import (FILE_HASH, FILE_SIZE, KADEMLIA_CALLBACK_REQ, NODE_ID,
-                                             NODE_VERSION, SOURCE_ADDRESS, SOURCE_ID, SOURCE_PORT,
-                                             FakeNode, kad_ip, private_address)
-from KadSourceTagsECTest import (KADEMLIA2_SEARCH_RES, KADEMLIA2_SEARCH_SOURCE_REQ,
-                                 TAG_BUDDYHASH, TAG_FILESIZE, TAG_SERVERIP, TAG_SERVERPORT,
-                                 TAG_SOURCEIP, TAG_SOURCEPORT, TAG_SOURCETYPE, running_kad_daemon,
-                                 tag as kad_tag, unpack_kad_packet)
+from KadSourceBuddyIdIntegrationTest import (FILE_HASH, FILE_SIZE, KADEMLIA_CALLBACK_REQ,
+                                             NODE_VERSION, SOURCE_ID, SOURCE_PORT, FakeNode,
+                                             private_address)
+from KadSourceTagsECTest import KADEMLIA2_SEARCH_SOURCE_REQ, running_kad_daemon, tag as kad_tag
 
 TAG_BUDDYPOINTER = b'bpv'
-BUDDY_HASH = b'00112233445566778899aabbccddeeff'
 POINTER_KEY = bytes(0xFF ^ b for b in SOURCE_ID)
-# The next request to the same buddy IP waits out eMule's flood interval; the socket gives up at 40 s.
-FLOOD_INTERVAL = 60
-SOCKET_TIMEOUT = 40
 # A pointer lookup runs this long.
 LOOKUP_SECONDS = 45
-# Long enough for a request that must not come: one more socket timeout and the 65 s wait.
-SETTLE_SECONDS = 75
 
 
 def marked_record(buddy_address, buddy_port, with_size=True):
     """A firewalled source reached through the buddy at buddy_address:buddy_port, with `bpv`."""
-    tags = [kad_tag(TAG_SOURCETYPE, 0x09, 3),
-            kad_tag(TAG_SOURCEIP, 0x03, kad_ip(SOURCE_ADDRESS)),
-            kad_tag(TAG_SOURCEPORT, 0x08, SOURCE_PORT),
-            kad_tag(TAG_SERVERIP, 0x03, kad_ip(buddy_address)),
-            kad_tag(TAG_SERVERPORT, 0x08, buddy_port),
-            kad_tag(TAG_BUDDYHASH, 0x02, BUDDY_HASH),
-            kad_tag(TAG_BUDDYPOINTER, 0x09, 1)]
-    if with_size:
-        tags.append(kad_tag(TAG_FILESIZE, 0x03, FILE_SIZE))
-    return tags
-
-
-class LiveBuddy(threading.Thread):
-    """The buddy the pointer names. It records the callback requests and passes none on."""
-
-    daemon = True
-
-    def __init__(self, address, requests):
-        super().__init__()
-        self.requests = requests
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.bind((address, 0))
-        self.sock.settimeout(0.5)
-        self.port = self.sock.getsockname()[1]
-        self.running = True
-
-    def run(self):
-        while self.running:
-            try:
-                packet, _peer = self.sock.recvfrom(65535)
-            except socket.timeout:
-                continue
-            except OSError:
-                return
-            packet = unpack_kad_packet(packet)
-            if packet[:2] == bytes([0xE4, KADEMLIA_CALLBACK_REQ]):
-                self.requests.append((time.monotonic(), 'pointer', packet[2:18]))
-
-    def stop(self):
-        self.running = False
-        self.join(timeout=5)
-        self.sock.close()
+    return record(buddy_address, buddy_port, with_size) + [kad_tag(TAG_BUDDYPOINTER, 0x09, 1)]
 
 
 class Storer(FakeNode):
@@ -111,9 +61,7 @@ class Storer(FakeNode):
             else:
                 self.source_searches += 1
                 records = [marked_record(address, self.port)]
-            entries = b''.join(SOURCE_ID + bytes([len(tags)]) + b''.join(tags) for tags in records)
-            self.send(peer, KADEMLIA2_SEARCH_RES, NODE_ID + body[:16]
-                      + struct.pack('<H', len(records)) + entries)
+            self.send_records(peer, body[:16], records)
         elif opcode == KADEMLIA_CALLBACK_REQ:
             self.requests.append((time.monotonic(), 'record', body[:16]))
         else:
@@ -122,7 +70,7 @@ class Storer(FakeNode):
 
 def drive(binary, address, with_pointer):
     """Feed one daemon the source and return the storer, with every callback request."""
-    live = LiveBuddy(address, []) if with_pointer else None
+    live = SecondBuddy(address, [], label='pointer') if with_pointer else None
     node = Storer(address, live)
     threads = [thread for thread in (node, live) if thread]
     for thread in threads:

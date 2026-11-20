@@ -19,7 +19,6 @@ One fake Kad node is the daemon's only contact and also the source's buddy. Neit
 The argument after the daemon picks the case, so each fits the CI time limit: 'one' or 'two'.
 """
 import socket
-import struct
 import sys
 import tempfile
 import threading
@@ -28,12 +27,12 @@ from pathlib import Path
 
 from AllSearchIntegrationTest import C, integer, retry_port_collisions, string, wait_for
 from KadLanModeIntegrationTest import write_private_contacts
-from KadSourceBuddyIdIntegrationTest import (FILE_HASH, FILE_SIZE, KADEMLIA_CALLBACK_REQ, NODE_ID,
-                                             NODE_VERSION, SOURCE_ID, SOURCE_PORT, FakeNode,
-                                             kad_ip, private_address, source_tags)
-from KadSourceTagsECTest import (KADEMLIA2_SEARCH_RES, KADEMLIA2_SEARCH_SOURCE_REQ,
-                                 TAG_BUDDYHASH, TAG_SERVERIP, TAG_SERVERPORT, running_kad_daemon,
-                                 tag as kad_tag, unpack_kad_packet)
+from KadSourceBuddyIdIntegrationTest import (FILE_HASH, FILE_SIZE, KADEMLIA_CALLBACK_REQ,
+                                             NODE_VERSION, SOURCE_PORT, FakeNode, kad_ip,
+                                             private_address, source_tags)
+from KadSourceTagsECTest import (KADEMLIA2_SEARCH_SOURCE_REQ, TAG_BUDDYHASH, TAG_SERVERIP,
+                                 TAG_SERVERPORT, running_kad_daemon, tag as kad_tag,
+                                 unpack_kad_packet)
 
 # No 4-byte group is a palindrome, so the two layouts differ.
 BUDDY_HASH = b'00112233445566778899aabbccddeeff'
@@ -54,9 +53,9 @@ def other_layout(buddy_id):
     return b''.join(buddy_id[i:i + 4][::-1] for i in range(0, 16, 4))
 
 
-def record(address, port):
+def record(address, port, with_size=True):
     """A firewalled source reached through the buddy at address:port."""
-    return source_tags(False) + [kad_tag(TAG_BUDDYHASH, 0x02, BUDDY_HASH),
+    return source_tags(False, with_size=with_size) + [kad_tag(TAG_BUDDYHASH, 0x02, BUDDY_HASH),
                                  kad_tag(TAG_SERVERIP, 0x03, kad_ip(address)),
                                  kad_tag(TAG_SERVERPORT, 0x08, port)]
 
@@ -66,9 +65,10 @@ class SecondBuddy(threading.Thread):
 
     daemon = True
 
-    def __init__(self, address, requests):
+    def __init__(self, address, requests, label='second'):
         super().__init__()
         self.requests = requests
+        self.label = label
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((address, 0))
         self.sock.settimeout(0.5)
@@ -85,7 +85,7 @@ class SecondBuddy(threading.Thread):
                 return
             packet = unpack_kad_packet(packet)
             if packet[:2] == bytes([0xE4, KADEMLIA_CALLBACK_REQ]):
-                self.requests.append((time.monotonic(), 'second', packet[2:18]))
+                self.requests.append((time.monotonic(), self.label, packet[2:18]))
 
     def stop(self):
         self.running = False
@@ -108,9 +108,7 @@ class SilentBuddy(FakeNode):
             records = [record(address, self.port)]
             if self.second:
                 records.append(record(address, self.second.port))
-            entries = b''.join(SOURCE_ID + bytes([len(tags)]) + b''.join(tags) for tags in records)
-            self.send(peer, KADEMLIA2_SEARCH_RES, NODE_ID + body[:16]
-                      + struct.pack('<H', len(records)) + entries)
+            self.send_records(peer, body[:16], records)
         elif opcode == KADEMLIA_CALLBACK_REQ:
             self.requests.append((time.monotonic(), 'first', body[:16]))
         else:
