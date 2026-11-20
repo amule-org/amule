@@ -22,7 +22,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-18 23:45+0000\n"
+"PO-Revision-Date: 2026-11-20 10:33+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -2147,68 +2147,57 @@ msgid "Connecting via %s"
 msgstr "Connessione tramite %s"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Direct"
-msgstr "Directory"
+msgstr "Diretta"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Incoming"
-msgstr "Directory file scaricati"
+msgstr "In entrata"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Server callback"
-msgstr "una callback diretta"
+msgstr "Callback del server"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Kad buddy callback"
-msgstr "una callback Lugdunum"
+msgstr "Callback dell’amico Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Direct UDP callback"
-msgstr "una callback diretta"
+msgstr "Callback UDP diretta"
 
 # AI-GENERATED — please review.
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Callback by the source's server"
-msgstr "il server della fonte"
+msgstr "Callback dal server della fonte"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Server hole punch"
-msgstr "un hole punch del server"
+msgstr "Hole punch del server"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Lugdunum callback"
-msgstr "una callback Lugdunum"
+msgstr "Callback Lugdunum"
 
 #: src/DataToText.cpp
 msgid "Answered server callback"
-msgstr ""
+msgstr "Risposta a callback del server"
 
 #: src/DataToText.cpp
 msgid "Answered Kad buddy callback"
-msgstr ""
+msgstr "Risposta a callback dell’amico Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Answered direct UDP callback"
-msgstr "una callback diretta"
+msgstr "Risposta a callback UDP diretta"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Answered Lugdunum callback"
-msgstr "una callback Lugdunum"
+msgstr "Risposta a callback Lugdunum"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "proxy"
-msgstr "Proxy"
+msgstr "proxy"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -3931,6 +3920,15 @@ msgstr "Nodo speciale"
 #: src/kademlia/utils/LookupDiagnostics.cpp
 msgid "UDP firewall check"
 msgstr "Verifica firewall UDP"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+msgid "Publish buddy pointer"
+msgstr "Pubblicazione puntatore amico"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "Pubblicazione puntatore amico"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format

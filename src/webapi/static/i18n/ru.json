@@ -1085,5 +1085,21 @@
   "downloads_peer_route_kad_buddy": "партнёр Kad",
   "downloads_peer_route_foreign_nat_callback": "собственный сервер источника",
   "downloads_peer_route_server_hole_punch": "прокол через сервер",
-  "downloads_peer_route_lugdunum_callback": "обратный вызов Lugdunum"
+  "downloads_peer_route_lugdunum_callback": "обратный вызов Lugdunum",
+  "downloads_peer_col_connection": "Соединение",
+  "client_detail_connection": "Соединение",
+  "downloads_peer_state_waiting_to_ask": "Ожидание запроса ({time})",
+  "downloads_peer_conn_dial": "Прямое",
+  "downloads_peer_conn_inbound": "Входящее",
+  "downloads_peer_conn_server_callback": "Обратный вызов сервера",
+  "downloads_peer_conn_kad_buddy_callback": "Обратный вызов партнёра Kad",
+  "downloads_peer_conn_direct_udp_callback": "Прямой обратный вызов UDP",
+  "downloads_peer_conn_foreign_nat_callback": "Обратный вызов сервером источника",
+  "downloads_peer_conn_server_hole_punch": "Прокол через сервер",
+  "downloads_peer_conn_lugdunum_callback": "Обратный вызов Lugdunum",
+  "downloads_peer_conn_answered_server_callback": "Отвеченный обратный вызов сервера",
+  "downloads_peer_conn_answered_kad_buddy_callback": "Отвеченный обратный вызов партнёра Kad",
+  "downloads_peer_conn_answered_direct_udp_callback": "Отвеченный прямой обратный вызов UDP",
+  "downloads_peer_conn_answered_lugdunum_callback": "Отвеченный обратный вызов Lugdunum",
+  "downloads_peer_conn_proxy": "прокси"
 }

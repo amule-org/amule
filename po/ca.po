@@ -3909,6 +3909,16 @@ msgid "UDP firewall check"
 msgstr "Comprovació del tallafocs UDP"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Publish buddy pointer"
+msgstr "Publicació de notes"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
+#, fuzzy
+msgid "Find buddy pointer"
+msgstr "Publicació de notes"
+
+#: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
 msgid "type %u"
 msgstr "tipus %u"

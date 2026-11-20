@@ -77,5 +77,7 @@
   "networks_kad_files": "文件",
   "networks_server_static_no": "否",
   "networks_server_remove": "移除",
-  "search_empty": "这里啥都没有。"
+  "search_empty": "这里啥都没有。",
+  "about_website": "网站",
+  "about_daemon_disconnected": "未连接"
 }
