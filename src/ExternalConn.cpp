@@ -1932,7 +1932,7 @@ static CECPacket *Get_EC_Response_SetSharedDirs(const CECPacket *request)
 }
 
 template <typename File, typename FileTag, ec_tagname_t QueryTag, typename FileList>
-static CECPacket *Get_EC_FileListResponse(const CECPacket *request,
+static CECPacket *Get_EC_Response_FileList(const CECPacket *request,
 	ec_opcode_t responseOpcode,
 	const FileList &files,
 	CFileEncoderMap &encoders,
@@ -3789,7 +3789,7 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			return NULL;
 		}
 		if (request->GetDetailLevel() != EC_DETAIL_INC_UPDATE) {
-			response = Get_EC_FileListResponse<CKnownFile, CEC_SharedFile_Tag, EC_TAG_KNOWNFILE>(
+			response = Get_EC_Response_FileList<CKnownFile, CEC_SharedFile_Tag, EC_TAG_KNOWNFILE>(
 				request,
 				EC_OP_SHARED_FILES,
 				*theApp->sharedfiles,
@@ -3824,15 +3824,15 @@ CECPacket *CECServerSocket::ProcessRequest2(const CECPacket *request)
 			return NULL;
 		}
 		if (request->GetDetailLevel() != EC_DETAIL_INC_UPDATE) {
-			response =
-				Get_EC_FileListResponse<CPartFile, CEC_PartFile_Tag, EC_TAG_PARTFILE>(request,
-					EC_OP_DLOAD_QUEUE,
-					*theApp->downloadqueue,
-					m_FileEncoder,
-					m_lastEcGenSeenPart,
-					m_partialUpdateActive,
-					m_lastSentPartFileIds,
-					m_sentWithDetailIdsPart);
+			response = Get_EC_Response_FileList<CPartFile, CEC_PartFile_Tag, EC_TAG_PARTFILE>(
+				request,
+				EC_OP_DLOAD_QUEUE,
+				*theApp->downloadqueue,
+				m_FileEncoder,
+				m_lastEcGenSeenPart,
+				m_partialUpdateActive,
+				m_lastSentPartFileIds,
+				m_sentWithDetailIdsPart);
 		}
 		break;
 	case EC_OP_GET_CLIENT_HISTORY:
