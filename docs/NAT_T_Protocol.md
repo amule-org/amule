@@ -42,7 +42,7 @@ with its field.
 | `0x1000` | `SRV_TCPFLG_LUGDUNUM_CALLBACK` | `OP_IDCHANGE` TCP flag | Lugdunum callback support |
 | `0x20000` | `SRV_TCPFLG_LOWID_HOLEPUNCH` | `OP_IDCHANGE` TCP flag | ed2k-server hole punch support |
 | `0x100000` | `SRV_TCPFLG_PUNCH_WAKE` | `OP_IDCHANGE` TCP flag | A `0x60` wakes the target first and waits for its `0x9F` (hole-punch extension) |
-| `0x100000` | `SRV_UDPFLG_FOREIGN_NAT_CALLBACK` | Server status UDP flag | Takes a cross-server callback; on eNode-go also extension support |
+| `0x100000` | `SRV_UDPFLG_FOREIGN_NAT_CALLBACK` | Server status UDP flag | Takes a cross-server `0xA6`; its wake waits for the target's `0x9F`. ed2k-server sets it only with the TCP bit |
 | `0xAC` | `ST_NATT_TOKEN` | `OP_SERVERIDENT` tag | Session token, new at every login; never on UDP |
 | `0xA9` | `ST_NATT_PROOF` | `OP_SERVERIDENT` tag | u32 = 1: the server takes a proof `0x9F` |
 | `0x92` | `ST_UDPFLAGS` | `OP_SERVERIDENT` tag | The server's UDP flags, the same word as in its status answer |
