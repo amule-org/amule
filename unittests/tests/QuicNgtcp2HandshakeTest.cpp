@@ -508,6 +508,13 @@ public:
 		return SendStreamData(m_conn, m_streamId, payload, nowMs, fin, accepted);
 	}
 
+	//! The dialler's stream, which a dial does not read.
+	std::vector<std::vector<uint8_t>> SendOnDiallerStream(
+		const std::vector<uint8_t> &payload, uint64_t nowMs, size_t *accepted)
+	{
+		return SendStreamData(m_conn, 0, payload, nowMs, false, accepted);
+	}
+
 	bool HandshakeDone() const { return m_handshakeDone; }
 	int64_t OwnStream() const { return m_streamId; }
 	int64_t ReceivedOn() const { return m_receivedOn; }
@@ -1330,6 +1337,24 @@ TEST(QuicNgtcp2Handshake, RealClientReadsAServerThatAnswersOnItsOwnStream)
 	const auto proofEnd =
 		server.Received().begin() + static_cast<std::ptrdiff_t>(QuicNatt::EAQN1_PROOF_SIZE);
 	ASSERT_TRUE(std::vector<uint8_t>(proofEnd, server.Received().end()) == hello);
+
+	// Bytes on the dialler's stream are ignored, but their credit must come back: a window of
+	// them would otherwise use up the connection window.
+	const std::vector<uint8_t> ignored(CQuicSocketTransport::kReadWindow, 0x5A);
+	size_t ignoredSent = 0;
+	for (int round = 0; round < 200 && ignoredSent < ignored.size(); ++round, nowMs += 10) {
+		size_t taken = 0;
+		toClient(server.SendOnDiallerStream(
+			std::vector<uint8_t>(
+				ignored.begin() + static_cast<std::ptrdiff_t>(ignoredSent), ignored.end()),
+			nowMs,
+			&taken));
+		ignoredSent += taken;
+		clientConnection->Tick(nowMs);
+		toServer();
+		toClient(server.Pump(nowMs));
+	}
+	ASSERT_TRUE(ignoredSent == ignored.size());
 
 	// More than one read window: the dial must reopen credit on the server's stream.
 	std::vector<uint8_t> bulk(CQuicSocketTransport::kReadWindow + 4096);

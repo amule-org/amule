@@ -451,9 +451,9 @@ private:
 		return m_streamClosingSinceMs && nowMs - *m_streamClosingSinceMs >= kClosedStreamLingerMs;
 	}
 
-	// The point a connection has something worth handing to the rest of aMule: either side's
-	// one stream has opened (QuicSocketTransport.h) -- the peer's, for an inbound connection, or
-	// this side's own, for an outbound dial, once OnExtendMaxLocalStreamsBidi() lets it open.
+	// The point a connection has something worth handing to the rest of aMule: the stream we
+	// write on has opened -- the peer's, for an inbound connection, or this side's own, for an
+	// outbound dial, once OnExtendMaxLocalStreamsBidi() lets it open.
 	// Checked after every successful ProcessDatagram() and from Tick(), since either is a place
 	// a stream can newly open.
 	void OfferStreamIfJustOpened()
@@ -713,6 +713,9 @@ public:
 			it->second.readStreamId = streamId;
 		}
 		if (it->second.readStreamId != streamId) {
+			// Unread, but its credit goes back: it must not use up the connection window.
+			ngtcp2_conn_extend_max_stream_offset(conn, streamId, datalen);
+			ngtcp2_conn_extend_max_offset(conn, datalen);
 			return 0;
 		}
 		// Once a transport is attached (AttachTransport()), bytes go straight to it: buffering
@@ -876,15 +879,14 @@ public:
 		params.max_idle_timeout = NanosecondsFromMs(kIdleTimeoutMs);
 		params.original_dcid = originalDcid;
 		params.original_dcid_present = 1;
-		// Only the remote-initiated windows matter: eD2k always replies on the peer's own
-		// stream, never opens one of its own (see QuicSocketTransport.h). ExtendReadWindow()
-		// reopens these as the application drains its read buffer, once a real stream exists.
+		// As the acceptor aMule replies on the dialler's stream and opens none of its own, so
+		// only the remote-initiated windows matter. ExtendReadWindow() reopens these as the
+		// application drains its read buffer, once a real stream exists.
 		params.initial_max_stream_data_bidi_remote = CQuicSocketTransport::kReadWindow;
 		params.initial_max_stream_data_uni = CQuicSocketTransport::kReadWindow;
 		params.initial_max_data = CQuicSocketTransport::kReadWindow;
 		// ngtcp2_transport_params_default() leaves this at 0, meaning "the peer may open no
-		// bidirectional stream at all". Exactly one is the design (QuicSocketTransport.h): the
-		// peer's own stream, never a second.
+		// bidirectional stream at all". The dialler needs exactly one.
 		params.initial_max_streams_bidi = 1;
 
 		ngtcp2_conn *conn = nullptr;
