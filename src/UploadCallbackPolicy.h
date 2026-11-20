@@ -25,6 +25,8 @@
 #ifndef UPLOAD_CALLBACK_POLICY_H
 #define UPLOAD_CALLBACK_POLICY_H
 
+#include "SourceRoutePolicy.h" // Needed for EContactRouteReport
+
 #include <cstdint>
 
 // The upload queue has no unit-test seam, so its rules live here where they can be tested.
@@ -55,6 +57,40 @@ inline bool IsUploadCallbackInFlight(std::uint64_t sentAtMs, std::uint64_t nowMs
 inline unsigned MaxInflightUploadCallbacks(unsigned freeSlots, bool lowIdAlternationSlot)
 {
 	return freeSlots + (lowIdAlternationSlot ? 1U : 0U);
+}
+
+//! The peer drops, unanswered, a direct callback request that comes within @a throttleMs of the
+//! last one from our IP.
+inline bool IsDirectCallbackThrottled(std::uint64_t lastSentMs, std::uint64_t nowMs, std::uint64_t throttleMs)
+{
+	return lastSentMs != 0 && nowMs >= lastSentMs && nowMs - lastSentMs < throttleMs;
+}
+
+struct SUploadCallbackRouteFacts
+{
+	//! CanDoCallback() for the peer's server: the peer can connect to us.
+	bool canTakeCallback = false;
+	//! CUpDownClient::IsDirectCallbackPossible().
+	bool directCallback = false;
+	bool directThrottled = false;
+	bool onOurServer = false;
+};
+
+/**
+ * The upload callback route that needs no NAT-T server support, or None.
+ *
+ * The order is TryToContact()'s. The server callback needs the peer on our server: a LowID is valid
+ * only on its own server, so the request would wake a different client on ours.
+ */
+inline EContactRouteReport UploadCallbackRoute(const SUploadCallbackRouteFacts &facts)
+{
+	if (!facts.canTakeCallback) {
+		return EContactRouteReport::None;
+	}
+	if (facts.directCallback && !facts.directThrottled) {
+		return EContactRouteReport::DirectUdpCallback;
+	}
+	return facts.onOurServer ? EContactRouteReport::ServerCallback : EContactRouteReport::None;
 }
 
 #endif // UPLOAD_CALLBACK_POLICY_H

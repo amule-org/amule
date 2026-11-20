@@ -2264,12 +2264,38 @@ void CUpDownClient::SendClassicCallbackRequest()
 	theApp->serverconnect->SendPacket(packet);
 }
 
+bool CUpDownClient::IsDirectCallbackPossible() const
+{
+	return HasLowID() && SupportsDirectUDPCallback() && thePrefs::GetEffectiveUDPPort() != 0 &&
+	       GetConnectIP() != 0;
+}
+
+void CUpDownClient::SendDirectCallbackRequest()
+{
+	CMemFile data;
+	data.WriteUInt16(thePrefs::GetPort());   // needs to know our port
+	data.WriteHash(thePrefs::GetUserHash()); // and userhash
+	// our connection settings
+	data.WriteUInt8(Kademlia::CPrefs::GetMyConnectOptions(true, false));
+	AddDebugLogLineN(logClientUDP,
+		"Sending OP_DIRECTCALLBACKREQ to " + Uint32_16toStringIP_Port(GetConnectIP(), GetKadPort()));
+	CPacket *packet = new CPacket(data, OP_EMULEPROT, OP_DIRECTCALLBACKREQ);
+	theStats::AddUpOverheadOther(packet->GetPacketSize());
+	theApp->clientudp->SendPacket(packet,
+		GetConnectIP(),
+		GetKadPort(),
+		ShouldReceiveCryptUDPPackets(),
+		GetUserHash().GetHash(),
+		false,
+		0);
+	m_lastDirectCallbackRequest = ::GetTickCount64();
+}
+
 SSourceRouteFacts CUpDownClient::SourceRouteFacts(bool callbackOnly) const
 {
 	SSourceRouteFacts facts;
 	facts.callbackOnly = callbackOnly;
-	facts.directCallback = HasLowID() && SupportsDirectUDPCallback() &&
-			       thePrefs::GetEffectiveUDPPort() != 0 && GetConnectIP() != 0;
+	facts.directCallback = IsDirectCallbackPossible();
 	facts.hasBuddyID = HasValidBuddyID();
 	facts.kadConnected = Kademlia::CKademlia::IsConnected();
 	// Also asked from Disconnected(), which runs during shutdown.
@@ -2684,24 +2710,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		AddDebugLogLineN(logClient,
 			CFormat("Direct Callback on port %u to client on ip %s") % GetKadPort() %
 				Uint32toStringIP(GetConnectIP()));
-
-		CMemFile data;
-		data.WriteUInt16(thePrefs::GetPort());   // needs to know our port
-		data.WriteHash(thePrefs::GetUserHash()); // and userhash
-		// our connection settings
-		data.WriteUInt8(Kademlia::CPrefs::GetMyConnectOptions(true, false));
-		AddDebugLogLineN(logClientUDP,
-			"Sending OP_DIRECTCALLBACKREQ to " +
-				Uint32_16toStringIP_Port(GetConnectIP(), GetKadPort()));
-		CPacket *packet = new CPacket(data, OP_EMULEPROT, OP_DIRECTCALLBACKREQ);
-		theStats::AddUpOverheadOther(packet->GetPacketSize());
-		theApp->clientudp->SendPacket(packet,
-			GetConnectIP(),
-			GetKadPort(),
-			ShouldReceiveCryptUDPPackets(),
-			GetUserHash().GetHash(),
-			false,
-			0);
+		SendDirectCallbackRequest();
 		StartSourceRoute(route);
 	} else if (HasLowID() && !dialIPv6) { // LOWID
 		// Set where a packet actually goes out. Several of the paths below reach the end having

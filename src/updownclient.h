@@ -1089,7 +1089,10 @@ public:
 	{
 		return m_fDirectUDPCallback != 0 && HasValidHash() && GetKadPort() != 0;
 	}
+	//! A LowID we can ask to connect with OP_DIRECTCALLBACKREQ. The caller checks CanDoCallback().
+	bool IsDirectCallbackPossible() const;
 	uint64_t GetDirectCallbackTimeout() const { return m_dwDirectCallbackTimeout; }
+	uint64_t GetLastDirectCallbackRequest() const { return m_lastDirectCallbackRequest; }
 	bool HasObfuscatedConnectionBeenEstablished() const { return m_hasbeenobfuscatinglately; }
 
 	void SetCryptLayerSupport(bool bVal) { m_fSupportsCryptLayer = bVal ? 1 : 0; }
@@ -1162,6 +1165,7 @@ private:
 
 	void Init();
 	void SendClassicCallbackRequest();
+	void SendDirectCallbackRequest();
 	//! `inbound`: an OP_HELLO, which only a peer that dialled us sends.
 	bool ProcessHelloTypePacket(const CMemFile &data, bool inbound);
 	void SendHelloTypePacket(CMemFile *data);
@@ -1241,6 +1245,8 @@ private:
 	uint32 m_cAsked;
 	uint64 m_dwLastUpRequest;
 	uint64 m_uploadCallbackSentAt = 0;
+	//! Our last OP_DIRECTCALLBACKREQ to this peer, from either side.
+	uint64 m_lastDirectCallbackRequest = 0;
 	bool m_uploadCallbackSpent = false;
 	bool m_uploadCallbackExpected = false;
 	uint32 m_nCurSessionUp;

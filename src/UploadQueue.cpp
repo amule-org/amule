@@ -26,6 +26,7 @@
 #include "UploadQueue.h" // Interface declarations
 #include "UploadQueueAddressPolicy.h"
 #include "UploadCallbackPolicy.h"
+#include "PeerAddressing.h" // Needed for kCallbackRequestThrottleMs
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
@@ -93,12 +94,20 @@ bool CUploadQueue::TryStartUploadCallback(
 	if (inFlight >= inFlightCeiling) {
 		return false;
 	}
-	// CanDoCallback() alone is also true for a peer on another server and for a Kad-only
-	// session, and TryToContact() checks both for the same reason: a LowID is valid only on its
-	// own server, so the request would wake a different client on ours.
-	EContactRouteReport route = EContactRouteReport::ServerCallback;
-	if (theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort()) &&
-		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort())) {
+	SUploadCallbackRouteFacts facts;
+	facts.canTakeCallback = theApp->CanDoCallback(client->GetServerIP(), client->GetServerPort());
+	facts.directCallback = client->IsDirectCallbackPossible();
+	// A request the peer drops would hold an in-flight place and spend the peer for nothing.
+	facts.directThrottled = IsDirectCallbackThrottled(
+		client->GetLastDirectCallbackRequest(), now, PeerAddressing::kCallbackRequestThrottleMs);
+	facts.onOurServer =
+		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort());
+	EContactRouteReport route = UploadCallbackRoute(facts);
+	if (route == EContactRouteReport::DirectUdpCallback) {
+		client->SendDirectCallbackRequest();
+		AddDebugLogLineN(
+			logLocalClient, "Started direct UDP upload callback to " + client->GetFullIP());
+	} else if (route == EContactRouteReport::ServerCallback) {
 		client->SendClassicCallbackRequest();
 		AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
 	} else {
