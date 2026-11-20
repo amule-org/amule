@@ -36,6 +36,13 @@ reached. The login cannot carry that address, so a probing server also needs `0x
 `0x8000` (below), or the address never reaches it. The server caps dial-back attempts, not
 updates: four per session, the login's own address included.
 
+With the crypt layer required, the probe must be obfuscated. aMule takes a plain incoming connection
+only from a server it is still logging in to, matched by IPv4 address
+(`CServerConnect::AwaitingTestFromIP()`), and in strict mode not even then. So it refuses a plain
+probe from the server's IPv6 address, and the verdict is `0x05`. A server reaches such a client
+only if it dials obfuscated, keyed with the user hash from the login. ed2k-server does this first
+when the login's `CT_SERVER_FLAGS` say the client supports the crypt layer.
+
 ## Login: advertising our IPv6 address
 
 A client that currently advertises an IPv6 address to peers (`AdvertiseIPv6Mode`
