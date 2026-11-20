@@ -106,6 +106,7 @@
 #include "PartFile.h"                   // Needed for CPartFile
 #include "PlatformSpecific.h"           // Needed for PlatformSpecific::ShutdownSleepInhibition();
 #include "Preferences.h"                // Needed for CPreferences
+#include "PublicIPAnswerPolicy.h"       // Needed for PublicIPAnswerVotes
 #include "PublicIPv6Corroboration.h"    // Needed for ObservedPublicIPv6
 #include "SearchList.h"                 // Needed for CSearchList
 #include "SharedFileList.h"             // Needed for ClearKadSourcePublishInfo
@@ -3336,6 +3337,8 @@ uint32 CamuleApp::GetPublicIP(bool ignorelocal) const
 void CamuleApp::SetPublicIP(const uint32 dwIP)
 {
 	wxASSERT((dwIP == 0) || !IsLowID(dwIP));
+	// Whatever set or cleared our IP outranks votes cast before it.
+	PublicIPAnswerVotes().Reset();
 
 	if (dwIP != 0 && dwIP != m_dwPublicIP && serverlist != NULL) {
 		m_dwPublicIP = dwIP;

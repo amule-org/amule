@@ -67,6 +67,7 @@
 #include "MemFile.h"           // Needed for CMemFile
 #include "Packet.h"            // Needed for CPacket
 #include "Friend.h"            // Needed for CFriend
+#include "PublicIPAnswerPolicy.h"
 #include "PublicIPv6Corroboration.h"
 #include "ClientVersionString.h"
 #include "ClientList.h"       // Needed for CClientList
@@ -3877,8 +3878,15 @@ void CUpDownClient::ProcessPublicIPAnswer(const uint8_t *pbyData, uint32 uSize)
 	if (m_fNeedOurPublicIP == true) { // did we?
 		m_fNeedOurPublicIP = false;
 		// Ignore local ip on GetPublicIP (could be wrong)
-		if (theApp->GetPublicIP(true) == 0 && !IsLowID(dwIP)) {
-			theApp->SetPublicIP(dwIP);
+		uint32 answerer = 0;
+		if (theApp->GetPublicIP(true) == 0 && m_socket != nullptr &&
+			m_socket->GetPeerAddress().ToIPv4NetworkOrder(answerer)) {
+			const uint32 agreed = PublicIPAnswerVotes().Add(answerer, dwIP);
+			if (agreed != 0) {
+				AddDebugLogLineN(logClient,
+					"Two /16 networks confirm our IP " + Uint32toStringIP(agreed));
+				theApp->SetPublicIP(agreed);
+			}
 		}
 	}
 }
