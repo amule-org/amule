@@ -559,6 +559,7 @@ bool CClientList::AttachToAlreadyKnown(
 						AttachUtpSocketAfterVerifiedHello(
 							incomingSynWinner,
 							foundSocket->IsTransportInbound(),
+							foundSocket->GetTransport()->IsConnected(),
 							found_client->HasValidHash() &&
 								tocheck->HasValidHash(),
 							thePrefs::GetUserHash().GetHash(),

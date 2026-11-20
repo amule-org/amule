@@ -9,8 +9,8 @@ direct NAT-T path aMule only responds: eMuleAI dials aMule's inbound QUIC
 endpoint when it is the downloader, but as the uploader it opens a passive
 endpoint and waits for a dial that aMule does not make on that path. The
 exchange does not change the normal eD2k handshake. The QUIC dial has been
-tested live between two aMule nodes; it has not yet been live-tested against
-eMuleAI 1.6.
+tested live between two aMule nodes, and against eMuleQt 0.7.38 in a NAT lab;
+it has not yet been live-tested against eMuleAI 1.6.
 
 ## Wire values
 
@@ -166,6 +166,11 @@ user hash and UDP endpoint, aMule looks the peer up in its capability cache:
 
 If a QUIC dial cannot start, or ends before its stream opens, the peer gets a
 30-second cooldown and the rendezvous falls back to uTP.
+
+The dial writes its EAQN1 proof and its eD2k data on the stream it opens, and
+reads the first stream the peer sends on. aMule answers on the dialler's
+stream; eMuleAI and eMuleQt answer on a stream of their own, so the dial lets
+the peer open one bidirectional stream.
 
 Only a dial with a known peer hash can use QUIC. On the ed2k-server punch every
 dial has one: a 29- or 30-byte `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) carries it to
@@ -424,7 +429,9 @@ without `ENABLE_UTP`, since every rendezvous ends in a uTP dial:
   a newer punch from the same peer replaces its dial-back. The ordinary uTP connection
   and `OP_HELLO` perform the rest; `ShouldKeepFoundUtp()` remains the collision backstop, and when it swaps
   the stream under a source that had already sent its file request, the request is sent again
-  on the kept stream. No TCP fallback is available between two LowID peers;
+  on the kept stream. The hash order decides only between two connected streams: a dial still in
+  its handshake loses to the stream that brought the `OP_HELLO`, since the peer may never answer
+  it (eMuleQt has no uTP). No TCP fallback is available between two LowID peers;
 - receiving `0x62`: log the failure and release the matching outstanding target ID.
 
 ### Punch schedule and port sweep

@@ -132,17 +132,39 @@ TEST(UtpDialPolicy, HelloAttachmentHonorsOnlyTheVerifiedSynWinnerToken)
 	const uint8_t peerHash[16] = { 1 };
 
 	const SUtpHelloAttachmentDecision synWinner =
-		DecideUtpHelloAttachment(true, false, true, localHash, peerHash);
+		DecideUtpHelloAttachment(true, false, true, true, localHash, peerHash);
 	ASSERT_FALSE(synWinner.keepFound);
 	ASSERT_TRUE(synWinner.socketSwap);
 
 	const SUtpHelloAttachmentDecision differentHelloPeer =
-		DecideUtpHelloAttachment(false, false, true, localHash, peerHash);
+		DecideUtpHelloAttachment(false, false, true, true, localHash, peerHash);
 	ASSERT_TRUE(differentHelloPeer.keepFound);
 	ASSERT_FALSE(differentHelloPeer.socketSwap);
 
 	const SUtpHelloAttachmentDecision withoutPeerHash =
-		DecideUtpHelloAttachment(false, false, false, localHash, nullptr);
+		DecideUtpHelloAttachment(false, false, true, false, localHash, nullptr);
+	ASSERT_TRUE(withoutPeerHash.keepFound);
+	ASSERT_FALSE(withoutPeerHash.socketSwap);
+}
+
+// Our uTP dial fell back from QUIC and the peer has no uTP; its QUIC stream brings the hello.
+TEST(UtpDialPolicy, HelloAttachmentDropsAFoundDialStillInItsHandshake)
+{
+	const uint8_t localHash[16] = { 0 };
+	const uint8_t peerHash[16] = { 1 };
+
+	const SUtpHelloAttachmentDecision unconnected =
+		DecideUtpHelloAttachment(false, false, false, true, localHash, peerHash);
+	ASSERT_FALSE(unconnected.keepFound);
+	ASSERT_TRUE(unconnected.socketSwap);
+
+	const SUtpHelloAttachmentDecision connected =
+		DecideUtpHelloAttachment(false, false, true, true, localHash, peerHash);
+	ASSERT_TRUE(connected.keepFound);
+	ASSERT_FALSE(connected.socketSwap);
+
+	const SUtpHelloAttachmentDecision withoutPeerHash =
+		DecideUtpHelloAttachment(false, false, false, false, localHash, nullptr);
 	ASSERT_TRUE(withoutPeerHash.keepFound);
 	ASSERT_FALSE(withoutPeerHash.socketSwap);
 }
@@ -152,7 +174,7 @@ TEST(UtpDialPolicy, HelloAttachmentSwapsToVerifiedWinnerAndRecoversFileRequest)
 	const uint8_t localHash[16] = { 0 };
 	const uint8_t peerHash[16] = { 1 };
 	const SUtpHelloAttachmentDecision decision =
-		DecideUtpHelloAttachment(true, false, true, localHash, peerHash);
+		DecideUtpHelloAttachment(true, false, true, true, localHash, peerHash);
 	bool fileRequestLost = false;
 	bool outgoingAlive = true;
 	bool incomingAttached = false;

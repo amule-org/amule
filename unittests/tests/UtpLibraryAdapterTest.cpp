@@ -497,6 +497,7 @@ TEST(UtpLibraryAdapter, IncomingSynWinnerFlowsThroughVerifiedHelloAttachmentSeam
 		verifiedHelloMatch,
 		false,
 		true,
+		true,
 		localHash,
 		peerHash,
 		true,
