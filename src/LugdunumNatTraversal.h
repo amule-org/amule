@@ -177,27 +177,6 @@ inline bool IsServerWayDatagramFromOurServer(const ServerWayDatagramFacts &facts
 	return facts.serverCallbackCapable && facts.sourceIp == facts.serverIp;
 }
 
-struct ServerWayKeyCandidates
-{
-	std::array<std::uint32_t, 2> keys{};
-	std::size_t count = 0;
-};
-
-// The challenge authenticates only the status-ping reply. A callback or keepalive wake uses the
-// established server key, so try the challenge first and the distinct established key second.
-inline ServerWayKeyCandidates ServerWayKeys(
-	bool cryptPingReplyPending, std::uint32_t challenge, std::uint32_t serverKeyUdp)
-{
-	ServerWayKeyCandidates candidates;
-	if (cryptPingReplyPending && challenge != 0) {
-		candidates.keys[candidates.count++] = challenge;
-	}
-	if (serverKeyUdp != 0 && (candidates.count == 0 || candidates.keys[0] != serverKeyUdp)) {
-		candidates.keys[candidates.count++] = serverKeyUdp;
-	}
-	return candidates;
-}
-
 struct LowIdServerSourceFacts
 {
 	bool originIsLocalServer = false;

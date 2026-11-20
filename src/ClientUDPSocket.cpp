@@ -79,6 +79,7 @@
 #include "NetworkFunctions.h"       // Needed for IsGoodIP
 #include "ClientRef.h"              // Needed for a safe temporary dial client
 #include "ListenSocket.h"           // Needed for TooManySockets
+#include "UdpObfuscationPolicy.h"   // Needed for ServerUdpReceiveKeys
 #endif
 
 //
@@ -779,21 +780,15 @@ bool CClientUDPSocket::TryProcessServerWayNatCallback(uint32 ip, uint8_t *buffer
 		return false;
 	}
 
-	const LugdunumNatTraversal::ServerWayKeyCandidates keys =
-		LugdunumNatTraversal::ServerWayKeys(serverListEntry->GetCryptPingReplyPending(),
-			serverListEntry->GetChallenge(),
-			serverListEntry->GetServerKeyUDP());
+	const ServerUdpKeyCandidates keys = ServerUdpReceiveKeys(serverListEntry->GetCryptPingReplyPending(),
+		serverListEntry->GetChallenge(),
+		serverListEntry->GetServerKeyUDP());
 	uint8_t *decrypted = buffer;
-	int decryptedLen = static_cast<int>(length);
-	// A failed DecryptReceivedServer() leaves buffer unchanged, so the next candidate is safe.
-	for (std::size_t index = 0; index != keys.count; ++index) {
-		decrypted = buffer;
-		decryptedLen = CEncryptedDatagramSocket::DecryptReceivedServer(
-			buffer, static_cast<int>(length), &decrypted, keys.keys[index], ip);
-		if (decryptedLen < static_cast<int>(length) && decrypted != nullptr && decryptedLen >= 2) {
-			break;
-		}
-	}
+	const int decryptedLen =
+		DecryptWithServerUdpKeys(keys, static_cast<int>(length), [&](std::uint32_t key) {
+			return CEncryptedDatagramSocket::DecryptReceivedServer(
+				buffer, static_cast<int>(length), &decrypted, key, ip);
+		});
 	// Every non-decrypting path returns the input length unchanged; a decrypt strips the header.
 	if (decryptedLen >= static_cast<int>(length) || decrypted == nullptr || decryptedLen < 2) {
 		return false;

@@ -431,29 +431,6 @@ TEST(LugdunumNatTraversal, RecognisesServerWayDatagramsOnlyFromACapableCurrentSe
 	ASSERT_FALSE(IsServerWayDatagramFromOurServer(notCapable));
 }
 
-TEST(LugdunumNatTraversal, TriesTheServerKeyAfterAnUnansweredCryptPingChallenge)
-{
-	// Only the status-ping reply uses its challenge. A callback or extension wake uses the
-	// established server key, so both need trying, in that order, while a reply is pending.
-	const ServerWayKeyCandidates both = ServerWayKeys(true, 777, 42);
-	ASSERT_EQUALS((std::size_t)2, both.count);
-	ASSERT_TRUE((both.keys == std::array<std::uint32_t, 2>{ 777, 42 }));
-
-	// Without a pending ping, or without a usable challenge, there is exactly one established key.
-	const ServerWayKeyCandidates noPending = ServerWayKeys(false, 777, 42);
-	ASSERT_EQUALS((std::size_t)1, noPending.count);
-	ASSERT_EQUALS((std::uint32_t)42, noPending.keys[0]);
-	const ServerWayKeyCandidates noChallenge = ServerWayKeys(true, 0, 42);
-	ASSERT_EQUALS((std::size_t)1, noChallenge.count);
-	ASSERT_EQUALS((std::uint32_t)42, noChallenge.keys[0]);
-	const ServerWayKeyCandidates noServerKey = ServerWayKeys(true, 777, 0);
-	ASSERT_EQUALS((std::size_t)1, noServerKey.count);
-	ASSERT_EQUALS((std::uint32_t)777, noServerKey.keys[0]);
-	const ServerWayKeyCandidates sameKey = ServerWayKeys(true, 42, 42);
-	ASSERT_EQUALS((std::size_t)1, sameKey.count);
-	ASSERT_EQUALS((std::uint32_t)42, sameKey.keys[0]);
-}
-
 TEST(LugdunumNatTraversal, KeepsLowIdServerSourcesOnlyFromOurOwnCapableServer)
 {
 	LowIdServerSourceFacts facts;
