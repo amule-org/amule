@@ -72,6 +72,23 @@ TEST(Proxy, IPv4IPv6AndMappedSourcesMatchSocketIngress)
 	}
 }
 
+TEST(Proxy, AnAllZeroIPv6SourceIsAbsentButAnAllZeroIPv4OneIsNot)
+{
+	auto zero6 = ipv6;
+	std::fill(zero6.begin() + 4, zero6.begin() + 20, 0);
+	auto addr = CNetworkAddress::FromString("192.0.2.99");
+	uint16 port = 0;
+	unsigned char output[3];
+	ASSERT_EQUALS(3u, Parse(zero6, addr, port, output, sizeof(output)));
+	ASSERT_TRUE(addr.IsAbsent());
+
+	auto zero4 = ipv4;
+	std::fill(zero4.begin() + 4, zero4.begin() + 8, 0);
+	ASSERT_EQUALS(3u, Parse(zero4, addr, port, output, sizeof(output)));
+	ASSERT_FALSE(addr.IsAbsent());
+	ASSERT_TRUE(addr.IsIPv4());
+}
+
 TEST(Proxy, EveryTruncatedHeaderIsRejected)
 {
 	for (const auto &packet : { ipv4, ipv6, mapped }) {

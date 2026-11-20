@@ -282,9 +282,9 @@ endif()
 # and outbound dials, and the transport NAT traversal connects over.
 option (ENABLE_UTP "enable experimental uTP: datagram framing, inbound streams and outbound dialing" OFF)
 
-# IPv6 TCP admission is intentionally separate from listener activation and the
-# remaining IPv6 identity work. Keep it off until those consumers are migrated.
-option (ENABLE_IPV6 "enable experimental native IPv6 TCP admission (IPv6 identity migration remains incomplete)" OFF)
+# IPv6 TCP admission is intentionally separate from listener activation, which the
+# AddressFamilies setting controls at runtime.
+option (ENABLE_IPV6 "enable experimental native IPv6 TCP admission" OFF)
 
 # Server-coordinated NAT-T: the login flags, keepalives, punches and callbacks
 # that let two LowID peers connect over uTP. Each path also has a runtime

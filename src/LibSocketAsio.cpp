@@ -1331,7 +1331,9 @@ private:
 	{
 		m_IPstring = adr.IPAddress();
 		m_IP = m_IPstring.c_str();
-		m_IPint = StringIPtoUint32(m_IPstring);
+		// Narrowed as UpdateIP() narrows an accepted peer.
+		m_IPint = NetworkAddressAsio::FromIngressAddress(adr.GetEndpoint().address())
+				  .ToIPv4NetworkOrderOrZero();
 		m_peerAddress = CNetworkAddress::Absent();
 	}
 

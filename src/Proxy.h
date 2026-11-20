@@ -443,7 +443,9 @@ const unsigned int PROXY_UDP_MAXIMUM_OVERHEAD = PROXY_UDP_OVERHEAD_IPV6;
  * reach the constants, so it would move the code without moving the dependency.
  *
  * Invalid headers clear the source and port and leave the output buffer untouched.
- * Valid empty payloads still publish the source. Input and output must not overlap.
+ * Valid empty payloads still publish the source. An all-zero IPv6 source (ATYP 4) comes back
+ * absent, while an ATYP 1 0.0.0.0 stays present; the receive path drops an absent source.
+ * Input and output must not overlap.
  */
 inline uint32 ParseSocks5UDPDatagram(const char *packet,
 	uint32 available,

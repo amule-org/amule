@@ -645,31 +645,6 @@ CUpDownClient *CClientList::FindClientAtEndpoint(
 	return NULL;
 }
 
-CUpDownClient *CClientList::FindClientByProtocolPeerIdentity(const CProtocolPeerIdentity &identity)
-{
-	// HighID and LowID clients sit in m_clientList under the hybrid the identity was built from;
-	// a HighID source has no user address until its hello, so m_ipList would miss it.
-	CUpDownClient *match = nullptr;
-	bool ambiguous = false;
-	const auto consider = [&](const CClientRef &entry) {
-		CUpDownClient *client = entry.GetClient();
-		if (client->GetProtocolPeerIdentity() != identity)
-			return;
-		ambiguous = ambiguous || match != nullptr;
-		match = client;
-	};
-	if (const auto hybrid = identity.TryGetUserIDHybrid()) {
-		for (auto range = m_clientList.equal_range(*hybrid); range.first != range.second;
-			++range.first)
-			consider(range.first->second);
-	} else if (identity.GetKind() == CProtocolPeerIdentity::Kind::NativeIPv6) {
-		for (auto range = m_ipList.equal_range(identity.Address()); range.first != range.second;
-			++range.first)
-			consider(range.first->second);
-	}
-	return ambiguous ? nullptr : match;
-}
-
 CUpDownClient *CClientList::FindClientByIP(uint32 clientip)
 {
 	return FindClientByIP(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(clientip));

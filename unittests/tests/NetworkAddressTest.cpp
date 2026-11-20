@@ -588,6 +588,11 @@ TEST(NetworkAddress, GloballyRoutableIPv6RejectsEveryUnreachableRange)
 			"2001:db8::",
 			"2001:db8:ffff:ffff:ffff:ffff:ffff:ffff",
 			"2001:db9::" },
+		// 3fff::/20, the second documentation block (RFC 9637).
+		{ "3ffe:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
+			"3fff::",
+			"3fff:fff:ffff:ffff:ffff:ffff:ffff:ffff",
+			"3fff:1000::" },
 		// 5f00::/16
 		{ "5eff:ffff:ffff:ffff:ffff:ffff:ffff:ffff",
 			"5f00::",

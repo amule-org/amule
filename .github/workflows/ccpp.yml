@@ -309,6 +309,9 @@ jobs:
             ngtcp2: latest
     steps:
       - uses: actions/checkout@v7
+      - name: libutp matches its manifest
+        working-directory: src/extern/libutp
+        run: sha256sum --check --strict --quiet SHA256SUMS
       - name: restore ccache
         uses: actions/cache/restore@v6
         with:
