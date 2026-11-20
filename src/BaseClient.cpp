@@ -2624,7 +2624,16 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 	if (!dialIPv6) {
 		m_preparedDialAddress = CNetworkAddress::Absent();
 	}
-	const ESourceRoute route = NextSourceRoute(SourceRouteFacts(HasLowID() && !dialIPv6));
+	const SSourceRouteChoice choice = ChooseSourceRoute(SourceRouteFacts(HasLowID() && !dialIPv6),
+		IsDirectCallbackThrottled(m_lastDirectCallbackRequest,
+			::GetTickCount64(),
+			PeerAddressing::kCallbackRequestThrottleMs));
+	const ESourceRoute route = choice.route;
+	if (choice.directHeld) {
+		AddDebugLogLineN(logClient,
+			"Skipped a direct callback to " + GetFullIP() +
+				": it would come too soon after our last one, so the peer would drop it");
+	}
 
 	if (GetKadState() == KS_QUEUED_FWCHECK) {
 		SetKadState(KS_CONNECTING_FWCHECK);
@@ -2679,6 +2688,16 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			SetDownloadState(DS_TOOMANYCONNSKAD);
 			return EContactResult::Declined;
 		}
+	}
+
+	// With no other route left, the source is asked again on reask rather than given up.
+	if (choice.directHeld && route == ESourceRoute::None && GetUploadState() != US_CONNECTING &&
+		!(m_socket && m_socket->IsConnected())) {
+		if (GetDownloadState() == DS_CONNECTING) {
+			m_bReaskPending = true;
+			SetDownloadState(DS_ONQUEUE);
+		}
+		return EContactResult::Declined;
 	}
 
 	if (!m_socket || !m_socket->IsConnected()) {

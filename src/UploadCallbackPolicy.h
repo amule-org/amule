@@ -59,13 +59,6 @@ inline unsigned MaxInflightUploadCallbacks(unsigned freeSlots, bool lowIdAlterna
 	return freeSlots + (lowIdAlternationSlot ? 1U : 0U);
 }
 
-//! The peer drops, unanswered, a direct callback request that comes within @a throttleMs of the
-//! last one from our IP.
-inline bool IsDirectCallbackThrottled(std::uint64_t lastSentMs, std::uint64_t nowMs, std::uint64_t throttleMs)
-{
-	return lastSentMs != 0 && nowMs >= lastSentMs && nowMs - lastSentMs < throttleMs;
-}
-
 struct SUploadCallbackRouteFacts
 {
 	//! CanDoCallback() for the peer's server: the peer can connect to us.

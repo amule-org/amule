@@ -27,15 +27,6 @@ TEST(UploadCallbackPolicy, InFlightCeilingIncludesAlternationSlot)
 	ASSERT_EQUALS(4U, MaxInflightUploadCallbacks(3, true));
 }
 
-TEST(UploadCallbackPolicy, DirectCallbackThrottleBoundary)
-{
-	ASSERT_FALSE(IsDirectCallbackThrottled(0, 100, 1000));
-	ASSERT_TRUE(IsDirectCallbackThrottled(100, 100, 1000));
-	ASSERT_TRUE(IsDirectCallbackThrottled(100, 100 + 999, 1000));
-	ASSERT_FALSE(IsDirectCallbackThrottled(100, 100 + 1000, 1000));
-	ASSERT_FALSE(IsDirectCallbackThrottled(100, 99, 1000));
-}
-
 namespace
 {
 // A peer we can reach both ways: it takes a direct callback and is on our server.
@@ -63,6 +54,7 @@ TEST(UploadCallbackPolicy, KadOnlyPeerGetsTheDirectCallback)
 	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
 }
 
+// A direct request went out lately, from either side.
 TEST(UploadCallbackPolicy, ThrottledDirectCallbackFallsBackToTheServer)
 {
 	SUploadCallbackRouteFacts facts = PeerWithBothRoutes();

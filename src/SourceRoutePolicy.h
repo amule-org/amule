@@ -428,6 +428,33 @@ inline ESourceRoute NextSourceRoute(const SSourceRouteFacts &facts)
 	return buddy && facts.canTakeCallback ? ESourceRoute::KadBuddy : ESourceRoute::None;
 }
 
+//! The peer drops, unanswered, a direct callback request that comes within @a throttleMs of the
+//! last one from our IP.
+inline bool IsDirectCallbackThrottled(std::uint64_t lastSentMs, std::uint64_t nowMs, std::uint64_t throttleMs)
+{
+	return lastSentMs != 0 && nowMs >= lastSentMs && nowMs - lastSentMs < throttleMs;
+}
+
+struct SSourceRouteChoice
+{
+	ESourceRoute route = ESourceRoute::None;
+	//! The direct callback was next, but the peer would drop it now.
+	bool directHeld = false;
+};
+
+/**
+ * NextSourceRoute() for a contact made now. A direct callback the peer would drop is skipped, not
+ * failed: the next route is tried, and with none left the source waits for its next ask.
+ */
+inline SSourceRouteChoice ChooseSourceRoute(SSourceRouteFacts facts, bool directThrottled)
+{
+	SSourceRouteChoice choice;
+	choice.directHeld = directThrottled && NextSourceRoute(facts) == ESourceRoute::DirectUdpCallback;
+	facts.directCallback = facts.directCallback && !choice.directHeld;
+	choice.route = NextSourceRoute(facts);
+	return choice;
+}
+
 struct SSourceRouteMergeFacts
 {
 	// The copy we keep: its user address is a native IPv6, its ID is Kad's placeholder 1.
