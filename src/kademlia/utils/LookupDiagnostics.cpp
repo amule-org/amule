@@ -66,6 +66,8 @@ wxString SearchType(LookupType type)
 		return _("UDP firewall check");
 	case LookupType::PublishPointer:
 		return _("Publish buddy pointer");
+	case LookupType::FindPointer:
+		return _("Find buddy pointer");
 	default:
 		return CFormat(_("type %u")) % static_cast<uint32_t>(type);
 	}

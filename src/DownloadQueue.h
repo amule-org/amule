@@ -217,7 +217,8 @@ public:
 		uint32_t buddyip,
 		uint16_t buddyport,
 		uint8_t byCryptOptions,
-		const CNetworkAddress &publishedIPv6);
+		const CNetworkAddress &publishedIPv6,
+		uint8_t pointerVersion = 0);
 
 	CPartFile *GetFileByKadFileSearchID(uint32 id) const;
 

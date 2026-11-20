@@ -376,6 +376,11 @@ add_test (NAME KadPointerPolicyTest COMMAND KadPointerPolicyTest)
 target_include_directories (KadPointerPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_link_libraries (KadPointerPolicyTest muleunit mulecommon)
 
+add_executable (KadPointerCacheTest KadPointerCacheTest.cpp)
+add_test (NAME KadPointerCacheTest COMMAND KadPointerCacheTest)
+target_include_directories (KadPointerCacheTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (KadPointerCacheTest muleunit mulecommon)
+
 # The tags of our type 3/5 records and of our buddy pointer record (#2513).
 add_executable (KadSourceRecordTagsTest
 	KadSourceRecordTagsTest.cpp
@@ -3350,6 +3355,15 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					$<TARGET_FILE:amuled> ${buddies}
 			)
 			set_tests_properties (KadBuddyCallbackRetryIntegrationTest-${buddies}
+				PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
+		endforeach ()
+		foreach (pointer IN ITEMS hit miss)
+			add_test (NAME KadBuddyPointerResolveIntegrationTest-${pointer}
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/KadBuddyPointerResolveIntegrationTest.py
+					$<TARGET_FILE:amuled> ${pointer}
+			)
+			set_tests_properties (KadBuddyPointerResolveIntegrationTest-${pointer}
 				PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
 		endforeach ()
 		add_test (NAME KadBuddyLifecycleIntegrationTest

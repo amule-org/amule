@@ -69,6 +69,7 @@
 #include <map>
 #include <wx/thread.h> // Needed for wxMutex
 
+struct SKadPointerBuddy;
 class CPartFile;
 class CClientTCPSocket;
 class CPacket;
@@ -403,6 +404,14 @@ private:
 	bool StartKadBuddyCallback();
 	//! After a contact that never completed the hellos: whether another route is left to try.
 	bool KeepForNextRoute(bool failedAdvertisedIPv6);
+	//! The rest of KeepForNextRoute(), once the route in m_sourceRoute has failed for good.
+	bool KeepAfterRouteFailed();
+	//! The record carried the pointer route and our pointer support is on.
+	bool UsesKadPointerRoute() const;
+	//! Moves to the next buddy the source's pointer names, or waits for its lookup. Whether the
+	//! buddy route is still worth asking.
+	bool TakeKadPointerRoute();
+	void UseKadPointerBuddy(const SKadPointerBuddy &buddy, uint32 askedIP);
 	ESourceRoute NextSourceRouteNow() const;
 	//! Moves to a stored fallback route. Whether it leaves a route to try.
 	bool UseSourceFallback(ESourceFallback fallback, ESourceRoute failedRoute);
@@ -928,6 +937,9 @@ public:
 		// The next round asks the buddy in both layouts again, starting with the last one.
 		m_bBuddyCallbackUnanswered = false;
 		m_bBuddyOtherLayoutTried = false;
+		// And takes the buddies a pointer names from the first again.
+		m_kadPointerNext = 0;
+		m_kadPointerWaiting = false;
 		m_lastContactRoute = EContactRouteReport::None;
 		m_lastContactOverIPv6 = false;
 	}
@@ -958,10 +970,19 @@ public:
 	bool IsRouteAnsweredByOtherHost() const;
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
+	// The Kad record of this source carried the pointer route (#2513), published from `recordIP`.
+	void SetKadPointerRoute(uint32 recordIP)
+	{
+		m_kadPointerMarked = true;
+		m_kadRecordIP = recordIP;
+	}
+	// The source waits for its pointer lookup. Once that has a buddy, the source asks it; once it
+	// ends without one, the source moves on to its next route. False when it has none left.
+	bool UpdateKadPointerWait();
 	// A kept source asks for its next Kad callback only once this is true.
 	bool IsKadCallbackRetryDue(uint64 now) const
 	{
-		return Kademlia::IsKadCallbackRetryDue(now, m_kadCallbackRetryTime);
+		return !m_kadPointerWaiting && Kademlia::IsKadCallbackRetryDue(now, m_kadCallbackRetryTime);
 	}
 	// This source as an Extended Source Exchange record, sanitized with `filter`.
 	ExtSX::SRecord GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const;
@@ -1365,6 +1386,14 @@ private:
 	// When the last KADEMLIA_CALLBACK_REQ was sent, and when the next one may go, 0 for at once.
 	uint64_t m_kadCallbackSentTime = 0;
 	uint64_t m_kadCallbackRetryTime = 0;
+	// The record carried `bpv` (#2513): a pointer at ~userHash names the current buddy. Such a
+	// source is asked in its one buddy ID layout, and its pointer is looked up once its buddies fail.
+	bool m_kadPointerMarked = false;
+	// The source IP the storer recorded for that record, which a pointer must share (§5.6.2).
+	uint32 m_kadRecordIP = 0;
+	// The source waits for its pointer lookup, and where it is in the buddies that names.
+	bool m_kadPointerWaiting = false;
+	unsigned m_kadPointerNext = 0;
 	// The route of the contact in flight, and the routes that failed since the last hello.
 	ESourceRoute m_sourceRoute{};
 	// The same route, kept after the attempt ends so the source list can show it, plus the two

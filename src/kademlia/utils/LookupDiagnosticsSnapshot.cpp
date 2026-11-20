@@ -54,6 +54,8 @@ Kademlia::LookupType Kademlia::LookupTypeFromSearch(uint32_t type)
 		return LookupType::UDPFirewallCheck;
 	case CSearch::STOREPOINTER:
 		return LookupType::PublishPointer;
+	case CSearch::FINDPOINTER:
+		return LookupType::FindPointer;
 	default:
 		return LookupType::Unknown;
 	}

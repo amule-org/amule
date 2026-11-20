@@ -64,15 +64,17 @@ def kad_ip(address):
     return int.from_bytes(socket.inet_aton(address), 'little')
 
 
-def source_tags(with_buddy_hash, source_type=3, forged=False):
+def source_tags(with_buddy_hash, source_type=3, forged=False, with_size=True):
     """A firewalled source with no buddy address, as older publishers sent it.
 
     forged adds a second TAG_SOURCEIP, as a storer that keeps a publisher's one serves it.
+    with_size=False leaves out the file size, as in a buddy pointer.
     """
     tags = [kad_tag(TAG_SOURCETYPE, 0x09, source_type),
             kad_tag(TAG_SOURCEIP, 0x03, kad_ip(SOURCE_ADDRESS)),
-            kad_tag(TAG_SOURCEPORT, 0x08, SOURCE_PORT),
-            kad_tag(TAG_FILESIZE, 0x03, FILE_SIZE)]
+            kad_tag(TAG_SOURCEPORT, 0x08, SOURCE_PORT)]
+    if with_size:
+        tags.append(kad_tag(TAG_FILESIZE, 0x03, FILE_SIZE))
     if source_type == 7:
         # A route the receiver parses and then refuses: 2001:db8::/32 is documentation space, so
         # the record reaches the type 7 branch of the downloader and nothing is ever dialled.
@@ -106,6 +108,12 @@ class FakeNode(threading.Thread):
     def send(self, peer, opcode, body=b''):
         self.sock.sendto(bytes([0xE4, opcode]) + body, peer)
 
+    def send_records(self, peer, target, records):
+        """Answer a source search at target with one SOURCE_ID entry per tag list."""
+        entries = b''.join(SOURCE_ID + bytes([len(tags)]) + b''.join(tags) for tags in records)
+        self.send(peer, KADEMLIA2_SEARCH_RES,
+                  NODE_ID + target + struct.pack('<H', len(records)) + entries)
+
     def run(self):
         while self.running:
             try:
@@ -136,10 +144,8 @@ class FakeNode(threading.Thread):
         elif opcode == KADEMLIA2_SEARCH_SOURCE_REQ:
             # <target 16><startposition 2><filesize 8>
             self.source_searches += 1
-            tags = source_tags(self.with_buddy_hash, self.source_type, self.forged)
-            self.send(peer, KADEMLIA2_SEARCH_RES,
-                      NODE_ID + body[:16] + struct.pack('<H', 1) + SOURCE_ID
-                      + bytes([len(tags)]) + b''.join(tags))
+            self.send_records(peer, body[:16],
+                              [source_tags(self.with_buddy_hash, self.source_type, self.forged)])
         elif opcode == KADEMLIA_CALLBACK_REQ:
             self.callbacks.append(body)
 

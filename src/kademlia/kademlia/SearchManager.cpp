@@ -39,6 +39,7 @@ there client on the eMule forum..
 #include <wx/wx.h>
 
 #include "Search.h"
+#include "../../KadPointerLookup.h"
 #include "../utils/LookupDiagnostics.h"
 #include <algorithm>
 #include "../../GetTickCount.h"
@@ -334,7 +335,8 @@ void CSearchManager::JumpStart()
 	while (next_it != m_searches.end()) {
 		SearchMap::iterator current_it = next_it++; /* don't change this to a ++next_it! */
 		switch (current_it->second->GetSearchTypes()) {
-		case CSearch::FILE: {
+		case CSearch::FILE:
+		case CSearch::FINDPOINTER: {
 			if (current_it->second->m_created + SEARCHFILE_LIFETIME < now) {
 				DeleteSearch(current_it);
 			} else if (current_it->second->GetAnswers() > SEARCHFILE_TOTAL ||
@@ -653,9 +655,15 @@ namespace
 std::deque<LookupSnapshot> s_recentLookups;
 }
 
+static_assert(KAD_POINTER_LOOKUP_SECONDS == SEARCHFILE_LIFETIME,
+	"a source waits for its pointer lookup as long as that runs");
+
 void CSearchManager::RememberLookup(CSearch &search)
 {
 	search.RecordStoreAcknowledgements();
+	if (search.GetSearchTypes() == CSearch::FINDPOINTER) {
+		KadPointerLookup::Finished(search.GetTarget());
+	}
 
 	if (search.m_publishMeasured && theLogger.IsEnabled(logKadPublish)) {
 		CPublishMetrics::Instance().Finish(search.m_lookupTrace,

@@ -40,6 +40,7 @@ if (BUILD_MONOLITHIC OR BUILD_DAEMON)
 		KadKeywordPublishTimes.cpp
 		KadPublishSeeds.cpp
 		KadSourceRecordTags.cpp
+		KadPointerLookup.cpp
 		KnownFileList.cpp
 		ListenSocket.cpp
 		MuleUDPSocket.cpp

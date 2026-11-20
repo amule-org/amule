@@ -87,6 +87,7 @@ there client on the eMule forum..
 #endif
 #include "../../GuiEvents.h"
 #include "../../KadBuddyIdLayout.h"
+#include "../../KadPointerLookup.h"
 #include "../../KadBuddySearchPolicy.h" // Needed for OwnBuddyID
 #include "../../KadPointerPolicy.h"     // Needed for SendsKadPointer
 #include "../../KadSourceRecordTags.h"  // Needed for AddKadBuddyRecordTags
@@ -190,6 +191,7 @@ CSearch::~CSearch()
 	case STOREKEYWORD:
 	case STORENOTES:
 	case STOREPOINTER:
+	case FINDPOINTER:
 	case FINDSOURCE: // maybe also exclude
 		if (m_closestDistantFound != 0) {
 			CKademlia::StatsAddClosestDistance(m_closestDistantFound);
@@ -401,6 +403,7 @@ void CSearch::PrepareToStop() noexcept
 		baseTime = SEARCHNODE_LIFETIME;
 		break;
 	case FILE:
+	case FINDPOINTER:
 		baseTime = SEARCHFILE_LIFETIME;
 		break;
 	case KEYWORD:
@@ -970,6 +973,28 @@ void CSearch::StorePacket()
 		m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
 		break;
 	}
+	case FINDPOINTER: {
+		// A pointer names no file, so the search asks for any size. Contacts before version 3
+		// know only the old search, which carries no size.
+		if (from->GetVersion() < 3) {
+			break;
+		}
+		CMemFile searchTerms;
+		searchTerms.WriteUInt128(m_target);
+		searchTerms.WriteUInt16(0);
+		searchTerms.WriteUInt64(0);
+		DebugSendF("Kad2SearchSourceReq(Pointer)", from->GetIPAddress(), from->GetUDPPort());
+		CUInt128 clientID = from->GetClientID();
+		CKademlia::GetUDPListener()->SendPacket(searchTerms,
+			KADEMLIA2_SEARCH_SOURCE_REQ,
+			from->GetIPAddress(),
+			from->GetUDPPort(),
+			from->GetVersion() >= 6 ? from->GetUDPKey() : CKadUDPKey(0),
+			from->GetVersion() >= 6 ? &clientID : nullptr);
+		m_totalRequestAnswers++;
+		m_lookupTrace.ItemRequest({ from->GetIPAddress(), from->GetUDPPort() });
+		break;
+	}
 	case KEYWORD: {
 		AddDebugLogLineN(logKadSearch, "Search request type: Keyword");
 		CMemFile searchTerms;
@@ -1476,6 +1501,10 @@ void CSearch::ProcessResult(const CUInt128 &answer, TagPtrList *info, uint32_t f
 		type = "File";
 		ProcessResultFile(answer, info, fromIP, fromPort);
 		break;
+	case FINDPOINTER:
+		type = "Pointer";
+		ProcessResultPointer(answer, info);
+		break;
 	case KEYWORD:
 		type = "Keyword";
 		ProcessResultKeyword(answer, info, fromIP, fromPort);
@@ -1502,10 +1531,18 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32
 	uint8_t byCryptOptions = 0; // 0 = not supported.
 	CUInt128 buddy;
 	CNetworkAddress publishedIPv6;
+	// The pointer route version (§5.6.1); 0 without the tag. Only the first is read, as by a storer.
+	uint8_t pointerVersion = 0;
+	bool pointerVersionSeen = false;
 
 	for (TagPtrList::const_iterator it = info->begin(); it != info->end(); ++it) {
 		CTag *tag = *it;
-		if (!tag->GetName().Cmp(TAG_SOURCETYPE)) {
+		if (!tag->GetName().Cmp(TAG_BUDDYPOINTER)) {
+			if (!pointerVersionSeen && tag->IsInt() && tag->GetInt() <= 0xff) {
+				pointerVersion = static_cast<uint8_t>(tag->GetInt());
+			}
+			pointerVersionSeen = true;
+		} else if (!tag->GetName().Cmp(TAG_SOURCETYPE)) {
 			type = tag->GetInt();
 		} else if (!tag->GetName().Cmp(TAG_SOURCEIP)) {
 			// The storer writes one, from the packet address. Another is the publisher's,
@@ -1600,13 +1637,42 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32
 			buddyip,
 			buddyport,
 			byCryptOptions,
-			publishedIPv6);
+			publishedIPv6,
+			pointerVersion);
 		break;
 	case 2:
 		// Don't use this type, some clients will process it wrong.
 	default:
 		break;
 	}
+}
+
+void CSearch::ProcessResultPointer(const CUInt128 &answer, TagPtrList *info)
+{
+	// A pointer record (§5.6.1): a type 3 record under the source ID, naming the current buddy.
+	SKadPointerRecord record;
+	record.sameSource = answer == (m_target ^ CUInt128(true));
+	for (TagPtrList::const_iterator it = info->begin(); it != info->end(); ++it) {
+		const CTag *tag = *it;
+		if (!tag->GetName().Cmp(TAG_SOURCETYPE)) {
+			record.type = static_cast<uint8_t>(tag->GetInt());
+		} else if (!tag->GetName().Cmp(TAG_SOURCEIP)) {
+			record.sourceIP = tag->GetInt();
+			++record.sourceIPs;
+		} else if (!tag->GetName().Cmp(TAG_SERVERIP)) {
+			record.buddy.ip = tag->GetInt();
+		} else if (!tag->GetName().Cmp(TAG_SERVERPORT)) {
+			record.buddy.port = static_cast<uint16_t>(tag->GetInt());
+		} else if (!tag->GetName().Cmp(TAG_BUDDYHASH) && tag->IsStr()) {
+			CMD4Hash hash;
+			if (hash.Decode(tag->GetStr())) {
+				// As for a file record: the tag is in the publisher's layout (#1835).
+				ConvertBuddyIdLayout(hash.GetHash(), record.buddy.id.data());
+				record.hasBuddyID = true;
+			}
+		}
+	}
+	KadPointerLookup::AddRecord(m_target, record);
 }
 
 void CSearch::ProcessResultNotes(const CUInt128 &answer, TagPtrList *info)
@@ -1956,6 +2022,11 @@ void CSearch::SendFindValue(CContact *contact, bool reaskMore)
 					contact->GetIPAddress(),
 					contact->GetUDPPort());
 				break;
+			case FINDPOINTER:
+				DebugSendF("Kad2Req(FindPointer)",
+					contact->GetIPAddress(),
+					contact->GetUDPPort());
+				break;
 			case STOREKEYWORD:
 				DebugSendF("Kad2Req(StoreKeyword)",
 					contact->GetIPAddress(),
@@ -2165,6 +2236,7 @@ uint8_t CSearch::GetRequestContactCount() const
 	case KEYWORD:
 	case FINDSOURCE:
 	case NOTES:
+	case FINDPOINTER:
 		return KADEMLIA_FIND_VALUE;
 	case FINDBUDDY:
 	case STOREFILE:
