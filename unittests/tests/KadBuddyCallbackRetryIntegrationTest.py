@@ -55,9 +55,10 @@ def other_layout(buddy_id):
 
 def record(address, port, with_size=True):
     """A firewalled source reached through the buddy at address:port."""
-    return source_tags(False, with_size=with_size) + [kad_tag(TAG_BUDDYHASH, 0x02, BUDDY_HASH),
-                                 kad_tag(TAG_SERVERIP, 0x03, kad_ip(address)),
-                                 kad_tag(TAG_SERVERPORT, 0x08, port)]
+    return source_tags(False, with_size=with_size) + [
+        kad_tag(TAG_BUDDYHASH, 0x02, BUDDY_HASH),
+        kad_tag(TAG_SERVERIP, 0x03, kad_ip(address)),
+        kad_tag(TAG_SERVERPORT, 0x08, port)]
 
 
 class SecondBuddy(threading.Thread):
