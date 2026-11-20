@@ -46,6 +46,7 @@
 #include "Logger.h"
 #include "GuiEvents.h"               // Needed for Notify_*
 #include "IPFilter.h"                // Needed for theApp->ipfilter->IsReady()
+#include "PublicIPAnswerPolicy.h"    // Needed for PublicIPAnswerVotes
 #include "PublicIPv6Corroboration.h" // Needed for RefreshLocalPublicIPv6Addresses
 #include <common/Format.h>
 #ifdef ENABLE_IPV6
@@ -783,6 +784,10 @@ void CServerConnect::NoteIPv6PinholeOpened()
 
 void CServerConnect::SetClientID(uint32 newid)
 {
+	// A new ID can mean a new route, so peers may now see another IP.
+	if (newid != clientid) {
+		PublicIPAnswerVotes().Reset();
+	}
 	clientid = newid;
 
 	if (!::IsLowID(newid)) {

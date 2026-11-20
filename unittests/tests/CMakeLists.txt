@@ -2926,6 +2926,16 @@ target_link_libraries (PublicIPv6CorroborationTest
 	mulecommon
 )
 
+# OP_PUBLICIP_ANSWER (0x98) quorum: one peer, or one /16, never sets our IPv4.
+add_executable (PublicIPAnswerPolicyTest PublicIPAnswerPolicyTest.cpp)
+add_test (NAME PublicIPAnswerPolicyTest COMMAND PublicIPAnswerPolicyTest)
+target_include_directories (PublicIPAnswerPolicyTest
+	PRIVATE ${CMAKE_BINARY_DIR}
+	PRIVATE ${CMAKE_SOURCE_DIR}/src
+	PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (PublicIPAnswerPolicyTest muleunit mulecommon)
+
 # OP_UDPRESERVEDPROT2 frame demultiplexing: the type byte, the payload window
 # handed to each handler, the unknown-type drop, and the log throttle that
 # keeps an unknown-frame flood from becoming a log flood. Same reason for the

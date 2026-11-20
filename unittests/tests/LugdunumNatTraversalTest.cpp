@@ -70,7 +70,8 @@ TEST(LugdunumNatTraversal, ReverseCallbackNeverRequestsAnotherReverseAndRendezvo
 
 TEST(LugdunumNatTraversal, ParsesLiveIdChangeVectors)
 {
-	// Mazinga, without 0x1000 (S3): id, flags, aux (server) port only.
+	// Mazinga, without 0x1000 (S3): id, flags, aux (server) port and reported IP, but no
+	// obfuscation port.
 	const std::array<std::uint8_t, 16> mazingaA{ { 0xa0,
 		0x69,
 		0xa1,
@@ -94,7 +95,9 @@ TEST(LugdunumNatTraversal, ParsesLiveIdChangeVectors)
 	ASSERT_EQUALS((std::uint32_t)0x17F9, a.tcpFlags);
 	ASSERT_TRUE(a.hasAuxPort);
 	ASSERT_EQUALS((std::uint32_t)4232, a.auxPort);
-	ASSERT_FALSE(a.hasReportedIp);
+	ASSERT_TRUE(a.hasReportedIp);
+	ASSERT_EQUALS((std::uint32_t)0x711C754F, a.reportedIp);
+	ASSERT_FALSE(a.hasObfuscationPortTcp);
 	ASSERT_FALSE(a.hasYourPort);
 
 	// Mazinga, with 0x1000 (S3): adds reported IP, obfuscation port and "your port" 56197.
@@ -128,6 +131,8 @@ TEST(LugdunumNatTraversal, ParsesLiveIdChangeVectors)
 	ASSERT_EQUALS((std::uint32_t)0x17F9, b.tcpFlags);
 	ASSERT_EQUALS((std::uint32_t)4232, b.auxPort);
 	ASSERT_TRUE(b.hasReportedIp);
+	ASSERT_EQUALS(a.reportedIp, b.reportedIp);
+	ASSERT_TRUE(b.hasObfuscationPortTcp);
 	ASSERT_EQUALS((std::uint32_t)4232, b.obfuscationPortTcp);
 	ASSERT_TRUE(b.hasYourPort);
 	ASSERT_EQUALS((std::uint32_t)56197, b.yourPort);
@@ -249,6 +254,7 @@ TEST(LugdunumNatTraversal, HandlesIdChangeBoundarySizesAndLeavesExistingFieldsUn
 	const auto at20 = ParseIdChangeFields(full.data(), 20);
 	ASSERT_TRUE(at20.ok);
 	ASSERT_TRUE(at20.hasReportedIp);
+	ASSERT_TRUE(at20.hasObfuscationPortTcp);
 	ASSERT_EQUALS((std::uint32_t)4232, at20.obfuscationPortTcp);
 	ASSERT_FALSE(at20.hasYourPort);
 
@@ -263,11 +269,13 @@ TEST(LugdunumNatTraversal, HandlesIdChangeBoundarySizesAndLeavesExistingFieldsUn
 	ASSERT_FALSE(onlyId.hasAuxPort);
 	ASSERT_FALSE(onlyId.hasReportedIp);
 
-	// 16 bytes (id+flags+aux port only): matches upstream's existing behaviour of not reading a
-	// reported IP unless it is bundled with the obfuscation port (20+ bytes).
+	// 16 bytes: the reported IP without the obfuscation port, as eMule reads it.
 	const auto at16 = ParseIdChangeFields(full.data(), 16);
 	ASSERT_TRUE(at16.hasAuxPort);
-	ASSERT_FALSE(at16.hasReportedIp);
+	ASSERT_TRUE(at16.hasReportedIp);
+	ASSERT_EQUALS(at20.reportedIp, at16.reportedIp);
+	ASSERT_FALSE(at16.hasObfuscationPortTcp);
+	ASSERT_EQUALS((std::uint32_t)0, at16.obfuscationPortTcp);
 }
 
 TEST(LugdunumNatTraversal, BuildsCallbackRequestPayload)
