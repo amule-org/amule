@@ -1,0 +1,6 @@
+usr/bin/amuleapi
+usr/bin/amuled
+usr/share/amule/amuleapi-static
+usr/share/man/man1/amuled.1
+usr/share/man/*/man1/amuled.1
+usr/share/man/man1/amuleapi.1

@@ -1,0 +1,2 @@
+rm_conffile /etc/init.d/amule-daemon 1:3.0.0~
+rm_conffile /etc/default/amule-daemon 1:3.0.0~

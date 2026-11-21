@@ -1,0 +1,13 @@
+usr/bin/alcc
+usr/bin/amulecmd
+usr/bin/cas
+usr/bin/ed2k
+usr/share/cas
+usr/share/man/man1/alcc.1
+usr/share/man/*/man1/alcc.1
+usr/share/man/man1/amulecmd.1
+usr/share/man/*/man1/amulecmd.1
+usr/share/man/man1/cas.1
+usr/share/man/*/man1/cas.1
+usr/share/man/man1/ed2k.1
+usr/share/man/*/man1/ed2k.1

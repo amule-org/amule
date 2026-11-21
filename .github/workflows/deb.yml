@@ -1,0 +1,108 @@
+name: Debian packages
+
+# Builds every suite and arch and uploads the .debs to Cloudsmith: a
+# published GitHub Release goes to the release repository, the nightly
+# schedule and a manual run to the nightly one. Releases start as drafts, so
+# the tag push is too early.
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CHANNEL: ${{ github.event_name == 'release' && 'release' || 'nightly' }}
+
+concurrency:
+  group: deb-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+    steps:
+      - id: check
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          build=true
+          # A nightly version ends in the commit, so skip a night with no new one.
+          if [ "${EVENT}" = schedule ]; then
+              latest="$(curl -fsS 'https://api.cloudsmith.io/v1/packages/amule-org/amule-nightly/?query=name:amule&sort=-date&page_size=1' |
+                  jq -r '.[0].version // ""')" || true
+              if [[ "${latest}" == *".${GITHUB_SHA::9}"* ]]; then
+                  echo "${latest} is already published."
+                  build=false
+              fi
+          fi
+          echo "build=${build}" >> "$GITHUB_OUTPUT"
+
+  deb:
+    needs: changes
+    if: needs.changes.outputs.build == 'true'
+    name: ${{ matrix.suite }} ${{ matrix.arch }}
+    # armhf runs natively on the arm64 runner. ppc64el, s390x and riscv64 are
+    # cross-built: under QEMU they did not finish in 6 hours.
+    runs-on: ${{ contains(fromJSON('["arm64", "armhf"]'), matrix.arch) && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [debian12, debian13, ubuntu22.04, ubuntu24.04, ubuntu26.04, ubuntu26.10]
+        arch: [amd64, arm64, i386, armhf, ppc64el, s390x, riscv64]
+        exclude:
+          # Ubuntu has no i386 images, and Debian 12 has no riscv64 port.
+          - { suite: ubuntu22.04, arch: i386 }
+          - { suite: ubuntu24.04, arch: i386 }
+          - { suite: ubuntu26.04, arch: i386 }
+          - { suite: ubuntu26.10, arch: i386 }
+          - { suite: debian12, arch: riscv64 }
+          # The foreign arch lags the security updates, so multiarch cannot
+          # match versions with amd64.
+          - { suite: debian12, arch: s390x }
+          - { suite: ubuntu22.04, arch: riscv64 }
+          # jammy's debugedit crashes on the cross-built s390x binaries.
+          - { suite: ubuntu22.04, arch: s390x }
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # A nightly version counts the commits.
+          fetch-depth: 0
+      - name: Build
+        run: packaging/linux/build.sh deb ${{ matrix.suite }} "${CHANNEL}" ${{ matrix.arch }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: deb-${{ matrix.suite }}-${{ matrix.arch }}
+          # The .changes file names the suite's codename for the upload.
+          path: |
+            dist/deb/${{ matrix.suite }}-${{ matrix.arch }}/out/*.deb
+            dist/deb/${{ matrix.suite }}-${{ matrix.arch }}/out/*.changes
+            !dist/deb/${{ matrix.suite }}-${{ matrix.arch }}/out/*-dbgsym_*
+          retention-days: 7
+
+  publish:
+    needs: deb
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: deb-*
+          path: dist/deb-publish
+      - name: Upload to Cloudsmith
+        env:
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+          REPO: amule-org/${{ env.CHANNEL == 'release' && 'amule' || 'amule-nightly' }}
+        run: |
+          if [ -z "${CLOUDSMITH_API_KEY}" ]; then
+              echo "No CLOUDSMITH_API_KEY secret: nothing to publish."
+              exit 0
+          fi
+          pipx install cloudsmith-cli
+          packaging/linux/deb/publish-cloudsmith.sh "${REPO}" dist/deb-publish

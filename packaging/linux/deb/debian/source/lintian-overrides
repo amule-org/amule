@@ -1,0 +1,14 @@
+# No [context] on these overrides: Ubuntu 22.04's lintian does not understand it.
+
+# packaging/licenses/libmaxminddb/NOTICE: these packages link the system
+# libmaxminddb. Only the self-contained bundles ship it with this NOTICE.
+amule source: missing-notice-file-for-apache-license
+
+# src/webapi/static/js/vendor/*.module.js: upstream release builds of Preact
+# and htm, vendored as published; docs/THIRDPARTY.md names the versions.
+# wxwidgets/docs/doxygen/doxygen-awesome-css/*.js: in the unmodified wx
+# release tarball, and not built.
+amule source: source-is-missing
+
+# wxwidgets/samples/help/doc.chm: in the unmodified wx release tarball, and not built.
+amule source: source-contains-prebuilt-ms-help-file
