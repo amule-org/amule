@@ -69,7 +69,7 @@ bool ParseLinuxRouteDump(
 	const std::vector<std::uint8_t> &datagram, std::uint32_t sequence, std::vector<Route> &routes);
 // Parse a native macOS PF_ROUTE sysctl route dump; invalid dumps do not mutate routes.
 // Declared unconditionally but defined and exercised on macOS only.
-bool ParseMacRouteDump(std::vector<unsigned char> &dump, std::vector<Route> &routes);
+bool ParseMacRouteDump(const std::vector<unsigned char> &dump, std::vector<Route> &routes);
 } // namespace detail
 
 } // namespace pcp

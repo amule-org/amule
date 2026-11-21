@@ -101,8 +101,9 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		if (response.result != 0) {
 			refused.store(true);
 			std::ostringstream msg;
-			msg << "IPv6 PCP: gateway refused mapping with result code " << response.result
-			    << ", retrying in " << (response.lifetime == 0 ? 30 : response.lifetime) << " s";
+			msg << "IPv6 PCP: gateway refused mapping with result code "
+			    << static_cast<unsigned>(response.result) << ", retrying in "
+			    << (response.lifetime == 0 ? 30 : response.lifetime) << " s";
 			AddDebugLogLineN(logUPnP, msg);
 			Arm(std::chrono::seconds(response.lifetime == 0 ? 30 : response.lifetime));
 			return;

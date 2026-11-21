@@ -208,4 +208,16 @@ TEST(PCPGateway, ParsesGatewayAfterPacked28ByteMacDestination)
 	ASSERT_EQUALS(3U, routes[0].interfaceIndex);
 	ASSERT_TRUE(routes[0].isDefault);
 }
+
+TEST(PCPGateway, RejectsTruncatedMacDumpWithoutMutation)
+{
+	auto dump = MacRouteWith28ByteDestination();
+	// A valid route followed by a truncated message: the whole dump is invalid.
+	dump.insert(dump.end(), 4, 0);
+	std::vector<Route> routes{ Default(RouterB, 7, 100) };
+	ASSERT_FALSE(detail::ParseMacRouteDump(dump, routes));
+	ASSERT_EQUALS(1U, routes.size());
+	ASSERT_TRUE(routes[0].gateway == RouterB);
+	ASSERT_EQUALS(7U, routes[0].interfaceIndex);
+}
 #endif

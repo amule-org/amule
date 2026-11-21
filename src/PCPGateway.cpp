@@ -179,18 +179,19 @@ bool ParseLinuxRouteDump(
 
 #if defined(__APPLE__)
 // Parse a native macOS PF_ROUTE sysctl route dump; invalid dumps do not mutate routes.
-bool ParseMacRouteDump(std::vector<unsigned char> &dump, std::vector<Route> &routes)
+bool ParseMacRouteDump(const std::vector<unsigned char> &dump, std::vector<Route> &routes)
 {
-	for (auto *message = dump.data(), *dumpEnd = message + dump.size(); message < dumpEnd;) {
+	std::vector<Route> parsed;
+	for (const auto *message = dump.data(), *dumpEnd = message + dump.size(); message < dumpEnd;) {
 		if (static_cast<std::size_t>(dumpEnd - message) < sizeof(rt_msghdr))
 			return false;
-		auto *header = reinterpret_cast<rt_msghdr *>(message);
+		const auto *header = reinterpret_cast<const rt_msghdr *>(message);
 		if (header->rtm_msglen < sizeof(*header) || header->rtm_msglen > dumpEnd - message)
 			return false;
 		if (header->rtm_version == RTM_VERSION && (header->rtm_flags & RTF_GATEWAY) &&
 			(header->rtm_flags & RTF_UP) && !(header->rtm_flags & RTF_HOST)) {
-			auto *sockaddrs = message + sizeof(*header);
-			auto *messageEnd = message + header->rtm_msglen;
+			const auto *sockaddrs = message + sizeof(*header);
+			const auto *messageEnd = message + header->rtm_msglen;
 			const sockaddr_in6 *destination = nullptr, *gateway = nullptr;
 			bool defaultMask = true;
 			unsigned int addressFlag = 1;
@@ -198,7 +199,8 @@ bool ParseMacRouteDump(std::vector<unsigned char> &dump, std::vector<Route> &rou
 				if (header->rtm_addrs & addressFlag) {
 					if (sockaddrs >= messageEnd)
 						return false;
-					auto *sockaddr = reinterpret_cast<::sockaddr *>(sockaddrs);
+					const auto *sockaddr =
+						reinterpret_cast<const ::sockaddr *>(sockaddrs);
 					if (static_cast<std::size_t>(messageEnd - sockaddrs) < 2)
 						return false;
 					// XNU packs sockaddrs on 4-byte boundaries (ROUNDUP32), not on the
@@ -214,10 +216,11 @@ bool ParseMacRouteDump(std::vector<unsigned char> &dump, std::vector<Route> &rou
 					if (sockaddr->sa_family == AF_INET6 &&
 						sockaddr->sa_len >= sizeof(sockaddr_in6)) {
 						if (slot == RTAX_DST)
-							destination =
-								reinterpret_cast<sockaddr_in6 *>(sockaddr);
+							destination = reinterpret_cast<const sockaddr_in6 *>(
+								sockaddr);
 						if (slot == RTAX_GATEWAY)
-							gateway = reinterpret_cast<sockaddr_in6 *>(sockaddr);
+							gateway = reinterpret_cast<const sockaddr_in6 *>(
+								sockaddr);
 					}
 					if (slot == RTAX_NETMASK) {
 						for (std::size_t byte = 8;
@@ -241,11 +244,12 @@ bool ParseMacRouteDump(std::vector<unsigned char> &dump, std::vector<Route> &rou
 				route.interfaceIndex = header->rtm_index;
 				route.metric = static_cast<std::uint32_t>(header->rtm_rmx.rmx_hopcount);
 				route.isDefault = true;
-				routes.push_back(route);
+				parsed.push_back(route);
 			}
 		}
 		message += header->rtm_msglen;
 	}
+	routes.insert(routes.end(), parsed.begin(), parsed.end());
 	return true;
 }
 #endif
