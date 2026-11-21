@@ -8648,8 +8648,14 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 		// Capability gate: refuse rather than silently drop a setting the
 		// connected daemon cannot honour.
 		if (!webapi::PrefGateOpen(f, current)) {
-			// The null such a row reads as is accepted back unchanged (R9).
-			if (f.null_while_gated && src->find(f.key)->second.is<picojson::null>()) {
+			// What the row reads is accepted back unchanged (R9): null, or a gated bool's value.
+			const picojson::value &sent = src->find(f.key)->second;
+			bool echoed = f.null_while_gated && sent.is<picojson::null>();
+			if (!f.null_while_gated && f.type == webapi::PrefType::Bool && sent.is<bool>()) {
+				auto &snap = const_cast<webapi::PreferencesSnapshot &>(current);
+				echoed = sent.get<bool>() == *static_cast<bool *>(f.member(snap));
+			}
+			if (echoed) {
 				accepted_noop = true;
 				continue;
 			}

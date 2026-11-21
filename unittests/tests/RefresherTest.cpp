@@ -2698,7 +2698,7 @@ TEST(Refresher, PreferencesIPv6SettingsDecode)
 	ASSERT_EQUALS(std::string("ipv4_only"), p.ip_versions);
 	ASSERT_EQUALS(std::string("when_verified"), p.ipv6_advertising);
 
-	// A 3.2 daemon: AddressFamilies and the boolean, no mode tag.
+	// AddressFamilies and the boolean without the mode tag: not supported.
 	{
 		CECEmptyTag conn(EC_TAG_PREFS_CONNECTIONS);
 		conn.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES, static_cast<std::uint32_t>(1)));
@@ -2967,11 +2967,16 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 				    id == "servers.update_urls" || id == "security.ipfilter_update_url" ||
 				    id == "kad.update_url");
 		}
-		// Null while unsupported, so they cannot read as IPv4 only or "when verified".
+		// Null while unsupported, where the default would be a sentinel (0 outside the range) or
+		// a wrong answer (no debug categories, IPv4 only). The shipped gated bools read false.
 		if (f.null_while_gated) {
 			++null_gated;
 			const std::string id = std::string(f.category) + "." + f.key;
-			ASSERT_TRUE(id == "connection.ip_versions" || id == "connection.ipv6_advertising");
+			ASSERT_TRUE(id == "connection.ip_versions" || id == "connection.ipv6_advertising" ||
+				    id == "advanced.write_buffer_limit_mebibytes" ||
+				    id == "advanced.kad_max_served_buddies" ||
+				    id == "advanced.debug_categories" ||
+				    id == "advanced.debug_categories_enabled");
 			ASSERT_TRUE(f.gated_by != nullptr);
 		}
 	}
@@ -2979,7 +2984,7 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 	ASSERT_EQUALS(static_cast<std::size_t>(1), foreign_group);
 	ASSERT_EQUALS(static_cast<std::size_t>(8), retired);
 	ASSERT_EQUALS(static_cast<std::size_t>(7), admin_read);
-	ASSERT_EQUALS(static_cast<std::size_t>(2), null_gated);
+	ASSERT_EQUALS(static_cast<std::size_t>(6), null_gated);
 
 	// One category is gated on a tag proving the daemon has it. That tag must be one of the
 	// category's own value-encoded rows: a presence-encoded one is absent whenever it is false,

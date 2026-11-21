@@ -129,8 +129,8 @@ struct PrefField
 	// opposite of what the three `_minutes` rows do: those quantise to a unit a user already
 	// thinks in, while nobody thinks in 15000-byte blocks.
 	std::uint32_t step;
-	// Null while `gated_by` is false (R10), for a row whose default would read as a real setting.
-	// The older gated rows emit their default, and /api/v1/ is frozen.
+	// Null while `gated_by` is false (R10), for a row whose default would be a sentinel or a wrong
+	// answer. The gated bools read false instead: a daemon without the feature has it off.
 	bool null_while_gated;
 };
 

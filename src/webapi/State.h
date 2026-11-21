@@ -1153,7 +1153,7 @@ struct PreferencesSnapshot
 	bool upnp_enabled = false;
 	std::uint16_t upnp_control_point_port = 0;
 	// IPv6. ipv6_supported: the daemon reports both settings below, which only an
-	// ENABLE_IPV6 daemon from 3.3 on does.
+	// ENABLE_IPV6 daemon does.
 	bool ipv6_supported = false;
 	std::string ip_versions;
 	std::string ipv6_advertising;

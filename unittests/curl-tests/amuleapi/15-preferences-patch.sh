@@ -1032,11 +1032,11 @@ _assert_json_eq '.files.media_metadata_available' "$SAVED_AVAILABLE" 'files.medi
 # --- advanced.debug_categories_enabled: replaced as a whole, no restart. ---
 _curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
 _assert_json_eq '(.advanced.debug_categories_supported|type)' boolean 'advanced.debug_categories_supported is boolean'
-_assert_json_eq '(.advanced.debug_categories|type)' array 'advanced.debug_categories is an array'
-_assert_json_eq '(.advanced.debug_categories_enabled|type)' array 'advanced.debug_categories_enabled is an array'
 _assert_json_eq '(.advanced.verbose_logging_logfile_only|type)' boolean 'advanced.verbose_logging_logfile_only is boolean'
 SAVED_DEBUG=$(printf '%s' "$CURL_BODY" | jq -c '{debug_categories_enabled:.advanced.debug_categories_enabled,verbose_logging_logfile_only:.advanced.verbose_logging_logfile_only}')
 if [ "$(printf '%s' "$CURL_BODY" | jq -r '.advanced.debug_categories_supported')" = "true" ]; then
+	_assert_json_eq '(.advanced.debug_categories|type)' array 'advanced.debug_categories is an array'
+	_assert_json_eq '(.advanced.debug_categories_enabled|type)' array 'advanced.debug_categories_enabled is an array'
 	DEBUG_RESTORE="{\"advanced\":$SAVED_DEBUG}"
 	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
 		-d '{"advanced":{"debug_categories_enabled":["Hasher","General"],"verbose_logging_logfile_only":true}}' \
@@ -1056,7 +1056,8 @@ if [ "$(printf '%s' "$CURL_BODY" | jq -r '.advanced.debug_categories_supported')
 	_assert_status 200 'restored the debug settings'
 	DEBUG_RESTORE=
 else
-	_skip 'the daemon does not report debug categories'
+	_assert_json_eq '.advanced.debug_categories' null 'advanced.debug_categories is null without support'
+	_assert_json_eq '.advanced.debug_categories_enabled' null 'advanced.debug_categories_enabled is null without support'
 fi
 
 # --- Line capacities round-trip and keep the GUI range. ----------
