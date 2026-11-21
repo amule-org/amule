@@ -119,7 +119,8 @@ const table = (name) => {
   return m[0];
 };
 const { TABS } = new Function(
-  [table("PROXY_TYPES"), table("SEE_SHARES"), table("GEOIP_SOURCES"), table("TABS"),
+  [table("PROXY_TYPES"), table("SEE_SHARES"), table("IP_VERSIONS"), table("IPV6_ADVERTISING"),
+   table("GEOIP_SOURCES"), table("TABS"),
    "return { TABS };"].join("\n"),
 )();
 

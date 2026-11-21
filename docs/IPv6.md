@@ -8,15 +8,16 @@ address at login and receiving IPv6 sources, is in
 ## Listener and outbound dials
 
 `AddressFamilies` selects the ed2k TCP listener: `1` is a dual-stack listener. It is in the
-Connection preferences tab (aMule, and amulegui through EC) or in `amule.conf`, and it takes
-effect only after a restart.
+Connection preferences tab (aMule, amulegui and the Web UI), in amuleapi as
+`connection.ip_versions`, or in `amule.conf`, and it takes effect only after a restart.
 
 With `1`, aMule also dials native IPv6 peers. That includes Kad sources that are firewalled on
 IPv4 and publish an IPv6 address (eMuleAI's `ip6` tag), when we are firewalled too.
 
 ## Advertising our address to peers
 
-`AdvertiseIPv6Mode`, in the same tab, tells peers our stable IPv6 address. It applies at once:
+`AdvertiseIPv6Mode`, in the same tab (amuleapi: `connection.ipv6_advertising`), tells peers our
+stable IPv6 address. It applies at once:
 
 | Value | Meaning |
 | --- | --- |

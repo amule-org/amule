@@ -129,6 +129,9 @@ struct PrefField
 	// opposite of what the three `_minutes` rows do: those quantise to a unit a user already
 	// thinks in, while nobody thinks in 15000-byte blocks.
 	std::uint32_t step;
+	// Null while `gated_by` is false (R10), for a row whose default would be a sentinel or a wrong
+	// answer. The gated bools read false instead: a daemon without the feature has it off.
+	bool null_while_gated;
 };
 
 // EC group tag each category packs into. Several categories intentionally share one group
@@ -151,6 +154,9 @@ std::size_t PrefCategoryCount();
 
 // Convenience for callers that walk a single category.
 ec_tagname_t PrefGroupTagFor(const char *category);
+
+// False when the row's `gated_by` capability is false in `p`; true for an ungated row.
+bool PrefGateOpen(const PrefField &f, const PreferencesSnapshot &p);
 
 } // namespace webapi
 

@@ -42,6 +42,9 @@ namespace
 const char *const kProxyTypes[] = { "socks5", "socks4", "http", "socks4a", nullptr };
 const char *const kSharedFilesVisibility[] = { "everybody", "friends", "nobody", nullptr };
 const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr };
+// The stored AddressFamilies values and EIPv6AdvertisingMode.
+const char *const kIpVersions[] = { "ipv4_only", "ipv4_and_ipv6", nullptr };
+const char *const kIPv6Advertising[] = { "when_verified", "always", "never", nullptr };
 
 // Everything from here to the matching `clang-format on` is a data table, not code, and is kept
 // one row per field so it reads as a specification. ColumnLimit is 110 and the longest row is
@@ -89,9 +92,10 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, \
 		PREF_MEMBER(memb, std::uint32_t), 0, 0, minv, stepv}
 
-#define PREF_U32_DOMAIN_GATED(cat, key, tag, minv, maxv, acc, memb, gate) \
+// Capability-gated, and null while the capability is false.
+#define PREF_U32_DOMAIN_GATED_NULL(cat, key, tag, minv, maxv, acc, memb, gate) \
 	{cat, key, tag, PrefType::Uint32, PrefEnc::Value, false, acc, maxv, nullptr, gate, \
-		PREF_MEMBER(memb, std::uint32_t), 0, 0, minv, 0}
+		PREF_MEMBER(memb, std::uint32_t), 0, 0, minv, 0, true}
 
 #define PREF_U16_DOMAIN(cat, key, tag, minv, maxv, acc, memb) \
 	{cat, key, tag, PrefType::Uint16, PrefEnc::Value, false, acc, maxv, nullptr, nullptr, \
@@ -108,12 +112,16 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 #define PREF_STRARR(cat, key, tag, acc, memb) \
 	{cat, key, tag, PrefType::StringArray, PrefEnc::Value, false, acc, 0u, nullptr, nullptr, PREF_MEMBER(memb, std::vector<std::string>), 0}
 
-// Capability-gated: PATCH answers 409 when the named sibling bool is false.
-#define PREF_STRARR_GATED(cat, key, tag, acc, memb, gate) \
-	{cat, key, tag, PrefType::StringArray, PrefEnc::Value, false, acc, 0u, nullptr, gate, PREF_MEMBER(memb, std::vector<std::string>), 0}
+// Capability-gated, and null while the capability is false.
+#define PREF_STRARR_GATED_NULL(cat, key, tag, acc, memb, gate) \
+	{cat, key, tag, PrefType::StringArray, PrefEnc::Value, false, acc, 0u, nullptr, gate, PREF_MEMBER(memb, std::vector<std::string>), 0, 0, 0, 0, true}
 
 #define PREF_ENUM(cat, key, tag, names, acc, memb) \
 	{cat, key, tag, PrefType::Enum, PrefEnc::Value, false, acc, 0u, names, nullptr, PREF_MEMBER(memb, std::string), 0}
+
+// Capability-gated, and null while the capability is false.
+#define PREF_ENUM_GATED_NULL(cat, key, tag, names, acc, memb, gate) \
+	{cat, key, tag, PrefType::Enum, PrefEnc::Value, false, acc, 0u, names, gate, PREF_MEMBER(memb, std::string), 0, 0, 0, 0, true}
 
 #define PREF_MD4(cat, key, tag, acc, memb) \
 	{cat, key, tag, PrefType::Md4Hex, PrefEnc::Value, false, acc, 0u, nullptr, nullptr, PREF_MEMBER(memb, std::string), 0}
@@ -178,6 +186,10 @@ const PrefField kSchema[] = {
 	PREF_BOOL_INGROUP("connection", "upnp_supported", EC_TAG_GENERAL_UPNP_AVAILABLE, PrefEnc::Value, PrefAccess::ReadOnly, upnp_supported, EC_TAG_PREFS_GENERAL),
 	PREF_BOOL("connection", "upnp_enabled", EC_TAG_CONN_UPNP_ENABLED, PrefEnc::Value, false, PrefAccess::ReadWrite, upnp_enabled),
 	PREF_U16("connection", "upnp_control_point_port", EC_TAG_CONN_UPNP_TCP_PORT, 65535u, PrefAccess::ReadWrite, upnp_control_point_port),
+	// Presence of the mode tag, the one a write sends.
+	PREF_BOOL("connection", "ipv6_supported", EC_TAG_CONN_ADVERTISE_IPV6_MODE, PrefEnc::Presence, false, PrefAccess::ReadOnly, ipv6_supported),
+	PREF_ENUM_GATED_NULL("connection", "ip_versions", EC_TAG_CONN_ADDRESS_FAMILIES, kIpVersions, PrefAccess::ReadWrite, ip_versions, "ipv6_supported"),
+	PREF_ENUM_GATED_NULL("connection", "ipv6_advertising", EC_TAG_CONN_ADVERTISE_IPV6_MODE, kIPv6Advertising, PrefAccess::ReadWrite, ipv6_advertising, "ipv6_supported"),
 	PREF_PASSWD_PLAIN("connection", "proxy_password", EC_TAG_PROXY_PASSWORD),
 
 	// [directories]
@@ -301,11 +313,11 @@ const PrefField kSchema[] = {
 	// and nothing between them.
 	PREF_U32_DOMAIN("advanced", "file_buffer_bytes", EC_TAG_CORETW_FILEBUFFER, 0u, 3825000u, 15000u, PrefAccess::ReadWrite, advanced.file_buffer_bytes),
 	PREF_BOOL("advanced", "write_buffer_limit_supported", EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, PrefEnc::Presence, false, PrefAccess::ReadOnly, advanced.write_buffer_limit_supported),
-	PREF_U32_DOMAIN_GATED("advanced", "write_buffer_limit_mebibytes", EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, WriteBufferLimits::minMiB, WriteBufferLimits::maxMiB, PrefAccess::ReadWrite, advanced.write_buffer_limit_mebibytes, "write_buffer_limit_supported"),
+	PREF_U32_DOMAIN_GATED_NULL("advanced", "write_buffer_limit_mebibytes", EC_TAG_CORETW_WRITE_BUFFER_LIMIT_MIB, WriteBufferLimits::minMiB, WriteBufferLimits::maxMiB, PrefAccess::ReadWrite, advanced.write_buffer_limit_mebibytes, "write_buffer_limit_supported"),
 	// The core clamps these, so a value outside the range would be changed, not stored.
 	PREF_U32_DOMAIN("advanced", "kad_max_concurrent_source_search_count", EC_TAG_CORETW_KAD_MAX_SEARCHES, KAD_MAX_SOURCE_SEARCHES.min, KAD_MAX_SOURCE_SEARCHES.max, 0u, PrefAccess::ReadWrite, advanced.kad_max_concurrent_source_search_count),
 	PREF_BOOL("advanced", "kad_max_served_buddies_supported", EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, PrefEnc::Presence, false, PrefAccess::ReadOnly, advanced.kad_max_served_buddies_supported),
-	PREF_U32_DOMAIN_GATED("advanced", "kad_max_served_buddies", EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, Kademlia::KAD_SERVED_BUDDIES.min, Kademlia::KAD_SERVED_BUDDIES.max, PrefAccess::ReadWrite, advanced.kad_max_served_buddies, "kad_max_served_buddies_supported"),
+	PREF_U32_DOMAIN_GATED_NULL("advanced", "kad_max_served_buddies", EC_TAG_CORETW_KAD_MAX_SERVED_BUDDIES, Kademlia::KAD_SERVED_BUDDIES.min, Kademlia::KAD_SERVED_BUDDIES.max, PrefAccess::ReadWrite, advanced.kad_max_served_buddies, "kad_max_served_buddies_supported"),
 	PREF_U32_SCALED_DOMAIN("advanced", "kad_source_reask_minutes", EC_TAG_CORETW_KAD_REASK_MS, KAD_SOURCE_REASK_MINUTES.min, KAD_SOURCE_REASK_MINUTES.max, PrefAccess::ReadWrite, advanced.kad_source_reask_minutes, 60000u),
 	// s_MaxConperFive is a uint16; 70000 wrapped to 4464.
 	PREF_U32_DOMAIN("advanced", "max_new_connections_per_5_seconds", EC_TAG_CORETW_MAX_CONN_PER_FIVE, 0u, 65535u, 0u, PrefAccess::ReadWrite, advanced.max_new_connections_per_5_seconds),
@@ -317,8 +329,8 @@ const PrefField kSchema[] = {
 	// The category list is always sent by a core that can apply these, so its presence is the capability.
 	PREF_BOOL("advanced", "debug_categories_supported", EC_TAG_CORETW_DEBUG_CATEGORIES, PrefEnc::Presence, false, PrefAccess::ReadOnly, advanced.debug_categories_supported),
 	PREF_BOOL_GATED("advanced", "verbose_logging_logfile_only", EC_TAG_CORETW_VERBOSE_LOGFILE, PrefEnc::Value, false, PrefAccess::ReadWrite, advanced.verbose_logging_logfile_only, "debug_categories_supported"),
-	PREF_STRARR("advanced", "debug_categories", EC_TAG_CORETW_DEBUG_CATEGORIES, PrefAccess::ReadOnly, advanced.debug_categories),
-	PREF_STRARR_GATED("advanced", "debug_categories_enabled", EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED, PrefAccess::ReadWrite, advanced.debug_categories_enabled, "debug_categories_supported"),
+	PREF_STRARR_GATED_NULL("advanced", "debug_categories", EC_TAG_CORETW_DEBUG_CATEGORIES, PrefAccess::ReadOnly, advanced.debug_categories, "debug_categories_supported"),
+	PREF_STRARR_GATED_NULL("advanced", "debug_categories_enabled", EC_TAG_CORETW_DEBUG_CATEGORIES_ENABLED, PrefAccess::ReadWrite, advanced.debug_categories_enabled, "debug_categories_supported"),
 
 	// [kad] (EC group: KADEMLIA)
 	PREF_STR("kad", "update_url", EC_TAG_KADEMLIA_UPDATE_URL, PrefAccess::AdminRead, kad.update_url),
@@ -398,6 +410,17 @@ ec_tagname_t PrefGroupTagFor(const char *category)
 			return kCategories[i].group_tag;
 	}
 	return 0;
+}
+
+bool PrefGateOpen(const PrefField &f, const PreferencesSnapshot &p)
+{
+	if (!f.gated_by)
+		return true;
+	for (const PrefField &cap : kSchema) {
+		if (std::strcmp(cap.category, f.category) == 0 && std::strcmp(cap.key, f.gated_by) == 0)
+			return *static_cast<bool *>(cap.member(const_cast<PreferencesSnapshot &>(p)));
+	}
+	return true;
 }
 
 } // namespace webapi

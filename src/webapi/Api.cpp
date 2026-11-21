@@ -8206,7 +8206,7 @@ void WritePrefCategoryFields(
 		if (!PrefFieldIsEmitted(f, admin) || std::strcmp(f.category, category) != 0)
 			continue;
 		w.Key(f.key);
-		if (known)
+		if (known && (!f.null_while_gated || webapi::PrefGateOpen(f, p)))
 			WritePrefFieldValue(w, f, p);
 		else
 			w.ValueNull();
@@ -8647,23 +8647,21 @@ CHttpServer::Response CApiDispatcher::HandlePreferencesPatch(const CHttpServer::
 
 		// Capability gate: refuse rather than silently drop a setting the
 		// connected daemon cannot honour.
-		if (f.gated_by) {
-			bool ok = true;
-			for (std::size_t g = 0; g < webapi::PrefSchemaSize(); ++g) {
-				const webapi::PrefField &cap = webapi::PrefSchema()[g];
-				if (std::strcmp(cap.category, f.category) != 0 ||
-					std::strcmp(cap.key, f.gated_by) != 0)
-					continue;
-				webapi::PreferencesSnapshot &snap =
-					const_cast<webapi::PreferencesSnapshot &>(current);
-				ok = *static_cast<bool *>(cap.member(snap));
-				break;
+		if (!webapi::PrefGateOpen(f, current)) {
+			// What the row reads is accepted back unchanged (R9): null, or a gated bool's value.
+			const picojson::value &sent = src->find(f.key)->second;
+			bool echoed = f.null_while_gated && sent.is<picojson::null>();
+			if (!f.null_while_gated && f.type == webapi::PrefType::Bool && sent.is<bool>()) {
+				auto &snap = const_cast<webapi::PreferencesSnapshot &>(current);
+				echoed = sent.get<bool>() == *static_cast<bool *>(f.member(snap));
 			}
-			if (!ok) {
-				return ErrorResponse(409,
-					"option_not_supported",
-					"the connected daemon does not support that option");
+			if (echoed) {
+				accepted_noop = true;
+				continue;
 			}
+			return ErrorResponse(409,
+				"option_not_supported",
+				"the connected daemon does not support that option");
 		}
 
 		CECTag &g = group_for(webapi::PrefGroupTagFor(f.category));
