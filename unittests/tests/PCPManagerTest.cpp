@@ -59,6 +59,12 @@ struct FakeClient final : pcp::MappingClient
 		events.push_back(-id);
 		changed.notify_all();
 	}
+	void Release() override
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		events.push_back(-(100 + id));
+		changed.notify_all();
+	}
 	pcp::LeaseSnapshot Snapshot() const override
 	{
 		std::lock_guard<std::mutex> lock(mutex);
@@ -87,6 +93,7 @@ struct Harness
 	std::thread::id discoveryThread;
 	bool leaseActive = false;
 	bool nextClientReady = true;
+	bool clientFailed = false;
 
 	pcp::PCPManager Make()
 	{
@@ -107,6 +114,7 @@ struct Harness
 				auto client = std::make_unique<FakeClient>(
 					id, events, mutex, changed, nextClientReady);
 				client->lease.active = leaseActive;
+				client->lease.failed = clientFailed;
 				return client;
 			},
 			std::chrono::milliseconds(20));
@@ -245,5 +253,61 @@ TEST(PCPManagerTest, UnavailableGatewayDoesNotBlockUpdate)
 	manager.SetTarget(local, 4662);
 	ASSERT_TRUE(std::chrono::steady_clock::now() - start < std::chrono::milliseconds(100));
 	ASSERT_TRUE(h.Wait([&] { return h.discoveries > 0; }));
+	manager.Stop();
+}
+
+TEST(PCPManagerTest, StandByReleasesWithoutDeleteAndCanResume)
+{
+	Harness h;
+	auto manager = h.Make();
+	manager.SetTarget(local, 4662);
+	ASSERT_TRUE(h.Wait([&] { return h.events.size() >= 1; }));
+	// IGD2 holds the pinhole: PCP must let go without a delete that would close it.
+	manager.StandBy();
+	ASSERT_TRUE(h.Wait([&] { return h.events.size() >= 2; }));
+	{
+		std::lock_guard<std::mutex> lock(h.mutex);
+		ASSERT_EQUALS(-101, h.events[1]);
+	}
+	manager.SetTarget(local, 4662);
+	ASSERT_TRUE(h.Wait([&] { return h.events.size() >= 3; }));
+	{
+		std::lock_guard<std::mutex> lock(h.mutex);
+		ASSERT_EQUALS(1, h.events[2]);
+	}
+	manager.Stop();
+	std::lock_guard<std::mutex> lock(h.mutex);
+	ASSERT_EQUALS(4U, h.events.size());
+	ASSERT_EQUALS(-1, h.events[3]);
+}
+
+TEST(PCPManagerTest, MissingGatewayReportsFailure)
+{
+	Harness h;
+	h.available = false;
+	auto manager = h.Make();
+	ASSERT_FALSE(manager.LeaseState().failed);
+	manager.SetTarget(local, 4662);
+	ASSERT_TRUE(h.Wait([&] { return h.discoveries > 0; }));
+	const auto end = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+	while (!manager.LeaseState().failed && std::chrono::steady_clock::now() < end) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+	ASSERT_TRUE(manager.LeaseState().failed);
+	ASSERT_FALSE(manager.LeaseState().active);
+	// Without a target nothing has failed.
+	manager.ClearTarget();
+	ASSERT_FALSE(manager.LeaseState().failed);
+	manager.Stop();
+}
+
+TEST(PCPManagerTest, ClientFailureIsReported)
+{
+	Harness h;
+	h.clientFailed = true;
+	auto manager = h.Make();
+	manager.SetTarget(local, 4662);
+	ASSERT_TRUE(h.Wait([&] { return h.events.size() >= 1; }));
+	ASSERT_TRUE(manager.LeaseState().failed);
 	manager.Stop();
 }

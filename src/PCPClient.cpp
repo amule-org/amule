@@ -97,7 +97,9 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		if (response.result == 0 && (!response.mapping || response.mapping->lifetime == 0)) {
 			return;
 		}
+		unanswered.store(0);
 		if (response.result != 0) {
+			refused.store(true);
 			std::ostringstream msg;
 			msg << "IPv6 PCP: gateway refused mapping with result code " << response.result
 			    << ", retrying in " << (response.lifetime == 0 ? 30 : response.lifetime) << " s";
@@ -113,10 +115,12 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 			// how a server says so: delete the unwanted mapping and do not use it. The
 			// retry keeps the same pacing as a retransmission.
 			Delete();
+			refused.store(true);
 			Publish(false, 0);
 			ScheduleRetry();
 			return;
 		}
+		refused.store(false);
 		const auto granted = mapping.lifetime;
 		std::ostringstream msg;
 		msg << "IPv6 PCP: mapping for TCP port " << request->internalPort << " granted, lifetime "
@@ -159,6 +163,7 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		if (!encoded) {
 			return;
 		}
+		unanswered.fetch_add(1);
 		auto bytes = std::make_shared<std::vector<std::uint8_t>>(*encoded);
 		socket.async_send(boost::asio::buffer(*bytes),
 			[self = shared_from_this(), bytes](boost::system::error_code, std::size_t) {});
@@ -193,11 +198,15 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		}
 	}
 
-	void Drop()
+	void Drop(bool sendDelete = true)
 	{
 		timer.cancel();
-		Delete();
+		if (sendDelete) {
+			Delete();
+		}
 		request.reset();
+		unanswered.store(0);
+		refused.store(false);
 		retryExponent = 0;
 		++generation;
 		Publish(false, 0);
@@ -235,7 +244,7 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		Send();
 	}
 
-	void Stop()
+	void Stop(bool sendDelete)
 	{
 		std::lock_guard<std::mutex> lock(stopMutex);
 		if (stopped.exchange(true)) {
@@ -243,8 +252,8 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 		}
 		// The io_context belongs to the owner (the manager or a test runner); posting the
 		// cleanup there keeps the delete best-effort and leaves no thread to join.
-		boost::asio::post(context, [self = shared_from_this()] {
-			self->Drop();
+		boost::asio::post(context, [self = shared_from_this(), sendDelete] {
+			self->Drop(sendDelete);
 			boost::system::error_code error;
 			self->socket.cancel(error);
 			self->socket.close(error);
@@ -260,6 +269,9 @@ struct Client::State : std::enable_shared_from_this<Client::State>
 	std::optional<Request> request;
 	std::uint64_t generation = 0;
 	unsigned retryExponent = 0;
+	// Requests sent since the last valid response; two mean the first went unanswered.
+	std::atomic<unsigned> unanswered{ 0 };
+	std::atomic<bool> refused{ false };
 	bool ready = false;
 	std::atomic<bool> stopped{ false };
 	mutable std::mutex snapshotMutex;
@@ -308,6 +320,8 @@ LeaseSnapshot Client::Snapshot() const
 	if (m_state->stopped.load() || Clock::now() >= m_state->expires) {
 		snapshot.active = false;
 	}
+	snapshot.failed = !snapshot.active && !m_state->stopped.load() &&
+			  (m_state->refused.load() || m_state->unanswered.load() >= 2);
 	return snapshot;
 }
 
@@ -320,6 +334,11 @@ bool Client::Ready() const
 
 void Client::Stop()
 {
-	m_state->Stop();
+	m_state->Stop(true);
+}
+
+void Client::Release()
+{
+	m_state->Stop(false);
 }
 } // namespace pcp

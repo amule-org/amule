@@ -46,6 +46,7 @@ public:
 		client.SetMapping(port, address, externalPort);
 	}
 	void Stop() override { client.Stop(); }
+	void Release() override { client.Release(); }
 	LeaseSnapshot Snapshot() const override { return client.Snapshot(); }
 	bool Ready() const override { return client.Ready(); }
 
@@ -90,8 +91,13 @@ struct PCPManager::State
 				client = nullptr;
 				current.reset();
 				currentGateway.reset();
+				const bool handover = !desired && release;
 				lock.unlock();
-				old->Stop();
+				if (handover) {
+					old->Release();
+				} else {
+					old->Stop();
+				}
 				lock.lock();
 				continue;
 			}
@@ -108,6 +114,7 @@ struct PCPManager::State
 				if (stopping || revision != version) {
 					continue;
 				}
+				noGateway = !gateway;
 				if (current &&
 					(!gateway || !currentGateway ||
 						gateway->endpoint != currentGateway->endpoint ||
@@ -197,6 +204,10 @@ struct PCPManager::State
 	std::mutex stopMutex;
 	std::condition_variable changed;
 	std::optional<Target> target;
+	// Set with an empty target: the client is released, not deleted (a handover to IGD2).
+	bool release = false;
+	// The last discovery for the current target found no gateway.
+	bool noGateway = false;
 	std::uint64_t revision = 0;
 	std::uint64_t appliedRevision = 0;
 	// Guarded by mutex; non-null only while a client is applied to the current target.
@@ -219,6 +230,11 @@ PCPManager::~PCPManager()
 
 void PCPManager::SetTarget(const boost::asio::ip::address_v6 &address, std::uint16_t port)
 {
+	Update(address, port, false);
+}
+
+void PCPManager::Update(const boost::asio::ip::address_v6 &address, std::uint16_t port, bool release)
+{
 	const auto state = m_state;
 	std::lock_guard<std::mutex> lock(state->mutex);
 	if (state->stopping) {
@@ -228,10 +244,12 @@ void PCPManager::SetTarget(const boost::asio::ip::address_v6 &address, std::uint
 	if (port != 0 && !address.is_unspecified() && !address.is_multicast() && !address.is_v4_mapped()) {
 		next = Target{ address, port };
 	}
+	state->release = release;
 	if (state->target == next) {
 		return;
 	}
 	state->target = next;
+	state->noGateway = false;
 	++state->revision;
 	state->changed.notify_one();
 }
@@ -241,12 +259,19 @@ void PCPManager::ClearTarget()
 	SetTarget({}, 0);
 }
 
+void PCPManager::StandBy()
+{
+	Update({}, 0, true);
+}
+
 LeaseSnapshot PCPManager::LeaseState() const
 {
 	const auto state = m_state;
 	std::lock_guard<std::mutex> lock(state->mutex);
 	if (!state->client) {
-		return LeaseSnapshot{};
+		LeaseSnapshot snapshot;
+		snapshot.failed = state->target.has_value() && state->noGateway;
+		return snapshot;
 	}
 	return state->client->Snapshot();
 }

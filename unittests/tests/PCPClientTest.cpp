@@ -355,3 +355,59 @@ TEST(PCPClient, RetransmitsAtLeastFourSecondsApart)
 	// as small as the 4 s floor.
 	ASSERT_TRUE(std::chrono::steady_clock::now() - retryAt >= 5350ms);
 }
+
+TEST(PCPClient, UnansweredRequestsReportFailureUntilGrant)
+{
+	Server server;
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
+	client.SetMapping(4662, Local(), 4662);
+	const auto first = server.Next();
+	ASSERT_TRUE(first.has_value());
+	ASSERT_FALSE(client.Snapshot().failed);
+	// The retransmission means the first request went unanswered.
+	const auto retry = server.Next(6000ms);
+	ASSERT_TRUE(retry.has_value());
+	std::this_thread::sleep_for(50ms);
+	ASSERT_TRUE(client.Snapshot().failed);
+	server.Reply(*retry);
+	ASSERT_TRUE(Active(client, true));
+	ASSERT_FALSE(client.Snapshot().failed);
+}
+
+TEST(PCPClient, RefusalReportsFailureUntilGrant)
+{
+	Server server;
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
+	client.SetMapping(4662, Local(), 4662);
+	const auto first = server.Next();
+	ASSERT_TRUE(first.has_value());
+	server.Reply(*first, 2, 1);
+	std::this_thread::sleep_for(100ms);
+	ASSERT_TRUE(client.Snapshot().failed);
+	ASSERT_FALSE(client.Snapshot().active);
+	const auto retry = server.Next();
+	ASSERT_TRUE(retry.has_value());
+	server.Reply(*retry);
+	ASSERT_TRUE(Active(client, true));
+	ASSERT_FALSE(client.Snapshot().failed);
+}
+
+TEST(PCPClient, ReleaseStopsWithoutDelete)
+{
+	Server server;
+	IoRunner runner;
+	pcp::Client client(server.Endpoint(), Local(), runner.io);
+	client.SetMapping(4662, Local(), 4662);
+	const auto request = server.Next();
+	ASSERT_TRUE(request.has_value());
+	server.Reply(*request, 0, 60);
+	ASSERT_TRUE(Active(client, true));
+	// A handover: the other protocol may share this gateway entry, so no delete is sent.
+	client.Release();
+	ASSERT_FALSE(server.Next(1250ms).has_value());
+	ASSERT_FALSE(client.Snapshot().active);
+	client.SetMapping(4662, Local(), 4662);
+	ASSERT_FALSE(server.Next(250ms).has_value());
+}

@@ -41,3 +41,45 @@ TEST(PCPApplicationPolicy, RequiresEnabledIPv6ListenerAddressAndTCPPort)
 	ASSERT_FALSE(pcp::ApplicationTarget(true, true, multicast, 4662).has_value());
 	ASSERT_TRUE(*selected == address);
 }
+
+TEST(PCPApplicationPolicy, NoTargetClosesBothProtocols)
+{
+	pcp::PinholeOwners owners;
+	owners.pcpLease = true;
+	owners.igd2Available = true;
+	owners.igd2Holds = true;
+	ASSERT_TRUE(pcp::DecidePinholeRoute(false, owners) == pcp::PinholeRoute::Close);
+	ASSERT_TRUE(pcp::DecidePinholeRoute(false, pcp::PinholeOwners{}) == pcp::PinholeRoute::Close);
+}
+
+TEST(PCPApplicationPolicy, PCPLeaseOwnsEvenWhenIGD2Holds)
+{
+	pcp::PinholeOwners owners;
+	owners.pcpLease = true;
+	owners.pcpFailed = true;
+	owners.igd2Available = true;
+	owners.igd2Holds = true;
+	ASSERT_TRUE(pcp::DecidePinholeRoute(true, owners) == pcp::PinholeRoute::PCP);
+}
+
+TEST(PCPApplicationPolicy, IGD2PinholeOwnsWithoutPCPLease)
+{
+	pcp::PinholeOwners owners;
+	owners.igd2Available = true;
+	owners.igd2Holds = true;
+	ASSERT_TRUE(pcp::DecidePinholeRoute(true, owners) == pcp::PinholeRoute::IGD2);
+	owners.pcpFailed = true;
+	ASSERT_TRUE(pcp::DecidePinholeRoute(true, owners) == pcp::PinholeRoute::IGD2);
+}
+
+TEST(PCPApplicationPolicy, AsksPCPFirstAndIGD2OnlyAfterPCPFailed)
+{
+	pcp::PinholeOwners owners;
+	owners.igd2Available = true;
+	ASSERT_TRUE(pcp::DecidePinholeRoute(true, owners) == pcp::PinholeRoute::PCP);
+	owners.pcpFailed = true;
+	ASSERT_TRUE(pcp::DecidePinholeRoute(true, owners) == pcp::PinholeRoute::IGD2Fallback);
+	// Without an IGD2 service there is nothing to fall back to: PCP keeps asking.
+	owners.igd2Available = false;
+	ASSERT_TRUE(pcp::DecidePinholeRoute(true, owners) == pcp::PinholeRoute::PCP);
+}

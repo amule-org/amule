@@ -36,6 +36,8 @@ public:
 	virtual void SetMapping(
 		std::uint16_t port, boost::asio::ip::address_v6 address, std::uint16_t externalPort) = 0;
 	virtual void Stop() = 0;
+	// Stop without deleting the mapping, for a handover to IGD2.
+	virtual void Release() = 0;
 	// Current lease state of the underlying client, for callers that must know whether
 	// the pinhole is currently owned by PCP.
 	virtual LeaseSnapshot Snapshot() const = 0;
@@ -56,13 +58,18 @@ public:
 	PCPManager(const PCPManager &) = delete;
 	PCPManager &operator=(const PCPManager &) = delete;
 	void SetTarget(const boost::asio::ip::address_v6 &address, std::uint16_t port);
+	// Drop the target and delete the mapping: the pinhole must close.
 	void ClearTarget();
+	// Drop the target without deleting the mapping: IGD2 holds the pinhole, and on a gateway
+	// that keeps one entry for both protocols a PCP delete would close it.
+	void StandBy();
 	void Stop();
 	// Whether a lease for the current target is currently held. While this returns true
 	// the pinhole has exactly one owner (PCP); the IGD2 fallback must stand down.
 	LeaseSnapshot LeaseState() const;
 
 private:
+	void Update(const boost::asio::ip::address_v6 &address, std::uint16_t port, bool release);
 	struct State;
 	std::shared_ptr<State> m_state;
 };

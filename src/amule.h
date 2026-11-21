@@ -488,8 +488,10 @@ public:
 	CAsioService *m_AsioService;
 #ifdef ENABLE_IPV6
 	pcp::PCPManager *m_pcpManager = nullptr;
-	void RequestPCPPinhole();
 #endif
+	//! Open the node's inbound IPv6 TCP pinhole through PCP or the gateway's IGD2 firewall
+	//! service, with one owner at a time. A no-op without an IPv6 listener.
+	void RequestIPv6Pinholes();
 #ifdef ENABLE_UPNP
 	CUPnPControlPoint *m_upnp;
 #ifdef ENABLE_IPV6
@@ -497,9 +499,6 @@ public:
 	unsigned int m_IPv6PinholeOpeningsSeen = 0;
 #endif
 	std::vector<CUPnPPortMapping> m_upnpMappings;
-	//! Ask the gateway's IGD2 firewall service for the inbound IPv6 pinholes the node needs. A
-	//! no-op without an IPv6 listener or without that service.
-	void RequestIPv6Pinholes();
 	// Build the port mappings from the current preferences and start the UPnP
 	// control point. A no-op when UPnP is disabled or already running.
 	void StartUPnP();

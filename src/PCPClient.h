@@ -38,6 +38,9 @@ struct LeaseSnapshot
 	std::uint16_t internalPort = 0;
 	std::uint32_t grantedLifetime = 0;
 	std::uint64_t generation = 0;
+	// No lease, and the gateway refused the request or left the first ones unanswered: the
+	// pinhole owner decision may hand the target to IGD2.
+	bool failed = false;
 };
 
 class Client
@@ -62,6 +65,9 @@ public:
 	// address was still tentative); the manager recreates such a client on its due pass.
 	bool Ready() const;
 	void Stop();
+	// Stop without deleting the mapping: on a handover the other protocol may share the
+	// gateway's entry, and a delete would close it.
+	void Release();
 
 private:
 	struct State;
