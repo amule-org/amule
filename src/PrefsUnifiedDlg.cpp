@@ -95,7 +95,8 @@
 #include "ServerList.h"
 #include "Statistics.h"
 #include "UserEvents.h"
-#include "PlatformSpecific.h" // Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+#include "PlatformSpecific.h"                // Needed for PLATFORMSPECIFIC_CAN_PREVENT_SLEEP_MODE
+#include <ec/cpp/ECForwardingCapabilities.h> // Needed for forwarding capability availability
 #if defined(ENABLE_IPV6) && !defined(CLIENT_GUI)
 #include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
 #endif
@@ -1473,30 +1474,28 @@ bool PrefsUnifiedDlg::TransferToWindow()
 	CastChild(IDC_RATESBEFORETITLE, wxRadioButton)->SetValue(thePrefs::GetShowRatesOnTitle() == 2);
 	CastChild(IDC_RATESAFTERTITLE, wxRadioButton)->SetValue(thePrefs::GetShowRatesOnTitle() != 2);
 
-	// UPNP
+	// Automatic router forwarding uses the existing preference for UPnP and PCP. Keep the
+	// UPnP-specific port and EC controls gated by UPnP support alone.
 #ifdef CLIENT_GUI
-	// Gate the P2P-router UPnP controls on the daemon's advertised capability
-	// (EC_TAG_GENERAL_UPNP_AVAILABLE), not amulegui's own ENABLE_UPNP -- the daemon is what
-	// forwards. Do NOT clobber the pref when unavailable: the value belongs to the daemon.
-	if (thePrefs::GetUPnPAvailable()) {
-		FindWindow(IDC_UPNPTCPPORT)->Enable(thePrefs::GetUPnPEnabled());
-		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPEnabled());
-	} else {
-		FindWindow(IDC_UPNP_ENABLED)->Enable(false);
-		FindWindow(IDC_UPNPTCPPORT)->Enable(false);
-		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(false);
-	}
+	const bool upnpAvailable = thePrefs::GetUPnPAvailable();
+	const bool pcpAvailable = thePrefs::GetPCPAvailable();
+	// The value belongs to the daemon; do not clobber it locally.
 #else
+	const bool upnpAvailable = ECForwardingCapabilities::UpnpAvailable();
+	const bool pcpAvailable = ECForwardingCapabilities::PcpAvailable();
+	// In a build that cannot forward at all, reset the preference so a saved true is
+	// not advertised to EC clients.
+	if (!upnpAvailable && !pcpAvailable) {
+		thePrefs::SetUPnPEnabled(false);
+	}
+#endif
+	FindWindow(IDC_UPNP_ENABLED)->Enable(upnpAvailable || pcpAvailable);
+	FindWindow(IDC_UPNPTCPPORT)->Enable(upnpAvailable && thePrefs::GetUPnPEnabled());
+	FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(upnpAvailable && thePrefs::GetUPnPEnabled());
+#ifndef CLIENT_GUI
 #ifndef ENABLE_UPNP
-	FindWindow(IDC_UPNP_ENABLED)->Enable(false);
-	FindWindow(IDC_UPNPTCPPORT)->Enable(false);
-	FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(false);
-	thePrefs::SetUPnPEnabled(false);
 	FindWindow(IDC_UPNP_EC_ENABLED)->Enable(false);
 	thePrefs::SetUPnPECEnabled(false);
-#else
-	FindWindow(IDC_UPNPTCPPORT)->Enable(thePrefs::GetUPnPEnabled());
-	FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(thePrefs::GetUPnPEnabled());
 #endif
 #endif
 
@@ -2438,8 +2437,16 @@ void PrefsUnifiedDlg::OnCheckBoxChange(wxCommandEvent &event)
 		break;
 
 	case IDC_UPNP_ENABLED:
+#ifdef CLIENT_GUI
+		FindWindow(IDC_UPNPTCPPORT)->Enable(value && thePrefs::GetUPnPAvailable());
+		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(value && thePrefs::GetUPnPAvailable());
+#elif defined(ENABLE_UPNP)
 		FindWindow(IDC_UPNPTCPPORT)->Enable(value);
 		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(value);
+#else
+		FindWindow(IDC_UPNPTCPPORT)->Enable(false);
+		FindWindow(IDC_UPNPTCPPORTTEXT)->Enable(false);
+#endif
 		break;
 
 	// amuleapi is an EC client of the core: it can only run when external connections are

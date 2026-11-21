@@ -126,6 +126,7 @@ bool CPreferences::s_UPnPEnabled;
 bool CPreferences::s_UPnPECEnabled;
 uint16 CPreferences::s_UPnPTCPPort;
 bool CPreferences::s_UPnPAvailable = false;
+bool CPreferences::s_PCPAvailable = false;
 bool CPreferences::s_autoserverlist;
 bool CPreferences::s_deadserver;
 CPath CPreferences::s_incomingdir;

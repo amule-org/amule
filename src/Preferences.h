@@ -549,11 +549,13 @@ public:
 	static void SetUPnPECEnabled(bool val) { s_UPnPECEnabled = val; }
 	static uint16 GetUPnPTCPPort() { return s_UPnPTCPPort; }
 	static void SetUPnPTCPPort(uint16 val) { s_UPnPTCPPort = val; }
-	// Runtime capability (not persisted): whether the connected daemon is built with UPnP,
-	// advertised over EC. False by default, so a pre-3.1 daemon (which never sends the tag) keeps
-	// the P2P-UPnP controls greyed rather than showing a dead toggle.
+	// Runtime capabilities (not persisted) advertised by the connected daemon over EC.
+	// An absent PCP tag means unsupported, preserving behavior with older daemons.
 	static bool GetUPnPAvailable() { return s_UPnPAvailable; }
 	static void SetUPnPAvailable(bool val) { s_UPnPAvailable = val; }
+	static bool GetPCPAvailable() { return s_PCPAvailable; }
+	static void SetPCPAvailable(bool val) { s_PCPAvailable = val; }
+	static bool CanForwardPorts() { return s_UPnPAvailable || s_PCPAvailable; }
 	static bool IsManualHighPrio() { return s_bmanualhighprio; }
 	static void SetManualHighPrio(bool val) { s_bmanualhighprio = val; }
 	void LoadCats();
@@ -1078,6 +1080,7 @@ protected:
 	static bool s_UPnPECEnabled;
 	static uint16 s_UPnPTCPPort;
 	static bool s_UPnPAvailable;
+	static bool s_PCPAvailable;
 
 	////////////// PROXY
 	static CProxyData s_ProxyData;

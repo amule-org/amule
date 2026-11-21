@@ -83,6 +83,8 @@
 #include "IPv6ReachabilityProof.h"  // Needed for clearing inbound proof on address changes
 #include "IPv6ChangeNotification.h" // Needed for ShouldMarkIPv6ChangeNotification
 #include "IPv6PinholePolicy.h"      // Needed for pinhole request and renewal policy
+#include "PCPApplicationPolicy.h"   // Needed for PCP target gating
+#include "PCPManager.h"             // Needed for PCP gateway mapping lifecycle
 #endif
 #include "HashListFile.h"
 #include "ClientCreditsList.h"    // Needed for CClientCreditsList
@@ -293,6 +295,10 @@ CamuleApp::CamuleApp()
 
 CamuleApp::~CamuleApp()
 {
+#ifdef ENABLE_IPV6
+	delete m_pcpManager;
+	m_pcpManager = nullptr;
+#endif
 	// Headless GeoIP resolver (owned by the core; NULL when GeoIP is
 	// disabled/unsupported). Frees the mmap'd MaxMind DB handle.
 	delete m_IP2Country;
@@ -1763,6 +1769,13 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 		*msg << "*** Client UDP socket (extended eMule) disabled on preferences";
 	}
 
+#ifdef ENABLE_IPV6
+	// ReinitializeNetwork runs after the daemon fork; the manager owns its worker thread. It
+	// exists before StartUPnP's first pinhole pass, so that pass asks PCP first.
+	if (!m_pcpManager) {
+		m_pcpManager = new pcp::PCPManager();
+	}
+#endif
 #ifdef ENABLE_UPNP
 	StartUPnP();
 #endif
@@ -1772,10 +1785,8 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 	// where a changed bind address or a first-run wizard can leave us on a different
 	// interface entirely.
 	RefreshLocalPublicIPv6Addresses();
-#ifdef ENABLE_UPNP
 	// After the refresh: the pinhole names the address it chooses.
 	RequestIPv6Pinholes();
-#endif
 
 	return ok;
 }
@@ -1926,13 +1937,11 @@ bool CamuleApp::RebindP2PSockets(bool tcpPortChanged, bool udpPortChanged, uint1
 			if (!changedMappings.empty()) {
 				m_upnp->AddPortMappings(changedMappings);
 			}
-			if (tcpPortChanged) {
-				// The renewal pass moves the pinhole to the port we now listen on.
-				RequestIPv6Pinholes();
-			}
 		}
 	}
 #endif
+	// Moves the pinhole to the port we now listen on, whichever protocol owns it.
+	RequestIPv6Pinholes();
 
 	AddLogLineC(_("P2P listening sockets rebound; established peer connections "
 		      "were kept."));
@@ -2428,41 +2437,97 @@ private:
 };
 #endif
 
-#ifdef ENABLE_UPNP
 void CamuleApp::RequestIPv6Pinholes()
 {
 #ifdef ENABLE_IPV6
-	if (m_upnp == nullptr || !thePrefs::GetUPnPEnabled()) {
-		return;
-	}
 	// The same condition the advertising decision uses: without a listener on [::] there is nothing
 	// for an inbound connection to reach.
-	const bool listenerTakesIPv6 = listensocket != nullptr && listensocket->BoundHost() == "[::]";
+	const bool listening = listensocket != nullptr && listensocket->BoundHost() == "[::]";
 	const std::optional<CNetworkAddress> local = SelectedLocalIPv6();
-	// A pinhole names a host, so it needs the address rather than a wildcard. Without one, the
-	// empty target drops the pinhole.
+	std::optional<boost::asio::ip::address_v6> address;
+	// Built straight from the stored octets: a text round-trip through make_address_v6 adds
+	// nothing but an error path.
+	if (local && local->IsIPv6()) {
+		address = boost::asio::ip::address_v6(local->GetOctets());
+	}
+	// A pinhole names a host, so it needs the address rather than a wildcard.
 	// TCP only: aMule's UDP sockets are IPv4-only today, so a UDP pinhole would open a port where
 	// nothing of ours listens over IPv6 and expose whatever else binds there. They come back when
 	// IPv6 UDP does.
-	const std::string client = ShouldRequestIPv6Pinhole(true, listenerTakesIPv6) && local.has_value()
-					   ? local->ToString()
-					   : std::string();
-	m_upnp->SetIPv6PinholeTarget(client, thePrefs::GetPort(), kIPv6PinholeLeaseSeconds);
-	// A pinhole that opened after the server's dial-back failed is of no use until it dials again.
-	const unsigned int openings = m_upnp->IPv6PinholeOpenings();
-	if (openings != m_IPv6PinholeOpeningsSeen) {
-		m_IPv6PinholeOpeningsSeen = openings;
+	const auto target =
+		pcp::ApplicationTarget(thePrefs::GetUPnPEnabled(), listening, address, thePrefs::GetPort());
+
+	// One owner per pinhole, decided here only: gateways such as miniupnpd keep one entry for
+	// both protocols and refuse the protocol that did not create it.
+	pcp::PinholeOwners owners;
+	if (m_pcpManager) {
+		const pcp::LeaseSnapshot lease = m_pcpManager->LeaseState();
+		owners.pcpLease = lease.active;
+		owners.pcpFailed = lease.failed;
+	} else {
+		owners.pcpFailed = true;
+	}
+#ifdef ENABLE_UPNP
+	const bool igd2 = m_upnp != nullptr && thePrefs::GetUPnPEnabled();
+	owners.igd2Available = igd2;
+	owners.igd2Holds = igd2 && m_upnp->HoldsIPv6Pinhole();
+#endif
+	const pcp::PinholeRoute route = pcp::DecidePinholeRoute(target.has_value(), owners);
+
+	// A pinhole that opened after the server's dial-back failed is of no use until it dials again,
+	// whichever protocol opened it.
+	const auto notePinholeOpened = [this] {
 		if (serverconnect) {
 			serverconnect->NoteIPv6PinholeOpened();
 			AdvertisedIPv6ForPeers();
 		}
+	};
+	if (owners.pcpLease && !m_pcpLeaseSeen) {
+		notePinholeOpened();
+	}
+	m_pcpLeaseSeen = owners.pcpLease;
+
+	if (m_pcpManager) {
+		switch (route) {
+		case pcp::PinholeRoute::Close:
+			m_pcpManager->ClearTarget();
+			break;
+		case pcp::PinholeRoute::IGD2:
+			m_pcpManager->StandBy();
+			break;
+		case pcp::PinholeRoute::PCP:
+		case pcp::PinholeRoute::IGD2Fallback:
+			m_pcpManager->SetTarget(*target, thePrefs::GetPort());
+			break;
+		}
+	}
+
+#ifdef ENABLE_UPNP
+	if (!igd2) {
+		return;
+	}
+	std::string client;
+	if (route == pcp::PinholeRoute::PCP) {
+		// A handover is not a close: DeletePinhole would remove a shared PCP entry too.
+		m_upnp->ReleaseIPv6Pinholes();
+	} else {
+		if (route != pcp::PinholeRoute::Close) {
+			client = local->ToString();
+		}
+		// An empty target closes the IGD2 pinhole.
+		m_upnp->SetIPv6PinholeTarget(client, thePrefs::GetPort(), kIPv6PinholeLeaseSeconds);
+	}
+	const unsigned int openings = m_upnp->IPv6PinholeOpenings();
+	if (openings != m_IPv6PinholeOpeningsSeen) {
+		m_IPv6PinholeOpeningsSeen = openings;
+		notePinholeOpened();
 	}
 	// Queued, not run: the pass sends SOAP and holds the service map mutex, and a slow gateway must
 	// not stall the main loop.
 	CThreadScheduler::AddTaskIfNoneOfType(new CIPv6PinholeRenewalTask(m_upnp, client));
 #endif
-}
 #endif
+}
 
 void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 {
@@ -2477,9 +2542,7 @@ void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 	static uint64 msPrevPinhole;
 	if (msCur - msPrevPinhole >= 30000) {
 		msPrevPinhole = msCur;
-#ifdef ENABLE_UPNP
 		RequestIPv6Pinholes();
-#endif
 	}
 
 	if (!IsRunning()) {
@@ -3245,6 +3308,13 @@ void CamuleApp::ShutDown()
 
 	ReportShutdownStatus(_("Stopping network services..."));
 
+#ifdef ENABLE_IPV6
+	if (m_pcpManager) {
+		m_pcpManager->Stop();
+		delete m_pcpManager;
+		m_pcpManager = nullptr;
+	}
+#endif
 	// Stop ASIO thread
 	m_AsioService->Stop();
 

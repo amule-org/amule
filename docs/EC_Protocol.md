@@ -19,6 +19,15 @@ is a good start).
 The EC protocol consists of two layers: a low-level **transmission
 layer**, and a high-level **application layer**.
 
+### General preference forwarding capabilities
+
+`EC_TAG_GENERAL_UPNP_AVAILABLE` reports UPnP support only. Newer daemons
+also send optional `EC_TAG_GENERAL_PCP_AVAILABLE` (`0x120a`), a boolean
+indicating IPv6 PCP forwarding support. Clients should keep UPnP-specific
+controls gated on the UPnP tag, and may enable a generic automatic
+forwarding preference when either capability is true. Older daemons omit
+the PCP tag; clients must interpret absence as unsupported and retain the
+legacy UPnP capability behavior.
 
 ### Section 1.1 — Transmission layer
 

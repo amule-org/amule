@@ -23,8 +23,9 @@
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301, USA
 //
 
-#include <ec/cpp/ECTag.h>         // Needed for CECTag
-#include <ec/cpp/ECSpecialTags.h> // Needed for special EC tag creator classes
+#include <ec/cpp/ECTag.h>                    // Needed for CECTag
+#include <ec/cpp/ECSpecialTags.h>            // Needed for special EC tag creator classes
+#include <ec/cpp/ECForwardingCapabilities.h> // Needed for forwarding capability emit/apply
 
 #include "config.h" // Needed for ENABLE_VERSION_CHECK
 #include "Logger.h" // for AddLogLineC on the refusal paths
@@ -232,15 +233,12 @@ CEC_Prefs_Packet::CEC_Prefs_Packet(
 		const bool versionCheckAvailable = false;
 #endif
 		user_prefs.AddTag(CECTag(EC_TAG_GENERAL_VERSION_CHECK_AVAILABLE, versionCheckAvailable));
-		// Capability signal: whether this build can do UPnP port forwarding (ENABLE_UPNP).
-		// The remote GUI greys the P2P-UPnP controls when the core cannot forward, instead
-		// of offering a dead toggle.
-#ifdef ENABLE_UPNP
-		const bool upnpAvailable = true;
-#else
-		const bool upnpAvailable = false;
-#endif
-		user_prefs.AddTag(CECTag(EC_TAG_GENERAL_UPNP_AVAILABLE, upnpAvailable));
+		// Capability signals: whether this build can do UPnP port forwarding and IPv6 PCP
+		// forwarding (shared with the test suite in ECForwardingCapabilities.h). Emitted as
+		// bools by every 3.1+ daemon, so a client can tell "compiled out" (false) from an
+		// old daemon predating the tag (absent). Distinct tags keep UPnP-specific controls
+		// separate from the generic forwarding capability.
+		ECForwardingCapabilities::AddCapabilityTags(user_prefs);
 		AddTag(user_prefs);
 	}
 
@@ -801,13 +799,12 @@ bool CEC_Prefs_Packet::Apply(wxArrayString *refusedDirs) const
 		} else {
 			thePrefs::SetVersionCheckAvailable(true);
 		}
-		// A pre-3.1 daemon omits this tag; treat "absent" as no UPnP so the
-		// controls stay disabled rather than dead (only explicit true enables).
-		if (const CECTag *up = thisTab->GetTagByName(EC_TAG_GENERAL_UPNP_AVAILABLE)) {
-			thePrefs::SetUPnPAvailable(up->GetInt() != 0);
-		} else {
-			thePrefs::SetUPnPAvailable(false);
-		}
+		// Forwarding capability of the connected daemon (shared with the test suite in
+		// ECForwardingCapabilities.h). A pre-3.1 daemon omits these tags; absence means
+		// unavailable (only an explicit true enables). UPnP stays a distinct signal so
+		// UPnP-specific controls gate on it alone.
+		ECForwardingCapabilities::ApplyCapabilityTags(
+			*thisTab, thePrefs::SetUPnPAvailable, thePrefs::SetPCPAvailable);
 #endif
 	}
 
