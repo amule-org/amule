@@ -358,7 +358,7 @@ void CServerList::ServerStats()
 			ping_server->SetCryptPingReplyPending(false);
 
 			CPacket *packet = new CPacket(OP_GLOBSERVSTATREQ, 4, OP_EDONKEYPROT);
-			uint32 challenge = 0x55AA0000 + (uint16)rand();
+			uint32 challenge = 0x55AA0000 + GetRandomUint16();
 			ping_server->SetChallenge(challenge);
 			packet->CopyUInt32ToDataBuffer(challenge);
 			ping_server->SetLastPinged(tNow);

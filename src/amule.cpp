@@ -108,6 +108,7 @@
 #include "Preferences.h"                // Needed for CPreferences
 #include "PublicIPAnswerPolicy.h"       // Needed for PublicIPAnswerVotes
 #include "PublicIPv6Corroboration.h"    // Needed for ObservedPublicIPv6
+#include "RandomFunctions.h"            // Needed for GetRandomUint16
 #include "SearchList.h"                 // Needed for CSearchList
 #include "SharedFileList.h"             // Needed for ClearKadSourcePublishInfo
 #include "Server.h"                     // Needed for GetListName
@@ -1653,7 +1654,7 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 		// Select a random usable port in the range 1025 ... 2^16 - 1
 		uint16 port = thePrefs::ECPort();
 		while (port < 1024 || port == thePrefs::GetPort()) {
-			port = (uint16)rand();
+			port = GetRandomUint16();
 		}
 		thePrefs::SetECPort(port);
 
@@ -1674,7 +1675,7 @@ bool CamuleApp::ReinitializeNetwork(wxString *msg)
 		// Select a random usable value in the range 1025 ... 2^16 - 1
 		uint16 port = thePrefs::GetUDPPort();
 		while (port < 1024 || port == thePrefs::GetPort() + 3) {
-			port = (uint16)rand();
+			port = GetRandomUint16();
 		}
 		thePrefs::SetUDPPort(port);
 

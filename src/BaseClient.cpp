@@ -101,9 +101,10 @@
 #include "UtpDialPolicy.h" // Needed for file-request recovery after a uTP socket swap
 #endif
 #include "Logger.h"
-#include "DataToText.h" // Needed for GetSoftName()
-#include "GuiEvents.h"  // Needed for Notify_
-#include "ServerList.h" // For CServerList
+#include "DataToText.h"      // Needed for GetSoftName()
+#include "GuiEvents.h"       // Needed for Notify_
+#include "ServerList.h"      // For CServerList
+#include "RandomFunctions.h" // Needed for GetRandomUint32
 
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Prefs.h"
@@ -3821,8 +3822,11 @@ void CUpDownClient::SendSecIdentStatePacket()
 		AddDebugLogLineN(logClient, "Not sending SecIdentState Packet, because State is Zero");
 		return;
 	}
-	// crypt: send random data to sign
-	uint32 dwRandom = rand() + 1;
+	// crypt: send random data to sign. 0 means no challenge.
+	uint32 dwRandom = GetRandomUint32();
+	if (dwRandom == 0) {
+		dwRandom = 1;
+	}
 	credits->m_dwCryptRndChallengeFor = dwRandom;
 
 	CMemFile data;
