@@ -15,7 +15,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-20 09:13+0000\n"
+"PO-Revision-Date: 2026-11-21 09:21+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/amule-application/ru/>\n"
 "Language: ru\n"
@@ -2125,7 +2125,7 @@ msgstr "наш сервер"
 
 #: src/DataToText.cpp
 msgid "the Kad buddy"
-msgstr "партнёр Kad"
+msgstr "друг Kad"
 
 #: src/DataToText.cpp
 msgid "the source's own server"
@@ -2168,7 +2168,7 @@ msgstr "Обратный вызов сервера"
 
 #: src/DataToText.cpp
 msgid "Kad buddy callback"
-msgstr "Обратный вызов партнёра Kad"
+msgstr "Обратный вызов друга Kad"
 
 #: src/DataToText.cpp
 msgid "Direct UDP callback"
@@ -2192,7 +2192,7 @@ msgstr "Отвеченный обратный вызов сервера"
 
 #: src/DataToText.cpp
 msgid "Answered Kad buddy callback"
-msgstr "Отвеченный обратный вызов партнёра Kad"
+msgstr "Отвеченный обратный вызов друга Kad"
 
 #: src/DataToText.cpp
 msgid "Answered direct UDP callback"
@@ -3938,14 +3938,12 @@ msgid "UDP firewall check"
 msgstr "Проверка UDP-фаервола"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Publish buddy pointer"
-msgstr "Публикация заметок"
+msgstr "Опубликовать указатель друга"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find buddy pointer"
-msgstr "Публикация заметок"
+msgstr "Найти указатель друга"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
@@ -5910,7 +5908,7 @@ msgstr "Одновременные запросы источников Kad"
 
 #: src/muuli_wdr.cpp
 msgid "Firewalled Kad nodes served as buddy"
-msgstr "Узлы Kad за брандмауэром, обслуживаемые как партнёры"
+msgstr "Узлы Kad за брандмауэром, обслуживаемые как друзья"
 
 #: src/muuli_wdr.cpp
 msgid "How many firewalled Kad nodes this node relays callbacks for. Each one holds a connection, so at most a tenth of the connection limit is served."
@@ -8625,7 +8623,7 @@ msgstr "Соединяем с другом на %s"
 
 #: src/ServerWnd.cpp
 msgid "Served buddies:"
-msgstr "Обслужено партнёров:"
+msgstr "Обслужено друзей:"
 
 #: src/ServerWnd.cpp
 #, c-format

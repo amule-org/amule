@@ -1085,5 +1085,21 @@
   "downloads_peer_route_kad_buddy": "o amigo do Kad",
   "downloads_peer_route_foreign_nat_callback": "o próprio servidor da fonte",
   "downloads_peer_route_server_hole_punch": "um hole punch via servidor",
-  "downloads_peer_route_lugdunum_callback": "um callback Lugdunum"
+  "downloads_peer_route_lugdunum_callback": "um callback Lugdunum",
+  "downloads_peer_col_connection": "Conexão",
+  "client_detail_connection": "Conexão",
+  "downloads_peer_state_waiting_to_ask": "Esperando para perguntar ({time})",
+  "downloads_peer_conn_dial": "Direta",
+  "downloads_peer_conn_inbound": "Recebida",
+  "downloads_peer_conn_server_callback": "Callback do servidor",
+  "downloads_peer_conn_kad_buddy_callback": "Callback do amigo do Kad",
+  "downloads_peer_conn_direct_udp_callback": "Callback UDP direto",
+  "downloads_peer_conn_foreign_nat_callback": "Callback pelo servidor da fonte",
+  "downloads_peer_conn_server_hole_punch": "Hole punch via servidor",
+  "downloads_peer_conn_lugdunum_callback": "Callback Lugdunum",
+  "downloads_peer_conn_answered_server_callback": "Callback do servidor atendido",
+  "downloads_peer_conn_answered_kad_buddy_callback": "Callback do amigo do Kad atendido",
+  "downloads_peer_conn_answered_direct_udp_callback": "Callback UDP direto atendido",
+  "downloads_peer_conn_answered_lugdunum_callback": "Callback Lugdunum atendido",
+  "downloads_peer_conn_proxy": "proxy"
 }

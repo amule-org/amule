@@ -22,7 +22,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-20 10:33+0000\n"
+"PO-Revision-Date: 2026-11-21 09:21+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -3926,9 +3926,8 @@ msgid "Publish buddy pointer"
 msgstr "Pubblicazione puntatore amico"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find buddy pointer"
-msgstr "Pubblicazione puntatore amico"
+msgstr "Ricerca puntatore amico"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
