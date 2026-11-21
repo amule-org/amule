@@ -43,7 +43,7 @@
 #define KADEMLIAREPUBLISHTIMEK HR2S(24)   // 24 hours
 #define KADEMLIADISCONNECTDELAY MIN2S(20) // 20 mins
 #define KADEMLIAMAXINDEX 50000            // Total keyword indexes.
-#define KADEMLIAMAXENTRIES 60000          // Total keyword entries.
+#define KADEMLIAMAXENTRIES 200000         // Total keyword entries, ~1.7 KB of RAM each.
 #define KADEMLIAMAXSOURCEPERFILE 1000     // Max number of sources per file in index.
 #define KADEMLIAMAXNOTESPERFILE 150       // Max number of notes per entry in index.
 #define KADEMLIAMAXSOURCES 100000         // Total source entries in index (~820 bytes each).
