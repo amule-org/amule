@@ -77,6 +77,9 @@ fi
 _assert_json_eq '[.nodes[] | select(.key == "diagnostics") | .children[] | select(.key == "source_routes") | .children[].key] | join(" ")' \
 	'source_routes_next_route source_routes_fallback_server_route source_routes_fallback_ipv4 source_routes_fallback_ipv6 source_routes_chain_restored source_routes_reached_after_failure source_routes_merge_took_route source_routes_merge_kept_fallback source_routes_origin_gained source_routes_other_host_refused source_routes_other_host_kept_apart' \
 	'/stats/tree lists the source route diagnostics'
+_assert_json_eq '[.nodes[] | select(.key == "diagnostics") | .children[] | select(.key == "kad_pointer") | .children[].key] | join(" ")' \
+	'kad_pointer_reachable kad_pointer_reachable_share kad_pointer_lookups kad_pointer_lookups_found kad_pointer_lookups_missed kad_pointer_lookups_busy kad_pointer_sources_reached' \
+	'/stats/tree lists the Kad buddy pointer diagnostics'
 _assert_json_eq '[.. | objects | select(.key? == "source_routes_next_route") | .values[0].type] | .[0]' \
 	integer '/stats/tree source route counters are integers'
 _assert_json_eq '[.. | objects | select(.key? == "publishing_kad") | .children[].key] | join(" ")' \

@@ -108,6 +108,70 @@ TEST(KadPublishPolicy, AFirewalledNodeWithNoRouteBackPublishesNothing)
 	ASSERT_TRUE(DecideKadSourcePublish(facts) == EKadSourcePublish::None);
 }
 
+// #2513: with no buddy and no IPv6, type 7 with the pointer route keeps our records reachable.
+TEST(KadPublishPolicy, AFirewalledNodeWithOnlyThePointerPublishesTypeSeven)
+{
+	SKadPublishFacts facts = Firewalled();
+	facts.pointerEnabled = true;
+	ASSERT_TRUE(DecideKadSourcePublish(facts) == EKadSourcePublish::PointerOnly);
+	ASSERT_EQUALS(7, KadSourceTypeFor(EKadSourcePublish::PointerOnly, false));
+	ASSERT_EQUALS(7, KadSourceTypeFor(EKadSourcePublish::PointerOnly, true));
+	ASSERT_TRUE(PublishesToKad(facts));
+
+	// A buddy or an IPv6 route comes first.
+	facts.advertisesIPv6 = true;
+	ASSERT_TRUE(DecideKadSourcePublish(facts) == EKadSourcePublish::IPv6Only);
+	facts.hasBuddy = true;
+	ASSERT_TRUE(DecideKadSourcePublish(facts) == EKadSourcePublish::Buddy);
+}
+
+// The pointer alone keeps source records live; it gives no reason to publish keywords and notes.
+TEST(KadPublishPolicy, ThePointerAlonePublishesNoKeywords)
+{
+	SKadPublishFacts pointer = Firewalled();
+	pointer.pointerEnabled = true;
+	ASSERT_FALSE(PublishesKadKeywords(pointer));
+	ASSERT_FALSE(PublishesKadKeywords(Firewalled()));
+
+	SKadPublishFacts ipv6 = Firewalled();
+	ipv6.advertisesIPv6 = true;
+	ASSERT_TRUE(PublishesKadKeywords(ipv6));
+	SKadPublishFacts buddy = Firewalled();
+	buddy.hasBuddy = true;
+	ASSERT_TRUE(PublishesKadKeywords(buddy));
+}
+
+TEST(KadPublishPolicy, TypeSevenCarriesThePointerRouteWhenEnabled)
+{
+	ASSERT_TRUE(Type7CarriesKadPointer(EKadSourcePublish::PointerOnly, true));
+	ASSERT_TRUE(Type7CarriesKadPointer(EKadSourcePublish::IPv6Only, true));
+	ASSERT_FALSE(Type7CarriesKadPointer(EKadSourcePublish::IPv6Only, false));
+	ASSERT_FALSE(Type7CarriesKadPointer(EKadSourcePublish::Buddy, true));
+}
+
+// Type 7 only fills: an entry with the marker still leads to us through the pointer.
+TEST(KadPublishPolicy, TypeSevenLeavesALiveMarkedEntryAlone)
+{
+	const uint32_t now = 100000;
+	const uint32_t lifetime = 18000;
+	ASSERT_FALSE(IsKadSourceFillDue(now - 60, true, now, lifetime));
+	ASSERT_TRUE(IsKadSourceFillDue(now - 60, false, now, lifetime));      // Published without it.
+	ASSERT_TRUE(IsKadSourceFillDue(now - lifetime, true, now, lifetime)); // Expired.
+	ASSERT_TRUE(IsKadSourceFillDue(0, false, now, lifetime));             // Never published.
+	ASSERT_TRUE(IsKadSourceFillDue(now + 60, true, now, lifetime));       // Clock stepped back.
+}
+
+TEST(KadPublishPolicy, AnAcknowledgementLivesLessThanItsLifetime)
+{
+	const uint32_t now = 1000000;
+	const uint32_t lifetime = 5 * 3600;
+	ASSERT_TRUE(IsKadAckLive(now, now, lifetime));
+	ASSERT_TRUE(IsKadAckLive(now - lifetime + 1, now, lifetime));
+	ASSERT_FALSE(IsKadAckLive(now - lifetime, now, lifetime)); // Expired.
+	ASSERT_FALSE(IsKadAckLive(0, now, lifetime));              // None.
+	ASSERT_FALSE(IsKadAckLive(now + 60, now, lifetime));       // Clock stepped back.
+}
+
 TEST(KadPublishPolicy, ALookupAnswerFillsTheMissingKeyOfAContactTheSearchOwns)
 {
 	ASSERT_TRUE(KeepsLookupResponderKey(true, 6, 0, 0x1234));

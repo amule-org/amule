@@ -43,6 +43,7 @@
 #endif
 
 #include "Constants.h"             // Needed for PS_*, PR_*
+#include "KadPublishPolicy.h"      // Needed for EKadSourcePublish
 #include "ClientRef.h"             // Needed for CClientRef
 #include "VerifyLocalDataResult.h" // Needed for CVerifyLocalDataResult
 
@@ -383,22 +384,32 @@ public:
 	}
 	// Another unused function, useful for the shared files control column
 	uint32 GetLastPublishBuddy() const { return m_lastBuddyIP; }
-	// The last source publish that some node acknowledged, and the buddy it named.
-	void SetKadSourceAck(uint32 time, uint32 nodes)
+	// The last source publish that some node acknowledged, the buddy it named, and whether a node
+	// that acknowledged it got the pointer route (#2513). Neither is saved: a restart forgets them.
+	void SetKadSourceAck(uint32 time, uint32 nodes, bool marked)
 	{
 		m_kadSrcAckTime = time;
 		m_kadSrcAckNodes = nodes;
 		m_kadSrcAckBuddyIP = m_lastBuddyIP;
 		m_kadSrcAckBuddyPort = m_lastBuddyPort;
+		m_kadSrcAckMarked = marked;
 	}
 	uint32 GetKadSourceAckTime() const { return m_kadSrcAckTime; }
 	uint32 GetKadSourceAckNodes() const { return m_kadSrcAckNodes; }
 	uint32 GetKadSourceAckBuddyIP() const { return m_kadSrcAckBuddyIP; }
 	uint16 GetKadSourceAckBuddyPort() const { return m_kadSrcAckBuddyPort; }
+	bool IsKadSourceAckMarked() const { return m_kadSrcAckMarked; }
 	void SetLastPublishTimeKadNotes(uint32 time) { m_lastPublishTimeKadNotes = time; }
 	uint32 GetLastPublishTimeKadNotes() const { return m_lastPublishTimeKadNotes; }
 
-	bool PublishSrc();
+	// Whether our source entry is due now; then, unless it waits for the files that lead nowhere,
+	// records it as published. `pointerLive`: our pointer names our current buddy.
+	bool PublishSrc(bool pointerLive = false, uint64 unreachedDue = 0);
+	// Whether a source publish through this route is due now, the publish order aside.
+	bool IsKadSourcePublishDue(
+		EKadSourcePublish mode, uint32 buddyIP, uint16 buddyPort, uint32 now) const;
+	// Whether our live entry for this file leads to us through the pointer (#2513).
+	bool IsKadSourceReachableByPointer(bool pointerLive, uint32 now) const;
 	bool PublishNotes();
 
 	// Nonzero when this file has verified media metadata attached, probed by MediaProbe at
@@ -530,6 +541,7 @@ protected:
 	uint32 m_kadSrcAckNodes = 0;
 	uint32 m_kadSrcAckBuddyIP = 0;
 	uint16 m_kadSrcAckBuddyPort = 0;
+	bool m_kadSrcAckMarked = false;
 
 	uint32 m_lastSeen;
 

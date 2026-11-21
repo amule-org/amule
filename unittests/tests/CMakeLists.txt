@@ -3376,6 +3376,15 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			set_tests_properties (KadBuddyPointerResolveIntegrationTest-${pointer}
 				PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
 		endforeach ()
+		foreach (record IN ITEMS pointer ip6 plain)
+			add_test (NAME KadBuddyPointerType7IntegrationTest-${record}
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/KadBuddyPointerType7IntegrationTest.py
+					$<TARGET_FILE:amuled> ${record}
+			)
+			set_tests_properties (KadBuddyPointerType7IntegrationTest-${record}
+				PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
+		endforeach ()
 		add_test (NAME KadBuddyLifecycleIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadBuddyLifecycleIntegrationTest.py $<TARGET_FILE:amuled>

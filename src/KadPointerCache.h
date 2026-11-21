@@ -39,10 +39,19 @@
 constexpr unsigned KAD_POINTER_MAX_BUDDIES = 3;
 //! How long a pointer lookup runs (SEARCHFILE_LIFETIME).
 constexpr uint32_t KAD_POINTER_LOOKUP_SECONDS = 45;
+//! Reasks in a row a source whose pointer gave no buddy is kept for: about an hour by default, the
+//! median time a LowID spent without a buddy in our logs.
+constexpr unsigned KAD_POINTER_MAX_MISSES = 4;
 //! How long a lookup that found a pointer is reused.
 constexpr uint32_t KAD_POINTER_HIT_SECONDS = 3600;
 //! Pointer lookups run at once at most, as eMuleQt does (§5.6.1).
 constexpr unsigned KAD_POINTER_MAX_RUNNING = 5;
+
+//! Whether a source whose pointer gave no buddy `misses` times in a row is kept for another try.
+inline bool ShouldRetryKadPointer(unsigned misses) noexcept
+{
+	return misses < KAD_POINTER_MAX_MISSES;
+}
 
 //! A buddy a pointer names. The ID is in the layout the source's other records give it.
 struct SKadPointerBuddy
@@ -131,7 +140,7 @@ public:
 	/**
 	 * The next step for a source at `next` in the buddy list, skipping the buddy it just asked.
 	 * A source gets each buddy once a round; once the lookup ended and the list is used up, it is
-	 * Exhausted until the entry expires.
+	 * Exhausted until the entry expires, or Spent() ends a hit whose buddies all failed.
 	 */
 	SKadPointerNext Next(
 		const Key &key, unsigned next, uint32_t askedIP, uint16_t askedPort, uint32_t now) const
@@ -194,6 +203,8 @@ public:
 
 	struct SOutcome
 	{
+		//! A lookup for this key was running.
+		bool ran = false;
 		bool found = false;
 		unsigned buddies = 0;
 		unsigned accepted = 0;
@@ -210,12 +221,30 @@ public:
 		}
 		SEntry &entry = it->second;
 		entry.running = false;
+		outcome.ran = true;
 		outcome.found = !entry.buddies.empty();
 		entry.expires = now + (outcome.found ? KAD_POINTER_HIT_SECONDS : missSeconds);
 		outcome.buddies = static_cast<unsigned>(entry.buddies.size());
 		outcome.accepted = entry.accepted;
 		outcome.refused = entry.refused;
 		return outcome;
+	}
+
+	/**
+	 * A source asked every buddy a found pointer names and none passed on its callback: the
+	 * pointer is stale, as when the publisher has a new buddy and pointer since. The hit ends now,
+	 * so the source's next reask (and any other copy of it) looks the pointer up again instead of
+	 * asking the same buddies until the hour is over. Returns whether a hit was ended.
+	 */
+	bool Spent(const Key &key, uint32_t now)
+	{
+		const auto it = m_entries.find(key);
+		if (it == m_entries.end() || it->second.running || it->second.buddies.empty() ||
+			now >= it->second.expires) {
+			return false;
+		}
+		it->second.expires = now;
+		return true;
 	}
 
 	//! Drops what has expired.
