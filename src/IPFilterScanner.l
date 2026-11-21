@@ -124,6 +124,16 @@ static bool ScanInt(const char * buf, uint32 & a)
 	return true;
 }
 
+// The rules restrict the literal alphabet, so no scope, brackets or dotted tail reach here.
+static bool ScanIPv6(const char *text, CNetworkAddress &address)
+{
+	address = CNetworkAddress::FromString(text);
+	return address.IsIPv6() && !address.IsIPv4Mapped();
+}
+
+// eMule's level for a line that has none (DFLT_FILTER_LEVEL).
+static const uint32 kDefaultFilterLevel = 100;
+
 %}
 
 %option noyywrap
@@ -145,8 +155,8 @@ WS		[ \t\r]*
 		*slash = 0;
 		char *acc = strchr(slash + 1, ',') + 1;
 		char *dsc = strchr(acc, ',') + 1;
-		CNetworkAddress parsed = CNetworkAddress::FromString(address);
-		if (!parsed.IsIPv6() || parsed.IsIPv4Mapped() ||
+		CNetworkAddress parsed;
+		if (!ScanIPv6(address, parsed) ||
 			!ScanInt(slash + 1, IPv6Prefix) || IPv6Prefix > 128 ||
 			!ScanInt(acc, IPLevel)) {
 			yyip_Bad++;
@@ -154,6 +164,42 @@ WS		[ \t\r]*
 			IPv6Network = parsed.TruncatedToPrefix(IPv6Prefix);
 			IPDescription = dsc;
 			return 2;
+		}
+	}
+
+^{WS}[0-9a-fA-F:]+"/"{NO}{WS} {
+		/* Bare native IPv6 CIDR, as eMuleQt accepts it: <address>/<prefix>. A line with
+		   anything after it is longer, so the bad-line rule takes it instead. */
+		char *address = yytext + strspn(yytext, " \t\r");
+		char *slash = strchr(address, '/');
+		*slash = 0;
+		CNetworkAddress parsed;
+		if (!ScanIPv6(address, parsed) || !ScanInt(slash + 1, IPv6Prefix) || IPv6Prefix > 128) {
+			yyip_Bad++;
+		} else {
+			IPv6Network = parsed.TruncatedToPrefix(IPv6Prefix);
+			IPLevel = kDefaultFilterLevel;
+			IPDescription = yytext + yyleng;
+			return 2;
+		}
+	}
+
+^{WS}[0-9a-fA-F:]+{WS}-{WS}[0-9a-fA-F:]+{WS},{WS}{NO}{WS},.* {
+		/* Native IPv6 range, as eMuleQt writes it: <first> - <last> , <level> , <description>.
+		   Pointers are taken before the terminators are written. */
+		char *first = yytext + strspn(yytext, " \t\r");
+		char *dash = strchr(first, '-');
+		char *last = dash + 1 + strspn(dash + 1, " \t\r");
+		char *acc = strchr(last, ',') + 1;
+		char *dsc = strchr(acc, ',') + 1;
+		first[strcspn(first, " \t\r-")] = 0;
+		last[strcspn(last, " \t\r,")] = 0;
+		if (!ScanIPv6(first, IPv6Network) || !ScanIPv6(last, IPv6Last) ||
+			IPv6Last.GetOctets() < IPv6Network.GetOctets() || !ScanInt(acc, IPLevel)) {
+			yyip_Bad++;
+		} else {
+			IPDescription = dsc;
+			return 3;
 		}
 	}
 

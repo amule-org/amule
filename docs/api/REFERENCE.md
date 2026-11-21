@@ -2833,14 +2833,20 @@ Those lines are gettext-translated at the daemon's locale and carry no correlati
 
 #### On-disk IPv6 filter entries
 
-Both `ipfilter.dat` and `ipfilter_static.dat` also accept native IPv6 CIDRs:
+Both `ipfilter.dat` and `ipfilter_static.dat` also accept native IPv6 rules in three forms:
 
 ```text
 2001:db8::/32,100,Example network
 2001:db8::1/128,0,Single address
+2001:db8::5 - 2001:db8::1:2 , 0 , Example range
+2001:db8:1::/48
 ```
 
-The syntax is `address/prefix,level,description`: an unbracketed IPv6 literal, a prefix length from `0` through `128`, and a level from `0` through `255`. Host bits are cleared. Scope suffixes, IPv4-mapped literals and dotted IPv4 tails are not accepted. Descriptions may contain commas and colons. PeerGuardian lines keep their syntax. An AntiP2P line is rejected whole when anything other than whitespace follows its end address.
+- `address/prefix,level,description` is a CIDR with a level and a description.
+- `first - last , level , description` is an inclusive range, the form eMuleQt saves. The last address must not be below the first.
+- A bare `address/prefix` gets level `100`, eMule's level for a line without one, and no description.
+
+In every form an address is an unbracketed IPv6 literal, a prefix length is `0` through `128` and a level is `0` through `255`. Host bits are cleared. Scope suffixes, IPv4-mapped literals and dotted IPv4 tails are not accepted. Descriptions may contain commas and colons. A bare CIDR with anything after it, or a range without its level and description, is a malformed line. PeerGuardian lines keep their syntax. An AntiP2P line is rejected whole when anything other than whitespace follows its end address.
 
 A matching rule blocks only when its level is **below** the configured filter level. When IPv6 rules overlap, the later rule wins, not the longest prefix. `ipfilter_static.dat` loads last, so its rules can exempt addresses with a higher level. A reload replaces IPv4 and IPv6 rules together and keeps the old filter live until loading finishes.
 

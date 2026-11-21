@@ -304,15 +304,21 @@ private:
 #endif
 			CNetworkAddress ipv6Network;
 			uint32 ipv6Prefix = 0;
+			CNetworkAddress ipv6Last;
 			int token;
 			while ((token = yyiplex(IPStart,
 					IPEnd,
 					IPAccessLevel,
 					IPDescription,
 					ipv6Network,
-					ipv6Prefix))) {
+					ipv6Prefix,
+					ipv6Last))) {
 				if (token == 2) {
 					if (m_ipv6Ranges.Append(ipv6Network, ipv6Prefix, IPAccessLevel)) {
+						filtercount++;
+					}
+				} else if (token == 3) {
+					if (m_ipv6Ranges.AppendRange(ipv6Network, ipv6Last, IPAccessLevel)) {
 						filtercount++;
 					}
 				} else {

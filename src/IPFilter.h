@@ -53,14 +53,27 @@ public:
 		return true;
 	}
 
+	bool AddRange(const CNetworkAddress &first, const CNetworkAddress &last, unsigned level)
+	{
+		if (!AppendRange(first, last, level)) {
+			return false;
+		}
+		Resolve();
+		return true;
+	}
+
 private:
 	friend class CIPFilterTask;
+
+	static bool IsRuleAddress(const CNetworkAddress &address)
+	{
+		return address.IsIPv6() && !address.IsIPv4Mapped() && address.GetScopeId() == 0;
+	}
 
 	// Loading appends all files in precedence order before resolving once.
 	bool Append(const CNetworkAddress &address, unsigned bits, unsigned level)
 	{
-		if (!address.IsIPv6() || address.IsIPv4Mapped() || address.GetScopeId() != 0 || bits > 128 ||
-			level > 255) {
+		if (!IsRuleAddress(address) || bits > 128 || level > 255) {
 			return false;
 		}
 		const auto network = address.TruncatedToPrefix(bits);
@@ -69,6 +82,20 @@ private:
 			last[bit / 8] |= static_cast<uint8>(0x80u >> (bit % 8));
 		}
 		m_rules.push_back({ network.GetOctets(), last, network, bits, level });
+		++m_levelCounts[level];
+		m_resolved = false;
+		return true;
+	}
+
+	// A range has no prefix of its own: ::/0 leaves the match to its bounds.
+	bool AppendRange(const CNetworkAddress &first, const CNetworkAddress &last, unsigned level)
+	{
+		if (!IsRuleAddress(first) || !IsRuleAddress(last) || last.GetOctets() < first.GetOctets() ||
+			level > 255) {
+			return false;
+		}
+		m_rules.push_back(
+			{ first.GetOctets(), last.GetOctets(), CNetworkAddress::AnyIPv6(), 0, level });
 		++m_levelCounts[level];
 		m_resolved = false;
 		return true;

@@ -34,14 +34,16 @@
 #include "Types.h"
 #include "NetworkAddress.h"
 
-// Tokens: 0 = EOF, 1 = legacy IPv4 range, 2 = native IPv6 CIDR.
+// Tokens: 0 = EOF, 1 = legacy IPv4 range, 2 = native IPv6 CIDR, 3 = native IPv6 range from
+// IPv6Network to IPv6Last.
 #define YY_DECL \
 	int yyiplex(uint32 &IPStart, \
 		uint32 &IPEnd, \
 		uint32 &IPLevel, \
 		char *&IPDescription, \
 		CNetworkAddress &IPv6Network, \
-		uint32 &IPv6Prefix)
+		uint32 &IPv6Prefix, \
+		CNetworkAddress &IPv6Last)
 YY_DECL;
 void yyiprestart(FILE *new_file);
 
