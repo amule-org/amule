@@ -140,7 +140,7 @@ public:
 	/**
 	 * The next step for a source at `next` in the buddy list, skipping the buddy it just asked.
 	 * A source gets each buddy once a round; once the lookup ended and the list is used up, it is
-	 * Exhausted until the entry expires.
+	 * Exhausted until the entry expires, or Spent() ends a hit whose buddies all failed.
 	 */
 	SKadPointerNext Next(
 		const Key &key, unsigned next, uint32_t askedIP, uint16_t askedPort, uint32_t now) const
@@ -228,6 +228,23 @@ public:
 		outcome.accepted = entry.accepted;
 		outcome.refused = entry.refused;
 		return outcome;
+	}
+
+	/**
+	 * A source asked every buddy a found pointer names and none passed on its callback: the
+	 * pointer is stale, as when the publisher has a new buddy and pointer since. The hit ends now,
+	 * so the source's next reask (and any other copy of it) looks the pointer up again instead of
+	 * asking the same buddies until the hour is over. Returns whether a hit was ended.
+	 */
+	bool Spent(const Key &key, uint32_t now)
+	{
+		const auto it = m_entries.find(key);
+		if (it == m_entries.end() || it->second.running || it->second.buddies.empty() ||
+			now >= it->second.expires) {
+			return false;
+		}
+		it->second.expires = now;
+		return true;
 	}
 
 	//! Drops what has expired.

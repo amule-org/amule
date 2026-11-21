@@ -4720,7 +4720,17 @@ CUpDownClient::EKadPointerFirst CUpDownClient::TakeKadPointerRouteFirst()
 
 bool CUpDownClient::KeepForKadPointerRetry()
 {
-	if (!UsesKadPointerRoute() || !ShouldRetryKadPointer(m_kadPointerMisses)) {
+	if (!UsesKadPointerRoute()) {
+		return false;
+	}
+	// Every buddy the pointer named failed: the next round looks it up again.
+	if (KadPointerLookup::Cache().Spent(
+		    KadPointerLookup::KeyOf(GetUserHash()), static_cast<uint32_t>(time(nullptr)))) {
+		AddDebugLogLineN(logKadBuddy,
+			"No buddy the pointer of source " + GetUserHash().Encode() +
+				" names passed on a callback: its pointer is looked up again");
+	}
+	if (!ShouldRetryKadPointer(m_kadPointerMisses)) {
 		return false;
 	}
 	++m_kadPointerMisses;
