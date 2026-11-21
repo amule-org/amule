@@ -106,14 +106,21 @@ def older_core(api_binary, temp):
                               password='regression') as (_, base, token):
             advanced = http(base, '/preferences', token)[1]['advanced']
             assert advanced['debug_categories_supported'] is False, advanced
-            assert advanced['debug_categories'] == [], advanced
-            assert advanced['debug_categories_enabled'] == [], advanced
+            assert advanced['debug_categories'] is None, advanced
+            assert advanced['debug_categories_enabled'] is None, advanced
+            assert advanced['verbose_logging_logfile_only'] is False, advanced
             for field, value in (('debug_categories_enabled', []),
                                  ('verbose_logging_logfile_only', True)):
                 status, result = http(base, '/preferences', token, 'PATCH', {'advanced': {
                     field: value}})
                 assert status == 409, (field, result)
                 assert result['error']['code'] == 'option_not_supported', result
+            # What they read goes back as a no-op (R9).
+            for field, value in (('debug_categories_enabled', None),
+                                 ('verbose_logging_logfile_only', False)):
+                status, result = http(base, '/preferences', token, 'PATCH', {'advanced': {
+                    field: value}})
+                assert status == 200, (field, result)
             assert not core.writes, 'an unsupported write reached the older core'
         core.shutdown()
 

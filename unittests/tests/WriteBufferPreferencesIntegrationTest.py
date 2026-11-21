@@ -67,7 +67,13 @@ def run(api_binary, supported):
                     assert not core.writes, 'unsupported write reached the legacy daemon'
                 prefs = http(base, '/preferences', token)[1]['advanced']
                 assert prefs['write_buffer_limit_supported'] is supported, prefs
-                assert prefs['write_buffer_limit_mebibytes'] == (128 if supported else 0), prefs
+                assert prefs['write_buffer_limit_mebibytes'] == (128 if supported else None), prefs
+                if not supported:
+                    # The null it reads goes back as a no-op (R9).
+                    status, result = http(base, '/preferences', token, 'PATCH', {'advanced': {
+                        'write_buffer_limit_mebibytes': None}})
+                    assert status == 200, result
+                    assert not core.writes, 'an echoed null reached the legacy daemon'
                 previous_writes = len(core.writes)
                 status, result = http(base, '/preferences', token, 'PATCH', {'advanced': {
                     'max_new_connections_per_5_seconds': 51}})
