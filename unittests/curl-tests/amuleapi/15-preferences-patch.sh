@@ -34,6 +34,7 @@ HELD_PORT_FILE=$(mktemp -t amuleapi_15_preferences_patch_port.XXXXXX)
 PORT_HOLDER_PID=
 # Set while the debug settings are changed, so an early exit restores them.
 DEBUG_RESTORE=
+IPV6_RESTORE=
 _cleanup() {
 	if [ -n "$PORT_HOLDER_PID" ]; then
 		kill "$PORT_HOLDER_PID" 2>/dev/null || true
@@ -43,6 +44,10 @@ _cleanup() {
 	if [ -n "$DEBUG_RESTORE" ]; then
 		curl -s -o /dev/null --max-time 10 -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 			-H "Content-Type: application/json" -d "$DEBUG_RESTORE" "$API/preferences"
+	fi
+	if [ -n "$IPV6_RESTORE" ]; then
+		curl -s -o /dev/null --max-time 10 -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+			-H "Content-Type: application/json" -d "$IPV6_RESTORE" "$API/preferences"
 	fi
 }
 _on_exit _cleanup
@@ -1079,6 +1084,52 @@ _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: applica
 	-d "{\"connection\":{\"download_capacity_kibibytes_per_second\":$SAVED_DLCAP,\"upload_capacity_kibibytes_per_second\":$SAVED_ULCAP}}" \
 	"$API/preferences"
 _assert_status 200 'restored the line capacities'
+
+# --- IPv6 settings: round trip with support, null and 409 without. ---
+_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+_assert_json_eq '(.connection.ipv6_supported|type)' boolean 'connection.ipv6_supported is boolean'
+if [ "$(printf '%s' "$CURL_BODY" | jq -r '.connection.ipv6_supported')" = "true" ]; then
+	_assert_json_eq '.connection.ip_versions | . == "ipv4_only" or . == "ipv4_and_ipv6"' true 'connection.ip_versions is a known value'
+	_assert_json_eq '.connection.ipv6_advertising | . == "when_verified" or . == "always" or . == "never"' true 'connection.ipv6_advertising is a known value'
+	IPV6_RESTORE=$(printf '%s' "$CURL_BODY" | jq -c '{connection:{ip_versions:.connection.ip_versions,ipv6_advertising:.connection.ipv6_advertising}}')
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d '{"connection":{"ip_versions":"ipv4_and_ipv6","ipv6_advertising":"never","ipv6_supported":false}}' \
+		"$API/preferences"
+	_assert_status 200 'PATCH ip_versions + ipv6_advertising (+ ignored ipv6_supported) -> 200'
+	_assert_json_eq '.connection.ip_versions' ipv4_and_ipv6 'ip_versions echoed in the PATCH reply'
+	_assert_json_eq '.connection.ipv6_advertising' never 'ipv6_advertising echoed in the PATCH reply'
+	_assert_json_eq '.connection.ipv6_supported' true 'ipv6_supported read-only (ignored on PATCH)'
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d '{"connection":{"ip_versions":"ipv4_only","ipv6_advertising":"always"}}' "$API/preferences"
+	_assert_status 200 'PATCH ip_versions=ipv4_only + ipv6_advertising=always -> 200'
+	_curl -H "Authorization: Bearer $ADMIN_TOKEN" "$API/preferences"
+	_assert_json_eq '.connection.ip_versions' ipv4_only 'ip_versions persisted (no stale GET)'
+	_assert_json_eq '.connection.ipv6_advertising' always 'ipv6_advertising persisted (no stale GET)'
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d '{"connection":{"ipv6_advertising":"sometimes"}}' "$API/preferences"
+	_assert_status 400 'PATCH an unknown ipv6_advertising value -> 400'
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d '{"connection":{"ip_versions":null}}' "$API/preferences"
+	_assert_status 400 'PATCH ip_versions=null with support -> 400'
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d "$IPV6_RESTORE" "$API/preferences"
+	_assert_status 200 'restored the IPv6 settings'
+	IPV6_RESTORE=
+else
+	_assert_json_eq '.connection.ip_versions' null 'connection.ip_versions is null without support'
+	_assert_json_eq '.connection.ipv6_advertising' null 'connection.ipv6_advertising is null without support'
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d '{"connection":{"ipv6_advertising":"always"}}' "$API/preferences"
+	_assert_status 409 'PATCH ipv6_advertising without support -> 409'
+	_assert_json_eq '.error.code' option_not_supported 'the 409 says option_not_supported'
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d '{"connection":{"ip_versions":"ipv4_and_ipv6"}}' "$API/preferences"
+	_assert_status 409 'PATCH ip_versions without support -> 409'
+	_curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+		-d '{"connection":{"ip_versions":null,"ipv6_advertising":null}}' "$API/preferences"
+	_assert_status 200 'PATCH the nulls back unchanged -> 200 (read-modify-write)'
+	_assert_json_eq '.connection.ip_versions' null 'ip_versions still null'
+fi
 
 # --- Summary. -----------------------------------------------------
 _summary

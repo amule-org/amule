@@ -26,6 +26,7 @@
 #include <ec/cpp/ECSpecialTags.h>
 
 #include <set>
+#include <stdexcept>
 
 #include "PrefsSchema.h"
 #include "Server.h" // SRV_PR_*
@@ -2648,6 +2649,68 @@ TEST(Refresher, PreferencesEnumAndNestedRemoteControlsDecode)
 	ASSERT_EQUALS(std::string("127.0.0.1"), p.remote_controls.amuleapi.bind_address);
 }
 
+namespace
+{
+
+const PrefField &ConnectionPrefRow(const char *key)
+{
+	for (std::size_t i = 0; i < PrefSchemaSize(); ++i) {
+		const PrefField &f = PrefSchema()[i];
+		if (std::string(f.category) == "connection" && std::string(f.key) == key)
+			return f;
+	}
+	throw std::runtime_error(std::string("no connection row ") + key);
+}
+
+void ParseConnection(const CECEmptyTag &conn, PreferencesSnapshot &p)
+{
+	CECPacket resp(EC_OP_SET_PREFERENCES);
+	resp.AddTag(conn);
+	std::vector<CategorySnapshot> cats;
+	ParsePreferencesFromPacket(&resp, p, cats);
+}
+
+} // namespace
+
+TEST(Refresher, PreferencesIPv6SettingsDecode)
+{
+	PreferencesSnapshot p;
+	{
+		CECEmptyTag conn(EC_TAG_PREFS_CONNECTIONS);
+		conn.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES, static_cast<std::uint32_t>(1)));
+		conn.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6, false));
+		conn.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6_MODE, static_cast<std::uint32_t>(2)));
+		ParseConnection(conn, p);
+	}
+	ASSERT_TRUE(p.ipv6_supported);
+	ASSERT_EQUALS(std::string("ipv4_and_ipv6"), p.ip_versions);
+	ASSERT_EQUALS(std::string("never"), p.ipv6_advertising);
+	ASSERT_TRUE(PrefGateOpen(ConnectionPrefRow("ip_versions"), p));
+
+	// Out of range reads as the daemon's own fallback, not as the previous value.
+	{
+		CECEmptyTag conn(EC_TAG_PREFS_CONNECTIONS);
+		conn.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES, static_cast<std::uint32_t>(7)));
+		conn.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6_MODE, static_cast<std::uint32_t>(9)));
+		ParseConnection(conn, p);
+	}
+	ASSERT_TRUE(p.ipv6_supported);
+	ASSERT_EQUALS(std::string("ipv4_only"), p.ip_versions);
+	ASSERT_EQUALS(std::string("when_verified"), p.ipv6_advertising);
+
+	// A 3.2 daemon: AddressFamilies and the boolean, no mode tag.
+	{
+		CECEmptyTag conn(EC_TAG_PREFS_CONNECTIONS);
+		conn.AddTag(CECTag(EC_TAG_CONN_ADDRESS_FAMILIES, static_cast<std::uint32_t>(1)));
+		conn.AddTag(CECTag(EC_TAG_CONN_ADVERTISE_IPV6, true));
+		ParseConnection(conn, p);
+	}
+	ASSERT_TRUE(!p.ipv6_supported);
+	ASSERT_TRUE(!PrefGateOpen(ConnectionPrefRow("ip_versions"), p));
+	ASSERT_TRUE(!PrefGateOpen(ConnectionPrefRow("ipv6_advertising"), p));
+	ASSERT_TRUE(PrefGateOpen(ConnectionPrefRow("upnp_enabled"), p));
+}
+
 TEST(Refresher, PreferencesLineCapacitiesDecode)
 {
 	CECPacket resp(EC_OP_SET_PREFERENCES);
@@ -2864,9 +2927,9 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 			++emitted;
 	}
 
-	// The documented payload is 147 fields. A row added or dropped without
+	// The documented payload is 150 fields. A row added or dropped without
 	// updating docs/api/REFERENCE.md should trip this.
-	ASSERT_EQUALS(static_cast<std::size_t>(147), emitted);
+	ASSERT_EQUALS(static_cast<std::size_t>(150), emitted);
 }
 
 // The schema's irregularities are enumerated rather than merely counted: each is deliberate and
@@ -2877,7 +2940,7 @@ TEST(Refresher, PrefsSchemaIsWellFormed)
 // API states the positive fact and the schema undoes the EC negation on read and write alike.
 TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 {
-	std::size_t inverted = 0, foreign_group = 0, retired = 0, admin_read = 0;
+	std::size_t inverted = 0, foreign_group = 0, retired = 0, admin_read = 0, null_gated = 0;
 	for (std::size_t i = 0; i < PrefSchemaSize(); ++i) {
 		const PrefField &f = PrefSchema()[i];
 		if (f.invert) {
@@ -2904,11 +2967,19 @@ TEST(Refresher, PrefsSchemaIrregularitiesStayContained)
 				    id == "servers.update_urls" || id == "security.ipfilter_update_url" ||
 				    id == "kad.update_url");
 		}
+		// Null while unsupported, so they cannot read as IPv4 only or "when verified".
+		if (f.null_while_gated) {
+			++null_gated;
+			const std::string id = std::string(f.category) + "." + f.key;
+			ASSERT_TRUE(id == "connection.ip_versions" || id == "connection.ipv6_advertising");
+			ASSERT_TRUE(f.gated_by != nullptr);
+		}
 	}
 	ASSERT_EQUALS(static_cast<std::size_t>(2), inverted);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), foreign_group);
 	ASSERT_EQUALS(static_cast<std::size_t>(8), retired);
 	ASSERT_EQUALS(static_cast<std::size_t>(7), admin_read);
+	ASSERT_EQUALS(static_cast<std::size_t>(2), null_gated);
 
 	// One category is gated on a tag proving the daemon has it. That tag must be one of the
 	// category's own value-encoded rows: a presence-encoded one is absent whenever it is false,

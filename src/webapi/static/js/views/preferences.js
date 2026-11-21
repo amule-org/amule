@@ -54,6 +54,15 @@ const SEE_SHARES = [
   { value: "friends", labelKey: "prefs_opt_see_shares_friends" },
   { value: "nobody", labelKey: "prefs_opt_see_shares_nobody" },
 ];
+const IP_VERSIONS = [
+  { value: "ipv4_only", labelKey: "prefs_opt_ip_versions_ipv4_only" },
+  { value: "ipv4_and_ipv6", labelKey: "prefs_opt_ip_versions_ipv4_and_ipv6" },
+];
+const IPV6_ADVERTISING = [
+  { value: "when_verified", labelKey: "prefs_opt_ipv6_advertising_when_verified" },
+  { value: "always", labelKey: "prefs_opt_ipv6_advertising_always" },
+  { value: "never", labelKey: "prefs_opt_ipv6_advertising_never" },
+];
 const GEOIP_SOURCES = [
   { value: "dbip", labelKey: "prefs_opt_source_dbip" },
   { value: "maxmind", labelKey: "prefs_opt_source_maxmind" },
@@ -111,6 +120,14 @@ const TABS = [
       { key: "ed2k_enabled", type: "bool", labelKey: "prefs_ed2k_readonly" },
       { key: "autoconnect", type: "bool" },
       { key: "reconnect_on_connection_loss", type: "bool" },
+    ] },
+    // Hidden like the desktop's IPv6 box when the daemon does not report it.
+    { legendKey: "prefs_group_ipv6", noteKey: "prefs_ipv6_restart_hint",
+      hideWhen: (v) => v["connection.ipv6_supported"] === false, fields: [
+      { key: "ipv6_supported", type: "bool", hidden: true },
+      { key: "ip_versions", type: "select", options: IP_VERSIONS, gatedBy: "ipv6_supported" },
+      { key: "ipv6_advertising", type: "select", options: IPV6_ADVERTISING, gatedBy: "ipv6_supported",
+        gatedByEq: { key: "ip_versions", value: "ipv4_and_ipv6" } },
     ] },
   ] },
   { id: "directories", labelKey: "prefs_directories", cat: "directories", groups: [

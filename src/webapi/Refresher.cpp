@@ -3174,6 +3174,9 @@ void ParsePreferencesFromPacket(
 	out_prefs.advanced.verbose_logging_logfile_only = false;
 	out_prefs.advanced.debug_categories.clear();
 	out_prefs.advanced.debug_categories_enabled.clear();
+	// The daemon's own fallback for an out-of-range value.
+	out_prefs.ip_versions = "ipv4_only";
+	out_prefs.ipv6_advertising = "when_verified";
 
 	// Each prefs sub-section is one top-level CECEmptyTag with named child
 	// fields; the table says which section every field lives in.

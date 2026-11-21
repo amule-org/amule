@@ -2452,7 +2452,10 @@ Returns every preference category amuled carries over EC. The `general` and `con
     "proxy_user": "",
     "upnp_supported": true,
     "upnp_enabled": false,
-    "upnp_control_point_port": 50000
+    "upnp_control_point_port": 50000,
+    "ipv6_supported": true,
+    "ip_versions": "ipv4_and_ipv6",
+    "ipv6_advertising": "when_verified"
   },
   "directories": {
     "incoming_path":   "/home/me/.aMule/Incoming",
@@ -2571,6 +2574,8 @@ Booleans are plain JSON `true`/`false` regardless of how amuled encodes them on 
 
 `connection.upnp_enabled` toggles UPnP router forwarding of the daemon's P2P ports — the ports themselves are `connection.tcp_port` (ed2k TCP) and `connection.udp_port` (ed2k/Kad UDP). `connection.upnp_control_point_port` is a separate optional knob: the fixed local port the UPnP control point (libupnp) binds to for the router's callbacks, `0` meaning auto-assign — **not** a forwarded port. `connection.upnp_supported` is **read-only** — the daemon advertises whether it was built with UPnP (`false` on a core built `-DENABLE_UPNP=OFF`, where `upnp_enabled` has no effect); it is ignored if sent on PATCH. (EC-port UPnP is reported read-only, as `remote_controls.external_connections.upnp_enabled`.)
 
+`connection.ip_versions` selects the IP versions the daemon uses: `"ipv4_only"` or `"ipv4_and_ipv6"`. The daemon reads it only at startup, so a change takes effect after it restarts. `connection.ipv6_advertising` selects when the daemon gives servers and peers its IPv6 address: `"when_verified"` (only after a server's dial-back probe or an incoming connection shows that the address is reachable, and never after a failed probe), `"always"` or `"never"`. It applies at once, and it has no effect while `ip_versions` is `"ipv4_only"`. `connection.ipv6_supported` is **read-only**: `true` when the daemon reports both settings. A daemon built without IPv6, or older than 3.3, does not report them. There it is `false`, the two settings read `null`, and a `PATCH` that sets either answers `409 option_not_supported`. A `null` sent back unchanged is accepted and changes nothing.
+
 The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2P and HTTP traffic through. `proxy_type` is one of `"socks5"` / `"socks4"` / `"http"` / `"socks4a"` — any other value is a `400`. It is the empty string when the daemon has no proxy type configured at all (the core's `PROXY_NONE`), a state that cannot be set back through this API; use `proxy_enabled: false` to turn the proxy off. `proxy_auth_enabled` toggles username/password authentication. `proxy_password` is **write-only** — accepted on PATCH but never returned on GET; PATCH the other proxy fields without it to leave the stored password unchanged.
 
 `servers.accelerated_publication_enabled` lets the daemon publish its shared files at the pace an eD2k server advertises (OFFERFILES v1); servers that advertise none get the standard pace. It defaults to `true` and takes effect from the next server connection. A daemon that predates the setting does not report it: the key then reads `false`, and a PATCH has no effect.
@@ -2585,8 +2590,8 @@ The `connection.proxy_*` fields configure the proxy the **daemon** routes its P2
 
 | Kind | What `PATCH` does | Examples |
 | --- | --- | --- |
-| Settable | applied | most of the 147 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
-| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `files.media_metadata_available`, `kad.protocol10_supported`, `advanced.debug_categories_supported`, `advanced.kad_max_served_buddies_supported`, `advanced.debug_categories`, `connection.upnp_supported`, the six `geoip.*`, the seven `remote_controls.external_connections.*` |
+| Settable | applied | most of the 150 -- `files.mmap_enabled`, `connection.max_connection_count`, … |
+| Read-only status | ignored, request still succeeds | `files.mmap_supported`, `files.media_metadata_available`, `kad.protocol10_supported`, `advanced.debug_categories_supported`, `advanced.kad_max_served_buddies_supported`, `advanced.debug_categories`, `connection.upnp_supported`, `connection.ipv6_supported`, the six `geoip.*`, the seven `remote_controls.external_connections.*` |
 | Write-only | applied, never echoed on `GET` | `connection.proxy_password` |
 | Compatibility | ignored, request still succeeds, even when it names nothing else | the eight `remote_controls.webserver.*` |
 | Refused | `400 bad_request` | `remote_controls.amuleapi.password`, `.guest_password`, `.guest_enabled` |

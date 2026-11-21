@@ -42,6 +42,9 @@ namespace
 const char *const kProxyTypes[] = { "socks5", "socks4", "http", "socks4a", nullptr };
 const char *const kSharedFilesVisibility[] = { "everybody", "friends", "nobody", nullptr };
 const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr };
+// The stored AddressFamilies values and EIPv6AdvertisingMode.
+const char *const kIpVersions[] = { "ipv4_only", "ipv4_and_ipv6", nullptr };
+const char *const kIPv6Advertising[] = { "when_verified", "always", "never", nullptr };
 
 // Everything from here to the matching `clang-format on` is a data table, not code, and is kept
 // one row per field so it reads as a specification. ColumnLimit is 110 and the longest row is
@@ -115,6 +118,10 @@ const char *const kIp2CountrySources[] = { "dbip", "maxmind", "custom", nullptr 
 #define PREF_ENUM(cat, key, tag, names, acc, memb) \
 	{cat, key, tag, PrefType::Enum, PrefEnc::Value, false, acc, 0u, names, nullptr, PREF_MEMBER(memb, std::string), 0}
 
+// Capability-gated, and null while the capability is false.
+#define PREF_ENUM_GATED_NULL(cat, key, tag, names, acc, memb, gate) \
+	{cat, key, tag, PrefType::Enum, PrefEnc::Value, false, acc, 0u, names, gate, PREF_MEMBER(memb, std::string), 0, 0, 0, 0, true}
+
 #define PREF_MD4(cat, key, tag, acc, memb) \
 	{cat, key, tag, PrefType::Md4Hex, PrefEnc::Value, false, acc, 0u, nullptr, nullptr, PREF_MEMBER(memb, std::string), 0}
 
@@ -178,6 +185,11 @@ const PrefField kSchema[] = {
 	PREF_BOOL_INGROUP("connection", "upnp_supported", EC_TAG_GENERAL_UPNP_AVAILABLE, PrefEnc::Value, PrefAccess::ReadOnly, upnp_supported, EC_TAG_PREFS_GENERAL),
 	PREF_BOOL("connection", "upnp_enabled", EC_TAG_CONN_UPNP_ENABLED, PrefEnc::Value, false, PrefAccess::ReadWrite, upnp_enabled),
 	PREF_U16("connection", "upnp_control_point_port", EC_TAG_CONN_UPNP_TCP_PORT, 65535u, PrefAccess::ReadWrite, upnp_control_point_port),
+	// Presence of the mode tag. A 3.2 daemon sends AddressFamilies but only the boolean mode,
+	// which cannot say "never".
+	PREF_BOOL("connection", "ipv6_supported", EC_TAG_CONN_ADVERTISE_IPV6_MODE, PrefEnc::Presence, false, PrefAccess::ReadOnly, ipv6_supported),
+	PREF_ENUM_GATED_NULL("connection", "ip_versions", EC_TAG_CONN_ADDRESS_FAMILIES, kIpVersions, PrefAccess::ReadWrite, ip_versions, "ipv6_supported"),
+	PREF_ENUM_GATED_NULL("connection", "ipv6_advertising", EC_TAG_CONN_ADVERTISE_IPV6_MODE, kIPv6Advertising, PrefAccess::ReadWrite, ipv6_advertising, "ipv6_supported"),
 	PREF_PASSWD_PLAIN("connection", "proxy_password", EC_TAG_PROXY_PASSWORD),
 
 	// [directories]
@@ -398,6 +410,17 @@ ec_tagname_t PrefGroupTagFor(const char *category)
 			return kCategories[i].group_tag;
 	}
 	return 0;
+}
+
+bool PrefGateOpen(const PrefField &f, const PreferencesSnapshot &p)
+{
+	if (!f.gated_by)
+		return true;
+	for (const PrefField &cap : kSchema) {
+		if (std::strcmp(cap.category, f.category) == 0 && std::strcmp(cap.key, f.gated_by) == 0)
+			return *static_cast<bool *>(cap.member(const_cast<PreferencesSnapshot &>(p)));
+	}
+	return true;
 }
 
 } // namespace webapi
