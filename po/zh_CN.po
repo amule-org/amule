@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-19 11:57+0000\n"
+"PO-Revision-Date: 2026-11-21 09:21+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -3910,14 +3910,12 @@ msgid "UDP firewall check"
 msgstr "UDP 防火墙检查"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Publish buddy pointer"
-msgstr "发布附注"
+msgstr "发布搭档指针"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find buddy pointer"
-msgstr "发布附注"
+msgstr "寻找搭档指针"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format

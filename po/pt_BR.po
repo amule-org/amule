@@ -19,7 +19,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-16 12:37+0000\n"
+"PO-Revision-Date: 2026-11-21 09:21+0000\n"
 "Last-Translator: Marcelo Roberto Jimenez <mrjimenez@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/amule/amule-application/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -406,14 +406,13 @@ msgid "Finishing shutdown..."
 msgstr "Concluindo o encerramento..."
 
 #: src/amule.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Could not read the EC password: %s"
-msgstr "Não foi possível salvar a senha do amuleapi: %s"
+msgstr "Não foi possível ler a senha EC: %s"
 
 #: src/amule.cpp src/ExternalConnector.cpp
-#, fuzzy
 msgid "The EC password must not be empty."
-msgstr "A senha EC não foi alterada."
+msgstr "A senha EC não pode ser vazia."
 
 #: src/amule.cpp
 msgid "Could not save AcceptExternalConnections to amule.conf."
@@ -869,19 +868,16 @@ msgid "Kad network disabled on preferences, not connecting."
 msgstr "A rede Kad está desabilitada nas preferências; não será conectada."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: aMule daemon cannot be used when external connections are disabled. To enable External Connections, use either a normal aMule, run amuled once with the option --set-ec-pass-stdin or set the key \"AcceptExternalConnections\" to 1 in the file ~/.aMule/amule.conf"
-msgstr "ERRO: O daemon aMule não pode ser usado quando conexões externas estão desabilitadas. Para habilitar Conexões Externas, use um aMule normal, inicie o amuled com a opção --ec-config ou defina a chave \"AcceptExternalConnections\" como 1 no arquivo ~/.aMule/amule.conf"
+msgstr "ERRO: O daemon aMule não pode ser usado quando conexões externas estão desabilitadas. Para habilitar Conexões Externas, use um aMule normal, execute o amuled uma vez com a opção --set-ec-pass-stdin ou defina a chave \"AcceptExternalConnections\" como 1 no arquivo ~/.aMule/amule.conf"
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: An EC password is required. Run amuled --set-ec-pass-stdin to set it."
-msgstr "ERRO: É necessária uma senha EC. Execute amuled --ec-config para defini-la."
+msgstr "ERRO: É necessária uma senha EC. Execute amuled --set-ec-pass-stdin para defini-la."
 
 #: src/amuled.cpp
-#, fuzzy
 msgid "ERROR: Invalid ECPasswordVerifier in amule.conf. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "ERRO: ECPasswordVerifier inválido no amule.conf. Execute amuled --ec-config para definir uma nova senha EC."
+msgstr "ERRO: ECPasswordVerifier inválido no amule.conf. Execute amuled --set-ec-pass-stdin para definir uma nova senha EC."
 
 #: src/amuled.cpp
 msgid "amuled: OnInit - starting timer"
@@ -2052,9 +2048,9 @@ msgid "Remote Queue Full"
 msgstr "Fila de espera remota cheia"
 
 #: src/DataToText.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Waiting to ask (%s)"
-msgstr "Uploads em espera: %s"
+msgstr "Esperando para perguntar (%s)"
 
 #: src/DataToText.cpp
 msgid "Old MLDonkey"
@@ -2145,67 +2141,56 @@ msgid "Connecting via %s"
 msgstr "Conectando via %s"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Direct"
-msgstr "Diretórios"
+msgstr "Direta"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Incoming"
-msgstr "Pasta de entrada"
+msgstr "Recebida"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Server callback"
-msgstr "um callback direto"
+msgstr "Callback do servidor"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Kad buddy callback"
-msgstr "um callback Lugdunum"
+msgstr "Callback do amigo do Kad"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Direct UDP callback"
-msgstr "um callback direto"
+msgstr "Callback UDP direto"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Callback by the source's server"
-msgstr "o próprio servidor da fonte"
+msgstr "Callback pelo servidor da fonte"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Server hole punch"
-msgstr "um hole punch via servidor"
+msgstr "Hole punch via servidor"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Lugdunum callback"
-msgstr "um callback Lugdunum"
+msgstr "Callback Lugdunum"
 
 #: src/DataToText.cpp
 msgid "Answered server callback"
-msgstr ""
+msgstr "Callback do servidor atendido"
 
 #: src/DataToText.cpp
 msgid "Answered Kad buddy callback"
-msgstr ""
+msgstr "Callback do amigo do Kad atendido"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Answered direct UDP callback"
-msgstr "um callback direto"
+msgstr "Callback UDP direto atendido"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "Answered Lugdunum callback"
-msgstr "um callback Lugdunum"
+msgstr "Callback Lugdunum atendido"
 
 #: src/DataToText.cpp
-#, fuzzy
 msgid "proxy"
-msgstr "Proxy"
+msgstr "proxy"
 
 #: src/DataToText.cpp src/DownloadListCtrl.cpp src/OtherFunctions.cpp
 #: src/TransferWnd.cpp
@@ -2519,16 +2504,16 @@ msgstr "Link eD2k inválido! ERRO: %s"
 
 #: src/ECClientPassword.h
 msgid "[EC]/Password and [EC]/PasswordMD5 cannot both be nonempty; remove one"
-msgstr ""
+msgstr "[EC]/Password e [EC]/PasswordMD5 não podem estar ambos preenchidos; remova um deles"
 
 #: src/ECClientPassword.h
 msgid "To replace both, run amulecmd -w --password-stdin."
-msgstr ""
+msgstr "Para substituir ambos, execute amulecmd -w --password-stdin."
 
 #: src/ECClientPassword.h
 #, c-format
 msgid "Cannot save %s; using its migrated password for this run only."
-msgstr ""
+msgstr "Não foi possível salvar %s; usando a senha migrada apenas nesta sessão."
 
 #: src/ECSpecialMuleTags.cpp
 msgid "Refused a remote request to change the online-signature folder: it can only be set in the daemon's own configuration."
@@ -3083,6 +3068,10 @@ msgid ""
 "\n"
 "Exiting...\n"
 msgstr ""
+"Não é possível conectar com uma senha vazia.\n"
+"Defina uma com --set-ec-pass-stdin.\n"
+"\n"
+"Saindo...\n"
 
 #: src/ExternalConnector.cpp
 msgid "Show this help text."
@@ -3098,7 +3087,7 @@ msgstr "Porta em que o aMule está esperando Conexões Externas (padrão: 4712)"
 
 #: src/ExternalConnector.cpp
 msgid "Read the External Connection password from the first line of stdin (hidden on a terminal)."
-msgstr ""
+msgstr "Ler a senha de Conexões Externas da primeira linha de stdin (oculta em um terminal)."
 
 #: src/ExternalConnector.cpp
 msgid "Read configuration from file."
@@ -3137,9 +3126,9 @@ msgid "Do not write a log file; print to the console only."
 msgstr "Não escrever um arquivo de log; imprimir apenas no console."
 
 #: src/ExternalConnector.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "Cannot read the password: %s\n"
-msgstr "Não foi possível salvar a senha do amuleapi: %s"
+msgstr "Não foi possível ler a senha: %s\n"
 
 #: src/FileDetailDialog.cpp
 msgid "File Details"
@@ -3926,14 +3915,12 @@ msgid "UDP firewall check"
 msgstr "Verificação de firewall UDP"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Publish buddy pointer"
-msgstr "Publicar notas"
+msgstr "Publicar ponteiro de amigo"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find buddy pointer"
-msgstr "Publicar notas"
+msgstr "Procurar ponteiro de amigo"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
@@ -6231,9 +6218,8 @@ msgid "Support Protocol Obfuscation"
 msgstr "Suportar ofuscação de protocolo"
 
 #: src/muuli_wdr.cpp
-#, fuzzy
 msgid "This option enables Protocol Obfuscation for ed2k clients and servers, and makes aMule accept obfuscated connections. Kad UDP is always obfuscated, because the key that proves your address to a peer travels in the obfuscation header."
-msgstr "Esta opção habilita a ofuscação de protocolo e faz o aMule aceitar conexões ofuscadas de outros clientes."
+msgstr "Esta opção habilita a ofuscação de protocolo para clientes e servidores ed2k e faz o aMule aceitar conexões ofuscadas. O UDP do Kad é sempre ofuscado, porque a chave que comprova o seu endereço para outro cliente viaja no cabeçalho de ofuscação."
 
 #: src/muuli_wdr.cpp
 msgid "Use obfuscation for outgoing connections"
@@ -7275,9 +7261,8 @@ msgid "Remote Controls"
 msgstr "Controles remotos"
 
 #: src/PrefsUnifiedDlg.cpp
-#, fuzzy
 msgid "Let amulegui, amuleapi and other tools control aMule."
-msgstr "Permitir que o amulegui, o amuleapi, a interface web e outras ferramentas controlem o aMule."
+msgstr "Permitir que o amulegui, o amuleapi e outras ferramentas controlem o aMule."
 
 #: src/PrefsUnifiedDlg.cpp
 msgid "Online Signature"
@@ -10691,9 +10676,8 @@ msgid "EC password change rejected: could not store ECPasswordVerifier. The acti
 msgstr "Alteração da senha EC rejeitada: não foi possível armazenar o ECPasswordVerifier. A credencial ativa não foi alterada."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
-#, fuzzy
 msgid "ECPassword contains an invalid or empty-password digest. Run amuled --set-ec-pass-stdin to set a new EC password."
-msgstr "O ECPassword contém um hash inválido ou de senha vazia. Execute amuled --ec-config para definir uma nova senha EC."
+msgstr "O ECPassword contém um hash inválido ou de senha vazia. Execute amuled --set-ec-pass-stdin para definir uma nova senha EC."
 
 #: src/libs/ec/cpp/ECSRPConfig.cpp
 msgid "Invalid or unsupported ECPasswordVerifier; refusing external connections."
