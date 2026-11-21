@@ -488,6 +488,8 @@ public:
 	CAsioService *m_AsioService;
 #ifdef ENABLE_IPV6
 	pcp::PCPManager *m_pcpManager = nullptr;
+	// LeaseState().active at the last RequestIPv6Pinholes() pass.
+	bool m_pcpLeaseSeen = false;
 #endif
 	//! Open the node's inbound IPv6 TCP pinhole through PCP or the gateway's IGD2 firewall
 	//! service, with one owner at a time. A no-op without an IPv6 listener.

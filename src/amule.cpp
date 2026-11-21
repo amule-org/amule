@@ -2474,6 +2474,19 @@ void CamuleApp::RequestIPv6Pinholes()
 #endif
 	const pcp::PinholeRoute route = pcp::DecidePinholeRoute(target.has_value(), owners);
 
+	// A pinhole that opened after the server's dial-back failed is of no use until it dials again,
+	// whichever protocol opened it.
+	const auto notePinholeOpened = [this] {
+		if (serverconnect) {
+			serverconnect->NoteIPv6PinholeOpened();
+			AdvertisedIPv6ForPeers();
+		}
+	};
+	if (owners.pcpLease && !m_pcpLeaseSeen) {
+		notePinholeOpened();
+	}
+	m_pcpLeaseSeen = owners.pcpLease;
+
 	if (m_pcpManager) {
 		switch (route) {
 		case pcp::PinholeRoute::Close:
@@ -2504,14 +2517,10 @@ void CamuleApp::RequestIPv6Pinholes()
 		// An empty target closes the IGD2 pinhole.
 		m_upnp->SetIPv6PinholeTarget(client, thePrefs::GetPort(), kIPv6PinholeLeaseSeconds);
 	}
-	// A pinhole that opened after the server's dial-back failed is of no use until it dials again.
 	const unsigned int openings = m_upnp->IPv6PinholeOpenings();
 	if (openings != m_IPv6PinholeOpeningsSeen) {
 		m_IPv6PinholeOpeningsSeen = openings;
-		if (serverconnect) {
-			serverconnect->NoteIPv6PinholeOpened();
-			AdvertisedIPv6ForPeers();
-		}
+		notePinholeOpened();
 	}
 	// Queued, not run: the pass sends SOAP and holds the service map mutex, and a slow gateway must
 	// not stall the main loop.
