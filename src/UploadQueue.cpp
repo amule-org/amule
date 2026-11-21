@@ -26,7 +26,8 @@
 #include "UploadQueue.h" // Interface declarations
 #include "UploadQueueAddressPolicy.h"
 #include "UploadCallbackPolicy.h"
-#include "PeerAddressing.h" // Needed for kCallbackRequestThrottleMs
+#include "PeerAddressing.h"   // Needed for kCallbackRequestThrottleMs
+#include "KadBuddyIdLayout.h" // Needed for IsKadCallbackThrottled
 
 #include <protocol/Protocols.h>
 #include <protocol/ed2k/Client2Client/TCP.h>
@@ -104,6 +105,8 @@ bool CUploadQueue::TryStartUploadCallback(
 	facts.directTried = client->m_uploadDirectCallbackTried;
 	facts.onOurServer =
 		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort());
+	facts.kadBuddyCallback = client->IsUploadKadBuddyCallbackPossible();
+	facts.kadBuddyThrottled = Kademlia::IsKadCallbackThrottled(client->GetKadCallbackSentTime(), now);
 	EContactRouteReport route = UploadCallbackRoute(facts);
 	if (route == EContactRouteReport::DirectUdpCallback) {
 		client->SendDirectCallbackRequest();
@@ -112,6 +115,11 @@ bool CUploadQueue::TryStartUploadCallback(
 	} else if (route == EContactRouteReport::ServerCallback) {
 		client->SendClassicCallbackRequest();
 		AddDebugLogLineN(logLocalClient, "Started classic upload callback to " + client->GetFullIP());
+	} else if (route == EContactRouteReport::KadBuddy) {
+		// The download side's layout state is left alone: only its own requests may switch it.
+		client->SendKadBuddyCallbackRequest();
+		AddDebugLogLineN(
+			logLocalClient, "Started Kad buddy upload callback to " + client->GetFullIP());
 	} else {
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 		// Each route reports whether it actually sent: with no route, or with the NAT-T

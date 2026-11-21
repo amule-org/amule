@@ -83,6 +83,12 @@ inline bool IsKadCallbackRetryDue(uint64_t nowMs, uint64_t retryAtMs) noexcept
 	return nowMs >= retryAtMs;
 }
 
+// Whether a request to the same buddy now would still fall inside the flood interval of the last one.
+inline bool IsKadCallbackThrottled(uint64_t lastSentMs, uint64_t nowMs) noexcept
+{
+	return lastSentMs != 0 && !IsKadCallbackRetryDue(nowMs, KadCallbackRetryTime(lastSentMs, true));
+}
+
 // Whether the buddy that left a callback unanswered has the other layout left to try (#1835).
 inline bool HasOtherBuddyIdLayoutLeft(bool requestUnanswered, bool otherLayoutTried) noexcept
 {

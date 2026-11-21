@@ -2314,6 +2314,35 @@ SSourceRouteFacts CUpDownClient::SourceRouteFacts(bool callbackOnly) const
 	return facts;
 }
 
+bool CUpDownClient::IsUploadKadBuddyCallbackPossible() const
+{
+	return HasLowID() && m_reqfile != nullptr && HasValidBuddyID() && GetBuddyIP() != 0 &&
+	       GetBuddyPort() != 0 && Kademlia::CKademlia::IsConnected();
+}
+
+void CUpDownClient::SendKadBuddyCallbackRequest()
+{
+	uint8_t buddyIDToSend[16];
+	if (m_bBuddyIdUseAmuleLayout) {
+		Kademlia::ConvertBuddyIdLayout(GetBuddyID(), buddyIDToSend);
+	} else {
+		md4cpy(buddyIDToSend, GetBuddyID());
+	}
+	// Both sides wait on this: eMule's flood limit counts every request from our IP.
+	m_kadCallbackSentTime = ::GetTickCount64();
+	CMemFile bio(34);
+	bio.WriteUInt128(Kademlia::CUInt128(buddyIDToSend));
+	bio.WriteUInt128(Kademlia::CUInt128(m_reqfile->GetFileHash().GetHash()));
+	bio.WriteUInt16(thePrefs::GetPort());
+	CPacket *packet = new CPacket(bio, OP_KADEMLIAHEADER, KADEMLIA_CALLBACK_REQ);
+	// eMule FIXME: We don't know which kadversion the buddy has, so we need to send unencrypted
+	theApp->clientudp->SendPacket(packet, GetBuddyIP(), GetBuddyPort(), false, nullptr, true, 0);
+	AddDebugLogLineN(logClientKadUDP,
+		CFormat("KadCallbackReq (size=%i) to %s") % packet->GetPacketSize() %
+			Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()));
+	theStats::AddUpOverheadKad(packet->GetRealPacketSize());
+}
+
 bool CUpDownClient::StartKadBuddyCallback()
 {
 	if (GetBuddyIP() && GetBuddyPort()) {
@@ -2321,26 +2350,9 @@ bool CUpDownClient::StartKadBuddyCallback()
 		m_bBuddyOtherLayoutTried = m_bBuddyOtherLayoutTried || m_bBuddyCallbackUnanswered;
 		m_bBuddyIdUseAmuleLayout = Kademlia::NextBuddyIdUsesAmuleLayout(
 			m_bBuddyIdUseAmuleLayout, m_bBuddyCallbackUnanswered);
-		uint8_t buddyIDToSend[16];
-		if (m_bBuddyIdUseAmuleLayout) {
-			Kademlia::ConvertBuddyIdLayout(GetBuddyID(), buddyIDToSend);
-		} else {
-			md4cpy(buddyIDToSend, GetBuddyID());
-		}
 		m_bBuddyCallbackUnanswered = true;
-		m_kadCallbackSentTime = ::GetTickCount64();
 		m_kadCallbackRetryTime = 0;
-		CMemFile bio(34);
-		bio.WriteUInt128(Kademlia::CUInt128(buddyIDToSend));
-		bio.WriteUInt128(Kademlia::CUInt128(m_reqfile->GetFileHash().GetHash()));
-		bio.WriteUInt16(thePrefs::GetPort());
-		CPacket *packet = new CPacket(bio, OP_KADEMLIAHEADER, KADEMLIA_CALLBACK_REQ);
-		// eMule FIXME: We don't know which kadversion the buddy has, so we need to send unencrypted
-		theApp->clientudp->SendPacket(packet, GetBuddyIP(), GetBuddyPort(), false, nullptr, true, 0);
-		AddDebugLogLineN(logClientKadUDP,
-			CFormat("KadCallbackReq (size=%i) to %s") % packet->GetPacketSize() %
-				Uint32_16toStringIP_Port(GetBuddyIP(), GetBuddyPort()));
-		theStats::AddUpOverheadKad(packet->GetRealPacketSize());
+		SendKadBuddyCallbackRequest();
 	} else {
 		AddLogLineN(_("Searching buddy for lowid connection"));
 		// Create search to find buddy.

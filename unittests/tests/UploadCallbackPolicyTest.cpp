@@ -81,10 +81,36 @@ TEST(UploadCallbackPolicy, UnansweredDirectCallbackFallsBackToTheServer)
 	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
 }
 
+// A peer we download from, with a known buddy: the order is TryToContact()'s.
+TEST(UploadCallbackPolicy, KadBuddyComesAfterTheServerCallback)
+{
+	SUploadCallbackRouteFacts facts = PeerWithBothRoutes();
+	facts.kadBuddyCallback = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::DirectUdpCallback);
+	facts.directTried = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::ServerCallback);
+	facts.onOurServer = false;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::KadBuddy);
+}
+
+TEST(UploadCallbackPolicy, KadBuddyWaitsForTheFloodInterval)
+{
+	SUploadCallbackRouteFacts facts;
+	facts.canTakeCallback = true;
+	facts.kadBuddyCallback = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::KadBuddy);
+	facts.kadBuddyThrottled = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
+	facts.kadBuddyThrottled = false;
+	facts.canTakeCallback = false;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
+}
+
 TEST(UploadCallbackPolicy, OnlyTheDirectRouteLeavesThePeerUnspent)
 {
 	ASSERT_FALSE(UploadCallbackSpendsPeer(EContactRouteReport::DirectUdpCallback));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ServerCallback));
+	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::KadBuddy));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ForeignNatCallback));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ServerHolePunch));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::LugdunumCallback));

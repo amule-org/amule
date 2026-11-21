@@ -69,6 +69,10 @@ struct SUploadCallbackRouteFacts
 	//! A direct request went out in this request interval and was not answered.
 	bool directTried = false;
 	bool onOurServer = false;
+	//! CUpDownClient::IsUploadKadBuddyCallbackPossible().
+	bool kadBuddyCallback = false;
+	//! A Kad callback request went to the peer's buddy within eMule's flood interval.
+	bool kadBuddyThrottled = false;
 };
 
 /**
@@ -76,7 +80,8 @@ struct SUploadCallbackRouteFacts
  *
  * The order is TryToContact()'s: an unanswered direct request moves on to the next route. The server
  * callback needs the peer on our server: a LowID is valid only on its own server, so the request
- * would wake a different client on ours.
+ * would wake a different client on ours. The Kad buddy route needs a file we download from the
+ * peer: only that file's sources give its buddy ID.
  */
 inline EContactRouteReport UploadCallbackRoute(const SUploadCallbackRouteFacts &facts)
 {
@@ -86,7 +91,13 @@ inline EContactRouteReport UploadCallbackRoute(const SUploadCallbackRouteFacts &
 	if (facts.directCallback && !facts.directThrottled && !facts.directTried) {
 		return EContactRouteReport::DirectUdpCallback;
 	}
-	return facts.onOurServer ? EContactRouteReport::ServerCallback : EContactRouteReport::None;
+	if (facts.onOurServer) {
+		return EContactRouteReport::ServerCallback;
+	}
+	if (facts.kadBuddyCallback && !facts.kadBuddyThrottled) {
+		return EContactRouteReport::KadBuddy;
+	}
+	return EContactRouteReport::None;
 }
 
 //! Whether a request on @a route spends the peer when it is sent. A direct request spends it only

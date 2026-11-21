@@ -1116,6 +1116,11 @@ public:
 	}
 	//! A LowID we can ask to connect with OP_DIRECTCALLBACKREQ. The caller checks CanDoCallback().
 	bool IsDirectCallbackPossible() const;
+	//! A LowID we download from and can ask through its Kad buddy. The caller checks CanDoCallback().
+	bool IsUploadKadBuddyCallbackPossible() const;
+	uint64_t GetKadCallbackSentTime() const { return m_kadCallbackSentTime; }
+	//! KADEMLIA_CALLBACK_REQ to the buddy, in the current buddy ID layout, for m_reqfile.
+	void SendKadBuddyCallbackRequest();
 	uint64_t GetDirectCallbackTimeout() const { return m_dwDirectCallbackTimeout; }
 	uint64_t GetLastDirectCallbackRequest() const { return m_lastDirectCallbackRequest; }
 	bool HasObfuscatedConnectionBeenEstablished() const { return m_hasbeenobfuscatinglately; }

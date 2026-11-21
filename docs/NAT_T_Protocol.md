@@ -574,7 +574,9 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
 
 The upload side sends this request too, when a slot frees for a queued LowID peer
 (`CUploadQueue::TryStartUploadCallback()`). It tries the direct `0x95` (`OP_DIRECTCALLBACKREQ`)
-and the `0x1C` (`OP_CALLBACKREQUEST`) server callback first. A peer on another server then gets the
+and the `0x1C` (`OP_CALLBACKREQUEST`) server callback first. A peer we also download from, whose
+Kad buddy we know from that file's sources, then gets `KADEMLIA_CALLBACK_REQ` through the buddy, at
+most once in eMule's 65-second flood interval for that buddy. A peer on another server then gets the
 `0xA6` (`OP_NAT_CALLBACKREQUEST`), before the `0x60` (`OP_LOWID_HOLEPUNCH_REQUEST`) and the
 Lugdunum callback. The peer's server address and ID come from its `OP_HELLO`, and the server is
 chosen as above. The upload side adds a new target only while that server has fewer than 15 of its
