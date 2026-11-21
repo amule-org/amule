@@ -23,7 +23,6 @@
 #include "Logger.h"
 
 #include <boost/asio.hpp>
-#include <condition_variable>
 #include <mutex>
 #include <sstream>
 #include <thread>
@@ -62,7 +61,7 @@ struct Target
 };
 } // namespace
 
-struct PCPManager::State
+struct PCPManager::State : std::enable_shared_from_this<PCPManager::State>
 {
 	State(Discovery discover, Factory create, std::chrono::milliseconds interval)
 	: discovery(discover ? std::move(discover) : Discovery{ DiscoverGateway })
@@ -73,136 +72,117 @@ struct PCPManager::State
 	{
 	}
 
-	void Run()
+	// Runs on the manager thread only, posted by SetTarget() and by the pass timer.
+	void Reconcile(bool due)
 	{
 		std::unique_lock<std::mutex> lock(mutex);
-		std::optional<Target> current;
-		std::optional<Gateway> currentGateway;
-		bool due = false;
-		for (;;) {
-			if (stopping) {
-				break;
+		if (stopping) {
+			return;
+		}
+		const auto desired = target;
+		const auto version = revision;
+		if (current && (!desired || !(*current == *desired))) {
+			const bool handover = !desired && release;
+			auto old = Detach();
+			lock.unlock();
+			if (handover) {
+				old->Release();
+			} else {
+				old->Stop();
 			}
-			const auto desired = target;
-			const auto version = revision;
-			if (current && (!desired || !(*current == *desired))) {
-				auto old = std::move(client);
-				// The handle is moved-from now; record that so no later path reads it.
-				client = nullptr;
-				current.reset();
-				currentGateway.reset();
-				const bool handover = !desired && release;
+			lock.lock();
+			if (stopping || revision != version) {
+				return;
+			}
+		}
+		if (!desired) {
+			passTimer.cancel();
+			return;
+		}
+		if (due || !current || appliedRevision != version) {
+			appliedRevision = version;
+			lock.unlock();
+			const auto gateway = discovery(desired->address);
+			lock.lock();
+			// A newer target posted its own pass, which takes over from here.
+			if (stopping || revision != version) {
+				return;
+			}
+			noGateway = !gateway;
+			const bool gatewayChanged =
+				current && (!gateway || !currentGateway ||
+						   gateway->endpoint != currentGateway->endpoint ||
+						   gateway->localAddress != currentGateway->localAddress);
+			// A client whose bind() failed never becomes usable and stays dead forever; the
+			// due pass recreates it against the same gateway.
+			const bool deadClient = current && client && !client->Ready();
+			if (gatewayChanged || deadClient) {
+				auto old = Detach();
 				lock.unlock();
-				if (handover) {
-					old->Release();
-				} else {
-					old->Stop();
-				}
-				lock.lock();
-				continue;
-			}
-			if (!desired) {
-				changed.wait(lock, [&] { return stopping || revision != version; });
-				continue;
-			}
-			if (due || !current || appliedRevision != version) {
-				due = false;
-				appliedRevision = version;
-				lock.unlock();
-				const auto gateway = discovery(desired->address);
+				old->Stop();
 				lock.lock();
 				if (stopping || revision != version) {
-					continue;
+					return;
 				}
-				noGateway = !gateway;
-				if (current &&
-					(!gateway || !currentGateway ||
-						gateway->endpoint != currentGateway->endpoint ||
-						gateway->localAddress != currentGateway->localAddress)) {
-					auto old = std::move(client);
-					client = nullptr;
-					current.reset();
-					currentGateway.reset();
+			}
+			if (gateway && !current) {
+				lock.unlock();
+				auto next = factory(*gateway);
+				lock.lock();
+				if (stopping || revision != version) {
 					lock.unlock();
-					old->Stop();
-					lock.lock();
-					if (stopping || revision != version) {
-						continue;
-					}
-				}
-				if (current && client && !client->Ready()) {
-					// A client whose bind() failed never becomes usable and stays dead
-					// forever; the due pass recreates it against the same gateway.
-					auto old = std::move(client);
-					client = nullptr;
-					current.reset();
-					lock.unlock();
-					old->Stop();
-					lock.lock();
-					if (stopping || revision != version) {
-						continue;
-					}
-				}
-				if (gateway && !current) {
-					lock.unlock();
-					auto next = factory(*gateway);
-					lock.lock();
-					if (stopping || revision != version) {
-						lock.unlock();
-						if (next) {
-							next->Stop();
-						}
-						lock.lock();
-						continue;
-					}
 					if (next) {
-						// SetMapping is asynchronous. Holding the admission lock
-						// prevents a stale lookup from reopening after ClearTarget
-						// has returned.
-						next->SetMapping(
-							desired->port, desired->address, desired->port);
-						client = std::move(next);
-						// Reset the moved-from handle so a later iteration cannot
-						// re-adopt it.
-						next = nullptr;
-						current = desired;
-						currentGateway = gateway;
-						std::ostringstream msg;
-						msg << "IPv6 PCP: default router "
-						    << gateway->endpoint.address().to_string()
-						    << " selected for local address "
-						    << gateway->localAddress.to_string();
-						AddDebugLogLineN(logUPnP, msg);
+						next->Stop();
 					}
+					return;
+				}
+				if (next) {
+					// SetMapping is asynchronous. Holding the admission lock prevents a
+					// stale lookup from reopening after ClearTarget has returned.
+					next->SetMapping(desired->port, desired->address, desired->port);
+					client = std::move(next);
+					current = desired;
+					currentGateway = gateway;
+					std::ostringstream msg;
+					msg << "IPv6 PCP: default router "
+					    << gateway->endpoint.address().to_string()
+					    << " selected for local address "
+					    << gateway->localAddress.to_string();
+					AddDebugLogLineN(logUPnP, msg);
 				}
 			}
-			// The loop owns the only thread that services the shared io_context, so posted
-			// client work runs here, in bounded slices between the waits.
-			const auto deadline = std::chrono::steady_clock::now() + retryInterval;
-			bool woken = false;
-			while (!woken && std::chrono::steady_clock::now() < deadline) {
-				clientIo.poll();
-				woken = changed.wait_for(lock, std::chrono::milliseconds(50), [&] {
-					return stopping || revision != version;
-				});
+		}
+		// The next due pass refreshes the router and replaces a dead client.
+		passTimer.expires_after(retryInterval);
+		passTimer.async_wait([self = shared_from_this()](boost::system::error_code error) {
+			if (!error) {
+				self->Reconcile(true);
 			}
-			due = !woken;
-		}
-		lock.unlock();
-		if (client) {
-			client->Stop();
-		}
+		});
+	}
+
+	// Guarded by mutex.
+	std::unique_ptr<MappingClient> Detach()
+	{
+		auto old = std::move(client);
+		client = nullptr;
+		current.reset();
+		currentGateway.reset();
+		return old;
 	}
 
 	Discovery discovery;
 	Factory factory;
 	std::chrono::milliseconds retryInterval;
-	// One event loop for every client this manager creates; its thread is the manager's
-	// own worker, which also services the clients between passes.
+	// The manager's event loop: its thread runs it, and every client it creates lives on it,
+	// so a posted delete goes out at once and the thread sleeps when nothing is due.
 	boost::asio::io_context clientIo;
+	boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work{
+		boost::asio::make_work_guard(clientIo)
+	};
+	boost::asio::steady_timer passTimer{ clientIo };
 	std::mutex mutex;
 	std::mutex stopMutex;
-	std::condition_variable changed;
 	std::optional<Target> target;
 	// Set with an empty target: the client is released, not deleted (a handover to IGD2).
 	bool release = false;
@@ -212,6 +192,8 @@ struct PCPManager::State
 	std::uint64_t appliedRevision = 0;
 	// Guarded by mutex; non-null only while a client is applied to the current target.
 	std::unique_ptr<MappingClient> client;
+	std::optional<Target> current;
+	std::optional<Gateway> currentGateway;
 	bool stopping = false;
 	std::thread thread;
 };
@@ -220,7 +202,7 @@ PCPManager::PCPManager(Discovery discovery, Factory factory, std::chrono::millis
 : m_state(std::make_shared<State>(std::move(discovery), std::move(factory), retryInterval))
 {
 	const auto state = m_state;
-	state->thread = std::thread([state] { state->Run(); });
+	state->thread = std::thread([state] { state->clientIo.run(); });
 }
 
 PCPManager::~PCPManager()
@@ -251,7 +233,7 @@ void PCPManager::Update(const boost::asio::ip::address_v6 &address, std::uint16_
 	state->target = next;
 	state->noGateway = false;
 	++state->revision;
-	state->changed.notify_one();
+	boost::asio::post(state->clientIo, [state] { state->Reconcile(false); });
 }
 
 void PCPManager::ClearTarget()
@@ -282,16 +264,27 @@ void PCPManager::Stop()
 	std::lock_guard<std::mutex> stopLock(state->stopMutex);
 	{
 		std::lock_guard<std::mutex> lock(state->mutex);
+		if (state->stopping) {
+			return;
+		}
 		state->stopping = true;
 		++state->revision;
 	}
-	state->changed.notify_one();
+	boost::asio::post(state->clientIo, [state] {
+		std::unique_ptr<MappingClient> last;
+		{
+			std::lock_guard<std::mutex> lock(state->mutex);
+			last = state->Detach();
+		}
+		if (last) {
+			// The client posts its delete onto this loop, which runs it before run() returns.
+			last->Stop();
+		}
+		state->passTimer.cancel();
+		state->work.reset();
+	});
 	if (state->thread.joinable()) {
 		state->thread.join();
-	}
-	// Client teardown posts onto the shared loop; drain it here so the best-effort delete
-	// and the socket close complete before the manager disappears.
-	while (state->clientIo.poll() > 0) {
 	}
 }
 } // namespace pcp

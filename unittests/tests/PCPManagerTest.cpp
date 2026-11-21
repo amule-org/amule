@@ -23,6 +23,7 @@
 #include <muleunit/test.h>
 #include <functional>
 
+#include <array>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -127,6 +128,61 @@ struct Harness
 };
 
 const auto local = boost::asio::ip::make_address_v6("2001:db8::2");
+
+// A gateway on loopback for the manager's real client.
+class FakeGateway
+{
+public:
+	FakeGateway()
+	: m_socket(m_io, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v6::loopback(), 0))
+	{
+	}
+	boost::asio::ip::udp::endpoint Endpoint() const { return m_socket.local_endpoint(); }
+	// The next datagram within the timeout, or an empty vector.
+	std::vector<std::uint8_t> Next(std::chrono::milliseconds timeout)
+	{
+		std::vector<std::uint8_t> packet;
+		m_socket.async_receive_from(boost::asio::buffer(m_buffer),
+			m_peer,
+			[&](boost::system::error_code error, std::size_t size) {
+				if (!error) {
+					packet.assign(m_buffer.begin(), m_buffer.begin() + size);
+				}
+			});
+		m_io.restart();
+		m_io.run_for(timeout);
+		if (packet.empty()) {
+			m_socket.cancel();
+			m_io.restart();
+			m_io.run();
+		}
+		return packet;
+	}
+	void Grant(const std::vector<std::uint8_t> &request, std::uint32_t lifetime)
+	{
+		std::vector<std::uint8_t> response(60, 0);
+		response[0] = 2;
+		response[1] = 0x81;
+		for (unsigned i = 0; i < 4; ++i) {
+			response[4 + i] = static_cast<std::uint8_t>(lifetime >> (24 - 8 * i));
+			response[11 - i] = static_cast<std::uint8_t>(100 >> (8 * i));
+		}
+		std::copy(request.begin() + 24, request.begin() + 60, response.begin() + 24);
+		m_socket.send_to(boost::asio::buffer(response), m_peer);
+	}
+
+private:
+	boost::asio::io_context m_io;
+	boost::asio::ip::udp::socket m_socket;
+	boost::asio::ip::udp::endpoint m_peer;
+	std::array<std::uint8_t, 1100> m_buffer{};
+};
+
+std::uint32_t Lifetime(const std::vector<std::uint8_t> &packet)
+{
+	return (std::uint32_t{ packet[4] } << 24) | (std::uint32_t{ packet[5] } << 16) |
+	       (std::uint32_t{ packet[6] } << 8) | packet[7];
+}
 } // namespace
 
 TEST(PCPManagerTest, LeaseStateTracksClientLease)
@@ -309,5 +365,30 @@ TEST(PCPManagerTest, ClientFailureIsReported)
 	manager.SetTarget(local, 4662);
 	ASSERT_TRUE(h.Wait([&] { return h.events.size() >= 1; }));
 	ASSERT_TRUE(manager.LeaseState().failed);
+	manager.Stop();
+}
+
+TEST(PCPManagerTest, ClearTargetDeletesRealMappingAtOnce)
+{
+	FakeGateway gateway;
+	const auto loopback = boost::asio::ip::address_v6::loopback();
+	pcp::PCPManager manager([&](boost::asio::ip::address_v6 address) -> std::optional<pcp::Gateway> {
+		return pcp::Gateway{ address, gateway.Endpoint() };
+	});
+	manager.SetTarget(loopback, 4662);
+	const auto request = gateway.Next(std::chrono::milliseconds(1500));
+	ASSERT_EQUALS(60U, request.size());
+	ASSERT_EQUALS(3600U, Lifetime(request));
+	gateway.Grant(request, 3600);
+	const auto end = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+	while (!manager.LeaseState().active && std::chrono::steady_clock::now() < end) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	}
+	ASSERT_TRUE(manager.LeaseState().active);
+	// Turning forwarding off must close the pinhole now, not when the lease or aMule ends.
+	manager.ClearTarget();
+	const auto deletion = gateway.Next(std::chrono::milliseconds(1000));
+	ASSERT_EQUALS(60U, deletion.size());
+	ASSERT_EQUALS(0U, Lifetime(deletion));
 	manager.Stop();
 }
