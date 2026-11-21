@@ -42,16 +42,16 @@ constexpr uint32_t KAD_POINTER_LOOKUP_SECONDS = 45;
 //! Reasks in a row a source whose pointer gave no buddy is kept for: about an hour by default, the
 //! median time a LowID spent without a buddy in our logs.
 constexpr unsigned KAD_POINTER_MAX_MISSES = 4;
+//! How long a lookup that found a pointer is reused.
+constexpr uint32_t KAD_POINTER_HIT_SECONDS = 3600;
+//! Pointer lookups run at once at most, as eMuleQt does (§5.6.1).
+constexpr unsigned KAD_POINTER_MAX_RUNNING = 5;
 
 //! Whether a source whose pointer gave no buddy `misses` times in a row is kept for another try.
 inline bool ShouldRetryKadPointer(unsigned misses) noexcept
 {
 	return misses < KAD_POINTER_MAX_MISSES;
 }
-//! How long a lookup that found a pointer is reused.
-constexpr uint32_t KAD_POINTER_HIT_SECONDS = 3600;
-//! Pointer lookups run at once at most, as eMuleQt does (§5.6.1).
-constexpr unsigned KAD_POINTER_MAX_RUNNING = 5;
 
 //! A buddy a pointer names. The ID is in the layout the source's other records give it.
 struct SKadPointerBuddy

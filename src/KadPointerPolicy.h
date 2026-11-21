@@ -116,7 +116,7 @@ inline bool IsKadPointerLive(const SKadPointerState &state,
 	uint32_t lifetime) noexcept
 {
 	return buddyIP != 0 && state.buddyIP == buddyIP && state.buddyPort == buddyPort &&
-	       state.acknowledged != 0 && state.acknowledged <= now && now - state.acknowledged < lifetime;
+	       IsKadAckLive(state.acknowledged, now, lifetime);
 }
 
 /**
@@ -127,7 +127,7 @@ inline bool IsKadPointerLive(const SKadPointerState &state,
 inline bool KadSourceReachableByPointer(
 	bool pointerLive, uint32_t ackTime, bool ackMarked, uint32_t now, uint32_t lifetime) noexcept
 {
-	return pointerLive && ackMarked && ackTime != 0 && ackTime <= now && now - ackTime < lifetime;
+	return pointerLive && ackMarked && IsKadAckLive(ackTime, now, lifetime);
 }
 
 /**

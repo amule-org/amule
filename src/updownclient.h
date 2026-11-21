@@ -996,6 +996,9 @@ public:
 	EKadPointerFirst TakeKadPointerRouteFirst();
 	// Whether a source whose pointer gave no buddy is kept to look it up again at its next reask.
 	bool KeepForKadPointerRetry();
+	// A source whose pointer gave no buddy: kept to look it up again, or else its buddy route has
+	// failed and it moves on to its next route or a fallback. False when it has none left.
+	bool KeepAfterKadPointerGaveNone();
 	// A pointer lookup that could not start, with KAD_POINTER_MAX_RUNNING running: the source
 	// tries again once one has had time to end. True: the source is kept.
 	bool DeferKadPointerLookup();

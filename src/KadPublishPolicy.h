@@ -125,6 +125,12 @@ inline bool Type7CarriesKadPointer(EKadSourcePublish mode, bool pointerEnabled) 
 	       (mode == EKadSourcePublish::IPv6Only && pointerEnabled);
 }
 
+//! Whether an acknowledgement at `ackTime` is less than `lifetime` seconds old; 0 is none.
+inline bool IsKadAckLive(uint32_t ackTime, uint32_t now, uint32_t lifetime) noexcept
+{
+	return ackTime != 0 && ackTime <= now && now - ackTime < lifetime;
+}
+
 /**
  * Whether a file whose source entries were last acknowledged at `ackTime`, with `bpv` or not, is
  * published as type 7 while we have no buddy. Type 7 only fills: an entry with the marker still
@@ -132,7 +138,7 @@ inline bool Type7CarriesKadPointer(EKadSourcePublish mode, bool pointerEnabled) 
  */
 inline bool IsKadSourceFillDue(uint32_t ackTime, bool ackMarked, uint32_t now, uint32_t lifetime) noexcept
 {
-	return !(ackMarked && ackTime != 0 && ackTime <= now && now - ackTime < lifetime);
+	return !(ackMarked && IsKadAckLive(ackTime, now, lifetime));
 }
 
 /**
@@ -149,8 +155,8 @@ inline bool KadSourceEntriesLive(EKadSourcePublish mode,
 	uint32_t buddyIP,
 	uint16_t buddyPort)
 {
-	return mode != EKadSourcePublish::None && ackTime != 0 && ackTime <= now &&
-	       now - ackTime < lifetime && ackBuddyIP == buddyIP && ackBuddyPort == buddyPort;
+	return mode != EKadSourcePublish::None && IsKadAckLive(ackTime, now, lifetime) &&
+	       ackBuddyIP == buddyIP && ackBuddyPort == buddyPort;
 }
 
 /**

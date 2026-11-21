@@ -2716,7 +2716,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			ResetLastAskedTime();
 			return EContactResult::Declined;
 		case EKadPointerFirst::None:
-			if (KeepForKadPointerRetry()) {
+			if (KeepAfterKadPointerGaveNone()) {
 				return EContactResult::Declined;
 			}
 			theApp->downloadqueue->RemoveSource(this);
@@ -4668,8 +4668,14 @@ bool CUpDownClient::UpdateKadPointerWait()
 		UseKadPointerBuddy(next.buddy, GetBuddyIP());
 		return true;
 	}
-	// The lookup ended with no buddy to ask. The publisher may have none yet: look again later.
+	// The lookup ended with no buddy to ask.
 	m_kadCallbackRetryTime = 0;
+	return KeepAfterKadPointerGaveNone();
+}
+
+bool CUpDownClient::KeepAfterKadPointerGaveNone()
+{
+	// The publisher may have no buddy yet: look again later.
 	if (KeepForKadPointerRetry()) {
 		return true;
 	}

@@ -161,6 +161,17 @@ TEST(KadPublishPolicy, TypeSevenLeavesALiveMarkedEntryAlone)
 	ASSERT_TRUE(IsKadSourceFillDue(now + 60, true, now, lifetime));       // Clock stepped back.
 }
 
+TEST(KadPublishPolicy, AnAcknowledgementLivesLessThanItsLifetime)
+{
+	const uint32_t now = 1000000;
+	const uint32_t lifetime = 5 * 3600;
+	ASSERT_TRUE(IsKadAckLive(now, now, lifetime));
+	ASSERT_TRUE(IsKadAckLive(now - lifetime + 1, now, lifetime));
+	ASSERT_FALSE(IsKadAckLive(now - lifetime, now, lifetime)); // Expired.
+	ASSERT_FALSE(IsKadAckLive(0, now, lifetime));              // None.
+	ASSERT_FALSE(IsKadAckLive(now + 60, now, lifetime));       // Clock stepped back.
+}
+
 TEST(KadPublishPolicy, ALookupAnswerFillsTheMissingKeyOfAContactTheSearchOwns)
 {
 	ASSERT_TRUE(KeepsLookupResponderKey(true, 6, 0, 0x1234));
