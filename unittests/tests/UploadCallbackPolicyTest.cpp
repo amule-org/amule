@@ -106,11 +106,23 @@ TEST(UploadCallbackPolicy, KadBuddyWaitsForTheFloodInterval)
 	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
 }
 
-TEST(UploadCallbackPolicy, OnlyTheDirectRouteLeavesThePeerUnspent)
+// With NAT-T server coordination, None lets the pass go on to the cross-server routes.
+TEST(UploadCallbackPolicy, AnUnansweredKadBuddyRequestMovesOn)
+{
+	SUploadCallbackRouteFacts facts = PeerWithBothRoutes();
+	facts.kadBuddyCallback = true;
+	facts.directTried = true;
+	facts.onOurServer = false;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::KadBuddy);
+	facts.kadBuddyTried = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
+}
+
+TEST(UploadCallbackPolicy, OnlyTheDirectAndKadBuddyRoutesLeaveThePeerUnspent)
 {
 	ASSERT_FALSE(UploadCallbackSpendsPeer(EContactRouteReport::DirectUdpCallback));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ServerCallback));
-	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::KadBuddy));
+	ASSERT_FALSE(UploadCallbackSpendsPeer(EContactRouteReport::KadBuddy));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ForeignNatCallback));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ServerHolePunch));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::LugdunumCallback));

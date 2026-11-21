@@ -639,6 +639,8 @@ public:
 		m_uploadCallbackRoute = route;
 		if (route == EContactRouteReport::DirectUdpCallback) {
 			m_uploadDirectCallbackTried = true;
+		} else if (route == EContactRouteReport::KadBuddy) {
+			m_uploadKadBuddyCallbackTried = true;
 		}
 	}
 	bool HasUploadCallbackInFlight(uint64 now) const
@@ -661,6 +663,7 @@ public:
 		ClearUploadCallbackInFlight();
 		m_uploadCallbackSpent = false;
 		m_uploadDirectCallbackTried = false;
+		m_uploadKadBuddyCallbackTried = false;
 	}
 	size_t GetUpPartCount() const { return m_upPartStatus.size(); }
 
@@ -1279,6 +1282,7 @@ private:
 	uint64 m_lastDirectCallbackRequest = 0;
 	bool m_uploadCallbackSpent = false;
 	bool m_uploadDirectCallbackTried = false;
+	bool m_uploadKadBuddyCallbackTried = false;
 	bool m_uploadCallbackExpected = false;
 	uint32 m_nCurSessionUp;
 	uint16 m_nUpPartCount;

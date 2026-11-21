@@ -110,7 +110,6 @@ TEST(KadBuddyIdLayout, TheSameBuddyIPIsAskedAgainAfterTheFloodInterval)
 	ASSERT_TRUE(IsKadCallbackRetryDue(retryAt, retryAt));
 }
 
-// Another buddy IP has no flood interval to wait for, and a source that never waited is due.
 // The upload side asks only the same buddy, so it always waits the full interval.
 TEST(KadBuddyIdLayout, ARequestWithinTheFloodIntervalIsThrottled)
 {
@@ -120,6 +119,7 @@ TEST(KadBuddyIdLayout, ARequestWithinTheFloodIntervalIsThrottled)
 	ASSERT_FALSE(IsKadCallbackThrottled(100000, 100000 + KAD_CALLBACK_SAME_BUDDY_WAIT_MS));
 }
 
+// Another buddy IP has no flood interval to wait for, and a source that never waited is due.
 TEST(KadBuddyIdLayout, AnotherBuddyIPIsAskedAtOnce)
 {
 	ASSERT_EQUALS(static_cast<uint64_t>(0), KadCallbackRetryTime(100000, false));

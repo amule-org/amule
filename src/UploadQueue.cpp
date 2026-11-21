@@ -107,6 +107,7 @@ bool CUploadQueue::TryStartUploadCallback(
 		theApp->serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort());
 	facts.kadBuddyCallback = client->IsUploadKadBuddyCallbackPossible();
 	facts.kadBuddyThrottled = Kademlia::IsKadCallbackThrottled(client->GetKadCallbackSentTime(), now);
+	facts.kadBuddyTried = client->m_uploadKadBuddyCallbackTried;
 	EContactRouteReport route = UploadCallbackRoute(facts);
 	if (route == EContactRouteReport::DirectUdpCallback) {
 		client->SendDirectCallbackRequest();
