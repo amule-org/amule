@@ -97,6 +97,12 @@ struct filter_st
 
 // Some special-purpose blocks from the IANA registry (RFC 6890), and multicast. RFC 3330 also listed
 // 39/8, 128.0/16, 191.255/16 and 223.255.255/24 as reserved, but the RIRs have allocated them since.
+//
+// Left out on purpose: 100.64.0.0/10 (shared address space, RFC 6598) and TEST-NET-2/3
+// (198.51.100.0/24, 203.0.113.0/24). A Kad testnet of many daemons on one host numbers its nodes
+// from them: they pass IsGoodIP() with LAN filtering on, and IsLanIP() is RFC 1918 only, so the
+// nodes treat each other as Internet peers and run the real firewall checks (#2513). Folding this
+// table into a "globally routable" test would end that.
 static filter_st reserved_ranges[] = {
 	{ 0x00000000, 0x000000ff }, // 0.0.0.0/8       "This network" [RFC 791]
 	{ 0x0000007f, 0x000000ff }, // 127.0.0.0/8     Loopback [RFC 1122]

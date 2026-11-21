@@ -320,6 +320,9 @@ CStatTreeItemNativeCounter
 CStatTreeItemCounter *CStatistics::s_publishEvents[static_cast<std::size_t>(EPublishEvent::Count)];
 CStatTreeItemSimple *CStatistics::s_kadPublishedNow;
 CStatTreeItemSimple *CStatistics::s_kadPublishedShare;
+CStatTreeItemSimple *CStatistics::s_kadPointerReachableNow;
+CStatTreeItemSimple *CStatistics::s_kadPointerReachableShare;
+CStatTreeItemCounter *CStatistics::s_kadPointerEvents[static_cast<std::size_t>(EKadPointerEvent::Count)];
 CStatTreeItemSimple *CStatistics::s_kadPublishedWellNow;
 CStatTreeItemSimple *CStatistics::s_ed2kOfferedNow;
 CStatTreeItemSimple *CStatistics::s_ed2kOfferedShare;
@@ -1274,6 +1277,38 @@ void CStatistics::InitStatsTree()
 				events[i].parent->AddChild(new CStatTreeItemCounter(events[i].label)));
 			s_publishEvents[i]->SetKey(events[i].key);
 		}
+
+		// Kad buddy pointer (#2513): what our pointer makes reachable, and what our lookups of
+		// other sources' pointers did.
+		CStatTreeItemBase *const pointer = diagnostics->AddChild(
+			(new CStatTreeItemBase("Kad Buddy Pointer"))->SetKey("kad_pointer"));
+		s_kadPointerReachableNow =
+			addNow(pointer, "Files Reachable by Pointer Now: %llu", "kad_pointer_reachable");
+		s_kadPointerReachableNow->SetValue(uint64(0));
+		s_kadPointerReachableShare = addNow(pointer,
+			"Shared Files Reachable by Pointer Now: %.1f%%",
+			"kad_pointer_reachable_share");
+		s_kadPointerReachableShare->SetValue(0.0);
+		// In EKadPointerEvent order.
+		const EventItem pointerEvents[] = {
+			{ pointer, "Source Pointer Lookups (Session): %s", "kad_pointer_lookups" },
+			{ pointer, "Lookups That Found a Buddy (Session): %s", "kad_pointer_lookups_found" },
+			{ pointer, "Lookups That Found None (Session): %s", "kad_pointer_lookups_missed" },
+			{ pointer,
+				"Lookups Not Started, Too Many Running (Session): %s",
+				"kad_pointer_lookups_busy" },
+			{ pointer,
+				"Sources Reached Through a Pointer (Session): %s",
+				"kad_pointer_sources_reached" },
+		};
+		static_assert(std::extent_v<decltype(pointerEvents)> ==
+				      static_cast<std::size_t>(EKadPointerEvent::Count),
+			"one stats item per pointer event");
+		for (std::size_t i = 0; i < static_cast<std::size_t>(EKadPointerEvent::Count); ++i) {
+			s_kadPointerEvents[i] = static_cast<CStatTreeItemCounter *>(
+				pointer->AddChild(new CStatTreeItemCounter(pointerEvents[i].label)));
+			s_kadPointerEvents[i]->SetKey(pointerEvents[i].key);
+		}
 	}
 
 	// Stable machine keys for API consumers (EC_TAG_STAT_NODE_KEY), assigned here so
@@ -1373,6 +1408,9 @@ void CStatistics::UpdateStatsTree()
 	s_kadPublishedNow->SetValue(publishing.kadPublished);
 	s_kadPublishedShare->SetValue(100.0 * static_cast<double>(publishing.kadPublished) / shared);
 	s_kadPublishedWellNow->SetValue(publishing.kadPublishedWell);
+	s_kadPointerReachableNow->SetValue(publishing.kadPointerReachable);
+	s_kadPointerReachableShare->SetValue(
+		100.0 * static_cast<double>(publishing.kadPointerReachable) / shared);
 	// Offered flags outlive a disconnection; nothing is offered without a server.
 	const uint64 offered = theApp->IsConnectedED2K() ? publishing.ed2kOffered : 0;
 	s_ed2kOfferedNow->SetValue(offered);

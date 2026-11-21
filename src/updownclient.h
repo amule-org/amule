@@ -974,15 +974,36 @@ public:
 	bool IsRouteAnsweredByOtherHost() const;
 	// Moves to the fallback buddy address after a callback through the stored one failed.
 	bool SwitchToBuddyCandidate();
-	// The Kad record of this source carried the pointer route (#2513), published from `recordIP`.
-	void SetKadPointerRoute(uint32 recordIP)
+	// The Kad record of this source carried the pointer route (#2513), published from `recordIP`
+	// as source type `recordType` (3, 5 or 7).
+	void SetKadPointerRoute(uint32 recordIP, uint8 recordType)
 	{
 		m_kadPointerMarked = true;
 		m_kadRecordIP = recordIP;
+		m_kadRecordType = recordType;
 	}
 	// The source waits for its pointer lookup. Once that has a buddy, the source asks it; once it
 	// ends without one, the source moves on to its next route. False when it has none left.
 	bool UpdateKadPointerWait();
+	// A source with no buddy of its own to ask (type 7): what its pointer gave.
+	enum class EKadPointerFirst
+	{
+		Ask,      // A buddy from the pointer is set: ask it
+		Waiting,  // The lookup runs
+		Deferred, // The lookup could not start yet; the source asks again soon
+		None,     // No buddy from the pointer now
+	};
+	EKadPointerFirst TakeKadPointerRouteFirst();
+	// Whether a source whose pointer gave no buddy is kept to look it up again at its next reask.
+	bool KeepForKadPointerRetry();
+	// A source whose pointer gave no buddy: kept to look it up again, or else its buddy route has
+	// failed and it moves on to its next route or a fallback. False when it has none left.
+	bool KeepAfterKadPointerGaveNone();
+	// A pointer lookup that could not start, with KAD_POINTER_MAX_RUNNING running: the source
+	// tries again once one has had time to end. True: the source is kept.
+	bool DeferKadPointerLookup();
+	// The source waits `delayMs` to ask again, pointer first, with every route untried.
+	void WaitForKadPointerLookup(uint64 delayMs);
 	// A kept source asks for its next Kad callback only once this is true.
 	bool IsKadCallbackRetryDue(uint64 now) const
 	{
@@ -1402,6 +1423,11 @@ private:
 	bool m_kadPointerMarked = false;
 	// The source IP the storer recorded for that record, which a pointer must share (§5.6.2).
 	uint32 m_kadRecordIP = 0;
+	uint8 m_kadRecordType = 0;
+	// The buddy asked last came from the pointer.
+	bool m_kadPointerBuddyAsked = false;
+	// Pointer lookups in a row that gave this source no buddy; reset once it is reached.
+	uint8 m_kadPointerMisses = 0;
 	// The source waits for its pointer lookup, and where it is in the buddies that names.
 	bool m_kadPointerWaiting = false;
 	unsigned m_kadPointerNext = 0;

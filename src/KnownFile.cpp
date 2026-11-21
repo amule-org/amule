@@ -79,6 +79,7 @@
 #include "ThreadTasks.h"                     // Needed for CThreadScheduler and CVerifyLocalDataTask
 
 #include "KadCallbackPolicy.h" // Needed for CanPublishSource
+#include "KadPointerPolicy.h"  // Needed for DefersKadSourcePublish
 #include "SharedFileList.h"    // Needed for CSharedFileList::CurrentKadPublishFacts
 #endif
 
@@ -1515,21 +1516,42 @@ bool CAbstractFile::RequestKadNoteSearch()
 #endif
 }
 
-bool CKnownFile::PublishSrc()
+bool CKnownFile::IsKadSourcePublishDue(
+	EKadSourcePublish mode, uint32 buddyIP, uint16 buddyPort, uint32 now) const
 {
-	const CSharedFileList::SKadSourceRoute route = CSharedFileList::CurrentKadSourceRoute();
-	if (route.mode == EKadSourcePublish::None) {
+	if (mode == EKadSourcePublish::None) {
 		return false;
 	}
 	// Only a buddy route is tracked, so gaining or losing a buddy republishes at once.
-	const uint32 now = static_cast<uint32>(time(nullptr));
-	if (!Kademlia::CanPublishSource(route.mode == EKadSourcePublish::Buddy,
-		    route.buddyIP,
+	if (!Kademlia::CanPublishSource(mode == EKadSourcePublish::Buddy,
+		    buddyIP,
 		    m_lastBuddyIP,
 		    m_lastPublishTimeKadSrc,
 		    now,
-		    route.buddyPort,
+		    buddyPort,
 		    m_lastBuddyPort)) {
+		return false;
+	}
+	// Without a buddy, type 7 only fills: a record with the pointer route still leads to us.
+	return mode != EKadSourcePublish::PointerOnly ||
+	       IsKadSourceFillDue(m_kadSrcAckTime, m_kadSrcAckMarked, now, KADEMLIAREPUBLISHTIMES);
+}
+
+bool CKnownFile::IsKadSourceReachableByPointer(bool pointerLive, uint32 now) const
+{
+	return KadSourceReachableByPointer(
+		pointerLive, m_kadSrcAckTime, m_kadSrcAckMarked, now, KADEMLIAREPUBLISHTIMES);
+}
+
+bool CKnownFile::PublishSrc(bool pointerLive, uint64 unreachedDue)
+{
+	const CSharedFileList::SKadSourceRoute route = CSharedFileList::CurrentKadSourceRoute();
+	const uint32 now = static_cast<uint32>(time(nullptr));
+	if (!IsKadSourcePublishDue(route.mode, route.buddyIP, route.buddyPort, now)) {
+		return false;
+	}
+	// Files whose entries lead nowhere go first (#2513).
+	if (DefersKadSourcePublish(IsKadSourceReachableByPointer(pointerLive, now), unreachedDue)) {
 		return false;
 	}
 

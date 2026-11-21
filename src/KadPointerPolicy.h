@@ -59,12 +59,13 @@ inline bool SendsKadPointer(bool enabled, bool storerKeyHeld) noexcept
 	return enabled && storerKeyHeld;
 }
 
-//! The buddy our last pointer named, and when it is due again.
+//! The buddy our last pointer named, when it is due again, and when a storer last acknowledged it.
 struct SKadPointerState
 {
 	uint32_t buddyIP = 0;
 	uint16_t buddyPort = 0;
 	uint32_t nextDue = 0;
+	uint32_t acknowledged = 0;
 };
 
 /**
@@ -83,19 +84,61 @@ inline bool IsKadPointerDue(bool enabled,
 	       (buddyIP != state.buddyIP || buddyPort != state.buddyPort || now >= state.nextDue);
 }
 
-//! The state after a pointer lookup for this buddy started; storers keep it `lifetime` seconds.
-inline SKadPointerState KadPointerStarted(
-	uint32_t buddyIP, uint16_t buddyPort, uint32_t now, uint32_t lifetime) noexcept
+/**
+ * The state after a pointer lookup for this buddy started; storers keep it `lifetime` seconds. A
+ * republish for the same buddy keeps the last acknowledgement, which still holds on its storers.
+ */
+inline SKadPointerState KadPointerStarted(const SKadPointerState &last,
+	uint32_t buddyIP,
+	uint16_t buddyPort,
+	uint32_t now,
+	uint32_t lifetime) noexcept
 {
-	return { buddyIP, buddyPort, now + lifetime };
+	const bool sameBuddy = buddyIP == last.buddyIP && buddyPort == last.buddyPort;
+	return { buddyIP, buddyPort, now + lifetime, sameBuddy ? last.acknowledged : 0 };
 }
 
 //! A pointer lookup ended: with no acknowledgement, it is tried again sooner.
 inline void KadPointerFinished(SKadPointerState &state, uint32_t acknowledged, uint32_t now) noexcept
 {
-	if (acknowledged == 0 && now + KAD_POINTER_RETRY_SECONDS < state.nextDue) {
+	if (acknowledged != 0) {
+		state.acknowledged = now;
+	} else if (now + KAD_POINTER_RETRY_SECONDS < state.nextDue) {
 		state.nextDue = now + KAD_POINTER_RETRY_SECONDS;
 	}
+}
+
+//! Whether a storer holds a pointer naming the buddy at buddyIP:buddyPort, kept `lifetime` seconds.
+inline bool IsKadPointerLive(const SKadPointerState &state,
+	uint32_t buddyIP,
+	uint16_t buddyPort,
+	uint32_t now,
+	uint32_t lifetime) noexcept
+{
+	return buddyIP != 0 && state.buddyIP == buddyIP && state.buddyPort == buddyPort &&
+	       IsKadAckLive(state.acknowledged, now, lifetime);
+}
+
+/**
+ * Whether a file is reachable through our pointer now: a node acknowledged its source entry with
+ * `bpv` less than `lifetime` seconds ago, whatever buddy and type (3, 5 or 7) it named, and our
+ * pointer names the buddy we have.
+ */
+inline bool KadSourceReachableByPointer(
+	bool pointerLive, uint32_t ackTime, bool ackMarked, uint32_t now, uint32_t lifetime) noexcept
+{
+	return pointerLive && ackMarked && IsKadAckLive(ackTime, now, lifetime);
+}
+
+/**
+ * Whether a due file waits for the others when a buddy (re)appears. A file reachable through our
+ * pointer (KadSourceReachableByPointer()) still leads pointer-aware downloaders to us, so the due
+ * files whose entries lead nowhere go first: never published, expired, or published without `bpv`.
+ * Legacy downloaders lose nothing, as they cannot use a type 7 record or one naming an old buddy.
+ */
+inline bool DefersKadSourcePublish(bool reachableByPointer, uint64_t unreachedDue) noexcept
+{
+	return reachableByPointer && unreachedDue != 0;
 }
 
 #endif // KAD_POINTER_POLICY_H

@@ -29,6 +29,7 @@
 #include "MD4Hash.h"
 #include "NetworkFunctions.h" // Needed for Uint32_16toStringIP_Port
 #include "Preferences.h"
+#include "Statistics.h" // Needed for theStats
 #include "kademlia/kademlia/Search.h"
 #include "kademlia/kademlia/SearchManager.h"
 #include "kademlia/utils/UInt128.h"
@@ -87,6 +88,7 @@ bool KadPointerLookup::Start(const CMD4Hash &userHash, uint32_t recordIP)
 	Cache().Prune(static_cast<uint32_t>(time(nullptr)));
 	// Each lookup is a 45 s Kad search: records with many publishers must not start one each.
 	if (Cache().Running() >= KAD_POINTER_MAX_RUNNING) {
+		theStats::AddKadPointerEvent(EKadPointerEvent::LookupRefusedBusy);
 		AddDebugLogLineN(logKadBuddy,
 			CFormat("Kad buddy pointer lookup for source %s not started: %u already running") %
 				userHash.Encode() % KAD_POINTER_MAX_RUNNING);
@@ -101,6 +103,7 @@ bool KadPointerLookup::Start(const CMD4Hash &userHash, uint32_t recordIP)
 		return false;
 	}
 	Cache().Started(KeyOf(userHash), recordIP);
+	theStats::AddKadPointerEvent(EKadPointerEvent::LookupStarted);
 	AddDebugLogLineN(logKadBuddy, "Kad buddy pointer lookup started for source " + userHash.Encode());
 	return true;
 }
@@ -120,6 +123,10 @@ void KadPointerLookup::Finished(const Kademlia::CUInt128 &target)
 	const uint32_t missSeconds = static_cast<uint32_t>(thePrefs::GetSourceReaskTime() / 1000);
 	const CKadPointerCache::SOutcome outcome =
 		Cache().Finished(key, static_cast<uint32_t>(time(nullptr)), missSeconds);
+	if (outcome.ran) {
+		theStats::AddKadPointerEvent(
+			outcome.found ? EKadPointerEvent::LookupFound : EKadPointerEvent::LookupMissed);
+	}
 	AddDebugLogLineN(logKadBuddy,
 		CFormat("Kad buddy pointer lookup for source %s ended: %s, buddies %u, records accepted %u, "
 			"refused %u") %

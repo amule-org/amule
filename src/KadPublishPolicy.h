@@ -36,6 +36,7 @@ enum class EKadSourcePublish
 	DirectCallback, // Type 6: firewalled, but peers can ask for a UDP callback directly
 	Buddy,          // Types 3/5: firewalled, peers ask our buddy to relay a callback
 	IPv6Only,       // Type 7: no IPv4 route left, peers reach us by a tag, here the IPv6 one
+	PointerOnly,    // Type 7: no route but our buddy pointer, for when we have a buddy again
 	None            // No route back to us; publishing would only waste peers' attempts
 };
 
@@ -45,6 +46,7 @@ struct SKadPublishFacts
 	bool directCallback = false;
 	bool hasBuddy = false;
 	bool advertisesIPv6 = false;
+	bool pointerEnabled = false;
 };
 
 /**
@@ -58,6 +60,10 @@ struct SKadPublishFacts
  * no buddy tags it was worse than useless to a receiver that cannot read "ip6": it read the absent
  * buddy hash as a zero buddy ID and spent a Kad lookup on it (#2521). A type that receiver does not
  * know costs it nothing instead.
+ *
+ * PointerOnly is type 7 with only the pointer route, `bpv` (#2513, emule-qt ipv6-spec §5.6): while
+ * we have no buddy, a downloader that reads it looks up our pointer, which names our next buddy as
+ * soon as we have one. It only fills files with no live record (IsKadSourceFillDue()).
  */
 inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
 {
@@ -73,6 +79,9 @@ inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
 	if (facts.advertisesIPv6) {
 		return EKadSourcePublish::IPv6Only;
 	}
+	if (facts.pointerEnabled) {
+		return EKadSourcePublish::PointerOnly;
+	}
 	return EKadSourcePublish::None;
 }
 
@@ -87,6 +96,7 @@ inline uint8_t KadSourceTypeFor(EKadSourcePublish mode, bool largeFile) noexcept
 	case EKadSourcePublish::Buddy:
 		return largeFile ? 5 : 3;
 	case EKadSourcePublish::IPv6Only:
+	case EKadSourcePublish::PointerOnly:
 		return 7; // One value for every size; the size travels in FT_FILESIZE.
 	case EKadSourcePublish::None:
 		break;
@@ -98,6 +108,37 @@ inline uint8_t KadSourceTypeFor(EKadSourcePublish mode, bool largeFile) noexcept
 inline bool PublishesToKad(const SKadPublishFacts &facts)
 {
 	return DecideKadSourcePublish(facts) != EKadSourcePublish::None;
+}
+
+//! Whether keywords and notes are published too. Not on the pointer alone: it only keeps the
+//! source records we already have from going stale, it is no reason to be found by name.
+inline bool PublishesKadKeywords(const SKadPublishFacts &facts)
+{
+	const EKadSourcePublish mode = DecideKadSourcePublish(facts);
+	return mode != EKadSourcePublish::None && mode != EKadSourcePublish::PointerOnly;
+}
+
+//! Whether a type 7 record carries `bpv`: always in PointerOnly, and in IPv6Only when enabled.
+inline bool Type7CarriesKadPointer(EKadSourcePublish mode, bool pointerEnabled) noexcept
+{
+	return mode == EKadSourcePublish::PointerOnly ||
+	       (mode == EKadSourcePublish::IPv6Only && pointerEnabled);
+}
+
+//! Whether an acknowledgement at `ackTime` is less than `lifetime` seconds old; 0 is none.
+inline bool IsKadAckLive(uint32_t ackTime, uint32_t now, uint32_t lifetime) noexcept
+{
+	return ackTime != 0 && ackTime <= now && now - ackTime < lifetime;
+}
+
+/**
+ * Whether a file whose source entries were last acknowledged at `ackTime`, with `bpv` or not, is
+ * published as type 7 while we have no buddy. Type 7 only fills: an entry with the marker still
+ * leads to us through the pointer, and replacing it would only cost a store.
+ */
+inline bool IsKadSourceFillDue(uint32_t ackTime, bool ackMarked, uint32_t now, uint32_t lifetime) noexcept
+{
+	return !(ackMarked && IsKadAckLive(ackTime, now, lifetime));
 }
 
 /**
@@ -114,8 +155,8 @@ inline bool KadSourceEntriesLive(EKadSourcePublish mode,
 	uint32_t buddyIP,
 	uint16_t buddyPort)
 {
-	return mode != EKadSourcePublish::None && ackTime != 0 && ackTime <= now &&
-	       now - ackTime < lifetime && ackBuddyIP == buddyIP && ackBuddyPort == buddyPort;
+	return mode != EKadSourcePublish::None && IsKadAckLive(ackTime, now, lifetime) &&
+	       ackBuddyIP == buddyIP && ackBuddyPort == buddyPort;
 }
 
 /**

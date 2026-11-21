@@ -1806,7 +1806,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		ctemp->SetBuddyPort(buddyport);
 		// A marked record has a pointer behind it, published from the IP the storer recorded.
 		if (pointerVersion == KAD_POINTER_VERSION) {
-			ctemp->SetKadPointerRoute(ip);
+			ctemp->SetKadPointerRoute(ip, type);
 		}
 		break;
 	}
@@ -1835,7 +1835,18 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		break;
 	}
 	case 7: {
-		// The IPv6 route above was refused. FT_SOURCEIP must not be dialled.
+		// The IPv6 route above was refused. FT_SOURCEIP must not be dialled, but the pointer route
+		// names the buddy to ask once the source has one (#2513, emule-qt ipv6-spec §5.6.1).
+		if (pointerVersion == KAD_POINTER_VERSION && thePrefs::IsKadBuddyPointerEnabled()) {
+			ctemp = new CUpDownClient(tcp, 1, 0, 0, temp, false, true);
+			ctemp->SetSourceFrom(SF_KADEMLIA);
+			ctemp->SetKadPort(udp);
+			uint8_t cID[16];
+			pcontactID->ToByteArray(cID);
+			ctemp->SetUserHash(CMD4Hash(cID));
+			ctemp->SetKadPointerRoute(ip, type);
+			break;
+		}
 		AddDebugLogLineN(logKadSearch,
 			CFormat("Ignored Kad source type 7 with no usable route (%s)") %
 				Uint32toStringIP(ED2KID));

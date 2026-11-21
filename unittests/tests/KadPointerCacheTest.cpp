@@ -208,6 +208,42 @@ TEST(KadPointerCache, AnExpiredEntryEndsTheRound)
 		    EKadPointerStep::Exhausted);
 }
 
+// The publisher took a new buddy since: once every buddy the pointer named failed, the next round
+// looks the pointer up again instead of asking the same dead buddies for the rest of the hour.
+TEST(KadPointerCache, ASpentHitIsLookedUpAgain)
+{
+	CKadPointerCache cache;
+	cache.Started(SOURCE, RECORD_IP);
+	cache.Add(SOURCE, Pointer());
+	cache.Finished(SOURCE, NOW, MISS);
+	ASSERT_TRUE(NextAfterDeadBuddy(cache, 1, NOW + 60).step == EKadPointerStep::Exhausted);
+	ASSERT_TRUE(cache.Spent(SOURCE, NOW + 60));
+	ASSERT_TRUE(NextAfterDeadBuddy(cache, 0, NOW + 60).step == EKadPointerStep::Look);
+	cache.Prune(NOW + 60);
+	ASSERT_EQUALS(0u, cache.Size());
+}
+
+// Only a hit ends early: a miss already lasts until the next reask, and a running lookup goes on.
+TEST(KadPointerCache, OnlyAFinishedHitIsSpent)
+{
+	CKadPointerCache cache;
+	ASSERT_FALSE(cache.Spent(SOURCE, NOW));
+	cache.Started(SOURCE, RECORD_IP);
+	cache.Add(SOURCE, Pointer());
+	ASSERT_FALSE(cache.Spent(SOURCE, NOW));
+	ASSERT_TRUE(NextAfterDeadBuddy(cache, 1, NOW).step == EKadPointerStep::Wait);
+	cache.Finished(SOURCE, NOW, MISS);
+	ASSERT_TRUE(cache.Spent(SOURCE, NOW + 1));
+	ASSERT_FALSE(cache.Spent(SOURCE, NOW + 1));
+
+	CKadPointerCache missed;
+	missed.Started(SOURCE, RECORD_IP);
+	missed.Finished(SOURCE, NOW, MISS);
+	ASSERT_FALSE(missed.Spent(SOURCE, NOW + 1));
+	ASSERT_TRUE(NextAfterDeadBuddy(missed, 0, NOW + MISS - 1).step == EKadPointerStep::Exhausted);
+	ASSERT_TRUE(NextAfterDeadBuddy(missed, 0, NOW + MISS).step == EKadPointerStep::Look);
+}
+
 TEST(KadPointerCache, PruneDropsOnlyWhatExpired)
 {
 	CKadPointerCache cache;
@@ -234,4 +270,22 @@ TEST(KadPointerCache, OnlyRunningLookupsAreCounted)
 	ASSERT_EQUALS(KAD_POINTER_MAX_RUNNING - 1, cache.Running());
 	cache.Prune(NOW + MISS);
 	ASSERT_EQUALS(KAD_POINTER_MAX_RUNNING - 1, cache.Running());
+}
+
+// A source whose pointer gave no buddy is kept for a few reasks: its publisher may get one.
+TEST(KadPointerCache, AMissIsRetriedAFewReasksOnly)
+{
+	ASSERT_TRUE(ShouldRetryKadPointer(0));
+	ASSERT_TRUE(ShouldRetryKadPointer(KAD_POINTER_MAX_MISSES - 1));
+	ASSERT_FALSE(ShouldRetryKadPointer(KAD_POINTER_MAX_MISSES));
+}
+
+TEST(KadPointerCache, OnlyALookupThatRanHasAnOutcome)
+{
+	CKadPointerCache cache;
+	ASSERT_FALSE(cache.Finished(SOURCE, NOW, MISS).ran);
+	cache.Started(SOURCE, RECORD_IP);
+	const CKadPointerCache::SOutcome outcome = cache.Finished(SOURCE, NOW, MISS);
+	ASSERT_TRUE(outcome.ran);
+	ASSERT_FALSE(outcome.found);
 }
