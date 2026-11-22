@@ -51,11 +51,13 @@ NetworkInterfaceIPv6 Address(const Bytes &bytes, bool temporary = false, bool de
 	return address;
 }
 
-NetworkInterface Interface(const wxString &name, std::vector<NetworkInterfaceIPv6> addresses)
+NetworkInterface Interface(
+	const wxString &name, std::vector<NetworkInterfaceIPv6> addresses, bool defaultRoute = false)
 {
 	NetworkInterface iface;
 	iface.name = name;
 	iface.ipv6 = std::move(addresses);
+	iface.defaultIPv6Route = defaultRoute;
 	return iface;
 }
 
@@ -130,6 +132,30 @@ TEST(AdvertisedIPv6, APinnedInterfaceLimitsTheChoice)
 		Interface("wlan0", { Address(Global(2)) }) };
 	ASSERT_TRUE(Chooses(interfaces, Global(2), "wlan0"));
 	ASSERT_FALSE(ChooseAdvertisedIPv6(interfaces, "tun0").has_value());
+}
+
+// Ethernet and Wi-Fi on one LAN: the address follows the interface that traffic leaves through.
+TEST(AdvertisedIPv6, TheInterfaceTrafficLeavesThroughWinsOverALowerAddress)
+{
+	const std::vector<NetworkInterface> interfaces = { Interface("eth0", { Address(Global(9)) }, true),
+		Interface("wlan0", { Address(Global(3)) }) };
+	ASSERT_TRUE(Chooses(interfaces, Global(9)));
+}
+
+TEST(AdvertisedIPv6, AStableAddressElsewhereBeatsATemporaryOneOnTheRouteInterface)
+{
+	const std::vector<NetworkInterface> interfaces = {
+		Interface("eth0", { Address(Global(1), true) }, true),
+		Interface("wlan0", { Address(Global(5)) })
+	};
+	ASSERT_TRUE(Chooses(interfaces, Global(5)));
+}
+
+TEST(AdvertisedIPv6, APinOutranksTheRouteInterface)
+{
+	const std::vector<NetworkInterface> interfaces = { Interface("eth0", { Address(Global(1)) }, true),
+		Interface("wlan0", { Address(Global(2)) }) };
+	ASSERT_TRUE(Chooses(interfaces, Global(2), "wlan0"));
 }
 
 // Every refresh must agree on the answer, whatever order the platform enumerates in.

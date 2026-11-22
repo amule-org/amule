@@ -124,6 +124,59 @@ std::vector<std::pair<Ipv6Bytes, unsigned int>> ReadIfInet6Flags()
 
 #endif // !__WINDOWS__ && __linux__
 
+// The source address the system picks for global IPv6 traffic. connect() on a UDP socket only
+// selects the route and the source, and sends nothing. The target is a documentation address, so
+// only the default route covers it.
+bool DefaultRouteIPv6Source(Ipv6Bytes &source)
+{
+	static const Ipv6Bytes target = { 0x20, 0x01, 0x0d, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 };
+	sockaddr_in6 remote{};
+	remote.sin6_family = AF_INET6;
+	remote.sin6_port = htons(9);
+	std::memcpy(&remote.sin6_addr, target.data(), target.size());
+	sockaddr_in6 local{};
+	socklen_t localLen = sizeof(local);
+#ifdef __WINDOWS__
+	const SOCKET fd = ::socket(AF_INET6, SOCK_DGRAM, 0);
+	if (fd == INVALID_SOCKET) {
+		return false;
+	}
+#else
+	const int fd = ::socket(AF_INET6, SOCK_DGRAM, 0);
+	if (fd < 0) {
+		return false;
+	}
+#endif
+	const bool found = ::connect(fd, reinterpret_cast<const sockaddr *>(&remote), sizeof(remote)) == 0 &&
+			   ::getsockname(fd, reinterpret_cast<sockaddr *>(&local), &localLen) == 0 &&
+			   local.sin6_family == AF_INET6;
+#ifdef __WINDOWS__
+	::closesocket(fd);
+#else
+	::close(fd);
+#endif
+	if (found) {
+		std::memcpy(source.data(), &local.sin6_addr, source.size());
+	}
+	return found;
+}
+
+void MarkDefaultIPv6Route(std::vector<NetworkInterface> &interfaces)
+{
+	Ipv6Bytes source{};
+	if (!DefaultRouteIPv6Source(source)) {
+		return;
+	}
+	for (NetworkInterface &iface : interfaces) {
+		for (const NetworkInterfaceIPv6 &address : iface.ipv6) {
+			if (address.bytes == source) {
+				iface.defaultIPv6Route = true;
+				return;
+			}
+		}
+	}
+}
+
 } // namespace
 
 std::vector<NetworkInterface> DetectNetworkInterfaces()
@@ -284,5 +337,6 @@ std::vector<NetworkInterface> DetectNetworkInterfaces()
 		freeifaddrs(ifaces);
 	}
 #endif
+	MarkDefaultIPv6Route(result);
 	return result;
 }
