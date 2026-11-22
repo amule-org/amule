@@ -693,6 +693,9 @@ add_test (NAME QuicSocketTransportTest COMMAND QuicSocketTransportTest)
 target_include_directories (QuicSocketTransportTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (QuicSocketTransportTest muleunit mulecommon ${Boost_LIBRARIES})
 
+# The QUIC admission decision only, as UtpAdmissionTest. Free of ngtcp2, so it runs in every build.
+add_muleunit_test (QuicAdmissionTest)
+
 # One libutp socket behind IStreamTransport: the partial write whose refused
 # tail must stay queued, and the close that must happen exactly once. The
 # library is a seam here, so this runs in every build like UtpStreamTest.

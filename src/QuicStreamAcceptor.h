@@ -50,8 +50,46 @@ public:
 		uint16_t port) = 0;
 };
 
-//! Gathers the same facts CUtpStreamAcceptor gathers, from the same application state, and acts
-//! on the same decision -- the two transports share one admission policy by design.
+//! Why an offered QUIC stream was, or was not, taken.
+enum class EQuicAdmission
+{
+	Admit,
+	ShuttingDown,
+	TooManySockets,
+	NoAddress,
+	Filtered,
+	Banned
+};
+
+/**
+ * The admission decision, separated from gathering the facts it needs.
+ *
+ * DecideUtpAdmission() less its half-open budget, which counts streams before their first data: a
+ * QUIC stream is offered at its first data. No exception while connecting to a server either: that
+ * one is the TCP listener's, for the server's TCP callback test.
+ */
+constexpr EQuicAdmission DecideQuicAdmission(
+	bool running, bool tooManySockets, bool hasAddress, bool filtered, bool banned)
+{
+	if (!running) {
+		return EQuicAdmission::ShuttingDown;
+	}
+	if (tooManySockets) {
+		return EQuicAdmission::TooManySockets;
+	}
+	if (!hasAddress) {
+		return EQuicAdmission::NoAddress;
+	}
+	if (filtered) {
+		return EQuicAdmission::Filtered;
+	}
+	if (banned) {
+		return EQuicAdmission::Banned;
+	}
+	return EQuicAdmission::Admit;
+}
+
+//! Gathers those facts from the application and acts on the decision.
 class CQuicStreamAcceptor : public IQuicStreamAcceptor
 {
 public:
