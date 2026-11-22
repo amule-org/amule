@@ -723,6 +723,10 @@ target_link_libraries (UtpSocketTransportTest
 # target is instrumented: a global -fsanitize=thread breaks the crypto++ version probe.
 option (ENABLE_TSAN_TESTS "Also build UtpSocketTransportTest under ThreadSanitizer (Clang or GCC)" OFF)
 if (ENABLE_TSAN_TESTS)
+	if (WIN32 OR NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+		message (FATAL_ERROR "ENABLE_TSAN_TESTS=YES needs Clang or GCC on a platform with "
+			"ThreadSanitizer, and Windows has none. Set ENABLE_TSAN_TESTS=NO.")
+	endif()
 	add_executable (UtpSocketTransportTsanTest
 		UtpSocketTransportTest.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp

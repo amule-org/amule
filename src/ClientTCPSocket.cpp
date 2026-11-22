@@ -336,15 +336,17 @@ bool CClientTCPSocket::TryUtpTcpFallback()
 	// re-checks bans, refuses an address it cannot dial, drops an obfuscation
 	// mismatch and sends a LowID peer down its callback path instead. An inbound
 	// stream reaches this too, so none of those checks is hypothetical.
-	facts.directDialAllowed = !m_client->HasLowID() && m_client->IsRedialAllowed();
+	// Asked only while connecting: its ban lookup also drops lapsed bans.
+	facts.directDialAllowed = facts.connecting && !m_client->HasLowID() && m_client->IsRedialAllowed();
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	facts.callbackDial = m_client->IsLugdunumCallbackDial();
 #endif
-	// Connect() would reach SetConnectionEncryption()'s wxFAIL and leave the
-	// keystreams at their mid-stream position, so the peer would decode the new
-	// connection's first bytes from position zero. Only an inbound peer that runs
-	// the ed2k handshake inside frames we already obfuscate gets here, and TCP is
-	// the right answer for it -- just not on this socket.
+	// A stream handshake that already started cannot be re-keyed: Connect() would
+	// reach SetConnectionEncryption()'s wxFAIL and leave the keystreams at their
+	// mid-stream position, so the peer would decode the new connection's first
+	// bytes from position zero. Only an inbound peer that runs the ed2k handshake
+	// inside frames we already obfuscate gets here, and TCP is the right answer
+	// for it -- just not on this socket.
 	facts.streamCryptStarted = StreamCryptInProgress();
 	return RunUtpTcpFallback(
 		facts,

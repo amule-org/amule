@@ -65,8 +65,9 @@ enum class EQuicAdmission
  * The admission decision, separated from gathering the facts it needs.
  *
  * DecideUtpAdmission() less its half-open budget, which counts streams before their first data: a
- * QUIC stream is offered at its first data. No exception while connecting to a server either: that
- * one is the TCP listener's, for the server's TCP callback test.
+ * QUIC stream is offered at its first data. As for uTP, the caller passes a rendezvous peer's limit
+ * without the five-second interval. No exception while connecting to a server: that one is the TCP
+ * listener's, for the server's TCP callback test.
  */
 constexpr EQuicAdmission DecideQuicAdmission(
 	bool running, bool tooManySockets, bool hasAddress, bool filtered, bool banned)

@@ -533,8 +533,9 @@ constexpr std::uint64_t kUtpCryptHeaderBytes = 8;
 
 // Both families fit the IPv6 minimum link: 1280 - 40 IPv6 - 8 UDP. An IPv4 packet is then 1260
 // bytes, which passes WireGuard (1420) and the other tunnels a 1500-byte link carries. A higher
-// ceiling would rely on libutp's MTU search, whose probes ask for DF. Our UDP socket never sets
-// DF, so a probe passes by fragmenting and the search settles on the ceiling.
+// ceiling would rely on libutp's MTU search, whose probes ask for DF. Our UDP socket does not set
+// DF itself, and only Linux sets it by default, so elsewhere a probe passes by fragmenting and the
+// search settles on the ceiling.
 constexpr std::uint64_t UtpUdpMtu()
 {
 	return UINT64_C(1232) - kUtpEnvelopeBytes - kUtpCryptHeaderBytes;

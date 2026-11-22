@@ -41,7 +41,16 @@ bool CQuicStreamAcceptor::AcceptStream(
 {
 	// Each fact only once the ones before it pass: during shutdown the listener may be gone.
 	const bool running = theApp->IsRunning();
-	const bool tooManySockets = running && theApp->listensocket->TooManySockets();
+#ifdef AMULE_UTP_TRANSPORT
+	// As in the uTP acceptor: a stream from a peer a rendezvous announced is that NAT-T meeting,
+	// and the limit on new connections per five seconds does not hold it back.
+	const uint32_t ip = address.ToIPv4NetworkOrderOrZero();
+	const bool rendezvous = running && ip != 0 && theApp->clientudp != nullptr &&
+				theApp->clientudp->IsExpectedUtpPeer(ip, port);
+#else
+	const bool rendezvous = false;
+#endif
+	const bool tooManySockets = running && theApp->listensocket->TooManySockets(rendezvous);
 	const bool hasAddress = address.IsPresent();
 	const bool checkAddress = running && !tooManySockets && hasAddress;
 	const bool filtered = checkAddress && theApp->ipfilter->IsFiltered(address);
@@ -69,9 +78,7 @@ bool CQuicStreamAcceptor::AcceptStream(
 
 	auto *socket = new CClientTCPSocket();
 #ifdef AMULE_UTP_TRANSPORT
-	// As in the uTP acceptor: a stream from a peer a rendezvous announced is that NAT-T meeting.
-	const uint32_t ip = address.ToIPv4NetworkOrderOrZero();
-	if (ip != 0 && theApp->clientudp != nullptr && theApp->clientudp->IsExpectedUtpPeer(ip, port)) {
+	if (rendezvous) {
 		socket->MarkRendezvousStream(theApp->clientudp->IsLugdunumRendezvousPeer(ip));
 	}
 #endif
