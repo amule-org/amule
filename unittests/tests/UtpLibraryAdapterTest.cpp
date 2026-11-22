@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cstdlib>
 #include <deque>
 #include <memory>
 #include <string>
@@ -361,6 +362,38 @@ uint32_t ReadUntilData(SLoopback &loop, IStreamTransport &transport, Buffer &buf
 	return receivedBytes;
 }
 } // namespace
+
+namespace
+{
+//! The connection IDs and sequence numbers of four SYNs, dialled right after srand(1).
+std::vector<uint16_t> SynNumbersAfterSrand()
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	srand(1);
+	std::vector<uint16_t> numbers;
+	std::vector<std::unique_ptr<IStreamTransport>> transports(4);
+	for (size_t i = 0; i < transports.size(); ++i) {
+		ASSERT_TRUE(loop.server->Dial(
+			kPeerIp, static_cast<uint16_t>(kPeerPort + i), false, nullptr, transports[i]));
+		const SFrameNumbers syn = FrameNumbers(sink.lastPayload);
+		numbers.push_back(syn.connectionId);
+		numbers.push_back(syn.seqNr);
+	}
+	transports.clear();
+	Teardown(loop);
+	return numbers;
+}
+} // namespace
+
+// libutp's default draws these from rand(), so the same seed gave the same handshakes.
+TEST(UtpLibraryAdapter, SynNumbersDoNotComeFromRand)
+{
+	ASSERT_TRUE(SynNumbersAfterSrand() != SynNumbersAfterSrand());
+}
 
 TEST(UtpLibraryAdapter, AnInboundSynReachesAdmissionWithItsPeer)
 {

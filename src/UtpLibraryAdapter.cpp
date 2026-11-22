@@ -39,6 +39,9 @@
 #include <utility>
 #include <vector>
 
+// From RandomFunctions.h, which can't be included here: its Types.h declares int8 unlike libutp.
+uint32_t GetRandomUint32();
+
 namespace
 {
 class CUtpLibraryAdapter final : public IUtpLibrary, public IUtpSocketOperations
@@ -110,6 +113,7 @@ public:
 		utp_set_callback(m_context, UTP_ON_ERROR, OnError);
 		utp_set_callback(m_context, UTP_ON_READ, OnRead);
 		utp_set_callback(m_context, UTP_GET_READ_BUFFER_SIZE, GetReadBufferSize);
+		utp_set_callback(m_context, UTP_GET_RANDOM, GetRandom);
 		return true;
 	}
 
@@ -1130,6 +1134,9 @@ private:
 		return transport == nullptr ? 0 : transport->ReadBufferSize();
 	}
 
+	// The connection ID and first sequence number of each stream. libutp's default is rand(): 15
+	// random bits on Windows, and a sequence that follows from the second Kad started in.
+	static uint64 GetRandom(utp_callback_arguments * /*args*/) { return GetRandomUint32(); }
 	static uint64 GetUdpMtu(utp_callback_arguments *args)
 	{
 		return UtpUdpMtu(args->address->sa_family == AF_INET6);
