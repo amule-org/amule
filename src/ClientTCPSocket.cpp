@@ -309,61 +309,54 @@ void CClientTCPSocket::SetClient(CUpDownClient *pClient)
 }
 
 #ifdef AMULE_UTP_TRANSPORT
+void CClientTCPSocket::RecordUtpDialFailure()
+{
+	uint32 utpIp = 0;
+	if (!GetTransport()->GetPeerAddress().ToIPv4NetworkOrder(utpIp)) {
+		return;
+	}
+	// The next contact with this endpoint goes straight to TCP.
+	const uint16 utpPort = GetTransport()->GetPeerPort();
+	theApp->clientudp->UtpDialFailures().RecordFailure(utpIp, utpPort, ::GetTickCount64());
+	AddDebugLogLineN(logClientUDP,
+		CFormat("uTP handshake with %s did not complete; TCP first for %u min") %
+			Uint32_16toStringIP_Port(utpIp, utpPort) %
+			static_cast<unsigned>(UtpDialFailureMemory::CooldownMs / 60000));
+}
+
 bool CClientTCPSocket::TryUtpTcpFallback()
 {
 	if (m_client == nullptr || !HasUtpTransport()) {
 		return false;
 	}
-	if (m_client->GetDownloadState() != DS_CONNECTING && m_client->GetUploadState() != US_CONNECTING) {
-		return false;
-	}
+	SUtpTcpFallbackFacts facts;
+	facts.connecting =
+		m_client->GetDownloadState() == DS_CONNECTING || m_client->GetUploadState() == US_CONNECTING;
 	// Connect() is otherwise reached only through TryToContact(), which filters,
 	// re-checks bans, refuses an address it cannot dial, drops an obfuscation
 	// mismatch and sends a LowID peer down its callback path instead. An inbound
 	// stream reaches this too, so none of those checks is hypothetical.
-	if (m_client->HasLowID() || !m_client->IsRedialAllowed()) {
-		return false;
-	}
+	facts.directDialAllowed = !m_client->HasLowID() && m_client->IsRedialAllowed();
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	if (m_client->IsLugdunumCallbackDial()) {
-		return false;
-	}
+	facts.callbackDial = m_client->IsLugdunumCallbackDial();
 #endif
-	// A stream handshake that already started cannot be re-keyed: Connect() would
-	// reach SetConnectionEncryption()'s wxFAIL and leave the keystreams at their
-	// mid-stream position, so the peer would decode the new connection's first
-	// bytes from position zero. Only an inbound peer that runs the ed2k handshake
-	// inside frames we already obfuscate gets here, and TCP is the right answer
-	// for it -- just not on this socket.
-	if (StreamCryptInProgress()) {
-		return false;
-	}
-	if (m_utpFallbackAttempted) {
-		return false;
-	}
-	m_utpFallbackAttempted = true;
-	uint32 utpIp = 0;
-	if (!m_utpStreamConnected && GetTransport()->GetPeerAddress().ToIPv4NetworkOrder(utpIp)) {
-		// The next contact with this endpoint goes straight to TCP.
-		const uint16 utpPort = GetTransport()->GetPeerPort();
-		theApp->clientudp->UtpDialFailures().RecordFailure(utpIp, utpPort, ::GetTickCount64());
-		AddDebugLogLineN(logClientUDP,
-			CFormat("uTP handshake with %s did not complete; TCP first for %u min") %
-				Uint32_16toStringIP_Port(utpIp, utpPort) %
-				static_cast<unsigned>(UtpDialFailureMemory::CooldownMs / 60000));
-	}
-	// Before the transport goes: this waits out a send running on the throttler
-	// thread, which would otherwise be inside the stream we are about to free,
-	// and clears what the dead stream left half-written.
-	QuiesceForRedial();
-	// Destroy only the failed uTP stream; keep the client and socket wrapper so
-	// the normal TCP Connect() path can reuse its identity.
-	DetachTransport().reset();
-	// The uTP window is spent. Give the TCP connect its own, rather than whatever
-	// remained of it -- the OnClose() route arrives here without CheckTimeOut()'s
-	// reset, so it would otherwise inherit an already-elapsed timer.
-	ResetTimeOutTimer();
-	return m_client->Connect();
+	// Connect() would reach SetConnectionEncryption()'s wxFAIL and leave the
+	// keystreams at their mid-stream position, so the peer would decode the new
+	// connection's first bytes from position zero. Only an inbound peer that runs
+	// the ed2k handshake inside frames we already obfuscate gets here, and TCP is
+	// the right answer for it -- just not on this socket.
+	facts.streamCryptStarted = StreamCryptInProgress();
+	return RunUtpTcpFallback(
+		facts,
+		m_utpFallbackAttempted,
+		m_utpStreamConnected,
+		[this]() { RecordUtpDialFailure(); },
+		// Also clears what the dead stream left half-written.
+		[this]() { QuiesceForRedial(); },
+		// Only the stream: the client and this socket keep their identity for Connect().
+		[this]() { DetachTransport().reset(); },
+		[this]() { ResetTimeOutTimer(); },
+		[this]() { return m_client->Connect(); });
 }
 #endif
 

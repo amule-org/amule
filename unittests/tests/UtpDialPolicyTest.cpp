@@ -26,6 +26,7 @@
 #include "UtpDialPolicy.h"
 
 #include <optional>
+#include <string>
 #include <vector>
 
 using namespace muleunit;
@@ -699,4 +700,85 @@ TEST(UtpDialPolicy, AHalfOpenStreamExpiresAtItsLimit)
 	ASSERT_TRUE(IsUtpHalfOpenExpired(1000, 1000 + kUtpHalfOpenLimitMs));
 	// A clock behind the accept expires nothing.
 	ASSERT_FALSE(IsUtpHalfOpenExpired(1000, 999));
+}
+
+namespace
+{
+SUtpTcpFallbackFacts FallbackAllowed()
+{
+	SUtpTcpFallbackFacts facts;
+	facts.connecting = true;
+	facts.directDialAllowed = true;
+	return facts;
+}
+
+//! Runs the fallback with steps that only record their order.
+bool RunRecordedFallback(const SUtpTcpFallbackFacts &facts,
+	bool &attempted,
+	bool handshakeCompleted,
+	bool dialResult,
+	std::vector<std::string> &steps)
+{
+	return RunUtpTcpFallback(
+		facts,
+		attempted,
+		handshakeCompleted,
+		[&]() { steps.emplace_back("record"); },
+		[&]() { steps.emplace_back("quiesce"); },
+		[&]() { steps.emplace_back("drop"); },
+		[&]() { steps.emplace_back("reset"); },
+		[&]() {
+			steps.emplace_back("dial");
+			return dialResult;
+		});
+}
+} // namespace
+
+TEST(UtpDialPolicy, FallbackNeedsAPendingDirectDialWithNoStreamCryptStarted)
+{
+	for (unsigned bits = 0; bits < 16; ++bits) {
+		SUtpTcpFallbackFacts facts;
+		facts.connecting = (bits & 1) != 0;
+		facts.directDialAllowed = (bits & 2) != 0;
+		facts.callbackDial = (bits & 4) != 0;
+		facts.streamCryptStarted = (bits & 8) != 0;
+		ASSERT_EQUALS(bits == 3, ShouldTryUtpTcpFallback(facts));
+
+		bool attempted = false;
+		std::vector<std::string> steps;
+		const bool dialled = RunRecordedFallback(facts, attempted, false, true, steps);
+		// A refusal leaves the latch open and the stream untouched.
+		ASSERT_EQUALS(bits == 3, dialled);
+		ASSERT_EQUALS(bits == 3, attempted);
+		ASSERT_EQUALS(bits == 3 ? 5u : 0u, (unsigned)steps.size());
+	}
+}
+
+TEST(UtpDialPolicy, AFailedHandshakeIsRecordedThenTheSocketQuiescesBeforeItsStreamGoes)
+{
+	bool attempted = false;
+	std::vector<std::string> steps;
+	ASSERT_TRUE(RunRecordedFallback(FallbackAllowed(), attempted, false, true, steps));
+	const std::vector<std::string> expected{ "record", "quiesce", "drop", "reset", "dial" };
+	ASSERT_TRUE(expected == steps);
+}
+
+TEST(UtpDialPolicy, AStreamThatConnectedIsNoDialFailure)
+{
+	bool attempted = false;
+	std::vector<std::string> steps;
+	ASSERT_TRUE(RunRecordedFallback(FallbackAllowed(), attempted, true, true, steps));
+	const std::vector<std::string> expected{ "quiesce", "drop", "reset", "dial" };
+	ASSERT_TRUE(expected == steps);
+}
+
+TEST(UtpDialPolicy, TheFallbackRunsOnceEvenWhenItsDialFails)
+{
+	bool attempted = false;
+	std::vector<std::string> steps;
+	ASSERT_FALSE(RunRecordedFallback(FallbackAllowed(), attempted, false, false, steps));
+	ASSERT_TRUE(attempted);
+	steps.clear();
+	ASSERT_FALSE(RunRecordedFallback(FallbackAllowed(), attempted, false, true, steps));
+	ASSERT_TRUE(steps.empty());
 }

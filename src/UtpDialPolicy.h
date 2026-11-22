@@ -239,6 +239,61 @@ inline SUtpHelloAttachmentResult AttachUtpSocketAfterVerifiedHello(bool winnerMa
 	return { decision, socketAttached };
 }
 
+//! What CClientTCPSocket::TryUtpTcpFallback() reads before it trades a failed uTP stream for TCP.
+struct SUtpTcpFallbackFacts
+{
+	//! The download or the upload waits for this connection.
+	bool connecting = false;
+	//! A HighID whose dial the checks of TryToContact() would allow.
+	bool directDialAllowed = false;
+	//! A server-coordinated callback: the peer dials us, so a dial of ours replaces nothing.
+	bool callbackDial = false;
+	//! The ed2k obfuscation handshake started inside the stream and cannot be re-keyed.
+	bool streamCryptStarted = false;
+};
+
+inline bool ShouldTryUtpTcpFallback(const SUtpTcpFallbackFacts &facts)
+{
+	return facts.connecting && facts.directDialAllowed && !facts.callbackDial &&
+	       !facts.streamCryptStarted;
+}
+
+/**
+ * Trades a failed uTP stream for one TCP dial, keeping the socket and its client.
+ *
+ * In this order: the failure is recorded while the dead stream still names its endpoint, and only
+ * when its handshake never completed; the socket is quiesced before the transport goes, as a send
+ * may still run inside that stream on the throttler thread; the timeout is reset before the dial,
+ * as the OnClose() route arrives with an elapsed one; the dial comes last. `attempted` is set
+ * whatever the dial returns.
+ */
+template <typename RecordFailure,
+	typename Quiesce,
+	typename DropTransport,
+	typename ResetTimeout,
+	typename Dial>
+inline bool RunUtpTcpFallback(const SUtpTcpFallbackFacts &facts,
+	bool &attempted,
+	bool handshakeCompleted,
+	RecordFailure &&recordFailure,
+	Quiesce &&quiesce,
+	DropTransport &&dropTransport,
+	ResetTimeout &&resetTimeout,
+	Dial &&dial)
+{
+	if (attempted || !ShouldTryUtpTcpFallback(facts)) {
+		return false;
+	}
+	attempted = true;
+	if (!handshakeCompleted) {
+		recordFailure();
+	}
+	quiesce();
+	dropTransport();
+	resetTimeout();
+	return dial();
+}
+
 inline bool ConsumeUtpFileRequestRetry(bool &fileRequestLost, bool downloadConnected)
 {
 	if (!fileRequestLost) {
