@@ -2562,6 +2562,14 @@ target_link_libraries (Ipv4AddressTest
 	mulecommon
 )
 
+add_executable (JsonIntegerTest JsonIntegerTest.cpp)
+add_test (NAME JsonIntegerTest COMMAND JsonIntegerTest)
+target_include_directories (JsonIntegerTest PRIVATE
+	${CMAKE_SOURCE_DIR}/src/webapi
+	${CMAKE_SOURCE_DIR}/src/libwebcommon
+)
+target_link_libraries (JsonIntegerTest muleunit picojson_header)
+
 add_executable (JsonDepthScanTest
 	JsonDepthScanTest.cpp
 )
