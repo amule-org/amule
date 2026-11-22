@@ -1101,5 +1101,14 @@
   "downloads_peer_conn_answered_kad_buddy_callback": "Devolución de llamada de compañero de Kad respondida",
   "downloads_peer_conn_answered_direct_udp_callback": "Devolución de llamada UDP directa respondida",
   "downloads_peer_conn_answered_lugdunum_callback": "Devolución de llamada de Lugdunum respondida",
-  "downloads_peer_conn_proxy": "proxy"
+  "downloads_peer_conn_proxy": "proxy",
+  "prefs_group_ipv6": "IPv6",
+  "prefs_ipv6_restart_hint": "Un cambio en las familias de direcciones surte efecto tras reiniciar aMule.",
+  "prefs_opt_ip_versions_ipv4_only": "Sólo IPv4",
+  "prefs_opt_ip_versions_ipv4_and_ipv6": "IPv4 y IPv6",
+  "prefs_opt_ipv6_advertising_when_verified": "Cuando se verifique",
+  "prefs_opt_ipv6_advertising_always": "Siempre",
+  "prefs_opt_ipv6_advertising_never": "Nunca",
+  "prefs_field_connection_ip_versions": "Familias de direcciones",
+  "prefs_field_connection_ipv6_advertising": "Anunciar mi dirección IPv6"
 }

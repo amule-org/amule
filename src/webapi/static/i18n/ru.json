@@ -1101,5 +1101,14 @@
   "downloads_peer_conn_answered_kad_buddy_callback": "Отвеченный обратный вызов друга Kad",
   "downloads_peer_conn_answered_direct_udp_callback": "Отвеченный прямой обратный вызов UDP",
   "downloads_peer_conn_answered_lugdunum_callback": "Отвеченный обратный вызов Lugdunum",
-  "downloads_peer_conn_proxy": "прокси"
+  "downloads_peer_conn_proxy": "прокси",
+  "prefs_group_ipv6": "IPv6",
+  "prefs_ipv6_restart_hint": "Изменение семейств адресов вступает в силу после перезапуска aMule.",
+  "prefs_opt_ip_versions_ipv4_only": "Только IPv4",
+  "prefs_opt_ip_versions_ipv4_and_ipv6": "IPv4 и IPv6",
+  "prefs_opt_ipv6_advertising_when_verified": "При подтверждении",
+  "prefs_opt_ipv6_advertising_always": "Всегда",
+  "prefs_opt_ipv6_advertising_never": "Никогда",
+  "prefs_field_connection_ip_versions": "Семейства адресов",
+  "prefs_field_connection_ipv6_advertising": "Объявлять мой адрес IPv6"
 }
