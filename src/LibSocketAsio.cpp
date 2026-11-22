@@ -2188,6 +2188,7 @@ public:
 	}
 
 	bool IsOk() const { return m_OK; }
+	int ReceiveBufferBytes() const { return m_receiveBufferBytes; }
 
 	void Close()
 	{
@@ -2287,23 +2288,56 @@ private:
 		} else if (received == 0) {
 			AddDebugLogLineF(logAsio, "UDP HandleReadError nothing available");
 		} else {
-
-			const CNetworkAddress sourceAddress =
-				NetworkAddressAsio::FromIngressAddress(m_receiveEndpoint.address());
-			AddDebugLogLineF(logAsio,
-				CFormat("UDP HandleRead %d %s:%d") % received % sourceAddress.ToString() %
-					m_receiveEndpoint.port());
-
-			// create our read buffer
-			CUDPData *recdata =
-				new CUDPData(m_readBuffer, received, sourceAddress, m_receiveEndpoint.port());
-			{
-				wxMutexLocker lock(m_receiveBuffersLock);
-				m_receiveBuffers.push_back(recdata);
-			}
-			CoreNotify_UDPSocketReceive(m_muleSocket);
+			QueueReceived(received);
+			DrainQueued();
 		}
 		StartBackgroundRead();
+	}
+
+	// Hands the datagram in m_readBuffer to the main thread, one notification each: OnReceive()
+	// takes one datagram per call.
+	void QueueReceived(size_t received)
+	{
+		const CNetworkAddress sourceAddress =
+			NetworkAddressAsio::FromIngressAddress(m_receiveEndpoint.address());
+		AddDebugLogLineF(logAsio,
+			CFormat("UDP HandleRead %d %s:%d") % received % sourceAddress.ToString() %
+				m_receiveEndpoint.port());
+
+		CUDPData *recdata =
+			new CUDPData(m_readBuffer, received, sourceAddress, m_receiveEndpoint.port());
+		{
+			wxMutexLocker lock(m_receiveBuffersLock);
+			m_receiveBuffers.push_back(recdata);
+		}
+		CoreNotify_UDPSocketReceive(m_muleSocket);
+	}
+
+	// One read per completion left the rest of a burst in the kernel, which drops what does not
+	// fit in the receive buffer. Take what is already there before waiting again; a backlog then
+	// waits in m_receiveBuffers, where uTP sees delay instead of loss.
+	void DrainQueued()
+	{
+		for (unsigned taken = 0; m_canDrain && taken < kMaxDrainedPerRead; ++taken) {
+			error_code ec;
+			const size_t received =
+				m_socket->receive_from(buffer(m_readBuffer, CMuleUDPSocket::UDP_BUFFER_SIZE),
+					m_receiveEndpoint,
+					0,
+					ec);
+			if (ec) {
+				// would_block when the queue is empty. Anything else is left to the next
+				// read.
+				if (ec != error::would_block) {
+					AddDebugLogLineN(
+						logAsio, CFormat("UDP DrainError %s") % ec.message());
+				}
+				return;
+			}
+			if (received != 0) {
+				QueueReceived(received);
+			}
+		}
 	}
 
 	void HandleSendTo(const error_code &ec, size_t sent, CUDPData *recdata)
@@ -2337,6 +2371,11 @@ private:
 			// EADDRINUSE while the kernel still considers the previous binding live. Without this
 			// Kad and the ed2k client UDP stay broken until the user restarts amule.
 			m_socket->set_option(socket_base::reuse_address(true));
+			SetReceiveBuffer();
+			// Only DrainQueued() reads synchronously; the async reads work either way.
+			error_code ec;
+			m_socket->non_blocking(true, ec);
+			m_canDrain = !ec;
 			SetCloexecOnSocket(m_socket->native_handle());
 			// Pin this UDP socket (ed2k client/server + Kad all funnel
 			// through here) to the configured interface (#173).
@@ -2352,6 +2391,30 @@ private:
 			m_socket = NULL;
 			m_OK = false;
 		}
+	}
+
+	void SetReceiveBuffer()
+	{
+		error_code ec;
+		m_socket->set_option(socket_base::receive_buffer_size(kReceiveBufferBytes), ec);
+		socket_base::receive_buffer_size granted;
+		m_socket->get_option(granted, ec);
+		m_receiveBufferBytes = ec ? 0 : granted.value();
+		AddDebugLogLineN(logAsio,
+			CFormat("UDP socket %s %d: receive buffer %d bytes") % m_address.IPAddress() %
+				m_address.Service() % m_receiveBufferBytes);
+#ifdef __linux__
+		// Linux grants at most net.core.rmem_max, which it doubles for its own bookkeeping; asio
+		// reports the value without the doubling, so a capped socket reads as rmem_max.
+		static std::atomic<bool> s_told{ false };
+		if (m_receiveBufferBytes != 0 && m_receiveBufferBytes < kReceiveBufferBytes &&
+			!s_told.exchange(true)) {
+			AddLogLineN(CFormat(_("net.core.rmem_max limits the UDP receive buffer to %d bytes. "
+					      "Bursts of uTP and QUIC data can be lost; setting it to %d "
+					      "avoids that.")) %
+				    m_receiveBufferBytes % kReceiveBufferBytes);
+		}
+#endif
 	}
 
 	void StartBackgroundRead()
@@ -2379,6 +2442,14 @@ private:
 	std::atomic<bool> m_destroying; // set once Destroy() has been called
 	io_context::strand m_strand;    // handle synchronisation in io_service thread pool
 	amuleIPV4Address m_address;
+
+	// A limit, not an allocation: room for a burst while the reader is busy. The kernel drops
+	// what does not fit, and uTP halves its window for every loss. Windows defaults to 64 KB.
+	static constexpr int kReceiveBufferBytes = 4 * 1024 * 1024;
+	// So one flooded socket cannot hold the strand.
+	static constexpr unsigned kMaxDrainedPerRead = 256;
+	int m_receiveBufferBytes = 0;
+	bool m_canDrain = false;
 
 	// One fix receive buffer
 	char *m_readBuffer;
@@ -2418,6 +2489,11 @@ CLibUDPSocket::~CLibUDPSocket()
 bool CLibUDPSocket::IsOk() const
 {
 	return m_aSocket->IsOk();
+}
+
+int CLibUDPSocket::GetReceiveBufferBytes() const
+{
+	return m_aSocket->ReceiveBufferBytes();
 }
 
 uint32 CLibUDPSocket::RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes)

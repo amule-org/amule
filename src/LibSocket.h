@@ -285,6 +285,9 @@ public:
 
 	// wx Stuff
 	bool IsOk() const;
+	//! The receive buffer the system granted, in bytes, as asio reports it (on Linux, without
+	//! the kernel's doubling); 0 if unknown.
+	int GetReceiveBufferBytes() const;
 	virtual uint32 RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes);
 	virtual uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes);
 	int LastError() const;
