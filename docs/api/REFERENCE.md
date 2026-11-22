@@ -1242,6 +1242,8 @@ curl -s -X PATCH -H "Authorization: Bearer $TOKEN" \
 
 **Response:** `200 OK` — the updated download object (full detail envelope including `progress.parts`).
 
+All supplied fields are validated before any commands are sent, so `400 bad_request` or `409 not_shared` leaves the file unchanged by this request; a core rejection (`400 amuled_rejected`) or EC failure (`503 ec_unavailable`) can still leave earlier fields applied.
+
 **Errors:** `400 bad_request` (`{hash}` is not 32 hex characters, no recognised field, invalid enum, or `my_comment`/`my_rating` sent alone), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `404 not_found`, `503 ec_unavailable`.
 
 #### `DELETE /api/v1/downloads/{hash}`
@@ -2027,6 +2029,8 @@ Send a bare priority level to pin it (the file's `priority_auto` becomes `false`
 `my_comment` and `my_rating` must be sent **together** (both or neither) — the daemon writes them as one atomic operation. `my_comment` is capped at 50 characters; `my_rating` is an integer `0`–`5`. Setting them requires the file to be shared. The same fields are accepted on [`PATCH /downloads/{hash}`](#patch-apiv1downloadshash) for a downloading file that is also shared.
 
 `name` renames the file — a non-empty string with no path separators (`/` or `\`, rejected to prevent the rename escaping the file's directory). Rename works on any known file, so it is accepted on both this endpoint and [`PATCH /downloads/{hash}`](#patch-apiv1downloadshash).
+
+All supplied fields are validated before any commands are sent, so `400 bad_request` or `409 not_shared` leaves the file unchanged by this request; a core rejection (`400 amuled_rejected`) or EC failure (`503 ec_unavailable`) can still leave earlier fields applied.
 
 **Errors:** `400 bad_request` (`{hash}` is not 32 hex characters, missing/invalid fields, `my_comment`/`my_rating` sent alone, or a `name` that is empty or contains a path separator), `404 not_found` (no shared file with that hash), `409 not_shared` (comment/rating on a non-shared file), `400 amuled_rejected`, `503 ec_unavailable`.
 
