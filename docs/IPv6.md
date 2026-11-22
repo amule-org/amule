@@ -29,8 +29,8 @@ stable IPv6 address. It applies at once:
 IPv6 connections, because eMuleAI peers then dial only that address.
 
 On a host with several interfaces, such as Ethernet and Wi-Fi on one LAN, the address comes from
-the interface that IPv6 traffic leaves through. The "Bind to network interface" setting overrides
-this.
+the interface that IPv6 traffic leaves through, when that interface has a stable address. The
+"Bind to network interface" setting overrides this.
 
 In every mode, advertising stops for up to a day when several unrelated peers see us arriving from
 a prefix this host does not hold (IPv6 NAT) and none has confirmed ours.
