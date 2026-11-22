@@ -30,6 +30,7 @@
 
 #include <atomic>
 #include <deque>
+#include <optional>
 
 #include "ThrottlerWake.h"
 #include "Types.h"
@@ -51,7 +52,8 @@ public:
 
 	void QueueForSendingControlPacket(ThrottledControlSocket *socket, bool hasSent = false);
 	void RemoveFromAllQueues(ThrottledControlSocket *socket);
-	void RemoveFromAllQueues(ThrottledFileSocket *socket);
+	//! Returns the socket's place in the upload slot list, if it had one.
+	std::optional<uint32> RemoveFromAllQueues(ThrottledFileSocket *socket);
 
 	void EndThread();
 

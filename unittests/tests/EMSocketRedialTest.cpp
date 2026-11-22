@@ -36,6 +36,9 @@
 #include <amule.h>
 #include <protocol/Protocols.h>
 
+#include <optional>
+#include <vector>
+
 using namespace muleunit;
 
 DECLARE_SIMPLE(EMSocketRedial)
@@ -43,6 +46,15 @@ DECLARE_SIMPLE(EMSocketRedial)
 namespace
 {
 int g_throttlerRemovals = 0;
+// The place in the upload slot list the throttler reports for a socket it removes.
+std::optional<uint32> g_uploadSlot;
+struct SReAdd
+{
+	uint32 index;
+	ThrottledFileSocket *socket;
+	size_t queuedControlPackets;
+};
+std::vector<SReAdd> g_reAdds;
 } // namespace
 
 // Only the application boundary is stubbed; the socket's state machine is production code.
@@ -91,9 +103,15 @@ void *UploadBandwidthThrottler::Entry()
 	return nullptr;
 }
 void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSocket *, bool) {}
-void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *)
+std::optional<uint32> UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *)
 {
 	++g_throttlerRemovals;
+	return g_uploadSlot;
+}
+void UploadBandwidthThrottler::AddToStandardList(uint32 index, ThrottledFileSocket *socket)
+{
+	g_reAdds.push_back(
+		{ index, socket, dynamic_cast<CEMSocket &>(*socket).GetPendingControlPacketCount() });
 }
 void CUploadDiskIOThread::SocketNeedsMoreData() {}
 bool CClientList::IsKadFirewallCheckIP(uint32) const
@@ -141,6 +159,8 @@ public:
 		theApp = &m_app;
 		m_app.uploadBandwidthThrottler = &m_throttler;
 		g_throttlerRemovals = 0;
+		g_uploadSlot.reset();
+		g_reAdds.clear();
 	}
 	~CRedialFixture()
 	{
@@ -186,4 +206,24 @@ TEST(EMSocketRedial, QuiescingDropsWhatTheDeadStreamLeftQueued)
 	ASSERT_EQUALS(0u, (unsigned)socket.GetPendingControlPacketCount());
 	// It leaves the throttler before its queues go, so no send is still running in them.
 	ASSERT_TRUE(g_throttlerRemovals > 0);
+	// It held no upload slot, so it gets none.
+	ASSERT_EQUALS(0u, (unsigned)g_reAdds.size());
+}
+
+TEST(EMSocketRedial, AnUploadSlotIsGivenBackOnceTheDeadStreamIsGone)
+{
+	CRedialFixture fixture;
+	CRedialSocket socket;
+	ASSERT_TRUE(Send(socket, true));
+	g_uploadSlot = 3;
+
+	socket.QuiesceForRedial();
+
+	// Only sockets in that list are sent file data: without it, the redialled socket
+	// accepts the upload and then sends none of the file.
+	ASSERT_EQUALS(1u, (unsigned)g_reAdds.size());
+	ASSERT_EQUALS(3u, (unsigned)g_reAdds[0].index);
+	ASSERT_TRUE(g_reAdds[0].socket == &socket);
+	// Not before the queues go, or the throttler sends the old stream's leftovers.
+	ASSERT_EQUALS(0u, (unsigned)g_reAdds[0].queuedControlPackets);
 }

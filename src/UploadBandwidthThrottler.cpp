@@ -29,6 +29,7 @@
 #include <common/Macros.h>
 #include <common/Constants.h>
 
+#include <algorithm>
 #include <cmath>
 #include "OtherFunctions.h"
 #include "ThrottledSocket.h"
@@ -204,15 +205,22 @@ void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledControlSocket *socke
 	DoRemoveFromAllQueues(socket);
 }
 
-void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *socket)
+std::optional<uint32> UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *socket)
 {
 	wxMutexLocker lock(m_sendLocker);
 
-	if (m_doRun) {
-		DoRemoveFromAllQueues(socket);
-
-		RemoveFromStandardListNoLock(socket);
+	if (!m_doRun) {
+		return std::nullopt;
 	}
+	DoRemoveFromAllQueues(socket);
+
+	const auto slot = std::find(m_StandardOrder_list.begin(), m_StandardOrder_list.end(), socket);
+	if (slot == m_StandardOrder_list.end()) {
+		return std::nullopt;
+	}
+	const auto index = static_cast<uint32>(slot - m_StandardOrder_list.begin());
+	RemoveFromStandardListNoLock(socket);
+	return index;
 }
 
 /**
