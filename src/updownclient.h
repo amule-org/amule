@@ -639,6 +639,8 @@ public:
 		m_uploadCallbackRoute = route;
 		if (route == EContactRouteReport::DirectUdpCallback) {
 			m_uploadDirectCallbackTried = true;
+		} else if (route == EContactRouteReport::KadBuddy) {
+			m_uploadKadBuddyCallbackTried = true;
 		}
 	}
 	bool HasUploadCallbackInFlight(uint64 now) const
@@ -661,6 +663,7 @@ public:
 		ClearUploadCallbackInFlight();
 		m_uploadCallbackSpent = false;
 		m_uploadDirectCallbackTried = false;
+		m_uploadKadBuddyCallbackTried = false;
 	}
 	size_t GetUpPartCount() const { return m_upPartStatus.size(); }
 
@@ -1137,6 +1140,11 @@ public:
 	}
 	//! A LowID we can ask to connect with OP_DIRECTCALLBACKREQ. The caller checks CanDoCallback().
 	bool IsDirectCallbackPossible() const;
+	//! A LowID we download from and can ask through its Kad buddy. The caller checks CanDoCallback().
+	bool IsUploadKadBuddyCallbackPossible() const;
+	uint64_t GetKadCallbackSentTime() const { return m_kadCallbackSentTime; }
+	//! KADEMLIA_CALLBACK_REQ to the buddy, in the current buddy ID layout, for m_reqfile.
+	void SendKadBuddyCallbackRequest();
 	uint64_t GetDirectCallbackTimeout() const { return m_dwDirectCallbackTimeout; }
 	uint64_t GetLastDirectCallbackRequest() const { return m_lastDirectCallbackRequest; }
 	bool HasObfuscatedConnectionBeenEstablished() const { return m_hasbeenobfuscatinglately; }
@@ -1295,6 +1303,7 @@ private:
 	uint64 m_lastDirectCallbackRequest = 0;
 	bool m_uploadCallbackSpent = false;
 	bool m_uploadDirectCallbackTried = false;
+	bool m_uploadKadBuddyCallbackTried = false;
 	bool m_uploadCallbackExpected = false;
 	uint32 m_nCurSessionUp;
 	uint16 m_nUpPartCount;

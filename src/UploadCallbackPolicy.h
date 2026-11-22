@@ -69,14 +69,21 @@ struct SUploadCallbackRouteFacts
 	//! A direct request went out in this request interval and was not answered.
 	bool directTried = false;
 	bool onOurServer = false;
+	//! CUpDownClient::IsUploadKadBuddyCallbackPossible().
+	bool kadBuddyCallback = false;
+	//! A Kad callback request went to the peer's buddy within eMule's flood interval.
+	bool kadBuddyThrottled = false;
+	//! Our Kad buddy request went out in this request interval and was not answered.
+	bool kadBuddyTried = false;
 };
 
 /**
  * The upload callback route that needs no NAT-T server support, or None.
  *
- * The order is TryToContact()'s: an unanswered direct request moves on to the next route. The server
- * callback needs the peer on our server: a LowID is valid only on its own server, so the request
- * would wake a different client on ours.
+ * The order is TryToContact()'s: an unanswered direct or Kad buddy request moves on to the next
+ * route. The server callback needs the peer on our server: a LowID is valid only on its own server,
+ * so the request would wake a different client on ours. The Kad buddy route needs a file we
+ * download from the peer: only that file's sources give its buddy ID.
  */
 inline EContactRouteReport UploadCallbackRoute(const SUploadCallbackRouteFacts &facts)
 {
@@ -86,14 +93,21 @@ inline EContactRouteReport UploadCallbackRoute(const SUploadCallbackRouteFacts &
 	if (facts.directCallback && !facts.directThrottled && !facts.directTried) {
 		return EContactRouteReport::DirectUdpCallback;
 	}
-	return facts.onOurServer ? EContactRouteReport::ServerCallback : EContactRouteReport::None;
+	if (facts.onOurServer) {
+		return EContactRouteReport::ServerCallback;
+	}
+	if (facts.kadBuddyCallback && !facts.kadBuddyThrottled && !facts.kadBuddyTried) {
+		return EContactRouteReport::KadBuddy;
+	}
+	return EContactRouteReport::None;
 }
 
-//! Whether a request on @a route spends the peer when it is sent. A direct request spends it only
-//! when answered: the peer ignores one it will not take, and the next route is still worth a try.
+//! Whether a request on @a route spends the peer when it is sent. A direct or a Kad buddy request
+//! spends it only when answered: either can be dropped without a reply, and the next route is
+//! still worth a try.
 inline bool UploadCallbackSpendsPeer(EContactRouteReport route)
 {
-	return route != EContactRouteReport::DirectUdpCallback;
+	return route != EContactRouteReport::DirectUdpCallback && route != EContactRouteReport::KadBuddy;
 }
 
 #endif // UPLOAD_CALLBACK_POLICY_H

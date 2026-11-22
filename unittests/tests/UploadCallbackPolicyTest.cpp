@@ -81,10 +81,48 @@ TEST(UploadCallbackPolicy, UnansweredDirectCallbackFallsBackToTheServer)
 	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
 }
 
-TEST(UploadCallbackPolicy, OnlyTheDirectRouteLeavesThePeerUnspent)
+// A peer we download from, with a known buddy: the order is TryToContact()'s.
+TEST(UploadCallbackPolicy, KadBuddyComesAfterTheServerCallback)
+{
+	SUploadCallbackRouteFacts facts = PeerWithBothRoutes();
+	facts.kadBuddyCallback = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::DirectUdpCallback);
+	facts.directTried = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::ServerCallback);
+	facts.onOurServer = false;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::KadBuddy);
+}
+
+TEST(UploadCallbackPolicy, KadBuddyWaitsForTheFloodInterval)
+{
+	SUploadCallbackRouteFacts facts;
+	facts.canTakeCallback = true;
+	facts.kadBuddyCallback = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::KadBuddy);
+	facts.kadBuddyThrottled = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
+	facts.kadBuddyThrottled = false;
+	facts.canTakeCallback = false;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
+}
+
+// With NAT-T server coordination, None lets the pass go on to the cross-server routes.
+TEST(UploadCallbackPolicy, AnUnansweredKadBuddyRequestMovesOn)
+{
+	SUploadCallbackRouteFacts facts = PeerWithBothRoutes();
+	facts.kadBuddyCallback = true;
+	facts.directTried = true;
+	facts.onOurServer = false;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::KadBuddy);
+	facts.kadBuddyTried = true;
+	ASSERT_TRUE(UploadCallbackRoute(facts) == EContactRouteReport::None);
+}
+
+TEST(UploadCallbackPolicy, OnlyTheDirectAndKadBuddyRoutesLeaveThePeerUnspent)
 {
 	ASSERT_FALSE(UploadCallbackSpendsPeer(EContactRouteReport::DirectUdpCallback));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ServerCallback));
+	ASSERT_FALSE(UploadCallbackSpendsPeer(EContactRouteReport::KadBuddy));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ForeignNatCallback));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::ServerHolePunch));
 	ASSERT_TRUE(UploadCallbackSpendsPeer(EContactRouteReport::LugdunumCallback));
