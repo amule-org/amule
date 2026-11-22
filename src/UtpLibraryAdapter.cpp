@@ -101,8 +101,9 @@ public:
 		if (!m_context) {
 			return false;
 		}
-		utp_context_set_userdata(m_context, &sink);
-		s_self = this;
+		// Each callback finds its own adapter through the context, so two can live at once.
+		utp_context_set_userdata(m_context, this);
+		m_sink = &sink;
 		utp_set_callback(m_context, UTP_SENDTO, SendTo);
 		utp_set_callback(m_context, UTP_ON_OVERHEAD_STATISTICS, OnOverheadStatistics);
 		utp_set_callback(m_context, UTP_GET_UDP_MTU, GetUdpMtu);
@@ -150,8 +151,7 @@ public:
 		// Ahead of the SYN, which utp_connect() sends at once: the peer learns from it how to
 		// obfuscate its SYN-ACK. A plain dial announces nothing, as that would publish our hash.
 		if (encrypt) {
-			auto *sink = static_cast<IUtpDatagramSink *>(utp_context_get_userdata(m_context));
-			sink->SendUtpKeyFrame(ip, port, userHash);
+			m_sink->SendUtpKeyFrame(ip, port, userHash);
 		}
 		sockaddr_in address{};
 		address.sin_family = AF_INET;
@@ -220,9 +220,7 @@ public:
 		m_acceptedAtMs.clear();
 		m_context = nullptr;
 		m_acceptor = nullptr;
-		if (s_self == this) {
-			s_self = nullptr;
-		}
+		m_sink = nullptr;
 	}
 	bool ProcessDatagram(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port) override
 	{
@@ -391,8 +389,7 @@ public:
 						"%u") %
 						(uint8)ip % (uint8)(ip >> 8) % (uint8)(ip >> 16) %
 						(uint8)(ip >> 24) % repointedFrom.second % port);
-				static_cast<IUtpDatagramSink *>(utp_context_get_userdata(m_context))
-					->OnUtpStreamMoved();
+				m_sink->OnUtpStreamMoved();
 			} else {
 				// libutp refused the frame after all: put back whatever pair the socket held
 				// before the attempt, so the stream is never left without a translation.
@@ -859,21 +856,19 @@ private:
 		const auto *address = reinterpret_cast<const sockaddr_in *>(args->address);
 		uint32_t ip = IpOf(*address);
 		uint16_t port = ntohs(address->sin_port);
-		if (s_self != nullptr) {
-			const auto translation = s_self->m_remapOutputs.find({ ip, port });
-			if (translation != s_self->m_remapOutputs.end()) {
-				ip = translation->second.first;
-				port = translation->second.second;
-			}
+		CUtpLibraryAdapter &self = Self(args);
+		const auto translation = self.m_remapOutputs.find({ ip, port });
+		if (translation != self.m_remapOutputs.end()) {
+			ip = translation->second.first;
+			port = translation->second.second;
 		}
-		auto *sink = static_cast<IUtpDatagramSink *>(utp_context_get_userdata(args->context));
 		// From the socket, never the destination: an address can belong to
 		// several clients. A context-level send has no verified peer.
 		bool encrypt = false;
 		const uint8_t *userHash = nullptr;
 		utp_socket *socket = args->socket;
-		if (socket == nullptr && s_self != nullptr) {
-			socket = std::exchange(s_self->m_sending, nullptr);
+		if (socket == nullptr) {
+			socket = std::exchange(self.m_sending, nullptr);
 			if (socket != nullptr && !IsPeerOf(socket, args->address, args->address_len)) {
 				socket = nullptr;
 			}
@@ -883,33 +878,30 @@ private:
 				static_cast<const CUtpSocketTransport *>(utp_get_userdata(socket));
 			if (transport != nullptr) {
 				encrypt = transport->CryptParameters(&userHash);
-			} else if (s_self != nullptr) {
-				const auto closing = s_self->m_closingCrypt.find(socket);
-				if (closing != s_self->m_closingCrypt.end()) {
+			} else {
+				const auto closing = self.m_closingCrypt.find(socket);
+				if (closing != self.m_closingCrypt.end()) {
 					encrypt = true;
 					userHash = closing->second.data();
 				}
 			}
 		}
 		// The SYN-ACK leaves before UTP_ON_ACCEPT, from a socket with no transport yet.
-		if (!encrypt && s_self != nullptr && s_self->m_ingressKey != nullptr &&
-			s_self->m_ingress == Endpoint{ ip, port }) {
+		if (!encrypt && self.m_ingressKey != nullptr && self.m_ingress == Endpoint{ ip, port }) {
 			encrypt = true;
-			userHash = s_self->m_ingressKey;
+			userHash = self.m_ingressKey;
 		}
-		if (s_self != nullptr) {
-			// After the translation, so the record follows where the packet actually went.
-			s_self->NoteSentHeader(ip, port, args->buf, args->len);
-		}
-		sink->SendUtpDatagram(args->buf, args->len, ip, port, encrypt, userHash);
+		// After the translation, so the record follows where the packet actually went.
+		self.NoteSentHeader(ip, port, args->buf, args->len);
+		self.m_sink->SendUtpDatagram(args->buf, args->len, ip, port, encrypt, userHash);
 		return 0;
 	}
 	// libutp passes UTP_SENDTO no socket, but reports each socket's send here
 	// immediately before it.
 	static uint64 OnOverheadStatistics(utp_callback_arguments *args)
 	{
-		if (s_self != nullptr && args->send) {
-			s_self->m_sending = args->socket;
+		if (args->send) {
+			Self(args).m_sending = args->socket;
 		}
 		return 0;
 	}
@@ -921,6 +913,11 @@ private:
 		socklen_t peerLength = sizeof(peer);
 		return utp_getpeername(socket, reinterpret_cast<sockaddr *>(&peer), &peerLength) == 0 &&
 		       peerLength == length && std::memcmp(&peer, address, length) == 0;
+	}
+	//! The adapter that owns the context a callback came from. Create() stores it there.
+	static CUtpLibraryAdapter &Self(const utp_callback_arguments *args)
+	{
+		return *static_cast<CUtpLibraryAdapter *>(utp_context_get_userdata(args->context));
 	}
 	//! The transport that owns a socket, or null for one we never accepted.
 	static CUtpSocketTransport *TransportOf(utp_socket *socket)
@@ -960,25 +957,27 @@ private:
 	//! libutp's question before it creates a socket for a SYN or sends the SYN-ACK: nonzero refuses.
 	static uint64 OnFirewall(utp_callback_arguments *args)
 	{
-		if (s_self == nullptr || s_self->m_acceptor == nullptr || args->address == nullptr ||
+		CUtpLibraryAdapter &self = Self(args);
+		if (self.m_acceptor == nullptr || args->address == nullptr ||
 			args->address->sa_family != AF_INET) {
 			return 1;
 		}
 		const auto *address = reinterpret_cast<const sockaddr_in *>(args->address);
-		return s_self->m_acceptor->AdmitsSyn(IpOf(*address),
+		return self.m_acceptor->AdmitsSyn(IpOf(*address),
 			       ntohs(address->sin_port),
-			       s_self->ExpireAndCountHalfOpen(s_self->m_nowMs))
+			       self.ExpireAndCountHalfOpen(self.m_nowMs))
 			       ? 0
 			       : 1;
 	}
 
 	static uint64 OnAccept(utp_callback_arguments *args)
 	{
-		if (s_self == nullptr || s_self->m_acceptor == nullptr || args->address == nullptr ||
+		CUtpLibraryAdapter &self = Self(args);
+		if (self.m_acceptor == nullptr || args->address == nullptr ||
 			args->address->sa_family != AF_INET) {
 			// No acceptor refuses every SYN, as this build did before one.
-			if (s_self != nullptr && args->socket != nullptr) {
-				s_self->m_refused.push_back(args->socket);
+			if (args->socket != nullptr) {
+				self.m_refused.push_back(args->socket);
 			}
 			return 0;
 		}
@@ -986,31 +985,27 @@ private:
 		const uint32_t ip = IpOf(*address);
 		const uint16_t port = ntohs(address->sin_port);
 		const SUtpSynCandidateMatch candidateMatch =
-			FindUniqueUtpSynCandidate(s_self->m_remapCandidates, ip, port, s_self->m_nowMs);
+			FindUniqueUtpSynCandidate(self.m_remapCandidates, ip, port, self.m_nowMs);
 		SUtpSynCandidateInfo candidateInfo;
 		candidateInfo.status = candidateMatch.status;
 		if (candidateMatch.status == EUtpSynCandidateStatus::Unique) {
-			const SPendingHandshake &candidate = s_self->m_remapCandidates[candidateMatch.index];
+			const SPendingHandshake &candidate = self.m_remapCandidates[candidateMatch.index];
 			candidateInfo.ip = candidate.ip;
 			candidateInfo.port = candidate.port;
 			candidateInfo.clientToken = candidate.clientToken;
 		}
 		const SUtpIncomingSynDecision decision =
-			s_self->m_acceptor->DecideIncomingSyn(ip, port, candidateInfo);
+			self.m_acceptor->DecideIncomingSyn(ip, port, candidateInfo);
 		if (decision.disposition == EUtpIncomingSynDisposition::RejectKeepOutgoing) {
 			// Close only after utp_process_udp returns; utp_close re-enters callbacks.
-			s_self->m_refused.push_back(args->socket);
+			self.m_refused.push_back(args->socket);
 			return 0;
 		}
 
 		// Interface type so the seam can move out of it; the concrete pointer
 		// stays for the setup below.
-		auto owned = std::make_unique<CUtpSocketTransport>(*s_self,
-			args->socket,
-			CNetworkAddress::FromIPv4NetworkOrder(ip),
-			port,
-			nullptr,
-			true);
+		auto owned = std::make_unique<CUtpSocketTransport>(
+			self, args->socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port, nullptr, true);
 		CUtpSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
 		// Before admission can produce a callback that needs it.
@@ -1018,9 +1013,9 @@ private:
 		// Until this runs, libutp's 1 MiB default is the receive bound.
 		raw->ApplyReceiveBound();
 		// Not connected yet: a SYN proves no address. The peer's first data marks it.
-		raw->MarkSynObfuscated(s_self->m_datagramObfuscated);
-		if (s_self->m_ingressKey != nullptr) {
-			raw->SetPreHelloKey(s_self->m_ingressKey);
+		raw->MarkSynObfuscated(self.m_datagramObfuscated);
+		if (self.m_ingressKey != nullptr) {
+			raw->SetPreHelloKey(self.m_ingressKey);
 		}
 
 		// Registered before admission so that this pairs with the removal in
@@ -1031,30 +1026,30 @@ private:
 		// drop that live stream off the gate its own frames pass through.
 		// Briefly registering a refused endpoint costs nothing: libutp still holds
 		// the socket until the close below.
-		s_self->Register(args->socket, ip, port);
-		if (!s_self->m_acceptor->AcceptStream(transport, ip, port, decision)) {
+		self.Register(args->socket, ip, port);
+		if (!self.m_acceptor->AcceptStream(transport, ip, port, decision)) {
 			// Forgotten at once, unlike an admitted stream: a refused peer has no
 			// FIN to acknowledge, and leaving its endpoint on the gate until the
 			// socket is destroyed would let its next frames reach libutp.
-			s_self->Forget(args->socket);
+			self.Forget(args->socket);
 			// Destroying it closes the socket, which must happen after libutp
 			// has finished with the datagram.
-			s_self->m_refusedStreams.push_back(std::move(transport));
+			self.m_refusedStreams.push_back(std::move(transport));
 			return 0;
 		}
-		s_self->m_acceptedAtMs[args->socket] = s_self->m_nowMs;
+		self.m_acceptedAtMs[args->socket] = self.m_nowMs;
 		return 0;
 	}
 
 	static uint64 OnStateChange(utp_callback_arguments *args)
 	{
-		if (args->state == UTP_STATE_DESTROYING && s_self != nullptr) {
+		if (args->state == UTP_STATE_DESTROYING) {
 			// Before the transport check: a closed socket has no userdata left,
 			// and this is the only notice that its endpoint is now dead.
-			s_self->Forget(args->socket);
+			Self(args).Forget(args->socket);
 		}
-		if (args->state == UTP_STATE_CONNECT && s_self != nullptr) {
-			s_self->RemoveRemapCandidate(args->socket);
+		if (args->state == UTP_STATE_CONNECT) {
+			Self(args).RemoveRemapCandidate(args->socket);
 		}
 		CUtpSocketTransport *transport = TransportOf(args->socket);
 		if (transport == nullptr) {
@@ -1092,22 +1087,16 @@ private:
 		}
 		switch (args->error_code) {
 		case UTP_ECONNREFUSED:
-			if (s_self != nullptr) {
-				s_self->RemoveRemapCandidate(args->socket);
-			}
+			Self(args).RemoveRemapCandidate(args->socket);
 			transport->OnEnded(EUtpTransportFailure::Refused);
 			break;
 		case UTP_ETIMEDOUT:
-			if (s_self != nullptr) {
-				s_self->RemoveRemapCandidate(args->socket);
-			}
+			Self(args).RemoveRemapCandidate(args->socket);
 			transport->OnEnded(EUtpTransportFailure::TimedOut);
 			break;
 		case UTP_ECONNRESET:
 		default:
-			if (s_self != nullptr) {
-				s_self->RemoveRemapCandidate(args->socket);
-			}
+			Self(args).RemoveRemapCandidate(args->socket);
 			transport->OnEnded(EUtpTransportFailure::Reset);
 			break;
 		}
@@ -1116,9 +1105,7 @@ private:
 
 	static uint64 OnRead(utp_callback_arguments *args)
 	{
-		if (s_self != nullptr) {
-			s_self->RemoveRemapCandidate(args->socket);
-		}
+		Self(args).RemoveRemapCandidate(args->socket);
 		CUtpSocketTransport *transport = TransportOf(args->socket);
 		if (transport != nullptr) {
 			transport->OnPayload(args->buf, args->len);
@@ -1193,6 +1180,7 @@ private:
 	}
 
 	utp_context *m_context = nullptr;
+	IUtpDatagramSink *m_sink = nullptr;
 	IUtpStreamAcceptor *m_acceptor = nullptr;
 	bool m_datagramObfuscated = false;
 	// Borrowed for the span of one ProcessDatagram() call, like m_datagramObfuscated.
@@ -1237,12 +1225,7 @@ private:
 	std::map<utp_socket *, std::uint64_t> m_acceptedAtMs;
 	// Refused streams, destroyed at the same point. Destruction is the close.
 	std::vector<std::unique_ptr<IStreamTransport>> m_refusedStreams;
-	// libutp's callbacks carry only the context's user pointer, which already
-	// holds the datagram sink. One adapter exists per process.
-	static CUtpLibraryAdapter *s_self;
 };
-
-CUtpLibraryAdapter *CUtpLibraryAdapter::s_self = nullptr;
 } // namespace
 
 std::unique_ptr<IUtpLibrary> CreateUtpLibrary()
