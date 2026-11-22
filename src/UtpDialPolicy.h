@@ -307,7 +307,7 @@ inline EUdpMappingEvidence CompareUdpPortObservers(
 // eMuleAI's GetBestExternalUdpPort() falls back the same way, to the port its eServer buddy saw. A
 // NAT that maps a port per destination shows each peer another port, so the server's is not used:
 // two aMule peers behind one such NAT both leave the choice to the hello. Kad's port still counts,
-// as on master and in eMuleAI.
+// as in eMuleAI.
 inline std::uint16_t ExternalUdpPortForPeers(
 	std::uint16_t kadPort, std::uint16_t serverSeenPort, EUdpMappingEvidence evidence)
 {
