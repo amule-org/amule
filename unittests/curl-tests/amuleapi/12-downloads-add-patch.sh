@@ -242,9 +242,8 @@ _assert_json_eq '.status'   paused 'combined PATCH response status=paused'
 _assert_json_eq '.priority' low    'combined PATCH response priority=low'
 _assert_json_eq '.category_index' 0      'combined PATCH response category_index=0'
 
-# `category_index` says "must be a non-negative integer", so it has to mean it:
-# a fractional value is a 400, not truncated to 2, so it enforces what its
-# own message promises, the same as my_rating.
+# A category must be an integer in 0..255: fractional values are refused,
+# rather than silently truncated to another category.
 _curl -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 	-H "Content-Type: application/json" \
 	-d '{"category_index":2.9}' "$API/downloads/$TEST_HASH"

@@ -91,11 +91,7 @@ LINK="ed2k://|file|bulk-test.bin|1024|0123456789ABCDEF0123456789ABCDEF|/"
 # Both adding and bulk-patching downloads must reject invalid category fields before
 # sending any mutation to the core. Cover fractions, other JSON types and overflow.
 for category in '2.9' '"2"' '256'; do
-	if [ "$category" = '"2"' ]; then
-		message='`category_index` must be a non-negative integer'
-	else
-		message='`category_index` must be in [0, 255]'
-	fi
+	message='`category_index` must be an integer in 0..255'
 	_req POST /api/v1/downloads "$(jq -nc --arg link "$LINK" --argjson category "$category" \
 		'{links:[$link],category_index:$category}')"
 	_assert_status 400 "POST /downloads category_index=$category"
