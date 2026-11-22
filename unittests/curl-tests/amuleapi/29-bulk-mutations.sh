@@ -88,6 +88,27 @@ _req PUT /api/v1/shared "{}";     _assert_status 405 "PUT /shared -> 405"
 # --- POST /downloads results shape ----------------------------------
 echo "  --- POST /downloads unified results shape ---"
 LINK="ed2k://|file|bulk-test.bin|1024|0123456789ABCDEF0123456789ABCDEF|/"
+# Both adding and bulk-patching downloads must reject invalid category fields before
+# sending any mutation to the core. Cover fractions, other JSON types and overflow.
+for category in '2.9' '"2"' '256'; do
+	if [ "$category" = '"2"' ]; then
+		message='`category_index` must be a non-negative integer'
+	else
+		message='`category_index` must be in [0, 255]'
+	fi
+	_req POST /api/v1/downloads "$(jq -nc --arg link "$LINK" --argjson category "$category" \
+		'{links:[$link],category_index:$category}')"
+	_assert_status 400 "POST /downloads category_index=$category"
+	_assert_json_eq '.error.code' bad_request 'POST category validation error code'
+	_assert_json_eq '.error.message' "$message" 'POST category validation message'
+
+	_req PATCH /api/v1/downloads "$(jq -nc --arg hash "$H0" --argjson category "$category" \
+		'{hashes:[$hash],category_index:$category}')"
+	_assert_status 400 "bulk PATCH /downloads category_index=$category"
+	_assert_json_eq '.error.code' bad_request 'bulk PATCH category validation error code'
+	_assert_json_eq '.error.message' "$message" 'bulk PATCH category validation message'
+done
+
 _req POST /api/v1/downloads "{\"links\":[\"$LINK\"]}"
 _assert_json_eq '.results | type' array              "POST /downloads has results[] array"
 _assert_json_eq '.results | length' 1                "  one result entry"

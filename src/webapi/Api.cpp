@@ -26,6 +26,7 @@
 #include "ServerListSources.h"
 #include "Metrics.h"
 #include <ConstantTime.h>
+#include "JsonInteger.h"
 #include "JsonDepthScan.h" // webapi::JsonNestingWithinLimit
 
 #include "ClientTagNames.h" // Needed for the shared client-tag token decoders
@@ -3766,16 +3767,6 @@ CHttpServer::Response UrlFetchOp(
 	return r;
 }
 
-// JSON has one number type and picojson hands every one over as a double, so a
-// field documented as an integer must say so: without this, `{"min_size_bytes":
-// 2.9}` is accepted and silently truncated. One helper rather than a cast per site,
-// because `v != (double)(int)v` cannot judge a byte count above INT_MAX, which is
-// the range these fields live in.
-inline bool IsIntegralJsonNumber(double v)
-{
-	return std::isfinite(v) && v == std::floor(v);
-}
-
 // Extract an optional JSON integer before any narrowing or unit conversion.
 bool TakeBoundedInteger(const picojson::object &obj,
 	const char *key,
@@ -3787,7 +3778,7 @@ bool TakeBoundedInteger(const picojson::object &obj,
 	const auto it = obj.find(key);
 	if (it == obj.end())
 		return true;
-	if (!it->second.is<double>() || !IsIntegralJsonNumber(it->second.get<double>())) {
+	if (!it->second.is<double>() || !webapi::IsIntegralJsonNumber(it->second.get<double>())) {
 		error = std::string(key) + " must be a non-negative integer";
 		return false;
 	}
@@ -4850,19 +4841,10 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 	{
 		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
-			if (!it->second.is<double>()) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`category_index` must be a non-negative integer");
+			const char *error = nullptr;
+			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
+				return ErrorResponse(400, "bad_request", error);
 			}
-			const double v = it->second.get<double>();
-			// The integrality test the message already promises: without it
-			// 2.9 was accepted and truncated to 2.
-			if (v < 0 || v > 255 || !IsIntegralJsonNumber(v)) {
-				return ErrorResponse(
-					400, "bad_request", "`category_index` must be in [0, 255]");
-			}
-			category = static_cast<std::uint8_t>(v);
 		}
 	}
 
@@ -5147,22 +5129,15 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	{
 		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
-			if (!it->second.is<double>()) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`category_index` must be a non-negative integer");
-			}
-			const double v = it->second.get<double>();
-			// The integrality test the message already promises: without it
-			// 2.9 was accepted and truncated to 2.
-			if (v < 0 || v > 255 || !IsIntegralJsonNumber(v)) {
-				return ErrorResponse(
-					400, "bad_request", "`category_index` must be in [0, 255]");
+			std::uint8_t category = 0;
+			const char *error = nullptr;
+			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
+				return ErrorResponse(400, "bad_request", error);
 			}
 			auto err = send_op(EC_OP_PARTFILE_SET_CAT,
 				/*has_inner=*/true,
 				EC_TAG_PARTFILE_CAT,
-				static_cast<std::uint8_t>(v));
+				category);
 			if (err.status >= 400)
 				return err;
 			any_change = true;
@@ -6516,7 +6491,7 @@ CHttpServer::Response CApiDispatcher::HandleFriendAdd(const CHttpServer::Request
 					400, "bad_request", "required integer field `port` is missing");
 			}
 			const double d = it->second.get<double>();
-			if (!IsIntegralJsonNumber(d) || d < 1 || d > 65535) {
+			if (!webapi::IsIntegralJsonNumber(d) || d < 1 || d > 65535) {
 				return ErrorResponse(
 					400, "bad_request", "`port` must be an integer in 1..65535");
 			}
@@ -9076,7 +9051,7 @@ CHttpServer::Response CApiDispatcher::HandleKadBootstrap(const CHttpServer::Requ
 		const double v = it->second.get<double>();
 		// Same contract as the `port` on POST /friends. 0 is rejected: no Kad
 		// contact can be reached on it.
-		if (!IsIntegralJsonNumber(v) || v < 1 || v > 65535) {
+		if (!webapi::IsIntegralJsonNumber(v) || v < 1 || v > 65535) {
 			return ErrorResponse(400, "bad_request", "`port` must be an integer in 1..65535");
 		}
 		port = static_cast<std::uint16_t>(v);
@@ -9302,20 +9277,12 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 	{
 		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
-			if (!it->second.is<double>())
-				return ErrorResponse(400,
-					"bad_request",
-					"`category_index` must be a non-negative integer");
-			const double v = it->second.get<double>();
-			// The integrality test the message already promises: without it
-			// 2.9 was accepted and truncated to 2.
-			if (v < 0 || v > 255 || !IsIntegralJsonNumber(v))
-				return ErrorResponse(
-					400, "bad_request", "`category_index` must be in [0, 255]");
-			ops.push_back({ EC_OP_PARTFILE_SET_CAT,
-				true,
-				EC_TAG_PARTFILE_CAT,
-				static_cast<std::uint8_t>(v) });
+			std::uint8_t category = 0;
+			const char *error = nullptr;
+			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
+				return ErrorResponse(400, "bad_request", error);
+			}
+			ops.push_back({ EC_OP_PARTFILE_SET_CAT, true, EC_TAG_PARTFILE_CAT, category });
 		}
 	}
 	if (ops.empty())
@@ -11185,19 +11152,10 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 		const auto &obj = root.get<picojson::object>();
 		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
-			if (!it->second.is<double>()) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`category_index` must be a non-negative integer");
+			const char *error = nullptr;
+			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
+				return ErrorResponse(400, "bad_request", error);
 			}
-			const double v = it->second.get<double>();
-			// The integrality test the message already promises: without it
-			// 2.9 was accepted and truncated to 2.
-			if (v < 0 || v > 255 || !IsIntegralJsonNumber(v)) {
-				return ErrorResponse(
-					400, "bad_request", "`category_index` must be in [0, 255]");
-			}
-			category = static_cast<std::uint8_t>(v);
 		}
 		const auto eit = obj.find("ecid");
 		if (eit != obj.end()) {
@@ -11206,7 +11164,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 					400, "bad_request", "`ecid` must be a non-negative integer");
 			}
 			const double v = eit->second.get<double>();
-			if (!IsIntegralJsonNumber(v)) {
+			if (!webapi::IsIntegralJsonNumber(v)) {
 				return ErrorResponse(
 					400, "bad_request", "`ecid` must be a non-negative integer");
 			}
