@@ -136,6 +136,13 @@ public:
 	//! The server saw our UDP at @a ip (a 36-byte 0x61): the key IP toward peers punched in this
 	//! login. 0 forgets it.
 	void NoteServerSeenUdpIP(uint32_t ip) { m_serverSeenUdpIP = ip; }
+#ifdef AMULE_UTP_TRANSPORT
+	//! Our UDP port as the server saw it in that 0x61; 0 forgets it.
+	void NoteServerSeenUdpPort(uint16_t port, uint64_t now) { m_serverSeenUdpPort.Note(port, now); }
+	EUdpMappingEvidence UdpMappingEvidence(uint64_t now) const;
+	//! Our UDP port as a peer should see it, for the simultaneous-open tie-break; 0 when unknown.
+	uint16_t ExternalUdpPortForPeers(uint64_t now) const;
+#endif
 	//! The IPv4 @a peerIp sees our UDP at, when it differs from our public IP; else 0.
 	uint32_t NatKeyIPFor(uint32_t peerIp);
 	uint32 ClientCryptKeyIP(uint32 ip) override { return NatKeyIPFor(ip); }
@@ -235,6 +242,9 @@ private:
 	std::mutex m_natKeyIPsMutex;
 	NatSourceEcho::CKeyIps m_natKeyIPs{ NatSourceEcho::kMaxKeyIps, NatSourceEcho::kKeyIpIdleMs };
 	uint32_t m_serverSeenUdpIP = 0;
+#ifdef AMULE_UTP_TRANSPORT
+	ServerSeenUdpPort m_serverSeenUdpPort;
+#endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
 	NatKeyFrame::Callbacks KeyFrameCallbacks();

@@ -103,6 +103,17 @@ void HandleLowIdHolePunchInfo(
 		ownUdpIP = IsGoodIP(seen, true) ? seen : 0;
 	}
 	theApp->clientudp->NoteServerSeenUdpIP(ownUdpIP);
+	theApp->clientudp->NoteServerSeenUdpPort(ownUdpIP != 0 ? info.ownUdpPort : 0, now);
+	if (ownUdpIP != 0) {
+		const EUdpMappingEvidence evidence = theApp->clientudp->UdpMappingEvidence(now);
+		AddDebugLogLineN(logServer,
+			CFormat("Our UDP port: the server saw %u; %s") % info.ownUdpPort %
+				(evidence == EUdpMappingEvidence::PortPerDestination
+						? wxString("our NAT maps a port per destination")
+						: (evidence == EUdpMappingEvidence::OnePort
+								  ? wxString("Kad sees the same port")
+								  : wxString("Kad has no port to compare"))));
+	}
 	const NatServerHolePunch::VouchedPeer peer{ info.userHash, info.peerCrypt };
 	serverconnect->LowIdHolePunchExpectedEndpoints().Register(
 		info.peerIP, info.udpPort, info.tcpPort, now, peer);

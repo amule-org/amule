@@ -124,6 +124,8 @@ public:
 	uint16_t GetInternKadPort() const noexcept { return thePrefs::GetUDPPort(); }
 	void SetExternKadPort(uint16_t port, uint32_t fromIP);
 	bool FindExternKadPort(bool reset = false);
+	//! The nodes asked saw our UDP at different ports, so none was taken.
+	bool ExternKadPortsDisagree() const;
 
 	static uint8_t GetMyConnectOptions(bool encryption = true, bool callback = true);
 	static uint32_t GetUDPVerifyKey(uint32_t targetIP);

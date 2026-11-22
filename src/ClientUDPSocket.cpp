@@ -50,6 +50,8 @@
 #include "MemFile.h"              // Needed for CMemFile
 #include "Logger.h"
 #include "kademlia/kademlia/Kademlia.h"
+#include "kademlia/kademlia/Prefs.h"
+#include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/utils/KadUDPKey.h"
 #include <zlib.h>
 #include "EncryptedDatagramSocket.h"
@@ -157,6 +159,38 @@ uint32_t CClientUDPSocket::NatKeyIPFor(uint32_t peerIp)
 	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
 	return m_natKeyIPs.Lookup(peerIp, LoginIP(), ::GetTickCount64()).value_or(0);
 }
+
+#ifdef AMULE_UTP_TRANSPORT
+namespace
+{
+uint16_t VerifiedKadUdpPort()
+{
+	if (!Kademlia::CKademlia::IsConnected() || !Kademlia::CKademlia::GetPrefs()->GetUseExternKadPort() ||
+		!Kademlia::CUDPFirewallTester::IsVerified()) {
+		return 0;
+	}
+	return Kademlia::CKademlia::GetPrefs()->GetExternalKadPort();
+}
+
+bool KadUdpPortsDisagree()
+{
+	return Kademlia::CKademlia::IsConnected() && Kademlia::CKademlia::GetPrefs()->GetUseExternKadPort() &&
+	       Kademlia::CKademlia::GetPrefs()->ExternKadPortsDisagree();
+}
+} // namespace
+
+EUdpMappingEvidence CClientUDPSocket::UdpMappingEvidence(uint64_t now) const
+{
+	return CompareUdpPortObservers(
+		VerifiedKadUdpPort(), m_serverSeenUdpPort.Current(now), KadUdpPortsDisagree());
+}
+
+uint16_t CClientUDPSocket::ExternalUdpPortForPeers(uint64_t now) const
+{
+	return ::ExternalUdpPortForPeers(
+		VerifiedKadUdpPort(), m_serverSeenUdpPort.Current(now), UdpMappingEvidence(now));
+}
+#endif
 
 void CClientUDPSocket::MaybeSendSourceEcho(
 	uint32_t ip, uint16_t port, uint8_t firstByte, size_t length, bool decrypted)

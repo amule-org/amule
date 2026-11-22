@@ -118,6 +118,43 @@ TEST(UtpDialPolicy, RejectsIncomingSynOnlyWhenExternalUdpPortIsKnown)
 	ASSERT_FALSE(CanRejectIncomingUtpSynForSimultaneousOpen(0));
 }
 
+TEST(UtpDialPolicy, TwoObserversTellHowOurNatMapsUdp)
+{
+	ASSERT_TRUE(CompareUdpPortObservers(4672, 4672, false) == EUdpMappingEvidence::OnePort);
+	ASSERT_TRUE(CompareUdpPortObservers(4672, 51000, false) == EUdpMappingEvidence::PortPerDestination);
+	// Kad's own nodes saw different ports: no server report is needed.
+	ASSERT_TRUE(CompareUdpPortObservers(0, 0, true) == EUdpMappingEvidence::PortPerDestination);
+	ASSERT_TRUE(CompareUdpPortObservers(0, 4672, false) == EUdpMappingEvidence::Unknown);
+	ASSERT_TRUE(CompareUdpPortObservers(4672, 0, false) == EUdpMappingEvidence::Unknown);
+}
+
+TEST(UtpDialPolicy, TheServerSeenPortStandsInForKad)
+{
+	ASSERT_EQUALS((int)4672,
+		(int)ExternalUdpPortForPeers(4672, 51000, EUdpMappingEvidence::PortPerDestination));
+	ASSERT_EQUALS((int)51000, (int)ExternalUdpPortForPeers(0, 51000, EUdpMappingEvidence::Unknown));
+	ASSERT_EQUALS(
+		(int)0, (int)ExternalUdpPortForPeers(0, 51000, EUdpMappingEvidence::PortPerDestination));
+	ASSERT_EQUALS((int)0, (int)ExternalUdpPortForPeers(0, 0, EUdpMappingEvidence::Unknown));
+	// So the incoming SYN is decided at once, as eMuleAI decides it.
+	ASSERT_TRUE(CanRejectIncomingUtpSynForSimultaneousOpen(
+		ExternalUdpPortForPeers(0, 51000, EUdpMappingEvidence::Unknown)));
+}
+
+TEST(UtpDialPolicy, TheServerSeenPortExpires)
+{
+	ServerSeenUdpPort seen;
+	ASSERT_EQUALS((int)0, (int)seen.Current(1000));
+	seen.Note(51000, 1000);
+	ASSERT_EQUALS((int)51000, (int)seen.Current(1000 + kServerSeenUdpPortTtlMs - 1));
+	ASSERT_EQUALS((int)0, (int)seen.Current(1000 + kServerSeenUdpPortTtlMs));
+	// A clock behind the report gives nothing.
+	ASSERT_EQUALS((int)0, (int)seen.Current(999));
+	seen.Note(51000, 2000);
+	seen.Note(0, 2000);
+	ASSERT_EQUALS((int)0, (int)seen.Current(2000));
+}
+
 TEST(UtpDialPolicy, TranslationRefusesEndpointCollisions)
 {
 	ASSERT_TRUE(CanInstallUtpPortTranslation(false, false));
