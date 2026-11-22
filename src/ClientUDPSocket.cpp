@@ -179,16 +179,45 @@ bool KadUdpPortsDisagree()
 }
 } // namespace
 
-EUdpMappingEvidence CClientUDPSocket::UdpMappingEvidence(uint64_t now) const
+void CClientUDPSocket::NoteServerSeenUdpPort(uint16_t port, uint64_t now)
 {
-	return CompareUdpPortObservers(
-		VerifiedKadUdpPort(), m_serverSeenUdpPort.Current(now), KadUdpPortsDisagree());
+	m_serverSeenUdpPort.Note(port, now);
+	if (port == 0) {
+		return;
+	}
+	const uint16_t kadPort = VerifiedKadUdpPort();
+	const bool kadPortsDisagree = KadUdpPortsDisagree();
+	switch (CompareUdpPortObservers(kadPort, port, kadPortsDisagree)) {
+	case EUdpMappingEvidence::Unknown:
+		AddDebugLogLineN(logServer,
+			CFormat("Our UDP port: the server saw %u; Kad has no verified port") % port);
+		break;
+	case EUdpMappingEvidence::OnePort:
+		AddDebugLogLineN(logServer, CFormat("Our UDP port: the server and Kad saw %u") % port);
+		break;
+	case EUdpMappingEvidence::PortPerDestination:
+		if (kadPortsDisagree) {
+			AddDebugLogLineN(logServer,
+				CFormat("Our UDP port: the server saw %u, Kad's nodes saw different ports; "
+					"our NAT maps a port per destination") %
+					port);
+		} else {
+			AddDebugLogLineN(logServer,
+				CFormat("Our UDP port: the server saw %u, Kad %u; "
+					"our NAT maps a port per destination") %
+					port % kadPort);
+		}
+		break;
+	}
 }
 
 uint16_t CClientUDPSocket::ExternalUdpPortForPeers(uint64_t now) const
 {
-	return ::ExternalUdpPortForPeers(
-		VerifiedKadUdpPort(), m_serverSeenUdpPort.Current(now), UdpMappingEvidence(now));
+	const uint16_t kadPort = VerifiedKadUdpPort();
+	const uint16_t serverSeenPort = m_serverSeenUdpPort.Current(now);
+	return ::ExternalUdpPortForPeers(kadPort,
+		serverSeenPort,
+		CompareUdpPortObservers(kadPort, serverSeenPort, KadUdpPortsDisagree()));
 }
 #endif
 

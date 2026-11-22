@@ -137,9 +137,8 @@ public:
 	//! login. 0 forgets it.
 	void NoteServerSeenUdpIP(uint32_t ip) { m_serverSeenUdpIP = ip; }
 #ifdef AMULE_UTP_TRANSPORT
-	//! Our UDP port as the server saw it in that 0x61; 0 forgets it.
-	void NoteServerSeenUdpPort(uint16_t port, uint64_t now) { m_serverSeenUdpPort.Note(port, now); }
-	EUdpMappingEvidence UdpMappingEvidence(uint64_t now) const;
+	//! Our UDP port as the server saw it in that 0x61, logged against Kad's; 0 forgets it.
+	void NoteServerSeenUdpPort(uint16_t port, uint64_t now);
 	//! Our UDP port as a peer should see it, for the simultaneous-open tie-break; 0 when unknown.
 	uint16_t ExternalUdpPortForPeers(uint64_t now) const;
 #endif

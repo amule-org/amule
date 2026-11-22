@@ -303,9 +303,11 @@ inline EUdpMappingEvidence CompareUdpPortObservers(
 						   : EUdpMappingEvidence::Unknown;
 }
 
-// Our UDP port as a peer should see it, or 0: Kad's verified one, else the one our server saw, as
-// eMuleAI's GetBestExternalUdpPort(). A NAT that maps a port per destination shows each peer
-// another port, so the server's says nothing about the peer's.
+// Our UDP port as a peer should see it, or 0: Kad's verified one, else the one our server saw.
+// eMuleAI's GetBestExternalUdpPort() falls back the same way, to the port its eServer buddy saw. A
+// NAT that maps a port per destination shows each peer another port, so the server's is not used:
+// two aMule peers behind one such NAT both leave the choice to the hello. Kad's port still counts,
+// as on master and in eMuleAI.
 inline std::uint16_t ExternalUdpPortForPeers(
 	std::uint16_t kadPort, std::uint16_t serverSeenPort, EUdpMappingEvidence evidence)
 {
@@ -315,8 +317,8 @@ inline std::uint16_t ExternalUdpPortForPeers(
 	return evidence == EUdpMappingEvidence::PortPerDestination ? 0 : serverSeenPort;
 }
 
-// Our UDP port as our server saw it in a 36-byte 0x61, kept for this login. eMuleAI keeps its
-// server's report for 5 min.
+// Our UDP port as our server saw it in a 36-byte 0x61; the next login forgets it. eMuleAI keeps the
+// port its eServer buddy saw for 5 min.
 constexpr std::uint64_t kServerSeenUdpPortTtlMs = 300'000;
 
 class ServerSeenUdpPort
