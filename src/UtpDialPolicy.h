@@ -285,9 +285,65 @@ inline std::optional<SUtpEndpoint> MakeLocalUtpEndpoint(
 	return MakeUtpEndpointFromNetworkOrder(publicIp, bestUdpPort);
 }
 
-// A configured UDP port is not evidence of a NAT's public mapping. Before Kad has verified an
-// external UDP port, rejecting an incoming simultaneous-open SYN risks both peers retaining their
-// outgoing dials based on different local tuples. Accept it and let OP_HELLO make the final
+// What Kad and our server, the two observers of our UDP port, say about our NAT.
+enum class EUdpMappingEvidence
+{
+	Unknown,
+	OnePort,
+	PortPerDestination
+};
+
+inline EUdpMappingEvidence CompareUdpPortObservers(
+	std::uint16_t kadPort, std::uint16_t serverSeenPort, bool kadPortsDisagree)
+{
+	if (kadPortsDisagree || (kadPort != 0 && serverSeenPort != 0 && kadPort != serverSeenPort)) {
+		return EUdpMappingEvidence::PortPerDestination;
+	}
+	return kadPort != 0 && serverSeenPort != 0 ? EUdpMappingEvidence::OnePort
+						   : EUdpMappingEvidence::Unknown;
+}
+
+// Our UDP port as a peer should see it, or 0: Kad's verified one, else the one our server saw.
+// eMuleAI's GetBestExternalUdpPort() falls back the same way, to the port its eServer buddy saw. A
+// NAT that maps a port per destination shows each peer another port, so the server's is not used:
+// two aMule peers behind one such NAT both leave the choice to the hello. Kad's port still counts,
+// as in eMuleAI.
+inline std::uint16_t ExternalUdpPortForPeers(
+	std::uint16_t kadPort, std::uint16_t serverSeenPort, EUdpMappingEvidence evidence)
+{
+	if (kadPort != 0) {
+		return kadPort;
+	}
+	return evidence == EUdpMappingEvidence::PortPerDestination ? 0 : serverSeenPort;
+}
+
+// Our UDP port as our server saw it in a 36-byte 0x61; the next login forgets it. eMuleAI keeps the
+// port its eServer buddy saw for 5 min.
+constexpr std::uint64_t kServerSeenUdpPortTtlMs = 300'000;
+
+class ServerSeenUdpPort
+{
+public:
+	//! Port 0 forgets it: a 0x61 without the field is no fresh view.
+	void Note(std::uint16_t port, std::uint64_t now)
+	{
+		m_port = port;
+		m_seenAt = now;
+	}
+	std::uint16_t Current(std::uint64_t now) const
+	{
+		const bool fresh = now >= m_seenAt && now - m_seenAt < kServerSeenUdpPortTtlMs;
+		return fresh ? m_port : 0;
+	}
+
+private:
+	std::uint16_t m_port = 0;
+	std::uint64_t m_seenAt = 0;
+};
+
+// A configured UDP port is not evidence of a NAT's public mapping. Before Kad or our server has
+// seen our external UDP port, rejecting an incoming simultaneous-open SYN risks both peers retaining
+// their outgoing dials based on different local tuples. Accept it and let OP_HELLO make the final
 // identity and winner decision instead.
 inline bool CanRejectIncomingUtpSynForSimultaneousOpen(std::uint16_t externalUdpPort)
 {

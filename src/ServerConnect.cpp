@@ -874,6 +874,7 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_lowIdHolePunchSchedules = NatServerHolePunch::PunchScheduleSet();
 	if (theApp->clientudp != nullptr) {
 		theApp->clientudp->NoteServerSeenUdpIP(0);
+		theApp->clientudp->NoteServerSeenUdpPort(0, 0);
 	}
 #endif
 	m_pendingWakes = NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback>();

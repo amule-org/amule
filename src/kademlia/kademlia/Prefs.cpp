@@ -292,6 +292,12 @@ void CPrefs::SetExternKadPort(uint16_t port, uint32_t fromIP)
 	}
 }
 
+bool CPrefs::ExternKadPortsDisagree() const
+{
+	return m_externKadPort == 0 && m_externPortIPs.size() >= EXTERNAL_PORT_ASKIPS &&
+	       m_externPorts.size() > 1;
+}
+
 bool CPrefs::FindExternKadPort(bool reset)
 {
 	if (!reset) {

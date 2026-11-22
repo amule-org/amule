@@ -50,6 +50,8 @@
 #include "MemFile.h"              // Needed for CMemFile
 #include "Logger.h"
 #include "kademlia/kademlia/Kademlia.h"
+#include "kademlia/kademlia/Prefs.h"
+#include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/utils/KadUDPKey.h"
 #include <zlib.h>
 #include "EncryptedDatagramSocket.h"
@@ -157,6 +159,67 @@ uint32_t CClientUDPSocket::NatKeyIPFor(uint32_t peerIp)
 	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
 	return m_natKeyIPs.Lookup(peerIp, LoginIP(), ::GetTickCount64()).value_or(0);
 }
+
+#ifdef AMULE_UTP_TRANSPORT
+namespace
+{
+uint16_t VerifiedKadUdpPort()
+{
+	if (!Kademlia::CKademlia::IsConnected() || !Kademlia::CKademlia::GetPrefs()->GetUseExternKadPort() ||
+		!Kademlia::CUDPFirewallTester::IsVerified()) {
+		return 0;
+	}
+	return Kademlia::CKademlia::GetPrefs()->GetExternalKadPort();
+}
+
+bool KadUdpPortsDisagree()
+{
+	return Kademlia::CKademlia::IsConnected() && Kademlia::CKademlia::GetPrefs()->GetUseExternKadPort() &&
+	       Kademlia::CKademlia::GetPrefs()->ExternKadPortsDisagree();
+}
+} // namespace
+
+void CClientUDPSocket::NoteServerSeenUdpPort(uint16_t port, uint64_t now)
+{
+	m_serverSeenUdpPort.Note(port, now);
+	if (port == 0) {
+		return;
+	}
+	const uint16_t kadPort = VerifiedKadUdpPort();
+	const bool kadPortsDisagree = KadUdpPortsDisagree();
+	switch (CompareUdpPortObservers(kadPort, port, kadPortsDisagree)) {
+	case EUdpMappingEvidence::Unknown:
+		AddDebugLogLineN(logServer,
+			CFormat("Our UDP port: the server saw %u; Kad has no verified port") % port);
+		break;
+	case EUdpMappingEvidence::OnePort:
+		AddDebugLogLineN(logServer, CFormat("Our UDP port: the server and Kad saw %u") % port);
+		break;
+	case EUdpMappingEvidence::PortPerDestination:
+		if (kadPortsDisagree) {
+			AddDebugLogLineN(logServer,
+				CFormat("Our UDP port: the server saw %u, Kad's nodes saw different ports; "
+					"our NAT maps a port per destination") %
+					port);
+		} else {
+			AddDebugLogLineN(logServer,
+				CFormat("Our UDP port: the server saw %u, Kad %u; "
+					"our NAT maps a port per destination") %
+					port % kadPort);
+		}
+		break;
+	}
+}
+
+uint16_t CClientUDPSocket::ExternalUdpPortForPeers(uint64_t now) const
+{
+	const uint16_t kadPort = VerifiedKadUdpPort();
+	const uint16_t serverSeenPort = m_serverSeenUdpPort.Current(now);
+	return ::ExternalUdpPortForPeers(kadPort,
+		serverSeenPort,
+		CompareUdpPortObservers(kadPort, serverSeenPort, KadUdpPortsDisagree()));
+}
+#endif
 
 void CClientUDPSocket::MaybeSendSourceEcho(
 	uint32_t ip, uint16_t port, uint8_t firstByte, size_t length, bool decrypted)

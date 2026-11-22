@@ -25,7 +25,7 @@
 #include "UtpStreamAcceptor.h"
 
 #include "ClientTCPSocket.h"
-#include "ClientUDPSocket.h" // Needed for NatKeyIPFor
+#include "ClientUDPSocket.h" // Needed for NatKeyIPFor and ExternalUdpPortForPeers
 #include "NatSourceEcho.h"   // Needed for LocalUdpIP
 #include "Logger.h"
 #include "ClientList.h"
@@ -36,8 +36,6 @@
 #include "amule.h"
 #include "updownclient.h"
 #include "kademlia/kademlia/Kademlia.h"
-#include "kademlia/kademlia/Prefs.h"
-#include "kademlia/kademlia/UDPFirewallTester.h"
 
 #include <algorithm>
 
@@ -92,12 +90,14 @@ SUtpIncomingSynDecision CUtpStreamAcceptor::DecideIncomingSyn(
 		return { EUtpIncomingSynDisposition::RejectKeepOutgoing, 0 };
 	}
 
-	uint16_t externalUdpPort = 0;
-	if (Kademlia::CKademlia::IsConnected() && Kademlia::CKademlia::GetPrefs()->GetUseExternKadPort() &&
-		Kademlia::CUDPFirewallTester::IsVerified()) {
-		externalUdpPort = Kademlia::CKademlia::GetPrefs()->GetExternalKadPort();
-	}
+	const uint16_t externalUdpPort =
+		theApp->clientudp != nullptr ? theApp->clientudp->ExternalUdpPortForPeers(::GetTickCount64())
+					     : 0;
 	if (!CanRejectIncomingUtpSynForSimultaneousOpen(externalUdpPort)) {
+		AddDebugLogLineN(logClient,
+			CFormat("Simultaneous uTP open with %s: our external UDP port is unknown, the hello "
+				"decides") %
+				Uint32_16toStringIP_Port(ip, port));
 		return { EUtpIncomingSynDisposition::AcceptKeepIncoming, candidate.clientToken };
 	}
 	// The peer orders by our SYN's source address, which is our UDP address, not our login one.
@@ -115,9 +115,15 @@ SUtpIncomingSynDecision CUtpStreamAcceptor::DecideIncomingSyn(
 		std::any_of(localHash, localHash + 16, [](uint8_t byte) { return byte != 0; });
 	const bool peerHashValid = peer->HasValidHash();
 	const uint8_t *peerHash = peerHashValid ? peer->GetUserHash().GetHash() : nullptr;
-	if (DecideUtpSimultaneousOpen(
-		    localEndpoint, remoteEndpoint, localHash, localHashValid, peerHash, peerHashValid) ==
-		EUtpSimultaneousOpenDecision::KeepIncoming) {
+	const bool keepIncoming =
+		DecideUtpSimultaneousOpen(
+			localEndpoint, remoteEndpoint, localHash, localHashValid, peerHash, peerHashValid) ==
+		EUtpSimultaneousOpenDecision::KeepIncoming;
+	AddDebugLogLineN(logClient,
+		CFormat("Simultaneous uTP open with %s: our UDP port %u, keeping the %s stream") %
+			Uint32_16toStringIP_Port(ip, port) % externalUdpPort %
+			(keepIncoming ? "incoming" : "outgoing"));
+	if (keepIncoming) {
 		return { EUtpIncomingSynDisposition::AcceptKeepIncoming, candidate.clientToken };
 	}
 	return { EUtpIncomingSynDisposition::RejectKeepOutgoing, 0 };

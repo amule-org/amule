@@ -103,6 +103,7 @@ void HandleLowIdHolePunchInfo(
 		ownUdpIP = IsGoodIP(seen, true) ? seen : 0;
 	}
 	theApp->clientudp->NoteServerSeenUdpIP(ownUdpIP);
+	theApp->clientudp->NoteServerSeenUdpPort(ownUdpIP != 0 ? info.ownUdpPort : 0, now);
 	const NatServerHolePunch::VouchedPeer peer{ info.userHash, info.peerCrypt };
 	serverconnect->LowIdHolePunchExpectedEndpoints().Register(
 		info.peerIP, info.udpPort, info.tcpPort, now, peer);
