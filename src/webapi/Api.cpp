@@ -4842,7 +4842,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
 			const char *error = nullptr;
-			if (!webapi::ParseCategoryIndex(it->second, category, error)) {
+			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
 				return ErrorResponse(400, "bad_request", error);
 			}
 		}
@@ -5131,7 +5131,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		if (it != obj.end()) {
 			std::uint8_t category = 0;
 			const char *error = nullptr;
-			if (!webapi::ParseCategoryIndex(it->second, category, error)) {
+			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
 				return ErrorResponse(400, "bad_request", error);
 			}
 			auto err = send_op(EC_OP_PARTFILE_SET_CAT,
@@ -9279,7 +9279,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 		if (it != obj.end()) {
 			std::uint8_t category = 0;
 			const char *error = nullptr;
-			if (!webapi::ParseCategoryIndex(it->second, category, error)) {
+			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
 				return ErrorResponse(400, "bad_request", error);
 			}
 			ops.push_back({ EC_OP_PARTFILE_SET_CAT, true, EC_TAG_PARTFILE_CAT, category });
@@ -11153,7 +11153,7 @@ CHttpServer::Response CApiDispatcher::HandleSearchDownload(
 		const auto it = obj.find("category_index");
 		if (it != obj.end()) {
 			const char *error = nullptr;
-			if (!webapi::ParseCategoryIndex(it->second, category, error)) {
+			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
 				return ErrorResponse(400, "bad_request", error);
 			}
 		}

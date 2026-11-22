@@ -16,7 +16,7 @@ TEST(JsonInteger, CategoryAcceptsEveryByteValue)
 	for (unsigned value = 0; value <= 255; ++value) {
 		std::uint8_t category = 42;
 		const char *error = nullptr;
-		ASSERT_TRUE(webapi::ParseCategoryIndex(picojson::value(double(value)), category, error));
+		ASSERT_TRUE(webapi::ParseCategoryIndexField(picojson::value(double(value)), category, error));
 		ASSERT_EQUALS(value, unsigned(category));
 	}
 }
@@ -32,7 +32,7 @@ TEST(JsonInteger, CategoryRejectsOtherJsonTypesWithoutChangingOutput)
 	for (const auto &input : inputs) {
 		std::uint8_t category = 42;
 		const char *error = nullptr;
-		ASSERT_FALSE(webapi::ParseCategoryIndex(input, category, error));
+		ASSERT_FALSE(webapi::ParseCategoryIndexField(input, category, error));
 		ASSERT_EQUALS(unsigned(42), unsigned(category));
 		ASSERT_EQUALS(
 			std::string("`category_index` must be a non-negative integer"), std::string(error));
@@ -53,7 +53,7 @@ TEST(JsonInteger, CategoryRejectsFractionsAndOutOfRangeNumbers)
 	for (double input : inputs) {
 		std::uint8_t category = 42;
 		const char *error = nullptr;
-		ASSERT_FALSE(webapi::ParseCategoryIndex(picojson::value(input), category, error));
+		ASSERT_FALSE(webapi::ParseCategoryIndexField(picojson::value(input), category, error));
 		ASSERT_EQUALS(unsigned(42), unsigned(category));
 		ASSERT_EQUALS(std::string("`category_index` must be in [0, 255]"), std::string(error));
 	}
@@ -61,18 +61,28 @@ TEST(JsonInteger, CategoryRejectsFractionsAndOutOfRangeNumbers)
 
 TEST(JsonInteger, ParsedJsonRetainsIntegerAndFractionSemantics)
 {
-	for (const std::string body : { "0", "-0", "2.0", "2e0", "255" }) {
+	struct ParsedCategory
+	{
+		const char *body;
+		unsigned expected;
+	};
+	for (const auto &test : { ParsedCategory{ "0", 0 },
+		     ParsedCategory{ "-0", 0 },
+		     ParsedCategory{ "2.0", 2 },
+		     ParsedCategory{ "2e0", 2 },
+		     ParsedCategory{ "255", 255 } }) {
 		picojson::value input;
-		ASSERT_TRUE(picojson::parse(input, body).empty());
+		ASSERT_TRUE(picojson::parse(input, std::string(test.body)).empty());
 		std::uint8_t category = 42;
 		const char *error = nullptr;
-		ASSERT_TRUE(webapi::ParseCategoryIndex(input, category, error));
+		ASSERT_TRUE(webapi::ParseCategoryIndexField(input, category, error));
+		ASSERT_EQUALS(test.expected, unsigned(category));
 	}
 	picojson::value input;
 	ASSERT_TRUE(picojson::parse(input, std::string("2.9")).empty());
 	std::uint8_t category = 42;
 	const char *error = nullptr;
-	ASSERT_FALSE(webapi::ParseCategoryIndex(input, category, error));
+	ASSERT_FALSE(webapi::ParseCategoryIndexField(input, category, error));
 	ASSERT_EQUALS(unsigned(42), unsigned(category));
 }
 

@@ -18,9 +18,9 @@ inline bool IsIntegralJsonNumber(double value)
 	return std::isfinite(value) && value == std::floor(value);
 }
 
-// All category-taking endpoints use the same byte range and error messages. Presence and
+// JSON category fields use the same byte range and error messages. Presence and
 // defaults belong to the caller: an omitted category must not become a PATCH operation.
-inline bool ParseCategoryIndex(const picojson::value &input, std::uint8_t &category, const char *&error)
+inline bool ParseCategoryIndexField(const picojson::value &input, std::uint8_t &category, const char *&error)
 {
 	if (!input.is<double>()) {
 		error = "`category_index` must be a non-negative integer";
