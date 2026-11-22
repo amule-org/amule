@@ -510,11 +510,10 @@ inline bool ProcessUtpFrame(IUtpContext &context,
 
 // UDP sizing for libutp, accounting for the two-byte aMule envelope.
 //
-// libutp's own defaults (utp_default_get_udp_mtu / _overhead in utp_utils.cpp) branch on the
-// address family and know nothing of the envelope, so overriding them is what makes libutp size
-// packets that do not fragment. Branching the same way keeps the family awareness those defaults
-// had: an IPv6 peer costs 20 more header bytes than IPv4, and libutp assumes Teredo because it
-// cannot know the local interface either.
+// libutp's own defaults (utp_default_get_udp_mtu / _overhead in utp_utils.cpp) know nothing of the
+// envelope, so overriding them is what makes libutp size packets that do not fragment. The
+// overhead keeps their family awareness: an IPv6 peer costs 20 more header bytes than IPv4, and
+// libutp assumes Teredo because it cannot know the local interface either.
 //
 // Taken as a bool rather than a sockaddr so this stays free of socket headers and testable without
 // one; the adapter does the sa_family comparison.
@@ -532,11 +531,13 @@ constexpr std::uint64_t kUtpEnvelopeBytes = 2;
 // in this direction is eight bytes of payload on a plaintext datagram.
 constexpr std::uint64_t kUtpCryptHeaderBytes = 8;
 
-constexpr std::uint64_t UtpUdpMtu(bool isIPv6)
+// Both families fit the IPv6 minimum link: 1280 - 40 IPv6 - 8 UDP. An IPv4 packet is then 1260
+// bytes, which passes WireGuard (1420) and the other tunnels a 1500-byte link carries. A higher
+// ceiling would rely on libutp's MTU search, whose probes ask for DF. Our UDP socket never sets
+// DF, so a probe passes by fragmenting and the search settles on the ceiling.
+constexpr std::uint64_t UtpUdpMtu()
 {
-	// IPv4:   1500 ethernet - 20 IPv4 - 8 UDP - 24 GRE - 8 PPPoE - 2 MPPE - 36 fudge.
-	// Teredo: 1280 - 40 IPv6 - 8 UDP.
-	return (isIPv6 ? UINT64_C(1232) : UINT64_C(1402)) - kUtpEnvelopeBytes - kUtpCryptHeaderBytes;
+	return UINT64_C(1232) - kUtpEnvelopeBytes - kUtpCryptHeaderBytes;
 }
 
 constexpr std::uint64_t UtpUdpOverhead(bool isIPv6)

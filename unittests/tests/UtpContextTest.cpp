@@ -320,20 +320,17 @@ TEST(UtpContext, FailedCreationDropsWithoutMaintenance)
 	ASSERT_EQUALS(0, state.acks);
 	ASSERT_EQUALS(0, state.timeouts);
 }
-TEST(UtpContext, UdpSizingKeepsTheFamilyAwarenessLibutpHad)
+TEST(UtpContext, UdpSizingFitsTheIPv6MinimumLinkForBothFamilies)
 {
-	// libutp's own defaults branch on the address family; overriding them for the two-byte
-	// envelope must not flatten that, or an IPv6 peer gets IPv4 numbers and libutp sizes
-	// packets 20 bytes too large.
-	ASSERT_EQUALS(1392ull, UtpUdpMtu(false));
-	ASSERT_EQUALS(1222ull, UtpUdpMtu(true));
+	// 1280 - 40 IPv6 - 8 UDP, less what aMule puts in front of libutp's packet.
+	ASSERT_EQUALS(1222ull, UtpUdpMtu());
+	ASSERT_EQUALS(1232ull - kUtpEnvelopeBytes - kUtpCryptHeaderBytes, UtpUdpMtu());
+	// Over IPv4 the whole packet passes a WireGuard link.
+	ASSERT_TRUE(UtpUdpMtu() + kUtpEnvelopeBytes + kUtpCryptHeaderBytes + 28 <= 1420ull);
+
+	// The overhead keeps libutp's family awareness, moved by the envelope.
 	ASSERT_EQUALS(30ull, UtpUdpOverhead(false));
 	ASSERT_EQUALS(78ull, UtpUdpOverhead(true));
-
-	// The envelope is what the override exists for: each is libutp's own
-	// constant moved by exactly two bytes, in the direction that leaves room.
-	ASSERT_EQUALS(1402ull - kUtpEnvelopeBytes - kUtpCryptHeaderBytes, UtpUdpMtu(false));
-	ASSERT_EQUALS(1232ull - kUtpEnvelopeBytes - kUtpCryptHeaderBytes, UtpUdpMtu(true));
 	ASSERT_EQUALS(28ull + kUtpEnvelopeBytes, UtpUdpOverhead(false));
 	ASSERT_EQUALS(76ull + kUtpEnvelopeBytes, UtpUdpOverhead(true));
 }
@@ -345,10 +342,8 @@ TEST(UtpContext, TheUdpBudgetLeavesRoomForTheObfuscationHeader)
 {
 	ASSERT_EQUALS(8ull, kUtpCryptHeaderBytes);
 
-	// A full-size payload plus everything aMule puts in front of it still fits the number
-	// libutp was sizing against before the crypt header was accounted for.
-	ASSERT_TRUE(UtpUdpMtu(false) + kUtpEnvelopeBytes + kUtpCryptHeaderBytes <= 1402ull);
-	ASSERT_TRUE(UtpUdpMtu(true) + kUtpEnvelopeBytes + kUtpCryptHeaderBytes <= 1232ull);
+	// A full-size payload plus everything aMule puts in front of it still fits the IPv6 minimum.
+	ASSERT_TRUE(UtpUdpMtu() + kUtpEnvelopeBytes + kUtpCryptHeaderBytes <= 1232ull);
 }
 
 TEST(UtpContext, FrameClassificationTable)
