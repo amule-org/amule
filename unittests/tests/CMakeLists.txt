@@ -807,13 +807,15 @@ if (ENABLE_UTP)
 		UtpLibraryAdapterTest.cpp
 		${CMAKE_SOURCE_DIR}/src/UtpLibraryAdapter.cpp
 		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+		${CMAKE_SOURCE_DIR}/src/RandomFunctions.cpp
+		${CMAKE_SOURCE_DIR}/src/kademlia/utils/UInt128.cpp
 	)
 	target_include_directories (UtpLibraryAdapterTest PRIVATE
 		${CMAKE_BINARY_DIR}
 		${CMAKE_SOURCE_DIR}/src
 		${CMAKE_SOURCE_DIR}/src/include
 	)
-	target_link_libraries (UtpLibraryAdapterTest muleunit Utp::Utp ${Boost_LIBRARIES})
+	target_link_libraries (UtpLibraryAdapterTest muleunit Utp::Utp ${Boost_LIBRARIES} CRYPTOPP::CRYPTOPP)
 	add_test (NAME UtpLibraryAdapterTest COMMAND UtpLibraryAdapterTest)
 
 	# The admission decision only. Gathering its inputs needs the application;
