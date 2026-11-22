@@ -68,6 +68,10 @@ struct NetworkInterface
 	//! already drops deprecated addresses and has no temporary flag: a router-advertised prefix
 	//! with a random suffix is taken as temporary, which a randomized stable address matches too.
 	std::vector<NetworkInterfaceIPv6> ipv6;
+
+	//! Holds the source address the system picks for global IPv6 traffic: outbound IPv6 leaves
+	//! through this interface. At most one interface has it.
+	bool defaultIPv6Route = false;
 };
 
 /**

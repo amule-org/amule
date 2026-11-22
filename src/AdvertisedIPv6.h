@@ -41,25 +41,31 @@
  * accept, and never a deprecated one, which is kept for existing connections only. With an
  * interface pin, inbound traffic arrives only through that interface, so only its addresses count.
  * A stable address is preferred over an RFC 4941 temporary one, which the system rotates away from
- * peers that stored it. The lowest address wins a tie, so every refresh agrees whatever order the
- * platform enumerates in.
+ * peers that stored it. Next comes the interface that outbound IPv6 leaves through, because our
+ * outbound IPv6 connections leave from the advertised address. To the router each interface is a
+ * device of its own, with its own port sharing permission: a FRITZ!Box refuses a pinhole for an
+ * interface without one (606). The lowest address wins a tie, so every refresh agrees whatever
+ * order the platform enumerates in.
  */
 inline std::optional<CNetworkAddress> ChooseAdvertisedIPv6(
 	const std::vector<NetworkInterface> &interfaces, const wxString &pinnedInterface)
 {
 	const NetworkInterfaceIPv6 *best = nullptr;
+	bool bestOffRoute = false;
 	for (const NetworkInterface &iface : interfaces) {
 		if (!pinnedInterface.IsEmpty() && iface.name != pinnedInterface) {
 			continue;
 		}
+		const bool offRoute = !iface.defaultIPv6Route;
 		for (const NetworkInterfaceIPv6 &address : iface.ipv6) {
 			if (address.deprecated || !PeerAddressing::IsUsableTagIdentity(
 							  CNetworkAddress::IPv6FromOctets(address.bytes))) {
 				continue;
 			}
-			if (!best || std::tie(address.temporary, address.bytes) <
-					     std::tie(best->temporary, best->bytes)) {
+			if (!best || std::tie(address.temporary, offRoute, address.bytes) <
+					     std::tie(best->temporary, bestOffRoute, best->bytes)) {
 				best = &address;
+				bestOffRoute = offRoute;
 			}
 		}
 	}
