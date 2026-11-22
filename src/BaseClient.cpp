@@ -256,8 +256,7 @@ void CUpDownClient::Init()
 	m_dwLastAskedForSources = 0;
 
 	m_SecureIdentState = IS_UNAVAILABLE;
-	m_lastSignatureAddress = CNetworkAddress::Absent();
-	m_hasReceivedSignature = false;
+	m_signatureGuard = SecIdent::SignatureAddressGuard();
 
 	m_byInfopacketsReceived = IP_NONE;
 
@@ -3817,7 +3816,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 		return;
 
 	// we accept only one signature per IP, to avoid floods which need a lot cpu time for cryptfunctions
-	if (m_hasReceivedSignature && m_lastSignatureAddress == GetUserAddress()) {
+	if (m_signatureGuard.IsRepeat(GetUserAddress())) {
 		AddDebugLogLineN(logClient, "received multiple signatures from one client");
 		return;
 	}
@@ -3837,7 +3836,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 	// Over uTP or QUIC the peer saw our UDP address, which a TCP/UDP split NAT makes differ.
 	if (hasIPv4 && m_socket->HasTransport() && theApp->clientudp != nullptr) {
-		ownIPAsSeen = theApp->clientudp->NatKeyIPFor(peerIPv4);
+		ownIPAsSeen = theApp->clientudp->IdentUdpIP();
 	}
 #endif
 	// cppcheck-suppress duplicateBranch
@@ -3853,11 +3852,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 				byChaIPKind);
 	}
 
-	if (GetUserAddress().IsPresent()) {
-		// A signature we could not bind to an endpoint must not block the peer's next attempt.
-		m_lastSignatureAddress = GetUserAddress();
-		m_hasReceivedSignature = true;
-	}
+	m_signatureGuard.Note(GetUserAddress());
 }
 
 void CUpDownClient::SendSecIdentStatePacket()
@@ -3869,7 +3864,7 @@ void CUpDownClient::SendSecIdentStatePacket()
 	if (theApp->CryptoAvailable()) {
 		if (credits->GetSecIDKeyLen() == 0) {
 			nValue = IS_KEYANDSIGNEEDED;
-		} else if (!m_hasReceivedSignature || m_lastSignatureAddress != GetUserAddress()) {
+		} else if (!m_signatureGuard.IsRepeat(GetUserAddress())) {
 			nValue = IS_SIGNATURENEEDED;
 		}
 	}

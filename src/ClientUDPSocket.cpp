@@ -160,6 +160,15 @@ uint32_t CClientUDPSocket::NatKeyIPFor(uint32_t peerIp)
 	return m_natKeyIPs.Lookup(peerIp, LoginIP(), ::GetTickCount64()).value_or(0);
 }
 
+uint32_t CClientUDPSocket::IdentUdpIP() const
+{
+	// The server's view belongs to its login: between logins only Kad's is current.
+	const uint32_t login = LoginIP();
+	return NatSourceEcho::IdentUdpIP(login != 0 ? m_serverSeenUdpIP : 0,
+		wxUINT32_SWAP_ALWAYS(Kademlia::CKademlia::GetIPAddress()),
+		login);
+}
+
 #ifdef AMULE_UTP_TRANSPORT
 namespace
 {

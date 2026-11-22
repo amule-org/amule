@@ -32,6 +32,7 @@
 #error "updownclient.h depends on the amule/amuled transport defines; compile this unit in those targets"
 #endif
 
+#include <array>
 #include <atomic>
 #include "DisplayRateCounter.h"
 
@@ -44,6 +45,7 @@
 #include <common/Macros.h>
 #include "NetworkFunctions.h"
 #include "NetworkAddress.h"
+#include "SecIdentPolicy.h" // Needed for SignatureAddressGuard
 #include "OtherStructs.h"
 #include "ClientCredits.h"    // Needed for EIdentState
 #include <ec/cpp/ECID.h>      // Needed for CECID
@@ -344,6 +346,8 @@ public:
 	bool ExtProtocolAvailable() const { return m_bEmuleProtocol; }
 	bool IsEmuleClient() const { return (m_byEmuleVersion > 0); }
 	bool IsBanned() const;
+	//! PeerAddressing::BanAddresses() for this peer.
+	std::array<CNetworkAddress, 3> BanAddresses() const;
 	const wxString &GetClientFilename() const { return m_clientFilename; }
 	uint16 GetUDPPort() const { return m_nUDPPort; }
 	void SetUDPPort(uint16 nPort) { m_nUDPPort = nPort; }
@@ -1283,8 +1287,7 @@ private:
 	ESecureIdentState m_SecureIdentState;
 	uint8 m_byInfopacketsReceived; // have we received the edonkeyprot and emuleprot packet already (see
 				       // InfoPacketsReceived() )
-	CNetworkAddress m_lastSignatureAddress;
-	bool m_hasReceivedSignature;
+	SecIdent::SignatureAddressGuard m_signatureGuard;
 	uint8 m_bySupportSecIdent;
 
 	uint32 m_byCompatibleClient;

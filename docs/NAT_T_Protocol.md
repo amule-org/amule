@@ -679,9 +679,11 @@ a uTP or QUIC stream is our UDP address.
 aMule keeps a **key IP** per peer IPv4: the address that peer sees our UDP at, kept only when it
 differs from our login address (`NatSourceEcho::CKeyIps`, at most 256, each until an hour without
 use, or until our login address changes). `CClientUDPSocket::ClientCryptKeyIP()` gives it to every
-ed2k-keyed datagram queued to that peer, punches, uTP and QUIC alike. `VerifyIdent()` checks a
-`CRYPT_CIP_REMOTECLIENT` signature on a uTP or QUIC stream against it, and the uTP simultaneous-open
-tie-break orders by it, else by Kad's view of our address. Two sources fill it:
+ed2k-keyed datagram queued to that peer, punches, uTP and QUIC alike, and the uTP simultaneous-open
+tie-break orders by it, else by Kad's view of our address. `VerifyIdent()` does not use it: it
+checks a `CRYPT_CIP_REMOTECLIENT` signature on a uTP or QUIC stream against the server field below
+while logged in, else Kad's view (`NatSourceEcho::IdentUdpIP()`). The echo is the peer's own word,
+and a peer that relays another's signature would echo its own IP. Two sources fill the key IP:
 
 - **The server field.** The `own_ip` of a 36-byte `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) is the key IP
   toward every peer punched in that login (`ExpectNatTPeer()`). A shorter `0x61` means the server

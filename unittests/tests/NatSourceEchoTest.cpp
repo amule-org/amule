@@ -249,6 +249,17 @@ TEST(NatSourceEcho, TheTieBreakUsesTheAddressThePeerSees)
 	ASSERT_EQUALS(kLogin, LocalUdpIP(0, 0, kLogin));
 }
 
+// The peer's echo is not asked: a relaying peer would echo its own IP.
+TEST(NatSourceEcho, SecureIdentUsesOnlyAnAddressThePeerDoesNotChoose)
+{
+	ASSERT_EQUALS(kUdp, IdentUdpIP(kUdp, Ip(203, 0, 113, 5), kLogin));
+	ASSERT_EQUALS(Ip(203, 0, 113, 5), IdentUdpIP(0, Ip(203, 0, 113, 5), kLogin));
+	// Our login address is the default the challenge falls back to anyway.
+	ASSERT_EQUALS(0u, IdentUdpIP(kLogin, Ip(203, 0, 113, 5), kLogin));
+	ASSERT_EQUALS(0u, IdentUdpIP(0, kLogin, kLogin));
+	ASSERT_EQUALS(0u, IdentUdpIP(0, 0, kLogin));
+}
+
 TEST(NatSourceEcho, StaysWithinItsCapacity)
 {
 	CKeyIps keys(2, 1000);

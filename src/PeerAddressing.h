@@ -27,6 +27,7 @@
 
 #include "NetworkAddress.h"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 
@@ -644,6 +645,28 @@ inline EHelloAttach DecideHelloAttach(bool knownRouteUnproven, bool bothHashesVa
 {
 	return knownRouteUnproven && bothHashesValid && !sameHash ? EHelloAttach::KeepApart
 								  : EHelloAttach::Attach;
+}
+
+//! The addresses a ban on a peer is read and lifted under, absent where there is none: the live
+//! connection, the kept identity a hello came from, and the IPv6 the peer advertises in its own
+//! hello. Ban() records only the first, so a peer that advertises another host's address can get
+//! only itself refused.
+inline std::array<CNetworkAddress, 3> BanAddresses(const CNetworkAddress &conduct,
+	const CNetworkAddress &identity,
+	bool identityFromFallback,
+	const CNetworkAddress &ownAdvertisedIPv6)
+{
+	std::array<CNetworkAddress, 3> addresses{
+		conduct, CNetworkAddress::Absent(), CNetworkAddress::Absent()
+	};
+	// A ban on an identity no hello came from belongs to another host.
+	if (identity != conduct && !identityFromFallback) {
+		addresses[1] = identity;
+	}
+	if (ownAdvertisedIPv6 != conduct && ownAdvertisedIPv6 != addresses[1]) {
+		addresses[2] = ownAdvertisedIPv6;
+	}
+	return addresses;
 }
 
 } // namespace PeerAddressing

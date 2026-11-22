@@ -138,4 +138,34 @@ TEST(SecIdent, RemoteClientChallengeIPIsTheAddressThePeerSeesUsAt)
 	ASSERT_EQUALS(highId, SecIdent::RemoteClientChallengeIP(0, 0, login, false, highId));
 }
 
+TEST(SecIdent, OnlyTheFirstSignatureFromAnAddressIsVerified)
+{
+	const CNetworkAddress v4 = CNetworkAddress::FromIPv4NetworkOrder(0x017100cb);
+	CNetworkAddress::Octets octets{};
+	octets[0] = 0x20;
+	octets[1] = 0x01;
+	octets[2] = 0x0d;
+	octets[3] = 0xb8;
+	octets[15] = 1;
+	// A peer with no IPv4 endpoint: its first signature is still verified.
+	const CNetworkAddress v6 = CNetworkAddress::IPv6FromOctets(octets);
+	SecIdent::SignatureAddressGuard guard;
+	ASSERT_FALSE(guard.IsRepeat(v6));
+	ASSERT_FALSE(guard.IsRepeat(CNetworkAddress::Absent()));
+	guard.Note(v6);
+	ASSERT_TRUE(guard.IsRepeat(v6));
+	ASSERT_FALSE(guard.IsRepeat(v4));
+	guard.Note(v4);
+	ASSERT_TRUE(guard.IsRepeat(v4));
+	ASSERT_FALSE(guard.IsRepeat(v6));
+}
+
+TEST(SecIdent, AnUnboundSignatureDoesNotBlockTheNextOne)
+{
+	SecIdent::SignatureAddressGuard guard;
+	guard.Note(CNetworkAddress::Absent());
+	ASSERT_FALSE(guard.IsRepeat(CNetworkAddress::Absent()));
+	ASSERT_FALSE(guard.IsRepeat(CNetworkAddress::FromIPv4NetworkOrder(0x017100cb)));
+}
+
 // File_checked_for_headers
