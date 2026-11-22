@@ -1135,7 +1135,7 @@ private:
 	}
 
 	// The connection ID and first sequence number of each stream. libutp's default is rand(): 15
-	// random bits on Windows, and a sequence that follows from the second Kad started in.
+	// random bits on Windows, and the same values on nodes whose Kad started in the same second.
 	static uint64 GetRandom(utp_callback_arguments * /*args*/) { return GetRandomUint32(); }
 	static uint64 GetUdpMtu(utp_callback_arguments *args)
 	{
