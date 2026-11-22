@@ -4889,17 +4889,41 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 
 namespace
 {
+// Prepare every command before sending any of them: malformed later fields must not
+// leave earlier fields applied. Core/transport failures still stop at the failing command.
+struct FilePatchCommand
+{
+	std::unique_ptr<CECPacket> packet;
+	const char *failure;
+};
+
+CHttpServer::Response ApplyFilePatch(CamuleapiApp &app, const std::vector<FilePatchCommand> &commands)
+{
+	for (const auto &command : commands) {
+		std::unique_ptr<const CECPacket> response(app.SendRecvSerialized(command.packet.get()));
+		if (!response) {
+			return ErrorResponse(503, "ec_unavailable", command.failure);
+		}
+		std::string error;
+		if (IsEcFailedResponse(response.get(), error)) {
+			return ErrorResponse(400, "amuled_rejected", error.c_str());
+		}
+	}
+	CHttpServer::Response ok;
+	ok.status = 200;
+	return ok;
+}
+
 // The optional `my_comment` + `my_rating` pair shared by PATCH /downloads/{hash}
-// and PATCH /shared/{hash}. Both must be present or neither. Sends
+// and PATCH /shared/{hash}. Both must be present or neither. Prepares
 // EC_OP_SHARED_FILE_SET_COMMENT, which amuled resolves against the shared-files
 // registry, so the file must be shared. A body with neither field is a no-op.
-bool TrySetCommentRating(CamuleapiApp &app,
-	const picojson::object &obj,
+bool PrepareCommentRating(const picojson::object &obj,
 	const webapi::FileSnapshot &f,
-	bool &applied,
+	const CMD4Hash &file_hash,
+	std::vector<FilePatchCommand> &commands,
 	CHttpServer::Response &err)
 {
-	applied = false;
 	const auto cit = obj.find("my_comment");
 	const auto rit = obj.find("my_rating");
 	const bool has_c = cit != obj.end();
@@ -4925,8 +4949,7 @@ bool TrySetCommentRating(CamuleapiApp &app,
 		return false;
 	}
 	const double rd = rit->second.get<double>();
-	const int rating = static_cast<int>(rd);
-	if (static_cast<double>(rating) != rd || rating < 0 || rating > 5) {
+	if (!webapi::IsIntegralJsonNumber(rd) || rd < 0 || rd > 5) {
 		err = ErrorResponse(400, "bad_request", "`my_rating` must be an integer in [0, 5]");
 		return false;
 	}
@@ -4934,28 +4957,11 @@ bool TrySetCommentRating(CamuleapiApp &app,
 		err = ErrorResponse(409, "not_shared", "comment and rating can only be set on a shared file");
 		return false;
 	}
-	CMD4Hash file_hash;
-	if (!HashFromHex(f.hash, file_hash)) {
-		err = ErrorResponse(500, "internal_error", "failed to decode file hash");
-		return false;
-	}
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SHARED_FILE_SET_COMMENT));
 	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE, file_hash));
 	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE_COMMENT, comment));
-	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE_RATING, static_cast<std::uint8_t>(rating)));
-	const CECPacket *ec_resp = app.SendRecvSerialized(ec_req.get());
-	if (!ec_resp) {
-		err = ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for SET_COMMENT");
-		return false;
-	}
-	std::string ec_err;
-	if (IsEcFailedResponse(ec_resp, ec_err)) {
-		delete ec_resp;
-		err = ErrorResponse(400, "amuled_rejected", ec_err.c_str());
-		return false;
-	}
-	delete ec_resp;
-	applied = true;
+	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE_RATING, static_cast<std::uint8_t>(rd)));
+	commands.push_back({ std::move(ec_req), "EC roundtrip failed for SET_COMMENT" });
 	return true;
 }
 
@@ -4963,13 +4969,11 @@ bool TrySetCommentRating(CamuleapiApp &app,
 // /shared/{hash}, mapping to EC_OP_RENAME_FILE. Empty names and names containing
 // path separators are rejected: amuled's RenameFile JoinPaths()es the value, so a
 // separator would let the rename escape the file's directory.
-bool TryRename(CamuleapiApp &app,
-	const picojson::object &obj,
-	const webapi::FileSnapshot &f,
-	bool &applied,
+bool PrepareRename(const picojson::object &obj,
+	const CMD4Hash &file_hash,
+	std::vector<FilePatchCommand> &commands,
 	CHttpServer::Response &err)
 {
-	applied = false;
 	const auto nit = obj.find("name");
 	if (nit == obj.end())
 		return true;
@@ -4986,27 +4990,10 @@ bool TryRename(CamuleapiApp &app,
 		err = ErrorResponse(400, "bad_request", "`name` must not contain path separators");
 		return false;
 	}
-	CMD4Hash file_hash;
-	if (!HashFromHex(f.hash, file_hash)) {
-		err = ErrorResponse(500, "internal_error", "failed to decode file hash");
-		return false;
-	}
 	std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_RENAME_FILE));
 	ec_req->AddTag(CECTag(EC_TAG_KNOWNFILE, file_hash));
 	ec_req->AddTag(CECTag(EC_TAG_PARTFILE_NAME, name));
-	const CECPacket *ec_resp = app.SendRecvSerialized(ec_req.get());
-	if (!ec_resp) {
-		err = ErrorResponse(503, "ec_unavailable", "EC roundtrip failed for RENAME_FILE");
-		return false;
-	}
-	std::string ec_err;
-	if (IsEcFailedResponse(ec_resp, ec_err)) {
-		delete ec_resp;
-		err = ErrorResponse(400, "amuled_rejected", ec_err.c_str());
-		return false;
-	}
-	delete ec_resp;
-	applied = true;
+	commands.push_back({ std::move(ec_req), "EC roundtrip failed for RENAME_FILE" });
 	return true;
 }
 } // namespace
@@ -5045,34 +5032,17 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		return ErrorResponse(500, "internal_error", "failed to decode partfile hash");
 	}
 
-	// Each field present in the body fires one EC mutation, in a fixed order (status,
-	// priority, category) so the wire effect does not depend on JSON key order.
-	auto send_op = [&](ec_opcode_t op,
-			       bool has_inner,
-			       ec_tagname_t inner_name,
-			       std::uint8_t inner_value) -> CHttpServer::Response {
-		std::unique_ptr<CECPacket> p(new CECPacket(op));
+	// Preserve the command order, but validate all fields before the first EC mutation.
+	std::vector<FilePatchCommand> commands;
+	auto add_op = [&](ec_opcode_t op, bool has_inner, ec_tagname_t inner_name, std::uint8_t inner_value) {
+		auto packet = std::make_unique<CECPacket>(op);
 		CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
 		if (has_inner) {
 			hash_tag.AddTag(CECTag(inner_name, inner_value));
 		}
-		p->AddTag(hash_tag);
-		const CECPacket *r = m_app.SendRecvSerialized(p.get());
-		if (!r) {
-			return ErrorResponse(503, "ec_unavailable", "EC roundtrip failed");
-		}
-		std::string ec_err_msg;
-		if (IsEcFailedResponse(r, ec_err_msg)) {
-			delete r;
-			return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
-		}
-		delete r;
-		CHttpServer::Response ok;
-		ok.status = 200;
-		return ok;
+		packet->AddTag(hash_tag);
+		commands.push_back({ std::move(packet), "EC roundtrip failed" });
 	};
-
-	bool any_change = false;
 
 	// action: a command, not a state. The read side's `status` has eleven values,
 	// of which this accepted three, in a different tense.
@@ -5097,10 +5067,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 					"bad_request",
 					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
 			}
-			auto err = send_op(op, /*has_inner=*/false, static_cast<ec_tagname_t>(0), 0);
-			if (err.status >= 400)
-				return err;
-			any_change = true;
+			add_op(op, /*has_inner=*/false, static_cast<ec_tagname_t>(0), 0);
 		}
 	}
 
@@ -5117,11 +5084,7 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 				return ErrorResponse(
 					400, "bad_request", FilePriorityAccepted(kPrioDownload).c_str());
 			}
-			auto err = send_op(
-				EC_OP_PARTFILE_PRIO_SET, /*has_inner=*/true, EC_TAG_PARTFILE_PRIO, code);
-			if (err.status >= 400)
-				return err;
-			any_change = true;
+			add_op(EC_OP_PARTFILE_PRIO_SET, /*has_inner=*/true, EC_TAG_PARTFILE_PRIO, code);
 		}
 	}
 
@@ -5134,13 +5097,10 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
 				return ErrorResponse(400, "bad_request", error);
 			}
-			auto err = send_op(EC_OP_PARTFILE_SET_CAT,
+			add_op(EC_OP_PARTFILE_SET_CAT,
 				/*has_inner=*/true,
 				EC_TAG_PARTFILE_CAT,
 				category);
-			if (err.status >= 400)
-				return err;
-			any_change = true;
 		}
 	}
 
@@ -5157,42 +5117,29 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 			if (!it->second.is<bool>()) {
 				return ErrorResponse(400, "bad_request", "`a4af_auto` must be a boolean");
 			}
-			auto err = send_op(EC_OP_PARTFILE_SET_A4AF_AUTO,
+			add_op(EC_OP_PARTFILE_SET_A4AF_AUTO,
 				/*has_inner=*/true,
 				EC_TAG_PARTFILE_A4AFAUTO,
 				static_cast<std::uint8_t>(it->second.get<bool>() ? 1 : 0));
-			if (err.status >= 400)
-				return err;
-			any_change = true;
 		}
 	}
 
-	// comment + rating, both required together. Only settable on a file that is
-	// shared; otherwise TrySetCommentRating returns 409.
-	{
-		bool applied = false;
-		CHttpServer::Response cr_err;
-		if (!TrySetCommentRating(m_app, obj, d, applied, cr_err))
-			return cr_err;
-		if (applied)
-			any_change = true;
+	CHttpServer::Response error;
+	if (!PrepareCommentRating(obj, d, file_hash, commands, error) ||
+		!PrepareRename(obj, file_hash, commands, error)) {
+		return error;
 	}
 
-	// name (rename; issue #420).
-	{
-		bool applied = false;
-		CHttpServer::Response rn_err;
-		if (!TryRename(m_app, obj, d, applied, rn_err))
-			return rn_err;
-		if (applied)
-			any_change = true;
-	}
-
-	if (!any_change) {
+	if (commands.empty()) {
 		return ErrorResponse(400,
 			"bad_request",
 			"request body must include at least one of "
 			"`action`, `priority`, `category_index`, `my_comment`+`my_rating`, or `name`");
+	}
+
+	const auto applied = ApplyFilePatch(m_app, commands);
+	if (applied.status >= 400) {
+		return applied;
 	}
 
 	// Inline refresh so the response below sees post-mutation state.
@@ -9122,7 +9069,12 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 	}
 	const auto &obj = root.get<picojson::object>();
 
-	bool any_change = false;
+	CMD4Hash file_hash;
+	if (!HashFromHex(s.hash, file_hash)) {
+		return ErrorResponse(500, "internal_error", "failed to decode file hash");
+	}
+
+	std::vector<FilePatchCommand> commands;
 
 	// priority (optional now that comment/rating share this endpoint).
 	const auto pit = obj.find("priority");
@@ -9134,53 +9086,29 @@ CHttpServer::Response CApiDispatcher::HandleSharedPatch(
 		if (!FilePriorityToCode(pit->second.get<std::string>(), kPrioShared, code)) {
 			return ErrorResponse(400, "bad_request", FilePriorityAccepted(kPrioShared).c_str());
 		}
-		CMD4Hash file_hash;
-		if (!HashFromHex(s.hash, file_hash)) {
-			return ErrorResponse(500, "internal_error", "failed to decode file hash");
-		}
 		std::unique_ptr<CECPacket> ec_req(new CECPacket(EC_OP_SHARED_SET_PRIO));
 		CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
 		hash_tag.AddTag(CECTag(EC_TAG_PARTFILE_PRIO, code));
 		ec_req->AddTag(hash_tag);
 
-		const CECPacket *ec_resp = m_app.SendRecvSerialized(ec_req.get());
-		if (!ec_resp) {
-			return ErrorResponse(
-				503, "ec_unavailable", "EC roundtrip failed for SHARED_SET_PRIO");
-		}
-		std::string ec_err_msg;
-		if (IsEcFailedResponse(ec_resp, ec_err_msg)) {
-			delete ec_resp;
-			return ErrorResponse(400, "amuled_rejected", ec_err_msg.c_str());
-		}
-		delete ec_resp;
-		any_change = true;
+		commands.push_back({ std::move(ec_req), "EC roundtrip failed for SHARED_SET_PRIO" });
 	}
 
-	// comment + rating (both required together; issue #419).
-	{
-		bool applied = false;
-		CHttpServer::Response cr_err;
-		if (!TrySetCommentRating(m_app, obj, s, applied, cr_err))
-			return cr_err;
-		if (applied)
-			any_change = true;
+	CHttpServer::Response error;
+	if (!PrepareCommentRating(obj, s, file_hash, commands, error) ||
+		!PrepareRename(obj, file_hash, commands, error)) {
+		return error;
 	}
 
-	// name (rename; issue #420).
-	{
-		bool applied = false;
-		CHttpServer::Response rn_err;
-		if (!TryRename(m_app, obj, s, applied, rn_err))
-			return rn_err;
-		if (applied)
-			any_change = true;
-	}
-
-	if (!any_change) {
+	if (commands.empty()) {
 		return ErrorResponse(400,
 			"bad_request",
 			"request body must include `priority`, `comment`+`rating`, or `name`");
+	}
+
+	const auto applied = ApplyFilePatch(m_app, commands);
+	if (applied.status >= 400) {
+		return applied;
 	}
 
 	(void)RefresherTick(m_app, m_state);

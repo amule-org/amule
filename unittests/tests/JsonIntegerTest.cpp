@@ -35,7 +35,7 @@ TEST(JsonInteger, CategoryRejectsOtherJsonTypesWithoutChangingOutput)
 		ASSERT_FALSE(webapi::ParseCategoryIndexField(input, category, error));
 		ASSERT_EQUALS(unsigned(42), unsigned(category));
 		ASSERT_EQUALS(
-			std::string("`category_index` must be a non-negative integer"), std::string(error));
+			std::string("`category_index` must be an integer in 0..255"), std::string(error));
 	}
 }
 
@@ -55,7 +55,8 @@ TEST(JsonInteger, CategoryRejectsFractionsAndOutOfRangeNumbers)
 		const char *error = nullptr;
 		ASSERT_FALSE(webapi::ParseCategoryIndexField(picojson::value(input), category, error));
 		ASSERT_EQUALS(unsigned(42), unsigned(category));
-		ASSERT_EQUALS(std::string("`category_index` must be in [0, 255]"), std::string(error));
+		ASSERT_EQUALS(
+			std::string("`category_index` must be an integer in 0..255"), std::string(error));
 	}
 }
 

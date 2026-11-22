@@ -68,9 +68,10 @@ JWT_SECRET=$(od -An -tx1 -N32 /dev/urandom | tr -d ' \n')
 run_phase() {
 	local script=$1
 	echo "==================== $script ===================="
-	# All-search always owns an offline core/API pair on private ports.
+	# These phases own an offline core/API pair on private ports.
 	# Endpoint checks use the shared daemon unless CI requests the fixture.
 	if [ "$script" = "45-all-search.sh" ] || [ "$script" = "49-search-metadata.sh" ] ||
+		[ "$script" = "51-file-patch-validation.sh" ] ||
 		{ [ "$script" = "26-rfc-followup-endpoints.sh" ] && [ "${AMULEAPI_SMOKE_OFFLINE:-0}" = "1" ]; }; then
 		AMULEAPI_BIN="$BIN" bash "$SCRIPT_DIR/$script" --offline
 		return $?
@@ -259,6 +260,7 @@ PHASES=(
 	48-cross-origin-writes.sh
 	49-search-metadata.sh
 	50-proxy-auth.sh
+	51-file-patch-validation.sh
 	99-peer-fixture-teardown.sh
 )
 

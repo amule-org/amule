@@ -22,13 +22,14 @@ inline bool IsIntegralJsonNumber(double value)
 // defaults belong to the caller: an omitted category must not become a PATCH operation.
 inline bool ParseCategoryIndexField(const picojson::value &input, std::uint8_t &category, const char *&error)
 {
+	constexpr const char *message = "`category_index` must be an integer in 0..255";
 	if (!input.is<double>()) {
-		error = "`category_index` must be a non-negative integer";
+		error = message;
 		return false;
 	}
 	const double value = input.get<double>();
-	if (value < 0 || value > 255 || !IsIntegralJsonNumber(value)) {
-		error = "`category_index` must be in [0, 255]";
+	if (!IsIntegralJsonNumber(value) || value < 0 || value > 255) {
+		error = message;
 		return false;
 	}
 	category = static_cast<std::uint8_t>(value);
