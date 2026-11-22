@@ -42,9 +42,30 @@ there client on the eMule forum..
 #include "../../ArchSpecific.h"
 #include <common/Format.h> // Needed for CFormat
 
+#include <chrono>
+#include <random>
+
 ////////////////////////////////////////
 using namespace Kademlia;
 ////////////////////////////////////////
+
+namespace
+{
+// The random bits of a lookup target, 32 at a time. rand() gives only 31 (glibc) or 15 (Windows),
+// so a chunk filled from it never has its top bit set. Not for keys or challenges.
+std::mt19937 &RandomBits()
+{
+	thread_local std::mt19937 generator = [] {
+		std::random_device device;
+		// The clock too: old MinGW's random_device repeats the same sequence on every run.
+		std::seed_seq seed{ device(),
+			device(),
+			static_cast<unsigned>(std::chrono::steady_clock::now().time_since_epoch().count()) };
+		return std::mt19937(seed);
+	}();
+	return generator;
+}
+} // namespace
 
 CUInt128::CUInt128(const CUInt128 &value, unsigned numBits)
 {
@@ -60,15 +81,14 @@ CUInt128::CUInt128(const CUInt128 &value, unsigned numBits)
 	}
 
 	// Fill the remaining bits of the current 32-bit chunk with random bits
-	// (Not seeding based on time to allow multiple different ones to be created in quick succession)
 	numULONGs = (numBits + 31) / 32;
 	for (unsigned i = numBits; i < numULONGs * 32; i++) {
-		SetBitNumber(i, rand() % 2);
+		SetBitNumber(i, RandomBits()() & 1);
 	}
 
-	// Pad with random bytes
+	// Pad with random chunks
 	for (unsigned i = numULONGs; i < 4; i++) {
-		Set32BitChunk(i, rand());
+		Set32BitChunk(i, static_cast<uint32_t>(RandomBits()()));
 	}
 }
 

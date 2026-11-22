@@ -240,6 +240,25 @@ TEST_M(CUInt128, ConstructWithBits, "CUInt128(const CUInt128&, unsigned)")
 	}
 }
 
+// Every random bit is set in some of 64 IDs: rand() left the top bit of each chunk 0 (glibc), or its
+// top 17 bits (Windows). A wrong failure takes one bit 0 in all 64, about 2^-57 for the 128 bits.
+TEST_M(CUInt128, ConstructWithBitsFillsEveryRandomBit, "CUInt128(const CUInt128&, unsigned)")
+{
+	uint32_t random[4] = { 0, 0, 0, 0 };
+	uint32_t partial = 0;
+	for (int n = 0; n < 64; n++) {
+		const CUInt128 id(CUInt128(0u), 0);
+		for (unsigned i = 0; i < 4; i++) {
+			random[i] |= id.Get32BitChunk(i);
+		}
+		partial |= CUInt128(CUInt128(0u), 1).Get32BitChunk(0);
+	}
+	for (const uint32_t chunk : random) {
+		ASSERT_EQUALS(0xffffffffu, chunk);
+	}
+	ASSERT_EQUALS(0x7fffffffu, partial);
+}
+
 TEST_M(CUInt128, AssignCUInt128, "operator=(const CUInt128&)")
 {
 	CUInt128 a((uint8_t *)&TestData::sequence);
