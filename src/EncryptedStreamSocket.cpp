@@ -61,7 +61,8 @@
  * Server (incoming connection): the two are swapped. The first 1024 bytes are discarded.
  *
  * Handshake: same rules as above.
- *     Client: <SemiRandomNotProtocolMarker 1[plain]><G^A 96[plain]><RandomBytes 0-15[plain]>
+ *     Client: <SemiRandomNotProtocolMarker 1[plain]><G^A 96[plain]><PaddingLen 1[plain]>
+ *             <RandomBytes PaddingLen[plain]>, PaddingLen 0-15
  *     Server: <G^B 96[plain]><MagicValue 4><EncryptionMethodsSupported 1>
  *             <EncryptionMethodPreferred 1><PaddingLen 1><RandomBytes PaddingLen>
  *     Client: <MagicValue 4><EncryptionMethodsSelected 1><PaddingLen 1><RandomBytes PaddingLen>
