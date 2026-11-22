@@ -3836,7 +3836,7 @@ void CUpDownClient::ProcessSignaturePacket(const uint8_t *pachPacket, uint32 nSi
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 	// Over uTP or QUIC the peer saw our UDP address, which a TCP/UDP split NAT makes differ.
 	if (hasIPv4 && m_socket->HasTransport() && theApp->clientudp != nullptr) {
-		ownIPAsSeen = theApp->clientudp->IdentKeyIP();
+		ownIPAsSeen = theApp->clientudp->IdentUdpIP();
 	}
 #endif
 	// cppcheck-suppress duplicateBranch

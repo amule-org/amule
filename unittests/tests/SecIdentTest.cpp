@@ -147,7 +147,7 @@ TEST(SecIdent, OnlyTheFirstSignatureFromAnAddressIsVerified)
 	octets[2] = 0x0d;
 	octets[3] = 0xb8;
 	octets[15] = 1;
-	// A peer with no IPv4 endpoint: once tested against address 0 too.
+	// A peer with no IPv4 endpoint: its first signature is still verified.
 	const CNetworkAddress v6 = CNetworkAddress::IPv6FromOctets(octets);
 	SecIdent::SignatureAddressGuard guard;
 	ASSERT_FALSE(guard.IsRepeat(v6));

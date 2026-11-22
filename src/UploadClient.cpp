@@ -703,8 +703,8 @@ void CUpDownClient::UnBan()
 	m_Aggressiveness = 0;
 
 	theApp->clientlist->AddTrackClient(this);
-	// All that IsBanned() reads: an older entry for another of them would otherwise leave the
-	// record looking banned after this one lapsed.
+	// All that IsBanned() reads, or the peer would stay banned. The advertised IPv6 too: only the
+	// user's own chat with a spammer gets here, and a ban there came from that address's own conduct.
 	for (const CNetworkAddress &address : BanAddresses()) {
 		if (address.IsPresent()) {
 			theApp->clientlist->RemoveBannedClient(address);
