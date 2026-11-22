@@ -716,6 +716,31 @@ target_link_libraries (UtpSocketTransportTest
 	${Boost_LIBRARIES}
 )
 
+# Its concurrency case passes with the locks removed unless a race detector watches it. Only this
+# target is instrumented: a global -fsanitize=thread breaks the crypto++ version probe.
+option (ENABLE_TSAN_TESTS "Also build UtpSocketTransportTest under ThreadSanitizer (Clang or GCC)" OFF)
+if (ENABLE_TSAN_TESTS)
+	add_executable (UtpSocketTransportTsanTest
+		UtpSocketTransportTest.cpp
+		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	)
+	target_include_directories (UtpSocketTransportTsanTest
+		PRIVATE ${CMAKE_BINARY_DIR}
+		PRIVATE ${CMAKE_SOURCE_DIR}/src
+		PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	)
+	target_compile_options (UtpSocketTransportTsanTest PRIVATE -fsanitize=thread -g -O1)
+	target_link_options (UtpSocketTransportTsanTest PRIVATE -fsanitize=thread)
+	target_link_libraries (UtpSocketTransportTsanTest
+		muleunit
+		${Boost_LIBRARIES}
+	)
+	add_test (NAME UtpSocketTransportTsanTest COMMAND UtpSocketTransportTsanTest)
+	# A report fails the run even where the test's own checks pass.
+	set_tests_properties (UtpSocketTransportTsanTest PROPERTIES
+		ENVIRONMENT "TSAN_OPTIONS=halt_on_error=1:exitcode=66")
+endif()
+
 add_executable (LibSocketTransportTest
 	LibSocketTransportTest.cpp
 	# The test includes LibSocket.cpp so it can drain the process-global io_context pool
