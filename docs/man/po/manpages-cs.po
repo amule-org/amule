@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-11-16 12:10+0100\n"
-"PO-Revision-Date: 2026-11-20 11:29+0000\n"
+"PO-Revision-Date: 2026-11-22 13:57+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/application-man-pages/cs/>\n"
 "Language: cs\n"
@@ -107,23 +107,23 @@ msgstr "B<[ --log-soubor>=I<E<lt>souborE<gt>> B<]>"
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "Write logs to the specified filename instead of the default log file.  Overrides the B<LogFilePath> setting under B<[eMule]> in I<amule.conf> for this run only.  Relative paths are resolved against the configuration directory.  The parent directory must already exist and be writable; it is not created automatically.  An empty or absent configuration setting uses I<logfile> in the configuration directory.  On startup, the previous log is backed up to the same path with I<.bak> appended.  If the backup cannot be created, a warning is logged and the current session is appended to the existing log.  Configuration changes take effect after restart."
-msgstr ""
+msgstr "Zapsat logy do zadaného souboru namísto výchozího souboru logu.  Toto nastavení přepisuje nastavení B<LogFilePath> v sekci B<[eMule]> v I<amule.conf>, a to pouze pro toto spuštění.  Relativní cesty se vyhodnocují vzhledem ke konfiguračnímu adresáři.  Nadřazený adresář musí již existovat a musí být zapisovatelný; nevytváří se automaticky.  Pokud je toto nastavení konfigurace prázdné nebo chybí, použije se I<logfile> v konfiguračním adresáři.  Při spuštění se předchozí log zálohuje do stejné cesty a bude mít příponu I<.bak>.  Pokud nelze zálohu vytvořit, zaznamená se varování a aktuální relace se připojí k existujícímu logu.  Změny v konfiguraci se projeví až po restartu."
 
 #. type: TP
 #: amule.1.in amulegui.1.in
 #, no-wrap
 msgid "B<[ -geometry >I<E<lt>geomE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -geometrie >I<E<lt>geomE<gt>> B<]>"
 
 #. type: Plain text
 #: amule.1.in amulegui.1.in
 msgid "Sets the geometry of the app. I<E<lt>geomE<gt>> uses the same format as standard X11 apps:\t[B<=>][I<E<lt>widthE<gt>>{B<xX>}I<E<lt>heightE<gt>>][{B<+->}I<E<lt>xoffsetE<gt>>{B<+->}I<E<lt>yoffsetE<gt>>]"
-msgstr ""
+msgstr "Nastaví geometrii aplikace. I<E<lt>geomE<gt>> používá stejný formát jako běžné aplikace X11:\t[B<=>][I<E<lt>šířkaE<gt>>{B<xX>}I<E<lt>výškaE<gt>>][{B<+->}I<E<lt>xoffsetE<gt>>{B<+->}I<E<lt>yoffsetE<gt>>]"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "Prints log messages to stdout."
-msgstr ""
+msgstr "Vypíše zprávy logu do stdout."
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
@@ -133,120 +133,120 @@ msgstr "Resetuje nastavení na výchozí hodnoty."
 #. type: Plain text
 #: amule.1.in
 msgid "Enable or disable starting aMule on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
-msgstr ""
+msgstr "Zapněte nebo vypněte spouštění aMule po přihlášení uživatele a poté program ukončete. Úložiště specifické pro daný operační systém se vybere automaticky: Run klíč registru Windows, LaunchAgent v macOS, položka I<.desktop> automatického spuštění XDG v systému Linux."
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "Enable or disable aMule as the current user's default handler for ed2k:// and magnet: links, then exit.  I<E<lt>valueE<gt>> is B<on> or B<off> for both kinds of link, or B<ed2k:on>, B<ed2k:off>, B<magnet:on> or B<magnet:off> for one of them.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
-msgstr ""
+msgstr "Povolte nebo zakažte u současného uživatele aMule jako výchozí aplikaci pro odkazy ed2k:// a magnet: , následně aplikaci ukončete.  I<E<lt>hodnotaE<gt>> je B<on> nebo B<off> pro oba typy odkazů, nebo B<ed2k:on>, B<ed2k:off>, B<magnet:on> nebo B<magnet:off> pro jeden z typů.  Obchod specifický pro daný operační systém je automaticky vybrán: Windows registr, macOS LaunchServices, Linux XDG I<mimeapps.list>."
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "Enable or disable aMule as the current user's handler for I<.emulecollection> files, then exit.  The OS-specific store is selected automatically: Windows registry, macOS LaunchServices, Linux XDG I<mimeapps.list>."
-msgstr ""
+msgstr "Povolte nebo zakažte u současného uživatele aMule jako výchozí aplikaci pro soubory I<.emulecollection>, poté ukončete aplikaci.  Obchod specifický pro daný operační systém je automaticky vybrán: Windows registr, macOS LaunchServices, Linux XDG I<mimeapps.list>."
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "Don't catch fatal exceptions and don't block exit on assertions.  Useful for headless / supervised setups (systemd, watchdog scripts)  where the otherwise-modal assertion dialog prevents auto-restart."
-msgstr ""
+msgstr "Nezachytávat fatální výjimky a neblokovat ukončení při assertions.  To je užitečné pro bezgrafická / dohlížená prostředí (systemd, skripty watchdog),  kde by jinak modální dialog s assertion bránil automatickému restartu."
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "Does not disable stdin."
-msgstr ""
+msgstr "Nezakazuje stdin."
 
 #. type: TP
 #: amule.1.in amulegui.1.in
 #, no-wrap
 msgid "B<[ -t>, B<--category>=I<E<lt>numE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -t>, B<--kategorie>=I<E<lt>čísloE<gt>> B<]>"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "Set category for passed eD2k links to I<E<lt>numE<gt>>"
-msgstr ""
+msgstr "Nastavte kategorii pro zadané odkazy eD2k na I<E<lt>čísloE<gt>>"
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "Displays the current version number."
-msgstr ""
+msgstr "Zobrazuje aktuální číslo verze."
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "Prints a short usage description."
-msgstr ""
+msgstr "Vypíše krátký popis použití."
 
 #. type: TP
 #: amule.1.in amuled.1.in amulegui.1.in
 #, no-wrap
 msgid "B<[ eD2k-link | collection-file ]>"
-msgstr ""
+msgstr "B<[ eD2k-odkaz | collection-soubor ]>"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "Adds an eD2k-link, or every link in an eMule collection file, to the core."
-msgstr ""
+msgstr "Přidá eD2k-odkaz, nebo každý odkaz v eMule souboru kolekce, do jádra."
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "The eD2k link to be added can be:"
-msgstr ""
+msgstr "eD2k odkaz pro přidání může být:"
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "a file link (ed2k://|file|...), it will be added to the download queue;"
-msgstr ""
+msgstr "odkaz souboru (ed2k://|soubor|...), bude přidán do fronty stahování;"
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "a server link (ed2k://|server|...), it will be added to the server list;"
-msgstr ""
+msgstr "odkaz serveru (ed2k://|server|...), bude přidán do seznamu serverů;"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in ed2k.1.in
 msgid "a serverlist link, in which case all servers in the list will be added to the server list;"
-msgstr ""
+msgstr "odkaz seznamu serverů, kdy všechny servery odkázaného seznamu budou přidány do místního seznamu serverů;"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "a magnet link."
-msgstr ""
+msgstr "magnet odkaz."
 
 #. type: Plain text
 #: amule.1.in amuled.1.in amulegui.1.in
 msgid "Alternatively the argument can be the path to an .emulecollection file, or a file:// URL naming one, in which case every link it contains is added to the download queue.  This is what lets a file manager open a collection with aMule."
-msgstr ""
+msgstr "Alternativně může být argumentem cesta k souboru .emulecollection nebo adresa URL typu file:// odkazující na takový soubor; v takovém případě se všechny odkazy, které obsahuje, přidají do fronty stahování. Právě díky tomu může správce souborů otevřít sbírku v programu aMule."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amulegui.1.in
 #, no-wrap
 msgid "NOTES"
-msgstr ""
+msgstr "POZNÁMKY"
 
 #. type: SS
 #: amule.1.in amulecmd.1.in amulegui.1.in
 #, no-wrap
 msgid "Paths"
-msgstr ""
+msgstr "Cesty"
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amulegui.1.in
 msgid "For all options which take a I<E<lt>pathE<gt>> value, if the I<path> contains no directory part (i.e. just a plain filename), then it is considered to be under the aMule configuration directory, I<~/.aMule>."
-msgstr ""
+msgstr "U všech předvoleb, které přijímají hodnotu typu I<E<lt>cestaE<gt>>, platí, že pokud I<cesta> neobsahuje žádný adresář (tj. jde pouze o prostý název souboru), je použito umístěnou v konfiguračním adresáři aMule, I<~/.aMule>."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
 #: ../../src/utils/cas/docs/cas.1.in
 #, no-wrap
 msgid "FILES"
-msgstr ""
+msgstr "SOUBORY"
 
 #. type: Plain text
 #: amule.1.in amuled.1.in
 msgid "~/.aMule/*"
-msgstr ""
+msgstr "~/.aMule/*"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
@@ -255,7 +255,7 @@ msgstr ""
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 #, no-wrap
 msgid "REPORTING BUGS"
-msgstr ""
+msgstr "HLÁŠENÍ CHYB"
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
