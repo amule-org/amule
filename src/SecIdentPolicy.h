@@ -93,6 +93,26 @@ inline uint32_t RemoteClientChallengeIP(
 	}
 	return publicIP;
 }
+
+//! One signature per peer address: a repeat from the same address is not verified again, so a
+//! peer cannot keep us busy with crypto. The first one is always verified, whatever the address.
+class SignatureAddressGuard
+{
+public:
+	bool IsRepeat(const CNetworkAddress &address) const { return m_received && m_last == address; }
+	//! A signature we could not bind to an endpoint must not block the peer's next attempt.
+	void Note(const CNetworkAddress &address)
+	{
+		if (address.IsPresent()) {
+			m_last = address;
+			m_received = true;
+		}
+	}
+
+private:
+	CNetworkAddress m_last = CNetworkAddress::Absent();
+	bool m_received = false;
+};
 } // namespace SecIdent
 
 #endif // SECIDENTPOLICY_H

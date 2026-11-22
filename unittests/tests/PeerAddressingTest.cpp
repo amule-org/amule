@@ -1037,3 +1037,29 @@ TEST(PeerAddressing, AListHashOrAnIncomingHelloIsNotCheckedOnOurDial)
 	ASSERT_FALSE(PeerAddressing::ChecksDialAnswer(true, true));
 	ASSERT_FALSE(PeerAddressing::ChecksDialAnswer(true, false));
 }
+
+TEST(PeerAddressing, ABanCoversTheIPv6ThePeerAdvertises)
+{
+	const auto v4 = CNetworkAddress::FromString("192.0.2.1");
+	const auto stable = CNetworkAddress::FromString("2001:db8:1:2::1");
+	const auto temporary = CNetworkAddress::FromString("2001:db8:1:2:abcd::7");
+	const auto absent = CNetworkAddress::Absent();
+	auto addresses = PeerAddressing::BanAddresses(v4, v4, false, stable);
+	ASSERT_TRUE(addresses[0] == v4);
+	ASSERT_TRUE(addresses[1] == absent);
+	ASSERT_TRUE(addresses[2] == stable);
+	addresses = PeerAddressing::BanAddresses(temporary, v4, false, stable);
+	ASSERT_TRUE(addresses[0] == temporary);
+	ASSERT_TRUE(addresses[1] == v4);
+	ASSERT_TRUE(addresses[2] == stable);
+	// An identity no hello came from belongs to another host.
+	addresses = PeerAddressing::BanAddresses(temporary, v4, true, stable);
+	ASSERT_TRUE(addresses[1] == absent);
+	ASSERT_TRUE(addresses[2] == stable);
+	// Each address once.
+	addresses = PeerAddressing::BanAddresses(stable, stable, false, stable);
+	ASSERT_TRUE(addresses[1] == absent);
+	ASSERT_TRUE(addresses[2] == absent);
+	addresses = PeerAddressing::BanAddresses(v4, v4, false, absent);
+	ASSERT_TRUE(addresses[2] == absent);
+}

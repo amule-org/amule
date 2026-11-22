@@ -144,6 +144,8 @@ public:
 #endif
 	//! The IPv4 @a peerIp sees our UDP at, when it differs from our public IP; else 0.
 	uint32_t NatKeyIPFor(uint32_t peerIp);
+	//! Our UDP's IPv4 for a secure ident check on a uTP or QUIC stream (NatSourceEcho::IdentUdpIP).
+	uint32_t IdentKeyIP() const;
 	uint32 ClientCryptKeyIP(uint32 ip) override { return NatKeyIPFor(ip); }
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION

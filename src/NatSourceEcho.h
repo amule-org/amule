@@ -260,6 +260,15 @@ private:
 	std::map<std::uint32_t, Entry> m_entries;
 };
 
+//! Our IPv4 as a peer on a uTP or QUIC stream signed it, for secure ident: the server's view of
+//! our UDP, else Kad's, or 0 when that is our login address. Never the peer's echo: a peer that
+//! relays another's signature would echo its own IP.
+inline std::uint32_t IdentUdpIP(std::uint32_t serverSeenIp, std::uint32_t kadIp, std::uint32_t loginIp)
+{
+	const std::uint32_t ip = serverSeenIp != 0 ? serverSeenIp : kadIp;
+	return ip == loginIp ? 0 : ip;
+}
+
 //! Our address in the uTP simultaneous-open order, as the peer sees our SYN's source: the key IP
 //! toward it, else Kad's view, which the external Kad port comes from, else our public IP.
 inline std::uint32_t LocalUdpIP(std::uint32_t keyIp, std::uint32_t kadIp, std::uint32_t publicIp)

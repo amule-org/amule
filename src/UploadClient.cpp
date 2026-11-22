@@ -30,7 +30,8 @@
 
 #include <zlib.h>
 
-#include <memory> // Needed for std::unique_ptr
+#include <algorithm> // Needed for std::any_of
+#include <memory>    // Needed for std::unique_ptr
 
 #include "ClientCredits.h"   // Needed for CClientCredits
 #include "Packet.h"          // Needed for CPacket
@@ -42,7 +43,8 @@
 #include "SharedFileList.h"  // Needed for CSharedFileList
 #include "amule.h"           // Needed for theApp
 #include "ClientList.h"
-#include "Statistics.h" // Needed for theStats
+#include "PeerAddressing.h" // Needed for BanAddresses
+#include "Statistics.h"     // Needed for theStats
 #include "Logger.h"
 #include "ScopedPtr.h"          // Needed for CScopedArray
 #include "GuiEvents.h"          // Needed for Notify_*
@@ -701,15 +703,12 @@ void CUpDownClient::UnBan()
 	m_Aggressiveness = 0;
 
 	theApp->clientlist->AddTrackClient(this);
-	// Both, as IsBanned() reads both: an older entry for the kept identity would otherwise leave
-	// the record looking banned after this one lapsed.
-	const CNetworkAddress conduct = GetConductAddress();
-	if (conduct.IsPresent()) {
-		theApp->clientlist->RemoveBannedClient(conduct);
-	}
-	// A ban on an identity no hello came from belongs to another host.
-	if (GetUserAddress() != conduct && !IsIdentityFromFallback()) {
-		theApp->clientlist->RemoveBannedClient(GetUserAddress());
+	// All that IsBanned() reads: an older entry for another of them would otherwise leave the
+	// record looking banned after this one lapsed.
+	for (const CNetworkAddress &address : BanAddresses()) {
+		if (address.IsPresent()) {
+			theApp->clientlist->RemoveBannedClient(address);
+		}
 	}
 	SetUploadState(US_NONE);
 	ClearWaitStartTime();
@@ -741,12 +740,27 @@ void CUpDownClient::Ban()
 bool CUpDownClient::IsBanned() const
 {
 	// A ban lands on the connection that behaved, but is enforced on the kept identity too: a peer
-	// banned over IPv4 stays banned when it comes back over IPv6.
-	const CNetworkAddress conduct = GetConductAddress();
-	const bool banned = theApp->clientlist->IsBannedClient(conduct) ||
-			    (GetUserAddress() != conduct && !IsIdentityFromFallback() &&
-				    theApp->clientlist->IsBannedClient(GetUserAddress()));
+	// banned over IPv4 stays banned when it comes back over IPv6. One banned at the IPv6 it
+	// advertises stays banned when it comes back over IPv4 or from another IPv6.
+	const auto addresses = BanAddresses();
+	const bool banned =
+		std::any_of(addresses.begin(), addresses.end(), [](const CNetworkAddress &address) {
+			return address.IsPresent() && theApp->clientlist->IsBannedClient(address);
+		});
 	return banned && m_nDownloadState != DS_DOWNLOADING;
+}
+
+std::array<CNetworkAddress, 3> CUpDownClient::BanAddresses() const
+{
+	CNetworkAddress advertised = CNetworkAddress::Absent();
+#ifdef ENABLE_IPV6
+	// Not one from a source record: that one another peer named.
+	if (m_hasModIPv6 && !m_modIPv6FromRecord) {
+		advertised = CNetworkAddress::FromIPv6Bytes(m_modIPv6);
+	}
+#endif
+	return PeerAddressing::BanAddresses(
+		GetConductAddress(), GetUserAddress(), IsIdentityFromFallback(), advertised);
 }
 
 void CUpDownClient::CheckForAggressive()
