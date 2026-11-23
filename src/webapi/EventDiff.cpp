@@ -290,9 +290,10 @@ std::string ToJson(const ClientSnapshot &c)
 	  << "\"ecid\":" << c.ecid << ",\"name\":" << JsonStrOrNull(!c.client_name.empty(), c.client_name)
 	  << ",\"user_hash\":\"" << EscJson(c.user_hash)
 	  << "\""
-	  // An absent address nulls ip/port together, matching WriteClientBaseFields.
+	  // The port is nulled with the address, of either family, matching WriteClientBaseFields.
 	  << ",\"ip\":" << JsonStrOrNull(!c.ip.empty(), c.ip)
-	  << ",\"port\":" << (c.ip.empty() ? std::string("null") : std::to_string(c.port))
+	  << ",\"ipv6\":" << JsonStrOrNull(!c.ipv6.empty(), c.ipv6)
+	  << ",\"port\":" << (c.HasAddress() ? std::to_string(c.port) : std::string("null"))
 	  << ",\"country_code\":"
 	  // null, not "", when the lookup has not resolved.
 	  << JsonStrOrNull(!c.country_code.empty(), c.country_code)
@@ -463,12 +464,13 @@ bool Equal(const FriendSnapshot &a, const FriendSnapshot &b)
 bool Equal(const ClientSnapshot &a, const ClientSnapshot &b)
 {
 	return a.client_name == b.client_name && a.user_hash == b.user_hash && a.ip == b.ip &&
-	       a.country_code == b.country_code && a.port == b.port && a.software == b.software &&
-	       a.software_version == b.software_version && a.reported_os == b.reported_os &&
-	       a.upload_state == b.upload_state && a.download_state == b.download_state &&
-	       a.next_ask_at == b.next_ask_at && a.ident_state == b.ident_state &&
-	       a.download_file_name == b.download_file_name && a.upload_file_name == b.upload_file_name &&
-	       a.upload_file_hash == b.upload_file_hash && a.download_file_hash == b.download_file_hash &&
+	       a.ipv6 == b.ipv6 && a.country_code == b.country_code && a.port == b.port &&
+	       a.software == b.software && a.software_version == b.software_version &&
+	       a.reported_os == b.reported_os && a.upload_state == b.upload_state &&
+	       a.download_state == b.download_state && a.next_ask_at == b.next_ask_at &&
+	       a.ident_state == b.ident_state && a.download_file_name == b.download_file_name &&
+	       a.upload_file_name == b.upload_file_name && a.upload_file_hash == b.upload_file_hash &&
+	       a.download_file_hash == b.download_file_hash &&
 	       a.uploaded_bytes_session == b.uploaded_bytes_session &&
 	       a.downloaded_bytes_session == b.downloaded_bytes_session &&
 	       a.uploaded_bytes_total == b.uploaded_bytes_total &&

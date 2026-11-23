@@ -800,6 +800,22 @@ A route value this build does not know reads as none, and a transport it
 does not know reads as TCP. A reply without the tag reads as a client
 that has not connected yet.
 
+### IPv6 address of a client
+
+| Tag | Code | Type | Meaning |
+| --- | ---- | ---- | ------- |
+| `EC_TAG_CLIENT_USER_IPV6` | `0x0638` | `string` | The client's IPv6 address, empty when it has none |
+
+A child of `EC_TAG_CLIENT`, beside `EC_TAG_CLIENT_USER_IP`, which stays
+`0` for a client with no IPv4 address. It is the address of the live
+connection when that is IPv6, else the client's own address when that
+is. An IPv6 address the client only advertised is left out. The text is
+the RFC 5952 form, with no brackets and no interface scope.
+
+An empty string means the client has no IPv6 address, so a frontend
+learns when the address goes. A reply without the tag means an older
+daemon.
+
 ### Combined network searches
 
 `EC_SEARCH_ALL` (`5`) starts a global eD2k search and a Kad keyword search

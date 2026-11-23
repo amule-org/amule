@@ -507,6 +507,7 @@ Identical to the REST [`/api/v1/clients`](REFERENCE.md#get-apiv1clients) list-it
   "name":                   "AnonymousPeer",
   "user_hash":              "1f2e3a...",
   "ip":                     "203.0.113.42",
+  "ipv6":                   null,
   "country_code":           "de",
   "port":                   4662,
   "software":               "emule",

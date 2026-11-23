@@ -18,6 +18,9 @@ import { t, terr } from "../i18n.js";
 const ACTIVE = (s) => s && s !== "idle" && s !== "unknown";
 export const isDown = (c) => (c.download_speed_bytes_per_second || 0) > 0 || ACTIVE(c.download_state);
 export const isUp = (c) => (c.upload_speed_bytes_per_second || 0) > 0 || ACTIVE(c.upload_state);
+// An IPv6 address is bracketed, or its port reads as one more group.
+export const peerAddress = (c) =>
+  c.ip ? c.ip + ":" + c.port : c.ipv6 ? "[" + c.ipv6 + "]:" + c.port : "—";
 
 // Column set, declared once. Every consumer offers all of them in the column
 // picker and picks which ones start hidden (see ClientTable's defaultHidden),
@@ -59,7 +62,7 @@ export const COLS = [
     sortVal: (c) => c.country_code || "", cell: (c) => html`<${CountryCell} code=${c.country_code} />` },
   // Empty ip: a peer we never connected to directly (LowID).
   { key: "address", th: "downloads_peer_col_address", num: true, width: "180px", sortable: true,
-    sortVal: (c) => ipNum(c.ip), cell: (c) => c.ip ? c.ip + ":" + c.port : "—" },
+    sortVal: (c) => ipNum(c.ip), cell: peerAddress },
   { key: "name", th: "downloads_peer_col_name", width: "180px", sortable: true,
     sortVal: (c) => (c.name || "").toLowerCase(),
     cell: (c) => { const flags = peerFlags(c); return html`<div class="name-cell">${flags.length ? html`<span class="peer-flags">${flags}</span>` : null}<span class="name-text" title=${c.name}>${c.name || "—"}</span></div>`; } },
@@ -200,7 +203,7 @@ export const KNOWN_COLS = [
     sortVal: (c) => c.source_origin || "",
     cell: (c) => c.source_origin ? t("downloads_peer_origin_" + c.source_origin) : "—" },
   { key: "address", th: "downloads_peer_col_address", num: true, width: "170px", sortable: true,
-    sortVal: (c) => ipNum(c.ip), cell: (c) => c.ip ? c.ip + ":" + c.port : "—" },
+    sortVal: (c) => ipNum(c.ip), cell: peerAddress },
   { key: "first_seen", th: "downloads_peer_col_first_seen", width: "160px", sortable: true,
     sortVal: (c) => c.first_seen_at || 0, cell: (c) => formatTimestamp(c.first_seen_at) },
   // "Online now" while the peer is connected (matched by user hash against the

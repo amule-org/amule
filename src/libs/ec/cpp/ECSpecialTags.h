@@ -624,6 +624,8 @@ public:
 	}
 
 	bool UserIP(uint32 &target) const { return AssignIfExist(EC_TAG_CLIENT_USER_IP, target); }
+	//! Empty when the peer has no IPv6 address; absent on a core older than the tag.
+	wxString UserIPv6(wxString *target) const { return AssignIfExist(EC_TAG_CLIENT_USER_IPV6, target); }
 	uint16 UserPort(uint16 *target = 0) const { return AssignIfExist(EC_TAG_CLIENT_USER_PORT, target); }
 	uint32 ServerIP(uint32 *target = 0) const { return AssignIfExist(EC_TAG_CLIENT_SERVER_IP, target); }
 	uint16 ServerPort(uint16 *target = 0) const

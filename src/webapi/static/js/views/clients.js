@@ -53,7 +53,9 @@ export default function ClientsPanel() {
       // first contact ATTEMPT, so `!!live` gave an unroutable peer the
       // "Online now" badge. `connected` is null on a core that does not
       // report it; render that as offline.
-      return { ...k, _live: live, online: live ? live.connected === true : false,
+      // The live address too: the credit store keeps IPv4 only, so an IPv6 peer has none there.
+      const address = live && (live.ip || live.ipv6) ? { ip: live.ip, ipv6: live.ipv6, port: live.port } : {};
+      return { ...k, ...address, _live: live, online: live ? live.connected === true : false,
                download_speed_bytes_per_second: live && live.download_speed_bytes_per_second,
                upload_speed_bytes_per_second: live && live.upload_speed_bytes_per_second };
     });

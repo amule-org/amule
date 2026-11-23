@@ -318,6 +318,8 @@ public:
 	bool HasPeerIPv4() const;
 	//! Where bans, corruption and AICH votes are charged: see PeerAddressing::ConductAddress().
 	CNetworkAddress GetConductAddress() const;
+	//! The IPv6 address EC clients show: see PeerAddressing::DisplayIPv6().
+	CNetworkAddress GetDisplayIPv6() const;
 	uint32 GetUserIDHybrid() const { return m_nUserIDHybrid; }
 	void SetUserIDHybrid(uint32 val);
 	uint16_t GetUserPort() const { return m_nUserPort; }

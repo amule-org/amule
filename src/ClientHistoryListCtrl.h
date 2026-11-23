@@ -79,6 +79,8 @@ struct ClientHistoryRow
 	uint32 upSpeed = 0;
 	double downSpeed = 0.0;
 	uint32 ip = 0;
+	//! A connected peer's IPv6 address when it has no IPv4 one. The store keeps IPv4 only.
+	wxString ipv6;
 	uint16 port = 0;
 	uint8 clientSoft = 0;
 	uint8 sourceFrom = 0;
@@ -137,6 +139,7 @@ public:
 		wxString version;
 		wxString modVersion;
 		uint32 ip = 0;
+		wxString ipv6;
 		uint16 port = 0;
 		uint8 clientSoft = 0;
 		uint8 sourceFrom = 0;

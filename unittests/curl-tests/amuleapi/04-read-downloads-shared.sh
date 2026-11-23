@@ -648,7 +648,7 @@ _assert_status 405 "DELETE /api/v1/shared → 405"
 # the LATER sections were written against.
 _curl -H "Authorization: Bearer $TOKEN" "$API/clients?limit=1"
 if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
-	for k in name software software_version reported_os download_file_name \
+	for k in name ipv6 software software_version reported_os download_file_name \
 		upload_file_name upload_file_hash download_file_hash \
 		obfuscation_state source_origin client_mod_name; do
 		_assert_json_eq ".clients[0] | .$k | type | test(\"^(string|null)\$\")" true \
@@ -666,7 +666,7 @@ if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
 	ECID=$(echo "$CURL_BODY" | jq -r '.clients[0].ecid')
 	_curl -H "Authorization: Bearer $TOKEN" "$API/clients/$ECID"
 	_assert_status 200 "GET /clients/{ecid} for the null-string check → 200"
-	for k in name software software_version reported_os obfuscation_state \
+	for k in name ipv6 software software_version reported_os obfuscation_state \
 		source_origin client_mod_name; do
 		_assert_json_eq ".$k | type | test(\"^(string|null)\$\")" true \
 			"/clients/{ecid}: $k is a string or null"

@@ -845,6 +845,10 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 		if (c->AssignIfExist(EC_TAG_CLIENT_USER_IP, v))
 			cs.ip = FormatClientIpv4(v);
 	}
+	// Present and empty means the address went; absent means unchanged, or an older daemon.
+	if (const CECTag *t = c->GetTagByName(EC_TAG_CLIENT_USER_IPV6)) {
+		cs.ipv6 = std::string(t->GetStringData().utf8_str());
+	}
 	{
 		std::uint16_t v = 0;
 		if (c->AssignIfExist(EC_TAG_CLIENT_USER_PORT, v))

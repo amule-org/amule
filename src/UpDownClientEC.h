@@ -93,7 +93,11 @@ public:
 	uint8 GetDownloadState() const { return m_nDownloadState; }
 	CFriend *GetFriend() const { return m_Friend; }
 	bool GetFriendSlot() const { return m_bFriendSlot; }
-	wxString GetFullIP() const { return Uint32toStringIP(m_dwUserIP); }
+	//! As in the core: a peer with no IPv4 address shows its IPv6 one.
+	wxString GetFullIP() const
+	{
+		return m_dwUserIP != 0 || m_userIPv6.IsEmpty() ? Uint32toStringIP(m_dwUserIP) : m_userIPv6;
+	}
 	// Numeric counterpart, matching the core client. amulegui never resolves locally -- it
 	// takes the from-core branch in GetDisplayCountryCode -- but that helper is shared with
 	// monolithic aMule and takes the numeric form.
@@ -197,6 +201,7 @@ private:
 	uint16 m_nKadPort;
 	float m_kBpsDown;
 	uint32 m_dwUserIP;
+	wxString m_userIPv6;
 	uint16 m_lastDownloadingPart;
 	uint16 m_nextRequestedPart;
 	uint8 m_obfuscationStatus;

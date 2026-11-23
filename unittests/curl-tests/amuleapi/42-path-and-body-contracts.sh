@@ -200,10 +200,10 @@ else
 fi
 
 _curl -H "$AUTH" "$API/clients?limit=50"
-NOADDR_ECID=$(printf '%s' "$CURL_BODY" | jq -r 'first(.clients[]? | select(.ip == null) | .ecid) // empty')
+NOADDR_ECID=$(printf '%s' "$CURL_BODY" | jq -r 'first(.clients[]? | select(.ip == null and .ipv6 == null) | .ecid) // empty')
 if [ -n "$NOADDR_ECID" ]; then
 	_curl -H "$AUTH" "$API/clients/$NOADDR_ECID"
-	_assert_json_eq '.kad_port' null 'client detail nulls kad_port with ip/port'
+	_assert_json_eq '.kad_port' null 'client detail nulls kad_port with the address and port'
 else
 	_skip 'client detail kad_port check: every connected client has an address'
 fi
@@ -218,6 +218,16 @@ fi
 _curl -H "$AUTH" "$API/downloads?limit=200"
 _assert_json_eq '[.downloads[]? | select(.last_received_at == 0)] | length' 0 \
 	'no download reports last_received_at as a raw 0 (the never-case is null)'
+
+# The port is null exactly when the client has no address of either family.
+# Reads only, so appended at the end.
+_curl -H "$AUTH" "$API/clients?limit=50"
+_assert_json_eq '[.clients[]? | .ipv6 | type | select(. != "string" and . != "null")] | length' 0 \
+	'every /clients ipv6 is a string or null'
+_assert_json_eq '[.clients[]? | select(.ipv6 == "")] | length' 0 \
+	'no /clients row has an empty ipv6'
+_assert_json_eq '[.clients[]? | select((.ip == null and .ipv6 == null) != (.port == null))] | length' 0 \
+	'every /clients port is null exactly when ip and ipv6 both are'
 
 # --- Summary. -----------------------------------------------------
 _summary

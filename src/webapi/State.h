@@ -317,7 +317,10 @@ struct ClientSnapshot
 	std::string client_name;
 	std::string user_hash; // peer's user hash (32-char lowercase hex MD4)
 	std::string ip;        // dotted-quad
+	std::string ipv6;      // RFC 5952 text, "" when the peer has none
 	std::uint16_t port = 0;
+	//! Either family: port and kad_port are null only when both are.
+	bool HasAddress() const { return !ip.empty() || !ipv6.empty(); }
 	// ISO 3166-1 alpha-2 country code (lowercase), resolved by the daemon's GeoIP from
 	// the peer IP (#439). "" when GeoIP is disabled/unsupported or the IP does not
 	// resolve.

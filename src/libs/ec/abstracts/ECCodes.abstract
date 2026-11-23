@@ -538,6 +538,12 @@ EC_TAG_CLIENT                             0x0600
 # proxy carried the dial. Decided once per connection, at its first hello.
 # Additive: a missing tag reads as never connected.
 	EC_TAG_CLIENT_CONNECTION_ROUTE            0x0637
+
+# The peer's IPv6 address as text, empty when there is none: the live
+# connection's address when that is IPv6, else the peer's own address when that
+# is. EC_TAG_CLIENT_USER_IP stays 0 for a peer with no IPv4 address. Additive: a
+# missing tag means an older daemon.
+	EC_TAG_CLIENT_USER_IPV6                   0x0638
 EC_TAG_SEARCHFILE                         0x0700
 	EC_TAG_SEARCH_TYPE                        0x0701
 	EC_TAG_SEARCH_NAME                        0x0702

@@ -44,6 +44,12 @@ inline wxString Uint32_16toStringIP_Port(uint32 ip, uint16 port)
 	       (uint8)(ip >> 24) % port;
 }
 
+//! An address in text with its port. An IPv6 address is bracketed, or the port reads as one more group.
+inline wxString AddressWithPort(const wxString &address, uint16 port)
+{
+	return CFormat(address.Contains(wxT(":")) ? "[%s]:%u" : "%s:%u") % address % port;
+}
+
 // These functions take IPs in host-order
 inline wxString KadIPToString(uint32_t ip)
 {

@@ -4434,3 +4434,49 @@ TEST(Refresher, WriteBufferCapabilityDoesNotSurviveAnOlderCore)
 	ASSERT_FALSE(prefs.advanced.write_buffer_limit_supported);
 	ASSERT_EQUALS(uint32_t{ 0 }, prefs.advanced.write_buffer_limit_mebibytes);
 }
+
+static void PutClientTags(CECPacket &resp, std::uint32_t ecid, const std::vector<CECTag> &tags)
+{
+	CECTag container(EC_TAG_CLIENT, static_cast<std::uint32_t>(0));
+	CECTag cli(EC_TAG_CLIENT, ecid);
+	for (const CECTag &tag : tags) {
+		cli.AddTag(tag);
+	}
+	container.AddTag(cli);
+	resp.AddTag(container);
+}
+
+TEST(Refresher, AClientIPv6StaysUntilTheDaemonSendsItEmpty)
+{
+	std::map<std::uint32_t, ClientSnapshot> cache;
+	const FileMap no_files;
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		PutClientTags(resp,
+			21,
+			{ CECTag(EC_TAG_CLIENT_USER_IP, static_cast<std::uint32_t>(0)),
+				CECTag(EC_TAG_CLIENT_USER_IPV6, wxString(wxT("2001:db8::5"))),
+				CECTag(EC_TAG_CLIENT_USER_PORT, static_cast<std::uint16_t>(4662)) });
+		ApplyGetUpdateToClients(&resp, cache, no_files);
+	}
+	ASSERT_TRUE(cache[21].ip.empty());
+	ASSERT_EQUALS(std::string("2001:db8::5"), cache[21].ipv6);
+	ASSERT_EQUALS(static_cast<std::uint16_t>(4662), cache[21].port);
+	ASSERT_TRUE(cache[21].HasAddress());
+
+	// An update without the tag leaves the address alone.
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		PutClientTags(resp, 21, {});
+		ApplyGetUpdateToClients(&resp, cache, no_files);
+	}
+	ASSERT_EQUALS(std::string("2001:db8::5"), cache[21].ipv6);
+
+	{
+		CECPacket resp(EC_OP_SHARED_FILES);
+		PutClientTags(resp, 21, { CECTag(EC_TAG_CLIENT_USER_IPV6, wxString()) });
+		ApplyGetUpdateToClients(&resp, cache, no_files);
+	}
+	ASSERT_TRUE(cache[21].ipv6.empty());
+	ASSERT_FALSE(cache[21].HasAddress());
+}
