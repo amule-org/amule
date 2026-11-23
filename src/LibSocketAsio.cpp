@@ -660,6 +660,17 @@ public:
 		m_socket->set_option(ip::tcp::no_delay(true), ec);
 	}
 
+	bool TcpNoDelay() const
+	{
+		if (!m_socket || !m_socket->is_open()) {
+			return false;
+		}
+		ip::tcp::no_delay option;
+		error_code ec;
+		m_socket->get_option(option, ec);
+		return !ec && option.value();
+	}
+
 	bool IsDestroying() const { return m_destroying.load(std::memory_order_acquire); }
 
 	// Returns the actual error code
@@ -980,6 +991,7 @@ private:
 			AddDebugLogLineF(logAsio, CFormat("HandleConnect: wrapper gone %s") % m_IP);
 		} else {
 			if (ok) {
+				EnableTcpNoDelay();
 				// Before the connect event, so its handler sees IsConnected(). Close() sets
 				// m_closed before it clears m_connected, so re-checking here cannot miss it.
 				m_connected = true;
@@ -1309,6 +1321,9 @@ private:
 				m_socket->connect(endpoint, ec);
 			}
 			const bool ok = !ec;
+			if (ok) {
+				EnableTcpNoDelay();
+			}
 			m_OK = ok;
 			m_connected = ok;
 			// As in HandleConnect, a successful connect clears a stale error.
@@ -1485,6 +1500,11 @@ void CLibSocket::EnableTcpKeepalive(int idleSec, int probeIntervalSec, int probe
 void CLibSocket::EnableTcpNoDelay()
 {
 	m_aSocket->EnableTcpNoDelay();
+}
+
+bool CLibSocket::GetTcpNoDelay() const
+{
+	return m_aSocket->TcpNoDelay();
 }
 
 void CLibSocket::SetConnectTimeout(int ms)
@@ -1801,6 +1821,7 @@ public:
 
 		// return the socket we received
 		socket.LinkSocketImpl(std::move(m_currentSocket));
+		socket.EnableTcpNoDelay();
 
 		// check if we have another socket ready for reception
 		m_currentSocket = NewAcceptSocket();

@@ -511,6 +511,56 @@ TEST(LibSocketTransport, BoundedSynchronousConnectRunsOnEverySocketContext)
 	DrainSocketContexts();
 }
 
+TEST(LibSocketTransport, ConnectedTcpSocketsTurnNagleOff)
+{
+	boost::asio::io_context io;
+	boost::asio::ip::tcp::acceptor listener(io, { boost::asio::ip::address_v4::loopback(), 0 });
+	amuleIPV4Address address;
+	address.Hostname(wxString("127.0.0.1"));
+	address.Service(listener.local_endpoint().port());
+	for (bool wait : { true, false }) {
+		CLibSocket socket;
+		// Without wait the connect completes later, in HandleConnect.
+		ASSERT_EQUALS(wait, socket.Connect(address, wait));
+		const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+		while (!socket.IsConnected() && std::chrono::steady_clock::now() < deadline) {
+			DrainSocketContexts();
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
+		ASSERT_TRUE(socket.IsConnected());
+		ASSERT_TRUE_M(socket.GetTcpNoDelay(), wait ? "synchronous connect" : "asynchronous connect");
+		boost::asio::ip::tcp::socket peer(io);
+		listener.accept(peer);
+		socket.Close();
+		DrainSocketContexts();
+	}
+}
+
+TEST(LibSocketTransport, AcceptedTcpSocketTurnsNagleOff)
+{
+	amuleIPV4Address address;
+	address.Hostname(wxString("127.0.0.1"));
+	address.Service(0);
+	auto listener = std::make_shared<CAsioSocketServerImpl>(address, nullptr);
+	listener->Init();
+	ASSERT_TRUE(listener->IsOk());
+	boost::asio::io_context io;
+	boost::asio::ip::tcp::socket client(io);
+	client.connect(listener->local_endpoint());
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+	while (!listener->SocketAvailable() && std::chrono::steady_clock::now() < deadline) {
+		DrainSocketContexts();
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+	}
+	ASSERT_TRUE(listener->SocketAvailable());
+	CLibSocket peer;
+	ASSERT_TRUE(listener->AcceptWith(peer));
+	ASSERT_TRUE(peer.GetTcpNoDelay());
+	peer.Close();
+	listener->Close();
+	DrainSocketContexts();
+}
+
 TEST(LibSocketTransport, AcceptedAsyncWriteQueuesNoSendEvent)
 {
 	for (int context = 0; context < s_numberOfAsioThreads; ++context) {
