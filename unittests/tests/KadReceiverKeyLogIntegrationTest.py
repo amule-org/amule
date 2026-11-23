@@ -142,7 +142,7 @@ def drop_unkeyed_pointer_records(binary):
     indexed and before a response goes back, and a search with nothing stored simply never answers.
     """
     with logging_daemon(binary, 'kad-pointer-drop-') as (root, proc, ec, udp_port):
-        file_id = kad_id(ec, proc, root)
+        file_id = kad_id(ec)
         for (opcode, body), expected in (
                 (pointer_tagged_record(file_id, 4201),
                  'Dropped Kad2 source publish of type 3 with a pointer tag from 127.0.0.1:{port}: '
@@ -160,7 +160,7 @@ def drop_unkeyed_requests(binary):
     of 2 a minute and run() spends both, and the publish bucket is 2 a minute as well.
     """
     with logging_daemon(binary, 'kad-unkeyed-drop-') as (root, proc, ec, udp_port):
-        file_id = kad_id(ec, proc, root)
+        file_id = kad_id(ec)
         keyed = lambda p: keyed_for(p, file_id)
 
         # The keyed type 7 publish is the control: same record, and it is indexed.
@@ -185,7 +185,7 @@ def drop_unkeyed_requests(binary):
 
 def run(binary):
     with logging_daemon(binary, 'kad-publish-key-') as (root, proc, ec, udp_port):
-        file_id = kad_id(ec, proc, root)
+        file_id = kad_id(ec)
         keyed = lambda p: keyed_for(p, file_id)
 
         for name, wrap, expected, (opcode, body) in (

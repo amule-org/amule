@@ -366,9 +366,11 @@ jobs:
       # The daemon tests behave the same on every Ubuntu build, so they run once:
       # here, with asserts and every experimental feature compiled in. They mostly wait on
       # daemon timers, so they run in parallel; each picks its own free ports and temp dirs.
+      # They use about 6% of one CPU each, so 12 fit on 4 vCPUs. The step then takes about as
+      # long as its longest test (COST in unittests/tests/CMakeLists.txt starts that one first).
       - name: run integration tests
         if: matrix.build_type == 'Debug'
-        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error --parallel 4 -L '^integration$'
+        run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error --parallel 12 -L '^integration$'
       - name: run shared-file reverify integration test
         if: matrix.build_type == 'Debug'
         run: ctest ${{ env.ctest_flags }} --timeout 300 --no-tests=error -L '^reverify$'
