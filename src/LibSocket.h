@@ -150,10 +150,13 @@ public:
 	// interval are settable). No-op if the underlying socket is not open.
 	void EnableTcpKeepalive(int idleSec, int probeIntervalSec, int probeCount);
 
-	// Turn off Nagle. Used by the EC sockets on both ends, where a packet's trailing small
-	// write would otherwise wait out the peer's delayed-ACK timer. No-op if the underlying
-	// socket is not open.
+	// Turn off Nagle. Every TCP socket gets this once connected or accepted: aMule writes whole
+	// messages, and with Nagle the last part-filled segment of each one waits until the peer
+	// acknowledges the rest, which the peer's delayed-ACK timer holds back. On a download that
+	// costs about a round trip per 180 KB block. No-op if the underlying socket is not open.
 	void EnableTcpNoDelay();
+	//! Whether Nagle is off; false if the socket is not open.
+	bool GetTcpNoDelay() const;
 
 	// Handlers
 	virtual void OnConnect(int) {}
