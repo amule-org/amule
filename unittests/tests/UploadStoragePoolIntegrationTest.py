@@ -366,7 +366,7 @@ def run(binary, fixture, stage):
                 if ec:
                     ec.sock.close()
                 if proc:
-                    stop_daemon(proc)
+                    stop_daemon(proc, console=root / 'console.log')
                 os.close(notify_r)
 
 

@@ -303,7 +303,8 @@ def running_daemon(binary, root, ports, *, stop_timeout=10, **start_kwargs):
         if ec is not None:
             ec.sock.close()
         if proc is not None:
-            stop_daemon(proc, timeout=stop_timeout, check=not failed)
+            stop_daemon(proc, timeout=stop_timeout, check=not failed,
+                        console=root / start_kwargs.get('console', 'console.log'))
 
 
 # Loopback calls must not go through a proxy set in the caller's environment.
@@ -469,8 +470,12 @@ def amulecmd(binary, port, *args, env, password='regression', script='', timeout
                           timeout=timeout, check=check)
 
 
-def stop_daemon(proc, timeout=10, check=True, codes=(0,)):
-    """Stop proc and reap it. check asserts an exit in codes; pass False on failure paths."""
+def stop_daemon(proc, timeout=10, check=True, codes=(0,), console=None):
+    """Stop proc and reap it. check asserts an exit in codes; pass False on failure paths.
+
+    A failed check prints console, the daemon's output file. An assert or abort at shutdown
+    writes its reason there, and the test deletes its temp directory next.
+    """
     if proc.poll() is None:
         if os.name == 'nt':
             # TerminateProcess does not reap spawned helpers; their log handles
@@ -484,9 +489,18 @@ def stop_daemon(proc, timeout=10, check=True, codes=(0,)):
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait()
+        if check:
+            print_console(console)
         assert not check, f'daemon did not exit within {timeout} s'
         return
-    assert not check or os.name == 'nt' or code in codes, f'daemon shutdown failed: {code}'
+    if check and os.name != 'nt' and code not in codes:
+        print_console(console)
+        raise AssertionError(f'daemon shutdown failed: {code}')
+
+
+def print_console(console):
+    if console is not None and Path(console).exists():
+        print(Path(console).read_text(errors='replace')[-20000:], file=sys.stderr)
 
 
 def free_ports(n, udp_indices=(), peer_index=None):
@@ -609,6 +623,12 @@ def run(binary):
                 query = queries.get(timeout=5)
                 assert b'ubuntu' in query and b'linux' in query, query
                 assert ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0
+                # A server answer names no search, so one that comes after the next search
+                # starts goes to that one. Stop this search only once its answer is in.
+                wait_for(proc, 'the server answer to the first search',
+                         lambda: C['EC_TAG_SEARCHFILE'] in ec.call(
+                             C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], sid)])[1],
+                         timeout=10, interval=0.05)
                 ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
                 # One incomplete UTF-8 tail must not garble the entire result.
                 # Check the name returned over EC after the production reader,

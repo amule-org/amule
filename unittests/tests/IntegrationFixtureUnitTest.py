@@ -6,6 +6,7 @@ import configparser
 from pathlib import Path
 import errno
 import hashlib
+import io
 import os
 import signal
 import struct
@@ -255,6 +256,22 @@ class StopDaemonUnitTest(unittest.TestCase):
         time.sleep(0.5)
         AllSearchIntegrationTest.stop_daemon(proc, timeout=1, check=False)
         self.assertIsNotNone(proc.poll())
+
+    def test_failed_shutdown_prints_the_console(self):
+        if os.name == 'nt':
+            self.skipTest('taskkill exit codes are not checked on Windows')
+        with tempfile.TemporaryDirectory() as directory:
+            console = Path(directory) / 'console.log'
+            console.write_text('Assertion failed: at shutdown\n')
+            proc = self.spawn('import time; time.sleep(60)')
+            with patch('sys.stderr', new_callable=io.StringIO) as stderr, \
+                    self.assertRaises(AssertionError):
+                AllSearchIntegrationTest.stop_daemon(proc, console=console)
+            self.assertIn('Assertion failed: at shutdown', stderr.getvalue())
+            proc = self.spawn('import time; time.sleep(60)')
+            with patch('sys.stderr', new_callable=io.StringIO) as stderr:
+                AllSearchIntegrationTest.stop_daemon(proc, codes=(-signal.SIGTERM,), console=console)
+            self.assertEqual(stderr.getvalue(), '')
 
     def test_exited_process_is_not_signalled(self):
         proc = self.spawn('pass')
