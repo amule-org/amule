@@ -130,6 +130,14 @@ How to use:
       		Failure running:
       		 StackTest.cpp:11 -- Test failed.
 
+    ENABLE_TSAN_TESTS=YES also builds UtpSocketTransportTsanTest, the
+    uTP transport tests under ThreadSanitizer, for Clang or GCC. No CI
+    job runs it; run it after a change to the transport's locking:
+
+      $ cmake -B build -DBUILD_TESTING=YES -DENABLE_TSAN_TESTS=YES
+      $ cmake --build build --target UtpSocketTransportTsanTest
+      $ ctest --test-dir build -R UtpSocketTransportTsanTest
+
 
   5) More
     More information about available test-macros can be found in the

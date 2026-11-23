@@ -165,7 +165,7 @@ void CEMSocket::QuiesceForRedial()
 
 	// Unguarded, as in OnClose(): this runs while the app is up. The destructor
 	// guards the same call because it also runs during shutdown.
-	theApp->uploadBandwidthThrottler->RemoveFromAllQueues(this);
+	const std::optional<uint32> uploadSlot = theApp->uploadBandwidthThrottler->RemoveFromAllQueues(this);
 	CDownloadBandwidthThrottler::Get().Forget(this);
 
 	ClearQueues();
@@ -175,6 +175,12 @@ void CEMSocket::QuiesceForRedial()
 	{
 		std::lock_guard<std::mutex> lock(m_sendLocker);
 		byConnected = ES_NOTCONNECTED;
+	}
+
+	// The upload slot outlives the stream. Without its place back, the redialled
+	// socket accepts the upload and never sends any of the file.
+	if (uploadSlot) {
+		theApp->uploadBandwidthThrottler->AddToStandardList(*uploadSlot, this);
 	}
 }
 

@@ -693,6 +693,9 @@ add_test (NAME QuicSocketTransportTest COMMAND QuicSocketTransportTest)
 target_include_directories (QuicSocketTransportTest PRIVATE ${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include)
 target_link_libraries (QuicSocketTransportTest muleunit mulecommon ${Boost_LIBRARIES})
 
+# The QUIC admission decision only, as UtpAdmissionTest. Free of ngtcp2, so it runs in every build.
+add_muleunit_test (QuicAdmissionTest)
+
 # One libutp socket behind IStreamTransport: the partial write whose refused
 # tail must stay queued, and the close that must happen exactly once. The
 # library is a seam here, so this runs in every build like UtpStreamTest.
@@ -715,6 +718,35 @@ target_link_libraries (UtpSocketTransportTest
 	muleunit
 	${Boost_LIBRARIES}
 )
+
+# Its concurrency case passes with the locks removed unless a race detector watches it. Only this
+# target is instrumented: a global -fsanitize=thread breaks the crypto++ version probe.
+option (ENABLE_TSAN_TESTS "Also build UtpSocketTransportTest under ThreadSanitizer (Clang or GCC)" OFF)
+if (ENABLE_TSAN_TESTS)
+	if (WIN32 OR NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+		message (FATAL_ERROR "ENABLE_TSAN_TESTS=YES needs Clang or GCC on a platform with "
+			"ThreadSanitizer, and Windows has none. Set ENABLE_TSAN_TESTS=NO.")
+	endif()
+	add_executable (UtpSocketTransportTsanTest
+		UtpSocketTransportTest.cpp
+		${CMAKE_SOURCE_DIR}/src/NetworkAddress.cpp
+	)
+	target_include_directories (UtpSocketTransportTsanTest
+		PRIVATE ${CMAKE_BINARY_DIR}
+		PRIVATE ${CMAKE_SOURCE_DIR}/src
+		PRIVATE ${CMAKE_SOURCE_DIR}/src/include
+	)
+	target_compile_options (UtpSocketTransportTsanTest PRIVATE -fsanitize=thread -g -O1)
+	target_link_options (UtpSocketTransportTsanTest PRIVATE -fsanitize=thread)
+	target_link_libraries (UtpSocketTransportTsanTest
+		muleunit
+		${Boost_LIBRARIES}
+	)
+	add_test (NAME UtpSocketTransportTsanTest COMMAND UtpSocketTransportTsanTest)
+	# A report fails the run even where the test's own checks pass.
+	set_tests_properties (UtpSocketTransportTsanTest PROPERTIES
+		ENVIRONMENT "TSAN_OPTIONS=halt_on_error=1:exitcode=66")
+endif()
 
 add_executable (LibSocketTransportTest
 	LibSocketTransportTest.cpp
@@ -4277,3 +4309,30 @@ if (BUILD_WXCAS)
 endif ()
 
 add_muleunit_test (PublishMetricsTest)
+
+# The socket reset a uTP-to-TCP fallback dials through: CEMSocket's own state machine, with
+# only the application boundary stubbed.
+if (TARGET mulesocket AND TARGET muleappcommon AND TARGET muleappcore)
+	add_executable (EMSocketRedialTest
+		EMSocketRedialTest.cpp
+		${CMAKE_SOURCE_DIR}/src/EMSocket.cpp
+		${CMAKE_SOURCE_DIR}/src/EncryptedStreamSocket.cpp
+		${CMAKE_SOURCE_DIR}/src/Proxy.cpp
+		${CMAKE_SOURCE_DIR}/src/DownloadBandwidthThrottler.cpp
+		${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
+		${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
+	)
+	target_compile_definitions (EMSocketRedialTest PRIVATE AMULE_DAEMON)
+	target_include_directories (EMSocketRedialTest PRIVATE
+		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
+		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
+		${CMAKE_BINARY_DIR}/src/libs/ec/cpp
+	)
+	add_application_test_stubs (EMSocketRedialTest)
+	# In amuled's order, which GNU ld needs for these static libraries.
+	target_link_libraries (EMSocketRedialTest
+		muleunit muleappcommon muleappcore mulecommon mulesocket wxWidgets::NET CRYPTOPP::CRYPTOPP
+		ZLIB::ZLIB
+	)
+	add_test (NAME EMSocketRedialTest COMMAND EMSocketRedialTest)
+endif()

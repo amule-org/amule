@@ -1194,6 +1194,58 @@ TEST(UtpLibraryAdapter, ARefusedStreamIsNeverRegistered)
 	Teardown(loop);
 }
 
+TEST(UtpLibraryAdapter, ASynReachesTheAdapterItArrivedAtNotTheNewestOne)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	CServerSink otherSink;
+	CFakeAcceptor otherAcceptor;
+	std::unique_ptr<IUtpLibrary> other = CreateUtpLibrary();
+	ASSERT_TRUE(other->Create(otherSink));
+	other->SetAcceptor(&otherAcceptor);
+	StartClient(loop);
+
+	Pump(loop);
+
+	ASSERT_EQUALS(1, acceptor.synChecks);
+	ASSERT_EQUALS(1, acceptor.offers);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	ASSERT_TRUE(loop.server->HasRegisteredPeer(kPeerIp, kPeerPort));
+	ASSERT_EQUALS(0, otherAcceptor.synChecks);
+	ASSERT_EQUALS(0, otherAcceptor.offers);
+	ASSERT_FALSE(other->HasRegisteredPeer(kPeerIp, kPeerPort));
+	ASSERT_EQUALS(0u, otherSink.datagrams);
+	other.reset();
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, DestroyingAnotherAdapterLeavesThisOneAccepting)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	CServerSink otherSink;
+	std::unique_ptr<IUtpLibrary> other = CreateUtpLibrary();
+	ASSERT_TRUE(other->Create(otherSink));
+	other.reset();
+	StartClient(loop);
+
+	Pump(loop);
+
+	ASSERT_EQUALS(1, acceptor.offers);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	Teardown(loop);
+}
+
 TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 {
 	// The point of the series: an accepted stream carries bytes.

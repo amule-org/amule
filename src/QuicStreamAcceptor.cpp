@@ -30,7 +30,6 @@
 #include "ListenSocket.h"
 #include "Logger.h"
 #include "NetworkAddress.h"
-#include "ServerConnect.h"
 #include "Statistics.h"
 #include "StreamTransport.h"
 #include "amule.h"
@@ -40,36 +39,46 @@
 bool CQuicStreamAcceptor::AcceptStream(
 	std::unique_ptr<IStreamTransport> &transport, const CNetworkAddress &address, uint16_t port)
 {
-	// The same policy as CUtpStreamAcceptor::AcceptStream(), by design: one admitted stream
-	// arrives alone, with no accept burst to fold, for either transport. Not shared via a
-	// common function: six lines of identical, already-reviewed logic is not worth a
-	// cross-module dependency between the two transports' acceptors.
-	if (!theApp->IsRunning()) {
-		return false;
-	}
-	if (!theApp->serverconnect->IsConnecting() && theApp->listensocket->TooManySockets()) {
+	// Each fact only once the ones before it pass: during shutdown the listener may be gone.
+	const bool running = theApp->IsRunning();
+#ifdef AMULE_UTP_TRANSPORT
+	// As in the uTP acceptor: a stream from a peer a rendezvous announced is that NAT-T meeting,
+	// and the limit on new connections per five seconds does not hold it back.
+	const uint32_t ip = address.ToIPv4NetworkOrderOrZero();
+	const bool rendezvous = running && ip != 0 && theApp->clientudp != nullptr &&
+				theApp->clientudp->IsExpectedUtpPeer(ip, port);
+#else
+	const bool rendezvous = false;
+#endif
+	const bool tooManySockets = running && theApp->listensocket->TooManySockets(rendezvous);
+	const bool hasAddress = address.IsPresent();
+	const bool checkAddress = running && !tooManySockets && hasAddress;
+	const bool filtered = checkAddress && theApp->ipfilter->IsFiltered(address);
+	const bool banned = checkAddress && !filtered && theApp->clientlist->IsBannedClient(address);
+
+	switch (DecideQuicAdmission(running, tooManySockets, hasAddress, filtered, banned)) {
+	case EQuicAdmission::Admit:
+		break;
+	case EQuicAdmission::TooManySockets:
+		// Per stream, as for uTP: one admitted stream arrives alone, with no accept burst to fold.
 		theStats::AddMaxConnectionLimitReached();
 		return false;
-	}
-	if (!address.IsPresent()) {
-		return false;
-	}
-	if (theApp->ipfilter->IsFiltered(address)) {
+	case EQuicAdmission::Filtered:
 		AddDebugLogLineN(logClient,
 			CFormat("Denied QUIC stream from %s:%u (Filtered IP)") % address.ToWxString() % port);
 		return false;
-	}
-	if (theApp->clientlist->IsBannedClient(address)) {
+	case EQuicAdmission::Banned:
 		AddDebugLogLineN(logClient,
 			CFormat("Denied QUIC stream from %s:%u (Banned IP)") % address.ToWxString() % port);
+		return false;
+	case EQuicAdmission::ShuttingDown:
+	case EQuicAdmission::NoAddress:
 		return false;
 	}
 
 	auto *socket = new CClientTCPSocket();
 #ifdef AMULE_UTP_TRANSPORT
-	// As in the uTP acceptor: a stream from a peer a rendezvous announced is that NAT-T meeting.
-	const uint32_t ip = address.ToIPv4NetworkOrderOrZero();
-	if (ip != 0 && theApp->clientudp != nullptr && theApp->clientudp->IsExpectedUtpPeer(ip, port)) {
+	if (rendezvous) {
 		socket->MarkRendezvousStream(theApp->clientudp->IsLugdunumRendezvousPeer(ip));
 	}
 #endif
