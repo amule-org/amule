@@ -25,6 +25,8 @@
 
 #include "Tag.h" // Interface declarations
 
+#include <utility>
+
 #include <common/Format.h> // Needed for WXLONGLONGFMTSPEC
 
 #include "SafeFile.h"         // Needed for CFileDataIO
@@ -39,7 +41,7 @@ CTag::CTag(const wxString &Name)
 {
 	m_uType = 0;
 	m_uName = 0;
-	m_uVal = 0;
+	m_value.m_uVal = 0;
 	m_nSize = 0;
 }
 
@@ -47,7 +49,7 @@ CTag::CTag(uint8 uName)
 {
 	m_uType = 0;
 	m_uName = uName;
-	m_uVal = 0;
+	m_value.m_uVal = 0;
 	m_nSize = 0;
 }
 
@@ -58,35 +60,35 @@ CTag::CTag(const CTag &rTag)
 	m_uName = rTag.m_uName;
 	m_nSize = 0;
 	if (rTag.IsStr()) {
-		m_pstrVal = new wxString(rTag.GetStr());
+		m_value.m_pstrVal = new wxString(rTag.GetStr());
 	} else if (rTag.IsInt()) {
-		m_uVal = rTag.GetInt();
+		m_value.m_uVal = rTag.GetInt();
 	} else if (rTag.IsFloat()) {
-		m_fVal = rTag.GetFloat();
+		m_value.m_fVal = rTag.GetFloat();
 	} else if (rTag.IsHash()) {
-		m_hashVal = new CMD4Hash(rTag.GetHash());
+		m_value.m_hashVal = new CMD4Hash(rTag.GetHash());
 	} else if (rTag.IsBlob()) {
 		m_nSize = rTag.GetBlobSize();
-		m_pData = new unsigned char[rTag.GetBlobSize()];
-		memcpy(m_pData, rTag.GetBlob(), rTag.GetBlobSize());
+		m_value.m_pData = new unsigned char[rTag.GetBlobSize()];
+		memcpy(m_value.m_pData, rTag.GetBlob(), rTag.GetBlobSize());
 	} else if (rTag.IsBsob()) {
 		m_nSize = rTag.GetBsobSize();
-		m_pData = new unsigned char[rTag.GetBsobSize()];
-		memcpy(m_pData, rTag.GetBsob(), rTag.GetBsobSize());
+		m_value.m_pData = new unsigned char[rTag.GetBsobSize()];
+		memcpy(m_value.m_pData, rTag.GetBsob(), rTag.GetBsobSize());
 	} else if (rTag.m_uType == TAGTYPE_BOOL || rTag.m_uType == TAGTYPE_BOOLARRAY) {
 		// The reader skips these payloads; only their type and name survive.
-		m_uVal = 0;
+		m_value.m_uVal = 0;
 	} else {
 		wxFAIL;
-		m_uVal = 0;
+		m_value.m_uVal = 0;
 	}
 }
 
 CTag::CTag(const CFileDataIO &data, bool bOptUTF8, bool normalizeIntTypes)
 {
 	// Zero variables to allow for safe deletion
-	m_uType = m_uName = m_nSize = m_uVal = 0;
-	m_pData = NULL;
+	m_uType = m_uName = m_nSize = m_value.m_uVal = 0;
+	m_value.m_pData = nullptr;
 
 	try {
 		m_uType = data.ReadUInt8();
@@ -108,26 +110,26 @@ CTag::CTag(const CFileDataIO &data, bool bOptUTF8, bool normalizeIntTypes)
 		// search results from a server. If we cannot, we throw an exception.
 		switch (m_uType) {
 		case TAGTYPE_STRING:
-			m_pstrVal = new wxString(data.ReadString(bOptUTF8));
+			m_value.m_pstrVal = new wxString(data.ReadString(bOptUTF8));
 			break;
 
 		case TAGTYPE_UINT32:
-			m_uVal = data.ReadUInt32();
+			m_value.m_uVal = data.ReadUInt32();
 			break;
 
 		case TAGTYPE_UINT64:
-			m_uVal = data.ReadUInt64();
+			m_value.m_uVal = data.ReadUInt64();
 			break;
 
 		case TAGTYPE_UINT16:
-			m_uVal = data.ReadUInt16();
+			m_value.m_uVal = data.ReadUInt16();
 			if (normalizeIntTypes) {
 				m_uType = TAGTYPE_UINT32;
 			}
 			break;
 
 		case TAGTYPE_UINT8:
-			m_uVal = data.ReadUInt8();
+			m_value.m_uVal = data.ReadUInt8();
 			if (normalizeIntTypes) {
 				m_uType = TAGTYPE_UINT32;
 			}
@@ -135,11 +137,11 @@ CTag::CTag(const CFileDataIO &data, bool bOptUTF8, bool normalizeIntTypes)
 
 		case TAGTYPE_FLOAT32:
 			// #warning Endianness problem?
-			data.Read(&m_fVal, 4);
+			data.Read(&m_value.m_fVal, 4);
 			break;
 
 		case TAGTYPE_HASH16:
-			m_hashVal = new CMD4Hash(data.ReadHash());
+			m_value.m_hashVal = new CMD4Hash(data.ReadHash());
 			break;
 
 		case TAGTYPE_BOOL:
@@ -167,14 +169,14 @@ CTag::CTag(const CFileDataIO &data, bool bOptUTF8, bool normalizeIntTypes)
 				throw CInvalidPacket("Malformed tag");
 			}
 
-			m_pData = new unsigned char[m_nSize];
-			data.Read(m_pData, m_nSize);
+			m_value.m_pData = new unsigned char[m_nSize];
+			data.Read(m_value.m_pData, m_nSize);
 			break;
 
 		default:
 			if (m_uType >= TAGTYPE_STR1 && m_uType <= TAGTYPE_STR16) {
 				uint8 length = m_uType - TAGTYPE_STR1 + 1;
-				m_pstrVal = new wxString(data.ReadOnlyString(bOptUTF8, length));
+				m_value.m_pstrVal = new wxString(data.ReadOnlyString(bOptUTF8, length));
 				m_uType = TAGTYPE_STRING;
 			} else {
 				// Since we cannot determine the length of this tag, we
@@ -186,7 +188,7 @@ CTag::CTag(const CFileDataIO &data, bool bOptUTF8, bool normalizeIntTypes)
 		}
 	} catch (...) {
 		if (m_uType == TAGTYPE_BLOB) {
-			delete[] m_pData;
+			delete[] m_value.m_pData;
 		}
 
 		throw;
@@ -196,60 +198,25 @@ CTag::CTag(const CFileDataIO &data, bool bOptUTF8, bool normalizeIntTypes)
 CTag::~CTag()
 {
 	if (IsStr()) {
-		delete m_pstrVal;
+		delete m_value.m_pstrVal;
 	} else if (IsHash()) {
-		delete m_hashVal;
+		delete m_value.m_hashVal;
 	} else if (IsBlob() || IsBsob()) {
-		delete[] m_pData;
+		delete[] m_value.m_pData;
 	}
 }
 
 CTag &CTag::operator=(const CTag &rhs)
 {
 	if (&rhs != this) {
-		// Release whatever THIS currently owns, keyed on its *current* type -- the same
-		// dispatch the destructor uses. The union means the owned pointer only exists for
-		// string / hash / blob / bsob tags; for an int/float tag that slot holds a scalar,
-		// not a pointer. Freeing based on the RHS type, as this used to, frees a garbage
-		// "pointer" whenever the two tags' types differ -- assigning a string tag onto a
-		// slot currently holding an int, which is exactly what std::vector<CTag>::erase
-		// does when it shifts elements. That corrupts the heap, observed as a double free
-		// in a wxString destructor.
-		if (IsStr()) {
-			delete m_pstrVal;
-		} else if (IsHash()) {
-			delete m_hashVal;
-		} else if (IsBlob() || IsBsob()) {
-			delete[] m_pData;
-		}
-
-		m_uType = rhs.m_uType;
-		m_uName = rhs.m_uName;
-		m_Name = rhs.m_Name;
-		m_nSize = 0;
-		if (rhs.IsStr()) {
-			m_pstrVal = new wxString(rhs.GetStr());
-		} else if (rhs.IsInt()) {
-			m_uVal = rhs.GetInt();
-		} else if (rhs.IsFloat()) {
-			m_fVal = rhs.GetFloat();
-		} else if (rhs.IsHash()) {
-			m_hashVal = new CMD4Hash(rhs.GetHash());
-		} else if (rhs.IsBlob()) {
-			m_nSize = rhs.GetBlobSize();
-			m_pData = new unsigned char[rhs.GetBlobSize()];
-			memcpy(m_pData, rhs.GetBlob(), rhs.GetBlobSize());
-		} else if (rhs.IsBsob()) {
-			m_nSize = rhs.GetBsobSize();
-			m_pData = new unsigned char[rhs.GetBsobSize()];
-			memcpy(m_pData, rhs.GetBsob(), rhs.GetBsobSize());
-		} else if (rhs.m_uType == TAGTYPE_BOOL || rhs.m_uType == TAGTYPE_BOOLARRAY) {
-			// Match the copy constructor for payloads discarded by the reader.
-			m_uVal = 0;
-		} else {
-			wxFAIL;
-			m_uVal = 0;
-		}
+		// Finish the deep copy before releasing the old value. The temporary then
+		// owns the previous payload and releases it through the normal destructor.
+		CTag copy(rhs);
+		m_Name.swap(copy.m_Name);
+		std::swap(m_uName, copy.m_uName);
+		std::swap(m_uType, copy.m_uType);
+		std::swap(m_nSize, copy.m_nSize);
+		std::swap(m_value, copy.m_value);
 	}
 	return *this;
 }
@@ -263,28 +230,28 @@ uint64 CTag::GetInt() const
 {
 	CHECK_TAG_TYPE(IsInt(), Integer);
 
-	return m_uVal;
+	return m_value.m_uVal;
 }
 
 const wxString &CTag::GetStr() const
 {
 	CHECK_TAG_TYPE(IsStr(), String);
 
-	return *m_pstrVal;
+	return *m_value.m_pstrVal;
 }
 
 float CTag::GetFloat() const
 {
 	CHECK_TAG_TYPE(IsFloat(), Float);
 
-	return m_fVal;
+	return m_value.m_fVal;
 }
 
 const CMD4Hash &CTag::GetHash() const
 {
 	CHECK_TAG_TYPE(IsHash(), Hash);
 
-	return *m_hashVal;
+	return *m_value.m_hashVal;
 }
 
 uint32 CTag::GetBlobSize() const
@@ -298,7 +265,7 @@ const uint8_t *CTag::GetBlob() const
 {
 	CHECK_TAG_TYPE(IsBlob(), Blob);
 
-	return m_pData;
+	return m_value.m_pData;
 }
 
 uint32 CTag::GetBsobSize() const
@@ -312,7 +279,7 @@ const uint8_t *CTag::GetBsob() const
 {
 	CHECK_TAG_TYPE(IsBsob(), Bsob);
 
-	return m_pData;
+	return m_value.m_pData;
 }
 
 bool CTag::WriteNewEd2kTag(CFileDataIO *data, EUtf8Str eStrEncode) const
@@ -322,17 +289,17 @@ bool CTag::WriteNewEd2kTag(CFileDataIO *data, EUtf8Str eStrEncode) const
 	uint8 uType;
 
 	if (IsInt()) {
-		if (m_uVal <= 0xFF) {
+		if (m_value.m_uVal <= 0xFF) {
 			uType = TAGTYPE_UINT8;
-		} else if (m_uVal <= 0xFFFF) {
+		} else if (m_value.m_uVal <= 0xFFFF) {
 			uType = TAGTYPE_UINT16;
-		} else if (m_uVal <= 0xFFFFFFFF) {
+		} else if (m_value.m_uVal <= 0xFFFFFFFF) {
 			uType = TAGTYPE_UINT32;
 		} else {
 			uType = TAGTYPE_UINT64;
 		}
 	} else if (IsStr()) {
-		uint16 uStrValLen = GetRawSize(*m_pstrVal, eStrEncode);
+		uint16 uStrValLen = GetRawSize(*m_value.m_pstrVal, eStrEncode);
 		if (uStrValLen >= 1 && uStrValLen <= 16) {
 			uType = TAGTYPE_STR1 + uStrValLen - 1;
 		} else {
@@ -355,37 +322,37 @@ bool CTag::WriteNewEd2kTag(CFileDataIO *data, EUtf8Str eStrEncode) const
 	// Write tag data
 	switch (uType) {
 	case TAGTYPE_STRING:
-		data->WriteString(*m_pstrVal, eStrEncode);
+		data->WriteString(*m_value.m_pstrVal, eStrEncode);
 		break;
 	case TAGTYPE_UINT64:
-		data->WriteUInt64(m_uVal);
+		data->WriteUInt64(m_value.m_uVal);
 		break;
 	case TAGTYPE_UINT32:
-		data->WriteUInt32(m_uVal);
+		data->WriteUInt32(m_value.m_uVal);
 		break;
 	case TAGTYPE_UINT16:
-		data->WriteUInt16(m_uVal);
+		data->WriteUInt16(m_value.m_uVal);
 		break;
 	case TAGTYPE_UINT8:
-		data->WriteUInt8(m_uVal);
+		data->WriteUInt8(m_value.m_uVal);
 		break;
 	case TAGTYPE_FLOAT32:
 		// #warning Endianness problem?
-		data->Write(&m_fVal, 4);
+		data->Write(&m_value.m_fVal, 4);
 		break;
 	case TAGTYPE_HASH16:
-		data->WriteHash(*m_hashVal);
+		data->WriteHash(*m_value.m_hashVal);
 		break;
 	case TAGTYPE_BLOB:
 		data->WriteUInt32(m_nSize);
-		data->Write(m_pData, m_nSize);
+		data->Write(m_value.m_pData, m_nSize);
 		break;
 	default:
 		// See comment on the default: of CTag::CTag(const CFileDataIO& data, bool bOptUTF8)
 		if (uType >= TAGTYPE_STR1 && uType <= TAGTYPE_STR16) {
 			// Sending '0' as len size makes it not write the len on the IO file.
 			// This is because this tag types send the len as their type.
-			data->WriteString(*m_pstrVal, eStrEncode, 0);
+			data->WriteString(*m_value.m_pstrVal, eStrEncode, 0);
 		} else {
 			printf("%s; Unknown tag: type=0x%02X\n", __FUNCTION__, uType);
 			wxFAIL;
@@ -432,20 +399,20 @@ wxString CTag::GetFullInfo() const
 	strTag += "=";
 	if (m_uType == TAGTYPE_STRING) {
 		strTag += "\"";
-		strTag += *m_pstrVal;
+		strTag += *m_value.m_pstrVal;
 		strTag += "\"";
 	} else if (m_uType >= TAGTYPE_STR1 && m_uType <= TAGTYPE_STR16) {
-		strTag += CFormat("(Str%u)\"") % (m_uType - TAGTYPE_STR1 + 1) + *m_pstrVal + "\"";
+		strTag += CFormat("(Str%u)\"") % (m_uType - TAGTYPE_STR1 + 1) + *m_value.m_pstrVal + "\"";
 	} else if (m_uType == TAGTYPE_UINT64) {
-		strTag += CFormat("(Int64)%u") % m_uVal;
+		strTag += CFormat("(Int64)%u") % m_value.m_uVal;
 	} else if (m_uType == TAGTYPE_UINT32) {
-		strTag += CFormat("(Int32)%u") % m_uVal;
+		strTag += CFormat("(Int32)%u") % m_value.m_uVal;
 	} else if (m_uType == TAGTYPE_UINT16) {
-		strTag += CFormat("(Int16)%u") % m_uVal;
+		strTag += CFormat("(Int16)%u") % m_value.m_uVal;
 	} else if (m_uType == TAGTYPE_UINT8) {
-		strTag += CFormat("(Int8)%u") % m_uVal;
+		strTag += CFormat("(Int8)%u") % m_value.m_uVal;
 	} else if (m_uType == TAGTYPE_FLOAT32) {
-		strTag += CFormat("(Float32)%f") % m_fVal;
+		strTag += CFormat("(Float32)%f") % m_value.m_fVal;
 	} else if (m_uType == TAGTYPE_BLOB) {
 		strTag += CFormat("(Blob)%u") % m_nSize;
 	} else if (m_uType == TAGTYPE_BSOB) {
@@ -459,14 +426,14 @@ wxString CTag::GetFullInfo() const
 CTagHash::CTagHash(const wxString &name, const CMD4Hash &value)
 : CTag(name)
 {
-	m_hashVal = new CMD4Hash(value);
+	m_value.m_hashVal = new CMD4Hash(value);
 	m_uType = TAGTYPE_HASH16;
 }
 
 CTagHash::CTagHash(uint8 name, const CMD4Hash &value)
 : CTag(name)
 {
-	m_hashVal = new CMD4Hash(value);
+	m_value.m_hashVal = new CMD4Hash(value);
 	m_uType = TAGTYPE_HASH16;
 }
 

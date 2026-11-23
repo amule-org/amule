@@ -4,7 +4,9 @@
 #include <MemFile.h>
 #include <tags/FileTags.h>
 #include <math.h>
+#include <cstdlib>
 #include <memory>
+#include <new>
 
 #include "MD4Hash.h"
 #include "amule.h"
@@ -12,6 +14,51 @@
 #include <vector>
 
 using namespace muleunit;
+
+// This test binary replaces the global allocator so a test can make one chosen
+// allocation fail. The allocation that finds 0 here throws; -1 never fails.
+static int g_allocationsUntilFailure = -1;
+
+static void *CountedAllocate(std::size_t size)
+{
+	if (g_allocationsUntilFailure >= 0 && g_allocationsUntilFailure-- == 0) {
+		throw std::bad_alloc();
+	}
+	if (void *p = std::malloc(size ? size : 1)) {
+		return p;
+	}
+	throw std::bad_alloc();
+}
+
+void *operator new(std::size_t size)
+{
+	return CountedAllocate(size);
+}
+
+void *operator new[](std::size_t size)
+{
+	return CountedAllocate(size);
+}
+
+void operator delete(void *p) noexcept
+{
+	std::free(p);
+}
+
+void operator delete[](void *p) noexcept
+{
+	std::free(p);
+}
+
+void operator delete(void *p, std::size_t) noexcept
+{
+	std::free(p);
+}
+
+void operator delete[](void *p, std::size_t) noexcept
+{
+	std::free(p);
+}
 
 DECLARE_SIMPLE(CTag)
 
@@ -1046,4 +1093,137 @@ TEST_M(CTag, AssignBool, "Assign parsed BOOL metadata over an owned string")
 TEST_M(CTag, AssignBoolArray, "Assign parsed BOOLARRAY metadata over an owned string")
 {
 	CheckSkippedTagCopy(TAGTYPE_BOOLARRAY, true);
+}
+
+// Compare the actual protocol payload, not only the tag's type or display text.
+static void CheckCopiedTag(const CTag &expected, const CTag &actual)
+{
+	ASSERT_EQUALS(expected.GetType(), actual.GetType());
+	ASSERT_EQUALS(expected.GetNameID(), actual.GetNameID());
+	ASSERT_EQUALS(expected.GetName(), actual.GetName());
+	if (expected.GetType() == TAGTYPE_BOOL || expected.GetType() == TAGTYPE_BOOLARRAY) {
+		CMemFile discarded;
+		ASSERT_FALSE(actual.WriteTagToFile(&discarded));
+		ASSERT_EQUALS(uint64(0), discarded.GetLength());
+		return;
+	}
+	if (expected.IsBsob()) {
+		ASSERT_EQUALS(expected.GetBsobSize(), actual.GetBsobSize());
+		ASSERT_TRUE(expected.GetBsob() != actual.GetBsob());
+		for (uint32 i = 0; i < expected.GetBsobSize(); ++i) {
+			ASSERT_EQUALS(expected.GetBsob()[i], actual.GetBsob()[i]);
+		}
+		return;
+	}
+	CMemFile expectedPacket;
+	CMemFile actualPacket;
+	ASSERT_TRUE(expected.WriteNewEd2kTag(&expectedPacket));
+	ASSERT_TRUE(actual.WriteNewEd2kTag(&actualPacket));
+	ASSERT_EQUALS(expectedPacket.GetLength(), actualPacket.GetLength());
+	expectedPacket.Seek(0, wxFromStart);
+	actualPacket.Seek(0, wxFromStart);
+	while (expectedPacket.GetPosition() < expectedPacket.GetLength()) {
+		ASSERT_EQUALS(expectedPacket.ReadUInt8(), actualPacket.ReadUInt8());
+	}
+	if (expected.IsStr()) {
+		ASSERT_TRUE(&expected.GetStr() != &actual.GetStr());
+	} else if (expected.IsHash()) {
+		ASSERT_TRUE(&expected.GetHash() != &actual.GetHash());
+	} else if (expected.IsBlob()) {
+		ASSERT_TRUE(expected.GetBlob() != actual.GetBlob());
+	}
+}
+
+TEST_M(CTag, CopyAssignmentMatrix, "Copy and assign every owned and scalar tag type")
+{
+	const uint8 bytes[] = { 0, 0x80, 0xff, 7 };
+	CMD4Hash hash;
+	ASSERT_TRUE(hash.Decode(std::string("0123456789ABCDEF0123456789ABCDEF")));
+	std::vector<CTag> tags;
+	tags.push_back(CTagString("named string", "payload"));
+	tags.push_back(CTagString(uint8(7), ""));
+	tags.push_back(CTagHash("hash", hash));
+	tags.push_back(CTagBlob("blob", bytes, sizeof(bytes)));
+	tags.push_back(CTagBsob("bsob", bytes, sizeof(bytes)));
+	tags.push_back(CTagBlob("empty blob", bytes, 0));
+	tags.push_back(CTagBsob("empty bsob", bytes, 0));
+	tags.push_back(CTagFloat("float", 1.25f));
+	tags.push_back(CTagIntSized(uint8(8), 0xfedcba9876543210ULL, 64));
+	tags.push_back(CTagIntSized("uint32", 0xfedcba98, 32));
+	tags.push_back(CTagIntSized("uint16", 0xfedc, 16));
+	tags.push_back(CTagIntSized("uint8", 0xfe, 8));
+	for (uint8 type : { TAGTYPE_BOOL, TAGTYPE_BOOLARRAY }) {
+		CMemFile packet;
+		packet.WriteUInt8(type);
+		packet.WriteString("discarded", utf8strNone);
+		if (type == TAGTYPE_BOOLARRAY) {
+			packet.WriteUInt16(0);
+		}
+		packet.WriteUInt8(1);
+		packet.Seek(0, wxFromStart);
+		tags.emplace_back(packet, true);
+	}
+	for (const CTag &source : tags) {
+		CTag copy(source);
+		CheckCopiedTag(source, copy);
+		std::unique_ptr<CTag> clone(copy.CloneTag());
+		CheckCopiedTag(source, *clone);
+		CTag &alias = copy;
+		copy = alias;
+		CheckCopiedTag(source, copy);
+		for (const CTag &previous : tags) {
+			CTag target(previous);
+			ASSERT_TRUE(&(target = source) == &target);
+			CheckCopiedTag(source, target);
+			// The assigned value survives destruction of its source copy.
+			{
+				CTag transient(source);
+				target = transient;
+			}
+			CheckCopiedTag(source, target);
+		}
+	}
+	// Known-file and server metadata use value vectors: erase assigns across types.
+	std::vector<CTag> shifted(tags);
+	while (shifted.size() > 1) {
+		shifted.erase(shifted.begin());
+		for (size_t i = 0; i < shifted.size(); ++i) {
+			CheckCopiedTag(tags[tags.size() - shifted.size() + i], shifted[i]);
+		}
+	}
+}
+
+TEST_M(CTag,
+	FailedAssignmentKeepsTarget,
+	"An allocation failure during assignment leaves the target unchanged")
+{
+	const uint8 bytes[] = { 1, 2, 3 };
+	CMD4Hash hash;
+	ASSERT_TRUE(hash.Decode(std::string("0123456789ABCDEF0123456789ABCDEF")));
+	std::vector<CTag> sources;
+	sources.push_back(CTagString("string", "new value"));
+	sources.push_back(CTagHash("hash", hash));
+	sources.push_back(CTagBlob("blob", bytes, sizeof(bytes)));
+	sources.push_back(CTagBsob("bsob", bytes, sizeof(bytes)));
+	for (const CTag &source : sources) {
+		// Fail each allocation of the assignment in turn, until it completes.
+		for (int failAt = 0;; ++failAt) {
+			CTag target(CTagString("target", "old value"));
+			bool failed = false;
+			g_allocationsUntilFailure = failAt;
+			try {
+				target = source;
+			} catch (const std::bad_alloc &) {
+				failed = true;
+			}
+			g_allocationsUntilFailure = -1;
+			if (!failed) {
+				CheckCopiedTag(source, target);
+				break;
+			}
+			ASSERT_TRUE(target.IsStr());
+			ASSERT_EQUALS(wxString("target"), target.GetName());
+			ASSERT_EQUALS(wxString("old value"), target.GetStr());
+		}
+	}
 }
