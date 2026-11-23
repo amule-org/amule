@@ -1454,6 +1454,8 @@ private:
 		// Flush() writes into a kMaxUdpPayload-sized stack buffer; keep ngtcp2 from ever trying
 		// to hand it back a larger packet, which PMTUD could otherwise grow towards over time.
 		settings.max_tx_udp_payload_size = kMaxUdpPayload;
+		settings.max_stream_window = CQuicSocketTransport::kMaxReadWindow;
+		settings.max_window = CQuicSocketTransport::kMaxReadWindow;
 		// ngtcp2_settings_default() leaves this at UINT64_MAX (no timeout): the deadline is
 		// initial_ts + handshake_timeout, so initial_ts must be this connection's own creation
 		// time, not whatever ngtcp2_settings_default() left there (0) -- relative to that, a
@@ -1518,20 +1520,20 @@ private:
 		bool &packetSent)
 	{
 		// A peer that stops ACKing is already a dead connection from this engine's point of view,
-		// so refusing to grow past the same window CQuicSocketTransport imposes on the application
-		// side (kReadWindow, also 256KiB) is a bound, not a behaviour change for any peer actually
-		// speaking QUIC. Offer only what still fits, the same way ngtcp2 itself accepting less than
+		// so refusing to grow past the largest window CQuicSocketTransport ever grants
+		// (kMaxReadWindow) is a bound, not a behaviour change for any peer actually speaking QUIC.
+		// Offer only what still fits, the same way ngtcp2 itself accepting less than
 		// offered is already handled below -- @p length is the caller's whole queued chunk (up to
 		// CQuicSocketTransport::kWriteBound, also 256KiB), not what ngtcp2 is actually about to
 		// accept (one packet's worth), so treating the full length as what must fit would abort the
 		// stream over a single byte still outstanding, not an actual lack of room.
-		if (info.unackedSendBytes >= CQuicSocketTransport::kReadWindow) {
+		if (info.unackedSendBytes >= CQuicSocketTransport::kMaxReadWindow) {
 			return 0;
 		}
 		// One STREAM frame never carries more than a packet, so copying more only inflates the
 		// retained capacity of unackedSendChunks.
 		const size_t offeredLength = std::min({ length,
-			CQuicSocketTransport::kReadWindow - info.unackedSendBytes,
+			CQuicSocketTransport::kMaxReadWindow - info.unackedSendBytes,
 			kMaxUdpPayload });
 		// Our own copy, created before ngtcp2 ever sees it: the ngtcp2_vec below must point at
 		// memory we control for as long as ngtcp2 might still need it (ConnectionInfo::
