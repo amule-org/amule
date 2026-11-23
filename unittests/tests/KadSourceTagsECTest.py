@@ -23,7 +23,9 @@ TAG_SOURCETYPE, TAG_SOURCEIP, TAG_SOURCEPORT, TAG_FILESIZE = b'\xff', b'\xfe', b
 TAG_SERVERIP, TAG_SERVERPORT, TAG_BUDDYHASH, TAG_ENCRYPTION = b'\xfb', b'\xfa', b'\xf8', b'\xf3'
 TAG_FILENAME, TAG_DESCRIPTION = b'\x01', b'\x0b'
 FILE_SIZE = 9728000
-SENDER_IP = 0x7f000001  # 127.0.0.1, as the storer keeps it
+# A daemon takes two source publishes a minute from one IP, so each step sends from its own.
+SPOOF_SENDER = '127.0.0.3'
+SENDER_IP = 0x7f000003  # SPOOF_SENDER, as the storer keeps it
 UNICODE_NAME = 'Клим café 東京 서울 中国.bin'.encode('utf-8')
 UNICODE_COMMENT = '¡Maldita! Ñandú — アニメ'.encode('utf-8')
 
@@ -78,9 +80,10 @@ def http_cache_tags():
     return tags
 
 
-def publish(udp_port, file_id, source_id, tags, opcode=KADEMLIA2_PUBLISH_SOURCE_REQ):
+def publish(udp_port, file_id, source_id, tags, opcode=KADEMLIA2_PUBLISH_SOURCE_REQ,
+            sender='127.0.0.1'):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as peer:
-        peer.bind(('127.0.0.1', 0))
+        peer.bind((sender, 0))
         peer.settimeout(10)
         peer.sendto(bytes([0xE4, opcode]) + file_id + source_id
                     + bytes([len(tags)]) + b''.join(tags), ('127.0.0.1', udp_port))
@@ -138,13 +141,13 @@ def restart_kad(ec, proc):
     start_kad(ec, proc)
 
 
-def kad_id(ec, proc, root):
-    """The running daemon's Kad ID, from the index header that stopping Kad saves."""
-    assert ec.call(C['EC_OP_KAD_STOP'])[0] == C['EC_OP_NOOP']
-    key = (Path(root) / 'key_index.dat').read_bytes()[8:24]
-    assert len(key) == 16
-    start_kad(ec, proc)
-    return key
+def kad_id(ec):
+    """The running daemon's Kad ID, in the byte order Kad packets carry it."""
+    state = ec.call(C['EC_OP_GET_CONNSTATE'])[1][C['EC_TAG_CONNSTATE']][1]
+    key = state[C['EC_TAG_KAD_ID']][0]
+    assert len(key) == 16, key
+    # EC sends it big-endian; Kad sends four little-endian 32-bit words.
+    return b''.join(key[i:i + 4][::-1] for i in range(0, 16, 4))
 
 
 @contextmanager
@@ -167,7 +170,7 @@ def run(binary):
         root = Path(directory)
         with running_kad_daemon(binary, root, console='stdout.log') as (proc, ec, udp_port, _):
             # A publish aimed at our Kad ID is within tolerance.
-            file_id = kad_id(ec, proc, root)
+            file_id = kad_id(ec)
 
             cache_source, big_source = b'\x11' * 16, b'\x22' * 16
             publish(udp_port, file_id, cache_source, core_tags(4001) + http_cache_tags()
@@ -199,14 +202,13 @@ def run(binary):
 
             # Known tags skip the extra-tag budget, so a repeat of one must not be stored.
             # Unusable ones first: they must not take the slot of the usable one after them.
-            # The restart clears the limit of two source publishes per minute from one IP.
-            restart_kad(ec, proc)
             repeat_source = b'\x44' * 16
             unusable = [tag(TAG_SERVERIP, 0x02, b'x'), tag(b'ip6', 0x02, b'f' * 65)]
             repeats = [tag(TAG_SERVERIP, 0x03, 0x0200007f), tag(TAG_SERVERPORT, 0x08, 4673),
                        tag(TAG_ENCRYPTION, 0x09, 1), tag(TAG_BUDDYHASH, 0x02, b'cd' * 16),
                        tag(b'ip6', 0x02, b'20010dba' * 4), tag(b'bi6', 0x02, b'20010dbb' * 4)]
-            publish(udp_port, file_id, repeat_source, unusable + core_tags(4003) + repeats * 20)
+            publish(udp_port, file_id, repeat_source, unusable + core_tags(4003) + repeats * 20,
+                    sender='127.0.0.2')
             stored = search(udp_port, file_id, repeats=True)[repeat_source]
             names = [name for name, _ in stored]
             for name in (TAG_SERVERIP, TAG_SERVERPORT, TAG_ENCRYPTION, TAG_BUDDYHASH, b'ip6', b'bi6'):
@@ -228,14 +230,12 @@ def run(binary):
 
             # Only the packet address may become TAG_SOURCEIP: searchers connect to the last one.
             # Names are sent up to a NUL, so one must not hide a TAG_SOURCEIP or TAG_SOURCEPORT.
-            # The restart clears the limit of two source publishes per minute from one IP.
-            restart_kad(ec, proc)
             spoof_source = b'\x55' * 16
             spoofed = tag(TAG_SOURCEIP, 0x03, 0x04030201)
             hidden = [tag(TAG_SOURCEIP + b'\x00', 0x03, 0x05050505),
                       tag(TAG_SOURCEPORT + b'\x00x', 0x08, 9999)]
             publish(udp_port, file_id, spoof_source,
-                    [spoofed] + core_tags(4005) + [spoofed] + hidden)
+                    [spoofed] + core_tags(4005) + [spoofed] + hidden, sender=SPOOF_SENDER)
             stored = search(udp_port, file_id, repeats=True)[spoof_source]
             assert source_ips(stored) == [SENDER_IP], ('publisher TAG_SOURCEIP kept', stored)
             ports = [value for name, value in stored if name == TAG_SOURCEPORT]

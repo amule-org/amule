@@ -4328,6 +4328,34 @@ foreach (ec_wire_test IN ITEMS
 	endif ()
 endforeach ()
 
+# A fresh build tree has no timings from an earlier ctest run, so ctest starts tests in the order
+# they are added, and a long one that starts last ends the parallel step alone. COST starts these
+# first. Each value is the test's seconds on CI. They wait on real Kad and upload timers.
+foreach (long_test IN ITEMS
+	PublishMetrics-kad2:242
+	KadBuddyCallbackRetryIntegrationTest-two:234
+	KadBuddyLifecycleIntegrationTest:181
+	KadBuddyPointerResolveIntegrationTest-miss:179
+	KadBuddyPointerResolveIntegrationTest-hit:157
+	KadBuddyCallbackRetryIntegrationTest-one:157
+	KadSourceBuddyIdIntegrationTest:137
+	UploadRefillIntegrationTest:117
+	UPnPPortMappingIntegrationTest:99
+	KadBuddyPointerType7IntegrationTest-pointer:94
+	KadBuddyPointerType7IntegrationTest-ip6:94
+	KadBuddyPointerType7IntegrationTest-plain:90
+	OfferFilesLiveLimitsTest:80
+	UploadRead-diagnostics-off:77
+	UploadRead-diagnostics:61
+)
+	string (REPLACE ":" ";" long_test "${long_test}")
+	list (GET long_test 0 long_test_name)
+	list (GET long_test 1 long_test_seconds)
+	if (TEST ${long_test_name})
+		set_tests_properties (${long_test_name} PROPERTIES COST ${long_test_seconds})
+	endif ()
+endforeach ()
+
 add_executable (UploadReadDiagnosticsTest UploadReadDiagnosticsTest.cpp)
 add_test (NAME UploadReadDiagnosticsTest COMMAND UploadReadDiagnosticsTest)
 target_include_directories (UploadReadDiagnosticsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
