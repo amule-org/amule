@@ -303,7 +303,8 @@ def running_daemon(binary, root, ports, *, stop_timeout=10, **start_kwargs):
         if ec is not None:
             ec.sock.close()
         if proc is not None:
-            stop_daemon(proc, timeout=stop_timeout, check=not failed)
+            stop_daemon(proc, timeout=stop_timeout, check=not failed,
+                        console=root / start_kwargs.get('console', 'console.log'))
 
 
 # Loopback calls must not go through a proxy set in the caller's environment.
@@ -469,8 +470,12 @@ def amulecmd(binary, port, *args, env, password='regression', script='', timeout
                           timeout=timeout, check=check)
 
 
-def stop_daemon(proc, timeout=10, check=True, codes=(0,)):
-    """Stop proc and reap it. check asserts an exit in codes; pass False on failure paths."""
+def stop_daemon(proc, timeout=10, check=True, codes=(0,), console=None):
+    """Stop proc and reap it. check asserts an exit in codes; pass False on failure paths.
+
+    A failed check prints console, the daemon's output file. An assert or abort at shutdown
+    writes its reason there, and the test deletes its temp directory next.
+    """
     if proc.poll() is None:
         if os.name == 'nt':
             # TerminateProcess does not reap spawned helpers; their log handles
@@ -484,9 +489,18 @@ def stop_daemon(proc, timeout=10, check=True, codes=(0,)):
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait()
+        if check:
+            print_console(console)
         assert not check, f'daemon did not exit within {timeout} s'
         return
-    assert not check or os.name == 'nt' or code in codes, f'daemon shutdown failed: {code}'
+    if check and os.name != 'nt' and code not in codes:
+        print_console(console)
+        raise AssertionError(f'daemon shutdown failed: {code}')
+
+
+def print_console(console):
+    if console is not None and Path(console).exists():
+        print(Path(console).read_text(errors='replace')[-20000:], file=sys.stderr)
 
 
 def free_ports(n, udp_indices=(), peer_index=None):
