@@ -28,10 +28,11 @@
 
 #include <common/Format.h> // Needed for CFormat
 
-#include "amule.h"          // Needed for theApp
-#include "ClientList.h"     // Needed for CClientList::GetClientsByHash
-#include "DataToText.h"     // Needed for GetSoftName, OriginToText
-#include "OtherFunctions.h" // Needed for CastItoXBytes, Uint32toStringIP
+#include "amule.h"            // Needed for theApp
+#include "ClientList.h"       // Needed for CClientList::GetClientsByHash
+#include "DataToText.h"       // Needed for GetSoftName, OriginToText
+#include "OtherFunctions.h"   // Needed for CastItoXBytes, Uint32toStringIP
+#include "NetworkFunctions.h" // Needed for AddressWithPort
 #ifdef CLIENT_GUI
 #include "UpDownClientEC.h"
 #else
@@ -124,6 +125,7 @@ size_t CClientHistoryListCtrl::AppendLiveRow(const CMD4Hash &hash, const LiveCli
 	row.version = live.version;
 	row.modVersion = live.modVersion;
 	row.ip = live.ip;
+	row.ipv6 = live.ipv6;
 	row.port = live.port;
 	row.clientSoft = live.clientSoft;
 	row.sourceFrom = live.sourceFrom;
@@ -201,13 +203,15 @@ void CClientHistoryListCtrl::ReconcileLive(const std::unordered_map<CMD4Hash, Li
 		if (!entry.second.name.IsEmpty() &&
 			(row.name != entry.second.name || row.version != entry.second.version ||
 				row.modVersion != entry.second.modVersion || row.ip != entry.second.ip ||
-				row.port != entry.second.port || row.clientSoft != entry.second.clientSoft ||
+				row.ipv6 != entry.second.ipv6 || row.port != entry.second.port ||
+				row.clientSoft != entry.second.clientSoft ||
 				row.sourceFrom != entry.second.sourceFrom ||
 				row.nameCell != entry.second.nameCell)) {
 			row.name = entry.second.name;
 			row.version = entry.second.version;
 			row.modVersion = entry.second.modVersion;
 			row.ip = entry.second.ip;
+			row.ipv6 = entry.second.ipv6;
 			row.port = entry.second.port;
 			row.clientSoft = entry.second.clientSoft;
 			row.sourceFrom = entry.second.sourceFrom;
@@ -328,7 +332,7 @@ bool CClientHistoryListCtrl::PeerForItem(wxUIntPtr data, PeerIdentity &out) cons
 	out.detail.softVerStr = row->version;
 	// Left empty when unknown, so the dialog says so rather than rendering a
 	// literal 0.0.0.0.
-	out.detail.fullIp = row->ip ? Uint32toStringIP(row->ip) : wxString();
+	out.detail.fullIp = row->ip ? Uint32toStringIP(row->ip) : row->ipv6;
 	out.detail.userPort = row->port;
 	out.detail.obfuscationStatus = row->obfuscation;
 	// Same direction the list's own Total Up / Total Down columns use.
@@ -376,10 +380,10 @@ wxString CClientHistoryListCtrl::GetItemColumnText(wxUIntPtr item, unsigned colu
 		return row->version;
 
 	case COLUMN_HISTORY_ADDRESS:
-		if (row->ip == 0) {
-			return wxEmptyString;
+		if (row->ip != 0) {
+			return AddressWithPort(Uint32toStringIP(row->ip), row->port);
 		}
-		return CFormat(wxT("%s:%u")) % Uint32toStringIP(row->ip) % row->port;
+		return row->ipv6.IsEmpty() ? wxString() : AddressWithPort(row->ipv6, row->port);
 
 	case COLUMN_HISTORY_ORIGIN:
 		// Translated here, not by OriginToText(): see CClientsListCtrl, which

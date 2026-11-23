@@ -26,13 +26,14 @@
 #include "ClientDetailDialog.h" // Interface declarations
 #include "DataToText.h"         // Needed for FormatClientSoftware
 #include "DialogLayout.h"
-#include "PartFile.h"    // Needed for CPartFile
-#include "UploadQueue.h" // Needed for CUploadQueue
-#include "ServerList.h"  // Needed for CServerList
-#include "amule.h"       // Needed for theApp
-#include "Server.h"      // Needed for CServer
-#include "muuli_wdr.h"   // Needed for ID_CLOSEWND
-#include "Preferences.h" // Needed for thePrefs
+#include "NetworkFunctions.h" // Needed for AddressWithPort
+#include "PartFile.h"         // Needed for CPartFile
+#include "UploadQueue.h"      // Needed for CUploadQueue
+#include "ServerList.h"       // Needed for CServerList
+#include "amule.h"            // Needed for theApp
+#include "Server.h"           // Needed for CServer
+#include "muuli_wdr.h"        // Needed for ID_CLOSEWND
+#include "Preferences.h"      // Needed for thePrefs
 
 // CClientDetailDialog dialog
 
@@ -151,9 +152,8 @@ bool CClientDetailDialog::OnInitDialog()
 					     : kNoValue);
 
 	CastChild(ID_DIP, wxStaticText)
-		->SetLabel(m_info.fullIp.IsEmpty()
-				   ? kNoValue
-				   : wxString(CFormat("%s:%i") % m_info.fullIp % m_info.userPort));
+		->SetLabel(
+			m_info.fullIp.IsEmpty() ? kNoValue : AddressWithPort(m_info.fullIp, m_info.userPort));
 
 	if (m_info.serverIp) {
 		wxString srvaddr = Uint32toStringIP(m_info.serverIp);

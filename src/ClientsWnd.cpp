@@ -382,6 +382,8 @@ void CClientsWnd::UpdateAll()
 			entry.version = c->GetSoftVerStr();
 			entry.modVersion = c->GetClientModString();
 			entry.ip = c->GetIP();
+			const wxString fullIp = c->GetFullIP();
+			entry.ipv6 = entry.ip == 0 && fullIp.Contains(wxT(":")) ? fullIp : wxString();
 			entry.port = c->GetUserPort();
 			entry.clientSoft = static_cast<uint8>(c->GetClientSoft());
 			entry.sourceFrom = static_cast<uint8>(c->GetSourceFrom());
@@ -407,7 +409,7 @@ void CClientsWnd::UpdateAll()
 		row.name = c->GetUserName();
 		row.software = FormatClientSoftware(c->GetSoftStr(), c->GetClientModString());
 		row.version = c->GetSoftVerStr();
-		row.ip = c->GetIP();
+		row.address = c->GetFullIP();
 		row.port = c->GetUserPort();
 		row.sourceFrom = static_cast<uint8>(c->GetSourceFrom());
 		row.connectionRoute = static_cast<uint8>(c->GetConnectionRoute());

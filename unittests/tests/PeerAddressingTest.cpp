@@ -1063,3 +1063,28 @@ TEST(PeerAddressing, ABanCoversTheIPv6ThePeerAdvertises)
 	addresses = PeerAddressing::BanAddresses(v4, v4, false, absent);
 	ASSERT_TRUE(addresses[2] == absent);
 }
+
+TEST(PeerAddressing, TheShownIPv6IsTheLiveConnectionsElseTheIdentitys)
+{
+	const auto v4 = CNetworkAddress::FromString("192.0.2.1");
+	const auto mapped = CNetworkAddress::FromString("::ffff:192.0.2.1");
+	const auto session = CNetworkAddress::FromString("2001:db8::5");
+	const auto identity = CNetworkAddress::FromString("2001:db8::9");
+	const auto absent = CNetworkAddress::Absent();
+	// An IPv6 connection names the peer, even beside an IPv4 identity or another IPv6 one.
+	ASSERT_TRUE(PeerAddressing::DisplayIPv6(session, v4) == session);
+	ASSERT_TRUE(PeerAddressing::DisplayIPv6(session, identity) == session);
+	// Otherwise the identity, when it is IPv6.
+	ASSERT_TRUE(PeerAddressing::DisplayIPv6(v4, identity) == identity);
+	ASSERT_TRUE(PeerAddressing::DisplayIPv6(mapped, identity) == identity);
+	ASSERT_TRUE(PeerAddressing::DisplayIPv6(absent, identity) == identity);
+	// A mapped address is IPv4.
+	ASSERT_TRUE(PeerAddressing::DisplayIPv6(mapped, v4) == absent);
+	ASSERT_TRUE(PeerAddressing::DisplayIPv6(absent, mapped) == absent);
+	ASSERT_TRUE(PeerAddressing::DisplayIPv6(v4, v4) == absent);
+	ASSERT_TRUE(PeerAddressing::DisplayIPv6(absent, absent) == absent);
+	// The scope names an interface of this host.
+	const auto shown = PeerAddressing::DisplayIPv6(CNetworkAddress::FromString("fe80::1%3"), v4);
+	ASSERT_TRUE(shown == CNetworkAddress::FromString("fe80::1"));
+	ASSERT_EQUALS(0ul, shown.GetScopeId());
+}

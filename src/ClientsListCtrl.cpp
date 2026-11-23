@@ -34,6 +34,7 @@
 #include "ClientList.h"         // Needed for CClientList::FindClientByECID
 #include "ClientRef.h"          // Needed for CClientRef
 #include "DataToText.h"         // Needed for GetSoftName, OriginToText
+#include "NetworkFunctions.h"   // Needed for AddressWithPort
 #include "OtherFunctions.h"     // Needed for CastItoXBytes, CastItoSpeed
 #include "muuli_wdr.h"          // Needed for ID_CLIENTSLIST
 
@@ -204,7 +205,7 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		if (!row->name.IsEmpty()) {
 			return row->name;
 		}
-		return Uint32toStringIP(row->ip);
+		return row->address;
 
 	case COLUMN_CLIENTS_SOFTWARE:
 		return row->software;
@@ -213,7 +214,7 @@ wxString CClientsListCtrl::GetItemColumnText(wxUIntPtr item, unsigned column) co
 		return row->version;
 
 	case COLUMN_CLIENTS_ADDRESS:
-		return CFormat(wxT("%s:%u")) % Uint32toStringIP(row->ip) % row->port;
+		return AddressWithPort(row->address, row->port);
 
 	case COLUMN_CLIENTS_ORIGIN:
 		// OriginToText() hands back the wxTRANSLATE() marker, which is only an extraction

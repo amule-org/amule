@@ -97,7 +97,8 @@ public:
 		wxString name;
 		wxString software;
 		wxString version;
-		uint32 ip = 0;
+		//! As CUpDownClient::GetFullIP(): the IPv6 address of a peer with no IPv4 one.
+		wxString address;
 		uint16 port = 0;
 		uint8 sourceFrom = 0;
 		//! PackConnectionRoute(), 0 before the first connection.
@@ -124,13 +125,13 @@ public:
 		bool operator==(const Row &other) const
 		{
 			return nameCell == other.nameCell && name == other.name &&
-			       software == other.software && version == other.version && ip == other.ip &&
-			       port == other.port && sourceFrom == other.sourceFrom &&
-			       connectionRoute == other.connectionRoute && files == other.files &&
-			       upSpeed == other.upSpeed && downSpeed == other.downSpeed &&
-			       sessionUp == other.sessionUp && sessionDown == other.sessionDown &&
-			       totalUp == other.totalUp && totalDown == other.totalDown &&
-			       creditRatio == other.creditRatio;
+			       software == other.software && version == other.version &&
+			       address == other.address && port == other.port &&
+			       sourceFrom == other.sourceFrom && connectionRoute == other.connectionRoute &&
+			       files == other.files && upSpeed == other.upSpeed &&
+			       downSpeed == other.downSpeed && sessionUp == other.sessionUp &&
+			       sessionDown == other.sessionDown && totalUp == other.totalUp &&
+			       totalDown == other.totalDown && creditRatio == other.creditRatio;
 		}
 		bool operator!=(const Row &other) const { return !(*this == other); }
 	};

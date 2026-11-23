@@ -2618,11 +2618,11 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	WriteStringOrNull(w, "name", !c.client_name.empty(), c.client_name);
 	w.Key("user_hash");
 	w.ValueString(wxString::FromUTF8(c.user_hash.c_str()));
-	// Nulled together, keyed on the address: a port without one describes nothing.
-	// Matches the SSE row and WriteKnownClientObject.
-	const bool has_addr = !c.ip.empty();
-	WriteStringOrNull(w, "ip", has_addr, c.ip);
-	WriteIntOrNull(w, "port", has_addr, static_cast<int64_t>(c.port));
+	// The port is nulled with the address, of either family: a port without one describes
+	// nothing. Matches the SSE row and WriteKnownClientObject.
+	WriteStringOrNull(w, "ip", !c.ip.empty(), c.ip);
+	WriteStringOrNull(w, "ipv6", !c.ipv6.empty(), c.ipv6);
+	WriteIntOrNull(w, "port", c.HasAddress(), static_cast<int64_t>(c.port));
 	// ISO 3166-1 alpha-2 (lowercase); null when GeoIP is off/unresolved (#439).
 	WriteStringOrNull(w, "country_code", !c.country_code.empty(), c.country_code);
 	WriteStringOrNull(w, "software", !c.software.empty(), c.software);
@@ -2882,10 +2882,10 @@ void WriteClientDetailObject(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	WriteStringOrNull(w, "server_ip", has_server, c.server_ip);
 	WriteStringOrNull(w, "server_name", has_server, c.server_name);
 	WriteIntOrNull(w, "server_port", has_server, static_cast<int64_t>(c.server_port));
-	// Nulled on the same condition as ip/port: a client with no recorded address has no
+	// Nulled on the same condition as port: a client with no recorded address has no
 	// recorded Kad port either, and a raw 0 would spell absence differently from the
 	// fields it is paired with.
-	WriteIntOrNull(w, "kad_port", !c.ip.empty(), static_cast<int64_t>(c.kad_port));
+	WriteIntOrNull(w, "kad_port", c.HasAddress(), static_cast<int64_t>(c.kad_port));
 	w.EndObject();
 }
 

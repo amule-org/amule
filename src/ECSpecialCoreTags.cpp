@@ -427,6 +427,14 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 	AddDiffTag(this, EC_TAG_CLIENT_SOFT_VER_STR, client->GetSoftVerStr(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_MOD_VERSION, client->GetClientModString(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_USER_IP, client->GetIP(), valuemap);
+	{
+		// Empty rather than left out, so a frontend learns when the address goes.
+		const CNetworkAddress ipv6 = client->GetDisplayIPv6();
+		AddDiffTag(this,
+			EC_TAG_CLIENT_USER_IPV6,
+			ipv6.IsPresent() ? ipv6.ToWxString() : wxString(),
+			valuemap);
+	}
 	AddDiffTag(this, EC_TAG_CLIENT_USER_PORT, client->GetUserPort(), valuemap);
 #ifdef ENABLE_IP2COUNTRY
 	// Peer country ISO code resolved core-side (#439). Emitted whenever GeoIP is enabled and

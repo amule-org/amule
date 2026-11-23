@@ -35,4 +35,8 @@ the interface that IPv6 traffic leaves through, when that interface has a stable
 In every mode, advertising stops for up to a day when several unrelated peers see us arriving from
 a prefix this host does not hold (IPv6 NAT) and none has confirmed ours.
 
+aMule, amulegui and the Web UI show a peer's IPv6 address when it has no IPv4 one, in the client
+details and in the address column of the client lists. amuleapi has the peer's IPv6 address in the
+`ipv6` field of the client objects.
+
 Connecting to a server over an IPv6 transport is out of scope.

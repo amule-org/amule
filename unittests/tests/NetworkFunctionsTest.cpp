@@ -383,3 +383,9 @@ TEST(NetworkFunctions, HostnameResolvesToIPv4Only)
 	amuleIPV4Address empty;
 	ASSERT_FALSE(empty.Hostname(wxEmptyString));
 }
+
+TEST(NetworkFunctions, AddressWithPortBracketsIPv6)
+{
+	ASSERT_EQUALS(wxString(wxT("192.0.2.1:4662")), AddressWithPort(wxT("192.0.2.1"), 4662));
+	ASSERT_EQUALS(wxString(wxT("[2001:db8::5]:4662")), AddressWithPort(wxT("2001:db8::5"), 4662));
+}

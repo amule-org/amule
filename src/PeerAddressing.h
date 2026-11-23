@@ -548,6 +548,22 @@ inline CNetworkAddress ConductAddress(
 	return identityUnproven ? CNetworkAddress::Absent() : userAddress;
 }
 
+/**
+ * The IPv6 address a frontend shows for a peer: the live socket's peer when that is native IPv6,
+ * else the identity when that is. An IPv6 the peer only advertised is left out, as nothing proved
+ * it. The interface scope is dropped: it names an interface of this host, not of the peer.
+ */
+inline CNetworkAddress DisplayIPv6(const CNetworkAddress &socketPeer, const CNetworkAddress &userAddress)
+{
+	const auto native = [](const CNetworkAddress &address) {
+		return address.IsIPv6() && !address.IsIPv4Mapped();
+	};
+	if (native(socketPeer)) {
+		return socketPeer.WithoutScope();
+	}
+	return native(userAddress) ? userAddress.WithoutScope() : CNetworkAddress::Absent();
+}
+
 //! Whether one address is IPv4 (or mapped) and the other native IPv6.
 inline bool IsOtherFamily(const CNetworkAddress &a, const CNetworkAddress &b) noexcept
 {

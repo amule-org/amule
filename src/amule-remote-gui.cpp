@@ -3385,6 +3385,7 @@ void CUpDownClientListRem::ProcessItemUpdate(const CEC_UpDownClient_Tag *tag, CC
 
 	// User IP:Port
 	tag->UserIP(client->m_dwUserIP);
+	tag->UserIPv6(&client->m_userIPv6);
 	tag->UserPort(&client->m_nUserPort);
 
 	// Server IP:Port

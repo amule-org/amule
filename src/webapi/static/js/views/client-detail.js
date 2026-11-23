@@ -12,7 +12,7 @@ import { api } from "../api.js";
 import { html, useState, useEffect, useStore } from "../dom.js";
 import { Section, statRow, Placeholder, CountryCell, Tabs } from "../components.js";
 import { formatBytes, formatSpeed, formatInt, formatPercent, formatTimestamp, twin } from "../format.js";
-import { softLabel, identLabel, stateBadge, connectionLabel } from "./client-table.js";
+import { softLabel, identLabel, stateBadge, connectionLabel, peerAddress } from "./client-table.js";
 import { t } from "../i18n.js";
 
 const hashCell = (h) => html`<span class="mono">${(h || "").toUpperCase() || "—"}</span>`;
@@ -64,7 +64,7 @@ function clientSections(c) {
     has("ident_state") ? statRow("client_detail_ident", identLabel(c.ident_state)) : null,
   ];
   const network = [
-    has("ip") ? statRow("client_detail_ip", c.ip ? c.ip + ":" + c.port : "—") : null,
+    has("ip") ? statRow("client_detail_ip", peerAddress(c)) : null,
     has("kad_port") ? statRow("client_detail_kad", t(c.kad_port ? "client_detail_kad_on" : "client_detail_kad_off")) : null,
     has("country_code") ? statRow("client_detail_country", html`<${CountryCell} code=${c.country_code} />`) : null,
     has("server_ip") ? statRow("client_detail_server", c.server_ip ? c.server_ip + ":" + c.server_port : "—") : null,

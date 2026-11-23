@@ -2590,8 +2590,47 @@ TEST(EventDiff, ClientAddressFieldsFollowRestOrder)
 	c.port = 4662;
 	c.country_code = "us";
 	const std::string payload = EmitClientAndGetPayload(c);
-	ASSERT_TRUE(payload.find("\"ip\":\"1.2.3.4\",\"port\":4662,\"country_code\":\"us\"") !=
+	ASSERT_TRUE(payload.find("\"ip\":\"1.2.3.4\",\"ipv6\":null,\"port\":4662,\"country_code\":\"us\"") !=
 		    std::string::npos);
+}
+
+TEST(EventDiff, AClientWithOnlyAnIPv6AddressKeepsItsPort)
+{
+	ClientSnapshot c;
+	c.ecid = 1;
+	c.ipv6 = "2001:db8::5";
+	c.port = 4662;
+	ASSERT_TRUE(EmitClientAndGetPayload(c).find("\"ip\":null,\"ipv6\":\"2001:db8::5\",\"port\":4662") !=
+		    std::string::npos);
+	c.ipv6.clear();
+	ASSERT_TRUE(EmitClientAndGetPayload(c).find("\"ip\":null,\"ipv6\":null,\"port\":null") !=
+		    std::string::npos);
+}
+
+TEST(EventDiff, ClientUpdatedFiresOnIPv6Change)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		ClientSnapshot c;
+		c.ecid = 10;
+		c.ip = "192.0.2.1";
+		cache.emplace(c.ecid, c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+	const auto cursor = bus.NewestId();
+	state.MutateClients(
+		[](std::map<std::uint32_t, ClientSnapshot> &cache) { cache.at(10).ipv6 = "2001:db8::5"; });
+	EmitDiffsAndUpdate(bus, prev, state);
+	int updated = 0;
+	for (const auto &ev : DrainSince(bus, cursor)) {
+		if (ev.name == "client_updated") {
+			++updated;
+			ASSERT_TRUE(ev.data.find("\"ipv6\":\"2001:db8::5\"") != std::string::npos);
+		}
+	}
+	ASSERT_EQUALS(1, updated);
 }
 
 TEST(EventDiff, CaptchaMessageFieldsFollowRestOrder)
