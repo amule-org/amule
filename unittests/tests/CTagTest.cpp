@@ -4,7 +4,9 @@
 #include <MemFile.h>
 #include <tags/FileTags.h>
 #include <math.h>
+#include <cstdlib>
 #include <memory>
+#include <new>
 
 #include "MD4Hash.h"
 #include "amule.h"
@@ -12,6 +14,51 @@
 #include <vector>
 
 using namespace muleunit;
+
+// This test binary replaces the global allocator so a test can make one chosen
+// allocation fail. The allocation that finds 0 here throws; -1 never fails.
+static int g_allocationsUntilFailure = -1;
+
+static void *CountedAllocate(std::size_t size)
+{
+	if (g_allocationsUntilFailure >= 0 && g_allocationsUntilFailure-- == 0) {
+		throw std::bad_alloc();
+	}
+	if (void *p = std::malloc(size ? size : 1)) {
+		return p;
+	}
+	throw std::bad_alloc();
+}
+
+void *operator new(std::size_t size)
+{
+	return CountedAllocate(size);
+}
+
+void *operator new[](std::size_t size)
+{
+	return CountedAllocate(size);
+}
+
+void operator delete(void *p) noexcept
+{
+	std::free(p);
+}
+
+void operator delete[](void *p) noexcept
+{
+	std::free(p);
+}
+
+void operator delete(void *p, std::size_t) noexcept
+{
+	std::free(p);
+}
+
+void operator delete[](void *p, std::size_t) noexcept
+{
+	std::free(p);
+}
 
 DECLARE_SIMPLE(CTag)
 
@@ -1049,7 +1096,7 @@ TEST_M(CTag, AssignBoolArray, "Assign parsed BOOLARRAY metadata over an owned st
 }
 
 // Compare the actual protocol payload, not only the tag's type or display text.
-static void CheckCopiedTag(const CTag &expected, CTag &actual)
+static void CheckCopiedTag(const CTag &expected, const CTag &actual)
 {
 	ASSERT_EQUALS(expected.GetType(), actual.GetType());
 	ASSERT_EQUALS(expected.GetNameID(), actual.GetNameID());
@@ -1142,6 +1189,41 @@ TEST_M(CTag, CopyAssignmentMatrix, "Copy and assign every owned and scalar tag t
 		shifted.erase(shifted.begin());
 		for (size_t i = 0; i < shifted.size(); ++i) {
 			CheckCopiedTag(tags[tags.size() - shifted.size() + i], shifted[i]);
+		}
+	}
+}
+
+TEST_M(CTag,
+	FailedAssignmentKeepsTarget,
+	"An allocation failure during assignment leaves the target unchanged")
+{
+	const uint8 bytes[] = { 1, 2, 3 };
+	CMD4Hash hash;
+	ASSERT_TRUE(hash.Decode(std::string("0123456789ABCDEF0123456789ABCDEF")));
+	std::vector<CTag> sources;
+	sources.push_back(CTagString("string", "new value"));
+	sources.push_back(CTagHash("hash", hash));
+	sources.push_back(CTagBlob("blob", bytes, sizeof(bytes)));
+	sources.push_back(CTagBsob("bsob", bytes, sizeof(bytes)));
+	for (const CTag &source : sources) {
+		// Fail each allocation of the assignment in turn, until it completes.
+		for (int failAt = 0;; ++failAt) {
+			CTag target(CTagString("target", "old value"));
+			bool failed = false;
+			g_allocationsUntilFailure = failAt;
+			try {
+				target = source;
+			} catch (const std::bad_alloc &) {
+				failed = true;
+			}
+			g_allocationsUntilFailure = -1;
+			if (!failed) {
+				CheckCopiedTag(source, target);
+				break;
+			}
+			ASSERT_TRUE(target.IsStr());
+			ASSERT_EQUALS(wxString("target"), target.GetName());
+			ASSERT_EQUALS(wxString("old value"), target.GetStr());
 		}
 	}
 }
