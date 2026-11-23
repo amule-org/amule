@@ -623,6 +623,12 @@ def run(binary):
                 query = queries.get(timeout=5)
                 assert b'ubuntu' in query and b'linux' in query, query
                 assert ec.progress(sid)[C['EC_TAG_SEARCH_KAD_ACTIVE']][0] == 0
+                # A server answer names no search, so one that comes after the next search
+                # starts goes to that one. Stop this search only once its answer is in.
+                wait_for(proc, 'the server answer to the first search',
+                         lambda: C['EC_TAG_SEARCHFILE'] in ec.call(
+                             C['EC_OP_SEARCH_RESULTS'], [integer(C['EC_TAG_SEARCH_ID'], sid)])[1],
+                         timeout=10, interval=0.05)
                 ec.call(C['EC_OP_SEARCH_STOP'], [integer(C['EC_TAG_SEARCH_ID'], sid)])
                 # One incomplete UTF-8 tail must not garble the entire result.
                 # Check the name returned over EC after the production reader,
