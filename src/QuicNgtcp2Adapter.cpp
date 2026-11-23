@@ -75,12 +75,12 @@ constexpr int kMaxFlushPacketsPerCall = 16;
 // Without these, handle_expiry() never ends a connection on its own, and a peer that goes
 // silent would hold its admission slot permanently.
 constexpr uint64_t kHandshakeTimeoutMs = 10000; // 10s: generous even over a slow real path.
-// A client repeats its Initial with the token until its own handshake timeout.
-constexpr uint64_t kRetryTokenLifetimeMs = kHandshakeTimeoutMs;
-constexpr uint64_t kIdleTimeoutMs = 60000; // 60s of silence after that is a dead peer.
+constexpr uint64_t kIdleTimeoutMs = 60000;      // 60s of silence after that is a dead peer.
 // Peer PINGs reset the idle timer, so it alone cannot reclaim a slot.
 constexpr uint64_t kStreamOfferTimeoutMs = 20000; // From the first datagram to the proven stream.
 constexpr uint64_t kClosedStreamLingerMs = 10000; // From our FIN or reset to the peer's.
+// A client repeats its Initial with the token until its own handshake timeout.
+constexpr uint64_t kRetryTokenLifetimeMs = kHandshakeTimeoutMs;
 
 //! ngtcp2 errors after which no CONNECTION_CLOSE may, or need, be sent.
 bool IsSilentClose(int liberr)
