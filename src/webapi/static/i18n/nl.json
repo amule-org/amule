@@ -1091,5 +1091,14 @@
   "downloads_peer_col_connection": "Verbinding",
   "client_detail_connection": "Verbinding",
   "downloads_peer_conn_dial": "Direct",
-  "downloads_peer_conn_inbound": "Binnenkomend"
+  "downloads_peer_conn_inbound": "Binnenkomend",
+  "prefs_group_ipv6": "IPv6",
+  "prefs_ipv6_restart_hint": "Een verandering aan de adresfamilies wordt toegepast nadat aMule opnieuw opstart.",
+  "prefs_opt_ip_versions_ipv4_only": "Alleen IPv4",
+  "prefs_opt_ip_versions_ipv4_and_ipv6": "IPv4 en IPv6",
+  "prefs_opt_ipv6_advertising_when_verified": "Als geverifiëerd",
+  "prefs_opt_ipv6_advertising_always": "Altijd",
+  "prefs_opt_ipv6_advertising_never": "Nooit",
+  "prefs_field_connection_ip_versions": "Adresfamilies",
+  "prefs_field_connection_ipv6_advertising": "Adverteer met mijn IPv6-adres"
 }

@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-21 09:21+0000\n"
+"PO-Revision-Date: 2026-11-23 13:43+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -4316,6 +4316,11 @@ msgstr "警告：网络接口 '%s' 不存在—— 流量不再绑定到该接�
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr "创建 UDP 套接字 %s %d 出错：%s"
+
+#: src/LibSocketAsio.cpp
+#, c-format
+msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes. Bursts of uTP and QUIC data can be lost; setting it to %d avoids that."
+msgstr "net.core.rmem_max 将 UDP 接收缓存限制到 %d 字节。uTP 和 QUIC 数据的迸发可能丢失；将它设为 %d 避免此情况。"
 
 #: src/LibSocketAsio.cpp
 #, c-format

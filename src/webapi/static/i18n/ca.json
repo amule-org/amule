@@ -1101,5 +1101,14 @@
   "downloads_peer_conn_answered_kad_buddy_callback": "Retrotrucada de l'amic de Kad contestada",
   "downloads_peer_conn_answered_direct_udp_callback": "Retrotrucada UDP directa contestada",
   "downloads_peer_conn_answered_lugdunum_callback": "Retrotrucada de Lugdunum contestada",
-  "downloads_peer_conn_proxy": "proxy"
+  "downloads_peer_conn_proxy": "proxy",
+  "prefs_group_ipv6": "IPv6",
+  "prefs_ipv6_restart_hint": "Un canvi a les famílies d'adreces entra en vigor després que aMule es reiniciï.",
+  "prefs_opt_ip_versions_ipv4_only": "Només IPv4",
+  "prefs_opt_ip_versions_ipv4_and_ipv6": "IPv4 i IPv6",
+  "prefs_opt_ipv6_advertising_when_verified": "Un cop verificat",
+  "prefs_opt_ipv6_advertising_always": "Sempre",
+  "prefs_opt_ipv6_advertising_never": "Mai",
+  "prefs_field_connection_ip_versions": "Adreçar-se a les famílies",
+  "prefs_field_connection_ipv6_advertising": "Anuncia la meva adreça IPv6"
 }
