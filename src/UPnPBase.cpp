@@ -1232,7 +1232,6 @@ bool CUPnPControlPoint::SendAddPinhole(SIPv6Pinhole &pinhole)
 	}
 	pinhole.uniqueId = uniqueId;
 	++m_IPv6PinholeOpenings;
-	m_IPv6PinholeHeld = true;
 	pinhole.expiry = std::chrono::steady_clock::now() + std::chrono::seconds(pinhole.lease);
 	std::ostringstream msg;
 	msg << "IPv6 pinhole for " << pinhole.client << " (protocol " << pinhole.protocol
@@ -1405,6 +1404,8 @@ void CUPnPControlPoint::RenewExpiringIPv6Pinholes(const std::string &currentClie
 			SendAddPinhole(pinhole);
 		}
 	}
+	// Derived from the map, so a close, a failed renewal or a failed re-add clears it too.
+	NoteIPv6PinholesHeld();
 }
 
 static std::vector<CUPnPArgumentValue> AddPortMappingArguments(const CUPnPPortMapping &upnpPortMapping)
@@ -2012,6 +2013,7 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 					SendDeletePinhole(entry.second);
 					SendAddPinhole(entry.second);
 				}
+				NoteIPv6PinholesHeld();
 			}
 		}
 		msg << "Successfully retrieved SCPD Document for service " << service.GetServiceType()
