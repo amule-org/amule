@@ -69,10 +69,26 @@ public:
 
 class CUpDownClient;
 
+//! What a new connection's first Initial proves about its source (RFC 9000 section 8.1).
+enum class EQuicInitialAddress
+{
+	Proven,   //!< The Initial may open a connection.
+	Answered, //!< Answered without state: a Retry, or an INVALID_TOKEN close.
+	Refused,  //!< Dropped.
+};
+
 class IQuicConnectionFactory
 {
 public:
 	virtual ~IQuicConnectionFactory() = default;
+	//! Runs before any admission charge, so a Retry costs the sender no rate-limit budget.
+	//! Proven by default: a factory without address validation.
+	virtual EQuicInitialAddress ValidateInitialAddress(
+		const uint8_t *, size_t, const CNetworkAddress &, uint16_t, uint64_t nowMs)
+	{
+		(void)nowMs;
+		return EQuicInitialAddress::Proven;
+	}
 	//! nowMs lets an implementation stamp the new connection's own clock (e.g. the deadline a
 	//! handshake timeout is measured from) with the same monotonic time ProcessDatagram() is
 	//! already using, rather than an implicit zero that would only coincide with "now" for a
@@ -104,7 +120,10 @@ class CQuicContext final
 {
 public:
 	static constexpr size_t kMaxConnections = 256;
-	static constexpr size_t kMaxConnectionsPerScope = 8;
+	//! Room for several peers behind one CGNAT address; a Retry proves each address first.
+	static constexpr size_t kMaxConnectionsPerScope = 16;
+	//! One new connection per scope per interval: about one Initial retransmission.
+	static constexpr uint64_t kNewConnectionIntervalMs = 1000;
 	//! RFC 9000 section 14.1: a server discards Initials in smaller datagrams.
 	static constexpr size_t kMinInitialDatagram = 1200;
 
@@ -153,13 +172,13 @@ private:
 	ConnectionMap::iterator FindInitialConnection(const CNetworkAddress &, uint16_t, const std::string &);
 	ConnectionMap::iterator FindNonInitialConnection(
 		const CNetworkAddress &, uint16_t, const uint8_t *, size_t);
-	bool AdmitNewConnection(const CNetworkAddress &, uint64_t nowMs);
+	bool HasRoomFor(const CNetworkAddress &);
 	void EraseClosedConnections();
 	bool IsTableFull();
 
 	IQuicConnectionFactory *m_factory;
 	ConnectionMap m_connections;
-	NatRendezvous::CRequesterLimiter m_newConnectionLimiter;
+	NatRendezvous::CRequesterLimiter m_newConnectionLimiter{ kNewConnectionIntervalMs, kMaxConnections };
 };
 
 #endif

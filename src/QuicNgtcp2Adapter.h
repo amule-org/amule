@@ -53,6 +53,7 @@ struct CQuicInitialMetadata
 	uint32_t version;
 	std::string destinationCid;
 	std::string sourceCid;
+	std::string token;
 };
 
 class IQuicDatagramSink
@@ -75,6 +76,18 @@ public:
 		uint16_t,
 		const CQuicInitialMetadata &,
 		uint64_t nowMs) = 0;
+	//! RFC 9000 section 8.1.2. Proven only for a valid Retry token from @p address and @p port.
+	//! Otherwise sends a Retry, or an INVALID_TOKEN close for a bad Retry token. Proven by
+	//! default: an engine without address validation.
+	virtual EQuicInitialAddress ValidateInitialAddress(const CQuicInitialMetadata &,
+		const CNetworkAddress &,
+		uint16_t,
+		IQuicDatagramSink &,
+		uint64_t nowMs)
+	{
+		(void)nowMs;
+		return EQuicInitialAddress::Proven;
+	}
 	//! Creates an outbound TLS 1.3/ngtcp2 client connection to an authenticated
 	//! peer. The identity comes from its ed2k hello, never from its endpoint.
 	virtual Handle CreateClient(const CQuicTlsPolicy &,
@@ -186,6 +199,8 @@ public:
 	//! long as this factory. Null refuses every stream's hand-off, which is the state before an
 	//! acceptor exists -- the connection itself is still admitted and still works.
 	void SetAcceptor(IQuicStreamAcceptor *acceptor);
+	EQuicInitialAddress ValidateInitialAddress(
+		const uint8_t *, size_t, const CNetworkAddress &, uint16_t, uint64_t nowMs) override;
 	std::unique_ptr<IQuicConnection> CreateInbound(const uint8_t *,
 		size_t,
 		const CNetworkAddress &,

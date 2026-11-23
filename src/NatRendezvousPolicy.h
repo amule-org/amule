@@ -43,6 +43,13 @@ inline std::optional<PeerAddressing::UdpEndpoint> AcceptObservedEndpoint(
 class CRequesterLimiter
 {
 public:
+	CRequesterLimiter() = default;
+	CRequesterLimiter(std::uint64_t throttleMs, std::size_t maxTracked) noexcept
+	: m_throttleMs(throttleMs)
+	, m_maxTracked(maxTracked)
+	{
+	}
+
 	/** @p now is a monotonic millisecond tick; rollback re-anchors the request window. */
 	bool Admit(const CNetworkAddress &requester, std::uint64_t now) noexcept
 	{
@@ -54,8 +61,7 @@ public:
 		Evict(now);
 		for (auto &entry : m_entries) {
 			if (entry.address == key) {
-				if (now >= entry.lastRequest &&
-					now - entry.lastRequest < kRequestThrottleMs) {
+				if (now >= entry.lastRequest && now - entry.lastRequest < m_throttleMs) {
 					return false;
 				}
 				entry.lastRequest = now;
@@ -63,7 +69,7 @@ public:
 			}
 		}
 
-		if (m_entries.size() >= kMaxTrackedRequesters) {
+		if (m_entries.size() >= m_maxTracked) {
 			const auto oldest = std::min_element(m_entries.begin(),
 				m_entries.end(),
 				[](const SEntry &left, const SEntry &right) {
@@ -85,13 +91,14 @@ private:
 	void Evict(std::uint64_t now) noexcept
 	{
 		const auto firstLive =
-			std::remove_if(m_entries.begin(), m_entries.end(), [now](const SEntry &entry) {
-				return now >= entry.lastRequest &&
-				       now - entry.lastRequest >= kRequestThrottleMs;
+			std::remove_if(m_entries.begin(), m_entries.end(), [this, now](const SEntry &entry) {
+				return now >= entry.lastRequest && now - entry.lastRequest >= m_throttleMs;
 			});
 		m_entries.erase(firstLive, m_entries.end());
 	}
 
+	std::uint64_t m_throttleMs = kRequestThrottleMs;
+	std::size_t m_maxTracked = kMaxTrackedRequesters;
 	std::vector<SEntry> m_entries;
 };
 } // namespace NatRendezvous

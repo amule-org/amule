@@ -149,7 +149,7 @@ bool CQuicContext::IsTableFull()
 	return m_connections.size() >= kMaxConnections;
 }
 
-bool CQuicContext::AdmitNewConnection(const CNetworkAddress &address, uint64_t nowMs)
+bool CQuicContext::HasRoomFor(const CNetworkAddress &address)
 {
 	if (IsTableFull()) {
 		return false;
@@ -162,8 +162,7 @@ bool CQuicContext::AdmitNewConnection(const CNetworkAddress &address, uint64_t n
 			return false;
 		}
 	}
-	// Counted before CreateInbound(): refused attempts must cost the sender as much as accepted ones.
-	return m_newConnectionLimiter.Admit(address, nowMs);
+	return true;
 }
 
 bool CQuicContext::Dial(const CNetworkAddress &address,
@@ -208,7 +207,20 @@ bool CQuicContext::ProcessDatagram(
 		}
 		return accepted;
 	}
-	if (!initial || !m_factory || !AdmitNewConnection(address, nowMs)) {
+	// Room first: a Retry is wasted if the Initial with its token is then refused.
+	if (!initial || !m_factory || !HasRoomFor(address)) {
+		return false;
+	}
+	switch (m_factory->ValidateInitialAddress(payload, length, address, port, nowMs)) {
+	case EQuicInitialAddress::Proven:
+		break;
+	case EQuicInitialAddress::Answered:
+		return true;
+	case EQuicInitialAddress::Refused:
+		return false;
+	}
+	// Counted before CreateInbound(): refused attempts must cost the sender as much as accepted ones.
+	if (!m_newConnectionLimiter.Admit(address, nowMs)) {
 		return false;
 	}
 	std::unique_ptr<IQuicConnection> connection =

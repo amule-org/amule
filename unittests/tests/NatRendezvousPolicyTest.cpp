@@ -51,6 +51,20 @@ TEST(NatRendezvousPolicy, ThrottlesRequesterAndExpiresBudget)
 	ASSERT_TRUE(limiter.Admit(requester, 1000 + NatRendezvous::kRequestThrottleMs));
 }
 
+TEST(NatRendezvousPolicy, LimiterTakesItsOwnWindowAndCap)
+{
+	NatRendezvous::CRequesterLimiter limiter(500, 2);
+	const auto first = CNetworkAddress::FromString("192.0.2.7");
+
+	ASSERT_TRUE(limiter.Admit(first, 1000));
+	ASSERT_FALSE(limiter.Admit(first, 1499));
+	ASSERT_TRUE(limiter.Admit(first, 1500));
+	// A third scope evicts the oldest, which then starts a new window.
+	ASSERT_TRUE(limiter.Admit(CNetworkAddress::FromString("192.0.2.8"), 1501));
+	ASSERT_TRUE(limiter.Admit(CNetworkAddress::FromString("192.0.2.9"), 1502));
+	ASSERT_TRUE(limiter.Admit(first, 1503));
+}
+
 TEST(NatRendezvousPolicy, RejectsUnusableRequester)
 {
 	NatRendezvous::CRequesterLimiter limiter;
