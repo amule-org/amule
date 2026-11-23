@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-11-16 12:10+0100\n"
-"PO-Revision-Date: 2026-11-22 13:57+0000\n"
+"PO-Revision-Date: 2026-11-23 11:29+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/application-man-pages/cs/>\n"
 "Language: cs\n"
@@ -263,7 +263,7 @@ msgstr "HLÁŠENÍ CHYB"
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Please report bugs either on our forum (I<https://github.com/amule-org/amule/discussions>), or in our bugtracker (I<https://github.com/amule-org/amule/issues>).  Please do not report bugs in e-mail, neither to our mailing list nor directly to any team member."
-msgstr ""
+msgstr "Chyby prosím nahlašujte buď na našem fóru (I<https://github.com/amule-org/amule/discussions>), nebo v našem systému pro sledování chyb (I<https://github.com/amule-org/amule/issues>).  Chyby prosím nehlaste e-mailem, na náš mailing list, ani přímo některému členovi týmu."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
@@ -272,7 +272,7 @@ msgstr ""
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 #, no-wrap
 msgid "COPYRIGHT"
-msgstr ""
+msgstr "COPYRIGHT"
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
@@ -280,7 +280,7 @@ msgstr ""
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "aMule and all of its related utilities are distributed under the GNU General Public License."
-msgstr ""
+msgstr "aMule a související nástroje jsou distribuovány pod licencí GNU General Public License."
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
@@ -289,7 +289,7 @@ msgstr ""
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 #, no-wrap
 msgid "SEE ALSO"
-msgstr ""
+msgstr "TAKÉ VIZ"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
@@ -298,7 +298,7 @@ msgstr ""
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 #, no-wrap
 msgid "AUTHOR"
-msgstr ""
+msgstr "AUTOR"
 
 #. type: Plain text
 #: amule.1.in amulecmd.1.in amuled.1.in ed2k.1.in
@@ -306,19 +306,19 @@ msgstr ""
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "This manpage was written by Vollstrecker E<lt>amule@vollstreckernet.deE<gt>"
-msgstr ""
+msgstr "Stránku manuálu napsal Vollstrecker E<lt>amule@vollstreckernet.deE<gt>"
 
 #. type: TH
 #: amulecmd.1.in
 #, no-wrap
 msgid "AMULECMD"
-msgstr ""
+msgstr "AMULECMD"
 
 #. type: TH
 #: amulecmd.1.in
 #, no-wrap
 msgid "aMuleCmd v@PACKAGE_VERSION@"
-msgstr ""
+msgstr "aMuleCmd v@PACKAGE_VERSION@"
 
 #. type: TH
 #: amulecmd.1.in ed2k.1.in ../../src/utils/aLinkCreator/docs/alc.1.in
@@ -326,70 +326,70 @@ msgstr ""
 #: ../../src/utils/cas/docs/cas.1.in ../../src/utils/wxCas/docs/wxcas.1.in
 #, no-wrap
 msgid "aMule utilities"
-msgstr ""
+msgstr "aMule nástroje"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "amulecmd - Console-based program to control aMule"
-msgstr ""
+msgstr "amulecmd - Konzolový program pro kontrolu aMule"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "[B<-h> I<E<lt>hostE<gt>>] [B<-p> I<E<lt>portE<gt>>]"
-msgstr ""
+msgstr "[B<-h> I<E<lt>hostitelE<gt>>] [B<-p> I<E<lt>portE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "[B<-f> I<E<lt>pathE<gt>>]"
-msgstr ""
+msgstr "[B<-f> I<E<lt>cestaE<gt>>]"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "[B<-l> I<E<lt>langE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> I<E<lt>commandE<gt>>]B< >}"
-msgstr ""
+msgstr "[B<-l> I<E<lt>jazykE<gt>>] {B< >[B<-w>]B< >|B< >[B<-c> I<E<lt>příkazE<gt>>]B< >}"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "B<amulecmd> is a console-based client to control aMule."
-msgstr ""
+msgstr "B<amulecmd> je konzolový klient pro kontrolu aMule."
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -h> I<E<lt>hostE<gt>>, B<--host>=I<E<lt>hostE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -h> I<E<lt>hostitelE<gt>>, B<--host>=I<E<lt>hostitelE<gt>> B<]>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Host where aMule is running (default: I<127.0.0.1>).  I<E<lt>hostE<gt>> might be an IP address or a DNS name"
-msgstr ""
+msgstr "Hostitel, na kterém aMule běží (výchozí: I<127.0.0.1>). I<E<lt>hostitelE<gt>> může být IP adresa nebo DNS jméno"
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -p> I<E<lt>portE<gt>>, B<--port>=I<E<lt>portE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -p> I<E<lt>portE<gt>>, B<--port>=I<E<lt>portE<gt>> B<]>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "aMule's port for External Connections, as set in Preferences-E<gt>Remote Controls (default: I<4712>)"
-msgstr ""
+msgstr "aMule port pro externí připojení, jak je nastaven v Nastavení-E<gt>Vzdálené ovládání (výchozí: I<4712>)"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Read the External Connections password from the first line of stdin. Input is hidden on a terminal. Later lines stay on stdin, where amulecmd reads its commands. With B<-w> it replaces a saved password, even when an older file holds two. Without this option and without a saved password, amulecmd asks for the password the same way, so piped input then also starts with the password."
-msgstr ""
+msgstr "Číst heslo pro externí připojení z prvního řádku standardního vstupu (stdin). Vstup je na terminálu skryt. Následující řádky zůstávají na standardním vstupu, odkud amulecmd čte své příkazy. Pomocí volby B<-w> dojde k nahrazení uloženého hesla, a to i v případě, že starší soubor obsahuje dvě hesla. Bez této volby a bez uloženého hesla si amulecmd vyžádá heslo stejným způsobem, takže vstup přes rouru (pipe) pak také začíná heslem."
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -f> I<E<lt>pathE<gt>>, B<--config-file>=I<E<lt>pathE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -f> I<E<lt>cestaE<gt>>, B<--konfigurační-soubor>=I<E<lt>cestaE<gt>> B<]>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Use the given configuration file.  Default configuration file is I<~/.aMule/remote.conf>"
-msgstr ""
+msgstr "Použít zadaný konfigurační soubor.  Výchozí konfigurační soubor je I<~/.aMule/remote.conf>"
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -405,54 +405,54 @@ msgstr "Zapnout podrobný výstup včetně ladicích zpráv."
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -l> I<E<lt>langE<gt>>, B<--locale>=I<E<lt>langE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -l> I<E<lt>jazykE<gt>>, B<--locale>=I<E<lt>jazykE<gt>> B<]>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Sets program locale (language).  See the B<NOTES> section for the description of the I<E<lt>langE<gt>> parameter."
-msgstr ""
+msgstr "Nastaví jazykové prostředí programu (jazyk). Viz sekce B<POZNÁMKY> pro popis parametru I<E<lt>jazykE<gt>>."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Write command line options to config file and exit"
-msgstr ""
+msgstr "Zapsat předvolby z příkazového řádku do konfiguračního souboru a ukončit"
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<[ -c> I<E<lt>commandE<gt>>, B<--command>=I<E<lt>commandE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -c> I<E<lt>příkazE<gt>>, B<--command>=I<E<lt>příkazE<gt>> B<]>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Execute I<E<lt>commandE<gt>> as if it was entered at amulecmd's prompt and exit."
-msgstr ""
+msgstr "Spustit I<E<lt>příkazE<gt>> tak, jako kdyby byl zadán na příkazovou řádku v amulecmd a ukončit."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Force ZLIB compression on the External Connection link regardless of the dialed-IP locality.  Useful when the server side is reachable over a VPN tunnel that resolves to a LAN IP and the heuristic would otherwise skip compression."
-msgstr ""
+msgstr "Vynutit ZLIB kompresi u odkazu externího připojení, bez ohledu na umístění vytáčené IP adresy. Užitečné, když je serverová strana dostupná přes VPN tunel, který je veden na LAN IP a heuristika by jinak přeskočila kompresi."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Separate the fields of the list commands with spaces, as earlier versions did, instead of tabs.  Client names and file names may contain spaces, so the default tab separator is what lets a script split a row back into its fields; use this only for scripts written against the older output."
-msgstr ""
+msgstr "Oddělit mezerami pole seznamových příkazů, tak jak to bylo u starších verzí, namísto oddělení tabulátory. Názvy klientů a souborů mohou obsahovat mezery, takže výchozí separátor karet je to, co umožňuje skriptu rozdělit řádek zpět do jednotlivých polí; použijte toto pouze pro skripty psané pro starší výstup."
 
 #. type: SH
 #: amulecmd.1.in
 #, no-wrap
 msgid "COMMANDS"
-msgstr ""
+msgstr "PŘÍKAZY"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "All commands are case insensitive."
-msgstr ""
+msgstr "Všechny příkazy jsou citlivé na velikost písmen."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Adds an eD2k-link or a magnet-link to the core."
-msgstr ""
+msgstr "Přidá eD2k odkaz nebo magnet odkaz do jádra."
 
 #. type: Plain text
 #: amulecmd.1.in

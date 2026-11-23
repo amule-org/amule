@@ -10,13 +10,14 @@
 # sergei manolo <sergei.saz@gmail.com>.
 # minterior <minterior@gmail.com>.
 # Kisnov <kisnov@users.noreply.hosted.weblate.org>, 2026.
+# Aniol <aniol@users.noreply.hosted.weblate.org>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-19 11:56+0000\n"
-"Last-Translator: Kisnov <kisnov@users.noreply.hosted.weblate.org>\n"
+"PO-Revision-Date: 2026-11-23 11:29+0000\n"
+"Last-Translator: Aniol <aniol@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Catalan <https://hosted.weblate.org/projects/amule/amule-application/ca/>\n"
 "Language: ca\n"
 "MIME-Version: 1.0\n"
@@ -3909,14 +3910,12 @@ msgid "UDP firewall check"
 msgstr "Comprovació del tallafocs UDP"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Publish buddy pointer"
-msgstr "Publicació de notes"
+msgstr "Publicar el punter del company"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find buddy pointer"
-msgstr "Publicació de notes"
+msgstr "Troba el punter associat"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
@@ -4317,6 +4316,11 @@ msgstr "AVÍS: la interfície de xarxa «%s» ha desaparegut; el trànsit ja no 
 #, c-format
 msgid "Error creating UDP socket %s %d : %s"
 msgstr "Error en crear el sòcol UDP %s %d : %s"
+
+#: src/LibSocketAsio.cpp
+#, c-format
+msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes. Bursts of uTP and QUIC data can be lost; setting it to %d avoids that."
+msgstr ""
 
 #: src/LibSocketAsio.cpp
 #, c-format
