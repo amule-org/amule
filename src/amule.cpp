@@ -3679,11 +3679,11 @@ bool CamuleApp::IsFirewalledKad() const
 
 bool CamuleApp::IsFirewalledKadUDP() const
 {
-	// Firewalled until a test result is verified, as the core treats it and as TCP reads before
-	// two peers confirm it. Reported only: the protocol keeps using IsFirewalledUDP().
-	return !Kademlia::CKademlia::IsConnected() // not connected counts as firewalled
-	       || Kademlia::CUDPFirewallTester::IsFirewalledUDP(true) ||
-	       !Kademlia::CUDPFirewallTester::IsVerified();
+	// Not connected, or no verified test result yet, counts as firewalled: the core treats it so,
+	// and TCP reads the same before two peers confirm it. Reported only: the protocol keeps using
+	// IsFirewalledUDP().
+	return !Kademlia::CKademlia::IsConnected() || !Kademlia::CUDPFirewallTester::IsVerified() ||
+	       Kademlia::CUDPFirewallTester::IsFirewalledUDP(true);
 }
 
 bool CamuleApp::IsKadRunning() const
