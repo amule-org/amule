@@ -190,6 +190,33 @@ The dial path is `CUpDownClient::TryServerVouchedLowIdUtpDial()` in
 policy in [`src/QuicCapabilityCache.h`](../src/QuicCapabilityCache.h) and the
 ledger in [`src/QuicCapsRequestLedger.h`](../src/QuicCapsRequestLedger.h).
 
+## Inbound QUIC admission
+
+aMule proves the address of a QUIC dialler before it keeps any state for the
+connection (RFC 9000 section 8.1.2). An Initial without a token gets a Retry
+packet. The Retry token binds the sender's address and port, and it is valid
+for 10 seconds in the aMule process that made it. The dialler sends its
+Initial again with the token, and only that Initial opens a connection. So
+every inbound connection costs one more round trip. An Initial with an expired
+or foreign Retry token gets a CONNECTION_CLOSE with `0x0b` (`INVALID_TOKEN`),
+so that dial fails at once and not at its handshake timeout.
+
+When the address is proven, these limits apply:
+
+- 256 connections in all;
+- 16 connections per scope: one IPv4 address, or one IPv6 /64 (see
+  `RateLimitScope()` in [`src/PeerAddressing.h`](../src/PeerAddressing.h));
+- one new connection per scope per second.
+
+aMule drops an Initial over a limit without an answer, and the dialler's next
+retransmission of it tries again. A full table or scope sends no Retry, because
+the connection could not open. A connection closes when its handshake takes
+more than 10 seconds, when it has no stream with a valid EAQN1 proof 20 seconds
+after its first datagram, or after 60 seconds of silence.
+
+The admission policy is in [`src/QuicContext.cpp`](../src/QuicContext.cpp),
+and the Retry in [`src/QuicNgtcp2Adapter.cpp`](../src/QuicNgtcp2Adapter.cpp).
+
 ## Key frame (QUIC and uTP datagram obfuscation)
 
 A key frame tells the receiver which user hash to obfuscate its datagrams to the sender with:

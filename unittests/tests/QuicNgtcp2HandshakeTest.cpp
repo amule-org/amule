@@ -1476,3 +1476,158 @@ TEST(QuicNgtcp2Handshake, AHandshakeThatNeverOpensAStreamIsReclaimed)
 	}
 	ASSERT_TRUE(client.Draining());
 }
+
+namespace
+{
+const CNetworkAddress kServer = CNetworkAddress::FromString("192.0.2.2");
+constexpr uint16_t kServerPort = 4662;
+constexpr uint16_t kClientPort = 4672;
+
+//! Long header type 3, QUIC v1 (RFC 9000 section 17.2.5).
+bool IsRetryPacket(const std::vector<uint8_t> &datagram)
+{
+	return !datagram.empty() && (datagram[0] & 0xF0) == 0xF0;
+}
+
+bool IsInitialPacket(const std::vector<uint8_t> &datagram)
+{
+	return !datagram.empty() && (datagram[0] & 0xF0) == 0xC0;
+}
+
+//! A real dialler and a real server, each behind its own CQuicContext as in CClientUDPSocket.
+struct CRetryRig
+{
+	uint64_t nowMs = 0;
+	CQuicEphemeralCredentials serverCredentials;
+	std::shared_ptr<CollectingSink> serverSink = std::make_shared<CollectingSink>();
+	std::shared_ptr<CollectingSink> clientSink = std::make_shared<CollectingSink>();
+	AcceptingAcceptor serverAcceptor;
+	std::unique_ptr<IStreamTransport> handedOff;
+	unsigned dialFailures = 0;
+	CUpDownClient *owner = reinterpret_cast<CUpDownClient *>(static_cast<uintptr_t>(1));
+	CQuicNgtcp2Factory serverFactory;
+	CQuicNgtcp2Factory clientFactory;
+	CQuicContext serverContext;
+	CQuicContext clientContext;
+
+	CRetryRig()
+	: serverFactory(CQuicTlsPolicy{ &serverCredentials },
+		  serverSink,
+		  CreateProductionQuicNgtcp2Engine(),
+		  kTestServerIdentity,
+		  [this] { return nowMs; })
+	, clientFactory(
+		  CQuicTlsPolicy{ nullptr },
+		  clientSink,
+		  CreateProductionQuicNgtcp2Engine(),
+		  kTestClientIdentity,
+		  [this] { return nowMs; },
+		  [this](CUpDownClient *, std::unique_ptr<IStreamTransport> transport) {
+			  auto *raw = static_cast<CQuicSocketTransport *>(transport.get());
+			  handedOff = std::move(transport);
+			  return raw;
+		  },
+		  [this](CUpDownClient *, const std::array<uint8_t, 16> &) { ++dialFailures; })
+	, serverContext(&serverFactory)
+	, clientContext(&clientFactory)
+	{
+		serverFactory.SetAcceptor(&serverAcceptor);
+	}
+
+	~CRetryRig() { QuicClientRefTestForget(owner); }
+
+	bool Dial() { return clientContext.Dial(kServer, kServerPort, kTestServerIdentity, nowMs, owner); }
+
+	void ToServer(uint16_t clientPort = kClientPort)
+	{
+		const auto datagrams = std::move(clientSink->sent);
+		clientSink->sent.clear();
+		for (const auto &datagram : datagrams) {
+			serverContext.ProcessDatagram(
+				datagram.data(), datagram.size(), kPeer, clientPort, nowMs);
+		}
+	}
+
+	void ToClient()
+	{
+		const auto datagrams = std::move(serverSink->sent);
+		serverSink->sent.clear();
+		for (const auto &datagram : datagrams) {
+			clientContext.ProcessDatagram(
+				datagram.data(), datagram.size(), kServer, kServerPort, nowMs);
+		}
+	}
+
+	void RunUntilHandedOff()
+	{
+		for (int round = 0; round < 40 && !(handedOff && serverAcceptor.accepted); ++round) {
+			nowMs += 10;
+			clientContext.Tick(nowMs);
+			serverContext.Tick(nowMs);
+			ToServer();
+			ToClient();
+		}
+	}
+};
+} // namespace
+
+TEST(QuicNgtcp2Handshake, ADiallerFollowsARetryAndCompletesTheHandoff)
+{
+	CRetryRig rig;
+	ASSERT_TRUE(rig.Dial());
+	ASSERT_TRUE(!rig.clientSink->sent.empty());
+
+	const size_t initials = rig.clientSink->sent.size();
+	rig.ToServer();
+	ASSERT_EQUALS(0u, rig.serverContext.ConnectionCount());
+	ASSERT_EQUALS(initials, rig.serverSink->sent.size());
+	for (const auto &datagram : rig.serverSink->sent) {
+		ASSERT_TRUE(IsRetryPacket(datagram));
+	}
+
+	rig.RunUntilHandedOff();
+	ASSERT_TRUE(rig.handedOff != nullptr);
+	ASSERT_TRUE(rig.serverAcceptor.accepted != nullptr);
+	ASSERT_TRUE(rig.serverAcceptor.lastAddress == kPeer);
+	ASSERT_EQUALS(kClientPort, rig.serverAcceptor.lastPort);
+	ASSERT_EQUALS(1u, rig.serverContext.ConnectionCount());
+	ASSERT_EQUALS(0u, rig.dialFailures);
+}
+
+TEST(QuicNgtcp2Handshake, ARetryTokenFromAnotherPortEndsTheDialAtOnce)
+{
+	CRetryRig rig;
+	ASSERT_TRUE(rig.Dial());
+	rig.ToServer();
+	rig.ToClient();
+	ASSERT_TRUE(!rig.clientSink->sent.empty());
+
+	rig.ToServer(kClientPort + 1);
+	ASSERT_EQUALS(0u, rig.serverContext.ConnectionCount());
+	ASSERT_EQUALS(1u, rig.serverSink->sent.size());
+	ASSERT_TRUE(IsInitialPacket(rig.serverSink->sent.front()));
+
+	rig.ToClient();
+	ASSERT_EQUALS(0u, rig.clientContext.ConnectionCount());
+	ASSERT_EQUALS(1u, rig.dialFailures);
+}
+
+TEST(QuicNgtcp2Handshake, AnExpiredRetryTokenEndsTheDialAtOnce)
+{
+	CRetryRig rig;
+	ASSERT_TRUE(rig.Dial());
+	rig.ToServer();
+	rig.ToClient();
+	ASSERT_TRUE(!rig.clientSink->sent.empty());
+
+	// Longer than the dialler's whole handshake.
+	rig.nowMs += 10001;
+	rig.ToServer();
+	ASSERT_EQUALS(0u, rig.serverContext.ConnectionCount());
+	ASSERT_EQUALS(1u, rig.serverSink->sent.size());
+	ASSERT_TRUE(IsInitialPacket(rig.serverSink->sent.front()));
+
+	rig.ToClient();
+	ASSERT_EQUALS(0u, rig.clientContext.ConnectionCount());
+	ASSERT_EQUALS(1u, rig.dialFailures);
+}

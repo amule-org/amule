@@ -33,6 +33,8 @@
 #include <ngtcp2/ngtcp2_crypto.h>
 #include <ngtcp2/ngtcp2_crypto_gnutls.h>
 
+#include <gnutls/crypto.h>
+
 #include <algorithm>
 #include <cstring>
 #include <deque>
@@ -61,18 +63,24 @@ bool ParseInitialMetadata(const uint8_t *data, size_t length, CQuicInitialMetada
 	metadata.version = header.version;
 	metadata.destinationCid.assign(reinterpret_cast<const char *>(header.dcid.data), header.dcid.datalen);
 	metadata.sourceCid.assign(reinterpret_cast<const char *>(header.scid.data), header.scid.datalen);
+	metadata.token.clear();
+	if (header.tokenlen > 0) {
+		metadata.token.assign(reinterpret_cast<const char *>(header.token), header.tokenlen);
+	}
 	return true;
 }
 
 constexpr size_t kMaxUdpPayload = 1452;
 constexpr int kMaxFlushPacketsPerCall = 16;
-// Without these, handle_expiry() never ends a connection on its own, and spoofed Initials
-// could fill every admission slot permanently.
+// Without these, handle_expiry() never ends a connection on its own, and a peer that goes
+// silent would hold its admission slot permanently.
 constexpr uint64_t kHandshakeTimeoutMs = 10000; // 10s: generous even over a slow real path.
 constexpr uint64_t kIdleTimeoutMs = 60000;      // 60s of silence after that is a dead peer.
 // Peer PINGs reset the idle timer, so it alone cannot reclaim a slot.
 constexpr uint64_t kStreamOfferTimeoutMs = 20000; // From the first datagram to the proven stream.
 constexpr uint64_t kClosedStreamLingerMs = 10000; // From our FIN or reset to the peer's.
+// A client repeats its Initial with the token until its own handshake timeout.
+constexpr uint64_t kRetryTokenLifetimeMs = kHandshakeTimeoutMs;
 
 //! ngtcp2 errors after which no CONNECTION_CLOSE may, or need, be sent.
 bool IsSilentClose(int liberr)
@@ -120,6 +128,38 @@ bool AssignCid(ngtcp2_cid &cid, const std::string &value)
 	cid.datalen = value.size();
 	std::memcpy(cid.data, value.data(), cid.datalen);
 	return true;
+}
+
+// A Retry token binds these bytes, so one endpoint must always give the same ones.
+bool TokenAddress(const CNetworkAddress &address,
+	uint16_t port,
+	ngtcp2_sockaddr_union &remote,
+	ngtcp2_socklen &remoteLength)
+{
+	std::memset(&remote, 0, sizeof(remote));
+	const uint8_t portBytes[2] = { static_cast<uint8_t>(port >> 8), static_cast<uint8_t>(port) };
+	uint32_t ipv4 = 0;
+	if (address.ToIPv4NetworkOrder(ipv4)) {
+		remote.in.sin_family = NGTCP2_AF_INET;
+		std::memcpy(&remote.in.sin_port, portBytes, sizeof(portBytes));
+		std::memcpy(&remote.in.sin_addr, &ipv4, sizeof(ipv4));
+		remoteLength = sizeof(remote.in);
+		return true;
+	}
+	uint8_t ipv6[16];
+	if (!address.ToIPv6Bytes(ipv6)) {
+		return false;
+	}
+	remote.in6.sin6_family = NGTCP2_AF_INET6;
+	std::memcpy(&remote.in6.sin6_port, portBytes, sizeof(portBytes));
+	std::memcpy(&remote.in6.sin6_addr, ipv6, sizeof(ipv6));
+	remoteLength = sizeof(remote.in6);
+	return true;
+}
+
+bool IsRetryToken(const std::string &token)
+{
+	return !token.empty() && static_cast<uint8_t>(token[0]) == NGTCP2_CRYPTO_TOKEN_MAGIC_RETRY;
 }
 
 void Ngtcp2Random(uint8_t *dest, size_t destlen, const ngtcp2_rand_ctx *)
@@ -670,11 +710,63 @@ private:
 class CProductionNgtcp2Engine final : public IQuicNgtcp2Engine
 {
 public:
+	CProductionNgtcp2Engine()
+	: m_retrySecretReady(gnutls_rnd(GNUTLS_RND_KEY, m_retrySecret.data(), m_retrySecret.size()) == 0)
+	{
+	}
+
 	~CProductionNgtcp2Engine() override
 	{
 		for (auto &connection : m_connections) {
 			ngtcp2_conn_del(connection.second.conn);
 		}
+	}
+
+	EQuicInitialAddress ValidateInitialAddress(const CQuicInitialMetadata &metadata,
+		const CNetworkAddress &address,
+		uint16_t port,
+		IQuicDatagramSink &sink,
+		uint64_t nowMs) override
+	{
+		ngtcp2_sockaddr_union remote;
+		ngtcp2_socklen remoteLength = 0;
+		ngtcp2_cid clientScid = {};
+		ngtcp2_cid clientDcid = {};
+		if (!m_retrySecretReady || !TokenAddress(address, port, remote, remoteLength) ||
+			!AssignCid(clientScid, metadata.sourceCid) ||
+			!AssignCid(clientDcid, metadata.destinationCid)) {
+			return EQuicInitialAddress::Refused;
+		}
+		uint8_t packet[kMaxUdpPayload];
+		ngtcp2_ssize written = -1;
+		if (IsRetryToken(metadata.token)) {
+			ngtcp2_cid originalDcid = {};
+			if (VerifyRetryToken(metadata, remote, remoteLength, nowMs, originalDcid)) {
+				return EQuicInitialAddress::Proven;
+			}
+			// The client follows one Retry only; without the close it waits out its timeout.
+			written = ngtcp2_crypto_write_connection_close(packet,
+				sizeof(packet),
+				metadata.version,
+				&clientScid,
+				&clientDcid,
+				NGTCP2_INVALID_TOKEN,
+				nullptr,
+				0);
+		} else {
+			written = WriteRetry(packet,
+				sizeof(packet),
+				metadata.version,
+				clientScid,
+				clientDcid,
+				remote,
+				remoteLength,
+				nowMs);
+		}
+		if (written <= 0 || !sink.SendDatagram(packet, static_cast<size_t>(written), address, port)) {
+			return EQuicInitialAddress::Refused;
+		}
+		return EQuicInitialAddress::Answered;
 	}
 
 	// One eD2k byte stream per connection. An accepted connection reads and writes on the
@@ -821,8 +913,8 @@ public:
 	}
 
 	Handle CreateServer(const CQuicTlsPolicy &policy,
-		const CNetworkAddress &,
-		uint16_t,
+		const CNetworkAddress &address,
+		uint16_t port,
 		const CQuicInitialMetadata &metadata,
 		uint64_t nowMs) override
 	{
@@ -848,8 +940,21 @@ public:
 			return nullptr;
 		}
 
+		// With a token, the client's first DCID is the one in the token, and this Initial's DCID
+		// is our Retry's SCID (RFC 9000 section 7.3).
+		const bool retried = !metadata.token.empty();
 		ngtcp2_cid originalDcid = {};
-		if (!AssignCid(originalDcid, metadata.destinationCid)) {
+		ngtcp2_cid retryScid = {};
+		if (retried) {
+			ngtcp2_sockaddr_union remote;
+			ngtcp2_socklen remoteLength = 0;
+			if (!m_retrySecretReady || !IsRetryToken(metadata.token) ||
+				!TokenAddress(address, port, remote, remoteLength) ||
+				!VerifyRetryToken(metadata, remote, remoteLength, nowMs, originalDcid) ||
+				!AssignCid(retryScid, metadata.destinationCid)) {
+				return nullptr;
+			}
+		} else if (!AssignCid(originalDcid, metadata.destinationCid)) {
 			return nullptr;
 		}
 
@@ -868,17 +973,25 @@ public:
 		callbacks.recv_client_initial = ngtcp2_crypto_recv_client_initial_cb;
 
 		ngtcp2_settings settings = MakeSettings(nowMs);
+		if (retried) {
+			settings.token = reinterpret_cast<const uint8_t *>(metadata.token.data());
+			settings.tokenlen = metadata.token.size();
+			settings.token_type = NGTCP2_TOKEN_TYPE_RETRY;
+		}
 
 		ngtcp2_transport_params params = {};
 		ngtcp2_transport_params_default(&params);
 		params.max_udp_payload_size = kMaxUdpPayload;
 		// ngtcp2_transport_params_default() leaves this at 0 (disabled): handle_expiry() would
-		// then never end a quiescent connection on its own. Spoofed Initials cost nothing to
-		// send; without this, 8 per scope (CQuicContext::kMaxConnectionsPerScope) times every
-		// scope needed to fill 256 total slots never frees up again.
+		// then never end a quiescent connection on its own, and a peer that goes silent would
+		// hold its admission slot for good.
 		params.max_idle_timeout = NanosecondsFromMs(kIdleTimeoutMs);
 		params.original_dcid = originalDcid;
 		params.original_dcid_present = 1;
+		if (retried) {
+			params.retry_scid = retryScid;
+			params.retry_scid_present = 1;
+		}
 		// As the acceptor aMule replies on the dialler's stream and opens none of its own, so
 		// only the remote-initiated windows matter. ExtendReadWindow() reopens these as the
 		// application drains its read buffer, once a real stream exists.
@@ -1576,7 +1689,67 @@ private:
 		return ok;
 	}
 
+	bool VerifyRetryToken(const CQuicInitialMetadata &metadata,
+		const ngtcp2_sockaddr_union &remote,
+		ngtcp2_socklen remoteLength,
+		uint64_t nowMs,
+		ngtcp2_cid &originalDcid) const
+	{
+		ngtcp2_cid dcid = {};
+		return AssignCid(dcid, metadata.destinationCid) &&
+		       ngtcp2_crypto_verify_retry_token(&originalDcid,
+			       reinterpret_cast<const uint8_t *>(metadata.token.data()),
+			       metadata.token.size(),
+			       m_retrySecret.data(),
+			       m_retrySecret.size(),
+			       metadata.version,
+			       &remote.sa,
+			       remoteLength,
+			       &dcid,
+			       NanosecondsFromMs(kRetryTokenLifetimeMs),
+			       NanosecondsFromMs(nowMs)) == 0;
+	}
+
+	ngtcp2_ssize WriteRetry(uint8_t *packet,
+		size_t capacity,
+		uint32_t version,
+		const ngtcp2_cid &clientScid,
+		const ngtcp2_cid &clientDcid,
+		const ngtcp2_sockaddr_union &remote,
+		ngtcp2_socklen remoteLength,
+		uint64_t nowMs) const
+	{
+		ngtcp2_cid retryScid = {};
+		if (!AssignCid(retryScid, RandomServerCid())) {
+			return -1;
+		}
+		uint8_t token[NGTCP2_CRYPTO_MAX_RETRY_TOKENLEN];
+		const ngtcp2_ssize tokenLength = ngtcp2_crypto_generate_retry_token(token,
+			m_retrySecret.data(),
+			m_retrySecret.size(),
+			version,
+			&remote.sa,
+			remoteLength,
+			&retryScid,
+			&clientDcid,
+			NanosecondsFromMs(nowMs));
+		if (tokenLength < 0) {
+			return -1;
+		}
+		return ngtcp2_crypto_write_retry(packet,
+			capacity,
+			version,
+			&clientScid,
+			&retryScid,
+			&clientDcid,
+			token,
+			static_cast<size_t>(tokenLength));
+	}
+
 	std::map<Handle, ConnectionInfo> m_connections;
+	//! Keys the Retry tokens of this process only.
+	std::array<uint8_t, 32> m_retrySecret{};
+	const bool m_retrySecretReady;
 };
 } // namespace
 
@@ -1600,6 +1773,17 @@ CQuicNgtcp2Factory::CQuicNgtcp2Factory(const CQuicTlsPolicy &policy,
 void CQuicNgtcp2Factory::SetAcceptor(IQuicStreamAcceptor *acceptor)
 {
 	m_acceptor = acceptor;
+}
+
+EQuicInitialAddress CQuicNgtcp2Factory::ValidateInitialAddress(
+	const uint8_t *data, size_t length, const CNetworkAddress &address, uint16_t port, uint64_t nowMs)
+{
+	CQuicInitialMetadata metadata;
+	if (m_policy.credentials == nullptr || m_sink == nullptr || m_engine == nullptr ||
+		!ParseInitialMetadata(data, length, metadata)) {
+		return EQuicInitialAddress::Refused;
+	}
+	return m_engine->ValidateInitialAddress(metadata, address, port, *m_sink, nowMs);
 }
 
 std::unique_ptr<IQuicConnection> CQuicNgtcp2Factory::CreateInbound(const uint8_t *data,

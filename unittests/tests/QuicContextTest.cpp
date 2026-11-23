@@ -120,6 +120,15 @@ struct FakeFactory : IQuicConnectionFactory
 	std::string lastCid;
 	unsigned outboundCalls = 0;
 	std::array<uint8_t, 16> lastExpectedIdentity{};
+	EQuicInitialAddress validation = EQuicInitialAddress::Proven;
+	unsigned validations = 0;
+
+	EQuicInitialAddress ValidateInitialAddress(
+		const uint8_t *, size_t, const CNetworkAddress &, uint16_t, uint64_t) override
+	{
+		++validations;
+		return validation;
+	}
 
 	std::unique_ptr<IQuicConnection> CreateInbound(const uint8_t *,
 		size_t,
@@ -269,7 +278,7 @@ TEST(QuicContext, AmbiguousNonInitialFromSharedEndpointIsRefused)
 	factory.next = std::make_unique<FakeConnection>();
 	auto second = Initial(0x46);
 	ASSERT_TRUE(context.ProcessDatagram(
-		second.data(), second.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+		second.data(), second.size(), kPeer, 4662, CQuicContext::kNewConnectionIntervalMs));
 	auto packet = ShortPacket();
 	ASSERT_TRUE(!context.ProcessDatagram(packet.data(), packet.size(), kPeer, 4662, 0));
 	ASSERT_EQUALS(2u, factory.calls);
@@ -291,8 +300,11 @@ TEST(QuicContext, NonInitialRoutesByCidWhenConnectionsExposeOne)
 	second->issuedCids = { std::string("\x02", 1) };
 	factory.next = std::move(second);
 	auto secondInitial = Initial(0x52);
-	ASSERT_TRUE(context.ProcessDatagram(
-		secondInitial.data(), secondInitial.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+	ASSERT_TRUE(context.ProcessDatagram(secondInitial.data(),
+		secondInitial.size(),
+		kPeer,
+		4662,
+		CQuicContext::kNewConnectionIntervalMs));
 
 	// Short header: flags, then the DCID this context must match against each connection's
 	// own issued CID -- not "the sole connection at this endpoint", since there are two.
@@ -322,8 +334,11 @@ TEST(QuicContext, NonInitialLongHeaderRoutesByCidWhenConnectionsExposeOne)
 	second->issuedCids = { std::string("\x02", 1) };
 	factory.next = std::move(second);
 	auto secondInitial = Initial(0x54);
-	ASSERT_TRUE(context.ProcessDatagram(
-		secondInitial.data(), secondInitial.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+	ASSERT_TRUE(context.ProcessDatagram(secondInitial.data(),
+		secondInitial.size(),
+		kPeer,
+		4662,
+		CQuicContext::kNewConnectionIntervalMs));
 
 	// Long header: flags (bit 0x80 set), a 4-byte version, a DCID length byte, then the DCID
 	// itself -- the offset this fix actually reads from.
@@ -346,7 +361,7 @@ TEST(QuicContext, ConnectionFailureRemovesOwnership)
 	ASSERT_TRUE(!context.ProcessDatagram(packet.data(), packet.size(), kPeer, 4662, 0));
 	factory.next = std::make_unique<FakeConnection>();
 	ASSERT_TRUE(context.ProcessDatagram(
-		initial.data(), initial.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+		initial.data(), initial.size(), kPeer, 4662, CQuicContext::kNewConnectionIntervalMs));
 	ASSERT_EQUALS(2u, factory.calls);
 }
 
@@ -361,7 +376,7 @@ TEST(QuicContext, TickServicesEveryLiveConnectionAndErasesClosedOnes)
 	factory.next = std::make_unique<FakeConnection>();
 	auto second = Initial(0x71);
 	ASSERT_TRUE(context.ProcessDatagram(
-		second.data(), second.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+		second.data(), second.size(), kPeer, 4662, CQuicContext::kNewConnectionIntervalMs));
 
 	// factory.created[1] does not survive this Tick(): closeOnTick makes it IsClosed(), and
 	// CQuicContext::Tick() erases (destroys) closed connections in the same call. Read its tick
@@ -409,10 +424,54 @@ TEST(QuicContext, NewConnectionsFromOneScopeAreRateLimited)
 	auto first = Initial(0x71);
 	auto second = Initial(0x72);
 	ASSERT_TRUE(context.ProcessDatagram(first.data(), first.size(), kPeer, 4662, 0));
-	ASSERT_TRUE(!context.ProcessDatagram(second.data(), second.size(), kPeer, 4663, 1));
+	ASSERT_TRUE(!context.ProcessDatagram(
+		second.data(), second.size(), kPeer, 4663, CQuicContext::kNewConnectionIntervalMs - 1));
 	ASSERT_TRUE(context.ProcessDatagram(
-		second.data(), second.size(), kPeer, 4663, NatRendezvous::kRequestThrottleMs));
+		second.data(), second.size(), kPeer, 4663, CQuicContext::kNewConnectionIntervalMs));
 	ASSERT_EQUALS(2u, factory.calls);
+}
+
+TEST(QuicContext, AnsweredInitialOpensNothingAndCostsNoRateBudget)
+{
+	FakeFactory factory;
+	factory.alwaysCreate = true;
+	factory.validation = EQuicInitialAddress::Answered;
+	CQuicContext context(&factory);
+	auto first = Initial(0x80);
+	ASSERT_TRUE(context.ProcessDatagram(first.data(), first.size(), kPeer, 4662, 0));
+	ASSERT_EQUALS(0u, factory.calls);
+	ASSERT_EQUALS(0u, context.ConnectionCount());
+
+	factory.validation = EQuicInitialAddress::Proven;
+	auto retried = Initial(0x81);
+	ASSERT_TRUE(context.ProcessDatagram(retried.data(), retried.size(), kPeer, 4662, 0));
+	ASSERT_EQUALS(1u, factory.calls);
+	ASSERT_TRUE(factory.lastCid == std::string(1, '\x81'));
+	ASSERT_EQUALS(1u, context.ConnectionCount());
+}
+
+TEST(QuicContext, RefusedAddressDropsTheInitial)
+{
+	FakeFactory factory;
+	factory.alwaysCreate = true;
+	factory.validation = EQuicInitialAddress::Refused;
+	CQuicContext context(&factory);
+	auto initial = Initial(0x82);
+	ASSERT_TRUE(!context.ProcessDatagram(initial.data(), initial.size(), kPeer, 4662, 0));
+	ASSERT_EQUALS(1u, factory.validations);
+	ASSERT_EQUALS(0u, factory.calls);
+}
+
+TEST(QuicContext, ExistingConnectionIsNotValidatedAgain)
+{
+	FakeFactory factory;
+	factory.alwaysCreate = true;
+	CQuicContext context(&factory);
+	auto initial = Initial(0x83);
+	ASSERT_TRUE(context.ProcessDatagram(initial.data(), initial.size(), kPeer, 4662, 0));
+	ASSERT_TRUE(context.ProcessDatagram(initial.data(), initial.size(), kPeer, 4662, 1));
+	ASSERT_EQUALS(1u, factory.validations);
+	ASSERT_EQUALS(2u, factory.created[0]->calls);
 }
 
 TEST(QuicContext, RefusedCreationStillCountsAgainstRateLimit)
@@ -436,11 +495,13 @@ TEST(QuicContext, CapsConnectionsPerScope)
 		auto payload = Initial(static_cast<uint8_t>(i + 1));
 		ASSERT_TRUE(context.ProcessDatagram(
 			payload.data(), payload.size(), kPeer, static_cast<uint16_t>(1000 + i), now));
-		now += NatRendezvous::kRequestThrottleMs;
+		now += CQuicContext::kNewConnectionIntervalMs;
 	}
 	auto extra = Initial(0xfe);
 	ASSERT_TRUE(!context.ProcessDatagram(extra.data(), extra.size(), kPeer, 2000, now));
 	ASSERT_EQUALS(CQuicContext::kMaxConnectionsPerScope, factory.calls);
+	// No Retry for an Initial that could not open a connection anyway.
+	ASSERT_EQUALS(CQuicContext::kMaxConnectionsPerScope, factory.validations);
 }
 
 TEST(QuicContext, CapsTotalConnections)
@@ -456,6 +517,7 @@ TEST(QuicContext, CapsTotalConnections)
 	ASSERT_TRUE(!context.ProcessDatagram(
 		payload.data(), payload.size(), PeerNumber(CQuicContext::kMaxConnections + 1), 4662, 0));
 	ASSERT_EQUALS(CQuicContext::kMaxConnections, context.ConnectionCount());
+	ASSERT_EQUALS(CQuicContext::kMaxConnections, factory.validations);
 }
 
 TEST(QuicContext, ClosedConnectionsReleaseCapacity)
@@ -517,7 +579,7 @@ TEST(QuicContext, InitialWithForeignDcidIsNotRoutedToEndpointConnection)
 	factory.created[0]->issuedCids.push_back(std::string(1, '\x7a'));
 	auto foreign = Initial(0x7b);
 	ASSERT_TRUE(context.ProcessDatagram(
-		foreign.data(), foreign.size(), kPeer, 4662, NatRendezvous::kRequestThrottleMs));
+		foreign.data(), foreign.size(), kPeer, 4662, CQuicContext::kNewConnectionIntervalMs));
 	ASSERT_EQUALS(2u, factory.calls);
 	ASSERT_EQUALS(1u, factory.created[0]->calls);
 }
