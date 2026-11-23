@@ -389,6 +389,9 @@ private:
 		std::string client; // Empty when the node wants no pinhole.
 		unsigned short port;
 		unsigned int lease;
+		// With an empty client: forget the pinholes without DeletePinhole, because PCP took
+		// over and may share the gateway's entry.
+		bool release = false;
 	};
 	std::optional<SIPv6PinholeTarget> m_IPv6PinholeTarget;
 	CUPnPMutex m_IPv6PinholeTargetMutex;
@@ -398,6 +401,7 @@ private:
 	std::atomic<bool> m_gatewayMapped;
 	std::atomic<int> m_registering;
 	std::atomic<unsigned int> m_IPv6PinholeOpenings{ 0 };
+	std::atomic<bool> m_IPv6PinholeHeld{ false };
 	std::chrono::steady_clock::time_point m_searchDeadline;
 
 public:
@@ -424,6 +428,10 @@ public:
 	//! How many AddPinhole requests a gateway granted. A re-add after a failed renewal counts too: a
 	//! router restart may have closed the pinhole meanwhile. Read by the main thread.
 	unsigned int IPv6PinholeOpenings() const { return m_IPv6PinholeOpenings.load(); }
+	//! Whether a gateway currently holds one of our pinholes, as of the last SOAP exchange.
+	bool HoldsIPv6Pinhole() const { return m_IPv6PinholeHeld.load(); }
+	//! Hand the pinhole over to PCP: the next renewal pass forgets it without DeletePinhole.
+	void ReleaseIPv6Pinholes();
 	//! Record an inbound pinhole request and immediately try to send it. Recording comes first:
 	//! discovery is asynchronous, so a request made before the gateway's firewall service registers
 	//! is replayed by the registration path rather than lost.
@@ -485,6 +493,8 @@ private:
 	bool HasWANMappingService() const;
 	// The caller must hold m_ServiceMapMutex.
 	void ApplyIPv6PinholeTarget(const SIPv6PinholeTarget &target);
+	// Guarded by m_ServiceMapMutex.
+	void NoteIPv6PinholesHeld();
 	bool ExecuteOnAnyService(
 		const std::string &actionName, const std::vector<CUPnPArgumentValue> &argval);
 	bool PrivateAddPortMapping(const CUPnPPortMapping &upnpPortMapping);

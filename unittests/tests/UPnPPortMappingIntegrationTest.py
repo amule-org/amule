@@ -656,6 +656,18 @@ def run_pinhole_scenarios(driver, failures):
             record_failure(failures, f'pinhole refusal: unbacked renewal/retry cadence was '
                                      f'{gateway.pinhole_actions}')
 
+        # The pinhole owner decision reads this: only a granted entry counts.
+        got, _ = run(['target', 'holds'])
+        if got.get('holds') != 'true':
+            record_failure(failures, f'pinhole held: an open pinhole reported {got}')
+        got, _ = run(['target', 'target-none', 'holds'])
+        if got.get('holds') != 'false':
+            record_failure(failures, f'pinhole held: a closed pinhole reported {got}')
+        with FakeGateway(services=('ip', 'ipv6fw'), reject_pinhole_actions=(ADD_PINHOLE,)) as gateway:
+            got = run_driver(driver, gateway, ['target', 'holds'])
+        if got.get('holds') != 'false':
+            record_failure(failures, f'pinhole held: a refused pinhole reported {got}')
+
         got, gateway = run(['addpinhole', 'deletepinholes'])
         if gateway.pinhole_actions != [(ADD_PINHOLE, '1'), (DELETE_PINHOLE, '1')]:
             record_failure(failures, f'pinhole delete: gateway saw {gateway.pinhole_actions}')

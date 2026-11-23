@@ -1289,12 +1289,37 @@ void CUPnPControlPoint::SetIPv6PinholeTarget(
 	const std::string &client, unsigned short port, unsigned int leaseSeconds)
 {
 	CUPnPMutexLocker lock(m_IPv6PinholeTargetMutex);
-	m_IPv6PinholeTarget = SIPv6PinholeTarget{ client, port, leaseSeconds };
+	m_IPv6PinholeTarget = SIPv6PinholeTarget{ client, port, leaseSeconds, false };
+}
+
+void CUPnPControlPoint::ReleaseIPv6Pinholes()
+{
+	CUPnPMutexLocker lock(m_IPv6PinholeTargetMutex);
+	m_IPv6PinholeTarget = SIPv6PinholeTarget{ std::string(), 0, 0, true };
+}
+
+void CUPnPControlPoint::NoteIPv6PinholesHeld()
+{
+	bool held = false;
+	for (const auto &entry : m_IPv6Pinholes) {
+		held = held || !entry.second.uniqueId.empty();
+	}
+	m_IPv6PinholeHeld = held;
 }
 
 void CUPnPControlPoint::ApplyIPv6PinholeTarget(const SIPv6PinholeTarget &target)
 {
 	const int tcp = 6;
+	if (target.release) {
+		// A handover, not a close: on a gateway that keeps one entry for both protocols, a
+		// DeletePinhole would remove the PCP pinhole too. A separate IGD2 entry ends with its lease.
+		if (!m_IPv6Pinholes.empty()) {
+			AddDebugLogLineN(logUPnP, "IPv6 pinhole handed over to PCP without DeletePinhole");
+		}
+		m_IPv6Pinholes.clear();
+		NoteIPv6PinholesHeld();
+		return;
+	}
 	const std::string wanted = target.client.empty() ? std::string() : PinholeKey(tcp, target.port);
 	for (auto it = m_IPv6Pinholes.begin(); it != m_IPv6Pinholes.end();) {
 		if (it->first == wanted) {
@@ -1327,6 +1352,7 @@ void CUPnPControlPoint::DeleteIPv6Pinholes()
 	// Forgotten whether or not the gateway acknowledged: the leases expire by themselves, and a
 	// kept id would only let a later renewal claim a lease that no longer exists.
 	m_IPv6Pinholes.clear();
+	m_IPv6PinholeHeld = false;
 }
 
 void CUPnPControlPoint::RenewExpiringIPv6Pinholes(const std::string &currentClient)
@@ -1378,6 +1404,8 @@ void CUPnPControlPoint::RenewExpiringIPv6Pinholes(const std::string &currentClie
 			SendAddPinhole(pinhole);
 		}
 	}
+	// Derived from the map, so a close, a failed renewal or a failed re-add clears it too.
+	NoteIPv6PinholesHeld();
 }
 
 static std::vector<CUPnPArgumentValue> AddPortMappingArguments(const CUPnPPortMapping &upnpPortMapping)
@@ -1985,6 +2013,7 @@ void CUPnPControlPoint::Subscribe(CUPnPService &service)
 					SendDeletePinhole(entry.second);
 					SendAddPinhole(entry.second);
 				}
+				NoteIPv6PinholesHeld();
 			}
 		}
 		msg << "Successfully retrieved SCPD Document for service " << service.GetServiceType()

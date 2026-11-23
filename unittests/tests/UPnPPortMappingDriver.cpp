@@ -27,7 +27,7 @@
 // before each operation.
 // Usage: UPnPPortMappingDriver <tcp> <udp> (add|delete|pending|wanservice|
 //        addpinholeodd|addpinhole-unassigned|renewexpiring-retry|target|target-moved|
-//        target-none)...
+//        target-none|holds)...
 // Optional: AMULE_TEST_UPNP_PINHOLE_CLIENT overrides the default pinhole client (::1).
 
 #include "config.h"
@@ -135,6 +135,8 @@ int main(int argc, char **argv)
 					PINHOLE_LEASE);
 				controlPoint.RenewExpiringIPv6Pinholes(client);
 				result = true;
+			} else if (std::strcmp(argv[i], "holds") == 0) {
+				result = controlPoint.HoldsIPv6Pinhole();
 			} else if (std::strcmp(argv[i], "wanservice") == 0) {
 				result = controlPoint.WanServiceDetected();
 			} else {
