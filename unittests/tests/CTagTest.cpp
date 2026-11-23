@@ -1047,3 +1047,101 @@ TEST_M(CTag, AssignBoolArray, "Assign parsed BOOLARRAY metadata over an owned st
 {
 	CheckSkippedTagCopy(TAGTYPE_BOOLARRAY, true);
 }
+
+// Compare the actual protocol payload, not only the tag's type or display text.
+static void CheckCopiedTag(const CTag &expected, CTag &actual)
+{
+	ASSERT_EQUALS(expected.GetType(), actual.GetType());
+	ASSERT_EQUALS(expected.GetNameID(), actual.GetNameID());
+	ASSERT_EQUALS(expected.GetName(), actual.GetName());
+	if (expected.GetType() == TAGTYPE_BOOL || expected.GetType() == TAGTYPE_BOOLARRAY) {
+		CMemFile discarded;
+		ASSERT_FALSE(actual.WriteTagToFile(&discarded));
+		ASSERT_EQUALS(uint64(0), discarded.GetLength());
+		return;
+	}
+	if (expected.IsBsob()) {
+		ASSERT_EQUALS(expected.GetBsobSize(), actual.GetBsobSize());
+		ASSERT_TRUE(expected.GetBsob() != actual.GetBsob());
+		for (uint32 i = 0; i < expected.GetBsobSize(); ++i) {
+			ASSERT_EQUALS(expected.GetBsob()[i], actual.GetBsob()[i]);
+		}
+		return;
+	}
+	CMemFile expectedPacket;
+	CMemFile actualPacket;
+	ASSERT_TRUE(expected.WriteNewEd2kTag(&expectedPacket));
+	ASSERT_TRUE(actual.WriteNewEd2kTag(&actualPacket));
+	ASSERT_EQUALS(expectedPacket.GetLength(), actualPacket.GetLength());
+	expectedPacket.Seek(0, wxFromStart);
+	actualPacket.Seek(0, wxFromStart);
+	while (expectedPacket.GetPosition() < expectedPacket.GetLength()) {
+		ASSERT_EQUALS(expectedPacket.ReadUInt8(), actualPacket.ReadUInt8());
+	}
+	if (expected.IsStr()) {
+		ASSERT_TRUE(&expected.GetStr() != &actual.GetStr());
+	} else if (expected.IsHash()) {
+		ASSERT_TRUE(&expected.GetHash() != &actual.GetHash());
+	} else if (expected.IsBlob()) {
+		ASSERT_TRUE(expected.GetBlob() != actual.GetBlob());
+	}
+}
+
+TEST_M(CTag, CopyAssignmentMatrix, "Copy and assign every owned and scalar tag type")
+{
+	const uint8 bytes[] = { 0, 0x80, 0xff, 7 };
+	CMD4Hash hash;
+	ASSERT_TRUE(hash.Decode(std::string("0123456789ABCDEF0123456789ABCDEF")));
+	std::vector<CTag> tags;
+	tags.push_back(CTagString("named string", "payload"));
+	tags.push_back(CTagString(uint8(7), ""));
+	tags.push_back(CTagHash("hash", hash));
+	tags.push_back(CTagBlob("blob", bytes, sizeof(bytes)));
+	tags.push_back(CTagBsob("bsob", bytes, sizeof(bytes)));
+	tags.push_back(CTagBlob("empty blob", bytes, 0));
+	tags.push_back(CTagBsob("empty bsob", bytes, 0));
+	tags.push_back(CTagFloat("float", 1.25f));
+	tags.push_back(CTagIntSized(uint8(8), 0xfedcba9876543210ULL, 64));
+	tags.push_back(CTagIntSized("uint32", 0xfedcba98, 32));
+	tags.push_back(CTagIntSized("uint16", 0xfedc, 16));
+	tags.push_back(CTagIntSized("uint8", 0xfe, 8));
+	for (uint8 type : { TAGTYPE_BOOL, TAGTYPE_BOOLARRAY }) {
+		CMemFile packet;
+		packet.WriteUInt8(type);
+		packet.WriteString("discarded", utf8strNone);
+		if (type == TAGTYPE_BOOLARRAY) {
+			packet.WriteUInt16(0);
+		}
+		packet.WriteUInt8(1);
+		packet.Seek(0, wxFromStart);
+		tags.emplace_back(packet, true);
+	}
+	for (const CTag &source : tags) {
+		CTag copy(source);
+		CheckCopiedTag(source, copy);
+		std::unique_ptr<CTag> clone(copy.CloneTag());
+		CheckCopiedTag(source, *clone);
+		CTag &alias = copy;
+		copy = alias;
+		CheckCopiedTag(source, copy);
+		for (const CTag &previous : tags) {
+			CTag target(previous);
+			ASSERT_TRUE(&(target = source) == &target);
+			CheckCopiedTag(source, target);
+			// The assigned value survives destruction of its source copy.
+			{
+				CTag transient(source);
+				target = transient;
+			}
+			CheckCopiedTag(source, target);
+		}
+	}
+	// Known-file and server metadata use value vectors: erase assigns across types.
+	std::vector<CTag> shifted(tags);
+	while (shifted.size() > 1) {
+		shifted.erase(shifted.begin());
+		for (size_t i = 0; i < shifted.size(); ++i) {
+			CheckCopiedTag(tags[tags.size() - shifted.size() + i], shifted[i]);
+		}
+	}
+}

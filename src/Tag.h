@@ -93,14 +93,14 @@ protected:
 	CTag(uint8 uName);
 
 	uint8 m_uType;
-	union
+	union Value
 	{
 		CMD4Hash *m_hashVal;
 		wxString *m_pstrVal;
 		uint64 m_uVal;
 		float m_fVal;
 		unsigned char *m_pData;
-	};
+	} m_value;
 
 	uint32 m_nSize;
 
@@ -141,22 +141,22 @@ protected:
 		switch (bitsize) {
 		case 64:
 			wxASSERT(value <= ULONGLONG(0xFFFFFFFFFFFFFFFF));
-			m_uVal = value;
+			m_value.m_uVal = value;
 			m_uType = TAGTYPE_UINT64;
 			break;
 		case 32:
 			wxASSERT(value <= 0xFFFFFFFF);
-			m_uVal = value;
+			m_value.m_uVal = value;
 			m_uType = TAGTYPE_UINT32;
 			break;
 		case 16:
 			wxASSERT(value <= 0xFFFF);
-			m_uVal = value;
+			m_value.m_uVal = value;
 			m_uType = TAGTYPE_UINT16;
 			break;
 		case 8:
 			wxASSERT(value <= 0xFF);
-			m_uVal = value;
+			m_value.m_uVal = value;
 			m_uType = TAGTYPE_UINT8;
 			break;
 		default:
@@ -186,7 +186,7 @@ private:
 			// The bitsize was forced.
 			Init(value, forced_bits);
 		} else {
-			m_uVal = value;
+			m_value.m_uVal = value;
 			if (value <= 0xFF) {
 				m_uType = TAGTYPE_UINT8;
 			} else if (value <= 0xFFFF) {
@@ -262,14 +262,14 @@ public:
 	CTagFloat(const wxString &name, float value)
 	: CTag(name)
 	{
-		m_fVal = value;
+		m_value.m_fVal = value;
 		m_uType = TAGTYPE_FLOAT32;
 	}
 
 	CTagFloat(uint8 name, float value)
 	: CTag(name)
 	{
-		m_fVal = value;
+		m_value.m_fVal = value;
 		m_uType = TAGTYPE_FLOAT32;
 	}
 };
@@ -280,14 +280,14 @@ public:
 	CTagString(const wxString &name, const wxString &value)
 	: CTag(name)
 	{
-		m_pstrVal = new wxString(value);
+		m_value.m_pstrVal = new wxString(value);
 		m_uType = TAGTYPE_STRING;
 	}
 
 	CTagString(uint8 name, const wxString &value)
 	: CTag(name)
 	{
-		m_pstrVal = new wxString(value);
+		m_value.m_pstrVal = new wxString(value);
 		m_uType = TAGTYPE_STRING;
 	}
 };
@@ -307,8 +307,8 @@ public:
 	: CTag(name)
 	{
 		m_uType = TAGTYPE_BSOB;
-		m_pData = new uint8_t[nSize];
-		memcpy(m_pData, value, nSize);
+		m_value.m_pData = new uint8_t[nSize];
+		memcpy(m_value.m_pData, value, nSize);
 		m_nSize = nSize;
 	}
 };
@@ -320,8 +320,8 @@ public:
 	: CTag(name)
 	{
 		m_uType = TAGTYPE_BLOB;
-		m_pData = new uint8_t[nSize];
-		memcpy(m_pData, value, nSize);
+		m_value.m_pData = new uint8_t[nSize];
+		memcpy(m_value.m_pData, value, nSize);
 		m_nSize = nSize;
 	}
 };
