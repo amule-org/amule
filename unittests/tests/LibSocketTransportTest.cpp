@@ -31,6 +31,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstring>
 #include <future>
 #include <memory>
@@ -52,6 +53,7 @@
 #include "WarningsPush_Asio.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ip/udp.hpp>
 #include "WarningsPop.h"
 #endif
 
@@ -1057,6 +1059,86 @@ TEST(LibSocketTransport, AFailedEndIsReportedAtOnce)
 	socket.OnStreamLost();
 	ASSERT_EQUALS(1, socket.lost);
 	ASSERT_EQUALS(0, socket.reads);
+}
+
+namespace
+{
+//! A free loopback UDP port: bound, read back and released.
+uint16 FreeUdpPort()
+{
+	boost::asio::io_context io;
+	boost::asio::ip::udp::socket probe(io, { boost::asio::ip::address_v4::loopback(), 0 });
+	return probe.local_endpoint().port();
+}
+
+//! A UDP socket on loopback. Its handler is never called: these tests count notifications.
+CLibUDPSocket *OpenLoopbackUdp(uint16 port)
+{
+	alignas(std::max_align_t) static char handler[1];
+	amuleIPV4Address address;
+	address.Hostname(wxString("127.0.0.1"));
+	address.Service(port);
+	return new CLibUDPSocket(address, 0, reinterpret_cast<CMuleUDPSocket *>(handler));
+}
+
+//! Destroy() deletes the wrapper on the socket's strand.
+void CloseUdp(CLibUDPSocket *socket)
+{
+	socket->Close();
+	socket->Destroy();
+	DrainSocketContexts();
+}
+} // namespace
+
+TEST(LibSocketTransport, UdpReadTakesEveryQueuedDatagramInOneCompletion)
+{
+	// No workers: the test runs the read completions itself.
+	const uint16 port = FreeUdpPort();
+	CLibUDPSocket *socket = OpenLoopbackUdp(port);
+	ASSERT_TRUE(socket->IsOk());
+
+	boost::asio::io_context io;
+	boost::asio::ip::udp::socket sender(io, { boost::asio::ip::address_v4::loopback(), 0 });
+	const boost::asio::ip::udp::endpoint to(boost::asio::ip::address_v4::loopback(), port);
+	const char payload[64] = {};
+	const int burst = 64;
+	for (int i = 0; i < burst; ++i) {
+		sender.send_to(boost::asio::buffer(payload), to);
+	}
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+	// Enough for the reactor and one read completion. With one datagram per completion the
+	// rest of the burst stays in the kernel, which drops what its buffer cannot hold.
+	const int before = s_queuedNotifications.load();
+	for (int i = 0; i < 4; ++i) {
+		s_io_service.restart();
+		s_io_service.poll_one();
+	}
+	ASSERT_EQUALS(burst, s_queuedNotifications.load() - before);
+
+	// Each datagram is handed over whole, one per call, as OnReceive() takes them.
+	char received[sizeof(payload) + 1];
+	CNetworkAddress from;
+	uint16 fromPort = 0;
+	for (int i = 0; i < burst; ++i) {
+		ASSERT_EQUALS((uint32)sizeof(payload),
+			socket->RecvFrom(from, fromPort, received, sizeof(received)));
+	}
+	ASSERT_EQUALS(0u, socket->RecvFrom(from, fromPort, received, sizeof(received)));
+	CloseUdp(socket);
+}
+
+TEST(LibSocketTransport, UdpSocketAsksForMoreReceiveBufferThanTheSystemDefault)
+{
+	boost::asio::io_context io;
+	boost::asio::ip::udp::socket plain(io, { boost::asio::ip::address_v4::loopback(), 0 });
+	boost::asio::socket_base::receive_buffer_size systemDefault;
+	plain.get_option(systemDefault);
+
+	CLibUDPSocket *socket = OpenLoopbackUdp(FreeUdpPort());
+	// The kernel drops a burst that does not fit; Windows defaults to 64 KB.
+	ASSERT_TRUE(socket->GetReceiveBufferBytes() > systemDefault.value());
+	CloseUdp(socket);
 }
 
 // File_checked_for_headers
