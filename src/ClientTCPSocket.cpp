@@ -203,15 +203,17 @@ void CClientTCPSocket::PinVerifiedStreamKeyIP()
 	if (HasTransport() && m_client != nullptr && m_client->HasValidHash() &&
 		theApp->clientudp != nullptr) {
 		peerIP = GetTransport()->GetPeerAddress().ToIPv4NetworkOrderOrZero();
-		// TLS makes every QUIC stream report itself obfuscated; its datagrams are when keyed.
+		// TLS makes every QUIC stream report itself obfuscated; its datagrams are obfuscated only
+		// when keyed on the peer's hash.
 		bool obfuscated = GetTransport()->IsUtp() && GetTransport()->ObfuscatesStream();
 #ifdef AMULE_QUIC_TRANSPORT
 		if (!GetTransport()->IsUtp()) {
 			obfuscated = theApp->clientudp->HasQuicPeerKey(peerIP, GetTransport()->GetPeerPort());
 		}
 #endif
-		// The key IP the stream has used so far: the peer rebuilt it, since the hello arrived. A
-		// hello while we know no IP keeps the pin it finds.
+		// The key IP this stream's frames carry from now on. For QUIC, a hello while we know no IP
+		// keeps the pin it finds. A uTP stream needs our IP for its crypt parameters
+		// (ApplyUtpCryptParameters()).
 		if (obfuscated) {
 			keyIP = ClientUdpKeyIP(theApp->clientudp->NatKeyIPFor(peerIP),
 				theApp->GetPublicIP(true),
