@@ -100,13 +100,6 @@ TEST(ContactDialPolicy, OtherContactsCheckOnlyTheirTarget)
 	ASSERT_TRUE(noIdentity[0] == PeerIPv4());
 }
 
-TEST(ContactDialPolicy, AnIPv6DialTargetSkipsIPv4Utp)
-{
-	ASSERT_TRUE(ShouldTryIPv4Utp(PeerIPv4()));
-	ASSERT_TRUE(ShouldTryIPv4Utp(MappedPeerIPv4()));
-	ASSERT_FALSE(ShouldTryIPv4Utp(PeerIPv6()));
-}
-
 TEST(ContactDialPolicy, ANativeIPv6ContactIsDialledDirectly)
 {
 	ASSERT_TRUE(DecideContactRoute(DialableIPv6()) == EContactRoute::DialIPv6);

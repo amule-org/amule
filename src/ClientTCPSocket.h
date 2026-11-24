@@ -155,11 +155,6 @@ private:
 	void NoteHelloForStatistics();
 #endif
 #ifdef AMULE_UTP_TRANSPORT
-	bool TryUtpTcpFallback();
-	void RecordUtpDialFailure();
-	bool m_utpFallbackAttempted = false;
-	// The transport's IsConnected() turns false again when the stream ends.
-	bool m_utpStreamConnected = false;
 	SUtpIncomingSynWinner m_utpIncomingSynWinner;
 #endif
 
