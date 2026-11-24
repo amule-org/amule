@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """An open node serves up to its slot limit, one buddy per address: extra ones lose their connection,
 callbacks are limited per sender and buddy, pending offers are capped, and late requests are not
-promoted.
+promoted. A relayed rendezvous is checked and rebuilt.
 
 The buddy counters the daemon reports over EC follow each step."""
 import os
@@ -29,6 +29,12 @@ KADEMLIA_CALLBACK_REQ = 0x52
 KADEMLIA_FINDBUDDY_RES = 0x5A
 OP_HELLO = 0x01
 OP_CALLBACK = 0x99
+OP_EMULEPROT = 0xC5
+OP_REASKCALLBACKUDP = 0x94
+OP_REASKCALLBACKTCP = 0x9A
+OP_RENDEZVOUS = 0xA0
+NATT_UTP = 0x80
+NATT_QUIC = 0x40
 # KadMaxServedBuddies, below a tenth of MaxConnections.
 SERVED_LIMIT = 4
 BUDDY_DISCONNECTED = 0
@@ -303,6 +309,53 @@ def check_kept_slot_is_for_natt_nodes(proc, ec, udp_port, peer_port):
     leave(proc, ec, legacy + [natt])
 
 
+def rendezvous(requester_hash, options, file_hash, tail=b''):
+    """A 0xA0 (rendezvous) as eMuleAI puts it in a reask: a zero file hash marks it."""
+    return bytes(16) + bytes([OP_RENDEZVOUS]) + requester_hash + bytes([options]) + file_hash + tail
+
+
+def endpoint_hint(address, port, transport):
+    return socket.inet_aton(address) + struct.pack('<HB', port, transport)
+
+
+def check_rendezvous_is_checked_and_rebuilt(proc, ec, udp_port, peer_port):
+    """A buddy drops a rendezvous whose sides declared transports and share none, and one that does
+    not parse. It relays the others built from the parsed fields, after the endpoint it saw."""
+    natt = Requester('127.0.0.80', udp_port, peer_port)
+    legacy = Requester('127.0.0.81', udp_port, peer_port, natt=False)
+    natt.connect()
+    legacy.connect()
+    wait_served(proc, ec, 2)
+    before = buddy_counters(ec)
+    requester_hash, file_hash = os.urandom(16), os.urandom(16)
+    public_hint = endpoint_hint('1.2.3.4', 4672, 1)
+    with kad_peer('127.0.0.90', udp_port) as requester:
+        seen = socket.inet_aton(requester.getsockname()[0]) + struct.pack('<H', requester.getsockname()[1])
+
+        def reask(buddy, body):
+            requester.send(bytes([OP_EMULEPROT, OP_REASKCALLBACKUDP]) + buddy.buddy_id + body)
+
+        # Dropped before the one relayed, so a relay of either is the first packet the node reads.
+        reask(natt, rendezvous(requester_hash, NATT_QUIC, file_hash))
+        reask(natt, rendezvous(bytes(16), NATT_UTP, file_hash))
+        # Bytes after the hint, such as a later extension, are not relayed.
+        reask(natt, rendezvous(requester_hash, NATT_UTP | NATT_QUIC, file_hash, public_hint + b'\x01\x02xy'))
+        body = wait_packet(natt.sock, OP_REASKCALLBACKTCP, MARGIN)
+        assert body == seen + rendezvous(requester_hash, NATT_UTP | NATT_QUIC, file_hash, public_hint), body
+
+        # A node that declared nothing is relayed to whatever the requester declared. A hint that is
+        # not a public address is dropped.
+        reask(legacy, rendezvous(requester_hash, NATT_QUIC, file_hash, endpoint_hint('10.0.0.1', 4672, 2)))
+        body = wait_packet(legacy.sock, OP_REASKCALLBACKTCP, MARGIN)
+        assert body == seen + rendezvous(requester_hash, NATT_QUIC, file_hash), body
+
+    wait_counter(proc, ec, 'SERVING_REASKS', before['SERVING_REASKS'] + 2)
+    counters = buddy_counters(ec)
+    assert counters['SERVING_REASKS_MALFORMED'] == before['SERVING_REASKS_MALFORMED'] + 1, counters
+    leave(proc, ec, [natt, legacy])
+    wait_served(proc, ec, 0)
+
+
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-kad-buddy-') as directory:
         root = Path(directory)
@@ -325,10 +378,11 @@ def run(binary):
             check_highid_buddy_is_released(proc, ec, udp_port, peer_port)
             check_one_offer_per_address(proc, ec, udp_port, peer_port)
             check_kept_slot_is_for_natt_nodes(proc, ec, udp_port, peer_port)
+            check_rendezvous_is_checked_and_rebuilt(proc, ec, udp_port, peer_port)
     print(f'PASS: {SERVED_LIMIT} buddies served, one per address, the extra one dropped, callbacks limited '
           'per sender and buddy, pending offers capped, an expired request not promoted, a duplicate '
           'offer counted apart, a HighID node released, one offer per address, the kept slot only for a '
-          'NAT-T node, and each counted')
+          'NAT-T node, a rendezvous checked and rebuilt, and each counted')
 
 
 if __name__ == '__main__':
