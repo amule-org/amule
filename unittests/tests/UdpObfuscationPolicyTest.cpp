@@ -22,6 +22,7 @@ DECLARE_SIMPLE(UdpObfuscationPolicy)
 namespace
 {
 constexpr std::uint32_t kPublicIP = 0x0100007F;
+constexpr std::uint32_t kKeyIP = 0x0200A8C0;
 constexpr std::uint32_t kReceiverKey = 0x12345678;
 
 bool Is(EUdpSendForm actual, EUdpSendForm expected)
@@ -63,6 +64,24 @@ TEST(UdpObfuscationPolicy, APacketWithNoKeyMaterialIsSentPlain)
 	ASSERT_FALSE(ObfuscateQueuedPacket(true, false, true, 0, true));
 	ASSERT_FALSE(ObfuscateQueuedPacket(true, false, false, kReceiverKey, true));
 	ASSERT_FALSE(ObfuscateQueuedPacket(false, true, true, kReceiverKey, true));
+}
+
+TEST(UdpObfuscationPolicy, TheClientKeyTakesThePerPeerKeyIPFirst)
+{
+	ASSERT_EQUALS(kKeyIP, ClientUdpKeyIP(kKeyIP, kPublicIP));
+	ASSERT_EQUALS(kKeyIP, ClientUdpKeyIP(kKeyIP, 0));
+	ASSERT_EQUALS(kPublicIP, ClientUdpKeyIP(0, kPublicIP));
+}
+
+TEST(UdpObfuscationPolicy, WithNoIPThePeerCanRebuildAClientPacketIsPlainOrDropped)
+{
+	// Our IP is in the key and the peer takes it from the datagram's source: obfuscating with any
+	// other address, such as our host name's, sends a packet nobody can read.
+	ASSERT_EQUALS((std::uint32_t)0, ClientUdpKeyIP(0, 0));
+	ASSERT_TRUE(Is(DecideUdpSendForm(true, false, false, ClientUdpKeyIP(0, 0)), EUdpSendForm::Plain));
+	ASSERT_TRUE(Is(DecideUdpSendForm(true, true, false, ClientUdpKeyIP(0, 0)), EUdpSendForm::Drop));
+	ASSERT_TRUE(Is(
+		DecideUdpSendForm(true, true, false, ClientUdpKeyIP(kKeyIP, 0)), EUdpSendForm::Obfuscated));
 }
 
 TEST(UdpObfuscationPolicy, AnEncryptedClientPacketIsObfuscatedWhileThePublicIPIsKnown)

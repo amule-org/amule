@@ -45,13 +45,23 @@ inline bool ObfuscateQueuedPacket(bool requested,
 }
 
 /**
- * How a queued UDP packet leaves. Client obfuscation needs our public IP, so an ordinary packet falls
- * back to plain without one. A packet that must be obfuscated (one carrying our user hash) is dropped
- * instead: the public IP can be lost between queueing and sending.
+ * Our IP in a client UDP key. The receiver rebuilds the key from the datagram's source, so only an
+ * address the peer sees us at will do: its per-peer key IP, else our verified public IP. Never the
+ * host-name fallback of GetPublicIP(), which is a LAN or loopback address behind NAT. 0: no key.
  */
-inline EUdpSendForm DecideUdpSendForm(bool encrypt, bool requireObfuscation, bool kad, std::uint32_t publicIP)
+inline std::uint32_t ClientUdpKeyIP(std::uint32_t perPeerKeyIP, std::uint32_t verifiedPublicIP)
 {
-	if (encrypt && (publicIP != 0 || kad)) {
+	return perPeerKeyIP != 0 ? perPeerKeyIP : verifiedPublicIP;
+}
+
+/**
+ * How a queued UDP packet leaves. Client obfuscation needs our IP in the key (ClientUdpKeyIP()), so an
+ * ordinary packet falls back to plain without one. A packet that must be obfuscated (one carrying our
+ * user hash) is dropped instead: the public IP can be lost between queueing and sending.
+ */
+inline EUdpSendForm DecideUdpSendForm(bool encrypt, bool requireObfuscation, bool kad, std::uint32_t keyIP)
+{
+	if (encrypt && (keyIP != 0 || kad)) {
 		return EUdpSendForm::Obfuscated;
 	}
 	return requireObfuscation ? EUdpSendForm::Drop : EUdpSendForm::Plain;
