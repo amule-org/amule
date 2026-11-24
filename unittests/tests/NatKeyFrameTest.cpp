@@ -307,6 +307,8 @@ struct Rig
 {
 	bool enabled = true;
 	bool obfuscation = true;
+	//! Nonzero: obfuscation is on only toward this IPv4, as for a verified stream while we know no IP.
+	std::uint32_t obfuscatedOnlyFor = 0;
 	bool acceptKeyFrame = true;
 	bool acceptDatagram = true;
 	std::vector<std::string> events;
@@ -322,7 +324,9 @@ struct Rig
 	{
 		Callbacks callbacks;
 		callbacks.enabled = [this] { return enabled; };
-		callbacks.obfuscationOn = [this] { return obfuscation; };
+		callbacks.obfuscationOn = [this](std::uint32_t ip) {
+			return obfuscation && (obfuscatedOnlyFor == 0 || ip == obfuscatedOnlyFor);
+		};
 		callbacks.sendKeyFrame = [this](std::uint32_t, std::uint16_t, const Hash &) {
 			events.push_back("keyframe");
 			return acceptKeyFrame;
@@ -520,6 +524,29 @@ TEST(NatKeyFrame, NothingIsObfuscatedAndNoKeyFrameSentWhenTheUserTurnedObfuscati
 	ASSERT_EQUALS(1, static_cast<int>(rig.events.size()));
 	ASSERT_TRUE(rig.events[0] == "datagram");
 	ASSERT_FALSE(rig.datagramKeys.back().has_value());
+}
+
+TEST(NatKeyFrame, ObfuscationIsDecidedPerPeerSoAVerifiedStreamKeepsItsKey)
+{
+	Rig rig;
+	rig.obfuscatedOnlyFor = 1;
+	rig.service.NoteDialled(1, 1, MakeHash(5), 0);
+	rig.service.NoteDialled(2, 1, MakeHash(6), 0);
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 1, 1, 10);
+	rig.service.SendDatagram(kShortHeader, sizeof(kShortHeader), 2, 1, 10);
+	ASSERT_EQUALS(2, static_cast<int>(rig.datagramKeys.size()));
+	ASSERT_TRUE(rig.datagramKeys[0] == std::optional<Hash>(MakeHash(5)));
+	ASSERT_FALSE(rig.datagramKeys[1].has_value());
+}
+
+TEST(NatKeyFrame, AnEndpointHasAPeerKeyWhileItsKeyLives)
+{
+	Rig rig;
+	ASSERT_FALSE(rig.service.HasPeerKey(1, 1, 0));
+	rig.service.NoteDialled(1, 1, MakeHash(5), 0);
+	ASSERT_TRUE(rig.service.HasPeerKey(1, 1, 10));
+	ASSERT_FALSE(rig.service.HasPeerKey(1, 2, 10));
+	ASSERT_FALSE(rig.service.HasPeerKey(1, 1, 10 + kPeerKeyIdleMs));
 }
 
 TEST(NatKeyFrame, ADatagramToAnUnknownPeerGoesPlainWithoutOurKeyFrame)

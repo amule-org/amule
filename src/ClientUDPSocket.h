@@ -55,6 +55,7 @@ class CServer;
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 #include "NatKeyFrame.h"
 #include "NatSourceEcho.h"
+#include "UdpObfuscationPolicy.h" // Needed for CVerifiedStreamKeyIPs
 #include <mutex>
 #endif
 #ifdef AMULE_QUIC_TRANSPORT
@@ -148,6 +149,15 @@ public:
 	//! Our UDP's IPv4 for a secure ident check on a uTP or QUIC stream (NatSourceEcho::IdentUdpIP).
 	uint32_t IdentUdpIP() const;
 	uint32 ClientCryptKeyIP(uint32 ip) override { return NatKeyIPFor(ip); }
+	uint32 StreamKeyIP(uint32 ip) override;
+	//! A verified, obfuscated stream to @a peerIp keeps @a keyIP for when we know no IP, until it
+	//! is unpinned. False, and nothing to unpin, without a key IP.
+	bool PinStreamKeyIP(uint32_t peerIp, uint32_t keyIP);
+	void UnpinStreamKeyIP(uint32_t peerIp);
+#ifdef AMULE_QUIC_TRANSPORT
+	//! Whether our QUIC datagrams to this endpoint are keyed on the peer's hash.
+	bool HasQuicPeerKey(uint32_t ip, uint16_t port);
+#endif
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	//! Whether a rendezvous may punch or dial this IPv4: what a server or peer names is checked
@@ -250,6 +260,7 @@ private:
 	// Read when a datagram is queued, which is not always on the main thread.
 	std::mutex m_natKeyIPsMutex;
 	NatSourceEcho::CKeyIps m_natKeyIPs{ NatSourceEcho::kMaxKeyIps, NatSourceEcho::kKeyIpIdleMs };
+	CVerifiedStreamKeyIPs m_streamKeyIPs; // Under m_natKeyIPsMutex.
 	uint32_t m_serverSeenUdpIP = 0;
 #ifdef AMULE_UTP_TRANSPORT
 	ServerSeenUdpPort m_serverSeenUdpPort;

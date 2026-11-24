@@ -73,6 +73,15 @@ TEST(UdpObfuscationPolicy, TheClientKeyTakesThePerPeerKeyIPFirst)
 	ASSERT_EQUALS(kPublicIP, ClientUdpKeyIP(0, kPublicIP));
 }
 
+TEST(UdpObfuscationPolicy, AStreamKeyIPIsTheLastResort)
+{
+	constexpr std::uint32_t kStreamKeyIP = 0x0300A8C0;
+	// A pin from before an IP change must not outrank what we know now.
+	ASSERT_EQUALS(kKeyIP, ClientUdpKeyIP(kKeyIP, kPublicIP, kStreamKeyIP));
+	ASSERT_EQUALS(kPublicIP, ClientUdpKeyIP(0, kPublicIP, kStreamKeyIP));
+	ASSERT_EQUALS(kStreamKeyIP, ClientUdpKeyIP(0, 0, kStreamKeyIP));
+}
+
 TEST(UdpObfuscationPolicy, AClientPacketWithNoKeyIPIsPlainOrDropped)
 {
 	// Our IP is in the key and the peer takes it from the datagram's source: obfuscating with any
@@ -94,6 +103,36 @@ TEST(UdpObfuscationPolicy, AFrameOfARequiredObfuscatedStreamIsDroppedRatherThanS
 	ASSERT_FALSE(TransportFrameRequiresObfuscation(true, true, false));
 	ASSERT_FALSE(TransportFrameRequiresObfuscation(true, false, true));
 	ASSERT_FALSE(TransportFrameRequiresObfuscation(false, true, true));
+}
+
+TEST(UdpObfuscationPolicy, AVerifiedStreamKeepsItsKeyIPUntilItsLastStreamIsUnpinned)
+{
+	constexpr std::uint32_t kPeer = 0x0500000A;
+	CVerifiedStreamKeyIPs pins;
+	ASSERT_EQUALS((std::uint32_t)0, pins.Lookup(kPeer));
+	ASSERT_TRUE(pins.Pin(kPeer, kKeyIP));
+	ASSERT_TRUE(pins.Pin(kPeer, kPublicIP));
+	// The newest pin wins: a peer sees us at one IP whatever its port.
+	ASSERT_EQUALS(kPublicIP, pins.Lookup(kPeer));
+	pins.Unpin(kPeer);
+	ASSERT_EQUALS(kPublicIP, pins.Lookup(kPeer));
+	pins.Unpin(kPeer);
+	ASSERT_EQUALS((std::uint32_t)0, pins.Lookup(kPeer));
+	// An unknown peer, or one more unpin, changes nothing.
+	pins.Unpin(kPeer);
+	ASSERT_EQUALS((std::uint32_t)0, pins.Lookup(kPeer));
+}
+
+TEST(UdpObfuscationPolicy, NothingIsPinnedWithoutBothAddresses)
+{
+	CVerifiedStreamKeyIPs pins;
+	ASSERT_FALSE(pins.Pin(0x0500000A, 0));
+	ASSERT_FALSE(pins.Pin(0, kKeyIP));
+	ASSERT_EQUALS((std::uint32_t)0, pins.Lookup(0x0500000A));
+	// A pinned stream's key IP keys its frames while we know no IP of ours.
+	ASSERT_TRUE(pins.Pin(0x0500000A, kKeyIP));
+	ASSERT_TRUE(Is(DecideUdpSendForm(true, true, false, ClientUdpKeyIP(0, 0, pins.Lookup(0x0500000A))),
+		EUdpSendForm::Obfuscated));
 }
 
 TEST(UdpObfuscationPolicy, AnEncryptedClientPacketIsObfuscatedWhileThePublicIPIsKnown)

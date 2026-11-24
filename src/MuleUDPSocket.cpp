@@ -278,7 +278,7 @@ bool CMuleUDPSocket::TrySendObfuscatedPacket(
 		DecideUdpSendForm(thePrefs::IsClientCryptLayerSupported(),
 			true,
 			false,
-			ClientUdpKeyIP(ClientCryptKeyIP(IP), theApp->GetPublicIP(true))) !=
+			ClientUdpKeyIP(ClientCryptKeyIP(IP), theApp->GetPublicIP(true), StreamKeyIP(IP))) !=
 			EUdpSendForm::Obfuscated) {
 		AddDebugLogLineN(logMuleUDP,
 			(m_name + ": Packet discarded, it cannot be obfuscated (")
@@ -352,6 +352,7 @@ bool CMuleUDPSocket::QueuePacket(CPacket *packet,
 	newpending.bKad = bKad;
 	newpending.nReceiverVerifyKey = nReceiverVerifyKey;
 	newpending.keyIP = (newpending.bEncrypt && !bKad) ? ClientCryptKeyIP(IP) : 0;
+	newpending.streamKeyIP = (newpending.bEncrypt && !bKad) ? StreamKeyIP(IP) : 0;
 	if (newpending.bEncrypt && pachTargetClientHashORKadID != NULL) {
 		md4cpy(newpending.pachTargetClientHashORKadID, pachTargetClientHashORKadID);
 	} else {
@@ -368,6 +369,11 @@ bool CMuleUDPSocket::QueuePacket(CPacket *packet,
 }
 
 uint32 CMuleUDPSocket::ClientCryptKeyIP(uint32)
+{
+	return 0;
+}
+
+uint32 CMuleUDPSocket::StreamKeyIP(uint32)
 {
 	return 0;
 }
@@ -393,7 +399,7 @@ SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, u
 	while (!m_queue.empty() && !m_busy && (chargedBytes < maxNumberOfBytesToSend)) {
 		UDPPack item = m_queue.front();
 		CPacket *packet = item.packet;
-		const uint32 keyIP = ClientUdpKeyIP(item.keyIP, theApp->GetPublicIP(true));
+		const uint32 keyIP = ClientUdpKeyIP(item.keyIP, theApp->GetPublicIP(true), item.streamKeyIP);
 		const EUdpSendForm form =
 			DecideUdpSendForm(item.bEncrypt, item.bRequireEncrypt, item.bKad, keyIP);
 		if (form == EUdpSendForm::Drop) {

@@ -94,6 +94,8 @@ public:
 	virtual void OnDisconnected(int errorCode);
 	/** The IPv4 @a ip sees us at, when it differs from our public IP; else 0. */
 	virtual uint32 ClientCryptKeyIP(uint32 ip);
+	/** The key IP of a verified, obfuscated stream to @a ip; else 0. */
+	virtual uint32 StreamKeyIP(uint32 ip);
 
 	/**
 	 * Queues a packet for sending, taking ownership of it.
@@ -237,6 +239,8 @@ private:
 		uint32 nReceiverVerifyKey;
 		// The IPv4 the target sees us at, for the ed2k key; 0 for our public IP.
 		uint32 keyIP;
+		// A verified stream's key IP toward the target, for when we know no IP (ClientUdpKeyIP()).
+		uint32 streamKeyIP;
 		// Client hash or kad ID.
 		uint8 pachTargetClientHashORKadID[16];
 	};

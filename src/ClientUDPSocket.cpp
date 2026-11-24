@@ -162,6 +162,31 @@ uint32_t CClientUDPSocket::NatKeyIPFor(uint32_t peerIp)
 	return m_natKeyIPs.Lookup(peerIp, LoginIP(), ::GetTickCount64()).value_or(0);
 }
 
+uint32 CClientUDPSocket::StreamKeyIP(uint32 ip)
+{
+	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
+	return m_streamKeyIPs.Lookup(ip);
+}
+
+bool CClientUDPSocket::PinStreamKeyIP(uint32_t peerIp, uint32_t keyIP)
+{
+	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
+	return m_streamKeyIPs.Pin(peerIp, keyIP);
+}
+
+void CClientUDPSocket::UnpinStreamKeyIP(uint32_t peerIp)
+{
+	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
+	m_streamKeyIPs.Unpin(peerIp);
+}
+
+#ifdef AMULE_QUIC_TRANSPORT
+bool CClientUDPSocket::HasQuicPeerKey(uint32_t ip, uint16_t port)
+{
+	return m_keyFrames.HasPeerKey(ip, port, ::GetTickCount64());
+}
+#endif
+
 uint32_t CClientUDPSocket::IdentUdpIP() const
 {
 	// The server's view belongs to its login: between logins only Kad's is current.
@@ -342,7 +367,10 @@ NatKeyFrame::Callbacks CClientUDPSocket::KeyFrameCallbacks()
 {
 	NatKeyFrame::Callbacks callbacks;
 	callbacks.enabled = [] { return QuicNatTEnabled(); };
-	callbacks.obfuscationOn = [] { return NatTObfuscationAvailable(); };
+	callbacks.obfuscationOn = [this](uint32_t ip) {
+		return NatTObfuscationAvailable() ||
+		       (thePrefs::IsClientCryptLayerSupported() && StreamKeyIP(ip) != 0);
+	};
 	callbacks.sendKeyFrame = [this](uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key) -> bool {
 		return SendNatKeyFrame(ip, port, key);
 	};
