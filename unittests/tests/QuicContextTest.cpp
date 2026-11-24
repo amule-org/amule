@@ -456,13 +456,16 @@ TEST(QuicContext, FineTickStopsOneCoreTickAfterTheLastDeadline)
 	ASSERT_TRUE(tick.Update(1405, 1400) == CQuicFineTick::EAction::Start);
 }
 
-TEST(QuicContext, FineTickStartsAgainAfterATimerThatFailedToStart)
+TEST(QuicContext, FineTickRetriesAFailedStartOnlyAfterOneCoreTick)
 {
 	CQuicFineTick tick(300);
 	ASSERT_TRUE(tick.Update(1005, 1000) == CQuicFineTick::EAction::Start);
-	tick.StartFailed();
+	tick.StartFailed(1000);
 	ASSERT_TRUE(!tick.IsRunning());
-	ASSERT_TRUE(tick.Update(1010, 1005) == CQuicFineTick::EAction::Start);
+	// Each datagram asks again; a failing thread creation must not be retried for every one.
+	ASSERT_TRUE(tick.Update(1010, 1005) == CQuicFineTick::EAction::None);
+	ASSERT_TRUE(tick.Update(1300, 1299) == CQuicFineTick::EAction::None);
+	ASSERT_TRUE(tick.Update(1305, 1300) == CQuicFineTick::EAction::Start);
 }
 
 TEST(QuicContext, DestructionClosesOwnedConnections)

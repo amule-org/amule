@@ -691,7 +691,7 @@ void CClientUDPSocket::ScheduleQuicFineTick(uint64_t nowMs)
 	switch (m_quicFineTick.Update(m_quic.NextExpiryMs(), nowMs)) {
 	case CQuicFineTick::EAction::Start:
 		if (!m_quicFineTimer.Start(static_cast<int>(CQuicFineTick::kPeriodMs))) {
-			m_quicFineTick.StartFailed();
+			m_quicFineTick.StartFailed(nowMs);
 		}
 		break;
 	case CQuicFineTick::EAction::Stop:

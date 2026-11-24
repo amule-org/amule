@@ -44,7 +44,7 @@ public:
 		Stop
 	};
 
-	//! Also the pacing granularity: a paced sender puts out at most this long's worth at once.
+	//! Also how late a paced packet can leave.
 	static constexpr uint64_t kPeriodMs = 5;
 
 	explicit CQuicFineTick(uint64_t horizonMs)
@@ -55,6 +55,9 @@ public:
 	//! @p nextExpiryMs: the earliest deadline of any connection, UINT64_MAX for none.
 	EAction Update(uint64_t nextExpiryMs, uint64_t nowMs)
 	{
+		if (!m_running && nowMs < m_retryAfterMs) {
+			return EAction::None;
+		}
 		if (nextExpiryMs <= nowMs + m_horizonMs) {
 			m_lastNeededMs = nowMs;
 			if (!m_running) {
@@ -72,12 +75,18 @@ public:
 
 	bool IsRunning() const { return m_running; }
 
-	//! The timer could not start: the core tick serves every connection until the next Update().
-	void StartFailed() { m_running = false; }
+	//! The timer could not start: the core tick serves every connection, and the next start is
+	//! tried one core tick later, not on every datagram.
+	void StartFailed(uint64_t nowMs)
+	{
+		m_running = false;
+		m_retryAfterMs = nowMs + m_horizonMs;
+	}
 
 private:
 	const uint64_t m_horizonMs;
 	uint64_t m_lastNeededMs = 0;
+	uint64_t m_retryAfterMs = 0;
 	bool m_running = false;
 };
 
