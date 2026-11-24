@@ -291,6 +291,8 @@ public:
 	//! the kernel's doubling); 0 if unknown.
 	int GetReceiveBufferBytes() const;
 	virtual uint32 RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes);
+	//! Whether a received datagram waits for the next RecvFrom().
+	bool HasQueuedDatagram();
 	virtual uint32 SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes);
 	int LastError() const;
 	void Close();

@@ -200,6 +200,7 @@ private:
 	//! How to key the reply to a uTP SYN, having sent our key frame first when the plan says so.
 	NatKeyFrame::UtpSynPlan PrepareUtpSynReply(uint32_t ip, uint16_t port, bool synObfuscated);
 	CUtpContext m_utp;
+	CUtpAckBatch m_utpAckBatch;
 	CUtpStreamAcceptor m_utpAcceptor;
 	NatKeyFrame::CExpectedPeers m_utpExpectedPeers{ 256, NatKeyFrame::kExpectedPeerTtlMs };
 	NatKeyFrame::CHeldKeys m_utpHeldKeys{ 256, NatKeyFrame::kHeldKeyTtlMs };

@@ -105,6 +105,8 @@ public:
 	//! Keys a plain dial to that endpoint, still in its handshake, with a hash its key frame announced.
 	virtual bool ApplyAnnouncedKey(uint32_t, uint16_t, const uint8_t *) { return false; }
 	virtual void Tick() = 0;
+	//! Sends the ACKs libutp deferred while it processed datagrams.
+	virtual void IssueDeferredAcks() {}
 
 	// Unactivated prerequisite. Success transfers a pending stream into an
 	// initially empty output; it is NOT an application connection notification.
@@ -292,6 +294,30 @@ public:
 	virtual bool HasRepointCandidate(uint32_t, uint16_t) const { return false; }
 };
 
+/**
+ * When to send the ACKs libutp deferred. libutp sends one ACK per socket per IssueDeferredAcks()
+ * call, so a received burst is acknowledged once: when no datagram is left queued, or every
+ * kMaxDatagrams datagrams if the queue never drains.
+ */
+class CUtpAckBatch
+{
+public:
+	static constexpr unsigned kMaxDatagrams = 32;
+
+	//! After each received datagram: whether to send the deferred ACKs now.
+	bool AfterDatagram(bool moreQueued)
+	{
+		if (moreQueued && ++m_datagrams < kMaxDatagrams) {
+			return false;
+		}
+		m_datagrams = 0;
+		return true;
+	}
+
+private:
+	unsigned m_datagrams = 0;
+};
+
 // Main-thread only. Tick never recreates state abandoned by socket Close().
 class CUtpContext final : public IUtpContext
 {
@@ -357,10 +383,13 @@ public:
 		if (!Configure()) {
 			return false;
 		}
-		const bool claimed =
-			m_library->ProcessDatagram(payload, length, ip, port, nowMs, obfuscated, preHelloKey);
-		m_library->IssueDeferredAcks();
-		return claimed;
+		return m_library->ProcessDatagram(payload, length, ip, port, nowMs, obfuscated, preHelloKey);
+	}
+	void IssueDeferredAcks() override
+	{
+		if (m_active) {
+			m_library->IssueDeferredAcks();
+		}
 	}
 	bool ApplyAnnouncedKey(uint32_t ip, uint16_t port, const uint8_t *userHash) override
 	{

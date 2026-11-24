@@ -707,6 +707,11 @@ void CClientUDPSocket::ScheduleQuicFineTick(uint64_t nowMs)
 void CClientUDPSocket::OnReceive(int errorCode)
 {
 	CMuleUDPSocket::OnReceive(errorCode);
+#ifdef AMULE_UTP_TRANSPORT
+	if (m_utpAckBatch.AfterDatagram(HasQueuedDatagram())) {
+		m_utp.IssueDeferredAcks();
+	}
+#endif
 
 	// TODO: A better solution is needed.
 	if (thePrefs::IsUDPDisabled()) {

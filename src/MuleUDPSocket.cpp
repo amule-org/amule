@@ -375,6 +375,13 @@ bool CMuleUDPSocket::Ok()
 	return m_socket && m_socket->IsOk();
 }
 
+bool CMuleUDPSocket::HasQueuedDatagram()
+{
+	wxMutexLocker lock(m_mutex);
+
+	return m_socket && m_socket->HasQueuedDatagram();
+}
+
 SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, uint32 WXUNUSED(minFragSize))
 {
 	wxMutexLocker lock(m_mutex);
