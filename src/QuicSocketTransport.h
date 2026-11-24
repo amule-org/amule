@@ -97,9 +97,18 @@ public:
 	 * Initial stream receive window the engine must advertise. Not a cap that drops bytes:
 	 * QUIC has acknowledged every byte OnPayload() sees, so discarding one would corrupt the
 	 * eD2k stream. The bound is applied by the peer instead: credit is only reopened through
-	 * ExtendReadWindow() as Read() drains, so buffered bytes never exceed this window.
+	 * ExtendReadWindow() as Read() drains, so buffered bytes never exceed the window, which
+	 * starts here and grows to at most kMaxReadWindow.
 	 */
 	static constexpr size_t kReadWindow = 256 * 1024;
+	/**
+	 * How far ngtcp2 may grow that window, for the stream and the connection, while the reader
+	 * keeps up: it doubles the window whenever a quarter of it is read within two round trips.
+	 * 8 MiB allows about 80 MB/s at a 100 ms round trip; in the lab, 4 MiB was 22% slower there.
+	 * Also the most the engine keeps unacknowledged on its send side, as an aMule peer never
+	 * grants more.
+	 */
+	static constexpr size_t kMaxReadWindow = 8 * 1024 * 1024;
 
 private:
 	void RequestFlushLocked(IStreamTransportEvents *&);

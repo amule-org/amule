@@ -29,6 +29,7 @@
 // one test.
 
 #include <muleunit/test.h>
+#include <libs/common/Format.h>
 #include <NetworkAddress.h>
 #include <QuicContext.h>
 #include <QuicGnuTlsSession.h>
@@ -43,6 +44,7 @@
 #include <ngtcp2/ngtcp2_crypto.h>
 #include <ngtcp2/ngtcp2_crypto_gnutls.h>
 
+#include <algorithm>
 #include <array>
 #include <memory>
 #include <mutex>
@@ -224,7 +226,8 @@ std::vector<std::vector<uint8_t>> SendStreamData(ngtcp2_conn *conn,
 class CTestQuicClient
 {
 public:
-	bool Init(size_t streamWindow = CQuicSocketTransport::kReadWindow)
+	bool Init(size_t streamWindow = CQuicSocketTransport::kReadWindow,
+		size_t connectionWindow = CQuicSocketTransport::kReadWindow)
 	{
 		EnsureGnuTlsInitialized();
 		if (gnutls_certificate_allocate_credentials(&m_credentials) != GNUTLS_E_SUCCESS) {
@@ -307,7 +310,7 @@ public:
 		// correctly refuses to send a single byte against that. Match CProductionNgtcp2Engine's
 		// own server-side windows (QuicNgtcp2Adapter.cpp) so the reply path has somewhere to land.
 		params.initial_max_stream_data_bidi_local = streamWindow;
-		params.initial_max_data = CQuicSocketTransport::kReadWindow;
+		params.initial_max_data = connectionWindow;
 
 		if (ngtcp2_conn_client_new(&m_conn,
 			    &dcid,
@@ -373,6 +376,12 @@ public:
 	bool Draining() const { return ngtcp2_conn_in_draining_period(m_conn) != 0; }
 	const std::vector<uint8_t> &Received() const { return m_received; }
 	void ClearReceived() { m_received.clear(); }
+	//! How much more this client may send on its stream: the peer's window less what it sent.
+	uint64_t SendCredit() const
+	{
+		return std::min(ngtcp2_conn_get_max_stream_data_left(m_conn, m_streamId),
+			ngtcp2_conn_get_max_data_left(m_conn));
+	}
 	//! The real-world equivalent of an application finishing a Read() and reopening that much
 	//! credit -- CQuicSocketTransport::ExtendReadWindow()'s counterpart on this side, needed to
 	//! recover from a stream this client itself blocked by advertising a small window.
@@ -948,6 +957,102 @@ TEST(QuicNgtcp2Handshake, FlowControlBlockDoesNotLoseTheStreamAndRecoversOnceUnb
 		progressed = client.Received().size() > firstChunkSize;
 	}
 	ASSERT_TRUE(progressed);
+}
+
+// A server that reads as fast as data arrives uses up a quarter of its window within two round
+// trips, so ngtcp2 doubles the window, up to kMaxReadWindow. A fixed window holds every peer to
+// kReadWindow per round trip.
+TEST(QuicNgtcp2Handshake, AReaderThatKeepsUpGrowsItsWindowPastTheInitialOne)
+{
+	CQuicEphemeralCredentials credentials;
+	CQuicTlsPolicy policy{ &credentials };
+	uint64_t nowMs = 0;
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+	std::unique_ptr<IQuicConnection> connection;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	const std::vector<uint8_t> chunk(64 * 1024, 'w');
+	std::vector<uint8_t> drained(chunk.size());
+	uint64_t largestCredit = 0;
+	for (int round = 0; round < 400 && largestCredit <= CQuicSocketTransport::kReadWindow; ++round) {
+		nowMs += 1;
+		for (const auto &datagram : client.SendOnStream(chunk, nowMs)) {
+			ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+		}
+		while (acceptor.accepted->Read(drained.data(), static_cast<uint32_t>(drained.size())) > 0) {
+		}
+		connection->Tick(nowMs);
+		for (const auto &datagram : sink->sent) {
+			ASSERT_TRUE(client.Receive(datagram, nowMs));
+		}
+		sink->sent.clear();
+		largestCredit = std::max(largestCredit, client.SendCredit());
+	}
+	CFormat format("largest credit %llu, initial window %u");
+	const wxString detail = format % static_cast<unsigned long long>(largestCredit) %
+				static_cast<unsigned>(CQuicSocketTransport::kReadWindow);
+	ASSERT_TRUE_M(largestCredit > CQuicSocketTransport::kReadWindow, detail);
+}
+
+// Against a peer that grants more, the server keeps more than kReadWindow unacknowledged once its
+// congestion window allows: each round sends a burst with no acknowledgement reaching the server,
+// so the stream bytes in the burst are what it holds in flight.
+TEST(QuicNgtcp2Handshake, ASenderKeepsMoreThanTheInitialWindowInFlightWhenThePeerGrantsIt)
+{
+	CQuicEphemeralCredentials credentials;
+	CQuicTlsPolicy policy{ &credentials };
+	uint64_t nowMs = 0;
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	constexpr size_t kGrant = 64 * 1024 * 1024;
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init(kGrant, kGrant));
+	std::unique_ptr<IQuicConnection> connection;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+	client.ClearReceived();
+
+	// The largest write the transport takes at once (its write bound equals kReadWindow).
+	const std::vector<uint8_t> chunk(CQuicSocketTransport::kReadWindow, 's');
+	size_t largestBurst = 0;
+	for (int round = 0; round < 40 && largestBurst <= CQuicSocketTransport::kReadWindow; ++round) {
+		client.ClearReceived();
+		for (int flush = 0; flush < 2000; ++flush) {
+			acceptor.accepted->Write(chunk.data(), static_cast<uint32_t>(chunk.size()));
+			const size_t before = sink->sent.size();
+			acceptor.accepted->Flush();
+			if (sink->sent.size() == before) {
+				break;
+			}
+		}
+		for (const auto &datagram : sink->sent) {
+			ASSERT_TRUE(client.Receive(datagram, nowMs));
+		}
+		sink->sent.clear();
+		largestBurst = std::max(largestBurst, client.Received().size());
+		nowMs += 10;
+		for (const auto &datagram : client.Pump(nowMs)) {
+			ASSERT_TRUE(connection->ProcessDatagram(datagram.data(), datagram.size(), nowMs));
+		}
+	}
+	CFormat format("largest burst %u, initial window %u");
+	const wxString detail = format % static_cast<unsigned>(largestBurst) %
+				static_cast<unsigned>(CQuicSocketTransport::kReadWindow);
+	ASSERT_TRUE_M(largestBurst > CQuicSocketTransport::kReadWindow, detail);
 }
 
 // A clean eD2k close must not silently drop data still queued in the transport's own buffer:
