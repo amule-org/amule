@@ -523,6 +523,8 @@ CClientUDPSocket::CClientUDPSocket(const amuleIPV4Address &address, const CProxy
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 , m_quicCapsHoldoffs(QuicCapsHoldoffCallbacks())
 #endif
+, m_quicFineTick(CORE_TIMER_PERIOD)
+, m_quicFineTimer(theApp, ID_QUIC_TIMER_EVENT)
 #endif
 {
 	if (!thePrefs::IsUDPDisabled()) {
@@ -668,10 +670,36 @@ NatKeyFrame::UtpSynPlan CClientUDPSocket::PrepareUtpSynReply(uint32_t ip, uint16
 void CClientUDPSocket::TickQuic()
 {
 	wxASSERT(wxIsMainThread());
-	m_quic.Tick(::GetTickCount64());
+	const uint64_t nowMs = ::GetTickCount64();
+	m_quic.Tick(nowMs);
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-	m_quicCapsHoldoffs.Service(::GetTickCount64());
+	m_quicCapsHoldoffs.Service(nowMs);
 #endif
+	ScheduleQuicFineTick(nowMs);
+}
+
+void CClientUDPSocket::TickQuicFine()
+{
+	wxASSERT(wxIsMainThread());
+	const uint64_t nowMs = ::GetTickCount64();
+	m_quic.Tick(nowMs);
+	ScheduleQuicFineTick(nowMs);
+}
+
+void CClientUDPSocket::ScheduleQuicFineTick(uint64_t nowMs)
+{
+	switch (m_quicFineTick.Update(m_quic.NextExpiryMs(), nowMs)) {
+	case CQuicFineTick::EAction::Start:
+		if (!m_quicFineTimer.Start(static_cast<int>(CQuicFineTick::kPeriodMs))) {
+			m_quicFineTick.StartFailed(nowMs);
+		}
+		break;
+	case CQuicFineTick::EAction::Stop:
+		m_quicFineTimer.Stop();
+		break;
+	case CQuicFineTick::EAction::None:
+		break;
+	}
 }
 #endif
 
@@ -1016,6 +1044,10 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 			    CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip),
 			    port,
 			    ::GetTickCount64())) {
+			// While it runs, the fine tick checks every deadline itself.
+			if (!m_quicFineTick.IsRunning()) {
+				ScheduleQuicFineTick(::GetTickCount64());
+			}
 			return;
 		}
 		if (m_unservedFrameLog.ShouldLog(::GetTickCount64())) {

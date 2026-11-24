@@ -565,6 +565,8 @@ protected:
 
 	void OnTCPTimer(CTimerEvent &evt);
 	void OnCoreTimer(CTimerEvent &evt);
+	//! The fine tick for QUIC's timers (CClientUDPSocket::TickQuicFine()).
+	void OnQuicTimer(CTimerEvent &evt);
 
 	void OnFinishedHashing(CHashingEvent &evt);
 	void OnHashingDrained(wxThreadEvent &evt);

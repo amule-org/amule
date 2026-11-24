@@ -73,6 +73,7 @@ wxBEGIN_EVENT_TABLE(CamuleGuiApp, wxApp)
 
 	// Core timer
 	EVT_MULE_TIMER(ID_CORE_TIMER_EVENT, CamuleGuiApp::OnCoreTimer)
+	EVT_MULE_TIMER(ID_QUIC_TIMER_EVENT, CamuleGuiApp::OnQuicTimer)
 
 	EVT_MULE_NOTIFY(CamuleGuiApp::OnNotifyEvent)
 

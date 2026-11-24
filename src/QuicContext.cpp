@@ -25,6 +25,7 @@
 
 #include "PeerAddressing.h"
 
+#include <algorithm>
 #include <iterator>
 
 CQuicContext::~CQuicContext()
@@ -243,4 +244,15 @@ void CQuicContext::Tick(uint64_t nowMs)
 		entry.second->Tick(nowMs);
 	}
 	EraseClosedConnections();
+}
+
+uint64_t CQuicContext::NextExpiryMs() const
+{
+	uint64_t earliest = UINT64_MAX;
+	for (const auto &entry : m_connections) {
+		if (!entry.second->IsClosed()) {
+			earliest = std::min(earliest, entry.second->NextExpiryMs());
+		}
+	}
+	return earliest;
 }

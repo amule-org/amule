@@ -65,6 +65,9 @@ public:
 	//! real implementation closes the connection itself if the timer handling is fatal (e.g.
 	//! the idle timeout has elapsed).
 	virtual void Tick(uint64_t nowMs) { (void)nowMs; }
+	//! When Tick() next has work: an ngtcp2 timer, a pacing burst to close or an owed flush.
+	//! UINT64_MAX for none, a past time for now. Its scale is Tick()'s @p nowMs.
+	virtual uint64_t NextExpiryMs() const { return UINT64_MAX; }
 };
 
 class CUpDownClient;
@@ -152,6 +155,8 @@ public:
 	//! whether any datagram has arrived -- this is what lets a connection recover from loss
 	//! instead of hanging forever once nothing more is received from the peer.
 	void Tick(uint64_t nowMs);
+	//! The earliest NextExpiryMs() of any open connection, UINT64_MAX for none.
+	uint64_t NextExpiryMs() const;
 	size_t ConnectionCount() const { return m_connections.size(); }
 
 private:

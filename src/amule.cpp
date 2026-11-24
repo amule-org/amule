@@ -2530,6 +2530,15 @@ void CamuleApp::RequestIPv6Pinholes()
 #endif
 }
 
+void CamuleApp::OnQuicTimer(CTimerEvent &WXUNUSED(evt))
+{
+#ifdef AMULE_QUIC_TRANSPORT
+	if (IsRunning() && clientudp) {
+		clientudp->TickQuicFine();
+	}
+#endif
+}
+
 void CamuleApp::OnCoreTimer(CTimerEvent &WXUNUSED(evt))
 {
 	// Former TimerProc section
