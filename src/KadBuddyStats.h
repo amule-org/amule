@@ -88,7 +88,8 @@ struct CBuddyRelayCounts
 	uint64_t reaskBytes = 0;
 	uint64_t reasksNoBuddy = 0;
 	uint64_t reasksMismatched = 0;
-	uint64_t reasksMalformed = 0; // Too short to name a buddy, or larger than any reask.
+	// Too short to name a buddy, larger than any reask, or a rendezvous that does not parse.
+	uint64_t reasksMalformed = 0;
 	uint64_t callbacksOverBudget = 0;
 	uint64_t reasksOverBudget = 0;
 	uint64_t rendezvousNoSharedTransport = 0; // Both declared NAT-T transports and share none.

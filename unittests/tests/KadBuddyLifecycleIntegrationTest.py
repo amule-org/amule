@@ -286,6 +286,23 @@ def check_one_offer_per_address(proc, ec, udp_port, peer_port):
     wait_served(proc, ec, 0)
 
 
+def check_kept_slot_is_for_natt_nodes(proc, ec, udp_port, peer_port):
+    """A third of the slots is kept for NAT-T nodes: 4 slots keep 1, so a node that declares no
+    transport (the 34-byte request) fills only 3, and a NAT-T node still takes the last."""
+    before = buddy_counters(ec)
+    legacy = [Requester(f'127.0.0.{70 + n}', udp_port, peer_port, natt=False) for n in range(SERVED_LIMIT - 1)]
+    for buddy in legacy:
+        buddy.connect()
+    wait_served(proc, ec, SERVED_LIMIT - 1)
+    Requester('127.0.0.73', udp_port, peer_port, offered=False, natt=False)
+    wait_counter(proc, ec, 'SERVING_REFUSED_FULL', before['SERVING_REFUSED_FULL'] + 1)
+    assert buddy_counters(ec)['PENDING'] == before['PENDING'], 'a legacy request took the kept slot'
+    natt = Requester('127.0.0.74', udp_port, peer_port)
+    natt.connect()
+    wait_served(proc, ec, SERVED_LIMIT)
+    leave(proc, ec, legacy + [natt])
+
+
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-kad-buddy-') as directory:
         root = Path(directory)
@@ -307,9 +324,11 @@ def run(binary):
             check_duplicate_offer_is_counted_apart(proc, ec, udp_port, peer_port)
             check_highid_buddy_is_released(proc, ec, udp_port, peer_port)
             check_one_offer_per_address(proc, ec, udp_port, peer_port)
+            check_kept_slot_is_for_natt_nodes(proc, ec, udp_port, peer_port)
     print(f'PASS: {SERVED_LIMIT} buddies served, one per address, the extra one dropped, callbacks limited '
           'per sender and buddy, pending offers capped, an expired request not promoted, a duplicate '
-          'offer counted apart, a HighID node released, one offer per address, and each counted')
+          'offer counted apart, a HighID node released, one offer per address, the kept slot only for a '
+          'NAT-T node, and each counted')
 
 
 if __name__ == '__main__':
