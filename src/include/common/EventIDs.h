@@ -46,7 +46,9 @@ enum
 	// Spacing timer between amulegui reconnect attempts (issue #444)
 	ID_REMOTE_RECONNECT_TIMER,
 	// Polls the hashing queue while the startup splash is up
-	ID_SPLASH_POLL_TIMER
+	ID_SPLASH_POLL_TIMER,
+	// QUIC's fine tick (CQuicFineTick)
+	ID_QUIC_TIMER_EVENT
 };
 
 #endif // EVENTHANDLERS_H

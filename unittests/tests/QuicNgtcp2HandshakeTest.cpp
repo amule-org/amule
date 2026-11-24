@@ -1239,6 +1239,70 @@ TEST(QuicNgtcp2Handshake, FlushesAtOneTimestampSendABurstNotOnePacket)
 	ASSERT_TRUE(sink->sent.size() >= 5);
 }
 
+TEST(QuicNgtcp2Handshake, NextExpiryIsDueWhileABurstIsOpenAndSetWhileDataIsInFlight)
+{
+	CQuicEphemeralCredentials credentials;
+	CQuicTlsPolicy policy{ &credentials };
+	uint64_t nowMs = 0;
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+	std::unique_ptr<IQuicConnection> connection;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	const std::vector<uint8_t> data(32 * 1024, 0x5a);
+	ASSERT_EQUALS(static_cast<uint32_t>(data.size()),
+		acceptor.accepted->Write(data.data(), static_cast<uint32_t>(data.size())));
+	const size_t before = sink->sent.size();
+	acceptor.accepted->Flush();
+	ASSERT_TRUE(sink->sent.size() > before);
+	// ngtcp2 paces the burst only once a later tick closes it, so the burst itself is due.
+	ASSERT_TRUE(connection->NextExpiryMs() <= nowMs);
+
+	nowMs += 1;
+	connection->Tick(nowMs);
+	// Unacknowledged data keeps the loss-detection timer armed.
+	ASSERT_TRUE(connection->NextExpiryMs() != UINT64_MAX);
+
+	connection->Close();
+	ASSERT_EQUALS(UINT64_MAX, connection->NextExpiryMs());
+}
+
+TEST(QuicNgtcp2Handshake, AFlushOwedToAReopenedWindowIsDue)
+{
+	CQuicEphemeralCredentials credentials;
+	CQuicTlsPolicy policy{ &credentials };
+	uint64_t nowMs = 0;
+	auto sink = std::make_shared<CollectingSink>();
+	auto engine = CreateProductionQuicNgtcp2Engine();
+	CQuicNgtcp2Factory factory(policy, sink, engine, kTestServerIdentity, [&nowMs] { return nowMs; });
+	AcceptingAcceptor acceptor;
+	factory.SetAcceptor(&acceptor);
+
+	CTestQuicClient client;
+	ASSERT_TRUE(client.Init());
+	std::unique_ptr<IQuicConnection> connection;
+	ASSERT_TRUE(DriveHandshake(client, factory, *sink, connection, nowMs));
+	ASSERT_TRUE(ExchangeEaqn1Proof(client, connection, *sink, nowMs));
+	// Let the handshake's own bursts and ACK timers settle, until nothing is due now.
+	for (int round = 0; round < 100 && connection->NextExpiryMs() <= nowMs; ++round) {
+		nowMs += 1;
+		connection->Tick(nowMs);
+	}
+	ASSERT_TRUE(connection->NextExpiryMs() > nowMs);
+
+	connection->ExtendStreamReadWindow(1024);
+	// The peer may be blocked on this window, and nothing else would make us tell it.
+	ASSERT_TRUE(connection->NextExpiryMs() <= nowMs);
+}
+
 void QuicClientRefTestForget(CUpDownClient *client);
 
 // The real client engine (CQuicNgtcp2Factory::CreateOutboundForClient(), not a fake, and not

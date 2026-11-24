@@ -23,6 +23,7 @@
 
 #include <muleunit/test.h>
 #include <QuicContext.h>
+#include <QuicFineTick.h>
 #include <QuicCapabilityCache.h>
 #include <NetworkAddress.h>
 
@@ -98,6 +99,9 @@ struct FakeConnection : IQuicConnection
 			closed = true;
 		}
 	}
+
+	uint64_t nextExpiry = UINT64_MAX;
+	uint64_t NextExpiryMs() const override { return nextExpiry; }
 
 	void Close() override
 	{
@@ -389,6 +393,76 @@ TEST(QuicContext, TickServicesEveryLiveConnectionAndErasesClosedOnes)
 	ASSERT_EQUALS(1u, factory.created[0]->ticks);
 	ASSERT_EQUALS(1u, secondTicks);
 	ASSERT_EQUALS(1u, context.ConnectionCount());
+}
+
+TEST(QuicContext, NextExpiryIsTheEarliestDeadlineOfTheOpenConnections)
+{
+	FakeFactory factory;
+	CQuicContext context(&factory);
+	ASSERT_EQUALS(UINT64_MAX, context.NextExpiryMs());
+
+	factory.next = std::make_unique<FakeConnection>();
+	auto first = Initial(0x72);
+	ASSERT_TRUE(context.ProcessDatagram(first.data(), first.size(), kPeer, 4662, 0));
+	factory.next = std::make_unique<FakeConnection>();
+	auto second = Initial(0x73);
+	ASSERT_TRUE(context.ProcessDatagram(
+		second.data(), second.size(), kPeer, 4662, CQuicContext::kNewConnectionIntervalMs));
+	factory.created[0]->nextExpiry = 500;
+	factory.created[1]->nextExpiry = 200;
+	ASSERT_EQUALS(200u, context.NextExpiryMs());
+
+	// Closed but not yet erased: its timers will never be serviced again.
+	factory.created[1]->closed = true;
+	ASSERT_EQUALS(500u, context.NextExpiryMs());
+}
+
+TEST(QuicContext, FineTickStartsOnlyForADeadlineWithinOneCoreTick)
+{
+	CQuicFineTick tick(300);
+	ASSERT_TRUE(tick.Update(UINT64_MAX, 1000) == CQuicFineTick::EAction::None);
+	ASSERT_TRUE(tick.Update(1301, 1000) == CQuicFineTick::EAction::None);
+	ASSERT_TRUE(!tick.IsRunning());
+	ASSERT_TRUE(tick.Update(1300, 1000) == CQuicFineTick::EAction::Start);
+	ASSERT_TRUE(tick.IsRunning());
+}
+
+TEST(QuicContext, FineTickTreatsAPastDeadlineAsDue)
+{
+	CQuicFineTick tick(300);
+	ASSERT_TRUE(tick.Update(0, 1000) == CQuicFineTick::EAction::Start);
+}
+
+TEST(QuicContext, FineTickStartsOnceWhileDeadlinesKeepComing)
+{
+	CQuicFineTick tick(300);
+	ASSERT_TRUE(tick.Update(1005, 1000) == CQuicFineTick::EAction::Start);
+	for (uint64_t now = 1005; now < 3000; now += CQuicFineTick::kPeriodMs) {
+		ASSERT_TRUE(tick.Update(now + 25, now) == CQuicFineTick::EAction::None);
+	}
+	ASSERT_TRUE(tick.IsRunning());
+}
+
+TEST(QuicContext, FineTickStopsOneCoreTickAfterTheLastDeadline)
+{
+	CQuicFineTick tick(300);
+	ASSERT_TRUE(tick.Update(1005, 1000) == CQuicFineTick::EAction::Start);
+	// A connection that went idle: its next deadline is its idle timeout.
+	ASSERT_TRUE(tick.Update(31000, 1100) == CQuicFineTick::EAction::None);
+	ASSERT_TRUE(tick.Update(31000, 1299) == CQuicFineTick::EAction::None);
+	ASSERT_TRUE(tick.Update(31000, 1300) == CQuicFineTick::EAction::Stop);
+	ASSERT_TRUE(!tick.IsRunning());
+	ASSERT_TRUE(tick.Update(31000, 1400) == CQuicFineTick::EAction::None);
+	ASSERT_TRUE(tick.Update(1405, 1400) == CQuicFineTick::EAction::Start);
+}
+
+TEST(QuicContext, FineTickStartsAgainAfterATimerThatFailedToStart)
+{
+	CQuicFineTick tick(300);
+	ASSERT_TRUE(tick.Update(1005, 1000) == CQuicFineTick::EAction::Start);
+	tick.StartFailed();
+	ASSERT_TRUE(!tick.IsRunning());
+	ASSERT_TRUE(tick.Update(1010, 1005) == CQuicFineTick::EAction::Start);
 }
 
 TEST(QuicContext, DestructionClosesOwnedConnections)

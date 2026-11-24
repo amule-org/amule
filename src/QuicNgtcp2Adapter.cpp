@@ -383,6 +383,18 @@ public:
 		}
 	}
 
+	// The handshake deadline is seconds away, so the core tick serves it.
+	uint64_t NextExpiryMs() const override
+	{
+		if (m_closed) {
+			return UINT64_MAX;
+		}
+		if (m_flushOwed) {
+			return 0;
+		}
+		return m_engine->NextExpiryMs(m_handle);
+	}
+
 	// IQuicStreamOperations: CQuicSocketTransport's handle is this connection's own
 	// IQuicNgtcp2Engine::Handle, but it is never read back here -- this connection already
 	// knows which engine handle and stream it is. @p nowMs is CQuicSocketTransport's own injected
@@ -1145,6 +1157,21 @@ public:
 			return false;
 		}
 		return FlushConnection(it->second, sink, address, port, ts);
+	}
+
+	uint64_t NextExpiryMs(Handle handle) const override
+	{
+		auto it = m_connections.find(handle);
+		if (it == m_connections.end()) {
+			return UINT64_MAX;
+		}
+		// Until a Tick() closes the burst, ngtcp2 has not paced it, so its expiry would not
+		// include the burst's own pacing deadline.
+		if (it->second.burstOpen) {
+			return it->second.burstTs / UINT64_C(1000000);
+		}
+		const ngtcp2_tstamp expiry = ngtcp2_conn_get_expiry(it->second.conn);
+		return expiry == UINT64_MAX ? UINT64_MAX : (expiry + UINT64_C(999999)) / UINT64_C(1000000);
 	}
 
 	bool OwnsConnectionId(Handle handle, const std::string &cid) const override

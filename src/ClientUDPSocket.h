@@ -64,6 +64,8 @@ class CServer;
 #include "QuicStreamAcceptor.h"
 #include "QuicCapsRequestLedger.h"
 #include "QuicCapabilityCache.h"
+#include "QuicFineTick.h"
+#include "Timer.h"
 #endif
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT) && defined(AMULE_QUIC_TRANSPORT)
 #include "ClientRef.h" // Needed for a safe CAPS-holdoff owner reference
@@ -161,6 +163,9 @@ public:
 	//! datagram. Without this a connection that stops receiving ACKs would never retransmit
 	//! and never time out.
 	void TickQuic();
+	//! The ngtcp2 part of TickQuic(), every CQuicFineTick::kPeriodMs while a connection has a
+	//! deadline sooner than the next core tick.
+	void TickQuicFine();
 	//! Sends one QUIC datagram, obfuscated with the peer's hash when it is known. A long header
 	//! is preceded by our key frame, so the peer can obfuscate its replies the same way.
 	bool SendQuicFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port);
@@ -229,6 +234,10 @@ private:
 	CQuicCapsHoldoffs<CClientRef> m_quicCapsHoldoffs;
 	CQuicCapsHoldoffs<CClientRef>::SCallbacks QuicCapsHoldoffCallbacks();
 #endif
+	//! Starts or stops the fine tick for the connections' earliest deadline.
+	void ScheduleQuicFineTick(uint64_t nowMs);
+	CQuicFineTick m_quicFineTick;
+	CTimer m_quicFineTimer;
 #endif
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 	//! Our key frame, obfuscated with @a key; false when the packet was not queued.

@@ -118,6 +118,9 @@ public:
 	//! the timer handling was fatal (e.g. the idle timeout elapsed): the caller must then close
 	//! the connection rather than keep ticking it.
 	virtual bool Tick(Handle, IQuicDatagramSink &, const CNetworkAddress &, uint16_t, uint64_t nowMs) = 0;
+	//! When Tick() next has work, in Tick()'s milliseconds: ngtcp2_conn_get_expiry(), or the
+	//! open pacing burst that the next Tick() closes. UINT64_MAX for none.
+	virtual uint64_t NextExpiryMs(Handle) const { return UINT64_MAX; }
 	//! True once the stream we write on is open: the peer's on an accepted connection, our own
 	//! on a dial. The point at which a connection has something worth handing to the rest of aMule.
 	virtual bool HasOpenStream(Handle) const = 0;
