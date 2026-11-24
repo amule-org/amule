@@ -429,8 +429,8 @@ private:
 	Kademlia::CDepartedBuddies m_departedBuddies;
 	// Covers the time before relays reach a buddy that left.
 	static constexpr std::size_t DepartedBuddiesPerSlot = 2;
-	// Slots are kept for NAT-T nodes only once we relay the Kad rendezvous they need.
-	static constexpr bool RelaysKadRendezvous = false;
+	// Slots are kept for NAT-T nodes because we relay the Kad rendezvous they need.
+	static constexpr bool RelaysKadRendezvous = true;
 	std::string m_departedNote; // The latest drop for a buddy that left, this minute.
 	unsigned m_limitedLinesThisMinute = 0;
 	static constexpr unsigned MaxLimitedLinesPerMinute = 10;
