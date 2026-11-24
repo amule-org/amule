@@ -89,3 +89,15 @@ TEST(KadServedBuddyPolicy, NatTNodesFillKeptSlotsFirstThenOpenOnes)
 	ASSERT_TRUE(AdmitsServedBuddy(7, 2, 8, 2, false));
 	ASSERT_FALSE(AdmitsServedBuddy(8, 2, 8, 2, false));
 }
+
+TEST(KadServedBuddyPolicy, ARendezvousIsDroppedOnlyWhenBothDeclaredAndShareNoTransport)
+{
+	ASSERT_TRUE(ForwardsRendezvous(0x80, 0x80));
+	ASSERT_TRUE(ForwardsRendezvous(0x80 | 0x40, 0x40));
+	ASSERT_FALSE(ForwardsRendezvous(0x80, 0x40));
+	ASSERT_FALSE(ForwardsRendezvous(0x40, 0x80));
+	// Either side declaring no NAT-T transport is forwarded as before; other bits are ignored.
+	ASSERT_TRUE(ForwardsRendezvous(0, 0x80));
+	ASSERT_TRUE(ForwardsRendezvous(0x80, 0));
+	ASSERT_TRUE(ForwardsRendezvous(0x3F, 0x80));
+}

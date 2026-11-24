@@ -56,6 +56,16 @@ inline bool IsNatTCapableRequest(uint8_t connectOptions)
 	return (connectOptions & NatTConnectOptions) != 0;
 }
 
+// Whether the buddy forwards a rendezvous between a served node and a requester. It drops one only
+// when both declared NAT-T transports and share none; a peer that declared none (a legacy client, or
+// a 34-byte buddy request) is forwarded as before.
+inline bool ForwardsRendezvous(uint8_t servedOptions, uint8_t requesterOptions)
+{
+	const uint8_t served = servedOptions & NatTConnectOptions;
+	const uint8_t requester = requesterOptions & NatTConnectOptions;
+	return served == 0 || requester == 0 || (served & requester) != 0;
+}
+
 // The setting, capped at a tenth of the connection limit: each served buddy holds a connection.
 // Never fewer than one, the stock count.
 inline uint32_t EffectiveServedBuddyLimit(uint32_t setting, uint32_t maxConnections)
