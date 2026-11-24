@@ -262,7 +262,8 @@ bool CClientTCPSocket::CheckTimeOut()
 	uint64 uTimeout = GetTimeOut();
 #ifdef AMULE_UTP_TRANSPORT
 	if (HasTransport() && !GetTransport()->IsConnected()) {
-		// A uTP handshake gets a shorter window than the normal TCP timeout.
+		// Ends an accepted stream whose peer never sends data, and an unanswered
+		// rendezvous dial, sooner. The half-open expiry runs only on a new SYN.
 		uTimeout = std::min<uint64>(uTimeout, CONNECTION_TIMEOUT / 2);
 	}
 #endif
