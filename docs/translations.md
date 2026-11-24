@@ -242,6 +242,43 @@ application catalogs, and a separate source-of-truth.
 | `manpages-xx.add` | `docs/man/po/` | Optional language-specific addendum. Committed to git. |
 | `*.xx.1.in` (with language suffix) | build dir / source bundle | Rendered translated manpages. **Not committed.** Built at install time via po4a when present, or shipped pre-rendered in the source bundle attached to each GitHub Release. |
 
+### What to translate inside the markup
+
+Manpage strings carry po4a markup. `B<x>` renders `x` in bold, `I<x>` in
+italics, and `E<lt>` and `E<gt>` are escapes for `<` and `>`. So
+`I<E<lt>portE<gt>>` renders as italic `<port>`. The `B`, `I`, `E` and the
+brackets are markup: never change them.
+
+What goes *inside* is translated only when it is descriptive. Keep it
+verbatim when it is something the reader types or something the program
+defines:
+
+| Keep as-is | Examples |
+| ---------- | -------- |
+| Commands | `B<show>`, `B<exit>`, `B<progress>`, `B<results>` |
+| Options | `B<-h>`, `B<-w>`, `B<--password-stdin>`, `B<--config-dir>` |
+| Program names | `B<amulecmd>`, `B<amuled>`, `B<amulegui>`, `B<cas>` |
+| Config keys and sections | `B<LogFilePath>`, `B<[eMule]>` |
+| Literal values | `B<on>`, `B<off>`, `B<ed2k:on>`, `B<Enabled=1>` |
+| Filenames, paths, URLs | `I<amule.conf>`, `I<.bak>`, `I<$HOME/.aMule/remote.conf>` |
+
+Placeholders the reader replaces with a value of their own are
+descriptive, so they may be translated. Replace the word inside and leave
+everything around it alone, so `I<E<lt>portE<gt>>` becomes
+`I<E<lt>yourwordE<gt>>`. Two conditions: keep the `E` in both escapes,
+and use the same word everywhere, including the prose that refers back to
+the placeholder.
+
+Losing that `E` is the common mistake. `E<lt>yourword<gt>` instead of
+`E<lt>yourwordE<gt>` stops the page rendering:
+
+```text
+Unknown '<' or '>' sequence. Faulty message: [\fB\-h\fP \fIE<lt>hostE<gt>\fP] [\fB\-p\fP \fIE<lt>yourword<gt>\fP]
+```
+
+Run `./scripts/check-manpages-render.sh` before pushing to catch it. CI
+runs the same script on every pull request.
+
 ### Updating manpages.pot after editing an English master
 
 After editing any `*.1.in` master, run from the repository root:
