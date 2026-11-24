@@ -59,6 +59,7 @@
 #include "UtpLibraryAdapter.h"
 #include "UtpStreamAcceptor.h"
 #endif
+#include "NatRendezvousProtocol.h" // Needed for ParseRendezvousEnvelope, BuildForwardedRendezvous
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicTls.h"
 #include "QuicNgtcp2Adapter.h"
@@ -1657,14 +1658,38 @@ void CClientUDPSocket::ProcessPacket(
 		if (buddy->GetSocket() == nullptr) {
 			break;
 		}
-		/* The packet starts with a 16-byte key for the buddy. It is currently
-		   unused, so the transformation discards the first 10 bytes below and
-		   overwrites the other 6 with ip/port. */
-		CMemFile mem_packet(packet + 10, size - 10);
-		// Change the ip and port while leaving the rest untouched
-		mem_packet.Seek(0, wxFromStart);
-		mem_packet.WriteUInt32(host);
-		mem_packet.WriteUInt16(port);
+		CMemFile mem_packet;
+		if (size > NatRendezvous::kRendezvousPrefixSize &&
+			packet[NatRendezvous::kRendezvousPrefixSize] == NatRendezvous::OP_RENDEZVOUS &&
+			std::all_of(packet + NatRendezvous::kHashSize,
+				packet + NatRendezvous::kRendezvousPrefixSize,
+				[](uint8 byte) { return byte == 0; })) {
+			// A rendezvous is checked and rebuilt from what parsed, never relayed as received.
+			const auto envelope = NatRendezvous::ParseRendezvousEnvelope(packet, size);
+			if (!envelope) {
+				++relays.reasksMalformed;
+				break;
+			}
+			if (!Kademlia::ForwardsRendezvous(
+				    buddy->GetServedBuddyOptions(), envelope->request.connectOptions)) {
+				++relays.rendezvousNoSharedTransport;
+				break;
+			}
+			const std::vector<std::uint8_t> body =
+				NatRendezvous::BuildForwardedRendezvous(envelope->request);
+			mem_packet.WriteUInt32(host);
+			mem_packet.WriteUInt16(port);
+			mem_packet.Write(body.data(), body.size());
+		} else {
+			/* The packet starts with a 16-byte key for the buddy. It is currently
+			   unused, so the transformation discards the first 10 bytes below and
+			   overwrites the other 6 with ip/port. */
+			mem_packet.Write(packet + 10, size - 10);
+			// Change the ip and port while leaving the rest untouched
+			mem_packet.Seek(0, wxFromStart);
+			mem_packet.WriteUInt32(host);
+			mem_packet.WriteUInt16(port);
+		}
 		CPacket *response = new CPacket(mem_packet, OP_EMULEPROT, OP_REASKCALLBACKTCP);
 		const uint32 responseSize = response->GetPacketSize();
 		if (!theApp->clientlist->HasBuddyRelayBudget(buddy, responseSize)) {

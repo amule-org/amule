@@ -87,6 +87,7 @@ there client on the eMule forum..
 #endif
 #include "../../GuiEvents.h"
 #include "../../KadBuddyIdLayout.h"
+#include "../../KadServedBuddyPolicy.h"
 #include "../../KadPointerLookup.h"
 #include "../../KadBuddySearchPolicy.h" // Needed for OwnBuddyID
 #include "../../KadPointerPolicy.h"     // Needed for SendsKadPointer
@@ -1426,6 +1427,19 @@ void CSearch::StorePacket()
 		packetdata.WriteUInt128(OwnBuddyID(CKademlia::GetPrefs()->GetKadID()));
 		packetdata.WriteUInt128(CKademlia::GetPrefs()->GetClientHash());
 		packetdata.WriteUInt16(thePrefs::GetPort());
+#ifdef AMULE_UTP_TRANSPORT
+		constexpr bool utpBuiltIn = true;
+#else
+		constexpr bool utpBuiltIn = false;
+#endif
+#ifdef AMULE_QUIC_TRANSPORT
+		const bool quicEnabled = thePrefs::IsQuicNatTEnabled();
+#else
+		const bool quicEnabled = false;
+#endif
+		// The 35th byte: the buddy forwards a rendezvous only between peers that share a transport.
+		packetdata.WriteUInt8(CPrefs::GetMyConnectOptions(true, false) |
+				      LocalNatTConnectOptions(utpBuiltIn, quicEnabled));
 
 		DebugSend(KadFindBuddyReq, from->GetIPAddress(), from->GetUDPPort());
 		if (from->GetVersion() >= 6) {

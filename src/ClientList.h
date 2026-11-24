@@ -291,7 +291,8 @@ public:
 		SameIP,   // We already serve, or have offered to, that address.
 		Conflict, // We already know that client, or it is us.
 	};
-	EIncomingBuddy IncomingBuddy(Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID, bool natT);
+	EIncomingBuddy IncomingBuddy(
+		Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID, uint8_t connectOptions);
 
 	//! How many buddies we serve at most: the setting, capped by the connection limit.
 	uint32 GetServedBuddyLimit() const;
@@ -429,8 +430,8 @@ private:
 	Kademlia::CDepartedBuddies m_departedBuddies;
 	// Covers the time before relays reach a buddy that left.
 	static constexpr std::size_t DepartedBuddiesPerSlot = 2;
-	// Slots are kept for NAT-T nodes only once we relay the Kad rendezvous they need.
-	static constexpr bool RelaysKadRendezvous = false;
+	// Slots are kept for NAT-T nodes because we relay the Kad rendezvous they need.
+	static constexpr bool RelaysKadRendezvous = true;
 	std::string m_departedNote; // The latest drop for a buddy that left, this minute.
 	unsigned m_limitedLinesThisMinute = 0;
 	static constexpr unsigned MaxLimitedLinesPerMinute = 10;

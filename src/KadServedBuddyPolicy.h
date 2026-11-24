@@ -51,9 +51,26 @@ constexpr std::size_t MaxReaskRelaySize = 8228;
 // 0x80 for uTP (eMuleAI), 0x40 for QUIC (eMuleAI, eMuleQt).
 constexpr uint8_t NatTConnectOptions = 0x80 | 0x40;
 
+// The NAT-T bits we declare in our own buddy request: uTP when it is built in, QUIC when it is
+// built in and enabled.
+inline uint8_t LocalNatTConnectOptions(bool utp, bool quic)
+{
+	return static_cast<uint8_t>((utp ? 0x80 : 0) | (quic ? 0x40 : 0));
+}
+
 inline bool IsNatTCapableRequest(uint8_t connectOptions)
 {
 	return (connectOptions & NatTConnectOptions) != 0;
+}
+
+// Whether the buddy forwards a rendezvous between a served node and a requester. It drops one only
+// when both declared NAT-T transports and share none; a peer that declared none (a legacy client, or
+// a 34-byte buddy request) is forwarded as before.
+inline bool ForwardsRendezvous(uint8_t servedOptions, uint8_t requesterOptions)
+{
+	const uint8_t served = servedOptions & NatTConnectOptions;
+	const uint8_t requester = requesterOptions & NatTConnectOptions;
+	return served == 0 || requester == 0 || (served & requester) != 0;
 }
 
 // The setting, capped at a tenth of the connection limit: each served buddy holds a connection.

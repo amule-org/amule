@@ -1750,15 +1750,15 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 	CUInt128 userID = bio.ReadUInt128();
 	uint16_t tcpport = bio.ReadUInt16();
 	// eMuleAI and eMuleQt append their connect options; stock clients send 34 bytes.
-	const bool natT = lenPacket > 34 && Kademlia::IsNatTCapableRequest(bio.ReadUInt8());
-	if (natT) {
+	const uint8_t connectOptions = lenPacket > 34 ? bio.ReadUInt8() : 0;
+	if (Kademlia::IsNatTCapableRequest(connectOptions)) {
 		++stats.requestsNatT;
 	}
 
 	CUInt128 zero;
 	CContact contact(userID, ip, port, tcpport, 0, 0, false, zero);
 	const char *refusal = nullptr;
-	switch (theApp->clientlist->IncomingBuddy(&contact, &BuddyID, natT)) {
+	switch (theApp->clientlist->IncomingBuddy(&contact, &BuddyID, connectOptions)) {
 	case CClientList::EIncomingBuddy::Offered:
 		break;
 	case CClientList::EIncomingBuddy::Full:
