@@ -1643,7 +1643,8 @@ void CClientUDPSocket::ProcessPacket(
 				++relays.rendezvousNoSharedTransport;
 				break;
 			}
-			const std::vector<std::uint8_t> body = NatRendezvous::BuildForwardedRendezvous(envelope->request);
+			const std::vector<std::uint8_t> body =
+				NatRendezvous::BuildForwardedRendezvous(envelope->request);
 			mem_packet.WriteUInt32(host);
 			mem_packet.WriteUInt16(port);
 			mem_packet.Write(body.data(), body.size());
