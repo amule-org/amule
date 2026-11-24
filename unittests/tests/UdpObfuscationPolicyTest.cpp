@@ -22,6 +22,7 @@ DECLARE_SIMPLE(UdpObfuscationPolicy)
 namespace
 {
 constexpr std::uint32_t kPublicIP = 0x0100007F;
+constexpr std::uint32_t kKeyIP = 0x0200A8C0;
 constexpr std::uint32_t kReceiverKey = 0x12345678;
 
 bool Is(EUdpSendForm actual, EUdpSendForm expected)
@@ -63,6 +64,75 @@ TEST(UdpObfuscationPolicy, APacketWithNoKeyMaterialIsSentPlain)
 	ASSERT_FALSE(ObfuscateQueuedPacket(true, false, true, 0, true));
 	ASSERT_FALSE(ObfuscateQueuedPacket(true, false, false, kReceiverKey, true));
 	ASSERT_FALSE(ObfuscateQueuedPacket(false, true, true, kReceiverKey, true));
+}
+
+TEST(UdpObfuscationPolicy, TheClientKeyTakesThePerPeerKeyIPFirst)
+{
+	ASSERT_EQUALS(kKeyIP, ClientUdpKeyIP(kKeyIP, kPublicIP));
+	ASSERT_EQUALS(kKeyIP, ClientUdpKeyIP(kKeyIP, 0));
+	ASSERT_EQUALS(kPublicIP, ClientUdpKeyIP(0, kPublicIP));
+}
+
+TEST(UdpObfuscationPolicy, AStreamKeyIPIsTheLastResort)
+{
+	constexpr std::uint32_t kStreamKeyIP = 0x0300A8C0;
+	// A pin from before an IP change must not outrank what we know now.
+	ASSERT_EQUALS(kKeyIP, ClientUdpKeyIP(kKeyIP, kPublicIP, kStreamKeyIP));
+	ASSERT_EQUALS(kPublicIP, ClientUdpKeyIP(0, kPublicIP, kStreamKeyIP));
+	ASSERT_EQUALS(kStreamKeyIP, ClientUdpKeyIP(0, 0, kStreamKeyIP));
+}
+
+TEST(UdpObfuscationPolicy, AClientPacketWithNoKeyIPIsPlainOrDropped)
+{
+	// Our IP is in the key and the peer takes it from the datagram's source: obfuscating with any
+	// other address, such as our host name's, sends a packet nobody can read.
+	ASSERT_EQUALS((std::uint32_t)0, ClientUdpKeyIP(0, 0));
+	ASSERT_TRUE(Is(DecideUdpSendForm(true, false, false, ClientUdpKeyIP(0, 0)), EUdpSendForm::Plain));
+	ASSERT_TRUE(Is(DecideUdpSendForm(true, true, false, ClientUdpKeyIP(0, 0)), EUdpSendForm::Drop));
+	ASSERT_TRUE(Is(
+		DecideUdpSendForm(true, true, false, ClientUdpKeyIP(kKeyIP, 0)), EUdpSendForm::Obfuscated));
+}
+
+TEST(UdpObfuscationPolicy, AFrameOfARequiredObfuscatedStreamIsDroppedRatherThanSentPlain)
+{
+	// After a server disconnect with Kad off we know no IP, and a uTP frame must not go plain.
+	const bool required = TransportFrameRequiresObfuscation(true, true, true);
+	ASSERT_TRUE(required);
+	ASSERT_TRUE(Is(DecideUdpSendForm(true, required, false, ClientUdpKeyIP(0, 0)), EUdpSendForm::Drop));
+	// Without "require", or without a key, a frame may go plain, as before.
+	ASSERT_FALSE(TransportFrameRequiresObfuscation(true, true, false));
+	ASSERT_FALSE(TransportFrameRequiresObfuscation(true, false, true));
+	ASSERT_FALSE(TransportFrameRequiresObfuscation(false, true, true));
+}
+
+TEST(UdpObfuscationPolicy, AVerifiedStreamKeepsItsKeyIPUntilItsLastStreamIsUnpinned)
+{
+	constexpr std::uint32_t kPeer = 0x0500000A;
+	CVerifiedStreamKeyIPs pins;
+	ASSERT_EQUALS((std::uint32_t)0, pins.Lookup(kPeer));
+	ASSERT_TRUE(pins.Pin(kPeer, kKeyIP));
+	ASSERT_TRUE(pins.Pin(kPeer, kPublicIP));
+	// The newest pin wins: a peer sees us at one IP whatever its port.
+	ASSERT_EQUALS(kPublicIP, pins.Lookup(kPeer));
+	pins.Unpin(kPeer);
+	ASSERT_EQUALS(kPublicIP, pins.Lookup(kPeer));
+	pins.Unpin(kPeer);
+	ASSERT_EQUALS((std::uint32_t)0, pins.Lookup(kPeer));
+	// An unknown peer, or one more unpin, changes nothing.
+	pins.Unpin(kPeer);
+	ASSERT_EQUALS((std::uint32_t)0, pins.Lookup(kPeer));
+}
+
+TEST(UdpObfuscationPolicy, NothingIsPinnedWithoutBothAddresses)
+{
+	CVerifiedStreamKeyIPs pins;
+	ASSERT_FALSE(pins.Pin(0x0500000A, 0));
+	ASSERT_FALSE(pins.Pin(0, kKeyIP));
+	ASSERT_EQUALS((std::uint32_t)0, pins.Lookup(0x0500000A));
+	// A pinned stream's key IP keys its frames while we know no IP of ours.
+	ASSERT_TRUE(pins.Pin(0x0500000A, kKeyIP));
+	ASSERT_TRUE(Is(DecideUdpSendForm(true, true, false, ClientUdpKeyIP(0, 0, pins.Lookup(0x0500000A))),
+		EUdpSendForm::Obfuscated));
 }
 
 TEST(UdpObfuscationPolicy, AnEncryptedClientPacketIsObfuscatedWhileThePublicIPIsKnown)

@@ -4864,8 +4864,9 @@ bool CUpDownClient::WantsStreamObfuscation() const
 
 bool CUpDownClient::ShouldReceiveCryptUDPPackets() const
 {
+	// The key holds our IP, so not the host-name fallback (ClientUdpKeyIP()).
 	return (thePrefs::IsClientCryptLayerSupported() && SupportsCryptLayer() &&
-		theApp->GetPublicIP() != 0 && HasValidHash() &&
+		theApp->GetPublicIP(true) != 0 && HasValidHash() &&
 		(thePrefs::IsClientCryptLayerRequested() || RequestsCryptLayer()));
 }
 

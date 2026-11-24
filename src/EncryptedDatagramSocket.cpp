@@ -72,6 +72,7 @@
 #include "./kademlia/kademlia/Kademlia.h"
 #include "RandomFunctions.h"
 #include "Statistics.h"
+#include "UdpObfuscationPolicy.h" // Needed for ClientUdpKeyIP
 
 #include <protocol/Protocols.h>
 #include <common/MD5Sum.h>
@@ -238,7 +239,8 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(uint8_t *bufIn,
 //   clientHashOrKadID != NULL                                 -> clientHashOrKadID
 //   clientHashOrKadID == NULL && kad && receiverVerifyKey != 0 -> receiverVerifyKey
 //   otherwise                                                  -> ASSERT
-// An ed2k key mixes in keyIP, the IPv4 the receiver sees us at, or our public IP when 0.
+// An ed2k key mixes in keyIP, the IPv4 the receiver sees us at, or, when 0, our IP from the server or
+// Kad (ClientUdpKeyIP()).
 // Kad reaches here whatever the user's crypt layer preference says, because the receiver key a
 // peer needs to prove our address travels in the header this writes.
 int CEncryptedDatagramSocket::EncryptSendClient(uint8_t **buf,
@@ -249,7 +251,8 @@ int CEncryptedDatagramSocket::EncryptSendClient(uint8_t **buf,
 	uint32_t senderVerifyKey,
 	uint32_t keyIP)
 {
-	wxASSERT(theApp->GetPublicIP() != 0 || kad);
+	keyIP = ClientUdpKeyIP(keyIP, theApp->GetPublicIP(true));
+	wxASSERT(keyIP != 0 || kad);
 	wxASSERT(kad || thePrefs::IsClientCryptLayerSupported());
 	wxASSERT(clientHashOrKadID != NULL || receiverVerifyKey != 0);
 	wxASSERT((receiverVerifyKey == 0 && senderVerifyKey == 0) || kad);
@@ -284,7 +287,7 @@ int CEncryptedDatagramSocket::EncryptSendClient(uint8_t **buf,
 	} else {
 		uint8_t keyData[23];
 		md4cpy(keyData, clientHashOrKadID);
-		PokeUInt32(keyData + 16, keyIP != 0 ? keyIP : theApp->GetPublicIP());
+		PokeUInt32(keyData + 16, keyIP);
 		PokeUInt16(keyData + 21, randomKeyPart);
 		keyData[20] = MAGICVALUE_UDP;
 		md5.Calculate(keyData, sizeof(keyData));

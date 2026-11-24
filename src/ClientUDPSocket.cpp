@@ -106,10 +106,11 @@ constexpr bool kQuicBuilt = false;
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 namespace
 {
-//! Our user hash may only leave obfuscated, and only where the user allows the crypt layer.
+//! Our user hash may only leave obfuscated, and only where the user allows the crypt layer. The key
+//! holds our IP, so not the host-name fallback (ClientUdpKeyIP()).
 bool NatTObfuscationAvailable()
 {
-	return thePrefs::IsClientCryptLayerSupported() && theApp->GetPublicIP() != 0;
+	return thePrefs::IsClientCryptLayerSupported() && theApp->GetPublicIP(true) != 0;
 }
 } // namespace
 
@@ -160,6 +161,31 @@ uint32_t CClientUDPSocket::NatKeyIPFor(uint32_t peerIp)
 	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
 	return m_natKeyIPs.Lookup(peerIp, LoginIP(), ::GetTickCount64()).value_or(0);
 }
+
+uint32 CClientUDPSocket::StreamKeyIP(uint32 ip)
+{
+	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
+	return m_streamKeyIPs.Lookup(ip);
+}
+
+bool CClientUDPSocket::PinStreamKeyIP(uint32_t peerIp, uint32_t keyIP)
+{
+	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
+	return m_streamKeyIPs.Pin(peerIp, keyIP);
+}
+
+void CClientUDPSocket::UnpinStreamKeyIP(uint32_t peerIp)
+{
+	std::lock_guard<std::mutex> lock(m_natKeyIPsMutex);
+	m_streamKeyIPs.Unpin(peerIp);
+}
+
+#ifdef AMULE_QUIC_TRANSPORT
+bool CClientUDPSocket::HasQuicPeerKey(uint32_t ip, uint16_t port)
+{
+	return m_keyFrames.HasPeerKey(ip, port, ::GetTickCount64());
+}
+#endif
 
 uint32_t CClientUDPSocket::IdentUdpIP() const
 {
@@ -319,8 +345,8 @@ bool CClientUDPSocket::SendQuicCapsRequest(const std::array<uint8_t, 16> &peer,
 	auto packet = std::make_unique<CPacket>(
 		OP_NATT_FRAME_CAPS, static_cast<uint32>(frame.size()), OP_UDPRESERVEDPROT2);
 	packet->CopyToDataBuffer(0, frame.data(), static_cast<unsigned int>(frame.size()));
-	const QuicCapsSendPlan sendPlan =
-		MakeQuicCapsSendPlan(thePrefs::IsClientCryptLayerSupported(), theApp->GetPublicIP(), peer);
+	const QuicCapsSendPlan sendPlan = MakeQuicCapsSendPlan(
+		thePrefs::IsClientCryptLayerSupported(), theApp->GetPublicIP(true), peer);
 	SendPacket(packet.release(),
 		ipv4,
 		udpPort,
@@ -341,7 +367,10 @@ NatKeyFrame::Callbacks CClientUDPSocket::KeyFrameCallbacks()
 {
 	NatKeyFrame::Callbacks callbacks;
 	callbacks.enabled = [] { return QuicNatTEnabled(); };
-	callbacks.obfuscationOn = [] { return NatTObfuscationAvailable(); };
+	callbacks.obfuscationOn = [this](uint32_t ip) {
+		return NatTObfuscationAvailable() ||
+		       (thePrefs::IsClientCryptLayerSupported() && StreamKeyIP(ip) != 0);
+	};
 	callbacks.sendKeyFrame = [this](uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key) -> bool {
 		return SendNatKeyFrame(ip, port, key);
 	};
@@ -1101,7 +1130,7 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 		response->CopyToDataBuffer(0, ack.data(), static_cast<unsigned int>(ack.size()));
 		const QuicCapsSendPlan sendPlan =
 			MakeQuicCapsSendPlan(thePrefs::IsClientCryptLayerSupported(),
-				theApp->GetPublicIP(),
+				theApp->GetPublicIP(true),
 				request.senderUserHash);
 		SendPacket(response.release(),
 			ip,

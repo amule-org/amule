@@ -78,6 +78,12 @@ public:
 	void Disconnect(const wxString &strReason);
 
 	bool InitNetworkData(AdmissionTransport transport);
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+	//! Once a hello has crossed an obfuscated uTP or QUIC stream, its frames keep the key IP that
+	//! carried it, while we know no IP of ours.
+	void PinVerifiedStreamKeyIP();
+	void UnpinVerifiedStreamKeyIP();
+#endif
 #ifdef AMULE_UTP_TRANSPORT
 	//! Hands this peer's obfuscation preference and hash to an attached stream.
 	void ApplyUtpCryptParameters();
@@ -146,6 +152,7 @@ protected:
 
 private:
 	CUpDownClient *m_client;
+	uint32 m_pinnedStreamPeerIP = 0;
 	bool m_connectionCountPending = false;
 	EConnectionOpener m_opener = EConnectionOpener::Accepted;
 	bool m_viaProxy = false;

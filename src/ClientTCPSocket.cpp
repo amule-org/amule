@@ -139,6 +139,9 @@ std::uint8_t CClientTCPSocket::ConnectionRoute(bool contactInFlight, EContactRou
 
 CClientTCPSocket::~CClientTCPSocket()
 {
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+	UnpinVerifiedStreamKeyIP();
+#endif
 	if (m_client) {
 		m_client->SetSocket(NULL);
 	}
@@ -190,6 +193,50 @@ void CClientTCPSocket::ApplyUtpCryptParameters()
 	GetTransport()->SetCryptParameters(encrypt, encrypt ? m_client->GetUserHash().GetHash() : nullptr);
 }
 
+#endif
+
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+void CClientTCPSocket::PinVerifiedStreamKeyIP()
+{
+	uint32 peerIP = 0;
+	uint32 keyIP = 0;
+	if (HasTransport() && m_client != nullptr && m_client->HasValidHash() &&
+		theApp->clientudp != nullptr) {
+		peerIP = GetTransport()->GetPeerAddress().ToIPv4NetworkOrderOrZero();
+		// TLS makes every QUIC stream report itself obfuscated; its datagrams are obfuscated only
+		// when keyed on the peer's hash.
+		bool obfuscated = GetTransport()->IsUtp() && GetTransport()->ObfuscatesStream();
+#ifdef AMULE_QUIC_TRANSPORT
+		if (!GetTransport()->IsUtp()) {
+			obfuscated = theApp->clientudp->HasQuicPeerKey(peerIP, GetTransport()->GetPeerPort());
+		}
+#endif
+		// The key IP this stream's frames carry from now on. For QUIC, a hello while we know no IP
+		// keeps the pin it finds. A uTP stream needs our IP for its crypt parameters
+		// (ApplyUtpCryptParameters()).
+		if (obfuscated) {
+			keyIP = ClientUdpKeyIP(theApp->clientudp->NatKeyIPFor(peerIP),
+				theApp->GetPublicIP(true),
+				theApp->clientudp->StreamKeyIP(peerIP));
+		}
+	}
+	// A second hello replaces the first pin.
+	UnpinVerifiedStreamKeyIP();
+	if (theApp->clientudp != nullptr && theApp->clientudp->PinStreamKeyIP(peerIP, keyIP)) {
+		m_pinnedStreamPeerIP = peerIP;
+	}
+}
+
+void CClientTCPSocket::UnpinVerifiedStreamKeyIP()
+{
+	if (m_pinnedStreamPeerIP != 0 && theApp->clientudp != nullptr) {
+		theApp->clientudp->UnpinStreamKeyIP(m_pinnedStreamPeerIP);
+	}
+	m_pinnedStreamPeerIP = 0;
+}
+#endif
+
+#ifdef AMULE_UTP_TRANSPORT
 bool CClientTCPSocket::IsUtpInbound() const
 {
 	return HasUtpTransport() && GetTransport()->IsInbound();
@@ -434,6 +481,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		// Apply them before secure identification queues any reply.
 		ApplyUtpCryptParameters();
 #endif
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+		PinVerifiedStreamKeyIP();
+#endif
 
 		// Start secure identification once both info packets have arrived:
 		// OP_EMULEINFO + OP_HELLOANSWER (old eMule), or eMule-OP_HELLOANSWER (new).
@@ -554,6 +604,9 @@ bool CClientTCPSocket::ProcessPacket(const uint8_t *buffer, uint32 size, uint8 o
 		// After the attach above, which may have replaced the client this keys
 		// on. Outbound streams also refresh their parameters on HELLOANSWER.
 		ApplyUtpCryptParameters();
+#endif
+#if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+		PinVerifiedStreamKeyIP();
 #endif
 		Notify_SharedCtrlRefreshClient(m_client->ECID(), AVAILABLE_SOURCE);
 		if ((m_client->GetHashType() == SO_EMULE) && !bIsMuleHello) {

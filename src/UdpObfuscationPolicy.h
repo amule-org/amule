@@ -15,6 +15,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 
 enum class EUdpSendForm
 {
@@ -45,13 +46,83 @@ inline bool ObfuscateQueuedPacket(bool requested,
 }
 
 /**
- * How a queued UDP packet leaves. Client obfuscation needs our public IP, so an ordinary packet falls
- * back to plain without one. A packet that must be obfuscated (one carrying our user hash) is dropped
- * instead: the public IP can be lost between queueing and sending.
+ * Our IP in a client UDP key. The receiver rebuilds the key from the datagram's source, so only an
+ * address the peer sees us at will do: its per-peer key IP, else our verified public IP, else, while
+ * we know neither, the key IP of a verified stream to that peer (CVerifiedStreamKeyIPs). Never the
+ * host-name fallback of GetPublicIP(), which is a LAN or loopback address behind NAT. 0: no key.
  */
-inline EUdpSendForm DecideUdpSendForm(bool encrypt, bool requireObfuscation, bool kad, std::uint32_t publicIP)
+inline std::uint32_t ClientUdpKeyIP(
+	std::uint32_t perPeerKeyIP, std::uint32_t verifiedPublicIP, std::uint32_t streamKeyIP = 0)
 {
-	if (encrypt && (publicIP != 0 || kad)) {
+	if (perPeerKeyIP != 0) {
+		return perPeerKeyIP;
+	}
+	return verifiedPublicIP != 0 ? verifiedPublicIP : streamKeyIP;
+}
+
+/**
+ * The key IP of each verified, obfuscated uTP or QUIC stream, by peer IPv4. A live stream keeps the
+ * key it was verified with: if our IP has changed since, the peer can no longer reach the stream
+ * anyway, and if it has not, that key is still right while we know no IP, as after a server
+ * disconnect with Kad off. A peer sees us at one IP whatever its port, so one entry serves all its
+ * streams; the newest pin wins.
+ */
+class CVerifiedStreamKeyIPs
+{
+public:
+	//! False, and nothing to unpin, without both addresses.
+	bool Pin(std::uint32_t peerIP, std::uint32_t keyIP)
+	{
+		if (peerIP == 0 || keyIP == 0) {
+			return false;
+		}
+		Entry &entry = m_entries[peerIP];
+		entry.keyIP = keyIP;
+		++entry.streams;
+		return true;
+	}
+
+	void Unpin(std::uint32_t peerIP)
+	{
+		const auto found = m_entries.find(peerIP);
+		if (found != m_entries.end() && --found->second.streams == 0) {
+			m_entries.erase(found);
+		}
+	}
+
+	std::uint32_t Lookup(std::uint32_t peerIP) const
+	{
+		const auto found = m_entries.find(peerIP);
+		return found != m_entries.end() ? found->second.keyIP : 0;
+	}
+
+private:
+	struct Entry
+	{
+		std::uint32_t keyIP = 0;
+		unsigned streams = 0;
+	};
+	std::map<std::uint32_t, Entry> m_entries;
+};
+
+/**
+ * Whether a transport frame (uTP, or QUIC with a key) must leave obfuscated. As the RC4 layer does on
+ * TCP, "require" holds for the whole stream: a frame with no key IP, neither its stream's
+ * (CVerifiedStreamKeyIPs) nor ours, is dropped, and the transport sends it again later, never plain.
+ */
+inline bool TransportFrameRequiresObfuscation(bool encrypt, bool haveCryptTarget, bool cryptLayerRequired)
+{
+	return encrypt && haveCryptTarget && cryptLayerRequired;
+}
+
+/**
+ * How a queued UDP packet leaves. Client obfuscation needs our IP in the key (ClientUdpKeyIP()), so an
+ * ordinary packet falls back to plain without one. A packet that must be obfuscated (one carrying our
+ * user hash) is dropped instead: the public IP can be lost between queueing and sending.
+ */
+inline EUdpSendForm DecideUdpSendForm(bool encrypt, bool requireObfuscation, bool kad, std::uint32_t keyIP)
+{
+	if (encrypt && (keyIP != 0 || kad)) {
 		return EUdpSendForm::Obfuscated;
 	}
 	return requireObfuscation ? EUdpSendForm::Drop : EUdpSendForm::Plain;

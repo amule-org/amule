@@ -551,8 +551,9 @@ struct Callbacks
 {
 	//! The runtime opt-in for QUIC NAT-T.
 	std::function<bool()> enabled;
-	//! Whether the user allows the UDP obfuscation layer at all.
-	std::function<bool()> obfuscationOn;
+	//! Whether a datagram to this IPv4 may be obfuscated: the user allows the layer, and we have
+	//! an IP of ours for the key, from the server or Kad, or from a verified stream to that peer.
+	std::function<bool(std::uint32_t ip)> obfuscationOn;
 	//! Sends our key frame, obfuscated with @a key; false means the sink rejected it.
 	std::function<bool(std::uint32_t ip, std::uint16_t port, const Hash &key)> sendKeyFrame;
 	//! Sends one QUIC datagram, obfuscated with @a key unless it is null.
@@ -595,6 +596,12 @@ public:
 	bool IsExpectedPeer(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs) const
 	{
 		return m_expected.IsExpectedAllowingMovedPort(ip, port, nowMs);
+	}
+
+	//! Whether our datagrams to this endpoint are keyed on a peer hash, so obfuscated.
+	bool HasPeerKey(std::uint32_t ip, std::uint16_t port, std::uint64_t nowMs)
+	{
+		return m_keys.Lookup(ip, port, nowMs).has_value();
 	}
 
 	//! We are dialling this identity. It is authoritative unless a live server-vouched key exists.
@@ -641,7 +648,7 @@ public:
 			return false;
 		}
 		SendPlan plan;
-		if (m_callbacks.obfuscationOn()) {
+		if (m_callbacks.obfuscationOn(ip)) {
 			plan = PlanDatagram(
 				m_keys, m_gate, ip, port, IsQuicLongHeader(payload, length), nowMs);
 		}

@@ -275,8 +275,10 @@ bool CMuleUDPSocket::TrySendObfuscatedPacket(
 {
 	wxCHECK_MSG(packet, false, "Invalid packet.");
 	if (targetClientHash == nullptr ||
-		DecideUdpSendForm(
-			thePrefs::IsClientCryptLayerSupported(), true, false, theApp->GetPublicIP()) !=
+		DecideUdpSendForm(thePrefs::IsClientCryptLayerSupported(),
+			true,
+			false,
+			ClientUdpKeyIP(ClientCryptKeyIP(IP), theApp->GetPublicIP(true), StreamKeyIP(IP))) !=
 			EUdpSendForm::Obfuscated) {
 		AddDebugLogLineN(logMuleUDP,
 			(m_name + ": Packet discarded, it cannot be obfuscated (")
@@ -291,7 +293,9 @@ bool CMuleUDPSocket::TrySendObfuscatedPacket(
 bool CMuleUDPSocket::TrySendTransportPacket(
 	CPacket *packet, uint32 IP, uint16 port, bool bEncrypt, const uint8 *targetClientHash)
 {
-	return QueuePacket(packet, IP, port, bEncrypt, targetClientHash, false, 0, false, true);
+	const bool requireEncrypt = TransportFrameRequiresObfuscation(
+		bEncrypt, targetClientHash != nullptr, thePrefs::IsClientCryptLayerRequired());
+	return QueuePacket(packet, IP, port, bEncrypt, targetClientHash, false, 0, requireEncrypt, true);
 }
 
 bool CMuleUDPSocket::QueuePacket(CPacket *packet,
@@ -348,6 +352,7 @@ bool CMuleUDPSocket::QueuePacket(CPacket *packet,
 	newpending.bKad = bKad;
 	newpending.nReceiverVerifyKey = nReceiverVerifyKey;
 	newpending.keyIP = (newpending.bEncrypt && !bKad) ? ClientCryptKeyIP(IP) : 0;
+	newpending.streamKeyIP = (newpending.bEncrypt && !bKad) ? StreamKeyIP(IP) : 0;
 	if (newpending.bEncrypt && pachTargetClientHashORKadID != NULL) {
 		md4cpy(newpending.pachTargetClientHashORKadID, pachTargetClientHashORKadID);
 	} else {
@@ -364,6 +369,11 @@ bool CMuleUDPSocket::QueuePacket(CPacket *packet,
 }
 
 uint32 CMuleUDPSocket::ClientCryptKeyIP(uint32)
+{
+	return 0;
+}
+
+uint32 CMuleUDPSocket::StreamKeyIP(uint32)
 {
 	return 0;
 }
@@ -389,8 +399,9 @@ SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, u
 	while (!m_queue.empty() && !m_busy && (chargedBytes < maxNumberOfBytesToSend)) {
 		UDPPack item = m_queue.front();
 		CPacket *packet = item.packet;
-		const EUdpSendForm form = DecideUdpSendForm(
-			item.bEncrypt, item.bRequireEncrypt, item.bKad, theApp->GetPublicIP());
+		const uint32 keyIP = ClientUdpKeyIP(item.keyIP, theApp->GetPublicIP(true), item.streamKeyIP);
+		const EUdpSendForm form =
+			DecideUdpSendForm(item.bEncrypt, item.bRequireEncrypt, item.bKad, keyIP);
 		if (form == EUdpSendForm::Drop) {
 			AddDebugLogLineN(logMuleUDP,
 				(m_name + ": Packet discarded, obfuscation lapsed before sending (")
@@ -410,7 +421,7 @@ SocketSentBytes CMuleUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, u
 					item.bKad,
 					item.nReceiverVerifyKey,
 					(item.bKad ? Kademlia::CPrefs::GetUDPVerifyKey(item.IP) : 0),
-					item.keyIP);
+					keyIP);
 			}
 
 			if (SendTo(sendbuffer, len, item.IP, item.port)) {
