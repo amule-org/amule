@@ -55,6 +55,16 @@ inline std::uint32_t ClientUdpKeyIP(std::uint32_t perPeerKeyIP, std::uint32_t ve
 }
 
 /**
+ * Whether a transport frame (uTP, or QUIC with a key) must leave obfuscated. As the RC4 layer does on
+ * TCP, "require" holds for the whole stream: while our IP is unknown, as after a server disconnect with
+ * Kad off, its frames are dropped, and the transport sends them again later, never plain.
+ */
+inline bool TransportFrameRequiresObfuscation(bool encrypt, bool haveCryptTarget, bool cryptLayerRequired)
+{
+	return encrypt && haveCryptTarget && cryptLayerRequired;
+}
+
+/**
  * How a queued UDP packet leaves. Client obfuscation needs our IP in the key (ClientUdpKeyIP()), so an
  * ordinary packet falls back to plain without one. A packet that must be obfuscated (one carrying our
  * user hash) is dropped instead: the public IP can be lost between queueing and sending.

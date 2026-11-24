@@ -239,7 +239,8 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(uint8_t *bufIn,
 //   clientHashOrKadID != NULL                                 -> clientHashOrKadID
 //   clientHashOrKadID == NULL && kad && receiverVerifyKey != 0 -> receiverVerifyKey
 //   otherwise                                                  -> ASSERT
-// An ed2k key mixes in keyIP, the IPv4 the receiver sees us at, or our public IP when 0.
+// An ed2k key mixes in keyIP, the IPv4 the receiver sees us at, or, when 0, our IP from the server or
+// Kad (ClientUdpKeyIP()).
 // Kad reaches here whatever the user's crypt layer preference says, because the receiver key a
 // peer needs to prove our address travels in the header this writes.
 int CEncryptedDatagramSocket::EncryptSendClient(uint8_t **buf,

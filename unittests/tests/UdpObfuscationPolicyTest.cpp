@@ -73,7 +73,7 @@ TEST(UdpObfuscationPolicy, TheClientKeyTakesThePerPeerKeyIPFirst)
 	ASSERT_EQUALS(kPublicIP, ClientUdpKeyIP(0, kPublicIP));
 }
 
-TEST(UdpObfuscationPolicy, WithNoIPThePeerCanRebuildAClientPacketIsPlainOrDropped)
+TEST(UdpObfuscationPolicy, AClientPacketWithNoKeyIPIsPlainOrDropped)
 {
 	// Our IP is in the key and the peer takes it from the datagram's source: obfuscating with any
 	// other address, such as our host name's, sends a packet nobody can read.
@@ -82,6 +82,18 @@ TEST(UdpObfuscationPolicy, WithNoIPThePeerCanRebuildAClientPacketIsPlainOrDroppe
 	ASSERT_TRUE(Is(DecideUdpSendForm(true, true, false, ClientUdpKeyIP(0, 0)), EUdpSendForm::Drop));
 	ASSERT_TRUE(Is(
 		DecideUdpSendForm(true, true, false, ClientUdpKeyIP(kKeyIP, 0)), EUdpSendForm::Obfuscated));
+}
+
+TEST(UdpObfuscationPolicy, AFrameOfARequiredObfuscatedStreamIsDroppedRatherThanSentPlain)
+{
+	// After a server disconnect with Kad off we know no IP, and a uTP frame must not go plain.
+	const bool required = TransportFrameRequiresObfuscation(true, true, true);
+	ASSERT_TRUE(required);
+	ASSERT_TRUE(Is(DecideUdpSendForm(true, required, false, ClientUdpKeyIP(0, 0)), EUdpSendForm::Drop));
+	// Without "require", or without a key, a frame may go plain, as before.
+	ASSERT_FALSE(TransportFrameRequiresObfuscation(true, true, false));
+	ASSERT_FALSE(TransportFrameRequiresObfuscation(true, false, true));
+	ASSERT_FALSE(TransportFrameRequiresObfuscation(false, true, true));
 }
 
 TEST(UdpObfuscationPolicy, AnEncryptedClientPacketIsObfuscatedWhileThePublicIPIsKnown)

@@ -293,7 +293,9 @@ bool CMuleUDPSocket::TrySendObfuscatedPacket(
 bool CMuleUDPSocket::TrySendTransportPacket(
 	CPacket *packet, uint32 IP, uint16 port, bool bEncrypt, const uint8 *targetClientHash)
 {
-	return QueuePacket(packet, IP, port, bEncrypt, targetClientHash, false, 0, false, true);
+	const bool requireEncrypt = TransportFrameRequiresObfuscation(
+		bEncrypt, targetClientHash != nullptr, thePrefs::IsClientCryptLayerRequired());
+	return QueuePacket(packet, IP, port, bEncrypt, targetClientHash, false, 0, requireEncrypt, true);
 }
 
 bool CMuleUDPSocket::QueuePacket(CPacket *packet,
