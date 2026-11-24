@@ -145,6 +145,8 @@ public:
 	static const unsigned UDP_BUFFER_SIZE = 16384;
 
 protected:
+	//! Whether OnReceive() will be called again for a datagram already received.
+	bool HasQueuedDatagram();
 	/** Update the stored address of a socket that is currently closed. */
 	bool SetBindAddressIfClosed(const amuleIPV4Address &address);
 

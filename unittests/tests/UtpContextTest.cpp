@@ -237,19 +237,43 @@ TEST(UtpContext, LibrarySendIsEncryptedWithHashWhenPeerKnown)
 	ASSERT_EQUALS(0u, sink.key);
 }
 
-TEST(UtpContext, ProcessingIssuesDeferredAcksWithoutTick)
+TEST(UtpContext, ProcessingLeavesAcksForIssueDeferredAcks)
 {
 	State state;
 	Sink sink;
 	CUtpContext context(std::make_unique<FakeLibrary>(state), sink);
+	// Nothing to acknowledge before libutp is set up.
+	context.IssueDeferredAcks();
+	ASSERT_EQUALS(0, state.acks);
 	const uint8_t payload[] = { 0x41 };
 	ASSERT_TRUE(context.ProcessDatagram(payload, sizeof(payload), 1, 2));
-	ASSERT_EQUALS(1, state.acks);
-	ASSERT_EQUALS(0, state.timeouts);
 	state.claimed = false;
 	ASSERT_FALSE(context.ProcessDatagram(payload, sizeof(payload), 1, 2));
-	ASSERT_EQUALS(2, state.acks);
+	ASSERT_EQUALS(0, state.acks);
+	context.IssueDeferredAcks();
+	ASSERT_EQUALS(1, state.acks);
 	ASSERT_EQUALS(0, state.timeouts);
+}
+
+TEST(UtpContext, AckBatchSendsOnceTheQueueDrains)
+{
+	CUtpAckBatch batch;
+	for (int i = 0; i < 5; ++i) {
+		ASSERT_FALSE(batch.AfterDatagram(true));
+	}
+	ASSERT_TRUE(batch.AfterDatagram(false));
+	ASSERT_TRUE(batch.AfterDatagram(false));
+}
+
+TEST(UtpContext, AckBatchSendsEveryMaxDatagramsWhileTheQueueNeverDrains)
+{
+	CUtpAckBatch batch;
+	for (int round = 0; round < 2; ++round) {
+		for (unsigned i = 1; i < CUtpAckBatch::kMaxDatagrams; ++i) {
+			ASSERT_FALSE(batch.AfterDatagram(true));
+		}
+		ASSERT_TRUE(batch.AfterDatagram(true));
+	}
 }
 
 TEST(UtpContext, TickAndCloseAbandonStateUntilNextDatagram)
@@ -264,7 +288,7 @@ TEST(UtpContext, TickAndCloseAbandonStateUntilNextDatagram)
 		const uint8_t payload[] = { 0x41 };
 		ASSERT_TRUE(context.ProcessDatagram(payload, sizeof(payload), 1, 2));
 		context.Tick();
-		ASSERT_EQUALS(2, state.acks);
+		ASSERT_EQUALS(1, state.acks);
 		ASSERT_EQUALS(1, state.timeouts);
 		context.Destroy(); // The operation used by CClientUDPSocket::Close.
 		ASSERT_EQUALS(1, state.destroys);
@@ -272,7 +296,7 @@ TEST(UtpContext, TickAndCloseAbandonStateUntilNextDatagram)
 		context.Destroy();
 		context.Tick();
 		ASSERT_EQUALS(1, state.destroys);
-		ASSERT_EQUALS(2, state.acks);
+		ASSERT_EQUALS(1, state.acks);
 		ASSERT_EQUALS(1, state.timeouts);
 		ASSERT_TRUE(context.ProcessDatagram(payload, sizeof(payload), 3, 4));
 		ASSERT_EQUALS(2, state.creates);

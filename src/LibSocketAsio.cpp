@@ -2173,6 +2173,12 @@ public:
 	// wrapper. Atomic so it is safe to call from any thread without an external lock.
 	void OnWrapperGone() { m_libSocket.store(nullptr, std::memory_order_release); }
 
+	bool HasQueuedDatagram()
+	{
+		wxMutexLocker lock(m_receiveBuffersLock);
+		return !m_receiveBuffers.empty();
+	}
+
 	uint32 RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes)
 	{
 		CUDPData *recdata;
@@ -2520,6 +2526,11 @@ int CLibUDPSocket::GetReceiveBufferBytes() const
 uint32 CLibUDPSocket::RecvFrom(CNetworkAddress &addr, uint16 &port, void *buf, uint32 nBytes)
 {
 	return m_aSocket->RecvFrom(addr, port, buf, nBytes);
+}
+
+bool CLibUDPSocket::HasQueuedDatagram()
+{
+	return m_aSocket->HasQueuedDatagram();
 }
 
 uint32 CLibUDPSocket::SendTo(const amuleIPV4Address &addr, const void *buf, uint32 nBytes)
