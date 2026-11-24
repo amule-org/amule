@@ -91,6 +91,7 @@ struct CBuddyRelayCounts
 	uint64_t reasksMalformed = 0; // Too short to name a buddy, or larger than any reask.
 	uint64_t callbacksOverBudget = 0;
 	uint64_t reasksOverBudget = 0;
+	uint64_t rendezvousNoSharedTransport = 0; // Both declared NAT-T transports and share none.
 	// Log only: the drops above whose BuddyID belongs to a buddy that left.
 	uint64_t callbacksDeparted = 0;
 	uint64_t reasksDeparted = 0;
@@ -374,6 +375,8 @@ inline std::string FormatBuddyRelaySummary(
 	drop(now.reasksMalformed - before.reasksMalformed, "malformed reasks");
 	drop(now.callbacksOverBudget - before.callbacksOverBudget, "callbacks over a buddy's byte budget");
 	drop(now.reasksOverBudget - before.reasksOverBudget, "reasks over a buddy's byte budget");
+	drop(now.rendezvousNoSharedTransport - before.rendezvousNoSharedTransport,
+		"rendezvous with no shared transport");
 	if (relayed.empty() && dropped.empty()) {
 		return {};
 	}

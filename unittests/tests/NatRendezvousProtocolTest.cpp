@@ -207,3 +207,28 @@ TEST(NatRendezvousProtocol, RelayDecisionDoesNotClaimAuthentication)
 		NatRendezvous::DecideRelay(bytes.data(), bytes.size(), Endpoint("192.0.2.7"), limiter, 1000);
 	ASSERT_TRUE(action.has_value());
 }
+
+TEST(NatRendezvousProtocol, ForwardedRendezvousIsRebuiltFromTheParsedRequest)
+{
+	for (const bool hint : { false, true }) {
+		for (const bool file : { false, true }) {
+			Bytes in = Rendezvous(hint, file);
+			const auto envelope = NatRendezvous::ParseRendezvousEnvelope(in.data(), in.size());
+			ASSERT_TRUE(envelope.has_value());
+			const auto body = NatRendezvous::BuildForwardedRendezvous(envelope->request);
+			// Same bytes as received after the serving-buddy ID, for a well-formed request.
+			ASSERT_EQUALS(in.size() - NatRendezvous::kHashSize, body.size());
+			ASSERT_TRUE(std::equal(body.begin(), body.end(), in.begin() + NatRendezvous::kHashSize));
+		}
+	}
+}
+
+TEST(NatRendezvousProtocol, ForwardedRendezvousDropsTrailingBytesTheParserDidNotAccept)
+{
+	Bytes in = Rendezvous(false, true);
+	in.push_back(0x55);
+	const auto envelope = NatRendezvous::ParseRendezvousEnvelope(in.data(), in.size());
+	ASSERT_TRUE(envelope.has_value());
+	const auto body = NatRendezvous::BuildForwardedRendezvous(envelope->request);
+	ASSERT_EQUALS(in.size() - NatRendezvous::kHashSize - 1, body.size());
+}

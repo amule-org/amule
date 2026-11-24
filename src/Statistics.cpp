@@ -281,7 +281,7 @@ std::vector<uint64> KadBuddyRowValues(const CClientList &clients)
 		s.relays.callbacksNoBuddy + s.relays.callbacksMismatched + s.relays.callbacksRateLimited +
 			s.relays.callbacksOverBudget,
 		s.relays.reasksNoBuddy + s.relays.reasksMismatched + s.relays.reasksMalformed +
-			s.relays.reasksOverBudget,
+			s.relays.reasksOverBudget + s.relays.rendezvousNoSharedTransport,
 		s.peakRelayBytesPerMinute,
 		o.searches,
 		o.searchesHeld,

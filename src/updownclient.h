@@ -34,6 +34,7 @@
 
 #include <array>
 #include <atomic>
+#include "KadServedBuddyPolicy.h" // Needed for IsNatTCapableRequest
 #include "DisplayRateCounter.h"
 
 #include "Constants.h"    // Needed for ESourceFrom
@@ -1021,9 +1022,11 @@ public:
 	/* Role: we serve this buddy, or it serves us */
 	void SetServedBuddy(bool served) { m_bServedBuddy = served; }
 	bool IsServedBuddy() const { return m_bServedBuddy; }
+	//! The connect options of its buddy request; 0 when it sent the 34-byte form.
+	void SetServedBuddyOptions(uint8 options) { m_servedBuddyOptions = options; }
+	uint8 GetServedBuddyOptions() const { return m_servedBuddyOptions; }
 	//! The buddy request set a NAT-T bit in its connect options.
-	void SetServedBuddyNatT(bool natT) { m_bServedBuddyNatT = natT; }
-	bool IsServedBuddyNatT() const { return m_bServedBuddyNatT; }
+	bool IsServedBuddyNatT() const { return Kademlia::IsNatTCapableRequest(m_servedBuddyOptions); }
 
 	// KadIPCheck
 	bool IsBuddyPingDue() const { return m_buddyLiveness.PingDue(::GetTickCount64()); }
@@ -1419,7 +1422,7 @@ private:
 	// The current buddy was already asked in the other layout.
 	bool m_bBuddyOtherLayoutTried = false;
 	bool m_bServedBuddy = false;
-	bool m_bServedBuddyNatT = false;
+	uint8 m_servedBuddyOptions = 0;
 	uint32 m_nBuddyIP;
 	uint16 m_nBuddyPort;
 	// A different buddy address from a Kad result, held back while the stored one answers.

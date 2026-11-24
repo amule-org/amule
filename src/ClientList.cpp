@@ -1645,9 +1645,9 @@ void CClientList::RequestBuddy(Kademlia::CContact *contact, uint8_t connectOptio
 }
 
 CClientList::EIncomingBuddy CClientList::IncomingBuddy(
-	Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID, bool natT)
+	Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID, uint8_t connectOptions)
 {
-	if (!AdmitsServedBuddy(natT)) {
+	if (!AdmitsServedBuddy(Kademlia::IsNatTCapableRequest(connectOptions))) {
 		return EIncomingBuddy::Full;
 	}
 	uint32_t nContactIP = wxUINT32_SWAP_ALWAYS(contact->GetIPAddress());
@@ -1680,7 +1680,7 @@ CClientList::EIncomingBuddy CClientList::IncomingBuddy(
 		new CUpDownClient(contact->GetTCPPort(), contact->GetIPAddress(), 0, 0, NULL, false, true);
 	pNewClient->SetKadPort(contact->GetUDPPort());
 	pNewClient->SetServedBuddy(true);
-	pNewClient->SetServedBuddyNatT(natT);
+	pNewClient->SetServedBuddyOptions(connectOptions);
 	pNewClient->SetKadState(KS_INCOMING_BUDDY);
 	uint8_t ID[16];
 	contact->GetClientID().ToByteArray(ID);

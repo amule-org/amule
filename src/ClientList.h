@@ -291,7 +291,7 @@ public:
 		SameIP,   // We already serve, or have offered to, that address.
 		Conflict, // We already know that client, or it is us.
 	};
-	EIncomingBuddy IncomingBuddy(Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID, bool natT);
+	EIncomingBuddy IncomingBuddy(Kademlia::CContact *contact, Kademlia::CUInt128 *buddyID, uint8_t connectOptions);
 
 	//! How many buddies we serve at most: the setting, capped by the connection limit.
 	uint32 GetServedBuddyLimit() const;

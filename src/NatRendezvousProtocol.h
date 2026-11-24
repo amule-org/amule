@@ -19,6 +19,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 namespace NatRendezvous
 {
@@ -139,6 +140,29 @@ inline std::optional<RendezvousEnvelope> ParseRendezvousEnvelope(
 	}
 	envelope.request = *request;
 	return envelope;
+}
+
+// What a buddy forwards after the requester's observed endpoint: every field is written from the
+// parsed request, so nothing the parser did not accept is carried to the served node.
+inline std::vector<std::uint8_t> BuildForwardedRendezvous(const RendezvousRequest &request)
+{
+	std::vector<std::uint8_t> body(kHashSize, 0); // Extended-payload marker.
+	body.push_back(OP_RENDEZVOUS);
+	body.insert(body.end(), request.requesterHash.begin(), request.requesterHash.end());
+	body.push_back(request.connectOptions);
+	const FileHash noFile{};
+	const FileHash &file = request.fileHash ? *request.fileHash : noFile;
+	body.insert(body.end(), file.begin(), file.end());
+	if (request.requesterHint) {
+		const std::uint32_t address = request.requesterHint->address.ToIPv4NetworkOrderOrZero();
+		for (int shift = 0; shift < 32; shift += 8) {
+			body.push_back(std::uint8_t(address >> shift));
+		}
+		body.push_back(std::uint8_t(request.requesterHint->port));
+		body.push_back(std::uint8_t(request.requesterHint->port >> 8));
+		body.push_back(request.requesterHint->transportHint);
+	}
+	return body;
 }
 
 // The endpoint is deliberately not read as an identity from the payload. eMuleAI receives this

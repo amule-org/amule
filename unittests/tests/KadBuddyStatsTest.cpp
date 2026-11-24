@@ -294,3 +294,13 @@ TEST(KadBuddyStats, BuddyIdHexIsUpperCaseInStoredOrder)
 	};
 	ASSERT_EQUALS(std::string("00010AFF102B3C4D5E6F708192A3B4C5"), BuddyIdHex(id));
 }
+
+TEST(KadBuddyStats, SummaryCountsRendezvousWithNoSharedTransport)
+{
+	CBuddyRelayCounts before;
+	CBuddyRelayCounts now;
+	now.rendezvousNoSharedTransport = 2;
+	ASSERT_EQUALS(std::string("Relays in the last minute: none. Dropped: rendezvous with no shared "
+				  "transport 2"),
+		FormatBuddyRelaySummary(now, before));
+}
