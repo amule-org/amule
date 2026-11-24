@@ -78,7 +78,6 @@ there client on the eMule forum..
 #include "../../PeerCapabilities.h" // Needed for DecodeIPv6HexTag
 #include "../../Logger.h"
 #include "../../Preferences.h"
-#include "../../KadServedBuddyPolicy.h" // Needed for LocalNatTConnectOptions
 #include "../../CFile.h"            // Needed for CFile
 #include "../../IPFilter.h"         // Needed for CIPFilter
 #include "../../KadPublishSeeds.h"  // Needed for KadPublishSeeds
@@ -88,6 +87,7 @@ there client on the eMule forum..
 #endif
 #include "../../GuiEvents.h"
 #include "../../KadBuddyIdLayout.h"
+#include "../../KadServedBuddyPolicy.h"
 #include "../../KadPointerLookup.h"
 #include "../../KadBuddySearchPolicy.h" // Needed for OwnBuddyID
 #include "../../KadPointerPolicy.h"     // Needed for SendsKadPointer

@@ -775,3 +775,26 @@ stable `key`.
 
 A session is classified when its hello is processed, on the main thread; the upload disk I/O
 thread only reads the result.
+
+## Kad buddy rendezvous
+
+A firewalled node's Kad buddy forwards the requester's `0xA0` (rendezvous),
+carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
+
+- **Declared transports.** A node declares its NAT-T transports in the 35th
+  byte of its `0x51` (`KADEMLIA_FINDBUDDY_REQ`): connect options with `0x80`
+  for uTP and `0x40` for QUIC. aMule sends it with the transports it can use,
+  uTP when built in and QUIC when built in and enabled. The requester declares
+  its own in the connect options of the `0xA0`. A 34-byte `0x51` declares none.
+- **Check.** The buddy drops the `0xA0` only when both peers declared
+  transports and share none, and counts the drop in its relay summary. If
+  either peer declared none, it forwards as before. The check needs no CAPS
+  exchange: the `0x02` and `0x03` frames under `0xB2` are sent between the two
+  endpoints, never through the buddy.
+- **Rebuilt.** The buddy writes each forwarded `0xA0` from the fields it parsed,
+  after the requester's observed endpoint, and does not copy the received bytes.
+- **Slots.** A third of the buddy slots is kept for nodes that declared a
+  transport, so a node that serves buddies keeps room for NAT-T nodes.
+- **Interop.** An eMuleAI buddy forwards without this check. A drop on our side
+  only stops a rendezvous that would fail anyway: the requester sees a timeout
+  in both cases, because the `0xB2` frames have no failure frame.

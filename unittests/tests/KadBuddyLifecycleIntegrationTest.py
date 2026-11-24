@@ -83,7 +83,7 @@ def pass_firewall_check(udp_port):
 class Requester:
     """A firewalled node that asked for a buddy. A refused request gets no answer."""
 
-    def __init__(self, address, udp_port, peer_port, buddy_id=None, user_id=None, offered=True):
+    def __init__(self, address, udp_port, peer_port, buddy_id=None, user_id=None, offered=True, natt=True):
         self.address = address
         self.peer_port = peer_port
         self.sock = socket.socket()
@@ -94,7 +94,11 @@ class Requester:
         # CUInt128 reads four little-endian words, and the hash is their big-endian bytes.
         self.user_hash = struct.pack('>4I', *struct.unpack('<4I', self.user_id))
         with kad_peer(address, udp_port) as peer:
-            kad_send(peer, KADEMLIA_FINDBUDDY_REQ, self.buddy_id + self.user_id + struct.pack('<H', self.port))
+            # A NAT-T node (0x80, uTP) may take any slot, so these tests fill the whole limit; a node
+            # that declares none (the 34-byte form) cannot take the third of the slots kept for NAT-T.
+            options = struct.pack('<B', 0x80) if natt else b''
+            kad_send(peer, KADEMLIA_FINDBUDDY_REQ,
+                     self.buddy_id + self.user_id + struct.pack('<H', self.port) + options)
             if offered:
                 wait_kad_packet(peer, KADEMLIA_FINDBUDDY_RES)
 
