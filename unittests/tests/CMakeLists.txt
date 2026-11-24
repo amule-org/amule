@@ -4380,30 +4380,3 @@ if (BUILD_WXCAS)
 endif ()
 
 add_muleunit_test (PublishMetricsTest)
-
-# The socket reset a uTP-to-TCP fallback dials through: CEMSocket's own state machine, with
-# only the application boundary stubbed.
-if (TARGET mulesocket AND TARGET muleappcommon AND TARGET muleappcore)
-	add_executable (EMSocketRedialTest
-		EMSocketRedialTest.cpp
-		${CMAKE_SOURCE_DIR}/src/EMSocket.cpp
-		${CMAKE_SOURCE_DIR}/src/EncryptedStreamSocket.cpp
-		${CMAKE_SOURCE_DIR}/src/Proxy.cpp
-		${CMAKE_SOURCE_DIR}/src/DownloadBandwidthThrottler.cpp
-		${CMAKE_SOURCE_DIR}/src/LoggerConsole.cpp
-		${CMAKE_SOURCE_DIR}/src/GetTickCount.cpp
-	)
-	target_compile_definitions (EMSocketRedialTest PRIVATE AMULE_DAEMON)
-	target_include_directories (EMSocketRedialTest PRIVATE
-		${CMAKE_BINARY_DIR} ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/include
-		${CMAKE_SOURCE_DIR}/src/libs ${CMAKE_BINARY_DIR}/src/libs
-		${CMAKE_BINARY_DIR}/src/libs/ec/cpp
-	)
-	add_application_test_stubs (EMSocketRedialTest)
-	# In amuled's order, which GNU ld needs for these static libraries.
-	target_link_libraries (EMSocketRedialTest
-		muleunit muleappcommon muleappcore mulecommon mulesocket wxWidgets::NET CRYPTOPP::CRYPTOPP
-		ZLIB::ZLIB
-	)
-	add_test (NAME EMSocketRedialTest COMMAND EMSocketRedialTest)
-endif()

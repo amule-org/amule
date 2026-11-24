@@ -2862,54 +2862,8 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			return EContactResult::Declined;
 		}
 	} else { // HIGHID
+		// Always TCP, even to a peer that offers uTP: TCP is far faster on the same path.
 		StartSourceRoute(ESourceRoute::Dial, dialIPv6);
-#ifdef AMULE_UTP_TRANSPORT
-		IUtpContext *utp = theApp->clientudp->GetUtpContext();
-		// Only a port learned from this peer is a remote endpoint. Our own
-		// UDP port says nothing about where an unknown peer listens.
-		const uint16_t utpPort = GetUtpDialPort();
-		// An armed context is not a sendable one: CMuleUDPSocket::SendTo()
-		// reports success on a closed socket, so the SYN would vanish and the
-		// TCP fallback below would be skipped.
-		const bool canSend = utp != nullptr && utp->IsAvailable() && theApp->clientudp->Ok();
-		// Refuse rather than downgrade: the stream handshake never runs over a
-		// transport, so uTP without frame obfuscation would send in the clear
-		// what TCP would have obfuscated. The two predicates differ, because
-		// the frame one also demands a known public IP.
-		const bool obfuscationSatisfied = !WantsStreamObfuscation() || ShouldReceiveCryptUDPPackets();
-		SUtpDialFacts facts{ m_modCapabilities.SupportsNatTraversal(),
-			canSend,
-			true,
-			thePrefs::GetProxyData()->m_proxyEnable,
-			utpPort != 0 && IsGoodIP(GetConnectIP(), thePrefs::FilterLanIPs()),
-			obfuscationSatisfied };
-		facts.recentDialFailure = theApp->clientudp->UtpDialFailures().IsCoolingDown(
-			GetConnectIP(), utpPort, ::GetTickCount64());
-		// Connect() is a no-op on a live socket. Without the same guard the
-		// uTP path would attach a transport over a connection already in use.
-		if (!m_socket->IsOk() && ShouldTryIPv4Utp(GetDialAddress()) &&
-			DecideUtpDial(facts) == EUtpDialDecision::TryUtp) {
-			std::unique_ptr<IStreamTransport> transport;
-			const SUtpDialOptions dialOptions{ false, ::GetTickCount64(), ECID() };
-			if (utp->Dial(GetConnectIP(),
-				    utpPort,
-				    ShouldReceiveCryptUDPPackets(),
-				    HasValidHash() ? GetUserHash().GetHash() : nullptr,
-				    dialOptions,
-				    transport)) {
-				// Attached first: the socket refuses stream obfuscation once
-				// it is carried by a transport that obfuscates its own frames.
-				m_socket->AttachTransport(std::move(transport));
-				if (WantsStreamObfuscation()) {
-					m_socket->SetConnectionEncryption(
-						true, GetUserHash().GetHash(), false);
-				} else {
-					m_socket->SetConnectionEncryption(false, nullptr, false);
-				}
-				return EContactResult::Contacting;
-			}
-		}
-#endif
 		if (!Connect()) {
 			return EContactResult::ConnectNotStarted;
 		}
@@ -2948,13 +2902,13 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 	IUtpContext *utp = theApp->clientudp->GetUtpContext();
 	const bool canSend = utp != nullptr && utp->IsAvailable() && theApp->clientudp->Ok();
 	const bool obfuscationSatisfied = !WantsStreamObfuscation() || ShouldReceiveCryptUDPPackets();
-	const SUtpDialFacts facts{ true,
-		canSend,
-		false,
-		thePrefs::GetProxyData()->m_proxyEnable,
-		GetUDPPort() != 0 && IsGoodIP(GetConnectIP(), thePrefs::FilterLanIPs()),
-		obfuscationSatisfied,
-		true };
+	SUtpDialFacts facts;
+	facts.peerSupportsUtp = true;
+	facts.localOutboundService = canSend;
+	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+	facts.routableEndpoint = GetUDPPort() != 0 && IsGoodIP(GetConnectIP(), thePrefs::FilterLanIPs());
+	facts.obfuscationSatisfied = obfuscationSatisfied;
+	facts.serverVouchedLowId = true;
 	if (!canSend || !IsRedialAllowed() || DecideUtpDial(facts) != EUtpDialDecision::TryUtp) {
 		return false;
 	}

@@ -85,12 +85,6 @@ inline bool IsUnansweredAdvertisedDial(
 	return helloIncomplete && IsAdvertisedIPv6Dial(dialAddress, connectAddress);
 }
 
-/** uTP framing is IPv4-only, so an IPv6 dial target goes over TCP. */
-inline bool ShouldTryIPv4Utp(const CNetworkAddress &dialAddress)
-{
-	return !(dialAddress.IsIPv6() && !dialAddress.IsIPv4Mapped());
-}
-
 /**
  * Returns a peer's advertised IPv6 as the TCP target only when this node is explicitly configured
  * for dual stack and has selected a global local IPv6. The local address proves that an IPv6 source

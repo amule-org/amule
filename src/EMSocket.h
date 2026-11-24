@@ -141,12 +141,6 @@ protected:
 	virtual bool PacketReceived(CPacket *WXUNUSED(packet)) { return false; };
 	virtual void OnClose(int nErrorCode);
 
-	//! Quiesce a socket whose stream is gone, so it can be dialled again: wait out
-	//! any send in flight on the throttler thread, drop the dead stream's queues,
-	//! and return to the pre-connection state, upload slot included. OnClose()
-	//! leaves ES_DISCONNECTED, which no send or receive path clears.
-	void QuiesceForRedial();
-
 	// atomic: the throttler and disk I/O threads read it without m_sendLocker
 	std::atomic<uint8> byConnected;
 	uint32 m_uTimeOut;

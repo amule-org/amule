@@ -205,22 +205,15 @@ void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledControlSocket *socke
 	DoRemoveFromAllQueues(socket);
 }
 
-std::optional<uint32> UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *socket)
+void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *socket)
 {
 	wxMutexLocker lock(m_sendLocker);
 
-	if (!m_doRun) {
-		return std::nullopt;
-	}
-	DoRemoveFromAllQueues(socket);
+	if (m_doRun) {
+		DoRemoveFromAllQueues(socket);
 
-	const auto slot = std::find(m_StandardOrder_list.begin(), m_StandardOrder_list.end(), socket);
-	if (slot == m_StandardOrder_list.end()) {
-		return std::nullopt;
+		RemoveFromStandardListNoLock(socket);
 	}
-	const auto index = static_cast<uint32>(slot - m_StandardOrder_list.begin());
-	RemoveFromStandardListNoLock(socket);
-	return index;
 }
 
 /**

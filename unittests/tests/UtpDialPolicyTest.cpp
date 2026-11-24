@@ -26,41 +26,60 @@
 #include "UtpDialPolicy.h"
 
 #include <optional>
-#include <string>
 #include <vector>
 
 using namespace muleunit;
 
 DECLARE_SIMPLE(UtpDialPolicy)
 
+namespace
+{
+SUtpDialFacts EligibleLowIdFacts()
+{
+	SUtpDialFacts facts;
+	facts.peerSupportsUtp = true;
+	facts.localOutboundService = true;
+	facts.routableEndpoint = true;
+	facts.obfuscationSatisfied = true;
+	facts.serverVouchedLowId = true;
+	return facts;
+}
+} // namespace
+
 TEST(UtpDialPolicy, DecisionMatrix)
 {
 	// The one accepting combination: every fact set except the proxy.
 	for (unsigned bits = 0; bits < 64; ++bits) {
-		const SUtpDialFacts facts{ (bits % 2) != 0,
-			((bits / 2) % 2) != 0,
-			((bits / 4) % 2) != 0,
-			((bits / 8) % 2) != 0,
-			((bits / 16) % 2) != 0,
-			((bits / 32) % 2) != 0 };
-		ASSERT_EQUALS(bits == 55, DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
+		SUtpDialFacts facts;
+		facts.peerSupportsUtp = (bits & 1) != 0;
+		facts.localOutboundService = (bits & 2) != 0;
+		facts.proxyEnabled = (bits & 4) != 0;
+		facts.routableEndpoint = (bits & 8) != 0;
+		facts.obfuscationSatisfied = (bits & 16) != 0;
+		facts.serverVouchedLowId = (bits & 32) != 0;
+		ASSERT_EQUALS(bits == 59, DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
 	}
 }
 
 TEST(UtpDialPolicy, ServerVouchedLowIdMayDialWithoutPeerHello)
 {
-	SUtpDialFacts facts{ true, true, false, false, true, true, true };
+	SUtpDialFacts facts = EligibleLowIdFacts();
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
-	facts.serverVouchedLowId = false;
-	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
-	facts.serverVouchedLowId = true;
 	facts.routableEndpoint = false;
+	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
+}
+
+// A HighID peer can take TCP, and TCP is far faster on the same path.
+TEST(UtpDialPolicy, AHighIdPeerThatOffersUtpStaysOnTcp)
+{
+	SUtpDialFacts facts = EligibleLowIdFacts();
+	facts.serverVouchedLowId = false;
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
 }
 
 TEST(UtpDialPolicy, EndpointRoutability)
 {
-	SUtpDialFacts facts{ true, true, true, false, true, true };
+	SUtpDialFacts facts = EligibleLowIdFacts();
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
 	facts.routableEndpoint = false;
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
@@ -310,7 +329,7 @@ TEST(UtpDialPolicy, SimultaneousOpenRejectsWhenNoDeterministicOrderExists)
 // thing that could carry it.
 TEST(UtpDialPolicy, ObfuscationOwedButUnavailableStaysOnTcp)
 {
-	SUtpDialFacts facts{ true, true, true, false, true, true };
+	SUtpDialFacts facts = EligibleLowIdFacts();
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
 	facts.obfuscationSatisfied = false;
 	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
@@ -370,54 +389,6 @@ TEST(UtpDialPolicy, IncomingSynFindsOnlyOneLiveOutboundHandshake)
 	candidates.push_back({ ip, 5000, 100, true, true, true });
 	ASSERT_TRUE(FindUniqueUtpSynCandidate(candidates, ip, 4800, 30'099).status ==
 		    EUtpSynCandidateStatus::Ambiguous);
-}
-
-TEST(UtpDialPolicy, ARecentFailureAtTheEndpointKeepsTheLegacyConnect)
-{
-	SUtpDialFacts facts{ true, true, true, false, true, true };
-	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::TryUtp);
-
-	facts.recentDialFailure = true;
-	ASSERT_TRUE(DecideUtpDial(facts) == EUtpDialDecision::PreserveLegacy);
-}
-
-TEST(UtpDialPolicy, AFailedEndpointIsSkippedUntilItsCooldownEnds)
-{
-	UtpDialFailureMemory failures;
-	ASSERT_FALSE(failures.IsCoolingDown(0x0A000001, 4672, 1'000));
-
-	failures.RecordFailure(0x0A000001, 4672, 1'000);
-	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 1'000));
-	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 1'000 + UtpDialFailureMemory::CooldownMs - 1));
-	ASSERT_FALSE(failures.IsCoolingDown(0x0A000001, 4672, 1'000 + UtpDialFailureMemory::CooldownMs));
-
-	// The path failed, not the peer: another port or address is dialled as before.
-	failures.RecordFailure(0x0A000001, 4672, 2'000);
-	ASSERT_FALSE(failures.IsCoolingDown(0x0A000001, 4673, 2'000));
-	ASSERT_FALSE(failures.IsCoolingDown(0x0A000002, 4672, 2'000));
-}
-
-TEST(UtpDialPolicy, ARecordedFailureRestartsItsCooldown)
-{
-	UtpDialFailureMemory failures;
-	failures.RecordFailure(0x0A000001, 4672, 1'000);
-	failures.RecordFailure(0x0A000001, 4672, 5'000);
-	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 1'000 + UtpDialFailureMemory::CooldownMs));
-	ASSERT_FALSE(failures.IsCoolingDown(0x0A000001, 4672, 5'000 + UtpDialFailureMemory::CooldownMs));
-}
-
-TEST(UtpDialPolicy, FailureMemoryIsBoundedAndForgetsTheOldestFirst)
-{
-	UtpDialFailureMemory failures;
-	for (std::uint32_t index = 0; index < UtpDialFailureMemory::MaxEntries; ++index) {
-		failures.RecordFailure(0x0A000000 + index, 4672, 1'000 + index);
-	}
-	ASSERT_TRUE(failures.IsCoolingDown(0x0A000000, 4672, 2'000));
-
-	failures.RecordFailure(0x0B000000, 4672, 3'000);
-	ASSERT_FALSE(failures.IsCoolingDown(0x0A000000, 4672, 3'000));
-	ASSERT_TRUE(failures.IsCoolingDown(0x0A000001, 4672, 3'000));
-	ASSERT_TRUE(failures.IsCoolingDown(0x0B000000, 4672, 3'000));
 }
 
 TEST(UtpDialPolicy, RepointIsABoundedChangeOfAnExistingPort)
@@ -700,85 +671,4 @@ TEST(UtpDialPolicy, AHalfOpenStreamExpiresAtItsLimit)
 	ASSERT_TRUE(IsUtpHalfOpenExpired(1000, 1000 + kUtpHalfOpenLimitMs));
 	// A clock behind the accept expires nothing.
 	ASSERT_FALSE(IsUtpHalfOpenExpired(1000, 999));
-}
-
-namespace
-{
-SUtpTcpFallbackFacts FallbackAllowed()
-{
-	SUtpTcpFallbackFacts facts;
-	facts.connecting = true;
-	facts.directDialAllowed = true;
-	return facts;
-}
-
-//! Runs the fallback with steps that only record their order.
-bool RunRecordedFallback(const SUtpTcpFallbackFacts &facts,
-	bool &attempted,
-	bool handshakeCompleted,
-	bool dialResult,
-	std::vector<std::string> &steps)
-{
-	return RunUtpTcpFallback(
-		facts,
-		attempted,
-		handshakeCompleted,
-		[&]() { steps.emplace_back("record"); },
-		[&]() { steps.emplace_back("quiesce"); },
-		[&]() { steps.emplace_back("drop"); },
-		[&]() { steps.emplace_back("reset"); },
-		[&]() {
-			steps.emplace_back("dial");
-			return dialResult;
-		});
-}
-} // namespace
-
-TEST(UtpDialPolicy, FallbackNeedsAPendingDirectDialWithNoStreamCryptStarted)
-{
-	for (unsigned bits = 0; bits < 16; ++bits) {
-		SUtpTcpFallbackFacts facts;
-		facts.connecting = (bits & 1) != 0;
-		facts.directDialAllowed = (bits & 2) != 0;
-		facts.callbackDial = (bits & 4) != 0;
-		facts.streamCryptStarted = (bits & 8) != 0;
-		ASSERT_EQUALS(bits == 3, ShouldTryUtpTcpFallback(facts));
-
-		bool attempted = false;
-		std::vector<std::string> steps;
-		const bool dialled = RunRecordedFallback(facts, attempted, false, true, steps);
-		// A refusal leaves the latch open and the stream untouched.
-		ASSERT_EQUALS(bits == 3, dialled);
-		ASSERT_EQUALS(bits == 3, attempted);
-		ASSERT_EQUALS(bits == 3 ? 5u : 0u, (unsigned)steps.size());
-	}
-}
-
-TEST(UtpDialPolicy, AFailedHandshakeIsRecordedThenTheSocketQuiescesBeforeItsStreamGoes)
-{
-	bool attempted = false;
-	std::vector<std::string> steps;
-	ASSERT_TRUE(RunRecordedFallback(FallbackAllowed(), attempted, false, true, steps));
-	const std::vector<std::string> expected{ "record", "quiesce", "drop", "reset", "dial" };
-	ASSERT_TRUE(expected == steps);
-}
-
-TEST(UtpDialPolicy, AStreamThatConnectedIsNoDialFailure)
-{
-	bool attempted = false;
-	std::vector<std::string> steps;
-	ASSERT_TRUE(RunRecordedFallback(FallbackAllowed(), attempted, true, true, steps));
-	const std::vector<std::string> expected{ "quiesce", "drop", "reset", "dial" };
-	ASSERT_TRUE(expected == steps);
-}
-
-TEST(UtpDialPolicy, TheFallbackRunsOnceEvenWhenItsDialFails)
-{
-	bool attempted = false;
-	std::vector<std::string> steps;
-	ASSERT_FALSE(RunRecordedFallback(FallbackAllowed(), attempted, false, false, steps));
-	ASSERT_TRUE(attempted);
-	steps.clear();
-	ASSERT_FALSE(RunRecordedFallback(FallbackAllowed(), attempted, false, true, steps));
-	ASSERT_TRUE(steps.empty());
 }

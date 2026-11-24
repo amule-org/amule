@@ -25,12 +25,10 @@
 #ifndef UTP_DIAL_POLICY_H
 #define UTP_DIAL_POLICY_H
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <deque>
 #include <optional>
 #include <utility>
 
@@ -46,86 +44,23 @@ struct SUtpDialFacts
 {
 	bool peerSupportsUtp = false;
 	bool localOutboundService = false;
-	bool directHighId = false;
 	bool proxyEnabled = false;
 	bool routableEndpoint = false;
 	// The stream handshake never runs over a transport, so a peer owed
 	// obfuscation may only be dialled when the frames carry it themselves.
 	bool obfuscationSatisfied = false;
-	// ed2k-server vouched for this LowID peer's endpoint via OP_LOWID_HOLEPUNCH_INFO: an
-	// alternative to directHighId, not an addition to it -- either is sufficient grounds to
-	// try uTP.
+	// ed2k-server vouched for this LowID peer's endpoint via OP_LOWID_HOLEPUNCH_INFO. A HighID
+	// peer is always dialled over TCP: it can take TCP, and TCP is faster.
 	bool serverVouchedLowId = false;
-	// A uTP dial to this endpoint fell back to TCP recently (UtpDialFailureMemory), so the
-	// legacy connect goes first instead of waiting out the uTP handshake window again.
-	bool recentDialFailure = false;
 };
 
 inline EUtpDialDecision DecideUtpDial(const SUtpDialFacts &facts)
 {
-	return facts.peerSupportsUtp && facts.localOutboundService &&
-			       (facts.directHighId || facts.serverVouchedLowId) && !facts.proxyEnabled &&
-			       facts.routableEndpoint && facts.obfuscationSatisfied &&
-			       !facts.recentDialFailure
+	return facts.peerSupportsUtp && facts.localOutboundService && facts.serverVouchedLowId &&
+			       !facts.proxyEnabled && facts.routableEndpoint && facts.obfuscationSatisfied
 		       ? EUtpDialDecision::TryUtp
 		       : EUtpDialDecision::PreserveLegacy;
 }
-
-// Endpoints whose uTP handshake did not complete and fell back to TCP. The cooldown outlasts the
-// default source re-ask interval, so the next contact goes straight to TCP; a HighID peer still
-// has TCP, so a stale entry costs only the uTP attempt. Keyed by endpoint, not by peer: a peer
-// that moves to another address or port is dialled as before.
-class UtpDialFailureMemory
-{
-public:
-	static constexpr std::uint64_t CooldownMs = 60 * 60 * 1000;
-	static constexpr std::size_t MaxEntries = 512;
-
-	bool IsCoolingDown(std::uint32_t ip, std::uint16_t udpPort, std::uint64_t nowMs)
-	{
-		PruneExpired(nowMs);
-		return Find(ip, udpPort) != m_failures.end();
-	}
-
-	void RecordFailure(std::uint32_t ip, std::uint16_t udpPort, std::uint64_t nowMs)
-	{
-		PruneExpired(nowMs);
-		const auto existing = Find(ip, udpPort);
-		if (existing != m_failures.end()) {
-			m_failures.erase(existing);
-		} else if (m_failures.size() >= MaxEntries) {
-			m_failures.pop_front();
-		}
-		m_failures.push_back({ ip, udpPort, nowMs });
-	}
-
-private:
-	struct Failure
-	{
-		std::uint32_t ip;
-		std::uint16_t udpPort;
-		std::uint64_t at;
-	};
-
-	std::deque<Failure>::iterator Find(std::uint32_t ip, std::uint16_t udpPort)
-	{
-		return std::find_if(
-			m_failures.begin(), m_failures.end(), [ip, udpPort](const Failure &failure) {
-				return failure.ip == ip && failure.udpPort == udpPort;
-			});
-	}
-
-	// Entries are kept in recording order, so the expired ones are at the front.
-	void PruneExpired(std::uint64_t nowMs)
-	{
-		while (!m_failures.empty() && nowMs >= m_failures.front().at &&
-			nowMs - m_failures.front().at >= CooldownMs) {
-			m_failures.pop_front();
-		}
-	}
-
-	std::deque<Failure> m_failures;
-};
 
 /** Whether this side keeps the already-found transport in a simultaneous dial. */
 inline bool ShouldKeepFoundUtp(bool foundInbound, const uint8_t *localHash, const uint8_t *peerHash)
@@ -237,61 +172,6 @@ inline SUtpHelloAttachmentResult AttachUtpSocketAfterVerifiedHello(bool winnerMa
 		std::forward<CloseFoundSocket>(closeFoundSocket),
 		std::forward<AttachIncomingSocket>(attachIncomingSocket));
 	return { decision, socketAttached };
-}
-
-//! What CClientTCPSocket::TryUtpTcpFallback() reads before it trades a failed uTP stream for TCP.
-struct SUtpTcpFallbackFacts
-{
-	//! The download or the upload waits for this connection.
-	bool connecting = false;
-	//! A HighID whose dial the checks of TryToContact() would allow.
-	bool directDialAllowed = false;
-	//! A server-coordinated callback: the peer dials us, so a dial of ours replaces nothing.
-	bool callbackDial = false;
-	//! The ed2k obfuscation handshake started inside the stream and cannot be re-keyed.
-	bool streamCryptStarted = false;
-};
-
-inline bool ShouldTryUtpTcpFallback(const SUtpTcpFallbackFacts &facts)
-{
-	return facts.connecting && facts.directDialAllowed && !facts.callbackDial &&
-	       !facts.streamCryptStarted;
-}
-
-/**
- * Trades a failed uTP stream for one TCP dial, keeping the socket and its client.
- *
- * In this order: the failure is recorded while the dead stream still names its endpoint, and only
- * when its handshake never completed; the socket is quiesced before the transport goes, as a send
- * may still run inside that stream on the throttler thread; the timeout is reset before the dial,
- * as the OnClose() route arrives with an elapsed one; the dial comes last. `attempted` is set
- * whatever the dial returns.
- */
-template <typename RecordFailure,
-	typename Quiesce,
-	typename DropTransport,
-	typename ResetTimeout,
-	typename Dial>
-inline bool RunUtpTcpFallback(const SUtpTcpFallbackFacts &facts,
-	bool &attempted,
-	bool handshakeCompleted,
-	RecordFailure &&recordFailure,
-	Quiesce &&quiesce,
-	DropTransport &&dropTransport,
-	ResetTimeout &&resetTimeout,
-	Dial &&dial)
-{
-	if (attempted || !ShouldTryUtpTcpFallback(facts)) {
-		return false;
-	}
-	attempted = true;
-	if (!handshakeCompleted) {
-		recordFailure();
-	}
-	quiesce();
-	dropTransport();
-	resetTimeout();
-	return dial();
 }
 
 inline bool ConsumeUtpFileRequestRetry(bool &fileRequestLost, bool downloadConnected)
