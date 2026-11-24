@@ -51,6 +51,13 @@ constexpr std::size_t MaxReaskRelaySize = 8228;
 // 0x80 for uTP (eMuleAI), 0x40 for QUIC (eMuleAI, eMuleQt).
 constexpr uint8_t NatTConnectOptions = 0x80 | 0x40;
 
+// The NAT-T bits we declare in our own buddy request: uTP when it is built in, QUIC when it is
+// built in and enabled.
+inline uint8_t LocalNatTConnectOptions(bool utp, bool quic)
+{
+	return static_cast<uint8_t>((utp ? 0x80 : 0) | (quic ? 0x40 : 0));
+}
+
 inline bool IsNatTCapableRequest(uint8_t connectOptions)
 {
 	return (connectOptions & NatTConnectOptions) != 0;
