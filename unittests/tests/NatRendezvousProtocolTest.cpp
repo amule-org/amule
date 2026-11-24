@@ -218,7 +218,8 @@ TEST(NatRendezvousProtocol, ForwardedRendezvousIsRebuiltFromTheParsedRequest)
 			const auto body = NatRendezvous::BuildForwardedRendezvous(envelope->request);
 			// Same bytes as received after the serving-buddy ID, for a well-formed request.
 			ASSERT_EQUALS(in.size() - NatRendezvous::kHashSize, body.size());
-			ASSERT_TRUE(std::equal(body.begin(), body.end(), in.begin() + NatRendezvous::kHashSize));
+			const auto received = in.begin() + NatRendezvous::kHashSize;
+			ASSERT_TRUE(std::equal(body.begin(), body.end(), received));
 		}
 	}
 }
