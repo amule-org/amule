@@ -408,6 +408,18 @@ event; daemon free-space checks are not visible to the GUI.
   GNOME install
   [`gnome-shell-extension-appindicator`](https://extensions.gnome.org/extension/615/appindicator-support/);
   Ubuntu enables this by default.
+* **"net.core.rmem_max limits the UDP receive buffer" in the log
+  (Linux)**: aMule asks for a 4 MiB receive buffer on its UDP sockets,
+  and Linux caps it at `net.core.rmem_max`. With less, bursts of uTP and
+  QUIC data can be lost. Raise the cap as root:
+
+  ```sh
+  sysctl -w net.core.rmem_max=4194304
+  ```
+
+  To keep it after a reboot, put `net.core.rmem_max = 4194304` in a file
+  under `/etc/sysctl.d/`. When aMule runs in a container, set it on the
+  host.
 
 For anything else, the documentation and forum are the best places to look:
 

@@ -2436,10 +2436,13 @@ private:
 		static std::atomic<bool> s_told{ false };
 		if (m_receiveBufferBytes != 0 && m_receiveBufferBytes < kReceiveBufferBytes &&
 			!s_told.exchange(true)) {
-			AddLogLineN(CFormat(_("net.core.rmem_max limits the UDP receive buffer to %d bytes. "
-					      "Bursts of uTP and QUIC data can be lost; setting it to %d "
-					      "avoids that.")) %
-				    m_receiveBufferBytes % kReceiveBufferBytes);
+			// The command stays out of the msgid so that no translation can change it.
+			AddLogLineN(
+				CFormat(_("net.core.rmem_max limits the UDP receive buffer to %d bytes, so "
+					  "bursts of uTP and QUIC data can be lost. To avoid that, run as "
+					  "root, on the host if aMule runs in a container: %s")) %
+				m_receiveBufferBytes %
+				(CFormat(wxT("sysctl -w net.core.rmem_max=%d")) % kReceiveBufferBytes));
 		}
 #endif
 	}

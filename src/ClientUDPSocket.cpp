@@ -311,8 +311,9 @@ std::array<uint8_t, 16> QuicLocalIdentityFromUserHash();
 
 bool QuicNatTEnabled()
 {
-	// QUIC NAT-T has its own amule.conf opt-in. It must not inherit the legacy
-	// server-coordinated NAT settings, and remains available in QUIC-only builds.
+	// QUIC NAT-T has its own amule.conf opt-in and must not inherit the legacy
+	// server-coordinated NAT settings. A QUIC-only build only accepts: every QUIC
+	// dial needs ENABLE_NATT_SERVER_COORDINATION and ENABLE_UTP.
 	return thePrefs::IsQuicNatTEnabled();
 }
 

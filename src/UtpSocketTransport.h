@@ -85,8 +85,6 @@ public:
  * is reached from the upload bandwidth thread through CEMSocket, so it only
  * queues into CUtpStream and the main thread hands those bytes to libutp on the
  * next Flush(). That split is the whole reason the queue exists.
- *
- * Nothing constructs one of these yet.
  */
 class CUtpSocketTransport final : public IStreamTransport
 {
