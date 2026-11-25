@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-11-16 12:10+0100\n"
-"PO-Revision-Date: 2026-11-23 11:29+0000\n"
+"PO-Revision-Date: 2026-11-25 03:57+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/application-man-pages/cs/>\n"
 "Language: cs\n"
@@ -457,17 +457,17 @@ msgstr "Přidá eD2k odkaz nebo magnet odkaz do jádra."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "a serverlist link, in which case all servers in the list will be added to the server list."
-msgstr ""
+msgstr "odkaz na seznam serverů, v tomto případě všechny servery budou přidány do seznamu serverů."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The magnet link must contain the eD2k hash and file length."
-msgstr ""
+msgstr "Odkaz magnet musí obsahovat eD2k hash a délku souboru."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Cancels the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. To get the value use B<show>."
-msgstr ""
+msgstr "Zruší stahování stanovené podle I<E<lt>hashE<gt>> nebo I<E<lt>čísloE<gt>>. Pro získání hodnoty použijte B<show>."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -477,32 +477,32 @@ msgstr "Připojit se k síti."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "This will connect to all networks that are enabled in Preferences."
-msgstr ""
+msgstr "Toto způsobí připojení ke všem sítím, které jsou povolené v Nastavení."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "With the optional parameter you can specify which network to connect to. Giving a server address in the form of IP:Port (where IP is either a dotted decimal IPv4 address or a resolvable DNS name) aMule will connect to that server only."
-msgstr ""
+msgstr "Pomocí volitelného parametru můžete určit, ke které síti se připojit. Zadáním adresy serveru ve formě IP:Port (kde IP je buď decimální adresa IPv4, nebo jméno hostitele, vyřešitelné pomocí DNS) se aMule připojí jen k tomuto serveru."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Disconnect from all networks you are connected to, or just disconnect from the specified network."
-msgstr ""
+msgstr "Odpojte se od všech sítí, ke kterým jste připojeni, nebo se odpojte jen od zadané sítě."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Start downloading a file."
-msgstr ""
+msgstr "Začít stahovat soubor"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Give the I<E<lt>numberE<gt>> of a file as listed by B<results>, optionally followed by a search I<E<lt>idE<gt>> (as printed by B<search>). Without an id, the number refers to the last B<results> output, or to the most recently started search if nothing was listed yet.  Example: 'download 12' downloads file 12 of the last results; 'download 12 3' downloads file 12 of search 3."
-msgstr ""
+msgstr "Zadejte I<E<lt>čísloE<gt>> souboru ze seznamu B<results>, volitelně připište I<E<lt>idE<gt>> vyhledávání (které vrátilo B<search>). Bez id zadané číslo představuje výstup posledních B<results>, nebo naposledy zahájené vyhledávání, pokud ještě nebylo nic v seznamu.  Příklad: 'download 12' stáhne soubor 12 posledních výsledků; 'download 12 3' stáhne soubor 12 z vyhledávání 3."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Disconnect from amule/amuled and quit amulecmd."
-msgstr ""
+msgstr "Odpojit od amule/amuled a ukončit amulecmd."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -512,7 +512,7 @@ msgstr "Získat a zobrazit hodnotu předvolby."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Available values for I<E<lt>whatE<gt>>:"
-msgstr ""
+msgstr "Dostupné hodnoty pro I<E<lt>coE<gt>>:"
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -522,62 +522,62 @@ msgstr "Získejte limity šířky pásma."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Get IPFilter preferences."
-msgstr ""
+msgstr "Získat nastavení IPFilter."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Prints a short usage description.  If called without parameter, it shows a list of available commands.  If called with I<E<lt>commandE<gt>>, it shows a short description of the given command."
-msgstr ""
+msgstr "Vypíše krátký popis použití.  Pokud není uveden parametr, vypíše seznam dostupných příkazů.  Pokud je uvedeno s I<E<lt>příkazE<gt>>, ukáže krátký popis daného příkazu."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Pauses the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. To get the value use B<show>."
-msgstr ""
+msgstr "Pozastaví stahování stanovené podle I<E<lt>hashE<gt>> nebo I<E<lt>čísloE<gt>>. Pro získání hodnoty použijte B<show>."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Set priority of a download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>."
-msgstr ""
+msgstr "Nastavit prioritu stahování, určeného pomocí I<E<lt>hashE<gt>> nebo I<E<lt>čísloE<gt>>."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Available values for I<E<lt>priorityE<gt>>:"
-msgstr ""
+msgstr "Dostupné hodnoty pro I<E<lt>prioritaE<gt>>:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Automatic priority."
-msgstr ""
+msgstr "Automatická priorita."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "High priority."
-msgstr ""
+msgstr "Vysoká priorita."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Low priority."
-msgstr ""
+msgstr "Nízká priorita."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Normal priority."
-msgstr ""
+msgstr "Normální priorita."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shows the progress of an on-going search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search."
-msgstr ""
+msgstr "Ukáže průběh aktuálního vyhledávání. Volitelně přijímá parametr I<E<lt>idE<gt>> (zobrazený pomocí B<search>); bez id zobrazí naposledy zahájené vyhledávání."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "A synonym of the B<exit> command."
-msgstr ""
+msgstr "Synonymum příkazu B<exit>."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Reloads a given object."
-msgstr ""
+msgstr "Znovu načte zadaný objekt."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -587,7 +587,7 @@ msgstr "Znovu načíst seznam sdílených souborů."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Reload IP filter tables."
-msgstr ""
+msgstr "Znovu načíst tabulky IP filtru"
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -597,12 +597,12 @@ msgstr "Resetovat log."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shows you the results of a search. Optionally takes a search I<E<lt>idE<gt>> (as printed by B<search>); with no id, shows the most recently started search.  Several searches can be kept on the daemon at once and addressed by id."
-msgstr ""
+msgstr "Ukáže vám výsledky vyhledávání. Volitelně připište I<E<lt>idE<gt>> vyhledávání (které vrátil B<search>); bez id zobrazí naposledy zahájené vyhledávání.  Na daemonu může být několik vyhledávání zároveň a je možné je adresovat pomocí id."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Resumes the download specified by I<E<lt>hashE<gt>> or I<E<lt>numberE<gt>>. To get the value use B<show>."
-msgstr ""
+msgstr "Obnoví stahování stanovené podle I<E<lt>hashE<gt>> nebo I<E<lt>čísloE<gt>>. Pro získání hodnoty použijte B<show>."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -622,12 +622,12 @@ msgstr ""
 #. type: Plain text
 #: amulecmd.1.in
 msgid "These management commands require daemon support for search listing and multiple searches.  Use an explicit ID from B<search list> for stop and more."
-msgstr ""
+msgstr "Tyto příkazy pro správu vyžadují podporu daemona pro výpis vyhledávání a mnohočetné vyhledávání. Použijte explicitně ID z B<search list> pro zastavení a další."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Makes a search for the given I<E<lt>keywordE<gt>>. A search type and a keyword to search is mandatory to do this.  Example: 'search kad amule' performs a kad search for 'amule'.  Prints a search id; pass it to B<results> or B<progress> to address this search. Several searches can run at once, each with its own id."
-msgstr ""
+msgstr "Vyhledá zadané I<E<lt>klíčové slovoE<gt>>. Typ vyhledávání a klíčové slovo je nutné uvést. Příklad: 'search kad amule' provede hledání v Kad pro slovo 'amule'. Vrátí id vyhledávání; předá ho do B<results> nebo B<progress> pro vyřešení tohoto vyhledávání. V jednu chvíli může běžet více vyhledávání, každé s vlastním id."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -987,7 +987,7 @@ msgstr ""
 #. type: Plain text
 #: amulegui.1.in
 msgid "Write logs to the specified filename instead of the default log file.  Overrides the B<LogFilePath> setting under B<[eMule]> in I<remote.conf> for this run only.  Relative paths are resolved against the configuration directory.  The parent directory must already exist and be writable; it is not created automatically.  An empty or absent configuration setting uses I<remotelogfile> in the configuration directory.  On startup, the previous log is backed up to the same path with I<.bak> appended.  If the backup cannot be created, a warning is logged and the current session is appended to the existing log.  Configuration changes take effect after restart."
-msgstr ""
+msgstr "Zapsat logy do zadaného souboru namísto výchozího souboru logu.  Toto nastavení přepisuje nastavení B<LogFilePath> v sekci B<[eMule]> v I<remote.conf>, a to pouze pro toto spuštění.  Relativní cesty se vyhodnocují vzhledem ke konfiguračnímu adresáři.  Nadřazený adresář musí již existovat a musí být zapisovatelný; nevytváří se automaticky.  Pokud je toto nastavení konfigurace prázdné nebo chybí, použije se I<remotelogfile> v konfiguračním adresáři.  Při spuštění se předchozí log zálohuje do stejné cesty a bude mít příponu I<.bak>.  Pokud nelze zálohu vytvořit, zaznamená se varování a aktuální relace se připojí k existujícímu logu.  Změny v konfiguraci se projeví až po restartu."
 
 #. type: Plain text
 #: amulegui.1.in
