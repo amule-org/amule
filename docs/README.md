@@ -417,9 +417,9 @@ event; daemon free-space checks are not visible to the GUI.
   sysctl -w net.core.rmem_max=4194304
   ```
 
-  To keep it after a reboot, put `net.core.rmem_max = 4194304` in a file
-  under `/etc/sysctl.d/`. When aMule runs in a container, set it on the
-  host.
+  To keep it after a reboot, put `net.core.rmem_max = 4194304` in
+  `/etc/sysctl.d/90-amule.conf`. When aMule runs in a container, set it
+  on the host.
 
 For anything else, the documentation and forum are the best places to look:
 
