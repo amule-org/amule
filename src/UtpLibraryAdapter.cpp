@@ -146,7 +146,7 @@ public:
 			port,
 			nullptr,
 			false,
-			m_readWindows.Take(m_sink->UdpReceiveBufferBytes()));
+			m_readWindows.Take());
 		utp_set_userdata(socket, pending.get());
 		pending->ApplyReceiveBound();
 		pending->SetCryptParameters(encrypt, userHash);
@@ -1015,7 +1015,7 @@ private:
 			port,
 			nullptr,
 			true,
-			self.m_readWindows.Take(self.m_sink->UdpReceiveBufferBytes()));
+			self.m_readWindows.Take());
 		CUtpSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
 		// Before admission can produce a callback that needs it.

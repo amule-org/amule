@@ -57,8 +57,6 @@ public:
 	virtual void SendUtpKeyFrame(uint32_t, uint16_t, const uint8_t *) {}
 	//! A connected stream now follows its peer to a new source port, after libutp took the frame.
 	virtual void OnUtpStreamMoved() {}
-	//! The receive buffer the OS granted the UDP socket; 0 when unknown.
-	virtual size_t UdpReceiveBufferBytes() const { return 0; }
 };
 
 class IStreamTransport;

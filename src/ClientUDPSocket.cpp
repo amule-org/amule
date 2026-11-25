@@ -663,12 +663,6 @@ void CClientUDPSocket::OnUtpStreamMoved()
 	theStats::AddUtpStreamMove();
 }
 
-size_t CClientUDPSocket::UdpReceiveBufferBytes() const
-{
-	const int granted = GetReceiveBufferBytes();
-	return granted > 0 ? static_cast<size_t>(granted) : 0;
-}
-
 void CClientUDPSocket::HandleUtpKeyFrame(const uint8_t *payload, size_t length, uint32_t ip, uint16_t port)
 {
 	const std::optional<NatKeyFrame::Hash> announced = NatKeyFrame::ParsePayload(payload, length);

@@ -143,9 +143,6 @@ public:
 	 */
 	bool Ok();
 
-	//! The receive buffer the OS granted the open socket; 0 when closed or unknown.
-	int GetReceiveBufferBytes() const;
-
 	/** Read buffer size */
 	static const unsigned UDP_BUFFER_SIZE = 16384;
 

@@ -435,7 +435,7 @@ TEST(UtpSocketTransport, AWideReadBoundIsTheOneApplied)
 			4662,
 			nullptr,
 			true,
-			budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer));
+			budget.Take());
 		transport.ApplyReceiveBound();
 		ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)ops.receiveBound);
 		ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());

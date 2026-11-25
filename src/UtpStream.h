@@ -305,16 +305,15 @@ private:
 };
 
 /**
- * Picks a new stream's read bound: CUtpStream::kDefaultReadBound, or kWideReadBound when the UDP
- * receive buffer can take it.
+ * Picks a new stream's read bound: kWideReadBound while fewer than kMaxWideStreams hold it, else
+ * CUtpStream::kDefaultReadBound.
  *
  * The bound is the window the peer may fill in one round trip. On a lab rig with a 4 MiB socket
  * buffer, 1 MiB moved 1.9 times as much as 256 KiB at 50 ms and 3.7 times as much at 100 ms.
- * libutp does not pace, so a whole window can arrive as one burst. With Linux's default
- * 212992-byte buffer such bursts already overflow it at 50 ms, and there a single run of 1 MiB
- * gained nothing. So a stream gets the wide bound only when the OS granted kWideMinReceiveBuffer,
- * as Windows and macOS do by default, and only while fewer than kMaxWideStreams hold it: a slow
- * reader can pin about twice its bound (kReadOverrunFactor).
+ * With Linux's default 212992-byte buffer it moved 1.2 times as much at 10 ms. At 50 and 100 ms
+ * that small buffer drops packets, the congestion window stays under both bounds, and 1 MiB
+ * neither gains nor loses. The cap is there because a slow reader can pin about twice its bound
+ * (kReadOverrunFactor).
  *
  * Take() is for the main thread; a lease may be released on any thread.
  */
@@ -322,7 +321,6 @@ class CUtpReadWindowBudget
 {
 public:
 	static constexpr size_t kWideReadBound = 1024 * 1024;
-	static constexpr size_t kWideMinReceiveBuffer = 4 * 1024 * 1024;
 	static constexpr size_t kMaxWideStreams = 32;
 	static_assert(kWideReadBound / CUtpStream::kWindowSlackDivisor >= CUtpStream::kWindowSlackBytes,
 		"read bound too small for a full slack");
@@ -361,11 +359,11 @@ public:
 		std::shared_ptr<std::atomic<size_t>> m_wide;
 	};
 
-	//! The lease for a new stream on a socket with that receive buffer.
-	CLease Take(size_t receiveBufferBytes)
+	//! The lease for a new stream.
+	CLease Take()
 	{
 		CLease lease;
-		if (receiveBufferBytes >= kWideMinReceiveBuffer && m_wide->load() < kMaxWideStreams) {
+		if (m_wide->load() < kMaxWideStreams) {
 			++*m_wide;
 			lease.m_wide = m_wide;
 		}

@@ -107,8 +107,6 @@ public:
 		keyFramePort = port;
 	}
 	void OnUtpStreamMoved() override { ++streamMoves; }
-	size_t UdpReceiveBufferBytes() const override { return receiveBuffer; }
-	size_t receiveBuffer = 0;
 	uint32_t lastIp = 0;
 	uint16_t lastPort = 0;
 	//! The last datagram this side put on the wire, so a test can read the numbers it carried.
@@ -1320,29 +1318,11 @@ void AssertStallsAtTheWideBound(SLoopback &loop, IStreamTransport &transport)
 	ASSERT_TRUE_M(buffered + 2048 >= bound, detail);
 }
 
-TEST(UtpLibraryAdapter, AStreamOnAFullSocketBufferStopsAtTheWideBound)
+TEST(UtpLibraryAdapter, ADialStopsAtTheWideBound)
 {
 	SLoopback loop;
 	g_loop = &loop;
 	CServerSink sink;
-	sink.receiveBuffer = CUtpReadWindowBudget::kWideMinReceiveBuffer;
-	CFakeAcceptor acceptor;
-	loop.server = CreateUtpLibrary();
-	ASSERT_TRUE(loop.server->Create(sink));
-	loop.server->SetAcceptor(&acceptor);
-	StartClient(loop);
-	Pump(loop);
-	ASSERT_TRUE(acceptor.accepted != nullptr);
-	AssertStallsAtTheWideBound(loop, *acceptor.accepted);
-	Teardown(loop);
-}
-
-TEST(UtpLibraryAdapter, ADialOnAFullSocketBufferStopsAtTheWideBound)
-{
-	SLoopback loop;
-	g_loop = &loop;
-	CServerSink sink;
-	sink.receiveBuffer = CUtpReadWindowBudget::kWideMinReceiveBuffer;
 	loop.server = CreateUtpLibrary();
 	ASSERT_TRUE(loop.server->Create(sink));
 	StartClientAcceptor(loop);
@@ -1372,16 +1352,16 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	Pump(loop);
 	ASSERT_TRUE(acceptor.accepted != nullptr);
 
-	const size_t bound = CUtpStream::kDefaultReadBound;
+	const size_t bound = CUtpReadWindowBudget::kWideReadBound;
 	std::vector<uint8_t> payload(bound * 2);
 	for (size_t i = 0; i < payload.size(); ++i) {
 		payload[i] = static_cast<uint8_t>((i * 7) & 0xFF);
 	}
 
 	// Offer everything without reading a byte. Delivery must stall at the
-	// bound: more than that in flight would mean the 64 KiB never took effect.
+	// bound.
 	size_t offered = 0;
-	for (int round = 0; round < 64 && offered < payload.size(); ++round) {
+	for (int round = 0; round < 256 && offered < payload.size(); ++round) {
 		utp_iovec vector{ payload.data() + offered, payload.size() - offered };
 		const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
 		if (accepted > 0) {
@@ -1393,8 +1373,6 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	auto *utp = static_cast<CUtpSocketTransport *>(acceptor.accepted.get());
 	const size_t buffered = utp->ReadBufferSize();
 	// Short of the bound: libutp stops once the window cannot hold a packet.
-	// Without UTP_RCVBUF the 1 MiB default would govern and all of it would be
-	// here.
 	CFormat stalled("buffered %u, bound %u, payload %u");
 	const wxString detail = stalled % unsigned(buffered) % unsigned(bound) % unsigned(payload.size());
 	ASSERT_TRUE_M(buffered < payload.size(), detail);
@@ -1417,7 +1395,7 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	ASSERT_TRUE(utp->ReadBufferSize() != 0);
 
 	// The rest must now arrive.
-	for (int round = 0; round < 512 && (offered < payload.size() || total < payload.size()); ++round) {
+	for (int round = 0; round < 4096 && (offered < payload.size() || total < payload.size()); ++round) {
 		if (offered < payload.size()) {
 			utp_iovec vector{ payload.data() + offered, payload.size() - offered };
 			const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
