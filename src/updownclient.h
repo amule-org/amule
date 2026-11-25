@@ -1153,9 +1153,9 @@ public:
 	void SendKadBuddyCallbackRequest();
 	uint64_t GetDirectCallbackTimeout() const { return m_dwDirectCallbackTimeout; }
 	uint64_t GetServerCallbackTimeout() const { return m_serverCallbackTimeout; }
-	//! Our OP_CALLBACKREQUEST for this client timed out or was refused. A download still waiting
-	//! on it moves to its next route. Returns true when the client is to be deleted.
-	bool ServerCallbackFailed(const wxString &reason);
+	//! Our server refused our OP_CALLBACKREQUEST for this client. A download still waiting on it
+	//! moves to its next route. Returns true when the client is to be deleted.
+	bool ServerCallbackRefused();
 	uint64_t GetLastDirectCallbackRequest() const { return m_lastDirectCallbackRequest; }
 	bool HasObfuscatedConnectionBeenEstablished() const { return m_hasbeenobfuscatinglately; }
 

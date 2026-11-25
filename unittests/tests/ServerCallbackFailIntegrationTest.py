@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 aMule Team
 # SPDX-License-Identifier: GPL-2.0-or-later
-"""A server callback that is refused or never answered must not hold its source.
+"""A server callback our server refuses must fail at once when the refusal is known to be its own.
 
 A fake server gives the daemon a HighID and answers each source request with LowID sources, so
-the daemon asks it to call them back. A refusal with one request out fails that request at once.
-A refusal with two out names neither, so both wait for the timeout.
+the daemon asks it to call them back. OP_CALLBACK_FAIL names no request: with one request out it
+fails that one at once, and with two out it fails neither, so both wait for the connect timeout.
 """
 import os
 from pathlib import Path
@@ -28,7 +28,8 @@ OP_GETSOURCES_OBFU = 0x23
 OP_CALLBACK_FAIL = 0x36
 OP_IDCHANGE = 0x40
 OP_FOUNDSOURCES = 0x42
-TIMEOUT_S = 45
+# CONNECTION_TIMEOUT: the socket of an unanswered callback times out after it.
+TIMEOUT_S = 40
 
 
 def packet(opcode, body=b''):
@@ -117,14 +118,14 @@ def run(binary):
                 server.refuse()
                 wait_log('the refused callback to fail its source', lambda: deleted('Server callback refused') == 1, 10)
 
-                # Two out: the refusal names neither, so both wait for the timeout.
+                # Two out: the refusal names neither, so both wait for the connect timeout.
                 sent = time.monotonic()
                 download('pair', (0x20202, 0x30303))
                 server.refuse()
                 wait_log('the refusal to be left unmatched',
                          lambda: 'OP_CALLBACK_FAIL with 2 callback requests out' in log.read_text(errors='replace'), 10)
-                assert deleted('Server callback timeout') == 0, 'a callback timed out early'
-                wait_log('both callbacks to time out', lambda: deleted('Server callback timeout') == 2, TIMEOUT_S + 30)
+                assert deleted('Timeout') == 0, 'a callback timed out early'
+                wait_log('both callbacks to time out', lambda: deleted('Timeout') == 2, TIMEOUT_S + 30)
                 assert time.monotonic() - sent >= TIMEOUT_S - 1, 'the callbacks timed out before their window'
                 assert deleted('Server callback refused') == 1, 'the unmatched refusal failed a request'
                 assert proc.poll() is None, 'the daemon exited'

@@ -2269,11 +2269,12 @@ void CUpDownClient::SendClassicCallbackRequest()
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
 	theApp->serverconnect->SendPacket(packet);
-	m_serverCallbackTimeout = ::GetTickCount64() + kCallbackAnswerTimeoutMs;
+	// Our placeholder socket ends an unanswered wait after this (CheckTimeOut()).
+	m_serverCallbackTimeout = ::GetTickCount64() + CONNECTION_TIMEOUT;
 	theApp->clientlist->AddServerCallbackClient(this);
 }
 
-bool CUpDownClient::ServerCallbackFailed(const wxString &reason)
+bool CUpDownClient::ServerCallbackRefused()
 {
 	theApp->clientlist->RemoveServerCallback(this);
 	m_serverCallbackTimeout = 0;
@@ -2285,7 +2286,7 @@ bool CUpDownClient::ServerCallbackFailed(const wxString &reason)
 		m_sourceRoute != ESourceRoute::ServerCallback) {
 		return false;
 	}
-	return Disconnected(reason);
+	return Disconnected("Server callback refused");
 }
 
 bool CUpDownClient::IsDirectCallbackPossible() const
@@ -2810,7 +2811,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		// packet of overhead is used, handle it like a normal connection try: no restrictions
 		// apply, and !theApp->CanDoCallback(this) above already checked whether any callback is
 		// possible at all.
-		m_dwDirectCallbackTimeout = ::GetTickCount64() + kCallbackAnswerTimeoutMs;
+		m_dwDirectCallbackTimeout = ::GetTickCount64() + SEC2MS(45);
 		theApp->clientlist->AddDirectCallbackClient(this);
 		AddDebugLogLineN(logClient,
 			CFormat("Direct Callback on port %u to client on ip %s") % GetKadPort() %

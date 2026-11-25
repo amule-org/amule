@@ -361,7 +361,8 @@ protected:
 	void CleanUpClientList();
 
 	void ProcessDirectCallbackList();
-	void ProcessServerCallbackList();
+	//! Drops the requests whose answer window has passed.
+	void PruneServerCallbacks();
 
 private:
 	/**

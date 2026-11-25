@@ -428,9 +428,6 @@ inline ESourceRoute NextSourceRoute(const SSourceRouteFacts &facts)
 	return buddy && facts.canTakeCallback ? ESourceRoute::KadBuddy : ESourceRoute::None;
 }
 
-//! eMule's connect-try timeout: a callback whose peer has not connected to us by then has failed.
-constexpr std::uint64_t kCallbackAnswerTimeoutMs = 45'000;
-
 //! The peer drops, unanswered, a direct callback request that comes within @a throttleMs of the
 //! last one from our IP.
 inline bool IsDirectCallbackThrottled(std::uint64_t lastSentMs, std::uint64_t nowMs, std::uint64_t throttleMs)

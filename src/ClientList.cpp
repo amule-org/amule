@@ -997,7 +997,6 @@ void CClientList::Process()
 
 	CleanUpClientList();
 	ProcessDirectCallbackList();
-	ProcessServerCallbackList();
 	theApp->browsemanager->Process(cur_tick);
 }
 
@@ -1960,29 +1959,23 @@ void CClientList::AddServerCallbackClient(CUpDownClient *toAdd)
 	if (toAdd->HasBeenDeleted()) {
 		return;
 	}
+	PruneServerCallbacks();
 	// A new request for the same client only moves its deadline.
 	RemoveServerCallback(toAdd);
 	m_currentServerCallbacks.push_back(CCLIENTREF(toAdd, "CClientList::AddServerCallbackClient"));
 }
 
-void CClientList::ProcessServerCallbackList()
+void CClientList::PruneServerCallbacks()
 {
 	const uint64_t now = ::GetTickCount64();
-	for (CClientRefList::iterator it = m_currentServerCallbacks.begin();
-		it != m_currentServerCallbacks.end();) {
-		// ServerCallbackFailed() drops the entry, so the client is held here.
-		const CClientRef ref = *it++;
-		CUpDownClient *client = ref.GetClient();
-		if (client->GetServerCallbackTimeout() < now &&
-			client->ServerCallbackFailed("Server callback timeout")) {
-			client->Safe_Delete();
-		}
-	}
+	m_currentServerCallbacks.remove_if(
+		[now](const CClientRef &ref) { return ref.GetClient()->GetServerCallbackTimeout() < now; });
 }
 
 void CClientList::ServerCallbackRefused()
 {
 	// The packet names no request, so it is ours to act on only while one request is out.
+	PruneServerCallbacks();
 	if (m_currentServerCallbacks.size() != 1) {
 		AddDebugLogLineN(logServer,
 			CFormat("Server: OP_CALLBACK_FAIL with %u callback requests out, each waits for its "
@@ -1990,9 +1983,10 @@ void CClientList::ServerCallbackRefused()
 				m_currentServerCallbacks.size());
 		return;
 	}
+	// ServerCallbackRefused() drops the entry, so the client is held here.
 	const CClientRef ref = m_currentServerCallbacks.front();
 	CUpDownClient *client = ref.GetClient();
-	if (client->ServerCallbackFailed("Server callback refused")) {
+	if (client->ServerCallbackRefused()) {
 		client->Safe_Delete();
 	}
 }
