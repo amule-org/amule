@@ -710,8 +710,8 @@ use, or until our login address changes). `CClientUDPSocket::ClientCryptKeyIP()`
 ed2k-keyed datagram queued to that peer, punches, uTP and QUIC alike, and the uTP simultaneous-open
 tie-break orders by it, else by Kad's view of our address. Whether anything toward that peer is
 obfuscated at all is decided with the same key IP, else our public IP, else a verified stream's
-(`CMuleUDPSocket::ClientKeyIP()`), so a rendezvous can be obfuscated while our own public IP is
-unknown. `VerifyIdent()` does not use it: it
+(`CMuleUDPSocket::ClientKeyIP()`). The key IP needs a login address, so while our public IP is
+unknown only a verified stream's key IP keeps traffic to its peer obfuscated. `VerifyIdent()` does not use it: it
 checks a `CRYPT_CIP_REMOTECLIENT` signature on a uTP or QUIC stream against the server field below
 while logged in, else Kad's view (`NatSourceEcho::IdentUdpIP()`). The echo is the peer's own word,
 and a peer that relays another's signature would echo its own IP. Two sources fill the key IP:
