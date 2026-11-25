@@ -69,6 +69,8 @@
 
 CClientList::CClientList()
 : m_deadSources(true)
+// As long as a download's placeholder socket waits for the callback (CheckTimeOut()).
+, m_serverCallbacks(CONNECTION_TIMEOUT)
 {
 	m_dwLastBannCleanUp = 0;
 	m_dwLastTrackedCleanUp = 0;
@@ -187,6 +189,7 @@ void CClientList::RemoveClient(CUpDownClient *client)
 {
 	RemoveFromKadList(client);
 	RemoveDirectCallback(client);
+	RemoveServerCallbacks(client);
 	// Drop any browse of this client: the manager holds a reference, and the client is going
 	// away, so there is nothing left to report a result to. Guarded like the clientlist call in
 	// CUpDownClient::Safe_Delete: clients are still being reaped while the app tears itself
@@ -1950,6 +1953,32 @@ void CClientList::ProcessDirectCallbackList()
 				curClient->Safe_Delete();
 			}
 		}
+	}
+}
+
+void CClientList::AddServerCallbackRequest(CUpDownClient *client)
+{
+	if (!client->HasBeenDeleted()) {
+		m_serverCallbacks.Add(
+			CCLIENTREF(client, "CClientList::AddServerCallbackRequest"), ::GetTickCount64());
+	}
+}
+
+void CClientList::ServerCallbackRefused()
+{
+	const uint64_t now = ::GetTickCount64();
+	// The client is held here: ServerCallbackRefused() may delete it.
+	const std::optional<CClientRef> refused = m_serverCallbacks.TakeRefused(now);
+	if (!refused) {
+		AddDebugLogLineN(logServer,
+			CFormat("Server: OP_CALLBACK_FAIL with %u callback requests out, each waits for its "
+				"timeout") %
+				m_serverCallbacks.Count(now));
+		return;
+	}
+	CUpDownClient *client = refused->GetClient();
+	if (client->ServerCallbackRefused()) {
+		client->Safe_Delete();
 	}
 }
 
