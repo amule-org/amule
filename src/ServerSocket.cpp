@@ -109,7 +109,11 @@ void HandleLowIdHolePunchInfo(
 		info.peerIP, info.udpPort, info.tcpPort, now, peer);
 	theApp->clientudp->ExpectNatTPeer(peerIP, info.udpPort, &info.userHash);
 	// The four punches, with the port sweep at 0.5 s, are driven from the core timer.
-	serverconnect->StartLowIdHolePunchSchedule(info.peerIP, info.udpPort, now, info.userHash);
+	theApp->clientudp->StartLowIdHolePunchSchedule(info.peerIP,
+		info.udpPort,
+		now,
+		NatServerHolePunch::RendezvousPath::ServerPunch,
+		info.userHash);
 	AddDebugLogLineN(logServer,
 		CFormat("Client UDP socket: OP_HOLEPUNCH at 0, 0.5, 1 and 2 s to %s") %
 			Uint32_16toStringIP_Port(peerIP, info.udpPort));

@@ -716,6 +716,22 @@ struct PunchDue
 	std::uint16_t udpPort = 0;
 };
 
+// The path a rendezvous took. The extension counts as the ed2k-server punch, and its Lugdunum
+// fallback dial as Lugdunum's callback; the Kad buddy relays a rendezvous with no server involved.
+enum class RendezvousPath
+{
+	ServerPunch,
+	LugdunumCallback,
+	KadBuddy
+};
+
+// Only the Kad path outlives a server session: a server reconnect must not drop what a buddy's
+// rendezvous is still punching.
+constexpr bool IsServerPath(RendezvousPath path) noexcept
+{
+	return path != RendezvousPath::KadBuddy;
+}
+
 // The punches owed to each peer endpoint. One schedule per address and port, restarted by a second
 // 0x61 for it. A punch or a hello from the peer drops its schedule, and each one expires with its
 // expected endpoint.
@@ -728,6 +744,7 @@ public:
 	void Start(const IPv4 &peerIP,
 		std::uint16_t udpPort,
 		std::uint64_t now,
+		RendezvousPath path,
 		const std::optional<Hash> &peerHash = std::nullopt)
 	{
 		Evict(now);
@@ -742,7 +759,7 @@ public:
 		}
 		// An all-zero hash names no peer, as in DialBackSchedule: no hello could match it.
 		const bool named = peerHash && *peerHash != Hash{};
-		Entry entry{ peerIP, udpPort, now, named ? peerHash : std::nullopt, {} };
+		Entry entry{ peerIP, udpPort, now, path, named ? peerHash : std::nullopt, {} };
 		for (const std::uint64_t offset : kServerPunchOffsetsMs) {
 			entry.due.push_back({ now + offset, PunchDue::Endpoint });
 		}
@@ -801,6 +818,14 @@ public:
 			m_entries.end());
 		return due;
 	}
+	// A server login ends its own paths' schedules; a Kad buddy's keep running.
+	void ClearServerPaths()
+	{
+		m_entries.erase(std::remove_if(m_entries.begin(),
+					m_entries.end(),
+					[](const Entry &entry) { return IsServerPath(entry.path); }),
+			m_entries.end());
+	}
 	std::size_t Size() const { return m_entries.size(); }
 
 private:
@@ -814,6 +839,7 @@ private:
 		IPv4 peerIP;
 		std::uint16_t udpPort;
 		std::uint64_t startedAt;
+		RendezvousPath path;
 		std::optional<Hash> peerHash;
 		std::vector<Item> due;
 	};
@@ -1033,14 +1059,6 @@ private:
 	};
 	std::deque<Entry> m_pending;
 };
-// Statistics: which server-coordinated path a rendezvous took. The extension counts as the
-// ed2k-server punch, and its Lugdunum fallback dial as Lugdunum's callback.
-enum class RendezvousPath
-{
-	ServerPunch,
-	LugdunumCallback
-};
-
 // Covers the 30 s punch window, the 3 s dial back and the stream's handshake.
 constexpr std::uint64_t kRendezvousOutcomeTtlMs = 60'000;
 constexpr std::size_t kMaxPendingRendezvous = 64;

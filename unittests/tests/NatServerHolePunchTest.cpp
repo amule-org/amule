@@ -1223,7 +1223,7 @@ TEST(NatServerHolePunch, TheServerPunchSchedulePunchesAtZeroHalfOneAndTwoSeconds
 {
 	PunchScheduleSet schedules;
 	const IPv4 peer{ { 192, 0, 2, 1 } };
-	schedules.Start(peer, 4'662, 1'000);
+	schedules.Start(peer, 4'662, 1'000, RendezvousPath::ServerPunch);
 	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(1'000).size());
 	ASSERT_TRUE(schedules.TakeDue(1'499).empty());
 	// The first repeat and the sweep share 0.5 s, the punch to the endpoint going first.
@@ -1246,7 +1246,7 @@ TEST(NatServerHolePunch, ALateTickSendsEveryPunchStillOwedWithTheSweepLast)
 {
 	PunchScheduleSet schedules;
 	const IPv4 peer{ { 198, 51, 100, 7 } };
-	schedules.Start(peer, 4'000, 0);
+	schedules.Start(peer, 4'000, 0, RendezvousPath::ServerPunch);
 	const std::vector<PunchDue> owed = schedules.TakeDue(10'000);
 	ASSERT_EQUALS((std::size_t)5, owed.size());
 	for (std::size_t i = 0; i + 1 < owed.size(); ++i) {
@@ -1261,9 +1261,9 @@ TEST(NatServerHolePunch, TwoPeersBehindOneAddressKeepTheirOwnSchedules)
 	// address must not restart the first peer's schedule.
 	PunchScheduleSet schedules;
 	const IPv4 shared{ { 192, 0, 2, 9 } };
-	schedules.Start(shared, 4'000, 1'000);
+	schedules.Start(shared, 4'000, 1'000, RendezvousPath::ServerPunch);
 	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(1'000).size());
-	schedules.Start(shared, 5'000, 1'200);
+	schedules.Start(shared, 5'000, 1'200, RendezvousPath::ServerPunch);
 	ASSERT_EQUALS((std::size_t)2, schedules.Size());
 	// The later peer's own first punch, owed from its own start.
 	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(1'200).size());
@@ -1280,7 +1280,7 @@ TEST(NatServerHolePunch, TwoPeersBehindOneAddressKeepTheirOwnSchedules)
 	ASSERT_TRUE(later[1].udpPort == 5'000 && later[1].kind == PunchDue::Sweep);
 
 	// Restarting one port's schedule does not touch the other's.
-	schedules.Start(shared, 4'000, 2'000);
+	schedules.Start(shared, 4'000, 2'000, RendezvousPath::ServerPunch);
 	const std::vector<PunchDue> restarted = schedules.TakeDue(2'000);
 	ASSERT_EQUALS((std::size_t)1, restarted.size());
 	ASSERT_TRUE(restarted[0].udpPort == 4'000);
@@ -1384,10 +1384,10 @@ TEST(NatServerHolePunch, APunchOrAHelloFromThePeerEndsItsSchedule)
 	const IPv4 other{ { 192, 0, 2, 2 } };
 	Hash anyone{};
 	anyone.fill(0x05);
-	schedules.Start(peer, 4'662, 0);
-	schedules.Start(other, 4'662, 0);
+	schedules.Start(peer, 4'662, 0, RendezvousPath::ServerPunch);
+	schedules.Start(other, 4'662, 0, RendezvousPath::ServerPunch);
 	// A second 0x61 for the same peer restarts its schedule; it never runs two.
-	schedules.Start(peer, 4'662, 0);
+	schedules.Start(peer, 4'662, 0, RendezvousPath::ServerPunch);
 	ASSERT_EQUALS((std::size_t)2, schedules.Size());
 
 	schedules.Cancel(peer, 4'662);
@@ -1416,8 +1416,8 @@ TEST(NatServerHolePunch, AHelloEndsOnlyItsOwnPeersSchedule)
 	q.fill(0x02);
 	Hash stranger{};
 	stranger.fill(0x03);
-	schedules.Start(shared, 4'000, 0, p);
-	schedules.Start(shared, 5'000, 0, q);
+	schedules.Start(shared, 4'000, 0, RendezvousPath::ServerPunch, p);
+	schedules.Start(shared, 5'000, 0, RendezvousPath::ServerPunch, q);
 
 	schedules.CancelPeer(shared, q);
 	ASSERT_EQUALS((std::size_t)1, schedules.Size());
@@ -1431,7 +1431,7 @@ TEST(NatServerHolePunch, AHelloEndsOnlyItsOwnPeersSchedule)
 	ASSERT_EQUALS((std::size_t)0, schedules.Size());
 
 	// A server that vouched for an all-zero hash named no peer, so any hello ends a lone schedule.
-	schedules.Start(shared, 6'000, 1, Hash{});
+	schedules.Start(shared, 6'000, 1, RendezvousPath::ServerPunch, Hash{});
 	schedules.CancelPeer(shared, stranger);
 	ASSERT_EQUALS((std::size_t)0, schedules.Size());
 }
@@ -1439,7 +1439,7 @@ TEST(NatServerHolePunch, AHelloEndsOnlyItsOwnPeersSchedule)
 TEST(NatServerHolePunch, AScheduleExpiresWithTheExpectedEndpoint)
 {
 	PunchScheduleSet schedules;
-	schedules.Start({ { 192, 0, 2, 1 } }, 4'662, 0);
+	schedules.Start({ { 192, 0, 2, 1 } }, 4'662, 0, RendezvousPath::ServerPunch);
 	// A tick that never came leaves nothing to punch 30 s later.
 	ASSERT_TRUE(schedules.TakeDue(kExpectedEndpointTtlMs).empty());
 	ASSERT_EQUALS((std::size_t)0, schedules.Size());
@@ -1449,7 +1449,7 @@ TEST(NatServerHolePunch, PunchSchedulesStayBoundedByEvictingTheOldest)
 {
 	PunchScheduleSet schedules;
 	for (std::uint8_t last = 0; last < 100; ++last) {
-		schedules.Start({ { 10, 0, 0, last } }, 4'662, 0);
+		schedules.Start({ { 10, 0, 0, last } }, 4'662, 0, RendezvousPath::ServerPunch);
 	}
 	ASSERT_EQUALS(kMaxPunchSchedules, schedules.Size());
 	// The hundredth address stands and the first one went.
@@ -1557,4 +1557,25 @@ TEST(NatServerHolePunch, ARequestThatNeverWentOutLeavesTheFallbackForLater)
 	// Not spent, but not asked again on the next tick either.
 	ASSERT_FALSE(fallback.IsDue(kHolePunchFallbackMs + 1));
 	ASSERT_TRUE(fallback.IsDue(2 * kHolePunchFallbackMs));
+}
+
+TEST(NatServerHolePunch, AServerLoginEndsTheServerSchedulesButNotTheKadBuddys)
+{
+	PunchScheduleSet schedules;
+	const IPv4 server{ { 192, 0, 2, 1 } };
+	const IPv4 lugdunum{ { 192, 0, 2, 2 } };
+	const IPv4 kad{ { 192, 0, 2, 3 } };
+	schedules.Start(server, 4'662, 0, RendezvousPath::ServerPunch);
+	schedules.Start(lugdunum, 4'662, 0, RendezvousPath::LugdunumCallback);
+	schedules.Start(kad, 4'662, 0, RendezvousPath::KadBuddy);
+	schedules.ClearServerPaths();
+	ASSERT_EQUALS((std::size_t)1, schedules.Size());
+	// The schedule left is the Kad peer's, with all its punches and its sweep.
+	const std::vector<PunchDue> first = schedules.TakeDue(0);
+	ASSERT_EQUALS((std::size_t)1, first.size());
+	ASSERT_TRUE(first[0].peerIP == kad);
+	ASSERT_EQUALS((std::size_t)2, schedules.TakeDue(500).size());
+	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(1'000).size());
+	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(2'000).size());
+	ASSERT_EQUALS((std::size_t)0, schedules.Size());
 }
