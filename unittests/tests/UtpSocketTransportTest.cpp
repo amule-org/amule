@@ -424,6 +424,29 @@ TEST(UtpSocketTransport, ConnectingRequestsWhatTheHandshakeRefused)
 	}
 }
 
+TEST(UtpSocketTransport, AWideReadBoundIsTheOneApplied)
+{
+	FakeOperations ops;
+	CUtpReadWindowBudget budget;
+	CUtpReadWindowBudget::CLease lease;
+	const size_t bound = budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, lease);
+	{
+		CUtpSocketTransport transport(ops,
+			Handle(),
+			CNetworkAddress::FromString("192.0.2.7"),
+			4662,
+			nullptr,
+			true,
+			bound,
+			std::move(lease));
+		transport.ApplyReceiveBound();
+		ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)ops.receiveBound);
+		ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());
+	}
+	// The transport held the share; closing it frees the share.
+	ASSERT_EQUALS(0u, (unsigned)budget.WideStreams());
+}
+
 TEST(UtpSocketTransport, ReadBufferSizeTracksCurrentOccupancy)
 {
 	FakeOperations ops;

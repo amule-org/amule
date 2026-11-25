@@ -378,6 +378,11 @@ uint32 CMuleUDPSocket::StreamKeyIP(uint32)
 	return 0;
 }
 
+int CMuleUDPSocket::GetReceiveBufferBytes() const
+{
+	return m_socket ? m_socket->GetReceiveBufferBytes() : 0;
+}
+
 bool CMuleUDPSocket::Ok()
 {
 	wxMutexLocker lock(m_mutex);

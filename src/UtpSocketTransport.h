@@ -96,13 +96,17 @@ public:
 		const CNetworkAddress &peer,
 		uint16_t peerPort,
 		IStreamTransportEvents *events,
-		bool inbound)
+		bool inbound,
+		size_t readBound = CUtpStream::kDefaultReadBound,
+		CUtpReadWindowBudget::CLease readWindow = {})
 	: m_operations(operations)
 	, m_socket(socket)
 	, m_peer(peer)
 	, m_peerPort(peerPort)
 	, m_inbound(inbound)
 	, m_events(events)
+	, m_stream(CUtpStream::kDefaultWriteBound, readBound)
+	, m_readWindow(std::move(readWindow))
 	{
 	}
 
@@ -656,6 +660,7 @@ private:
 	// transport synchronously. Destruction detaches before library re-entry.
 	IStreamTransportEvents *m_events;
 	CUtpStream m_stream;
+	CUtpReadWindowBudget::CLease m_readWindow;
 	bool m_connected = false;
 	std::recursive_mutex m_raiseMutex;
 	bool m_flushPending = false;

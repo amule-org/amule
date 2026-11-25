@@ -474,3 +474,77 @@ TEST(UtpStream, APeerIgnoringTheWindowEndsTheStream)
 	stream.OnPayload(past.data(), past.size());
 	ASSERT_EQUALS(limit, stream.ReadBufferSize());
 }
+
+DECLARE_SIMPLE(UtpReadWindowBudget)
+
+TEST(UtpReadWindowBudget, ACappedSocketBufferKeepsTheDefaultBound)
+{
+	// Linux's default net.core.rmem_max: a wider window only overflows it.
+	CUtpReadWindowBudget budget;
+	CUtpReadWindowBudget::CLease lease;
+	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)budget.Take(212992, lease));
+	ASSERT_FALSE(lease.HoldsWide());
+	ASSERT_EQUALS(0u, (unsigned)budget.WideStreams());
+	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)budget.Take(0, lease));
+}
+
+TEST(UtpReadWindowBudget, AFullSocketBufferGetsTheWideBoundUntilTheLeaseEnds)
+{
+	CUtpReadWindowBudget budget;
+	{
+		CUtpReadWindowBudget::CLease lease;
+		ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound,
+			(unsigned)budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, lease));
+		ASSERT_TRUE(lease.HoldsWide());
+		ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());
+	}
+	ASSERT_EQUALS(0u, (unsigned)budget.WideStreams());
+}
+
+TEST(UtpReadWindowBudget, StreamsPastTheCapGetTheDefaultBound)
+{
+	CUtpReadWindowBudget budget;
+	const size_t buffer = CUtpReadWindowBudget::kWideMinReceiveBuffer;
+	std::vector<CUtpReadWindowBudget::CLease> leases(CUtpReadWindowBudget::kMaxWideStreams);
+	for (auto &lease : leases) {
+		ASSERT_EQUALS(
+			(unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)budget.Take(buffer, lease));
+	}
+	CUtpReadWindowBudget::CLease extra;
+	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)budget.Take(buffer, extra));
+	ASSERT_FALSE(extra.HoldsWide());
+
+	// A closed stream frees its share for the next one.
+	leases.pop_back();
+	ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)budget.Take(buffer, extra));
+	ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kMaxWideStreams, (unsigned)budget.WideStreams());
+}
+
+TEST(UtpReadWindowBudget, AMovedLeaseReleasesOnce)
+{
+	CUtpReadWindowBudget budget;
+	CUtpReadWindowBudget::CLease first;
+	budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, first);
+	{
+		CUtpReadWindowBudget::CLease second(std::move(first));
+		ASSERT_FALSE(first.HoldsWide());
+		ASSERT_TRUE(second.HoldsWide());
+		ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());
+	}
+	ASSERT_EQUALS(0u, (unsigned)budget.WideStreams());
+
+	// Reusing a lease for a new Take() gives back the share it held.
+	budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, first);
+	budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, first);
+	ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());
+}
+
+TEST(UtpReadWindowBudget, ALeaseOutlivingItsBudgetReleasesSafely)
+{
+	CUtpReadWindowBudget::CLease lease;
+	{
+		CUtpReadWindowBudget budget;
+		budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, lease);
+	}
+	ASSERT_TRUE(lease.HoldsWide());
+}

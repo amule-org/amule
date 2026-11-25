@@ -140,8 +140,16 @@ public:
 		if (socket == nullptr) {
 			return false;
 		}
-		auto pending = std::make_unique<CUtpSocketTransport>(
-			*this, socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port, nullptr, false);
+		CUtpReadWindowBudget::CLease readWindow;
+		const size_t readBound = m_readWindows.Take(m_sink->UdpReceiveBufferBytes(), readWindow);
+		auto pending = std::make_unique<CUtpSocketTransport>(*this,
+			socket,
+			CNetworkAddress::FromIPv4NetworkOrder(ip),
+			port,
+			nullptr,
+			false,
+			readBound,
+			std::move(readWindow));
 		utp_set_userdata(socket, pending.get());
 		pending->ApplyReceiveBound();
 		pending->SetCryptParameters(encrypt, userHash);
@@ -1004,8 +1012,17 @@ private:
 
 		// Interface type so the seam can move out of it; the concrete pointer
 		// stays for the setup below.
-		auto owned = std::make_unique<CUtpSocketTransport>(
-			self, args->socket, CNetworkAddress::FromIPv4NetworkOrder(ip), port, nullptr, true);
+		CUtpReadWindowBudget::CLease readWindow;
+		const size_t readBound =
+			self.m_readWindows.Take(self.m_sink->UdpReceiveBufferBytes(), readWindow);
+		auto owned = std::make_unique<CUtpSocketTransport>(self,
+			args->socket,
+			CNetworkAddress::FromIPv4NetworkOrder(ip),
+			port,
+			nullptr,
+			true,
+			readBound,
+			std::move(readWindow));
 		CUtpSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
 		// Before admission can produce a callback that needs it.
@@ -1179,6 +1196,7 @@ private:
 	utp_context *m_context = nullptr;
 	IUtpDatagramSink *m_sink = nullptr;
 	IUtpStreamAcceptor *m_acceptor = nullptr;
+	CUtpReadWindowBudget m_readWindows;
 	bool m_datagramObfuscated = false;
 	// Borrowed for the span of one ProcessDatagram() call, like m_datagramObfuscated.
 	const uint8_t *m_ingressKey = nullptr;

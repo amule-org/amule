@@ -107,6 +107,8 @@ public:
 		keyFramePort = port;
 	}
 	void OnUtpStreamMoved() override { ++streamMoves; }
+	size_t UdpReceiveBufferBytes() const override { return receiveBuffer; }
+	size_t receiveBuffer = 0;
 	uint32_t lastIp = 0;
 	uint16_t lastPort = 0;
 	//! The last datagram this side put on the wire, so a test can read the numbers it carried.
@@ -1292,6 +1294,42 @@ TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 		CFormat format("byte %u differs");
 		ASSERT_EQUALS_M((int)payload[i], (int)received[i], format % unsigned(i));
 	}
+	Teardown(loop);
+}
+
+TEST(UtpLibraryAdapter, AStreamOnAFullSocketBufferStopsAtTheWideBound)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	sink.receiveBuffer = CUtpReadWindowBudget::kWideMinReceiveBuffer;
+	CFakeAcceptor acceptor;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	loop.server->SetAcceptor(&acceptor);
+	StartClient(loop);
+	Pump(loop);
+	ASSERT_TRUE(acceptor.accepted != nullptr);
+
+	const size_t bound = CUtpReadWindowBudget::kWideReadBound;
+	std::vector<uint8_t> payload(bound * 2);
+	size_t offered = 0;
+	for (int round = 0; round < 256 && offered < payload.size(); ++round) {
+		utp_iovec vector{ payload.data() + offered, payload.size() - offered };
+		const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
+		if (accepted > 0) {
+			offered += static_cast<size_t>(accepted);
+		}
+		Pump(loop);
+	}
+	auto *utp = static_cast<CUtpSocketTransport *>(acceptor.accepted.get());
+	const size_t buffered = utp->ReadBufferSize();
+	CFormat stalled("buffered %u, bound %u");
+	const wxString detail = stalled % unsigned(buffered) % unsigned(bound);
+	// Past the default bound, so the wide one is in force, and stalled short of it.
+	ASSERT_TRUE_M(buffered > CUtpStream::kDefaultReadBound, detail);
+	ASSERT_TRUE_M(buffered <= bound, detail);
+	ASSERT_TRUE_M(buffered + 2048 >= bound, detail);
 	Teardown(loop);
 }
 
