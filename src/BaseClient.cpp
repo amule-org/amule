@@ -2269,7 +2269,7 @@ void CUpDownClient::SendClassicCallbackRequest()
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
 	theApp->serverconnect->SendPacket(packet);
-	// Our placeholder socket ends an unanswered wait after this (CheckTimeOut()).
+	// A download's placeholder socket ends an unanswered wait after this (CheckTimeOut()).
 	m_serverCallbackTimeout = ::GetTickCount64() + CONNECTION_TIMEOUT;
 	theApp->clientlist->AddServerCallbackClient(this);
 }
