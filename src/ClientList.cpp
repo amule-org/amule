@@ -1962,7 +1962,8 @@ void CClientList::AddServerCallbackClient(CUpDownClient *toAdd)
 	PruneServerCallbacks();
 	// A new request for the same client only moves its deadline.
 	RemoveServerCallback(toAdd);
-	m_currentServerCallbacks.push_back(CCLIENTREF(toAdd, "CClientList::AddServerCallbackClient"));
+	m_currentServerCallbacks.emplace_back(
+		toAdd CLIENT_DEBUGSTRING("CClientList::AddServerCallbackClient"));
 }
 
 void CClientList::PruneServerCallbacks()
