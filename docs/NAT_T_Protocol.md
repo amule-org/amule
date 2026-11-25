@@ -232,9 +232,10 @@ What aMule does with it, in QUIC builds and only while `QuicNatT=1`:
 
 - **Sending.** Every QUIC datagram is obfuscated with the peer's hash when it is known: the identity aMule
   dialled, or the hash a key frame announced. Obfuscation requires `ClientCryptLayerSupported` and a
-  key IP toward the peer (see [Split TCP and UDP exit](#split-tcp-and-udp-exit)); where the peer sees a
-  different source IP, its sender-IP check may reject the datagram. A QUIC long-header packet is preceded by aMule's own key frame, at most
-  one per endpoint every 10 s. aMule sends its key frame only where it can itself be obfuscated; eMuleAI
+  key IP toward the peer (see [Split TCP and UDP exit](#split-tcp-and-udp-exit)); where the peer
+  sees a different source IP, its sender-IP check may reject the datagram. A QUIC long-header
+  packet is preceded by aMule's own key frame, at most one per endpoint every 10 s. aMule sends its
+  key frame only where it can itself be obfuscated; eMuleAI
   also sends it in the clear when it has no key, which exposes the sender's user hash to anyone on the
   path. With either prerequisite unavailable, datagrams go plain and no key frame is sent.
 - **Receiving.** A key frame is honoured only from an endpoint a rendezvous announced (the
@@ -565,15 +566,17 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
   `CServerConnect::ForeignCallbackServer()`). A server address learnt from a peer is never asked;
 - keeping sources: while we are firewalled, a LowID source of such a server survives
   `CPartFile::CanAddSource()`, from source exchange or from another server's answer
-  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`), whether or not we are logged in to a server. A source of a listed `0x100000` server
-  that lacks only its UDP key is dropped, and that server's key is recovered (see
-  [Missing server UDP key](#missing-server-udp-key)), so later sources of it are kept;
+  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`), whether or not we are logged in to a
+  server. A source of a listed `0x100000` server that lacks only its UDP key is dropped, and that
+  server's key is recovered (see [Missing server UDP key](#missing-server-udp-key)), so later
+  sources of it are kept;
 - requester: where a LowID-to-LowID contact is declined in `TryToContact()`, an odd LowID source
   on such a server gets `0xA6` (`OP_NAT_CALLBACKREQUEST`) `<target_id 4><0 4><crypt 1>`, server-key
   obfuscated, from the client UDP socket to that server's obfuscation UDP port. Requester ID 0
   marks it foreign; `crypt` is our `(CT_SERVER_FLAGS >> 9) & 7`. The server answers the address the
-  request came from, so we need no session of our own: only its UDP key for our current IP. Per server we send a burst of 5,
-  then one every 2 s, and at most 30 different targets in 10 minutes, below the server's own
+  request came from, so we need no session of our own, only its UDP key for our current IP, and
+  none is sent to a server we are still logging in to. Per server we send a burst of 5, then one
+  every 2 s, and at most 30 different targets in 10 minutes, below the server's own
   limits. A request waits 30 s for its answer; a target that never answers is not asked again for
   10 minutes (`NatServerHolePunch::ForeignCallbackRequests`);
 - requester, answer: the server's `0xA7` (`OP_NAT_CALLBACKREQUESTED_UDP`) is accepted only from that

@@ -814,6 +814,17 @@ bool CServerConnect::IsLocalServer(uint32 dwIP, uint16 nPort)
 	return false;
 }
 
+bool CServerConnect::IsLoggingInTo(uint32 dwIP, uint16 nPort) const
+{
+	for (const auto &attempt : connectionattemps) {
+		const CServer *server = attempt.second != nullptr ? attempt.second->cur_server : nullptr;
+		if (server != nullptr && server->GetIP() == dwIP && server->GetPort() == nPort) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void CServerConnect::KeepConnectionAlive()
 {
 	uint64 dwServerKeepAliveTimeout = thePrefs::GetServerKeepAliveTimeout();
@@ -886,7 +897,10 @@ void CServerConnect::ResetLowIdHolePunchState()
 
 CServer *CServerConnect::ForeignCallbackServer(uint32 serverIp, uint16 serverPort)
 {
-	if (IsLocalServer(serverIp, serverPort)) {
+	// Asked from Disconnected() at shutdown too, after the server list is gone. A login still in
+	// progress is to our own server, which IsLocalServer() does not know yet.
+	if (theApp->serverlist == nullptr || IsLocalServer(serverIp, serverPort) ||
+		IsLoggingInTo(serverIp, serverPort)) {
 		return nullptr;
 	}
 	CServer *server = theApp->serverlist->GetServerByIPTCP(serverIp, serverPort);

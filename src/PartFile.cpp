@@ -1982,7 +1982,8 @@ bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	[[maybe_unused]] unsigned origin)
 {
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	if (theApp->serverconnect == nullptr || !theApp->serverconnect->IsConnected()) {
+	// Logged out, only a cross-server request can still reach the source.
+	if (theApp->serverconnect == nullptr) {
 		return false;
 	}
 	// A server is either Lugdunum or ed2k-server: each keeps a LowID source it would
@@ -1992,7 +1993,8 @@ bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	const bool originIsLocalServer = origin == SF_LOCAL_SERVER;
 	const bool sourceServerIsOurCurrentServer =
 		current != nullptr && current->GetIP() == serverip && current->GetPort() == serverport;
-	const bool weAreLowId = theApp->serverconnect->IsLowID();
+	// Our ID outlives the session that gave it.
+	const bool weAreLowId = theApp->serverconnect->IsConnected() && theApp->serverconnect->IsLowID();
 
 	LugdunumNatTraversal::LowIdServerSourceFacts lugdunumFacts;
 	lugdunumFacts.originIsLocalServer = originIsLocalServer;

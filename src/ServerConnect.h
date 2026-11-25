@@ -111,6 +111,8 @@ public:
 	bool IsLowID() { return ::IsLowID(clientid); }
 	void SetClientID(uint32 newid);
 	bool IsLocalServer(uint32 dwIP, uint16 nPort);
+	//! A login to this server is under way.
+	bool IsLoggingInTo(uint32 dwIP, uint16 nPort) const;
 
 	void TryAnotherConnectionrequest();
 	bool IsSingleConnect() { return singleconnecting; }
