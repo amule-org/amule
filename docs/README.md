@@ -419,7 +419,10 @@ event; daemon free-space checks are not visible to the GUI.
 
   To keep it after a reboot, put `net.core.rmem_max = 4194304` in
   `/etc/sysctl.d/90-amule.conf`. When aMule runs in a container, set it
-  on the host.
+  on the host. This raises a system-wide ceiling and reserves no memory;
+  sockets that ask for no size keep `net.core.rmem_default`.
+  `ss -u -a -m` then shows `rb8388608` on aMule's sockets: the kernel
+  doubles the value for its own bookkeeping.
 
 For anything else, the documentation and forum are the best places to look:
 
