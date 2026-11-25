@@ -69,7 +69,7 @@
 
 CClientList::CClientList()
 : m_deadSources(true)
-// A download's placeholder socket ends an unanswered callback wait then (CheckTimeOut()).
+// As long as a download's placeholder socket waits for the callback (CheckTimeOut()).
 , m_serverCallbacks(CONNECTION_TIMEOUT)
 {
 	m_dwLastBannCleanUp = 0;
