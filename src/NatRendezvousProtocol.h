@@ -165,6 +165,59 @@ inline std::vector<std::uint8_t> BuildForwardedRendezvous(const RendezvousReques
 	return body;
 }
 
+// The NAT-T bits of a rendezvous' connect options: 0x80 for uTP (eMuleAI), 0x40 for QUIC (eMuleAI,
+// eMuleQt).
+constexpr std::uint8_t kNatTTransports = 0x80 | 0x40;
+
+// What follows the requester's ip and port in an OP_REASKCALLBACKTCP from our buddy: a plain reask
+// starts with its file hash, a forwarded control payload with an all-zero one.
+inline bool IsForwardedControl(const std::uint8_t *body, std::size_t size) noexcept
+{
+	return body && size >= kHashSize &&
+	       std::all_of(body, body + kHashSize, [](std::uint8_t byte) { return byte == 0; });
+}
+
+enum class EServedRendezvous
+{
+	Punch,
+	Malformed,
+	NoSharedTransport
+};
+
+struct ServedRendezvousDecision
+{
+	EServedRendezvous outcome;
+	RendezvousRequest request;
+	// The endpoint our buddy saw the request come from. The requester's hint is never punched:
+	// it only helps a requester on the buddy's own network.
+	PeerAddressing::UdpEndpoint target;
+	std::uint8_t sharedTransports;
+};
+
+// The served node's side of a forwarded 0xA0 (rendezvous). The requester dials and we wait, so we
+// arm every transport both sides have and let it choose; with none in common there is nothing to
+// arm. Our buddy checks this too, but an eMuleAI buddy forwards without the check.
+inline ServedRendezvousDecision DecideServedRendezvous(const PeerAddressing::UdpEndpoint &observed,
+	const std::uint8_t *body,
+	std::size_t size,
+	std::uint8_t localTransports) noexcept
+{
+	ServedRendezvousDecision decision{ EServedRendezvous::Malformed, {}, observed, 0 };
+	if (!IsForwardedControl(body, size) || size <= kHashSize || body[kHashSize] != OP_RENDEZVOUS ||
+		PeerAddressing::ClassifyUdpPeer(observed) == PeerAddressing::EUdpRoute::Reject) {
+		return decision;
+	}
+	const auto request = ParseRendezvousRequestWithHint(body + kHashSize, size - kHashSize);
+	if (!request) {
+		return decision;
+	}
+	decision.request = *request;
+	decision.sharedTransports = request->connectOptions & localTransports & kNatTTransports;
+	decision.outcome = decision.sharedTransports != 0 ? EServedRendezvous::Punch
+							  : EServedRendezvous::NoSharedTransport;
+	return decision;
+}
+
 // The endpoint is deliberately not read as an identity from the payload. eMuleAI receives this
 // request through a buddy, whose observed source endpoint is the routing input. The optional
 // requester hint is unverified metadata only. An observed source is not authentication: a later
