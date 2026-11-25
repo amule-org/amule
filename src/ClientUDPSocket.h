@@ -100,7 +100,6 @@ public:
 #if defined(ENABLE_NATT_SERVER_COORDINATION)
 	bool DialLowIdHolePunchPeer(
 		uint32 ip, uint16 tcpPort, uint16 udpPort, const NatServerHolePunch::VouchedPeer &peer);
-#ifdef AMULE_UTP_TRANSPORT
 	//! Starts the punch schedule for one peer and sends what is already due: the punch to the
 	//! endpoint a 0x61, a cross-server 0xA7 answer or a keepalive wake named, then its repeats at
 	//! 0.5, 1 and 2 s, with the port sweep at 0.5 s. @a peerHash, when the rendezvous vouched for
@@ -108,13 +107,13 @@ public:
 	void StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP,
 		uint16 udpPort,
 		uint64 now,
+		NatServerHolePunch::RendezvousPath path,
 		const std::optional<NatServerHolePunch::Hash> &peerHash);
 	//! Sends the punches and sweeps that have come due. Called from every OnCoreTimer tick.
 	void SendDueLowIdHolePunches(uint64 now);
-	//! Forgets the punches owed to each peer; the sweep budget is kept, so a server cannot buy
+	//! Forgets the punches the server paths owe; the sweep budget is kept, so a server cannot buy
 	//! more sweeps by dropping us.
 	void ResetLowIdHolePunchSchedules();
-#endif
 	bool DialLugdunumNatCallbackPeer(const LugdunumNatTraversal::ForwardedCallback &callback);
 	//! A TCP 0x37 forward: a wake answered with our keepalive when ShouldAnswerWakeWithKeepalive()
 	//! says so, anywhere else Lugdunum's callback, dialled at once.
@@ -235,13 +234,11 @@ private:
 	LugdunumNatTraversal::ForwardedCallbackActionGuard m_lugdunumCallbackActions;
 	LugdunumNatTraversal::CCallbackRendezvous m_lugdunumCallbackRendezvous;
 	NatServerHolePunch::RendezvousOutcomes m_rendezvousOutcomes;
-#ifdef AMULE_UTP_TRANSPORT
 	//! The punches owed to each peer address, cancelled by a punch from it or by our dial
 	//! connecting.
 	NatServerHolePunch::PunchScheduleSet m_lowIdHolePunchSchedules;
 	// Not reset with the session: a server must not be able to buy more sweeps by dropping us.
 	NatServerHolePunch::SweepBudget m_lowIdHolePunchSweeps;
-#endif
 	NatServerHolePunch::RequestedCallbackTargets m_requestedCallbackTargets;
 	NatServerHolePunch::ForeignCallbackRequests m_foreignCallbacks;
 #endif

@@ -1219,13 +1219,14 @@ bool CClientUDPSocket::IsRendezvousPeerAllowed(uint32 ip)
 void CClientUDPSocket::StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP,
 	uint16 udpPort,
 	uint64 now,
+	NatServerHolePunch::RendezvousPath path,
 	const std::optional<NatServerHolePunch::Hash> &peerHash)
 {
 	// Every path checks its target first; this is the backstop for the next one.
 	if (udpPort == 0 || !IsRendezvousPeerAllowed(PeekUInt32(peerIP.data()))) {
 		return;
 	}
-	m_lowIdHolePunchSchedules.Start(peerIP, udpPort, now, peerHash);
+	m_lowIdHolePunchSchedules.Start(peerIP, udpPort, now, path, peerHash);
 	// The first punch is due now, so it leaves with this tick rather than the next one.
 	SendDueLowIdHolePunches(now);
 }
@@ -1268,7 +1269,7 @@ void CClientUDPSocket::SendDueLowIdHolePunches(uint64 now)
 
 void CClientUDPSocket::ResetLowIdHolePunchSchedules()
 {
-	m_lowIdHolePunchSchedules = NatServerHolePunch::PunchScheduleSet();
+	m_lowIdHolePunchSchedules.ClearServerPaths();
 }
 #endif
 
@@ -1465,7 +1466,11 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 	ExpectNatTPeer(answer->targetIp, answer->targetUdpPort, &answer->targetHash);
 	NatServerHolePunch::IPv4 targetIP{};
 	PokeUInt32(targetIP.data(), answer->targetIp);
-	StartLowIdHolePunchSchedule(targetIP, answer->targetUdpPort, now, answer->targetHash);
+	StartLowIdHolePunchSchedule(targetIP,
+		answer->targetUdpPort,
+		now,
+		NatServerHolePunch::RendezvousPath::ServerPunch,
+		answer->targetHash);
 	const NatServerHolePunch::VouchedPeer peer{ answer->targetHash,
 		static_cast<std::uint8_t>(answer->crypt & 0x07) };
 	DialLowIdHolePunchPeer(answer->targetIp, pending->sourceTcpPort, answer->targetUdpPort, peer);
@@ -1597,7 +1602,8 @@ bool CClientUDPSocket::AnswerWakeWithKeepalive(const LugdunumNatTraversal::Forwa
 	if (callback.hasObfuscation) {
 		vouched = callback.userHash;
 	}
-	StartLowIdHolePunchSchedule(targetIP, target.udpPort, now, vouched);
+	StartLowIdHolePunchSchedule(
+		targetIP, target.udpPort, now, NatServerHolePunch::RendezvousPath::ServerPunch, vouched);
 	AddDebugLogLineN(logClientUDP,
 		CFormat("Wake keepalive for requester %u: OP_HOLEPUNCH at 0, 0.5, 1 "
 			"and 2 s to %s") %
@@ -1680,12 +1686,12 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 {
 	NatServerHolePunch::IPv4 source{};
 	PokeUInt32(source.data(), host);
+	// A punch from the peer is what its schedule was for, whatever path started it.
+	m_lowIdHolePunchSchedules.Cancel(source, port);
 	CServerConnect *connect = theApp->serverconnect;
 	if (connect == nullptr) {
 		return;
 	}
-	// A punch from the peer is what its schedule was for.
-	m_lowIdHolePunchSchedules.Cancel(source, port);
 	if (!connect->IsConnected() || !thePrefs::IsLowIdHolePunchEnabled() ||
 		thePrefs::GetEffectiveUDPPort() == 0) {
 		return;

@@ -469,7 +469,7 @@ applies to the `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) above, to the cross-server `0x
 (`OP_NAT_CALLBACKREQUESTED_UDP`) answer and to the extension wake, which each sent a single
 `OP_HOLEPUNCH` before. The wire format is unchanged: an empty `0xA1` (`OP_HOLEPUNCH`) under `0xC5`
 (`OP_EMULEPROT`) to the given UDP port. The due punches are sent from `CamuleApp::OnCoreTimer`
-(`CServerConnect::StartLowIdHolePunchSchedule()` sends the first, `SendDueLowIdHolePunches()` the
+(`CClientUDPSocket::StartLowIdHolePunchSchedule()` sends the first, `SendDueLowIdHolePunches()` the
 rest), so no thread is added.
 
 - one schedule per peer address and port: a second `0x61` for the same address and port restarts it
