@@ -3642,6 +3642,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/ServerTrustIntegrationTest.py $<TARGET_FILE:amuled>
 		)
+		add_test (NAME ServerCallbackFailIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/ServerCallbackFailIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (ServerCallbackFailIntegrationTest PROPERTIES LABELS "integration")
 		# The ed2k helper writes ED2KLinks too; checked when it is built.
 		set (ED2K_HELPER "")
 		if (BUILD_ED2K)
@@ -4302,6 +4307,7 @@ foreach (ec_wire_test IN ITEMS
 	ServerListFallbackIntegrationTest
 	ServerListGuiIntegrationTest
 	ServerListSourcesIntegrationTest
+	ServerCallbackFailIntegrationTest
 	ServerTrustIntegrationTest
 	ShareExcludeDefaultsIntegrationTest
 	ShareExclusionLifecycleIntegrationTest
@@ -4346,6 +4352,7 @@ foreach (long_test IN ITEMS
 	KadBuddyPointerType7IntegrationTest-plain:90
 	OfferFilesLiveLimitsTest:80
 	UploadRead-diagnostics-off:77
+	ServerCallbackFailIntegrationTest:70
 	UploadRead-diagnostics:61
 )
 	string (REPLACE ":" ";" long_test "${long_test}")

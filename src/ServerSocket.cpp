@@ -866,6 +866,8 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 		}
 		case OP_CALLBACK_FAIL: {
 			AddDebugLogLineN(logServer, "Server: OP_CALLBACK_FAIL");
+			theStats::AddDownOverheadServer(size);
+			theApp->clientlist->ServerCallbackRefused();
 			break;
 		}
 #ifdef ENABLE_NATT_SERVER_COORDINATION

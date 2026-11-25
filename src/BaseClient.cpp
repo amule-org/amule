@@ -1568,6 +1568,10 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 		AddDebugLogLineN(logClient,
 			"Direct callback failed to client on ip " + Uint32toStringIP(GetConnectIP()));
 	}
+	if (m_serverCallbackTimeout != 0) {
+		theApp->clientlist->RemoveServerCallback(this);
+		m_serverCallbackTimeout = 0;
+	}
 
 	if (GetKadState() == KS_QUEUED_FWCHECK_UDP || GetKadState() == KS_CONNECTING_FWCHECK_UDP) {
 		Kademlia::CUDPFirewallTester::SetUDPFWCheckResult(false,
@@ -2265,6 +2269,23 @@ void CUpDownClient::SendClassicCallbackRequest()
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
 	theApp->serverconnect->SendPacket(packet);
+	m_serverCallbackTimeout = ::GetTickCount64() + kCallbackAnswerTimeoutMs;
+	theApp->clientlist->AddServerCallbackClient(this);
+}
+
+bool CUpDownClient::ServerCallbackFailed(const wxString &reason)
+{
+	theApp->clientlist->RemoveServerCallback(this);
+	m_serverCallbackTimeout = 0;
+	if (m_uploadCallbackRoute == EContactRouteReport::ServerCallback) {
+		ClearUploadCallbackInFlight();
+	}
+	// A socket means the peer reached us after all; its own handling decides.
+	if (m_socket != nullptr || GetDownloadState() != DS_WAITCALLBACK ||
+		m_sourceRoute != ESourceRoute::ServerCallback) {
+		return false;
+	}
+	return Disconnected(reason);
 }
 
 bool CUpDownClient::IsDirectCallbackPossible() const
@@ -2789,7 +2810,7 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 		// packet of overhead is used, handle it like a normal connection try: no restrictions
 		// apply, and !theApp->CanDoCallback(this) above already checked whether any callback is
 		// possible at all.
-		m_dwDirectCallbackTimeout = ::GetTickCount64() + SEC2MS(45);
+		m_dwDirectCallbackTimeout = ::GetTickCount64() + kCallbackAnswerTimeoutMs;
 		theApp->clientlist->AddDirectCallbackClient(this);
 		AddDebugLogLineN(logClient,
 			CFormat("Direct Callback on port %u to client on ip %s") % GetKadPort() %
@@ -3100,6 +3121,10 @@ void CUpDownClient::ConnectionEstablished()
 		AddDebugLogLineN(logClient,
 			"Direct Callback succeeded, connection established to " +
 				Uint32toStringIP(GetConnectIP()));
+	}
+	if (m_serverCallbackTimeout != 0) {
+		theApp->clientlist->RemoveServerCallback(this);
+		m_serverCallbackTimeout = 0;
 	}
 
 	switch (GetKadState()) {

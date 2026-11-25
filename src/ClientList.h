@@ -343,6 +343,14 @@ public:
 	{
 		m_currentDirectCallbacks.remove(CCLIENTREF(toRemove, ""));
 	}
+	// OP_CALLBACKREQUESTs waiting for the peer to connect
+	void AddServerCallbackClient(CUpDownClient *toAdd);
+	void RemoveServerCallback(CUpDownClient *toRemove)
+	{
+		m_currentServerCallbacks.remove(CCLIENTREF(toRemove, ""));
+	}
+	//! OP_CALLBACK_FAIL from our server.
+	void ServerCallbackRefused();
 	void AddTrackCallbackRequests(uint32_t ip);
 	void AddTrackCallbackRequests(const CNetworkAddress &address);
 	bool AllowCallbackRequest(uint32_t ip) const;
@@ -353,6 +361,7 @@ protected:
 	void CleanUpClientList();
 
 	void ProcessDirectCallbackList();
+	void ProcessServerCallbackList();
 
 private:
 	/**
@@ -461,6 +470,7 @@ private:
 
 	typedef CClientRefList DirectCallbackList;
 	DirectCallbackList m_currentDirectCallbacks;
+	CClientRefList m_currentServerCallbacks;
 	struct CallbackAddressAndTicks
 	{
 		CNetworkAddress address;

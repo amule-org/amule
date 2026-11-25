@@ -187,6 +187,7 @@ void CClientList::RemoveClient(CUpDownClient *client)
 {
 	RemoveFromKadList(client);
 	RemoveDirectCallback(client);
+	RemoveServerCallback(client);
 	// Drop any browse of this client: the manager holds a reference, and the client is going
 	// away, so there is nothing left to report a result to. Guarded like the clientlist call in
 	// CUpDownClient::Safe_Delete: clients are still being reaped while the app tears itself
@@ -996,6 +997,7 @@ void CClientList::Process()
 
 	CleanUpClientList();
 	ProcessDirectCallbackList();
+	ProcessServerCallbackList();
 	theApp->browsemanager->Process(cur_tick);
 }
 
@@ -1950,6 +1952,48 @@ void CClientList::ProcessDirectCallbackList()
 				curClient->Safe_Delete();
 			}
 		}
+	}
+}
+
+void CClientList::AddServerCallbackClient(CUpDownClient *toAdd)
+{
+	if (toAdd->HasBeenDeleted()) {
+		return;
+	}
+	// A new request for the same client only moves its deadline.
+	RemoveServerCallback(toAdd);
+	m_currentServerCallbacks.push_back(CCLIENTREF(toAdd, "CClientList::AddServerCallbackClient"));
+}
+
+void CClientList::ProcessServerCallbackList()
+{
+	const uint64_t now = ::GetTickCount64();
+	for (CClientRefList::iterator it = m_currentServerCallbacks.begin();
+		it != m_currentServerCallbacks.end();) {
+		// ServerCallbackFailed() drops the entry, so the client is held here.
+		const CClientRef ref = *it++;
+		CUpDownClient *client = ref.GetClient();
+		if (client->GetServerCallbackTimeout() < now &&
+			client->ServerCallbackFailed("Server callback timeout")) {
+			client->Safe_Delete();
+		}
+	}
+}
+
+void CClientList::ServerCallbackRefused()
+{
+	// The packet names no request, so it is ours to act on only while one request is out.
+	if (m_currentServerCallbacks.size() != 1) {
+		AddDebugLogLineN(logServer,
+			CFormat("Server: OP_CALLBACK_FAIL with %u callback requests out, each waits for its "
+				"timeout") %
+				m_currentServerCallbacks.size());
+		return;
+	}
+	const CClientRef ref = m_currentServerCallbacks.front();
+	CUpDownClient *client = ref.GetClient();
+	if (client->ServerCallbackFailed("Server callback refused")) {
+		client->Safe_Delete();
 	}
 }
 
