@@ -560,6 +560,11 @@ target_include_directories (UploadCallbackPolicyTest PRIVATE ${CMAKE_SOURCE_DIR}
 target_link_libraries (UploadCallbackPolicyTest muleunit mulecommon)
 add_test (NAME UploadCallbackPolicyTest COMMAND UploadCallbackPolicyTest)
 
+add_executable (ServerCallbackRequestsTest ServerCallbackRequestsTest.cpp)
+target_include_directories (ServerCallbackRequestsTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ServerCallbackRequestsTest muleunit mulecommon)
+add_test (NAME ServerCallbackRequestsTest COMMAND ServerCallbackRequestsTest)
+
 # Pure admission and rate-limit policy for the future NAT rendezvous control path.
 add_executable (NatRendezvousPolicyTest
 	NatRendezvousPolicyTest.cpp
@@ -4303,11 +4308,11 @@ foreach (ec_wire_test IN ITEMS
 	PathDefaultsIntegrationTest
 	SearchParamsRestoreIntegrationTest
 	SearchResultDownloadIntegrationTest
+	ServerCallbackFailIntegrationTest
 	ServerListFallbackApiIntegrationTest
 	ServerListFallbackIntegrationTest
 	ServerListGuiIntegrationTest
 	ServerListSourcesIntegrationTest
-	ServerCallbackFailIntegrationTest
 	ServerTrustIntegrationTest
 	ShareExcludeDefaultsIntegrationTest
 	ShareExclusionLifecycleIntegrationTest

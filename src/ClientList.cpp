@@ -69,6 +69,8 @@
 
 CClientList::CClientList()
 : m_deadSources(true)
+// A download's placeholder socket ends an unanswered callback wait then (CheckTimeOut()).
+, m_serverCallbacks(CONNECTION_TIMEOUT)
 {
 	m_dwLastBannCleanUp = 0;
 	m_dwLastTrackedCleanUp = 0;
@@ -187,7 +189,7 @@ void CClientList::RemoveClient(CUpDownClient *client)
 {
 	RemoveFromKadList(client);
 	RemoveDirectCallback(client);
-	RemoveServerCallback(client);
+	RemoveServerCallbacks(client);
 	// Drop any browse of this client: the manager holds a reference, and the client is going
 	// away, so there is nothing left to report a result to. Guarded like the clientlist call in
 	// CUpDownClient::Safe_Delete: clients are still being reaped while the app tears itself
@@ -1954,39 +1956,27 @@ void CClientList::ProcessDirectCallbackList()
 	}
 }
 
-void CClientList::AddServerCallbackClient(CUpDownClient *toAdd)
+void CClientList::AddServerCallbackRequest(CUpDownClient *client)
 {
-	if (toAdd->HasBeenDeleted()) {
-		return;
+	if (!client->HasBeenDeleted()) {
+		m_serverCallbacks.Add(
+			CCLIENTREF(client, "CClientList::AddServerCallbackRequest"), ::GetTickCount64());
 	}
-	PruneServerCallbacks();
-	// A new request for the same client only moves its deadline.
-	RemoveServerCallback(toAdd);
-	m_currentServerCallbacks.emplace_back(
-		toAdd CLIENT_DEBUGSTRING("CClientList::AddServerCallbackClient"));
-}
-
-void CClientList::PruneServerCallbacks()
-{
-	const uint64_t now = ::GetTickCount64();
-	m_currentServerCallbacks.remove_if(
-		[now](const CClientRef &ref) { return ref.GetClient()->GetServerCallbackTimeout() < now; });
 }
 
 void CClientList::ServerCallbackRefused()
 {
-	// The packet names no request, so it is ours to act on only while one request is out.
-	PruneServerCallbacks();
-	if (m_currentServerCallbacks.size() != 1) {
+	const uint64_t now = ::GetTickCount64();
+	// The client is held here: ServerCallbackRefused() may delete it.
+	const std::optional<CClientRef> refused = m_serverCallbacks.TakeRefused(now);
+	if (!refused) {
 		AddDebugLogLineN(logServer,
 			CFormat("Server: OP_CALLBACK_FAIL with %u callback requests out, each waits for its "
 				"timeout") %
-				m_currentServerCallbacks.size());
+				m_serverCallbacks.Count(now));
 		return;
 	}
-	// ServerCallbackRefused() drops the entry, so the client is held here.
-	const CClientRef ref = m_currentServerCallbacks.front();
-	CUpDownClient *client = ref.GetClient();
+	CUpDownClient *client = refused->GetClient();
 	if (client->ServerCallbackRefused()) {
 		client->Safe_Delete();
 	}

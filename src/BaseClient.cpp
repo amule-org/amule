@@ -1568,9 +1568,9 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 		AddDebugLogLineN(logClient,
 			"Direct callback failed to client on ip " + Uint32toStringIP(GetConnectIP()));
 	}
-	if (m_serverCallbackTimeout != 0) {
-		theApp->clientlist->RemoveServerCallback(this);
-		m_serverCallbackTimeout = 0;
+	if (m_serverCallbackPending) {
+		theApp->clientlist->RemoveServerCallbacks(this);
+		m_serverCallbackPending = false;
 	}
 
 	if (GetKadState() == KS_QUEUED_FWCHECK_UDP || GetKadState() == KS_CONNECTING_FWCHECK_UDP) {
@@ -2269,15 +2269,14 @@ void CUpDownClient::SendClassicCallbackRequest()
 	theStats::AddUpOverheadServer(packet->GetPacketSize());
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
 	theApp->serverconnect->SendPacket(packet);
-	// A download's placeholder socket ends an unanswered wait after this (CheckTimeOut()).
-	m_serverCallbackTimeout = ::GetTickCount64() + CONNECTION_TIMEOUT;
-	theApp->clientlist->AddServerCallbackClient(this);
+	m_serverCallbackPending = true;
+	theApp->clientlist->AddServerCallbackRequest(this);
 }
 
 bool CUpDownClient::ServerCallbackRefused()
 {
-	theApp->clientlist->RemoveServerCallback(this);
-	m_serverCallbackTimeout = 0;
+	theApp->clientlist->RemoveServerCallbacks(this);
+	m_serverCallbackPending = false;
 	if (m_uploadCallbackRoute == EContactRouteReport::ServerCallback) {
 		ClearUploadCallbackInFlight();
 	}
@@ -3123,9 +3122,9 @@ void CUpDownClient::ConnectionEstablished()
 			"Direct Callback succeeded, connection established to " +
 				Uint32toStringIP(GetConnectIP()));
 	}
-	if (m_serverCallbackTimeout != 0) {
-		theApp->clientlist->RemoveServerCallback(this);
-		m_serverCallbackTimeout = 0;
+	if (m_serverCallbackPending) {
+		theApp->clientlist->RemoveServerCallbacks(this);
+		m_serverCallbackPending = false;
 	}
 
 	switch (GetKadState()) {

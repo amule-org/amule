@@ -34,6 +34,7 @@
 #include "KadBuddyStats.h"
 #include "ChatSessionStore.h"
 #include "RequestPacing.h" // Needed for CRequestScoreMemory
+#include "ServerCallbackRequests.h"
 #include "CanonicalPeerIndex.h"
 #include "TrackedClientRecord.h"
 #include "kademlia/kademlia/FirewallCheckRequests.h"
@@ -344,10 +345,10 @@ public:
 		m_currentDirectCallbacks.remove(CCLIENTREF(toRemove, ""));
 	}
 	// OP_CALLBACKREQUESTs waiting for the peer to connect
-	void AddServerCallbackClient(CUpDownClient *toAdd);
-	void RemoveServerCallback(CUpDownClient *toRemove)
+	void AddServerCallbackRequest(CUpDownClient *client);
+	void RemoveServerCallbacks(CUpDownClient *client)
 	{
-		m_currentServerCallbacks.remove(CCLIENTREF(toRemove, ""));
+		m_serverCallbacks.Remove(CCLIENTREF(client, ""));
 	}
 	//! OP_CALLBACK_FAIL from our server.
 	void ServerCallbackRefused();
@@ -361,8 +362,6 @@ protected:
 	void CleanUpClientList();
 
 	void ProcessDirectCallbackList();
-	//! Drops the requests whose answer window has passed.
-	void PruneServerCallbacks();
 
 private:
 	/**
@@ -471,7 +470,7 @@ private:
 
 	typedef CClientRefList DirectCallbackList;
 	DirectCallbackList m_currentDirectCallbacks;
-	CClientRefList m_currentServerCallbacks;
+	CServerCallbackRequests<CClientRef> m_serverCallbacks;
 	struct CallbackAddressAndTicks
 	{
 		CNetworkAddress address;

@@ -1152,7 +1152,6 @@ public:
 	//! KADEMLIA_CALLBACK_REQ to the buddy, in the current buddy ID layout, for m_reqfile.
 	void SendKadBuddyCallbackRequest();
 	uint64_t GetDirectCallbackTimeout() const { return m_dwDirectCallbackTimeout; }
-	uint64_t GetServerCallbackTimeout() const { return m_serverCallbackTimeout; }
 	//! Our server refused our OP_CALLBACKREQUEST for this client. A download still waiting on it
 	//! moves to its next route. Returns true when the client is to be deleted.
 	bool ServerCallbackRefused();
@@ -1498,7 +1497,8 @@ private:
 
 	Kademlia::CBuddyLiveness m_buddyLiveness;
 	uint64_t m_dwDirectCallbackTimeout;
-	uint64_t m_serverCallbackTimeout = 0;
+	//! An OP_CALLBACKREQUEST for this client may still be in the client list.
+	bool m_serverCallbackPending = false;
 
 	//! This keeps track of aggressive requests for files.
 	uint16 m_Aggressiveness;
