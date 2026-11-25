@@ -32,6 +32,7 @@ OP_IDCHANGE = 0x40
 OP_SERVERIDENT = 0x41
 OP_FOUNDSOURCES = 0x42
 OP_IPV6_CALLBACK_REQUEST = 0x64
+ST_SERVERNAME = 0x01
 ST_IPV6_CALLBACK = 0xaa
 ST_IPV6_STATUS = 0xab
 OUR_LOWID = 0x100
@@ -46,8 +47,14 @@ def uint32_tag(name, value):
     return b'\x03' + struct.pack('<H', 1) + bytes([name]) + struct.pack('<I', value)
 
 
+def string_tag(name, value):
+    return b'\x02' + struct.pack('<H', 1) + bytes([name]) + struct.pack('<H', len(value)) + value
+
+
 def ident(offer):
-    tags = [uint32_tag(ST_IPV6_STATUS, 0x07)] + ([uint32_tag(ST_IPV6_CALLBACK, 1)] if offer else [])
+    # A real server names itself; a shorter ident is dropped as malformed.
+    tags = [string_tag(ST_SERVERNAME, b'IPv6 callback fixture'), uint32_tag(ST_IPV6_STATUS, 0x07)]
+    tags += [uint32_tag(ST_IPV6_CALLBACK, 1)] if offer else []
     return packet(OP_SERVERIDENT, bytes(22) + struct.pack('<I', len(tags)) + b''.join(tags))
 
 
