@@ -134,6 +134,7 @@ struct SFakeFiles
 		int key;
 		bool due;
 		bool seedOutOfBudget;
+		uint32_t publishTime = 1; // 0: never published.
 	};
 	std::vector<SFile> shared;
 	std::vector<int> cursor; // Keys the cursor returns, in order.
@@ -159,12 +160,30 @@ struct SFakeFiles
 			});
 	}
 	void Waited(const SFile &) { ++waited; }
-	static bool Publish(const SFile &file) { return file.due; }
+	static uint32_t PublishTime(const SFile &file) { return file.publishTime; }
+	static bool Publish(SFile &file)
+	{
+		if (!file.due) {
+			return false;
+		}
+		file.due = false;
+		file.publishTime = Republish;
+		return true;
+	}
+	static constexpr uint32_t Republish = 100000;
 };
 
 int NextKey(std::map<int, uint32_t> &waits, uint32_t now, SFakeFiles &files)
 {
-	const SFakeFiles::SFile *file = Kademlia::NextKadSourcePublish(waits, now, 100, files);
+	Kademlia::CKadPublishOrder<int> order;
+	const SFakeFiles::SFile *file = Kademlia::NextKadSourcePublish(waits, order, now, 100, files);
+	return file ? file->key : 0;
+}
+
+int NextKey(Kademlia::CKadPublishOrder<int> &order, uint32_t now, SFakeFiles &files)
+{
+	std::map<int, uint32_t> waits;
+	const SFakeFiles::SFile *file = Kademlia::NextKadSourcePublish(waits, order, now, 100, files);
 	return file ? file->key : 0;
 }
 } // namespace
@@ -225,6 +244,7 @@ struct SFakeKeywords
 		int key;
 		bool due;
 		bool starts;
+		uint32_t publishTime = 1; // 0: never published.
 	};
 	std::vector<SKeyword> list;
 	size_t cursor = 0;
@@ -239,17 +259,35 @@ struct SFakeKeywords
 		cursor = (cursor + 1) % list.size();
 		return keyword;
 	}
-	static bool Due(const SKeyword &keyword, uint32_t) { return keyword.due; }
-	bool Start(const SKeyword &keyword, uint32_t)
+	SKeyword *Find(int key)
 	{
-		started += keyword.starts ? 1 : 0;
-		return keyword.starts;
+		for (SKeyword &keyword : list) {
+			if (keyword.key == key) {
+				return &keyword;
+			}
+		}
+		return nullptr;
+	}
+	static int Key(const SKeyword &keyword) { return keyword.key; }
+	static uint32_t PublishTime(const SKeyword &keyword) { return keyword.publishTime; }
+	static bool Due(const SKeyword &keyword, uint32_t) { return keyword.due; }
+	bool Start(SKeyword &keyword, uint32_t)
+	{
+		if (!keyword.starts) {
+			return false;
+		}
+		++started;
+		keyword.due = false;
+		keyword.publishTime = 100000;
+		return true;
 	}
 };
 
 int NextKeyword(SFakeKeywords &keywords, size_t maxChecks = 100)
 {
-	const SFakeKeywords::SKeyword *keyword = Kademlia::NextKeywordPublish(1000, maxChecks, keywords);
+	Kademlia::CKadPublishOrder<int> order;
+	const SFakeKeywords::SKeyword *keyword =
+		Kademlia::NextKeywordPublish(order, 1000, maxChecks, keywords);
 	return keyword ? keyword->key : 0;
 }
 } // namespace
@@ -285,4 +323,163 @@ TEST(KadCallbackPolicy, AKeywordPublishChecksAtMostMaxChecks)
 	keywords.list = { { 1, false, true }, { 2, false, true }, { 3, true, true } };
 	ASSERT_EQUALS(0, NextKeyword(keywords, 2));
 	ASSERT_EQUALS(3, NextKeyword(keywords, 2)); // The next tick goes on from keyword 3.
+}
+
+TEST(KadCallbackPolicy, ADueRepublishGoesBeforeAFirstPublish)
+{
+	SFakeFiles files;
+	files.shared = { { 1, true, false, 0 }, { 2, true, false, 950 }, { 3, true, false, 900 } };
+	files.cursor = { 1, 2, 3 };
+	Kademlia::CKadPublishOrder<int> order;
+	order.Add(950, 2);
+	order.Add(900, 3);
+	// The most overdue first, then the other, then the cursor's file never published.
+	ASSERT_EQUALS(3, NextKey(order, 1000, files));
+	ASSERT_EQUALS(2, NextKey(order, 1000, files));
+	ASSERT_EQUALS(1, NextKey(order, 1000, files));
+}
+
+TEST(KadCallbackPolicy, AnOrderEntryForAFileRepublishedSinceIsSkipped)
+{
+	SFakeFiles files;
+	files.shared = { { 2, false, false, 5000 } };
+	Kademlia::CKadPublishOrder<int> order;
+	order.Add(900, 2);
+	ASSERT_EQUALS(0, NextKey(order, 1000, files));
+}
+
+TEST(KadCallbackPolicy, AnOrderEntryForAFileNoLongerSharedIsSkipped)
+{
+	SFakeFiles files;
+	files.shared = { { 2, true, false, 900 } };
+	files.cursor = { 2 };
+	Kademlia::CKadPublishOrder<int> order;
+	order.Add(800, 1);
+	ASSERT_EQUALS(2, NextKey(order, 1000, files));
+}
+
+// A route change makes a file due before its publish time; only the cursor finds it.
+TEST(KadCallbackPolicy, AFileDueEarlyIsFoundByTheCursor)
+{
+	SFakeFiles files;
+	files.shared = { { 5, true, false, 50000 } };
+	files.cursor = { 5 };
+	Kademlia::CKadPublishOrder<int> order;
+	order.Add(50000, 5);
+	ASSERT_EQUALS(5, NextKey(order, 1000, files));
+}
+
+TEST(KadCallbackPolicy, ADueFileFromTheOrderWaitsForItsSeeds)
+{
+	SFakeFiles files;
+	files.shared = { { 2, true, true, 900 } };
+	Kademlia::CKadPublishOrder<int> order;
+	order.Add(900, 2);
+	std::map<int, uint32_t> waits;
+	ASSERT_TRUE(Kademlia::NextKadSourcePublish(waits, order, 1000, 100, files) == nullptr);
+	ASSERT_EQUALS(1000u, waits[2]);
+	ASSERT_EQUALS(1, files.waited);
+}
+
+TEST(KadCallbackPolicy, EveryTenthSourceStartIsAFirstPublish)
+{
+	SFakeFiles files;
+	for (int key = 1; key <= 20; ++key) {
+		files.shared.push_back({ key, true, false, key <= 15 ? static_cast<uint32_t>(key) : 0 });
+		files.cursor.push_back(key);
+	}
+	Kademlia::CKadPublishOrder<int> order;
+	for (int key = 1; key <= 15; ++key) {
+		order.Add(key, key);
+	}
+	std::vector<int> keys;
+	for (int i = 0; i < 20; ++i) {
+		keys.push_back(NextKey(order, 1000, files));
+	}
+	const std::vector<int> want = {
+		1, 2, 3, 4, 5, 6, 7, 8, 9, 16, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20
+	};
+	ASSERT_TRUE(keys == want);
+}
+
+// With no file left that was never published, republishes take the turn, and it stays for the
+// next new file.
+TEST(KadCallbackPolicy, AFirstPublishTurnStaysUntilAFileNeverPublishedStarts)
+{
+	SFakeFiles files;
+	Kademlia::CKadPublishOrder<int> order;
+	for (int key = 1; key <= 11; ++key) {
+		files.shared.push_back({ key, true, false, static_cast<uint32_t>(key) });
+		files.cursor.push_back(key);
+		order.Add(key, key);
+	}
+	for (int key = 1; key <= 10; ++key) {
+		ASSERT_EQUALS(key, NextKey(order, 1000, files));
+	}
+	ASSERT_TRUE(order.FirstPublishTurn());
+	files.shared.push_back({ 12, true, false, 0 });
+	files.cursor.push_back(12);
+	ASSERT_EQUALS(12, NextKey(order, 1000, files));
+	ASSERT_FALSE(order.FirstPublishTurn());
+	ASSERT_EQUALS(11, NextKey(order, 1000, files));
+}
+
+namespace
+{
+int NextKeyword(Kademlia::CKadPublishOrder<int> &order, SFakeKeywords &keywords)
+{
+	const SFakeKeywords::SKeyword *keyword = Kademlia::NextKeywordPublish(order, 1000, 100, keywords);
+	return keyword ? keyword->key : 0;
+}
+} // namespace
+
+TEST(KadCallbackPolicy, ADueKeywordRepublishGoesBeforeAFirstPublish)
+{
+	SFakeKeywords keywords;
+	keywords.list = { { 1, true, true, 0 }, { 2, true, true, 950 }, { 3, true, true, 900 } };
+	Kademlia::CKadPublishOrder<int> order;
+	order.Add(950, 2);
+	order.Add(900, 3);
+	ASSERT_EQUALS(3, NextKeyword(order, keywords));
+	ASSERT_EQUALS(2, NextKeyword(order, keywords));
+	ASSERT_EQUALS(1, NextKeyword(order, keywords));
+}
+
+TEST(KadCallbackPolicy, AnOrderEntryForAKeywordRepublishedSinceIsSkipped)
+{
+	SFakeKeywords keywords;
+	keywords.list = { { 2, false, true, 5000 } };
+	Kademlia::CKadPublishOrder<int> order;
+	order.Add(900, 2);
+	ASSERT_EQUALS(0, NextKeyword(order, keywords));
+}
+
+// Its nodes reported high load: it leaves the order, and the cursor tries it again.
+TEST(KadCallbackPolicy, AKeywordThatFailsToStartIsRetriedByTheCursor)
+{
+	SFakeKeywords keywords;
+	keywords.list = { { 2, true, false, 900 } };
+	Kademlia::CKadPublishOrder<int> order;
+	order.Add(900, 2);
+	ASSERT_EQUALS(0, NextKeyword(order, keywords));
+	keywords.list[0].starts = true;
+	ASSERT_EQUALS(2, NextKeyword(order, keywords));
+}
+
+TEST(KadCallbackPolicy, EveryTenthKeywordStartIsAFirstPublish)
+{
+	SFakeKeywords keywords;
+	for (int key = 1; key <= 12; ++key) {
+		keywords.list.push_back({ key, true, true, key <= 10 ? static_cast<uint32_t>(key) : 0 });
+	}
+	Kademlia::CKadPublishOrder<int> order;
+	for (int key = 1; key <= 10; ++key) {
+		order.Add(key, key);
+	}
+	std::vector<int> keys;
+	for (int i = 0; i < 12; ++i) {
+		keys.push_back(NextKeyword(order, keywords));
+	}
+	const std::vector<int> want = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 10, 12 };
+	ASSERT_TRUE(keys == want);
 }
