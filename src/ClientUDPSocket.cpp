@@ -1469,7 +1469,7 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 	StartLowIdHolePunchSchedule(targetIP,
 		answer->targetUdpPort,
 		now,
-		NatServerHolePunch::RendezvousPath::ServerPunch,
+		NatServerHolePunch::RendezvousPath::LugdunumCallback,
 		answer->targetHash);
 	const NatServerHolePunch::VouchedPeer peer{ answer->targetHash,
 		static_cast<std::uint8_t>(answer->crypt & 0x07) };

@@ -1570,8 +1570,10 @@ TEST(NatServerHolePunch, AServerLoginEndsTheServerSchedulesButNotTheKadBuddys)
 	schedules.Start(kad, 4'662, 0, RendezvousPath::KadBuddy);
 	schedules.ClearServerPaths();
 	ASSERT_EQUALS((std::size_t)1, schedules.Size());
-	// The Kad schedule keeps all its punches and its sweep.
-	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(0).size());
+	// The schedule left is the Kad peer's, with all its punches and its sweep.
+	const std::vector<PunchDue> first = schedules.TakeDue(0);
+	ASSERT_EQUALS((std::size_t)1, first.size());
+	ASSERT_TRUE(first[0].peerIP == kad);
 	ASSERT_EQUALS((std::size_t)2, schedules.TakeDue(500).size());
 	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(1'000).size());
 	ASSERT_EQUALS((std::size_t)1, schedules.TakeDue(2'000).size());
