@@ -97,7 +97,7 @@ public:
 		uint16_t peerPort,
 		IStreamTransportEvents *events,
 		bool inbound,
-		CUtpReadWindowBudget::CLease readWindow = {})
+		CUtpReadWindowBudget::CLease &&readWindow = {})
 	: m_operations(operations)
 	, m_socket(socket)
 	, m_peer(peer)

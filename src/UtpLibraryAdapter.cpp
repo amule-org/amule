@@ -103,6 +103,9 @@ public:
 		}
 		// Each callback finds its own adapter through the context, so two can live at once.
 		utp_context_set_userdata(m_context, this);
+		// A stream that misses ApplyReceiveBound() must not get libutp's 1 MiB default.
+		utp_context_set_option(
+			m_context, UTP_RCVBUF, static_cast<int>(CUtpStream::kDefaultReadBound));
 		m_sink = &sink;
 		utp_set_callback(m_context, UTP_SENDTO, SendTo);
 		utp_set_callback(m_context, UTP_ON_OVERHEAD_STATISTICS, OnOverheadStatistics);

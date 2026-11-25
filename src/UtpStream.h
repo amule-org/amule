@@ -91,7 +91,7 @@ public:
 	 * and OnPayload() never refuses bytes the peer already paid to send -- so this value is also
 	 * the memory a single slow-reading connection may hold. eMuleAI settled on the same 256 KiB
 	 * (eMuleAI/UtpSocket.cpp), which is the interoperability argument for it as well.
-	 * CUtpReadWindowBudget gives a stream more when the UDP receive buffer can take it.
+	 * CUtpReadWindowBudget raises it to kWideReadBound for up to kMaxWideStreams streams at once.
 	 */
 	static constexpr size_t kDefaultReadBound = 256 * 1024;
 	// A smaller slack is less than a packet: occupancy stalls a packet short of the bound, never

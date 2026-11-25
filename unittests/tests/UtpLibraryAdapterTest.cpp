@@ -1373,6 +1373,7 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	auto *utp = static_cast<CUtpSocketTransport *>(acceptor.accepted.get());
 	const size_t buffered = utp->ReadBufferSize();
 	// Short of the bound: libutp stops once the window cannot hold a packet.
+	// A stream that missed UTP_RCVBUF would stall at the context's 256 KiB.
 	CFormat stalled("buffered %u, bound %u, payload %u");
 	const wxString detail = stalled % unsigned(buffered) % unsigned(bound) % unsigned(payload.size());
 	ASSERT_TRUE_M(buffered < payload.size(), detail);
@@ -1433,10 +1434,10 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	const wxString diag = progress % unsigned(offered) % unsigned(total) %
 			      unsigned(utp->ReadBufferSize()) % unsigned(sink.datagrams);
 	ASSERT_EQUALS_M((unsigned)payload.size(), (unsigned)total, diag);
-	for (size_t i = 0; i < payload.size(); ++i) {
-		CFormat format("byte %u differs after the window reopened");
-		ASSERT_EQUALS_M((int)payload[i], (int)received[i], format % unsigned(i));
-	}
+	// One check, not one per byte: a message per byte of 2 MiB is slow.
+	const auto differs = std::mismatch(payload.begin(), payload.end(), received.begin());
+	CFormat format("byte %u differs after the window reopened");
+	ASSERT_TRUE_M(differs.first == payload.end(), format % unsigned(differs.first - payload.begin()));
 	Teardown(loop);
 }
 
