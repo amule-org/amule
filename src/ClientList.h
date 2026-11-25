@@ -157,6 +157,10 @@ public:
 	 * another host answered. That is a NAT neighbour's client, not the one at that endpoint now.
 	 */
 	CUpDownClient *FindCallbackClientByIP(uint32 clientip, uint16 port);
+	CUpDownClient *FindCallbackClient(const CNetworkAddress &address, uint16 port)
+	{
+		return FindClientAtEndpoint(address, port, true);
+	}
 
 	/**
 	 * Finds a client with the specified ip, returning the first if several share it.
@@ -345,7 +349,8 @@ public:
 		m_currentDirectCallbacks.remove(CCLIENTREF(toRemove, ""));
 	}
 	// OP_CALLBACKREQUESTs waiting for the peer to connect
-	void AddServerCallbackRequest(CUpDownClient *client);
+	//! @a windowMs: how long the request can still be answered.
+	void AddServerCallbackRequest(CUpDownClient *client, uint64_t windowMs);
 	void RemoveServerCallbacks(CUpDownClient *client)
 	{
 		m_serverCallbacks.Remove(CCLIENTREF(client, ""));
@@ -362,6 +367,7 @@ protected:
 	void CleanUpClientList();
 
 	void ProcessDirectCallbackList();
+	void ProcessServerCallbacks();
 
 private:
 	/**

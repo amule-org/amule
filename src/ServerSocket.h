@@ -127,6 +127,8 @@ public:
 	// Sticky for the rest of this server session once any IPv6 was advertised on it, for the
 	// same reason (0xFFFFFFFF is never a real source id).
 	bool IsIPv6SentinelParsingOn() const { return !m_sentIPv6.empty(); }
+	//! OP_IPV6_CALLBACK_OPTIN, once a session, after an offer.
+	void TrySendIPv6CallbackOptIn();
 #endif
 
 private:
@@ -159,6 +161,7 @@ private:
 	// The server dials an advertised address at most 4 times a session, so few are ever sent.
 	static constexpr std::size_t MaxSentIPv6 = 8;
 	std::vector<CNetworkAddress> m_sentIPv6;
+	bool m_ipv6CallbackOptedIn = false;
 #endif
 };
 

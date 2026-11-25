@@ -51,6 +51,9 @@
 #include "NetworkFunctions.h" // Needed for IsGoodIP
 #include "GuiEvents.h"        // Needed for Notify_*
 #include "ServerIdChange.h"   // Needed for ParseIdChangeFields
+#include "PeerAddressing.h"   // Needed for IndexKey
+
+#include <optional>
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h"   // Needed for IsNatCallbackActive
 #include "LugdunumNatCallbackLog.h" // Needed for LogForwardedCallback
@@ -59,7 +62,10 @@
 #include "ClientUDPSocket.h"        // Needed for DialLowIdHolePunchPeer
 #endif
 #ifdef ENABLE_IPV6
-#include "AdvertisedIPv6.h" // Needed for AdvertisedIPv6ForPeers
+#include "AdvertisedIPv6.h"         // Needed for AdvertisedIPv6ForPeers
+#include "AddressFamilyPolicy.h"    // Needed for PermitsIPv6
+#include "ServerIPv6Callback.h"     // Needed for ShouldOptInToIPv6Callback
+#include "ServerIPv6SourcePolicy.h" // Needed for ShouldContactServerSourceOverIPv6
 #endif
 #include <boost/system/error_code.hpp>
 
@@ -227,6 +233,74 @@ void CServerSocket::OnReceive(int nErrorCode)
 	CEMSocket::OnReceive(nErrorCode);
 	m_dwLastTransmission = GetTickCount64();
 }
+
+namespace
+{
+//! The options and user hash that follow the address in a callback request's long form.
+struct SServerCallbackCrypt
+{
+	uint8 options;
+	CMD4Hash userHash;
+};
+
+//! Dials the peer a server callback request names.
+void AnswerServerCallback(
+	const CNetworkAddress &address, uint16 port, const std::optional<SServerCallbackCrypt> &crypt)
+{
+	const CNetworkAddress key = PeerAddressing::IndexKey(address);
+	// By the reported hash first: NAT neighbours can share an address and port.
+	CUpDownClient *client = nullptr;
+	if (crypt) {
+		for (const CClientRef &ref : theApp->clientlist->GetClientsByHash(crypt->userHash)) {
+			CUpDownClient *known = ref.GetClient();
+			if (known != nullptr && known->GetUserAddress() == key &&
+				known->GetUserPort() == port) {
+				client = known;
+				break;
+			}
+		}
+	}
+	if (!client) {
+		client = theApp->clientlist->FindCallbackClient(address, port);
+		// A NAT neighbour's client, known from its hello: dial anew.
+		if (client != nullptr && crypt && client->GetCreditsHash() != nullptr &&
+			client->HasValidHash() && client->GetUserHash() != crypt->userHash) {
+			client = nullptr;
+		}
+	}
+
+	if (!client) {
+		uint32 ipv4 = 0;
+		if (address.ToIPv4NetworkOrder(ipv4)) {
+			client = new CUpDownClient(port, HybridIDOfIPv4(ipv4), 0, 0, nullptr, false, true);
+		} else {
+			// The ID of an IPv6 source from a server record.
+			client = new CUpDownClient(port, 1, 0, 0, nullptr, false, true);
+			client->SetUserAddress(address);
+		}
+		theApp->clientlist->AddClient(client);
+	}
+	if (crypt && client->HasValidHash()) {
+		if (client->GetUserHash() != crypt->userHash) {
+			AddDebugLogLineN(logServer,
+				"Reported Userhash from a server callback request differs with our stored "
+				"hash");
+			// disable crypt support since we dont know which hash is true
+			client->SetCryptLayerRequest(false);
+			client->SetCryptLayerSupport(false);
+			client->SetCryptLayerRequires(false);
+		} else {
+			client->SetConnectOptions(crypt->options, true, false);
+		}
+	} else if (crypt) {
+		client->SetUserHash(crypt->userHash);
+		client->SetConnectOptions(crypt->options, true, false);
+	}
+
+	client->NoteCallbackAnswer(EConnectionOpener::AnswerServerCallback);
+	client->TryToConnect();
+}
+} // namespace
 
 bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcode)
 {
@@ -626,6 +700,8 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					cur_server->SetIPv6Verdict(
 						EServerIPv6Verdict::Unknown, CNetworkAddress::Absent());
 				}
+				// The same for the callback offer.
+				bool ipv6CallbackOffered = false;
 #endif
 				for (uint32 i = 0; i < nTags; i++) {
 					// Force Unicode=true rather than relying on the server's
@@ -644,7 +720,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 						update->SetDescription(tag.GetStr());
 					}
 #ifdef ENABLE_IPV6
-					else if (tag.GetNameID() == ST_IPV6_STATUS && tag.IsInt()) {
+					else if (tag.GetNameID() == ST_IPV6_CALLBACK && tag.IsInt()) {
+						ipv6CallbackOffered =
+							(tag.GetInt() & IPV6_CALLBACK_FEATURE) != 0;
+					} else if (tag.GetNameID() == ST_IPV6_STATUS && tag.IsInt()) {
 						const std::uint64_t rawStatus =
 							static_cast<std::uint64_t>(tag.GetInt());
 						cur_server->SetIPv6Verdict(
@@ -689,6 +768,10 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 #ifdef ENABLE_IPV6
 				// A failed verdict may be the one an opened pinhole waits for.
 				AdvertisedIPv6ForPeers();
+				if (cur_server) {
+					cur_server->SetIPv6CallbackOffered(ipv6CallbackOffered);
+					TrySendIPv6CallbackOptIn();
+				}
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 				if (!waitedForWakeKeepalive && cur_server->WaitsForWakeKeepalive()) {
@@ -805,65 +888,50 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 					break;
 				}
 
-				uint8 byCryptOptions = 0;
-				CMD4Hash achUserHash;
+				std::optional<SServerCallbackCrypt> crypt;
 				if (size >= 23) {
-					byCryptOptions = data.ReadUInt8();
-					;
-					achUserHash = data.ReadHash();
+					const uint8 options = data.ReadUInt8();
+					crypt = SServerCallbackCrypt{ options, data.ReadHash() };
 				}
-
-				// By the reported hash first: NAT neighbours can share an address and port.
-				CUpDownClient *client = nullptr;
-				if (size >= 23) {
-					for (const CClientRef &ref :
-						theApp->clientlist->GetClientsByHash(achUserHash)) {
-						CUpDownClient *known = ref.GetClient();
-						if (known != nullptr && known->GetIP() == dwIP &&
-							known->GetUserPort() == nPort) {
-							client = known;
-							break;
-						}
-					}
-				}
-				if (!client) {
-					client = theApp->clientlist->FindCallbackClientByIP(dwIP, nPort);
-					// A NAT neighbour's client, known from its hello: dial anew.
-					if (client != nullptr && size >= 23 &&
-						client->GetCreditsHash() != nullptr &&
-						client->HasValidHash() &&
-						client->GetUserHash() != achUserHash) {
-						client = nullptr;
-					}
-				}
-
-				if (!client) {
-					client = new CUpDownClient(
-						nPort, HybridIDOfIPv4(dwIP), 0, 0, nullptr, false, true);
-					theApp->clientlist->AddClient(client);
-				}
-				if (size >= 23 && client->HasValidHash()) {
-					if (client->GetUserHash() != achUserHash) {
-						AddDebugLogLineN(logServer,
-							"Reported Userhash from OP_CALLBACKREQUESTED differs "
-							"with our stored hash");
-						// disable crypt support since we dont know which hash is true
-						client->SetCryptLayerRequest(false);
-						client->SetCryptLayerSupport(false);
-						client->SetCryptLayerRequires(false);
-					} else {
-						client->SetConnectOptions(byCryptOptions, true, false);
-					}
-				} else if (size >= 23) {
-					client->SetUserHash(achUserHash);
-					client->SetConnectOptions(byCryptOptions, true, false);
-				}
-
-				client->NoteCallbackAnswer(EConnectionOpener::AnswerServerCallback);
-				client->TryToConnect();
+				AnswerServerCallback(
+					CNetworkAddress::FromIPv4NetworkOrderOrAbsent(dwIP), nPort, crypt);
 			}
 			break;
 		}
+#ifdef ENABLE_IPV6
+		case OP_CALLBACKREQUESTED_IPV6: {
+			AddDebugLogLineN(logServer, "Server: OP_CALLBACKREQUESTED_IPV6");
+			theStats::AddDownOverheadServer(size);
+			const std::optional<SIPv6CallbackRequested> request =
+				ParseIPv6CallbackRequested(packet, size);
+			if (!request) {
+				break;
+			}
+			// The gate of an IPv6 source from a server record.
+			SServerIPv6SourceFacts facts;
+			facts.address = CNetworkAddress::FromIPv6Bytes(request->address.data());
+			facts.port = request->port;
+			facts.ownAddresses = GetSentIPv6();
+			facts.ownPort = thePrefs::GetPort();
+			facts.ipv6Built = true;
+			facts.familyPermitted = AddressFamilyPolicy::Permits(facts.address);
+			facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
+			if (!ShouldContactServerSourceOverIPv6(facts) ||
+				theApp->ipfilter->IsFiltered(facts.address)) {
+				AddDebugLogLineN(logServer,
+					CFormat("Ignored IPv6 callback request to [%s]:%u") %
+						facts.address.ToWxString() % facts.port);
+				break;
+			}
+			std::optional<SServerCallbackCrypt> crypt;
+			if (request->cryptOptions && request->userHash) {
+				crypt = SServerCallbackCrypt{ *request->cryptOptions,
+					CMD4Hash(request->userHash->data()) };
+			}
+			AnswerServerCallback(facts.address, facts.port, crypt);
+			break;
+		}
+#endif
 		case OP_CALLBACK_FAIL: {
 			AddDebugLogLineN(logServer, "Server: OP_CALLBACK_FAIL");
 			theStats::AddDownOverheadServer(size);
@@ -1071,6 +1139,25 @@ void CServerSocket::SetConnectionState(sint8 newstate)
 		}
 	}
 }
+
+#ifdef ENABLE_IPV6
+void CServerSocket::TrySendIPv6CallbackOptIn()
+{
+	const bool canDialIPv6 = AddressFamilyPolicy::PermitsIPv6() &&
+				 !thePrefs::GetProxyData()->m_proxyEnable && SelectedLocalIPv6().has_value();
+	if (!ShouldOptInToIPv6Callback(cur_server->OffersIPv6Callback(),
+		    m_ipv6CallbackOptedIn,
+		    IsIPv6SentinelParsingOn(),
+		    canDialIPv6)) {
+		return;
+	}
+	CPacket *packet = new CPacket(OP_IPV6_CALLBACK_OPTIN, 0, OP_EDONKEYPROT);
+	theStats::AddUpOverheadServer(packet->GetPacketSize());
+	AddDebugLogLineN(logServer, "Client: OP_IPV6_CALLBACK_OPTIN");
+	SendPacket(packet, true);
+	m_ipv6CallbackOptedIn = true;
+}
+#endif
 
 void CServerSocket::SendPacket(CPacket *packet, bool delpacket, bool controlpacket, uint32 actualPayloadSize)
 {

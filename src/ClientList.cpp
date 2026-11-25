@@ -69,8 +69,6 @@
 
 CClientList::CClientList()
 : m_deadSources(true)
-// As long as a download's placeholder socket waits for the callback (CheckTimeOut()).
-, m_serverCallbacks(CONNECTION_TIMEOUT)
 {
 	m_dwLastBannCleanUp = 0;
 	m_dwLastTrackedCleanUp = 0;
@@ -999,6 +997,7 @@ void CClientList::Process()
 
 	CleanUpClientList();
 	ProcessDirectCallbackList();
+	ProcessServerCallbacks();
 	theApp->browsemanager->Process(cur_tick);
 }
 
@@ -1956,11 +1955,20 @@ void CClientList::ProcessDirectCallbackList()
 	}
 }
 
-void CClientList::AddServerCallbackRequest(CUpDownClient *client)
+void CClientList::AddServerCallbackRequest(CUpDownClient *client, uint64_t windowMs)
 {
 	if (!client->HasBeenDeleted()) {
-		m_serverCallbacks.Add(
-			CCLIENTREF(client, "CClientList::AddServerCallbackRequest"), ::GetTickCount64());
+		m_serverCallbacks.Add(CCLIENTREF(client, "CClientList::AddServerCallbackRequest"),
+			::GetTickCount64(),
+			windowMs);
+	}
+}
+
+void CClientList::ProcessServerCallbacks()
+{
+	// The references hold each client while ServerCallbackExpired() runs.
+	for (const CClientRef &ref : m_serverCallbacks.TakeExpired(::GetTickCount64())) {
+		ref.GetClient()->ServerCallbackExpired();
 	}
 }
 

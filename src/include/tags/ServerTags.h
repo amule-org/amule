@@ -52,6 +52,7 @@ enum Server_tags
 	ST_TCPPORTOBFUSCATION = 0x97, // <uint16>
 	ST_UDPPORTOBFUSCATION = 0x98, // <uint16>
 	ST_NATT_PROOF = 0xA9,         // <uint32> 1: ed2k-server takes a proof 0x9F instead of the token
+	ST_IPV6_CALLBACK = 0xAA,      // <uint> bit 0: the server takes 0x64 and 0x65 and sends 0x26
 	ST_IPV6_STATUS = 0xAB,        // <uint8> bit field: held|reachable|probed
 	ST_NATT_TOKEN = 0xAC          // <hash16> ed2k-server NAT-T session token
 };

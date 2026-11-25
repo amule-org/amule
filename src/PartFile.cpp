@@ -1709,6 +1709,9 @@ uint32 CPartFile::Process(uint8 m_icounter)
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 				cur_src->RetryLowIdHolePunchRequest();
 #endif
+#ifdef ENABLE_IPV6
+				cur_src->RetryIPv6CallbackRequest();
+#endif
 				if (cur_src->HasLowID() && !theApp->CanDoCallback(cur_src->GetServerIP(),
 								   cur_src->GetServerPort())) {
 					// If we are almost maxed on sources, slowly remove these

@@ -565,6 +565,11 @@ target_include_directories (ServerCallbackRequestsTest PRIVATE ${CMAKE_SOURCE_DI
 target_link_libraries (ServerCallbackRequestsTest muleunit mulecommon)
 add_test (NAME ServerCallbackRequestsTest COMMAND ServerCallbackRequestsTest)
 
+add_executable (ServerIPv6CallbackTest ServerIPv6CallbackTest.cpp)
+target_include_directories (ServerIPv6CallbackTest PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries (ServerIPv6CallbackTest muleunit mulecommon)
+add_test (NAME ServerIPv6CallbackTest COMMAND ServerIPv6CallbackTest)
+
 # Pure admission and rate-limit policy for the future NAT rendezvous control path.
 add_executable (NatRendezvousPolicyTest
 	NatRendezvousPolicyTest.cpp
