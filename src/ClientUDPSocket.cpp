@@ -1215,6 +1215,63 @@ bool CClientUDPSocket::IsRendezvousPeerAllowed(uint32 ip)
 	       !theApp->clientlist->IsBannedClient(CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip));
 }
 
+#ifdef AMULE_UTP_TRANSPORT
+void CClientUDPSocket::StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP,
+	uint16 udpPort,
+	uint64 now,
+	const std::optional<NatServerHolePunch::Hash> &peerHash)
+{
+	// Every path checks its target first; this is the backstop for the next one.
+	if (udpPort == 0 || !IsRendezvousPeerAllowed(PeekUInt32(peerIP.data()))) {
+		return;
+	}
+	m_lowIdHolePunchSchedules.Start(peerIP, udpPort, now, peerHash);
+	// The first punch is due now, so it leaves with this tick rather than the next one.
+	SendDueLowIdHolePunches(now);
+}
+
+void CClientUDPSocket::SendDueLowIdHolePunches(uint64 now)
+{
+	if (!Ok()) {
+		return;
+	}
+	const auto punch = [this](const NatServerHolePunch::IPv4 &peerIP, uint16 udpPort) {
+		CPacket *packet = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
+		theStats::AddUpOverheadOther(packet->GetPacketSize());
+		SendPacket(packet, PeekUInt32(peerIP.data()), udpPort, false, nullptr, false, 0);
+	};
+	for (const NatServerHolePunch::PunchDue &due : m_lowIdHolePunchSchedules.TakeDue(now)) {
+		if (due.kind == NatServerHolePunch::PunchDue::Endpoint) {
+			punch(due.peerIP, due.udpPort);
+			continue;
+		}
+		// One sweep per destination address every five minutes, ten a minute overall.
+		if (!m_lowIdHolePunchSweeps.Admit(due.peerIP, now)) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Punch sweep to %s refused by the sweep budget") %
+					Uint32toStringIP(PeekUInt32(due.peerIP.data())));
+			continue;
+		}
+		const std::vector<uint16> ports = NatServerHolePunch::SweptPorts(due.udpPort);
+		if (!ports.empty()) {
+			AddDebugLogLineN(logClientUDP,
+				CFormat("Punch sweep to %s: %u ports %u-%u around %u") %
+					Uint32toStringIP(PeekUInt32(due.peerIP.data())) %
+					static_cast<unsigned>(ports.size()) % ports.front() % ports.back() %
+					due.udpPort);
+		}
+		for (const uint16 port : ports) {
+			punch(due.peerIP, port);
+		}
+	}
+}
+
+void CClientUDPSocket::ResetLowIdHolePunchSchedules()
+{
+	m_lowIdHolePunchSchedules = NatServerHolePunch::PunchScheduleSet();
+}
+#endif
+
 uint32 CClientUDPSocket::SendServerWayObfuscated(
 	CPacket *packet, uint32 serverIp, uint16 port, uint32 serverKeyUdp)
 {
@@ -1408,7 +1465,7 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 	ExpectNatTPeer(answer->targetIp, answer->targetUdpPort, &answer->targetHash);
 	NatServerHolePunch::IPv4 targetIP{};
 	PokeUInt32(targetIP.data(), answer->targetIp);
-	connect->StartLowIdHolePunchSchedule(targetIP, answer->targetUdpPort, now, answer->targetHash);
+	StartLowIdHolePunchSchedule(targetIP, answer->targetUdpPort, now, answer->targetHash);
 	const NatServerHolePunch::VouchedPeer peer{ answer->targetHash,
 		static_cast<std::uint8_t>(answer->crypt & 0x07) };
 	DialLowIdHolePunchPeer(answer->targetIp, pending->sourceTcpPort, answer->targetUdpPort, peer);
@@ -1418,11 +1475,9 @@ bool CClientUDPSocket::TryProcessForeignNatCallback(uint32 ip, uint8_t *buffer, 
 bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint8_t, 16> &peerHash)
 {
 	// The peer is connected, so its punches have nothing left to reach.
-	if (theApp->serverconnect != nullptr) {
-		NatServerHolePunch::IPv4 peer{};
-		PokeUInt32(peer.data(), ip);
-		theApp->serverconnect->LowIdHolePunchSchedules().CancelPeer(peer, peerHash);
-	}
+	NatServerHolePunch::IPv4 peer{};
+	PokeUInt32(peer.data(), ip);
+	m_lowIdHolePunchSchedules.CancelPeer(peer, peerHash);
 	const std::optional<NatServerHolePunch::RendezvousPath> path =
 		m_rendezvousOutcomes.TakeSuccess(ip, peerHash, ::GetTickCount64());
 	if (!path) {
@@ -1542,7 +1597,7 @@ bool CClientUDPSocket::AnswerWakeWithKeepalive(const LugdunumNatTraversal::Forwa
 	if (callback.hasObfuscation) {
 		vouched = callback.userHash;
 	}
-	connect->StartLowIdHolePunchSchedule(targetIP, target.udpPort, now, vouched);
+	StartLowIdHolePunchSchedule(targetIP, target.udpPort, now, vouched);
 	AddDebugLogLineN(logClientUDP,
 		CFormat("Wake keepalive for requester %u: OP_HOLEPUNCH at 0, 0.5, 1 "
 			"and 2 s to %s") %
@@ -1630,7 +1685,7 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 		return;
 	}
 	// A punch from the peer is what its schedule was for.
-	connect->LowIdHolePunchSchedules().Cancel(source, port);
+	m_lowIdHolePunchSchedules.Cancel(source, port);
 	if (!connect->IsConnected() || !thePrefs::IsLowIdHolePunchEnabled() ||
 		thePrefs::GetEffectiveUDPPort() == 0) {
 		return;
