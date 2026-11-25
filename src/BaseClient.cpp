@@ -4895,8 +4895,8 @@ bool CUpDownClient::ShouldReceiveCryptUDPPackets() const
 	if (!WantsStreamObfuscation()) {
 		return false;
 	}
-	// The key holds the IP this peer sees us at, which a rendezvous can give while our own public IP
-	// is unknown (ClientUdpKeyIP()).
+	// The key holds the IP this peer sees us at, else our public IP, else a verified stream's
+	// (ClientUdpKeyIP()).
 	return theApp->clientudp != nullptr ? theApp->clientudp->ClientKeyIP(GetConnectIP()) != 0
 					    : theApp->GetPublicIP(true) != 0;
 }

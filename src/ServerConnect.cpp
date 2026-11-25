@@ -814,17 +814,6 @@ bool CServerConnect::IsLocalServer(uint32 dwIP, uint16 nPort)
 	return false;
 }
 
-bool CServerConnect::IsLoggingInTo(uint32 dwIP, uint16 nPort) const
-{
-	for (const auto &attempt : connectionattemps) {
-		const CServer *server = attempt.second != nullptr ? attempt.second->cur_server : nullptr;
-		if (server != nullptr && server->GetIP() == dwIP && server->GetPort() == nPort) {
-			return true;
-		}
-	}
-	return false;
-}
-
 void CServerConnect::KeepConnectionAlive()
 {
 	uint64 dwServerKeepAliveTimeout = thePrefs::GetServerKeepAliveTimeout();
@@ -893,6 +882,15 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_lugdunumCallbackRetryPacer = NatServerHolePunch::ServerRequestPacer();
 	m_holePunchKeepaliveAwaitsServerKey = false;
 	m_nextAwaitedServerKeyCheck = 0;
+}
+
+bool CServerConnect::IsLoggingInTo(uint32 dwIP, uint16 nPort) const
+{
+	return NatServerHolePunch::IsLoginAttemptTo(
+		connectionattemps,
+		[](const CServerSocket &socket) { return socket.cur_server; },
+		dwIP,
+		nPort);
 }
 
 CServer *CServerConnect::ForeignCallbackServer(uint32 serverIp, uint16 serverPort)

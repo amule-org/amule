@@ -711,10 +711,11 @@ ed2k-keyed datagram queued to that peer, punches, uTP and QUIC alike, and the uT
 tie-break orders by it, else by Kad's view of our address. Whether anything toward that peer is
 obfuscated at all is decided with the same key IP, else our public IP, else a verified stream's
 (`CMuleUDPSocket::ClientKeyIP()`). The key IP needs a login address, so while our public IP is
-unknown only a verified stream's key IP keeps traffic to its peer obfuscated. `VerifyIdent()` does not use it: it
-checks a `CRYPT_CIP_REMOTECLIENT` signature on a uTP or QUIC stream against the server field below
-while logged in, else Kad's view (`NatSourceEcho::IdentUdpIP()`). The echo is the peer's own word,
-and a peer that relays another's signature would echo its own IP. Two sources fill the key IP:
+unknown only a verified stream's key IP keeps traffic to its peer obfuscated. `VerifyIdent()`
+does not use it: it checks a `CRYPT_CIP_REMOTECLIENT` signature on a uTP or QUIC stream against
+the server field below while logged in, else Kad's view (`NatSourceEcho::IdentUdpIP()`). The echo
+is the peer's own word, and a peer that relays another's signature would echo its own IP. Two
+sources fill the key IP:
 
 - **The server field.** The `own_ip` of a 36-byte `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) is the key IP
   toward every peer punched in that login (`ExpectNatTPeer()`). A shorter `0x61` means the server
