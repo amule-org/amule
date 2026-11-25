@@ -129,3 +129,15 @@ TEST(ServerIPv6Callback, ARetryWaitsForItsTimeAndForANatStepsWindow)
 	ASSERT_FALSE(IsIPv6CallbackRetryDue(100, 0, true, kNatStepAnswerWindowMs - 1));
 	ASSERT_TRUE(IsIPv6CallbackRetryDue(100, 0, true, kNatStepAnswerWindowMs));
 }
+
+TEST(ServerIPv6Callback, ALowIDSourceIsKeptWhileTheCallbackCanReachIt)
+{
+	ASSERT_TRUE(ShouldKeepLowIdSourceForIPv6Callback(true, true, true, EServerIPv6Verdict::Verified));
+	// The first source answers come before the dial-back's verdict.
+	ASSERT_TRUE(ShouldKeepLowIdSourceForIPv6Callback(true, true, true, EServerIPv6Verdict::Probing));
+	ASSERT_FALSE(ShouldKeepLowIdSourceForIPv6Callback(true, true, true, EServerIPv6Verdict::Failed));
+	ASSERT_FALSE(ShouldKeepLowIdSourceForIPv6Callback(true, true, true, EServerIPv6Verdict::Unknown));
+	ASSERT_FALSE(ShouldKeepLowIdSourceForIPv6Callback(true, true, false, EServerIPv6Verdict::Verified));
+	ASSERT_FALSE(ShouldKeepLowIdSourceForIPv6Callback(true, false, true, EServerIPv6Verdict::Verified));
+	ASSERT_FALSE(ShouldKeepLowIdSourceForIPv6Callback(false, true, true, EServerIPv6Verdict::Verified));
+}

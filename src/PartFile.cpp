@@ -61,6 +61,7 @@
 #include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::Permits
 #include "AdvertisedIPv6.h"         // Needed for SelectedLocalIPv6
 #include "ServerIPv6SourcePolicy.h" // Needed for ShouldContactServerSourceOverIPv6
+#include "ServerIPv6Callback.h"     // Needed for ShouldKeepLowIdSourceForIPv6Callback
 #endif
 
 #ifdef CLIENT_GUI
@@ -1979,15 +1980,27 @@ bool CPartFile::CanAddSource(uint32 userid,
 namespace
 {
 // Whether a LowID source of that server survives CanAddSource's LowID-while-firewalled drop because
-// a server-coordinated NAT traversal can reach it. False in builds without one.
+// our IPv6 callback or a server-coordinated NAT traversal can reach it. False in builds without one.
 bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	[[maybe_unused]] uint16 serverport,
 	[[maybe_unused]] unsigned origin)
 {
-#ifdef ENABLE_NATT_SERVER_COORDINATION
+#if defined(ENABLE_IPV6) || defined(ENABLE_NATT_SERVER_COORDINATION)
 	if (theApp->serverconnect == nullptr || !theApp->serverconnect->IsConnected()) {
 		return false;
 	}
+#endif
+#ifdef ENABLE_IPV6
+	if (const CServer *current = theApp->serverconnect->GetCurrentServer();
+		current != nullptr &&
+		ShouldKeepLowIdSourceForIPv6Callback(theApp->serverconnect->IsLowID(),
+			current->GetIP() == serverip && current->GetPort() == serverport,
+			current->OffersIPv6Callback(),
+			current->GetIPv6Verdict())) {
+		return true;
+	}
+#endif
+#ifdef ENABLE_NATT_SERVER_COORDINATION
 	// A server is either Lugdunum or ed2k-server: each keeps a LowID source it would
 	// otherwise call back / hole-punch, so the two checks are independent and only one can apply
 	// to a given current server.

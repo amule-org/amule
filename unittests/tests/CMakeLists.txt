@@ -3657,6 +3657,13 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/ServerCallbackFailIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (ServerCallbackFailIntegrationTest PROPERTIES LABELS "integration")
+		if (ENABLE_IPV6)
+			add_test (NAME ServerIPv6CallbackIntegrationTest
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/ServerIPv6CallbackIntegrationTest.py $<TARGET_FILE:amuled>
+			)
+			set_tests_properties (ServerIPv6CallbackIntegrationTest PROPERTIES LABELS "integration")
+		endif ()
 		# The ed2k helper writes ED2KLinks too; checked when it is built.
 		set (ED2K_HELPER "")
 		if (BUILD_ED2K)
@@ -4314,6 +4321,7 @@ foreach (ec_wire_test IN ITEMS
 	SearchParamsRestoreIntegrationTest
 	SearchResultDownloadIntegrationTest
 	ServerCallbackFailIntegrationTest
+	ServerIPv6CallbackIntegrationTest
 	ServerListFallbackApiIntegrationTest
 	ServerListFallbackIntegrationTest
 	ServerListGuiIntegrationTest

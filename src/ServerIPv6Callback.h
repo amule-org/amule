@@ -92,6 +92,15 @@ inline bool ShouldRequestIPv6Callback(const SIPv6CallbackRequestFacts &facts)
 	       facts.verdict == EServerIPv6Verdict::Verified;
 }
 
+//! A LowID source of our server is kept while the callback can reach it: also while the server's
+//! dial-back of our IPv6 still runs, as the first source answers come before its verdict.
+inline bool ShouldKeepLowIdSourceForIPv6Callback(
+	bool weAreLowID, bool sourceOnOurServer, bool serverOffers, EServerIPv6Verdict verdict)
+{
+	return weAreLowID && sourceOnOurServer && serverOffers &&
+	       (verdict == EServerIPv6Verdict::Verified || verdict == EServerIPv6Verdict::Probing);
+}
+
 //! Opt in once a session, only where we can dial the IPv6 a request names.
 inline bool ShouldOptInToIPv6Callback(bool offered, bool optedIn, bool advertisedIPv6, bool canDialIPv6)
 {
