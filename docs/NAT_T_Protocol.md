@@ -173,10 +173,9 @@ stream; eMuleAI and eMuleQt answer on a stream of their own, so the dial lets
 the peer open one bidirectional stream.
 
 Only a dial with a known peer hash can use QUIC. On the ed2k-server punch every
-dial has one: a 29- or 30-byte `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) carries it to
-the requester's dial, and to the target's dial and dial-back, which
-`OP_HOLEPUNCH` triggers but takes the hash from the `0x61` that announced the
-endpoint. The cross-server `0xA7` (`OP_NAT_CALLBACKREQUESTED_UDP`) answer
+dial has one, because each `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) carries it: to the
+requester's dial, and to the target's dial and dial-back, which `OP_HOLEPUNCH`
+triggers but takes the hash from the `0x61` that announced the endpoint. The cross-server `0xA7` (`OP_NAT_CALLBACKREQUESTED_UDP`) answer
 carries the target's hash, and a Lugdunum forward may carry the user hash. A
 dial without one uses uTP.
 
