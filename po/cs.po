@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-20 15:06+0000\n"
+"PO-Revision-Date: 2026-11-25 15:18+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
@@ -4334,7 +4334,7 @@ msgstr "Chyba vytváření UDP socketu %s %d : %s"
 
 #: src/LibSocketAsio.cpp
 #, c-format
-msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes. Bursts of uTP and QUIC data can be lost; setting it to %d avoids that."
+msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes, so bursts of uTP and QUIC data can be lost. To avoid that, run as root, on the host if aMule runs in a container: %s"
 msgstr ""
 
 #: src/LibSocketAsio.cpp
@@ -7902,7 +7902,7 @@ msgstr "Kad používá tyto filtry; eD2k servery je mohou ignorovat"
 
 #: src/SearchMetadataPanel.cpp
 msgid "The connected daemon does not support media filters. Update the daemon to use these fields."
-msgstr "Připojený daemon nepodporuje filtry médií. Pro použití těchto polí aktualizujte daemona."
+msgstr "Připojený daemon nepodporuje mediální filtry. Pro použití těchto polí aktualizujte daemona."
 
 #: src/SearchList.cpp
 #, c-format
@@ -9719,7 +9719,7 @@ msgstr ""
 "    ALL: Všechny sítě (vyžaduje podporu daemona)\n"
 "Příklad: 'search kad soubor' provede kad hledání výrazu \"soubor\".\n"
 "\n"
-"Volitelně je možné přidat další filtry před, za, nebo mezi\n"
+"Volitelné filtry je možné přidat před, za, nebo mezi\n"
 "vyhledávaná slova:\n"
 "    --type <Audio|Video|Image|Doc|Pro|Arc|Iso>\n"
 "    --extension <ext>      (alias: --ext)\n"

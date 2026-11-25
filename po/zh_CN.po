@@ -4318,8 +4318,8 @@ msgid "Error creating UDP socket %s %d : %s"
 msgstr "创建 UDP 套接字 %s %d 出错：%s"
 
 #: src/LibSocketAsio.cpp
-#, c-format
-msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes. Bursts of uTP and QUIC data can be lost; setting it to %d avoids that."
+#, fuzzy, c-format
+msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes, so bursts of uTP and QUIC data can be lost. To avoid that, run as root, on the host if aMule runs in a container: %s"
 msgstr "net.core.rmem_max 将 UDP 接收缓存限制到 %d 字节。uTP 和 QUIC 数据的迸发可能丢失；将它设为 %d 避免此情况。"
 
 #: src/LibSocketAsio.cpp
