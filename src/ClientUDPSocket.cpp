@@ -1201,6 +1201,83 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	}
 }
 
+void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, const uint8_t *body, size_t size)
+{
+	Kademlia::CBuddyStats::Own::Rendezvous &counts = theApp->clientlist->GetBuddyStats().own.rendezvous;
+	++counts.received;
+	const wxString requester = Uint32_16toStringIP_Port(ip, udpPort);
+	uint8_t localTransports = 0;
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+#ifdef AMULE_QUIC_TRANSPORT
+	const bool quicEnabled = thePrefs::IsQuicNatTEnabled();
+#else
+	const bool quicEnabled = false;
+#endif
+	if (Ok()) {
+		localTransports = Kademlia::LocalNatTConnectOptions(m_utp.IsAvailable(), quicEnabled);
+	}
+#endif
+	const PeerAddressing::UdpEndpoint observed{ CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip),
+		udpPort };
+	const NatRendezvous::ServedRendezvousDecision decision =
+		NatRendezvous::DecideServedRendezvous(observed, body, size, localTransports);
+	switch (decision.outcome) {
+	case NatRendezvous::EServedRendezvous::Malformed:
+		++counts.malformed;
+		AddDebugLogLineN(
+			logKadBuddy, "Dropped a malformed rendezvous our buddy forwarded for " + requester);
+		return;
+	case NatRendezvous::EServedRendezvous::NoSharedTransport:
+		++counts.noSharedTransport;
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Dropped a rendezvous for %s: it declared NAT-T 0x%02x, we have 0x%02x") %
+				requester %
+				(decision.request.connectOptions & NatRendezvous::kNatTTransports) %
+				localTransports);
+		return;
+	case NatRendezvous::EServedRendezvous::Punch:
+		break;
+	}
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	if (!IsRendezvousPeerAllowed(ip)) {
+		AddDebugLogLineN(logKadBuddy, "Ignored a rendezvous for " + requester + ": not allowed");
+		return;
+	}
+	const uint64 now = ::GetTickCount64();
+	switch (m_servedRendezvous.Admit(decision.target, now)) {
+	case NatRendezvous::EServedAdmission::Start:
+		break;
+	case NatRendezvous::EServedAdmission::Join:
+		AddDebugLogLineN(
+			logKadBuddy, "Rendezvous resend for " + requester + " joins the one in flight");
+		return;
+	case NatRendezvous::EServedAdmission::RequesterLimited:
+		AddDebugLogLineN(
+			logKadBuddy, "Rendezvous for " + requester + " held back by its address limit");
+		return;
+	case NatRendezvous::EServedAdmission::OverGlobalLimit:
+		AddDebugLogLineN(
+			logKadBuddy, "Rendezvous for " + requester + " held back by the global limit");
+		return;
+	}
+	++counts.accepted;
+	AddDebugLogLineN(logKadBuddy,
+		CFormat("Rendezvous from our buddy: punching %s, NAT-T 0x%02x; the requester dials") %
+			requester % decision.sharedTransports);
+	const std::array<std::uint8_t, 16> &requesterHash = decision.request.requesterHash;
+	NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath::KadBuddy, ip, &requesterHash);
+	// Recorded before the punch: we answer the requester's CAPS only from an expected peer. No
+	// server vouches for the hash; the requester's hello decides which client the stream is.
+	ExpectNatTPeer(ip, udpPort, &requesterHash);
+	NatServerHolePunch::IPv4 peerIP{};
+	PokeUInt32(peerIP.data(), ip);
+	StartLowIdHolePunchSchedule(
+		peerIP, udpPort, now, NatServerHolePunch::RendezvousPath::KadBuddy, requesterHash);
+#else
+	wxFAIL_MSG("A rendezvous was accepted with no NAT-T transport built in");
+#endif
+}
+
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 bool CClientUDPSocket::IsRendezvousPeerAllowed(uint32 ip)
 {
@@ -1362,10 +1439,16 @@ void CClientUDPSocket::NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath 
 	if (!m_rendezvousOutcomes.NoteAttempt(path, ip, hash, ::GetTickCount64()) || !countAttempt) {
 		return;
 	}
-	if (path == NatServerHolePunch::RendezvousPath::ServerPunch) {
+	switch (path) {
+	case NatServerHolePunch::RendezvousPath::ServerPunch:
 		theStats::AddServerHolePunchAttempt();
-	} else {
+		break;
+	case NatServerHolePunch::RendezvousPath::LugdunumCallback:
 		theStats::AddLugdunumCallbackAttempt();
+		break;
+	case NatServerHolePunch::RendezvousPath::KadBuddy:
+		// Counted as buddy.own.rendezvous.accepted by the handler, which also counts the drops.
+		break;
 	}
 }
 
@@ -1481,10 +1564,16 @@ bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint
 	if (!path) {
 		return false;
 	}
-	if (*path == NatServerHolePunch::RendezvousPath::ServerPunch) {
+	switch (*path) {
+	case NatServerHolePunch::RendezvousPath::ServerPunch:
 		theStats::AddServerHolePunchSuccess();
-	} else {
+		break;
+	case NatServerHolePunch::RendezvousPath::LugdunumCallback:
 		theStats::AddLugdunumCallbackSuccess();
+		break;
+	case NatServerHolePunch::RendezvousPath::KadBuddy:
+		++theApp->clientlist->GetBuddyStats().own.rendezvous.connected;
+		break;
 	}
 	return true;
 }

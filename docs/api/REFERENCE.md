@@ -2785,7 +2785,8 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
       "requests": { "sent": 0, "skipped": 0, "offered": 0 },
       "connections": { "attempted": 0, "failed": 0 },
       "buddies": { "started": 0, "ended": 0, "timed_out": 0 },
-      "received_callback_count": 0, "received_reask_count": 0
+      "received_callback_count": 0, "received_reask_count": 0,
+      "rendezvous": { "received": 0, "malformed": 0, "no_shared_transport": 0, "accepted": 0, "connected": 0 }
     }
   }
 }
@@ -2822,6 +2823,7 @@ Standalone view of the Kad subtree from `/status`, plus the detail fields the st
 | `buddy.own.connections` | object | Connections to an offered buddy: `attempted`, and `failed`, which puts that node on the one-hour cooldown. |
 | `buddy.own.buddies` | object | `started`, `ended` and `timed_out`, as under `serving.buddies`, for this node's own buddy. |
 | `buddy.own.received_callback_count` / `.received_reask_count` | int | Callbacks and reasks this node's buddy relayed to it. |
+| `buddy.own.rendezvous` | object | NAT-T rendezvous requests (`0xA0`) this node's buddy forwarded to it; a forwarded rendezvous is not counted as a reask. `received` ends as `malformed` (not a well-formed `0xA0`, or no usable requester endpoint), `no_shared_transport` (the requester declared no NAT-T transport this build has: `0x80` uTP, `0x40` QUIC), `accepted`, or is held back by the rendezvous limits: a repeat to the same endpoint within 20 s joins the attempt in flight, a requester address may start one every 5 s, and all requesters together 20 a minute. On `accepted` this node punches the endpoint its buddy saw and waits for the requester to dial; `connected` counts the ones whose requester then completed a verified hello. Since 3.3; all `0` from an older daemon. |
 
 ---
 
@@ -3743,6 +3745,7 @@ Each scrape reads a compact snapshot that amuleapi publishes after a successful 
 | `amule_kad_buddy_own_connections_total` | counter, `result="attempted\|failed"` | Connections to an offered buddy |
 | `amule_kad_buddy_own_events_total` | counter, `event="started\|ended\|timed_out"` | Changes to this node's own buddy |
 | `amule_kad_buddy_own_received_total` | counter, `kind="callback\|reask"` | Packets this node's buddy relayed to it |
+| `amule_kad_buddy_own_rendezvous_total` | counter, `result="received\|malformed\|no_shared_transport\|accepted\|connected"` | Rendezvous this node's buddy forwarded to it, as `buddy.own.rendezvous` |
 | `amule_kad_buddy_own_seconds_total` | counter, `state="needed\|missing\|connected"` | Time a buddy was needed, the part of it without one, and the time with one |
 
 The `kad_buddy` counters come from the daemon whatever the Kad state, and reset when it restarts. They describe both roles: an open node serves firewalled nodes, and a firewalled node needs a buddy of its own, so on a given node one side usually stays at zero.

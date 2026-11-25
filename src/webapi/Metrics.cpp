@@ -333,6 +333,15 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 		w.Family("kad_buddy_own_received_total", "Packets our buddy relayed to us.", "counter");
 		w.Sample("kad_buddy_own_received_total", o.received_callback_count, "{kind=\"callback\"}");
 		w.Sample("kad_buddy_own_received_total", o.received_reask_count, "{kind=\"reask\"}");
+		w.Family(
+			"kad_buddy_own_rendezvous_total", "Rendezvous our buddy forwarded to us.", "counter");
+		w.Sample("kad_buddy_own_rendezvous_total", o.rendezvous.received, "{result=\"received\"}");
+		w.Sample("kad_buddy_own_rendezvous_total", o.rendezvous.malformed, "{result=\"malformed\"}");
+		w.Sample("kad_buddy_own_rendezvous_total",
+			o.rendezvous.no_shared_transport,
+			"{result=\"no_shared_transport\"}");
+		w.Sample("kad_buddy_own_rendezvous_total", o.rendezvous.accepted, "{result=\"accepted\"}");
+		w.Sample("kad_buddy_own_rendezvous_total", o.rendezvous.connected, "{result=\"connected\"}");
 		w.Family("kad_buddy_own_seconds_total",
 			"Time a buddy was needed, missing while needed, or connected.",
 			"counter");

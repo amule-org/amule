@@ -44,7 +44,8 @@ class CServer;
 
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
-#include "NatServerHolePunch.h" // Needed for VouchedPeer
+#include "NatRendezvousPolicy.h" // Needed for CServedRendezvousGate
+#include "NatServerHolePunch.h"  // Needed for VouchedPeer
 #endif
 
 #ifdef AMULE_UTP_TRANSPORT
@@ -88,6 +89,11 @@ class CClientUDPSocket : public CMuleUDPSocket
 public:
 	CClientUDPSocket(const amuleIPV4Address &address, const CProxyData *ProxyData = NULL);
 	bool Rebind(const amuleIPV4Address &address);
+	//! A 0xA0 (rendezvous) our own Kad buddy forwarded in OP_REASKCALLBACKTCP, from the requester
+	//! the buddy saw at @a ip (network order) and @a udpPort. @a body starts at the all-zero file
+	//! hash. Counted under buddy.own.rendezvous in every build; only a build with the punch schedule
+	//! acts on it: it expects the requester and punches that endpoint, and the requester dials.
+	void HandleForwardedRendezvous(uint32 ip, uint16 udpPort, const uint8_t *body, size_t size);
 #ifdef AMULE_UTP_TRANSPORT
 	~CClientUDPSocket() override;
 	void Close() override;
@@ -241,6 +247,8 @@ private:
 	NatServerHolePunch::SweepBudget m_lowIdHolePunchSweeps;
 	NatServerHolePunch::RequestedCallbackTargets m_requestedCallbackTargets;
 	NatServerHolePunch::ForeignCallbackRequests m_foreignCallbacks;
+	// The Kad buddy's rendezvous limits, apart from the server paths' action budget.
+	NatRendezvous::CServedRendezvousGate m_servedRendezvous;
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT

@@ -830,3 +830,45 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
 - **Interop.** An eMuleAI buddy forwards without this check. A drop on our side
   only stops a rendezvous that would fail anyway: the requester sees a timeout
   in both cases, because the `0xB2` frames have no failure frame.
+
+### Served node
+
+The buddy forwards the `0xA0` in `OP_REASKCALLBACKTCP` (`0x9A`): the
+requester's observed IPv4 and UDP port, then 16 zero bytes where a reask has
+its file hash, then the `0xA0` and its request. aMule takes it only from its
+own Kad buddy; a forward from any other peer, and an IPv6 requester
+(`0xFFFFFFFF`), are ignored as before.
+
+- **No reask.** A forwarded control payload is not answered as a reask, so the
+  requester gets no `OP_FILENOTFOUND`. Only `0xA0` is handled; any other
+  embedded opcode, a request that does not parse, or an unusable endpoint is
+  dropped as malformed.
+- **Who dials.** The requester. The served node waits: it does not choose a
+  transport, it arms every one both sides declared and lets the requester pick.
+  With none in common it drops the `0xA0`, even after the buddy's check,
+  because an eMuleAI buddy forwards without it. An eMuleQt requester declares
+  only `0x40` (QUIC), so only a QUIC build serves it.
+- **Endpoint.** It punches only the endpoint the buddy saw. The requester's
+  hint is parsed but never punched: it would help only a requester on the
+  buddy's own network. Bytes after the 7-byte tail, such as the extension block
+  of ModderMule/emule-qt#265, are ignored.
+- **Action.** It records the requester with `ExpectNatTPeer()` first, so it
+  answers the requester's CAPS, then starts the punch schedule and port sweep
+  of the server paths on the Kad buddy path. A server login does not end that
+  schedule. The user hash in the `0xA0` is passed as the server paths pass
+  theirs, but no server vouches for it: the requester's hello decides which
+  client the stream is.
+- **Limits.** A repeat to the same endpoint within 20 s joins the attempt in
+  flight; eMuleQt sends the request up to three times, 5 s apart. A requester
+  address may start one attempt every 5 s, and all requesters together 20 a
+  minute, a budget apart from the server paths' 20 actions a minute. The source
+  a buddy relays can be forged, so the per-address limit alone would not stop a
+  sender that forges a new one each time.
+- **Statistics.** `buddy.own.rendezvous` counts what the buddy forwarded:
+  `received`, `malformed`, `no_shared_transport`, `accepted`, and `connected`
+  when the requester's verified hello completes it. The Kad buddy path counts
+  apart from the ed2k-server punch and the Lugdunum callback. Each outcome is
+  logged under Kad buddy.
+- **Build.** The action needs `ENABLE_NATT_SERVER_COORDINATION` and uTP, as the
+  punch schedule does. Without them the `0xA0` is still recognised and counted,
+  and dropped as having no shared transport.

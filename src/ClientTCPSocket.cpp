@@ -57,6 +57,7 @@
 #include "kademlia/kademlia/Kademlia.h" // Needed for CKademlia::Kademlia
 #include "kademlia/kademlia/Prefs.h"    // Needed for CKademlia::CPrefs
 #include "KadBuddyIdLayout.h"           // Needed for MatchesBuddyIdEitherLayout (#1835)
+#include "NatRendezvousProtocol.h"      // Needed for IsForwardedControl
 #include "DownloadQueue.h"              // Needed for CDownloadQueue
 #include "Server.h"                     // Needed for CServer
 #include "ServerList.h"                 // Needed for CServerList
@@ -2013,10 +2014,10 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		}
 		AddDebugLogLineN(
 			logRemoteClient, "Remote Client: OP_REASKCALLBACKTCP from " + m_client->GetFullIP());
-		++theApp->clientlist->GetBuddyStats().own.reasksReceived;
 		CMemFile data_in(buffer, size);
 		uint32 destip = data_in.ReadUInt32();
 		if (destip == 0xFFFFFFFF) {
+			++theApp->clientlist->GetBuddyStats().own.reasksReceived;
 			// eMuleAI and eMule-Qt send an IPv6 requester as this plus 16 address bytes. There is
 			// no IPv6 UDP to answer on, and reading it as IPv4 would aim at 255.255.255.255.
 			AddDebugLogLineN(logRemoteClient,
@@ -2025,6 +2026,15 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 			break;
 		}
 		uint16 destport = data_in.ReadUInt16();
+		const uint64 controlOffset = data_in.GetPosition();
+		// Where a reask has its file hash, a forwarded control payload has 16 zero bytes and an
+		// opcode. It is no reask: answering it with OP_FILENOTFOUND would make the requester drop us.
+		if (NatRendezvous::IsForwardedControl(buffer + controlOffset, size - controlOffset)) {
+			theApp->clientudp->HandleForwardedRendezvous(
+				destip, destport, buffer + controlOffset, size - controlOffset);
+			break;
+		}
+		++theApp->clientlist->GetBuddyStats().own.reasksReceived;
 		CMD4Hash hash = data_in.ReadHash();
 		CKnownFile *reqfile = theApp->sharedfiles->GetFileByID(hash);
 
