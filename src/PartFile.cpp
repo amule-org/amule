@@ -2015,7 +2015,7 @@ bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	holePunchFacts.wakeKeepaliveAnnounced = NatServerHolePunch::ShouldAnnounceWakeKeepalive(
 		thePrefs::IsLowIdHolePunchEnabled(), thePrefs::IsLugdunumNatCallbackEnabled(), utpAvailable);
 	holePunchFacts.sourceServerTakesForeignCallback =
-		!sourceServerIsOurCurrentServer && holePunchFacts.wakeKeepaliveAnnounced && weAreLowId &&
+		!sourceServerIsOurCurrentServer && holePunchFacts.wakeKeepaliveAnnounced &&
 		theApp->serverconnect->ForeignCallbackServer(serverip, serverport) != nullptr;
 
 	return LugdunumNatTraversal::ShouldKeepLowIdServerSource(lugdunumFacts) ||

@@ -547,9 +547,10 @@ TEST(NatServerHolePunch, KeepsALowIdSourceOfAnotherServerThatTakesCrossServerReq
 	serverDoesNotTakeThem.sourceServerTakesForeignCallback = false;
 	ASSERT_FALSE(ShouldKeepLowIdServerSource(serverDoesNotTakeThem));
 
-	LowIdServerSourceFacts weAreHighId = facts;
-	weAreHighId.weAreLowId = false;
-	ASSERT_FALSE(ShouldKeepLowIdServerSource(weAreHighId));
+	// The request needs no LowID of ours, nor a session: our ID is stale while we are logged out.
+	LowIdServerSourceFacts noLowId = facts;
+	noLowId.weAreLowId = false;
+	ASSERT_TRUE(ShouldKeepLowIdServerSource(noLowId));
 
 	// A source on our own server is the same-server rule's alone.
 	LowIdServerSourceFacts ourServer = facts;

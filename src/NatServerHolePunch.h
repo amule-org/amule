@@ -294,15 +294,14 @@ inline bool ForeignCallbackServerAwaitsKey(const ForeignServerFacts &facts)
 // Whether a LowID source survives CanAddSource's LowID-while-firewalled drop. Since ed2k-server
 // 0.9.86 (ed2k-server#49) a LowID requester with NAT traversal gets only LowID sources that have it
 // too, and aMule qualifies through the UDP port it sends at login while LowIdHolePunch is on. Kept
-// are sources from our own hole-punch-capable server, and sources of another server that takes a
-// cross-server request, which we can ask while we announce the wake keepalive.
+// are sources from our own hole-punch-capable server while we are LowID there, and sources of another
+// server that takes a cross-server request, which we can ask while we announce the wake keepalive,
+// with or without a session of our own.
 inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
 {
-	if (!facts.weAreLowId) {
-		return false;
-	}
 	if (facts.sourceServerIsOurCurrentServer) {
-		return facts.settingEnabled && facts.originIsLocalServer && facts.serverAnnouncesHolePunch;
+		return facts.weAreLowId && facts.settingEnabled && facts.originIsLocalServer &&
+		       facts.serverAnnouncesHolePunch;
 	}
 	return facts.wakeKeepaliveAnnounced && facts.sourceServerTakesForeignCallback;
 }

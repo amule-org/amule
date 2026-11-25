@@ -61,6 +61,16 @@ TEST(UtpDialPolicy, DecisionMatrix)
 	}
 }
 
+// Without a key IP the frames go plain, which a requested obfuscation allows and a required one does
+// not.
+TEST(UtpDialPolicy, ADialWithoutAKeyIpGoesPlainUnlessObfuscationIsRequired)
+{
+	ASSERT_TRUE(UtpDialObfuscationSatisfied(true, false));
+	ASSERT_TRUE(UtpDialObfuscationSatisfied(true, true));
+	ASSERT_TRUE(UtpDialObfuscationSatisfied(false, false));
+	ASSERT_FALSE(UtpDialObfuscationSatisfied(false, true));
+}
+
 TEST(UtpDialPolicy, ServerVouchedLowIdMayDialWithoutPeerHello)
 {
 	SUtpDialFacts facts = EligibleLowIdFacts();

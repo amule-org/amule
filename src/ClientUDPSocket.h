@@ -268,6 +268,9 @@ private:
 	CTimer m_quicFineTimer;
 #endif
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
+	//! Our user hash may only leave obfuscated, where the user allows the crypt layer and we know the
+	//! IP @a ip sees us at, which the key holds (ClientKeyIP()).
+	bool NatTObfuscationAvailable(uint32_t ip);
 	//! Our key frame, obfuscated with @a key; false when the packet was not queued.
 	bool SendNatKeyFrame(uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key);
 	//! A datagram from a punched endpoint that no key decoded: tell it the source we saw.

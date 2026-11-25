@@ -46,8 +46,7 @@ struct SUtpDialFacts
 	bool localOutboundService = false;
 	bool proxyEnabled = false;
 	bool routableEndpoint = false;
-	// The stream handshake never runs over a transport, so a peer owed
-	// obfuscation may only be dialled when the frames carry it themselves.
+	// UtpDialObfuscationSatisfied().
 	bool obfuscationSatisfied = false;
 	// ed2k-server vouched for this LowID peer's endpoint via OP_LOWID_HOLEPUNCH_INFO. A HighID
 	// peer is always dialled over TCP: it can take TCP, and TCP is faster.
@@ -60,6 +59,14 @@ inline EUtpDialDecision DecideUtpDial(const SUtpDialFacts &facts)
 			       !facts.proxyEnabled && facts.routableEndpoint && facts.obfuscationSatisfied
 		       ? EUtpDialDecision::TryUtp
 		       : EUtpDialDecision::PreserveLegacy;
+}
+
+// The stream handshake never runs over a transport, so only the frames can obfuscate the stream,
+// and their key needs the IP the peer sees us at. Without one, the stream goes plain, unless either
+// side requires obfuscation.
+inline bool UtpDialObfuscationSatisfied(bool framesObfuscated, bool eitherRequires)
+{
+	return framesObfuscated || !eitherRequires;
 }
 
 /** Whether this side keeps the already-found transport in a simultaneous dial. */
