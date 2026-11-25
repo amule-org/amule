@@ -97,7 +97,6 @@ public:
 		uint16_t peerPort,
 		IStreamTransportEvents *events,
 		bool inbound,
-		size_t readBound = CUtpStream::kDefaultReadBound,
 		CUtpReadWindowBudget::CLease readWindow = {})
 	: m_operations(operations)
 	, m_socket(socket)
@@ -105,7 +104,7 @@ public:
 	, m_peerPort(peerPort)
 	, m_inbound(inbound)
 	, m_events(events)
-	, m_stream(CUtpStream::kDefaultWriteBound, readBound)
+	, m_stream(CUtpStream::kDefaultWriteBound, readWindow.ReadBound())
 	, m_readWindow(std::move(readWindow))
 	{
 	}

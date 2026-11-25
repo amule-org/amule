@@ -428,8 +428,6 @@ TEST(UtpSocketTransport, AWideReadBoundIsTheOneApplied)
 {
 	FakeOperations ops;
 	CUtpReadWindowBudget budget;
-	CUtpReadWindowBudget::CLease lease;
-	const size_t bound = budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, lease);
 	{
 		CUtpSocketTransport transport(ops,
 			Handle(),
@@ -437,8 +435,7 @@ TEST(UtpSocketTransport, AWideReadBoundIsTheOneApplied)
 			4662,
 			nullptr,
 			true,
-			bound,
-			std::move(lease));
+			budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer));
 		transport.ApplyReceiveBound();
 		ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)ops.receiveBound);
 		ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());

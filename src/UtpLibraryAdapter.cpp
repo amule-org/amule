@@ -140,16 +140,13 @@ public:
 		if (socket == nullptr) {
 			return false;
 		}
-		CUtpReadWindowBudget::CLease readWindow;
-		const size_t readBound = m_readWindows.Take(m_sink->UdpReceiveBufferBytes(), readWindow);
 		auto pending = std::make_unique<CUtpSocketTransport>(*this,
 			socket,
 			CNetworkAddress::FromIPv4NetworkOrder(ip),
 			port,
 			nullptr,
 			false,
-			readBound,
-			std::move(readWindow));
+			m_readWindows.Take(m_sink->UdpReceiveBufferBytes()));
 		utp_set_userdata(socket, pending.get());
 		pending->ApplyReceiveBound();
 		pending->SetCryptParameters(encrypt, userHash);
@@ -1012,17 +1009,13 @@ private:
 
 		// Interface type so the seam can move out of it; the concrete pointer
 		// stays for the setup below.
-		CUtpReadWindowBudget::CLease readWindow;
-		const size_t readBound =
-			self.m_readWindows.Take(self.m_sink->UdpReceiveBufferBytes(), readWindow);
 		auto owned = std::make_unique<CUtpSocketTransport>(self,
 			args->socket,
 			CNetworkAddress::FromIPv4NetworkOrder(ip),
 			port,
 			nullptr,
 			true,
-			readBound,
-			std::move(readWindow));
+			self.m_readWindows.Take(self.m_sink->UdpReceiveBufferBytes()));
 		CUtpSocketTransport *raw = owned.get();
 		std::unique_ptr<IStreamTransport> transport(std::move(owned));
 		// Before admission can produce a callback that needs it.

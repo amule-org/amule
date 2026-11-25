@@ -1297,6 +1297,29 @@ TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 	Teardown(loop);
 }
 
+//! The peer offers twice the wide bound and we read nothing: delivery stalls just short of it.
+void AssertStallsAtTheWideBound(SLoopback &loop, IStreamTransport &transport)
+{
+	const size_t bound = CUtpReadWindowBudget::kWideReadBound;
+	std::vector<uint8_t> payload(bound * 2);
+	size_t offered = 0;
+	for (int round = 0; round < 256 && offered < payload.size(); ++round) {
+		utp_iovec vector{ payload.data() + offered, payload.size() - offered };
+		const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
+		if (accepted > 0) {
+			offered += static_cast<size_t>(accepted);
+		}
+		Pump(loop);
+	}
+	const size_t buffered = static_cast<CUtpSocketTransport &>(transport).ReadBufferSize();
+	CFormat stalled("buffered %u, bound %u");
+	const wxString detail = stalled % unsigned(buffered) % unsigned(bound);
+	// Past the default bound, so the wide one is in force, and stalled short of it.
+	ASSERT_TRUE_M(buffered > CUtpStream::kDefaultReadBound, detail);
+	ASSERT_TRUE_M(buffered <= bound, detail);
+	ASSERT_TRUE_M(buffered + 2048 >= bound, detail);
+}
+
 TEST(UtpLibraryAdapter, AStreamOnAFullSocketBufferStopsAtTheWideBound)
 {
 	SLoopback loop;
@@ -1310,26 +1333,27 @@ TEST(UtpLibraryAdapter, AStreamOnAFullSocketBufferStopsAtTheWideBound)
 	StartClient(loop);
 	Pump(loop);
 	ASSERT_TRUE(acceptor.accepted != nullptr);
+	AssertStallsAtTheWideBound(loop, *acceptor.accepted);
+	Teardown(loop);
+}
 
-	const size_t bound = CUtpReadWindowBudget::kWideReadBound;
-	std::vector<uint8_t> payload(bound * 2);
-	size_t offered = 0;
-	for (int round = 0; round < 256 && offered < payload.size(); ++round) {
-		utp_iovec vector{ payload.data() + offered, payload.size() - offered };
-		const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
-		if (accepted > 0) {
-			offered += static_cast<size_t>(accepted);
-		}
-		Pump(loop);
-	}
-	auto *utp = static_cast<CUtpSocketTransport *>(acceptor.accepted.get());
-	const size_t buffered = utp->ReadBufferSize();
-	CFormat stalled("buffered %u, bound %u");
-	const wxString detail = stalled % unsigned(buffered) % unsigned(bound);
-	// Past the default bound, so the wide one is in force, and stalled short of it.
-	ASSERT_TRUE_M(buffered > CUtpStream::kDefaultReadBound, detail);
-	ASSERT_TRUE_M(buffered <= bound, detail);
-	ASSERT_TRUE_M(buffered + 2048 >= bound, detail);
+TEST(UtpLibraryAdapter, ADialOnAFullSocketBufferStopsAtTheWideBound)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	sink.receiveBuffer = CUtpReadWindowBudget::kWideMinReceiveBuffer;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+	std::unique_ptr<IStreamTransport> transport;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, transport));
+	Pump(loop);
+	ASSERT_TRUE(transport->IsConnected());
+	ASSERT_TRUE(loop.clientSocket != nullptr);
+	// libutp's accepting side sends nothing until the dialer has.
+	ExchangeOneFrameEachWay(loop, *transport, 0x5A);
+	AssertStallsAtTheWideBound(loop, *transport);
 	Teardown(loop);
 }
 

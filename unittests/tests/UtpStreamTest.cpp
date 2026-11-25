@@ -479,22 +479,22 @@ DECLARE_SIMPLE(UtpReadWindowBudget)
 
 TEST(UtpReadWindowBudget, ACappedSocketBufferKeepsTheDefaultBound)
 {
-	// Linux's default net.core.rmem_max: a wider window only overflows it.
+	// Linux's default net.core.rmem_max.
 	CUtpReadWindowBudget budget;
-	CUtpReadWindowBudget::CLease lease;
-	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)budget.Take(212992, lease));
+	CUtpReadWindowBudget::CLease lease = budget.Take(212992);
+	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)lease.ReadBound());
 	ASSERT_FALSE(lease.HoldsWide());
 	ASSERT_EQUALS(0u, (unsigned)budget.WideStreams());
-	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)budget.Take(0, lease));
+	lease = budget.Take(0);
+	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)lease.ReadBound());
 }
 
 TEST(UtpReadWindowBudget, AFullSocketBufferGetsTheWideBoundUntilTheLeaseEnds)
 {
 	CUtpReadWindowBudget budget;
 	{
-		CUtpReadWindowBudget::CLease lease;
-		ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound,
-			(unsigned)budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, lease));
+		CUtpReadWindowBudget::CLease lease = budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer);
+		ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)lease.ReadBound());
 		ASSERT_TRUE(lease.HoldsWide());
 		ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());
 	}
@@ -505,26 +505,27 @@ TEST(UtpReadWindowBudget, StreamsPastTheCapGetTheDefaultBound)
 {
 	CUtpReadWindowBudget budget;
 	const size_t buffer = CUtpReadWindowBudget::kWideMinReceiveBuffer;
-	std::vector<CUtpReadWindowBudget::CLease> leases(CUtpReadWindowBudget::kMaxWideStreams);
-	for (auto &lease : leases) {
+	std::vector<CUtpReadWindowBudget::CLease> leases;
+	for (size_t i = 0; i < CUtpReadWindowBudget::kMaxWideStreams; ++i) {
+		leases.push_back(budget.Take(buffer));
 		ASSERT_EQUALS(
-			(unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)budget.Take(buffer, lease));
+			(unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)leases.back().ReadBound());
 	}
-	CUtpReadWindowBudget::CLease extra;
-	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)budget.Take(buffer, extra));
+	CUtpReadWindowBudget::CLease extra = budget.Take(buffer);
+	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)extra.ReadBound());
 	ASSERT_FALSE(extra.HoldsWide());
 
 	// A closed stream frees its share for the next one.
 	leases.pop_back();
-	ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)budget.Take(buffer, extra));
+	extra = budget.Take(buffer);
+	ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)extra.ReadBound());
 	ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kMaxWideStreams, (unsigned)budget.WideStreams());
 }
 
 TEST(UtpReadWindowBudget, AMovedLeaseReleasesOnce)
 {
 	CUtpReadWindowBudget budget;
-	CUtpReadWindowBudget::CLease first;
-	budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, first);
+	CUtpReadWindowBudget::CLease first = budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer);
 	{
 		CUtpReadWindowBudget::CLease second(std::move(first));
 		ASSERT_FALSE(first.HoldsWide());
@@ -533,9 +534,9 @@ TEST(UtpReadWindowBudget, AMovedLeaseReleasesOnce)
 	}
 	ASSERT_EQUALS(0u, (unsigned)budget.WideStreams());
 
-	// Reusing a lease for a new Take() gives back the share it held.
-	budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, first);
-	budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, first);
+	// Assigning a new lease gives back the share the old one held.
+	first = budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer);
+	first = budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer);
 	ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());
 }
 
@@ -544,7 +545,7 @@ TEST(UtpReadWindowBudget, ALeaseOutlivingItsBudgetReleasesSafely)
 	CUtpReadWindowBudget::CLease lease;
 	{
 		CUtpReadWindowBudget budget;
-		budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer, lease);
+		lease = budget.Take(CUtpReadWindowBudget::kWideMinReceiveBuffer);
 	}
 	ASSERT_TRUE(lease.HoldsWide());
 }

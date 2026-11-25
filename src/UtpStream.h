@@ -308,12 +308,13 @@ private:
  * Picks a new stream's read bound: CUtpStream::kDefaultReadBound, or kWideReadBound when the UDP
  * receive buffer can take it.
  *
- * The bound is the window the peer may fill in one round trip. On a lab rig at 50 and 100 ms,
- * 1 MiB moved 2.7 and 4 times more than 256 KiB with a 4 MiB socket buffer. libutp does not pace,
- * so a whole window can arrive as one burst, and with Linux's default 212992-byte buffer the wider
- * window only overflowed it (no gain). So a stream gets the wide bound only when the OS granted
- * kWideMinReceiveBuffer, as Windows and macOS do by default, and only while fewer than
- * kMaxWideStreams hold it: a slow reader can pin about twice its bound (kReadOverrunFactor).
+ * The bound is the window the peer may fill in one round trip. On a lab rig with a 4 MiB socket
+ * buffer, 1 MiB moved 1.9 times as much as 256 KiB at 50 ms and 3.7 times as much at 100 ms.
+ * libutp does not pace, so a whole window can arrive as one burst. With Linux's default
+ * 212992-byte buffer such bursts already overflow it at 50 ms, and there a single run of 1 MiB
+ * gained nothing. So a stream gets the wide bound only when the OS granted kWideMinReceiveBuffer,
+ * as Windows and macOS do by default, and only while fewer than kMaxWideStreams hold it: a slow
+ * reader can pin about twice its bound (kReadOverrunFactor).
  *
  * Take() is for the main thread; a lease may be released on any thread.
  */
@@ -345,6 +346,7 @@ public:
 		}
 		~CLease() { Release(); }
 		bool HoldsWide() const { return m_wide != nullptr; }
+		size_t ReadBound() const { return m_wide ? kWideReadBound : CUtpStream::kDefaultReadBound; }
 
 	private:
 		friend class CUtpReadWindowBudget;
@@ -359,16 +361,15 @@ public:
 		std::shared_ptr<std::atomic<size_t>> m_wide;
 	};
 
-	//! The read bound for a new stream on a socket with that receive buffer.
-	size_t Take(size_t receiveBufferBytes, CLease &lease)
+	//! The lease for a new stream on a socket with that receive buffer.
+	CLease Take(size_t receiveBufferBytes)
 	{
-		lease = CLease();
-		if (receiveBufferBytes < kWideMinReceiveBuffer || m_wide->load() >= kMaxWideStreams) {
-			return CUtpStream::kDefaultReadBound;
+		CLease lease;
+		if (receiveBufferBytes >= kWideMinReceiveBuffer && m_wide->load() < kMaxWideStreams) {
+			++*m_wide;
+			lease.m_wide = m_wide;
 		}
-		++*m_wide;
-		lease.m_wide = m_wide;
-		return kWideReadBound;
+		return lease;
 	}
 
 	size_t WideStreams() const { return m_wide->load(); }
