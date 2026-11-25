@@ -275,6 +275,20 @@ struct ForeignServerFacts
 	bool cryptLayerUdpEnabled = false;
 };
 
+// Whether one of these login attempts, a map of server sockets, is to the server at ip:port. That
+// server is ours before IsLocalServer() knows it, so it takes no cross-server request.
+template <typename Attempts, typename ServerOf>
+bool IsLoginAttemptTo(const Attempts &attempts, ServerOf serverOf, std::uint32_t ip, std::uint16_t port)
+{
+	for (const auto &attempt : attempts) {
+		const auto *server = attempt.second != nullptr ? serverOf(*attempt.second) : nullptr;
+		if (server != nullptr && server->GetIP() == ip && server->GetPort() == port) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // A source's server address is learnt from a peer, so only a server in our own list is asked. The
 // request is server-key obfuscated, so it also needs that server's UDP key for our address.
 inline bool ServerTakesForeignCallback(const ForeignServerFacts &facts)
@@ -294,15 +308,14 @@ inline bool ForeignCallbackServerAwaitsKey(const ForeignServerFacts &facts)
 // Whether a LowID source survives CanAddSource's LowID-while-firewalled drop. Since ed2k-server
 // 0.9.86 (ed2k-server#49) a LowID requester with NAT traversal gets only LowID sources that have it
 // too, and aMule qualifies through the UDP port it sends at login while LowIdHolePunch is on. Kept
-// are sources from our own hole-punch-capable server, and sources of another server that takes a
-// cross-server request, which we can ask while we announce the wake keepalive.
+// are sources from our own hole-punch-capable server while we are LowID there, and sources of another
+// server that takes a cross-server request, which we can ask while we announce the wake keepalive,
+// with or without a session of our own.
 inline bool ShouldKeepLowIdServerSource(const LowIdServerSourceFacts &facts)
 {
-	if (!facts.weAreLowId) {
-		return false;
-	}
 	if (facts.sourceServerIsOurCurrentServer) {
-		return facts.settingEnabled && facts.originIsLocalServer && facts.serverAnnouncesHolePunch;
+		return facts.weAreLowId && facts.settingEnabled && facts.originIsLocalServer &&
+		       facts.serverAnnouncesHolePunch;
 	}
 	return facts.wakeKeepaliveAnnounced && facts.sourceServerTakesForeignCallback;
 }

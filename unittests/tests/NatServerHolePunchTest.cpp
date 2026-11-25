@@ -26,6 +26,7 @@
 #include "NatServerHolePunch.h"
 
 #include <algorithm>
+#include <map>
 
 using namespace muleunit;
 using namespace NatServerHolePunch;
@@ -547,14 +548,52 @@ TEST(NatServerHolePunch, KeepsALowIdSourceOfAnotherServerThatTakesCrossServerReq
 	serverDoesNotTakeThem.sourceServerTakesForeignCallback = false;
 	ASSERT_FALSE(ShouldKeepLowIdServerSource(serverDoesNotTakeThem));
 
-	LowIdServerSourceFacts weAreHighId = facts;
-	weAreHighId.weAreLowId = false;
-	ASSERT_FALSE(ShouldKeepLowIdServerSource(weAreHighId));
+	// The request needs no LowID of ours, nor a session: our ID is stale while we are logged out.
+	LowIdServerSourceFacts noLowId = facts;
+	noLowId.weAreLowId = false;
+	ASSERT_TRUE(ShouldKeepLowIdServerSource(noLowId));
 
 	// A source on our own server is the same-server rule's alone.
 	LowIdServerSourceFacts ourServer = facts;
 	ourServer.sourceServerIsOurCurrentServer = true;
 	ASSERT_FALSE(ShouldKeepLowIdServerSource(ourServer));
+}
+
+namespace
+{
+struct FakeServer
+{
+	std::uint32_t ip;
+	std::uint16_t port;
+	std::uint32_t GetIP() const { return ip; }
+	std::uint16_t GetPort() const { return port; }
+};
+struct FakeServerSocket
+{
+	FakeServer *cur_server;
+};
+} // namespace
+
+TEST(NatServerHolePunch, AServerWeAreLoggingInToIsNotAskedAcrossServers)
+{
+	FakeServer target{ 0x0a000001, 4661 };
+	FakeServer other{ 0x0a000002, 4661 };
+	FakeServerSocket toOther{ &other };
+	FakeServerSocket toTarget{ &target };
+	FakeServerSocket unresolved{ nullptr };
+	std::map<std::uint64_t, FakeServerSocket *> attempts;
+	const auto serverOf = [](const FakeServerSocket &socket) { return socket.cur_server; };
+	ASSERT_FALSE(IsLoginAttemptTo(attempts, serverOf, target.ip, target.port));
+
+	attempts[1] = &toOther;
+	attempts[2] = &unresolved;
+	attempts[3] = nullptr;
+	ASSERT_FALSE(IsLoginAttemptTo(attempts, serverOf, target.ip, target.port));
+	// The same address on another port is another server.
+	ASSERT_FALSE(IsLoginAttemptTo(attempts, serverOf, other.ip, 4242));
+
+	attempts[4] = &toTarget;
+	ASSERT_TRUE(IsLoginAttemptTo(attempts, serverOf, target.ip, target.port));
 }
 
 TEST(NatServerHolePunch, AServerTakesCrossServerRequestsOnlyWithItsFlagAndAKey)

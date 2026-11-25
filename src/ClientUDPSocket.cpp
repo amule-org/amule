@@ -104,15 +104,10 @@ constexpr bool kQuicBuilt = false;
 } // namespace
 
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
-namespace
+bool CClientUDPSocket::NatTObfuscationAvailable(uint32_t ip)
 {
-//! Our user hash may only leave obfuscated, and only where the user allows the crypt layer. The key
-//! holds our IP, so not the host-name fallback (ClientUdpKeyIP()).
-bool NatTObfuscationAvailable()
-{
-	return thePrefs::IsClientCryptLayerSupported() && theApp->GetPublicIP(true) != 0;
+	return thePrefs::IsClientCryptLayerSupported() && ClientKeyIP(ip) != 0;
 }
-} // namespace
 
 bool CClientUDPSocket::SendNatKeyFrame(uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key)
 {
@@ -260,7 +255,7 @@ uint16_t CClientUDPSocket::ExternalUdpPortForPeers(uint64_t now) const
 void CClientUDPSocket::MaybeSendSourceEcho(
 	uint32_t ip, uint16_t port, uint8_t firstByte, size_t length, bool decrypted)
 {
-	if (!NatTObfuscationAvailable()) {
+	if (!NatTObfuscationAvailable(ip)) {
 		return;
 	}
 	// Sent obfuscated, so it has no fixed plain signature. The split side can decode it: only its
@@ -368,10 +363,7 @@ NatKeyFrame::Callbacks CClientUDPSocket::KeyFrameCallbacks()
 {
 	NatKeyFrame::Callbacks callbacks;
 	callbacks.enabled = [] { return QuicNatTEnabled(); };
-	callbacks.obfuscationOn = [this](uint32_t ip) {
-		return NatTObfuscationAvailable() ||
-		       (thePrefs::IsClientCryptLayerSupported() && StreamKeyIP(ip) != 0);
-	};
+	callbacks.obfuscationOn = [this](uint32_t ip) { return NatTObfuscationAvailable(ip); };
 	callbacks.sendKeyFrame = [this](uint32_t ip, uint16_t port, const NatKeyFrame::Hash &key) -> bool {
 		return SendNatKeyFrame(ip, port, key);
 	};
@@ -634,7 +626,7 @@ void CClientUDPSocket::SendUtpKeyFrame(uint32_t ip, uint16_t port, const uint8_t
 {
 	wxASSERT(wxIsMainThread());
 	const std::uint64_t now = ::GetTickCount64();
-	if (!NatTObfuscationAvailable() || !m_utpKeyFrameGate.TryAcquire(ip, port, now)) {
+	if (!NatTObfuscationAvailable(ip) || !m_utpKeyFrameGate.TryAcquire(ip, port, now)) {
 		return;
 	}
 	NatKeyFrame::Hash key{};
@@ -672,7 +664,7 @@ void CClientUDPSocket::HandleUtpKeyFrame(const uint8_t *payload, size_t length, 
 	}
 	const std::optional<NatKeyFrame::Hash> key = NatKeyFrame::AcceptUtpKeyFrame(
 		m_utpExpectedPeers, m_utpHeldKeys, ip, port, *announced, ::GetTickCount64());
-	if (key && NatTObfuscationAvailable() && m_utp.ApplyAnnouncedKey(ip, port, key->data())) {
+	if (key && NatTObfuscationAvailable(ip) && m_utp.ApplyAnnouncedKey(ip, port, key->data())) {
 		AddDebugLogLineN(logClientUDP,
 			CFormat("NAT-T key frame from %s:%u: obfuscating our uTP dial with its hash") %
 				Uint32toStringIP(ip) % port);
@@ -688,7 +680,7 @@ NatKeyFrame::UtpSynPlan CClientUDPSocket::PrepareUtpSynReply(uint32_t ip, uint16
 		ip,
 		port,
 		synObfuscated,
-		NatTObfuscationAvailable(),
+		NatTObfuscationAvailable(ip),
 		now);
 	if (plan.sendKeyFrame && !SendNatKeyFrame(ip, port, *plan.key)) {
 		m_utpKeyFrameGate.Forget(ip, port);

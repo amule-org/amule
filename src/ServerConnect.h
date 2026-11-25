@@ -147,8 +147,11 @@ public:
 	//! Clears the pending requests, expected endpoints and waiting dial backs: called on a new
 	//! login, since a previous connection's target IDs mean nothing on a different server.
 	void ResetLowIdHolePunchState();
-	//! The listed server at that TCP address, when it is not ours and takes a cross-server NAT
-	//! callback request from us (NatServerHolePunch::ServerTakesForeignCallback()). A server that
+	//! A login to this server is under way.
+	bool IsLoggingInTo(uint32 dwIP, uint16 nPort) const;
+	//! The listed server at that TCP address, when it is not ours, nor one we are logging in to, and
+	//! takes a cross-server NAT callback request from us
+	//! (NatServerHolePunch::ServerTakesForeignCallback()). A server that
 	//! lacks only its UDP key is not returned, but its key is recovered for a later request. The
 	//! LowID source check calls it too, so a source from such a server, dropped until the key
 	//! exists, also brings that server's status ping forward.
