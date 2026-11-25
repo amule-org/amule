@@ -2280,8 +2280,8 @@ bool CUpDownClient::ServerCallbackFailed(const wxString &reason)
 	if (m_uploadCallbackRoute == EContactRouteReport::ServerCallback) {
 		ClearUploadCallbackInFlight();
 	}
-	// A socket means the peer reached us after all; its own handling decides.
-	if (m_socket != nullptr || GetDownloadState() != DS_WAITCALLBACK ||
+	// A connected socket means the peer reached us after all; its own handling decides.
+	if ((m_socket != nullptr && m_socket->IsConnected()) || GetDownloadState() != DS_WAITCALLBACK ||
 		m_sourceRoute != ESourceRoute::ServerCallback) {
 		return false;
 	}
