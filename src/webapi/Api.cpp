@@ -80,6 +80,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <fstream>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <cctype>
@@ -4889,6 +4890,85 @@ CHttpServer::Response CApiDispatcher::HandleDownloadAdd(const CHttpServer::Reque
 
 namespace
 {
+struct DownloadPatchOp
+{
+	ec_opcode_t opcode;
+	std::optional<ec_tagname_t> tag = std::nullopt;
+	std::uint8_t value = 0;
+};
+
+// The single and bulk endpoints share these fields and apply them in this order.
+std::unique_ptr<CHttpServer::Response> ParseDownloadPatchOps(
+	const picojson::object &obj, std::vector<DownloadPatchOp> &ops)
+{
+	// action: a command, not a state. The read side's `status` has eleven values,
+	// of which PATCH accepts three, in a different tense.
+	{
+		const auto it = obj.find("action");
+		if (it != obj.end()) {
+			if (!it->second.is<std::string>()) {
+				return BadRequestPtr(
+					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
+			}
+			const std::string &v = it->second.get<std::string>();
+			ec_opcode_t op;
+			if (v == "pause")
+				op = EC_OP_PARTFILE_PAUSE;
+			else if (v == "resume")
+				op = EC_OP_PARTFILE_RESUME;
+			else if (v == "stop")
+				op = EC_OP_PARTFILE_STOP;
+			else {
+				return BadRequestPtr(
+					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
+			}
+			ops.push_back({ op });
+		}
+	}
+
+	// priority: the kPrioDownload domain. "very_low" and "release" are upload-side
+	// only and are refused here by design; see kFilePriorities.
+	{
+		const auto it = obj.find("priority");
+		if (it != obj.end()) {
+			if (!it->second.is<std::string>()) {
+				return BadRequestPtr("`priority` must be a string");
+			}
+			std::uint8_t code = 0;
+			if (!FilePriorityToCode(it->second.get<std::string>(), kPrioDownload, code)) {
+				return BadRequestPtr(FilePriorityAccepted(kPrioDownload).c_str());
+			}
+			ops.push_back({ EC_OP_PARTFILE_PRIO_SET, EC_TAG_PARTFILE_PRIO, code });
+		}
+	}
+
+	// category: integer
+	{
+		const auto it = obj.find("category_index");
+		if (it != obj.end()) {
+			std::uint8_t category = 0;
+			const char *error = nullptr;
+			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
+				return BadRequestPtr(error);
+			}
+			ops.push_back({ EC_OP_PARTFILE_SET_CAT, EC_TAG_PARTFILE_CAT, category });
+		}
+	}
+
+	return nullptr;
+}
+
+std::unique_ptr<CECPacket> MakeDownloadPatchPacket(const DownloadPatchOp &op, const CMD4Hash &file_hash)
+{
+	auto packet = std::make_unique<CECPacket>(op.opcode);
+	CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
+	if (op.tag) {
+		hash_tag.AddTag(CECTag(*op.tag, op.value));
+	}
+	packet->AddTag(hash_tag);
+	return packet;
+}
+
 // Prepare every command before sending any of them: malformed later fields must not
 // leave earlier fields applied. Core/transport failures still stop at the failing command.
 struct FilePatchCommand
@@ -5032,76 +5112,10 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		return ErrorResponse(500, "internal_error", "failed to decode partfile hash");
 	}
 
-	// Preserve the command order, but validate all fields before the first EC mutation.
-	std::vector<FilePatchCommand> commands;
-	auto add_op = [&](ec_opcode_t op, bool has_inner, ec_tagname_t inner_name, std::uint8_t inner_value) {
-		auto packet = std::make_unique<CECPacket>(op);
-		CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
-		if (has_inner) {
-			hash_tag.AddTag(CECTag(inner_name, inner_value));
-		}
-		packet->AddTag(hash_tag);
-		commands.push_back({ std::move(packet), "EC roundtrip failed" });
-	};
-
-	// action: a command, not a state. The read side's `status` has eleven values,
-	// of which this accepted three, in a different tense.
-	{
-		const auto it = obj.find("action");
-		if (it != obj.end()) {
-			if (!it->second.is<std::string>()) {
-				return ErrorResponse(400,
-					"bad_request",
-					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
-			}
-			const std::string &v = it->second.get<std::string>();
-			ec_opcode_t op;
-			if (v == "pause")
-				op = EC_OP_PARTFILE_PAUSE;
-			else if (v == "resume")
-				op = EC_OP_PARTFILE_RESUME;
-			else if (v == "stop")
-				op = EC_OP_PARTFILE_STOP;
-			else {
-				return ErrorResponse(400,
-					"bad_request",
-					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
-			}
-			add_op(op, /*has_inner=*/false, static_cast<ec_tagname_t>(0), 0);
-		}
-	}
-
-	// priority: the kPrioDownload domain. "very_low" and "release" are upload-side
-	// only and are refused here by design; see kFilePriorities.
-	{
-		const auto it = obj.find("priority");
-		if (it != obj.end()) {
-			if (!it->second.is<std::string>()) {
-				return ErrorResponse(400, "bad_request", "`priority` must be a string");
-			}
-			std::uint8_t code = 0;
-			if (!FilePriorityToCode(it->second.get<std::string>(), kPrioDownload, code)) {
-				return ErrorResponse(
-					400, "bad_request", FilePriorityAccepted(kPrioDownload).c_str());
-			}
-			add_op(EC_OP_PARTFILE_PRIO_SET, /*has_inner=*/true, EC_TAG_PARTFILE_PRIO, code);
-		}
-	}
-
-	// category: integer
-	{
-		const auto it = obj.find("category_index");
-		if (it != obj.end()) {
-			std::uint8_t category = 0;
-			const char *error = nullptr;
-			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
-				return ErrorResponse(400, "bad_request", error);
-			}
-			add_op(EC_OP_PARTFILE_SET_CAT,
-				/*has_inner=*/true,
-				EC_TAG_PARTFILE_CAT,
-				category);
-		}
+	// Validate all fields before the first EC mutation.
+	std::vector<DownloadPatchOp> ops;
+	if (auto err = ParseDownloadPatchOps(obj, ops)) {
+		return *err;
 	}
 
 	// a4af_auto: a SET, not a toggle.
@@ -5117,11 +5131,15 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 			if (!it->second.is<bool>()) {
 				return ErrorResponse(400, "bad_request", "`a4af_auto` must be a boolean");
 			}
-			add_op(EC_OP_PARTFILE_SET_A4AF_AUTO,
-				/*has_inner=*/true,
+			ops.push_back({ EC_OP_PARTFILE_SET_A4AF_AUTO,
 				EC_TAG_PARTFILE_A4AFAUTO,
-				static_cast<std::uint8_t>(it->second.get<bool>() ? 1 : 0));
+				static_cast<std::uint8_t>(it->second.get<bool>() ? 1 : 0) });
 		}
+	}
+
+	std::vector<FilePatchCommand> commands;
+	for (const auto &op : ops) {
+		commands.push_back({ MakeDownloadPatchPacket(op, file_hash), "EC roundtrip failed" });
 	}
 
 	CHttpServer::Response error;
@@ -9156,62 +9174,10 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 	if (!ParseBulkHashes(obj, hashes, bad))
 		return bad;
 
-	// Validate the patch ONCE -- the same op list applies to every hash, so a malformed
-	// patch is a 400 for the whole request; per-hash problems surface per item. Fixed
-	// order (status, priority, category) keeps the effect deterministic.
-	struct PatchOp
-	{
-		ec_opcode_t op;
-		bool has_inner;
-		ec_tagname_t inner_name;
-		std::uint8_t inner_value;
-	};
-	std::vector<PatchOp> ops;
-	{
-		const auto it = obj.find("action");
-		if (it != obj.end()) {
-			if (!it->second.is<std::string>())
-				return ErrorResponse(400,
-					"bad_request",
-					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
-			const std::string &v = it->second.get<std::string>();
-			if (v == "pause")
-				ops.push_back(
-					{ EC_OP_PARTFILE_PAUSE, false, static_cast<ec_tagname_t>(0), 0 });
-			else if (v == "resume")
-				ops.push_back(
-					{ EC_OP_PARTFILE_RESUME, false, static_cast<ec_tagname_t>(0), 0 });
-			else if (v == "stop")
-				ops.push_back(
-					{ EC_OP_PARTFILE_STOP, false, static_cast<ec_tagname_t>(0), 0 });
-			else
-				return ErrorResponse(400,
-					"bad_request",
-					"`action` must be one of \"pause\", \"resume\" or \"stop\"");
-		}
-	}
-	{
-		const auto it = obj.find("priority");
-		if (it != obj.end()) {
-			if (!it->second.is<std::string>())
-				return ErrorResponse(400, "bad_request", "`priority` must be a string");
-			std::uint8_t code = 0;
-			if (!FilePriorityToCode(it->second.get<std::string>(), kPrioDownload, code))
-				return ErrorResponse(
-					400, "bad_request", FilePriorityAccepted(kPrioDownload).c_str());
-			ops.push_back({ EC_OP_PARTFILE_PRIO_SET, true, EC_TAG_PARTFILE_PRIO, code });
-		}
-	}
-	{
-		const auto it = obj.find("category_index");
-		if (it != obj.end()) {
-			std::uint8_t category = 0;
-			const char *error = nullptr;
-			if (!webapi::ParseCategoryIndexField(it->second, category, error)) {
-				return ErrorResponse(400, "bad_request", error);
-			}
-			ops.push_back({ EC_OP_PARTFILE_SET_CAT, true, EC_TAG_PARTFILE_CAT, category });
-		}
+	// Every hash uses the same validated operation list.
+	std::vector<DownloadPatchOp> ops;
+	if (auto err = ParseDownloadPatchOps(obj, ops)) {
+		return *err;
 	}
 	if (ops.empty())
 		return ErrorResponse(400,
@@ -9235,13 +9201,9 @@ CHttpServer::Response CApiDispatcher::HandleDownloadsBulkPatch(const CHttpServer
 			continue;
 		}
 		bool item_ok = true;
-		for (const PatchOp &pop : ops) {
-			std::unique_ptr<CECPacket> p(new CECPacket(pop.op));
-			CECTag hash_tag(EC_TAG_PARTFILE, file_hash);
-			if (pop.has_inner)
-				hash_tag.AddTag(CECTag(pop.inner_name, pop.inner_value));
-			p->AddTag(hash_tag);
-			const CECPacket *ec_resp = m_app.SendRecvSerialized(p.get());
+		for (const auto &op : ops) {
+			const auto packet = MakeDownloadPatchPacket(op, file_hash);
+			const CECPacket *ec_resp = m_app.SendRecvSerialized(packet.get());
 			if (!ec_resp) {
 				results.push_back(BulkErr(raw, 503, "ec_unavailable", "EC roundtrip failed"));
 				item_ok = false;
