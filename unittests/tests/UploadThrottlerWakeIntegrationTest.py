@@ -116,11 +116,12 @@ def run(binary, warmup, seconds):
                 assert not errors, errors
                 window = [t for t in arrivals if begin <= t <= end]
                 assert len(window) > 1, 'no upload data arrived'
-                pauses = [round((b - a) * 1000) for a, b in zip(window, window[1:]) if (b - a) * 1000 > PAUSE_MS]
+                gaps = [round((b - a) * 1000) for a, b in zip(window, window[1:])]
+                pauses = [gap for gap in gaps if gap > PAUSE_MS]
                 assert len(pauses) <= ALLOWED_PAUSES, (
                     f'upload stalled while the throttler slept: pauses of {pauses} ms in {seconds:g} s '
                     f'({len(window)} packets)')
-                print(f'OK: {len(window)} packets in {seconds:g} s, pauses over {PAUSE_MS} ms: {pauses}')
+                print(f'OK: {len(window)} packets in {seconds:g} s, largest pause {max(gaps)} ms, over {PAUSE_MS} ms: {pauses}')
             finally:
                 stop.set()
                 try:
