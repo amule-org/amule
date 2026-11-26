@@ -1711,7 +1711,9 @@ uint32 CPartFile::Process(uint8 m_icounter)
 				cur_src->RetryLowIdHolePunchRequest();
 #endif
 #ifdef ENABLE_IPV6
-				cur_src->RetryIPv6CallbackRequest();
+				if (cur_src->RetryIPv6CallbackRequest()) {
+					break;
+				}
 #endif
 				if (cur_src->HasLowID() && !theApp->CanDoCallback(cur_src->GetServerIP(),
 								   cur_src->GetServerPort())) {

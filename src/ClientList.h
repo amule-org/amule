@@ -352,7 +352,7 @@ public:
 	{
 		m_currentDirectCallbacks.remove(CCLIENTREF(toRemove, ""));
 	}
-	// OP_CALLBACKREQUESTs waiting for the peer to connect
+	// OP_CALLBACKREQUESTs and OP_IPV6_CALLBACK_REQUESTs waiting for the peer to connect
 	//! @a windowMs: how long the request can still be answered.
 	void AddServerCallbackRequest(CUpDownClient *client, uint64_t windowMs);
 	void RemoveServerCallbacks(CUpDownClient *client)

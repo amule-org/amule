@@ -34,8 +34,9 @@
 
 /**
  * Our callback requests to the server waiting for their peer to connect, one entry per request:
- * the server answers each one it refuses. A refusal (OP_CALLBACK_FAIL) names no request, so it is
- * known to be a request's own only while that request is the one out.
+ * the server answers each one it refuses. An empty refusal (OP_CALLBACK_FAIL) names no request, so
+ * it is known to be a request's own only while that request is the one out; the long one names its
+ * target (TakeFirst()).
  */
 template <typename Client> class CServerCallbackRequests
 {

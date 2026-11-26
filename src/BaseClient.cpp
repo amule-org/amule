@@ -89,8 +89,8 @@
 #include "Statistics.h"      // Needed for theStats
 #include "ClientUDPSocket.h"
 #include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
-#include "ServerIPv6Callback.h"  // Needed for ShouldRequestIPv6Callback
 #ifdef ENABLE_IPV6
+#include "ServerIPv6Callback.h"     // Needed for ShouldRequestIPv6Callback
 #include "AdvertisedIPv6.h"         // Needed for AdvertisedIPv6ForPeers
 #include "IPv6ReachabilityProof.h"  // Needed for inbound IPv6 hello proof
 #include "IPv6ChangeNotification.h" // Needed for OP_CHANGE_CLIENT_IP policy
@@ -2334,13 +2334,15 @@ bool CUpDownClient::TrySendIPv6CallbackRequest(bool fromLowToLowWait)
 	m_ipv6CallbackPending = true;
 	m_ipv6CallbackFromWait = fromLowToLowWait;
 	m_nextIPv6CallbackTry = now + thePrefs::GetSourceReaskTime();
+	// An ask: else the DS_WAITCALLBACK reask sends a retry from the wait a second time.
+	m_dwLastAskedTime = now;
 	theApp->clientlist->AddServerCallbackRequest(this, kIPv6CallbackAnswerMs);
 	SetDownloadState(DS_WAITCALLBACK);
 	NoteContactStep(EContactRouteReport::ServerCallback);
 	return true;
 }
 
-void CUpDownClient::RetryIPv6CallbackRequest()
+bool CUpDownClient::RetryIPv6CallbackRequest()
 {
 	const uint64 now = ::GetTickCount64();
 	const bool natStepOut = m_lastContactRoute == EContactRouteReport::ForeignNatCallback ||
@@ -2351,8 +2353,9 @@ void CUpDownClient::RetryIPv6CallbackRequest()
 			m_nextIPv6CallbackTry,
 			natStepOut,
 			now >= m_contactStepAt ? now - m_contactStepAt : 0)) {
-		TrySendIPv6CallbackRequest(true);
+		return TrySendIPv6CallbackRequest(true);
 	}
+	return false;
 }
 
 void CUpDownClient::IPv6CallbackFailed(const wxString &why)

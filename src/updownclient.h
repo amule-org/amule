@@ -1162,8 +1162,8 @@ public:
 	//! Our request's answer window passed (CServerCallbackRequests).
 	void ServerCallbackExpired();
 #ifdef ENABLE_IPV6
-	//! From the LowID-to-LowID wait: asks the IPv6 callback again once it is due.
-	void RetryIPv6CallbackRequest();
+	//! From the LowID-to-LowID wait: asks the IPv6 callback again once it is due. Whether it did.
+	bool RetryIPv6CallbackRequest();
 #endif
 	uint64_t GetLastDirectCallbackRequest() const { return m_lastDirectCallbackRequest; }
 	bool HasObfuscatedConnectionBeenEstablished() const { return m_hasbeenobfuscatinglately; }

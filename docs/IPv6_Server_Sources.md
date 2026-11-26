@@ -2,10 +2,10 @@
 
 This document specifies aMule's experimental support for the eD2k server-side
 IPv6 extension agreed between eMuleQt, eNode-go and this project: advertising a
-client's IPv6 address at login, receiving IPv6 sources in
-`OP_FOUNDSOURCES` / `OP_FOUNDSOURCES_OBFU`, and the IPv6 server callback. It
-does not cover connecting to a server over an IPv6 transport, which is out of
-scope, nor `OP_SERVERIDENT`'s
+client's IPv6 address at login, and receiving IPv6 sources in
+`OP_FOUNDSOURCES` / `OP_FOUNDSOURCES_OBFU`. It also covers the IPv6 server
+callback, an ed2k-server proposal (below). It does not cover connecting to a
+server over an IPv6 transport, which is out of scope, nor `OP_SERVERIDENT`'s
 `ST_IPV6` tag, which this implementation does not read. It reads
 `ST_IPV6_STATUS`, the probe verdict (below).
 
@@ -206,7 +206,7 @@ proposal still to be agreed with eNode-go.
     the next `OP_SERVERIDENT` offers the callback again.
   - `6` (the source did not opt in): that source is not asked again in this server session.
   - `8` (over the relay allowance): the source is asked again after 30 s, not after the source
-    reask time.
+    reask time, or when a NAT-T step sent at the refusal has had its 60 s.
   - `4` (the source is us), `5` (the source is gone), `7` (the source is unreachable), and any
     other value end only that request.
 
