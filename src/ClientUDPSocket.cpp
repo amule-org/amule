@@ -595,6 +595,7 @@ void CClientUDPSocket::TickUtp()
 	wxASSERT(wxIsMainThread());
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	TickLugdunumCallbackRendezvous();
+	TickKadRendezvous(::GetTickCount64());
 #endif
 	m_utp.Tick();
 }
@@ -1346,6 +1347,72 @@ void CClientUDPSocket::SendDueLowIdHolePunches(uint64 now)
 	}
 }
 
+bool CClientUDPSocket::StartKadRendezvous(const NatRendezvous::SKadRendezvousTarget &target)
+{
+	const uint64 now = ::GetTickCount64();
+	if (!Ok() || target.udpPort == 0 || !IsRendezvousPeerAllowed(target.ip) ||
+		!m_kadRendezvousRequests.Start(target, now)) {
+		return false;
+	}
+	// Recorded before the punch, as on every path: we answer the target's CAPS only from an
+	// expected peer, and the hash lets its hello find this attempt.
+	ExpectNatTPeer(target.ip, target.udpPort, &target.hash);
+	NatServerHolePunch::IPv4 peerIP{};
+	PokeUInt32(peerIP.data(), target.ip);
+	StartLowIdHolePunchSchedule(
+		peerIP, target.udpPort, now, NatServerHolePunch::RendezvousPath::KadBuddy, target.hash);
+	TickKadRendezvous(now);
+	return true;
+}
+
+void CClientUDPSocket::TickKadRendezvous(uint64 now)
+{
+	for (const NatRendezvous::SKadRendezvousAction &action : m_kadRendezvousRequests.TakeDue(now)) {
+		const NatRendezvous::SKadRendezvousTarget &target = action.target;
+		switch (action.kind) {
+		case NatRendezvous::SKadRendezvousAction::Send: {
+			const uint8_t localTransports = ServedNatTTransports();
+			const std::vector<std::uint8_t> envelope = NatRendezvous::BuildRendezvousEnvelope(
+				target.buddyID,
+				[] {
+					NatRendezvous::UserHash hash{};
+					std::copy_n(
+						thePrefs::GetUserHash().GetHash(), hash.size(), hash.begin());
+					return hash;
+				}(),
+				NatRendezvous::RequesterConnectOptions(
+					Kademlia::CPrefs::GetMyConnectOptions(), localTransports),
+				target.fileHash,
+				0,
+				thePrefs::GetEffectiveUDPPort(),
+				NatRendezvous::RequesterTransportHint(localTransports));
+			CMemFile data(envelope.data(), envelope.size());
+			CPacket *packet = new CPacket(data, OP_EMULEPROT, OP_REASKCALLBACKUDP);
+			AddDebugLogLineN(logClientUDP,
+				"Client UDP socket: send OP_REASKCALLBACKUDP carrying a rendezvous for " +
+					Uint32_16toStringIP_Port(target.ip, target.udpPort));
+			theStats::AddUpOverheadOther(packet->GetPacketSize());
+			SendPacket(packet, target.buddyIP, target.buddyPort, false, nullptr, true, 0);
+			break;
+		}
+		case NatRendezvous::SKadRendezvousAction::FallbackDial:
+			AddDebugLogLineN(logClientUDP,
+				"No punch from " + Uint32_16toStringIP_Port(target.ip, target.udpPort) +
+					": dialling its Kad endpoint");
+			DialLowIdHolePunchPeer(target.ip,
+				target.tcpPort,
+				target.udpPort,
+				NatServerHolePunch::VouchedPeer{ target.hash, std::nullopt });
+			break;
+		case NatRendezvous::SKadRendezvousAction::Expired:
+			AddDebugLogLineN(logClientUDP,
+				"Rendezvous for " + Uint32_16toStringIP_Port(target.ip, target.udpPort) +
+					" timed out");
+			break;
+		}
+	}
+}
+
 void CClientUDPSocket::ResetLowIdHolePunchSchedules()
 {
 	m_lowIdHolePunchSchedules.ClearServerPaths();
@@ -1568,6 +1635,9 @@ bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint
 	NatServerHolePunch::IPv4 peer{};
 	PokeUInt32(peer.data(), ip);
 	m_lowIdHolePunchSchedules.CancelPeer(peer, peerHash);
+	if (m_kadRendezvousRequests.Complete(ip, peerHash)) {
+		return true;
+	}
 	const std::optional<NatServerHolePunch::RendezvousPath> path =
 		m_rendezvousOutcomes.TakeSuccess(ip, peerHash, ::GetTickCount64());
 	if (!path) {
@@ -1779,6 +1849,17 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 	PokeUInt32(source.data(), host);
 	// A punch from the peer is what its schedule was for, whatever path started it.
 	m_lowIdHolePunchSchedules.Cancel(source, port);
+	// A Kad rendezvous we asked for needs no server: the target's punch is the dial's cue.
+	if (const auto target = m_kadRendezvousRequests.TakePunch(host, port, ::GetTickCount64())) {
+		AddDebugLogLineN(logClientUDP,
+			"OP_HOLEPUNCH from " + Uint32_16toStringIP_Port(host, port) +
+				" answers our rendezvous; dialling");
+		DialLowIdHolePunchPeer(host,
+			target->tcpPort,
+			port,
+			NatServerHolePunch::VouchedPeer{ target->hash, std::nullopt });
+		return;
+	}
 	CServerConnect *connect = theApp->serverconnect;
 	if (connect == nullptr) {
 		return;
@@ -2053,6 +2134,16 @@ void CClientUDPSocket::ProcessPacket(
 	case OP_FILENOTFOUND: {
 		AddDebugLogLineN(logClientUDP, "Client UDP socket: OP_FILENOTFOUND");
 		theStats::AddDownOverheadFileRequest(size);
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+		// A target that read our 0xA0 as a reask for a zero file hash does not speak the
+		// rendezvous. The source is not dead: leave it, and never ask it this way again.
+		if (m_kadRendezvousRequests.NoRendezvous(host, port)) {
+			AddDebugLogLineN(logClientUDP,
+				"No rendezvous at " + Uint32_16toStringIP_Port(host, port) +
+					": it answered not found");
+			break;
+		}
+#endif
 		CUpDownClient *sender = theApp->downloadqueue->GetDownloadClientByIP_UDP(host, port);
 		if (sender) {
 			sender->UDPReaskFNF(); // may delete 'sender'!

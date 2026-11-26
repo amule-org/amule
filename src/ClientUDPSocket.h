@@ -121,6 +121,13 @@ public:
 		uint64 now,
 		NatServerHolePunch::RendezvousPath path,
 		const std::optional<NatServerHolePunch::Hash> &peerHash);
+	//! Starts the requester side of a Kad buddy rendezvous for @a target: expects and punches its
+	//! Kad endpoint, then asks its buddy (0x94 carrying 0xA0) now and twice more, 5 s apart. False
+	//! when the target is not allowed, or an attempt, a cooldown or a no-rendezvous mark holds it.
+	bool StartKadRendezvous(const NatRendezvous::SKadRendezvousTarget &target);
+	//! Sends what the requester attempts owe: the repeats of the ask, the one dial of the target's
+	//! Kad endpoint when no punch came, and the end of an attempt that took too long.
+	void TickKadRendezvous(uint64 now);
 	//! Sends the punches and sweeps that have come due. Called from every OnCoreTimer tick.
 	void SendDueLowIdHolePunches(uint64 now);
 	//! Forgets the punches the server paths owe; the sweep budget is kept, so a server cannot buy
@@ -258,6 +265,8 @@ private:
 	NatServerHolePunch::ForeignCallbackRequests m_foreignCallbacks;
 	// The Kad buddy's rendezvous limits, apart from the server paths' action budget.
 	NatRendezvous::CServedRendezvousGate m_servedRendezvous;
+	// The rendezvous we ask for ourselves, through the buddy of a firewalled Kad source.
+	NatRendezvous::CKadRendezvousRequests m_kadRendezvousRequests;
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT

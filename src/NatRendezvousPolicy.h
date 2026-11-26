@@ -203,6 +203,10 @@ struct SKadRendezvousTarget
 	KadRendezvousHash hash;
 	std::uint32_t buddyIP;
 	std::uint16_t buddyPort;
+	// What the send and the dial need; the tracker itself matches on ip, port and hash only.
+	std::uint16_t tcpPort = 0;
+	KadRendezvousHash buddyID{};
+	KadRendezvousHash fileHash{};
 };
 
 struct SKadRendezvousAction

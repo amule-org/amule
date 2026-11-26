@@ -251,7 +251,7 @@ TEST(NatRendezvousPolicy, RequesterAttemptExpiresAndCoolsDown)
 	const auto expired = requests.TakeDue(1000 + NatRendezvous::kRequesterAttemptMs);
 	ASSERT_EQUALS(1u, CountOf(expired, Action::Expired));
 	ASSERT_FALSE(requests.TakePunch(kTargetIP, kTargetPort, 1000 + NatRendezvous::kRequesterAttemptMs)
-			     .has_value());
+			.has_value());
 
 	const std::uint64_t expiredAt = 1000 + NatRendezvous::kRequesterAttemptMs;
 	ASSERT_FALSE(requests.Start(Target(1), expiredAt + NatRendezvous::kRequesterCooldownMs - 1));

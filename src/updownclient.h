@@ -442,6 +442,11 @@ private:
 	//! whether the request went out; a busy server slot is not a send.
 	bool TrySendLowIdHolePunchRequest();
 	bool m_lowIdHolePunchRequested = false;
+	//! Asks this source's buddy for a rendezvous (0x94 carrying 0xA0) and punches the source's Kad
+	//! endpoint, when it is a LowID Kad source with a buddy and nothing else can reach it. True when
+	//! an attempt started. Called last from TryToContact's LowID->LowID decline.
+	bool TrySendKadBuddyRendezvous();
+	uint32 m_kadSourceIP = 0;
 	NatServerHolePunch::HolePunchFallback m_holePunchFallback;
 	//! The server of this LowID source when it is not ours and would wake the source for us
 	//! (ed2k-server 0.9.86), else null; always null without uTP, which the dial after the answer
@@ -930,6 +935,10 @@ public:
 	/* IP */
 	void SetBuddyIP(uint32 val) { m_nBuddyIP = val; }
 	uint32 GetBuddyIP() const { return m_nBuddyIP; }
+	//! The Kad endpoint of a firewalled Kad source (type 3/5) and its buddy's, kept apart from
+	//! GetIP(), which stays 0 so the source still matches no client by address.
+	void SetKadSourceIP(uint32 ip) { m_kadSourceIP = ip; }
+	uint32 GetKadSourceIP() const { return m_kadSourceIP; }
 	/* Port */
 	void SetBuddyPort(uint16 val) { m_nBuddyPort = val; }
 	uint16 GetBuddyPort() const { return m_nBuddyPort; }

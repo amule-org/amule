@@ -2041,6 +2041,27 @@ std::optional<LugdunumCallbackRoute> BuildLugdunumCallbackRoute(const CUpDownCli
 }
 } // namespace
 
+bool CUpDownClient::TrySendKadBuddyRendezvous()
+{
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	if (m_reqfile == nullptr || !HasLowID() || !HasValidHash() || !HasValidBuddyID() ||
+		GetBuddyIP() == 0 || GetBuddyPort() == 0 || GetKadSourceIP() == 0 || GetKadPort() == 0 ||
+		GetUserPort() == 0 || !Kademlia::CKademlia::IsConnected() || theApp->clientudp == nullptr ||
+		theApp->clientudp->ServedNatTTransports() == 0) {
+		return false;
+	}
+	NatRendezvous::SKadRendezvousTarget target{
+		GetKadSourceIP(), GetKadPort(), {}, GetBuddyIP(), GetBuddyPort(), GetUserPort()
+	};
+	std::copy_n(GetUserHash().GetHash(), target.hash.size(), target.hash.begin());
+	std::copy_n(GetBuddyID(), target.buddyID.size(), target.buddyID.begin());
+	std::copy_n(m_reqfile->GetFileHash().GetHash(), target.fileHash.size(), target.fileHash.begin());
+	return theApp->clientudp->StartKadRendezvous(target);
+#else
+	return false;
+#endif
+}
+
 bool CUpDownClient::TrySendLugdunumNatCallbackRequest()
 {
 #ifdef AMULE_UTP_TRANSPORT
@@ -2717,6 +2738,8 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 					}
 				} else if (TrySendLugdunumNatCallbackRequest()) {
 					NoteContactStep(EContactRouteReport::LugdunumCallback);
+				} else if (TrySendKadBuddyRendezvous()) {
+					NoteContactStep(EContactRouteReport::KadBuddy);
 				}
 #endif
 				SetDownloadState(DS_LOWTOLOWIP);
