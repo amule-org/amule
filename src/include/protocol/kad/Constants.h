@@ -33,11 +33,10 @@
 #define KADEMLIAASKTIME SEC2MS(1) // 1 second
 // The concurrent-file cap (formerly KADEMLIATOTALFILE) and per-file re-search interval (formerly
 // KADEMLIAREASKTIME) are now preferences: thePrefs::GetKadMaxSourceSearches() and
-// GetKadSourceReaskTime().
+// GetKadSourceReaskTime(). The source and keyword publish caps (formerly KADEMLIATOTALSTORESRC and
+// KADEMLIATOTALSTOREKEY) grow with the library: CSharedFileList::KadSourcePublishSlots().
 #define KADEMLIAPUBLISHTIME SEC(2)        // 2 second
 #define KADEMLIATOTALSTORENOTES 1         // Total hashes to store.
-#define KADEMLIATOTALSTORESRC 3           // Total hashes to store.
-#define KADEMLIATOTALSTOREKEY 2           // Total hashes to store.
 #define KADEMLIAREPUBLISHTIMES HR2S(5)    // 5 hours
 #define KADEMLIAREPUBLISHTIMEN HR2S(24)   // 24 hours
 #define KADEMLIAREPUBLISHTIMEK HR2S(24)   // 24 hours

@@ -20,8 +20,8 @@ from KadSourceTagsECTest import (KADEMLIA2_PUBLISH_SOURCE_REQ, KADEMLIA2_PUBLISH
 
 KADEMLIA2_PUBLISH_KEY_REQ = 0x43
 
-# More files, and so keywords, than KADEMLIATOTALSTORESRC and KADEMLIATOTALSTOREKEY, so the
-# last lookups wait for a slot. Also more than the one peer takes in a minute: 2 source and
+# More files, and so keywords, than a small library's 3 source and 2 keyword publish slots, so
+# the last lookups wait for a slot. Also more than the one peer takes in a minute: 2 source and
 # 3 keyword stores, and 7 requests from us.
 FILES = 4
 

@@ -483,3 +483,40 @@ TEST(KadCallbackPolicy, EveryTenthKeywordStartIsAFirstPublish)
 	const std::vector<int> want = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 10, 12 };
 	ASSERT_TRUE(keys == want);
 }
+
+TEST(KadCallbackPolicy, ASmallLibraryKeepsTheStockPublishSlots)
+{
+	ASSERT_EQUALS(3u, Kademlia::KadPublishSlotsNeeded(0, Kademlia::KadFilesPerSourceSlot, 3));
+	ASSERT_EQUALS(3u, Kademlia::KadPublishSlotsNeeded(4500, Kademlia::KadFilesPerSourceSlot, 3));
+	ASSERT_EQUALS(2u, Kademlia::KadPublishSlotsNeeded(9000, Kademlia::KadKeywordsPerKeywordSlot, 2));
+}
+
+TEST(KadCallbackPolicy, PublishSlotsGrowWithTheLibrary)
+{
+	ASSERT_EQUALS(4u, Kademlia::KadPublishSlotsNeeded(4501, Kademlia::KadFilesPerSourceSlot, 3));
+	ASSERT_EQUALS(14u, Kademlia::KadPublishSlotsNeeded(20000, Kademlia::KadFilesPerSourceSlot, 3));
+	ASSERT_EQUALS(3u, Kademlia::KadPublishSlotsNeeded(10771, Kademlia::KadKeywordsPerKeywordSlot, 2));
+}
+
+TEST(KadCallbackPolicy, TheSettingCapsThePublishSlotsAndLogsOncePerCap)
+{
+	bool capped = false;
+	int logs = 0;
+	const auto log = [&logs] { ++logs; };
+	ASSERT_EQUALS(10u, Kademlia::CappedKadPublishSlots(10, 12, capped, log));
+	ASSERT_EQUALS(12u, Kademlia::CappedKadPublishSlots(14, 12, capped, log));
+	ASSERT_EQUALS(12u, Kademlia::CappedKadPublishSlots(14, 12, capped, log));
+	ASSERT_EQUALS(1, logs);
+	ASSERT_EQUALS(12u, Kademlia::CappedKadPublishSlots(12, 12, capped, log));
+	ASSERT_EQUALS(12u, Kademlia::CappedKadPublishSlots(13, 12, capped, log));
+	ASSERT_EQUALS(2, logs);
+}
+
+TEST(KadCallbackPolicy, MoreSourceSlotsStartMoreLookupsPerTick)
+{
+	ASSERT_EQUALS(1u, Kademlia::KadSourceStartsPerTick(3));
+	ASSERT_EQUALS(2u, Kademlia::KadSourceStartsPerTick(4));
+	ASSERT_EQUALS(2u, Kademlia::KadSourceStartsPerTick(6));
+	ASSERT_EQUALS(3u, Kademlia::KadSourceStartsPerTick(8));
+	ASSERT_EQUALS(4u, Kademlia::KadSourceStartsPerTick(12));
+}
