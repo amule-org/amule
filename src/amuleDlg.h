@@ -374,8 +374,15 @@ public:
 	/// (issue #806).
 	bool IsVisibleToUser() const { return IsShown() && !m_iconized_logical; }
 
+#if defined(__WXGTK__) && !defined(__APPLE__)
+	bool Show(bool show = true) override;
+#endif
+
 private:
 	bool m_iconized_logical = false;
+#if defined(__WXGTK__) && !defined(__APPLE__)
+	bool m_restoreFullScreen = false; // fullscreen when last hidden
+#endif
 	wxFileName m_skinFileName;
 	std::vector<wxString> m_clientSkinNames;
 	bool m_GeoIPavailable;
