@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: manpages-ru\n"
-"POT-Creation-Date: 2026-11-16 12:10+0100\n"
+"POT-Creation-Date: 2026-11-26 09:43+0100\n"
 "PO-Revision-Date: 2026-11-16 19:37+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/amule/application-man-pages/ru/>\n"
@@ -56,7 +56,9 @@ msgstr "ИМЯ"
 
 #. type: Plain text
 #: amule.1.in
-msgid "amule - the all-platform eMule p2p client"
+#, fuzzy
+#| msgid "amule - the all-platform eMule p2p client"
+msgid "amule - the all-platform P2P client for the eD2k and Kad networks"
 msgstr "amule — многоплатформенный P2P-клиент eMule"
 
 #. type: SH
@@ -891,7 +893,9 @@ msgstr "Демон aMule"
 
 #. type: Plain text
 #: amuled.1.in
-msgid "amuled - the all-platform eMule p2p client - daemonized version"
+#, fuzzy
+#| msgid "amuled - the all-platform eMule p2p client - daemonized version"
+msgid "amuled - the all-platform P2P client for the eD2k and Kad networks - daemonized version"
 msgstr "amuled — многоплатформенный P2P-клиент eMule — демонизированная версия"
 
 #. type: Plain text

@@ -22,7 +22,7 @@ msgstr ""
 "Project-Id-Version: aMule 2.3.3\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-21 09:21+0000\n"
+"PO-Revision-Date: 2026-11-26 00:06+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/amule-application/it/>\n"
 "Language: it\n"
@@ -4331,8 +4331,8 @@ msgstr "Errore durante la creazione del socket UDP %s %d : %s"
 
 #: src/LibSocketAsio.cpp
 #, c-format
-msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes. Bursts of uTP and QUIC data can be lost; setting it to %d avoids that."
-msgstr ""
+msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes, so bursts of uTP and QUIC data can be lost. To avoid that, run as root, on the host if aMule runs in a container: %s"
+msgstr "net.core.rmem_max limita il buffer di ricezione UDP a %d byte; di conseguenza, raffiche di dati uTP e QUIC potrebbero andare perse. Per evitarlo, esegui il seguente comando come root (sull'host, se aMule è in esecuzione all'interno di un container): %s"
 
 #: src/LibSocketAsio.cpp
 #, c-format

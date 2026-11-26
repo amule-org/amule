@@ -308,7 +308,8 @@ uint32 CServer::GetServerKeyUDP(bool bForce) const
 
 void CServer::SetServerKeyUDP(uint32 dwServerKeyUDP)
 {
-	// ed2k-server sends a key before we know our IP; GetServerKeyUDP() never uses it then.
+	// A key can come before we know our IP. It is then bound to GetPublicIP()'s local
+	// fallback, so GetServerKeyUDP() uses it until our IP is known and ignores it after.
 	m_dwServerKeyUDP = dwServerKeyUDP;
 	m_dwIPServerKeyUDP = theApp->GetPublicIP();
 }

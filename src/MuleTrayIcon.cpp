@@ -227,6 +227,30 @@ void on_indicator_activate(AppIndicator *, gint, gint, gpointer user_data)
 	tray->DoShowHide();
 }
 
+// With no SNI host (an XEmbed tray such as stalonetray, trayer or tint2), the library falls back to
+// its own GtkStatusIcon, which opens the menu on a left click too. Emission hooks run before the
+// handlers, so this one can drop the library's left-click handler and toggle the window instead.
+// Not a subclass with its own fallback: 0.6.0 grew AppIndicatorClass without a soname change, so a
+// subclass built against one version fails on the other.
+gboolean on_status_icon_activate_hook(
+	GSignalInvocationHint *hint, guint, const GValue *params, gpointer user_data)
+{
+	CMuleTrayIcon *tray = static_cast<CMuleTrayIcon *>(user_data);
+	gpointer icon = g_value_get_object(&params[0]);
+	gpointer indicator = tray->GetIndicator();
+	// The library connects all its handlers on the icon with the indicator as their data.
+	if (indicator &&
+		g_signal_handler_find(icon, G_SIGNAL_MATCH_DATA, 0, 0, nullptr, nullptr, indicator)) {
+		// GLib takes a combination of bit flags here, not a single enum value.
+		// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+		const auto match = static_cast<GSignalMatchType>(G_SIGNAL_MATCH_ID | G_SIGNAL_MATCH_DATA);
+		g_signal_handlers_disconnect_matched(
+			icon, match, hint->signal_id, 0, nullptr, nullptr, indicator);
+		on_indicator_activate(nullptr, 0, 0, tray);
+	}
+	return TRUE;
+}
+
 void on_menu_item_activated(GtkMenuItem *item, gpointer user_data)
 {
 #ifndef CLIENT_GUI
@@ -307,6 +331,8 @@ CMuleTrayIcon::CMuleTrayIcon()
 : m_indicator(nullptr)
 , m_menu(nullptr)
 , m_lastIconState(-1)
+, m_statusIconActivate(0)
+, m_statusIconHook(0)
 {
 	// Tray-state icons are installed under share/icons/hicolor alongside the application
 	// icon. AppIndicator resolves them through the standard XDG icon-theme path.
@@ -357,11 +383,23 @@ CMuleTrayIcon::CMuleTrayIcon()
 		g_signal_connect(m_indicator, "activate", G_CALLBACK(on_indicator_activate), this);
 	}
 
+	// The same left click on the library's XEmbed fallback icon. A signal can be looked up only
+	// once its class exists.
+	g_type_class_ref(GTK_TYPE_STATUS_ICON);
+	m_statusIconActivate = g_signal_lookup("activate", GTK_TYPE_STATUS_ICON);
+	if (m_statusIconActivate) {
+		m_statusIconHook = g_signal_add_emission_hook(
+			m_statusIconActivate, 0, on_status_icon_activate_hook, this, nullptr);
+	}
+
 	RebuildMenu();
 }
 
 CMuleTrayIcon::~CMuleTrayIcon()
 {
+	if (m_statusIconHook) {
+		g_signal_remove_emission_hook(m_statusIconActivate, m_statusIconHook);
+	}
 	if (m_indicator) {
 		g_object_unref(m_indicator);
 		m_indicator = nullptr;

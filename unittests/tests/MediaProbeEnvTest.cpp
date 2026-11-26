@@ -99,39 +99,32 @@ const wxString kBundle = wxT("/tmp/amule-test-appdir");
 const wxString kBundleLib = kBundle + wxT("/usr/lib");
 const wxString kHostLib = wxT("/usr/lib");
 
-// A stand-in helper whose reply carries its own LD_LIBRARY_PATH as the title.
-wxString WriteFakeHelper(const wxString &variable = wxT("LD_LIBRARY_PATH"))
-{
-	const wxString path = wxFileName::CreateTempFileName(wxT("amule-fake-helper"));
-	wxFFile f(path, wxT("w"));
-	const wxString script = wxT("#!/bin/sh\n") wxT(
-		"printf 'AMMP "
-		"1\\nformat.duration=1\\nformat.bit_rate=1000\\nstreams.stream.0.codec_type="
-		"\"audio\"\\nstreams.stream.0.codec_name=\"mp3\"\\nformat.tags.artist=\"\"\\nformat.tags."
-		"album=\"\"\\n'\n") wxT("printf 'format.tags.title=\"%s\"\\nEND\\n' \"$LD_LIBRARY_PATH\"\n");
-	wxString selected = script;
-	selected.Replace(wxT("$LD_LIBRARY_PATH"), wxT("$") + variable);
-	f.Write(selected);
-	f.Close();
-	wxExecute(wxT("chmod +x ") + path, wxEXEC_SYNC);
-	return path;
-}
+// The stand-in helper is /bin/sh, which reads its script from stdin: the probed file. macOS
+// checks each new executable on its first launch, sometimes past a probe's deadline.
+const wxString kShell = wxT("/bin/sh");
 
-// Probe() rejects a file it cannot stat, so the "media" has to exist.
-wxString WriteDummyMedia()
+wxString WriteScript(const wxString &script)
 {
 	const wxString path = wxFileName::CreateTempFileName(wxT("amule-fake-media"));
 	wxFFile f(path, wxT("w"));
-	f.Write(wxT("x"));
+	f.Write(script + wxT("\n"));
 	f.Close();
 	return path;
+}
+
+// A reply whose title is the stand-in's own value of `variable`.
+wxString ReplyTitledWith(const wxString &variable)
+{
+	return wxT("printf 'AMMP 1\\nformat.duration=1\\nformat.bit_rate=1000\\nstreams.stream.0.codec_type="
+		   "\"audio\"\\nstreams.stream.0.codec_name=\"mp3\"\\nformat.tags.artist=\"\"\\nformat.tags."
+		   "album=\"\"\\nformat.tags.title=\"%s\"\\nEND\\n' \"$") +
+	       variable + wxT("\"");
 }
 
 wxString ProbeTitleWith(
 	const wxString &appdir, const wxString &ldPath, const wxString &variable = wxT("LD_LIBRARY_PATH"))
 {
-	const wxString helper = WriteFakeHelper(variable);
-	const wxString media = WriteDummyMedia();
+	const wxString media = WriteScript(ReplyTitledWith(variable));
 	wxString originalAppdir, originalLdPath;
 	const bool hadAppdir = wxGetEnv(wxT("APPDIR"), &originalAppdir);
 	const bool hadLdPath = wxGetEnv(wxT("LD_LIBRARY_PATH"), &originalLdPath);
@@ -145,7 +138,7 @@ wxString ProbeTitleWith(
 
 	MediaMetadata info;
 	const std::atomic<bool> keepRunning(true);
-	const auto outcome = MediaProbe::Probe(helper, CPath(media), info, 10000, keepRunning, false, false);
+	const auto outcome = MediaProbe::Probe(kShell, CPath(media), info, 10000, keepRunning, false, false);
 
 	if (hadAppdir)
 		wxSetEnv(wxT("APPDIR"), originalAppdir);
@@ -155,7 +148,6 @@ wxString ProbeTitleWith(
 		wxSetEnv(wxT("LD_LIBRARY_PATH"), originalLdPath);
 	else
 		wxUnsetEnv(wxT("LD_LIBRARY_PATH"));
-	wxRemoveFile(helper);
 	wxRemoveFile(media);
 	ASSERT_TRUE(outcome == MediaProbe::ProbeOutcome::Extracted);
 	return info.title;
@@ -198,19 +190,13 @@ MediaMetadata RunPolicyScript(const wxString &primary,
 	MediaProbe::ProbeOutcome *outcome = nullptr,
 	const std::atomic<bool> *keepRunning = nullptr)
 {
-	const wxString path = wxFileName::CreateTempFileName(wxT("amule-policy"));
-	const wxString media = wxFileName::CreateTempFileName(wxT("amule-input"));
-	wxFFile script(path, wxT("w"));
-	script.Write(wxT("#!/bin/sh\n") + primary + wxT("\n"));
-	script.Close();
-	wxChmod(path, 0700);
+	const wxString media = WriteScript(primary);
 	MediaMetadata info;
 	const std::atomic<bool> running(true);
 	const auto result = MediaProbe::Probe(
-		path, CPath(media), info, timeout, keepRunning ? *keepRunning : running, true, false);
+		kShell, CPath(media), info, timeout, keepRunning ? *keepRunning : running, true, false);
 	if (outcome)
 		*outcome = result;
-	wxRemoveFile(path);
 	wxRemoveFile(media);
 	return info;
 }

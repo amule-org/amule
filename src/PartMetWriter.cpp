@@ -20,7 +20,7 @@
 
 #include "PartMetWriter.h" // Interface declarations
 
-#include <wx/filefn.h>   // Needed for wxInvalidOffset
+#include <wx/filefn.h>   // Needed for wxCopyFile, wxInvalidOffset
 #include <wx/filename.h> // Needed for wxFileName::Exists (including dangling symlinks)
 
 #include "CFile.h"            // Needed for CFile, CIOFailureException
@@ -93,7 +93,14 @@ CPartMetSaveResult WritePartMet(CPartMetSaveRequest &req)
 		CPath::RemoveFile(req.tmpPath);
 		return { CPartMetSaveResult::Failed, "Incomplete part.met.tmp file" };
 	}
-	return InstallPartMet(req, { CPath::BackupFile, CPath::ReplaceEntry });
+	return InstallPartMet(req, { BackupPartMet, CPath::ReplaceEntry });
+}
+
+bool BackupPartMet(const CPath &met, const wxString &appendix)
+{
+	// No fsync: shutdown saves each download in turn, and the new live file is not synced
+	// either.
+	return ::wxCopyFile(met.GetRaw(), met.AppendExt(appendix).GetRaw(), true);
 }
 
 CPartMetSaveResult InstallPartMet(const CPartMetSaveRequest &req, const CPartMetFileOps &ops)

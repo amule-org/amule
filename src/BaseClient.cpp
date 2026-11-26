@@ -2146,8 +2146,9 @@ CServer *CUpDownClient::ForeignNatCallbackServer() const
 #ifndef AMULE_UTP_TRANSPORT
 	return nullptr;
 #else
+	// No session of ours is needed: the server answers the address the request came from.
 	CServerConnect *connect = theApp->serverconnect;
-	if (connect == nullptr || theApp->clientudp == nullptr || !connect->IsConnected()) {
+	if (connect == nullptr || theApp->clientudp == nullptr) {
 		return nullptr;
 	}
 	CServer *server = connect->ForeignCallbackServer(GetServerIP(), GetServerPort());
@@ -3057,13 +3058,14 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 #endif
 	IUtpContext *utp = theApp->clientudp->GetUtpContext();
 	const bool canSend = utp != nullptr && utp->IsAvailable() && theApp->clientudp->Ok();
-	const bool obfuscationSatisfied = !WantsStreamObfuscation() || ShouldReceiveCryptUDPPackets();
+	const bool obfuscateFrames = ShouldReceiveCryptUDPPackets();
 	SUtpDialFacts facts;
 	facts.peerSupportsUtp = true;
 	facts.localOutboundService = canSend;
 	facts.proxyEnabled = thePrefs::GetProxyData()->m_proxyEnable;
 	facts.routableEndpoint = GetUDPPort() != 0 && IsGoodIP(GetConnectIP(), thePrefs::FilterLanIPs());
-	facts.obfuscationSatisfied = obfuscationSatisfied;
+	facts.obfuscationSatisfied = UtpDialObfuscationSatisfied(
+		obfuscateFrames, thePrefs::IsClientCryptLayerRequired() || RequiresCryptLayer());
 	facts.serverVouchedLowId = true;
 	if (!canSend || !IsRedialAllowed() || DecideUtpDial(facts) != EUtpDialDecision::TryUtp) {
 		return false;
@@ -3072,7 +3074,7 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 	const SUtpDialOptions dialOptions{ true, ::GetTickCount64(), ECID() };
 	if (!utp->Dial(GetConnectIP(),
 		    GetUDPPort(),
-		    ShouldReceiveCryptUDPPackets(),
+		    obfuscateFrames,
 		    HasValidHash() ? GetUserHash().GetHash() : nullptr,
 		    dialOptions,
 		    transport)) {
@@ -3083,7 +3085,8 @@ bool CUpDownClient::TryServerVouchedLowIdUtpDial()
 	}
 	m_socket = new CClientTCPSocket(this, thePrefs::GetProxyData());
 	m_socket->AttachTransport(std::move(transport));
-	if (WantsStreamObfuscation()) {
+	// With plain frames the stream stays plain: no handshake runs over a transport.
+	if (obfuscateFrames) {
 		m_socket->SetConnectionEncryption(true, GetUserHash().GetHash(), false);
 	} else {
 		m_socket->SetConnectionEncryption(false, nullptr, false);
@@ -5025,10 +5028,13 @@ bool CUpDownClient::WantsStreamObfuscation() const
 
 bool CUpDownClient::ShouldReceiveCryptUDPPackets() const
 {
-	// The key holds our IP, so not the host-name fallback (ClientUdpKeyIP()).
-	return (thePrefs::IsClientCryptLayerSupported() && SupportsCryptLayer() &&
-		theApp->GetPublicIP(true) != 0 && HasValidHash() &&
-		(thePrefs::IsClientCryptLayerRequested() || RequestsCryptLayer()));
+	if (!WantsStreamObfuscation()) {
+		return false;
+	}
+	// The key holds the IP this peer sees us at, else our public IP, else a verified stream's
+	// (ClientUdpKeyIP()).
+	return theApp->clientudp != nullptr ? theApp->clientudp->ClientKeyIP(GetConnectIP()) != 0
+					    : theApp->GetPublicIP(true) != 0;
 }
 
 void CUpDownClient::ProcessCaptchaRequest(CMemFile *data)

@@ -474,3 +474,72 @@ TEST(UtpStream, APeerIgnoringTheWindowEndsTheStream)
 	stream.OnPayload(past.data(), past.size());
 	ASSERT_EQUALS(limit, stream.ReadBufferSize());
 }
+
+DECLARE_SIMPLE(UtpReadWindowBudget)
+
+TEST(UtpReadWindowBudget, AnEmptyLeaseKeepsTheDefaultBound)
+{
+	const CUtpReadWindowBudget::CLease lease;
+	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)lease.ReadBound());
+	ASSERT_FALSE(lease.HoldsWide());
+}
+
+TEST(UtpReadWindowBudget, AStreamGetsTheWideBoundUntilTheLeaseEnds)
+{
+	CUtpReadWindowBudget budget;
+	{
+		CUtpReadWindowBudget::CLease lease = budget.Take();
+		ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)lease.ReadBound());
+		ASSERT_TRUE(lease.HoldsWide());
+		ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());
+	}
+	ASSERT_EQUALS(0u, (unsigned)budget.WideStreams());
+}
+
+TEST(UtpReadWindowBudget, StreamsPastTheCapGetTheDefaultBound)
+{
+	CUtpReadWindowBudget budget;
+	std::vector<CUtpReadWindowBudget::CLease> leases;
+	for (size_t i = 0; i < CUtpReadWindowBudget::kMaxWideStreams; ++i) {
+		leases.push_back(budget.Take());
+		ASSERT_EQUALS(
+			(unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)leases.back().ReadBound());
+	}
+	CUtpReadWindowBudget::CLease extra = budget.Take();
+	ASSERT_EQUALS((unsigned)CUtpStream::kDefaultReadBound, (unsigned)extra.ReadBound());
+	ASSERT_FALSE(extra.HoldsWide());
+
+	// A closed stream frees its share for the next one.
+	leases.pop_back();
+	extra = budget.Take();
+	ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kWideReadBound, (unsigned)extra.ReadBound());
+	ASSERT_EQUALS((unsigned)CUtpReadWindowBudget::kMaxWideStreams, (unsigned)budget.WideStreams());
+}
+
+TEST(UtpReadWindowBudget, AMovedLeaseReleasesOnce)
+{
+	CUtpReadWindowBudget budget;
+	CUtpReadWindowBudget::CLease first = budget.Take();
+	{
+		CUtpReadWindowBudget::CLease second(std::move(first));
+		ASSERT_FALSE(first.HoldsWide());
+		ASSERT_TRUE(second.HoldsWide());
+		ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());
+	}
+	ASSERT_EQUALS(0u, (unsigned)budget.WideStreams());
+
+	// Assigning a new lease gives back the share the old one held.
+	first = budget.Take();
+	first = budget.Take();
+	ASSERT_EQUALS(1u, (unsigned)budget.WideStreams());
+}
+
+TEST(UtpReadWindowBudget, ALeaseOutlivingItsBudgetReleasesSafely)
+{
+	CUtpReadWindowBudget::CLease lease;
+	{
+		CUtpReadWindowBudget budget;
+		lease = budget.Take();
+	}
+	ASSERT_TRUE(lease.HoldsWide());
+}

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-11-16 12:10+0100\n"
+"POT-Creation-Date: 2026-11-26 09:43+0100\n"
 "PO-Revision-Date: 2026-11-17 22:57+0000\n"
 "Last-Translator: Kisnov <kisnov@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Catalan <https://hosted.weblate.org/projects/amule/application-man-pages/ca/>\n"
@@ -54,7 +54,9 @@ msgstr "NOM"
 
 #. type: Plain text
 #: amule.1.in
-msgid "amule - the all-platform eMule p2p client"
+#, fuzzy
+#| msgid "amule - the all-platform eMule p2p client"
+msgid "amule - the all-platform P2P client for the eD2k and Kad networks"
 msgstr "amule - el client p2p d'eMule multiplataforma"
 
 #. type: SH
@@ -889,7 +891,9 @@ msgstr "Dimoni de l'aMule"
 
 #. type: Plain text
 #: amuled.1.in
-msgid "amuled - the all-platform eMule p2p client - daemonized version"
+#, fuzzy
+#| msgid "amuled - the all-platform eMule p2p client - daemonized version"
+msgid "amuled - the all-platform P2P client for the eD2k and Kad networks - daemonized version"
 msgstr "amuled - el client p2p d'eMule multiplataforma - versió dimoni"
 
 #. type: Plain text

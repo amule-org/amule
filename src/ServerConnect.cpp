@@ -873,8 +873,8 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_lowIdHolePunchDialBacks = NatServerHolePunch::DialBackSchedule();
 	m_lowIdHolePunchExpectedEndpoints = NatServerHolePunch::ExpectedEndpointRegistry();
 #ifdef AMULE_UTP_TRANSPORT
-	m_lowIdHolePunchSchedules = NatServerHolePunch::PunchScheduleSet();
 	if (theApp->clientudp != nullptr) {
+		theApp->clientudp->ResetLowIdHolePunchSchedules();
 		theApp->clientudp->NoteServerSeenUdpIP(0);
 		theApp->clientudp->NoteServerSeenUdpPort(0, 0);
 	}
@@ -886,9 +886,21 @@ void CServerConnect::ResetLowIdHolePunchState()
 	m_nextAwaitedServerKeyCheck = 0;
 }
 
+bool CServerConnect::IsLoggingInTo(uint32 dwIP, uint16 nPort) const
+{
+	return NatServerHolePunch::IsLoginAttemptTo(
+		connectionattemps,
+		[](const CServerSocket &socket) { return socket.cur_server; },
+		dwIP,
+		nPort);
+}
+
 CServer *CServerConnect::ForeignCallbackServer(uint32 serverIp, uint16 serverPort)
 {
-	if (IsLocalServer(serverIp, serverPort)) {
+	// Asked from Disconnected() at shutdown too, after the server list is gone. A login still in
+	// progress is to our own server, which IsLocalServer() does not know yet.
+	if (theApp->serverlist == nullptr || IsLocalServer(serverIp, serverPort) ||
+		IsLoggingInTo(serverIp, serverPort)) {
 		return nullptr;
 	}
 	CServer *server = theApp->serverlist->GetServerByIPTCP(serverIp, serverPort);
@@ -923,7 +935,9 @@ void CServerConnect::StartWakeKeepalives()
 void CServerConnect::ProcessPunchesAndWakes()
 {
 	const std::uint64_t now = ::GetTickCount64();
-	SendDueLowIdHolePunches(now);
+	if (theApp->clientudp != nullptr) {
+		theApp->clientudp->SendDueLowIdHolePunches(now);
+	}
 	for (std::size_t due = m_holePunchKeepaliveBurst.TakeDue(now); due > 0; --due) {
 		TrySendLowIdHolePunchKeepalive();
 	}
@@ -976,56 +990,6 @@ void CServerConnect::ProcessLowIdHolePunchDialBacks()
 	}
 }
 
-void CServerConnect::StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP,
-	uint16 udpPort,
-	uint64 now,
-	const std::optional<NatServerHolePunch::Hash> &peerHash)
-{
-	// Every path checks its target first; this is the backstop for the next one.
-	if (udpPort == 0 || !CClientUDPSocket::IsRendezvousPeerAllowed(PeekUInt32(peerIP.data()))) {
-		return;
-	}
-	m_lowIdHolePunchSchedules.Start(peerIP, udpPort, now, peerHash);
-	// The first punch is due now, so it leaves with this tick rather than the next one.
-	SendDueLowIdHolePunches(now);
-}
-
-void CServerConnect::SendDueLowIdHolePunches(uint64 now)
-{
-	if (theApp->clientudp == nullptr || !theApp->clientudp->Ok()) {
-		return;
-	}
-	const auto punch = [](const NatServerHolePunch::IPv4 &peerIP, uint16 udpPort) {
-		CPacket *packet = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
-		theStats::AddUpOverheadOther(packet->GetPacketSize());
-		theApp->clientudp->SendPacket(
-			packet, PeekUInt32(peerIP.data()), udpPort, false, nullptr, false, 0);
-	};
-	for (const NatServerHolePunch::PunchDue &due : m_lowIdHolePunchSchedules.TakeDue(now)) {
-		if (due.kind == NatServerHolePunch::PunchDue::Endpoint) {
-			punch(due.peerIP, due.udpPort);
-			continue;
-		}
-		// One sweep per destination address every five minutes, ten a minute overall.
-		if (!m_lowIdHolePunchSweeps.Admit(due.peerIP, now)) {
-			AddDebugLogLineN(logClientUDP,
-				CFormat("Punch sweep to %s refused by the sweep budget") %
-					Uint32toStringIP(PeekUInt32(due.peerIP.data())));
-			continue;
-		}
-		const std::vector<uint16> ports = NatServerHolePunch::SweptPorts(due.udpPort);
-		if (!ports.empty()) {
-			AddDebugLogLineN(logClientUDP,
-				CFormat("Punch sweep to %s: %u ports %u-%u around %u") %
-					Uint32toStringIP(PeekUInt32(due.peerIP.data())) %
-					static_cast<unsigned>(ports.size()) % ports.front() % ports.back() %
-					due.udpPort);
-		}
-		for (const uint16 port : ports) {
-			punch(due.peerIP, port);
-		}
-	}
-}
 #endif
 
 void CServerConnect::TrySendLowIdHolePunchKeepalive()

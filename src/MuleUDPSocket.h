@@ -96,6 +96,8 @@ public:
 	virtual uint32 ClientCryptKeyIP(uint32 ip);
 	/** The key IP of a verified, obfuscated stream to @a ip; else 0. */
 	virtual uint32 StreamKeyIP(uint32 ip);
+	/** The IP our client UDP key toward @a ip holds (ClientUdpKeyIP()); 0 when none is known. */
+	uint32 ClientKeyIP(uint32 ip);
 
 	/**
 	 * Queues a packet for sending, taking ownership of it.

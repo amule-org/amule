@@ -147,8 +147,11 @@ public:
 	//! Clears the pending requests, expected endpoints and waiting dial backs: called on a new
 	//! login, since a previous connection's target IDs mean nothing on a different server.
 	void ResetLowIdHolePunchState();
-	//! The listed server at that TCP address, when it is not ours and takes a cross-server NAT
-	//! callback request from us (NatServerHolePunch::ServerTakesForeignCallback()). A server that
+	//! A login to this server is under way.
+	bool IsLoggingInTo(uint32 dwIP, uint16 nPort) const;
+	//! The listed server at that TCP address, when it is not ours, nor one we are logging in to, and
+	//! takes a cross-server NAT callback request from us
+	//! (NatServerHolePunch::ServerTakesForeignCallback()). A server that
 	//! lacks only its UDP key is not returned, but its key is recovered for a later request. The
 	//! LowID source check calls it too, so a source from such a server, dropped until the key
 	//! exists, also brings that server's status ping forward.
@@ -173,19 +176,6 @@ public:
 	//! Sends the due wake keepalives, and dials the Lugdunum way for each wake no 0x61 answered.
 	//! Called from every CamuleApp::OnCoreTimer tick, which the 0.5 s burst needs.
 	void ProcessPunchesAndWakes();
-	//! Starts the punch schedule for one peer and sends what is already due: the punch to the
-	//! endpoint a 0x61, a cross-server 0xA7 answer or a keepalive wake named, then its repeats at
-	//! 0.5, 1 and 2 s, with the port sweep at 0.5 s. @a peerHash, when the rendezvous vouched for
-	//! one, lets the peer's hello end the schedule.
-	void StartLowIdHolePunchSchedule(const NatServerHolePunch::IPv4 &peerIP,
-		uint16 udpPort,
-		uint64 now,
-		const std::optional<NatServerHolePunch::Hash> &peerHash);
-	//! Sends the punches and sweeps that have come due. Called from every OnCoreTimer tick.
-	void SendDueLowIdHolePunches(uint64 now);
-	//! The punches owed to each peer address, cancelled by a punch from it or by our dial
-	//! connecting.
-	NatServerHolePunch::PunchScheduleSet &LowIdHolePunchSchedules() { return m_lowIdHolePunchSchedules; }
 #endif
 #endif
 
@@ -256,11 +246,6 @@ private:
 	NatServerHolePunch::PendingWakeSet<LugdunumNatTraversal::ForwardedCallback> m_pendingWakes;
 	NatServerHolePunch::KeepaliveBurst m_holePunchKeepaliveBurst;
 	NatServerHolePunch::ServerRequestPacer m_lugdunumCallbackRetryPacer;
-#ifdef AMULE_UTP_TRANSPORT
-	NatServerHolePunch::PunchScheduleSet m_lowIdHolePunchSchedules;
-	// Not reset with the session: a server must not be able to buy more sweeps by dropping us.
-	NatServerHolePunch::SweepBudget m_lowIdHolePunchSweeps;
-#endif
 	bool m_holePunchKeepaliveAwaitsServerKey = false;
 	uint64 m_nextAwaitedServerKeyCheck = 0;
 	//! Sends the keepalive again, obfuscated, once the server's missing UDP key arrives.

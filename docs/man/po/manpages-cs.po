@@ -5,8 +5,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2026-11-16 12:10+0100\n"
-"PO-Revision-Date: 2026-11-25 03:57+0000\n"
+"POT-Creation-Date: 2026-11-26 09:43+0100\n"
+"PO-Revision-Date: 2026-11-26 09:08+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/application-man-pages/cs/>\n"
 "Language: cs\n"
@@ -54,7 +54,9 @@ msgstr "JMENO"
 
 #. type: Plain text
 #: amule.1.in
-msgid "amule - the all-platform eMule p2p client"
+#, fuzzy
+#| msgid "amule - the all-platform eMule p2p client"
+msgid "amule - the all-platform P2P client for the eD2k and Kad networks"
 msgstr "amule - eMule kompatibilní P2P klient pro všechny platformy"
 
 #. type: SH
@@ -607,17 +609,17 @@ msgstr "Obnoví stahování stanovené podle I<E<lt>hashE<gt>> nebo I<E<lt>čís
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Lists retained search IDs and queries, including searches started by other clients."
-msgstr ""
+msgstr "Vypisuje seznam dostupných ID vyhledávání a požadavků, včetně vyhledávání zahájených jinými klienty."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Stops activity for the specified search while retaining its results."
-msgstr ""
+msgstr "Zastaví aktivitu zadaného vyhledávání a zachová jeho výsledky."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Requests more Kad results for the specified search. Further results are not guaranteed.  The reply reports whether later requests remain possible, or whether that information is unavailable from an older daemon."
-msgstr ""
+msgstr "Požádá o více výsledků zadaného vyhledávání Kad. Další výsledky ale nejsou zaručeny.  Odpověď sdělí, zda jsou možné další žádosti a nebo zda je tato informace nedostupná pod starším daemonem."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -632,110 +634,110 @@ msgstr "Vyhledá zadané I<E<lt>klíčové slovoE<gt>>. Typ vyhledávání a kl�
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Available search types:"
-msgstr ""
+msgstr "Dostupné typy vyhledávání:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Searches eD2k and Kad together, using the available network if the other cannot start. Requires a daemon advertising All search support; older daemons return a clear error without starting a search. Example: 'search all amule'."
-msgstr ""
+msgstr "Prohledá eD2k a Kad zároveň, pomocí dostupné sítě, pokud se druhá nespustí. Vyžaduje daemon s podporu Vyhledávání všude; starší daemons vrátí chybu bez spuštění vyhledávání. Příklad: \"search all amule\"."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Performs a global search."
-msgstr ""
+msgstr "Provede globální vyhledávání."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Performs a search on the Kademlia network."
-msgstr ""
+msgstr "Provede vyhledávání v síti Kademlia."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Performs a local search."
-msgstr ""
+msgstr "Provede místní vyhledávání."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Optional filters can be placed before, after, or interleaved with the search keyword(s):"
-msgstr ""
+msgstr "Volitelné filtry mohou být umístěny před, za, nebo mezi vyhledávaná slova:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Restrict results to the given file type."
-msgstr ""
+msgstr "Omezit výsledky na daný typ souboru."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Restrict results to a specific file extension (e.g.\\ I<iso>, I<mp3>)."
-msgstr ""
+msgstr "Omezit výsledky na určitou koncovku souboru (např.\\ I<iso>, I<mp3>)."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum number of sources a result must report."
-msgstr ""
+msgstr "Minimální počet zdrojů které výsledek musí mít."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Smallest file size to return. Suffixes use binary multipliers (K = 1024, M = K\\(mu1024, G = M\\(mu1024); no suffix means bytes."
-msgstr ""
+msgstr "Nejnižší velikost souboru k zobrazení. Přípony používají binární multiplikátory (K = 1024, M = K\\(mu1024, G = M\\(mu1024); žádný suffix znamená bajty."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Largest file size to return. Same suffixes as B<--min-size>."
-msgstr ""
+msgstr "Nejvyšší velikost souboru k zobrazení. Stejné přípony jako B<-min-size>."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Media filters:"
-msgstr ""
+msgstr "Mediální filtry:"
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
-msgstr ""
+msgstr "B<--min-bitrate> I<E<lt>kbpsE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum bitrate as a whole number from 0 to 1000000."
-msgstr ""
+msgstr "Minimální datový tok jako celé číslo od 0 do 1000000."
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<--min-duration> I<E<lt>secondsE<gt>>"
-msgstr ""
+msgstr "B<--min-duration> I<E<lt>sekundyE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Minimum duration as a whole number from 0 to 86400."
-msgstr ""
+msgstr "Minimální doba trvání jako celé číslo od 0 do 86400."
 
 #. type: TP
 #: amulecmd.1.in
 #, no-wrap
 msgid "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
-msgstr ""
+msgstr "B<--codec>, B<--title>, B<--album>, B<--artist> I<E<lt>textE<gt>>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Each option takes a text value. Enclose values containing spaces in single or double quotes.  When using B<-c>, preserve those quotes inside the command string passed by the shell."
-msgstr ""
+msgstr "Každá volba přijímá textovou hodnotu. Hodnoty obsahující mezery ohraničte jednoduchými nebo dvojitými uvozovkami.  Při použití B<-c>, zachovat tyto uvozovky v řetězci příkazu předanému příkazové řádce."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Zero or empty media values impose no constraint. Nonempty media filters require daemon support. Kad applies these filters; eD2k servers may ignore them."
-msgstr ""
+msgstr "Nulové nebo prázdné mediální hodnoty nezpůsobí žádné omezení výsledků. Mediální filtry, které nejsou prázdné vyžadují podporu daemona. Kad tyto filtry použije; eD2k servery je mohou ignorovat."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Example: 'search global linux iso --type Iso --min-size 100M' returns results for 'linux iso' of file-type Iso at least 100 MiB."
-msgstr ""
+msgstr "Příklad: 'search global linux iso --type Iso --min-size 100M' vrátí výsledky pro 'linux iso' typu souboru Iso nejméně 100 MiB velké."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Sets a given preferences value."
-msgstr ""
+msgstr "Nastaví danou hodnotu předvoleb."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -745,12 +747,12 @@ msgstr "Nastavit limity šířky pásma."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Set IPFilter preferences."
-msgstr ""
+msgstr "Nastavit předvolby IPFiltru."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shows upload/download queue, servers list or shared files list."
-msgstr ""
+msgstr "Zobrazí frontu odesílání/stahování, seznam serverů nebo seznam sdílených souborů."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -780,193 +782,195 @@ msgstr "Zobrazit frontu odesílání."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Shutdown the remote running core (amule/amuled).  This will also shut down the text client, since it is unusable without a running core."
-msgstr ""
+msgstr "Vypnout vzdálené běžící jádro (amule/amuled).  Vypne se i textový klient, protože je bez běžícího jádra nepoužitelný."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show statistics tree."
-msgstr ""
+msgstr "Zobrazit strom statistik."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The optional I<E<lt>numberE<gt>> in the range of 0-255 can be passed as argument to this command, which tells how many entries of the client version subtree should be shown. Passing 0, or omitting it means 'unlimited'."
-msgstr ""
+msgstr "Volitelné I<E<lt>čísloE<gt>> v rozmezí 0-255 může být zadáno jako parametr tohoto příkazu. Číslo udává počet položek verzí podstromu klienta k zobrazení. Zadáním čísla 0 nebo neuvedením žádného čísla, bude použito 'neomezeno'."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Example: 'statistics 5' will show only the top 5 versions for each client type."
-msgstr ""
+msgstr "Příklad: 'statistics 5' zobrazí jen top 5 verzí u každého typu klienta."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Show connection status, current up/download speeds, etc."
-msgstr ""
+msgstr "Zobrazit stav připojení, aktuální rychlosti odesílání/stahování atd."
 
 #. type: SS
 #: amulecmd.1.in
 #, no-wrap
 msgid "Languages"
-msgstr ""
+msgstr "Jazyky"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The I<E<lt>langE<gt>> parameter for the B<-l> option has the following form: I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] where I<lang> is the primary language, I<LANG> is a sublanguage/territory, I<encoding> is the character set to use and I<modifier> allows the user to select a specific instance of localization data within a single category."
-msgstr ""
+msgstr "Parametr I<E<lt>langE<gt>> pro volbu B<-l> má následující formu: I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] kde I<lang> je primární jazyk, I<LANG> je podjazyk/teritorium, I<encoding> je znaková sada, která má být použita a I<modifier> umožňuje uživateli vybrat specifickou instanci lokalizačních dat v rámci jedné kategorie."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "For example, the following strings are valid:"
-msgstr ""
+msgstr "Například, následující řetězce jsou platné:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Though all the above strings are accepted as valid language definitions, I<encoding> and I<modifier> are yet unused."
-msgstr ""
+msgstr "I když jsou všechny výše uvedené řetězce přijímány jako platné definice jazyka, I<encoding> a I<modifier> jsou ještě nepoužité."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "In addition to the format above, you can also specify full language names in English - so B<-l german> is also valid and is equal to B<-l de_DE>."
-msgstr ""
+msgstr "Kromě výše uvedeného formátu můžete také zadat názvy jazyků v angličtině - tedy B<-l german> je také platný a odpovídá B<-l de_DE>."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "When no locale is defined, either on command-line or in config file, system default language will be used."
-msgstr ""
+msgstr "Pokud není stanoveno žádné jazykové prostředí, buď na příkazovém řádku nebo v konfiguračním souboru, použije se výchozí jazyk systému."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "~/.aMule/remote.conf"
-msgstr ""
+msgstr "~/.aMule/remote.conf"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The password is saved as an MD5 digest in [EC]/PasswordMD5, the same key as in amuleapi.conf. An [EC]/Password key from an older file is moved there on load."
-msgstr ""
+msgstr "Heslo je uloženo jako MD5 digest v [EC]/PasswordMD5, stejný klíč jako v amuleapi.conf. [EC]/Password klíč ze staršího souboru je sem přesunut při načtení."
 
 #. type: SH
 #: amulecmd.1.in
 #, no-wrap
 msgid "EXAMPLE"
-msgstr ""
+msgstr "PŘÍKLAD"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Typically amulecmd will be first run as:"
-msgstr ""
+msgstr "Typicky amulecmd bude prvně spuštěn jako:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
-msgstr ""
+msgstr "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "This will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
-msgstr ""
+msgstr "Toto uloží nastavení do I<$HOME/.aMule/remote.conf> a později bude stačit napsat jen:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Of course, you don't have to follow this example."
-msgstr ""
+msgstr "Samozřejmě, nemusíte následovat tento příklad."
 
 #. type: TH
 #: amuled.1.in
 #, no-wrap
 msgid "AMULED"
-msgstr ""
+msgstr "AMULED"
 
 #. type: TH
 #: amuled.1.in
 #, no-wrap
 msgid "aMule Daemon v@PACKAGE_VERSION@"
-msgstr ""
+msgstr "aMule daemon v@PACKAGE_VERSION@"
 
 #. type: TH
 #: amuled.1.in
 #, no-wrap
 msgid "aMule Daemon"
-msgstr ""
+msgstr "aMule daemon"
 
 #. type: Plain text
 #: amuled.1.in
-msgid "amuled - the all-platform eMule p2p client - daemonized version"
-msgstr ""
+#, fuzzy
+#| msgid "amuled - the all-platform eMule p2p client - daemonized version"
+msgid "amuled - the all-platform P2P client for the eD2k and Kad networks - daemonized version"
+msgstr "amuled - eMule kompatibilní P2P klient pro všechny platformy - daemonized verze"
 
 #. type: Plain text
 #: amuled.1.in ../../src/utils/cas/docs/cas.1.in
 msgid "[B<-c> I<E<lt>pathE<gt>>]"
-msgstr ""
+msgstr "[B<-c> I<E<lt>cestaE<gt>>]"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "[B<-p> I<E<lt>pathE<gt>>]"
-msgstr ""
+msgstr "[B<-p> I<E<lt>cestaE<gt>>]"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "Forks to background."
-msgstr ""
+msgstr "Fork na pozadí."
 
 #. type: TP
 #: amuled.1.in
 #, no-wrap
 msgid "B<[ -p> I<E<lt>pathE<gt>>, B<--pid-file>=I<E<lt>pathE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -p> I<E<lt>cestaE<gt>>, B<--pid-file>=I<E<lt>cestaE<gt>> B<]>"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "After fork, create a pid-file in the I<E<lt>pathE<gt>>.  I<E<lt>pathE<gt>> has to contain the filename."
-msgstr ""
+msgstr "Po forku vytvoří pid-soubor v I<E<lt>cestěE<gt>>.  I<E<lt>cestaE<gt>> musí obsahovat název souboru."
 
 #. type: Plain text
 #: amuled.1.in
 msgid "Set the External Connections password, enable External Connections, then exit without starting the core. Terminal input is hidden and confirmed; redirected stdin supplies one line without confirmation. An empty password is rejected.  Refused while aMule or another amuled uses the same config dir."
-msgstr ""
+msgstr "Nastavte heslo pro externí připojení, povolte externí připojení, poté ukončete bez spuštění jádra. Vstup terminálu je skrytý a potvrzený; přesměrovaný stdin dodává jeden řádek bez potvrzení. Prázdné heslo je odmítnuto.  Odmítnuto, pokud aMule nebo jiný amuled používají stejný adresář konfigurace."
 
 #. type: Plain text
 #: amuled.1.in
 msgid "Enable or disable starting amuled on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
-msgstr ""
+msgstr "Povolte nebo zakažte spouštění amuled po přihlášení a poté aplikaci ukončete.  Úložiště specifické pro operační systém je vybráno automaticky: Windows registr Run key, macOS LaunchAgent, Linux XDG I<.desktop> záznam automatického spuštění."
 
 #. type: TP
 #: amuled.1.in
 #, no-wrap
 msgid "B<[ -t> I<E<lt>numE<gt>>, B<--category>=I<E<lt>numE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -t> I<E<lt>čísloE<gt>>, B<--category>=I<E<lt>čísloE<gt>> B<]>"
 
 #. type: TP
 #: amuled.1.in
 #, no-wrap
 msgid "I<~/.aMule/allowed-remote-dirs.dat>"
-msgstr ""
+msgstr "I<~/.aMule/allowed-remote-dirs.dat>"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "The folders a remote EC or amuleapi client may point the incoming, temporary, shared or category download folders at, one absolute path per line. Empty or absent (the default) means every such remote folder change is refused. On a daemon-only install, such as a container or the Android port with no monolithic aMule to edit the list in its GUI, create or edit this file and restart B<amuled> to allow remote folder changes; relative lines are ignored."
-msgstr ""
+msgstr "Složky, na které může vzdálený klient EC nebo amuleapi směřovat příchozí, dočasné, sdílené nebo kategoriální složky pro stahování; jedna absolutní cesta na řádek. Prázdné nebo chybějící (výchozí nastavení) znamená, že každá taková změna vzdálené složky bude odmítnuta. V případě instalace pouze jako daemon, jako je například kontejner nebo port pro Android bez monolitického aMule, který by umožňoval úpravy seznamu v grafickém rozhraní, vytvořte nebo upravte tento soubor a restartujte B<amuled>, abyste povolili změny vzdálených složek; relativní cesty jsou ignorovány."
 
 #. type: SH
 #: amuled.1.in
 #, no-wrap
 msgid "MEDIA METADATA"
-msgstr ""
+msgstr "MEDIÁLNÍ METADATA"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "B<amuled> runs its bundled B<amule-media-probe> helper on each received file to extract the length, bitrate and codec tags it then publishes to the network. The helper must sit next to the B<amuled> executable. This is on by default (B<Enabled=1> under B<[MediaMetadata]> in I<amule.conf>); set B<Enabled=0> there and restart to turn it off."
-msgstr ""
+msgstr "B<amuled> spouští na každém přijatém souboru svůj integrovaný pomocný program B<amule-media-probe>, aby extrahoval údaje o délce, datovém toku a kodeku, které poté zveřejní v síti. Pomocný program musí být umístěn vedle spustitelného souboru B<amuled>. Tato funkce je ve výchozím nastavení zapnutá (B<Enabled=1> v sekci B<[MediaMetadata]> v souboru I<amule.conf>); pro její vypnutí nastavte v tomto souboru B<Enabled=0> a restartujte program."
 
 #. type: TH
 #: amulegui.1.in
 #, no-wrap
 msgid "AMULEGUI"
-msgstr ""
+msgstr "AMULEGUI"
 
 #. type: TH
 #: amulegui.1.in
 #, no-wrap
 msgid "aMuleGUI v@PACKAGE_VERSION@"
-msgstr ""
+msgstr "aMuleGUI v@PACKAGE_VERSION@"
 
 #. type: TH
 #: amulegui.1.in
@@ -977,12 +981,12 @@ msgstr "aMuleGUI"
 #. type: Plain text
 #: amulegui.1.in
 msgid "amulegui - aMule control program with GUI"
-msgstr ""
+msgstr "amulegui - aMule ovládací program s GUI"
 
 #. type: Plain text
 #: amulegui.1.in
 msgid "B<amulegui> is a client program, and can be connected to amule or amuled via EC. You can manage your amule program with it. It provides almost the same functionalities as amule, even if the core works on another computer."
-msgstr ""
+msgstr "B<amulegui> je klientský program a může být připojen k amule nebo amuled prostřednictvím EC. Můžete pomocí něho spravovat svůj program amule. Poskytuje téměř stejné funkce jako amule, i když jádro pracuje na jiném počítači."
 
 #. type: Plain text
 #: amulegui.1.in
@@ -992,61 +996,60 @@ msgstr "Zapsat logy do zadaného souboru namísto výchozího souboru logu.  Tot
 #. type: Plain text
 #: amulegui.1.in
 msgid "Skip connection dialog."
-msgstr ""
+msgstr "Přeskočit dialog připojení."
 
 #. type: Plain text
 #: amulegui.1.in
 msgid "Enable or disable starting amulegui on user login, then exit.  The OS-specific store is selected automatically: Windows registry Run key, macOS LaunchAgent, Linux XDG I<.desktop> autostart entry."
-msgstr ""
+msgstr "Povolte nebo zakažte spouštění amulegui po přihlášení uživatele a poté aplikaci ukončete.  Úložiště specifické pro operační systém je vybráno automaticky: Windows registr Run key, macOS LaunchAgent, Linux XDG I<.desktop> záznam automatického spuštění."
 
 #. type: Plain text
 #: amulegui.1.in
 msgid "Sends an eD2k-link, or every link in an eMule collection file, to the connected core."
-msgstr ""
+msgstr "Odesílá eD2k-odkaz, nebo každý odkaz v souboru eMule collection, k připojenému jádru."
 
 #. type: TP
 #: amulegui.1.in
 #, no-wrap
 msgid "I<~/.aMule/remote.conf>"
-msgstr ""
+msgstr "I<~/.aMule/remote.conf>"
 
 #. type: Plain text
 #: amulegui.1.in
 msgid "Settings, including the core to connect to."
-msgstr ""
+msgstr "Nastavení, včetně připojovaného jádra."
 
 #. type: TP
 #: amulegui.1.in
 #, no-wrap
 msgid "I<~/.aMule/remotelogfile>"
-msgstr ""
+msgstr "I<~/.aMule/remotelogfile>"
 
 #. type: Plain text
 #: amulegui.1.in
-#, fuzzy
 msgid "The log."
-msgstr "Zobrazit protokol."
+msgstr "Log."
 
 #. type: TP
 #: amulegui.1.in
 #, no-wrap
 msgid "I<~/.aMule/ED2KLinks>"
-msgstr ""
+msgstr "I<~/.aMule/ED2KLinks>"
 
 #. type: Plain text
 #: amulegui.1.in
 msgid "Links passed on the command line, waiting to be sent to the core."
-msgstr ""
+msgstr "Odkazy předané na příkazovou řádku, čekající na odeslání k jádru."
 
 #. type: Plain text
 #: amulegui.1.in
 msgid "This manpage was written by Julien Delange for Debian E<lt>julien AT gunnm DOT orgE<gt>"
-msgstr ""
+msgstr "Tuto stránku manuálu napsal Julien Delange pro Debian E<lt>julien AT gunnm DOT orgE<gt>"
 
 #. type: Plain text
 #: amulegui.1.in
 msgid "This manpage was rewritten by Vollstrecker E<lt>amule@vollstreckernet.deE<gt>"
-msgstr ""
+msgstr "Tuto stránku manuálu přepsal Vollstrecker E<lt>amule@vollstreckernet.deE<gt>"
 
 #. type: TH
 #: ed2k.1.in
@@ -1058,69 +1061,69 @@ msgstr "eD2k"
 #: ed2k.1.in
 #, no-wrap
 msgid "aMule eD2k link parser v1.5.1"
-msgstr ""
+msgstr "aMule eD2k link parser v1.5.1"
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "ed2k - aMule eD2k link parser"
-msgstr ""
+msgstr "ed2k - aMule eD2k link parser"
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "[B<-c> I<E<lt>pathE<gt>>] [B<-t> I<E<lt>numE<gt>>]"
-msgstr ""
+msgstr "[B<-c> I<E<lt>cestaE<gt>>] [B<-t> I<E<lt>čísloE<gt>>]"
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "I<E<lt>eD2k-linkE<gt>>"
-msgstr ""
+msgstr "I<E<lt>eD2k-odkazE<gt>>"
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "Sends the given I<E<lt>eD2k-linkE<gt>> to aMule, i.e. writes it to the file ~/.aMule/ED2KLinks, which will be checked by aMule every second for links."
-msgstr ""
+msgstr "Odesílá zadaný I<E<lt>eD2k-odkazE<gt>> do aMule, tedy zapíše ho do souboru ~/.aMule/ED2KLinks, který aMule každou sekundu kontroluje na přítomnost odkazů."
 
 #. type: TP
 #: ed2k.1.in
 #, no-wrap
 msgid "B<[ -t> I<E<lt>numE<gt>>, B<--category> I<E<lt>numE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -t> I<E<lt>čísloE<gt>>, B<--category> I<E<lt>čísloE<gt>> B<]>"
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "Set category for passed eD2k links to I<E<lt>numE<gt>>.  Unlike B<--config-dir>, the parser reads the value as the next argument and does not accept B<--category>=I<E<lt>numE<gt>> syntax."
-msgstr ""
+msgstr "Nastavte kategorii předaných odkazů eD2k na I<E<lt>čísloE<gt>>.  Na rozdíl od B<--config-dir>, parser čte hodnotu jako textový argument a nepřijímá syntaxi B<--category>=I<E<lt>čísloE<gt>>."
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "Loads all links found in the emulecollection given as I<E<lt>ed2k-linkE<gt>>"
-msgstr ""
+msgstr "Načte všechny odkazy nalezené v emulecollection jako I<E<lt>ed2k-odkazE<gt>>"
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "Lists all links found in the emulecollection given as I<E<lt>ed2k-linkE<gt>>"
-msgstr ""
+msgstr "Vypíše všechny odkazy nalezené v emulecollection jako I<E<lt>ed2k-odkazE<gt>>"
 
 #. type: TP
 #: ed2k.1.in
 #, no-wrap
 msgid "B<[ eD2k-link ]>"
-msgstr ""
+msgstr "B<[ eD2k-odkaz ]>"
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "Adds an eD2k-link to the core."
-msgstr ""
+msgstr "Přidá eD2k-odkaz jádru."
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "a magnet link;"
-msgstr ""
+msgstr "magnet odkaz;"
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "an emulecollection file."
-msgstr ""
+msgstr "soubor emulecollection."
 
 #. type: Plain text
 #: ed2k.1.in

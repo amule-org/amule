@@ -77,6 +77,9 @@ struct CPartMetFileOps
 	std::function<bool(const CPath &, const CPath &, wxString *)> replace;
 };
 
+//! Copies @a met to its name plus @a appendix. Unlike CPath::BackupFile, does not sync the copy.
+bool BackupPartMet(const CPath &met, const wxString &appendix);
+
 //! Backs up the old metadata without removing its live name, then installs the new file.
 //! On failure the live metadata stays in place and the temporary file remains for recovery.
 CPartMetSaveResult InstallPartMet(const CPartMetSaveRequest &req, const CPartMetFileOps &ops);

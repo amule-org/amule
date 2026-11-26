@@ -173,10 +173,9 @@ stream; eMuleAI and eMuleQt answer on a stream of their own, so the dial lets
 the peer open one bidirectional stream.
 
 Only a dial with a known peer hash can use QUIC. On the ed2k-server punch every
-dial has one: a 29- or 30-byte `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) carries it to
-the requester's dial, and to the target's dial and dial-back, which
-`OP_HOLEPUNCH` triggers but takes the hash from the `0x61` that announced the
-endpoint. The cross-server `0xA7` (`OP_NAT_CALLBACKREQUESTED_UDP`) answer
+dial has one, because each `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) carries it: to the
+requester's dial, and to the target's dial and dial-back, which `OP_HOLEPUNCH`
+triggers but takes the hash from the `0x61` that announced the endpoint. The cross-server `0xA7` (`OP_NAT_CALLBACKREQUESTED_UDP`) answer
 carries the target's hash, and a Lugdunum forward may carry the user hash. A
 dial without one uses uTP.
 
@@ -233,9 +232,10 @@ What aMule does with it, in QUIC builds and only while `QuicNatT=1`:
 
 - **Sending.** Every QUIC datagram is obfuscated with the peer's hash when it is known: the identity aMule
   dialled, or the hash a key frame announced. Obfuscation requires `ClientCryptLayerSupported` and a
-  nonzero sender public IP (`GetPublicIP() != 0`); where the peer sees a different source IP, its sender-IP
-  check may reject the datagram. A QUIC long-header packet is preceded by aMule's own key frame, at most
-  one per endpoint every 10 s. aMule sends its key frame only where it can itself be obfuscated; eMuleAI
+  key IP toward the peer (see [Split TCP and UDP exit](#split-tcp-and-udp-exit)); where the peer
+  sees a different source IP, its sender-IP check may reject the datagram. A QUIC long-header
+  packet is preceded by aMule's own key frame, at most one per endpoint every 10 s. aMule sends its
+  key frame only where it can itself be obfuscated; eMuleAI
   also sends it in the clear when it has no key, which exposes the sender's user hash to anyone on the
   path. With either prerequisite unavailable, datagrams go plain and no key frame is sent.
 - **Receiving.** A key frame is honoured only from an endpoint a rendezvous announced (the
@@ -263,7 +263,9 @@ The same prerequisites apply, and aMule's own key frame never leaves in the clea
 
 - **Dialling.** A dial that is obfuscated (the peer's hash and crypt support are known) sends aMule's key
   frame, obfuscated with the peer's hash, immediately before the SYN, at most once per endpoint every
-  10 s. A plain dial sends no key frame.
+  10 s. A plain dial sends no key frame. With no key IP toward the peer, a dial that either side
+  only requests to be obfuscated goes plain, since the stream handshake never runs over a transport;
+  one that either side requires is not made (`UtpDialObfuscationSatisfied()`).
 - **Accepting.** A key frame from any endpoint is held for 5 s (at most 256 endpoints) for the next SYN
   from that endpoint. A live server-vouched hash for the endpoint outranks it, and conflicting vouchers
   key nothing. With a key, the SYN-ACK (which libutp sends before the stream is accepted) and every frame
@@ -279,7 +281,7 @@ The same prerequisites apply, and aMule's own key frame never leaves in the clea
 In every case the hello replaces the key-frame hash with the crypt parameters it establishes.
 
 A key frame is queued only while it can be obfuscated, and it is dropped rather than sent plain if
-obfuscation lapses before it leaves (the public IP lost in between).
+obfuscation lapses before it leaves (the key IP lost in between).
 Ordinary client UDP keeps its existing plain fallback.
 
 The decisions are in [`src/NatKeyFrame.h`](../src/NatKeyFrame.h), driven from
@@ -469,7 +471,7 @@ applies to the `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) above, to the cross-server `0x
 (`OP_NAT_CALLBACKREQUESTED_UDP`) answer and to the extension wake, which each sent a single
 `OP_HOLEPUNCH` before. The wire format is unchanged: an empty `0xA1` (`OP_HOLEPUNCH`) under `0xC5`
 (`OP_EMULEPROT`) to the given UDP port. The due punches are sent from `CamuleApp::OnCoreTimer`
-(`CServerConnect::StartLowIdHolePunchSchedule()` sends the first, `SendDueLowIdHolePunches()` the
+(`CClientUDPSocket::StartLowIdHolePunchSchedule()` sends the first, `SendDueLowIdHolePunches()` the
 rest), so no thread is added.
 
 - one schedule per peer address and port: a second `0x61` for the same address and port restarts it
@@ -562,16 +564,19 @@ without `ENABLE_NATT_SERVER_COORDINATION`, nothing changes.
   (`SRV_UDPFLG_FOREIGN_NAT_CALLBACK`) in the UDP flags of its status reply and gave us its UDP key
   for our address (`NatServerHolePunch::ServerTakesForeignCallback()`,
   `CServerConnect::ForeignCallbackServer()`). A server address learnt from a peer is never asked;
-- keeping sources: while we are LowID, a LowID source of such a server survives
+- keeping sources: while we are firewalled, a LowID source of such a server survives
   `CPartFile::CanAddSource()`, from source exchange or from another server's answer
-  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`). A source of a listed `0x100000` server
-  that lacks only its UDP key is dropped, and that server's key is recovered (see
-  [Missing server UDP key](#missing-server-udp-key)), so later sources of it are kept;
+  (`NatServerHolePunch::ShouldKeepLowIdServerSource()`), whether or not we are logged in to a
+  server. A source of a listed `0x100000` server that lacks only its UDP key is dropped, and that
+  server's key is recovered (see [Missing server UDP key](#missing-server-udp-key)), so later
+  sources of it are kept;
 - requester: where a LowID-to-LowID contact is declined in `TryToContact()`, an odd LowID source
   on such a server gets `0xA6` (`OP_NAT_CALLBACKREQUEST`) `<target_id 4><0 4><crypt 1>`, server-key
   obfuscated, from the client UDP socket to that server's obfuscation UDP port. Requester ID 0
-  marks it foreign; `crypt` is our `(CT_SERVER_FLAGS >> 9) & 7`. Per server we send a burst of 5,
-  then one every 2 s, and at most 30 different targets in 10 minutes, below the server's own
+  marks it foreign; `crypt` is our `(CT_SERVER_FLAGS >> 9) & 7`. The server answers the address the
+  request came from, so we need no session of our own, only its UDP key for our current IP, and
+  none is sent to a server we are still logging in to. Per server we send a burst of 5, then one
+  every 2 s, and at most 30 different targets in 10 minutes, below the server's own
   limits. A request waits 30 s for its answer; a target that never answers is not asked again for
   10 minutes (`NatServerHolePunch::ForeignCallbackRequests`);
 - requester, answer: the server's `0xA7` (`OP_NAT_CALLBACKREQUESTED_UDP`) is accepted only from that
@@ -703,10 +708,14 @@ aMule keeps a **key IP** per peer IPv4: the address that peer sees our UDP at, k
 differs from our login address (`NatSourceEcho::CKeyIps`, at most 256, each until an hour without
 use, or until our login address changes). `CClientUDPSocket::ClientCryptKeyIP()` gives it to every
 ed2k-keyed datagram queued to that peer, punches, uTP and QUIC alike, and the uTP simultaneous-open
-tie-break orders by it, else by Kad's view of our address. `VerifyIdent()` does not use it: it
-checks a `CRYPT_CIP_REMOTECLIENT` signature on a uTP or QUIC stream against the server field below
-while logged in, else Kad's view (`NatSourceEcho::IdentUdpIP()`). The echo is the peer's own word,
-and a peer that relays another's signature would echo its own IP. Two sources fill the key IP:
+tie-break orders by it, else by Kad's view of our address. Whether anything toward that peer is
+obfuscated at all is decided with the same key IP, else our public IP, else a verified stream's
+(`CMuleUDPSocket::ClientKeyIP()`). The key IP needs a login address, so while our public IP is
+unknown only a verified stream's key IP keeps traffic to its peer obfuscated. `VerifyIdent()`
+does not use it: it checks a `CRYPT_CIP_REMOTECLIENT` signature on a uTP or QUIC stream against
+the server field below while logged in, else Kad's view (`NatSourceEcho::IdentUdpIP()`). The echo
+is the peer's own word, and a peer that relays another's signature would echo its own IP. Two
+sources fill the key IP:
 
 - **The server field.** The `own_ip` of a 36-byte `0x61` (`OP_LOWID_HOLEPUNCH_INFO`) is the key IP
   toward every peer punched in that login (`ExpectNatTPeer()`). A shorter `0x61` means the server

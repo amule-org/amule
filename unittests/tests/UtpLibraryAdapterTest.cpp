@@ -1295,6 +1295,48 @@ TEST(UtpLibraryAdapter, BytesCrossTheStreamInOrder)
 	Teardown(loop);
 }
 
+//! The peer offers twice the wide bound and we read nothing: delivery stalls just short of it.
+void AssertStallsAtTheWideBound(SLoopback &loop, IStreamTransport &transport)
+{
+	const size_t bound = CUtpReadWindowBudget::kWideReadBound;
+	std::vector<uint8_t> payload(bound * 2);
+	size_t offered = 0;
+	for (int round = 0; round < 256 && offered < payload.size(); ++round) {
+		utp_iovec vector{ payload.data() + offered, payload.size() - offered };
+		const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
+		if (accepted > 0) {
+			offered += static_cast<size_t>(accepted);
+		}
+		Pump(loop);
+	}
+	const size_t buffered = static_cast<CUtpSocketTransport &>(transport).ReadBufferSize();
+	CFormat stalled("buffered %u, bound %u");
+	const wxString detail = stalled % unsigned(buffered) % unsigned(bound);
+	// Past the default bound, so the wide one is in force, and stalled short of it.
+	ASSERT_TRUE_M(buffered > CUtpStream::kDefaultReadBound, detail);
+	ASSERT_TRUE_M(buffered <= bound, detail);
+	ASSERT_TRUE_M(buffered + 2048 >= bound, detail);
+}
+
+TEST(UtpLibraryAdapter, ADialStopsAtTheWideBound)
+{
+	SLoopback loop;
+	g_loop = &loop;
+	CServerSink sink;
+	loop.server = CreateUtpLibrary();
+	ASSERT_TRUE(loop.server->Create(sink));
+	StartClientAcceptor(loop);
+	std::unique_ptr<IStreamTransport> transport;
+	ASSERT_TRUE(loop.server->Dial(kPeerIp, kPeerPort, false, nullptr, transport));
+	Pump(loop);
+	ASSERT_TRUE(transport->IsConnected());
+	ASSERT_TRUE(loop.clientSocket != nullptr);
+	// libutp's accepting side sends nothing until the dialer has.
+	ExchangeOneFrameEachWay(loop, *transport, 0x5A);
+	AssertStallsAtTheWideBound(loop, *transport);
+	Teardown(loop);
+}
+
 TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing)
 {
 	// The window is opt_rcvbuf minus reported occupancy, so a reader that stops
@@ -1310,16 +1352,16 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	Pump(loop);
 	ASSERT_TRUE(acceptor.accepted != nullptr);
 
-	const size_t bound = CUtpStream::kDefaultReadBound;
+	const size_t bound = CUtpReadWindowBudget::kWideReadBound;
 	std::vector<uint8_t> payload(bound * 2);
 	for (size_t i = 0; i < payload.size(); ++i) {
 		payload[i] = static_cast<uint8_t>((i * 7) & 0xFF);
 	}
 
 	// Offer everything without reading a byte. Delivery must stall at the
-	// bound: more than that in flight would mean the 64 KiB never took effect.
+	// bound.
 	size_t offered = 0;
-	for (int round = 0; round < 64 && offered < payload.size(); ++round) {
+	for (int round = 0; round < 256 && offered < payload.size(); ++round) {
 		utp_iovec vector{ payload.data() + offered, payload.size() - offered };
 		const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
 		if (accepted > 0) {
@@ -1331,8 +1373,7 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	auto *utp = static_cast<CUtpSocketTransport *>(acceptor.accepted.get());
 	const size_t buffered = utp->ReadBufferSize();
 	// Short of the bound: libutp stops once the window cannot hold a packet.
-	// Without UTP_RCVBUF the 1 MiB default would govern and all of it would be
-	// here.
+	// A stream that missed UTP_RCVBUF would stall at the context's 256 KiB.
 	CFormat stalled("buffered %u, bound %u, payload %u");
 	const wxString detail = stalled % unsigned(buffered) % unsigned(bound) % unsigned(payload.size());
 	ASSERT_TRUE_M(buffered < payload.size(), detail);
@@ -1355,7 +1396,7 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	ASSERT_TRUE(utp->ReadBufferSize() != 0);
 
 	// The rest must now arrive.
-	for (int round = 0; round < 512 && (offered < payload.size() || total < payload.size()); ++round) {
+	for (int round = 0; round < 4096 && (offered < payload.size() || total < payload.size()); ++round) {
 		if (offered < payload.size()) {
 			utp_iovec vector{ payload.data() + offered, payload.size() - offered };
 			const ssize_t accepted = utp_writev(loop.clientSocket, &vector, 1);
@@ -1393,10 +1434,10 @@ TEST(UtpLibraryAdapter, DeliveryStopsAtTheConfiguredBoundAndResumesOnTheCrossing
 	const wxString diag = progress % unsigned(offered) % unsigned(total) %
 			      unsigned(utp->ReadBufferSize()) % unsigned(sink.datagrams);
 	ASSERT_EQUALS_M((unsigned)payload.size(), (unsigned)total, diag);
-	for (size_t i = 0; i < payload.size(); ++i) {
-		CFormat format("byte %u differs after the window reopened");
-		ASSERT_EQUALS_M((int)payload[i], (int)received[i], format % unsigned(i));
-	}
+	// One check, not one per byte: a message per byte of 2 MiB is slow.
+	const auto differs = std::mismatch(payload.begin(), payload.end(), received.begin());
+	CFormat format("byte %u differs after the window reopened");
+	ASSERT_TRUE_M(differs.first == payload.end(), format % unsigned(differs.first - payload.begin()));
 	Teardown(loop);
 }
 

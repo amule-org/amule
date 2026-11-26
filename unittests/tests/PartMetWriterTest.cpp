@@ -235,7 +235,7 @@ TEST(WritePartMet, FailedInstallPreservesLiveMetadataAndCanRetry)
 		CFile tmp(Tmp(), CFile::write);
 		tmp.WriteUInt8(2);
 	}
-	const CPartMetFileOps failing = { CPath::BackupFile,
+	const CPartMetFileOps failing = { BackupPartMet,
 		[&req](const CPath &src, const CPath &dst, wxString *detail) {
 			if (dst.GetRaw() == req.metPath.GetRaw()) {
 				*detail = "installation denied";
@@ -249,7 +249,7 @@ TEST(WritePartMet, FailedInstallPreservesLiveMetadataAndCanRetry)
 	ASSERT_EQUALS(1, ReadAll(Met())[0]);
 	ASSERT_EQUALS(1, ReadAll(Bak())[0]);
 	ASSERT_EQUALS(2, ReadAll(Tmp())[0]);
-	const CPartMetFileOps working = { CPath::BackupFile, CPath::ReplaceEntry };
+	const CPartMetFileOps working = { BackupPartMet, CPath::ReplaceEntry };
 	ASSERT_EQUALS(CPartMetSaveResult::Saved, InstallPartMet(req, working).status);
 	ASSERT_EQUALS(2, ReadAll(Met())[0]);
 	ASSERT_EQUALS(1, ReadAll(Bak())[0]);
@@ -269,7 +269,7 @@ TEST(WritePartMet, LiveMetadataRemainsDiscoverableBetweenBackupAndInstall)
 		tmp.WriteUInt8(2);
 	}
 	bool livePresent = false;
-	const CPartMetFileOps ops = { CPath::BackupFile,
+	const CPartMetFileOps ops = { BackupPartMet,
 		[&livePresent, &req](const CPath &src, const CPath &dst, wxString *detail) {
 			if (dst.GetRaw() == req.metPath.GetRaw()) {
 				livePresent = Met().FileExists() && ReadAll(Met())[0] == 1 &&
@@ -291,7 +291,7 @@ TEST(WritePartMet, FirstInstallFailureDoesNotReportSaved)
 		tmp.WriteUInt8(2);
 	}
 	auto req = Request(2);
-	const CPartMetFileOps ops = { CPath::BackupFile, [](const CPath &, const CPath &, wxString *detail) {
+	const CPartMetFileOps ops = { BackupPartMet, [](const CPath &, const CPath &, wxString *detail) {
 					     *detail = "replacement denied";
 					     return false;
 				     } };
@@ -412,7 +412,7 @@ TEST(WritePartMet, FailedBackupInstallPreservesBothPreviousVersions)
 		CFile tmp(Tmp(), CFile::write);
 		tmp.WriteUInt8(3);
 	}
-	const CPartMetFileOps ops = { CPath::BackupFile, [](const CPath &, const CPath &, wxString *detail) {
+	const CPartMetFileOps ops = { BackupPartMet, [](const CPath &, const CPath &, wxString *detail) {
 					     *detail = "replacement denied";
 					     return false;
 				     } };
@@ -465,7 +465,7 @@ TEST(WritePartMet, TemporaryLinkCannotOverwriteItsTarget)
 
 TEST(WritePartMet, StagedBackupLinkCannotOverwriteItsTarget)
 {
-	// Check both a live target and a dangling link: BackupFile must receive a
+	// Check both a live target and a dangling link: BackupPartMet must receive a
 	// fresh staging path instead of following a left-over link from an earlier run.
 	for (bool dangling : { false, true }) {
 		RemoveAll();

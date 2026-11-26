@@ -28,9 +28,11 @@
 #include "UtpTransportFailure.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <memory>
 #include <vector>
 
 /**
@@ -89,6 +91,7 @@ public:
 	 * and OnPayload() never refuses bytes the peer already paid to send -- so this value is also
 	 * the memory a single slow-reading connection may hold. eMuleAI settled on the same 256 KiB
 	 * (eMuleAI/UtpSocket.cpp), which is the interoperability argument for it as well.
+	 * CUtpReadWindowBudget raises it to kWideReadBound for up to kMaxWideStreams streams at once.
 	 */
 	static constexpr size_t kDefaultReadBound = 256 * 1024;
 	// A smaller slack is less than a packet: occupancy stalls a packet short of the bound, never
@@ -299,6 +302,78 @@ private:
 	bool m_blocksWrite = false;
 	bool m_readDrainedDue = false;
 	EUtpTransportFailure m_failure = EUtpTransportFailure::None;
+};
+
+/**
+ * Picks a new stream's read bound: kWideReadBound while fewer than kMaxWideStreams hold it, else
+ * CUtpStream::kDefaultReadBound.
+ *
+ * The bound is the window the peer may fill in one round trip. On a lab rig with a 4 MiB socket
+ * buffer, 1 MiB moved 1.9 times as much as 256 KiB at 50 ms and 3.7 times as much at 100 ms.
+ * With Linux's default 212992-byte buffer it moved 1.2 times as much at 10 ms. At 50 and 100 ms
+ * that small buffer drops packets, the congestion window stays under both bounds, and 1 MiB
+ * neither gains nor loses. The cap is there because a slow reader can pin about twice its bound
+ * (kReadOverrunFactor).
+ *
+ * Take() is for the main thread; a lease may be released on any thread.
+ */
+class CUtpReadWindowBudget
+{
+public:
+	static constexpr size_t kWideReadBound = 1024 * 1024;
+	static constexpr size_t kMaxWideStreams = 32;
+	static_assert(kWideReadBound / CUtpStream::kWindowSlackDivisor >= CUtpStream::kWindowSlackBytes,
+		"read bound too small for a full slack");
+
+	//! Holds one wide bound until destroyed. A default lease holds nothing.
+	class CLease
+	{
+	public:
+		CLease() = default;
+		CLease(CLease &&other) noexcept
+		: m_wide(std::move(other.m_wide))
+		{
+		}
+		CLease &operator=(CLease &&other) noexcept
+		{
+			if (this != &other) {
+				Release();
+				m_wide = std::move(other.m_wide);
+			}
+			return *this;
+		}
+		~CLease() { Release(); }
+		bool HoldsWide() const { return m_wide != nullptr; }
+		size_t ReadBound() const { return m_wide ? kWideReadBound : CUtpStream::kDefaultReadBound; }
+
+	private:
+		friend class CUtpReadWindowBudget;
+		void Release()
+		{
+			if (m_wide) {
+				--*m_wide;
+				m_wide.reset();
+			}
+		}
+		// Shared, so a lease that outlives its budget still releases safely.
+		std::shared_ptr<std::atomic<size_t>> m_wide;
+	};
+
+	//! The lease for a new stream.
+	CLease Take()
+	{
+		CLease lease;
+		if (m_wide->load() < kMaxWideStreams) {
+			++*m_wide;
+			lease.m_wide = m_wide;
+		}
+		return lease;
+	}
+
+	size_t WideStreams() const { return m_wide->load(); }
+
+private:
+	std::shared_ptr<std::atomic<size_t>> m_wide = std::make_shared<std::atomic<size_t>>(0);
 };
 
 #endif // UTPSTREAM_H

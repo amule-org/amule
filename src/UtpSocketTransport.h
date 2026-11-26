@@ -85,8 +85,6 @@ public:
  * is reached from the upload bandwidth thread through CEMSocket, so it only
  * queues into CUtpStream and the main thread hands those bytes to libutp on the
  * next Flush(). That split is the whole reason the queue exists.
- *
- * Nothing constructs one of these yet.
  */
 class CUtpSocketTransport final : public IStreamTransport
 {
@@ -96,13 +94,16 @@ public:
 		const CNetworkAddress &peer,
 		uint16_t peerPort,
 		IStreamTransportEvents *events,
-		bool inbound)
+		bool inbound,
+		CUtpReadWindowBudget::CLease &&readWindow = {})
 	: m_operations(operations)
 	, m_socket(socket)
 	, m_peer(peer)
 	, m_peerPort(peerPort)
 	, m_inbound(inbound)
 	, m_events(events)
+	, m_stream(CUtpStream::kDefaultWriteBound, readWindow.ReadBound())
+	, m_readWindow(std::move(readWindow))
 	{
 	}
 
@@ -656,6 +657,7 @@ private:
 	// transport synchronously. Destruction detaches before library re-entry.
 	IStreamTransportEvents *m_events;
 	CUtpStream m_stream;
+	CUtpReadWindowBudget::CLease m_readWindow;
 	bool m_connected = false;
 	std::recursive_mutex m_raiseMutex;
 	bool m_flushPending = false;

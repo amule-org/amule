@@ -275,10 +275,7 @@ bool CMuleUDPSocket::TrySendObfuscatedPacket(
 {
 	wxCHECK_MSG(packet, false, "Invalid packet.");
 	if (targetClientHash == nullptr ||
-		DecideUdpSendForm(thePrefs::IsClientCryptLayerSupported(),
-			true,
-			false,
-			ClientUdpKeyIP(ClientCryptKeyIP(IP), theApp->GetPublicIP(true), StreamKeyIP(IP))) !=
+		DecideUdpSendForm(thePrefs::IsClientCryptLayerSupported(), true, false, ClientKeyIP(IP)) !=
 			EUdpSendForm::Obfuscated) {
 		AddDebugLogLineN(logMuleUDP,
 			(m_name + ": Packet discarded, it cannot be obfuscated (")
@@ -376,6 +373,11 @@ uint32 CMuleUDPSocket::ClientCryptKeyIP(uint32)
 uint32 CMuleUDPSocket::StreamKeyIP(uint32)
 {
 	return 0;
+}
+
+uint32 CMuleUDPSocket::ClientKeyIP(uint32 ip)
+{
+	return ClientUdpKeyIP(ClientCryptKeyIP(ip), theApp->GetPublicIP(true), StreamKeyIP(ip));
 }
 
 bool CMuleUDPSocket::Ok()

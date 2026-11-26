@@ -1986,14 +1986,16 @@ bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	[[maybe_unused]] unsigned origin)
 {
 #if defined(ENABLE_IPV6) || defined(ENABLE_NATT_SERVER_COORDINATION)
-	if (theApp->serverconnect == nullptr || !theApp->serverconnect->IsConnected()) {
+	if (theApp->serverconnect == nullptr) {
 		return false;
 	}
+	// Our ID outlives the session that gave it.
+	const bool weAreLowId = theApp->serverconnect->IsConnected() && theApp->serverconnect->IsLowID();
 #endif
 #ifdef ENABLE_IPV6
 	if (const CServer *current = theApp->serverconnect->GetCurrentServer();
 		current != nullptr &&
-		ShouldKeepLowIdSourceForIPv6Callback(theApp->serverconnect->IsLowID(),
+		ShouldKeepLowIdSourceForIPv6Callback(weAreLowId,
 			current->GetIP() == serverip && current->GetPort() == serverport,
 			current->OffersIPv6Callback(),
 			current->GetIPv6Verdict())) {
@@ -2001,6 +2003,7 @@ bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	}
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION
+	// Logged out, only a cross-server request can still reach the source.
 	// A server is either Lugdunum or ed2k-server: each keeps a LowID source it would
 	// otherwise call back / hole-punch, so the two checks are independent and only one can apply
 	// to a given current server.
@@ -2008,7 +2011,6 @@ bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	const bool originIsLocalServer = origin == SF_LOCAL_SERVER;
 	const bool sourceServerIsOurCurrentServer =
 		current != nullptr && current->GetIP() == serverip && current->GetPort() == serverport;
-	const bool weAreLowId = theApp->serverconnect->IsLowID();
 
 	LugdunumNatTraversal::LowIdServerSourceFacts lugdunumFacts;
 	lugdunumFacts.originIsLocalServer = originIsLocalServer;
@@ -2031,7 +2033,7 @@ bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	holePunchFacts.wakeKeepaliveAnnounced = NatServerHolePunch::ShouldAnnounceWakeKeepalive(
 		thePrefs::IsLowIdHolePunchEnabled(), thePrefs::IsLugdunumNatCallbackEnabled(), utpAvailable);
 	holePunchFacts.sourceServerTakesForeignCallback =
-		!sourceServerIsOurCurrentServer && holePunchFacts.wakeKeepaliveAnnounced && weAreLowId &&
+		!sourceServerIsOurCurrentServer && holePunchFacts.wakeKeepaliveAnnounced &&
 		theApp->serverconnect->ForeignCallbackServer(serverip, serverport) != nullptr;
 
 	return LugdunumNatTraversal::ShouldKeepLowIdServerSource(lugdunumFacts) ||
