@@ -5152,7 +5152,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 		return ErrorResponse(400,
 			"bad_request",
 			"request body must include at least one of "
-			"`action`, `priority`, `category_index`, `my_comment`+`my_rating`, or `name`");
+			"`action`, `priority`, `category_index`, `a4af_auto`, `my_comment`+`my_rating`, or "
+			"`name`");
 	}
 
 	const auto applied = ApplyFilePatch(m_app, commands);
