@@ -24,14 +24,31 @@
 #include "MD4Hash.h"                 // Needed for CMD4Hash
 #include "Refill.h"                  // Needed for CRefill
 #include "Types.h"                   // Needed for uint64, needed by Constants.h
-#include <protocol/ed2k/Constants.h> // Needed for UDPSERVERREASKTIME
+#include <protocol/ed2k/Constants.h> // Needed for UDPSERVERREASKTIME and UDPSERVSTATREASKTIME
 
 #include <algorithm>
 #include <cstdint>
+#include <ctime>
 #include <deque>
 #include <functional>
 #include <map>
 #include <vector>
+
+// The first status reply gives the UDP flags a request depends on: files per packet, the opcode, and
+// whether the server takes a foreign NAT callback for the LowID sources it answers with. Requests
+// wait for it while a ping is due, and at most this long after the last ping.
+constexpr time_t kFirstServerStatusWaitS = 30;
+
+// pingSchedule is CServer::GetLastPingedTime(), saved in server.met: ServerStats() pings again
+// UDPSERVSTATREASKTIME after it. lastPingSent is CServer::GetRealLastPingedTime(), 0 until a ping
+// in this session. A server whose next ping is hours away is asked as before.
+inline bool AwaitsFirstServerStatus(bool statusKnown, time_t pingSchedule, time_t lastPingSent, time_t now)
+{
+	// HR2S(4.5) is a double.
+	constexpr time_t reaskTime = static_cast<time_t>(UDPSERVSTATREASKTIME);
+	const bool pingDue = pingSchedule == 0 || now >= pingSchedule + reaskTime;
+	return !statusKnown && (pingDue || now < lastPingSent + kFirstServerStatusWaitS);
+}
 
 // The global source requests one non-connected server gets: which downloads to ask it about, and
 // when. Lugdunum 17.15 stops answering an IP, for an hour or more, once its requests cost too much:

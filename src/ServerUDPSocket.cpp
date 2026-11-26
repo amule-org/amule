@@ -265,6 +265,7 @@ void CServerUDPSocket::ProcessPacket(CMemFile &packet, uint8 opcode, uint32 ip, 
 			update->SetSoftFiles(cur_softfiles);
 			update->SetHardFiles(cur_hardfiles);
 			update->SetUDPFlags(uUDPFlags);
+			update->SetUDPStatusKnown();
 			update->SetLowIDUsers(uLowIDUsers);
 			update->SetServerKeyUDP(dwServerUDPKey);
 			update->SetObfuscationPortTCP(nTCPObfuscationPort);

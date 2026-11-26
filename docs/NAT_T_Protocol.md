@@ -763,6 +763,12 @@ does nothing while an obfuscated ping is still waiting for its answer, when the 
 support UDP obfuscation, when our public IP is unknown (the ping would go plain), or when the server
 crypt layer is off.
 
+A server with no status answer yet, one just added or from a `server.met` with no UDP flags, gets no
+`0x9A` (`OP_GLOBGETSOURCES`) while its status ping is due, and for at most 30 s after its last ping
+(`AwaitsFirstServerStatus()`). Asked earlier, it answers with LowID sources that the check above
+drops, and is asked about them again only after `UDPSERVERREASKTIME`, about 22 minutes. A server
+whose next ping is hours away, as saved in `server.met`, is asked without waiting.
+
 An unanswered plain ping counts as a failure, and `ServerStats()` removes a server after
 `DeadServerRetry` failures. In a round that recovery brought forward it does not
 (`CServer::IsKeyRecoveryPing()`), so only the regular rounds count, and recovery never brings a
