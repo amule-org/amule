@@ -41,4 +41,17 @@ inline bool ProvesTcpPortReachable(EConnectionOpener opener, bool streamTranspor
 	return opener == EConnectionOpener::Dial && !streamTransport;
 }
 
+/**
+ * Whether a connection an acknowledgement of our own TCP firewall check arrived on shows our port
+ * takes connections, so that it may count as one of our confirmations.
+ *
+ * Only a plain TCP connection the checker opened to us does. A checker that runs eMule or an older
+ * aMule may send it over a connection we opened, or one a rendezvous set up, and neither shows
+ * anything about our port.
+ */
+inline bool ProvesOwnTcpPortReachable(EConnectionOpener opener, bool streamTransport) noexcept
+{
+	return opener == EConnectionOpener::Accepted && !streamTransport;
+}
+
 #endif // KAD_FIREWALL_CHECK_POLICY_H

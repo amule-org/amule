@@ -758,13 +758,14 @@ void CClientList::Process()
 
 		case KS_CONNECTED_FWCHECK:
 			// We successfully connected to the client.
-			// We now send a ack to let them know, if the connection is ours: one the node
-			// opened to us proves nothing about its port, so it gets no ACK at all.
+			// We now send a ack to let them know, if the connection proves the node's
+			// TCP port: one it opened to us, or one of ours through a punched NAT mapping,
+			// proves nothing, so it gets no ACK at all.
 			if (!ConnectionProvesTcpPort(cur_client)) {
 				AddDebugLogLineN(logLocalClient,
 					"Local Client: no TCP firewall check ACK to " +
 						Uint32toStringIP(cur_client->GetIP()) +
-						", the connection is not one we dialled");
+						", the connection doesn't prove its TCP port");
 			} else if (cur_client->GetKadVersion() >= 7) {
 				// The result is now sent over TCP instead of UDP, because UDP fails
 				// if our internal port is unreachable. We want the TCP test result
@@ -1294,8 +1295,8 @@ bool CClientList::RequestTCP(Kademlia::CContact *contact, uint8_t connectOptions
 		return false; // already busy with this client in some way (probably buddy stuff), don't mess
 			      // with it
 	} else if (pNewClient->IsConnected() && !ConnectionProvesTcpPort(pNewClient)) {
-		// The ACK would go over a connection we did not dial. Process() checks again before
-		// sending, as the node can still connect to us while ours is pending.
+		// The ACK would go over a connection that doesn't prove the peer's TCP port. Process()
+		// checks again before sending, as the node can still connect to us while ours is pending.
 		return false;
 	}
 

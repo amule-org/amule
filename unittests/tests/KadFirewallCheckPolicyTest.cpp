@@ -60,3 +60,30 @@ TEST(KadFirewallCheckPolicy, AStreamTransportDoesNotProveTheTcpPort)
 {
 	ASSERT_FALSE(ProvesTcpPortReachable(EConnectionOpener::Dial, true));
 }
+
+TEST(KadFirewallCheckPolicy, AConnectionTheCheckerOpenedProvesOurPort)
+{
+	ASSERT_TRUE(ProvesOwnTcpPortReachable(EConnectionOpener::Accepted, false));
+}
+
+TEST(KadFirewallCheckPolicy, AnAckOverOurOwnConnectionProvesNothing)
+{
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::Dial, false));
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::HolePunchDial, false));
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::LugdunumCallbackDial, false));
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::AnswerServerCallback, false));
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::AnswerKadCallback, false));
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::AnswerDirectCallback, false));
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::AnswerLugdunumCallback, false));
+}
+
+TEST(KadFirewallCheckPolicy, AnAckAfterARendezvousProvesNothing)
+{
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::AcceptedRendezvous, false));
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::AcceptedLugdunumRendezvous, false));
+}
+
+TEST(KadFirewallCheckPolicy, AnAckOverAStreamTransportDoesNotProveOurTcpPort)
+{
+	ASSERT_FALSE(ProvesOwnTcpPortReachable(EConnectionOpener::Accepted, true));
+}
