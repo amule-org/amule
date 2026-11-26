@@ -241,13 +241,11 @@ gboolean on_status_icon_activate_hook(
 	// The library connects all its handlers on the icon with the indicator as their data.
 	if (indicator &&
 		g_signal_handler_find(icon, G_SIGNAL_MATCH_DATA, 0, 0, nullptr, nullptr, indicator)) {
-		g_signal_handlers_disconnect_matched(icon,
-			static_cast<GSignalMatchType>(G_SIGNAL_MATCH_ID | G_SIGNAL_MATCH_DATA),
-			hint->signal_id,
-			0,
-			nullptr,
-			nullptr,
-			indicator);
+		// GLib takes a combination of bit flags here, not a single enum value.
+		// NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+		const auto match = static_cast<GSignalMatchType>(G_SIGNAL_MATCH_ID | G_SIGNAL_MATCH_DATA);
+		g_signal_handlers_disconnect_matched(
+			icon, match, hint->signal_id, 0, nullptr, nullptr, indicator);
 		on_indicator_activate(nullptr, 0, 0, tray);
 	}
 	return TRUE;
