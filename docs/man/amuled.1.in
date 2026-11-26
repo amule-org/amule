@@ -2,7 +2,7 @@
 .als B_untranslated B
 .als RB_untranslated RB
 .SH NAME
-amuled \- the all\-platform eMule p2p client \- daemonized version
+amuled \- the all\-platform P2P client for the eD2k and Kad networks \- daemonized version
 .SH SYNOPSIS
 .B_untranslated amuled
 .RB [ \-c " " \fI<path> ]
