@@ -206,7 +206,7 @@ proposal still to be agreed with eNode-go.
     the next `OP_SERVERIDENT` offers the callback again.
   - `6` (the source did not opt in): that source is not asked again in this server session.
   - `8` (over the relay allowance): the source is asked again after 30 s, not after the source
-    reask time, or when a NAT-T step sent at the refusal has had its 60 s.
+    reask time. When a NAT-T step went out at the refusal, after that step's 60 s.
   - `4` (the source is us), `5` (the source is gone), `7` (the source is unreachable), and any
     other value end only that request.
 
