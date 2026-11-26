@@ -837,9 +837,8 @@ void CamuleDlg::HideToTray()
 #if defined(__WXGTK__) && !defined(__APPLE__)
 bool CamuleDlg::Show(bool show)
 {
-	// GTK shows a hidden window maximized again if it was, but not fullscreen: the window comes
-	// back with its borders, at the fullscreen size. So ask for fullscreen before the window
-	// maps, from the normal bounds that leaving fullscreen restores.
+	// GTK shows a hidden window maximized again if it was, but not fullscreen. So ask for
+	// fullscreen before the window maps, from the normal bounds that leaving fullscreen restores.
 	if (show != IsShown()) {
 		if (!show) {
 			m_restoreFullScreen = IsFullScreen();
