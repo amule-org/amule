@@ -16,7 +16,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-23 13:43+0000\n"
+"PO-Revision-Date: 2026-11-26 09:07+0000\n"
 "Last-Translator: Hosted Weblate user 54392 <hamburger2048@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Simplified Han script) <https://hosted.weblate.org/projects/amule/amule-application/zh_Hans/>\n"
 "Language: zh_CN\n"
@@ -4318,9 +4318,9 @@ msgid "Error creating UDP socket %s %d : %s"
 msgstr "创建 UDP 套接字 %s %d 出错：%s"
 
 #: src/LibSocketAsio.cpp
-#, fuzzy, c-format
+#, c-format
 msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes, so bursts of uTP and QUIC data can be lost. To avoid that, run as root, on the host if aMule runs in a container: %s"
-msgstr "net.core.rmem_max 将 UDP 接收缓存限制到 %d 字节。uTP 和 QUIC 数据的迸发可能丢失；将它设为 %d 避免此情况。"
+msgstr "net.core.rmem_max 将 UDP 接收缓存限制到 %d 字节，因此 uTP 和 QUIC 数据的迸发可能丢失。为避免此情况，如 aMule 运行在容器中，在主机上以 root 权限运行：%s"
 
 #: src/LibSocketAsio.cpp
 #, c-format
