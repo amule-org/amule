@@ -1325,9 +1325,8 @@ void CClientUDPSocket::SendDueLowIdHolePunches(uint64 now)
 		}
 		// One sweep per destination address every five minutes, ten a minute overall, for the
 		// server paths and for the Kad buddy each.
-		NatServerHolePunch::SweepBudget &budget =
-			due.path == NatServerHolePunch::RendezvousPath::KadBuddy ? m_kadBuddyHolePunchSweeps
-										 : m_lowIdHolePunchSweeps;
+		NatServerHolePunch::SweepBudget &budget = NatServerHolePunch::SweepBudgetFor(
+			due.path, m_lowIdHolePunchSweeps, m_kadBuddyHolePunchSweeps);
 		if (!budget.Admit(due.peerIP, now)) {
 			AddDebugLogLineN(logClientUDP,
 				CFormat("Punch sweep to %s refused by the sweep budget") %

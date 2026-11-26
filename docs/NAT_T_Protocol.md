@@ -876,9 +876,8 @@ reask.
   address may start one attempt every 5 s, and all requesters together 20 a
   minute, a budget apart from the server paths' 20 actions a minute. Its port
   sweeps spend a budget of their own too, apart from the ten a minute the server
-  paths share. The source
-  a buddy relays can be forged, so the per-address limit alone would not stop a
-  sender that forges a new one each time.
+  paths share. The source a buddy relays can be forged, so the per-address limit
+  alone would not stop a sender that forges a new one each time.
 - **Statistics.** `buddy.own.rendezvous` counts what the buddy forwarded:
   `received`, `malformed`, `no_shared_transport`, `accepted`, and `connected`
   when the requester's verified hello completes it. The Kad buddy path counts

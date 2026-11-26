@@ -1274,17 +1274,22 @@ TEST(NatServerHolePunch, EachPunchDueNamesThePathThatStartedItsSchedule)
 	}
 }
 
-// Ten sweeps a minute for all the server paths together: a Kad buddy that forges its sources must
-// not use them up, so its sweeps spend a budget of their own.
+// Ten sweeps a minute for all the server paths together: a sender that forges the source a Kad buddy
+// relays must not use them up, so the Kad path's sweeps spend a budget of their own.
 TEST(NatServerHolePunch, SeparateSweepBudgetsDoNotSpendEachOther)
 {
 	SweepBudget server;
 	SweepBudget kad;
 	for (std::uint8_t i = 0; i < kMaxSweepsPerWindow; ++i) {
-		ASSERT_TRUE(kad.Admit(IPv4{ { 198, 51, 100, i } }, 1'000));
+		ASSERT_TRUE(SweepBudgetFor(RendezvousPath::KadBuddy, server, kad)
+				    .Admit(IPv4{ { 198, 51, 100, i } }, 1'000));
 	}
-	ASSERT_FALSE(kad.Admit(IPv4{ { 203, 0, 113, 1 } }, 1'001));
-	ASSERT_TRUE(server.Admit(IPv4{ { 203, 0, 113, 1 } }, 1'001));
+	const IPv4 next{ { 203, 0, 113, 1 } };
+	ASSERT_FALSE(SweepBudgetFor(RendezvousPath::KadBuddy, server, kad).Admit(next, 1'001));
+	for (const RendezvousPath path : { RendezvousPath::ServerPunch, RendezvousPath::LugdunumCallback }) {
+		ASSERT_TRUE(&SweepBudgetFor(path, server, kad) == &server);
+	}
+	ASSERT_TRUE(SweepBudgetFor(RendezvousPath::ServerPunch, server, kad).Admit(next, 1'001));
 }
 
 TEST(NatServerHolePunch, TheServerPunchSchedulePunchesAtZeroHalfOneAndTwoSeconds)

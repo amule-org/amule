@@ -930,6 +930,14 @@ private:
 	std::vector<Address> m_addresses;
 	std::deque<std::uint64_t> m_recent;
 };
+
+// The server paths share one sweep budget; the Kad buddy path, whose requester sources can be
+// forged, spends its own.
+inline SweepBudget &SweepBudgetFor(RendezvousPath path, SweepBudget &serverPaths, SweepBudget &kadBuddy)
+{
+	return IsServerPath(path) ? serverPaths : kadBuddy;
+}
+
 // Wake keepalive (ed2k-server's hole-punch extension). The server wakes the target with Lugdunum's 0x37 and
 // waits for its fresh 0x9F before it hands out the target's port: in a 30-byte 0x61 after a 0x60 (ed2k-server
 // 0.9.85), or in a 0xA7 to a requester on another server. ed2k-server sets 0x100000 in both flag words;
