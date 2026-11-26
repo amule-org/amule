@@ -301,9 +301,10 @@ aMule dials a HighID peer over TCP, also when the peer sets the NAT traversal bi
 aMule dials uTP and QUIC only for a LowID rendezvous: a server-vouched dial or a callback.
 aMule still accepts incoming uTP streams.
 
-eMuleAI also dials a HighID peer over TCP, bit or not: it picks uTP or QUIC only for a LowID peer or
-a NAT-T connect it was asked for. aMule sets the bits only while firewalled
-(`LocalAdvertisedModMiscOptions()`).
+eMuleAI dials a HighID peer over TCP, bit or not, except when it answers a Kad callback
+(`OP_CALLBACK`) for a peer it already knows: then it tries the transport that peer's hello declared
+before TCP. aMule sets the bits only while firewalled (`LocalAdvertisedModMiscOptions()`), so a
+HighID aMule is called back over TCP.
 
 ## Scope and interoperability status
 
