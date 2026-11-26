@@ -1308,7 +1308,9 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 		tagcount += 2;
 	}
 	tagcount++; // eMule misc flags 2 (kad version)
-	if (LocalAdvertisedModMiscOptions() != 0) {
+	const uint32 localModMiscOptions = LocalAdvertisedModMiscOptions(
+		theApp->IsFirewalled(), theApp->clientudp ? theApp->clientudp->ServedNatTTransports() : 0);
+	if (localModMiscOptions != 0) {
 		tagcount++;
 	}
 #ifdef ENABLE_IPV6
@@ -1432,7 +1434,6 @@ void CUpDownClient::SendHelloTypePacket(CMemFile *data)
 	tagMisCompatOptions.WriteTagToFile(data);
 
 	// eMuleAI vendor capabilities (CT_MOD_MISCOPTIONS).
-	const uint32 localModMiscOptions = LocalAdvertisedModMiscOptions();
 	if (localModMiscOptions != 0) {
 		CTagVarInt tagModMiscOptions(CT_MOD_MISCOPTIONS, localModMiscOptions, 32);
 		tagModMiscOptions.WriteTagToFile(data);

@@ -1238,8 +1238,7 @@ void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, cons
 		++counts.noSharedTransport;
 		AddDebugLogLineN(logKadBuddy,
 			CFormat("Dropped a rendezvous for %s: it declared NAT-T 0x%02x, we have 0x%02x") %
-				requester %
-				(decision.request.connectOptions & NatRendezvous::kNatTTransports) %
+				requester % NatRendezvous::RequesterTransports(decision.request) %
 				localTransports);
 		return;
 	case NatRendezvous::EServedRendezvous::Punch:
@@ -1857,8 +1856,8 @@ void CClientUDPSocket::ProcessPacket(
 				++relays.reasksMalformed;
 				break;
 			}
-			if (!Kademlia::ForwardsRendezvous(
-				    buddy->GetServedBuddyOptions(), envelope->request.connectOptions)) {
+			if (!Kademlia::ForwardsRendezvous(buddy->GetServedBuddyOptions(),
+				    NatRendezvous::RequesterTransports(envelope->request))) {
 				++relays.rendezvousNoSharedTransport;
 				break;
 			}

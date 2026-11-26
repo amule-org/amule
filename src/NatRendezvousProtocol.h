@@ -40,8 +40,11 @@ struct RequesterEndpointHint
 {
 	CNetworkAddress address;
 	std::uint16_t port;
-	std::uint8_t transportHint;
 };
+
+// The tail's last byte, eMuleAI's ENatTraversalTransport.
+constexpr std::uint8_t kTransportHintUtp = 1;
+constexpr std::uint8_t kTransportHintQuic = 2;
 
 struct RendezvousRequest
 {
@@ -49,6 +52,8 @@ struct RendezvousRequest
 	std::uint8_t connectOptions;
 	std::optional<FileHash> fileHash;
 	std::optional<RequesterEndpointHint> requesterHint;
+	// Kept when the address before it is unusable, as eMuleAI reads it.
+	std::uint8_t transportHint = 0;
 };
 
 inline bool IsZeroHash(const std::array<std::uint8_t, kHashSize> &hash) noexcept
@@ -104,9 +109,9 @@ inline std::optional<RendezvousRequest> ParseRendezvousRequestWithHint(
 	const std::uint16_t port = std::uint16_t(hint[4]) | (std::uint16_t(hint[5]) << 8);
 	const CNetworkAddress endpoint = CNetworkAddress::FromIPv4NetworkOrder(address);
 	if (address != 0 && port != 0 && endpoint.IsGloballyRoutableIPv4()) {
-		const std::uint8_t transportHint = size >= kRendezvousPayloadSize + 7 ? hint[6] : 0;
-		result.requesterHint = RequesterEndpointHint{ endpoint, port, transportHint };
+		result.requesterHint = RequesterEndpointHint{ endpoint, port };
 	}
+	result.transportHint = size >= kRendezvousPayloadSize + 7 ? hint[6] : 0;
 	return result;
 }
 
@@ -153,21 +158,33 @@ inline std::vector<std::uint8_t> BuildForwardedRendezvous(const RendezvousReques
 	const FileHash noFile{};
 	const FileHash &file = request.fileHash ? *request.fileHash : noFile;
 	body.insert(body.end(), file.begin(), file.end());
-	if (request.requesterHint) {
-		const std::uint32_t address = request.requesterHint->address.ToIPv4NetworkOrderOrZero();
+	if (request.requesterHint || request.transportHint != 0) {
+		// An unusable address goes out as zeros, so the transport byte still reaches the served node.
+		const std::uint32_t address =
+			request.requesterHint ? request.requesterHint->address.ToIPv4NetworkOrderOrZero() : 0;
+		const std::uint16_t port = request.requesterHint ? request.requesterHint->port : 0;
 		for (int shift = 0; shift < 32; shift += 8) {
 			body.push_back(std::uint8_t(address >> shift));
 		}
-		body.push_back(std::uint8_t(request.requesterHint->port));
-		body.push_back(std::uint8_t(request.requesterHint->port >> 8));
-		body.push_back(request.requesterHint->transportHint);
+		body.push_back(std::uint8_t(port));
+		body.push_back(std::uint8_t(port >> 8));
+		body.push_back(request.transportHint);
 	}
 	return body;
 }
 
-// The NAT-T bits of a rendezvous' connect options: 0x80 for uTP (eMuleAI), 0x40 for QUIC (eMuleAI,
-// eMuleQt).
+// The NAT-T bits of a rendezvous' connect options: 0x80 for uTP, 0x40 for QUIC (eMuleAI).
 constexpr std::uint8_t kNatTTransports = 0x80 | 0x40;
+
+// The transports a requester declared, as NAT-T connect-options bits. eMuleAI sets the bits; eMuleQt
+// sets none and names its one transport in the tail.
+inline std::uint8_t RequesterTransports(const RendezvousRequest &request) noexcept
+{
+	const std::uint8_t hinted = request.transportHint == kTransportHintUtp    ? 0x80
+				    : request.transportHint == kTransportHintQuic ? 0x40
+										  : 0;
+	return std::uint8_t((request.connectOptions & kNatTTransports) | hinted);
+}
 
 // What follows the requester's ip and port in an OP_REASKCALLBACKTCP from our buddy: a plain reask
 // starts with its file hash, a forwarded control payload with an all-zero one.
@@ -212,7 +229,7 @@ inline ServedRendezvousDecision DecideServedRendezvous(const PeerAddressing::Udp
 		return decision;
 	}
 	decision.request = *request;
-	decision.sharedTransports = request->connectOptions & localTransports & kNatTTransports;
+	decision.sharedTransports = RequesterTransports(*request) & localTransports;
 	decision.outcome = decision.sharedTransports != 0 ? EServedRendezvous::Punch
 							  : EServedRendezvous::NoSharedTransport;
 	return decision;
