@@ -106,3 +106,26 @@ TEST(ServerCallbackRequests, EachRequestHasItsOwnWindow)
 	requests.Clear();
 	ASSERT_EQUALS(0U, requests.Count(0));
 }
+
+TEST(ServerCallbackRequests, ARefusalThatNamesItsTargetFindsItAmongMany)
+{
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, kWindowMs);
+	requests.Add(2, 0, kWindowMs);
+	requests.Add(3, 0, kWindowMs);
+	const auto isTwo = [](int client) { return client == 2; };
+	const std::optional<int> refused = requests.TakeFirst(10, isTwo);
+	ASSERT_TRUE(refused.has_value());
+	ASSERT_EQUALS(2, *refused);
+	ASSERT_EQUALS(2U, requests.Count(10));
+	ASSERT_FALSE(requests.TakeFirst(10, isTwo).has_value());
+}
+
+TEST(ServerCallbackRequests, ARefusalThatNamesItsTargetSkipsAnEndedWindow)
+{
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, kWindowMs);
+	ASSERT_FALSE(requests.TakeFirst(kWindowMs + 1, [](int client) { return client == 1; }).has_value());
+	// The ended request still goes out once as expired.
+	ASSERT_EQUALS(1U, requests.TakeExpired(kWindowMs + 1).size());
+}

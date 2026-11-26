@@ -58,6 +58,9 @@
 #include "GuiEvents.h" // Needed for Notify_*
 #include "Packet.h"
 #include "UtpDialPolicy.h" // Needed for simultaneous uTP tie-breaking
+#ifdef ENABLE_IPV6
+#include "ServerIPv6Callback.h" // Needed for SIPv6CallbackFailure
+#endif
 
 #include <common/Format.h>
 
@@ -1989,6 +1992,29 @@ void CClientList::ServerCallbackRefused()
 		client->Safe_Delete();
 	}
 }
+
+#ifdef ENABLE_IPV6
+void CClientList::ServerCallbackRefused(const SIPv6CallbackFailure &failure)
+{
+	// Held here, as above.
+	const std::optional<CClientRef> refused =
+		m_serverCallbacks.TakeFirst(::GetTickCount64(), [&failure](const CClientRef &ref) {
+			const CUpDownClient *client = ref.GetClient();
+			return client != nullptr && client->GetUserIDHybrid() == failure.targetId;
+		});
+	if (!refused) {
+		AddDebugLogLineN(logServer,
+			CFormat("Server: OP_CALLBACK_FAIL for source %u, which no request of ours waits "
+				"for") %
+				failure.targetId);
+		return;
+	}
+	CUpDownClient *client = refused->GetClient();
+	if (client->ServerCallbackRefused(failure.reason)) {
+		client->Safe_Delete();
+	}
+}
+#endif
 
 void CClientList::AddTrackCallbackRequests(uint32_t ip)
 {

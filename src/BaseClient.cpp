@@ -94,6 +94,7 @@
 #include "AdvertisedIPv6.h"         // Needed for AdvertisedIPv6ForPeers
 #include "IPv6ReachabilityProof.h"  // Needed for inbound IPv6 hello proof
 #include "IPv6ChangeNotification.h" // Needed for OP_CHANGE_CLIENT_IP policy
+#include "ServerSocket.h"           // Needed for HasIPv6CallbackDeclined
 #endif
 #include "ChatState.h"             // Needed for ChatStateAfterFailedConnect
 #include "ContactDialPolicy.h"     // Needed for DecideContactRoute
@@ -2313,6 +2314,8 @@ bool CUpDownClient::TrySendIPv6CallbackRequest(bool fromLowToLowWait)
 	facts.sourceOnOurServer = theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort());
 	facts.serverOffers = server->OffersIPv6Callback();
 	facts.verdict = server->GetIPv6Verdict();
+	const CServerSocket *socket = theApp->serverconnect->GetConnectedSocket();
+	facts.sourceDeclined = socket != nullptr && socket->HasIPv6CallbackDeclined(m_nUserIDHybrid);
 	if (!ShouldRequestIPv6Callback(facts)) {
 		return false;
 	}
@@ -2393,6 +2396,20 @@ void CUpDownClient::SendClassicCallbackRequest()
 	m_serverCallbackPending = true;
 	theApp->clientlist->AddServerCallbackRequest(this, CONNECTION_TIMEOUT);
 }
+
+#ifdef ENABLE_IPV6
+bool CUpDownClient::ServerCallbackRefused(std::uint8_t ipv6Reason)
+{
+	if (!m_ipv6CallbackPending) {
+		return ServerCallbackRefused();
+	}
+	if (ActOnIPv6CallbackRefusal(ipv6Reason).retrySoon) {
+		m_nextIPv6CallbackTry = ::GetTickCount64() + kIPv6CallbackRetryAfterRateLimitMs;
+	}
+	IPv6CallbackFailed(CFormat("refused (%s)") % IPv6CallbackRefusalText(ipv6Reason));
+	return false;
+}
+#endif
 
 bool CUpDownClient::ServerCallbackRefused()
 {

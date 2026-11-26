@@ -81,6 +81,21 @@ public:
 		return client;
 	}
 
+	//! The first live request whose client @a matches, removed.
+	template <typename Matches> std::optional<Client> TakeFirst(std::uint64_t now, const Matches &matches)
+	{
+		const auto found =
+			std::find_if(m_requests.begin(), m_requests.end(), [&](const Request &request) {
+				return request.deadline >= now && matches(request.client);
+			});
+		if (found == m_requests.end()) {
+			return std::nullopt;
+		}
+		const Client client = found->client;
+		m_requests.erase(found);
+		return client;
+	}
+
 	std::size_t Count(std::uint64_t now) const
 	{
 		return static_cast<std::size_t>(std::count_if(m_requests.begin(),

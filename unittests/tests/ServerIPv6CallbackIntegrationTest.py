@@ -6,8 +6,10 @@
 A fake server gives the daemon a LowID, offers the IPv6 callback (ST_IPV6_CALLBACK) and reports
 our IPv6 as reached by its dial-back (ST_IPV6_STATUS 0x07). The daemon then asks for each LowID
 source with OP_IPV6_CALLBACK_REQUEST. A refusal, or no answer, sends the source on
-LowID-to-LowID. Once the offer is withdrawn, a LowID source is not kept or asked. An
-OP_CALLBACKREQUESTED_IPV6 for loopback is not dialled.
+LowID-to-LowID. A refusal that names its target ends only that request, even with others out, and
+"our IPv6 is not verified" stops the requests until the next OP_SERVERIDENT. Once the offer is
+withdrawn, a LowID source is not kept or asked. An OP_IPV6_CALLBACKREQUESTED for loopback is not
+dialled.
 """
 import os
 from pathlib import Path
@@ -26,7 +28,7 @@ from DaemonConfig import write_amule_conf
 OP_LOGINREQUEST = 0x01
 OP_GETSOURCES = 0x19
 OP_GETSOURCES_OBFU = 0x23
-OP_CALLBACKREQUESTED_IPV6 = 0x26
+OP_IPV6_CALLBACKREQUESTED = 0x26
 OP_CALLBACK_FAIL = 0x36
 OP_IDCHANGE = 0x40
 OP_SERVERIDENT = 0x41
@@ -37,6 +39,8 @@ ST_IPV6_CALLBACK = 0xaa
 ST_IPV6_STATUS = 0xab
 OUR_LOWID = 0x100
 ANSWER_S = 10  # kIPv6CallbackAnswerMs
+NOT_VERIFIED = 3  # IPv6CallbackRefusal
+NOT_OPTED_IN = 6
 
 
 def packet(opcode, body=b''):
@@ -95,12 +99,17 @@ class FakeServer:
         self.peer.sendall(data)
 
     def wait_request(self, target, timeout=60):
+        self.wait_requests({target}, timeout)
+
+    def wait_requests(self, targets, timeout=60):
+        """The sources of several downloads are asked in any order."""
         deadline = time.monotonic() + timeout
-        while True:
+        left = set(targets)
+        while left:
             got = self.requests.get(timeout=max(0.1, deadline - time.monotonic()))
-            if got == target:
-                return
-            raise AssertionError(f'asked for {got:#x}, expected {target:#x}')
+            if got not in left:
+                raise AssertionError(f'asked for {got:#x}, expected one of {sorted(left)}')
+            left.discard(got)
 
 
 def run(binary):
@@ -153,6 +162,28 @@ def run(binary):
                          lambda: logged(f'IPv6 callback to source {0x20202} unanswered') == 1, ANSWER_S + 15)
                 assert time.monotonic() - sent >= ANSWER_S - 1, 'the window ended early'
 
+                # Two out: a refusal that names its target ends only that one.
+                download('declined', (0x40404,))
+                download('unverified', (0x50505,))
+                server.wait_requests({0x40404, 0x50505})
+                server.send(packet(OP_CALLBACK_FAIL, struct.pack('<IB', 0x40404, NOT_OPTED_IN)))
+                wait_log('the named refusal', lambda: logged(
+                    f'IPv6 callback to source {0x40404} refused (the source did not opt in)') == 1, 10)
+                assert logged(f'IPv6 callback to source {0x50505}') == 0, 'the other request ended too'
+                server.send(packet(OP_CALLBACK_FAIL, struct.pack('<IB', 0x50505, NOT_VERIFIED)))
+                wait_log('the second named refusal', lambda: logged(
+                    f'IPv6 callback to source {0x50505} refused (our IPv6 is not verified)') == 1, 10)
+
+                # Not verified: nothing is asked until the next OP_SERVERIDENT.
+                download('held', (0x60606,))
+                time.sleep(5)
+                assert server.requests.empty(), 'asked after the server refused our IPv6'
+                server.send(ident(True))
+                time.sleep(1)
+                download('offered again', (0x70707,))
+                server.wait_request(0x70707)
+                server.send(packet(OP_CALLBACK_FAIL, struct.pack('<IB', 0x70707, NOT_OPTED_IN)))
+
                 # Withdrawn: a LowID source is no longer kept, so nothing is asked.
                 server.send(ident(False))
                 time.sleep(1)
@@ -171,7 +202,7 @@ def run(binary):
                     listener.listen(1)
                     listener.settimeout(3)
                     port = listener.getsockname()[1]
-                    server.send(packet(OP_CALLBACKREQUESTED_IPV6,
+                    server.send(packet(OP_IPV6_CALLBACKREQUESTED,
                                        socket.inet_pton(socket.AF_INET6, '::1') + struct.pack('<H', port)))
                     wait_log('the loopback request to be ignored',
                              lambda: logged(f'Ignored IPv6 callback request to [::1]:{port}') == 1, 10)
@@ -186,7 +217,7 @@ def run(binary):
             except BaseException:
                 print(log.read_text(errors='replace')[-8000:], file=sys.stderr)
                 raise
-    print('the IPv6 callback is asked only where it can work, and a failure moves the source on')
+    print('the IPv6 callback is asked only where it can work, and a failure moves its own source on')
 
 
 if __name__ == '__main__':

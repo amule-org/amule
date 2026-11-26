@@ -899,8 +899,8 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 			break;
 		}
 #ifdef ENABLE_IPV6
-		case OP_CALLBACKREQUESTED_IPV6: {
-			AddDebugLogLineN(logServer, "Server: OP_CALLBACKREQUESTED_IPV6");
+		case OP_IPV6_CALLBACKREQUESTED: {
+			AddDebugLogLineN(logServer, "Server: OP_IPV6_CALLBACKREQUESTED");
 			theStats::AddDownOverheadServer(size);
 			const std::optional<SIPv6CallbackRequested> request =
 				ParseIPv6CallbackRequested(packet, size);
@@ -935,6 +935,26 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 		case OP_CALLBACK_FAIL: {
 			AddDebugLogLineN(logServer, "Server: OP_CALLBACK_FAIL");
 			theStats::AddDownOverheadServer(size);
+#ifdef ENABLE_IPV6
+			if (const std::optional<SIPv6CallbackFailure> failure =
+					ParseIPv6CallbackFailure(packet, size)) {
+				const SIPv6CallbackRefusalAction action =
+					ActOnIPv6CallbackRefusal(failure->reason);
+				AddDebugLogLineN(logServer,
+					CFormat("Server: OP_CALLBACK_FAIL for source %u: %s (%u)") %
+						failure->targetId % IPv6CallbackRefusalText(failure->reason) %
+						static_cast<unsigned>(failure->reason));
+				if (action.serverRefusesUs && cur_server != nullptr) {
+					// Until an OP_SERVERIDENT offers it again.
+					cur_server->SetIPv6CallbackOffered(false);
+				}
+				if (action.targetDeclines) {
+					NoteIPv6CallbackDeclined(failure->targetId);
+				}
+				theApp->clientlist->ServerCallbackRefused(*failure);
+				break;
+			}
+#endif
 			theApp->clientlist->ServerCallbackRefused();
 			break;
 		}
@@ -1143,11 +1163,14 @@ void CServerSocket::SetConnectionState(sint8 newstate)
 #ifdef ENABLE_IPV6
 void CServerSocket::TrySendIPv6CallbackOptIn()
 {
+	if (cur_server == nullptr) {
+		return;
+	}
 	const bool canDialIPv6 = AddressFamilyPolicy::PermitsIPv6() &&
 				 !thePrefs::GetProxyData()->m_proxyEnable && SelectedLocalIPv6().has_value();
 	if (!ShouldOptInToIPv6Callback(cur_server->OffersIPv6Callback(),
 		    m_ipv6CallbackOptedIn,
-		    IsIPv6SentinelParsingOn(),
+		    m_loginIPv6.IsPresent(),
 		    canDialIPv6)) {
 		return;
 	}

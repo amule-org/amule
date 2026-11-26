@@ -3,8 +3,9 @@
 This document specifies aMule's experimental support for the eD2k server-side
 IPv6 extension agreed between eMuleQt, eNode-go and this project: advertising a
 client's IPv6 address at login, receiving IPv6 sources in
-`OP_FOUNDSOURCES` / `OP_FOUNDSOURCES_OBFU`, and the IPv6 server callback. It does not cover connecting to a
-server over an IPv6 transport, which is out of scope, nor `OP_SERVERIDENT`'s
+`OP_FOUNDSOURCES` / `OP_FOUNDSOURCES_OBFU`, and the IPv6 server callback. It
+does not cover connecting to a server over an IPv6 transport, which is out of
+scope, nor `OP_SERVERIDENT`'s
 `ST_IPV6` tag, which this implementation does not read. It reads
 `ST_IPV6_STATUS`, the probe verdict (below).
 
@@ -179,26 +180,38 @@ proposal still to be agreed with eNode-go.
   only while its dial-back runs. aMule reads it from every `OP_SERVERIDENT`, so its absence
   withdraws the offer.
 - **Opt-in, as the source:** after an offer, aMule sends `OP_IPV6_CALLBACK_OPTIN` (`0x65`, no
-  payload) once per server session. It does so only when it advertised an IPv6 to that server and
+  payload) once per server session. It does so only when it advertises an IPv6 to that server and
   can dial IPv6: the address family setting allows it, no proxy is set, and a local IPv6 is
-  selected. The server sends the callback only to a client that opted in.
+  selected. The server sends the callback only to a client that opted in. Withdrawing the address
+  with `OP_IPV6_UPDATE` also withdraws the opt-in, so aMule sends it again after the next address.
 - **Request, as the requester:** while LowID, aMule asks for a LowID source of its own server with
   `OP_IPV6_CALLBACK_REQUEST` (`0x64`, `<target LowID 4>`). It asks only when the server's last
   `OP_SERVERIDENT` offered the callback and reported our IPv6 as reached by its dial-back
   (`ST_IPV6_STATUS` `0x07`): the server forwards no other address. The source then waits as
   "connecting via server".
-- **Callback, as the source:** `OP_CALLBACKREQUESTED_IPV6` (`0x26`) is `<ipv6 16><port 2>`,
+- **Callback, as the source:** `OP_IPV6_CALLBACKREQUESTED` (`0x26`) is `<ipv6 16><port 2>`,
   followed by `<crypt options 1><user hash 16>` when 17 more bytes follow, as in
   `OP_CALLBACKREQUESTED`. aMule dials it over TCP after the checks it makes on an IPv6 source from
   a server record (a global address, not our own, the address family setting, no proxy) and the
   IP filter. eNode-go sends the short form, without an opt-in, to any client that announced IPv6.
   aMule answers it the same way.
 - **Failure:** the server answers a request it does not forward with `OP_CALLBACK_FAIL` (`0x36`),
-  which names no request. With one callback request out, aMule takes the refusal as that
-  request's. With more out, each one waits its window of 10 s (`kIPv6CallbackAnswerMs` in
-  `src/ServerIPv6Callback.h`). Then the source goes on to the other LowID-to-LowID steps, the
-  server hole punch and the Lugdunum callback, in builds that have them. A connection that comes
-  later is still used.
+  `<target LowID 4><reason 1>`, as `OP_LOWID_HOLEPUNCH_FAIL` (`0x62`) does. aMule ends the
+  request for that target, whatever else is out. A request with no answer ends after 10 s
+  (`kIPv6CallbackAnswerMs` in `src/ServerIPv6Callback.h`). Either way the source goes on to the
+  other LowID-to-LowID steps, the server hole punch and the Lugdunum callback, in builds that have
+  them. A connection that comes later is still used. Some reasons also change what aMule asks
+  next:
+  - `1` (not offered), `2` (we are HighID) and `3` (our IPv6 is not verified): no request until
+    the next `OP_SERVERIDENT` offers the callback again.
+  - `6` (the source did not opt in): that source is not asked again in this server session.
+  - `8` (over the relay allowance): the source is asked again after 30 s, not after the source
+    reask time.
+  - `4` (the source is us), `5` (the source is gone), `7` (the source is unreachable), and any
+    other value end only that request.
+
+  An empty `OP_CALLBACK_FAIL` answers `OP_CALLBACKREQUEST`. aMule takes it as a request's only
+  while that request is the one out.
 - **Sources:** while the callback can work (offered, and our IPv6 reached or still being tested),
   a LowID source of our own server is kept, not dropped as unreachable. A source that waits
   LowID-to-LowID is asked again at most once per source reask interval. So a source found before

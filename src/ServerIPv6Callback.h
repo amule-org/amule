@@ -26,7 +26,7 @@
 #define SERVER_IPV6_CALLBACK_H
 
 // The IPv6 server callback: a LowID requester whose IPv6 the server's dial-back reached asks it
-// (OP_IPV6_CALLBACK_REQUEST) to have a LowID source dial that IPv6 (OP_CALLBACKREQUESTED_IPV6).
+// (OP_IPV6_CALLBACK_REQUEST) to have a LowID source dial that IPv6 (OP_IPV6_CALLBACKREQUESTED).
 
 #include "ServerIPv6Verdict.h" // Needed for EServerIPv6Verdict
 #include "SourceRoutePolicy.h" // Needed for kNatStepAnswerWindowMs
@@ -74,6 +74,101 @@ inline std::optional<SIPv6CallbackRequested> ParseIPv6CallbackRequested(
 	return parsed;
 }
 
+//! A refused request is answered with OP_CALLBACK_FAIL <target LowID 4 LE><reason 1>.
+struct SIPv6CallbackFailure
+{
+	std::uint32_t targetId = 0;
+	std::uint8_t reason = 0;
+};
+
+//! An empty OP_CALLBACK_FAIL answers OP_CALLBACKREQUEST and names no request.
+inline std::optional<SIPv6CallbackFailure> ParseIPv6CallbackFailure(
+	const std::uint8_t *data, std::size_t size)
+{
+	if (data == nullptr || size < 5) {
+		return std::nullopt;
+	}
+	SIPv6CallbackFailure failure;
+	failure.targetId = static_cast<std::uint32_t>(data[0]) | (static_cast<std::uint32_t>(data[1]) << 8) |
+			   (static_cast<std::uint32_t>(data[2]) << 16) |
+			   (static_cast<std::uint32_t>(data[3]) << 24);
+	failure.reason = data[4];
+	return failure;
+}
+
+//! The reasons ed2k-server sends.
+namespace IPv6CallbackRefusal
+{
+constexpr std::uint8_t NotOffered = 1;
+constexpr std::uint8_t RequesterHighID = 2;
+constexpr std::uint8_t RequesterNotVerified = 3;
+constexpr std::uint8_t SelfTarget = 4;
+constexpr std::uint8_t TargetGone = 5;
+constexpr std::uint8_t TargetNotOptedIn = 6;
+constexpr std::uint8_t TargetUnreachable = 7;
+constexpr std::uint8_t RateLimited = 8;
+} // namespace IPv6CallbackRefusal
+
+//! The relay allowance refills at 10 a second, shared with OP_CALLBACKREQUEST and the hole punch:
+//! the retries of many sources are spread over this time.
+constexpr std::uint64_t kIPv6CallbackRetryAfterRateLimitMs = 30'000;
+
+//! What a refusal changes beyond the one request: the source always goes on LowID-to-LowID.
+struct SIPv6CallbackRefusalAction
+{
+	//! The server forwards no request of ours until its next OP_SERVERIDENT.
+	bool serverRefusesUs = false;
+	//! The target takes no callback for the rest of the server session.
+	bool targetDeclines = false;
+	//! Ask again after kIPv6CallbackRetryAfterRateLimitMs, not after the source reask time.
+	bool retrySoon = false;
+};
+
+inline SIPv6CallbackRefusalAction ActOnIPv6CallbackRefusal(std::uint8_t reason)
+{
+	SIPv6CallbackRefusalAction action;
+	switch (reason) {
+	case IPv6CallbackRefusal::NotOffered:
+	case IPv6CallbackRefusal::RequesterHighID:
+	case IPv6CallbackRefusal::RequesterNotVerified:
+		action.serverRefusesUs = true;
+		break;
+	case IPv6CallbackRefusal::TargetNotOptedIn:
+		action.targetDeclines = true;
+		break;
+	case IPv6CallbackRefusal::RateLimited:
+		action.retrySoon = true;
+		break;
+	default:
+		break;
+	}
+	return action;
+}
+
+inline const char *IPv6CallbackRefusalText(std::uint8_t reason)
+{
+	switch (reason) {
+	case IPv6CallbackRefusal::NotOffered:
+		return "not offered to us";
+	case IPv6CallbackRefusal::RequesterHighID:
+		return "we are HighID";
+	case IPv6CallbackRefusal::RequesterNotVerified:
+		return "our IPv6 is not verified";
+	case IPv6CallbackRefusal::SelfTarget:
+		return "the source is us";
+	case IPv6CallbackRefusal::TargetGone:
+		return "the source is gone";
+	case IPv6CallbackRefusal::TargetNotOptedIn:
+		return "the source did not opt in";
+	case IPv6CallbackRefusal::TargetUnreachable:
+		return "the source is unreachable";
+	case IPv6CallbackRefusal::RateLimited:
+		return "over the relay allowance";
+	default:
+		return "unknown reason";
+	}
+}
+
 struct SIPv6CallbackRequestFacts
 {
 	bool weAreLowID = false;
@@ -83,13 +178,15 @@ struct SIPv6CallbackRequestFacts
 	bool serverOffers = false;
 	//! What its dial-back found for our IPv6.
 	EServerIPv6Verdict verdict = EServerIPv6Verdict::Unknown;
+	//! The source was refused as not opted in during this server session.
+	bool sourceDeclined = false;
 };
 
 //! The server forwards only an IPv6 its dial-back reached, so any other request is refused.
 inline bool ShouldRequestIPv6Callback(const SIPv6CallbackRequestFacts &facts)
 {
 	return facts.weAreLowID && facts.sourceLowID && facts.sourceOnOurServer && facts.serverOffers &&
-	       facts.verdict == EServerIPv6Verdict::Verified;
+	       facts.verdict == EServerIPv6Verdict::Verified && !facts.sourceDeclined;
 }
 
 //! A LowID source of our server is kept while the callback can reach it: also while the server's
