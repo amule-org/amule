@@ -138,6 +138,9 @@ public:
 	uint32 GetTCPFlags() const { return m_uTCPFlags; }
 	void SetUDPFlags(uint32 uFlags) { m_uUDPFlags = uFlags; }
 	uint32 GetUDPFlags() const { return m_uUDPFlags; }
+	//! A status reply came in, in this session or an earlier one (a non-zero ST_UDPFLAGS).
+	bool IsUDPStatusKnown() const { return m_bUDPStatusKnown; }
+	void SetUDPStatusKnown() { m_bUDPStatusKnown = true; }
 	uint32 GetLowIDUsers() const { return m_uLowIDUsers; }
 	void SetLowIDUsers(uint32 uLowIDUsers) { m_uLowIDUsers = uLowIDUsers; }
 	uint32 GetDescReqChallenge() const { return m_uDescReqChallenge; }
@@ -267,6 +270,7 @@ private:
 
 	bool m_bCryptPingReplyPending;
 	bool m_bKeyRecoveryPing;
+	bool m_bUDPStatusKnown = false;
 	uint32 m_dwServerKeyUDP;
 	uint32 m_dwIPServerKeyUDP;
 	uint16 m_nObfuscationPortTCP;

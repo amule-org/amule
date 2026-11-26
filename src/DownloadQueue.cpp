@@ -1046,7 +1046,9 @@ void CDownloadQueue::SendGlobalSources()
 		// By address, as m_globalSources: a server known by name has IP 0 until it resolves.
 		CServer *server = theApp->serverlist->GetServerByAddress(
 			servers[idx]->GetAddress(), servers[idx]->GetPort());
-		if (!server) {
+		if (!server ||
+			AwaitsFirstServerStatus(
+				server->IsUDPStatusKnown(), server->GetRealLastPingedTime(), time(nullptr))) {
 			continue;
 		}
 

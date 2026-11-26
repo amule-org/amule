@@ -87,6 +87,7 @@ CServer::CServer(CServer *pOld)
 	m_strVersion = pOld->m_strVersion;
 	m_uTCPFlags = pOld->m_uTCPFlags;
 	m_uUDPFlags = pOld->m_uUDPFlags;
+	m_bUDPStatusKnown = pOld->m_bUDPStatusKnown;
 	challenge = pOld->challenge;
 	softfiles = pOld->softfiles;
 	hardfiles = pOld->hardfiles;
@@ -222,6 +223,7 @@ void CServer::AddTagFromFile(const CTag &tag)
 
 	case ST_UDPFLAGS:
 		m_uUDPFlags = tag.GetInt();
+		m_bUDPStatusKnown = m_uUDPFlags != 0;
 		break;
 
 	case ST_AUXPORTSLIST:

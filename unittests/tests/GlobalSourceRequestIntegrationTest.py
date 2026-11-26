@@ -3,8 +3,10 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """Servers known by name get global source requests for a new download, never a paused one.
 
-A fake server answers the TCP login. Two more servers are `localhost:<port>` entries, so their
-UDP packets need a name lookup; their UDP ports are listeners that record each request.
+A fake server answers the TCP login. Three more servers are `localhost:<port>` entries, so their
+UDP packets need a name lookup; their UDP ports are listeners that record each request. Two answer
+the status ping, and get no request before that answer; the third never answers, and is asked
+anyway once the wait for its first status reply is over.
 """
 import os
 from pathlib import Path
@@ -22,16 +24,21 @@ from DaemonConfig import write_amule_conf
 
 OP_GLOBGETSOURCES = 0x9a
 OP_GLOBGETSOURCES2 = 0x94
+OP_GLOBSERVSTATREQ = 0x96
+OP_GLOBSERVSTATRES = 0x97
+FIRST_STATUS_WAIT_S = 30  # kFirstServerStatusWaitS
 
 
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-global-sources-') as directory:
         root = Path(directory)
         ec_port, peer_port, udp_port = free_ports(3, udp_indices=(2,), peer_index=1)
+        # No crypt layer: the status ping is then the plain one these listeners can answer.
         write_amule_conf(root, ec_port, Port=peer_port, UDPPort=udp_port, ConnectToED2K=1,
-                         FilterLanIPs=0, AddNewFilesPaused=1)
+                         FilterLanIPs=0, AddNewFilesPaused=1,
+                         sections={'Obfuscation': {'IsClientCryptLayerSupported': 0}})
         listeners = []
-        for _ in range(2):
+        for _ in range(3):
             listener = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             listener.bind(('127.0.0.1', 0))
             listeners.append(listener)
@@ -41,14 +48,24 @@ def run(binary):
         stop = threading.Event()
         logged_in = threading.Event()
         asked = {listener.getsockname()[1] - 4: [] for listener in listeners}
+        silent = listeners[2].getsockname()[1] - 4
+        first_asked, pinged, answered = {}, {}, {}
 
         def record():
             while not stop.is_set():
                 for listener in select.select(listeners, [], [], 0.2)[0]:
-                    data = listener.recv(4096)
-                    if len(data) > 2 and data[0] == 0xe3 and data[1] in (OP_GLOBGETSOURCES, OP_GLOBGETSOURCES2):
+                    data, sender = listener.recvfrom(4096)
+                    port = listener.getsockname()[1] - 4
+                    if len(data) >= 6 and data[0] == 0xe3 and data[1] == OP_GLOBSERVSTATREQ:
+                        pinged.setdefault(port, time.monotonic())
+                        if port != silent:
+                            answered.setdefault(port, time.monotonic())
+                            # <challenge 4><users 4><files 4>, the shortest answer.
+                            listener.sendto(bytes([0xe3, OP_GLOBSERVSTATRES]) + data[2:6] + bytes(8), sender)
+                    elif len(data) > 2 and data[0] == 0xe3 and data[1] in (OP_GLOBGETSOURCES, OP_GLOBGETSOURCES2):
                         step = 16 if data[1] == OP_GLOBGETSOURCES else 20
-                        asked[listener.getsockname()[1] - 4] += [data[i:i + 16] for i in range(2, len(data) - 15, step)]
+                        first_asked.setdefault(port, time.monotonic())
+                        asked[port] += [data[i:i + 16] for i in range(2, len(data) - 15, step)]
 
         def serve():
             try:
@@ -84,17 +101,25 @@ def run(binary):
                     assert ec.call(C['EC_OP_ADD_LINK'], [string(C['EC_TAG_STRING'], link)])[0] == C['EC_OP_NOOP']
                 assert ec.call(C['EC_OP_PARTFILE_RESUME'], [
                     tag(C['EC_TAG_PARTFILE'], active, 9)])[0] == C['EC_OP_NOOP']
-                deadline = time.monotonic() + 30
+                # One status ping every 5 s, then the silent server's wait.
+                deadline = time.monotonic() + 30 + FIRST_STATUS_WAIT_S + 20
                 while not all(active in hashes for hashes in asked.values()):
                     assert time.monotonic() < deadline, f'servers known by name were not asked: {asked}'
                     time.sleep(0.2)
                 assert not any(paused in hashes for hashes in asked.values()), 'a paused download was asked'
+                for port in asked:
+                    if port == silent:
+                        assert first_asked[port] >= pinged[port] + FIRST_STATUS_WAIT_S - 2, \
+                            'a server was asked before its first status reply or the end of the wait'
+                    else:
+                        assert first_asked[port] >= answered[port], 'a server was asked before its status reply'
         finally:
             stop.set()
             workers[0].join()
             for sock in listeners + [login]:
                 sock.close()
-        print('both servers known by name were asked about the new download, not the paused one')
+        print('the servers known by name were asked about the new download after their first status '
+              'reply or the wait, never about the paused one')
 
 
 if __name__ == '__main__':

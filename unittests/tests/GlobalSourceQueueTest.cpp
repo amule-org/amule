@@ -218,3 +218,15 @@ TEST(GlobalSourceQueue, OthersLeaveTheLastPacketForNewDownloads)
 	queue.Add(Hash(250));
 	ASSERT_FALSE(queue.Next(afterGap, downloads, Any, PER_PACKET).empty());
 }
+
+TEST(GlobalSourceQueue, AServerIsAskedOnlyAfterItsFirstStatusReplyOrAShortWait)
+{
+	const time_t ping = 1000;
+	// Never pinged: the ping comes within seconds, so its flags will soon be known.
+	ASSERT_TRUE(AwaitsFirstServerStatus(false, 0, ping));
+	ASSERT_TRUE(AwaitsFirstServerStatus(false, ping, ping + kFirstServerStatusWaitS - 1));
+	// A server that leaves the ping unanswered is asked as before.
+	ASSERT_FALSE(AwaitsFirstServerStatus(false, ping, ping + kFirstServerStatusWaitS));
+	ASSERT_FALSE(AwaitsFirstServerStatus(true, 0, ping));
+	ASSERT_FALSE(AwaitsFirstServerStatus(true, ping, ping));
+}
