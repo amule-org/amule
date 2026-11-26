@@ -930,8 +930,8 @@ says. Before this, a firewalled aMule did not try such a source at all.
   `<buddy id 16><zero 16><0xA0 1><our hash 16><opts 1><file hash 16><our ip 4><udp port 2><hint 1>`.
   The options are our Kad connect options plus the NAT-T transports we serve
   (`0x80` uTP, `0x40` QUIC), with `0x20` (endpoint hint) clear. The tail is
-  always written, with zeros for our IPv4, so the extension block of
-  ModderMule/emule-qt#265 can follow it; the hint is 2 (QUIC) when we serve
+  always written, with our public IPv4 or zeros while we do not know it, so the
+  extension block of ModderMule/emule-qt#265 can follow it; the hint is 2 (QUIC) when we serve
   QUIC, else 1 (uTP). It is sent up to three times, 5 s apart, until the source
   punches back.
 - **Dial.** On the source's first punch it dials the endpoint the punch came

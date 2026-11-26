@@ -1384,7 +1384,7 @@ void CClientUDPSocket::TickKadRendezvous(uint64 now)
 				NatRendezvous::RequesterConnectOptions(
 					Kademlia::CPrefs::GetMyConnectOptions(), localTransports),
 				target.fileHash,
-				0,
+				theApp->GetPublicIP(),
 				thePrefs::GetEffectiveUDPPort(),
 				NatRendezvous::RequesterTransportHint(localTransports));
 			CMemFile data(envelope.data(), envelope.size());

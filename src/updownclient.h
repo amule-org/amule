@@ -446,7 +446,6 @@ private:
 	//! endpoint, when it is a LowID Kad source with a buddy and nothing else can reach it. True when
 	//! an attempt started. Called last from TryToContact's LowID->LowID decline.
 	bool TrySendKadBuddyRendezvous();
-	uint32 m_kadSourceIP = 0;
 	NatServerHolePunch::HolePunchFallback m_holePunchFallback;
 	//! The server of this LowID source when it is not ours and would wake the source for us
 	//! (ed2k-server 0.9.86), else null; always null without uTP, which the dial after the answer
@@ -1435,6 +1434,7 @@ private:
 	bool m_bServedBuddy = false;
 	uint8 m_servedBuddyOptions = 0;
 	uint32 m_nBuddyIP;
+	uint32 m_kadSourceIP = 0;
 	uint16 m_nBuddyPort;
 	// A different buddy address from a Kad result, held back while the stored one answers.
 	uint32 m_nBuddyCandidateIP = 0;
