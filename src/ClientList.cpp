@@ -216,9 +216,12 @@ void CClientList::UpdateClientID(CUpDownClient *client, uint32 newID)
 	if ((client->GetClientState() != CS_LISTED) || (client->GetUserIDHybrid() == newID))
 		return;
 
+	// The ID map can hold the only reference, as for a client made for a callback before its
+	// hello gives it an address or a valid hash: take the new one before the old one goes.
+	const CClientRef ref = CCLIENTREF(client, "CClientList::UpdateClientID");
 	RemoveIDFromList(client);
 
-	m_clientList.insert(IDMapPair(newID, CCLIENTREF(client, "CClientList::UpdateClientID")));
+	m_clientList.insert(IDMapPair(newID, ref));
 }
 
 void CClientList::UpdateClientIP(CUpDownClient *client, const CNetworkAddress &address)
@@ -237,6 +240,8 @@ void CClientList::UpdateClientHash(CUpDownClient *client, const CMD4Hash &newHas
 	if ((client->GetClientState() != CS_LISTED) || (client->GetUserHash() == newHash))
 		return;
 
+	// Unlike in UpdateClientID(), the entry removed here is never the last reference: a listed
+	// client always has one in the ID map.
 	RemoveHashFromList(client);
 
 	if (!IsBadUserHash(newHash)) {
