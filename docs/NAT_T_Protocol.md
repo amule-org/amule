@@ -837,25 +837,34 @@ The buddy forwards the `0xA0` in `OP_REASKCALLBACKTCP` (`0x9A`): the
 requester's observed IPv4 and UDP port, then 16 zero bytes where a reask has
 its file hash, then the `0xA0` and its request. aMule takes it only from its
 own Kad buddy; a forward from any other peer, and an IPv6 requester
-(`0xFFFFFFFF`), are ignored as before.
+(`0xFFFFFFFF`, 16 address bytes and the port, then the payload), are ignored as
+before. A rendezvous for an IPv6 requester counts only in `received`, not as a
+reask.
 
 - **No reask.** A forwarded control payload is not answered as a reask, so the
   requester gets no `OP_FILENOTFOUND`. Only `0xA0` is handled; any other
   embedded opcode, a request that does not parse, or an unusable endpoint is
   dropped as malformed. A payload with an all-zero file hash and no `0xA0` is
-  dropped the same way, and is no longer answered with `OP_FILENOTFOUND` nor
-  counted as a reask.
+  dropped the same way: it gets no `OP_FILENOTFOUND` and does not count as a
+  reask.
 - **Who dials.** The requester. The served node waits: it does not choose a
   transport, it arms every one both sides declared and lets the requester pick.
   With none in common it drops the `0xA0`, even after the buddy's check,
   because an eMuleAI buddy forwards without it. An eMuleQt requester declares
-  only `0x40` (QUIC), so only a QUIC build serves it.
-- **Endpoint.** It punches only the endpoint the buddy saw. The requester's
+  only `0x40` (QUIC), so only a QUIC build with QUIC NAT-T turned on serves it.
+  The `0x51` (`KADEMLIA_FINDBUDDY_REQ`) declares exactly the transports this
+  handler arms, from one helper: uTP only with server coordination and uTP
+  available, QUIC also with QUIC NAT-T on.
+- **Endpoint.** It punches only the endpoint the buddy saw. When the source an
+  eMuleAI buddy saw is not public, that buddy writes the requester's
+  self-reported endpoint in its place (the `forwardIP` fallback in eMuleAI's
+  `ClientUDPSocket.cpp`), and that is the one punched. The requester's
   hint is parsed but never punched: it would help only a requester on the
   buddy's own network. Bytes after the 7-byte tail, such as the extension block
   of ModderMule/emule-qt#265, are ignored: aMule uses none of its elements yet.
-  A requester whose address is filtered, banned or on the LAN is ignored too,
-  and counted only in `received`.
+  A requester whose address is banned, filtered by the IP filter, or on the LAN
+  while LAN addresses are filtered (the default) is ignored too, and counted
+  only in `received`.
 - **Action.** It records the requester with `ExpectNatTPeer()` first, so it
   answers the requester's CAPS, then starts the punch schedule and port sweep
   of the server paths on the Kad buddy path. A server login does not end that
@@ -865,7 +874,9 @@ own Kad buddy; a forward from any other peer, and an IPv6 requester
 - **Limits.** A repeat to the same endpoint within 20 s joins the attempt in
   flight; eMuleQt sends the request up to three times, 5 s apart. A requester
   address may start one attempt every 5 s, and all requesters together 20 a
-  minute, a budget apart from the server paths' 20 actions a minute. The source
+  minute, a budget apart from the server paths' 20 actions a minute. Its port
+  sweeps spend a budget of their own too, apart from the ten a minute the server
+  paths share. The source
   a buddy relays can be forged, so the per-address limit alone would not stop a
   sender that forges a new one each time.
 - **Statistics.** `buddy.own.rendezvous` counts what the buddy forwarded:

@@ -94,6 +94,12 @@ public:
 	//! hash. Counted under buddy.own.rendezvous in every build; only a build with the punch schedule
 	//! acts on it: it expects the requester and punches that endpoint, and the requester dials.
 	void HandleForwardedRendezvous(uint32 ip, uint16 udpPort, const uint8_t *body, size_t size);
+	//! The NAT-T transport bits (0x80 uTP, 0x40 QUIC) this node serves a forwarded rendezvous with.
+	//! Our 0x51 (KADEMLIA_FINDBUDDY_REQ) declares exactly these and HandleForwardedRendezvous()
+	//! arms exactly these, so we never claim a transport the handler would drop. 0 without server
+	//! coordination, uTP, or while the socket is closed or uTP is unavailable; QUIC also needs QUIC
+	//! NAT-T turned on.
+	uint8_t ServedNatTTransports();
 #ifdef AMULE_UTP_TRANSPORT
 	~CClientUDPSocket() override;
 	void Close() override;
@@ -245,6 +251,9 @@ private:
 	NatServerHolePunch::PunchScheduleSet m_lowIdHolePunchSchedules;
 	// Not reset with the session: a server must not be able to buy more sweeps by dropping us.
 	NatServerHolePunch::SweepBudget m_lowIdHolePunchSweeps;
+	// The Kad buddy's sweeps spend a budget of their own: a rendezvous a buddy relays can be forged,
+	// and must not use up the sweeps the server paths are owed.
+	NatServerHolePunch::SweepBudget m_kadBuddyHolePunchSweeps;
 	NatServerHolePunch::RequestedCallbackTargets m_requestedCallbackTargets;
 	NatServerHolePunch::ForeignCallbackRequests m_foreignCallbacks;
 	// The Kad buddy's rendezvous limits, apart from the server paths' action budget.

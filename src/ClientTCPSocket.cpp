@@ -2017,9 +2017,19 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		CMemFile data_in(buffer, size);
 		uint32 destip = data_in.ReadUInt32();
 		if (destip == 0xFFFFFFFF) {
-			++theApp->clientlist->GetBuddyStats().own.reasksReceived;
-			// eMuleAI and eMule-Qt send an IPv6 requester as this plus 16 address bytes. There is
-			// no IPv6 UDP to answer on, and reading it as IPv4 would aim at 255.255.255.255.
+			// eMuleAI and eMule-Qt send an IPv6 requester as this plus 16 address bytes and the
+			// port. There is no IPv6 UDP to answer on, and reading it as IPv4 would aim at
+			// 255.255.255.255.
+			constexpr size_t kIPv6RequesterSize = 16 + 2;
+			const size_t controlOffset = data_in.GetPosition() + kIPv6RequesterSize;
+			if (size >= controlOffset && NatRendezvous::IsForwardedControl(
+							     buffer + controlOffset, size - controlOffset)) {
+				// A rendezvous, not a reask: counted as received and ignored, as the IPv4
+				// ones that cannot be acted on.
+				++theApp->clientlist->GetBuddyStats().own.rendezvous.received;
+			} else {
+				++theApp->clientlist->GetBuddyStats().own.reasksReceived;
+			}
 			AddDebugLogLineN(logRemoteClient,
 				"Remote Client: OP_REASKCALLBACKTCP for an IPv6 requester from " +
 					m_client->GetFullIP() + ", ignored");

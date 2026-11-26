@@ -716,19 +716,6 @@ inline std::vector<std::uint16_t> SweptPorts(std::uint16_t udpPort)
 	return ports;
 }
 
-// One punch the schedule still owes.
-struct PunchDue
-{
-	enum Kind
-	{
-		Endpoint,
-		Sweep
-	};
-	Kind kind = Endpoint;
-	IPv4 peerIP{};
-	std::uint16_t udpPort = 0;
-};
-
 // The path a rendezvous took. The extension counts as the ed2k-server punch, and its Lugdunum
 // fallback dial as Lugdunum's callback; the Kad buddy relays a rendezvous with no server involved.
 enum class RendezvousPath
@@ -744,6 +731,21 @@ constexpr bool IsServerPath(RendezvousPath path) noexcept
 {
 	return path != RendezvousPath::KadBuddy;
 }
+
+// One punch the schedule still owes.
+struct PunchDue
+{
+	enum Kind
+	{
+		Endpoint,
+		Sweep
+	};
+	Kind kind = Endpoint;
+	IPv4 peerIP{};
+	std::uint16_t udpPort = 0;
+	// The path that started the schedule, so each path's sweeps spend a budget of their own.
+	RendezvousPath path = RendezvousPath::ServerPunch;
+};
 
 // The punches owed to each peer endpoint. One schedule per address and port, restarted by a second
 // 0x61 for it. A punch or a hello from the peer drops its schedule, and each one expires with its
@@ -821,7 +823,7 @@ public:
 				entry.due.end(),
 				[now](const Item &item) { return now >= item.at; });
 			for (auto item = entry.due.begin(); item != firstPending; ++item) {
-				due.push_back({ item->kind, entry.peerIP, entry.udpPort });
+				due.push_back({ item->kind, entry.peerIP, entry.udpPort, entry.path });
 			}
 			entry.due.erase(entry.due.begin(), firstPending);
 		}

@@ -1201,22 +1201,29 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	}
 }
 
-void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, const uint8_t *body, size_t size)
+uint8_t CClientUDPSocket::ServedNatTTransports()
 {
-	Kademlia::CBuddyStats::Own::Rendezvous &counts = theApp->clientlist->GetBuddyStats().own.rendezvous;
-	++counts.received;
-	const wxString requester = Uint32_16toStringIP_Port(ip, udpPort);
-	uint8_t localTransports = 0;
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 #ifdef AMULE_QUIC_TRANSPORT
 	const bool quicEnabled = thePrefs::IsQuicNatTEnabled();
 #else
 	const bool quicEnabled = false;
 #endif
-	if (Ok()) {
-		localTransports = Kademlia::LocalNatTConnectOptions(m_utp.IsAvailable(), quicEnabled);
+	if (!Ok()) {
+		return 0;
 	}
+	return Kademlia::LocalNatTConnectOptions(m_utp.IsAvailable(), quicEnabled);
+#else
+	return 0;
 #endif
+}
+
+void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, const uint8_t *body, size_t size)
+{
+	Kademlia::CBuddyStats::Own::Rendezvous &counts = theApp->clientlist->GetBuddyStats().own.rendezvous;
+	++counts.received;
+	const wxString requester = Uint32_16toStringIP_Port(ip, udpPort);
+	const uint8_t localTransports = ServedNatTTransports();
 	const PeerAddressing::UdpEndpoint observed{ CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip),
 		udpPort };
 	const NatRendezvous::ServedRendezvousDecision decision =
@@ -1316,8 +1323,12 @@ void CClientUDPSocket::SendDueLowIdHolePunches(uint64 now)
 			punch(due.peerIP, due.udpPort);
 			continue;
 		}
-		// One sweep per destination address every five minutes, ten a minute overall.
-		if (!m_lowIdHolePunchSweeps.Admit(due.peerIP, now)) {
+		// One sweep per destination address every five minutes, ten a minute overall, for the
+		// server paths and for the Kad buddy each.
+		NatServerHolePunch::SweepBudget &budget =
+			due.path == NatServerHolePunch::RendezvousPath::KadBuddy ? m_kadBuddyHolePunchSweeps
+										 : m_lowIdHolePunchSweeps;
+		if (!budget.Admit(due.peerIP, now)) {
 			AddDebugLogLineN(logClientUDP,
 				CFormat("Punch sweep to %s refused by the sweep budget") %
 					Uint32toStringIP(PeekUInt32(due.peerIP.data())));
