@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-25 15:18+0000\n"
+"PO-Revision-Date: 2026-11-26 00:06+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
@@ -648,7 +648,7 @@ msgstr "Soubor online podpisu aMule se nepodařilo vytvořit"
 
 #: src/amule.cpp
 msgid "The selected locale seems not to be installed on your box. (Note: I'll try to set it anyway)"
-msgstr "Zdá se, že vybraná jazyková lokalizace není ve vašem systému nainstalována. (Poznámka: přesto se ji pokusím nastavit)"
+msgstr "Zdá se, že vybrané jazykové prostředí není ve vašem systému nainstalována. (Poznámka: přesto se ji pokusím nastavit)"
 
 #: src/amule.cpp
 #, c-format
@@ -3107,7 +3107,7 @@ msgstr "Zapnout podrobný výstup včetně ladicích zpráv."
 
 #: src/ExternalConnector.cpp
 msgid "Sets program locale (language)."
-msgstr "Nastavit národní prostředí programu (jazyk)."
+msgstr "Nastavit jazykové prostředí programu (jazyk)."
 
 #: src/ExternalConnector.cpp
 msgid "Write command line options to config file."

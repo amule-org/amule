@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-11-16 12:10+0100\n"
-"PO-Revision-Date: 2026-11-25 15:18+0000\n"
+"PO-Revision-Date: 2026-11-26 00:06+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/application-man-pages/cs/>\n"
 "Language: cs\n"
@@ -811,112 +811,112 @@ msgstr "Jazyky"
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The I<E<lt>langE<gt>> parameter for the B<-l> option has the following form: I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] where I<lang> is the primary language, I<LANG> is a sublanguage/territory, I<encoding> is the character set to use and I<modifier> allows the user to select a specific instance of localization data within a single category."
-msgstr ""
+msgstr "Parametr I<E<lt>langE<gt>> pro volbu B<-l> má následující formu: I<lang>[B<_>I<LANG>][B<.>I<encoding>][B<@>I<modifier>] kde I<lang> je primární jazyk, I<LANG> je podjazyk/teritorium, I<encoding> je znaková sada, která má být použita a I<modifier> umožňuje uživateli vybrat specifickou instanci lokalizačních dat v rámci jedné kategorie."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "For example, the following strings are valid:"
-msgstr ""
+msgstr "Například, následující řetězce jsou platné:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Though all the above strings are accepted as valid language definitions, I<encoding> and I<modifier> are yet unused."
-msgstr ""
+msgstr "I když jsou všechny výše uvedené řetězce přijímány jako platné definice jazyka, I<encoding> a I<modifier> jsou ještě nepoužité."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "In addition to the format above, you can also specify full language names in English - so B<-l german> is also valid and is equal to B<-l de_DE>."
-msgstr ""
+msgstr "Kromě výše uvedeného formátu můžete také zadat názvy jazyků v angličtině - tedy B<-l german> je také platný a odpovídá B<-l de_DE>."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "When no locale is defined, either on command-line or in config file, system default language will be used."
-msgstr ""
+msgstr "Pokud není stanoveno žádné jazykové prostředí, buď na příkazovém řádku nebo v konfiguračním souboru, použije se výchozí jazyk systému."
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "~/.aMule/remote.conf"
-msgstr ""
+msgstr "~/.aMule/remote.conf"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "The password is saved as an MD5 digest in [EC]/PasswordMD5, the same key as in amuleapi.conf. An [EC]/Password key from an older file is moved there on load."
-msgstr ""
+msgstr "Heslo je uloženo jako MD5 digest v [EC]/PasswordMD5, stejný klíč jako v amuleapi.conf. [EC]/Password klíč ze staršího souboru je sem přesunut při načtení."
 
 #. type: SH
 #: amulecmd.1.in
 #, no-wrap
 msgid "EXAMPLE"
-msgstr ""
+msgstr "PŘÍKLAD"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Typically amulecmd will be first run as:"
-msgstr ""
+msgstr "Typicky amulecmd bude prvně spuštěn jako:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
-msgstr ""
+msgstr "B<amulecmd> B<-h> I<hostname> B<-p> I<ECport> B<--password-stdin> B<-w>"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "This will save settings to I<$HOME/.aMule/remote.conf>, and later you only need to type:"
-msgstr ""
+msgstr "Toto uloží nastavení do I<$HOME/.aMule/remote.conf> a později bude stačit napsat jen:"
 
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Of course, you don't have to follow this example."
-msgstr ""
+msgstr "Samozřejmě, nemusíte následovat tento příklad."
 
 #. type: TH
 #: amuled.1.in
 #, no-wrap
 msgid "AMULED"
-msgstr ""
+msgstr "AMULED"
 
 #. type: TH
 #: amuled.1.in
 #, no-wrap
 msgid "aMule Daemon v@PACKAGE_VERSION@"
-msgstr ""
+msgstr "aMule daemon v@PACKAGE_VERSION@"
 
 #. type: TH
 #: amuled.1.in
 #, no-wrap
 msgid "aMule Daemon"
-msgstr ""
+msgstr "aMule daemon"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "amuled - the all-platform eMule p2p client - daemonized version"
-msgstr ""
+msgstr "amuled - eMule kompatibilní P2P klient pro všechny platformy - daemonized verze"
 
 #. type: Plain text
 #: amuled.1.in ../../src/utils/cas/docs/cas.1.in
 msgid "[B<-c> I<E<lt>pathE<gt>>]"
-msgstr ""
+msgstr "[B<-c> I<E<lt>cestaE<gt>>]"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "[B<-p> I<E<lt>pathE<gt>>]"
-msgstr ""
+msgstr "[B<-p> I<E<lt>cestaE<gt>>]"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "Forks to background."
-msgstr ""
+msgstr "Fork na pozadí."
 
 #. type: TP
 #: amuled.1.in
 #, no-wrap
 msgid "B<[ -p> I<E<lt>pathE<gt>>, B<--pid-file>=I<E<lt>pathE<gt>> B<]>"
-msgstr ""
+msgstr "B<[ -p> I<E<lt>cestaE<gt>>, B<--pid-file>=I<E<lt>cestaE<gt>> B<]>"
 
 #. type: Plain text
 #: amuled.1.in
 msgid "After fork, create a pid-file in the I<E<lt>pathE<gt>>.  I<E<lt>pathE<gt>> has to contain the filename."
-msgstr ""
+msgstr "Po forku vytvoří pid-soubor v I<E<lt>cestěE<gt>>.  I<E<lt>cestaE<gt>> musí obsahovat název souboru."
 
 #. type: Plain text
 #: amuled.1.in
