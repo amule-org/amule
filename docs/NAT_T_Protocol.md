@@ -74,10 +74,16 @@ streams (see [Key frame](#key-frame-quic-and-utp-datagram-obfuscation)). The
 outbound CAPS and QUIC dial also need `ENABLE_NATT_SERVER_COORDINATION` and
 `ENABLE_UTP`, which provide the rendezvous they run on.
 
-The feature does not advertise a QUIC capability in HELLO or
-`CT_MOD_MISCOPTIONS`. eMuleAI learns through `CAPS_ACK` instead. This avoids
-marking aMule as a mod when it does not provide the readable `ET_MOD_VERSION`
-that such an advertisement would imply.
+While we are firewalled, the hello's `CT_MOD_MISCOPTIONS` declares the
+transports we serve: bit 4 (`0x10`, `MOD_MISCOPT_NAT_TRAVERSAL_QUIC`) for QUIC
+and bit 1 (`0x02`, `MOD_MISCOPT_NAT_TRAVERSAL`) for uTP, the same transports
+that the Kad `0x51` (`KADEMLIA_FINDBUDDY_REQ`) declares (see
+[Kad buddy rendezvous](#kad-buddy-rendezvous)).
+eMuleAI needs them: once a uTP or QUIC stream connects it forgets the
+`CAPS_ACK`, and it asks for a file only when the peer's hello declares the
+stream's transport. Without the bit it closes the stream and dials again. A
+HighID sends neither bit: a peer reaches it over TCP, and eMuleAI's callback to
+a peer whose hello declared a transport tries that transport before TCP.
 
 ## Datagram envelope
 
@@ -295,8 +301,10 @@ aMule dials a HighID peer over TCP, also when the peer sets the NAT traversal bi
 aMule dials uTP and QUIC only for a LowID rendezvous: a server-vouched dial or a callback.
 aMule still accepts incoming uTP streams.
 
-eMuleAI dials a HighID peer that sets the bit over uTP first. aMule does not set the bit
-(`LocalAdvertisedModMiscOptions()`), so eMuleAI dials aMule over TCP.
+eMuleAI dials a HighID peer over TCP, bit or not, except when it answers a Kad callback
+(`OP_CALLBACK`) for a peer it already knows: then it tries the transport that peer's hello declared
+before TCP. aMule sets the bits only while firewalled (`LocalAdvertisedModMiscOptions()`), so a
+HighID aMule is called back over TCP.
 
 ## Scope and interoperability status
 
@@ -304,11 +312,15 @@ This exchange only negotiates capability information. It does not by itself
 establish a QUIC connection: aMule dials QUIC only on a server-vouched LowID
 rendezvous, after a compatible answer.
 
-A future direct interoperability run requires eMuleAI to know aMule's UDP
+The [Kad buddy rendezvous](#kad-buddy-rendezvous) is tested live: eMuleAI 1.6.0
+and eMuleQt 0.7.41, as requesters on a mobile network, download from a
+firewalled aMule behind a home NAT over QUIC, and eMuleAI also over uTP. Both
+follow aMule's QUIC Retry.
+
+The direct path is not tested live yet. It needs eMuleAI to know aMule's UDP
 endpoint, aMule to have a LowID, and eMuleAI itself to be firewalled. eMuleAI
 must also lack a usable Kad buddy for this peer so it selects direct NAT
-traversal instead of rendezvous. No live eMuleAI 1.6 validation has been
-performed for this task.
+traversal instead of rendezvous.
 
 ## Manual interoperability runbook
 
@@ -823,7 +835,11 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   byte of its `0x51` (`KADEMLIA_FINDBUDDY_REQ`): connect options with `0x80`
   for uTP and `0x40` for QUIC. aMule sends it with the transports it can use,
   uTP when built in and QUIC when built in and enabled. The requester declares
-  its own in the connect options of the `0xA0`. A 34-byte `0x51` declares none.
+  its own in the connect options of the `0xA0`, or names one in the last byte
+  of its 7-byte tail: `1` uTP, `2` QUIC. eMuleAI sets the bits; eMuleQt sets
+  none and names QUIC in the tail. It sends the tail only when it knows its
+  public IPv4; without it the request declares no transport, and the served
+  node drops it. A 34-byte `0x51` declares none.
 - **Check.** The buddy drops the `0xA0` only when both peers declared
   transports and share none, and counts the drop in its relay summary. If
   either peer declared none, it forwards as before. The check needs no CAPS
@@ -831,6 +847,9 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   endpoints, never through the buddy.
 - **Rebuilt.** The buddy writes each forwarded `0xA0` from the fields it parsed,
   after the requester's observed endpoint, and does not copy the received bytes.
+  A tail whose address it cannot use goes out with a zero address and port, so
+  its transport byte still reaches the served node; eMuleAI reads that byte
+  whatever the address.
 - **Slots.** A third of the buddy slots is kept for nodes that declared a
   transport, so a node that serves buddies keeps room for NAT-T nodes.
 - **Interop.** An eMuleAI buddy forwards without this check. A drop on our side
@@ -856,9 +875,9 @@ reask.
 - **Who dials.** The requester. The served node waits: it does not choose a
   transport, it arms every one both sides declared and lets the requester pick.
   With none in common it drops the `0xA0`, even after the buddy's check,
-  because an eMuleAI buddy forwards without it. An eMuleQt requester declares
-  only `0x40` (QUIC), so only a QUIC build with QUIC NAT-T turned on serves it.
-  The `0x51` (`KADEMLIA_FINDBUDDY_REQ`) declares exactly the transports this
+  because an eMuleAI buddy forwards without it. An eMuleQt requester names only
+  QUIC, so only a QUIC build with QUIC NAT-T turned on serves it. The `0x51`
+  (`KADEMLIA_FINDBUDDY_REQ`) and the hello declare exactly the transports this
   handler arms, from one helper: uTP only with server coordination and uTP
   available, QUIC also with QUIC NAT-T on.
 - **Endpoint.** It punches only the endpoint the buddy saw. When the source an

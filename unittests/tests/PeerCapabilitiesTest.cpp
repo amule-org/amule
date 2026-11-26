@@ -159,10 +159,16 @@ TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 	ASSERT_EQUALS(MOD_MISCOPT_KNOWN_MASK, caps.KnownBits());
 }
 
-// Extended Source Exchange and its tag skipping only: no NAT traversal, which is incomplete.
-TEST(PeerCapabilities, AdvertisesOnlyExtendedSourceExchange)
+// Extended Source Exchange and its tag skipping always; the NAT-T transports only while firewalled.
+TEST(PeerCapabilities, AdvertisesNatTTransportsOnlyWhileFirewalled)
 {
-	ASSERT_EQUALS(0x00000021u, LocalAdvertisedModMiscOptions());
+	ASSERT_EQUALS(0x00000021u, LocalAdvertisedModMiscOptions(false, 0xC0));
+	ASSERT_EQUALS(0x00000021u, LocalAdvertisedModMiscOptions(true, 0));
+	ASSERT_EQUALS(0x00000023u, LocalAdvertisedModMiscOptions(true, 0x80));
+	ASSERT_EQUALS(0x00000031u, LocalAdvertisedModMiscOptions(true, 0x40));
+	ASSERT_EQUALS(0x00000033u, LocalAdvertisedModMiscOptions(true, 0xC0));
+	// The other connect-options bits name no transport.
+	ASSERT_EQUALS(0x00000021u, LocalAdvertisedModMiscOptions(true, 0x3F));
 }
 
 TEST(PeerCapabilities, ExtendedSourceExchangeNeedsThePeersBitZero)
