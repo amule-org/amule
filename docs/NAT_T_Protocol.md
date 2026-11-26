@@ -842,7 +842,9 @@ own Kad buddy; a forward from any other peer, and an IPv6 requester
 - **No reask.** A forwarded control payload is not answered as a reask, so the
   requester gets no `OP_FILENOTFOUND`. Only `0xA0` is handled; any other
   embedded opcode, a request that does not parse, or an unusable endpoint is
-  dropped as malformed.
+  dropped as malformed. A payload with an all-zero file hash and no `0xA0` is
+  dropped the same way, and is no longer answered with `OP_FILENOTFOUND` nor
+  counted as a reask.
 - **Who dials.** The requester. The served node waits: it does not choose a
   transport, it arms every one both sides declared and lets the requester pick.
   With none in common it drops the `0xA0`, even after the buddy's check,
@@ -851,7 +853,9 @@ own Kad buddy; a forward from any other peer, and an IPv6 requester
 - **Endpoint.** It punches only the endpoint the buddy saw. The requester's
   hint is parsed but never punched: it would help only a requester on the
   buddy's own network. Bytes after the 7-byte tail, such as the extension block
-  of ModderMule/emule-qt#265, are ignored.
+  of ModderMule/emule-qt#265, are ignored: aMule uses none of its elements yet.
+  A requester whose address is filtered, banned or on the LAN is ignored too,
+  and counted only in `received`.
 - **Action.** It records the requester with `ExpectNatTPeer()` first, so it
   answers the requester's CAPS, then starts the punch schedule and port sweep
   of the server paths on the Kad buddy path. A server login does not end that
