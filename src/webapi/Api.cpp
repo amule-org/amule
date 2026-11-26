@@ -3379,10 +3379,10 @@ std::string QueryOf(const CHttpServer::Request &req)
 	return query;
 }
 
-// Envelope for every list endpoint: the list under its named key plus pagination metadata.
+// List envelope: the rows under their named key plus pagination metadata.
 // Records are addressed as pointers so callers can serialize without copying rows.
 template <class T, class WriterFn>
-CHttpServer::Response WriteListResponse(const char *plural_key,
+CHttpServer::Response ListWindowResponse(const char *plural_key,
 	const std::vector<const T *> &window,
 	WriterFn write_item,
 	const ListParams &params,
@@ -3420,7 +3420,7 @@ CHttpServer::Response ListResponseFromPtrsUnlocked(const char *plural_key,
 	if (auto err = BuildListWindowFromPtrs(ptrs, params, comparators, window, total))
 		return *err;
 
-	return WriteListResponse(plural_key, window, write_item, params, total);
+	return ListWindowResponse(plural_key, window, write_item, params, total);
 }
 
 template <class T, class WriterFn>
@@ -3438,7 +3438,7 @@ CHttpServer::Response ListResponse(const webapi::CState &state,
 	if (auto err = BuildListWindow(items, params, comparators, window, total))
 		return *err;
 
-	return WriteListResponse(plural_key, window, write_item, params, total);
+	return ListWindowResponse(plural_key, window, write_item, params, total);
 }
 
 } // namespace
