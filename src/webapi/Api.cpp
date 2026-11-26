@@ -3379,11 +3379,32 @@ std::string QueryOf(const CHttpServer::Request &req)
 	return query;
 }
 
-// Envelope for every list endpoint: the list under its named key plus the
-// pagination metadata, with ec_unavailable + 503 handled here so no handler repeats
-// it. Records are addressed as pointers, so an endpoint whose rows are not all in
-// one vector need not build one.
-//
+// List envelope: the rows under their named key plus pagination metadata.
+// Records are addressed as pointers so callers can serialize without copying rows.
+template <class T, class WriterFn>
+CHttpServer::Response ListWindowResponse(const char *plural_key,
+	const std::vector<const T *> &window,
+	WriterFn write_item,
+	const ListParams &params,
+	std::size_t total)
+{
+	CHttpServer::Response r;
+	r.status = 200;
+	r.content_type = "application/json";
+	// Omit snapshot timestamps so identical pages retain the same ETag.
+	CJsonWriter w;
+	w.BeginObject();
+	w.Key(plural_key);
+	w.BeginArray();
+	for (const T *item : window)
+		write_item(w, *item);
+	w.EndArray();
+	WritePageMeta(w, total, params);
+	w.EndObject();
+	FinalizeJsonBody(w, r);
+	return r;
+}
+
 // State-free: takes no lock of its own, so a caller already holding CState's read
 // lock can build a response inside it. m_mu is NOT recursive -- a second
 // shared_lock taken while a writer is queued deadlocks.
@@ -3399,20 +3420,7 @@ CHttpServer::Response ListResponseFromPtrsUnlocked(const char *plural_key,
 	if (auto err = BuildListWindowFromPtrs(ptrs, params, comparators, window, total))
 		return *err;
 
-	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key(plural_key);
-	w.BeginArray();
-	for (const T *item : window)
-		write_item(w, *item);
-	w.EndArray();
-	WritePageMeta(w, total, params);
-	w.EndObject();
-	FinalizeJsonBody(w, r);
-	return r;
+	return ListWindowResponse(plural_key, window, write_item, params, total);
 }
 
 template <class T, class WriterFn>
@@ -3430,22 +3438,7 @@ CHttpServer::Response ListResponse(const webapi::CState &state,
 	if (auto err = BuildListWindow(items, params, comparators, window, total))
 		return *err;
 
-	CHttpServer::Response r;
-	r.status = 200;
-	r.content_type = "application/json";
-	// No snapshot_at_* in the envelope: it churned the body bytes every refresher
-	// tick and defeated the ETag cache. The ETag is the validator now.
-	CJsonWriter w;
-	w.BeginObject();
-	w.Key(plural_key);
-	w.BeginArray();
-	for (const T *item : window)
-		write_item(w, *item);
-	w.EndArray();
-	WritePageMeta(w, total, params);
-	w.EndObject();
-	FinalizeJsonBody(w, r);
-	return r;
+	return ListWindowResponse(plural_key, window, write_item, params, total);
 }
 
 } // namespace
