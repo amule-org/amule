@@ -80,6 +80,15 @@ download = '/downloads/' + file_hash
 wait_for(lambda: call('GET', download)[0] == 200, 'download')
 expect('PATCH', download, {'action': 'resume', 'priority': 'low', 'a4af_auto': False}, 200)
 
+empty = expect('PATCH', download, {}, 400, 'bad_request')
+message = empty['error']['message']
+assert '`a4af_auto`' in message, message
+expect('PATCH', download, {'a4af_auto': True}, 200)
+assert state(download)['a4af_auto'] is True
+expect('PATCH', download, {'a4af_auto': False}, 200)
+assert state(download)['a4af_auto'] is False
+print('PASS: empty download PATCH lists the independently writable A4AF field')
+
 for invalid in ({'priority': []}, {'category_index': 2.9}, {'category_index': '2'},
                 {'category_index': 256}, {'a4af_auto': 'false'}, {'my_comment': 'missing rating'},
                 {'my_comment': 'x', 'my_rating': 2.9}, {'my_comment': 'x', 'my_rating': 1e100},
