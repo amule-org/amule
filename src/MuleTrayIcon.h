@@ -128,6 +128,8 @@ public:
 #ifndef WITH_LIBAYATANA_APPINDICATOR
 	// Force a new bundle on the next statistics tick, even while idle.
 	void InvalidateForDPIChange() { Old_Icon = -1; }
+#else
+	AppIndicator *GetIndicator() const { return m_indicator; }
 #endif
 
 private:
@@ -135,6 +137,8 @@ private:
 	AppIndicator *m_indicator;
 	GtkWidget *m_menu;
 	int m_lastIconState;
+	unsigned int m_statusIconActivate; // GtkStatusIcon "activate" signal id
+	unsigned long m_statusIconHook;
 #else
 	virtual wxMenu *CreatePopupMenu();
 	void UpdateTray();
