@@ -62,7 +62,8 @@ UploadBandwidthThrottler::~UploadBandwidthThrottler()
 }
 
 /**
- * Called by the disk I/O thread when it has put new data on a socket queue. Wakes the throttler
+ * Called by the disk I/O thread when it has put new data on a socket queue, and by
+ * CEMSocket::OnSend() when a socket with file data queued can take more. Wakes the throttler
  * immediately instead of waiting for its next sleep interval. eMule ref:
  * UploadBandwidthThrottler.cpp:795
  */
@@ -287,8 +288,9 @@ void *UploadBandwidthThrottler::Entry()
 			sleepTime = extraSleepTime;
 		}
 
-		// Wakes early on new control packets, new file data or EndThread(). Called even when
-		// there is no time left to sleep, to consume a wake that the drain below serves.
+		// Wakes early on new control packets, new file data, a socket that can take file data
+		// again, or EndThread(). Called even when there is no time left to sleep, to consume a
+		// wake that the drain below serves.
 		m_wake.Wait(timeSinceLastLoop < sleepTime ? sleepTime - timeSinceLastLoop : 0);
 
 		// Check after sleep in case the thread has been signaled to end

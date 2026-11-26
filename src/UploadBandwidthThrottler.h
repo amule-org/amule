@@ -55,8 +55,9 @@ public:
 
 	void EndThread();
 
-	// Called by the disk I/O thread when new packet data is available on a socket queue. Wakes
-	// the throttler early instead of waiting for its next sleep interval. eMule ref:
+	// Called by the disk I/O thread when new packet data is available on a socket queue, and by
+	// CEMSocket::OnSend() when a socket with file data queued can take more. Wakes the throttler
+	// early instead of waiting for its next sleep interval. eMule ref:
 	// UploadBandwidthThrottler.cpp:795
 	void NewUploadDataAvailable();
 

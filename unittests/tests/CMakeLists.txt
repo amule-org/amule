@@ -3366,6 +3366,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					$<TARGET_FILE:amuled> --seconds 3 --compress
 			)
 			set_tests_properties (UploadRefillCompressedIntegrationTest PROPERTIES LABELS "integration")
+			add_test (NAME UploadThrottlerWakeIntegrationTest
+				COMMAND ${Python3_EXECUTABLE} -u
+					${CMAKE_CURRENT_SOURCE_DIR}/UploadThrottlerWakeIntegrationTest.py $<TARGET_FILE:amuled>
+			)
+			set_tests_properties (UploadThrottlerWakeIntegrationTest PROPERTIES LABELS "integration")
 			add_test (NAME UploadSlotLogStateIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/UploadSlotLogStateIntegrationTest.py $<TARGET_FILE:amuled>
@@ -4340,6 +4345,7 @@ foreach (ec_wire_test IN ITEMS
 	UploadRefillIntegrationTest
 	UploadSlotLogStateIntegrationTest
 	UploadSlotScopeIntegrationTest
+	UploadThrottlerWakeIntegrationTest
 	WriteBackpressureIntegrationTest
 	WriteBufferPreferencesIntegrationTest
 )
