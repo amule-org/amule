@@ -705,6 +705,14 @@ struct KadBuddyOwnSnapshot
 	} buddies;
 	std::uint64_t received_callback_count = 0;
 	std::uint64_t received_reask_count = 0;
+	struct
+	{
+		std::uint64_t received = 0;
+		std::uint64_t malformed = 0;
+		std::uint64_t no_shared_transport = 0;
+		std::uint64_t accepted = 0;
+		std::uint64_t connected = 0;
+	} rendezvous;
 };
 
 struct KadSnapshot

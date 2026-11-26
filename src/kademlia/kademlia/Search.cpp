@@ -74,6 +74,7 @@ there client on the eMule forum..
 #include "../../SearchList.h"
 #include "../../MemFile.h"
 #include "../../ClientList.h"
+#include "../../ClientUDPSocket.h" // Needed for ServedNatTTransports
 #include "../../updownclient.h"
 #include "../../PeerCapabilities.h" // Needed for DecodeIPv6HexTag
 #include "../../Logger.h"
@@ -1427,19 +1428,10 @@ void CSearch::StorePacket()
 		packetdata.WriteUInt128(OwnBuddyID(CKademlia::GetPrefs()->GetKadID()));
 		packetdata.WriteUInt128(CKademlia::GetPrefs()->GetClientHash());
 		packetdata.WriteUInt16(thePrefs::GetPort());
-#ifdef AMULE_UTP_TRANSPORT
-		constexpr bool utpBuiltIn = true;
-#else
-		constexpr bool utpBuiltIn = false;
-#endif
-#ifdef AMULE_QUIC_TRANSPORT
-		const bool quicEnabled = thePrefs::IsQuicNatTEnabled();
-#else
-		const bool quicEnabled = false;
-#endif
-		// The 35th byte: the buddy forwards a rendezvous only between peers that share a transport.
+		// The 35th byte: the buddy forwards a rendezvous only between peers that share a transport,
+		// and we declare only what our handler for a forwarded one arms.
 		packetdata.WriteUInt8(CPrefs::GetMyConnectOptions(true, false) |
-				      LocalNatTConnectOptions(utpBuiltIn, quicEnabled));
+				      (theApp->clientudp ? theApp->clientudp->ServedNatTTransports() : 0));
 
 		DebugSend(KadFindBuddyReq, from->GetIPAddress(), from->GetUDPPort());
 		if (from->GetVersion() >= 6) {

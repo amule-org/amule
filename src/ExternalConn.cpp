@@ -1475,6 +1475,12 @@ static CECEmptyTag MakeKadBuddyTag()
 		CECTag(EC_TAG_KAD_BUDDY_OWN_SECONDS, (own.endedMs + clients.GetOwnBuddyLinkedMs()) / 1000));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_CALLBACKS, own.callbacksReceived));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REASKS, own.reasksReceived));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_RECEIVED, own.rendezvous.received));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_MALFORMED, own.rendezvous.malformed));
+	tag.AddTag(CECTag(
+		EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_NO_SHARED_TRANSPORT, own.rendezvous.noSharedTransport));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_ACCEPTED, own.rendezvous.accepted));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_CONNECTED, own.rendezvous.connected));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_NEEDED_SECONDS, own.neededMs / 1000));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_MISSING_SECONDS, own.withoutBuddyMs / 1000));
 	return tag;

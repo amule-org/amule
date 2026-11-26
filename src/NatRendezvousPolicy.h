@@ -101,6 +101,84 @@ private:
 	std::size_t m_maxTracked = kMaxTrackedRequesters;
 	std::vector<SEntry> m_entries;
 };
+
+// A rendezvous our buddy forwards stays in flight this long, so eMuleQt's resends (up to three, 5 s
+// apart) join it rather than start another burst and sweep.
+constexpr std::uint64_t kServedRendezvousInFlightMs = 20 * 1000;
+// One new attempt per requester address every 5 s, as eMuleQt allows.
+constexpr std::uint64_t kServedRendezvousPerRequesterMs = 5 * 1000;
+// The server paths allow 20 actions a minute; this budget is the Kad buddy's own.
+constexpr std::uint64_t kServedRendezvousWindowMs = 60 * 1000;
+constexpr std::size_t kMaxServedRendezvousPerWindow = 20;
+
+enum class EServedAdmission
+{
+	Start,
+	Join,
+	RequesterLimited,
+	OverGlobalLimit
+};
+
+// Admission for the rendezvous our buddy forwards to us. Each one makes us punch and sweep an
+// endpoint the buddy saw, and that source can be forged: the per-requester limit stops repeats to
+// one address, the global one a sender that forges a new source each time.
+class CServedRendezvousGate
+{
+public:
+	EServedAdmission Admit(const PeerAddressing::UdpEndpoint &requester, std::uint64_t now)
+	{
+		Evict(now);
+		const auto inFlight = std::find_if(
+			m_inFlight.begin(), m_inFlight.end(), [&requester](const SAttempt &attempt) {
+				return attempt.requester.address == requester.address &&
+				       attempt.requester.port == requester.port;
+			});
+		if (inFlight != m_inFlight.end()) {
+			return EServedAdmission::Join;
+		}
+		if (m_started.size() >= kMaxServedRendezvousPerWindow) {
+			return EServedAdmission::OverGlobalLimit;
+		}
+		if (!m_perRequester.Admit(requester.address, now)) {
+			return EServedAdmission::RequesterLimited;
+		}
+		m_started.push_back(now);
+		m_inFlight.push_back({ requester, now });
+		return EServedAdmission::Start;
+	}
+
+private:
+	struct SAttempt
+	{
+		PeerAddressing::UdpEndpoint requester;
+		std::uint64_t startedAt;
+	};
+
+	void Evict(std::uint64_t now)
+	{
+		const auto expired = [now](std::uint64_t at, std::uint64_t window) {
+			return now >= at && now - at >= window;
+		};
+		m_inFlight.erase(std::remove_if(m_inFlight.begin(),
+					 m_inFlight.end(),
+					 [&expired](const SAttempt &attempt) {
+						 return expired(
+							 attempt.startedAt, kServedRendezvousInFlightMs);
+					 }),
+			m_inFlight.end());
+		m_started.erase(std::remove_if(m_started.begin(),
+					m_started.end(),
+					[&expired](std::uint64_t at) {
+						return expired(at, kServedRendezvousWindowMs);
+					}),
+			m_started.end());
+	}
+
+	CRequesterLimiter m_perRequester{ kServedRendezvousPerRequesterMs, kMaxTrackedRequesters };
+	// Both stay bounded by the global limit.
+	std::vector<SAttempt> m_inFlight;
+	std::vector<std::uint64_t> m_started;
+};
 } // namespace NatRendezvous
 
 #endif // NATRENDEZVOUSPOLICY_H

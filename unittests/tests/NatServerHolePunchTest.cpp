@@ -1258,6 +1258,40 @@ TEST(NatServerHolePunch, ServerRequestPacerAllowsABurstThenOnePerRefill)
 	ASSERT_FALSE(pacer.TryTake(later));
 }
 
+TEST(NatServerHolePunch, EachPunchDueNamesThePathThatStartedItsSchedule)
+{
+	PunchScheduleSet schedules;
+	const IPv4 server{ { 192, 0, 2, 1 } };
+	const IPv4 buddy{ { 192, 0, 2, 2 } };
+	schedules.Start(server, 4'662, 1'000, RendezvousPath::ServerPunch);
+	schedules.Start(buddy, 4'662, 1'000, RendezvousPath::KadBuddy);
+	const std::vector<PunchDue> due = schedules.TakeDue(1'500);
+	ASSERT_EQUALS((std::size_t)6, due.size());
+	for (const PunchDue &one : due) {
+		const RendezvousPath expected =
+			one.peerIP == buddy ? RendezvousPath::KadBuddy : RendezvousPath::ServerPunch;
+		ASSERT_TRUE(one.path == expected);
+	}
+}
+
+// Ten sweeps a minute for all the server paths together: a sender that forges the source a Kad buddy
+// relays must not use them up, so the Kad path's sweeps spend a budget of their own.
+TEST(NatServerHolePunch, SeparateSweepBudgetsDoNotSpendEachOther)
+{
+	SweepBudget server;
+	SweepBudget kad;
+	for (std::uint8_t i = 0; i < kMaxSweepsPerWindow; ++i) {
+		ASSERT_TRUE(SweepBudgetFor(RendezvousPath::KadBuddy, server, kad)
+				    .Admit(IPv4{ { 198, 51, 100, i } }, 1'000));
+	}
+	const IPv4 next{ { 203, 0, 113, 1 } };
+	ASSERT_FALSE(SweepBudgetFor(RendezvousPath::KadBuddy, server, kad).Admit(next, 1'001));
+	for (const RendezvousPath path : { RendezvousPath::ServerPunch, RendezvousPath::LugdunumCallback }) {
+		ASSERT_TRUE(&SweepBudgetFor(path, server, kad) == &server);
+	}
+	ASSERT_TRUE(SweepBudgetFor(RendezvousPath::ServerPunch, server, kad).Admit(next, 1'001));
+}
+
 TEST(NatServerHolePunch, TheServerPunchSchedulePunchesAtZeroHalfOneAndTwoSeconds)
 {
 	PunchScheduleSet schedules;

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 using namespace muleunit;
@@ -222,6 +223,154 @@ TEST(NatRendezvousProtocol, ForwardedRendezvousIsRebuiltFromTheParsedRequest)
 			ASSERT_TRUE(std::equal(body.begin(), body.end(), received));
 		}
 	}
+}
+
+namespace
+{
+// What our buddy writes after the requester's ip/port in OP_REASKCALLBACKTCP: the envelope less the
+// serving-buddy ID, so the extended-payload marker comes first.
+Bytes ForwardedBody(bool withEndpointHint, std::uint8_t connectOptions = 0xC2)
+{
+	Bytes body = Rendezvous(withEndpointHint, true);
+	body.erase(body.begin(), body.begin() + NatRendezvous::kHashSize);
+	body[NatRendezvous::kHashSize + 1 + NatRendezvous::kHashSize] = connectOptions;
+	return body;
+}
+
+NatRendezvous::ServedRendezvousDecision Served(const Bytes &body,
+	std::uint8_t localTransports = NatRendezvous::kNatTTransports,
+	const PeerAddressing::UdpEndpoint &observed = Endpoint("192.0.2.8", 4673))
+{
+	return NatRendezvous::DecideServedRendezvous(observed, body.data(), body.size(), localTransports);
+}
+} // namespace
+
+TEST(NatRendezvousProtocol, ForwardedControlIsMarkedByAZeroFileHash)
+{
+	const Bytes body = ForwardedBody(false);
+	ASSERT_TRUE(NatRendezvous::IsForwardedControl(body.data(), body.size()));
+
+	Bytes reask(NatRendezvous::kHashSize, 0);
+	reask[0] = 0x2A; // A file hash: a plain reask.
+	ASSERT_FALSE(NatRendezvous::IsForwardedControl(reask.data(), reask.size()));
+
+	const Bytes shortBody(NatRendezvous::kHashSize - 1, 0);
+	ASSERT_FALSE(NatRendezvous::IsForwardedControl(shortBody.data(), shortBody.size()));
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousPunchesTheObservedEndpointNotTheHint)
+{
+	const auto observed = Endpoint("192.0.2.8", 4673);
+	const auto decision = Served(ForwardedBody(true), NatRendezvous::kNatTTransports, observed);
+
+	ASSERT_TRUE(decision.outcome == NatRendezvous::EServedRendezvous::Punch);
+	ASSERT_TRUE(decision.target.address == observed.address);
+	ASSERT_EQUALS(observed.port, decision.target.port);
+	ASSERT_TRUE(decision.request.requesterHint.has_value());
+	ASSERT_FALSE(decision.target.address == decision.request.requesterHint->address);
+	ASSERT_EQUALS(std::uint8_t(1), decision.request.requesterHash[0]);
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousParsesWithAndWithoutTheTail)
+{
+	Bytes sixByteTail = ForwardedBody(true);
+	sixByteTail.pop_back();
+	for (const Bytes &body : { ForwardedBody(false), ForwardedBody(true), sixByteTail }) {
+		ASSERT_TRUE(Served(body).outcome == NatRendezvous::EServedRendezvous::Punch);
+	}
+	ASSERT_EQUALS(std::uint8_t(2), Served(ForwardedBody(true)).request.requesterHint->transportHint);
+}
+
+// ModderMule/emule-qt#265 appends typed elements after the full 7-byte tail. aMule uses none of
+// them yet, so the request parses as if they were absent.
+TEST(NatRendezvousProtocol, ServedRendezvousParsesABodyWithTheExtensionBlock)
+{
+	Bytes body = ForwardedBody(true);
+	body.insert(body.end(), { 0x01, 0x04, 0xDE, 0xAD, 0xBE, 0xEF, 0x02, 0x00 });
+	const auto decision = Served(body);
+
+	ASSERT_TRUE(decision.outcome == NatRendezvous::EServedRendezvous::Punch);
+	ASSERT_TRUE(decision.request.requesterHint->address == CNetworkAddress::FromString("8.8.8.8"));
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousDropsAnythingButAWellFormed0xA0)
+{
+	Bytes otherOpcode = ForwardedBody(false);
+	otherOpcode[NatRendezvous::kHashSize] = 0xA1;
+	Bytes nullRequester = ForwardedBody(false);
+	std::fill_n(nullRequester.begin() + NatRendezvous::kHashSize + 1, NatRendezvous::kHashSize, 0);
+	Bytes truncated = ForwardedBody(false);
+	truncated.pop_back();
+	const Bytes markerOnly(NatRendezvous::kHashSize, 0);
+	for (const Bytes &body : { otherOpcode, nullRequester, truncated, markerOnly }) {
+		ASSERT_TRUE(Served(body).outcome == NatRendezvous::EServedRendezvous::Malformed);
+	}
+	for (const auto &observed : { Endpoint("0.0.0.0"), Endpoint("192.0.2.8", 0) }) {
+		const auto decision = Served(ForwardedBody(false), NatRendezvous::kNatTTransports, observed);
+		ASSERT_TRUE(decision.outcome == NatRendezvous::EServedRendezvous::Malformed);
+	}
+}
+
+// We never dial here: we arm what we share with the requester and let it choose.
+TEST(NatRendezvousProtocol, ServedRendezvousNeedsATransportBothSidesHave)
+{
+	const auto quicOnlyRequester = ForwardedBody(false, 0x40 | 0x02);
+	ASSERT_TRUE(Served(quicOnlyRequester, 0x80).outcome ==
+		    NatRendezvous::EServedRendezvous::NoSharedTransport);
+	const auto shared = Served(quicOnlyRequester, 0x80 | 0x40);
+	ASSERT_TRUE(shared.outcome == NatRendezvous::EServedRendezvous::Punch);
+	ASSERT_EQUALS(std::uint8_t(0x40), shared.sharedTransports);
+
+	const auto noBits = ForwardedBody(false, 0x02);
+	ASSERT_TRUE(Served(noBits).outcome == NatRendezvous::EServedRendezvous::NoSharedTransport);
+	ASSERT_TRUE(Served(ForwardedBody(false), 0).outcome ==
+		    NatRendezvous::EServedRendezvous::NoSharedTransport);
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousRepeatJoinsTheAttemptInFlight)
+{
+	NatRendezvous::CServedRendezvousGate gate;
+	const auto requester = Endpoint("192.0.2.8", 4673);
+	using EAdmission = NatRendezvous::EServedAdmission;
+
+	ASSERT_TRUE(gate.Admit(requester, 1000) == EAdmission::Start);
+	// eMuleQt resends up to three times, 5 s apart.
+	for (const std::uint64_t resend : { 6000, 11000, 16000 }) {
+		ASSERT_TRUE(gate.Admit(requester, resend) == EAdmission::Join);
+	}
+	ASSERT_TRUE(gate.Admit(requester, 1000 + NatRendezvous::kServedRendezvousInFlightMs) ==
+		    EAdmission::Start);
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousLimitsEachRequesterAddress)
+{
+	NatRendezvous::CServedRendezvousGate gate;
+	using EAdmission = NatRendezvous::EServedAdmission;
+
+	ASSERT_TRUE(gate.Admit(Endpoint("192.0.2.8", 4673), 1000) == EAdmission::Start);
+	ASSERT_TRUE(gate.Admit(Endpoint("192.0.2.8", 4674), 1001) == EAdmission::RequesterLimited);
+	ASSERT_TRUE(gate.Admit(Endpoint("192.0.2.8", 4674),
+			    1000 + NatRendezvous::kServedRendezvousPerRequesterMs) == EAdmission::Start);
+}
+
+// A buddy relays a 0xA0 from any UDP source, and the source can be forged: a sender that forges a
+// new one each time is stopped only by a limit for all requesters.
+TEST(NatRendezvousProtocol, ServedRendezvousHasAGlobalLimitThatJoinsDoNotSpend)
+{
+	NatRendezvous::CServedRendezvousGate gate;
+	using EAdmission = NatRendezvous::EServedAdmission;
+	const auto requester = [](std::size_t i) {
+		const std::string address = "198.51.100." + std::to_string(i + 1);
+		return Endpoint(address.c_str());
+	};
+
+	for (std::size_t i = 0; i < NatRendezvous::kMaxServedRendezvousPerWindow; ++i) {
+		ASSERT_TRUE(gate.Admit(requester(i), 1000) == EAdmission::Start);
+		ASSERT_TRUE(gate.Admit(requester(i), 1001) == EAdmission::Join);
+	}
+	const auto next = requester(NatRendezvous::kMaxServedRendezvousPerWindow);
+	ASSERT_TRUE(gate.Admit(next, 1002) == EAdmission::OverGlobalLimit);
+	ASSERT_TRUE(gate.Admit(next, 1000 + NatRendezvous::kServedRendezvousWindowMs) == EAdmission::Start);
 }
 
 TEST(NatRendezvousProtocol, ForwardedRendezvousDropsTrailingBytesTheParserDidNotAccept)

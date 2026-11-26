@@ -1727,6 +1727,12 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		own.buddies.timed_out = get(EC_TAG_KAD_BUDDY_OWN_TIMED_OUT);
 		own.received_callback_count = get(EC_TAG_KAD_BUDDY_OWN_CALLBACKS);
 		own.received_reask_count = get(EC_TAG_KAD_BUDDY_OWN_REASKS);
+		// An older daemon sends none of these, and reads as zero like any absent counter here.
+		own.rendezvous.received = get(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_RECEIVED);
+		own.rendezvous.malformed = get(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_MALFORMED);
+		own.rendezvous.no_shared_transport = get(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_NO_SHARED_TRANSPORT);
+		own.rendezvous.accepted = get(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_ACCEPTED);
+		own.rendezvous.connected = get(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_CONNECTED);
 		out.has_buddy_counters = true;
 	}
 }

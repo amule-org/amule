@@ -716,19 +716,6 @@ inline std::vector<std::uint16_t> SweptPorts(std::uint16_t udpPort)
 	return ports;
 }
 
-// One punch the schedule still owes.
-struct PunchDue
-{
-	enum Kind
-	{
-		Endpoint,
-		Sweep
-	};
-	Kind kind = Endpoint;
-	IPv4 peerIP{};
-	std::uint16_t udpPort = 0;
-};
-
 // The path a rendezvous took. The extension counts as the ed2k-server punch, and its Lugdunum
 // fallback dial as Lugdunum's callback; the Kad buddy relays a rendezvous with no server involved.
 enum class RendezvousPath
@@ -744,6 +731,21 @@ constexpr bool IsServerPath(RendezvousPath path) noexcept
 {
 	return path != RendezvousPath::KadBuddy;
 }
+
+// One punch the schedule still owes.
+struct PunchDue
+{
+	enum Kind
+	{
+		Endpoint,
+		Sweep
+	};
+	Kind kind = Endpoint;
+	IPv4 peerIP{};
+	std::uint16_t udpPort = 0;
+	// The path that started the schedule, so each path's sweeps spend a budget of their own.
+	RendezvousPath path = RendezvousPath::ServerPunch;
+};
 
 // The punches owed to each peer endpoint. One schedule per address and port, restarted by a second
 // 0x61 for it. A punch or a hello from the peer drops its schedule, and each one expires with its
@@ -821,7 +823,7 @@ public:
 				entry.due.end(),
 				[now](const Item &item) { return now >= item.at; });
 			for (auto item = entry.due.begin(); item != firstPending; ++item) {
-				due.push_back({ item->kind, entry.peerIP, entry.udpPort });
+				due.push_back({ item->kind, entry.peerIP, entry.udpPort, entry.path });
 			}
 			entry.due.erase(entry.due.begin(), firstPending);
 		}
@@ -928,6 +930,14 @@ private:
 	std::vector<Address> m_addresses;
 	std::deque<std::uint64_t> m_recent;
 };
+
+// The server paths share one sweep budget; the Kad buddy path, whose requester sources can be
+// forged, spends its own.
+inline SweepBudget &SweepBudgetFor(RendezvousPath path, SweepBudget &serverPaths, SweepBudget &kadBuddy)
+{
+	return IsServerPath(path) ? serverPaths : kadBuddy;
+}
+
 // Wake keepalive (ed2k-server's hole-punch extension). The server wakes the target with Lugdunum's 0x37 and
 // waits for its fresh 0x9F before it hands out the target's port: in a 30-byte 0x61 after a 0x60 (ed2k-server
 // 0.9.85), or in a 0xA7 to a requester on another server. ed2k-server sets 0x100000 in both flag words;

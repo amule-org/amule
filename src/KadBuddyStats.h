@@ -144,6 +144,17 @@ struct CBuddyStats
 		uint64_t endedMs = 0; // Time with buddies that have ended.
 		uint64_t callbacksReceived = 0;
 		uint64_t reasksReceived = 0;
+		// A 0xA0 (rendezvous) our buddy forwarded: received ends as malformed, noSharedTransport,
+		// accepted, or held back by the rendezvous limits; connected counts accepted ones whose
+		// requester completed a verified hello.
+		struct Rendezvous
+		{
+			uint64_t received = 0;
+			uint64_t malformed = 0;
+			uint64_t noSharedTransport = 0;
+			uint64_t accepted = 0;
+			uint64_t connected = 0;
+		} rendezvous;
 		uint64_t neededMs = 0;
 		uint64_t withoutBuddyMs = 0;
 	} own;
