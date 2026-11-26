@@ -75,8 +75,10 @@ outbound CAPS and QUIC dial also need `ENABLE_NATT_SERVER_COORDINATION` and
 `ENABLE_UTP`, which provide the rendezvous they run on.
 
 While we are firewalled, the hello's `CT_MOD_MISCOPTIONS` declares the
-transports we serve: bit 4 (`0x10`) for QUIC and bit 1 (`0x02`) for uTP, the
-same ones as the Kad `0x51` (see [Kad buddy rendezvous](#kad-buddy-rendezvous)).
+transports we serve: bit 4 (`0x10`, `MOD_MISCOPT_NAT_TRAVERSAL_QUIC`) for QUIC
+and bit 1 (`0x02`, `MOD_MISCOPT_NAT_TRAVERSAL`) for uTP, the same transports
+that the Kad `0x51` (`KADEMLIA_FINDBUDDY_REQ`) declares (see
+[Kad buddy rendezvous](#kad-buddy-rendezvous)).
 eMuleAI needs them: once a uTP or QUIC stream connects it forgets the
 `CAPS_ACK`, and it asks for a file only when the peer's hello declares the
 stream's transport. Without the bit it closes the stream and dials again. A
@@ -834,7 +836,9 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   uTP when built in and QUIC when built in and enabled. The requester declares
   its own in the connect options of the `0xA0`, or names one in the last byte
   of its 7-byte tail: `1` uTP, `2` QUIC. eMuleAI sets the bits; eMuleQt sets
-  none and names QUIC in the tail. A 34-byte `0x51` declares none.
+  none and names QUIC in the tail. It sends the tail only when it knows its
+  public IPv4; without it the request declares no transport, and the served
+  node drops it. A 34-byte `0x51` declares none.
 - **Check.** The buddy drops the `0xA0` only when both peers declared
   transports and share none, and counts the drop in its relay summary. If
   either peer declared none, it forwards as before. The check needs no CAPS
