@@ -150,3 +150,151 @@ TEST(NatRendezvousPolicy, KeepsAdjacentIPv6PrefixesIndependent)
 	ASSERT_TRUE(limiter.Admit(first, 1000));
 	ASSERT_TRUE(limiter.Admit(second, 1001));
 }
+
+namespace
+{
+using Requests = NatRendezvous::CKadRendezvousRequests;
+using Action = NatRendezvous::SKadRendezvousAction;
+
+constexpr std::uint32_t kTargetIP = 0x0A71000C;
+constexpr std::uint16_t kTargetPort = 4672;
+
+NatRendezvous::KadRendezvousHash HashOf(std::uint8_t value)
+{
+	NatRendezvous::KadRendezvousHash hash{};
+	hash.fill(value);
+	return hash;
+}
+
+NatRendezvous::SKadRendezvousTarget Target(
+	std::uint8_t hash, std::uint32_t ip = kTargetIP, std::uint16_t port = kTargetPort)
+{
+	return { ip, port, HashOf(hash), 0x0B71000C, 5000 };
+}
+
+std::size_t CountOf(const std::vector<Action> &actions, Action::EKind kind)
+{
+	return static_cast<std::size_t>(std::count_if(actions.begin(),
+		actions.end(),
+		[kind](const Action &action) { return action.kind == kind; }));
+}
+} // namespace
+
+TEST(NatRendezvousPolicy, RequesterSendsThreeTimesFiveSecondsApart)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+
+	const auto first = requests.TakeDue(1000);
+	ASSERT_EQUALS(1u, CountOf(first, Action::Send));
+	ASSERT_TRUE(first.front().target.hash == HashOf(1));
+	ASSERT_EQUALS(0u, CountOf(requests.TakeDue(1000), Action::Send));
+	ASSERT_EQUALS(0u, CountOf(requests.TakeDue(5999), Action::Send));
+	ASSERT_EQUALS(1u, CountOf(requests.TakeDue(6000), Action::Send));
+	ASSERT_EQUALS(1u, CountOf(requests.TakeDue(11000), Action::Send));
+	ASSERT_EQUALS(0u, CountOf(requests.TakeDue(16000), Action::Send));
+}
+
+TEST(NatRendezvousPolicy, RequesterDialsTheKadEndpointOnceWithoutAPunch)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+	requests.TakeDue(1000);
+
+	ASSERT_EQUALS(0u,
+		CountOf(requests.TakeDue(1000 + NatRendezvous::kRequesterFallbackDialMs - 1),
+			Action::FallbackDial));
+	const auto due = requests.TakeDue(1000 + NatRendezvous::kRequesterFallbackDialMs);
+	ASSERT_EQUALS(1u, CountOf(due, Action::FallbackDial));
+	ASSERT_EQUALS(0u, CountOf(requests.TakeDue(9000), Action::FallbackDial));
+}
+
+TEST(NatRendezvousPolicy, RequesterDialsTheFirstPunchAndStopsSending)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+	requests.TakeDue(1000);
+
+	// The punch comes from the target's mapping, which need not be its Kad port.
+	const auto punched = requests.TakePunch(kTargetIP, 40000, 2000);
+	ASSERT_TRUE(punched.has_value());
+	ASSERT_TRUE(punched->hash == HashOf(1));
+	ASSERT_FALSE(requests.TakePunch(kTargetIP, 40000, 2100).has_value());
+
+	const auto later = requests.TakeDue(20000);
+	ASSERT_EQUALS(0u, CountOf(later, Action::FallbackDial));
+	ASSERT_EQUALS(0u, CountOf(later, Action::Send));
+}
+
+TEST(NatRendezvousPolicy, RequesterPunchFromAnotherPortNeedsALoneAttemptAtTheAddress)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+	ASSERT_TRUE(requests.Start(Target(2, kTargetIP, 4700), 1000));
+
+	ASSERT_FALSE(requests.TakePunch(kTargetIP, 40000, 2000).has_value());
+	const auto exact = requests.TakePunch(kTargetIP, 4700, 2000);
+	ASSERT_TRUE(exact.has_value());
+	ASSERT_TRUE(exact->hash == HashOf(2));
+	ASSERT_FALSE(requests.TakePunch(0x0C71000C, kTargetPort, 2000).has_value());
+}
+
+TEST(NatRendezvousPolicy, RequesterAttemptExpiresAndCoolsDown)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+	ASSERT_FALSE(requests.Start(Target(1), 1001));
+	requests.TakeDue(1000);
+
+	ASSERT_EQUALS(0u,
+		CountOf(requests.TakeDue(1000 + NatRendezvous::kRequesterAttemptMs - 1), Action::Expired));
+	const auto expired = requests.TakeDue(1000 + NatRendezvous::kRequesterAttemptMs);
+	ASSERT_EQUALS(1u, CountOf(expired, Action::Expired));
+	ASSERT_FALSE(requests.TakePunch(kTargetIP, kTargetPort, 1000 + NatRendezvous::kRequesterAttemptMs)
+			     .has_value());
+
+	const std::uint64_t expiredAt = 1000 + NatRendezvous::kRequesterAttemptMs;
+	ASSERT_FALSE(requests.Start(Target(1), expiredAt + NatRendezvous::kRequesterCooldownMs - 1));
+	ASSERT_TRUE(requests.Start(Target(1), expiredAt + NatRendezvous::kRequesterCooldownMs));
+}
+
+TEST(NatRendezvousPolicy, RequesterHelloEndsTheAttemptWithoutACooldown)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+	ASSERT_FALSE(requests.Complete(kTargetIP, HashOf(2)));
+	ASSERT_TRUE(requests.Complete(kTargetIP, HashOf(1)));
+	ASSERT_FALSE(requests.Complete(kTargetIP, HashOf(1)));
+
+	ASSERT_EQUALS(0u, requests.TakeDue(60000).size());
+	ASSERT_TRUE(requests.Start(Target(1), 60000));
+}
+
+TEST(NatRendezvousPolicy, RequesterFileNotFoundMeansNoRendezvousForGood)
+{
+	Requests requests;
+	ASSERT_FALSE(requests.NoRendezvous(kTargetIP, kTargetPort).has_value());
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+
+	const auto ended = requests.NoRendezvous(kTargetIP, kTargetPort);
+	ASSERT_TRUE(ended.has_value());
+	ASSERT_TRUE(ended->hash == HashOf(1));
+	ASSERT_FALSE(requests.NoRendezvous(kTargetIP, kTargetPort).has_value());
+	ASSERT_EQUALS(0u, requests.TakeDue(2000).size());
+
+	ASSERT_FALSE(requests.Start(Target(1), 1000 + 24ull * 3600 * 1000));
+	ASSERT_TRUE(requests.Start(Target(2), 2000));
+}
+
+TEST(NatRendezvousPolicy, RequesterAttemptsAreBounded)
+{
+	Requests requests;
+	for (std::size_t i = 0; i < NatRendezvous::kMaxRequesterAttempts; ++i) {
+		ASSERT_TRUE(requests.Start(
+			Target(static_cast<std::uint8_t>(i + 1), kTargetIP + static_cast<std::uint32_t>(i)),
+			1000));
+	}
+	ASSERT_FALSE(requests.Start(Target(0xF0, 0x0D71000C), 1000));
+	ASSERT_TRUE(requests.Complete(kTargetIP, HashOf(1)));
+	ASSERT_TRUE(requests.Start(Target(0xF0, 0x0D71000C), 1000));
+}

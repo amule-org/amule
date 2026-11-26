@@ -15,6 +15,7 @@
 #include "PeerAddressing.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -178,6 +179,196 @@ private:
 	// Both stay bounded by the global limit.
 	std::vector<SAttempt> m_inFlight;
 	std::vector<std::uint64_t> m_started;
+};
+
+// The requester side follows eMuleQt: up to three sends 5 s apart, an attempt over after 45 s.
+constexpr std::size_t kRequesterSends = 3;
+constexpr std::uint64_t kRequesterSendIntervalMs = 5 * 1000;
+// eMuleAI dials the source's Kad endpoint at once; we give the target's punch this long first.
+constexpr std::uint64_t kRequesterFallbackDialMs = 3 * 1000;
+constexpr std::uint64_t kRequesterAttemptMs = 45 * 1000;
+constexpr std::uint64_t kRequesterCooldownMs = 10 * 60 * 1000;
+// A full set refuses a new attempt rather than drop one whose expiry would start its cooldown.
+constexpr std::size_t kMaxRequesterAttempts = 32;
+constexpr std::size_t kMaxRequesterMarks = 256;
+
+using KadRendezvousHash = std::array<std::uint8_t, 16>;
+
+// A firewalled Kad source we ask for a rendezvous through its buddy. Addresses are IPv4 in aMule's
+// byte order.
+struct SKadRendezvousTarget
+{
+	std::uint32_t ip;
+	std::uint16_t udpPort;
+	KadRendezvousHash hash;
+	std::uint32_t buddyIP;
+	std::uint16_t buddyPort;
+};
+
+struct SKadRendezvousAction
+{
+	enum EKind
+	{
+		Send,
+		FallbackDial,
+		Expired
+	};
+	EKind kind;
+	SKadRendezvousTarget target;
+};
+
+// Our rendezvous requests in flight. The target's first punch is what we dial; a verified hello
+// ends the attempt, and one that times out keeps that source from this path for a while. A target
+// that answers OP_FILENOTFOUND does not speak the rendezvous and is never asked again.
+class CKadRendezvousRequests
+{
+public:
+	bool Start(const SKadRendezvousTarget &target, std::uint64_t now)
+	{
+		EvictMarks(now);
+		if (m_attempts.size() >= kMaxRequesterAttempts || IsMarked(target.hash) ||
+			std::any_of(m_attempts.begin(), m_attempts.end(), [&target](const SAttempt &attempt) {
+				return attempt.target.hash == target.hash ||
+				       (attempt.target.ip == target.ip &&
+					       attempt.target.udpPort == target.udpPort);
+			})) {
+			return false;
+		}
+		m_attempts.push_back({ target, now, 0, false, false });
+		return true;
+	}
+
+	// Everything due now, each returned once. A send whose moment a slow tick missed is skipped.
+	std::vector<SKadRendezvousAction> TakeDue(std::uint64_t now)
+	{
+		std::vector<SKadRendezvousAction> due;
+		for (auto it = m_attempts.begin(); it != m_attempts.end();) {
+			const std::uint64_t elapsed = now >= it->startedAt ? now - it->startedAt : 0;
+			if (elapsed >= kRequesterAttemptMs) {
+				due.push_back({ SKadRendezvousAction::Expired, it->target });
+				Mark(it->target.hash, now + kRequesterCooldownMs);
+				it = m_attempts.erase(it);
+				continue;
+			}
+			if (!it->punched) {
+				const std::size_t sendsDue = std::min<std::size_t>(
+					kRequesterSends, elapsed / kRequesterSendIntervalMs + 1);
+				if (sendsDue > it->sends) {
+					it->sends = sendsDue;
+					due.push_back({ SKadRendezvousAction::Send, it->target });
+				}
+				if (!it->fallbackDialled && elapsed >= kRequesterFallbackDialMs) {
+					it->fallbackDialled = true;
+					due.push_back({ SKadRendezvousAction::FallbackDial, it->target });
+				}
+			}
+			++it;
+		}
+		return due;
+	}
+
+	// The target to dial for a punch from @a ip, once per attempt. A punch from its own port is
+	// the target's; from another it may be a neighbour behind the same address, so only a lone
+	// attempt there takes it.
+	std::optional<SKadRendezvousTarget> TakePunch(std::uint32_t ip, std::uint16_t port, std::uint64_t now)
+	{
+		const auto match = Find(ip, port);
+		if (match == m_attempts.end() || match->punched ||
+			now - match->startedAt >= kRequesterAttemptMs) {
+			return std::nullopt;
+		}
+		match->punched = true;
+		return match->target;
+	}
+
+	bool Complete(std::uint32_t ip, const KadRendezvousHash &hash)
+	{
+		const auto match =
+			std::find_if(m_attempts.begin(), m_attempts.end(), [&](const SAttempt &attempt) {
+				return attempt.target.ip == ip && attempt.target.hash == hash;
+			});
+		if (match == m_attempts.end()) {
+			return false;
+		}
+		m_attempts.erase(match);
+		return true;
+	}
+
+	// An OP_FILENOTFOUND from an attempt's target: it read our 0xA0 as a reask. Nullopt when no
+	// attempt is in flight there, so the caller handles the answer as before.
+	std::optional<SKadRendezvousTarget> NoRendezvous(std::uint32_t ip, std::uint16_t port)
+	{
+		const auto match = Find(ip, port);
+		if (match == m_attempts.end()) {
+			return std::nullopt;
+		}
+		const SKadRendezvousTarget target = match->target;
+		m_attempts.erase(match);
+		Mark(target.hash, kForever);
+		return target;
+	}
+
+	std::size_t Size() const { return m_attempts.size(); }
+
+private:
+	static constexpr std::uint64_t kForever = ~std::uint64_t(0);
+
+	struct SAttempt
+	{
+		SKadRendezvousTarget target;
+		std::uint64_t startedAt;
+		std::size_t sends;
+		bool fallbackDialled;
+		bool punched;
+	};
+	struct SMark
+	{
+		KadRendezvousHash hash;
+		std::uint64_t until;
+	};
+
+	std::vector<SAttempt>::iterator Find(std::uint32_t ip, std::uint16_t port)
+	{
+		const auto exact =
+			std::find_if(m_attempts.begin(), m_attempts.end(), [&](const SAttempt &attempt) {
+				return attempt.target.ip == ip && attempt.target.udpPort == port;
+			});
+		if (exact != m_attempts.end()) {
+			return exact;
+		}
+		const auto atAddress = [ip](const SAttempt &attempt) { return attempt.target.ip == ip; };
+		if (std::count_if(m_attempts.begin(), m_attempts.end(), atAddress) != 1) {
+			return m_attempts.end();
+		}
+		return std::find_if(m_attempts.begin(), m_attempts.end(), atAddress);
+	}
+	bool IsMarked(const KadRendezvousHash &hash) const
+	{
+		return std::any_of(m_marks.begin(), m_marks.end(), [&hash](const SMark &mark) {
+			return mark.hash == hash;
+		});
+	}
+	void Mark(const KadRendezvousHash &hash, std::uint64_t until)
+	{
+		m_marks.erase(std::remove_if(m_marks.begin(),
+				      m_marks.end(),
+				      [&hash](const SMark &mark) { return mark.hash == hash; }),
+			m_marks.end());
+		if (m_marks.size() >= kMaxRequesterMarks) {
+			m_marks.erase(m_marks.begin());
+		}
+		m_marks.push_back({ hash, until });
+	}
+	void EvictMarks(std::uint64_t now)
+	{
+		m_marks.erase(std::remove_if(m_marks.begin(),
+				      m_marks.end(),
+				      [now](const SMark &mark) { return now >= mark.until; }),
+			m_marks.end());
+	}
+
+	std::vector<SAttempt> m_attempts;
+	std::vector<SMark> m_marks;
 };
 } // namespace NatRendezvous
 

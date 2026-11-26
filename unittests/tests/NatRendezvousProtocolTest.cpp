@@ -435,3 +435,91 @@ TEST(NatRendezvousProtocol, ForwardedRendezvousKeepsTheTransportOfAnUnusableHint
 	ASSERT_EQUALS(std::uint8_t(0x40), decision.sharedTransports);
 	ASSERT_FALSE(decision.request.requesterHint.has_value());
 }
+
+namespace
+{
+NatRendezvous::ServingBuddyId BuddyId(std::uint8_t first)
+{
+	NatRendezvous::ServingBuddyId id{};
+	id.fill(0x33);
+	id[0] = first;
+	return id;
+}
+
+Hash Filled(std::uint8_t value)
+{
+	Hash hash{};
+	hash.fill(value);
+	return hash;
+}
+} // namespace
+
+TEST(NatRendezvousProtocol, RequesterEnvelopeHasTheSketchedLayout)
+{
+	const Bytes envelope = NatRendezvous::BuildRendezvousEnvelope(
+		BuddyId(0x44), Filled(0x11), 0xC2, Filled(0x22), 0x0100A8C0, 0x1235, 2);
+
+	ASSERT_EQUALS(NatRendezvous::kRendezvousEnvelopeWithHintSize, envelope.size());
+	ASSERT_EQUALS(std::uint8_t(0x44), envelope[0]);
+	ASSERT_EQUALS(std::uint8_t(0x33), envelope[15]);
+	for (std::size_t i = 16; i < 32; ++i) {
+		ASSERT_EQUALS(std::uint8_t(0), envelope[i]);
+	}
+	ASSERT_EQUALS(NatRendezvous::OP_RENDEZVOUS, envelope[32]);
+	ASSERT_EQUALS(std::uint8_t(0x11), envelope[33]);
+	ASSERT_EQUALS(std::uint8_t(0x11), envelope[48]);
+	ASSERT_EQUALS(std::uint8_t(0xC2), envelope[49]);
+	ASSERT_EQUALS(std::uint8_t(0x22), envelope[50]);
+	ASSERT_EQUALS(std::uint8_t(0x22), envelope[65]);
+	// Our IPv4 as aMule stores it (192.168.0.1), then the UDP port low byte first, then the hint.
+	ASSERT_EQUALS(std::uint8_t(192), envelope[66]);
+	ASSERT_EQUALS(std::uint8_t(168), envelope[67]);
+	ASSERT_EQUALS(std::uint8_t(0), envelope[68]);
+	ASSERT_EQUALS(std::uint8_t(1), envelope[69]);
+	ASSERT_EQUALS(std::uint8_t(0x35), envelope[70]);
+	ASSERT_EQUALS(std::uint8_t(0x12), envelope[71]);
+	ASSERT_EQUALS(std::uint8_t(2), envelope[72]);
+}
+
+TEST(NatRendezvousProtocol, RequesterEnvelopeAlwaysWritesItsTail)
+{
+	const Bytes envelope = NatRendezvous::BuildRendezvousEnvelope(
+		BuddyId(0x44), Filled(0x11), 0x80, Filled(0x22), 0, 0, 1);
+
+	ASSERT_EQUALS(NatRendezvous::kRendezvousEnvelopeWithHintSize, envelope.size());
+	for (std::size_t i = 66; i < 72; ++i) {
+		ASSERT_EQUALS(std::uint8_t(0), envelope[i]);
+	}
+	ASSERT_EQUALS(std::uint8_t(1), envelope[72]);
+}
+
+TEST(NatRendezvousProtocol, RequesterEnvelopeIsWhatOurBuddyParses)
+{
+	const Bytes envelope = NatRendezvous::BuildRendezvousEnvelope(
+		BuddyId(0x44), Filled(0x11), 0xC2, Filled(0x22), 0, 0, 2);
+
+	const auto parsed = NatRendezvous::ParseRendezvousEnvelope(envelope.data(), envelope.size());
+	ASSERT_TRUE(parsed.has_value());
+	ASSERT_TRUE(parsed->servingBuddyId == BuddyId(0x44));
+	ASSERT_TRUE(parsed->request.requesterHash == Filled(0x11));
+	ASSERT_EQUALS(std::uint8_t(0xC2), parsed->request.connectOptions);
+	ASSERT_TRUE(parsed->request.fileHash.has_value());
+	ASSERT_TRUE(*parsed->request.fileHash == Filled(0x22));
+	// A zero endpoint is "unknown", so no hint reaches the served node.
+	ASSERT_FALSE(parsed->request.requesterHint.has_value());
+}
+
+TEST(NatRendezvousProtocol, RequesterOptionsAddOurNatTAndClearTheEndpointHintBit)
+{
+	ASSERT_EQUALS(std::uint8_t(0xC3), NatRendezvous::RequesterConnectOptions(0x23, 0xC0));
+	ASSERT_EQUALS(std::uint8_t(0x83), NatRendezvous::RequesterConnectOptions(0x03, 0x80));
+	// Only the NAT-T bits of the local transports are added.
+	ASSERT_EQUALS(std::uint8_t(0x01), NatRendezvous::RequesterConnectOptions(0x01, 0x0F));
+}
+
+TEST(NatRendezvousProtocol, RequesterHintIsQuicWhenWeServeQuicElseUtp)
+{
+	ASSERT_EQUALS(std::uint8_t(2), NatRendezvous::RequesterTransportHint(0xC0));
+	ASSERT_EQUALS(std::uint8_t(2), NatRendezvous::RequesterTransportHint(0x40));
+	ASSERT_EQUALS(std::uint8_t(1), NatRendezvous::RequesterTransportHint(0x80));
+}

@@ -174,7 +174,48 @@ inline std::vector<std::uint8_t> BuildForwardedRendezvous(const RendezvousReques
 }
 
 // The NAT-T bits of a rendezvous' connect options: 0x80 for uTP, 0x40 for QUIC (eMuleAI).
-constexpr std::uint8_t kNatTTransports = 0x80 | 0x40;
+constexpr std::uint8_t kNatTQuic = 0x40;
+constexpr std::uint8_t kNatTTransports = 0x80 | kNatTQuic;
+// Announces a 0xAA (endpoint hint), which no code reads and our buddy does not send.
+constexpr std::uint8_t kEndpointHintBit = 0x20;
+
+// What a requester sends its target's buddy as OP_REASKCALLBACKUDP. The tail is always written,
+// zeros for what we do not know, so the extension block of ModderMule/emule-qt#265 can follow it.
+// @a ourIPv4 is in aMule's byte order, first octet lowest, as BuildForwardedRendezvous writes it.
+inline std::vector<std::uint8_t> BuildRendezvousEnvelope(const ServingBuddyId &buddyId,
+	const UserHash &ourHash,
+	std::uint8_t connectOptions,
+	const FileHash &fileHash,
+	std::uint32_t ourIPv4,
+	std::uint16_t ourUdpPort,
+	std::uint8_t transportHint)
+{
+	std::vector<std::uint8_t> envelope(buddyId.begin(), buddyId.end());
+	envelope.resize(kRendezvousPrefixSize, 0);
+	envelope.push_back(OP_RENDEZVOUS);
+	envelope.insert(envelope.end(), ourHash.begin(), ourHash.end());
+	envelope.push_back(connectOptions);
+	envelope.insert(envelope.end(), fileHash.begin(), fileHash.end());
+	for (int shift = 0; shift < 32; shift += 8) {
+		envelope.push_back(std::uint8_t(ourIPv4 >> shift));
+	}
+	envelope.push_back(std::uint8_t(ourUdpPort));
+	envelope.push_back(std::uint8_t(ourUdpPort >> 8));
+	envelope.push_back(transportHint);
+	return envelope;
+}
+
+// Our connect options plus the NAT-T transports we serve, so the target arms one we can dial.
+inline std::uint8_t RequesterConnectOptions(std::uint8_t myConnectOptions, std::uint8_t localNatT) noexcept
+{
+	return std::uint8_t((myConnectOptions | (localNatT & kNatTTransports)) & ~kEndpointHintBit);
+}
+
+// The transport we will dial first: QUIC when we serve it, else uTP.
+inline std::uint8_t RequesterTransportHint(std::uint8_t localNatT) noexcept
+{
+	return (localNatT & kNatTQuic) != 0 ? kTransportHintQuic : kTransportHintUtp;
+}
 
 // The transports a requester declared, as NAT-T connect-options bits. eMuleAI sets the bits; eMuleQt
 // sets none and names its one transport in the tail.
