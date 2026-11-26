@@ -4893,7 +4893,7 @@ namespace
 struct DownloadPatchOp
 {
 	ec_opcode_t opcode;
-	std::optional<ec_tagname_t> tag = std::nullopt;
+	std::optional<ec_tagname_t> tag;
 	std::uint8_t value = 0;
 };
 
@@ -5151,9 +5151,8 @@ CHttpServer::Response CApiDispatcher::HandleDownloadPatch(
 	if (commands.empty()) {
 		return ErrorResponse(400,
 			"bad_request",
-			"request body must include at least one of "
-			"`action`, `priority`, `category_index`, `a4af_auto`, `my_comment`+`my_rating`, or "
-			"`name`");
+			"request body must include at least one of `action`, `priority`, `category_index`, "
+			"`a4af_auto`, `my_comment`+`my_rating`, or `name`");
 	}
 
 	const auto applied = ApplyFilePatch(m_app, commands);
