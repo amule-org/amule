@@ -911,3 +911,43 @@ reask.
 - **Build.** The action needs `ENABLE_NATT_SERVER_COORDINATION` and uTP, as the
   punch schedule does. Without them the `0xA0` is still recognised and counted,
   and dropped as having no shared transport.
+
+### Requester
+
+A firewalled aMule with Kad connected asks for a rendezvous when a source is a
+LowID Kad source with a buddy (type 3 or 5, with the buddy's ID, IPv4 and
+port), and nothing else reaches it: it is tried last in `TryToContact()`, after
+the cross-server callback, the ed2k-server hole punch and the Lugdunum callback.
+A server confirms who both sides are; a buddy only relays what the requester
+says. Before this, a firewalled aMule did not try such a source at all.
+
+- **Expect, then punch.** It records the source's Kad endpoint (the IP the
+  storer recorded and the source's Kad UDP port) and user hash with
+  `ExpectNatTPeer()`, so it answers the source's CAPS, then punches that
+  endpoint with the punch schedule and sweep of the Kad buddy path.
+- **Send.** An `OP_REASKCALLBACKUDP` (`0x94`) to the source's buddy, plain, as a
+  reask through a buddy is:
+  `<buddy id 16><zero 16><0xA0 1><our hash 16><opts 1><file hash 16><our ip 4><udp port 2><hint 1>`.
+  The options are our Kad connect options plus the NAT-T transports we serve
+  (`0x80` uTP, `0x40` QUIC), with `0x20` (endpoint hint) clear. The tail is
+  always written, with zeros for our IPv4, so the extension block of
+  ModderMule/emule-qt#265 can follow it; the hint is 2 (QUIC) when we serve
+  QUIC, else 1 (uTP). It is sent up to three times, 5 s apart, until the source
+  punches back.
+- **Dial.** On the source's first punch it dials the endpoint the punch came
+  from, through the dial the server paths use (QUIC when CAPS confirms it, else
+  uTP). Without a punch within 3 s it dials the source's Kad endpoint once, as
+  eMuleAI dials it at once.
+- **End.** A verified hello from the source ends the attempt. Otherwise it ends
+  after 45 s, and that source is not asked this way again for 10 minutes. One
+  attempt per source is in flight, and at most 32 at once.
+- **No rendezvous.** A source that does not speak the rendezvous (stock eMule,
+  and aMule before the served side) reads the `0xA0` as a reask for a zero file
+  hash and answers `OP_FILENOTFOUND`. During an attempt that answer ends the
+  attempt and is not taken as a dead source: the source is kept, and never
+  asked for a rendezvous again in this session.
+- **Statistics.** `buddy.own.requested_rendezvous` counts `started`, `sent`
+  (each `0x94`), `punched`, `fallback_dials`, and how attempts end: `connected`,
+  `timed_out` or `no_rendezvous`. Each step is logged under client UDP.
+- **Build.** As the served side: `ENABLE_NATT_SERVER_COORDINATION` and uTP, and
+  a node that serves no NAT-T transport does not ask.

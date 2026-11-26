@@ -1361,6 +1361,7 @@ bool CClientUDPSocket::StartKadRendezvous(const NatRendezvous::SKadRendezvousTar
 	PokeUInt32(peerIP.data(), target.ip);
 	StartLowIdHolePunchSchedule(
 		peerIP, target.udpPort, now, NatServerHolePunch::RendezvousPath::KadBuddy, target.hash);
+	++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.started;
 	TickKadRendezvous(now);
 	return true;
 }
@@ -1393,6 +1394,7 @@ void CClientUDPSocket::TickKadRendezvous(uint64 now)
 					Uint32_16toStringIP_Port(target.ip, target.udpPort));
 			theStats::AddUpOverheadOther(packet->GetPacketSize());
 			SendPacket(packet, target.buddyIP, target.buddyPort, false, nullptr, true, 0);
+			++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.sent;
 			break;
 		}
 		case NatRendezvous::SKadRendezvousAction::FallbackDial:
@@ -1403,11 +1405,13 @@ void CClientUDPSocket::TickKadRendezvous(uint64 now)
 				target.tcpPort,
 				target.udpPort,
 				NatServerHolePunch::VouchedPeer{ target.hash, std::nullopt });
+			++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.fallbackDials;
 			break;
 		case NatRendezvous::SKadRendezvousAction::Expired:
 			AddDebugLogLineN(logClientUDP,
 				"Rendezvous for " + Uint32_16toStringIP_Port(target.ip, target.udpPort) +
 					" timed out");
+			++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.timedOut;
 			break;
 		}
 	}
@@ -1636,6 +1640,7 @@ bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint
 	PokeUInt32(peer.data(), ip);
 	m_lowIdHolePunchSchedules.CancelPeer(peer, peerHash);
 	if (m_kadRendezvousRequests.Complete(ip, peerHash)) {
+		++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.connected;
 		return true;
 	}
 	const std::optional<NatServerHolePunch::RendezvousPath> path =
@@ -1858,6 +1863,7 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 			target->tcpPort,
 			port,
 			NatServerHolePunch::VouchedPeer{ target->hash, std::nullopt });
+		++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.punched;
 		return;
 	}
 	CServerConnect *connect = theApp->serverconnect;
@@ -2141,6 +2147,7 @@ void CClientUDPSocket::ProcessPacket(
 			AddDebugLogLineN(logClientUDP,
 				"No rendezvous at " + Uint32_16toStringIP_Port(host, port) +
 					": it answered not found");
+			++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.noRendezvous;
 			break;
 		}
 #endif

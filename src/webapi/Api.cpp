@@ -7156,6 +7156,16 @@ void WriteKadBuddyCounters(CJsonWriter &w, const webapi::KadSnapshot &k)
 		count("accepted", o.rendezvous.accepted);
 		count("connected", o.rendezvous.connected);
 		w.EndObject();
+		w.Key("requested_rendezvous");
+		w.BeginObject();
+		count("started", o.requested_rendezvous.started);
+		count("sent", o.requested_rendezvous.sent);
+		count("punched", o.requested_rendezvous.punched);
+		count("fallback_dials", o.requested_rendezvous.fallback_dials);
+		count("connected", o.requested_rendezvous.connected);
+		count("timed_out", o.requested_rendezvous.timed_out);
+		count("no_rendezvous", o.requested_rendezvous.no_rendezvous);
+		w.EndObject();
 		w.EndObject();
 	}
 }

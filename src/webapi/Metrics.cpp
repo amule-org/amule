@@ -342,6 +342,30 @@ std::string SerializeMetrics(const MetricsSnapshot &snapshot, const std::string 
 			"{result=\"no_shared_transport\"}");
 		w.Sample("kad_buddy_own_rendezvous_total", o.rendezvous.accepted, "{result=\"accepted\"}");
 		w.Sample("kad_buddy_own_rendezvous_total", o.rendezvous.connected, "{result=\"connected\"}");
+		w.Family("kad_buddy_own_requested_rendezvous_total",
+			"Rendezvous we asked a Kad source's buddy for.",
+			"counter");
+		w.Sample("kad_buddy_own_requested_rendezvous_total",
+			o.requested_rendezvous.started,
+			"{result=\"started\"}");
+		w.Sample("kad_buddy_own_requested_rendezvous_total",
+			o.requested_rendezvous.sent,
+			"{result=\"sent\"}");
+		w.Sample("kad_buddy_own_requested_rendezvous_total",
+			o.requested_rendezvous.punched,
+			"{result=\"punched\"}");
+		w.Sample("kad_buddy_own_requested_rendezvous_total",
+			o.requested_rendezvous.fallback_dials,
+			"{result=\"fallback_dials\"}");
+		w.Sample("kad_buddy_own_requested_rendezvous_total",
+			o.requested_rendezvous.connected,
+			"{result=\"connected\"}");
+		w.Sample("kad_buddy_own_requested_rendezvous_total",
+			o.requested_rendezvous.timed_out,
+			"{result=\"timed_out\"}");
+		w.Sample("kad_buddy_own_requested_rendezvous_total",
+			o.requested_rendezvous.no_rendezvous,
+			"{result=\"no_rendezvous\"}");
 		w.Family("kad_buddy_own_seconds_total",
 			"Time a buddy was needed, missing while needed, or connected.",
 			"counter");
