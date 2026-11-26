@@ -342,6 +342,15 @@ target_include_directories (KadFirewallCheckRequestsTest PRIVATE
 )
 target_link_libraries (KadFirewallCheckRequestsTest muleunit mulecommon)
 
+# Which connections a Kad TCP firewall check may acknowledge over.
+add_executable (KadFirewallCheckPolicyTest KadFirewallCheckPolicyTest.cpp)
+add_test (NAME KadFirewallCheckPolicyTest COMMAND KadFirewallCheckPolicyTest)
+target_include_directories (KadFirewallCheckPolicyTest PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (KadFirewallCheckPolicyTest muleunit mulecommon)
+
 # Our Kad public IP: a change needs reports from two /24s.
 add_executable (KadPublicIPVoteTest KadPublicIPVoteTest.cpp)
 add_test (NAME KadPublicIPVoteTest COMMAND KadPublicIPVoteTest)

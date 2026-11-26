@@ -57,6 +57,7 @@
 #include "kademlia/kademlia/Kademlia.h" // Needed for CKademlia::Kademlia
 #include "kademlia/kademlia/Prefs.h"    // Needed for CKademlia::CPrefs
 #include "KadBuddyIdLayout.h"           // Needed for MatchesBuddyIdEitherLayout (#1835)
+#include "KadFirewallCheckPolicy.h"     // Needed for ProvesOwnTcpPortReachable
 #include "NatRendezvousProtocol.h"      // Needed for IsForwardedControl
 #include "DownloadQueue.h"              // Needed for CDownloadQueue
 #include "Server.h"                     // Needed for CServer
@@ -2163,8 +2164,13 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 	case OP_KAD_FWTCPCHECK_ACK: { // Support required for Kadversion >= 7
 		AddDebugLogLineN(logRemoteClient,
 			"Remote Client: OP_KAD_FWTCPCHECK_ACK from " + m_client->GetFullIP());
-		if (theApp->clientlist->TakeKadFirewallReply(
-			    m_client->GetIP(), Kademlia::CFirewallCheckRequests::Reply::Reachable)) {
+		if (!ProvesOwnTcpPortReachable(m_opener, HasTransport())) {
+			// Not taken from the request list, so it doesn't use up that checker's reply.
+			AddDebugLogLineN(logRemoteClient,
+				"Ignored OP_KAD_FWTCPCHECK_ACK from " + m_client->GetFullIP() +
+					": the connection doesn't prove our TCP port");
+		} else if (theApp->clientlist->TakeKadFirewallReply(
+				   m_client->GetIP(), Kademlia::CFirewallCheckRequests::Reply::Reachable)) {
 			if (Kademlia::CKademlia::IsRunning()) {
 				Kademlia::CKademlia::GetPrefs()->IncFirewalled();
 			}
