@@ -446,6 +446,14 @@ void CEMSocket::OnSend(int nErrorCode)
 			// queue up for control packet
 			theApp->uploadBandwidthThrottler->QueueForSendingControlPacket(this, HasSent());
 		}
+		// The socket can take file data again. While every slot was busy the throttler sent
+		// nothing and backed its sleep off to as much as 1 s, so wake it, as the disk I/O thread
+		// does when it queues new data. Otherwise a fast slot whose kernel buffer drains within
+		// that sleep waits for the rest of it. eMule 0.72a wakes its throttler here too
+		// (SocketAvailable()).
+		if ((sendbuffer && !m_currentPacket_is_controlpacket) || !m_standard_queue.empty()) {
+			theApp->uploadBandwidthThrottler->NewUploadDataAvailable();
+		}
 	}
 }
 
