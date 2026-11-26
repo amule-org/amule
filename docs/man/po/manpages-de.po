@@ -4,7 +4,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: manpages-de\n"
-"POT-Creation-Date: 2026-11-16 12:10+0100\n"
+"POT-Creation-Date: 2026-11-26 09:43+0100\n"
 "PO-Revision-Date: 2026-10-07 16:31+0000\n"
 "Last-Translator: Balla Marcell <marcell.balla@gmx.at>\n"
 "Language-Team: German <kde-i18n-de@kde.org>\n"
@@ -58,7 +58,9 @@ msgstr "NAME"
 # type: Plain text
 #. type: Plain text
 #: amule.1.in
-msgid "amule - the all-platform eMule p2p client"
+#, fuzzy
+#| msgid "amule - the all-platform eMule p2p client"
+msgid "amule - the all-platform P2P client for the eD2k and Kad networks"
 msgstr "amule - der alle-Plattformen eMule p2p Client"
 
 # type: SH
@@ -1022,7 +1024,9 @@ msgstr "aMule Dämon"
 # type: Plain text
 #. type: Plain text
 #: amuled.1.in
-msgid "amuled - the all-platform eMule p2p client - daemonized version"
+#, fuzzy
+#| msgid "amuled - the all-platform eMule p2p client - daemonized version"
+msgid "amuled - the all-platform P2P client for the eD2k and Kad networks - daemonized version"
 msgstr "amuled - Der alle-Plattformen eMule p2p Client - dämonisierte Version"
 
 # type: TP

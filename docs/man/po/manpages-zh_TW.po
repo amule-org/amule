@@ -10,7 +10,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule Manual zh_TW\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 12:10+0100\n"
+"POT-Creation-Date: 2026-11-26 09:43+0100\n"
 "PO-Revision-Date: 2026-11-19 11:57+0000\n"
 "Last-Translator: Lee Vincent <leevincent@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Chinese (Traditional Han script) <https://hosted.weblate.org/projects/amule/application-man-pages/zh_Hant/>\n"
@@ -62,7 +62,9 @@ msgstr "名稱"
 
 #. type: Plain text
 #: amule.1.in
-msgid "amule - the all-platform eMule p2p client"
+#, fuzzy
+#| msgid "amule - the all-platform eMule p2p client"
+msgid "amule - the all-platform P2P client for the eD2k and Kad networks"
 msgstr "amule - 跨平台的 eMule P2P 用戶端"
 
 #. type: SH
@@ -897,7 +899,9 @@ msgstr "aMule 背景服務"
 
 #. type: Plain text
 #: amuled.1.in
-msgid "amuled - the all-platform eMule p2p client - daemonized version"
+#, fuzzy
+#| msgid "amuled - the all-platform eMule p2p client - daemonized version"
+msgid "amuled - the all-platform P2P client for the eD2k and Kad networks - daemonized version"
 msgstr "amuled - 跨平台 eMule P2P 用戶端的背景服務版"
 
 #. type: Plain text

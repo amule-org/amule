@@ -5,7 +5,7 @@
 #
 #, fuzzy
 msgid ""
-msgstr "Project-Id-Version: PACKAGE VERSION\nPOT-Creation-Date: 2026-11-16 12:10+0100\nPO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\nLast-Translator: FULL NAME <EMAIL@ADDRESS>\nLanguage-Team: LANGUAGE <LL@li.org>\nLanguage: \nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
+msgstr "Project-Id-Version: PACKAGE VERSION\nPOT-Creation-Date: 2026-11-26 09:43+0100\nPO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\nLast-Translator: FULL NAME <EMAIL@ADDRESS>\nLanguage-Team: LANGUAGE <LL@li.org>\nLanguage: \nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\n"
 
 #. type: TH
 #: amule.1.in
@@ -45,7 +45,7 @@ msgstr ""
 
 #. type: Plain text
 #: amule.1.in
-msgid "amule - the all-platform eMule p2p client"
+msgid "amule - the all-platform P2P client for the eD2k and Kad networks"
 msgstr ""
 
 #. type: SH
@@ -880,7 +880,7 @@ msgstr ""
 
 #. type: Plain text
 #: amuled.1.in
-msgid "amuled - the all-platform eMule p2p client - daemonized version"
+msgid "amuled - the all-platform P2P client for the eD2k and Kad networks - daemonized version"
 msgstr ""
 
 #. type: Plain text
