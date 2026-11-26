@@ -309,11 +309,15 @@ This exchange only negotiates capability information. It does not by itself
 establish a QUIC connection: aMule dials QUIC only on a server-vouched LowID
 rendezvous, after a compatible answer.
 
-A future direct interoperability run requires eMuleAI to know aMule's UDP
+The [Kad buddy rendezvous](#kad-buddy-rendezvous) is tested live: eMuleAI 1.6.0
+and eMuleQt 0.7.41, as requesters on a mobile network, download from a
+firewalled aMule behind a home NAT over QUIC, and eMuleAI also over uTP. Both
+follow aMule's QUIC Retry.
+
+The direct path is not tested live yet. It needs eMuleAI to know aMule's UDP
 endpoint, aMule to have a LowID, and eMuleAI itself to be firewalled. eMuleAI
 must also lack a usable Kad buddy for this peer so it selects direct NAT
-traversal instead of rendezvous. No live eMuleAI 1.6 validation has been
-performed for this task.
+traversal instead of rendezvous.
 
 ## Manual interoperability runbook
 
