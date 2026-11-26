@@ -103,8 +103,6 @@ TEST(ServerCallbackRequests, EachRequestHasItsOwnWindow)
 	ASSERT_EQUALS(1U, expired.size());
 	ASSERT_EQUALS(2, expired.front());
 	ASSERT_EQUALS(1U, requests.Count(kWindowMs + 1));
-	requests.Clear();
-	ASSERT_EQUALS(0U, requests.Count(0));
 }
 
 TEST(ServerCallbackRequests, ARefusalThatNamesItsTargetFindsItAmongMany)

@@ -7,9 +7,10 @@ A fake server gives the daemon a LowID, offers the IPv6 callback (ST_IPV6_CALLBA
 our IPv6 as reached by its dial-back (ST_IPV6_STATUS 0x07). The daemon then asks for each LowID
 source with OP_IPV6_CALLBACK_REQUEST. A refusal, or no answer, sends the source on
 LowID-to-LowID. A refusal that names its target ends only that request, even with others out, and
-"our IPv6 is not verified" stops the requests until the next OP_SERVERIDENT. Once the offer is
-withdrawn, a LowID source is not kept or asked. An OP_IPV6_CALLBACKREQUESTED for loopback is not
-dialled.
+"our IPv6 is not verified" stops the requests until the next OP_SERVERIDENT. A source found while
+the dial-back still runs (0x01) is kept, and asked from the LowID-to-LowID wait once the verdict
+is 0x07. Once the offer is withdrawn, a LowID source is not kept or asked. An
+OP_IPV6_CALLBACKREQUESTED for loopback is not dialled.
 """
 import os
 from pathlib import Path
@@ -41,6 +42,8 @@ OUR_LOWID = 0x100
 ANSWER_S = 10  # kIPv6CallbackAnswerMs
 NOT_VERIFIED = 3  # IPv6CallbackRefusal
 NOT_OPTED_IN = 6
+PROBING = 0x01  # ST_IPV6_STATUS: held, still being dialled back
+VERIFIED = 0x07
 
 
 def packet(opcode, body=b''):
@@ -55,9 +58,9 @@ def string_tag(name, value):
     return b'\x02' + struct.pack('<H', 1) + bytes([name]) + struct.pack('<H', len(value)) + value
 
 
-def ident(offer):
+def ident(offer, status=VERIFIED):
     # A real server names itself; a shorter ident is dropped as malformed.
-    tags = [string_tag(ST_SERVERNAME, b'IPv6 callback fixture'), uint32_tag(ST_IPV6_STATUS, 0x07)]
+    tags = [string_tag(ST_SERVERNAME, b'IPv6 callback fixture'), uint32_tag(ST_IPV6_STATUS, status)]
     tags += [uint32_tag(ST_IPV6_CALLBACK, 1)] if offer else []
     return packet(OP_SERVERIDENT, bytes(22) + struct.pack('<I', len(tags)) + b''.join(tags))
 
@@ -183,6 +186,18 @@ def run(binary):
                 download('offered again', (0x70707,))
                 server.wait_request(0x70707)
                 server.send(packet(OP_CALLBACK_FAIL, struct.pack('<IB', 0x70707, NOT_OPTED_IN)))
+
+                # Before the verdict: kept and not asked, then asked from the wait once it is 0x07.
+                server.send(ident(True, PROBING))
+                time.sleep(1)
+                download('before the verdict', (0x80808,))
+                time.sleep(5)
+                assert server.requests.empty(), 'asked before the dial-back reached our IPv6'
+                server.send(ident(True))
+                server.wait_request(0x80808, timeout=15)
+                time.sleep(3)
+                assert server.requests.empty(), 'the source was asked again at once'
+                server.send(packet(OP_CALLBACK_FAIL, struct.pack('<IB', 0x80808, NOT_OPTED_IN)))
 
                 # Withdrawn: a LowID source is no longer kept, so nothing is asked.
                 server.send(ident(False))

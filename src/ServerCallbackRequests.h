@@ -53,8 +53,6 @@ public:
 		m_requests.remove_if([&client](const Request &request) { return request.client == client; });
 	}
 
-	void Clear() { m_requests.clear(); }
-
 	//! The requests whose window ended before @a now, removed.
 	std::vector<Client> TakeExpired(std::uint64_t now)
 	{
