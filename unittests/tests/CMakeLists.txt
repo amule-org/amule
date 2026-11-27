@@ -3319,6 +3319,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					${CMAKE_CURRENT_SOURCE_DIR}/DotZeroPeerIntegrationTest.py
 					$<TARGET_FILE:amuled> $<TARGET_FILE:FakePeerConnect>)
 			set_tests_properties (DotZeroPeerIntegrationTest PROPERTIES LABELS "integration")
+			add_test (NAME HelloAnswerIdChangeIntegrationTest
+				COMMAND ${Python3_EXECUTABLE} -u
+					${CMAKE_CURRENT_SOURCE_DIR}/HelloAnswerIdChangeIntegrationTest.py
+					$<TARGET_FILE:amuled> $<TARGET_FILE:FakePeerConnect>)
+			set_tests_properties (HelloAnswerIdChangeIntegrationTest PROPERTIES LABELS "integration")
 			add_test (NAME DisplayRatesIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/DisplayRatesIntegrationTest.py $<TARGET_FILE:amuled>
@@ -4295,6 +4300,7 @@ foreach (ec_wire_test IN ITEMS
 	GlobalSourceRequestIntegrationTest
 	HashingCancelIntegrationTest
 	HashsetAnswerIntegrationTest
+	HelloAnswerIdChangeIntegrationTest
 	IntegrationFixtureUnitTest
 	KadBuddyLifecycleIntegrationTest
 	KadDistributionECTest
