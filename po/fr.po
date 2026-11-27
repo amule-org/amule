@@ -18,7 +18,7 @@ msgstr ""
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
 "PO-Revision-Date: 2026-10-16 23:24+0000\n"
 "Last-Translator: Dylan Aïssi <bob.dybian@gmail.com>\n"
-"Language-Team: Français\n"
+"Language-Team: French <https://hosted.weblate.org/projects/amule/amule-application/fr/>\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -8769,6 +8769,16 @@ msgid "Discovered %u new shared file"
 msgid_plural "Discovered %u new shared files"
 msgstr[0] "%u nouveau fichier partagé découvert"
 msgstr[1] "%u nouveaux fichiers partagés découverts"
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Your %zu shared files need %u Kad source publish slots, but /eMule/KadMaxSourcePublishes in amule.conf allows %u. Some files will be republished late."
+msgstr ""
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Your %zu Kad keywords need %u keyword publish slots, but /eMule/KadMaxKeywordPublishes in amule.conf allows %u. Some keywords will be republished late."
+msgstr ""
 
 #: src/SharedFileList.cpp
 #, c-format

@@ -8667,6 +8667,16 @@ msgstr[0] "找到 %u 個新的分享檔案"
 
 #: src/SharedFileList.cpp
 #, c-format
+msgid "Your %zu shared files need %u Kad source publish slots, but /eMule/KadMaxSourcePublishes in amule.conf allows %u. Some files will be republished late."
+msgstr ""
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Your %zu Kad keywords need %u keyword publish slots, but /eMule/KadMaxKeywordPublishes in amule.conf allows %u. Some keywords will be republished late."
+msgstr ""
+
+#: src/SharedFileList.cpp
+#, c-format
 msgid "Refused to rename '%s' to '%s': the new name must be a plain file name, not a path."
 msgstr "無法將「%s」重新命名為「%s」：新名稱只能填檔名，不可包含路徑。"
 
