@@ -26,6 +26,7 @@
 #ifndef SHAREDFILELIST_H
 #define SHAREDFILELIST_H
 
+#include "KadCallbackPolicy.h" // Needed for CKadPublishOrder
 #include "KadPublishCursor.h"
 #include "KadPointerPolicy.h" // Needed for SKadPointerState
 #include "KadPublishPolicy.h" // Needed for SKadPublishFacts
@@ -266,6 +267,7 @@ private:
 	bool AddFile(CKnownFile *pFile);
 	CKnownFile *GetNextKadFile(CKadPublishCursor<CMD4Hash> &cursor);
 	CKnownFile *NextKadSourcePublish(uint32 now);
+	void FillKadSourcePublishOrder();
 	// Starts our buddy pointer publish if it is due; true if it took this publish slot.
 	bool PublishKadPointer(uint32 now);
 
@@ -466,6 +468,11 @@ private:
 	void CountKadUnreachedDue(const SKadSourceRoute &route, bool pointerLive, uint32 now);
 	//! Due files waiting for their last storing nodes, with when each first waited.
 	std::map<CMD4Hash, uint32> m_kadSourceWaits;
+	//! Not saved: refilled from the files' saved publish times on the first publish tick.
+	Kademlia::CKadPublishOrder<CMD4Hash> m_srcPublishOrder;
+	bool m_srcPublishOrderFilled = false;
+	Kademlia::CKadPublishOrder<wxString> m_keywordPublishOrder;
+	bool m_keywordPublishOrderFilled = false;
 	CKadPublishCursor<CMD4Hash> m_notesPublishCursor;
 	unsigned int m_currFileKey;
 	uint32 m_lastPublishKadSrc;

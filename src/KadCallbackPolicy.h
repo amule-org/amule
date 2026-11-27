@@ -76,14 +76,71 @@ inline bool KadSourcePublishWaits(uint32_t nextPublishTime,
 	return seedOutOfBudget();
 }
 
-// The next file to publish as a Kad source, or nullptr. `waits` holds the due files that wait for
-// their last storing nodes, with when each first waited. They come first on every tick, because
-// the cursor reaches a file again only a pass later. `files` gives Find(key), Next() from the
-// cursor, Key(file), Waits(file, now, waitingSince), Waited(file) and Publish(file).
-template <typename Key, typename Files>
-auto NextKadSourcePublish(std::map<Key, uint32_t> &waits, uint32_t now, size_t maxChecks, Files &files)
-	-> decltype(files.Next())
+// Due republishes, earliest first, and the share of starts kept for items never published.
+// Entries are hints: the item's own publish time decides, so an item republished early or no
+// longer shared leaves a stale entry that is skipped.
+template <typename Key> class CKadPublishOrder
 {
+public:
+	// Every 10th start goes to an item never published, while one is left, so new items still
+	// go out when republishes fill every slot.
+	static constexpr uint32_t FirstPublishShare = 10;
+
+	void Add(uint32_t due, const Key &key) { m_due.emplace(due, key); }
+
+	bool PopDue(uint32_t now, Key &key)
+	{
+		if (m_due.empty() || m_due.begin()->first > now) {
+			return false;
+		}
+		key = m_due.begin()->second;
+		m_due.erase(m_due.begin());
+		return true;
+	}
+
+	bool FirstPublishTurn() const { return m_sinceFirst + 1 >= FirstPublishShare; }
+	void Started(bool first) { m_sinceFirst = first ? 0 : m_sinceFirst + 1; }
+
+private:
+	std::multimap<uint32_t, Key> m_due;
+	uint32_t m_sinceFirst = 0;
+};
+
+// The next file to publish as a Kad source, or nullptr. Due republishes go first, most overdue
+// first, so files published early in a long first pass do not wait for its end. `waits` holds the
+// due files that wait for their last storing nodes, with when each first waited. The cursor then
+// finds what the order does not hold: files never published, and files due early after a route
+// change. `files` gives Find(key), Next() from the cursor, Key(file), PublishTime(file) (its next
+// publish time, 0 if never published), Waits(file, now, waitingSince), Waited(file) and
+// Publish(file).
+template <typename Key, typename Files>
+auto NextKadSourcePublish(std::map<Key, uint32_t> &waits,
+	CKadPublishOrder<Key> &order,
+	uint32_t now,
+	size_t maxChecks,
+	Files &files) -> decltype(files.Next())
+{
+	const auto publish = [&](decltype(files.Next()) file) {
+		const bool first = files.PublishTime(*file) == 0;
+		if (!files.Publish(*file)) {
+			return false;
+		}
+		order.Add(files.PublishTime(*file), files.Key(*file));
+		order.Started(first);
+		return true;
+	};
+	if (order.FirstPublishTurn()) {
+		for (size_t i = 0; i < maxChecks; ++i) {
+			auto *file = files.Next();
+			if (!file) {
+				break;
+			}
+			if (files.PublishTime(*file) == 0 && !waits.count(files.Key(*file)) &&
+				publish(file)) {
+				return file;
+			}
+		}
+	}
 	for (auto it = waits.begin(); it != waits.end();) {
 		auto *file = files.Find(it->first);
 		if (file && files.Waits(*file, now, it->second)) {
@@ -91,7 +148,26 @@ auto NextKadSourcePublish(std::map<Key, uint32_t> &waits, uint32_t now, size_t m
 			continue;
 		}
 		it = waits.erase(it);
-		if (file && files.Publish(*file)) {
+		if (file && publish(file)) {
+			return file;
+		}
+	}
+	const auto waitOrPublish = [&](decltype(files.Next()) file) {
+		if (files.Waits(*file, now, 0)) {
+			waits.emplace(files.Key(*file), now);
+			files.Waited(*file);
+			return false;
+		}
+		return publish(file);
+	};
+	Key key;
+	for (size_t i = 0; i < maxChecks && order.PopDue(now, key); ++i) {
+		auto *file = files.Find(key);
+		if (!file || waits.count(key) || files.PublishTime(*file) == 0 ||
+			files.PublishTime(*file) > now) {
+			continue;
+		}
+		if (waitOrPublish(file)) {
 			return file;
 		}
 	}
@@ -100,32 +176,56 @@ auto NextKadSourcePublish(std::map<Key, uint32_t> &waits, uint32_t now, size_t m
 		if (!file) {
 			break;
 		}
-		if (waits.count(files.Key(*file))) {
-			continue;
-		}
-		if (files.Waits(*file, now, 0)) {
-			waits.emplace(files.Key(*file), now);
-			files.Waited(*file);
-			continue;
-		}
-		if (files.Publish(*file)) {
+		if (!waits.count(files.Key(*file)) && waitOrPublish(file)) {
 			return file;
 		}
 	}
 	return nullptr;
 }
 
-// The next due keyword whose publish starts, checking at most `maxChecks` from the list cursor, or
-// nullptr. `keywords` gives Next() from the cursor, Due(keyword, now) and Start(keyword, now).
-template <typename Keywords>
-auto NextKeywordPublish(uint32_t now, size_t maxChecks, Keywords &keywords) -> decltype(keywords.Next())
+// The next due keyword whose publish starts, or nullptr. As for sources, due republishes go
+// first and every 10th start goes to a keyword never published. A keyword that fails to start
+// leaves the order; the cursor tries it again. `keywords` gives Find(key), Next() from the list
+// cursor, Key(keyword), PublishTime(keyword) (0 if never published), Due(keyword, now) and
+// Start(keyword, now).
+template <typename Key, typename Keywords>
+auto NextKeywordPublish(CKadPublishOrder<Key> &order, uint32_t now, size_t maxChecks, Keywords &keywords)
+	-> decltype(keywords.Next())
 {
+	const auto start = [&](decltype(keywords.Next()) keyword) {
+		const bool first = keywords.PublishTime(*keyword) == 0;
+		if (!keywords.Start(*keyword, now)) {
+			return false;
+		}
+		order.Add(keywords.PublishTime(*keyword), keywords.Key(*keyword));
+		order.Started(first);
+		return true;
+	};
+	if (order.FirstPublishTurn()) {
+		for (size_t i = 0; i < maxChecks; ++i) {
+			auto *keyword = keywords.Next();
+			if (!keyword) {
+				break;
+			}
+			if (keywords.PublishTime(*keyword) == 0 && start(keyword)) {
+				return keyword;
+			}
+		}
+	}
+	Key key;
+	for (size_t i = 0; i < maxChecks && order.PopDue(now, key); ++i) {
+		auto *keyword = keywords.Find(key);
+		if (keyword && keywords.PublishTime(*keyword) != 0 && keywords.PublishTime(*keyword) <= now &&
+			start(keyword)) {
+			return keyword;
+		}
+	}
 	for (size_t i = 0; i < maxChecks; ++i) {
 		auto *keyword = keywords.Next();
 		if (!keyword) {
 			break;
 		}
-		if (keywords.Due(*keyword, now) && keywords.Start(*keyword, now)) {
+		if (keywords.Due(*keyword, now) && start(keyword)) {
 			return keyword;
 		}
 	}

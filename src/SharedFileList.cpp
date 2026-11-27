@@ -208,6 +208,13 @@ public:
 
 	CPublishKeyword *GetNextKeyword();
 	void ResetNextKeyword();
+	CPublishKeyword *Find(const wxString &keyword) { return FindKeyword(keyword); }
+	template <typename Fn> void ForEach(Fn fn) const
+	{
+		for (const CPublishKeyword *keyword : m_lstKeywords) {
+			fn(*keyword);
+		}
+	}
 
 	void LoadPublishTimes(const CPath &path);
 	void SavePublishTimes(const CPath &path) const;
@@ -2074,6 +2081,16 @@ void CSharedFileList::CountKadUnreachedDue(const SKadSourceRoute &route, bool po
 	m_kadUnreachedDue = unreached;
 }
 
+void CSharedFileList::FillKadSourcePublishOrder()
+{
+	wxMutexLocker lock(list_mut);
+	for (const auto &entry : m_Files_map) {
+		if (const uint32 due = entry.second->GetLastPublishTimeKadSrc()) {
+			m_srcPublishOrder.Add(due, entry.first);
+		}
+	}
+}
+
 CKnownFile *CSharedFileList::NextKadSourcePublish(uint32 now)
 {
 	const SKadSourceRoute route = CurrentKadSourceRoute();
@@ -2089,6 +2106,7 @@ CKnownFile *CSharedFileList::NextKadSourcePublish(uint32 now)
 		CKnownFile *Find(const CMD4Hash &hash) { return list.GetFileByID(hash); }
 		CKnownFile *Next() { return list.GetNextKadFile(list.m_srcPublishCursor); }
 		static const CMD4Hash &Key(const CKnownFile &file) { return file.GetFileHash(); }
+		static uint32 PublishTime(const CKnownFile &file) { return file.GetLastPublishTimeKadSrc(); }
 		static bool Waits(const CKnownFile &file, uint32 now, uint32 waitingSince)
 		{
 			return KadSourcePublishWaits(file, now, waitingSince);
@@ -2105,8 +2123,12 @@ CKnownFile *CSharedFileList::NextKadSourcePublish(uint32 now)
 	} files{ *this, pointerLive, m_kadUnreachedDue };
 	// Pass over files published in the last 5 h in this tick, rather than one per
 	// KADEMLIAPUBLISHTIME. The bound caps the work when few files are due.
+	if (!m_srcPublishOrderFilled) {
+		m_srcPublishOrderFilled = true;
+		FillKadSourcePublishOrder();
+	}
 	return Kademlia::NextKadSourcePublish(
-		m_kadSourceWaits, now, std::min<size_t>(100, GetCount()), files);
+		m_kadSourceWaits, m_srcPublishOrder, now, std::min<size_t>(100, GetCount()), files);
 }
 
 bool CSharedFileList::PublishKadPointer(uint32 now)
@@ -2223,6 +2245,15 @@ void CSharedFileList::Publish()
 						wxASSERT(!keyword || keyword->GetRefCount() != 0);
 						return keyword;
 					}
+					CPublishKeyword *Find(const wxString &key) { return list.Find(key); }
+					static const wxString &Key(const CPublishKeyword &keyword)
+					{
+						return keyword.GetKeyword();
+					}
+					static uint32 PublishTime(const CPublishKeyword &keyword)
+					{
+						return keyword.GetNextPublishTime();
+					}
 					static bool Due(const CPublishKeyword &keyword, uint32 now)
 					{
 						return now >= keyword.GetNextPublishTime();
@@ -2232,7 +2263,19 @@ void CSharedFileList::Publish()
 						return StartKeywordPublish(&keyword, now);
 					}
 				} keywords{ *m_keywords };
-				Kademlia::NextKeywordPublish(tNow,
+				if (!m_keywordPublishOrderFilled) {
+					// kadkeywords.dat keeps the publish times, not the order.
+					m_keywordPublishOrderFilled = true;
+					m_keywords->ForEach([this](const CPublishKeyword &keyword) {
+						if (keyword.GetNextPublishTime()) {
+							m_keywordPublishOrder.Add(
+								keyword.GetNextPublishTime(),
+								keyword.GetKeyword());
+						}
+					});
+				}
+				Kademlia::NextKeywordPublish(m_keywordPublishOrder,
+					tNow,
 					std::min<size_t>(100, static_cast<size_t>(m_keywords->GetCount())),
 					keywords);
 				m_keywords->SetNextPublishTime(KADEMLIAPUBLISHTIME + tNow);
