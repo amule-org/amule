@@ -3494,6 +3494,16 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/KadBuddyLifecycleIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (KadBuddyLifecycleIntegrationTest PROPERTIES LABELS "integration")
+		# The requester side needs the punch schedule and a NAT-T transport to declare.
+		if (ENABLE_NATT_SERVER_COORDINATION AND ENABLE_UTP)
+			add_test (NAME KadRendezvousRequesterIntegrationTest
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/KadRendezvousRequesterIntegrationTest.py
+					$<TARGET_FILE:amuled>
+			)
+			set_tests_properties (KadRendezvousRequesterIntegrationTest
+				PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
+		endif ()
 		add_test (NAME KadLanModeIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadLanModeIntegrationTest.py $<TARGET_FILE:amuled>
@@ -4298,6 +4308,7 @@ foreach (ec_wire_test IN ITEMS
 	IntegrationFixtureUnitTest
 	KadBuddyLifecycleIntegrationTest
 	KadDistributionECTest
+	KadRendezvousRequesterIntegrationTest
 	KadIndexLifecycleECTest
 	KadLanModeIntegrationTest
 	KadLookupECTest
