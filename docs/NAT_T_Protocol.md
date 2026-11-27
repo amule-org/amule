@@ -489,7 +489,8 @@ without `ENABLE_UTP`, since every rendezvous ends in a uTP dial:
   connected 60 s after its `0x60` (`kHolePunchFallbackMs`), because no `0x61` came or the dial
   never completed its uTP handshake. A Lugdunum request held for the server's UDP key counts as
   sent. One that cannot go out, for example with `LugdunumNatCallback` off, does not use up the
-  fallback: it is tried again 60 s later;
+  fallback: it is tried again 60 s later. When neither reaches a source with a Kad buddy, it is
+  asked through that buddy ([Kad buddy rendezvous](#kad-buddy-rendezvous), "Retry");
 - receiving `0x62` (`OP_LOWID_HOLEPUNCH_FAIL`), `<target_id 4><reason 1>`: log it. Only a `0x62`
   that matches a pending `0x60` counts, and it takes that request. ed2k-server repeats its answer
   at +1.2 and +3 s, and a `0x62` after a `0x61` leaves the dial that `0x61` started to its own
@@ -1011,7 +1012,15 @@ says. Before this, a firewalled aMule did not try such a source at all.
   attempt per source is in flight, and at most 32 at once.
 - **Retry.** A source left `DS_LOWTOLOWIP` is asked again from the download
   queue's tick, like the server paths' retries, once its cooldown is over or the
-  cap leaves room, and only while no server path works on it.
+  cap leaves room, and only while no server path works on it. A server step works
+  on it until nothing can answer it any more: a callback request until its answer
+  or timeout, and the hole punch, the Lugdunum callback or a cross-server
+  callback until its 60 s answer window passes (`kNatStepAnswerWindowMs`), or at
+  once when the server refuses the punch with a `0x62` (`OP_LOWID_HOLEPUNCH_FAIL`).
+  The server steps go first: a `0x60` (`OP_LOWID_HOLEPUNCH_REQUEST`) the request
+  limits held back keeps the rendezvous waiting until it has gone out. So a source
+  of our own server that the hole punch and the Lugdunum callback did not reach
+  is still asked through its buddy.
 - **No rendezvous.** A source that does not speak the rendezvous (stock eMule,
   and aMule before the served side) reads the `0xA0` as a reask for a zero file
   hash and answers `OP_FILENOTFOUND`. During an attempt that answer ends the

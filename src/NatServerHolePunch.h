@@ -349,10 +349,17 @@ public:
 		m_sent = true;
 		m_tried = false;
 		m_refused = false;
+		m_punchRefused = false;
 		m_sentAt = now;
 	}
 	//! The server refused the punch (0x62): the fallback is due now.
-	void OnPunchRefused() { m_refused = m_sent; }
+	void OnPunchRefused()
+	{
+		m_refused = m_sent;
+		m_punchRefused = m_sent;
+	}
+	//! The last punch was refused: nothing more comes from it. Kept until the next punch.
+	bool PunchRefused() const { return m_punchRefused; }
 	void Reset() { *this = HolePunchFallback(); }
 	bool IsDue(std::uint64_t now) const
 	{
@@ -374,6 +381,7 @@ private:
 	bool m_sent = false;
 	bool m_tried = false;
 	bool m_refused = false;
+	bool m_punchRefused = false;
 	std::uint64_t m_sentAt = 0;
 };
 

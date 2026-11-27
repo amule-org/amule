@@ -210,12 +210,39 @@ inline EConnectionOpener ResolveConnectionOpener(
 //! How long a NAT-T step of ours explains a new connection: the window its rendezvous has.
 constexpr std::uint64_t kNatStepAnswerWindowMs = 60'000;
 
-//! Whether a source left waiting LowID-to-LowID may be asked for the Kad rendezvous again: only
-//! while no server path works on it. A server callback that ended leaves its route behind.
-inline bool MayRetryKadRendezvous(EContactRouteReport lastRoute, bool serverCallbackPending)
+struct SKadRendezvousRetryFacts
 {
-	return lastRoute == EContactRouteReport::None || lastRoute == EContactRouteReport::KadBuddy ||
-	       (lastRoute == EContactRouteReport::ServerCallback && !serverCallbackPending);
+	//! The source's last contact step. A step that ended leaves its route behind.
+	EContactRouteReport lastRoute = EContactRouteReport::None;
+	//! Our OP_CALLBACKREQUEST or OP_IPV6_CALLBACK_REQUEST for it waits for its answer.
+	bool serverCallbackPending = false;
+	//! A 0x60 for it is allowed but has not gone out: the request limits held it back.
+	bool holePunchOwed = false;
+	//! The last NAT-T server step can no longer be answered: its answer window passed, or the
+	//! server refused the punch.
+	bool natStepOver = false;
+};
+
+//! Whether a source left waiting LowID-to-LowID may be asked for the Kad rendezvous again: only
+//! while no server path works on it, or a second path would take its punch and dial it twice.
+inline bool MayRetryKadRendezvous(const SKadRendezvousRetryFacts &facts)
+{
+	if (facts.holePunchOwed) {
+		return false;
+	}
+	switch (facts.lastRoute) {
+	case EContactRouteReport::None:
+	case EContactRouteReport::KadBuddy:
+		return true;
+	case EContactRouteReport::ServerCallback:
+		return !facts.serverCallbackPending;
+	case EContactRouteReport::ForeignNatCallback:
+	case EContactRouteReport::ServerHolePunch:
+	case EContactRouteReport::LugdunumCallback:
+		return facts.natStepOver;
+	default:
+		return false;
+	}
 }
 
 struct SContactInFlightFacts
