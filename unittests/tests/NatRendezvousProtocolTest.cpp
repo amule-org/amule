@@ -284,8 +284,8 @@ TEST(NatRendezvousProtocol, ServedRendezvousParsesWithAndWithoutTheTail)
 	ASSERT_EQUALS(std::uint8_t(0), Served(sixByteTail).request.transportHint);
 }
 
-// ModderMule/emule-qt#265 appends typed elements after the full 7-byte tail. aMule uses none of
-// them yet, so the request parses as if they were absent.
+// ModderMule/emule-qt#265 appends typed elements after the full 7-byte tail. A 0x01 shorter than
+// 18 bytes is not an IPv6 endpoint, and the rest of the request parses as if the block were absent.
 TEST(NatRendezvousProtocol, ServedRendezvousParsesABodyWithTheExtensionBlock)
 {
 	Bytes body = ForwardedBody(true);
@@ -294,6 +294,7 @@ TEST(NatRendezvousProtocol, ServedRendezvousParsesABodyWithTheExtensionBlock)
 
 	ASSERT_TRUE(decision.outcome == NatRendezvous::EServedRendezvous::Punch);
 	ASSERT_TRUE(decision.request.requesterHint->address == CNetworkAddress::FromString("8.8.8.8"));
+	ASSERT_FALSE(decision.request.requesterUdp6.has_value());
 }
 
 TEST(NatRendezvousProtocol, ServedRendezvousDropsAnythingButAWellFormed0xA0)
@@ -411,10 +412,131 @@ TEST(NatRendezvousProtocol, ForwardedRendezvousDropsTrailingBytesTheParserDidNot
 {
 	Bytes in = Rendezvous(false, true);
 	in.push_back(0x55);
+	auto envelope = NatRendezvous::ParseRendezvousEnvelope(in.data(), in.size());
+	ASSERT_TRUE(envelope.has_value());
+	auto body = NatRendezvous::BuildForwardedRendezvous(envelope->request);
+	ASSERT_EQUALS(in.size() - NatRendezvous::kHashSize - 1, body.size());
+
+	// An element of a type we do not know.
+	in = Rendezvous(true, true);
+	in.insert(in.end(), { 0x7F, 0x01, 0x55 });
+	envelope = NatRendezvous::ParseRendezvousEnvelope(in.data(), in.size());
+	ASSERT_TRUE(envelope.has_value());
+	body = NatRendezvous::BuildForwardedRendezvous(envelope->request);
+	ASSERT_EQUALS(in.size() - NatRendezvous::kHashSize - 3, body.size());
+}
+
+namespace
+{
+const char *const kRequesterIPv6 = "2606:4700::1111";
+
+// A 0x01 element: kRequesterIPv6, UDP port 4673 (little-endian), padded or cut to @a len.
+Bytes Udp6Element(std::uint8_t len = NatRendezvous::kExtRequesterUdp6Size, std::uint8_t firstOctet = 0x26)
+{
+	Bytes element{ NatRendezvous::kExtRequesterUdp6, len, firstOctet, 0x06, 0x47, 0x00 };
+	element.insert(element.end(), 10, 0);
+	element.insert(element.end(), { 0x11, 0x11, 0x41, 0x12 });
+	element.resize(2 + std::size_t(len), 0xEE);
+	return element;
+}
+
+std::vector<std::uint8_t> Forward(const Bytes &in)
+{
+	const auto envelope = NatRendezvous::ParseRendezvousEnvelope(in.data(), in.size());
+	return envelope ? NatRendezvous::BuildForwardedRendezvous(envelope->request) : Bytes{};
+}
+
+// What the buddy should forward: the envelope less the serving-buddy ID, then @a block.
+Bytes Expected(const Bytes &envelope, const Bytes &block)
+{
+	Bytes body(envelope.begin() + NatRendezvous::kHashSize, envelope.end());
+	body.insert(body.end(), block.begin(), block.end());
+	return body;
+}
+} // namespace
+
+TEST(NatRendezvousProtocol, ForwardedRendezvousCarriesTheRequesterIPv6Endpoint)
+{
+	Bytes in = Rendezvous(true, true);
+	const Bytes element = Udp6Element();
+	in.insert(in.end(), element.begin(), element.end());
 	const auto envelope = NatRendezvous::ParseRendezvousEnvelope(in.data(), in.size());
 	ASSERT_TRUE(envelope.has_value());
+	ASSERT_TRUE(envelope->request.requesterUdp6.has_value());
+	ASSERT_TRUE(envelope->request.requesterUdp6->address == CNetworkAddress::FromString(kRequesterIPv6));
+	ASSERT_EQUALS(std::uint16_t(4673), envelope->request.requesterUdp6->port);
+
 	const auto body = NatRendezvous::BuildForwardedRendezvous(envelope->request);
-	ASSERT_EQUALS(in.size() - NatRendezvous::kHashSize - 1, body.size());
+	ASSERT_TRUE(body == Expected(in, {}));
+	const auto decision = Served(body);
+	ASSERT_TRUE(decision.outcome == NatRendezvous::EServedRendezvous::Punch);
+	ASSERT_TRUE(decision.request.requesterUdp6->address == CNetworkAddress::FromString(kRequesterIPv6));
+}
+
+// Unknown types are dropped, and a longer 0x01 is read for its first 18 bytes and sent as 18.
+TEST(NatRendezvousProtocol, ForwardedRendezvousCarriesOnlyTheIPv6Element)
+{
+	Bytes in = Rendezvous(true, true);
+	in.insert(in.end(), { 0x02, 0x03, 0xAA, 0xBB, 0xCC });
+	const Bytes longer = Udp6Element(20);
+	in.insert(in.end(), longer.begin(), longer.end());
+	in.insert(in.end(), { 0x7F, 0x00 });
+	ASSERT_TRUE(Forward(in) == Expected(Rendezvous(true, true), Udp6Element()));
+}
+
+// As eMuleQt's target reads it: the first 0x01 with a routable address and a port wins.
+TEST(NatRendezvousProtocol, ForwardedRendezvousTakesTheFirstUsableIPv6Element)
+{
+	Bytes portZero = Udp6Element();
+	portZero[portZero.size() - 2] = 0;
+	portZero[portZero.size() - 1] = 0;
+	for (const Bytes &unusable :
+		{ Udp6Element(18, 0xFD), Udp6Element(18, 0xFE), Udp6Element(4), portZero }) {
+		Bytes in = Rendezvous(true, true);
+		in.insert(in.end(), unusable.begin(), unusable.end());
+		ASSERT_TRUE(Forward(in) == Expected(Rendezvous(true, true), {}));
+
+		const Bytes good = Udp6Element();
+		in.insert(in.end(), good.begin(), good.end());
+		ASSERT_TRUE(Forward(in) == Expected(Rendezvous(true, true), good));
+	}
+
+	Bytes twice = Rendezvous(true, true);
+	const Bytes first = Udp6Element();
+	Bytes second = Udp6Element();
+	second[3] = 0x07;
+	twice.insert(twice.end(), first.begin(), first.end());
+	twice.insert(twice.end(), second.begin(), second.end());
+	ASSERT_TRUE(Forward(twice) == Expected(Rendezvous(true, true), first));
+}
+
+// An element that runs past the end, or a lone byte left at the end, voids the whole block.
+TEST(NatRendezvousProtocol, ForwardedRendezvousDropsABlockThatRunsPastItsEnd)
+{
+	const Bytes good = Udp6Element();
+	for (const Bytes &bad : { Bytes{ 0x02, 0x05, 0x01, 0x02 }, Bytes{ 0x02 } }) {
+		Bytes in = Rendezvous(true, true);
+		in.insert(in.end(), good.begin(), good.end());
+		in.insert(in.end(), bad.begin(), bad.end());
+		const auto envelope = NatRendezvous::ParseRendezvousEnvelope(in.data(), in.size());
+		ASSERT_TRUE(envelope.has_value());
+		ASSERT_FALSE(envelope->request.requesterUdp6.has_value());
+		ASSERT_TRUE(Forward(in) == Expected(Rendezvous(true, true), {}));
+	}
+}
+
+// A requester that knows no public IPv4 sends a zero tail before the block; it is kept as zeros.
+TEST(NatRendezvousProtocol, ForwardedRendezvousWritesAZeroTailBeforeTheIPv6Element)
+{
+	Bytes in = Rendezvous(false, true);
+	in.insert(in.end(), NatRendezvous::kRendezvousTailSize, 0);
+	const Bytes element = Udp6Element();
+	in.insert(in.end(), element.begin(), element.end());
+	const auto envelope = NatRendezvous::ParseRendezvousEnvelope(in.data(), in.size());
+	ASSERT_TRUE(envelope.has_value());
+	ASSERT_FALSE(envelope->request.requesterHint.has_value());
+	ASSERT_EQUALS(std::uint8_t(0), envelope->request.transportHint);
+	ASSERT_TRUE(NatRendezvous::BuildForwardedRendezvous(envelope->request) == Expected(in, {}));
 }
 
 // Our buddy forwards the transport byte of a tail whose address it drops, with a zero address.

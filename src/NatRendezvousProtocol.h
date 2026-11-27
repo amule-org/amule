@@ -30,7 +30,11 @@ constexpr std::size_t kHashSize = 16;
 constexpr std::size_t kRendezvousPayloadSize = 1 + kHashSize + 1 + kHashSize;
 constexpr std::size_t kRendezvousPrefixSize = kHashSize + kHashSize;
 constexpr std::size_t kRendezvousEnvelopeSize = kRendezvousPrefixSize + kRendezvousPayloadSize;
-constexpr std::size_t kRendezvousEnvelopeWithHintSize = kRendezvousEnvelopeSize + 4 + 2 + 1;
+constexpr std::size_t kRendezvousTailSize = 4 + 2 + 1;
+constexpr std::size_t kRendezvousEnvelopeWithHintSize = kRendezvousEnvelopeSize + kRendezvousTailSize;
+// The extension block after the tail (ModderMule/emule-qt#265): <type 1><len 1><value len> elements.
+constexpr std::uint8_t kExtRequesterUdp6 = 0x01; // <ipv6 16><udp port 2 LE>
+constexpr std::size_t kExtRequesterUdp6Size = 16 + 2;
 
 using ServingBuddyId = std::array<std::uint8_t, kHashSize>;
 using UserHash = std::array<std::uint8_t, kHashSize>;
@@ -54,6 +58,8 @@ struct RendezvousRequest
 	std::optional<RequesterEndpointHint> requesterHint;
 	// Kept when the address before it is unusable, as eMuleAI reads it.
 	std::uint8_t transportHint = 0;
+	// From the extension block. We have no IPv6 UDP to use it; as a buddy we forward it.
+	std::optional<RequesterEndpointHint> requesterUdp6;
 };
 
 inline bool IsZeroHash(const std::array<std::uint8_t, kHashSize> &hash) noexcept
@@ -89,6 +95,37 @@ inline std::optional<RendezvousRequest> ParseRendezvousRequest(
 	return request;
 }
 
+// The first usable 0x01 element, as eMuleQt's target reads the block. An element that runs past
+// the end, or a lone byte left at the end, voids the whole block. A longer value is read for its
+// first 18 bytes.
+inline std::optional<RequesterEndpointHint> ParseExtensionUdp6(
+	const std::uint8_t *data, std::size_t size) noexcept
+{
+	std::optional<RequesterEndpointHint> found;
+	std::size_t pos = 0;
+	while (pos < size) {
+		if (size - pos < 2) {
+			return std::nullopt;
+		}
+		const std::uint8_t type = data[pos];
+		const std::size_t len = data[pos + 1];
+		pos += 2;
+		if (len > size - pos) {
+			return std::nullopt;
+		}
+		if (type == kExtRequesterUdp6 && len >= kExtRequesterUdp6Size && !found) {
+			const CNetworkAddress address = CNetworkAddress::FromIPv6Bytes(data + pos);
+			const std::uint16_t port =
+				std::uint16_t(data[pos + 16]) | (std::uint16_t(data[pos + 17]) << 8);
+			if (port != 0 && address.IsGloballyRoutableIPv6()) {
+				found = RequesterEndpointHint{ address, port };
+			}
+		}
+		pos += len;
+	}
+	return found;
+}
+
 inline std::optional<RendezvousRequest> ParseRendezvousRequestWithHint(
 	const std::uint8_t *data, std::size_t size) noexcept
 {
@@ -111,7 +148,11 @@ inline std::optional<RendezvousRequest> ParseRendezvousRequestWithHint(
 	if (address != 0 && port != 0 && endpoint.IsGloballyRoutableIPv4()) {
 		result.requesterHint = RequesterEndpointHint{ endpoint, port };
 	}
-	result.transportHint = size >= kRendezvousPayloadSize + 7 ? hint[6] : 0;
+	result.transportHint = size >= kRendezvousPayloadSize + kRendezvousTailSize ? hint[6] : 0;
+	if (size > kRendezvousPayloadSize + kRendezvousTailSize) {
+		result.requesterUdp6 = ParseExtensionUdp6(
+			hint + kRendezvousTailSize, size - kRendezvousPayloadSize - kRendezvousTailSize);
+	}
 	return result;
 }
 
@@ -148,7 +189,8 @@ inline std::optional<RendezvousEnvelope> ParseRendezvousEnvelope(
 }
 
 // What a buddy forwards after the requester's observed endpoint: every field is written from the
-// parsed request, so nothing the parser did not accept is carried to the served node.
+// parsed request, so nothing the parser did not accept is carried to the served node. Of the
+// extension block only a checked 0x01 element is carried.
 inline std::vector<std::uint8_t> BuildForwardedRendezvous(const RendezvousRequest &request)
 {
 	std::vector<std::uint8_t> body(kHashSize, 0); // Extended-payload marker.
@@ -158,7 +200,7 @@ inline std::vector<std::uint8_t> BuildForwardedRendezvous(const RendezvousReques
 	const FileHash noFile{};
 	const FileHash &file = request.fileHash ? *request.fileHash : noFile;
 	body.insert(body.end(), file.begin(), file.end());
-	if (request.requesterHint || request.transportHint != 0) {
+	if (request.requesterHint || request.transportHint != 0 || request.requesterUdp6) {
 		// An unusable address goes out as zeros, so the transport byte still reaches the served node.
 		const std::uint32_t address =
 			request.requesterHint ? request.requesterHint->address.ToIPv4NetworkOrderOrZero() : 0;
@@ -169,6 +211,14 @@ inline std::vector<std::uint8_t> BuildForwardedRendezvous(const RendezvousReques
 		body.push_back(std::uint8_t(port));
 		body.push_back(std::uint8_t(port >> 8));
 		body.push_back(request.transportHint);
+	}
+	std::array<std::uint8_t, 16> ipv6{};
+	if (request.requesterUdp6 && request.requesterUdp6->address.ToIPv6Bytes(ipv6.data())) {
+		body.push_back(kExtRequesterUdp6);
+		body.push_back(std::uint8_t(kExtRequesterUdp6Size));
+		body.insert(body.end(), ipv6.begin(), ipv6.end());
+		body.push_back(std::uint8_t(request.requesterUdp6->port));
+		body.push_back(std::uint8_t(request.requesterUdp6->port >> 8));
 	}
 	return body;
 }
