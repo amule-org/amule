@@ -3510,6 +3510,7 @@ void CPartFile::AddClientSources(CMemFile *sources,
 
 			if (uPacketSXVersion >= 4) {
 				newsource->SetConnectOptions(byCryptOptions, true, false);
+				newsource->AddDeclaredNatTTransports(byCryptOptions);
 			}
 
 			newsource->SetSourceFrom((ESourceFrom)nSourceFrom);
@@ -3612,6 +3613,7 @@ bool CPartFile::AddExtendedSource(const ExtSX::SRecord &record, unsigned nSource
 	}
 	if (record.connectOptions) {
 		newsource->SetConnectOptions(*record.connectOptions, true, ExtSX::HasDirectCallback(record));
+		newsource->AddDeclaredNatTTransports(*record.connectOptions);
 	}
 	if (lowID) {
 		if (record.callbackIP != 0) {

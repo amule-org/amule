@@ -25,6 +25,8 @@
 #ifndef PEERCAPABILITIES_H
 #define PEERCAPABILITIES_H
 
+#include "KadServedBuddyPolicy.h" // Needed for NatTConnectOptions
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -241,6 +243,12 @@ constexpr uint32_t LocalAdvertisedModMiscOptions(bool firewalled, uint8_t served
 	const uint8_t natT = firewalled ? servedNatTTransports : 0;
 	return MOD_MISCOPT_ALWAYS_ADVERTISED | ((natT & 0x80) != 0 ? MOD_MISCOPT_NAT_TRAVERSAL : 0u) |
 	       ((natT & 0x40) != 0 ? MOD_MISCOPT_NAT_TRAVERSAL_QUIC : 0u);
+}
+
+//! The NAT-T transports a connect-options byte declares: 0x80 uTP, 0x40 QUIC (eMuleAI).
+constexpr uint8_t DeclaredNatTTransports(uint8_t connectOptions)
+{
+	return static_cast<uint8_t>(connectOptions & Kademlia::NatTConnectOptions);
 }
 
 //! Whether source requests and answers with this peer use Extended Source Exchange.

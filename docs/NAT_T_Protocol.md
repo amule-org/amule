@@ -85,6 +85,15 @@ stream's transport. Without the bit it closes the stream and dials again. A
 HighID sends neither bit: a peer reaches it over TCP, and eMuleAI's callback to
 a peer whose hello declared a transport tries that transport before TCP.
 
+A source we have not met declares its transports elsewhere. eMuleAI sets
+`0x80` (uTP) and `0x40` (QUIC) in the connect options of its Kad source records
+(`TAG_ENCRYPTION`), and in a source-exchange answer to a peer whose hello
+declares NAT-T. eMuleQt sets `0x40` in the connect options of its Kad records
+like eMuleAI, and also adds a Kad tag `nat` (uint8, bit 0 for QUIC) that aMule
+does not need. aMule keeps what a record or an answer declares for each source,
+apart from the hello's bits, and each copy of the source adds its own. It is
+another node's word: a path may use it to pick what to try, never as proof.
+
 ## Datagram envelope
 
 A CAPS or CAPS_ACK datagram is:
