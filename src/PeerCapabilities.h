@@ -25,7 +25,7 @@
 #ifndef PEERCAPABILITIES_H
 #define PEERCAPABILITIES_H
 
-#include "KadServedBuddyPolicy.h" // Needed for NatTConnectOptions, NatTConnectOptionsFor
+#include "KadServedBuddyPolicy.h" // Needed for NatTConnectOptions
 
 #include <cstddef>
 #include <cstdint>
@@ -249,12 +249,6 @@ constexpr uint32_t LocalAdvertisedModMiscOptions(bool firewalled, uint8_t served
 constexpr uint8_t DeclaredNatTTransports(uint8_t connectOptions)
 {
 	return static_cast<uint8_t>(connectOptions & Kademlia::NatTConnectOptions);
-}
-
-//! eMuleQt's TAG_NATT, as the connect-options bit eMuleAI puts in TAG_ENCRYPTION: QUIC is 0x40.
-constexpr uint8_t KadNatTagTransports(uint8_t natTag)
-{
-	return Kademlia::NatTConnectOptionsFor(false, (natTag & 0x01) != 0);
 }
 
 //! Whether source requests and answers with this peer use Extended Source Exchange.

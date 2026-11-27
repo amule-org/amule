@@ -425,8 +425,6 @@ TEST(PeerCapabilities, VendorTagIdsAndKadTagNamesAreExact)
 
 	ASSERT_EQUALS(wxString(wxT("ip6")), wxString(TAG_IPV6));
 	ASSERT_EQUALS(wxString(wxT("bi6")), wxString(TAG_SERVINGBUDDYIPV6));
-	// eMuleQt's, from its src/core/utils/Opcodes.h.
-	ASSERT_EQUALS(wxString(wxT("nat")), wxString(TAG_NATT));
 }
 
 // A Kad record and a source-exchange answer carry crypt and callback bits in the same byte; only
@@ -437,12 +435,4 @@ TEST(PeerCapabilities, OnlyTheNatTBitsOfConnectOptionsDeclareATransport)
 	ASSERT_EQUALS(0x80, (int)DeclaredNatTTransports(0x80 | 0x09));
 	ASSERT_EQUALS(0x40, (int)DeclaredNatTTransports(0x40 | 0x01));
 	ASSERT_EQUALS(0xC0, (int)DeclaredNatTTransports(0xFF));
-}
-
-// eMuleQt's "nat" tag names QUIC in bit 0; the other bits are not defined.
-TEST(PeerCapabilities, KadNatTagDeclaresQuicAsEMuleAIsBit)
-{
-	ASSERT_EQUALS(0, (int)KadNatTagTransports(0));
-	ASSERT_EQUALS(0x40, (int)KadNatTagTransports(0x01));
-	ASSERT_EQUALS(0, (int)KadNatTagTransports(0xFE));
 }

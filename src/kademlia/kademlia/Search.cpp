@@ -76,7 +76,7 @@ there client on the eMule forum..
 #include "../../ClientList.h"
 #include "../../ClientUDPSocket.h" // Needed for ServedNatTTransports
 #include "../../updownclient.h"
-#include "../../PeerCapabilities.h" // Needed for DecodeIPv6HexTag, KadNatTagTransports
+#include "../../PeerCapabilities.h" // Needed for DecodeIPv6HexTag
 #include "../../Logger.h"
 #include "../../Preferences.h"
 #include "../../CFile.h"            // Needed for CFile
@@ -1558,7 +1558,6 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32
 	uint32_t buddyip = 0;
 	uint16_t buddyport = 0;
 	uint8_t byCryptOptions = 0; // 0 = not supported.
-	uint8_t natTag = 0;
 	CUInt128 buddy;
 	CNetworkAddress publishedIPv6;
 	// The pointer route version (§5.6.1); 0 without the tag. Only the first is read, as by a storer.
@@ -1608,8 +1607,6 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32
 			buddy.SetValueBE(canonical);
 		} else if (!tag->GetName().Cmp(TAG_ENCRYPTION)) {
 			byCryptOptions = (uint8)tag->GetInt();
-		} else if (!tag->GetName().Cmp(TAG_NATT) && tag->IsInt()) {
-			natTag = static_cast<uint8_t>(tag->GetInt());
 		} else if (!tag->GetName().Cmp(TAG_IPV6) || !tag->GetName().Cmp(TAG_SERVINGBUDDYIPV6)) {
 			// eMuleAI publishes IPv6 addresses alongside the IPv4 ones as 32 hex
 			// characters. The source's own address may be dialled; its serving buddy's
@@ -1671,7 +1668,7 @@ void CSearch::ProcessResultFile(const CUInt128 &answer, TagPtrList *info, uint32
 			udp,
 			buddyip,
 			buddyport,
-			static_cast<uint8_t>(byCryptOptions | KadNatTagTransports(natTag)),
+			byCryptOptions,
 			publishedIPv6,
 			pointerVersion);
 		break;

@@ -166,8 +166,6 @@
 // derived from its source ID. aMule neither publishes nor resolves it; a storer only recognises it,
 // because a record carrying it is one storers keep solely with a valid receiver key.
 #define TAG_BUDDYPOINTER wxT("bpv") // <uint8> pointer route version
-// eMuleQt: the NAT-T transports of a firewalled source (types 3, 5 and 6). Bit 0 is QUIC.
-#define TAG_NATT wxT("nat") // <uint8> NAT-T transports
 
 // Media values for FT_FILETYPE
 #define ED2KFTSTR_AUDIO wxT("Audio")

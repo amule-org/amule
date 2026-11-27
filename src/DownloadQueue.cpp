@@ -1686,7 +1686,7 @@ void CDownloadQueue::ObserverAdded(ObserverType *o)
 	NotifyObservers(EventType(EventType::INITIAL, &list), o);
 }
 
-// eMuleAI's bits in TAG_ENCRYPTION, and eMuleQt's TAG_NATT that the search folded in.
+// The NAT-T bits eMuleAI and eMuleQt set in TAG_ENCRYPTION.
 static void TakeDeclaredNatTTransports(CUpDownClient &source, uint8_t connectOptions)
 {
 	const uint8_t natT = DeclaredNatTTransports(connectOptions);

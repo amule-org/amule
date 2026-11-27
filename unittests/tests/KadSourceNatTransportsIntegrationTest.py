@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 """A Kad source record's NAT-T transports are kept for the source.
 
-eMuleAI declares them in TAG_ENCRYPTION (0x80 uTP, 0x40 QUIC), eMuleQt in its "nat" tag (bit 0,
-QUIC). One fake Kad node, the daemon's only contact, answers the source search with a record that
-declares nothing, then one of each kind. The daemon logs what each source declares.
+eMuleAI declares them in TAG_ENCRYPTION (0x80 uTP, 0x40 QUIC). eMuleQt sets 0x40 there too, and also
+adds a "nat" tag (bit 0, QUIC) that aMule does not need; a record with the tag still parses. One fake
+Kad node, the daemon's only contact, answers the source search with a record that declares nothing,
+then three that declare transports. The daemon logs what each source declares.
 """
 import struct
 import sys
@@ -27,7 +28,7 @@ TAG_NATT = b'nat'
 SOURCES = [
     (b'\x44' * 16, 0x01, None, None),
     (b'\x11' * 16, 0x80 | 0x40 | 0x01, None, 'uTP and QUIC'),
-    (b'\x22' * 16, 0x01, 0x01, 'QUIC'),
+    (b'\x22' * 16, 0x40 | 0x01, 0x01, 'QUIC'),
     (b'\x33' * 16, 0x80, None, 'uTP'),
 ]
 
@@ -100,8 +101,8 @@ def run(binary):
                 assert silent not in log(), 'a record with no NAT-T bit was logged as declaring one'
     finally:
         node.stop()
-    print('PASS: a Kad source keeps the NAT-T transports its record declares: eMuleAI\'s bits in '
-          'TAG_ENCRYPTION and eMuleQt\'s nat tag; a record with neither declares none')
+    print('PASS: a Kad source keeps the NAT-T transports its record\'s TAG_ENCRYPTION declares, with '
+          'or without eMuleQt\'s nat tag; a record with no NAT-T bit declares none')
 
 
 if __name__ == '__main__':
