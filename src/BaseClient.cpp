@@ -2054,14 +2054,10 @@ bool CUpDownClient::TrySendKadBuddyRendezvous()
 		GetKadSourceIP(), GetKadPort(), {}, GetBuddyIP(), GetBuddyPort(), GetUserPort()
 	};
 	std::copy_n(GetUserHash().GetHash(), target.hash.size(), target.hash.begin());
-	// A buddy compares the first 16 bytes with the ID as eMule's requester sends it: the stored
-	// ToByteArray() form, as our plain reask through a buddy does. Converted only for a source that
-	// published aMule's own layout, as SendKadBuddyCallbackRequest() does.
-	if (m_bBuddyIdUseAmuleLayout) {
-		Kademlia::ConvertBuddyIdLayout(GetBuddyID(), target.buddyID.data());
-	} else {
-		std::copy_n(GetBuddyID(), target.buddyID.size(), target.buddyID.begin());
-	}
+	// A buddy compares the first 16 bytes with the stored ToByteArray() form, as eMule's requester
+	// and our plain reask send it. Not m_bBuddyIdUseAmuleLayout: every source that speaks the
+	// rendezvous publishes the eMule layout, and an unanswered callback can leave the flag set.
+	std::copy_n(GetBuddyID(), target.buddyID.size(), target.buddyID.begin());
 	std::copy_n(m_reqfile->GetFileHash().GetHash(), target.fileHash.size(), target.fileHash.begin());
 	return theApp->clientudp->StartKadRendezvous(target);
 #else

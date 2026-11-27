@@ -934,9 +934,9 @@ says. Before this, a firewalled aMule did not try such a source at all.
 - **Buddy ID.** The request carries the buddy ID as eMule's requester sends
   it: `TAG_BUDDYHASH` read into a `CUInt128` and written as its
   `ToByteArray()`, the form eMule, eMuleAI and eMuleQt buddies compare with, and
-  the one our plain reask through a buddy sends. It is converted only for a
-  source that published aMule's own layout, as the Kad callback request does.
-  Our own buddy matches either layout.
+  the one our plain reask through a buddy sends. It is never converted: every
+  source that speaks the rendezvous publishes the eMule layout. Our own buddy
+  matches either layout.
 - **Send.** An `OP_REASKCALLBACKUDP` (`0x94`) to the source's buddy, plain, as a
   reask through a buddy is:
   `<buddy id 16><zero 16><0xA0 1><our hash 16><opts 1><file hash 16><our ip 4><udp port 2><hint 1>`.
