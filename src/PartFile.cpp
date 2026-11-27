@@ -61,6 +61,7 @@
 #include "AddressFamilyPolicy.h"    // Needed for AddressFamilyPolicy::Permits
 #include "AdvertisedIPv6.h"         // Needed for SelectedLocalIPv6
 #include "ServerIPv6SourcePolicy.h" // Needed for ShouldContactServerSourceOverIPv6
+#include "ServerIPv6Callback.h"     // Needed for ShouldKeepLowIdSourceForIPv6Callback
 #endif
 
 #ifdef CLIENT_GUI
@@ -1709,6 +1710,11 @@ uint32 CPartFile::Process(uint8 m_icounter)
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 				cur_src->RetryLowIdHolePunchRequest();
 #endif
+#ifdef ENABLE_IPV6
+				if (cur_src->RetryIPv6CallbackRequest()) {
+					break;
+				}
+#endif
 				if (cur_src->HasLowID() && !theApp->CanDoCallback(cur_src->GetServerIP(),
 								   cur_src->GetServerPort())) {
 					// If we are almost maxed on sources, slowly remove these
@@ -1976,16 +1982,30 @@ bool CPartFile::CanAddSource(uint32 userid,
 namespace
 {
 // Whether a LowID source of that server survives CanAddSource's LowID-while-firewalled drop because
-// a server-coordinated NAT traversal can reach it. False in builds without one.
+// our IPv6 callback or a server-coordinated NAT traversal can reach it. False in builds without one.
 bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	[[maybe_unused]] uint16 serverport,
 	[[maybe_unused]] unsigned origin)
 {
-#ifdef ENABLE_NATT_SERVER_COORDINATION
-	// Logged out, only a cross-server request can still reach the source.
+#if defined(ENABLE_IPV6) || defined(ENABLE_NATT_SERVER_COORDINATION)
 	if (theApp->serverconnect == nullptr) {
 		return false;
 	}
+	// Our ID outlives the session that gave it.
+	const bool weAreLowId = theApp->serverconnect->IsConnected() && theApp->serverconnect->IsLowID();
+#endif
+#ifdef ENABLE_IPV6
+	if (const CServer *current = theApp->serverconnect->GetCurrentServer();
+		current != nullptr &&
+		ShouldKeepLowIdSourceForIPv6Callback(weAreLowId,
+			current->GetIP() == serverip && current->GetPort() == serverport,
+			current->OffersIPv6Callback(),
+			current->GetIPv6Verdict())) {
+		return true;
+	}
+#endif
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	// Logged out, only a cross-server request can still reach the source.
 	// A server is either Lugdunum or ed2k-server: each keeps a LowID source it would
 	// otherwise call back / hole-punch, so the two checks are independent and only one can apply
 	// to a given current server.
@@ -1993,8 +2013,6 @@ bool ShouldKeepNatTraversalSource([[maybe_unused]] uint32 serverip,
 	const bool originIsLocalServer = origin == SF_LOCAL_SERVER;
 	const bool sourceServerIsOurCurrentServer =
 		current != nullptr && current->GetIP() == serverip && current->GetPort() == serverport;
-	// Our ID outlives the session that gave it.
-	const bool weAreLowId = theApp->serverconnect->IsConnected() && theApp->serverconnect->IsLowID();
 
 	LugdunumNatTraversal::LowIdServerSourceFacts lugdunumFacts;
 	lugdunumFacts.originIsLocalServer = originIsLocalServer;

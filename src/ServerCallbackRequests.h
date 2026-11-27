@@ -25,29 +25,26 @@
 #ifndef SERVER_CALLBACK_REQUESTS_H
 #define SERVER_CALLBACK_REQUESTS_H
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <list>
 #include <optional>
+#include <vector>
 
 /**
- * Our OP_CALLBACKREQUESTs waiting for their peer to connect, one entry per request: the server
- * answers each one it refuses. A refusal (OP_CALLBACK_FAIL) names no request, so it is known to
- * be a request's own only while that request is the one out.
+ * Our callback requests to the server waiting for their peer to connect, one entry per request:
+ * the server answers each one it refuses. An empty refusal (OP_CALLBACK_FAIL) names no request, so
+ * it is known to be a request's own only while that request is the one out; the long one names its
+ * target (TakeFirst()).
  */
 template <typename Client> class CServerCallbackRequests
 {
 public:
-	//! @a windowMs: how long a request can still be answered.
-	explicit CServerCallbackRequests(std::uint64_t windowMs)
-	: m_windowMs(windowMs)
+	//! @a windowMs: how long this request can still be answered.
+	void Add(const Client &client, std::uint64_t now, std::uint64_t windowMs)
 	{
-	}
-
-	void Add(const Client &client, std::uint64_t now)
-	{
-		Prune(now);
-		m_requests.push_back({ client, now + m_windowMs });
+		m_requests.push_back({ client, now + windowMs });
 	}
 
 	//! Every request for @a client: it connected, or it is gone.
@@ -56,22 +53,53 @@ public:
 		m_requests.remove_if([&client](const Request &request) { return request.client == client; });
 	}
 
+	//! The requests whose window ended before @a now, removed.
+	std::vector<Client> TakeExpired(std::uint64_t now)
+	{
+		std::vector<Client> expired;
+		m_requests.remove_if([now, &expired](const Request &request) {
+			if (request.deadline >= now) {
+				return false;
+			}
+			expired.push_back(request.client);
+			return true;
+		});
+		return expired;
+	}
+
 	//! The client a refusal at @a now is for, when only one request is out.
 	std::optional<Client> TakeRefused(std::uint64_t now)
 	{
-		Prune(now);
-		if (m_requests.size() != 1) {
+		const auto live = [now](const Request &request) { return request.deadline >= now; };
+		if (std::count_if(m_requests.begin(), m_requests.end(), live) != 1) {
 			return std::nullopt;
 		}
-		const Client client = m_requests.front().client;
-		m_requests.clear();
+		const auto refused = std::find_if(m_requests.begin(), m_requests.end(), live);
+		const Client client = refused->client;
+		m_requests.erase(refused);
 		return client;
 	}
 
-	std::size_t Count(std::uint64_t now)
+	//! The first live request whose client @a matches, removed.
+	template <typename Matches> std::optional<Client> TakeFirst(std::uint64_t now, const Matches &matches)
 	{
-		Prune(now);
-		return m_requests.size();
+		const auto found =
+			std::find_if(m_requests.begin(), m_requests.end(), [&](const Request &request) {
+				return request.deadline >= now && matches(request.client);
+			});
+		if (found == m_requests.end()) {
+			return std::nullopt;
+		}
+		const Client client = found->client;
+		m_requests.erase(found);
+		return client;
+	}
+
+	std::size_t Count(std::uint64_t now) const
+	{
+		return static_cast<std::size_t>(std::count_if(m_requests.begin(),
+			m_requests.end(),
+			[now](const Request &request) { return request.deadline >= now; }));
 	}
 
 private:
@@ -81,12 +109,6 @@ private:
 		std::uint64_t deadline;
 	};
 
-	void Prune(std::uint64_t now)
-	{
-		m_requests.remove_if([now](const Request &request) { return request.deadline < now; });
-	}
-
-	std::uint64_t m_windowMs;
 	std::list<Request> m_requests;
 };
 

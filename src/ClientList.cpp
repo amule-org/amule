@@ -59,6 +59,9 @@
 #include "GuiEvents.h" // Needed for Notify_*
 #include "Packet.h"
 #include "UtpDialPolicy.h" // Needed for simultaneous uTP tie-breaking
+#ifdef ENABLE_IPV6
+#include "ServerIPv6Callback.h" // Needed for SIPv6CallbackFailure
+#endif
 
 #include <common/Format.h>
 
@@ -70,8 +73,6 @@
 
 CClientList::CClientList()
 : m_deadSources(true)
-// As long as a download's placeholder socket waits for the callback (CheckTimeOut()).
-, m_serverCallbacks(CONNECTION_TIMEOUT)
 {
 	m_dwLastBannCleanUp = 0;
 	m_dwLastTrackedCleanUp = 0;
@@ -1022,6 +1023,7 @@ void CClientList::Process()
 
 	CleanUpClientList();
 	ProcessDirectCallbackList();
+	ProcessServerCallbacks();
 	theApp->browsemanager->Process(cur_tick);
 }
 
@@ -1983,11 +1985,20 @@ void CClientList::ProcessDirectCallbackList()
 	}
 }
 
-void CClientList::AddServerCallbackRequest(CUpDownClient *client)
+void CClientList::AddServerCallbackRequest(CUpDownClient *client, uint64_t windowMs)
 {
 	if (!client->HasBeenDeleted()) {
-		m_serverCallbacks.Add(
-			CCLIENTREF(client, "CClientList::AddServerCallbackRequest"), ::GetTickCount64());
+		m_serverCallbacks.Add(CCLIENTREF(client, "CClientList::AddServerCallbackRequest"),
+			::GetTickCount64(),
+			windowMs);
+	}
+}
+
+void CClientList::ProcessServerCallbacks()
+{
+	// The references hold each client while ServerCallbackExpired() runs.
+	for (const CClientRef &ref : m_serverCallbacks.TakeExpired(::GetTickCount64())) {
+		ref.GetClient()->ServerCallbackExpired();
 	}
 }
 
@@ -2008,6 +2019,29 @@ void CClientList::ServerCallbackRefused()
 		client->Safe_Delete();
 	}
 }
+
+#ifdef ENABLE_IPV6
+void CClientList::ServerCallbackRefused(const SIPv6CallbackFailure &failure)
+{
+	// Held here, as above.
+	const std::optional<CClientRef> refused =
+		m_serverCallbacks.TakeFirst(::GetTickCount64(), [&failure](const CClientRef &ref) {
+			const CUpDownClient *client = ref.GetClient();
+			return client != nullptr && client->GetUserIDHybrid() == failure.targetId;
+		});
+	if (!refused) {
+		AddDebugLogLineN(logServer,
+			CFormat("Server: OP_CALLBACK_FAIL for source %u, which no request of ours waits "
+				"for") %
+				failure.targetId);
+		return;
+	}
+	CUpDownClient *client = refused->GetClient();
+	if (client->ServerCallbackRefused(failure.reason)) {
+		client->Safe_Delete();
+	}
+}
+#endif
 
 void CClientList::AddTrackCallbackRequests(uint32_t ip)
 {

@@ -1173,6 +1173,16 @@ public:
 	//! Our server refused our OP_CALLBACKREQUEST for this client. A download still waiting on it
 	//! moves to its next route. Returns true when the client is to be deleted.
 	bool ServerCallbackRefused();
+#ifdef ENABLE_IPV6
+	//! The same, for a refusal that names this client and gives the IPv6 callback's reason.
+	bool ServerCallbackRefused(std::uint8_t ipv6Reason);
+#endif
+	//! Our request's answer window passed (CServerCallbackRequests).
+	void ServerCallbackExpired();
+#ifdef ENABLE_IPV6
+	//! From the LowID-to-LowID wait: asks the IPv6 callback again once it is due. Whether it did.
+	bool RetryIPv6CallbackRequest();
+#endif
 	uint64_t GetLastDirectCallbackRequest() const { return m_lastDirectCallbackRequest; }
 	bool HasObfuscatedConnectionBeenEstablished() const { return m_hasbeenobfuscatinglately; }
 
@@ -1254,6 +1264,16 @@ private:
 
 	void Init();
 	void SendClassicCallbackRequest();
+	//! The NAT-T steps of a LowID-to-LowID contact; the source then waits in DS_LOWTOLOWIP.
+	void StartLowToLowContact();
+	//! A connection may answer a LowID-to-LowID step of ours.
+	bool LowToLowAnswerAwaited() const;
+#ifdef ENABLE_IPV6
+	//! OP_IPV6_CALLBACK_REQUEST for this LowID source, when our server can forward it. Whether it went
+	//! out. @a fromLowToLowWait: a failure goes back to that wait, not on to the NAT-T steps.
+	bool TrySendIPv6CallbackRequest(bool fromLowToLowWait);
+	void IPv6CallbackFailed(const wxString &why);
+#endif
 	void SendDirectCallbackRequest();
 	//! `inbound`: an OP_HELLO, which only a peer that dialled us sends.
 	bool ProcessHelloTypePacket(const CMemFile &data, bool inbound);
@@ -1531,6 +1551,12 @@ private:
 	uint64_t m_dwDirectCallbackTimeout;
 	//! An OP_CALLBACKREQUEST for this client may still be in the client list.
 	bool m_serverCallbackPending = false;
+#ifdef ENABLE_IPV6
+	//! The request in the client list is an OP_IPV6_CALLBACK_REQUEST.
+	bool m_ipv6CallbackPending = false;
+	bool m_ipv6CallbackFromWait = false;
+	uint64 m_nextIPv6CallbackTry = 0;
+#endif
 
 	//! This keeps track of aggressive requests for files.
 	uint16 m_Aggressiveness;

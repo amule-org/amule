@@ -33,6 +33,7 @@
 #ifdef ENABLE_IPV6
 #include "NetworkAddress.h" // Needed for CNetworkAddress
 #include <algorithm>
+#include <unordered_set>
 #include <vector>
 #endif
 #include "OfferFilesPolicy.h"
@@ -105,6 +106,10 @@ public:
 	void SetLoginIPv6(const CNetworkAddress &address)
 	{
 		m_loginIPv6 = address;
+		if (!address.IsPresent()) {
+			// The server drops our opt-in with the address.
+			m_ipv6CallbackOptedIn = false;
+		}
 		if (address.IsPresent() &&
 			std::find(m_sentIPv6.begin(), m_sentIPv6.end(), address) == m_sentIPv6.end()) {
 			if (m_sentIPv6.size() == MaxSentIPv6) {
@@ -127,6 +132,19 @@ public:
 	// Sticky for the rest of this server session once any IPv6 was advertised on it, for the
 	// same reason (0xFFFFFFFF is never a real source id).
 	bool IsIPv6SentinelParsingOn() const { return !m_sentIPv6.empty(); }
+	//! OP_IPV6_CALLBACK_OPTIN after an offer, once a session and again after a withdrawal.
+	void TrySendIPv6CallbackOptIn();
+	//! A source refused as not opted in is not asked again this session.
+	void NoteIPv6CallbackDeclined(uint32 targetId)
+	{
+		if (m_ipv6CallbackDeclined.size() < MaxIPv6CallbackDeclined) {
+			m_ipv6CallbackDeclined.insert(targetId);
+		}
+	}
+	bool HasIPv6CallbackDeclined(uint32 targetId) const
+	{
+		return m_ipv6CallbackDeclined.count(targetId) != 0;
+	}
 #endif
 
 private:
@@ -159,6 +177,10 @@ private:
 	// The server dials an advertised address at most 4 times a session, so few are ever sent.
 	static constexpr std::size_t MaxSentIPv6 = 8;
 	std::vector<CNetworkAddress> m_sentIPv6;
+	bool m_ipv6CallbackOptedIn = false;
+	// Past the cap, a declined source is asked again once per source reask time.
+	static constexpr std::size_t MaxIPv6CallbackDeclined = 4096;
+	std::unordered_set<uint32> m_ipv6CallbackDeclined;
 #endif
 };
 

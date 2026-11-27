@@ -677,3 +677,18 @@ TEST(SourceRoutePolicy, ThrottleHoldsOnlyAnUntriedDirectCallback)
 	ASSERT_TRUE(choice.route == ESourceRoute::Dial);
 	ASSERT_FALSE(choice.directHeld);
 }
+
+// The Kad rendezvous is asked again while no server path works on the source. An IPv6 callback that
+// ended leaves ServerCallback behind, and that must not stop it.
+TEST(SourceRoutePolicy, KadRendezvousRetryWaitsOnlyForAServerPathAtWork)
+{
+	ASSERT_TRUE(MayRetryKadRendezvous(EContactRouteReport::None, false));
+	ASSERT_TRUE(MayRetryKadRendezvous(EContactRouteReport::KadBuddy, false));
+	ASSERT_TRUE(MayRetryKadRendezvous(EContactRouteReport::ServerCallback, false));
+	ASSERT_FALSE(MayRetryKadRendezvous(EContactRouteReport::ServerCallback, true));
+	for (const EContactRouteReport step : { EContactRouteReport::ForeignNatCallback,
+		     EContactRouteReport::ServerHolePunch,
+		     EContactRouteReport::LugdunumCallback }) {
+		ASSERT_FALSE(MayRetryKadRendezvous(step, false));
+	}
+}

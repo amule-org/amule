@@ -90,9 +90,11 @@
 #include "ClientUDPSocket.h"
 #include "AddressFamilyPolicy.h" // Needed for AddressFamilyPolicy::Permits
 #ifdef ENABLE_IPV6
+#include "ServerIPv6Callback.h"     // Needed for ShouldRequestIPv6Callback
 #include "AdvertisedIPv6.h"         // Needed for AdvertisedIPv6ForPeers
 #include "IPv6ReachabilityProof.h"  // Needed for inbound IPv6 hello proof
 #include "IPv6ChangeNotification.h" // Needed for OP_CHANGE_CLIENT_IP policy
+#include "ServerSocket.h"           // Needed for HasIPv6CallbackDeclined
 #endif
 #include "ChatState.h"             // Needed for ChatStateAfterFailedConnect
 #include "ContactDialPolicy.h"     // Needed for DecideContactRoute
@@ -1572,6 +1574,9 @@ bool CUpDownClient::Disconnected(const wxString &strReason, bool bFromSocket)
 	if (m_serverCallbackPending) {
 		theApp->clientlist->RemoveServerCallbacks(this);
 		m_serverCallbackPending = false;
+#ifdef ENABLE_IPV6
+		m_ipv6CallbackPending = false;
+#endif
 	}
 
 	if (GetKadState() == KS_QUEUED_FWCHECK_UDP || GetKadState() == KS_CONNECTING_FWCHECK_UDP) {
@@ -2263,8 +2268,7 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 	// StartKadRendezvous() lets it: its cooldown, the attempt in flight and the cap decide. As in
 	// TryToContact(), only while no server path works on this source: a second path would take
 	// its punch, dial the source twice and hold an attempt slot for nothing.
-	if ((m_lastContactRoute == EContactRouteReport::None ||
-		    m_lastContactRoute == EContactRouteReport::KadBuddy) &&
+	if (MayRetryKadRendezvous(m_lastContactRoute, m_serverCallbackPending) &&
 		TrySendKadBuddyRendezvous()) {
 		NoteContactStep(EContactRouteReport::KadBuddy);
 	}
@@ -2301,6 +2305,133 @@ static_assert(kNatStepAnswerWindowMs == NatServerHolePunch::kRendezvousOutcomeTt
 #endif
 #endif
 
+void CUpDownClient::StartLowToLowContact()
+{
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	// Sent once per source: a DS_LOWTOLOWIP source is not asked again.
+	if (TrySendForeignNatCallbackRequest()) {
+		// The source is on another server, which wakes it for us.
+		NoteContactStep(EContactRouteReport::ForeignNatCallback);
+	} else if (NatServerHolePunch::ShouldRequestLowIdHolePunch(BuildLowIdHolePunchRequestFacts(*this))) {
+		if (TrySendLowIdHolePunchRequest()) {
+			m_lowIdHolePunchRequested = true;
+			NoteContactStep(EContactRouteReport::ServerHolePunch);
+		}
+	} else if (TrySendLugdunumNatCallbackRequest()) {
+		NoteContactStep(EContactRouteReport::LugdunumCallback);
+	} else if (TrySendKadBuddyRendezvous()) {
+		NoteContactStep(EContactRouteReport::KadBuddy);
+	}
+#endif
+	SetDownloadState(DS_LOWTOLOWIP);
+}
+
+bool CUpDownClient::LowToLowAnswerAwaited() const
+{
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	// The Kad rendezvous needs neither server path.
+	if (thePrefs::IsLowIdHolePunchEnabled() || thePrefs::IsLugdunumNatCallbackEnabled() ||
+		m_lastContactRoute == EContactRouteReport::KadBuddy) {
+		return true;
+	}
+#endif
+#ifdef ENABLE_IPV6
+	// A late answer to our IPv6 callback.
+	if (m_lastContactRoute == EContactRouteReport::ServerCallback &&
+		::GetTickCount64() - m_contactStepAt < kNatStepAnswerWindowMs) {
+		return true;
+	}
+#endif
+	return false;
+}
+
+#ifdef ENABLE_IPV6
+bool CUpDownClient::TrySendIPv6CallbackRequest(bool fromLowToLowWait)
+{
+	CServer *server =
+		theApp->serverconnect != nullptr ? theApp->serverconnect->GetCurrentServer() : nullptr;
+	if (server == nullptr) {
+		return false;
+	}
+	SIPv6CallbackRequestFacts facts;
+	facts.weAreLowID = theApp->serverconnect->IsLowID();
+	facts.sourceLowID = HasLowID() && GetUserIDHybrid() != 0;
+	facts.sourceOnOurServer = theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort());
+	facts.serverOffers = server->OffersIPv6Callback();
+	facts.verdict = server->GetIPv6Verdict();
+	const CServerSocket *socket = theApp->serverconnect->GetConnectedSocket();
+	facts.sourceDeclined = socket != nullptr && socket->HasIPv6CallbackDeclined(m_nUserIDHybrid);
+	if (!ShouldRequestIPv6Callback(facts)) {
+		return false;
+	}
+
+	CMemFile data;
+	data.WriteUInt32(m_nUserIDHybrid);
+	CPacket *packet = new CPacket(data, OP_EDONKEYPROT, OP_IPV6_CALLBACK_REQUEST);
+	theStats::AddUpOverheadServer(packet->GetPacketSize());
+	AddDebugLogLineN(logLocalClient,
+		CFormat("Local Client: OP_IPV6_CALLBACK_REQUEST for source %u") % m_nUserIDHybrid);
+	theApp->serverconnect->SendPacket(packet);
+
+	const uint64 now = ::GetTickCount64();
+	m_serverCallbackPending = true;
+	m_ipv6CallbackPending = true;
+	m_ipv6CallbackFromWait = fromLowToLowWait;
+	m_nextIPv6CallbackTry = now + thePrefs::GetSourceReaskTime();
+	// An ask: else the DS_WAITCALLBACK reask sends a retry from the wait a second time.
+	m_dwLastAskedTime = now;
+	theApp->clientlist->AddServerCallbackRequest(this, kIPv6CallbackAnswerMs);
+	SetDownloadState(DS_WAITCALLBACK);
+	NoteContactStep(EContactRouteReport::ServerCallback);
+	return true;
+}
+
+bool CUpDownClient::RetryIPv6CallbackRequest()
+{
+	const uint64 now = ::GetTickCount64();
+	const bool natStepOut = m_lastContactRoute == EContactRouteReport::ForeignNatCallback ||
+				m_lastContactRoute == EContactRouteReport::ServerHolePunch ||
+				m_lastContactRoute == EContactRouteReport::LugdunumCallback ||
+				m_lastContactRoute == EContactRouteReport::KadBuddy;
+	if (GetUploadState() != US_CONNECTING &&
+		IsIPv6CallbackRetryDue(now,
+			m_nextIPv6CallbackTry,
+			natStepOut,
+			now >= m_contactStepAt ? now - m_contactStepAt : 0)) {
+		return TrySendIPv6CallbackRequest(true);
+	}
+	return false;
+}
+
+void CUpDownClient::IPv6CallbackFailed(const wxString &why)
+{
+	theApp->clientlist->RemoveServerCallbacks(this);
+	m_serverCallbackPending = false;
+	m_ipv6CallbackPending = false;
+	// A connected socket means the source reached us after all.
+	if ((m_socket != nullptr && m_socket->IsConnected()) || GetDownloadState() != DS_WAITCALLBACK) {
+		return;
+	}
+	AddDebugLogLineN(logClient,
+		CFormat("IPv6 callback to source %u %s, going on LowID-to-LowID") % m_nUserIDHybrid % why);
+	if (m_ipv6CallbackFromWait) {
+		SetDownloadState(DS_LOWTOLOWIP);
+	} else {
+		StartLowToLowContact();
+	}
+}
+#endif
+
+void CUpDownClient::ServerCallbackExpired()
+{
+#ifdef ENABLE_IPV6
+	if (m_ipv6CallbackPending) {
+		IPv6CallbackFailed("unanswered");
+	}
+#endif
+	// A classic request's placeholder socket ends its wait (CheckTimeOut()).
+}
+
 void CUpDownClient::SendClassicCallbackRequest()
 {
 	CMemFile data;
@@ -2312,11 +2443,31 @@ void CUpDownClient::SendClassicCallbackRequest()
 	AddDebugLogLineN(logLocalClient, "Local Client: OP_CALLBACKREQUEST to " + GetFullIP());
 	theApp->serverconnect->SendPacket(packet);
 	m_serverCallbackPending = true;
-	theApp->clientlist->AddServerCallbackRequest(this);
+	theApp->clientlist->AddServerCallbackRequest(this, CONNECTION_TIMEOUT);
 }
+
+#ifdef ENABLE_IPV6
+bool CUpDownClient::ServerCallbackRefused(std::uint8_t ipv6Reason)
+{
+	if (!m_ipv6CallbackPending) {
+		return ServerCallbackRefused();
+	}
+	if (ActOnIPv6CallbackRefusal(ipv6Reason).retrySoon) {
+		m_nextIPv6CallbackTry = ::GetTickCount64() + kIPv6CallbackRetryAfterRateLimitMs;
+	}
+	IPv6CallbackFailed(CFormat("refused (%s)") % IPv6CallbackRefusalText(ipv6Reason));
+	return false;
+}
+#endif
 
 bool CUpDownClient::ServerCallbackRefused()
 {
+#ifdef ENABLE_IPV6
+	if (m_ipv6CallbackPending) {
+		IPv6CallbackFailed("refused");
+		return false;
+	}
+#endif
 	theApp->clientlist->RemoveServerCallbacks(this);
 	m_serverCallbackPending = false;
 	if (m_uploadCallbackRoute == EContactRouteReport::ServerCallback) {
@@ -2744,24 +2895,13 @@ EContactResult CUpDownClient::TryToContact(bool bIgnoreMaxCon)
 			if (GetDownloadState() == DS_CONNECTING) {
 				// A step of an earlier round is not awaited any more.
 				NoteContactStep(EContactRouteReport::None);
-#ifdef ENABLE_NATT_SERVER_COORDINATION
-				// Sent once per source: a DS_LOWTOLOWIP source is not asked again.
-				if (TrySendForeignNatCallbackRequest()) {
-					// The source is on another server, which wakes it for us.
-					NoteContactStep(EContactRouteReport::ForeignNatCallback);
-				} else if (NatServerHolePunch::ShouldRequestLowIdHolePunch(
-						   BuildLowIdHolePunchRequestFacts(*this))) {
-					if (TrySendLowIdHolePunchRequest()) {
-						m_lowIdHolePunchRequested = true;
-						NoteContactStep(EContactRouteReport::ServerHolePunch);
-					}
-				} else if (TrySendLugdunumNatCallbackRequest()) {
-					NoteContactStep(EContactRouteReport::LugdunumCallback);
-				} else if (TrySendKadBuddyRendezvous()) {
-					NoteContactStep(EContactRouteReport::KadBuddy);
+#ifdef ENABLE_IPV6
+				// First: its answer is a plain TCP connection to our IPv6.
+				if (GetUploadState() != US_CONNECTING && TrySendIPv6CallbackRequest(false)) {
+					return EContactResult::Contacting;
 				}
 #endif
-				SetDownloadState(DS_LOWTOLOWIP);
+				StartLowToLowContact();
 			} else if (GetDownloadState() == DS_REQHASHSET) {
 				SetDownloadState(DS_ONQUEUE);
 				m_reqfile->SetHashSetNeeded(true);
@@ -3171,6 +3311,9 @@ void CUpDownClient::ConnectionEstablished()
 	if (m_serverCallbackPending) {
 		theApp->clientlist->RemoveServerCallbacks(this);
 		m_serverCallbackPending = false;
+#ifdef ENABLE_IPV6
+		m_ipv6CallbackPending = false;
+#endif
 	}
 
 	switch (GetKadState()) {
@@ -3228,15 +3371,11 @@ void CUpDownClient::ConnectionEstablished()
 		}
 	}
 	switch (GetDownloadState()) {
-#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	case DS_LOWTOLOWIP:
-		// The Kad rendezvous needs neither server path.
-		if (!thePrefs::IsLowIdHolePunchEnabled() && !thePrefs::IsLugdunumNatCallbackEnabled() &&
-			m_lastContactRoute != EContactRouteReport::KadBuddy) {
+		if (!LowToLowAnswerAwaited()) {
 			break;
 		}
 		[[fallthrough]];
-#endif
 	case DS_CONNECTING:
 	case DS_WAITCALLBACK:
 	case DS_WAITCALLBACKKAD:

@@ -221,6 +221,9 @@ public:
 	bool SupportsIPv6Updates() const { return ServerAcceptsIPv6Updates(GetTCPFlags()); }
 	//! Whether this server proves an address before publishing it; without it, it publishes on trust.
 	bool SupportsIPv6Probe() const { return (GetTCPFlags() & SRV_TCPFLG_IPV6_PROBE) != 0; }
+	//! The last OP_SERVERIDENT carried ST_IPV6_CALLBACK bit 0.
+	bool OffersIPv6Callback() const { return m_ipv6CallbackOffered; }
+	void SetIPv6CallbackOffered(bool offered) { m_ipv6CallbackOffered = offered; }
 #endif
 
 	const wxString &GetAuxPortsList() const { return m_auxPorts; }
@@ -277,6 +280,7 @@ private:
 	uint16 m_nObfuscationPortUDP;
 #ifdef ENABLE_IPV6
 	EServerIPv6Verdict m_ipv6Verdict = EServerIPv6Verdict::Unknown;
+	bool m_ipv6CallbackOffered = false;
 	CNetworkAddress m_ipv6VerdictAddress;
 #endif
 #ifdef ENABLE_NATT_SERVER_COORDINATION

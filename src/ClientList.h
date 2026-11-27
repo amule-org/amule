@@ -42,6 +42,10 @@
 #include <deque>
 #include <set>
 
+#ifdef ENABLE_IPV6
+struct SIPv6CallbackFailure;
+#endif
+
 class CUpDownClient;
 class CClientTCPSocket;
 class CMD4Hash;
@@ -157,6 +161,10 @@ public:
 	 * another host answered. That is a NAT neighbour's client, not the one at that endpoint now.
 	 */
 	CUpDownClient *FindCallbackClientByIP(uint32 clientip, uint16 port);
+	CUpDownClient *FindCallbackClient(const CNetworkAddress &address, uint16 port)
+	{
+		return FindClientAtEndpoint(address, port, true);
+	}
 
 	/**
 	 * Finds a client with the specified ip, returning the first if several share it.
@@ -344,14 +352,19 @@ public:
 	{
 		m_currentDirectCallbacks.remove(CCLIENTREF(toRemove, ""));
 	}
-	// OP_CALLBACKREQUESTs waiting for the peer to connect
-	void AddServerCallbackRequest(CUpDownClient *client);
+	// OP_CALLBACKREQUESTs and OP_IPV6_CALLBACK_REQUESTs waiting for the peer to connect
+	//! @a windowMs: how long the request can still be answered.
+	void AddServerCallbackRequest(CUpDownClient *client, uint64_t windowMs);
 	void RemoveServerCallbacks(CUpDownClient *client)
 	{
 		m_serverCallbacks.Remove(CCLIENTREF(client, ""));
 	}
 	//! OP_CALLBACK_FAIL from our server.
 	void ServerCallbackRefused();
+#ifdef ENABLE_IPV6
+	//! A refusal that names its target.
+	void ServerCallbackRefused(const SIPv6CallbackFailure &failure);
+#endif
 	void AddTrackCallbackRequests(uint32_t ip);
 	void AddTrackCallbackRequests(const CNetworkAddress &address);
 	bool AllowCallbackRequest(uint32_t ip) const;
@@ -362,6 +375,7 @@ protected:
 	void CleanUpClientList();
 
 	void ProcessDirectCallbackList();
+	void ProcessServerCallbacks();
 
 private:
 	/**

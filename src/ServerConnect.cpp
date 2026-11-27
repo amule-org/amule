@@ -772,6 +772,8 @@ void CServerConnect::UpdateAdvertisedIPv6(const std::optional<CNetworkAddress> &
 	connectedsocket->SetLoginIPv6(advertised.value_or(CNetworkAddress::Absent()));
 	// Any update answers the pinhole: a new address gets its own dial.
 	connectedsocket->SetIPv6ReprobeWanted(false);
+	// After the update: an address that follows a withdrawal needs a new opt-in.
+	connectedsocket->TrySendIPv6CallbackOptIn();
 }
 
 void CServerConnect::NoteIPv6PinholeOpened()

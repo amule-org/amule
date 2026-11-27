@@ -43,6 +43,8 @@ enum OP_ClientToServerTCP
 	// OP_CHAT_MESSAGE = 0x1E, OP_JOIN_ROOM = 0x1F.
 	OP_QUERY_MORE_RESULT = 0x21, // (null)
 	OP_GETSOURCES_OBFU = 0x23,
+	// <ipv6 16><port 2>[<crypt options 1><user hash 16>] server->client: dial this IPv6, as 0x35
+	OP_IPV6_CALLBACKREQUESTED = 0x26,
 	OP_SERVERLIST = 0x32,        // <count 1>(<IP 4><PORT 2>)[count] server->client
 	OP_SEARCHRESULT = 0x33,      // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 	OP_SERVERSTATUS = 0x34,      // <USER 4><FILES 4>
@@ -60,8 +62,11 @@ enum OP_ClientToServerTCP
 	OP_USERS_LIST = 0x43,   // <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 	OP_FOUNDSOURCES_OBFU =
 		0x44, // <HASH 16><count 1>(<ID 4><PORT 2><obf settings 1>(UserHash16 if obf&0x80))[count]
-	OP_IPV6_UPDATE = 0x63 // <ipv6 address 16>; all zeros withdraws. Same rules as the login tag:
-			      // sent only on a connection that received SRV_TCPFLG_IPV6_UPDATE. No reply.
+	OP_IPV6_UPDATE = 0x63, // <ipv6 address 16>; all zeros withdraws. Same rules as the login tag:
+			       // sent only on a connection that received SRV_TCPFLG_IPV6_UPDATE. No reply.
+	// The IPv6 callback, sent only to a server whose OP_SERVERIDENT carried ST_IPV6_CALLBACK.
+	OP_IPV6_CALLBACK_REQUEST = 0x64, // <target LowID 4>; a refusal is answered with OP_CALLBACK_FAIL
+	OP_IPV6_CALLBACK_OPTIN = 0x65    // (null): we take OP_IPV6_CALLBACKREQUESTED for this session
 };
 
 // Server TCP flags

@@ -36,8 +36,8 @@ constexpr std::uint64_t kWindowMs = 1000;
 
 TEST(ServerCallbackRequests, ALoneRequestTakesTheRefusal)
 {
-	CServerCallbackRequests<int> requests(kWindowMs);
-	requests.Add(1, 0);
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, kWindowMs);
 	const std::optional<int> refused = requests.TakeRefused(10);
 	ASSERT_TRUE(refused.has_value());
 	ASSERT_EQUALS(1, *refused);
@@ -46,9 +46,9 @@ TEST(ServerCallbackRequests, ALoneRequestTakesTheRefusal)
 
 TEST(ServerCallbackRequests, TwoClientsLeaveTheRefusalUnmatched)
 {
-	CServerCallbackRequests<int> requests(kWindowMs);
-	requests.Add(1, 0);
-	requests.Add(2, 0);
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, kWindowMs);
+	requests.Add(2, 0, kWindowMs);
 	ASSERT_FALSE(requests.TakeRefused(10).has_value());
 	ASSERT_EQUALS(2U, requests.Count(10));
 }
@@ -56,21 +56,21 @@ TEST(ServerCallbackRequests, TwoClientsLeaveTheRefusalUnmatched)
 TEST(ServerCallbackRequests, TwoRequestsForOneClientLeaveTheRefusalUnmatched)
 {
 	// The upload and download queues ask for the same client; the server answers both.
-	CServerCallbackRequests<int> requests(kWindowMs);
-	requests.Add(1, 0);
-	requests.Add(1, 1);
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, kWindowMs);
+	requests.Add(1, 1, kWindowMs);
 	ASSERT_FALSE(requests.TakeRefused(10).has_value());
 	// A request for another client before the second refusal: that refusal is not its own.
-	requests.Add(2, 20);
+	requests.Add(2, 20, kWindowMs);
 	ASSERT_FALSE(requests.TakeRefused(30).has_value());
 }
 
 TEST(ServerCallbackRequests, RemoveDropsEveryRequestOfTheClient)
 {
-	CServerCallbackRequests<int> requests(kWindowMs);
-	requests.Add(1, 0);
-	requests.Add(1, 1);
-	requests.Add(2, 2);
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, kWindowMs);
+	requests.Add(1, 1, kWindowMs);
+	requests.Add(2, 2, kWindowMs);
 	requests.Remove(1);
 	const std::optional<int> refused = requests.TakeRefused(10);
 	ASSERT_TRUE(refused.has_value());
@@ -79,12 +79,51 @@ TEST(ServerCallbackRequests, RemoveDropsEveryRequestOfTheClient)
 
 TEST(ServerCallbackRequests, ARequestCountsUntilItsWindowEnds)
 {
-	CServerCallbackRequests<int> requests(kWindowMs);
-	requests.Add(1, 0);
-	requests.Add(2, 500);
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, kWindowMs);
+	requests.Add(2, 500, kWindowMs);
 	ASSERT_EQUALS(2U, requests.Count(kWindowMs));
 	// Past the first request's window, the refusal can only be the second's.
 	const std::optional<int> refused = requests.TakeRefused(kWindowMs + 1);
 	ASSERT_TRUE(refused.has_value());
 	ASSERT_EQUALS(2, *refused);
+	// The expired one is still handed over once.
+	const std::vector<int> expired = requests.TakeExpired(kWindowMs + 1);
+	ASSERT_EQUALS(1U, expired.size());
+	ASSERT_EQUALS(1, expired.front());
+	ASSERT_TRUE(requests.TakeExpired(kWindowMs + 2).empty());
+}
+
+TEST(ServerCallbackRequests, EachRequestHasItsOwnWindow)
+{
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, 4 * kWindowMs);
+	requests.Add(2, 0, kWindowMs);
+	const std::vector<int> expired = requests.TakeExpired(kWindowMs + 1);
+	ASSERT_EQUALS(1U, expired.size());
+	ASSERT_EQUALS(2, expired.front());
+	ASSERT_EQUALS(1U, requests.Count(kWindowMs + 1));
+}
+
+TEST(ServerCallbackRequests, ARefusalThatNamesItsTargetFindsItAmongMany)
+{
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, kWindowMs);
+	requests.Add(2, 0, kWindowMs);
+	requests.Add(3, 0, kWindowMs);
+	const auto isTwo = [](int client) { return client == 2; };
+	const std::optional<int> refused = requests.TakeFirst(10, isTwo);
+	ASSERT_TRUE(refused.has_value());
+	ASSERT_EQUALS(2, *refused);
+	ASSERT_EQUALS(2U, requests.Count(10));
+	ASSERT_FALSE(requests.TakeFirst(10, isTwo).has_value());
+}
+
+TEST(ServerCallbackRequests, ARefusalThatNamesItsTargetSkipsAnEndedWindow)
+{
+	CServerCallbackRequests<int> requests;
+	requests.Add(1, 0, kWindowMs);
+	ASSERT_FALSE(requests.TakeFirst(kWindowMs + 1, [](int client) { return client == 1; }).has_value());
+	// The ended request still goes out once as expired.
+	ASSERT_EQUALS(1U, requests.TakeExpired(kWindowMs + 1).size());
 }
