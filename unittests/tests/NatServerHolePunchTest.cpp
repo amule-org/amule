@@ -345,10 +345,11 @@ TEST(NatServerHolePunch, SeveralRequestsCanBePendingAndEachIsTakenOnce)
 	ASSERT_TRUE(requests.CanSend(42, 101));
 	ASSERT_TRUE(requests.Take(43, 101));
 
+	// A 0x62 is matched the same way: one for another target leaves the request pending.
 	requests.OnSent(50, 200);
-	requests.Release(51);
+	ASSERT_FALSE(requests.Take(51, 200));
 	ASSERT_FALSE(requests.CanSend(50, 200));
-	requests.Release(50);
+	ASSERT_TRUE(requests.Take(50, 200));
 	ASSERT_TRUE(requests.CanSend(50, 200));
 }
 
@@ -1644,6 +1645,39 @@ TEST(NatServerHolePunch, ARequestThatNeverWentOutLeavesTheFallbackForLater)
 	// Not spent, but not asked again on the next tick either.
 	ASSERT_FALSE(fallback.IsDue(kHolePunchFallbackMs + 1));
 	ASSERT_TRUE(fallback.IsDue(2 * kHolePunchFallbackMs));
+}
+
+TEST(NatServerHolePunch, ARefusedHolePunchFallsBackAtOnceAndOnlyOnce)
+{
+	HolePunchFallback fallback;
+	// No punch out: a refusal has nothing to fail.
+	fallback.OnPunchRefused();
+	ASSERT_FALSE(fallback.IsDue(10 * kHolePunchFallbackMs));
+	fallback.OnPunchSent(1'000);
+	ASSERT_FALSE(fallback.IsDue(1'001));
+	fallback.OnPunchRefused();
+	ASSERT_TRUE(fallback.IsDue(1'001));
+	fallback.OnFallback(true, 1'001);
+	ASSERT_FALSE(fallback.IsDue(1'002));
+	// A repeated refusal, or the interval passing, does not use the callback a second time.
+	fallback.OnPunchRefused();
+	ASSERT_FALSE(fallback.IsDue(1'000 + kHolePunchFallbackMs));
+	// A new punch is not refused until its own 0x62.
+	fallback.OnPunchSent(2 * kHolePunchFallbackMs);
+	ASSERT_FALSE(fallback.IsDue(2 * kHolePunchFallbackMs + 1));
+}
+
+TEST(NatServerHolePunch, ARefusalWhoseFallbackCannotGoOutWaitsTheUsualInterval)
+{
+	HolePunchFallback fallback;
+	fallback.OnPunchSent(0);
+	fallback.OnPunchRefused();
+	ASSERT_TRUE(fallback.IsDue(10));
+	fallback.OnFallback(false, 10);
+	// Not asked again on every tick.
+	ASSERT_FALSE(fallback.IsDue(11));
+	ASSERT_FALSE(fallback.IsDue(10 + kHolePunchFallbackMs - 1));
+	ASSERT_TRUE(fallback.IsDue(10 + kHolePunchFallbackMs));
 }
 
 TEST(NatServerHolePunch, AServerLoginEndsTheServerSchedulesButNotTheKadBuddys)

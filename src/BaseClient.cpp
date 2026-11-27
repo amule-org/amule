@@ -2274,6 +2274,19 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 	}
 }
 
+void CUpDownClient::LowIdHolePunchRefused()
+{
+	// Only a source that waits on its punch: the 0x60 can be the upload side's, and the same
+	// LowID on another server is another client.
+	if (GetDownloadState() != DS_LOWTOLOWIP ||
+		m_lastContactRoute != EContactRouteReport::ServerHolePunch ||
+		!theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort())) {
+		return;
+	}
+	m_holePunchFallback.OnPunchRefused();
+	RetryLowIdHolePunchRequest();
+}
+
 bool CUpDownClient::AwaitServerKeyForLugdunumCallback()
 {
 	const std::optional<LugdunumCallbackRoute> route =
