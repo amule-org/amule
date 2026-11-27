@@ -52,7 +52,7 @@ constexpr std::size_t MaxReaskRelaySize = 8228;
 constexpr uint8_t NatTConnectOptions = 0x80 | 0x40;
 
 // The connect-options bits that declare uTP (0x80) and QUIC (0x40).
-inline uint8_t NatTConnectOptionsFor(bool utp, bool quic)
+constexpr uint8_t NatTConnectOptionsFor(bool utp, bool quic)
 {
 	return static_cast<uint8_t>((utp ? 0x80 : 0) | (quic ? 0x40 : 0));
 }
