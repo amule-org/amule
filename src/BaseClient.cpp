@@ -2054,7 +2054,13 @@ bool CUpDownClient::TrySendKadBuddyRendezvous()
 		GetKadSourceIP(), GetKadPort(), {}, GetBuddyIP(), GetBuddyPort(), GetUserPort()
 	};
 	std::copy_n(GetUserHash().GetHash(), target.hash.size(), target.hash.begin());
-	std::copy_n(GetBuddyID(), target.buddyID.size(), target.buddyID.begin());
+	// A buddy compares the first 16 bytes in its own layout. eMule, eMuleAI and eMuleQt use the
+	// eMule one, and our buddy matches either, so an ID read from Kad goes back in the eMule layout.
+	if (IsBuddyIDFromKad()) {
+		Kademlia::ConvertBuddyIdLayout(GetBuddyID(), target.buddyID.data());
+	} else {
+		std::copy_n(GetBuddyID(), target.buddyID.size(), target.buddyID.begin());
+	}
 	std::copy_n(m_reqfile->GetFileHash().GetHash(), target.fileHash.size(), target.fileHash.begin());
 	return theApp->clientudp->StartKadRendezvous(target);
 #else
@@ -2237,6 +2243,7 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 	if (!m_lowIdHolePunchRequested && TrySendLowIdHolePunchRequest()) {
 		m_lowIdHolePunchRequested = true;
 		NoteContactStep(EContactRouteReport::ServerHolePunch);
+		return;
 	}
 	if (m_holePunchFallback.IsDue(now)) {
 		const bool requested =
@@ -2247,7 +2254,13 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 			AddDebugLogLineN(logClient,
 				CFormat("Hole punch to source %u failed, trying the Lugdunum callback") %
 					GetUserIDHybrid());
+			return;
 		}
+	}
+	// A Kad rendezvous that timed out, or that the attempt cap held back, is asked again once
+	// StartKadRendezvous() lets it: its cooldown, the attempt in flight and the cap decide.
+	if (TrySendKadBuddyRendezvous()) {
+		NoteContactStep(EContactRouteReport::KadBuddy);
 	}
 }
 
@@ -4372,6 +4385,12 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	if (merge.takeAddress) {
 		SetBuddyIP(duplicate.GetBuddyIP());
 		SetBuddyPort(duplicate.GetBuddyPort());
+		// The Kad endpoint goes with the buddy: a rendezvous through the new buddy must expect,
+		// punch and dial the source where that record says it is.
+		if (duplicate.GetKadSourceIP() != 0 && duplicate.GetKadPort() != 0) {
+			SetKadSourceIP(duplicate.GetKadSourceIP());
+			SetKadPort(duplicate.GetKadPort());
+		}
 		m_nBuddyCandidateIP = 0;
 		m_nBuddyCandidatePort = 0;
 		m_bBuddyCandidateIsFormer = false;

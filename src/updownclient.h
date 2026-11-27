@@ -934,8 +934,8 @@ public:
 	/* IP */
 	void SetBuddyIP(uint32 val) { m_nBuddyIP = val; }
 	uint32 GetBuddyIP() const { return m_nBuddyIP; }
-	//! The Kad endpoint of a firewalled Kad source (type 3/5) and its buddy's, kept apart from
-	//! GetIP(), which stays 0 so the source still matches no client by address.
+	//! The Kad endpoint of a firewalled Kad source (type 3/5), kept apart from GetIP(), which
+	//! stays 0 so the source still matches no client by address.
 	void SetKadSourceIP(uint32 ip) { m_kadSourceIP = ip; }
 	uint32 GetKadSourceIP() const { return m_kadSourceIP; }
 	/* Port */

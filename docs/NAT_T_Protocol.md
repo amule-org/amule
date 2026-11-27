@@ -924,7 +924,15 @@ says. Before this, a firewalled aMule did not try such a source at all.
 - **Expect, then punch.** It records the source's Kad endpoint (the IP the
   storer recorded and the source's Kad UDP port) and user hash with
   `ExpectNatTPeer()`, so it answers the source's CAPS, then punches that
-  endpoint with the punch schedule and sweep of the Kad buddy path.
+  endpoint with the punch schedule and port sweep. Its sweeps spend a budget of
+  their own, apart from the server paths' and from the served side's, whose
+  forwarded rendezvous can be forged. When a Kad result for a source we already
+  know brings a new buddy address, the Kad endpoint of that record is taken
+  with it.
+- **Buddy ID.** A buddy compares the first 16 bytes in its own layout. A buddy
+  ID read from Kad (`TAG_BUDDYHASH`) is sent back in the eMule layout the
+  publisher wrote, which eMule, eMuleAI and eMuleQt compare in; our own buddy
+  matches either layout.
 - **Send.** An `OP_REASKCALLBACKUDP` (`0x94`) to the source's buddy, plain, as a
   reask through a buddy is:
   `<buddy id 16><zero 16><0xA0 1><our hash 16><opts 1><file hash 16><our ip 4><udp port 2><hint 1>`.
@@ -937,15 +945,21 @@ says. Before this, a firewalled aMule did not try such a source at all.
 - **Dial.** On the source's first punch it dials the endpoint the punch came
   from, through the dial the server paths use (QUIC when CAPS confirms it, else
   uTP). Without a punch within 3 s it dials the source's Kad endpoint once, as
-  eMuleAI dials it at once.
+  eMuleAI dials it at once. A punch that comes after that dial is not dialled
+  again unless it shows another port.
 - **End.** A verified hello from the source ends the attempt. Otherwise it ends
   after 45 s, and that source is not asked this way again for 10 minutes. One
   attempt per source is in flight, and at most 32 at once.
+- **Retry.** A source left `DS_LOWTOLOWIP` is asked again from the download
+  queue's tick, like the server paths' retries, once its cooldown is over or the
+  cap leaves room.
 - **No rendezvous.** A source that does not speak the rendezvous (stock eMule,
   and aMule before the served side) reads the `0xA0` as a reask for a zero file
   hash and answers `OP_FILENOTFOUND`. During an attempt that answer ends the
   attempt and is not taken as a dead source: the source is kept, and never
-  asked for a rendezvous again in this session.
+  asked for a rendezvous again in this session. An `OP_FILENOTFOUND` from a
+  known source at exactly that endpoint, behind the same shared address, is
+  that source's own answer and is handled as before.
 - **Statistics.** `buddy.own.requested_rendezvous` counts `started`, `sent`
   (each `0x94`), `punched`, `fallback_dials`, and how attempts end: `connected`,
   `timed_out` or `no_rendezvous`. Each step is logged under client UDP.

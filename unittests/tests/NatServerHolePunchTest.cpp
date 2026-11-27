@@ -1275,21 +1275,35 @@ TEST(NatServerHolePunch, EachPunchDueNamesThePathThatStartedItsSchedule)
 }
 
 // Ten sweeps a minute for all the server paths together: a sender that forges the source a Kad buddy
-// relays must not use them up, so the Kad path's sweeps spend a budget of their own.
+// relays must not use them up, so the Kad path's sweeps spend a budget of their own. Our own Kad
+// rendezvous spend a third one: forged ones must not block them, nor ours the served side's.
 TEST(NatServerHolePunch, SeparateSweepBudgetsDoNotSpendEachOther)
 {
 	SweepBudget server;
 	SweepBudget kad;
+	SweepBudget requester;
 	for (std::uint8_t i = 0; i < kMaxSweepsPerWindow; ++i) {
-		ASSERT_TRUE(SweepBudgetFor(RendezvousPath::KadBuddy, server, kad)
+		ASSERT_TRUE(SweepBudgetFor(RendezvousPath::KadBuddy, server, kad, requester)
 				    .Admit(IPv4{ { 198, 51, 100, i } }, 1'000));
 	}
 	const IPv4 next{ { 203, 0, 113, 1 } };
-	ASSERT_FALSE(SweepBudgetFor(RendezvousPath::KadBuddy, server, kad).Admit(next, 1'001));
+	ASSERT_FALSE(SweepBudgetFor(RendezvousPath::KadBuddy, server, kad, requester).Admit(next, 1'001));
 	for (const RendezvousPath path : { RendezvousPath::ServerPunch, RendezvousPath::LugdunumCallback }) {
-		ASSERT_TRUE(&SweepBudgetFor(path, server, kad) == &server);
+		ASSERT_TRUE(&SweepBudgetFor(path, server, kad, requester) == &server);
 	}
-	ASSERT_TRUE(SweepBudgetFor(RendezvousPath::ServerPunch, server, kad).Admit(next, 1'001));
+	ASSERT_TRUE(&SweepBudgetFor(RendezvousPath::KadRequester, server, kad, requester) == &requester);
+	ASSERT_TRUE(SweepBudgetFor(RendezvousPath::KadRequester, server, kad, requester).Admit(next, 1'001));
+	ASSERT_TRUE(SweepBudgetFor(RendezvousPath::ServerPunch, server, kad, requester).Admit(next, 1'001));
+}
+
+// Our own Kad rendezvous outlive a server session too: a server login must not drop their punches.
+TEST(NatServerHolePunch, AServerLoginKeepsOurKadRendezvousSchedule)
+{
+	PunchScheduleSet schedules;
+	schedules.Start({ { 192, 0, 2, 1 } }, 4'662, 0, RendezvousPath::ServerPunch);
+	schedules.Start({ { 192, 0, 2, 3 } }, 4'662, 0, RendezvousPath::KadRequester);
+	schedules.ClearServerPaths();
+	ASSERT_EQUALS((std::size_t)1, schedules.Size());
 }
 
 TEST(NatServerHolePunch, TheServerPunchSchedulePunchesAtZeroHalfOneAndTwoSeconds)

@@ -718,18 +718,20 @@ inline std::vector<std::uint16_t> SweptPorts(std::uint16_t udpPort)
 
 // The path a rendezvous took. The extension counts as the ed2k-server punch, and its Lugdunum
 // fallback dial as Lugdunum's callback; the Kad buddy relays a rendezvous with no server involved.
+// KadRequester is the rendezvous we ask a Kad source's buddy for.
 enum class RendezvousPath
 {
 	ServerPunch,
 	LugdunumCallback,
-	KadBuddy
+	KadBuddy,
+	KadRequester
 };
 
-// Only the Kad path outlives a server session: a server reconnect must not drop what a buddy's
+// Only the Kad paths outlive a server session: a server reconnect must not drop what a Kad
 // rendezvous is still punching.
 constexpr bool IsServerPath(RendezvousPath path) noexcept
 {
-	return path != RendezvousPath::KadBuddy;
+	return path != RendezvousPath::KadBuddy && path != RendezvousPath::KadRequester;
 }
 
 // One punch the schedule still owes.
@@ -932,10 +934,17 @@ private:
 };
 
 // The server paths share one sweep budget; the Kad buddy path, whose requester sources can be
-// forged, spends its own.
-inline SweepBudget &SweepBudgetFor(RendezvousPath path, SweepBudget &serverPaths, SweepBudget &kadBuddy)
+// forged, spends its own, and so do the rendezvous we ask for ourselves.
+inline SweepBudget &SweepBudgetFor(
+	RendezvousPath path, SweepBudget &serverPaths, SweepBudget &kadBuddy, SweepBudget &kadRequester)
 {
-	return IsServerPath(path) ? serverPaths : kadBuddy;
+	if (path == RendezvousPath::KadBuddy) {
+		return kadBuddy;
+	}
+	if (path == RendezvousPath::KadRequester) {
+		return kadRequester;
+	}
+	return serverPaths;
 }
 
 // Wake keepalive (ed2k-server's hole-punch extension). The server wakes the target with Lugdunum's 0x37 and

@@ -238,7 +238,7 @@ public:
 			})) {
 			return false;
 		}
-		m_attempts.push_back({ target, now, 0, false, false });
+		m_attempts.push_back({ target, now, 0, false, false, false });
 		return true;
 	}
 
@@ -273,15 +273,20 @@ public:
 
 	// The target to dial for a punch from @a ip, once per attempt. A punch from its own port is
 	// the target's; from another it may be a neighbour behind the same address, so only a lone
-	// attempt there takes it.
+	// attempt there takes it. Any punch ends the sends and the fallback dial, but the endpoint the
+	// fallback already dialled is not dialled again: only a punch from another port is.
 	std::optional<SKadRendezvousTarget> TakePunch(std::uint32_t ip, std::uint16_t port, std::uint64_t now)
 	{
 		const auto match = Find(ip, port);
-		if (match == m_attempts.end() || match->punched ||
+		if (match == m_attempts.end() || match->punchDialled ||
 			now - match->startedAt >= kRequesterAttemptMs) {
 			return std::nullopt;
 		}
 		match->punched = true;
+		if (match->fallbackDialled && port == match->target.udpPort) {
+			return std::nullopt;
+		}
+		match->punchDialled = true;
 		return match->target;
 	}
 
@@ -324,6 +329,7 @@ private:
 		std::size_t sends;
 		bool fallbackDialled;
 		bool punched;
+		bool punchDialled;
 	};
 	struct SMark
 	{
@@ -359,7 +365,11 @@ private:
 				      [&hash](const SMark &mark) { return mark.hash == hash; }),
 			m_marks.end());
 		if (m_marks.size() >= kMaxRequesterMarks) {
-			m_marks.erase(m_marks.begin());
+			// The oldest cooldown goes first: a "no rendezvous" mark lasts the session.
+			const auto cooldown = std::find_if(m_marks.begin(),
+				m_marks.end(),
+				[](const SMark &mark) { return mark.until != kForever; });
+			m_marks.erase(cooldown != m_marks.end() ? cooldown : m_marks.begin());
 		}
 		m_marks.push_back({ hash, until });
 	}

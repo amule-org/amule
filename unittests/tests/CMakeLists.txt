@@ -4376,6 +4376,7 @@ foreach (long_test IN ITEMS
 	KadBuddyPointerResolveIntegrationTest-hit:157
 	KadBuddyCallbackRetryIntegrationTest-one:157
 	KadSourceBuddyIdIntegrationTest:137
+	KadRendezvousRequesterIntegrationTest:101
 	UploadRefillIntegrationTest:117
 	UPnPPortMappingIntegrationTest:99
 	KadBuddyPointerType7IntegrationTest-pointer:94

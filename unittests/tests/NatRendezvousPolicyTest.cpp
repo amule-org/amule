@@ -298,3 +298,65 @@ TEST(NatRendezvousPolicy, RequesterAttemptsAreBounded)
 	ASSERT_TRUE(requests.Complete(kTargetIP, HashOf(1)));
 	ASSERT_TRUE(requests.Start(Target(0xF0, 0x0D71000C), 1000));
 }
+
+TEST(NatRendezvousPolicy, RequesterDoesNotDialAgainTheEndpointTheFallbackDialled)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+	const auto due = requests.TakeDue(1000 + NatRendezvous::kRequesterFallbackDialMs);
+	ASSERT_EQUALS(1u, CountOf(due, Action::FallbackDial));
+
+	// The punch shows the endpoint the fallback already dialled: no second dial, and no more sends.
+	ASSERT_FALSE(requests.TakePunch(kTargetIP, kTargetPort, 4500).has_value());
+	ASSERT_EQUALS(0u, CountOf(requests.TakeDue(20000), Action::Send));
+	// A punch from another port is a mapping the fallback did not reach: that one is dialled, once.
+	const auto moved = requests.TakePunch(kTargetIP, 40000, 21000);
+	ASSERT_TRUE(moved.has_value());
+	ASSERT_TRUE(moved->hash == HashOf(1));
+	ASSERT_FALSE(requests.TakePunch(kTargetIP, 40001, 21100).has_value());
+}
+
+TEST(NatRendezvousPolicy, RequesterDialsThePunchFromTheKadPortBeforeTheFallback)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+	requests.TakeDue(1000);
+	ASSERT_TRUE(requests.TakePunch(kTargetIP, kTargetPort, 2000).has_value());
+	ASSERT_EQUALS(0u, CountOf(requests.TakeDue(20000), Action::FallbackDial));
+}
+
+namespace
+{
+NatRendezvous::KadRendezvousHash HashOfIndex(std::size_t index)
+{
+	NatRendezvous::KadRendezvousHash hash{};
+	hash.fill(0xEE);
+	hash[0] = static_cast<std::uint8_t>(index);
+	hash[1] = static_cast<std::uint8_t>(index >> 8);
+	return hash;
+}
+} // namespace
+
+TEST(NatRendezvousPolicy, RequesterCooldownsDoNotPushOutANoRendezvousMark)
+{
+	Requests requests;
+	NatRendezvous::SKadRendezvousTarget silent{
+		kTargetIP, kTargetPort, HashOfIndex(0xFFFF), 0x0B71000C, 5000
+	};
+	ASSERT_TRUE(requests.Start(silent, 1000));
+	ASSERT_TRUE(requests.NoRendezvous(kTargetIP, kTargetPort).has_value());
+
+	// More timed-out attempts than there is room for marks, each with a cooldown of its own.
+	for (std::size_t i = 0; i < NatRendezvous::kMaxRequesterMarks + 1; ++i) {
+		NatRendezvous::SKadRendezvousTarget target{ 0x0C000000u + static_cast<std::uint32_t>(i),
+			kTargetPort,
+			HashOfIndex(i),
+			0x0B71000C,
+			5000 };
+		ASSERT_TRUE(requests.Start(target, 1000));
+		ASSERT_EQUALS(1u,
+			CountOf(requests.TakeDue(1000 + NatRendezvous::kRequesterAttemptMs),
+				Action::Expired));
+	}
+	ASSERT_FALSE(requests.Start(silent, 1000 + NatRendezvous::kRequesterAttemptMs));
+}

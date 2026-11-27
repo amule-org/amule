@@ -261,6 +261,8 @@ private:
 	// The Kad buddy's sweeps spend a budget of their own: a rendezvous a buddy relays can be forged,
 	// and must not use up the sweeps the server paths are owed.
 	NatServerHolePunch::SweepBudget m_kadBuddyHolePunchSweeps;
+	// Our own rendezvous through a source's buddy: kept apart from the forged-prone served side.
+	NatServerHolePunch::SweepBudget m_kadRequesterHolePunchSweeps;
 	NatServerHolePunch::RequestedCallbackTargets m_requestedCallbackTargets;
 	NatServerHolePunch::ForeignCallbackRequests m_foreignCallbacks;
 	// The Kad buddy's rendezvous limits, apart from the server paths' action budget.

@@ -1325,8 +1325,10 @@ void CClientUDPSocket::SendDueLowIdHolePunches(uint64 now)
 		}
 		// One sweep per destination address every five minutes, ten a minute overall, for the
 		// server paths and for the Kad buddy each.
-		NatServerHolePunch::SweepBudget &budget = NatServerHolePunch::SweepBudgetFor(
-			due.path, m_lowIdHolePunchSweeps, m_kadBuddyHolePunchSweeps);
+		NatServerHolePunch::SweepBudget &budget = NatServerHolePunch::SweepBudgetFor(due.path,
+			m_lowIdHolePunchSweeps,
+			m_kadBuddyHolePunchSweeps,
+			m_kadRequesterHolePunchSweeps);
 		if (!budget.Admit(due.peerIP, now)) {
 			AddDebugLogLineN(logClientUDP,
 				CFormat("Punch sweep to %s refused by the sweep budget") %
@@ -1360,7 +1362,7 @@ bool CClientUDPSocket::StartKadRendezvous(const NatRendezvous::SKadRendezvousTar
 	NatServerHolePunch::IPv4 peerIP{};
 	PokeUInt32(peerIP.data(), target.ip);
 	StartLowIdHolePunchSchedule(
-		peerIP, target.udpPort, now, NatServerHolePunch::RendezvousPath::KadBuddy, target.hash);
+		peerIP, target.udpPort, now, NatServerHolePunch::RendezvousPath::KadRequester, target.hash);
 	++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.started;
 	TickKadRendezvous(now);
 	return true;
@@ -1529,6 +1531,9 @@ void CClientUDPSocket::NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath 
 	case NatServerHolePunch::RendezvousPath::KadBuddy:
 		// Counted as buddy.own.rendezvous.accepted by the handler, which also counts the drops.
 		break;
+	case NatServerHolePunch::RendezvousPath::KadRequester:
+		// Counted as buddy.own.requested_rendezvous by StartKadRendezvous(); never noted here.
+		break;
 	}
 }
 
@@ -1657,6 +1662,9 @@ bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint
 		break;
 	case NatServerHolePunch::RendezvousPath::KadBuddy:
 		++theApp->clientlist->GetBuddyStats().own.rendezvous.connected;
+		break;
+	case NatServerHolePunch::RendezvousPath::KadRequester:
+		// Ended by m_kadRendezvousRequests.Complete() above; never noted as an outcome.
 		break;
 	}
 	return true;
@@ -2140,10 +2148,12 @@ void CClientUDPSocket::ProcessPacket(
 	case OP_FILENOTFOUND: {
 		AddDebugLogLineN(logClientUDP, "Client UDP socket: OP_FILENOTFOUND");
 		theStats::AddDownOverheadFileRequest(size);
+		CUpDownClient *sender = theApp->downloadqueue->GetDownloadClientByIP_UDP(host, port);
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 		// A target that read our 0xA0 as a reask for a zero file hash does not speak the
-		// rendezvous. The source is not dead: leave it, and never ask it this way again.
-		if (m_kadRendezvousRequests.NoRendezvous(host, port)) {
+		// rendezvous. The source is not dead: leave it, and never ask it this way again. A known
+		// source at exactly this endpoint, behind the same shared address, answers its own reask.
+		if (sender == nullptr && m_kadRendezvousRequests.NoRendezvous(host, port)) {
 			AddDebugLogLineN(logClientUDP,
 				"No rendezvous at " + Uint32_16toStringIP_Port(host, port) +
 					": it answered not found");
@@ -2151,7 +2161,6 @@ void CClientUDPSocket::ProcessPacket(
 			break;
 		}
 #endif
-		CUpDownClient *sender = theApp->downloadqueue->GetDownloadClientByIP_UDP(host, port);
 		if (sender) {
 			sender->UDPReaskFNF(); // may delete 'sender'!
 			sender = NULL;
