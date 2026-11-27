@@ -857,9 +857,11 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   uTP when built in and QUIC when built in and enabled. The requester declares
   its own in the connect options of the `0xA0`, or names one in the last byte
   of its 7-byte tail: `1` uTP, `2` QUIC. eMuleAI sets the bits; eMuleQt sets
-  none and names QUIC in the tail. It sends the tail only when it knows its
-  public IPv4; without it the request declares no transport, and the served
-  node drops it. A 34-byte `0x51` declares none.
+  none and names QUIC in the tail. Up to v0.7.41 it sends the tail only when it
+  knows its public IPv4; without it the request declares no transport, and the
+  served node drops it. Since ModderMule/emule-qt#265 (for v0.7.42) it always
+  sends the full tail, with zeros while it does not know its IPv4. A 34-byte
+  `0x51` declares none.
 - **Check.** The buddy drops the `0xA0` only when both peers declared
   transports and share none, and counts the drop in its relay summary. If
   either peer declared none, it forwards as before. The check needs no CAPS
