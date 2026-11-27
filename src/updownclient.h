@@ -1439,6 +1439,9 @@ private:
 	// A different buddy address from a Kad result, held back while the stored one answers.
 	uint32 m_nBuddyCandidateIP = 0;
 	uint16 m_nBuddyCandidatePort = 0;
+	// The Kad endpoint of the record that named the candidate, taken with it on a switch.
+	uint32 m_nBuddyCandidateKadIP = 0;
+	uint16 m_nBuddyCandidateKadPort = 0;
 	// The candidate is the buddy we switched away from, asked in one layout only.
 	bool m_bBuddyCandidateIsFormer = false;
 	// When the last KADEMLIA_CALLBACK_REQ was sent, and when the next one may go, 0 for at once.

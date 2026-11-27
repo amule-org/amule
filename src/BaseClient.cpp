@@ -2258,8 +2258,12 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 		}
 	}
 	// A Kad rendezvous that timed out, or that the attempt cap held back, is asked again once
-	// StartKadRendezvous() lets it: its cooldown, the attempt in flight and the cap decide.
-	if (TrySendKadBuddyRendezvous()) {
+	// StartKadRendezvous() lets it: its cooldown, the attempt in flight and the cap decide. As in
+	// TryToContact(), only while no server path works on this source: a second path would take
+	// its punch, dial the source twice and hold an attempt slot for nothing.
+	if ((m_lastContactRoute == EContactRouteReport::None ||
+		    m_lastContactRoute == EContactRouteReport::KadBuddy) &&
+		TrySendKadBuddyRendezvous()) {
 		NoteContactStep(EContactRouteReport::KadBuddy);
 	}
 }
@@ -4382,24 +4386,37 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	if (merge.takeID) {
 		SetBuddyID(duplicate.GetBuddyID(), duplicate.IsBuddyIDFromKad());
 	}
+	// The Kad endpoint goes with the buddy a record names: a rendezvous through that buddy must
+	// expect, punch and dial the source where that record says it is. That holds for the buddy we
+	// already use too, as a source from extended source exchange arrives with its buddy address.
+	const bool incomingHasKadEndpoint = duplicate.GetKadSourceIP() != 0 && duplicate.GetKadPort() != 0;
+	if (incomingHasKadEndpoint &&
+		(merge.takeAddress || (facts.incomingHasAddress && facts.sameAddress))) {
+		SetKadSourceIP(duplicate.GetKadSourceIP());
+		SetKadPort(duplicate.GetKadPort());
+	}
 	if (merge.takeAddress) {
 		SetBuddyIP(duplicate.GetBuddyIP());
 		SetBuddyPort(duplicate.GetBuddyPort());
-		// The Kad endpoint goes with the buddy: a rendezvous through the new buddy must expect,
-		// punch and dial the source where that record says it is.
-		if (duplicate.GetKadSourceIP() != 0 && duplicate.GetKadPort() != 0) {
-			SetKadSourceIP(duplicate.GetKadSourceIP());
-			SetKadPort(duplicate.GetKadPort());
-		}
 		m_nBuddyCandidateIP = 0;
 		m_nBuddyCandidatePort = 0;
+		m_nBuddyCandidateKadIP = 0;
+		m_nBuddyCandidateKadPort = 0;
 		m_bBuddyCandidateIsFormer = false;
+	}
+	// The record's Kad endpoint is kept with the candidate, whichever node returned it again.
+	if (merge.storeCandidate && incomingHasKadEndpoint && m_nBuddyCandidateIP == duplicate.GetBuddyIP() &&
+		m_nBuddyCandidatePort == duplicate.GetBuddyPort()) {
+		m_nBuddyCandidateKadIP = duplicate.GetKadSourceIP();
+		m_nBuddyCandidateKadPort = duplicate.GetKadPort();
 	}
 	// One Kad search returns the same fallback from several nodes.
 	if (merge.storeCandidate && (m_nBuddyCandidateIP != duplicate.GetBuddyIP() ||
 					    m_nBuddyCandidatePort != duplicate.GetBuddyPort())) {
 		m_nBuddyCandidateIP = duplicate.GetBuddyIP();
 		m_nBuddyCandidatePort = duplicate.GetBuddyPort();
+		m_nBuddyCandidateKadIP = incomingHasKadEndpoint ? duplicate.GetKadSourceIP() : 0;
+		m_nBuddyCandidateKadPort = incomingHasKadEndpoint ? duplicate.GetKadPort() : 0;
 		m_bBuddyCandidateIsFormer = false;
 		AddDebugLogLineN(logKadBuddy,
 			CFormat("Kad buddy %s kept as a fallback for source %s, which uses %s") %
@@ -4613,11 +4630,20 @@ bool CUpDownClient::SwitchToBuddyCandidate()
 			Uint32_16toStringIP_Port(m_nBuddyCandidateIP, m_nBuddyCandidatePort));
 	const uint32 leftIP = GetBuddyIP();
 	const uint16 leftPort = GetBuddyPort();
+	const uint32 leftKadIP = GetKadSourceIP();
+	const uint16 leftKadPort = GetKadPort();
 	SetBuddyIP(m_nBuddyCandidateIP);
 	SetBuddyPort(m_nBuddyCandidatePort);
+	// The source is where the record that named this buddy says it is.
+	if (m_nBuddyCandidateKadIP != 0 && m_nBuddyCandidateKadPort != 0) {
+		SetKadSourceIP(m_nBuddyCandidateKadIP);
+		SetKadPort(m_nBuddyCandidateKadPort);
+	}
 	const bool keepLeft = KeepsFormerBuddy(returning, layoutsTried);
 	m_nBuddyCandidateIP = keepLeft ? leftIP : 0;
 	m_nBuddyCandidatePort = keepLeft ? leftPort : 0;
+	m_nBuddyCandidateKadIP = keepLeft ? leftKadIP : 0;
+	m_nBuddyCandidateKadPort = keepLeft ? leftKadPort : 0;
 	m_bBuddyCandidateIsFormer = keepLeft;
 	// The first try through the new buddy keeps the current buddy ID layout (#1835). Back on the
 	// former buddy, that is the layout it was not asked in, and the last one left.
@@ -4688,6 +4714,8 @@ void CUpDownClient::UseKadPointerBuddy(const SKadPointerBuddy &buddy, uint32 ask
 	m_bBuddyOtherLayoutTried = false;
 	m_nBuddyCandidateIP = 0;
 	m_nBuddyCandidatePort = 0;
+	m_nBuddyCandidateKadIP = 0;
+	m_nBuddyCandidateKadPort = 0;
 	m_bBuddyCandidateIsFormer = false;
 	m_kadCallbackRetryTime = Kademlia::KadCallbackRetryTime(m_kadCallbackSentTime, buddy.ip == askedIP);
 }
@@ -4814,6 +4842,8 @@ void CUpDownClient::WaitForKadPointerLookup(uint64 delayMs)
 	SetBuddyPort(0);
 	m_nBuddyCandidateIP = 0;
 	m_nBuddyCandidatePort = 0;
+	m_nBuddyCandidateKadIP = 0;
+	m_nBuddyCandidateKadPort = 0;
 	m_bBuddyCandidateIsFormer = false;
 	m_kadPointerBuddyAsked = false;
 	m_sourceRoute = ESourceRoute::None;

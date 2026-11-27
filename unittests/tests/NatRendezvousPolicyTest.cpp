@@ -360,3 +360,19 @@ TEST(NatRendezvousPolicy, RequesterCooldownsDoNotPushOutANoRendezvousMark)
 	}
 	ASSERT_FALSE(requests.Start(silent, 1000 + NatRendezvous::kRequesterAttemptMs));
 }
+
+// A known source at the attempt's endpoint answers OP_FILENOTFOUND: it is the target itself only when
+// it carries the attempt's hash, as a source that connected before does.
+TEST(NatRendezvousPolicy, RequesterFileNotFoundFromAKnownSourceIsTheTargetsOnlyWithItsHash)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(Target(1), 1000));
+	ASSERT_FALSE(requests.NoRendezvous(kTargetIP, kTargetPort, HashOf(2)).has_value());
+	ASSERT_EQUALS(1u, requests.Size());
+
+	const auto ended = requests.NoRendezvous(kTargetIP, kTargetPort, HashOf(1));
+	ASSERT_TRUE(ended.has_value());
+	ASSERT_TRUE(ended->hash == HashOf(1));
+	ASSERT_EQUALS(0u, requests.Size());
+	ASSERT_FALSE(requests.Start(Target(1), 2000));
+}

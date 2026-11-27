@@ -1323,8 +1323,8 @@ void CClientUDPSocket::SendDueLowIdHolePunches(uint64 now)
 			punch(due.peerIP, due.udpPort);
 			continue;
 		}
-		// One sweep per destination address every five minutes, ten a minute overall, for the
-		// server paths and for the Kad buddy each.
+		// One sweep per destination address every five minutes, ten a minute overall, for each of
+		// three budgets: the server paths, the Kad buddy's served side and our own Kad rendezvous.
 		NatServerHolePunch::SweepBudget &budget = NatServerHolePunch::SweepBudgetFor(due.path,
 			m_lowIdHolePunchSweeps,
 			m_kadBuddyHolePunchSweeps,
@@ -2152,8 +2152,14 @@ void CClientUDPSocket::ProcessPacket(
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 		// A target that read our 0xA0 as a reask for a zero file hash does not speak the
 		// rendezvous. The source is not dead: leave it, and never ask it this way again. A known
-		// source at exactly this endpoint, behind the same shared address, answers its own reask.
-		if (sender == nullptr && m_kadRendezvousRequests.NoRendezvous(host, port)) {
+		// source at exactly this endpoint is the target only with the attempt's hash: a target
+		// that connected before keeps its address. Any other one answers its own reask.
+		std::optional<NatRendezvous::KadRendezvousHash> senderHash;
+		if (sender != nullptr) {
+			senderHash.emplace();
+			std::copy_n(sender->GetUserHash().GetHash(), senderHash->size(), senderHash->begin());
+		}
+		if (m_kadRendezvousRequests.NoRendezvous(host, port, senderHash)) {
 			AddDebugLogLineN(logClientUDP,
 				"No rendezvous at " + Uint32_16toStringIP_Port(host, port) +
 					": it answered not found");

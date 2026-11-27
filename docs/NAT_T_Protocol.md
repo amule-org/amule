@@ -926,9 +926,11 @@ says. Before this, a firewalled aMule did not try such a source at all.
   `ExpectNatTPeer()`, so it answers the source's CAPS, then punches that
   endpoint with the punch schedule and port sweep. Its sweeps spend a budget of
   their own, apart from the server paths' and from the served side's, whose
-  forwarded rendezvous can be forged. When a Kad result for a source we already
-  know brings a new buddy address, the Kad endpoint of that record is taken
-  with it.
+  forwarded rendezvous can be forged. A Kad result for a source we already know
+  gives its Kad endpoint whenever it names the buddy we use: a new address taken
+  for a source that had none, or the address we already have, as a source from
+  extended source exchange arrives with. A result naming another buddy is kept
+  as the candidate with its Kad endpoint, and a switch to it takes both.
 - **Buddy ID.** A buddy compares the first 16 bytes in its own layout. A buddy
   ID read from Kad (`TAG_BUDDYHASH`) is sent back in the eMule layout the
   publisher wrote, which eMule, eMuleAI and eMuleQt compare in; our own buddy
@@ -952,14 +954,15 @@ says. Before this, a firewalled aMule did not try such a source at all.
   attempt per source is in flight, and at most 32 at once.
 - **Retry.** A source left `DS_LOWTOLOWIP` is asked again from the download
   queue's tick, like the server paths' retries, once its cooldown is over or the
-  cap leaves room.
+  cap leaves room, and only while no server path works on it.
 - **No rendezvous.** A source that does not speak the rendezvous (stock eMule,
   and aMule before the served side) reads the `0xA0` as a reask for a zero file
   hash and answers `OP_FILENOTFOUND`. During an attempt that answer ends the
   attempt and is not taken as a dead source: the source is kept, and never
-  asked for a rendezvous again in this session. An `OP_FILENOTFOUND` from a
-  known source at exactly that endpoint, behind the same shared address, is
-  that source's own answer and is handled as before.
+  asked for a rendezvous again in this session. A known source at exactly that
+  endpoint is the target only when it has the attempt's user hash, as a source
+  that connected to us before does; any other one, behind the same shared
+  address, answers its own reask and is handled as before.
 - **Statistics.** `buddy.own.requested_rendezvous` counts `started`, `sent`
   (each `0x94`), `punched`, `fallback_dials`, and how attempts end: `connected`,
   `timed_out` or `no_rendezvous`. Each step is logged under client UDP.

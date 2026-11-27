@@ -304,11 +304,15 @@ public:
 	}
 
 	// An OP_FILENOTFOUND from an attempt's target: it read our 0xA0 as a reask. Nullopt when no
-	// attempt is in flight there, so the caller handles the answer as before.
-	std::optional<SKadRendezvousTarget> NoRendezvous(std::uint32_t ip, std::uint16_t port)
+	// attempt is in flight there, so the caller handles the answer as before. @a knownSender is
+	// the hash of a known source at exactly that endpoint: only the attempt's own target, which
+	// may have connected to us before, ends the attempt; another source answers its own reask.
+	std::optional<SKadRendezvousTarget> NoRendezvous(std::uint32_t ip,
+		std::uint16_t port,
+		const std::optional<KadRendezvousHash> &knownSender = std::nullopt)
 	{
 		const auto match = Find(ip, port);
-		if (match == m_attempts.end()) {
+		if (match == m_attempts.end() || (knownSender && *knownSender != match->target.hash)) {
 			return std::nullopt;
 		}
 		const SKadRendezvousTarget target = match->target;
