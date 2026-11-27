@@ -60,10 +60,10 @@
 #include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
-#include "KadBuddyIdLayout.h" // Needed for IsKadCallbackRetryDue
-#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "KadBuddyIdLayout.h"    // Needed for IsKadCallbackRetryDue
 #include "NatRendezvousPolicy.h" // Needed for SKadEndpoint
-#include "NatServerHolePunch.h"  // Needed for callback request policy
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+#include "NatServerHolePunch.h" // Needed for callback request policy
 #if defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
 #endif
