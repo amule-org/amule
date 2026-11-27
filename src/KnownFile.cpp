@@ -1074,6 +1074,7 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 		UsesExtendedSourceExchange(forClient->GetModCapabilities()));
 	const bool peerSkipsUnknownTags =
 		forClient->GetModCapabilities().SkipsUnknownExtendedSourceExchangeTags();
+	const bool peerDeclaresNatT = forClient->GetModCapabilities().DeclaresNatTraversal();
 	const ExtSX::SAddressFilter addressFilter = MakeExtendedSourceAddressFilter();
 	uint32 cDbgNoSrc = 0;
 
@@ -1081,10 +1082,15 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 	for (; it != m_ClientUploadList.end(); ++it) {
 		const CUpDownClient *cur_src = it->GetClient();
 
-		// Only the extended format can describe how to reach a LowID. A route no hello has
-		// proved may lead to another host: it is not passed on.
-		if ((cur_src->HasLowID() && !packet.IsExtended()) || cur_src == forClient ||
-			cur_src->IsRouteUnproven() ||
+		// Only the extended format describes every route to a LowID; the classic one only a
+		// server, for a NAT-T peer. A route no hello has proved may lead to another host: it is
+		// not passed on.
+		if ((cur_src->HasLowID() && !packet.IsExtended() &&
+			    !ExtSX::ShouldOfferClassicLowID(packet.GetVersion(),
+				    peerDeclaresNatT,
+				    cur_src->GetServerIP(),
+				    cur_src->GetServerPort())) ||
+			cur_src == forClient || cur_src->IsRouteUnproven() ||
 			!(cur_src->GetUploadState() == US_UPLOADING ||
 				cur_src->GetUploadState() == US_ONUPLOADQUEUE)) {
 			continue;
@@ -1140,8 +1146,10 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 		}
 
 		if (bNeeded && packet.IsExtended()) {
-			const ExtSX::SRecord record = cur_src->GetExtendedSourceRecord(addressFilter);
-			if (cur_src->HasLowID() && !ExtSX::ShouldOfferLowID(record, peerSkipsUnknownTags)) {
+			const ExtSX::SRecord record =
+				cur_src->GetExtendedSourceRecord(addressFilter, peerDeclaresNatT);
+			if (cur_src->HasLowID() &&
+				!ExtSX::ShouldOfferLowID(record, peerSkipsUnknownTags, peerDeclaresNatT)) {
 				continue;
 			}
 			packet.AddExtendedSource(record, peerSkipsUnknownTags);
@@ -1160,7 +1168,7 @@ CPacket *CKnownFile::CreateSrcInfoPacket(
 				cur_src->GetServerIP(),
 				cur_src->GetServerPort(),
 				cur_src->GetUserHash(),
-				cur_src->GetCryptOptions());
+				cur_src->GetSourceExchangeOptions(peerDeclaresNatT));
 
 			if (packet.IsFull()) {
 				break;

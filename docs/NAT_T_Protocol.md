@@ -628,6 +628,17 @@ server has fewer than 15 of its 30 targets, so the download side keeps at least 
 
 The runtime setting remains off by default.
 
+### LowID sources in source exchange
+
+A source-exchange answer normally offers a LowID only in the extended format, with a Kad buddy
+route, or with the direct callback to a peer that skips unknown tags. A peer whose hello declares a
+NAT-T transport (`CT_MOD_MISCOPTIONS` bit 1 or bit 4) also gets a LowID that has an IPv4 server,
+since it reaches that source through the server paths above. The extended format carries it, and
+the classic one from version 3, whose hybrid IDs keep a LowID apart from an IP. For that peer each
+source's connect options also carry the NAT-T transports the source's hello declared (`0x80` uTP,
+`0x40` QUIC), as eMuleAI writes them. Every other peer gets the answer as before. A firewalled
+aMule declares the bits, and keeps such a source while a server path can reach it (see above).
+
 ## Lugdunum NAT callback (eserver 17.15+)
 
 Lugdunum servers relay a NAT callback between two LowID clients on the same

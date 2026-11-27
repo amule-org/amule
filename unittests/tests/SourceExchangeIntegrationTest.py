@@ -19,6 +19,10 @@ from OfferFilesInteropPeer import receive
 from ShareWatcherMoveIntegrationTest import wait_shared
 
 PARTSIZE = 9728000
+# CT_MOD_MISCOPTIONS (0xAA) bits: Extended Source Exchange, uTP NAT-T, QUIC NAT-T.
+MOD_EXTXS, MOD_NATT_UTP, MOD_NATT_QUIC = 0x01, 0x02, 0x10
+LOWID = 0x1234
+LOWID_SERVER = ('203.0.113.5', 4661)
 
 
 def local_address():
@@ -42,19 +46,21 @@ def send(peer, protocol, opcode, data=b''):
 
 class Peer:
     def __init__(self, stack, address, daemon_port, name, sx1=1, sx2=False, extended=True,
-                 identity_port=None):
+                 identity_port=None, hello_id=None, server=None, mod_misc=None):
         self.sock = stack.enter_context(socket.socket())
         self.sock.bind((address, 0))
         self.sock.settimeout(10)
         self.sock.connect((address, daemon_port))
         self.port = identity_port or self.sock.getsockname()[1]
         self.user_hash = hashlib.md5(name.encode()).digest()
-        tags = b''.join(b'\x03\x01\x00' + bytes([key]) + struct.pack('<I', value)
-                        for key, value in ((0xfb, 50 << 10),
-                                           (0xfa, (sx1 << 12) | (int(extended) << 8)),
-                                           (0xfe, int(sx2) << 10)))
-        self.hello = (b'\x10' + self.user_hash + socket.inet_aton(address)
-                      + struct.pack('<HI', self.port, 3) + tags + bytes(6))
+        values = [(0xfb, 50 << 10), (0xfa, (sx1 << 12) | (int(extended) << 8)), (0xfe, int(sx2) << 10)]
+        if mod_misc is not None:
+            values.append((0xaa, mod_misc))
+        tags = b''.join(b'\x03\x01\x00' + bytes([key]) + struct.pack('<I', value) for key, value in values)
+        ident = struct.pack('<I', hello_id) if hello_id is not None else socket.inet_aton(address)
+        server_bytes = socket.inet_aton(server[0]) + struct.pack('<H', server[1]) if server else bytes(6)
+        self.hello = (b'\x10' + self.user_hash + ident
+                      + struct.pack('<HI', self.port, len(values)) + tags + server_bytes)
         self.extended = extended
         send(self.sock, 0xe3, 0x01, self.hello)
         self.until(0x4c)
@@ -64,7 +70,7 @@ class Peer:
         while True:
             self.sock.settimeout(max(0.01, deadline - time.monotonic()))
             opcode, data = receive(self.sock)
-            if opcode == wanted:
+            if opcode == wanted or (isinstance(wanted, tuple) and opcode in wanted):
                 return data
             assert time.monotonic() < deadline, f'no reply opcode {wanted:#x}'
 
@@ -82,6 +88,17 @@ def seed_upload(stack, address, daemon_port, file_hash, name):
     peer.prepare(file_hash, 1, 1)
     send(peer.sock, 0xe3, 0x54, file_hash)
     peer.until(0x55)
+    return peer
+
+
+def seed_lowid_upload(stack, address, daemon_port, file_hash):
+    """A LowID on its own server whose hello declares QUIC NAT-T, uploading or queued."""
+    peer = Peer(stack, address, daemon_port, 'lowid-source', hello_id=LOWID, server=LOWID_SERVER,
+                mod_misc=MOD_NATT_QUIC)
+    peer.prepare(file_hash, 1, 1)
+    send(peer.sock, 0xe3, 0x54, file_hash)
+    # An upload slot (OP_ACCEPTUPLOADREQ) or a queue rank: either state is offered.
+    peer.until((0x55, 0x5c, 0x60))
     return peer
 
 
@@ -157,6 +174,38 @@ def check_reply(replies, file_hash, source, address, version, sx2):
     assert data == expected, ('wrong source wire bytes', data.hex(), expected.hex())
 
 
+def check_lowid_reply(replies, file_hash, source, options):
+    assert len(replies) == 1, ('expected one source reply', replies)
+    opcode, data = replies[0]
+    expected = (b'\x04' + file_hash + b'\x01\x00' + struct.pack('<IH', LOWID, source.port)
+                + socket.inet_aton(LOWID_SERVER[0]) + struct.pack('<H', LOWID_SERVER[1])
+                + source.user_hash + bytes([options]))
+    assert opcode == 0x84, opcode
+    assert data == expected, ('wrong LowID source bytes', data.hex(), expected.hex())
+
+
+def check_lowid_offers(stack, address, daemon_port, file_hash):
+    """A LowID with its server goes only to a peer whose hello declares NAT-T, with the transports
+    the source declared, in the classic and the extended format."""
+    source = seed_lowid_upload(stack, address, daemon_port, file_hash)
+    count = 0
+    for mod_misc, offered in ((None, False), (MOD_NATT_QUIC, True), (MOD_NATT_UTP, True),
+                              (MOD_EXTXS, False), (MOD_EXTXS | MOD_NATT_QUIC, True)):
+        with ExitStack() as clients:
+            peer = Peer(clients, address, daemon_port, f'lowid-query-{count}', 4, True, mod_misc=mod_misc)
+            peer.prepare(file_hash, 1, 0)
+            replies = query(peer, file_hash, 1, 0, 'standalone', 4)
+            if not offered:
+                assert not replies, ('LowID offered to a peer without NAT-T', hex(mod_misc or 0), replies)
+            elif mod_misc & MOD_EXTXS:
+                assert len(replies) == 1, ('expected one extended reply', replies)
+                assert socket.inet_aton(LOWID_SERVER[0]) in replies[0][1], 'no server in the record'
+            else:
+                check_lowid_reply(replies, file_hash, source, 0x40)
+            count += 1
+    return count
+
+
 def run(binary):
     address = local_address()
     with tempfile.TemporaryDirectory(prefix='amule-source-exchange-') as directory, ExitStack() as stack:
@@ -168,11 +217,12 @@ def run(binary):
         (root / 'Temp/001.part').write_bytes(content)
         (root / 'Temp/001.part.met').write_bytes(part_met(completed_hash, 'completed.bin', len(content)))
         (root / 'Incoming/shared.bin').write_bytes(b'shared file' * 1024)
+        (root / 'Incoming/lowid.bin').write_bytes(b'lowid source' * 1024)
         ports = free_ports(2, peer_index=1)
         write_amule_conf(root, ports[0], Address=address, Port=ports[1], UDPEnable=0,
                          FilterLanIPs=0, MaxUpload=0, MaxConnections=500)
         proc, ec = stack.enter_context(running_daemon(binary, root, ports))
-        files = wait_shared(proc, ec, ['shared.bin', 'completed.bin'], 30)
+        files = wait_shared(proc, ec, ['shared.bin', 'completed.bin', 'lowid.bin'], 30)
         wait_for(proc, 'completed download data', lambda: (root / 'Incoming/completed.bin').exists())
         assert (root / 'Incoming/completed.bin').read_bytes() == content
         cases = []
@@ -206,6 +256,7 @@ def run(binary):
                         else:
                             check_reply(replies, file_hash, source, address, 4, True)
                         count += 1
+        count += check_lowid_offers(stack, address, ports[1], files['lowid.bin'])
         # Exact standalone framing is checked before any file lookup or reply is attempted.
         for opcode, valid in ((0x81, partial_hash), (0x83, b'\x04\x00\x00' + partial_hash)):
             for bad in (valid[:-1], valid + b'\x00'):

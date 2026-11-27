@@ -102,10 +102,10 @@ TEST(KadServedBuddyPolicy, ARendezvousIsDroppedOnlyWhenBothDeclaredAndShareNoTra
 	ASSERT_TRUE(ForwardsRendezvous(0x3F, 0x80));
 }
 
-TEST(KadServedBuddyPolicy, WeDeclareTheTransportsWeCanUse)
+TEST(KadServedBuddyPolicy, EachTransportHasItsConnectOptionsBit)
 {
-	ASSERT_EQUALS(0, LocalNatTConnectOptions(false, false));
-	ASSERT_EQUALS(0x80, LocalNatTConnectOptions(true, false));
-	ASSERT_EQUALS(0x40, LocalNatTConnectOptions(false, true));
-	ASSERT_EQUALS(0xC0, LocalNatTConnectOptions(true, true));
+	ASSERT_EQUALS(0, NatTConnectOptionsFor(false, false));
+	ASSERT_EQUALS(0x80, NatTConnectOptionsFor(true, false));
+	ASSERT_EQUALS(0x40, NatTConnectOptionsFor(false, true));
+	ASSERT_EQUALS(0xC0, NatTConnectOptionsFor(true, true));
 }

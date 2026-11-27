@@ -1212,7 +1212,7 @@ uint8_t CClientUDPSocket::ServedNatTTransports()
 	if (!Ok()) {
 		return 0;
 	}
-	return Kademlia::LocalNatTConnectOptions(m_utp.IsAvailable(), quicEnabled);
+	return Kademlia::NatTConnectOptionsFor(m_utp.IsAvailable(), quicEnabled);
 #else
 	return 0;
 #endif
