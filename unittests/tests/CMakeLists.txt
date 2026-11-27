@@ -3466,6 +3466,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/KadSourceBuddyIdIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (KadSourceBuddyIdIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME KadSourceNatTransportsIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/KadSourceNatTransportsIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (KadSourceNatTransportsIntegrationTest PROPERTIES LABELS "integration")
 		# One case per entry, so each fits the CI time limit.
 		foreach (buddies IN ITEMS one two)
 			add_test (NAME KadBuddyCallbackRetryIntegrationTest-${buddies}
@@ -4312,6 +4317,7 @@ foreach (ec_wire_test IN ITEMS
 	KadPopulatedLookupECTest
 	KadReceiverKeyLogIntegrationTest
 	KadSourceBuddyIdIntegrationTest
+	KadSourceNatTransportsIntegrationTest
 	KadSourceTagsECTest
 	KnownHistoryIntegrationTest
 	KnownMetKadAckIntegrationTest

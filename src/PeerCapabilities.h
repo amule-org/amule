@@ -243,6 +243,18 @@ constexpr uint32_t LocalAdvertisedModMiscOptions(bool firewalled, uint8_t served
 	       ((natT & 0x40) != 0 ? MOD_MISCOPT_NAT_TRAVERSAL_QUIC : 0u);
 }
 
+//! The NAT-T transports a connect-options byte declares: 0x80 uTP, 0x40 QUIC (eMuleAI).
+constexpr uint8_t DeclaredNatTTransports(uint8_t connectOptions)
+{
+	return static_cast<uint8_t>(connectOptions & 0xC0);
+}
+
+//! eMuleQt's TAG_NATT, as the connect-options bit eMuleAI puts in TAG_ENCRYPTION: QUIC is 0x40.
+constexpr uint8_t KadNatTagTransports(uint8_t natTag)
+{
+	return (natTag & 0x01) != 0 ? 0x40 : 0;
+}
+
 //! Whether source requests and answers with this peer use Extended Source Exchange.
 inline bool UsesExtendedSourceExchange(const CPeerCapabilities &peer)
 {

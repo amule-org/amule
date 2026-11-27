@@ -52,7 +52,7 @@
 #include <ec/cpp/ECID.h>      // Needed for CECID
 #include "BitVector.h"        // Needed for BitVector
 #include "ClientRef.h"        // Needed for debug defines
-#include "PeerCapabilities.h" // Needed for CPeerCapabilities
+#include "PeerCapabilities.h" // Needed for CPeerCapabilities, DeclaredNatTTransports
 #include "ProtocolPeerIdentity.h"
 #include "DeadSourceKey.h"     // Needed for CDeadSourceKey
 #include "StoredSourceRoute.h" // Needed for SStoredSourceRoute
@@ -1169,6 +1169,14 @@ public:
 	void SetConnectOptions(uint8_t options,
 		bool encryption = true,
 		bool callback = true); // shortcut, sets crypt, callback, etc from the tagvalue we receive
+	//! The NAT-T transports a Kad record or a source-exchange answer declared for this source, as
+	//! connect-options bits (0x80 uTP, 0x40 QUIC). Another node's word, not the source's hello,
+	//! so a hint only; every copy of the source adds its own.
+	uint8_t GetDeclaredNatTTransports() const { return m_declaredNatTTransports; }
+	void AddDeclaredNatTTransports(uint8_t connectOptions)
+	{
+		m_declaredNatTTransports |= DeclaredNatTTransports(connectOptions);
+	}
 	bool ShouldReceiveCryptUDPPackets() const;
 	//! Whether an ed2k stream to this peer should carry obfuscation.
 	bool WantsStreamObfuscation() const;
@@ -1490,6 +1498,7 @@ private:
 
 	/* eMuleAI vendor capabilities, parsed from the CT_MOD_* hello tags */
 	CPeerCapabilities m_modCapabilities;
+	uint8_t m_declaredNatTTransports = 0;
 	uint8_t m_modIPv6[16];
 	uint8_t m_servingBuddyIPv6[16];
 	bool m_hasModIPv6;

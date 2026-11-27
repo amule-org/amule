@@ -4406,6 +4406,7 @@ std::vector<CDeadSourceKey> CUpDownClient::DeadSourceKeys() const
 void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 {
 	AdoptKadBuddy(duplicate);
+	AddDeclaredNatTTransports(duplicate.GetDeclaredNatTTransports());
 
 	const SStoredSourceRoute incomingRoute = StoredRouteOf(duplicate);
 	SSourceRouteMergeFacts facts;
