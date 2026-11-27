@@ -319,13 +319,39 @@ inline bool ShouldDialIPv6(const SRecord &record, SKadSourceFacts app)
 	return ShouldContactKadSourceOverIPv6(app);
 }
 
+//! A LowID's own server, through which a peer that declared NAT-T reaches it: the ed2k-server
+//! hole punch or the cross-server callback.
+inline bool HasServerRoute(uint32_t serverIP, uint16_t serverPort)
+{
+	return serverIP != 0 && serverPort != 0;
+}
+
 //! Whether to send one of our LowID sources. The record must already be sanitized and carry
 //! only a buddy ID learned from Kad.
-inline bool ShouldOfferLowID(const SRecord &record, bool peerSkipsUnknownTags)
+inline bool ShouldOfferLowID(const SRecord &record, bool peerSkipsUnknownTags, bool peerDeclaresNatT)
 {
 	const bool buddyRoute = record.buddyID && record.buddyPort != 0;
 	// Without the user hash and connect options a peer cannot do the direct callback.
-	return buddyRoute || (peerSkipsUnknownTags && HasDirectCallback(record));
+	return buddyRoute || (peerSkipsUnknownTags && HasDirectCallback(record)) ||
+	       (peerDeclaresNatT && HasServerRoute(record.serverIP, record.serverPort));
+}
+
+//! The classic format carries a LowID only from version 3, whose hybrid IDs keep it apart from an
+//! IP, and only with its server, to a peer that declared NAT-T.
+inline bool ShouldOfferClassicLowID(
+	uint8_t version, bool peerDeclaresNatT, uint32_t serverIP, uint16_t serverPort)
+{
+	return version >= 3 && peerDeclaresNatT && HasServerRoute(serverIP, serverPort);
+}
+
+//! A source's connect options plus the NAT-T transports its hello declared (0x80 uTP, 0x40 QUIC),
+//! for a peer that declared NAT-T, as eMuleAI writes them.
+inline uint8_t WithSourceNatT(uint8_t options, bool sourceUtp, bool sourceQuic, bool peerDeclaresNatT)
+{
+	if (!peerDeclaresNatT) {
+		return options;
+	}
+	return static_cast<uint8_t>(options | (sourceUtp ? 0x80 : 0) | (sourceQuic ? 0x40 : 0));
 }
 
 } // namespace ExtSX

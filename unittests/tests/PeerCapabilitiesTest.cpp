@@ -159,6 +159,18 @@ TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 	ASSERT_EQUALS(MOD_MISCOPT_KNOWN_MASK, caps.KnownBits());
 }
 
+TEST(PeerCapabilities, EitherNatTBitDeclaresNatTraversal)
+{
+	CPeerCapabilities caps;
+	ASSERT_FALSE(caps.DeclaresNatTraversal());
+	caps.SetFromWire(MOD_MISCOPT_EXTENDED_XS | MOD_MISCOPT_IPV6);
+	ASSERT_FALSE(caps.DeclaresNatTraversal());
+	caps.SetFromWire(MOD_MISCOPT_NAT_TRAVERSAL);
+	ASSERT_TRUE(caps.DeclaresNatTraversal());
+	caps.SetFromWire(MOD_MISCOPT_NAT_TRAVERSAL_QUIC);
+	ASSERT_TRUE(caps.DeclaresNatTraversal());
+}
+
 // Extended Source Exchange and its tag skipping always; the NAT-T transports only while firewalled.
 TEST(PeerCapabilities, AdvertisesNatTTransportsOnlyWhileFirewalled)
 {

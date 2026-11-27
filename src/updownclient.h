@@ -1016,8 +1016,12 @@ public:
 	{
 		return !m_kadPointerWaiting && Kademlia::IsKadCallbackRetryDue(now, m_kadCallbackRetryTime);
 	}
-	// This source as an Extended Source Exchange record, sanitized with `filter`.
-	ExtSX::SRecord GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const;
+	// This source as an Extended Source Exchange record, sanitized with `filter`. For a peer that
+	// declared NAT-T, its options carry the NAT-T transports this source's hello declared.
+	ExtSX::SRecord GetExtendedSourceRecord(
+		const ExtSX::SAddressFilter &filter, bool peerDeclaresNatT) const;
+	// The connect options of this source in a classic source exchange answer, likewise.
+	uint8_t GetSourceExchangeOptions(bool peerDeclaresNatT) const;
 	/* Role: we serve this buddy, or it serves us */
 	void SetServedBuddy(bool served) { m_bServedBuddy = served; }
 	bool IsServedBuddy() const { return m_bServedBuddy; }

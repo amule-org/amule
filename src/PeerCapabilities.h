@@ -108,6 +108,7 @@ public:
 	bool SupportsIPv6() const { return Has(MOD_MISCOPT_IPV6); }
 	bool SupportsServingBuddyPull() const { return Has(MOD_MISCOPT_SERVING_BUDDY_PULL); }
 	bool SupportsNatTraversalQuic() const { return Has(MOD_MISCOPT_NAT_TRAVERSAL_QUIC); }
+	bool DeclaresNatTraversal() const { return SupportsNatTraversal() || SupportsNatTraversalQuic(); }
 	bool SkipsUnknownExtendedSourceExchangeTags() const { return Has(MOD_MISCOPT_EXTXS_SKIP_TAGS); }
 
 	/**

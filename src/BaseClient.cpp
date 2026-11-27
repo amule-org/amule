@@ -4498,7 +4498,16 @@ void CUpDownClient::AdoptContactRoutes(const CUpDownClient &duplicate)
 	}
 }
 
-ExtSX::SRecord CUpDownClient::GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const
+uint8_t CUpDownClient::GetSourceExchangeOptions(bool peerDeclaresNatT) const
+{
+	return ExtSX::WithSourceNatT(GetCryptOptions(),
+		m_modCapabilities.SupportsNatTraversal(),
+		m_modCapabilities.SupportsNatTraversalQuic(),
+		peerDeclaresNatT);
+}
+
+ExtSX::SRecord CUpDownClient::GetExtendedSourceRecord(
+	const ExtSX::SAddressFilter &filter, bool peerDeclaresNatT) const
 {
 	ExtSX::SRecord record;
 	record.hybridID = GetUserIDHybrid();
@@ -4516,7 +4525,8 @@ ExtSX::SRecord CUpDownClient::GetExtendedSourceRecord(const ExtSX::SAddressFilte
 		record.ipv6 = ipv6;
 	}
 	const uint8_t connectOptions =
-		GetCryptOptions() | (SupportsDirectUDPCallback() ? uint8_t{ 0x08 } : uint8_t{ 0 });
+		static_cast<uint8_t>(GetSourceExchangeOptions(peerDeclaresNatT) |
+				     (SupportsDirectUDPCallback() ? uint8_t{ 0x08 } : uint8_t{ 0 }));
 	if (connectOptions != 0) {
 		record.connectOptions = connectOptions;
 	}
