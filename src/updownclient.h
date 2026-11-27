@@ -1173,10 +1173,8 @@ public:
 	//! Our server refused our OP_CALLBACKREQUEST for this client. A download still waiting on it
 	//! moves to its next route. Returns true when the client is to be deleted.
 	bool ServerCallbackRefused();
-#ifdef ENABLE_IPV6
-	//! The same, for a refusal that names this client and gives the IPv6 callback's reason.
-	bool ServerCallbackRefused(std::uint8_t ipv6Reason);
-#endif
+	//! The same, for a refusal that names this client and gives a reason (ServerCallbackRefusal).
+	bool ServerCallbackRefused(std::uint8_t reason);
 	//! Our request's answer window passed (CServerCallbackRequests).
 	void ServerCallbackExpired();
 #ifdef ENABLE_IPV6

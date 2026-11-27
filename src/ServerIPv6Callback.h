@@ -28,8 +28,9 @@
 // The IPv6 server callback: a LowID requester whose IPv6 the server's dial-back reached asks it
 // (OP_IPV6_CALLBACK_REQUEST) to have a LowID source dial that IPv6 (OP_IPV6_CALLBACKREQUESTED).
 
-#include "ServerIPv6Verdict.h" // Needed for EServerIPv6Verdict
-#include "SourceRoutePolicy.h" // Needed for kNatStepAnswerWindowMs
+#include "ServerCallbackRequests.h" // Needed for ServerCallbackRefusal
+#include "ServerIPv6Verdict.h"      // Needed for EServerIPv6Verdict
+#include "SourceRoutePolicy.h"      // Needed for kNatStepAnswerWindowMs
 
 #include <array>
 #include <cstddef>
@@ -74,41 +75,6 @@ inline std::optional<SIPv6CallbackRequested> ParseIPv6CallbackRequested(
 	return parsed;
 }
 
-//! A refused request is answered with OP_CALLBACK_FAIL <target LowID 4 LE><reason 1>.
-struct SIPv6CallbackFailure
-{
-	std::uint32_t targetId = 0;
-	std::uint8_t reason = 0;
-};
-
-//! An empty OP_CALLBACK_FAIL answers OP_CALLBACKREQUEST and names no request.
-inline std::optional<SIPv6CallbackFailure> ParseIPv6CallbackFailure(
-	const std::uint8_t *data, std::size_t size)
-{
-	if (data == nullptr || size < 5) {
-		return std::nullopt;
-	}
-	SIPv6CallbackFailure failure;
-	failure.targetId = static_cast<std::uint32_t>(data[0]) | (static_cast<std::uint32_t>(data[1]) << 8) |
-			   (static_cast<std::uint32_t>(data[2]) << 16) |
-			   (static_cast<std::uint32_t>(data[3]) << 24);
-	failure.reason = data[4];
-	return failure;
-}
-
-//! The reasons ed2k-server sends.
-namespace IPv6CallbackRefusal
-{
-constexpr std::uint8_t NotOffered = 1;
-constexpr std::uint8_t RequesterHighID = 2;
-constexpr std::uint8_t RequesterNotVerified = 3;
-constexpr std::uint8_t SelfTarget = 4;
-constexpr std::uint8_t TargetGone = 5;
-constexpr std::uint8_t TargetNotOptedIn = 6;
-constexpr std::uint8_t TargetUnreachable = 7;
-constexpr std::uint8_t RateLimited = 8;
-} // namespace IPv6CallbackRefusal
-
 //! The relay allowance refills at 10 a second, shared with OP_CALLBACKREQUEST and the hole punch:
 //! the retries of many sources are spread over this time.
 constexpr std::uint64_t kIPv6CallbackRetryAfterRateLimitMs = 30'000;
@@ -128,45 +94,21 @@ inline SIPv6CallbackRefusalAction ActOnIPv6CallbackRefusal(std::uint8_t reason)
 {
 	SIPv6CallbackRefusalAction action;
 	switch (reason) {
-	case IPv6CallbackRefusal::NotOffered:
-	case IPv6CallbackRefusal::RequesterHighID:
-	case IPv6CallbackRefusal::RequesterNotVerified:
+	case ServerCallbackRefusal::NotOffered:
+	case ServerCallbackRefusal::RequesterHighID:
+	case ServerCallbackRefusal::RequesterNotVerified:
 		action.serverRefusesUs = true;
 		break;
-	case IPv6CallbackRefusal::TargetNotOptedIn:
+	case ServerCallbackRefusal::TargetNotOptedIn:
 		action.targetDeclines = true;
 		break;
-	case IPv6CallbackRefusal::RateLimited:
+	case ServerCallbackRefusal::RateLimited:
 		action.retrySoon = true;
 		break;
 	default:
 		break;
 	}
 	return action;
-}
-
-inline const char *IPv6CallbackRefusalText(std::uint8_t reason)
-{
-	switch (reason) {
-	case IPv6CallbackRefusal::NotOffered:
-		return "not offered to us";
-	case IPv6CallbackRefusal::RequesterHighID:
-		return "we are HighID";
-	case IPv6CallbackRefusal::RequesterNotVerified:
-		return "our IPv6 is not verified";
-	case IPv6CallbackRefusal::SelfTarget:
-		return "the source is us";
-	case IPv6CallbackRefusal::TargetGone:
-		return "the source is gone";
-	case IPv6CallbackRefusal::TargetNotOptedIn:
-		return "the source did not opt in";
-	case IPv6CallbackRefusal::TargetUnreachable:
-		return "the source is unreachable";
-	case IPv6CallbackRefusal::RateLimited:
-		return "over the relay allowance";
-	default:
-		return "unknown reason";
-	}
 }
 
 struct SIPv6CallbackRequestFacts

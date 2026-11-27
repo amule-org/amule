@@ -25,6 +25,8 @@
 #include <muleunit/test.h>
 #include "ServerCallbackRequests.h"
 
+#include <vector>
+
 using namespace muleunit;
 
 DECLARE_SIMPLE(ServerCallbackRequests)
@@ -126,4 +128,19 @@ TEST(ServerCallbackRequests, ARefusalThatNamesItsTargetSkipsAnEndedWindow)
 	ASSERT_FALSE(requests.TakeFirst(kWindowMs + 1, [](int client) { return client == 1; }).has_value());
 	// The ended request still goes out once as expired.
 	ASSERT_EQUALS(1U, requests.TakeExpired(kWindowMs + 1).size());
+}
+
+TEST(ServerCallbackRequests, ARefusalNamesItsTargetAndReason)
+{
+	const std::vector<std::uint8_t> data{ 0x77, 0x77, 0x00, 0x00, ServerCallbackRefusal::TargetGone };
+	const std::optional<SServerCallbackRefusal> refusal =
+		ParseServerCallbackRefusal(data.data(), data.size());
+	ASSERT_TRUE(refusal.has_value());
+	// Little-endian, as in OP_LOWID_HOLEPUNCH_FAIL.
+	ASSERT_EQUALS(0x7777U, refusal->targetId);
+	ASSERT_EQUALS(ServerCallbackRefusal::TargetGone, refusal->reason);
+	// A server other than ed2k-server refuses OP_CALLBACKREQUEST with an empty one.
+	ASSERT_FALSE(ParseServerCallbackRefusal(data.data(), 0).has_value());
+	ASSERT_FALSE(ParseServerCallbackRefusal(data.data(), 4).has_value());
+	ASSERT_FALSE(ParseServerCallbackRefusal(nullptr, 5).has_value());
 }

@@ -32,6 +32,66 @@
 #include <optional>
 #include <vector>
 
+//! An OP_CALLBACK_FAIL that names its request: <target LowID 4 LE><reason 1>. ed2k-server sends it
+//! for OP_IPV6_CALLBACK_REQUEST, and since andrey23127/ed2k-server#63 for OP_CALLBACKREQUEST too.
+//! Other servers refuse OP_CALLBACKREQUEST with an empty one.
+struct SServerCallbackRefusal
+{
+	std::uint32_t targetId = 0;
+	std::uint8_t reason = 0;
+};
+
+inline std::optional<SServerCallbackRefusal> ParseServerCallbackRefusal(
+	const std::uint8_t *data, std::size_t size)
+{
+	if (data == nullptr || size < 5) {
+		return std::nullopt;
+	}
+	SServerCallbackRefusal refusal;
+	refusal.targetId = static_cast<std::uint32_t>(data[0]) | (static_cast<std::uint32_t>(data[1]) << 8) |
+			   (static_cast<std::uint32_t>(data[2]) << 16) |
+			   (static_cast<std::uint32_t>(data[3]) << 24);
+	refusal.reason = data[4];
+	return refusal;
+}
+
+//! ed2k-server's reasons, one table for both requests. OP_CALLBACKREQUEST gets only 5, 7 and 8.
+namespace ServerCallbackRefusal
+{
+constexpr std::uint8_t NotOffered = 1;
+constexpr std::uint8_t RequesterHighID = 2;
+constexpr std::uint8_t RequesterNotVerified = 3;
+constexpr std::uint8_t SelfTarget = 4;
+constexpr std::uint8_t TargetGone = 5;
+constexpr std::uint8_t TargetNotOptedIn = 6;
+constexpr std::uint8_t TargetUnreachable = 7;
+constexpr std::uint8_t RateLimited = 8;
+} // namespace ServerCallbackRefusal
+
+inline const char *ServerCallbackRefusalText(std::uint8_t reason)
+{
+	switch (reason) {
+	case ServerCallbackRefusal::NotOffered:
+		return "not offered to us";
+	case ServerCallbackRefusal::RequesterHighID:
+		return "we are HighID";
+	case ServerCallbackRefusal::RequesterNotVerified:
+		return "our IPv6 is not verified";
+	case ServerCallbackRefusal::SelfTarget:
+		return "the source is us";
+	case ServerCallbackRefusal::TargetGone:
+		return "the source is gone";
+	case ServerCallbackRefusal::TargetNotOptedIn:
+		return "the source did not opt in";
+	case ServerCallbackRefusal::TargetUnreachable:
+		return "the source is unreachable";
+	case ServerCallbackRefusal::RateLimited:
+		return "over the relay allowance";
+	default:
+		return "unknown reason";
+	}
+}
+
 /**
  * Our callback requests to the server waiting for their peer to connect, one entry per request:
  * the server answers each one it refuses. An empty refusal (OP_CALLBACK_FAIL) names no request, so

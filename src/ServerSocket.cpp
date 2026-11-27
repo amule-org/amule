@@ -47,11 +47,12 @@
 #include "Logger.h"
 #include <common/Format.h>
 #include "IPFilter.h"
-#include "SharedFileList.h"   // Needed for CSharedFileList
-#include "NetworkFunctions.h" // Needed for IsGoodIP
-#include "GuiEvents.h"        // Needed for Notify_*
-#include "ServerIdChange.h"   // Needed for ParseIdChangeFields
-#include "PeerAddressing.h"   // Needed for IndexKey
+#include "SharedFileList.h"         // Needed for CSharedFileList
+#include "NetworkFunctions.h"       // Needed for IsGoodIP
+#include "GuiEvents.h"              // Needed for Notify_*
+#include "ServerIdChange.h"         // Needed for ParseIdChangeFields
+#include "PeerAddressing.h"         // Needed for IndexKey
+#include "ServerCallbackRequests.h" // Needed for ParseServerCallbackRefusal
 
 #include <optional>
 #ifdef ENABLE_NATT_SERVER_COORDINATION
@@ -939,26 +940,29 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 		case OP_CALLBACK_FAIL: {
 			AddDebugLogLineN(logServer, "Server: OP_CALLBACK_FAIL");
 			theStats::AddDownOverheadServer(size);
-#ifdef ENABLE_IPV6
-			if (const std::optional<SIPv6CallbackFailure> failure =
-					ParseIPv6CallbackFailure(packet, size)) {
-				const SIPv6CallbackRefusalAction action =
-					ActOnIPv6CallbackRefusal(failure->reason);
+			if (const std::optional<SServerCallbackRefusal> refusal =
+					ParseServerCallbackRefusal(packet, size)) {
 				AddDebugLogLineN(logServer,
 					CFormat("Server: OP_CALLBACK_FAIL for source %u: %s (%u)") %
-						failure->targetId % IPv6CallbackRefusalText(failure->reason) %
-						static_cast<unsigned>(failure->reason));
+						refusal->targetId %
+						ServerCallbackRefusalText(refusal->reason) %
+						static_cast<unsigned>(refusal->reason));
+#ifdef ENABLE_IPV6
+				// Reasons 1-3 and 6 refuse only OP_IPV6_CALLBACK_REQUEST, so they apply even
+				// when the request is no longer out.
+				const SIPv6CallbackRefusalAction action =
+					ActOnIPv6CallbackRefusal(refusal->reason);
 				if (action.serverRefusesUs && cur_server != nullptr) {
 					// Until an OP_SERVERIDENT offers it again.
 					cur_server->SetIPv6CallbackOffered(false);
 				}
 				if (action.targetDeclines) {
-					NoteIPv6CallbackDeclined(failure->targetId);
+					NoteIPv6CallbackDeclined(refusal->targetId);
 				}
-				theApp->clientlist->ServerCallbackRefused(*failure);
+#endif
+				theApp->clientlist->ServerCallbackRefused(*refusal);
 				break;
 			}
-#endif
 			theApp->clientlist->ServerCallbackRefused();
 			break;
 		}
