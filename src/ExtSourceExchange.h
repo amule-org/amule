@@ -25,6 +25,7 @@
 #ifndef EXTSOURCEEXCHANGE_H
 #define EXTSOURCEEXCHANGE_H
 
+#include "KadServedBuddyPolicy.h"   // Needed for NatTConnectOptionsFor
 #include "KadSourceAddressPolicy.h" // Needed for ShouldContactKadSourceOverIPv6
 #include "MD4Hash.h"
 #include "NetworkFunctions.h" // Needed for IsLowID
@@ -344,14 +345,14 @@ inline bool ShouldOfferClassicLowID(
 	return version >= 3 && peerDeclaresNatT && HasServerRoute(serverIP, serverPort);
 }
 
-//! A source's connect options plus the NAT-T transports its hello declared (0x80 uTP, 0x40 QUIC),
-//! for a peer that declared NAT-T, as eMuleAI writes them.
+//! A source's connect options plus the NAT-T transports its hello declared, for a peer that
+//! declared NAT-T, as eMuleAI writes them.
 inline uint8_t WithSourceNatT(uint8_t options, bool sourceUtp, bool sourceQuic, bool peerDeclaresNatT)
 {
 	if (!peerDeclaresNatT) {
 		return options;
 	}
-	return static_cast<uint8_t>(options | (sourceUtp ? 0x80 : 0) | (sourceQuic ? 0x40 : 0));
+	return static_cast<uint8_t>(options | Kademlia::NatTConnectOptionsFor(sourceUtp, sourceQuic));
 }
 
 } // namespace ExtSX
