@@ -1733,6 +1733,15 @@ void ParseKadFromPacket(const CECPacket *resp, KadSnapshot &out)
 		own.rendezvous.no_shared_transport = get(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_NO_SHARED_TRANSPORT);
 		own.rendezvous.accepted = get(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_ACCEPTED);
 		own.rendezvous.connected = get(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_CONNECTED);
+		own.requested_rendezvous.started = get(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_STARTED);
+		own.requested_rendezvous.sent = get(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_SENT);
+		own.requested_rendezvous.punched = get(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_PUNCHED);
+		own.requested_rendezvous.fallback_dials =
+			get(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_FALLBACK_DIALS);
+		own.requested_rendezvous.connected = get(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_CONNECTED);
+		own.requested_rendezvous.timed_out = get(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_TIMED_OUT);
+		own.requested_rendezvous.no_rendezvous =
+			get(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_NO_RENDEZVOUS);
 		out.has_buddy_counters = true;
 	}
 }

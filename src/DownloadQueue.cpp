@@ -1821,6 +1821,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		ctemp->SetBuddyID(cID, true);
 		ctemp->SetBuddyIP(buddyip);
 		ctemp->SetBuddyPort(buddyport);
+		ctemp->SetKadSourceIP(ED2KID);
 		// A marked record has a pointer behind it, published from the IP the storer recorded.
 		if (pointerVersion == KAD_POINTER_VERSION) {
 			ctemp->SetKadPointerRoute(ip, type);

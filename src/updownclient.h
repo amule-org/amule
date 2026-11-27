@@ -60,7 +60,8 @@
 #include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
-#include "KadBuddyIdLayout.h" // Needed for IsKadCallbackRetryDue
+#include "KadBuddyIdLayout.h"    // Needed for IsKadCallbackRetryDue
+#include "NatRendezvousPolicy.h" // Needed for SKadEndpoint
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "NatServerHolePunch.h" // Needed for callback request policy
 #if defined(AMULE_UTP_TRANSPORT)
@@ -442,6 +443,10 @@ private:
 	//! whether the request went out; a busy server slot is not a send.
 	bool TrySendLowIdHolePunchRequest();
 	bool m_lowIdHolePunchRequested = false;
+	//! Asks this source's buddy for a rendezvous (0x94 carrying 0xA0) and punches the source's Kad
+	//! endpoint, when it is a LowID Kad source with a buddy and nothing else can reach it. True when
+	//! an attempt started. Called last from TryToContact's LowID->LowID decline.
+	bool TrySendKadBuddyRendezvous();
 	NatServerHolePunch::HolePunchFallback m_holePunchFallback;
 	//! The server of this LowID source when it is not ours and would wake the source for us
 	//! (ed2k-server 0.9.86), else null; always null without uTP, which the dial after the answer
@@ -930,6 +935,15 @@ public:
 	/* IP */
 	void SetBuddyIP(uint32 val) { m_nBuddyIP = val; }
 	uint32 GetBuddyIP() const { return m_nBuddyIP; }
+	//! The Kad endpoint of a firewalled Kad source (type 3/5), kept apart from GetIP(), which
+	//! stays 0 so the source still matches no client by address.
+	void SetKadSourceIP(uint32 ip) { m_kadSourceIP = ip; }
+	uint32 GetKadSourceIP() const { return m_kadSourceIP; }
+	//! Kad endpoints earlier records named for this source, newest first.
+	const std::vector<NatRendezvous::SKadEndpoint> &GetFormerKadEndpoints() const
+	{
+		return m_formerKadEndpoints;
+	}
 	/* Port */
 	void SetBuddyPort(uint16 val) { m_nBuddyPort = val; }
 	uint16 GetBuddyPort() const { return m_nBuddyPort; }
@@ -1438,10 +1452,15 @@ private:
 	bool m_bServedBuddy = false;
 	uint8 m_servedBuddyOptions = 0;
 	uint32 m_nBuddyIP;
+	uint32 m_kadSourceIP = 0;
+	std::vector<NatRendezvous::SKadEndpoint> m_formerKadEndpoints;
 	uint16 m_nBuddyPort;
 	// A different buddy address from a Kad result, held back while the stored one answers.
 	uint32 m_nBuddyCandidateIP = 0;
 	uint16 m_nBuddyCandidatePort = 0;
+	// The Kad endpoint of the record that named the candidate, taken with it on a switch.
+	uint32 m_nBuddyCandidateKadIP = 0;
+	uint16 m_nBuddyCandidateKadPort = 0;
 	// The candidate is the buddy we switched away from, asked in one layout only.
 	bool m_bBuddyCandidateIsFormer = false;
 	// When the last KADEMLIA_CALLBACK_REQ was sent, and when the next one may go, 0 for at once.

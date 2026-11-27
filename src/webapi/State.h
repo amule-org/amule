@@ -713,6 +713,16 @@ struct KadBuddyOwnSnapshot
 		std::uint64_t accepted = 0;
 		std::uint64_t connected = 0;
 	} rendezvous;
+	struct
+	{
+		std::uint64_t started = 0;
+		std::uint64_t sent = 0;
+		std::uint64_t punched = 0;
+		std::uint64_t fallback_dials = 0;
+		std::uint64_t connected = 0;
+		std::uint64_t timed_out = 0;
+		std::uint64_t no_rendezvous = 0;
+	} requested_rendezvous;
 };
 
 struct KadSnapshot

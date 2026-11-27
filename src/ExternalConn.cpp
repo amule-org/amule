@@ -1481,6 +1481,19 @@ static CECEmptyTag MakeKadBuddyTag()
 		EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_NO_SHARED_TRANSPORT, own.rendezvous.noSharedTransport));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_ACCEPTED, own.rendezvous.accepted));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_RENDEZVOUS_CONNECTED, own.rendezvous.connected));
+	tag.AddTag(
+		CECTag(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_STARTED, own.requestedRendezvous.started));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_SENT, own.requestedRendezvous.sent));
+	tag.AddTag(
+		CECTag(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_PUNCHED, own.requestedRendezvous.punched));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_FALLBACK_DIALS,
+		own.requestedRendezvous.fallbackDials));
+	tag.AddTag(CECTag(
+		EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_CONNECTED, own.requestedRendezvous.connected));
+	tag.AddTag(CECTag(
+		EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_TIMED_OUT, own.requestedRendezvous.timedOut));
+	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_REQUESTED_RENDEZVOUS_NO_RENDEZVOUS,
+		own.requestedRendezvous.noRendezvous));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_NEEDED_SECONDS, own.neededMs / 1000));
 	tag.AddTag(CECTag(EC_TAG_KAD_BUDDY_OWN_MISSING_SECONDS, own.withoutBuddyMs / 1000));
 	return tag;
