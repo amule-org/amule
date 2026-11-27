@@ -172,8 +172,8 @@ the next login, even after it changed or advertising stopped.
 
 Two LowID clients on one server cannot reach each other over IPv4 without NAT traversal. When the
 requester's IPv6 accepts inbound connections and the source's does not, the server can still join
-them: it tells the source to dial the requester's IPv6. ed2k-server offers this. Its values are a
-proposal still to be agreed with eNode-go.
+them: it tells the source to dial the requester's IPv6. ed2k-server (from 0.9.90) and eNode-go
+(from v0.5.30) offer it with the same values.
 
 - **Offer:** `OP_SERVERIDENT` carries `ST_IPV6_CALLBACK` (`0xAA`), an integer whose bit 0 says
   the server takes the request below. A server sends it only to a client that announced IPv6, and
@@ -193,8 +193,8 @@ proposal still to be agreed with eNode-go.
   followed by `<crypt options 1><user hash 16>` when 17 more bytes follow, as in
   `OP_CALLBACKREQUESTED`. aMule dials it over TCP after the checks it makes on an IPv6 source from
   a server record (a global address, not our own, the address family setting, no proxy) and the
-  IP filter. eNode-go sends the short form, without an opt-in, to any client that announced IPv6.
-  aMule answers it the same way.
+  IP filter. Before v0.5.30, eNode-go sent the short form, without an opt-in, to any client that
+  announced IPv6; aMule answers that the same way.
 - **Failure:** the server answers a request it does not forward with `OP_CALLBACK_FAIL` (`0x36`),
   `<target LowID 4><reason 1>`, as `OP_LOWID_HOLEPUNCH_FAIL` (`0x62`) does. aMule ends the
   request for that target, whatever else is out. A request with no answer ends after 10 s
