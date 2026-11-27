@@ -1017,7 +1017,9 @@ says. Before this, a firewalled aMule did not try such a source at all.
   or timeout, and the hole punch, the Lugdunum callback or a cross-server
   callback until its 60 s answer window passes (`kNatStepAnswerWindowMs`), or at
   once when the server refuses the punch with a `0x62` (`OP_LOWID_HOLEPUNCH_FAIL`).
-  The server steps go first: a `0x60` (`OP_LOWID_HOLEPUNCH_REQUEST`) the request
+  A Lugdunum request held for the server's UDP key counts from when it is held,
+  since the key can take up to 20 minutes; the held request still goes out when
+  the key arrives. The server steps go first: a `0x60` (`OP_LOWID_HOLEPUNCH_REQUEST`) the request
   limits held back keeps the rendezvous waiting until it has gone out. So a source
   of our own server that the hole punch and the Lugdunum callback did not reach
   is still asked through its buddy.
