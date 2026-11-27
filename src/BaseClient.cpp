@@ -2268,8 +2268,7 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 	// StartKadRendezvous() lets it: its cooldown, the attempt in flight and the cap decide. As in
 	// TryToContact(), only while no server path works on this source: a second path would take
 	// its punch, dial the source twice and hold an attempt slot for nothing.
-	if ((m_lastContactRoute == EContactRouteReport::None ||
-		    m_lastContactRoute == EContactRouteReport::KadBuddy) &&
+	if (MayRetryKadRendezvous(m_lastContactRoute, m_serverCallbackPending) &&
 		TrySendKadBuddyRendezvous()) {
 		NoteContactStep(EContactRouteReport::KadBuddy);
 	}

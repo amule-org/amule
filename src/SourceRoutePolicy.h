@@ -210,6 +210,14 @@ inline EConnectionOpener ResolveConnectionOpener(
 //! How long a NAT-T step of ours explains a new connection: the window its rendezvous has.
 constexpr std::uint64_t kNatStepAnswerWindowMs = 60'000;
 
+//! Whether a source left waiting LowID-to-LowID may be asked for the Kad rendezvous again: only
+//! while no server path works on it. A server callback that ended leaves its route behind.
+inline bool MayRetryKadRendezvous(EContactRouteReport lastRoute, bool serverCallbackPending)
+{
+	return lastRoute == EContactRouteReport::None || lastRoute == EContactRouteReport::KadBuddy ||
+	       (lastRoute == EContactRouteReport::ServerCallback && !serverCallbackPending);
+}
+
 struct SContactInFlightFacts
 {
 	std::uint8_t downloadState = DS_NONE;
