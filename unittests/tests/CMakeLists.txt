@@ -3691,6 +3691,13 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/ServerCallbackFailIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (ServerCallbackFailIntegrationTest PROPERTIES LABELS "integration")
+		if (ENABLE_NATT_SERVER_COORDINATION AND ENABLE_UTP)
+			add_test (NAME LowIdHolePunchFailIntegrationTest
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/LowIdHolePunchFailIntegrationTest.py $<TARGET_FILE:amuled>
+			)
+			set_tests_properties (LowIdHolePunchFailIntegrationTest PROPERTIES LABELS "integration")
+		endif ()
 		if (ENABLE_IPV6)
 			add_test (NAME ServerIPv6CallbackIntegrationTest
 				COMMAND ${Python3_EXECUTABLE}
@@ -4347,6 +4354,7 @@ foreach (ec_wire_test IN ITEMS
 	LogfilePathIntegrationTest
 	LoggerRuntimeIntegrationTest
 	LoggingFormatIntegrationTest
+	LowIdHolePunchFailIntegrationTest
 	MediaProbeUnavailableTest
 	MetricsIntegrationTest
 	NetworkPreferencesIntegrationTest
@@ -4409,6 +4417,7 @@ foreach (long_test IN ITEMS
 	KadBuddyPointerType7IntegrationTest-plain:90
 	OfferFilesLiveLimitsTest:80
 	UploadRead-diagnostics-off:77
+	LowIdHolePunchFailIntegrationTest:75
 	ServerCallbackFailIntegrationTest:70
 	UploadRead-diagnostics:61
 )

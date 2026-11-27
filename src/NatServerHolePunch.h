@@ -328,7 +328,7 @@ constexpr std::uint64_t kPendingRequestTimeoutMs = 30'000;
 constexpr std::size_t kMaxPendingRequests = 8;
 
 // A hole punch that leaves its source unconnected this long failed: no 0x61 within
-// kPendingRequestTimeoutMs, a 0x62, or a dial that never completed its uTP handshake.
+// kPendingRequestTimeoutMs, or a dial that never completed its uTP handshake. A 0x62 fails it at once.
 constexpr std::uint64_t kHolePunchFallbackMs = 60'000;
 
 // ed2k-server runs Lugdunum's callback beside its hole punch, and the two can succeed on different
@@ -348,16 +348,21 @@ public:
 	{
 		m_sent = true;
 		m_tried = false;
+		m_refused = false;
 		m_sentAt = now;
 	}
+	//! The server refused the punch (0x62): the fallback is due now.
+	void OnPunchRefused() { m_refused = m_sent; }
 	void Reset() { *this = HolePunchFallback(); }
 	bool IsDue(std::uint64_t now) const
 	{
-		return ShouldFallBackToLugdunumCallback(m_sent, m_tried, m_sentAt, now);
+		return (m_refused && !m_tried) ||
+		       ShouldFallBackToLugdunumCallback(m_sent, m_tried, m_sentAt, now);
 	}
 	//! @a requested: the callback request went out, or waits for the server's UDP key.
 	void OnFallback(bool requested, std::uint64_t now)
 	{
+		m_refused = false;
 		if (requested) {
 			m_tried = true;
 		} else {
@@ -368,6 +373,7 @@ public:
 private:
 	bool m_sent = false;
 	bool m_tried = false;
+	bool m_refused = false;
 	std::uint64_t m_sentAt = 0;
 };
 
@@ -386,7 +392,8 @@ public:
 			m_pending.push_back({ targetId, now });
 		}
 	}
-	// True when a request for targetId was pending, which makes this side its requester.
+	// True when a request for targetId was pending: a 0x61 for it makes this side the requester,
+	// a 0x62 refuses it.
 	bool Take(std::uint32_t targetId, std::uint64_t now)
 	{
 		Evict(now);
@@ -397,8 +404,6 @@ public:
 		m_pending.erase(match);
 		return true;
 	}
-	// A 0x62 identifies the failed target.
-	void Release(std::uint32_t targetId) { Take(targetId, 0); }
 
 private:
 	struct Entry

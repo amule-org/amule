@@ -55,6 +55,7 @@
 #include "ServerCallbackRequests.h" // Needed for ParseServerCallbackRefusal
 
 #include <optional>
+#include <vector>
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "LugdunumNatTraversal.h"   // Needed for IsNatCallbackActive
 #include "LugdunumNatCallbackLog.h" // Needed for LogForwardedCallback
@@ -129,6 +130,30 @@ void HandleLowIdHolePunchInfo(
 			serverconnect->LowIdHolePunchExpectedEndpoints().NoteDialled(
 				info.peerIP, info.udpPort);
 		}
+	}
+}
+
+// Every reason, an unknown one too, means this punch will not happen.
+void HandleLowIdHolePunchFailure(
+	CServerConnect *serverconnect, const NatServerHolePunch::Failure &failure, std::uint64_t now)
+{
+	// ed2k-server repeats its answer at +1.2 and +3 s, and a 0x62 after a 0x61 leaves the dial
+	// that 0x61 started to its own timeout.
+	if (!serverconnect->LowIdHolePunchPendingRequests().Take(failure.targetId, now)) {
+		AddDebugLogLineN(logServer,
+			CFormat("Server: OP_LOWID_HOLEPUNCH_FAIL for source %u, which no request of ours "
+				"waits for") %
+				failure.targetId);
+		return;
+	}
+	const auto range = theApp->clientlist->GetClientList().equal_range(failure.targetId);
+	// Copied: the next step may change the list.
+	std::vector<CClientRef> clients;
+	for (auto it = range.first; it != range.second; ++it) {
+		clients.push_back(it->second);
+	}
+	for (const CClientRef &client : clients) {
+		client.GetClient()->LowIdHolePunchRefused();
 	}
 }
 } // namespace
@@ -1009,7 +1034,9 @@ bool CServerSocket::ProcessPacket(const uint8_t *packet, uint32 size, int8 opcod
 				NatServerHolePunch::ParseFailure(packet, size);
 			if (failure.has_value()) {
 				NatServerHolePunch::LogFailure(logServer, *failure);
-				serverconnect->LowIdHolePunchPendingRequests().Release(failure->targetId);
+#ifdef AMULE_UTP_TRANSPORT
+				HandleLowIdHolePunchFailure(serverconnect, *failure, ::GetTickCount64());
+#endif
 			}
 			break;
 		}

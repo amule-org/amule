@@ -482,7 +482,26 @@ without `ENABLE_UTP`, since every rendezvous ends in a uTP dial:
   on the kept stream. The hash order decides only between two connected streams: a dial still in
   its handshake loses to the stream that brought the `OP_HELLO`, since the peer may never answer
   it (eMuleQt has no uTP). No TCP fallback is available between two LowID peers;
-- receiving `0x62`: log the failure and release the matching outstanding target ID.
+- a failed punch: ed2k-server also runs Lugdunum's callback, which can work where the punch does
+  not, since the source dials us. So a source moves on to the
+  [Lugdunum NAT callback](#lugdunum-nat-callback-eserver-1715) once per punch
+  (`NatServerHolePunch::HolePunchFallback`): at once on a `0x62`, else when it is still not
+  connected 60 s after its `0x60` (`kHolePunchFallbackMs`), because no `0x61` came or the dial
+  never completed its uTP handshake. A Lugdunum request held for the server's UDP key counts as
+  sent. One that cannot go out, for example with `LugdunumNatCallback` off, does not use up the
+  fallback: it is tried again 60 s later;
+- receiving `0x62` (`OP_LOWID_HOLEPUNCH_FAIL`), `<target_id 4><reason 1>`: log it. Only a `0x62`
+  that matches a pending `0x60` counts, and it takes that request. ed2k-server repeats its answer
+  at +1.2 and +3 s, and a `0x62` after a `0x61` leaves the dial that `0x61` started to its own
+  timeout. The source with that ID then moves on at once, if it is a source of our current server
+  that still waits on this punch: `DS_LOWTOLOWIP`, with the hole punch as its last step
+  (`CUpDownClient::LowIdHolePunchRefused()`). An upload callback that sent the `0x60` frees its
+  in-flight place, as a refused `0x36` (`OP_CALLBACK_FAIL`) does; the peer stays spent. The
+  reason does not change this. Each of
+  ed2k-server's reasons (1 the target is not connected or its session is dead, 2 the target is
+  HighID, 3 a bad request, 4 the target has no UDP port, 5 a session is not over IPv4) means that
+  the punch will not happen, and an unknown reason has the same effect. No reason counts as a
+  success.
 
 ### Punch schedule and port sweep
 
