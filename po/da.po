@@ -12,7 +12,7 @@ msgstr ""
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
 "PO-Revision-Date: 2026-10-25 09:57+0000\n"
 "Last-Translator: Alex Thomsen Leth <alexl@stofanet.dk>\n"
-"Language-Team: aMule Team <https://github.com/amule-org/amule>\n"
+"Language-Team: Danish <https://hosted.weblate.org/projects/amule/amule-application/da/>\n"
 "Language: da\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -8788,6 +8788,16 @@ msgid "Discovered %u new shared file"
 msgid_plural "Discovered %u new shared files"
 msgstr[0] "Fandt %i kendte delte filer"
 msgstr[1] "Fandt %i kendte delte filer"
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Your %zu shared files need %u Kad source publish slots, but /eMule/KadMaxSourcePublishes in amule.conf allows %u. Some files will be republished late."
+msgstr ""
+
+#: src/SharedFileList.cpp
+#, c-format
+msgid "Your %zu Kad keywords need %u keyword publish slots, but /eMule/KadMaxKeywordPublishes in amule.conf allows %u. Some keywords will be republished late."
+msgstr ""
 
 #: src/SharedFileList.cpp
 #, c-format
