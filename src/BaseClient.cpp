@@ -2276,11 +2276,16 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 
 void CUpDownClient::LowIdHolePunchRefused()
 {
-	// Only a source that waits on its punch: the 0x60 can be the upload side's, and the same
-	// LowID on another server is another client.
+	// The same LowID on another server is another client.
+	if (!theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort())) {
+		return;
+	}
+	// The 0x60 can be the upload side's: its callback stops holding an in-flight slot.
+	if (m_uploadCallbackRoute == EContactRouteReport::ServerHolePunch) {
+		ClearUploadCallbackInFlight();
+	}
 	if (GetDownloadState() != DS_LOWTOLOWIP ||
-		m_lastContactRoute != EContactRouteReport::ServerHolePunch ||
-		!theApp->serverconnect->IsLocalServer(GetServerIP(), GetServerPort())) {
+		m_lastContactRoute != EContactRouteReport::ServerHolePunch) {
 		return;
 	}
 	m_holePunchFallback.OnPunchRefused();

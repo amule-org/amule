@@ -477,8 +477,9 @@ public:
 	//! Asks again for a DS_LOWTOLOWIP source whose request was never sent because the server
 	//! slot was busy or its UDP key was missing.
 	void RetryLowIdHolePunchRequest();
-	//! Our server refused a 0x60 for this client's ID (0x62). A source that waits on that punch
-	//! takes its next LowID-to-LowID step now.
+	//! Our server refused a 0x60 for this client's ID (0x62). An upload callback on that punch
+	//! frees its in-flight place, and a source that waits on it takes its next LowID-to-LowID
+	//! step now.
 	void LowIdHolePunchRefused();
 	//! A temporary client dialled on a server-announced endpoint. It becomes a download
 	//! source only through the client list match of its hello answer.

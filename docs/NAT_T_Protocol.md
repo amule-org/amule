@@ -495,7 +495,9 @@ without `ENABLE_UTP`, since every rendezvous ends in a uTP dial:
   at +1.2 and +3 s, and a `0x62` after a `0x61` leaves the dial that `0x61` started to its own
   timeout. The source with that ID then moves on at once, if it is a source of our current server
   that still waits on this punch: `DS_LOWTOLOWIP`, with the hole punch as its last step
-  (`CUpDownClient::LowIdHolePunchRefused()`). The reason does not change this. Each of
+  (`CUpDownClient::LowIdHolePunchRefused()`). An upload callback that sent the `0x60` frees its
+  in-flight place, as a refused `0x36` (`OP_CALLBACK_FAIL`) does; the peer stays spent. The
+  reason does not change this. Each of
   ed2k-server's reasons (1 the target is not connected or its session is dead, 2 the target is
   HighID, 3 a bad request, 4 the target has no UDP port, 5 a session is not over IPv4) means that
   the punch will not happen, and an unknown reason has the same effect. No reason counts as a
