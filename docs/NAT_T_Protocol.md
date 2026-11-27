@@ -931,10 +931,12 @@ says. Before this, a firewalled aMule did not try such a source at all.
   for a source that had none, or the address we already have, as a source from
   extended source exchange arrives with. A result naming another buddy is kept
   as the candidate with its Kad endpoint, and a switch to it takes both.
-- **Buddy ID.** A buddy compares the first 16 bytes in its own layout. A buddy
-  ID read from Kad (`TAG_BUDDYHASH`) is sent back in the eMule layout the
-  publisher wrote, which eMule, eMuleAI and eMuleQt compare in; our own buddy
-  matches either layout.
+- **Buddy ID.** The request carries the buddy ID as eMule's requester sends
+  it: `TAG_BUDDYHASH` read into a `CUInt128` and written as its
+  `ToByteArray()`, the form eMule, eMuleAI and eMuleQt buddies compare with, and
+  the one our plain reask through a buddy sends. It is converted only for a
+  source that published aMule's own layout, as the Kad callback request does.
+  Our own buddy matches either layout.
 - **Send.** An `OP_REASKCALLBACKUDP` (`0x94`) to the source's buddy, plain, as a
   reask through a buddy is:
   `<buddy id 16><zero 16><0xA0 1><our hash 16><opts 1><file hash 16><our ip 4><udp port 2><hint 1>`.

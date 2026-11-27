@@ -47,9 +47,11 @@ from KadSourceTagsECTest import tag as kad_tag
 TAG_SOURCEUPORT = b'\xfc'
 # TEST-NET-2: public to IsGoodIPPort(), so Kad does not run in LAN mode, and never answers.
 UNREACHABLE_CONTACT = '198.51.100.9'
-# Distinct bytes, so the layout the buddy ID goes back in shows on the wire. A publisher writes the
-# eMule layout, and an eMule, eMuleAI or eMuleQt buddy compares in it.
+# Distinct bytes, so the layout the buddy ID goes back in shows on the wire.
 BUDDY_ID = bytes(range(0x10, 0x20))
+# What a stock buddy compares: the ID as eMule's requester reads the tag into a CUInt128 and sends its
+# ToByteArray(), which reverses each 4-byte group of the tag text's bytes.
+BUDDY_ID_ON_WIRE = b''.join(BUDDY_ID[i:i + 4][::-1] for i in range(0, 16, 4))
 OP_EMULEPROT = 0xC5
 OP_REASKCALLBACKUDP = 0x94
 OP_FILENOTFOUND = 0x92
@@ -131,7 +133,7 @@ class SourceNode(FakeNode):
 
 def check_envelope(body, udp_port):
     assert len(body) == ENVELOPE_SIZE, ('envelope size', len(body), body.hex())
-    assert body[:16] == BUDDY_ID, ('buddy id not in the published layout', body[:16].hex())
+    assert body[:16] == BUDDY_ID_ON_WIRE, ('buddy id not as a stock buddy compares it', body[:16].hex())
     assert body[16:32] == bytes(16), ('zero hash marker', body[16:32].hex())
     assert body[32] == OP_RENDEZVOUS, ('opcode', body[32])
     assert body[33:49] != bytes(16), 'no requester hash'
@@ -234,7 +236,7 @@ def run(binary):
                                    'connected': 0, 'timed_out': 0, 'no_rendezvous': 1}, counters
     assert sources == 1, ('a source that does not speak the rendezvous was dropped', sources)
     print('PASS: a firewalled node asks a Kad source\'s buddy for a rendezvous in the sketched layout, '
-          'with the buddy ID as published; a silent source gets three requests and one fallback dial, '
+          'with the buddy ID as a stock buddy compares it; a silent source gets three requests and one fallback dial, '
           'a punch ends the requests, and OP_FILENOTFOUND ends the attempt and keeps the source')
 
 

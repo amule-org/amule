@@ -2054,9 +2054,10 @@ bool CUpDownClient::TrySendKadBuddyRendezvous()
 		GetKadSourceIP(), GetKadPort(), {}, GetBuddyIP(), GetBuddyPort(), GetUserPort()
 	};
 	std::copy_n(GetUserHash().GetHash(), target.hash.size(), target.hash.begin());
-	// A buddy compares the first 16 bytes in its own layout. eMule, eMuleAI and eMuleQt use the
-	// eMule one, and our buddy matches either, so an ID read from Kad goes back in the eMule layout.
-	if (IsBuddyIDFromKad()) {
+	// A buddy compares the first 16 bytes with the ID as eMule's requester sends it: the stored
+	// ToByteArray() form, as our plain reask through a buddy does. Converted only for a source that
+	// published aMule's own layout, as SendKadBuddyCallbackRequest() does.
+	if (m_bBuddyIdUseAmuleLayout) {
 		Kademlia::ConvertBuddyIdLayout(GetBuddyID(), target.buddyID.data());
 	} else {
 		std::copy_n(GetBuddyID(), target.buddyID.size(), target.buddyID.begin());
