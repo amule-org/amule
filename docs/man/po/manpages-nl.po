@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-11-26 09:43+0100\n"
-"PO-Revision-Date: 2026-11-17 22:57+0000\n"
+"PO-Revision-Date: 2026-11-27 10:57+0000\n"
 "Last-Translator: Watchman89 <watchman89@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Dutch <https://hosted.weblate.org/projects/amule/application-man-pages/nl/>\n"
 "Language: nl\n"
@@ -54,10 +54,8 @@ msgstr "NAAM"
 
 #. type: Plain text
 #: amule.1.in
-#, fuzzy
-#| msgid "amule - the all-platform eMule p2p client"
 msgid "amule - the all-platform P2P client for the eD2k and Kad networks"
-msgstr "amule - de p2p client van eMule voor alle platformen"
+msgstr "amule - de P2P-cliend voor de eD2k- en Kad-netwerken voor alle platformen"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
@@ -891,10 +889,8 @@ msgstr "aMule Daemon"
 
 #. type: Plain text
 #: amuled.1.in
-#, fuzzy
-#| msgid "amuled - the all-platform eMule p2p client - daemonized version"
 msgid "amuled - the all-platform P2P client for the eD2k and Kad networks - daemonized version"
-msgstr "amuled - de eMule p2p client voor alle platformen - gedaemonizeerde versie"
+msgstr "amuled - de P2P-client voor de eD2k- en Kadnetwerken voor alle platformen - gedaemonizeerde versie"
 
 #. type: Plain text
 #: amuled.1.in ../../src/utils/cas/docs/cas.1.in
