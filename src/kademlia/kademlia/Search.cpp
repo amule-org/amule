@@ -1214,8 +1214,10 @@ void CSearch::StorePacket()
 				}
 			}
 
-			taglist.push_back(
-				new CTagInt8(TAG_ENCRYPTION, CPrefs::GetMyConnectOptions(true, true)));
+			taglist.push_back(new CTagInt8(TAG_ENCRYPTION,
+				KadSourceConnectOptions(publishAs,
+					CPrefs::GetMyConnectOptions(true, true),
+					theApp->clientudp ? theApp->clientudp->ServedNatTTransports() : 0)));
 #ifdef ENABLE_IPV6
 			if (const std::optional<CNetworkAddress> ipv6 = AdvertisedIPv6ForPeers()) {
 				uint8_t bytes[16];

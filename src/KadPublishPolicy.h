@@ -85,6 +85,21 @@ inline EKadSourcePublish DecideKadSourcePublish(const SKadPublishFacts &facts)
 	return EKadSourcePublish::None;
 }
 
+/**
+ * The TAG_ENCRYPTION byte of a source record: our connect options, plus the NAT-T transports we
+ * serve (0x80 uTP, 0x40 QUIC) on a firewalled IPv4 record, types 3, 5 and 6. A firewalled
+ * requester picks a transport for us from these bits: eMuleAI dials a type 6 source over uTP or
+ * QUIC, and keeps a type 3/5 source's for the rendezvous. A HighID record is reached over TCP, and
+ * type 7 names no IPv4 route a transport could use.
+ */
+inline uint8_t KadSourceConnectOptions(
+	EKadSourcePublish mode, uint8_t myConnectOptions, uint8_t servedNatT) noexcept
+{
+	const bool firewalledIPv4 =
+		mode == EKadSourcePublish::DirectCallback || mode == EKadSourcePublish::Buddy;
+	return static_cast<uint8_t>(myConnectOptions | (firewalledIPv4 ? (servedNatT & (0x80 | 0x40)) : 0));
+}
+
 //! The FT_SOURCETYPE value a publish of this kind carries. 2 is unusable: older clients misread it.
 inline uint8_t KadSourceTypeFor(EKadSourcePublish mode, bool largeFile) noexcept
 {
