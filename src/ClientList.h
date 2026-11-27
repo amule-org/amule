@@ -42,10 +42,6 @@
 #include <deque>
 #include <set>
 
-#ifdef ENABLE_IPV6
-struct SIPv6CallbackFailure;
-#endif
-
 class CUpDownClient;
 class CClientTCPSocket;
 class CMD4Hash;
@@ -361,10 +357,8 @@ public:
 	}
 	//! OP_CALLBACK_FAIL from our server.
 	void ServerCallbackRefused();
-#ifdef ENABLE_IPV6
 	//! A refusal that names its target.
-	void ServerCallbackRefused(const SIPv6CallbackFailure &failure);
-#endif
+	void ServerCallbackRefused(const SServerCallbackRefusal &refusal);
 	void AddTrackCallbackRequests(uint32_t ip);
 	void AddTrackCallbackRequests(const CNetworkAddress &address);
 	bool AllowCallbackRequest(uint32_t ip) const;

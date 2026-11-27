@@ -116,42 +116,28 @@ TEST(ServerIPv6Callback, OnlyAVerifiedIPv6OnAnOfferingServerIsAsked)
 	ASSERT_FALSE(ShouldRequestIPv6Callback(facts));
 }
 
-TEST(ServerIPv6Callback, ARefusalNamesItsTargetAndReason)
-{
-	const std::vector<std::uint8_t> data{ 0x77, 0x77, 0x00, 0x00, 0x06 };
-	const std::optional<SIPv6CallbackFailure> failure =
-		ParseIPv6CallbackFailure(data.data(), data.size());
-	ASSERT_TRUE(failure.has_value());
-	// Little-endian, as in OP_LOWID_HOLEPUNCH_FAIL.
-	ASSERT_EQUALS(0x7777U, failure->targetId);
-	ASSERT_EQUALS(IPv6CallbackRefusal::TargetNotOptedIn, failure->reason);
-	// The empty one answers OP_CALLBACKREQUEST.
-	ASSERT_FALSE(ParseIPv6CallbackFailure(data.data(), 0).has_value());
-	ASSERT_FALSE(ParseIPv6CallbackFailure(data.data(), 4).has_value());
-}
-
 TEST(ServerIPv6Callback, EachReasonChangesOnlyWhatItIsAbout)
 {
-	for (std::uint8_t reason : { IPv6CallbackRefusal::NotOffered,
-		     IPv6CallbackRefusal::RequesterHighID,
-		     IPv6CallbackRefusal::RequesterNotVerified }) {
+	for (std::uint8_t reason : { ServerCallbackRefusal::NotOffered,
+		     ServerCallbackRefusal::RequesterHighID,
+		     ServerCallbackRefusal::RequesterNotVerified }) {
 		const SIPv6CallbackRefusalAction action = ActOnIPv6CallbackRefusal(reason);
 		ASSERT_TRUE(action.serverRefusesUs);
 		ASSERT_FALSE(action.targetDeclines);
 		ASSERT_FALSE(action.retrySoon);
 	}
 	const SIPv6CallbackRefusalAction notOptedIn =
-		ActOnIPv6CallbackRefusal(IPv6CallbackRefusal::TargetNotOptedIn);
+		ActOnIPv6CallbackRefusal(ServerCallbackRefusal::TargetNotOptedIn);
 	ASSERT_TRUE(notOptedIn.targetDeclines);
 	ASSERT_FALSE(notOptedIn.serverRefusesUs);
 	const SIPv6CallbackRefusalAction rateLimited =
-		ActOnIPv6CallbackRefusal(IPv6CallbackRefusal::RateLimited);
+		ActOnIPv6CallbackRefusal(ServerCallbackRefusal::RateLimited);
 	ASSERT_TRUE(rateLimited.retrySoon);
 	ASSERT_FALSE(rateLimited.serverRefusesUs);
 	// The rest, and a reason we do not know, end only the one request.
-	for (std::uint8_t reason : { IPv6CallbackRefusal::SelfTarget,
-		     IPv6CallbackRefusal::TargetGone,
-		     IPv6CallbackRefusal::TargetUnreachable,
+	for (std::uint8_t reason : { ServerCallbackRefusal::SelfTarget,
+		     ServerCallbackRefusal::TargetGone,
+		     ServerCallbackRefusal::TargetUnreachable,
 		     std::uint8_t{ 0 },
 		     std::uint8_t{ 9 } }) {
 		const SIPv6CallbackRefusalAction action = ActOnIPv6CallbackRefusal(reason);

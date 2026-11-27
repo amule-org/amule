@@ -4,8 +4,10 @@
 """A server callback our server refuses must fail at once when the refusal is known to be its own.
 
 A fake server gives the daemon a HighID and answers each source request with LowID sources, so
-the daemon asks it to call them back. OP_CALLBACK_FAIL names no request: with one request out it
-fails that one at once, and with two out it fails neither, so both wait for the connect timeout.
+the daemon asks it to call them back. An empty OP_CALLBACK_FAIL names no request: with one request
+out it fails that one at once, and with two out it fails neither, so both wait for the connect
+timeout. ed2k-server's names its target (andrey23127/ed2k-server#63), and fails only that request,
+in every build.
 """
 import os
 from pathlib import Path
@@ -28,6 +30,8 @@ OP_GETSOURCES_OBFU = 0x23
 OP_CALLBACK_FAIL = 0x36
 OP_IDCHANGE = 0x40
 OP_FOUNDSOURCES = 0x42
+# ed2k-server's reason for a target that is not connected.
+REASON_TARGET_GONE = 5
 # CONNECTION_TIMEOUT: the socket of an unanswered callback times out after it.
 TIMEOUT_S = 40
 
@@ -69,8 +73,9 @@ class FakeServer:
         except (EOFError, OSError):
             pass
 
-    def refuse(self):
-        self.peer.sendall(packet(OP_CALLBACK_FAIL))
+    def refuse(self, target=None, reason=REASON_TARGET_GONE):
+        body = b'' if target is None else struct.pack('<IB', target, reason)
+        self.peer.sendall(packet(OP_CALLBACK_FAIL, body))
 
     def wait_callbacks(self, ids, timeout=60):
         pending, deadline = set(ids), time.monotonic() + timeout
@@ -128,11 +133,24 @@ def run(binary):
                 wait_log('both callbacks to time out', lambda: deleted('Timeout') == 2, TIMEOUT_S + 30)
                 assert time.monotonic() - sent >= TIMEOUT_S - 1, 'the callbacks timed out before their window'
                 assert deleted('Server callback refused') == 1, 'the unmatched refusal failed a request'
+
+                # Two out, and the refusal names one: only that one fails at once.
+                download('named', (0x40404, 0x50505))
+                server.refuse(0x40404)
+                wait_log('the named callback to fail its source', lambda: deleted('Server callback refused') == 2, 10)
+                # A refusal for a target we do not wait for changes nothing.
+                server.refuse(0x60606)
+                wait_log('the refusal for another target to be left unmatched',
+                         lambda: f'OP_CALLBACK_FAIL for source {0x60606}, which no request' in log.read_text(errors='replace'),
+                         10)
+                assert deleted('Server callback refused') == 2, 'a refusal failed a request it does not name'
+                assert deleted('Timeout') == 2, 'the callback the refusal did not name ended early'
                 assert proc.poll() is None, 'the daemon exited'
             except BaseException:
                 print(log.read_text(errors='replace')[-8000:], file=sys.stderr)
                 raise
-    print('a lone refusal fails its request at once; an unmatched one leaves both to their timeout')
+    print('a lone refusal fails its request at once; an unmatched one leaves both to their timeout; '
+          'a named one fails only its target')
 
 
 if __name__ == '__main__':

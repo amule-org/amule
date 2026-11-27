@@ -2446,19 +2446,19 @@ void CUpDownClient::SendClassicCallbackRequest()
 	theApp->clientlist->AddServerCallbackRequest(this, CONNECTION_TIMEOUT);
 }
 
-#ifdef ENABLE_IPV6
-bool CUpDownClient::ServerCallbackRefused(std::uint8_t ipv6Reason)
+bool CUpDownClient::ServerCallbackRefused([[maybe_unused]] std::uint8_t reason)
 {
-	if (!m_ipv6CallbackPending) {
-		return ServerCallbackRefused();
+#ifdef ENABLE_IPV6
+	if (m_ipv6CallbackPending) {
+		if (ActOnIPv6CallbackRefusal(reason).retrySoon) {
+			m_nextIPv6CallbackTry = ::GetTickCount64() + kIPv6CallbackRetryAfterRateLimitMs;
+		}
+		IPv6CallbackFailed(CFormat("refused (%s)") % ServerCallbackRefusalText(reason));
+		return false;
 	}
-	if (ActOnIPv6CallbackRefusal(ipv6Reason).retrySoon) {
-		m_nextIPv6CallbackTry = ::GetTickCount64() + kIPv6CallbackRetryAfterRateLimitMs;
-	}
-	IPv6CallbackFailed(CFormat("refused (%s)") % IPv6CallbackRefusalText(ipv6Reason));
-	return false;
-}
 #endif
+	return ServerCallbackRefused();
+}
 
 bool CUpDownClient::ServerCallbackRefused()
 {
