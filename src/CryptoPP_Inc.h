@@ -65,7 +65,9 @@
 #include CRYPTO_HEADER(aes.h)
 #include CRYPTO_HEADER(gcm.h)
 #include CRYPTO_HEADER(hmac.h)
-// ChaCha20-Poly1305 arrived in cryptopp 8.1, which is aMule's floor, so it is always compiled in.
+// Newer cryptopp also pulls this in through osrng.h; 8.2 does not.
+#include CRYPTO_HEADER(hkdf.h)
+// ChaCha20-Poly1305 arrived in cryptopp 8.1, below aMule's floor, so it is always compiled in.
 // The EC layer still *negotiates* it, because that is about what the peer can do, not what this
 // build has.
 #include CRYPTO_HEADER(chachapoly.h)
