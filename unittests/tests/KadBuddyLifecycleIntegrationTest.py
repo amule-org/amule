@@ -340,10 +340,17 @@ def check_rendezvous_is_checked_and_rebuilt(proc, ec, udp_port, peer_port):
         # eMuleQt sets no NAT-T bit and names QUIC in the tail, which this uTP node does not serve.
         reask(natt, rendezvous(requester_hash, 0x20 | 0x01, file_hash, endpoint_hint('1.2.3.4', 4672, 2)))
         reask(natt, rendezvous(bytes(16), NATT_UTP, file_hash))
-        # Bytes after the hint, such as a later extension, are not relayed.
+        # Of the extension block after the hint only a usable 0x01, the requester's IPv6 UDP endpoint,
+        # is relayed, and as 18 bytes.
         reask(natt, rendezvous(requester_hash, NATT_UTP | NATT_QUIC, file_hash, public_hint + b'\x01\x02xy'))
         body = wait_packet(natt.sock, OP_REASKCALLBACKTCP, MARGIN)
         assert body == seen + rendezvous(requester_hash, NATT_UTP | NATT_QUIC, file_hash, public_hint), body
+        udp6 = socket.inet_pton(socket.AF_INET6, '2606:4700::1111') + struct.pack('<H', 4673)
+        block = b'\x7f\x01z' + b'\x01\x14' + udp6 + b'pp'
+        reask(natt, rendezvous(requester_hash, NATT_UTP | NATT_QUIC, file_hash, public_hint + block))
+        body = wait_packet(natt.sock, OP_REASKCALLBACKTCP, MARGIN)
+        relayed = public_hint + b'\x01\x12' + udp6
+        assert body == seen + rendezvous(requester_hash, NATT_UTP | NATT_QUIC, file_hash, relayed), body
 
         # A node that declared nothing is relayed to whatever the requester declared. A hint address
         # that is not public goes out as zeros; its transport byte is kept.
@@ -351,7 +358,7 @@ def check_rendezvous_is_checked_and_rebuilt(proc, ec, udp_port, peer_port):
         body = wait_packet(legacy.sock, OP_REASKCALLBACKTCP, MARGIN)
         assert body == seen + rendezvous(requester_hash, NATT_QUIC, file_hash, bytes(6) + b'\x02'), body
 
-    wait_counter(proc, ec, 'SERVING_REASKS', before['SERVING_REASKS'] + 2)
+    wait_counter(proc, ec, 'SERVING_REASKS', before['SERVING_REASKS'] + 3)
     counters = buddy_counters(ec)
     assert counters['SERVING_REASKS_MALFORMED'] == before['SERVING_REASKS_MALFORMED'] + 1, counters
     leave(proc, ec, [natt, legacy])

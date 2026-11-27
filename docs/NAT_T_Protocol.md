@@ -857,9 +857,11 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   uTP when built in and QUIC when built in and enabled. The requester declares
   its own in the connect options of the `0xA0`, or names one in the last byte
   of its 7-byte tail: `1` uTP, `2` QUIC. eMuleAI sets the bits; eMuleQt sets
-  none and names QUIC in the tail. It sends the tail only when it knows its
-  public IPv4; without it the request declares no transport, and the served
-  node drops it. A 34-byte `0x51` declares none.
+  none and names QUIC in the tail. Up to v0.7.41 it sends the tail only when it
+  knows its public IPv4; without it the request declares no transport, and the
+  served node drops it. Since ModderMule/emule-qt#265 (for v0.7.42) it always
+  sends the full tail, with zeros while it does not know its IPv4. A 34-byte
+  `0x51` declares none.
 - **Check.** The buddy drops the `0xA0` only when both peers declared
   transports and share none, and counts the drop in its relay summary. If
   either peer declared none, it forwards as before. The check needs no CAPS
@@ -870,6 +872,13 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   A tail whose address it cannot use goes out with a zero address and port, so
   its transport byte still reaches the served node; eMuleAI reads that byte
   whatever the address.
+- **Extension block.** eMuleQt appends `<type 1><len 1><value>` elements after
+  the tail (ModderMule/emule-qt#265). The buddy carries only a `0x01`, the
+  requester's IPv6 UDP endpoint (`<ipv6 16><udp port 2>`), and only when the
+  address is globally routable and the port is not zero. It reads the first such
+  element, writes it as 18 bytes, and writes the tail before it. An element that
+  runs past the end, or a lone byte at the end, voids the whole block; every
+  other element is dropped. eMuleAI reads up to the tail, so it ignores the block.
 - **Slots.** A third of the buddy slots is kept for nodes that declared a
   transport, so a node that serves buddies keeps room for NAT-T nodes.
 - **Interop.** An eMuleAI buddy forwards without this check. A drop on our side
@@ -905,8 +914,9 @@ reask.
   self-reported endpoint in its place (the `forwardIP` fallback in eMuleAI's
   `ClientUDPSocket.cpp`), and that is the one punched. The requester's
   hint is parsed but never punched: it would help only a requester on the
-  buddy's own network. Bytes after the 7-byte tail, such as the extension block
-  of ModderMule/emule-qt#265, are ignored: aMule uses none of its elements yet.
+  buddy's own network. The extension block after the 7-byte tail is ignored:
+  its `0x01` element, the requester's IPv6 UDP endpoint, needs IPv6 UDP, and
+  aMule's NAT-T has only IPv4.
   A requester whose address is banned, filtered by the IP filter, or on the LAN
   while LAN addresses are filtered (the default) is ignored too, and counted
   only in `received`.
