@@ -25,6 +25,7 @@
 #ifndef KAD_CALLBACK_POLICY_H
 #define KAD_CALLBACK_POLICY_H
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -261,11 +262,18 @@ uint32_t CappedKadPublishSlots(uint32_t needed, uint32_t max, bool &capped, cons
 	return needed > max ? max : needed;
 }
 
-// One start per 2 s publish tick allows 30 a minute, and a source slot finishes about 6 seeded
-// lookups a minute, so more than 3 slots need more starts per tick to stay busy.
-inline uint32_t KadSourceStartsPerTick(uint32_t slots)
+// One start per 2 s publish tick allows 30 a minute. A source slot finishes about 6 seeded lookups
+// a minute and a keyword slot about 3.4, so one start keeps about 5 source or 8 keyword slots busy.
+constexpr uint32_t KadSourceSlotsPerStart = 3;
+constexpr uint32_t KadKeywordSlotsPerStart = 8;
+
+// Lookups to start in one tick: one per `slotsPerStart` slots, never more than are free.
+inline uint32_t KadPublishStartsNow(uint32_t slots, uint32_t running, uint32_t slotsPerStart)
 {
-	return (slots + 2) / 3;
+	if (running >= slots) {
+		return 0;
+	}
+	return std::min(slots - running, (slots + slotsPerStart - 1) / slotsPerStart);
 }
 
 } // namespace Kademlia

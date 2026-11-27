@@ -512,11 +512,27 @@ TEST(KadCallbackPolicy, TheSettingCapsThePublishSlotsAndLogsOncePerCap)
 	ASSERT_EQUALS(2, logs);
 }
 
-TEST(KadCallbackPolicy, MoreSourceSlotsStartMoreLookupsPerTick)
+TEST(KadCallbackPolicy, MoreSlotsStartMoreLookupsPerTick)
 {
-	ASSERT_EQUALS(1u, Kademlia::KadSourceStartsPerTick(3));
-	ASSERT_EQUALS(2u, Kademlia::KadSourceStartsPerTick(4));
-	ASSERT_EQUALS(2u, Kademlia::KadSourceStartsPerTick(6));
-	ASSERT_EQUALS(3u, Kademlia::KadSourceStartsPerTick(8));
-	ASSERT_EQUALS(4u, Kademlia::KadSourceStartsPerTick(12));
+	const uint32_t source = Kademlia::KadSourceSlotsPerStart;
+	ASSERT_EQUALS(1u, Kademlia::KadPublishStartsNow(3, 0, source));
+	ASSERT_EQUALS(2u, Kademlia::KadPublishStartsNow(4, 0, source));
+	ASSERT_EQUALS(2u, Kademlia::KadPublishStartsNow(6, 0, source));
+	ASSERT_EQUALS(3u, Kademlia::KadPublishStartsNow(8, 0, source));
+	ASSERT_EQUALS(4u, Kademlia::KadPublishStartsNow(12, 0, source));
+	// The default keyword cap keeps one start per tick, as tested live.
+	const uint32_t keyword = Kademlia::KadKeywordSlotsPerStart;
+	ASSERT_EQUALS(1u, Kademlia::KadPublishStartsNow(2, 0, keyword));
+	ASSERT_EQUALS(1u, Kademlia::KadPublishStartsNow(8, 0, keyword));
+	ASSERT_EQUALS(2u, Kademlia::KadPublishStartsNow(9, 0, keyword));
+	ASSERT_EQUALS(4u, Kademlia::KadPublishStartsNow(32, 0, keyword));
+}
+
+TEST(KadCallbackPolicy, AStartNeverTakesMoreThanTheFreeSlots)
+{
+	const uint32_t source = Kademlia::KadSourceSlotsPerStart;
+	ASSERT_EQUALS(1u, Kademlia::KadPublishStartsNow(12, 11, source));
+	ASSERT_EQUALS(0u, Kademlia::KadPublishStartsNow(12, 12, source));
+	// The library shrank under the running lookups.
+	ASSERT_EQUALS(0u, Kademlia::KadPublishStartsNow(3, 5, source));
 }

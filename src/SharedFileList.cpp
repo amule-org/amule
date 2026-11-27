@@ -2253,7 +2253,13 @@ void CSharedFileList::Publish()
 		// We are connected to Kad with a route back to us, and Kad is ready to start publishing.
 		const bool keywords = PublishesKadKeywords(publishFacts);
 
-		if (keywords && Kademlia::CKademlia::GetTotalStoreKey() < KadKeywordPublishSlots()) {
+		uint32 keywordStarts = 0;
+		if (keywords) {
+			keywordStarts = Kademlia::KadPublishStartsNow(KadKeywordPublishSlots(),
+				Kademlia::CKademlia::GetTotalStoreKey(),
+				Kademlia::KadKeywordSlotsPerStart);
+		}
+		if (keywordStarts != 0) {
 
 			// list_mut serialises CPublishKeywordList access against CUploadDiskIOThread's
 			// RemoveFile -> RemoveKeywords path, which mutates pPubKw->references and ref counts
@@ -2306,10 +2312,14 @@ void CSharedFileList::Publish()
 						}
 					});
 				}
-				Kademlia::NextKeywordPublish(m_keywordPublishOrder,
-					tNow,
-					std::min<size_t>(100, static_cast<size_t>(m_keywords->GetCount())),
-					keywords);
+				const size_t checks =
+					std::min<size_t>(100, static_cast<size_t>(m_keywords->GetCount()));
+				for (uint32 n = 0; n < keywordStarts; ++n) {
+					if (!Kademlia::NextKeywordPublish(
+						    m_keywordPublishOrder, tNow, checks, keywords)) {
+						break;
+					}
+				}
 				m_keywords->SetNextPublishTime(KADEMLIAPUBLISHTIME + tNow);
 			}
 		}
@@ -2321,9 +2331,9 @@ void CSharedFileList::Publish()
 				m_lastPublishKadSrc = KADEMLIAPUBLISHTIME + tNow;
 			}
 			if (tNow >= m_lastPublishKadSrc) {
-				const uint32 starts =
-					std::min(sourceSlots - Kademlia::CKademlia::GetTotalStoreSrc(),
-						Kademlia::KadSourceStartsPerTick(sourceSlots));
+				const uint32 starts = Kademlia::KadPublishStartsNow(sourceSlots,
+					Kademlia::CKademlia::GetTotalStoreSrc(),
+					Kademlia::KadSourceSlotsPerStart);
 				for (uint32 n = 0; n < starts; ++n) {
 					CKnownFile *pCurKnownFile = NextKadSourcePublish(tNow);
 					if (!pCurKnownFile) {
