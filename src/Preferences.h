@@ -930,6 +930,10 @@ public:
 	// records. amule.conf-only, on by default -- no widget, no EC tag. Temporary: the key goes
 	// once pointer hits are non-trivial on a live node. Storers keep the #2540 rule regardless.
 	static bool IsKadBuddyPointerEnabled() { return s_KadBuddyPointerEnabled; }
+	// Caps on the concurrent Kad publish lookups, which otherwise grow with the shared library.
+	// amule.conf-only, no widget, no EC tag.
+	static uint32 GetKadMaxSourcePublishes() { return s_kadMaxSourcePublishes; }
+	static uint32 GetKadMaxKeywordPublishes() { return s_kadMaxKeywordPublishes; }
 
 	static void SetClientCryptLayerSupported(bool v) { s_IsClientCryptLayerSupported = v; }
 	static void SetClientCryptLayerRequested(bool v) { s_bCryptLayerRequested = v; }
@@ -1304,6 +1308,8 @@ protected:
 	static bool s_LowIdHolePunchEnabled;
 #endif
 	static bool s_KadBuddyPointerEnabled;
+	static uint32 s_kadMaxSourcePublishes;
+	static uint32 s_kadMaxKeywordPublishes;
 
 	// GeoIP / IP2Country
 	static bool s_GeoIPEnabled;

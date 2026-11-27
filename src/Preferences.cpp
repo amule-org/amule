@@ -29,6 +29,7 @@
 #include "ECClientPassword.h"
 #include "libs/ec/cpp/ECSRPConfig.h"
 #include "ServerListSources.h"
+#include "KadCallbackPolicy.h" // Needed for KAD_SOURCE_PUBLISH_SLOTS
 #include <wx/file.h>
 
 #include <protocol/ed2k/Constants.h>
@@ -298,6 +299,8 @@ bool CPreferences::s_LugdunumNatCallbackEnabled;
 bool CPreferences::s_LowIdHolePunchEnabled;
 #endif
 bool CPreferences::s_KadBuddyPointerEnabled;
+uint32 CPreferences::s_kadMaxSourcePublishes;
+uint32 CPreferences::s_kadMaxKeywordPublishes;
 
 wxArrayString CPreferences::s_serverListURLs;
 wxString CPreferences::s_KadURL;
@@ -1554,6 +1557,12 @@ void CPreferences::BuildItemList(const wxString &appdir)
 	// Temporary off switch for our Kad buddy pointer (#2513), no widget; see
 	// IsKadBuddyPointerEnabled().
 	s_MiscList.push_back(new Cfg_Bool("/eMule/KadBuddyPointer", s_KadBuddyPointerEnabled, true));
+	s_MiscList.push_back(MkCfg_Int("/eMule/KadMaxSourcePublishes",
+		s_kadMaxSourcePublishes,
+		Kademlia::KAD_SOURCE_PUBLISH_SLOTS.def));
+	s_MiscList.push_back(MkCfg_Int("/eMule/KadMaxKeywordPublishes",
+		s_kadMaxKeywordPublishes,
+		Kademlia::KAD_KEYWORD_PUBLISH_SLOTS.def));
 
 	NewCfgItem(IDC_ED2K_ACCELERATED_PUBLICATION,
 		(new Cfg_Bool("/eMule/ED2KAcceleratedPublication", s_ED2KAcceleratedPublication, true)));
@@ -1812,6 +1821,10 @@ void CPreferences::LoadAllItems(wxConfigBase *cfg)
 	s_kadMaxServedBuddies =
 		static_cast<uint32>(Kademlia::KAD_SERVED_BUDDIES.Clamp(s_kadMaxServedBuddies));
 	s_sourceReaskMins = SOURCE_REASK_MINUTES.Clamp(s_sourceReaskMins);
+	s_kadMaxSourcePublishes =
+		static_cast<uint32>(Kademlia::KAD_SOURCE_PUBLISH_SLOTS.Clamp(s_kadMaxSourcePublishes));
+	s_kadMaxKeywordPublishes =
+		static_cast<uint32>(Kademlia::KAD_KEYWORD_PUBLISH_SLOTS.Clamp(s_kadMaxKeywordPublishes));
 #endif
 
 	// Compile the shared-file exclusion filter from the values just loaded.

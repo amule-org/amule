@@ -25,9 +25,12 @@
 #ifndef KAD_CALLBACK_POLICY_H
 #define KAD_CALLBACK_POLICY_H
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <map>
+
+#include "SourceSearchLimits.h" // Needed for CPrefRange
 
 namespace Kademlia
 {
@@ -230,6 +233,47 @@ auto NextKeywordPublish(CKadPublishOrder<Key> &order, uint32_t now, size_t maxCh
 		}
 	}
 	return nullptr;
+}
+
+// In lab runs on the public Kad, one slot of seeded lookups republished about 1,650 files per 5 h,
+// or 4,900 keywords per 24 h. These counts leave a margin.
+constexpr uint32_t KadFilesPerSourceSlot = 1500;
+constexpr uint32_t KadKeywordsPerKeywordSlot = 4500;
+// Concurrent publish lookups. The minimum is the old fixed count; the setting caps the automatic
+// count, and the default is the highest count tested live.
+constexpr CPrefRange KAD_SOURCE_PUBLISH_SLOTS{ 3, 12, 32 };
+constexpr CPrefRange KAD_KEYWORD_PUBLISH_SLOTS{ 2, 8, 32 };
+
+// Slots needed to republish `items` once per interval, never under `minSlots`.
+inline uint32_t KadPublishSlotsNeeded(size_t items, uint32_t perSlot, uint32_t minSlots)
+{
+	const size_t needed = (items + perSlot - 1) / perSlot;
+	return needed > minSlots ? static_cast<uint32_t>(needed) : minSlots;
+}
+
+// The publish slots, `needed` capped at `max`. `logCap` runs each time the cap starts to hold.
+template <typename LogCap>
+uint32_t CappedKadPublishSlots(uint32_t needed, uint32_t max, bool &capped, const LogCap &logCap)
+{
+	if (needed > max && !capped) {
+		logCap();
+	}
+	capped = needed > max;
+	return needed > max ? max : needed;
+}
+
+// One start per 2 s publish tick allows 30 a minute. A source slot finishes about 6 seeded lookups
+// a minute and a keyword slot about 3.4, so one start keeps about 5 source or 8 keyword slots busy.
+constexpr uint32_t KadSourceSlotsPerStart = 3;
+constexpr uint32_t KadKeywordSlotsPerStart = 8;
+
+// Lookups to start in one tick: one per `slotsPerStart` slots, never more than are free.
+inline uint32_t KadPublishStartsNow(uint32_t slots, uint32_t running, uint32_t slotsPerStart)
+{
+	if (running >= slots) {
+		return 0;
+	}
+	return std::min(slots - running, (slots + slotsPerStart - 1) / slotsPerStart);
 }
 
 } // namespace Kademlia

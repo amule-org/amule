@@ -473,6 +473,11 @@ private:
 	bool m_srcPublishOrderFilled = false;
 	Kademlia::CKadPublishOrder<wxString> m_keywordPublishOrder;
 	bool m_keywordPublishOrderFilled = false;
+	//! The publish slots for the library size, capped by the settings.
+	uint32 KadSourcePublishSlots();
+	uint32 KadKeywordPublishSlots();
+	bool m_kadSourceSlotsCapped = false;
+	bool m_kadKeywordSlotsCapped = false;
 	CKadPublishCursor<CMD4Hash> m_notesPublishCursor;
 	unsigned int m_currFileKey;
 	uint32 m_lastPublishKadSrc;
