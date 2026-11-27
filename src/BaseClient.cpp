@@ -3225,7 +3225,9 @@ void CUpDownClient::ConnectionEstablished()
 	switch (GetDownloadState()) {
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 	case DS_LOWTOLOWIP:
-		if (!thePrefs::IsLowIdHolePunchEnabled() && !thePrefs::IsLugdunumNatCallbackEnabled()) {
+		// The Kad rendezvous needs neither server path.
+		if (!thePrefs::IsLowIdHolePunchEnabled() && !thePrefs::IsLugdunumNatCallbackEnabled() &&
+			m_lastContactRoute != EContactRouteReport::KadBuddy) {
 			break;
 		}
 		[[fallthrough]];
