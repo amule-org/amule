@@ -9,8 +9,9 @@ check. The fake node hands out one type 3 source whose buddy and whose Kad endpo
 of this test. With no ed2k server, the three server paths have nothing to offer, so the daemon sends
 the buddy an OP_REASKCALLBACKUDP (0x94) carrying an OP_RENDEZVOUS (0xA0) and punches the source.
 
-Three cases: a silent source gets three requests 5 s apart and one fallback dial; a source that
-punches back ends the requests and gets no fallback dial; a source that answers OP_FILENOTFOUND does
+Four cases: a silent source gets three requests 5 s apart and one fallback dial; a source that
+punches back ends the requests and gets no fallback dial; a stale record of the source that comes
+last does not stop the punches to its current endpoint; a source that answers OP_FILENOTFOUND does
 not speak the rendezvous, and stays a source.
 """
 import socket
@@ -108,25 +109,32 @@ class Endpoint:
 class SourceNode(FakeNode):
     """The fake node, handing out a type 3 source at the source socket, behind the buddy socket."""
 
-    def __init__(self, address, buddy, source):
+    def __init__(self, address, buddy, source, stale_port=None):
         super().__init__(address, with_buddy_hash=True)
         self.buddy = buddy
         self.source = source
+        self.stale_port = stale_port
+
+    def record(self, udp_port):
+        # TAG_SOURCEIP in host order, as Kad carries it; TAG_SERVERIP as aMule stores it.
+        source_ip = int.from_bytes(socket.inet_aton(self.source.address), 'big')
+        return [kad_tag(TAG_SOURCETYPE, 0x09, 3),
+                kad_tag(TAG_SOURCEIP, 0x03, source_ip),
+                kad_tag(TAG_SOURCEPORT, 0x08, SOURCE_PORT),
+                kad_tag(TAG_SOURCEUPORT, 0x08, udp_port),
+                kad_tag(TAG_FILESIZE, 0x03, FILE_SIZE),
+                kad_tag(TAG_SERVERIP, 0x03, kad_ip(self.buddy.address)),
+                kad_tag(TAG_SERVERPORT, 0x08, self.buddy.port),
+                kad_tag(TAG_BUDDYHASH, 0x02, BUDDY_ID.hex().encode())]
 
     def handle(self, opcode, body, peer):
         if opcode == KADEMLIA2_SEARCH_SOURCE_REQ:
             self.source_searches += 1
-            # TAG_SOURCEIP in host order, as Kad carries it; TAG_SERVERIP as aMule stores it.
-            source_ip = int.from_bytes(socket.inet_aton(self.source.address), 'big')
-            tags = [kad_tag(TAG_SOURCETYPE, 0x09, 3),
-                    kad_tag(TAG_SOURCEIP, 0x03, source_ip),
-                    kad_tag(TAG_SOURCEPORT, 0x08, SOURCE_PORT),
-                    kad_tag(TAG_SOURCEUPORT, 0x08, self.source.port),
-                    kad_tag(TAG_FILESIZE, 0x03, FILE_SIZE),
-                    kad_tag(TAG_SERVERIP, 0x03, kad_ip(self.buddy.address)),
-                    kad_tag(TAG_SERVERPORT, 0x08, self.buddy.port),
-                    kad_tag(TAG_BUDDYHASH, 0x02, BUDDY_ID.hex().encode())]
-            self.send_records(peer, body[:16], [tags])
+            records = [self.record(self.source.port)]
+            if self.stale_port is not None:
+                # As after the source restarted: a record from before still comes back, last.
+                records.append(self.record(self.stale_port))
+            self.send_records(peer, body[:16], records)
         else:
             super().handle(opcode, body, peer)
 
@@ -157,12 +165,16 @@ def source_count(ec):
     raise AssertionError(('no part file', tags))
 
 
-def drive(binary, address, answer):
+def drive(binary, address, answer, stale_record=False):
     """One daemon and one source. answer is None, OP_HOLEPUNCH or OP_FILENOTFOUND: what the source
-    sends the daemon after the first request reaches its buddy."""
+    sends the daemon after the first request reaches its buddy. stale_record adds an older record of
+    the source last, at a port well outside the sweep around the current one."""
     buddy = Endpoint(address)
     source = Endpoint(address)
-    node = SourceNode(address, buddy, source)
+    stale_port = None
+    if stale_record:
+        stale_port = source.port + 4000 if source.port < 60000 else source.port - 4000
+    node = SourceNode(address, buddy, source, stale_port)
     node.start()
     try:
         with tempfile.TemporaryDirectory(prefix='kad-rendezvous-requester-') as directory:
@@ -230,6 +242,12 @@ def run(binary):
     assert requested(counters) == {'started': 1, 'sent': 1, 'punched': 1, 'fallback_dials': 0,
                                    'connected': 0, 'timed_out': 0, 'no_rendezvous': 0}, counters
 
+    # The stale record arrives last, so its endpoint is the one kept; the current one is punched too.
+    reasks, punches, counters, _sources, _ = drive(binary, address, None, stale_record=True)
+    assert len(reasks) == SENDS, ('sends with a stale record last', len(reasks))
+    assert punches, 'the endpoint of the current record was not punched'
+    assert requested(counters)['started'] == 1, counters
+
     reasks, _punches, counters, sources, _ = drive(binary, address, OP_FILENOTFOUND)
     assert len(reasks) == 1, ('requests after OP_FILENOTFOUND', len(reasks))
     assert requested(counters) == {'started': 1, 'sent': 1, 'punched': 0, 'fallback_dials': 0,
@@ -237,7 +255,8 @@ def run(binary):
     assert sources == 1, ('a source that does not speak the rendezvous was dropped', sources)
     print('PASS: a firewalled node asks a Kad source\'s buddy for a rendezvous in the sketched layout, '
           'with the buddy ID as a stock buddy compares it; a silent source gets three requests and one fallback dial, '
-          'a punch ends the requests, and OP_FILENOTFOUND ends the attempt and keeps the source')
+          'a punch ends the requests, a stale record that comes last does not stop the punches to the current endpoint, '
+          'and OP_FILENOTFOUND ends the attempt and keeps the source')
 
 
 if __name__ == '__main__':

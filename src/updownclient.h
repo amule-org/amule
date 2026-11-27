@@ -62,7 +62,8 @@
 #include "KadBuddyLiveness.h"
 #include "KadBuddyIdLayout.h" // Needed for IsKadCallbackRetryDue
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-#include "NatServerHolePunch.h" // Needed for callback request policy
+#include "NatRendezvousPolicy.h" // Needed for SKadEndpoint
+#include "NatServerHolePunch.h"  // Needed for callback request policy
 #if defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
 #endif
@@ -938,6 +939,11 @@ public:
 	//! stays 0 so the source still matches no client by address.
 	void SetKadSourceIP(uint32 ip) { m_kadSourceIP = ip; }
 	uint32 GetKadSourceIP() const { return m_kadSourceIP; }
+	//! Kad endpoints earlier records named for this source, newest first.
+	const std::vector<NatRendezvous::SKadEndpoint> &GetFormerKadEndpoints() const
+	{
+		return m_formerKadEndpoints;
+	}
 	/* Port */
 	void SetBuddyPort(uint16 val) { m_nBuddyPort = val; }
 	uint16 GetBuddyPort() const { return m_nBuddyPort; }
@@ -1435,6 +1441,7 @@ private:
 	uint8 m_servedBuddyOptions = 0;
 	uint32 m_nBuddyIP;
 	uint32 m_kadSourceIP = 0;
+	std::vector<NatRendezvous::SKadEndpoint> m_formerKadEndpoints;
 	uint16 m_nBuddyPort;
 	// A different buddy address from a Kad result, held back while the stored one answers.
 	uint32 m_nBuddyCandidateIP = 0;

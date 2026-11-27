@@ -376,3 +376,49 @@ TEST(NatRendezvousPolicy, RequesterFileNotFoundFromAKnownSourceIsTheTargetsOnlyW
 	ASSERT_EQUALS(0u, requests.Size());
 	ASSERT_FALSE(requests.Start(Target(1), 2000));
 }
+
+// A restarted source has a new port while nodes still hand out its older records, in any order.
+TEST(NatRendezvousPolicy, RequesterKeepsTheEndpointsEarlierRecordsNamed)
+{
+	using Endpoint = NatRendezvous::SKadEndpoint;
+	std::vector<Endpoint> former;
+	const Endpoint fresh{ kTargetIP, 53927 };
+	const Endpoint stale{ kTargetIP, 54310 };
+	NatRendezvous::NoteKadEndpointChange(former, Endpoint{}, fresh);
+	ASSERT_TRUE(former.empty());
+
+	// The current record first, a stale one last: the current endpoint is kept as a former one.
+	NatRendezvous::NoteKadEndpointChange(former, fresh, stale);
+	ASSERT_EQUALS(1u, former.size());
+	ASSERT_TRUE(former[0] == fresh);
+	NatRendezvous::NoteKadEndpointChange(former, stale, stale);
+	ASSERT_EQUALS(1u, former.size());
+	// An endpoint that comes back leaves the list.
+	NatRendezvous::NoteKadEndpointChange(former, stale, fresh);
+	ASSERT_EQUALS(1u, former.size());
+	ASSERT_TRUE(former[0] == stale);
+
+	Endpoint current = fresh;
+	for (std::uint16_t port = 1; port <= 5; ++port) {
+		const Endpoint next{ kTargetIP, port };
+		NatRendezvous::NoteKadEndpointChange(former, current, next);
+		current = next;
+	}
+	ASSERT_EQUALS(NatRendezvous::kMaxFormerKadEndpoints, former.size());
+	ASSERT_TRUE(former[0] == (Endpoint{ kTargetIP, 4 }));
+}
+
+TEST(NatRendezvousPolicy, RequesterTakesAPunchFromAFormerEndpoint)
+{
+	Requests requests;
+	NatRendezvous::SKadRendezvousTarget target = Target(1);
+	// Only an earlier record named the address the source punches from.
+	target.former.push_back({ 0x0C71000C, 53927 });
+	ASSERT_TRUE(requests.Start(target, 1000));
+
+	const auto punch = requests.TakePunch(0x0C71000C, 53927, 2000);
+	ASSERT_TRUE(punch.has_value());
+	ASSERT_TRUE(punch->hash == HashOf(1));
+	ASSERT_TRUE(requests.Complete(0x0C71000C, HashOf(1)));
+	ASSERT_EQUALS(0u, requests.Size());
+}

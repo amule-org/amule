@@ -196,6 +196,35 @@ using KadRendezvousHash = std::array<std::uint8_t, 16>;
 
 // A firewalled Kad source we ask for a rendezvous through its buddy. Addresses are IPv4 in aMule's
 // byte order.
+// A firewalled Kad source's endpoint as a record names it: the IP its storer saw and its Kad port.
+struct SKadEndpoint
+{
+	std::uint32_t ip = 0;
+	std::uint16_t port = 0;
+	bool operator==(const SKadEndpoint &other) const { return ip == other.ip && port == other.port; }
+};
+
+// A source that restarted publishes a new port while nodes still hand out its old records, in any
+// order, so the endpoint we keep can be a stale one. Up to this many earlier ones are kept too.
+constexpr std::size_t kMaxFormerKadEndpoints = 3;
+
+// @a former once the source's endpoint moves from @a current to @a incoming: newest first.
+inline void NoteKadEndpointChange(
+	std::vector<SKadEndpoint> &former, const SKadEndpoint &current, const SKadEndpoint &incoming)
+{
+	if (current == incoming) {
+		return;
+	}
+	former.erase(std::remove(former.begin(), former.end(), incoming), former.end());
+	if (current.ip != 0 && current.port != 0) {
+		former.erase(std::remove(former.begin(), former.end(), current), former.end());
+		former.insert(former.begin(), current);
+	}
+	if (former.size() > kMaxFormerKadEndpoints) {
+		former.resize(kMaxFormerKadEndpoints);
+	}
+}
+
 struct SKadRendezvousTarget
 {
 	std::uint32_t ip;
@@ -207,6 +236,21 @@ struct SKadRendezvousTarget
 	std::uint16_t tcpPort = 0;
 	KadRendezvousHash buddyID{};
 	KadRendezvousHash fileHash{};
+	// Endpoints earlier records named: punched too, and a punch from one is the target's.
+	std::vector<SKadEndpoint> former{};
+
+	bool Names(std::uint32_t atIP, std::uint16_t atPort) const
+	{
+		return (ip == atIP && udpPort == atPort) ||
+		       std::find(former.begin(), former.end(), SKadEndpoint{ atIP, atPort }) != former.end();
+	}
+	bool AtAddress(std::uint32_t atIP) const
+	{
+		return ip == atIP ||
+		       std::any_of(former.begin(), former.end(), [atIP](const SKadEndpoint &endpoint) {
+			       return endpoint.ip == atIP;
+		       });
+	}
 };
 
 struct SKadRendezvousAction
@@ -283,7 +327,7 @@ public:
 			return std::nullopt;
 		}
 		match->punched = true;
-		if (match->fallbackDialled && port == match->target.udpPort) {
+		if (match->fallbackDialled && ip == match->target.ip && port == match->target.udpPort) {
 			return std::nullopt;
 		}
 		match->punchDialled = true;
@@ -294,7 +338,7 @@ public:
 	{
 		const auto match =
 			std::find_if(m_attempts.begin(), m_attempts.end(), [&](const SAttempt &attempt) {
-				return attempt.target.ip == ip && attempt.target.hash == hash;
+				return attempt.target.AtAddress(ip) && attempt.target.hash == hash;
 			});
 		if (match == m_attempts.end()) {
 			return false;
@@ -343,14 +387,13 @@ private:
 
 	std::vector<SAttempt>::iterator Find(std::uint32_t ip, std::uint16_t port)
 	{
-		const auto exact =
-			std::find_if(m_attempts.begin(), m_attempts.end(), [&](const SAttempt &attempt) {
-				return attempt.target.ip == ip && attempt.target.udpPort == port;
-			});
+		const auto exact = std::find_if(m_attempts.begin(),
+			m_attempts.end(),
+			[&](const SAttempt &attempt) { return attempt.target.Names(ip, port); });
 		if (exact != m_attempts.end()) {
 			return exact;
 		}
-		const auto atAddress = [ip](const SAttempt &attempt) { return attempt.target.ip == ip; };
+		const auto atAddress = [ip](const SAttempt &attempt) { return attempt.target.AtAddress(ip); };
 		if (std::count_if(m_attempts.begin(), m_attempts.end(), atAddress) != 1) {
 			return m_attempts.end();
 		}

@@ -2059,6 +2059,11 @@ bool CUpDownClient::TrySendKadBuddyRendezvous()
 	// rendezvous publishes the eMule layout, and an unanswered callback can leave the flag set.
 	std::copy_n(GetBuddyID(), target.buddyID.size(), target.buddyID.begin());
 	std::copy_n(m_reqfile->GetFileHash().GetHash(), target.fileHash.size(), target.fileHash.begin());
+	for (const NatRendezvous::SKadEndpoint &former : m_formerKadEndpoints) {
+		if (!target.Names(former.ip, former.port)) {
+			target.former.push_back(former);
+		}
+	}
 	return theApp->clientudp->StartKadRendezvous(target);
 #else
 	return false;
@@ -4391,6 +4396,9 @@ void CUpDownClient::AdoptKadBuddy(const CUpDownClient &duplicate)
 	const bool incomingHasKadEndpoint = duplicate.GetKadSourceIP() != 0 && duplicate.GetKadPort() != 0;
 	if (incomingHasKadEndpoint &&
 		(merge.takeAddress || (facts.incomingHasAddress && facts.sameAddress))) {
+		NatRendezvous::NoteKadEndpointChange(m_formerKadEndpoints,
+			{ GetKadSourceIP(), GetKadPort() },
+			{ duplicate.GetKadSourceIP(), duplicate.GetKadPort() });
 		SetKadSourceIP(duplicate.GetKadSourceIP());
 		SetKadPort(duplicate.GetKadPort());
 	}

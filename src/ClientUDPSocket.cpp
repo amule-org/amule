@@ -1363,6 +1363,26 @@ bool CClientUDPSocket::StartKadRendezvous(const NatRendezvous::SKadRendezvousTar
 	PokeUInt32(peerIP.data(), target.ip);
 	StartLowIdHolePunchSchedule(
 		peerIP, target.udpPort, now, NatServerHolePunch::RendezvousPath::KadRequester, target.hash);
+	// The source punches from where it is now, and our NAT drops it from a port we never sent to.
+	for (const NatRendezvous::SKadEndpoint &former : target.former) {
+		if (former.port == 0 || !IsRendezvousPeerAllowed(former.ip)) {
+			continue;
+		}
+		ExpectNatTPeer(former.ip, former.port, &target.hash);
+		NatServerHolePunch::IPv4 formerIP{};
+		PokeUInt32(formerIP.data(), former.ip);
+		StartLowIdHolePunchSchedule(formerIP,
+			former.port,
+			now,
+			NatServerHolePunch::RendezvousPath::KadRequester,
+			target.hash);
+	}
+	if (!target.former.empty()) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Rendezvous for %s: also punching %u endpoint(s) earlier records named") %
+				Uint32_16toStringIP_Port(target.ip, target.udpPort) %
+				static_cast<unsigned>(target.former.size()));
+	}
 	++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.started;
 	TickKadRendezvous(now);
 	return true;

@@ -931,6 +931,12 @@ says. Before this, a firewalled aMule did not try such a source at all.
   for a source that had none, or the address we already have, as a source from
   extended source exchange arrives with. A result naming another buddy is kept
   as the candidate with its Kad endpoint, and a switch to it takes both.
+- **Former endpoints.** A source that restarts publishes a new port, while
+  nodes still hand out its older records for hours, in any order. So the
+  endpoint taken last can be a stale one, and a punch from the source's real
+  port is then dropped by our NAT. The source keeps up to three endpoints that
+  earlier records named. A rendezvous expects and punches each of them as well,
+  and a punch from any of them is the source's.
 - **Buddy ID.** The request carries the buddy ID as eMule's requester sends
   it: `TAG_BUDDYHASH` read into a `CUInt128` and written as its
   `ToByteArray()`, the form eMule, eMuleAI and eMuleQt buddies compare with, and
