@@ -11,7 +11,7 @@ msgstr ""
 "Project-Id-Version: aMule\n"
 "Report-Msgid-Bugs-To: https://github.com/amule-org/amule/issues\n"
 "POT-Creation-Date: 2026-10-09 12:39+0000\n"
-"PO-Revision-Date: 2026-11-26 00:06+0000\n"
+"PO-Revision-Date: 2026-11-27 10:57+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/amule-application/cs/>\n"
 "Language: cs\n"
@@ -3928,9 +3928,8 @@ msgid "Publish buddy pointer"
 msgstr "Zveřejnit ukazatel kamaráda"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
-#, fuzzy
 msgid "Find buddy pointer"
-msgstr "Zveřejnit ukazatel kamaráda"
+msgstr "Najít ukazatel kamaráda"
 
 #: src/kademlia/utils/LookupDiagnostics.cpp
 #, c-format
@@ -4335,7 +4334,7 @@ msgstr "Chyba vytváření UDP socketu %s %d : %s"
 #: src/LibSocketAsio.cpp
 #, c-format
 msgid "net.core.rmem_max limits the UDP receive buffer to %d bytes, so bursts of uTP and QUIC data can be lost. To avoid that, run as root, on the host if aMule runs in a container: %s"
-msgstr ""
+msgstr "net.core.rmem_max omezuje UDP mezipaměť přijímání na %d bajtů, občasná nadměrná množství dat uTP a QUIC mohou být ztracena. Abyste tomu zabránili, spusťte jako správce root, na hostitelském zařízení pokud aMule běží v kontejneru: %s"
 
 #: src/LibSocketAsio.cpp
 #, c-format

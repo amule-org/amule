@@ -57,6 +57,8 @@
 #include "kademlia/kademlia/Kademlia.h" // Needed for CKademlia::Kademlia
 #include "kademlia/kademlia/Prefs.h"    // Needed for CKademlia::CPrefs
 #include "KadBuddyIdLayout.h"           // Needed for MatchesBuddyIdEitherLayout (#1835)
+#include "KadFirewallCheckPolicy.h"     // Needed for ProvesOwnTcpPortReachable
+#include "NatRendezvousProtocol.h"      // Needed for IsForwardedControl
 #include "DownloadQueue.h"              // Needed for CDownloadQueue
 #include "Server.h"                     // Needed for CServer
 #include "ServerList.h"                 // Needed for CServerList
@@ -2013,18 +2015,37 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 		}
 		AddDebugLogLineN(
 			logRemoteClient, "Remote Client: OP_REASKCALLBACKTCP from " + m_client->GetFullIP());
-		++theApp->clientlist->GetBuddyStats().own.reasksReceived;
 		CMemFile data_in(buffer, size);
 		uint32 destip = data_in.ReadUInt32();
 		if (destip == 0xFFFFFFFF) {
-			// eMuleAI and eMule-Qt send an IPv6 requester as this plus 16 address bytes. There is
-			// no IPv6 UDP to answer on, and reading it as IPv4 would aim at 255.255.255.255.
+			// eMuleAI and eMule-Qt send an IPv6 requester as this plus 16 address bytes and the
+			// port. There is no IPv6 UDP to answer on, and reading it as IPv4 would aim at
+			// 255.255.255.255.
+			constexpr size_t kIPv6RequesterSize = 16 + 2;
+			const size_t controlOffset = data_in.GetPosition() + kIPv6RequesterSize;
+			if (size >= controlOffset && NatRendezvous::IsForwardedControl(
+							     buffer + controlOffset, size - controlOffset)) {
+				// A rendezvous, not a reask: counted as received and ignored, as the IPv4
+				// ones that cannot be acted on.
+				++theApp->clientlist->GetBuddyStats().own.rendezvous.received;
+			} else {
+				++theApp->clientlist->GetBuddyStats().own.reasksReceived;
+			}
 			AddDebugLogLineN(logRemoteClient,
 				"Remote Client: OP_REASKCALLBACKTCP for an IPv6 requester from " +
 					m_client->GetFullIP() + ", ignored");
 			break;
 		}
 		uint16 destport = data_in.ReadUInt16();
+		const uint64 controlOffset = data_in.GetPosition();
+		// Where a reask has its file hash, a forwarded control payload has 16 zero bytes and an
+		// opcode. It is no reask: answering it with OP_FILENOTFOUND would make the requester drop us.
+		if (NatRendezvous::IsForwardedControl(buffer + controlOffset, size - controlOffset)) {
+			theApp->clientudp->HandleForwardedRendezvous(
+				destip, destport, buffer + controlOffset, size - controlOffset);
+			break;
+		}
+		++theApp->clientlist->GetBuddyStats().own.reasksReceived;
 		CMD4Hash hash = data_in.ReadHash();
 		CKnownFile *reqfile = theApp->sharedfiles->GetFileByID(hash);
 
@@ -2143,8 +2164,13 @@ bool CClientTCPSocket::ProcessExtPacket(const uint8_t *buffer, uint32 size, uint
 	case OP_KAD_FWTCPCHECK_ACK: { // Support required for Kadversion >= 7
 		AddDebugLogLineN(logRemoteClient,
 			"Remote Client: OP_KAD_FWTCPCHECK_ACK from " + m_client->GetFullIP());
-		if (theApp->clientlist->TakeKadFirewallReply(
-			    m_client->GetIP(), Kademlia::CFirewallCheckRequests::Reply::Reachable)) {
+		if (!ProvesOwnTcpPortReachable(m_opener, HasTransport())) {
+			// Not taken from the request list, so it doesn't use up that checker's reply.
+			AddDebugLogLineN(logRemoteClient,
+				"Ignored OP_KAD_FWTCPCHECK_ACK from " + m_client->GetFullIP() +
+					": the connection doesn't prove our TCP port");
+		} else if (theApp->clientlist->TakeKadFirewallReply(
+				   m_client->GetIP(), Kademlia::CFirewallCheckRequests::Reply::Reachable)) {
 			if (Kademlia::CKademlia::IsRunning()) {
 				Kademlia::CKademlia::GetPrefs()->IncFirewalled();
 			}

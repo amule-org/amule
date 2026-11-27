@@ -456,19 +456,23 @@ CamuleDlg::CamuleDlg(wxWindow *pParent, const wxString &title, wxPoint where, wx
 }
 
 #if defined(__WXGTK__) && !defined(__APPLE__)
+// Looked up at runtime because only the AppIndicator build has GTK headers.
+template <typename Function> static Function GtkFunction(const char *name)
+{
+	return reinterpret_cast<Function>(
+		wxDynamicLibrary::RawGetSymbol(wxDynamicLibrary::GetProgramHandle(), name));
+}
+
 // On X11, GTK stops drawing a window until the compositor confirms its last frame. Mutter can lose
 // that message (it logs "no frame drawn time"), and the window then stays stale for good while it
-// still handles input. Looked up at runtime because only the AppIndicator build has GTK headers.
+// still handles input.
 static void DisableFrameSync(wxWindow *window)
 {
 	if (wxGetDisplayInfo().type != wxDisplayX11) {
 		return;
 	}
-	const wxDllType self = wxDynamicLibrary::GetProgramHandle();
-	const auto getGdkWindow = reinterpret_cast<void *(*)(void *)>(
-		wxDynamicLibrary::RawGetSymbol(self, "gtk_widget_get_window"));
-	const auto setFrameSync = reinterpret_cast<void (*)(void *, int)>(
-		wxDynamicLibrary::RawGetSymbol(self, "gdk_x11_window_set_frame_sync_enabled"));
+	const auto getGdkWindow = GtkFunction<void *(*)(void *)>("gtk_widget_get_window");
+	const auto setFrameSync = GtkFunction<void (*)(void *, int)>("gdk_x11_window_set_frame_sync_enabled");
 	if (getGdkWindow && setFrameSync) {
 		if (void *gdkWindow = getGdkWindow(window->GetHandle())) {
 			setFrameSync(gdkWindow, 0);
@@ -829,6 +833,30 @@ void CamuleDlg::HideToTray()
 #endif
 	Show(false);
 }
+
+#if defined(__WXGTK__) && !defined(__APPLE__)
+bool CamuleDlg::Show(bool show)
+{
+	// GTK shows a hidden window maximized again if it was, but not fullscreen. So ask for
+	// fullscreen before the window maps, from the normal bounds that leaving fullscreen restores.
+	if (show != IsShown()) {
+		if (!show) {
+			m_restoreFullScreen = IsFullScreen();
+		} else {
+			if (m_restoreFullScreen && m_windowGeometry.IsValid()) {
+				SetSize(m_windowGeometry.GetNormalRect(), wxSIZE_ALLOW_MINUS_ONE);
+			}
+			// The unfullscreen call clears an earlier request, which GTK repeats at every map.
+			const auto setFullScreen = GtkFunction<void (*)(void *)>(
+				m_restoreFullScreen ? "gtk_window_fullscreen" : "gtk_window_unfullscreen");
+			if (setFullScreen) {
+				setFullScreen(GetHandle());
+			}
+		}
+	}
+	return wxFrame::Show(show);
+}
+#endif
 
 void CamuleDlg::OnToolBarButton(wxCommandEvent &ev)
 {
@@ -2337,6 +2365,11 @@ void CamuleDlg::Create_Toolbar(bool orientation)
 
 void CamuleDlg::CacheLastShownGeometry()
 {
+	// Show() and the saved preferences need the bounds from before fullscreen. A hidden window
+	// can have lost its fullscreen or maximized state but not its size.
+	if (!IsShown() || IsFullScreen()) {
+		return;
+	}
 	// wxGTK may deliver the iconize event before IsIconized() reflects it.
 	m_windowGeometry.Remember(GetRect(), IsMaximized(), IsIconized() || m_iconized_logical);
 }

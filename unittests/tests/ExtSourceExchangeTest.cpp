@@ -465,23 +465,57 @@ TEST(ExtSourceExchange, LowIDNeedsARoute)
 TEST(ExtSourceExchange, OffersALowIDOnlyWithARoute)
 {
 	ExtSX::SRecord record = LowIDWithBuddy();
-	ASSERT_TRUE(ExtSX::ShouldOfferLowID(record, false));
-	ASSERT_TRUE(ExtSX::ShouldOfferLowID(record, true));
+	ASSERT_TRUE(ExtSX::ShouldOfferLowID(record, false, false));
+	ASSERT_TRUE(ExtSX::ShouldOfferLowID(record, true, false));
 
 	// An ID the buddy cannot be reached without, or an endpoint without the ID, is no route.
 	record.buddyPort = 0;
-	ASSERT_FALSE(ExtSX::ShouldOfferLowID(record, true));
+	ASSERT_FALSE(ExtSX::ShouldOfferLowID(record, true, false));
 	record = LowIDWithBuddy();
 	record.buddyID.reset();
-	ASSERT_FALSE(ExtSX::ShouldOfferLowID(record, true));
+	ASSERT_FALSE(ExtSX::ShouldOfferLowID(record, true, false));
 
 	// The direct callback needs the user hash and connect options, which only bit 5 peers get.
 	record.callbackIP = 0x04030201;
 	record.kadPort = 4672;
 	record.userHash = CMD4Hash(WireBuddyID.data());
 	record.connectOptions = 0x08;
-	ASSERT_FALSE(ExtSX::ShouldOfferLowID(record, false));
-	ASSERT_TRUE(ExtSX::ShouldOfferLowID(record, true));
+	ASSERT_FALSE(ExtSX::ShouldOfferLowID(record, false, false));
+	ASSERT_TRUE(ExtSX::ShouldOfferLowID(record, true, false));
+}
+
+// A peer that declared NAT-T reaches a LowID through its server: the ed2k-server hole punch or the
+// cross-server callback.
+TEST(ExtSourceExchange, OffersALowIDWithItsServerToANatTPeer)
+{
+	ExtSX::SRecord record;
+	record.hybridID = 0x1234;
+	record.serverIP = 0x04030201;
+	record.serverPort = 4661;
+	ASSERT_FALSE(ExtSX::ShouldOfferLowID(record, true, false));
+	ASSERT_TRUE(ExtSX::ShouldOfferLowID(record, false, true));
+	record.serverPort = 0;
+	ASSERT_FALSE(ExtSX::ShouldOfferLowID(record, true, true));
+}
+
+TEST(ExtSourceExchange, ClassicFormatCarriesALowIDWithItsServerFromVersionThree)
+{
+	ASSERT_TRUE(ExtSX::ShouldOfferClassicLowID(4, true, 0x04030201, 4661));
+	ASSERT_TRUE(ExtSX::ShouldOfferClassicLowID(3, true, 0x04030201, 4661));
+	// Version 2 sends IDs as IPs, which a LowID is not.
+	ASSERT_FALSE(ExtSX::ShouldOfferClassicLowID(2, true, 0x04030201, 4661));
+	ASSERT_FALSE(ExtSX::ShouldOfferClassicLowID(4, false, 0x04030201, 4661));
+	ASSERT_FALSE(ExtSX::ShouldOfferClassicLowID(4, true, 0, 4661));
+	ASSERT_FALSE(ExtSX::ShouldOfferClassicLowID(4, true, 0x04030201, 0));
+}
+
+TEST(ExtSourceExchange, ANatTPeerGetsTheSourcesDeclaredTransports)
+{
+	ASSERT_EQUALS(uint8{ 0x01 | 0x80 | 0x40 }, ExtSX::WithSourceNatT(0x01, true, true, true));
+	ASSERT_EQUALS(uint8{ 0x40 }, ExtSX::WithSourceNatT(0, false, true, true));
+	ASSERT_EQUALS(uint8{ 0x80 }, ExtSX::WithSourceNatT(0, true, false, true));
+	// Any other peer gets the options as before.
+	ASSERT_EQUALS(uint8{ 0x01 }, ExtSX::WithSourceNatT(0x01, true, true, false));
 }
 
 TEST(ExtSourceExchange, AnswerUsesVersionOneWhateverWasRequested)

@@ -3273,6 +3273,7 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 		UsesExtendedSourceExchange(forClient->GetModCapabilities()));
 	const bool peerSkipsUnknownTags =
 		forClient->GetModCapabilities().SkipsUnknownExtendedSourceExchangeTags();
+	const bool peerDeclaresNatT = forClient->GetModCapabilities().DeclaresNatTraversal();
 	const ExtSX::SAddressFilter addressFilter = MakeExtendedSourceAddressFilter();
 	bool bNeeded;
 	for (SourceSet::iterator it = m_SrcList.begin(); it != m_SrcList.end(); ++it) {
@@ -3285,8 +3286,14 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 			!cur_src->IsRouteUnproven() &&
 			((state == DS_DOWNLOADING) || (state == DS_ONQUEUE && !cur_src->IsRemoteQueueFull()));
 
-		// Only the extended format can describe how to reach a LowID.
-		if ((cur_src->HasLowID() && !packet.IsExtended()) || !valid) {
+		// Only the extended format describes every route to a LowID; the classic one only a
+		// server, for a NAT-T peer.
+		if ((cur_src->HasLowID() && !packet.IsExtended() &&
+			    !ExtSX::ShouldOfferClassicLowID(packet.GetVersion(),
+				    peerDeclaresNatT,
+				    cur_src->GetServerIP(),
+				    cur_src->GetServerPort())) ||
+			!valid) {
 			continue;
 		}
 
@@ -3321,8 +3328,10 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 			}
 		}
 		if (bNeeded && packet.IsExtended()) {
-			const ExtSX::SRecord record = cur_src->GetExtendedSourceRecord(addressFilter);
-			if (cur_src->HasLowID() && !ExtSX::ShouldOfferLowID(record, peerSkipsUnknownTags)) {
+			const ExtSX::SRecord record =
+				cur_src->GetExtendedSourceRecord(addressFilter, peerDeclaresNatT);
+			if (cur_src->HasLowID() &&
+				!ExtSX::ShouldOfferLowID(record, peerSkipsUnknownTags, peerDeclaresNatT)) {
 				continue;
 			}
 			packet.AddExtendedSource(record, peerSkipsUnknownTags);
@@ -3341,7 +3350,7 @@ CPacket *CPartFile::CreateSrcInfoPacket(
 				cur_src->GetServerIP(),
 				cur_src->GetServerPort(),
 				cur_src->GetUserHash(),
-				cur_src->GetCryptOptions());
+				cur_src->GetSourceExchangeOptions(peerDeclaresNatT));
 
 			if (packet.IsFull()) {
 				break;
@@ -3519,6 +3528,7 @@ void CPartFile::AddClientSources(CMemFile *sources,
 
 			if (uPacketSXVersion >= 4) {
 				newsource->SetConnectOptions(byCryptOptions, true, false);
+				newsource->AddDeclaredNatTTransports(byCryptOptions);
 			}
 
 			newsource->SetSourceFrom((ESourceFrom)nSourceFrom);
@@ -3621,6 +3631,7 @@ bool CPartFile::AddExtendedSource(const ExtSX::SRecord &record, unsigned nSource
 	}
 	if (record.connectOptions) {
 		newsource->SetConnectOptions(*record.connectOptions, true, ExtSX::HasDirectCallback(record));
+		newsource->AddDeclaredNatTTransports(*record.connectOptions);
 	}
 	if (lowID) {
 		if (record.callbackIP != 0) {

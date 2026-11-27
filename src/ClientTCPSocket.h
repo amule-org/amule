@@ -108,6 +108,8 @@ public:
 		m_opener = lugdunum ? EConnectionOpener::AcceptedLugdunumRendezvous
 				    : EConnectionOpener::AcceptedRendezvous;
 	}
+	//! Who opened this connection.
+	EConnectionOpener Opener() const noexcept { return m_opener; }
 	//! PackConnectionRoute() for this connection, decided at its first hello and kept after.
 	std::uint8_t ConnectionRoute(bool contactInFlight, EContactRouteReport attempt);
 

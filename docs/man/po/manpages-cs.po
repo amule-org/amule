@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "POT-Creation-Date: 2026-11-26 09:43+0100\n"
-"PO-Revision-Date: 2026-11-26 09:08+0000\n"
+"PO-Revision-Date: 2026-11-27 10:57+0000\n"
 "Last-Translator: mslr8 <hosted.weblate.org.poncho089@passmail.net>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/amule/application-man-pages/cs/>\n"
 "Language: cs\n"
@@ -54,10 +54,8 @@ msgstr "JMENO"
 
 #. type: Plain text
 #: amule.1.in
-#, fuzzy
-#| msgid "amule - the all-platform eMule p2p client"
 msgid "amule - the all-platform P2P client for the eD2k and Kad networks"
-msgstr "amule - eMule kompatibilní P2P klient pro všechny platformy"
+msgstr "amule - eD2k a Kad P2P klient pro všechny platformy"
 
 #. type: SH
 #: amule.1.in amulecmd.1.in amuled.1.in amulegui.1.in ed2k.1.in
@@ -494,7 +492,7 @@ msgstr "Odpojte se od všech sítí, ke kterým jste připojeni, nebo se odpojte
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Start downloading a file."
-msgstr "Začít stahovat soubor"
+msgstr "Začít stahovat soubor."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -589,7 +587,7 @@ msgstr "Znovu načíst seznam sdílených souborů."
 #. type: Plain text
 #: amulecmd.1.in
 msgid "Reload IP filter tables."
-msgstr "Znovu načíst tabulky IP filtru"
+msgstr "Znovu načíst tabulky IP filtru."
 
 #. type: Plain text
 #: amulecmd.1.in
@@ -891,10 +889,8 @@ msgstr "aMule daemon"
 
 #. type: Plain text
 #: amuled.1.in
-#, fuzzy
-#| msgid "amuled - the all-platform eMule p2p client - daemonized version"
 msgid "amuled - the all-platform P2P client for the eD2k and Kad networks - daemonized version"
-msgstr "amuled - eMule kompatibilní P2P klient pro všechny platformy - daemonized verze"
+msgstr "amuled - eD2k a Kad P2P klient pro všechny platformy - daemonized verze"
 
 #. type: Plain text
 #: amuled.1.in ../../src/utils/cas/docs/cas.1.in
@@ -1128,161 +1124,161 @@ msgstr "soubor emulecollection."
 #. type: Plain text
 #: ed2k.1.in
 msgid "B<The order in which you give the parameters is important.> You can give more than one link, and every link can have it's own params.  For example B<ed2k E<lt>link1E<gt> -t2 E<lt>link2E<gt>> will download I<E<lt>link1E<gt>> in standard category and I<E<lt>link2E<gt>> in category 2."
-msgstr ""
+msgstr "B<Pořadí parametrů je důležité.> Můžete zadat více než jeden odkaz a každý z nich může mít své parametry.  Například B<ed2k E<lt>odkaz1E<gt> -t2 E<lt>odkaz2E<gt>> stáhne I<E<lt>odkaz1E<gt>> v běžné kategorii a I<E<lt>odkaz2E<gt>> v kategorii 2."
 
 #. type: Plain text
 #: ed2k.1.in
 msgid "~/.aMule/ED2KLinks"
-msgstr ""
+msgstr "~/.aMule/ED2KLinks"
 
 #. type: TH
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #, no-wrap
 msgid "ALC"
-msgstr ""
+msgstr "ALC"
 
 #. type: TH
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #, no-wrap
 msgid "aLinkCreator"
-msgstr ""
+msgstr "aLinkCreator"
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 msgid "aLinkCreator - the aMule eD2k link creator"
-msgstr ""
+msgstr "aLinkCreator - nástroj aMule pro tvorbu odkazů eD2k"
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 msgid "B<alc> is a graphical utility to create an eD2k link to any file on your computer."
-msgstr ""
+msgstr "B<alc> je grafický nástroj pro tvorbu odkazů eD2k směřujících na libovolné soubory vašeho počítače."
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alc.1.in
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "This app doesn't take any arguments."
-msgstr ""
+msgstr "Tato aplikace nepřijímá žádné argumenty."
 
 #. type: TH
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #, no-wrap
 msgid "ALCC"
-msgstr ""
+msgstr "ALCC"
 
 #. type: TH
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 #, no-wrap
 msgid "aMule eD2k links calculator"
-msgstr ""
+msgstr "aMule kalkulačka odkazů eD2k"
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 msgid "alcc - text based eD2k links calculator for aMule"
-msgstr ""
+msgstr "alcc - textová kalkulačka odkazů eD2k pro aMule"
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 msgid "I<E<lt>inputfiles_listE<gt>>"
-msgstr ""
+msgstr "I<E<lt>inputfiles_listE<gt>>"
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 msgid "Compute the eD2k links of all the input files given in the I<E<lt>inputfiles_listE<gt>> (There can be one or more files)."
-msgstr ""
+msgstr "Vypočítat odkazy eD2k všech souborů vstupu I<E<lt>inputfiles_listE<gt>> (Může jít o jeden nebo více souborů)."
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 msgid "Compute and add part hashes to the computed eD2k links."
-msgstr ""
+msgstr "Zjistit hashe částečných part souborů a přidat je k vypočítaným odkazům eD2k."
 
 #. type: Plain text
 #: ../../src/utils/aLinkCreator/docs/alcc.1.in
 msgid "Be verbose - show also calculation steps."
-msgstr ""
+msgstr "Podrobnější výstup - ukázat také kroky při provádění výpočtů."
 
 #. type: TH
 #: ../../src/utils/cas/docs/cas.1.in
 #, no-wrap
 msgid "CAS"
-msgstr ""
+msgstr "CAS"
 
 #. type: TH
 #: ../../src/utils/cas/docs/cas.1.in
 #, no-wrap
 msgid "cas v0.8"
-msgstr ""
+msgstr "cas v0.8"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "cas - c aMule statistics"
-msgstr ""
+msgstr "cas - c aMule statistiky"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "B<cas> is a program for displaying the contents of your aMule online signature file to console (in a human readable form). For this to work, you must enable the \"Online Signature\" option in aMule's preferences."
-msgstr ""
+msgstr "B<cas> je program, který zobrazuje na konzoli obsah vašeho aMule souboru s online podpisem (v člověku srozumitelné formě). Aby program fungoval, musíte v nastavení aMule povolit možnost \"Online podpis\"."
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "Writes the online signature picture.  The long form B<--picture> accepts an optional I<=E<lt>PATHE<gt>> to specify the output location; the short forms B<-o> / B<-P> do not (B<-P> requires an immediately following I<E<lt>PATHE<gt>> argument, and B<-o> is a no-argument switch).  Requires GD support compiled in (I<__GD__>); this option is silently ignored otherwise."
-msgstr ""
+msgstr "Zapisuje obrázek online podpisu.  Dlouhá forma B<--picture> přijímá volitelnou I<=E<lt>CESTAE<gt>> pro stanovení výstupního umístění; krátká forma B<-o> / B<-P> ne (B<-P> vyžaduje hned za tím argument I<E<lt>CESTAE<gt>> a B<-o> je bezargumentovým přepínačem).  Vyžaduje podporu GD kompilovanou v (I<__GD__>); tato volba je jinak tiše ignorována."
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "HTML page with stats and picture.  The long form B<--html> accepts an optional I<=E<lt>PATHE<gt>> to specify the output location; the short forms B<-p> / B<-H> do not (B<-H> requires an immediately following I<E<lt>PATHE<gt>> argument, and B<-p> is a no-argument switch)."
-msgstr ""
+msgstr "HTML stránka se statistikami a obrázkem.  Dlouhá forma B<--html> přijímá volitelnou I<=E<lt>CESTAE<gt>> pro stanovení výstupního umístění; krátká forma B<-p> / B<-H> ne (B<-H> vyžaduje hned za tím argument I<E<lt>CESTAE<gt>> a B<-p> je bezargumentovým přepínačem)."
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "Without any options, it prints online signature data to stdout."
-msgstr ""
+msgstr "Bez jakýchkoliv předvoleb vypíše data online podpisu na stdout."
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "B<cas> was written by Pedro de Oliveira E<lt>falso@rdk.homeip.netE<gt>"
-msgstr ""
+msgstr "B<cas> napsal Pedro de Oliveira E<lt>falso@rdk.homeip.netE<gt>"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "~/.aMule/casrc"
-msgstr ""
+msgstr "~/.aMule/casrc"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "aMule-online-sign.png (or .jpg, when B<-o> / B<--picture> is used and GD is available)"
-msgstr ""
+msgstr "aMule-online-sign.png (nebo .jpg, pokud je použito B<-o> / B<--picture> a je dostupné GD)"
 
 #. type: Plain text
 #: ../../src/utils/cas/docs/cas.1.in
 msgid "aMule-online-sign.html (when B<-p> / B<--html> is used)"
-msgstr ""
+msgstr "aMule-online-sign.html (pokud je použito B<-p> / B<--html>)"
 
 #. type: TH
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 #, no-wrap
 msgid "WXCAS"
-msgstr ""
+msgstr "WXCAS"
 
 #. type: TH
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 #, no-wrap
 msgid "wxCas"
-msgstr ""
+msgstr "wxCas"
 
 #. type: Plain text
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "wxcas - wx c aMule statistics"
-msgstr ""
+msgstr "wxcas - wx c aMule statistiky"
 
 #. type: Plain text
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "B<wxcas> is a program for displaying the contents of your online signature file in a nice wx Window on your Desktop.  For this to work, you must enable the \"Online Signature\" option in aMule's preferences."
-msgstr ""
+msgstr "B<wxcas> je program pro zobrazování obsahu vašeho souboru s online podpisem, v wx Window na vašem desktopu.  Aby to fungovalo, musíte povolit možnost \"Online podpis\" v nastavení aMule."
 
 #. type: Plain text
 #: ../../src/utils/wxCas/docs/wxcas.1.in
 msgid "Based on Pedro de Oliveira's B<cas>(1).  B<wxcas> was written by ThePolish E<lt>thepolish@vipmail.ruE<gt>"
-msgstr ""
+msgstr "Založeno na B<cas>(1) od Pedra de Oliveiry.  B<wxcas> napsal ThePolish E<lt>thepolish@vipmail.ruE<gt>"
 
 #~ msgid "Disable PHP interpreter (deprecated)"
 #~ msgstr "Zakázat interpret PHP (zastaralé)"

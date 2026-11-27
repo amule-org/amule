@@ -44,7 +44,8 @@ class CServer;
 
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
 #include "LugdunumNatTraversal.h"
-#include "NatServerHolePunch.h" // Needed for VouchedPeer
+#include "NatRendezvousPolicy.h" // Needed for CServedRendezvousGate
+#include "NatServerHolePunch.h"  // Needed for VouchedPeer
 #endif
 
 #ifdef AMULE_UTP_TRANSPORT
@@ -88,6 +89,17 @@ class CClientUDPSocket : public CMuleUDPSocket
 public:
 	CClientUDPSocket(const amuleIPV4Address &address, const CProxyData *ProxyData = NULL);
 	bool Rebind(const amuleIPV4Address &address);
+	//! A 0xA0 (rendezvous) our own Kad buddy forwarded in OP_REASKCALLBACKTCP, from the requester
+	//! the buddy saw at @a ip (network order) and @a udpPort. @a body starts at the all-zero file
+	//! hash. Counted under buddy.own.rendezvous in every build; only a build with the punch schedule
+	//! acts on it: it expects the requester and punches that endpoint, and the requester dials.
+	void HandleForwardedRendezvous(uint32 ip, uint16 udpPort, const uint8_t *body, size_t size);
+	//! The NAT-T transport bits (0x80 uTP, 0x40 QUIC) this node serves a forwarded rendezvous with.
+	//! Our 0x51 (KADEMLIA_FINDBUDDY_REQ) declares exactly these and HandleForwardedRendezvous()
+	//! arms exactly these, so we never claim a transport the handler would drop. 0 without server
+	//! coordination, uTP, or while the socket is closed or uTP is unavailable; QUIC also needs QUIC
+	//! NAT-T turned on.
+	uint8_t ServedNatTTransports();
 #ifdef AMULE_UTP_TRANSPORT
 	~CClientUDPSocket() override;
 	void Close() override;
@@ -109,6 +121,13 @@ public:
 		uint64 now,
 		NatServerHolePunch::RendezvousPath path,
 		const std::optional<NatServerHolePunch::Hash> &peerHash);
+	//! Starts the requester side of a Kad buddy rendezvous for @a target: expects and punches its
+	//! Kad endpoint, then asks its buddy (0x94 carrying 0xA0) now and twice more, 5 s apart. False
+	//! when the target is not allowed, or an attempt, a cooldown or a no-rendezvous mark holds it.
+	bool StartKadRendezvous(const NatRendezvous::SKadRendezvousTarget &target);
+	//! Sends what the requester attempts owe: the repeats of the ask, the one dial of the target's
+	//! Kad endpoint when no punch came, and the end of an attempt that took too long.
+	void TickKadRendezvous(uint64 now);
 	//! Sends the punches and sweeps that have come due. Called from every OnCoreTimer tick.
 	void SendDueLowIdHolePunches(uint64 now);
 	//! Forgets the punches the server paths owe; the sweep budget is kept, so a server cannot buy
@@ -239,8 +258,17 @@ private:
 	NatServerHolePunch::PunchScheduleSet m_lowIdHolePunchSchedules;
 	// Not reset with the session: a server must not be able to buy more sweeps by dropping us.
 	NatServerHolePunch::SweepBudget m_lowIdHolePunchSweeps;
+	// The Kad buddy's sweeps spend a budget of their own: a rendezvous a buddy relays can be forged,
+	// and must not use up the sweeps the server paths are owed.
+	NatServerHolePunch::SweepBudget m_kadBuddyHolePunchSweeps;
+	// Our own rendezvous through a source's buddy: kept apart from the forged-prone served side.
+	NatServerHolePunch::SweepBudget m_kadRequesterHolePunchSweeps;
 	NatServerHolePunch::RequestedCallbackTargets m_requestedCallbackTargets;
 	NatServerHolePunch::ForeignCallbackRequests m_foreignCallbacks;
+	// The Kad buddy's rendezvous limits, apart from the server paths' action budget.
+	NatRendezvous::CServedRendezvousGate m_servedRendezvous;
+	// The rendezvous we ask for ourselves, through the buddy of a firewalled Kad source.
+	NatRendezvous::CKadRendezvousRequests m_kadRendezvousRequests;
 #endif
 #endif
 #ifdef AMULE_QUIC_TRANSPORT

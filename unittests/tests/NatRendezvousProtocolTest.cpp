@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 using namespace muleunit;
@@ -97,7 +98,7 @@ TEST(NatRendezvousProtocol, ParsesFileContextAndUnverifiedEndpointHint)
 	ASSERT_TRUE(parsed->request.requesterHint.has_value());
 	ASSERT_TRUE(parsed->request.requesterHint->address == CNetworkAddress::FromString("8.8.8.8"));
 	ASSERT_EQUALS(std::uint16_t(4672), parsed->request.requesterHint->port);
-	ASSERT_EQUALS(std::uint8_t(2), parsed->request.requesterHint->transportHint);
+	ASSERT_EQUALS(NatRendezvous::kTransportHintQuic, parsed->request.transportHint);
 }
 
 TEST(NatRendezvousProtocol, RejectsTruncationTrailingBytesWrongOpcodeAndInvalidMarkers)
@@ -147,6 +148,8 @@ TEST(NatRendezvousProtocol, DropsInvalidOptionalEndpointHintButKeepsRequest)
 		const auto parsed = NatRendezvous::ParseRendezvousEnvelope(bytes.data(), bytes.size());
 		ASSERT_TRUE(parsed.has_value());
 		ASSERT_FALSE(parsed->request.requesterHint.has_value());
+		// eMuleAI reads the transport byte whatever the address before it.
+		ASSERT_EQUALS(NatRendezvous::kTransportHintQuic, parsed->request.transportHint);
 	}
 }
 
@@ -224,6 +227,186 @@ TEST(NatRendezvousProtocol, ForwardedRendezvousIsRebuiltFromTheParsedRequest)
 	}
 }
 
+namespace
+{
+// What our buddy writes after the requester's ip/port in OP_REASKCALLBACKTCP: the envelope less the
+// serving-buddy ID, so the extended-payload marker comes first.
+Bytes ForwardedBody(bool withEndpointHint, std::uint8_t connectOptions = 0xC2)
+{
+	Bytes body = Rendezvous(withEndpointHint, true);
+	body.erase(body.begin(), body.begin() + NatRendezvous::kHashSize);
+	body[NatRendezvous::kHashSize + 1 + NatRendezvous::kHashSize] = connectOptions;
+	return body;
+}
+
+NatRendezvous::ServedRendezvousDecision Served(const Bytes &body,
+	std::uint8_t localTransports = NatRendezvous::kNatTTransports,
+	const PeerAddressing::UdpEndpoint &observed = Endpoint("192.0.2.8", 4673))
+{
+	return NatRendezvous::DecideServedRendezvous(observed, body.data(), body.size(), localTransports);
+}
+} // namespace
+
+TEST(NatRendezvousProtocol, ForwardedControlIsMarkedByAZeroFileHash)
+{
+	const Bytes body = ForwardedBody(false);
+	ASSERT_TRUE(NatRendezvous::IsForwardedControl(body.data(), body.size()));
+
+	Bytes reask(NatRendezvous::kHashSize, 0);
+	reask[0] = 0x2A; // A file hash: a plain reask.
+	ASSERT_FALSE(NatRendezvous::IsForwardedControl(reask.data(), reask.size()));
+
+	const Bytes shortBody(NatRendezvous::kHashSize - 1, 0);
+	ASSERT_FALSE(NatRendezvous::IsForwardedControl(shortBody.data(), shortBody.size()));
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousPunchesTheObservedEndpointNotTheHint)
+{
+	const auto observed = Endpoint("192.0.2.8", 4673);
+	const auto decision = Served(ForwardedBody(true), NatRendezvous::kNatTTransports, observed);
+
+	ASSERT_TRUE(decision.outcome == NatRendezvous::EServedRendezvous::Punch);
+	ASSERT_TRUE(decision.target.address == observed.address);
+	ASSERT_EQUALS(observed.port, decision.target.port);
+	ASSERT_TRUE(decision.request.requesterHint.has_value());
+	ASSERT_FALSE(decision.target.address == decision.request.requesterHint->address);
+	ASSERT_EQUALS(std::uint8_t(1), decision.request.requesterHash[0]);
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousParsesWithAndWithoutTheTail)
+{
+	Bytes sixByteTail = ForwardedBody(true);
+	sixByteTail.pop_back();
+	for (const Bytes &body : { ForwardedBody(false), ForwardedBody(true), sixByteTail }) {
+		ASSERT_TRUE(Served(body).outcome == NatRendezvous::EServedRendezvous::Punch);
+	}
+	ASSERT_EQUALS(NatRendezvous::kTransportHintQuic, Served(ForwardedBody(true)).request.transportHint);
+	ASSERT_EQUALS(std::uint8_t(0), Served(sixByteTail).request.transportHint);
+}
+
+// ModderMule/emule-qt#265 appends typed elements after the full 7-byte tail. aMule uses none of
+// them yet, so the request parses as if they were absent.
+TEST(NatRendezvousProtocol, ServedRendezvousParsesABodyWithTheExtensionBlock)
+{
+	Bytes body = ForwardedBody(true);
+	body.insert(body.end(), { 0x01, 0x04, 0xDE, 0xAD, 0xBE, 0xEF, 0x02, 0x00 });
+	const auto decision = Served(body);
+
+	ASSERT_TRUE(decision.outcome == NatRendezvous::EServedRendezvous::Punch);
+	ASSERT_TRUE(decision.request.requesterHint->address == CNetworkAddress::FromString("8.8.8.8"));
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousDropsAnythingButAWellFormed0xA0)
+{
+	Bytes otherOpcode = ForwardedBody(false);
+	otherOpcode[NatRendezvous::kHashSize] = 0xA1;
+	Bytes nullRequester = ForwardedBody(false);
+	std::fill_n(nullRequester.begin() + NatRendezvous::kHashSize + 1, NatRendezvous::kHashSize, 0);
+	Bytes truncated = ForwardedBody(false);
+	truncated.pop_back();
+	const Bytes markerOnly(NatRendezvous::kHashSize, 0);
+	for (const Bytes &body : { otherOpcode, nullRequester, truncated, markerOnly }) {
+		ASSERT_TRUE(Served(body).outcome == NatRendezvous::EServedRendezvous::Malformed);
+	}
+	for (const auto &observed : { Endpoint("0.0.0.0"), Endpoint("192.0.2.8", 0) }) {
+		const auto decision = Served(ForwardedBody(false), NatRendezvous::kNatTTransports, observed);
+		ASSERT_TRUE(decision.outcome == NatRendezvous::EServedRendezvous::Malformed);
+	}
+}
+
+// We never dial here: we arm what we share with the requester and let it choose.
+TEST(NatRendezvousProtocol, ServedRendezvousNeedsATransportBothSidesHave)
+{
+	const auto quicOnlyRequester = ForwardedBody(false, 0x40 | 0x02);
+	ASSERT_TRUE(Served(quicOnlyRequester, 0x80).outcome ==
+		    NatRendezvous::EServedRendezvous::NoSharedTransport);
+	const auto shared = Served(quicOnlyRequester, 0x80 | 0x40);
+	ASSERT_TRUE(shared.outcome == NatRendezvous::EServedRendezvous::Punch);
+	ASSERT_EQUALS(std::uint8_t(0x40), shared.sharedTransports);
+
+	const auto noBits = ForwardedBody(false, 0x02);
+	ASSERT_TRUE(Served(noBits).outcome == NatRendezvous::EServedRendezvous::NoSharedTransport);
+	ASSERT_TRUE(Served(ForwardedBody(false), 0).outcome ==
+		    NatRendezvous::EServedRendezvous::NoSharedTransport);
+}
+
+// eMuleQt sets no NAT-T bit in the connect options, only its crypt bits and 0x20 (it takes an
+// endpoint hint), and names QUIC in the tail.
+TEST(NatRendezvousProtocol, ServedRendezvousTakesTheTransportFromTheTail)
+{
+	const auto emuleQt = ForwardedBody(true, 0x20 | 0x01);
+	const auto quic = Served(emuleQt, 0x80 | 0x40);
+	ASSERT_TRUE(quic.outcome == NatRendezvous::EServedRendezvous::Punch);
+	ASSERT_EQUALS(std::uint8_t(0x40), quic.sharedTransports);
+	ASSERT_TRUE(Served(emuleQt, 0x80).outcome == NatRendezvous::EServedRendezvous::NoSharedTransport);
+
+	Bytes utp = emuleQt;
+	utp.back() = NatRendezvous::kTransportHintUtp;
+	ASSERT_EQUALS(std::uint8_t(0x80), Served(utp, 0x80 | 0x40).sharedTransports);
+}
+
+TEST(NatRendezvousProtocol, RequesterTransportsAreTheBitsAndTheTail)
+{
+	NatRendezvous::RendezvousRequest request{};
+	request.connectOptions = 0x80 | 0x02;
+	ASSERT_EQUALS(std::uint8_t(0x80), NatRendezvous::RequesterTransports(request));
+	request.transportHint = NatRendezvous::kTransportHintQuic;
+	ASSERT_EQUALS(std::uint8_t(0xC0), NatRendezvous::RequesterTransports(request));
+
+	// eMuleAI takes only 1 and 2.
+	request.connectOptions = 0x02;
+	for (const std::uint8_t unknown : std::array<std::uint8_t, 3>{ 0, 3, 0xFF }) {
+		request.transportHint = unknown;
+		ASSERT_EQUALS(std::uint8_t(0), NatRendezvous::RequesterTransports(request));
+	}
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousRepeatJoinsTheAttemptInFlight)
+{
+	NatRendezvous::CServedRendezvousGate gate;
+	const auto requester = Endpoint("192.0.2.8", 4673);
+	using EAdmission = NatRendezvous::EServedAdmission;
+
+	ASSERT_TRUE(gate.Admit(requester, 1000) == EAdmission::Start);
+	// eMuleQt resends up to three times, 5 s apart.
+	for (const std::uint64_t resend : { 6000, 11000, 16000 }) {
+		ASSERT_TRUE(gate.Admit(requester, resend) == EAdmission::Join);
+	}
+	ASSERT_TRUE(gate.Admit(requester, 1000 + NatRendezvous::kServedRendezvousInFlightMs) ==
+		    EAdmission::Start);
+}
+
+TEST(NatRendezvousProtocol, ServedRendezvousLimitsEachRequesterAddress)
+{
+	NatRendezvous::CServedRendezvousGate gate;
+	using EAdmission = NatRendezvous::EServedAdmission;
+
+	ASSERT_TRUE(gate.Admit(Endpoint("192.0.2.8", 4673), 1000) == EAdmission::Start);
+	ASSERT_TRUE(gate.Admit(Endpoint("192.0.2.8", 4674), 1001) == EAdmission::RequesterLimited);
+	ASSERT_TRUE(gate.Admit(Endpoint("192.0.2.8", 4674),
+			    1000 + NatRendezvous::kServedRendezvousPerRequesterMs) == EAdmission::Start);
+}
+
+// A buddy relays a 0xA0 from any UDP source, and the source can be forged: a sender that forges a
+// new one each time is stopped only by a limit for all requesters.
+TEST(NatRendezvousProtocol, ServedRendezvousHasAGlobalLimitThatJoinsDoNotSpend)
+{
+	NatRendezvous::CServedRendezvousGate gate;
+	using EAdmission = NatRendezvous::EServedAdmission;
+	const auto requester = [](std::size_t i) {
+		const std::string address = "198.51.100." + std::to_string(i + 1);
+		return Endpoint(address.c_str());
+	};
+
+	for (std::size_t i = 0; i < NatRendezvous::kMaxServedRendezvousPerWindow; ++i) {
+		ASSERT_TRUE(gate.Admit(requester(i), 1000) == EAdmission::Start);
+		ASSERT_TRUE(gate.Admit(requester(i), 1001) == EAdmission::Join);
+	}
+	const auto next = requester(NatRendezvous::kMaxServedRendezvousPerWindow);
+	ASSERT_TRUE(gate.Admit(next, 1002) == EAdmission::OverGlobalLimit);
+	ASSERT_TRUE(gate.Admit(next, 1000 + NatRendezvous::kServedRendezvousWindowMs) == EAdmission::Start);
+}
+
 TEST(NatRendezvousProtocol, ForwardedRendezvousDropsTrailingBytesTheParserDidNotAccept)
 {
 	Bytes in = Rendezvous(false, true);
@@ -232,4 +415,111 @@ TEST(NatRendezvousProtocol, ForwardedRendezvousDropsTrailingBytesTheParserDidNot
 	ASSERT_TRUE(envelope.has_value());
 	const auto body = NatRendezvous::BuildForwardedRendezvous(envelope->request);
 	ASSERT_EQUALS(in.size() - NatRendezvous::kHashSize - 1, body.size());
+}
+
+// Our buddy forwards the transport byte of a tail whose address it drops, with a zero address.
+TEST(NatRendezvousProtocol, ForwardedRendezvousKeepsTheTransportOfAnUnusableHint)
+{
+	Bytes in = Rendezvous(false, true);
+	in[NatRendezvous::kRendezvousPrefixSize + 1 + NatRendezvous::kHashSize] = 0x20 | 0x01;
+	in.insert(in.end(), { 192, 168, 1, 7, 0x40, 0x12, NatRendezvous::kTransportHintQuic });
+	const auto envelope = NatRendezvous::ParseRendezvousEnvelope(in.data(), in.size());
+	ASSERT_TRUE(envelope.has_value());
+	ASSERT_FALSE(envelope->request.requesterHint.has_value());
+
+	const auto body = NatRendezvous::BuildForwardedRendezvous(envelope->request);
+	const Bytes tail(body.end() - 7, body.end());
+	ASSERT_TRUE(tail == Bytes({ 0, 0, 0, 0, 0, 0, NatRendezvous::kTransportHintQuic }));
+	const auto decision = Served(body);
+	ASSERT_TRUE(decision.outcome == NatRendezvous::EServedRendezvous::Punch);
+	ASSERT_EQUALS(std::uint8_t(0x40), decision.sharedTransports);
+	ASSERT_FALSE(decision.request.requesterHint.has_value());
+}
+
+namespace
+{
+NatRendezvous::ServingBuddyId BuddyId(std::uint8_t first)
+{
+	NatRendezvous::ServingBuddyId id{};
+	id.fill(0x33);
+	id[0] = first;
+	return id;
+}
+
+Hash Filled(std::uint8_t value)
+{
+	Hash hash{};
+	hash.fill(value);
+	return hash;
+}
+} // namespace
+
+TEST(NatRendezvousProtocol, RequesterEnvelopeHasTheSketchedLayout)
+{
+	const Bytes envelope = NatRendezvous::BuildRendezvousEnvelope(
+		BuddyId(0x44), Filled(0x11), 0xC2, Filled(0x22), 0x0100A8C0, 0x1235, 2);
+
+	ASSERT_EQUALS(NatRendezvous::kRendezvousEnvelopeWithHintSize, envelope.size());
+	ASSERT_EQUALS(std::uint8_t(0x44), envelope[0]);
+	ASSERT_EQUALS(std::uint8_t(0x33), envelope[15]);
+	for (std::size_t i = 16; i < 32; ++i) {
+		ASSERT_EQUALS(std::uint8_t(0), envelope[i]);
+	}
+	ASSERT_EQUALS(NatRendezvous::OP_RENDEZVOUS, envelope[32]);
+	ASSERT_EQUALS(std::uint8_t(0x11), envelope[33]);
+	ASSERT_EQUALS(std::uint8_t(0x11), envelope[48]);
+	ASSERT_EQUALS(std::uint8_t(0xC2), envelope[49]);
+	ASSERT_EQUALS(std::uint8_t(0x22), envelope[50]);
+	ASSERT_EQUALS(std::uint8_t(0x22), envelope[65]);
+	// Our IPv4 as aMule stores it (192.168.0.1), then the UDP port low byte first, then the hint.
+	ASSERT_EQUALS(std::uint8_t(192), envelope[66]);
+	ASSERT_EQUALS(std::uint8_t(168), envelope[67]);
+	ASSERT_EQUALS(std::uint8_t(0), envelope[68]);
+	ASSERT_EQUALS(std::uint8_t(1), envelope[69]);
+	ASSERT_EQUALS(std::uint8_t(0x35), envelope[70]);
+	ASSERT_EQUALS(std::uint8_t(0x12), envelope[71]);
+	ASSERT_EQUALS(std::uint8_t(2), envelope[72]);
+}
+
+TEST(NatRendezvousProtocol, RequesterEnvelopeAlwaysWritesItsTail)
+{
+	const Bytes envelope = NatRendezvous::BuildRendezvousEnvelope(
+		BuddyId(0x44), Filled(0x11), 0x80, Filled(0x22), 0, 0, 1);
+
+	ASSERT_EQUALS(NatRendezvous::kRendezvousEnvelopeWithHintSize, envelope.size());
+	for (std::size_t i = 66; i < 72; ++i) {
+		ASSERT_EQUALS(std::uint8_t(0), envelope[i]);
+	}
+	ASSERT_EQUALS(std::uint8_t(1), envelope[72]);
+}
+
+TEST(NatRendezvousProtocol, RequesterEnvelopeIsWhatOurBuddyParses)
+{
+	const Bytes envelope = NatRendezvous::BuildRendezvousEnvelope(
+		BuddyId(0x44), Filled(0x11), 0xC2, Filled(0x22), 0, 0, 2);
+
+	const auto parsed = NatRendezvous::ParseRendezvousEnvelope(envelope.data(), envelope.size());
+	ASSERT_TRUE(parsed.has_value());
+	ASSERT_TRUE(parsed->servingBuddyId == BuddyId(0x44));
+	ASSERT_TRUE(parsed->request.requesterHash == Filled(0x11));
+	ASSERT_EQUALS(std::uint8_t(0xC2), parsed->request.connectOptions);
+	ASSERT_TRUE(parsed->request.fileHash.has_value());
+	ASSERT_TRUE(*parsed->request.fileHash == Filled(0x22));
+	// A zero endpoint is "unknown", so no hint reaches the served node.
+	ASSERT_FALSE(parsed->request.requesterHint.has_value());
+}
+
+TEST(NatRendezvousProtocol, RequesterOptionsAddOurNatTAndClearTheEndpointHintBit)
+{
+	ASSERT_EQUALS(std::uint8_t(0xC3), NatRendezvous::RequesterConnectOptions(0x23, 0xC0));
+	ASSERT_EQUALS(std::uint8_t(0x83), NatRendezvous::RequesterConnectOptions(0x03, 0x80));
+	// Only the NAT-T bits of the local transports are added.
+	ASSERT_EQUALS(std::uint8_t(0x01), NatRendezvous::RequesterConnectOptions(0x01, 0x0F));
+}
+
+TEST(NatRendezvousProtocol, RequesterHintIsQuicWhenWeServeQuicElseUtp)
+{
+	ASSERT_EQUALS(std::uint8_t(2), NatRendezvous::RequesterTransportHint(0xC0));
+	ASSERT_EQUALS(std::uint8_t(2), NatRendezvous::RequesterTransportHint(0x40));
+	ASSERT_EQUALS(std::uint8_t(1), NatRendezvous::RequesterTransportHint(0x80));
 }

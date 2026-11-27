@@ -1046,7 +1046,10 @@ void CDownloadQueue::SendGlobalSources()
 		// By address, as m_globalSources: a server known by name has IP 0 until it resolves.
 		CServer *server = theApp->serverlist->GetServerByAddress(
 			servers[idx]->GetAddress(), servers[idx]->GetPort());
-		if (!server) {
+		if (!server || AwaitsFirstServerStatus(server->IsUDPStatusKnown(),
+				       server->GetLastPingedTime(),
+				       server->GetRealLastPingedTime(),
+				       time(nullptr))) {
 			continue;
 		}
 
@@ -1683,6 +1686,19 @@ void CDownloadQueue::ObserverAdded(ObserverType *o)
 	NotifyObservers(EventType(EventType::INITIAL, &list), o);
 }
 
+// The NAT-T bits eMuleAI and eMuleQt set in TAG_ENCRYPTION.
+static void TakeDeclaredNatTTransports(CUpDownClient &source, uint8_t connectOptions)
+{
+	const uint8_t natT = DeclaredNatTTransports(connectOptions);
+	if (natT == 0) {
+		return;
+	}
+	source.AddDeclaredNatTTransports(natT);
+	const char *names = natT == 0xC0 ? "uTP and QUIC" : natT == 0x80 ? "uTP" : "QUIC";
+	AddDebugLogLineN(logKadSearch,
+		CFormat("Kad source %s declares NAT-T over %s") % source.GetUserHash().Encode() % names);
+}
+
 void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 	const Kademlia::CUInt128 *pcontactID,
 	const Kademlia::CUInt128 *pbuddyID,
@@ -1748,6 +1764,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		source->SetUserHash(CMD4Hash(cID));
 		source->SetUserAddress(publishedIPv6);
 		source->SetConnectOptions(byCryptOptions);
+		TakeDeclaredNatTTransports(*source, byCryptOptions);
 		AddDebugLogLineN(logKadSearch,
 			CFormat("Adding a firewalled source type %d on its IPv6 address [%s]:%u") % type %
 				publishedIPv6.ToWxString() % tcp);
@@ -1804,6 +1821,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 		ctemp->SetBuddyID(cID, true);
 		ctemp->SetBuddyIP(buddyip);
 		ctemp->SetBuddyPort(buddyport);
+		ctemp->SetKadSourceIP(ED2KID);
 		// A marked record has a pointer behind it, published from the IP the storer recorded.
 		if (pointerVersion == KAD_POINTER_VERSION) {
 			ctemp->SetKadPointerRoute(ip, type);
@@ -1856,6 +1874,7 @@ void CDownloadQueue::KademliaSearchFile(uint32_t searchID,
 
 	if (ctemp) {
 		ctemp->SetConnectOptions(byCryptOptions);
+		TakeDeclaredNatTTransports(*ctemp, byCryptOptions);
 #ifdef ENABLE_IPV6
 		if (ShouldKeepKadSourceIPv6AsLastResort(facts)) {
 			ctemp->SetLastResortIPv6(publishedIPv6);

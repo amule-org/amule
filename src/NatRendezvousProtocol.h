@@ -40,8 +40,11 @@ struct RequesterEndpointHint
 {
 	CNetworkAddress address;
 	std::uint16_t port;
-	std::uint8_t transportHint;
 };
+
+// The tail's last byte, eMuleAI's ENatTraversalTransport.
+constexpr std::uint8_t kTransportHintUtp = 1;
+constexpr std::uint8_t kTransportHintQuic = 2;
 
 struct RendezvousRequest
 {
@@ -49,6 +52,8 @@ struct RendezvousRequest
 	std::uint8_t connectOptions;
 	std::optional<FileHash> fileHash;
 	std::optional<RequesterEndpointHint> requesterHint;
+	// Kept when the address before it is unusable, as eMuleAI reads it.
+	std::uint8_t transportHint = 0;
 };
 
 inline bool IsZeroHash(const std::array<std::uint8_t, kHashSize> &hash) noexcept
@@ -104,9 +109,9 @@ inline std::optional<RendezvousRequest> ParseRendezvousRequestWithHint(
 	const std::uint16_t port = std::uint16_t(hint[4]) | (std::uint16_t(hint[5]) << 8);
 	const CNetworkAddress endpoint = CNetworkAddress::FromIPv4NetworkOrder(address);
 	if (address != 0 && port != 0 && endpoint.IsGloballyRoutableIPv4()) {
-		const std::uint8_t transportHint = size >= kRendezvousPayloadSize + 7 ? hint[6] : 0;
-		result.requesterHint = RequesterEndpointHint{ endpoint, port, transportHint };
+		result.requesterHint = RequesterEndpointHint{ endpoint, port };
 	}
+	result.transportHint = size >= kRendezvousPayloadSize + 7 ? hint[6] : 0;
 	return result;
 }
 
@@ -153,16 +158,122 @@ inline std::vector<std::uint8_t> BuildForwardedRendezvous(const RendezvousReques
 	const FileHash noFile{};
 	const FileHash &file = request.fileHash ? *request.fileHash : noFile;
 	body.insert(body.end(), file.begin(), file.end());
-	if (request.requesterHint) {
-		const std::uint32_t address = request.requesterHint->address.ToIPv4NetworkOrderOrZero();
+	if (request.requesterHint || request.transportHint != 0) {
+		// An unusable address goes out as zeros, so the transport byte still reaches the served node.
+		const std::uint32_t address =
+			request.requesterHint ? request.requesterHint->address.ToIPv4NetworkOrderOrZero() : 0;
+		const std::uint16_t port = request.requesterHint ? request.requesterHint->port : 0;
 		for (int shift = 0; shift < 32; shift += 8) {
 			body.push_back(std::uint8_t(address >> shift));
 		}
-		body.push_back(std::uint8_t(request.requesterHint->port));
-		body.push_back(std::uint8_t(request.requesterHint->port >> 8));
-		body.push_back(request.requesterHint->transportHint);
+		body.push_back(std::uint8_t(port));
+		body.push_back(std::uint8_t(port >> 8));
+		body.push_back(request.transportHint);
 	}
 	return body;
+}
+
+// The NAT-T bits of a rendezvous' connect options: 0x80 for uTP, 0x40 for QUIC (eMuleAI).
+constexpr std::uint8_t kNatTQuic = 0x40;
+constexpr std::uint8_t kNatTTransports = 0x80 | kNatTQuic;
+// Announces a 0xAA (endpoint hint), which no code reads and our buddy does not send.
+constexpr std::uint8_t kEndpointHintBit = 0x20;
+
+// What a requester sends its target's buddy as OP_REASKCALLBACKUDP. The tail is always written,
+// zeros for what we do not know, so the extension block of ModderMule/emule-qt#265 can follow it.
+// @a ourIPv4 is in aMule's byte order, first octet lowest, as BuildForwardedRendezvous writes it.
+inline std::vector<std::uint8_t> BuildRendezvousEnvelope(const ServingBuddyId &buddyId,
+	const UserHash &ourHash,
+	std::uint8_t connectOptions,
+	const FileHash &fileHash,
+	std::uint32_t ourIPv4,
+	std::uint16_t ourUdpPort,
+	std::uint8_t transportHint)
+{
+	std::vector<std::uint8_t> envelope(buddyId.begin(), buddyId.end());
+	envelope.resize(kRendezvousPrefixSize, 0);
+	envelope.push_back(OP_RENDEZVOUS);
+	envelope.insert(envelope.end(), ourHash.begin(), ourHash.end());
+	envelope.push_back(connectOptions);
+	envelope.insert(envelope.end(), fileHash.begin(), fileHash.end());
+	for (int shift = 0; shift < 32; shift += 8) {
+		envelope.push_back(std::uint8_t(ourIPv4 >> shift));
+	}
+	envelope.push_back(std::uint8_t(ourUdpPort));
+	envelope.push_back(std::uint8_t(ourUdpPort >> 8));
+	envelope.push_back(transportHint);
+	return envelope;
+}
+
+// Our connect options plus the NAT-T transports we serve, so the target arms one we can dial.
+inline std::uint8_t RequesterConnectOptions(std::uint8_t myConnectOptions, std::uint8_t localNatT) noexcept
+{
+	return std::uint8_t((myConnectOptions | (localNatT & kNatTTransports)) & ~kEndpointHintBit);
+}
+
+// The transport we will dial first: QUIC when we serve it, else uTP.
+inline std::uint8_t RequesterTransportHint(std::uint8_t localNatT) noexcept
+{
+	return (localNatT & kNatTQuic) != 0 ? kTransportHintQuic : kTransportHintUtp;
+}
+
+// The transports a requester declared, as NAT-T connect-options bits. eMuleAI sets the bits; eMuleQt
+// sets none and names its one transport in the tail.
+inline std::uint8_t RequesterTransports(const RendezvousRequest &request) noexcept
+{
+	const std::uint8_t hinted = request.transportHint == kTransportHintUtp    ? 0x80
+				    : request.transportHint == kTransportHintQuic ? 0x40
+										  : 0;
+	return std::uint8_t((request.connectOptions & kNatTTransports) | hinted);
+}
+
+// What follows the requester's ip and port in an OP_REASKCALLBACKTCP from our buddy: a plain reask
+// starts with its file hash, a forwarded control payload with an all-zero one.
+inline bool IsForwardedControl(const std::uint8_t *body, std::size_t size) noexcept
+{
+	return body && size >= kHashSize &&
+	       std::all_of(body, body + kHashSize, [](std::uint8_t byte) { return byte == 0; });
+}
+
+enum class EServedRendezvous
+{
+	Punch,
+	Malformed,
+	NoSharedTransport
+};
+
+struct ServedRendezvousDecision
+{
+	EServedRendezvous outcome;
+	RendezvousRequest request;
+	// The endpoint our buddy saw the request come from. The requester's hint is never punched:
+	// it only helps a requester on the buddy's own network.
+	PeerAddressing::UdpEndpoint target;
+	std::uint8_t sharedTransports;
+};
+
+// The served node's side of a forwarded 0xA0 (rendezvous). The requester dials and we wait, so we
+// arm every transport both sides have and let it choose; with none in common there is nothing to
+// arm. Our buddy checks this too, but an eMuleAI buddy forwards without the check.
+inline ServedRendezvousDecision DecideServedRendezvous(const PeerAddressing::UdpEndpoint &observed,
+	const std::uint8_t *body,
+	std::size_t size,
+	std::uint8_t localTransports) noexcept
+{
+	ServedRendezvousDecision decision{ EServedRendezvous::Malformed, {}, observed, 0 };
+	if (!IsForwardedControl(body, size) || size <= kHashSize || body[kHashSize] != OP_RENDEZVOUS ||
+		PeerAddressing::ClassifyUdpPeer(observed) == PeerAddressing::EUdpRoute::Reject) {
+		return decision;
+	}
+	const auto request = ParseRendezvousRequestWithHint(body + kHashSize, size - kHashSize);
+	if (!request) {
+		return decision;
+	}
+	decision.request = *request;
+	decision.sharedTransports = RequesterTransports(*request) & localTransports;
+	decision.outcome = decision.sharedTransports != 0 ? EServedRendezvous::Punch
+							  : EServedRendezvous::NoSharedTransport;
+	return decision;
 }
 
 // The endpoint is deliberately not read as an identity from the payload. eMuleAI receives this

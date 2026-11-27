@@ -218,3 +218,36 @@ TEST(GlobalSourceQueue, OthersLeaveTheLastPacketForNewDownloads)
 	queue.Add(Hash(250));
 	ASSERT_FALSE(queue.Next(afterGap, downloads, Any, PER_PACKET).empty());
 }
+
+namespace
+{
+const time_t REASK = static_cast<time_t>(UDPSERVSTATREASKTIME);
+const time_t PING = 100000;
+// ServerStats() after a plain ping: the next one is due 3.5 to 4.5 h later.
+const time_t PLAIN_SCHEDULE = PING - 600;
+// After an obfuscated ping: the plain one is due 20 s later.
+const time_t OBFUSCATED_SCHEDULE = PING - REASK + 20;
+} // namespace
+
+TEST(GlobalSourceQueue, AServerIsAskedOnlyAfterItsFirstStatusReplyOrAShortWait)
+{
+	// Never pinged: the ping comes within seconds, so its flags will soon be known.
+	ASSERT_TRUE(AwaitsFirstServerStatus(false, 0, 0, PING));
+	ASSERT_TRUE(AwaitsFirstServerStatus(false, PLAIN_SCHEDULE, PING, PING + kFirstServerStatusWaitS - 1));
+	// A server that leaves the ping unanswered is asked as before.
+	ASSERT_FALSE(AwaitsFirstServerStatus(false, PLAIN_SCHEDULE, PING, PING + kFirstServerStatusWaitS));
+	// The plain ping that follows an unanswered obfuscated one is waited for too.
+	ASSERT_TRUE(
+		AwaitsFirstServerStatus(false, OBFUSCATED_SCHEDULE, PING, PING + kFirstServerStatusWaitS));
+	ASSERT_FALSE(AwaitsFirstServerStatus(true, 0, 0, PING));
+	ASSERT_FALSE(AwaitsFirstServerStatus(true, OBFUSCATED_SCHEDULE, PING, PING));
+}
+
+TEST(GlobalSourceQueue, AServerWithItsNextPingHoursAwayIsAskedAsBefore)
+{
+	// server.met from an earlier session: no UDP flags, last ping within UDPSERVSTATREASKTIME.
+	ASSERT_FALSE(AwaitsFirstServerStatus(false, PLAIN_SCHEDULE, 0, PING));
+	ASSERT_FALSE(AwaitsFirstServerStatus(false, PING - REASK + 1, 0, PING));
+	// Once that ping is due, the request waits for it.
+	ASSERT_TRUE(AwaitsFirstServerStatus(false, PING - REASK, 0, PING));
+}

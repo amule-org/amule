@@ -52,7 +52,7 @@
 #include <ec/cpp/ECID.h>      // Needed for CECID
 #include "BitVector.h"        // Needed for BitVector
 #include "ClientRef.h"        // Needed for debug defines
-#include "PeerCapabilities.h" // Needed for CPeerCapabilities
+#include "PeerCapabilities.h" // Needed for CPeerCapabilities, DeclaredNatTTransports
 #include "ProtocolPeerIdentity.h"
 #include "DeadSourceKey.h"     // Needed for CDeadSourceKey
 #include "StoredSourceRoute.h" // Needed for SStoredSourceRoute
@@ -60,7 +60,8 @@
 #include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
-#include "KadBuddyIdLayout.h" // Needed for IsKadCallbackRetryDue
+#include "KadBuddyIdLayout.h"    // Needed for IsKadCallbackRetryDue
+#include "NatRendezvousPolicy.h" // Needed for SKadEndpoint
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "NatServerHolePunch.h" // Needed for callback request policy
 #if defined(AMULE_UTP_TRANSPORT)
@@ -442,6 +443,10 @@ private:
 	//! whether the request went out; a busy server slot is not a send.
 	bool TrySendLowIdHolePunchRequest();
 	bool m_lowIdHolePunchRequested = false;
+	//! Asks this source's buddy for a rendezvous (0x94 carrying 0xA0) and punches the source's Kad
+	//! endpoint, when it is a LowID Kad source with a buddy and nothing else can reach it. True when
+	//! an attempt started. Called last from TryToContact's LowID->LowID decline.
+	bool TrySendKadBuddyRendezvous();
 	NatServerHolePunch::HolePunchFallback m_holePunchFallback;
 	//! The server of this LowID source when it is not ours and would wake the source for us
 	//! (ed2k-server 0.9.86), else null; always null without uTP, which the dial after the answer
@@ -930,6 +935,15 @@ public:
 	/* IP */
 	void SetBuddyIP(uint32 val) { m_nBuddyIP = val; }
 	uint32 GetBuddyIP() const { return m_nBuddyIP; }
+	//! The Kad endpoint of a firewalled Kad source (type 3/5), kept apart from GetIP(), which
+	//! stays 0 so the source still matches no client by address.
+	void SetKadSourceIP(uint32 ip) { m_kadSourceIP = ip; }
+	uint32 GetKadSourceIP() const { return m_kadSourceIP; }
+	//! Kad endpoints earlier records named for this source, newest first.
+	const std::vector<NatRendezvous::SKadEndpoint> &GetFormerKadEndpoints() const
+	{
+		return m_formerKadEndpoints;
+	}
 	/* Port */
 	void SetBuddyPort(uint16 val) { m_nBuddyPort = val; }
 	uint16 GetBuddyPort() const { return m_nBuddyPort; }
@@ -1016,8 +1030,12 @@ public:
 	{
 		return !m_kadPointerWaiting && Kademlia::IsKadCallbackRetryDue(now, m_kadCallbackRetryTime);
 	}
-	// This source as an Extended Source Exchange record, sanitized with `filter`.
-	ExtSX::SRecord GetExtendedSourceRecord(const ExtSX::SAddressFilter &filter) const;
+	// This source as an Extended Source Exchange record, sanitized with `filter`. For a peer that
+	// declared NAT-T, its options carry the NAT-T transports this source's hello declared.
+	ExtSX::SRecord GetExtendedSourceRecord(
+		const ExtSX::SAddressFilter &filter, bool peerDeclaresNatT) const;
+	// The connect options of this source in a classic source exchange answer, likewise.
+	uint8_t GetSourceExchangeOptions(bool peerDeclaresNatT) const;
 	/* Role: we serve this buddy, or it serves us */
 	void SetServedBuddy(bool served) { m_bServedBuddy = served; }
 	bool IsServedBuddy() const { return m_bServedBuddy; }
@@ -1175,6 +1193,14 @@ public:
 	void SetConnectOptions(uint8_t options,
 		bool encryption = true,
 		bool callback = true); // shortcut, sets crypt, callback, etc from the tagvalue we receive
+	//! The NAT-T transports a Kad record or a source-exchange answer declared for this source, as
+	//! connect-options bits (0x80 uTP, 0x40 QUIC). Another node's word, not the source's hello,
+	//! so a hint only; every copy of the source adds its own.
+	uint8_t GetDeclaredNatTTransports() const { return m_declaredNatTTransports; }
+	void AddDeclaredNatTTransports(uint8_t connectOptions)
+	{
+		m_declaredNatTTransports |= DeclaredNatTTransports(connectOptions);
+	}
 	bool ShouldReceiveCryptUDPPackets() const;
 	//! Whether an ed2k stream to this peer should carry obfuscation.
 	bool WantsStreamObfuscation() const;
@@ -1446,10 +1472,15 @@ private:
 	bool m_bServedBuddy = false;
 	uint8 m_servedBuddyOptions = 0;
 	uint32 m_nBuddyIP;
+	uint32 m_kadSourceIP = 0;
+	std::vector<NatRendezvous::SKadEndpoint> m_formerKadEndpoints;
 	uint16 m_nBuddyPort;
 	// A different buddy address from a Kad result, held back while the stored one answers.
 	uint32 m_nBuddyCandidateIP = 0;
 	uint16 m_nBuddyCandidatePort = 0;
+	// The Kad endpoint of the record that named the candidate, taken with it on a switch.
+	uint32 m_nBuddyCandidateKadIP = 0;
+	uint16 m_nBuddyCandidateKadPort = 0;
 	// The candidate is the buddy we switched away from, asked in one layout only.
 	bool m_bBuddyCandidateIsFormer = false;
 	// When the last KADEMLIA_CALLBACK_REQ was sent, and when the next one may go, 0 for at once.
@@ -1506,6 +1537,7 @@ private:
 
 	/* eMuleAI vendor capabilities, parsed from the CT_MOD_* hello tags */
 	CPeerCapabilities m_modCapabilities;
+	uint8_t m_declaredNatTTransports = 0;
 	uint8_t m_modIPv6[16];
 	uint8_t m_servingBuddyIPv6[16];
 	bool m_hasModIPv6;

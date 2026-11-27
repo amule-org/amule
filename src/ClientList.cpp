@@ -37,9 +37,10 @@
 #include <protocol/kad/Constants.h>
 #include <protocol/kad2/Client2Client/TCP.h>
 
-#include "amule.h"            // Needed for theApp
-#include "ChatSessionStore.h" // Needed for CChatSessionStore
-#include "ClientTCPSocket.h"  // Needed for CClientTCPSocket
+#include "amule.h"                  // Needed for theApp
+#include "ChatSessionStore.h"       // Needed for CChatSessionStore
+#include "ClientTCPSocket.h"        // Needed for CClientTCPSocket
+#include "KadFirewallCheckPolicy.h" // Needed for ProvesTcpPortReachable
 #include <algorithm>
 #include <cstring>
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
@@ -216,9 +217,12 @@ void CClientList::UpdateClientID(CUpDownClient *client, uint32 newID)
 	if ((client->GetClientState() != CS_LISTED) || (client->GetUserIDHybrid() == newID))
 		return;
 
+	// The ID map can hold the only reference, as for a client made for a callback before its
+	// hello gives it an address or a valid hash: take the new one before the old one goes.
+	const CClientRef ref = CCLIENTREF(client, "CClientList::UpdateClientID");
 	RemoveIDFromList(client);
 
-	m_clientList.insert(IDMapPair(newID, CCLIENTREF(client, "CClientList::UpdateClientID")));
+	m_clientList.insert(IDMapPair(newID, ref));
 }
 
 void CClientList::UpdateClientIP(CUpDownClient *client, const CNetworkAddress &address)
@@ -237,6 +241,8 @@ void CClientList::UpdateClientHash(CUpDownClient *client, const CMD4Hash &newHas
 	if ((client->GetClientState() != CS_LISTED) || (client->GetUserHash() == newHash))
 		return;
 
+	// Unlike in UpdateClientID(), the entry removed here is never the last reference: a listed
+	// client always has one in the ID map.
 	RemoveHashFromList(client);
 
 	if (!IsBadUserHash(newHash)) {
@@ -692,6 +698,16 @@ void CClientList::AddTrackClient(CUpDownClient *toadd)
 	m_trackedClientsList.Add(address, toadd->GetUserPort(), toadd->GetCreditsHash(), ::GetTickCount64());
 }
 
+namespace
+{
+//! Whether an acknowledgement over this client's connection proves the peer's TCP port open.
+bool ConnectionProvesTcpPort(const CUpDownClient *client)
+{
+	const CClientTCPSocket *socket = client->GetSocket();
+	return socket != nullptr && ProvesTcpPortReachable(socket->Opener(), socket->HasTransport());
+}
+} // namespace
+
 void CClientList::Process()
 {
 	const uint64 cur_tick = ::GetTickCount64();
@@ -748,8 +764,15 @@ void CClientList::Process()
 
 		case KS_CONNECTED_FWCHECK:
 			// We successfully connected to the client.
-			// We now send a ack to let them know.
-			if (cur_client->GetKadVersion() >= 7) {
+			// We now send a ack to let them know, if the connection proves the node's
+			// TCP port: one it opened to us, or one of ours through a punched NAT mapping,
+			// proves nothing, so it gets no ACK at all.
+			if (!ConnectionProvesTcpPort(cur_client)) {
+				AddDebugLogLineN(logLocalClient,
+					"Local Client: no TCP firewall check ACK to " +
+						Uint32toStringIP(cur_client->GetIP()) +
+						", the connection doesn't prove its TCP port");
+			} else if (cur_client->GetKadVersion() >= 7) {
 				// The result is now sent over TCP instead of UDP, because UDP fails
 				// if our internal port is unreachable. We want the TCP test result
 				// regardless of UDP being firewalled; the new UDP state and test
@@ -1278,6 +1301,10 @@ bool CClientList::RequestTCP(Kademlia::CContact *contact, uint8_t connectOptions
 	} else if (pNewClient->GetKadState() != KS_NONE) {
 		return false; // already busy with this client in some way (probably buddy stuff), don't mess
 			      // with it
+	} else if (pNewClient->IsConnected() && !ConnectionProvesTcpPort(pNewClient)) {
+		// The ACK would go over a connection that doesn't prove the peer's TCP port. Process()
+		// checks again before sending, as the node can still connect to us while ours is pending.
+		return false;
 	}
 
 	pNewClient->SetKadPort(contact->GetUDPPort());

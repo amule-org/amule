@@ -342,6 +342,15 @@ target_include_directories (KadFirewallCheckRequestsTest PRIVATE
 )
 target_link_libraries (KadFirewallCheckRequestsTest muleunit mulecommon)
 
+# Which connections a Kad TCP firewall check may acknowledge over.
+add_executable (KadFirewallCheckPolicyTest KadFirewallCheckPolicyTest.cpp)
+add_test (NAME KadFirewallCheckPolicyTest COMMAND KadFirewallCheckPolicyTest)
+target_include_directories (KadFirewallCheckPolicyTest PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/src/include
+)
+target_link_libraries (KadFirewallCheckPolicyTest muleunit mulecommon)
+
 # Our Kad public IP: a change needs reports from two /24s.
 add_executable (KadPublicIPVoteTest KadPublicIPVoteTest.cpp)
 add_test (NAME KadPublicIPVoteTest COMMAND KadPublicIPVoteTest)
@@ -3315,6 +3324,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					${CMAKE_CURRENT_SOURCE_DIR}/DotZeroPeerIntegrationTest.py
 					$<TARGET_FILE:amuled> $<TARGET_FILE:FakePeerConnect>)
 			set_tests_properties (DotZeroPeerIntegrationTest PROPERTIES LABELS "integration")
+			add_test (NAME HelloAnswerIdChangeIntegrationTest
+				COMMAND ${Python3_EXECUTABLE} -u
+					${CMAKE_CURRENT_SOURCE_DIR}/HelloAnswerIdChangeIntegrationTest.py
+					$<TARGET_FILE:amuled> $<TARGET_FILE:FakePeerConnect>)
+			set_tests_properties (HelloAnswerIdChangeIntegrationTest PROPERTIES LABELS "integration")
 			add_test (NAME DisplayRatesIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/DisplayRatesIntegrationTest.py $<TARGET_FILE:amuled>
@@ -3362,6 +3376,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 					$<TARGET_FILE:amuled> --seconds 3 --compress
 			)
 			set_tests_properties (UploadRefillCompressedIntegrationTest PROPERTIES LABELS "integration")
+			add_test (NAME UploadThrottlerWakeIntegrationTest
+				COMMAND ${Python3_EXECUTABLE} -u
+					${CMAKE_CURRENT_SOURCE_DIR}/UploadThrottlerWakeIntegrationTest.py $<TARGET_FILE:amuled>
+			)
+			set_tests_properties (UploadThrottlerWakeIntegrationTest PROPERTIES LABELS "integration")
 			add_test (NAME UploadSlotLogStateIntegrationTest
 				COMMAND ${Python3_EXECUTABLE} -u
 					${CMAKE_CURRENT_SOURCE_DIR}/UploadSlotLogStateIntegrationTest.py $<TARGET_FILE:amuled>
@@ -3452,6 +3471,11 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/KadSourceBuddyIdIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (KadSourceBuddyIdIntegrationTest PROPERTIES LABELS "integration")
+		add_test (NAME KadSourceNatTransportsIntegrationTest
+			COMMAND ${Python3_EXECUTABLE}
+				${CMAKE_CURRENT_SOURCE_DIR}/KadSourceNatTransportsIntegrationTest.py $<TARGET_FILE:amuled>
+		)
+		set_tests_properties (KadSourceNatTransportsIntegrationTest PROPERTIES LABELS "integration")
 		# One case per entry, so each fits the CI time limit.
 		foreach (buddies IN ITEMS one two)
 			add_test (NAME KadBuddyCallbackRetryIntegrationTest-${buddies}
@@ -3485,6 +3509,16 @@ if (ENABLE_INTEGRATION_TESTS AND BUILD_DAEMON AND UNIX AND NOT APPLE)
 				${CMAKE_CURRENT_SOURCE_DIR}/KadBuddyLifecycleIntegrationTest.py $<TARGET_FILE:amuled>
 		)
 		set_tests_properties (KadBuddyLifecycleIntegrationTest PROPERTIES LABELS "integration")
+		# The requester side needs the punch schedule and a NAT-T transport to declare.
+		if (ENABLE_NATT_SERVER_COORDINATION AND ENABLE_UTP)
+			add_test (NAME KadRendezvousRequesterIntegrationTest
+				COMMAND ${Python3_EXECUTABLE}
+					${CMAKE_CURRENT_SOURCE_DIR}/KadRendezvousRequesterIntegrationTest.py
+					$<TARGET_FILE:amuled>
+			)
+			set_tests_properties (KadRendezvousRequesterIntegrationTest
+				PROPERTIES LABELS "integration" SKIP_RETURN_CODE 77)
+		endif ()
 		add_test (NAME KadLanModeIntegrationTest
 			COMMAND ${Python3_EXECUTABLE}
 				${CMAKE_CURRENT_SOURCE_DIR}/KadLanModeIntegrationTest.py $<TARGET_FILE:amuled>
@@ -4293,9 +4327,11 @@ foreach (ec_wire_test IN ITEMS
 	GlobalSourceRequestIntegrationTest
 	HashingCancelIntegrationTest
 	HashsetAnswerIntegrationTest
+	HelloAnswerIdChangeIntegrationTest
 	IntegrationFixtureUnitTest
 	KadBuddyLifecycleIntegrationTest
 	KadDistributionECTest
+	KadRendezvousRequesterIntegrationTest
 	KadIndexLifecycleECTest
 	KadLanModeIntegrationTest
 	KadLookupECTest
@@ -4304,6 +4340,7 @@ foreach (ec_wire_test IN ITEMS
 	KadPopulatedLookupECTest
 	KadReceiverKeyLogIntegrationTest
 	KadSourceBuddyIdIntegrationTest
+	KadSourceNatTransportsIntegrationTest
 	KadSourceTagsECTest
 	KnownHistoryIntegrationTest
 	KnownMetKadAckIntegrationTest
@@ -4344,6 +4381,7 @@ foreach (ec_wire_test IN ITEMS
 	UploadRefillIntegrationTest
 	UploadSlotLogStateIntegrationTest
 	UploadSlotScopeIntegrationTest
+	UploadThrottlerWakeIntegrationTest
 	WriteBackpressureIntegrationTest
 	WriteBufferPreferencesIntegrationTest
 )
@@ -4363,6 +4401,7 @@ foreach (long_test IN ITEMS
 	KadBuddyPointerResolveIntegrationTest-hit:157
 	KadBuddyCallbackRetryIntegrationTest-one:157
 	KadSourceBuddyIdIntegrationTest:137
+	KadRendezvousRequesterIntegrationTest:135
 	UploadRefillIntegrationTest:117
 	UPnPPortMappingIntegrationTest:99
 	KadBuddyPointerType7IntegrationTest-pointer:94

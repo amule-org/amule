@@ -335,19 +335,21 @@ def check_rendezvous_is_checked_and_rebuilt(proc, ec, udp_port, peer_port):
         def reask(buddy, body):
             requester.send(bytes([OP_EMULEPROT, OP_REASKCALLBACKUDP]) + buddy.buddy_id + body)
 
-        # Dropped before the one relayed, so a relay of either is the first packet the node reads.
+        # Dropped before the one relayed, so a relay of any is the first packet the node reads.
         reask(natt, rendezvous(requester_hash, NATT_QUIC, file_hash))
+        # eMuleQt sets no NAT-T bit and names QUIC in the tail, which this uTP node does not serve.
+        reask(natt, rendezvous(requester_hash, 0x20 | 0x01, file_hash, endpoint_hint('1.2.3.4', 4672, 2)))
         reask(natt, rendezvous(bytes(16), NATT_UTP, file_hash))
         # Bytes after the hint, such as a later extension, are not relayed.
         reask(natt, rendezvous(requester_hash, NATT_UTP | NATT_QUIC, file_hash, public_hint + b'\x01\x02xy'))
         body = wait_packet(natt.sock, OP_REASKCALLBACKTCP, MARGIN)
         assert body == seen + rendezvous(requester_hash, NATT_UTP | NATT_QUIC, file_hash, public_hint), body
 
-        # A node that declared nothing is relayed to whatever the requester declared. A hint that is
-        # not a public address is dropped.
+        # A node that declared nothing is relayed to whatever the requester declared. A hint address
+        # that is not public goes out as zeros; its transport byte is kept.
         reask(legacy, rendezvous(requester_hash, NATT_QUIC, file_hash, endpoint_hint('10.0.0.1', 4672, 2)))
         body = wait_packet(legacy.sock, OP_REASKCALLBACKTCP, MARGIN)
-        assert body == seen + rendezvous(requester_hash, NATT_QUIC, file_hash), body
+        assert body == seen + rendezvous(requester_hash, NATT_QUIC, file_hash, bytes(6) + b'\x02'), body
 
     wait_counter(proc, ec, 'SERVING_REASKS', before['SERVING_REASKS'] + 2)
     counters = buddy_counters(ec)

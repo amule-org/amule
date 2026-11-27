@@ -56,7 +56,7 @@ enum Cipher : uint8_t
 	Cipher_AES128_GCM = 1,
 	/// Preferred where available: roughly 2.6x faster than AES-GCM without
 	/// hardware AES, which is every Raspberry Pi up to the 4. Needs Crypto++
-	/// 8.1, aMule's minimum, so it is always compiled in and just negotiated.
+	/// 8.1, below aMule's minimum, so it is always compiled in and just negotiated.
 	Cipher_ChaCha20_Poly1305 = 2
 };
 

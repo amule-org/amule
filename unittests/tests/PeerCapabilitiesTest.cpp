@@ -159,10 +159,28 @@ TEST(PeerCapabilities, ReservedBitsAreMaskedOff)
 	ASSERT_EQUALS(MOD_MISCOPT_KNOWN_MASK, caps.KnownBits());
 }
 
-// Extended Source Exchange and its tag skipping only: no NAT traversal, which is incomplete.
-TEST(PeerCapabilities, AdvertisesOnlyExtendedSourceExchange)
+TEST(PeerCapabilities, EitherNatTBitDeclaresNatTraversal)
 {
-	ASSERT_EQUALS(0x00000021u, LocalAdvertisedModMiscOptions());
+	CPeerCapabilities caps;
+	ASSERT_FALSE(caps.DeclaresNatTraversal());
+	caps.SetFromWire(MOD_MISCOPT_EXTENDED_XS | MOD_MISCOPT_IPV6);
+	ASSERT_FALSE(caps.DeclaresNatTraversal());
+	caps.SetFromWire(MOD_MISCOPT_NAT_TRAVERSAL);
+	ASSERT_TRUE(caps.DeclaresNatTraversal());
+	caps.SetFromWire(MOD_MISCOPT_NAT_TRAVERSAL_QUIC);
+	ASSERT_TRUE(caps.DeclaresNatTraversal());
+}
+
+// Extended Source Exchange and its tag skipping always; the NAT-T transports only while firewalled.
+TEST(PeerCapabilities, AdvertisesNatTTransportsOnlyWhileFirewalled)
+{
+	ASSERT_EQUALS(0x00000021u, LocalAdvertisedModMiscOptions(false, 0xC0));
+	ASSERT_EQUALS(0x00000021u, LocalAdvertisedModMiscOptions(true, 0));
+	ASSERT_EQUALS(0x00000023u, LocalAdvertisedModMiscOptions(true, 0x80));
+	ASSERT_EQUALS(0x00000031u, LocalAdvertisedModMiscOptions(true, 0x40));
+	ASSERT_EQUALS(0x00000033u, LocalAdvertisedModMiscOptions(true, 0xC0));
+	// The other connect-options bits name no transport.
+	ASSERT_EQUALS(0x00000021u, LocalAdvertisedModMiscOptions(true, 0x3F));
 }
 
 TEST(PeerCapabilities, ExtendedSourceExchangeNeedsThePeersBitZero)
@@ -407,4 +425,14 @@ TEST(PeerCapabilities, VendorTagIdsAndKadTagNamesAreExact)
 
 	ASSERT_EQUALS(wxString(wxT("ip6")), wxString(TAG_IPV6));
 	ASSERT_EQUALS(wxString(wxT("bi6")), wxString(TAG_SERVINGBUDDYIPV6));
+}
+
+// A Kad record and a source-exchange answer carry crypt and callback bits in the same byte; only
+// eMuleAI's 0x80 (uTP) and 0x40 (QUIC) declare a transport.
+TEST(PeerCapabilities, OnlyTheNatTBitsOfConnectOptionsDeclareATransport)
+{
+	ASSERT_EQUALS(0, (int)DeclaredNatTTransports(0x0F));
+	ASSERT_EQUALS(0x80, (int)DeclaredNatTTransports(0x80 | 0x09));
+	ASSERT_EQUALS(0x40, (int)DeclaredNatTTransports(0x40 | 0x01));
+	ASSERT_EQUALS(0xC0, (int)DeclaredNatTTransports(0xFF));
 }

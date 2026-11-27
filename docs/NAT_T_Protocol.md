@@ -74,10 +74,25 @@ streams (see [Key frame](#key-frame-quic-and-utp-datagram-obfuscation)). The
 outbound CAPS and QUIC dial also need `ENABLE_NATT_SERVER_COORDINATION` and
 `ENABLE_UTP`, which provide the rendezvous they run on.
 
-The feature does not advertise a QUIC capability in HELLO or
-`CT_MOD_MISCOPTIONS`. eMuleAI learns through `CAPS_ACK` instead. This avoids
-marking aMule as a mod when it does not provide the readable `ET_MOD_VERSION`
-that such an advertisement would imply.
+While we are firewalled, the hello's `CT_MOD_MISCOPTIONS` declares the
+transports we serve: bit 4 (`0x10`, `MOD_MISCOPT_NAT_TRAVERSAL_QUIC`) for QUIC
+and bit 1 (`0x02`, `MOD_MISCOPT_NAT_TRAVERSAL`) for uTP, the same transports
+that the Kad `0x51` (`KADEMLIA_FINDBUDDY_REQ`) declares (see
+[Kad buddy rendezvous](#kad-buddy-rendezvous)).
+eMuleAI needs them: once a uTP or QUIC stream connects it forgets the
+`CAPS_ACK`, and it asks for a file only when the peer's hello declares the
+stream's transport. Without the bit it closes the stream and dials again. A
+HighID sends neither bit: a peer reaches it over TCP, and eMuleAI's callback to
+a peer whose hello declared a transport tries that transport before TCP.
+
+A source we have not met declares its transports elsewhere. eMuleAI sets
+`0x80` (uTP) and `0x40` (QUIC) in the connect options of its Kad source records
+(`TAG_ENCRYPTION`), and in a source-exchange answer to a peer whose hello
+declares NAT-T. eMuleQt sets `0x40` in the connect options of its Kad records
+like eMuleAI, and also adds a Kad tag `nat` (uint8, bit 0 for QUIC) that aMule
+does not need. aMule keeps what a record or an answer declares for each source,
+apart from the hello's bits, and each copy of the source adds its own. It is
+another node's word: a path may use it to pick what to try, never as proof.
 
 ## Datagram envelope
 
@@ -295,8 +310,10 @@ aMule dials a HighID peer over TCP, also when the peer sets the NAT traversal bi
 aMule dials uTP and QUIC only for a LowID rendezvous: a server-vouched dial or a callback.
 aMule still accepts incoming uTP streams.
 
-eMuleAI dials a HighID peer that sets the bit over uTP first. aMule does not set the bit
-(`LocalAdvertisedModMiscOptions()`), so eMuleAI dials aMule over TCP.
+eMuleAI dials a HighID peer over TCP, bit or not, except when it answers a Kad callback
+(`OP_CALLBACK`) for a peer it already knows: then it tries the transport that peer's hello declared
+before TCP. aMule sets the bits only while firewalled (`LocalAdvertisedModMiscOptions()`), so a
+HighID aMule is called back over TCP.
 
 ## Scope and interoperability status
 
@@ -304,11 +321,15 @@ This exchange only negotiates capability information. It does not by itself
 establish a QUIC connection: aMule dials QUIC only on a server-vouched LowID
 rendezvous, after a compatible answer.
 
-A future direct interoperability run requires eMuleAI to know aMule's UDP
+The [Kad buddy rendezvous](#kad-buddy-rendezvous) is tested live: eMuleAI 1.6.0
+and eMuleQt 0.7.41, as requesters on a mobile network, download from a
+firewalled aMule behind a home NAT over QUIC, and eMuleAI also over uTP. Both
+follow aMule's QUIC Retry.
+
+The direct path is not tested live yet. It needs eMuleAI to know aMule's UDP
 endpoint, aMule to have a LowID, and eMuleAI itself to be firewalled. eMuleAI
 must also lack a usable Kad buddy for this peer so it selects direct NAT
-traversal instead of rendezvous. No live eMuleAI 1.6 validation has been
-performed for this task.
+traversal instead of rendezvous.
 
 ## Manual interoperability runbook
 
@@ -616,6 +637,17 @@ server has fewer than 15 of its 30 targets, so the download side keeps at least 
 
 The runtime setting remains off by default.
 
+### LowID sources in source exchange
+
+A source-exchange answer normally offers a LowID only in the extended format, with a Kad buddy
+route, or with the direct callback to a peer that skips unknown tags. A peer whose hello declares a
+NAT-T transport (`CT_MOD_MISCOPTIONS` bit 1 or bit 4) also gets a LowID that has an IPv4 server,
+since it reaches that source through the server paths above. The extended format carries it, and
+the classic one from version 3, whose hybrid IDs keep a LowID apart from an IP. For that peer each
+source's connect options also carry the NAT-T transports the source's hello declared (`0x80` uTP,
+`0x40` QUIC), as eMuleAI writes them. Every other peer gets the answer as before. A firewalled
+aMule declares the bits, and keeps such a source while a server path can reach it (see above).
+
 ## Lugdunum NAT callback (eserver 17.15+)
 
 Lugdunum servers relay a NAT callback between two LowID clients on the same
@@ -763,6 +795,12 @@ does nothing while an obfuscated ping is still waiting for its answer, when the 
 support UDP obfuscation, when our public IP is unknown (the ping would go plain), or when the server
 crypt layer is off.
 
+A server with no status answer yet, one just added or from a `server.met` with no UDP flags, gets no
+`0x9A` (`OP_GLOBGETSOURCES`) while its status ping is due, and for at most 30 s after its last ping
+(`AwaitsFirstServerStatus()`). Asked earlier, it answers with LowID sources that the check above
+drops, and is asked about them again only after `UDPSERVERREASKTIME`, about 22 minutes. A server
+whose next ping is hours away, as saved in `server.met`, is asked without waiting.
+
 An unanswered plain ping counts as a failure, and `ServerStats()` removes a server after
 `DeadServerRetry` failures. In a round that recovery brought forward it does not
 (`CServer::IsKeyRecoveryPing()`), so only the regular rounds count, and recovery never brings a
@@ -817,7 +855,11 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   byte of its `0x51` (`KADEMLIA_FINDBUDDY_REQ`): connect options with `0x80`
   for uTP and `0x40` for QUIC. aMule sends it with the transports it can use,
   uTP when built in and QUIC when built in and enabled. The requester declares
-  its own in the connect options of the `0xA0`. A 34-byte `0x51` declares none.
+  its own in the connect options of the `0xA0`, or names one in the last byte
+  of its 7-byte tail: `1` uTP, `2` QUIC. eMuleAI sets the bits; eMuleQt sets
+  none and names QUIC in the tail. It sends the tail only when it knows its
+  public IPv4; without it the request declares no transport, and the served
+  node drops it. A 34-byte `0x51` declares none.
 - **Check.** The buddy drops the `0xA0` only when both peers declared
   transports and share none, and counts the drop in its relay summary. If
   either peer declared none, it forwards as before. The check needs no CAPS
@@ -825,8 +867,132 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   endpoints, never through the buddy.
 - **Rebuilt.** The buddy writes each forwarded `0xA0` from the fields it parsed,
   after the requester's observed endpoint, and does not copy the received bytes.
+  A tail whose address it cannot use goes out with a zero address and port, so
+  its transport byte still reaches the served node; eMuleAI reads that byte
+  whatever the address.
 - **Slots.** A third of the buddy slots is kept for nodes that declared a
   transport, so a node that serves buddies keeps room for NAT-T nodes.
 - **Interop.** An eMuleAI buddy forwards without this check. A drop on our side
   only stops a rendezvous that would fail anyway: the requester sees a timeout
   in both cases, because the `0xB2` frames have no failure frame.
+
+### Served node
+
+The buddy forwards the `0xA0` in `OP_REASKCALLBACKTCP` (`0x9A`): the
+requester's observed IPv4 and UDP port, then 16 zero bytes where a reask has
+its file hash, then the `0xA0` and its request. aMule takes it only from its
+own Kad buddy; a forward from any other peer, and an IPv6 requester
+(`0xFFFFFFFF`, 16 address bytes and the port, then the payload), are ignored as
+before. A rendezvous for an IPv6 requester counts only in `received`, not as a
+reask.
+
+- **No reask.** A forwarded control payload is not answered as a reask, so the
+  requester gets no `OP_FILENOTFOUND`. Only `0xA0` is handled; any other
+  embedded opcode, a request that does not parse, or an unusable endpoint is
+  dropped as malformed. A payload with an all-zero file hash and no `0xA0` is
+  dropped the same way: it gets no `OP_FILENOTFOUND` and does not count as a
+  reask.
+- **Who dials.** The requester. The served node waits: it does not choose a
+  transport, it arms every one both sides declared and lets the requester pick.
+  With none in common it drops the `0xA0`, even after the buddy's check,
+  because an eMuleAI buddy forwards without it. An eMuleQt requester names only
+  QUIC, so only a QUIC build with QUIC NAT-T turned on serves it. The `0x51`
+  (`KADEMLIA_FINDBUDDY_REQ`) and the hello declare exactly the transports this
+  handler arms, from one helper: uTP only with server coordination and uTP
+  available, QUIC also with QUIC NAT-T on.
+- **Endpoint.** It punches only the endpoint the buddy saw. When the source an
+  eMuleAI buddy saw is not public, that buddy writes the requester's
+  self-reported endpoint in its place (the `forwardIP` fallback in eMuleAI's
+  `ClientUDPSocket.cpp`), and that is the one punched. The requester's
+  hint is parsed but never punched: it would help only a requester on the
+  buddy's own network. Bytes after the 7-byte tail, such as the extension block
+  of ModderMule/emule-qt#265, are ignored: aMule uses none of its elements yet.
+  A requester whose address is banned, filtered by the IP filter, or on the LAN
+  while LAN addresses are filtered (the default) is ignored too, and counted
+  only in `received`.
+- **Action.** It records the requester with `ExpectNatTPeer()` first, so it
+  answers the requester's CAPS, then starts the punch schedule and port sweep
+  of the server paths on the Kad buddy path. A server login does not end that
+  schedule. The user hash in the `0xA0` is passed as the server paths pass
+  theirs, but no server vouches for it: the requester's hello decides which
+  client the stream is.
+- **Limits.** A repeat to the same endpoint within 20 s joins the attempt in
+  flight; eMuleQt sends the request up to three times, 5 s apart. A requester
+  address may start one attempt every 5 s, and all requesters together 20 a
+  minute, a budget apart from the server paths' 20 actions a minute. Its port
+  sweeps spend a budget of their own too, apart from the ten a minute the server
+  paths share. The source a buddy relays can be forged, so the per-address limit
+  alone would not stop a sender that forges a new one each time.
+- **Statistics.** `buddy.own.rendezvous` counts what the buddy forwarded:
+  `received`, `malformed`, `no_shared_transport`, `accepted`, and `connected`
+  when the requester's verified hello completes it. The Kad buddy path counts
+  apart from the ed2k-server punch and the Lugdunum callback. Each outcome is
+  logged under Kad buddy.
+- **Build.** The action needs `ENABLE_NATT_SERVER_COORDINATION` and uTP, as the
+  punch schedule does. Without them the `0xA0` is still recognised and counted,
+  and dropped as having no shared transport.
+
+### Requester
+
+A firewalled aMule with Kad connected asks for a rendezvous when a source is a
+LowID Kad source with a buddy (type 3 or 5, with the buddy's ID, IPv4 and
+port), and nothing else reaches it: it is tried last in `TryToContact()`, after
+the cross-server callback, the ed2k-server hole punch and the Lugdunum callback.
+A server confirms who both sides are; a buddy only relays what the requester
+says. Before this, a firewalled aMule did not try such a source at all.
+
+- **Expect, then punch.** It records the source's Kad endpoint (the IP the
+  storer recorded and the source's Kad UDP port) and user hash with
+  `ExpectNatTPeer()`, so it answers the source's CAPS, then punches that
+  endpoint with the punch schedule and port sweep. Its sweeps spend a budget of
+  their own, apart from the server paths' and from the served side's, whose
+  forwarded rendezvous can be forged. A Kad result for a source we already know
+  gives its Kad endpoint whenever it names the buddy we use: a new address taken
+  for a source that had none, or the address we already have, as a source from
+  extended source exchange arrives with. A result naming another buddy is kept
+  as the candidate with its Kad endpoint, and a switch to it takes both.
+- **Former endpoints.** A source that restarts publishes a new port, while
+  nodes still hand out its older records for hours, in any order. So the
+  endpoint taken last can be a stale one, and a punch from the source's real
+  port is then dropped by our NAT. The source keeps up to three endpoints that
+  earlier records named. A rendezvous expects and punches each of them as well,
+  and a punch from any of them is the source's.
+- **Buddy ID.** The request carries the buddy ID as eMule's requester sends
+  it: `TAG_BUDDYHASH` read into a `CUInt128` and written as its
+  `ToByteArray()`, the form eMule, eMuleAI and eMuleQt buddies compare with, and
+  the one our plain reask through a buddy sends. It is never converted: every
+  source that speaks the rendezvous publishes the eMule layout. Our own buddy
+  matches either layout.
+- **Send.** An `OP_REASKCALLBACKUDP` (`0x94`) to the source's buddy, plain, as a
+  reask through a buddy is:
+  `<buddy id 16><zero 16><0xA0 1><our hash 16><opts 1><file hash 16><our ip 4><udp port 2><hint 1>`.
+  The options are our Kad connect options plus the NAT-T transports we serve
+  (`0x80` uTP, `0x40` QUIC), with `0x20` (endpoint hint) clear. The tail is
+  always written, with our public IPv4 or zeros while we do not know it, so the
+  extension block of ModderMule/emule-qt#265 can follow it; the hint is 2 (QUIC) when we serve
+  QUIC, else 1 (uTP). It is sent up to three times, 5 s apart, until the source
+  punches back.
+- **Dial.** On the source's first punch it dials the endpoint the punch came
+  from, through the dial the server paths use (QUIC when CAPS confirms it, else
+  uTP). Without a punch within 3 s it dials the source's Kad endpoint once, as
+  eMuleAI dials it at once. A punch that comes after that dial is not dialled
+  again unless it shows another port.
+- **End.** A verified hello from the source ends the attempt. Otherwise it ends
+  after 45 s, and that source is not asked this way again for 10 minutes. One
+  attempt per source is in flight, and at most 32 at once.
+- **Retry.** A source left `DS_LOWTOLOWIP` is asked again from the download
+  queue's tick, like the server paths' retries, once its cooldown is over or the
+  cap leaves room, and only while no server path works on it.
+- **No rendezvous.** A source that does not speak the rendezvous (stock eMule,
+  and aMule before the served side) reads the `0xA0` as a reask for a zero file
+  hash and answers `OP_FILENOTFOUND`. During an attempt that answer ends the
+  attempt and is not taken as a dead source: the source is kept, and never
+  asked for a rendezvous again in this session. A known source at exactly that
+  endpoint is the target only when it has the attempt's user hash, as a source
+  that connected to us before does; any other one, behind the same shared
+  address, answers its own reask and is handled as before.
+- **Statistics.** `buddy.own.requested_rendezvous` counts `started`, `sent`
+  (each `0x94`), `punched`, `fallback_dials`, and how attempts end: `connected`,
+  `timed_out` or `no_rendezvous`. Each step is logged under client UDP.
+- **Build.** As the served side: `ENABLE_NATT_SERVER_COORDINATION` and uTP, and
+  a node that serves no NAT-T transport does not ask.

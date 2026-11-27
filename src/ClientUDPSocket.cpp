@@ -595,6 +595,7 @@ void CClientUDPSocket::TickUtp()
 	wxASSERT(wxIsMainThread());
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 	TickLugdunumCallbackRendezvous();
+	TickKadRendezvous(::GetTickCount64());
 #endif
 	m_utp.Tick();
 }
@@ -1201,6 +1202,89 @@ void CClientUDPSocket::ProcessReservedProt2Frame(
 	}
 }
 
+uint8_t CClientUDPSocket::ServedNatTTransports()
+{
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+#ifdef AMULE_QUIC_TRANSPORT
+	const bool quicEnabled = thePrefs::IsQuicNatTEnabled();
+#else
+	const bool quicEnabled = false;
+#endif
+	if (!Ok()) {
+		return 0;
+	}
+	return Kademlia::NatTConnectOptionsFor(m_utp.IsAvailable(), quicEnabled);
+#else
+	return 0;
+#endif
+}
+
+void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, const uint8_t *body, size_t size)
+{
+	Kademlia::CBuddyStats::Own::Rendezvous &counts = theApp->clientlist->GetBuddyStats().own.rendezvous;
+	++counts.received;
+	const wxString requester = Uint32_16toStringIP_Port(ip, udpPort);
+	const uint8_t localTransports = ServedNatTTransports();
+	const PeerAddressing::UdpEndpoint observed{ CNetworkAddress::FromIPv4NetworkOrderOrAbsent(ip),
+		udpPort };
+	const NatRendezvous::ServedRendezvousDecision decision =
+		NatRendezvous::DecideServedRendezvous(observed, body, size, localTransports);
+	switch (decision.outcome) {
+	case NatRendezvous::EServedRendezvous::Malformed:
+		++counts.malformed;
+		AddDebugLogLineN(
+			logKadBuddy, "Dropped a malformed rendezvous our buddy forwarded for " + requester);
+		return;
+	case NatRendezvous::EServedRendezvous::NoSharedTransport:
+		++counts.noSharedTransport;
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Dropped a rendezvous for %s: it declared NAT-T 0x%02x, we have 0x%02x") %
+				requester % NatRendezvous::RequesterTransports(decision.request) %
+				localTransports);
+		return;
+	case NatRendezvous::EServedRendezvous::Punch:
+		break;
+	}
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+	if (!IsRendezvousPeerAllowed(ip)) {
+		AddDebugLogLineN(logKadBuddy, "Ignored a rendezvous for " + requester + ": not allowed");
+		return;
+	}
+	const uint64 now = ::GetTickCount64();
+	switch (m_servedRendezvous.Admit(decision.target, now)) {
+	case NatRendezvous::EServedAdmission::Start:
+		break;
+	case NatRendezvous::EServedAdmission::Join:
+		AddDebugLogLineN(
+			logKadBuddy, "Rendezvous resend for " + requester + " joins the one in flight");
+		return;
+	case NatRendezvous::EServedAdmission::RequesterLimited:
+		AddDebugLogLineN(
+			logKadBuddy, "Rendezvous for " + requester + " held back by its address limit");
+		return;
+	case NatRendezvous::EServedAdmission::OverGlobalLimit:
+		AddDebugLogLineN(
+			logKadBuddy, "Rendezvous for " + requester + " held back by the global limit");
+		return;
+	}
+	++counts.accepted;
+	AddDebugLogLineN(logKadBuddy,
+		CFormat("Rendezvous from our buddy: punching %s, NAT-T 0x%02x; the requester dials") %
+			requester % decision.sharedTransports);
+	const std::array<std::uint8_t, 16> &requesterHash = decision.request.requesterHash;
+	NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath::KadBuddy, ip, &requesterHash);
+	// Recorded before the punch: we answer the requester's CAPS only from an expected peer. No
+	// server vouches for the hash; the requester's hello decides which client the stream is.
+	ExpectNatTPeer(ip, udpPort, &requesterHash);
+	NatServerHolePunch::IPv4 peerIP{};
+	PokeUInt32(peerIP.data(), ip);
+	StartLowIdHolePunchSchedule(
+		peerIP, udpPort, now, NatServerHolePunch::RendezvousPath::KadBuddy, requesterHash);
+#else
+	wxFAIL_MSG("A rendezvous was accepted with no NAT-T transport built in");
+#endif
+}
+
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 bool CClientUDPSocket::IsRendezvousPeerAllowed(uint32 ip)
 {
@@ -1239,8 +1323,13 @@ void CClientUDPSocket::SendDueLowIdHolePunches(uint64 now)
 			punch(due.peerIP, due.udpPort);
 			continue;
 		}
-		// One sweep per destination address every five minutes, ten a minute overall.
-		if (!m_lowIdHolePunchSweeps.Admit(due.peerIP, now)) {
+		// One sweep per destination address every five minutes, ten a minute overall, for each of
+		// three budgets: the server paths, the Kad buddy's served side and our own Kad rendezvous.
+		NatServerHolePunch::SweepBudget &budget = NatServerHolePunch::SweepBudgetFor(due.path,
+			m_lowIdHolePunchSweeps,
+			m_kadBuddyHolePunchSweeps,
+			m_kadRequesterHolePunchSweeps);
+		if (!budget.Admit(due.peerIP, now)) {
 			AddDebugLogLineN(logClientUDP,
 				CFormat("Punch sweep to %s refused by the sweep budget") %
 					Uint32toStringIP(PeekUInt32(due.peerIP.data())));
@@ -1256,6 +1345,96 @@ void CClientUDPSocket::SendDueLowIdHolePunches(uint64 now)
 		}
 		for (const uint16 port : ports) {
 			punch(due.peerIP, port);
+		}
+	}
+}
+
+bool CClientUDPSocket::StartKadRendezvous(const NatRendezvous::SKadRendezvousTarget &target)
+{
+	const uint64 now = ::GetTickCount64();
+	if (!Ok() || target.udpPort == 0 || !IsRendezvousPeerAllowed(target.ip) ||
+		!m_kadRendezvousRequests.Start(target, now)) {
+		return false;
+	}
+	// Recorded before the punch, as on every path: we answer the target's CAPS only from an
+	// expected peer, and the hash lets its hello find this attempt.
+	ExpectNatTPeer(target.ip, target.udpPort, &target.hash);
+	NatServerHolePunch::IPv4 peerIP{};
+	PokeUInt32(peerIP.data(), target.ip);
+	StartLowIdHolePunchSchedule(
+		peerIP, target.udpPort, now, NatServerHolePunch::RendezvousPath::KadRequester, target.hash);
+	// The source punches from where it is now, and our NAT drops it from a port we never sent to.
+	for (const NatRendezvous::SKadEndpoint &former : target.former) {
+		if (former.port == 0 || !IsRendezvousPeerAllowed(former.ip)) {
+			continue;
+		}
+		ExpectNatTPeer(former.ip, former.port, &target.hash);
+		NatServerHolePunch::IPv4 formerIP{};
+		PokeUInt32(formerIP.data(), former.ip);
+		StartLowIdHolePunchSchedule(formerIP,
+			former.port,
+			now,
+			NatServerHolePunch::RendezvousPath::KadRequester,
+			target.hash);
+	}
+	if (!target.former.empty()) {
+		AddDebugLogLineN(logClientUDP,
+			CFormat("Rendezvous for %s: also punching %u endpoint(s) earlier records named") %
+				Uint32_16toStringIP_Port(target.ip, target.udpPort) %
+				static_cast<unsigned>(target.former.size()));
+	}
+	++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.started;
+	TickKadRendezvous(now);
+	return true;
+}
+
+void CClientUDPSocket::TickKadRendezvous(uint64 now)
+{
+	for (const NatRendezvous::SKadRendezvousAction &action : m_kadRendezvousRequests.TakeDue(now)) {
+		const NatRendezvous::SKadRendezvousTarget &target = action.target;
+		switch (action.kind) {
+		case NatRendezvous::SKadRendezvousAction::Send: {
+			const uint8_t localTransports = ServedNatTTransports();
+			const std::vector<std::uint8_t> envelope = NatRendezvous::BuildRendezvousEnvelope(
+				target.buddyID,
+				[] {
+					NatRendezvous::UserHash hash{};
+					std::copy_n(
+						thePrefs::GetUserHash().GetHash(), hash.size(), hash.begin());
+					return hash;
+				}(),
+				NatRendezvous::RequesterConnectOptions(
+					Kademlia::CPrefs::GetMyConnectOptions(), localTransports),
+				target.fileHash,
+				theApp->GetPublicIP(),
+				thePrefs::GetEffectiveUDPPort(),
+				NatRendezvous::RequesterTransportHint(localTransports));
+			CMemFile data(envelope.data(), envelope.size());
+			CPacket *packet = new CPacket(data, OP_EMULEPROT, OP_REASKCALLBACKUDP);
+			AddDebugLogLineN(logClientUDP,
+				"Client UDP socket: send OP_REASKCALLBACKUDP carrying a rendezvous for " +
+					Uint32_16toStringIP_Port(target.ip, target.udpPort));
+			theStats::AddUpOverheadOther(packet->GetPacketSize());
+			SendPacket(packet, target.buddyIP, target.buddyPort, false, nullptr, true, 0);
+			++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.sent;
+			break;
+		}
+		case NatRendezvous::SKadRendezvousAction::FallbackDial:
+			AddDebugLogLineN(logClientUDP,
+				"No punch from " + Uint32_16toStringIP_Port(target.ip, target.udpPort) +
+					": dialling its Kad endpoint");
+			DialLowIdHolePunchPeer(target.ip,
+				target.tcpPort,
+				target.udpPort,
+				NatServerHolePunch::VouchedPeer{ target.hash, std::nullopt });
+			++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.fallbackDials;
+			break;
+		case NatRendezvous::SKadRendezvousAction::Expired:
+			AddDebugLogLineN(logClientUDP,
+				"Rendezvous for " + Uint32_16toStringIP_Port(target.ip, target.udpPort) +
+					" timed out");
+			++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.timedOut;
+			break;
 		}
 	}
 }
@@ -1362,10 +1541,19 @@ void CClientUDPSocket::NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath 
 	if (!m_rendezvousOutcomes.NoteAttempt(path, ip, hash, ::GetTickCount64()) || !countAttempt) {
 		return;
 	}
-	if (path == NatServerHolePunch::RendezvousPath::ServerPunch) {
+	switch (path) {
+	case NatServerHolePunch::RendezvousPath::ServerPunch:
 		theStats::AddServerHolePunchAttempt();
-	} else {
+		break;
+	case NatServerHolePunch::RendezvousPath::LugdunumCallback:
 		theStats::AddLugdunumCallbackAttempt();
+		break;
+	case NatServerHolePunch::RendezvousPath::KadBuddy:
+		// Counted as buddy.own.rendezvous.accepted by the handler, which also counts the drops.
+		break;
+	case NatServerHolePunch::RendezvousPath::KadRequester:
+		// Counted as buddy.own.requested_rendezvous by StartKadRendezvous(); never noted here.
+		break;
 	}
 }
 
@@ -1476,15 +1664,28 @@ bool CClientUDPSocket::NoteRendezvousHello(uint32 ip, const std::array<std::uint
 	NatServerHolePunch::IPv4 peer{};
 	PokeUInt32(peer.data(), ip);
 	m_lowIdHolePunchSchedules.CancelPeer(peer, peerHash);
+	if (m_kadRendezvousRequests.Complete(ip, peerHash)) {
+		++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.connected;
+		return true;
+	}
 	const std::optional<NatServerHolePunch::RendezvousPath> path =
 		m_rendezvousOutcomes.TakeSuccess(ip, peerHash, ::GetTickCount64());
 	if (!path) {
 		return false;
 	}
-	if (*path == NatServerHolePunch::RendezvousPath::ServerPunch) {
+	switch (*path) {
+	case NatServerHolePunch::RendezvousPath::ServerPunch:
 		theStats::AddServerHolePunchSuccess();
-	} else {
+		break;
+	case NatServerHolePunch::RendezvousPath::LugdunumCallback:
 		theStats::AddLugdunumCallbackSuccess();
+		break;
+	case NatServerHolePunch::RendezvousPath::KadBuddy:
+		++theApp->clientlist->GetBuddyStats().own.rendezvous.connected;
+		break;
+	case NatServerHolePunch::RendezvousPath::KadRequester:
+		// Ended by m_kadRendezvousRequests.Complete() above; never noted as an outcome.
+		break;
 	}
 	return true;
 }
@@ -1681,6 +1882,18 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 	PokeUInt32(source.data(), host);
 	// A punch from the peer is what its schedule was for, whatever path started it.
 	m_lowIdHolePunchSchedules.Cancel(source, port);
+	// A Kad rendezvous we asked for needs no server: the target's punch is the dial's cue.
+	if (const auto target = m_kadRendezvousRequests.TakePunch(host, port, ::GetTickCount64())) {
+		AddDebugLogLineN(logClientUDP,
+			"OP_HOLEPUNCH from " + Uint32_16toStringIP_Port(host, port) +
+				" answers our rendezvous; dialling");
+		DialLowIdHolePunchPeer(host,
+			target->tcpPort,
+			port,
+			NatServerHolePunch::VouchedPeer{ target->hash, std::nullopt });
+		++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.punched;
+		return;
+	}
 	CServerConnect *connect = theApp->serverconnect;
 	if (connect == nullptr) {
 		return;
@@ -1758,8 +1971,8 @@ void CClientUDPSocket::ProcessPacket(
 				++relays.reasksMalformed;
 				break;
 			}
-			if (!Kademlia::ForwardsRendezvous(
-				    buddy->GetServedBuddyOptions(), envelope->request.connectOptions)) {
+			if (!Kademlia::ForwardsRendezvous(buddy->GetServedBuddyOptions(),
+				    NatRendezvous::RequesterTransports(envelope->request))) {
 				++relays.rendezvousNoSharedTransport;
 				break;
 			}
@@ -1956,6 +2169,24 @@ void CClientUDPSocket::ProcessPacket(
 		AddDebugLogLineN(logClientUDP, "Client UDP socket: OP_FILENOTFOUND");
 		theStats::AddDownOverheadFileRequest(size);
 		CUpDownClient *sender = theApp->downloadqueue->GetDownloadClientByIP_UDP(host, port);
+#if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
+		// A target that read our 0xA0 as a reask for a zero file hash does not speak the
+		// rendezvous. The source is not dead: leave it, and never ask it this way again. A known
+		// source at exactly this endpoint is the target only with the attempt's hash: a target
+		// that connected before keeps its address. Any other one answers its own reask.
+		std::optional<NatRendezvous::KadRendezvousHash> senderHash;
+		if (sender != nullptr) {
+			senderHash.emplace();
+			std::copy_n(sender->GetUserHash().GetHash(), senderHash->size(), senderHash->begin());
+		}
+		if (m_kadRendezvousRequests.NoRendezvous(host, port, senderHash)) {
+			AddDebugLogLineN(logClientUDP,
+				"No rendezvous at " + Uint32_16toStringIP_Port(host, port) +
+					": it answered not found");
+			++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.noRendezvous;
+			break;
+		}
+#endif
 		if (sender) {
 			sender->UDPReaskFNF(); // may delete 'sender'!
 			sender = NULL;

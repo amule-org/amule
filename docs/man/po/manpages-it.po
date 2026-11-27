@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aMule SVN\n"
 "POT-Creation-Date: 2026-11-26 09:43+0100\n"
-"PO-Revision-Date: 2026-11-16 20:31+0000\n"
+"PO-Revision-Date: 2026-11-27 10:57+0000\n"
 "Last-Translator: Got3nks <got3nks@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/amule/application-man-pages/it/>\n"
 "Language: it\n"
@@ -62,10 +62,8 @@ msgstr "NOME"
 # type: Plain text
 #. type: Plain text
 #: amule.1.in
-#, fuzzy
-#| msgid "amule - the all-platform eMule p2p client"
 msgid "amule - the all-platform P2P client for the eD2k and Kad networks"
-msgstr "amule - il client p2p multipiattaforma basato su eMule"
+msgstr "amule - il client P2P multipiattaforma per le reti eD2k e Kad"
 
 # type: SH
 #. type: SH
@@ -1030,10 +1028,8 @@ msgstr "aMule Daemon"
 # type: Plain text
 #. type: Plain text
 #: amuled.1.in
-#, fuzzy
-#| msgid "amuled - the all-platform eMule p2p client - daemonized version"
 msgid "amuled - the all-platform P2P client for the eD2k and Kad networks - daemonized version"
-msgstr "amuled - il client p2p multipiattaforma basato su eMule - versione demone"
+msgstr "aMule - il client P2P multipiattaforma per le reti eD2k e Kad - versione demone"
 
 # type: Plain text
 #. type: Plain text

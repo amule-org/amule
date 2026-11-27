@@ -25,6 +25,8 @@
 #ifndef PEERCAPABILITIES_H
 #define PEERCAPABILITIES_H
 
+#include "KadServedBuddyPolicy.h" // Needed for NatTConnectOptions
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -108,6 +110,7 @@ public:
 	bool SupportsIPv6() const { return Has(MOD_MISCOPT_IPV6); }
 	bool SupportsServingBuddyPull() const { return Has(MOD_MISCOPT_SERVING_BUDDY_PULL); }
 	bool SupportsNatTraversalQuic() const { return Has(MOD_MISCOPT_NAT_TRAVERSAL_QUIC); }
+	bool DeclaresNatTraversal() const { return SupportsNatTraversal() || SupportsNatTraversalQuic(); }
 	bool SkipsUnknownExtendedSourceExchangeTags() const { return Has(MOD_MISCOPT_EXTXS_SKIP_TAGS); }
 
 	/**
@@ -212,9 +215,13 @@ private:
 	uint32_t m_bits = 0;
 };
 
+//! The CT_MOD_MISCOPTIONS bits aMule always sends: Extended Source Exchange, and that aMule skips
+//! unknown tags in it.
+constexpr uint32_t MOD_MISCOPT_ALWAYS_ADVERTISED = MOD_MISCOPT_EXTENDED_XS | MOD_MISCOPT_EXTXS_SKIP_TAGS;
+
 /**
- * The CT_MOD_MISCOPTIONS word aMule puts in its own handshake: Extended Source Exchange, and
- * that aMule skips unknown tags in it.
+ * The CT_MOD_MISCOPTIONS word aMule puts in its own handshake: the bits above, and while we are
+ * firewalled the NAT-T transports we serve.
  *
  * The cost: eMuleAI flags a sender of this tag that has no readable ET_MOD_VERSION string as a
  * ghost mod. aMule sends that string only under __GIT__, so a release build gets eMuleAI's
@@ -222,16 +229,32 @@ private:
  *
  * What it buys: eMuleAI and emule-qt answer source requests with Extended Source Exchange only
  * to a peer with bit 0, and only that format carries LowID sources with their buddy route.
+ * eMuleAI asks for a file over a uTP or QUIC stream only when the peer's hello declares that
+ * transport: it forgets the CAPS answer once the stream connects.
+ *
+ * Only while firewalled: a HighID needs no NAT-T, and eMuleAI's callback to a peer whose hello
+ * declared a transport tries that transport before TCP.
+ *
+ * @param servedNatTTransports Connect-options bits, 0x80 uTP and 0x40 QUIC, as
+ *        CClientUDPSocket::ServedNatTTransports() returns them.
  */
-constexpr uint32_t LocalAdvertisedModMiscOptions()
+constexpr uint32_t LocalAdvertisedModMiscOptions(bool firewalled, uint8_t servedNatTTransports)
 {
-	return MOD_MISCOPT_EXTENDED_XS | MOD_MISCOPT_EXTXS_SKIP_TAGS;
+	const uint8_t natT = firewalled ? servedNatTTransports : 0;
+	return MOD_MISCOPT_ALWAYS_ADVERTISED | ((natT & 0x80) != 0 ? MOD_MISCOPT_NAT_TRAVERSAL : 0u) |
+	       ((natT & 0x40) != 0 ? MOD_MISCOPT_NAT_TRAVERSAL_QUIC : 0u);
+}
+
+//! The NAT-T transports a connect-options byte declares: 0x80 uTP, 0x40 QUIC (eMuleAI).
+constexpr uint8_t DeclaredNatTTransports(uint8_t connectOptions)
+{
+	return static_cast<uint8_t>(connectOptions & Kademlia::NatTConnectOptions);
 }
 
 //! Whether source requests and answers with this peer use Extended Source Exchange.
 inline bool UsesExtendedSourceExchange(const CPeerCapabilities &peer)
 {
-	return (LocalAdvertisedModMiscOptions() & MOD_MISCOPT_EXTENDED_XS) != 0 &&
+	return (MOD_MISCOPT_ALWAYS_ADVERTISED & MOD_MISCOPT_EXTENDED_XS) != 0 &&
 	       peer.SupportsExtendedSourceExchange();
 }
 
