@@ -38,6 +38,10 @@ OP_RENDEZVOUS = 0xA0
 OP_HOLEPUNCH = 0xA1
 OP_NATT_ENDPOINT_HINT = 0xAA
 ENDPOINT_HINT_BIT = 0x20
+# kEndpointRehintMs: a refresh this long after a hint no longer sends the requester another.
+REHINT_SECONDS = 3
+# The daemon's flood check drains one 0x51 from an address every 30 s, and drops the third.
+FLOOD_DRAIN_SECONDS = 30
 NATT_UTP = 0x80
 NATT_QUIC = 0x40
 # KadMaxServedBuddies, below a tenth of MaxConnections.
@@ -405,10 +409,26 @@ def wait_udp(peer, opcode):
             return packet[2:]
 
 
+def no_udp(peer, opcode, seconds):
+    """Whether the daemon sends peer no eMule-protocol packet with opcode for seconds."""
+    end = time.monotonic() + seconds
+    try:
+        while (left := end - time.monotonic()) > 0:
+            peer.settimeout(left)
+            if peer.recv(65535)[:2] == bytes([OP_EMULEPROT, opcode]):
+                return False
+    except socket.timeout:
+        pass
+    finally:
+        peer.settimeout(10)
+    return True
+
+
 def check_buddy_hints_where_the_served_node_is(proc, ec, udp_port, peer_port):
     """A rendezvous that asks for a hint (0x20) gets the requester a 0xAA naming the served node's
-    IPv4 and the port its 0x51 came from, and an 0xA1. A keyed refresh from another port within 3 s
-    gets it a second 0xAA with that port (emule-qt#281).
+    IPv4 and the port its 0x51 came from, and an 0xA1 (emule-qt#281). A keyed refresh from another
+    port within 3 s gets it a second 0xAA with that port. A later one sends nothing, but moves the
+    port for the next hint, which the requester's repeated rendezvous gets.
 
     The served node is on a private address: loopback never goes in a hint, and a LAN address only
     while LAN IPs are not filtered, as here."""
@@ -420,24 +440,46 @@ def check_buddy_hints_where_the_served_node_is(proc, ec, udp_port, peer_port):
     served.connect()
     wait_served(proc, ec, 1)
     requester_hash, file_hash = os.urandom(16), os.urandom(16)
-    with kad_peer('127.0.0.92', udp_port) as requester:
+    named = bytes([1]) + served.user_hash + served.buddy_id + file_hash + socket.inet_aton(address)
+
+    def relay(requester):
+        """The same rendezvous each time, as a requester repeats it; the hint it gets."""
         requester.send(bytes([OP_EMULEPROT, OP_REASKCALLBACKUDP]) + served.buddy_id +
                        rendezvous(requester_hash, NATT_UTP | ENDPOINT_HINT_BIT, file_hash))
         assert wait_packet(served.sock, OP_REASKCALLBACKTCP, MARGIN) is not None, 'the rendezvous was not relayed'
-        named = bytes([1]) + served.user_hash + served.buddy_id + file_hash + socket.inet_aton(address)
         hint = wait_udp(requester, OP_NATT_ENDPOINT_HINT)
-        assert len(hint) == 56, hint.hex()
-        assert hint[:53] == named and struct.unpack('<H', hint[53:55])[0] == served.kad_port, hint.hex()
-        assert hint[55] & (NATT_UTP | NATT_QUIC) == NATT_UTP, hex(hint[55])
         wait_udp(requester, OP_HOLEPUNCH)
+        return hint
 
-        # The node's NAT moved it: its keyed refresh comes from another port.
+    def refresh():
+        """A keyed refresh from a new port, as after the node's NAT moved it; that port."""
         body = served.buddy_id + served.user_id + struct.pack('<HB', served.port, NATT_UTP)
         with kad_peer(address, udp_port) as moved:
             moved.send(encrypted(bytes([0xE4, KADEMLIA_FINDBUDDY_REQ]) + body, kad_id(ec), verify_key(address)))
-            moved_port = moved.getsockname()[1]
-        hint = wait_udp(requester, OP_NATT_ENDPOINT_HINT)
-        assert hint[:53] == named and struct.unpack('<H', hint[53:55])[0] == moved_port, hint.hex()
+            return moved.getsockname()[1]
+
+    def port_of(hint):
+        assert len(hint) == 56 and hint[:53] == named, hint.hex()
+        return struct.unpack('<H', hint[53:55])[0]
+
+    with kad_peer('127.0.0.92', udp_port) as requester:
+        hint = relay(requester)
+        assert port_of(hint) == served.kad_port, hint.hex()
+        assert hint[55] & (NATT_UTP | NATT_QUIC) == NATT_UTP, hex(hint[55])
+
+        moved_port = refresh()
+        refreshed_at = time.monotonic()
+        assert port_of(wait_udp(requester, OP_NATT_ENDPOINT_HINT)) == moved_port, 'no second hint'
+
+        # A refresh after the 3 s (kEndpointRehintMs) moves the port for the next hint only. An
+        # address may send two 0x51 a minute and the daemon drains one every 30 s, so it also
+        # comes 30 s after the last refresh.
+        assert port_of(relay(requester)) == moved_port
+        hinted_at = time.monotonic()
+        time.sleep(max(0, max(hinted_at + REHINT_SECONDS + 0.5, refreshed_at + FLOOD_DRAIN_SECONDS + 1) - time.monotonic()))
+        late_port = refresh()
+        assert no_udp(requester, OP_NATT_ENDPOINT_HINT, 1), 'a refresh after the 3 s sent a hint'
+        assert port_of(relay(requester)) == late_port, 'the next hint kept the old port'
     leave(proc, ec, [served])
     wait_served(proc, ec, 0)
     return True
@@ -475,7 +517,8 @@ def run(binary):
           'per sender and buddy, pending offers capped, an expired request not promoted, a duplicate '
           'offer counted apart, a HighID node released, one offer per address, the kept slot only for a '
           'NAT-T node, a rendezvous checked and rebuilt, a keyed repeat taken as a refresh, '
-          + ('a hint sent and sent again after a refresh, ' if hinted else '') + 'and each counted')
+          + ('a hint sent, sent again after a refresh within 3 s, and moved for the next one by a later '
+             'refresh, ' if hinted else '') + 'and each counted')
 
 
 if __name__ == '__main__':
