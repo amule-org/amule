@@ -9,10 +9,11 @@ check. The fake node hands out one type 3 source whose buddy and whose Kad endpo
 of this test. With no ed2k server, the three server paths have nothing to offer, so the daemon sends
 the buddy an OP_REASKCALLBACKUDP (0x94) carrying an OP_RENDEZVOUS (0xA0) and punches the source.
 
-Four cases: a silent source gets three requests 5 s apart and one fallback dial; a source that
+Five cases: a silent source gets three requests 5 s apart and one fallback dial; a source that
 punches back ends the requests and gets no fallback dial; a stale record of the source that comes
 last does not stop the punches to its current endpoint; a source that answers OP_FILENOTFOUND does
-not speak the rendezvous, and stays a source.
+not speak the rendezvous, and stays a source; an endpoint hint (0xAA) from the source's buddy is
+punched, and one from any other socket is not (ModderMule/emule-qt#281).
 """
 import socket
 import struct
@@ -27,6 +28,7 @@ from KadSourceBuddyIdIntegrationTest import (
     FILE_HASH,
     FILE_SIZE,
     NODE_VERSION,
+    SOURCE_ID,
     SOURCE_PORT,
     FakeNode,
     kad_ip,
@@ -58,12 +60,15 @@ OP_REASKCALLBACKUDP = 0x94
 OP_FILENOTFOUND = 0x92
 OP_HOLEPUNCH = 0xA1
 OP_RENDEZVOUS = 0xA0
+OP_NATT_ENDPOINT_HINT = 0xAA
 NATT_UTP, NATT_QUIC, ENDPOINT_HINT_BIT = 0x80, 0x40, 0x20
 HINT_UTP, HINT_QUIC = 1, 2
 # <buddy id 16><zero 16><0xA0 1><our hash 16><opts 1><file hash 16><our ip 4><udp port 2><hint 1>
 ENVELOPE_SIZE = 16 + 16 + 1 + 16 + 1 + 16 + 4 + 2 + 1
 SENDS = 3
 SEND_INTERVAL = 5
+# kPortSweepHalfWidth: a punch also sweeps this many ports on each side of the endpoint.
+SWEEP_HALF_WIDTH = 16
 # The daemon listens on loopback. A socket bound to the private address still reaches it from that
 # address, as the fake node's answers do, so the daemon sees the source's own endpoint.
 DAEMON_ADDRESS = '127.0.0.1'
@@ -104,6 +109,15 @@ class Endpoint:
 
     def close(self):
         self.sock.close()
+
+
+def far_endpoint(address, others):
+    """An Endpoint whose port the sweep around a punch to any of others does not reach."""
+    while True:
+        endpoint = Endpoint(address)
+        if all(abs(endpoint.port - other.port) > SWEEP_HALF_WIDTH for other in others):
+            return endpoint
+        endpoint.close()
 
 
 class SourceNode(FakeNode):
@@ -147,12 +161,18 @@ def check_envelope(body, udp_port):
     assert body[33:49] != bytes(16), 'no requester hash'
     options = body[49]
     assert options & NATT_UTP, ('uTP not declared', hex(options))
-    assert not options & ENDPOINT_HINT_BIT, ('endpoint hint bit set', hex(options))
+    assert options & ENDPOINT_HINT_BIT, ('no endpoint hint asked for', hex(options))
     assert body[50:66] == bytes.fromhex(FILE_HASH), ('file hash', body[50:66].hex())
     port, hint = struct.unpack('<HB', body[70:73])
     assert port == udp_port, ('tail port', port, udp_port)
     expected_hint = HINT_QUIC if options & NATT_QUIC else HINT_UTP
     assert hint == expected_hint, ('tail hint', hint, hex(options))
+
+
+def endpoint_hint(buddy_id, endpoint):
+    """An OP_NATT_ENDPOINT_HINT naming the source at endpoint, for the buddy ID the request carried."""
+    return (bytes([OP_EMULEPROT, OP_NATT_ENDPOINT_HINT, 1]) + SOURCE_ID + buddy_id + bytes.fromhex(FILE_HASH)
+            + socket.inet_aton(endpoint.address) + struct.pack('<HB', endpoint.port, NATT_UTP))
 
 
 def source_count(ec):
@@ -165,12 +185,17 @@ def source_count(ec):
     raise AssertionError(('no part file', tags))
 
 
-def drive(binary, address, answer, stale_record=False):
+def drive(binary, address, answer, stale_record=False, hints=None):
     """One daemon and one source. answer is None, OP_HOLEPUNCH or OP_FILENOTFOUND: what the source
     sends the daemon after the first request reaches its buddy. stale_record adds an older record of
-    the source last, at a port well outside the sweep around the current one."""
+    the source last, at a port well outside the sweep around the current one. hints, a dict, has the
+    buddy hint the source at a third socket and the source hint another; it gets the punches of each."""
     buddy = Endpoint(address)
     source = Endpoint(address)
+    # Out of each other's sweeps: a punch that reaches the decoy, or the hinted socket without the
+    # hint, would be the sweep's.
+    hinted = far_endpoint(address, (source,))
+    decoy = far_endpoint(address, (source, hinted))
     stale_port = None
     if stale_record:
         stale_port = source.port + 4000 if source.port < 60000 else source.port - 4000
@@ -191,6 +216,10 @@ def drive(binary, address, answer, stale_record=False):
                          lambda: buddy.received(OP_REASKCALLBACKUDP), 120)
                 if answer == OP_HOLEPUNCH:
                     source.sock.sendto(bytes([OP_EMULEPROT, OP_HOLEPUNCH]), (DAEMON_ADDRESS, udp_port))
+                if hints is not None:
+                    buddy_id = buddy.received(OP_REASKCALLBACKUDP)[0][1][:16]
+                    source.sock.sendto(endpoint_hint(buddy_id, decoy), (DAEMON_ADDRESS, udp_port))
+                    buddy.sock.sendto(endpoint_hint(buddy_id, hinted), (DAEMON_ADDRESS, udp_port))
                 elif answer == OP_FILENOTFOUND:
                     before = source_count(ec)
                     assert before == 1, ('sources before the answer', before)
@@ -200,16 +229,19 @@ def drive(binary, address, answer, stale_record=False):
                 # packet's time is taken when it is read.
                 end = time.monotonic() + SENDS * SEND_INTERVAL + 2
                 while time.monotonic() < end:
-                    buddy.drain()
-                    source.drain()
+                    for endpoint in (buddy, source, hinted, decoy):
+                        endpoint.drain()
                 reasks = buddy.received(OP_REASKCALLBACKUDP)
+                if hints is not None:
+                    hints['hinted'] = hinted.received(OP_HOLEPUNCH)
+                    hints['decoy'] = decoy.received(OP_HOLEPUNCH)
                 punches = source.received(OP_HOLEPUNCH)
                 counters = buddy_counters(ec)
                 sources = source_count(ec)
     finally:
         node.stop()
-        buddy.close()
-        source.close()
+        for endpoint in (buddy, source, hinted, decoy):
+            endpoint.close()
     return reasks, punches, counters, sources, udp_port
 
 
@@ -253,10 +285,17 @@ def run(binary):
     assert requested(counters) == {'started': 1, 'sent': 1, 'punched': 0, 'fallback_dials': 0,
                                    'connected': 0, 'timed_out': 0, 'no_rendezvous': 1}, counters
     assert sources == 1, ('a source that does not speak the rendezvous was dropped', sources)
+
+    # The buddy hints where the source is now: that endpoint is punched, and the record's still is.
+    hints = {}
+    reasks, punches, counters, _sources, _ = drive(binary, address, None, hints=hints)
+    assert hints['hinted'], 'the hinted endpoint was not punched'
+    assert not hints['decoy'], ('a hint from the source itself was taken', len(hints['decoy']))
+    assert punches, 'the record\'s endpoint was no longer punched'
     print('PASS: a firewalled node asks a Kad source\'s buddy for a rendezvous in the sketched layout, '
           'with the buddy ID as a stock buddy compares it; a silent source gets three requests and one fallback dial, '
           'a punch ends the requests, a stale record that comes last does not stop the punches to the current endpoint, '
-          'and OP_FILENOTFOUND ends the attempt and keeps the source')
+          'OP_FILENOTFOUND ends the attempt and keeps the source, and a hint from the source\'s buddy is punched')
 
 
 if __name__ == '__main__':

@@ -334,6 +334,41 @@ public:
 		return match->target;
 	}
 
+	/**
+	 * A hint (0xAA) from the buddy we sent the target's rendezvous to, naming our buddy ID, the
+	 * target and the file: its endpoint is where the target is now (ModderMule/emule-qt#281). It becomes
+	 * the one we dial, and the one before it stays punched. Nullopt when no attempt waits for a punch
+	 * from that buddy, or when the target is already there; else the target to punch at the hint.
+	 */
+	std::optional<SKadRendezvousTarget> TakeEndpointHint(std::uint32_t buddyIP,
+		std::uint16_t buddyPort,
+		const KadRendezvousHash &buddyID,
+		const KadRendezvousHash &hash,
+		const KadRendezvousHash &fileHash,
+		const SKadEndpoint &hinted,
+		std::uint64_t now)
+	{
+		const auto match =
+			std::find_if(m_attempts.begin(), m_attempts.end(), [&](const SAttempt &attempt) {
+				return attempt.target.hash == hash && attempt.target.buddyIP == buddyIP &&
+				       attempt.target.buddyPort == buddyPort &&
+				       attempt.target.buddyID == buddyID &&
+				       attempt.target.fileHash == fileHash;
+			});
+		if (match == m_attempts.end() || match->punched ||
+			now - match->startedAt >= kRequesterAttemptMs ||
+			(match->target.ip == hinted.ip && match->target.udpPort == hinted.port)) {
+			return std::nullopt;
+		}
+		SKadRendezvousTarget &target = match->target;
+		NoteKadEndpointChange(target.former, SKadEndpoint{ target.ip, target.udpPort }, hinted);
+		target.ip = hinted.ip;
+		target.udpPort = hinted.port;
+		// The fallback dial is owed again, to the endpoint the hint gave.
+		match->fallbackDialled = false;
+		return target;
+	}
+
 	bool Complete(std::uint32_t ip, const KadRendezvousHash &hash)
 	{
 		const auto match =

@@ -422,3 +422,95 @@ TEST(NatRendezvousPolicy, RequesterTakesAPunchFromAFormerEndpoint)
 	ASSERT_TRUE(requests.Complete(0x0C71000C, HashOf(1)));
 	ASSERT_EQUALS(0u, requests.Size());
 }
+
+namespace
+{
+constexpr std::uint32_t kBuddyIP = 0x0B71000C;
+constexpr std::uint16_t kBuddyPort = 5000;
+const NatRendezvous::SKadEndpoint kHinted{ 0x0D71000C, 5555 };
+
+NatRendezvous::SKadRendezvousTarget HintedTarget()
+{
+	auto target = Target(1);
+	target.buddyID = HashOf(9);
+	target.fileHash = HashOf(7);
+	return target;
+}
+
+std::optional<NatRendezvous::SKadRendezvousTarget> Hint(Requests &requests,
+	std::uint64_t now,
+	std::uint16_t buddyPort = kBuddyPort,
+	std::uint8_t buddyID = 9,
+	std::uint8_t hash = 1,
+	NatRendezvous::SKadEndpoint hinted = kHinted,
+	std::uint8_t fileHash = 7)
+{
+	return requests.TakeEndpointHint(
+		kBuddyIP, buddyPort, HashOf(buddyID), HashOf(hash), HashOf(fileHash), hinted, now);
+}
+
+const Action *FallbackDial(const std::vector<Action> &actions)
+{
+	const auto it = std::find_if(actions.begin(), actions.end(), [](const Action &action) {
+		return action.kind == Action::FallbackDial;
+	});
+	return it != actions.end() ? &*it : nullptr;
+}
+} // namespace
+
+// Only the buddy we asked, naming the buddy ID we sent, the target and the file, moves the endpoint;
+// the old one stays punched (ModderMule/emule-qt#281).
+TEST(NatRendezvousPolicy, AHintFromTheTargetsBuddyMovesTheEndpointWeDial)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(HintedTarget(), 1000));
+	ASSERT_FALSE(Hint(requests, 1500, kBuddyPort + 1).has_value());
+	ASSERT_FALSE(Hint(requests, 1500, kBuddyPort, 8).has_value());
+	ASSERT_FALSE(Hint(requests, 1500, kBuddyPort, 9, 2).has_value());
+	ASSERT_FALSE(Hint(requests, 1500, kBuddyPort, 9, 1, kHinted, 6).has_value());
+	ASSERT_FALSE(Hint(requests, 1500, kBuddyPort, 9, 1, { kTargetIP, kTargetPort }).has_value());
+
+	const auto moved = Hint(requests, 1500);
+	ASSERT_TRUE(moved.has_value());
+	ASSERT_EQUALS(kHinted.ip, moved->ip);
+	ASSERT_EQUALS(kHinted.port, moved->udpPort);
+	ASSERT_TRUE(moved->Names(kTargetIP, kTargetPort));
+	// The target punches from where the hint said, and we dial it there.
+	const auto punch = requests.TakePunch(kHinted.ip, kHinted.port, 1600);
+	ASSERT_TRUE(punch.has_value());
+	ASSERT_EQUALS(kHinted.port, punch->udpPort);
+}
+
+TEST(NatRendezvousPolicy, TheFallbackDialsTheHintedEndpoint)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(HintedTarget(), 1000));
+	ASSERT_TRUE(Hint(requests, 1500).has_value());
+	requests.TakeDue(1000);
+	const auto due = requests.TakeDue(1000 + NatRendezvous::kRequesterFallbackDialMs);
+	ASSERT_TRUE(FallbackDial(due) != nullptr);
+	ASSERT_EQUALS(kHinted.port, FallbackDial(due)->target.udpPort);
+}
+
+TEST(NatRendezvousPolicy, AHintAfterThePunchChangesNothing)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(HintedTarget(), 1000));
+	ASSERT_TRUE(requests.TakePunch(kTargetIP, kTargetPort, 1200).has_value());
+	ASSERT_FALSE(Hint(requests, 1500).has_value());
+}
+
+// The fallback already dialled the record's endpoint: the hinted one is dialled too.
+TEST(NatRendezvousPolicy, AHintAfterTheFallbackDialIsDialledToo)
+{
+	Requests requests;
+	ASSERT_TRUE(requests.Start(HintedTarget(), 1000));
+	requests.TakeDue(1000);
+	const auto first = requests.TakeDue(1000 + NatRendezvous::kRequesterFallbackDialMs);
+	ASSERT_EQUALS(kTargetPort, FallbackDial(first)->target.udpPort);
+	ASSERT_TRUE(Hint(requests, 5000).has_value());
+	const auto second = requests.TakeDue(5000);
+	ASSERT_TRUE(FallbackDial(second) != nullptr);
+	ASSERT_EQUALS(kHinted.port, FallbackDial(second)->target.udpPort);
+	ASSERT_TRUE(FallbackDial(requests.TakeDue(5100)) == nullptr);
+}

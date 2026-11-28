@@ -262,6 +262,27 @@ inline std::array<std::uint8_t, kEndpointHintSize> BuildEndpointHint(const Endpo
 	return out;
 }
 
+// A hint a requester received. The caller checks the address; a zero one is refused here.
+inline std::optional<EndpointHint> ParseEndpointHint(const std::uint8_t *data, std::size_t size) noexcept
+{
+	if (!data || size != kEndpointHintSize || data[0] != kEndpointHintVersion) {
+		return std::nullopt;
+	}
+	EndpointHint hint{};
+	const std::uint8_t *at = data + 1;
+	std::copy_n(at, kHashSize, hint.target.begin());
+	std::copy_n(at + kHashSize, kHashSize, hint.buddyId.begin());
+	std::copy_n(at + 2 * kHashSize, kHashSize, hint.fileHash.begin());
+	at += 3 * kHashSize;
+	hint.ipv4 = ReadNetworkIPv4(at);
+	hint.udpPort = std::uint16_t(at[4] | (at[5] << 8));
+	hint.connectOptions = at[6];
+	if (hint.ipv4 == 0 || hint.udpPort == 0) {
+		return std::nullopt;
+	}
+	return hint;
+}
+
 /**
  * The hint a buddy sends for the node it serves (ModderMule/emule-qt#281): the node's public IPv4
  * with the UDP port its buddy request or last refresh came from. A NAT keeps that outside port for
@@ -377,10 +398,11 @@ inline std::vector<std::uint8_t> BuildRendezvousEnvelope(const ServingBuddyId &b
 	return envelope;
 }
 
-// Our connect options plus the NAT-T transports we serve, so the target arms one we can dial.
+// Our connect options plus the NAT-T transports we serve, so the target arms one we can dial, and
+// the bit that asks the target's buddy for a hint.
 inline std::uint8_t RequesterConnectOptions(std::uint8_t myConnectOptions, std::uint8_t localNatT) noexcept
 {
-	return std::uint8_t((myConnectOptions | (localNatT & kNatTTransports)) & ~kEndpointHintBit);
+	return std::uint8_t(myConnectOptions | (localNatT & kNatTTransports) | kEndpointHintBit);
 }
 
 // The transport we will dial first: QUIC when we serve it, else uTP.

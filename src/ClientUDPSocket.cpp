@@ -1466,6 +1466,31 @@ void CClientUDPSocket::TickKadRendezvous(uint64 now)
 	}
 }
 
+void CClientUDPSocket::HandleEndpointHint(uint32 ip, uint16 port, const uint8_t *data, size_t size)
+{
+	const wxString from = Uint32_16toStringIP_Port(ip, port);
+	const auto hint = NatRendezvous::ParseEndpointHint(data, size);
+	if (!hint || !IsRendezvousPeerAllowed(hint->ipv4)) {
+		AddDebugLogLineN(logClientUDP, "Dropped an endpoint hint from " + from);
+		return;
+	}
+	const uint64 now = ::GetTickCount64();
+	const auto target = m_kadRendezvousRequests.TakeEndpointHint(
+		ip, port, hint->buddyId, hint->target, hint->fileHash, { hint->ipv4, hint->udpPort }, now);
+	if (!target) {
+		AddDebugLogLineN(logClientUDP, "Ignored an endpoint hint from " + from);
+		return;
+	}
+	AddDebugLogLineN(logClientUDP,
+		CFormat("Endpoint hint from the buddy at %s: the source is at %s, punching it") % from %
+			Uint32_16toStringIP_Port(target->ip, target->udpPort));
+	ExpectNatTPeer(target->ip, target->udpPort, &target->hash);
+	NatServerHolePunch::IPv4 peerIP{};
+	PokeUInt32(peerIP.data(), target->ip);
+	StartLowIdHolePunchSchedule(
+		peerIP, target->udpPort, now, NatServerHolePunch::RendezvousPath::KadRequester, target->hash);
+}
+
 void CClientUDPSocket::ResetLowIdHolePunchSchedules()
 {
 	m_lowIdHolePunchSchedules.ClearServerPaths();
@@ -1966,6 +1991,10 @@ void CClientUDPSocket::ProcessPacket(
 		if (size == 0) {
 			HandleLowIdHolePunch(host, port);
 		}
+		break;
+	case OP_NATT_ENDPOINT_HINT:
+		theStats::AddDownOverheadOther(size);
+		HandleEndpointHint(host, port, packet, size);
 		break;
 #endif
 	case OP_REASKCALLBACKUDP: {

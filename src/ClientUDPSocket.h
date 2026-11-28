@@ -132,6 +132,9 @@ public:
 	//! Sends what the requester attempts owe: the repeats of the ask, the one dial of the target's
 	//! Kad endpoint when no punch came, and the end of an attempt that took too long.
 	void TickKadRendezvous(uint64 now);
+	//! A hint (0xAA) from @a ip, @a port: when it is the buddy of a target we asked for, the
+	//! target's endpoint moves to the hinted one, which we expect and punch (emule-qt#281).
+	void HandleEndpointHint(uint32 ip, uint16 port, const uint8_t *data, size_t size);
 	//! Sends the punches and sweeps that have come due. Called from every OnCoreTimer tick.
 	void SendDueLowIdHolePunches(uint64 now);
 	//! Forgets the punches the server paths owe; the sweep budget is kept, so a server cannot buy

@@ -631,12 +631,12 @@ TEST(NatRendezvousProtocol, RequesterEnvelopeIsWhatOurBuddyParses)
 	ASSERT_FALSE(parsed->request.requesterHint.has_value());
 }
 
-TEST(NatRendezvousProtocol, RequesterOptionsAddOurNatTAndClearTheEndpointHintBit)
+TEST(NatRendezvousProtocol, RequesterOptionsAddOurNatTAndAskForAHint)
 {
-	ASSERT_EQUALS(std::uint8_t(0xC3), NatRendezvous::RequesterConnectOptions(0x23, 0xC0));
-	ASSERT_EQUALS(std::uint8_t(0x83), NatRendezvous::RequesterConnectOptions(0x03, 0x80));
+	ASSERT_EQUALS(std::uint8_t(0xE3), NatRendezvous::RequesterConnectOptions(0x03, 0xC0));
+	ASSERT_EQUALS(std::uint8_t(0xA3), NatRendezvous::RequesterConnectOptions(0x03, 0x80));
 	// Only the NAT-T bits of the local transports are added.
-	ASSERT_EQUALS(std::uint8_t(0x01), NatRendezvous::RequesterConnectOptions(0x01, 0x0F));
+	ASSERT_EQUALS(std::uint8_t(0x21), NatRendezvous::RequesterConnectOptions(0x01, 0x0F));
 }
 
 TEST(NatRendezvousProtocol, RequesterHintIsQuicWhenWeServeQuicElseUtp)
@@ -725,4 +725,29 @@ TEST(NatRendezvousProtocol, SentHintsKeepOnePerRequesterAndAreCapped)
 	ASSERT_EQUALS(NatRendezvous::kMaxSentEndpointHints, moved.size());
 	// The oldest made room.
 	ASSERT_EQUALS(std::uint16_t(2), moved.front().requesterPort);
+}
+
+TEST(NatRendezvousProtocol, ARequesterReadsTheHintItsBuddyBuilt)
+{
+	const NatRendezvous::EndpointHint sent{
+		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, 0x1234, 0xC3
+	};
+	const auto bytes = NatRendezvous::BuildEndpointHint(sent);
+	const auto read = NatRendezvous::ParseEndpointHint(bytes.data(), bytes.size());
+	ASSERT_TRUE(read.has_value());
+	ASSERT_TRUE(read->target == Filled(0x11));
+	ASSERT_TRUE(read->buddyId == BuddyId(0x44));
+	ASSERT_TRUE(read->fileHash == Filled(0x22));
+	ASSERT_EQUALS(kPublicIPv4, read->ipv4);
+	ASSERT_EQUALS(std::uint16_t(0x1234), read->udpPort);
+	ASSERT_EQUALS(std::uint8_t(0xC3), read->connectOptions);
+
+	// eMuleAI's size and version only, and an endpoint we could punch.
+	ASSERT_FALSE(NatRendezvous::ParseEndpointHint(bytes.data(), bytes.size() - 1).has_value());
+	auto other = bytes;
+	other[0] = 2;
+	ASSERT_FALSE(NatRendezvous::ParseEndpointHint(other.data(), other.size()).has_value());
+	other = bytes;
+	other[53] = other[54] = 0;
+	ASSERT_FALSE(NatRendezvous::ParseEndpointHint(other.data(), other.size()).has_value());
 }

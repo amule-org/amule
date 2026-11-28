@@ -922,7 +922,12 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   is only the fallback. The options are the node's crypt bits and the
   transports its `0x51` declared. No hint goes out without a public address or
   a file hash, or when the forward was over budget. aMule's buddy sends it in
-  every build; as a requester aMule does not ask for one yet.
+  every build. As a requester aMule sets `0x20` and takes a hint only from the
+  buddy it sent the `0xA0` to, naming the buddy ID it sent, the target and the
+  file, with an endpoint it could punch. The hinted endpoint becomes the one it dials: it
+  is punched at once, the record's endpoint stays punched, and the fallback
+  dial goes to it, even when it went to the record's endpoint already. A second
+  hint moves it again. Once the target has punched, a hint changes nothing.
 - **Refresh.** A served node repeats its `0x51` unchanged, keyed with the
   buddy's receiver key (ModderMule/emule-qt#281). When the repeat comes from a
   node we serve, with its user hash and from its IP, the buddy takes it as a
