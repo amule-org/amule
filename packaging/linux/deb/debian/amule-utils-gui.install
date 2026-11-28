@@ -1,0 +1,14 @@
+usr/bin/alc
+usr/bin/amulegui
+usr/bin/wxcas
+usr/share/applications/alc.desktop
+usr/share/applications/org.amule.aMule.gui.desktop
+usr/share/applications/wxcas.desktop
+usr/share/pixmaps/alc.xpm
+usr/share/pixmaps/wxcas.xpm
+usr/share/man/man1/alc.1
+usr/share/man/*/man1/alc.1
+usr/share/man/man1/amulegui.1
+usr/share/man/*/man1/amulegui.1
+usr/share/man/man1/wxcas.1
+usr/share/man/*/man1/wxcas.1

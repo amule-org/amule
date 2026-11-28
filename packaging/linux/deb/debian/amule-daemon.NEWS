@@ -1,0 +1,10 @@
+amule (1:3.0.0-1) unstable; urgency=medium
+
+  This package no longer ships an init script or /etc/default/amule-daemon.
+  The upgrade removes both; a copy you changed is kept with a .dpkg-bak
+  suffix. Start amuled yourself, or from your own systemd unit.
+
+  amuleweb is gone. amuleapi replaces it: a REST API server with a web
+  interface. See amuleapi(1).
+
+ -- aMule Team <got3nks@users.noreply.github.com>  Sat, 14 Nov 2026 12:00:00 +0100

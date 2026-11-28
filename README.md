@@ -72,6 +72,7 @@ Download the latest release for your platform from the
 [Releases page]. Quick start:
 
 * **Linux**
+  * Debian / Ubuntu: add our APT repository, then `sudo apt install amule`. See [the APT instructions](docs/INSTALL_BINARIES.md#debian-and-ubuntu-apt-repository). [![OSS hosting by Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat-square)](https://cloudsmith.com)
   * Flatpak: `flatpak install ./appname.flatpak`
   * AppImage: `chmod +x` and run
   * Static tarball (headless, x64 / arm64): unpack and run — `amuled`, `amulecmd` and `amuleapi` with no shared-library dependencies, Web UI included
