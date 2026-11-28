@@ -1426,14 +1426,7 @@ void CSearch::StorePacket()
 		}
 
 		CMemFile packetdata;
-		// Our BuddyID, not the lookup target: the offer must echo it, and sources publish it.
-		packetdata.WriteUInt128(OwnBuddyID(CKademlia::GetPrefs()->GetKadID()));
-		packetdata.WriteUInt128(CKademlia::GetPrefs()->GetClientHash());
-		packetdata.WriteUInt16(thePrefs::GetPort());
-		// The 35th byte: the buddy forwards a rendezvous only between peers that share a transport,
-		// and we declare only what our handler for a forwarded one arms.
-		packetdata.WriteUInt8(CPrefs::GetMyConnectOptions(true, false) |
-				      (theApp->clientudp ? theApp->clientudp->ServedNatTTransports() : 0));
+		CKademliaUDPListener::WriteFindBuddyRequest(packetdata);
 
 		DebugSend(KadFindBuddyReq, from->GetIPAddress(), from->GetUDPPort());
 		if (from->GetVersion() >= 6) {

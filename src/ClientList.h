@@ -48,6 +48,7 @@ class CMD4Hash;
 namespace Kademlia
 {
 class CContact;
+class CKadUDPKey;
 class CUInt128;
 } // namespace Kademlia
 
@@ -286,7 +287,9 @@ public:
 	uint32 GetBuddyIP();
 	uint16 GetBuddyPort();
 	bool RequestTCP(Kademlia::CContact *contact, uint8_t connectOptions);
-	void RequestBuddy(Kademlia::CContact *contact, uint8_t connectOptions);
+	//! @a key is the one the offer (0x5A) carried, for the refreshes we send the buddy.
+	void RequestBuddy(
+		Kademlia::CContact *contact, uint8_t connectOptions, const Kademlia::CKadUDPKey &key);
 	bool CanRequestBuddy(uint32_t ip) const;
 	void RecordBuddyFailure(uint32_t ip);
 	enum class EIncomingBuddy
@@ -320,6 +323,12 @@ public:
 	uint64 GetOwnBuddyLinkedMs() const;
 	//! The served buddy whose BuddyID matches in either layout, or nullptr.
 	CUpDownClient *FindServedBuddy(const uint8_t *buddyID) const;
+	/**
+	 * A buddy request from a node we serve, with its user hash and from its IP, is a refresh
+	 * (ModderMule/emule-qt#281): it moves the UDP port we hint for that node and is not answered.
+	 * The caller checks the receiver key, which proves the IP. @a kadIP is in Kad's byte order.
+	 */
+	bool RefreshServedBuddy(const Kademlia::CUInt128 &userID, uint32 kadIP, uint16 udpPort);
 	void RecordBuddyRelay(const CUpDownClient *buddy, bool callback, uint32 bytes);
 	//! A callback or reask that no served buddy matched.
 	void RecordBuddyRelayDrop(bool callback, const uint8_t *buddyID);

@@ -60,8 +60,9 @@
 #include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
-#include "KadBuddyIdLayout.h"    // Needed for IsKadCallbackRetryDue
-#include "NatRendezvousPolicy.h" // Needed for SKadEndpoint
+#include "kademlia/utils/KadUDPKey.h" // Needed for CKadUDPKey
+#include "KadBuddyIdLayout.h"         // Needed for IsKadCallbackRetryDue
+#include "NatRendezvousPolicy.h"      // Needed for SKadEndpoint
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "NatServerHolePunch.h" // Needed for callback request policy
 #if defined(AMULE_UTP_TRANSPORT)
@@ -1048,11 +1049,25 @@ public:
 	uint8 GetServedBuddyOptions() const { return m_servedBuddyOptions; }
 	//! The buddy request set a NAT-T bit in its connect options.
 	bool IsServedBuddyNatT() const { return Kademlia::IsNatTCapableRequest(m_servedBuddyOptions); }
+	//! The UDP port its buddy request, then its last refresh, came from. Its hello does not set it.
+	void SetServedUdpPort(uint16 port) { m_servedUdpPort = port; }
+	uint16 GetServedUdpPort() const { return m_servedUdpPort; }
 
 	// KadIPCheck
 	bool IsBuddyPingDue() const { return m_buddyLiveness.PingDue(::GetTickCount64()); }
 	bool AllowIncomingBuddyPing() const { return m_buddyLiveness.AllowIncomingPing(::GetTickCount64()); }
 	void RecordBuddyPingSent() { m_buddyLiveness.PingSent(::GetTickCount64()); }
+	//! The Kad UDP port of our buddy, and the key its buddy offer (0x5A) carried for us. The 0x51
+	//! it answered counts as our last refresh.
+	void SetBuddyKadKey(uint16 udpPort, const Kademlia::CKadUDPKey &key)
+	{
+		m_buddyKadUDPPort = udpPort;
+		m_buddyKadKey = key;
+		m_buddyRefresh.Sent(::GetTickCount64());
+	}
+	//! As a served node: repeat our 0x51 to this buddy, keyed, so it hints our current UDP port
+	//! (ModderMule/emule-qt#281). None within 45 s of the last, and none without a key.
+	void SendBuddyRefresh();
 	void RecordBuddyPingReceived() { m_buddyLiveness.PingReceived(::GetTickCount64()); }
 	void RecordBuddyPongReceived() { m_buddyLiveness.PongReceived(::GetTickCount64()); }
 	void RecordBuddyPacketReceived() { m_buddyLiveness.ReceivedPacket(::GetTickCount64()); }
@@ -1473,6 +1488,10 @@ private:
 	bool m_bBuddyOtherLayoutTried = false;
 	bool m_bServedBuddy = false;
 	uint8 m_servedBuddyOptions = 0;
+	uint16 m_servedUdpPort = 0;
+	uint16 m_buddyKadUDPPort = 0;
+	Kademlia::CKadUDPKey m_buddyKadKey;
+	Kademlia::CBuddyRefreshGate m_buddyRefresh;
 	uint32 m_nBuddyIP;
 	uint32 m_kadSourceIP = 0;
 	std::vector<NatRendezvous::SKadEndpoint> m_formerKadEndpoints;

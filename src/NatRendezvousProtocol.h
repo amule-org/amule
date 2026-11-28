@@ -23,8 +23,8 @@
 
 namespace NatRendezvous
 {
-// These are nested control-payload opcodes, not eD2k opcodes. eMuleAI reserves 0xA1 for
-// OP_HOLEPUNCH and 0xAA for OP_NATT_ENDPOINT_HINT; those handlers belong to later slices.
+// These are nested control-payload opcodes, not eD2k opcodes. eMuleAI also uses 0xA1 for
+// OP_HOLEPUNCH and 0xAA for OP_NATT_ENDPOINT_HINT, below.
 constexpr std::uint8_t OP_RENDEZVOUS = 0xA0;
 constexpr std::size_t kHashSize = 16;
 constexpr std::size_t kRendezvousPayloadSize = 1 + kHashSize + 1 + kHashSize;
@@ -226,8 +226,153 @@ inline std::vector<std::uint8_t> BuildForwardedRendezvous(const RendezvousReques
 // The NAT-T bits of a rendezvous' connect options: 0x80 for uTP, 0x40 for QUIC (eMuleAI).
 constexpr std::uint8_t kNatTQuic = 0x40;
 constexpr std::uint8_t kNatTTransports = 0x80 | kNatTQuic;
-// Announces a 0xAA (endpoint hint), which no code reads and our buddy does not send.
+// A requester's 0xA0 asks the buddy for a 0xAA (endpoint hint) with this bit.
 constexpr std::uint8_t kEndpointHintBit = 0x20;
+
+// OP_NATT_ENDPOINT_HINT (0xAA), eMuleAI's, sent plain over UDP from the buddy to the requester:
+// <version 1><target hash 16><buddy ID 16><file hash 16><IPv4 4><UDP port 2 LE><connect options 1>.
+// eMuleAI drops any other size or version, and an address that is not public.
+constexpr std::uint8_t kEndpointHintVersion = 1;
+constexpr std::size_t kEndpointHintSize = 1 + kHashSize * 3 + 4 + 2 + 1;
+
+struct EndpointHint
+{
+	UserHash target;
+	ServingBuddyId buddyId; // As the requester sent it, in its layout.
+	FileHash fileHash;
+	std::uint32_t ipv4; // aMule's byte order, first octet lowest.
+	std::uint16_t udpPort;
+	std::uint8_t connectOptions;
+};
+
+inline std::array<std::uint8_t, kEndpointHintSize> BuildEndpointHint(const EndpointHint &hint) noexcept
+{
+	std::array<std::uint8_t, kEndpointHintSize> out{};
+	auto it = out.begin();
+	*it++ = kEndpointHintVersion;
+	it = std::copy(hint.target.begin(), hint.target.end(), it);
+	it = std::copy(hint.buddyId.begin(), hint.buddyId.end(), it);
+	it = std::copy(hint.fileHash.begin(), hint.fileHash.end(), it);
+	for (int shift = 0; shift < 32; shift += 8) {
+		*it++ = std::uint8_t(hint.ipv4 >> shift);
+	}
+	*it++ = std::uint8_t(hint.udpPort);
+	*it++ = std::uint8_t(hint.udpPort >> 8);
+	*it = hint.connectOptions;
+	return out;
+}
+
+// A hint a requester received. The caller checks the address; a zero one is refused here.
+inline std::optional<EndpointHint> ParseEndpointHint(const std::uint8_t *data, std::size_t size) noexcept
+{
+	if (!data || size != kEndpointHintSize || data[0] != kEndpointHintVersion) {
+		return std::nullopt;
+	}
+	EndpointHint hint{};
+	const std::uint8_t *at = data + 1;
+	std::copy_n(at, kHashSize, hint.target.begin());
+	std::copy_n(at + kHashSize, kHashSize, hint.buddyId.begin());
+	std::copy_n(at + 2 * kHashSize, kHashSize, hint.fileHash.begin());
+	at += 3 * kHashSize;
+	hint.ipv4 = ReadNetworkIPv4(at);
+	hint.udpPort = std::uint16_t(at[4] | (at[5] << 8));
+	hint.connectOptions = at[6];
+	if (hint.ipv4 == 0 || hint.udpPort == 0) {
+		return std::nullopt;
+	}
+	return hint;
+}
+
+/**
+ * The hint a buddy sends for the node it serves (ModderMule/emule-qt#281): the node's IPv4 with
+ * the UDP port its buddy request or last refresh came from. A NAT keeps that outside port for
+ * every destination; the hello's Kad port is the inside one, so it is only the fallback. The
+ * options are the node's crypt bits and the NAT-T transports its buddy request declared.
+ * @a addressUsable is the caller's: IsHintableServedIP().
+ */
+inline std::optional<EndpointHint> MakeServedEndpointHint(const UserHash &target,
+	const ServingBuddyId &buddyId,
+	const FileHash &fileHash,
+	std::uint32_t servedIPv4,
+	bool addressUsable,
+	std::uint16_t observedUdpPort,
+	std::uint16_t kadPort,
+	std::uint8_t cryptOptions,
+	std::uint8_t servedOptions) noexcept
+{
+	const std::uint16_t port = observedUdpPort != 0 ? observedUdpPort : kadPort;
+	if (port == 0 || !addressUsable) {
+		return std::nullopt;
+	}
+	return EndpointHint{ target,
+		buddyId,
+		fileHash,
+		servedIPv4,
+		port,
+		std::uint8_t((cryptOptions & 0x07) | (servedOptions & kNatTTransports)) };
+}
+
+// How long after a hint a refresh that moves the served node's port sends the requester another.
+constexpr std::uint64_t kEndpointRehintMs = 3000;
+constexpr std::size_t kMaxSentEndpointHints = 64;
+
+//! The hints a buddy sent in the last kEndpointRehintMs.
+class CSentEndpointHints
+{
+public:
+	struct Sent
+	{
+		std::uint32_t requesterIP; // Network order, as the UDP socket reports it.
+		std::uint16_t requesterPort;
+		EndpointHint hint;
+		std::uint64_t at;
+	};
+
+	void Record(std::uint32_t requesterIP,
+		std::uint16_t requesterPort,
+		const EndpointHint &hint,
+		std::uint64_t now)
+	{
+		Prune(now);
+		m_sent.erase(std::remove_if(m_sent.begin(),
+				     m_sent.end(),
+				     [&](const Sent &sent) {
+					     return sent.requesterIP == requesterIP &&
+						    sent.requesterPort == requesterPort &&
+						    sent.hint.target == hint.target;
+				     }),
+			m_sent.end());
+		if (m_sent.size() >= kMaxSentEndpointHints) {
+			m_sent.erase(m_sent.begin());
+		}
+		m_sent.push_back({ requesterIP, requesterPort, hint, now });
+	}
+
+	//! The hints for @a target still in the window whose port was not @a udpPort, now at it.
+	std::vector<Sent> TakeMoved(const UserHash &target, std::uint16_t udpPort, std::uint64_t now)
+	{
+		Prune(now);
+		std::vector<Sent> moved;
+		for (Sent &sent : m_sent) {
+			if (sent.hint.target == target && sent.hint.udpPort != udpPort) {
+				sent.hint.udpPort = udpPort;
+				moved.push_back(sent);
+			}
+		}
+		return moved;
+	}
+
+private:
+	void Prune(std::uint64_t now)
+	{
+		m_sent.erase(std::remove_if(m_sent.begin(),
+				     m_sent.end(),
+				     [now](const Sent &sent) { return now - sent.at > kEndpointRehintMs; }),
+			m_sent.end());
+	}
+
+	std::vector<Sent> m_sent;
+};
 
 // What a requester sends its target's buddy as OP_REASKCALLBACKUDP. The tail is always written,
 // zeros for what we do not know, so the extension block of ModderMule/emule-qt#265 can follow it.
@@ -255,10 +400,11 @@ inline std::vector<std::uint8_t> BuildRendezvousEnvelope(const ServingBuddyId &b
 	return envelope;
 }
 
-// Our connect options plus the NAT-T transports we serve, so the target arms one we can dial.
+// Our connect options plus the NAT-T transports we serve, so the target arms one we can dial, and
+// the bit that asks the target's buddy for a hint.
 inline std::uint8_t RequesterConnectOptions(std::uint8_t myConnectOptions, std::uint8_t localNatT) noexcept
 {
-	return std::uint8_t((myConnectOptions | (localNatT & kNatTTransports)) & ~kEndpointHintBit);
+	return std::uint8_t(myConnectOptions | (localNatT & kNatTTransports) | kEndpointHintBit);
 }
 
 // The transport we will dial first: QUIC when we serve it, else uTP.

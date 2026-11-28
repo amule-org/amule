@@ -1734,6 +1734,19 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 	// Verify packet is expected size
 	CHECK_PACKET_MIN_SIZE(34);
 
+	CMemFile bio(packetData, lenPacket);
+	CUInt128 BuddyID = bio.ReadUInt128();
+	CUInt128 userID = bio.ReadUInt128();
+	uint16_t tcpport = bio.ReadUInt16();
+	// eMuleAI and eMuleQt append their connect options; stock clients send 34 bytes.
+	const uint8_t connectOptions = lenPacket > 34 ? bio.ReadUInt8() : 0;
+
+	// A node we serve repeats its request as a refresh, keyed so the IP is proven. No slot or
+	// firewall rule applies, and it gets no answer (ModderMule/emule-qt#281).
+	if (validReceiverKey && theApp->clientlist->RefreshServedBuddy(userID, ip, port)) {
+		return;
+	}
+
 	Kademlia::CBuddyStats::Serving &stats = theApp->clientlist->GetBuddyStats().serving;
 	++stats.requestsReceived;
 	if (CKademlia::GetPrefs()->GetFirewalled() || CUDPFirewallTester::IsFirewalledUDP(true) ||
@@ -1744,13 +1757,6 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 			"Buddy request from " + KadIPPortToString(ip, port) + " refused: we are firewalled");
 		return;
 	}
-
-	CMemFile bio(packetData, lenPacket);
-	CUInt128 BuddyID = bio.ReadUInt128();
-	CUInt128 userID = bio.ReadUInt128();
-	uint16_t tcpport = bio.ReadUInt16();
-	// eMuleAI and eMuleQt append their connect options; stock clients send 34 bytes.
-	const uint8_t connectOptions = lenPacket > 34 ? bio.ReadUInt8() : 0;
 	if (Kademlia::IsNatTCapableRequest(connectOptions)) {
 		++stats.requestsNatT;
 	}
@@ -1795,13 +1801,34 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 	AddDebugLogLineN(logKadBuddy, "Buddy offer sent to " + KadIPPortToString(ip, port));
 }
 
+void CKademliaUDPListener::WriteFindBuddyRequest(CMemFile &packetdata)
+{
+	// Our BuddyID, not the lookup target: the offer must echo it, and sources publish it.
+	packetdata.WriteUInt128(OwnBuddyID(CKademlia::GetPrefs()->GetKadID()));
+	packetdata.WriteUInt128(CKademlia::GetPrefs()->GetClientHash());
+	packetdata.WriteUInt16(thePrefs::GetPort());
+	// The 35th byte: the buddy forwards a rendezvous only between peers that share a transport,
+	// and we declare only what our handler for a forwarded one arms.
+	packetdata.WriteUInt8(CPrefs::GetMyConnectOptions(true, false) |
+			      (theApp->clientudp ? theApp->clientudp->ServedNatTTransports() : 0));
+}
+
+void CKademliaUDPListener::SendBuddyRefresh(uint32_t ip, uint16_t port, const CKadUDPKey &key)
+{
+	CMemFile packetdata;
+	WriteFindBuddyRequest(packetdata);
+	DebugSend(KadFindBuddyReq, ip, port);
+	SendPacket(packetdata, KADEMLIA_FINDBUDDY_REQ, ip, port, key, nullptr);
+	AddDebugLogLineN(logKadBuddy, "Buddy refresh sent to " + KadIPPortToString(ip, port));
+}
+
 // KADEMLIA_FINDBUDDY_RES
 // Used by Kad1.0 and Kad2.0
 void CKademliaUDPListener::ProcessFindBuddyResponse(const uint8_t *packetData,
 	uint32_t lenPacket,
 	uint32_t ip,
 	uint16_t port,
-	const CKadUDPKey &WXUNUSED(senderKey))
+	const CKadUDPKey &senderKey)
 {
 	// Verify packet is expected size
 	CHECK_PACKET_MIN_SIZE(34);
@@ -1822,7 +1849,7 @@ void CKademliaUDPListener::ProcessFindBuddyResponse(const uint8_t *packetData,
 		AddDebugLogLineN(logKadBuddy, "Buddy offer from " + KadIPPortToString(ip, port));
 		CUInt128 zero;
 		CContact contact(userID, ip, port, tcpport, 0, 0, false, zero);
-		theApp->clientlist->RequestBuddy(&contact, connectOptions);
+		theApp->clientlist->RequestBuddy(&contact, connectOptions, senderKey);
 	}
 }
 

@@ -36,6 +36,7 @@ class CUpDownClient;
 class CServer;
 
 #include "MuleUDPSocket.h"
+#include "NatRendezvousProtocol.h"  // Needed for CSentEndpointHints
 #include "ReservedProtocolFrames.h" // Needed for CFrameLogThrottle
 
 #include <array>
@@ -100,6 +101,9 @@ public:
 	//! coordination, uTP, or while the socket is closed or uTP is unavailable; QUIC also needs QUIC
 	//! NAT-T turned on.
 	uint8_t ServedNatTTransports();
+	//! A refresh moved @a served's UDP port: requesters we hinted it to in the last 3 s get the new
+	//! one (ModderMule/emule-qt#281).
+	void ResendMovedEndpointHints(const CUpDownClient &served);
 #ifdef AMULE_UTP_TRANSPORT
 	~CClientUDPSocket() override;
 	void Close() override;
@@ -128,6 +132,9 @@ public:
 	//! Sends what the requester attempts owe: the repeats of the ask, the one dial of the target's
 	//! Kad endpoint when no punch came, and the end of an attempt that took too long.
 	void TickKadRendezvous(uint64 now);
+	//! A hint (0xAA) from @a ip, @a port: when it is the buddy of a target we asked for, the
+	//! target's endpoint moves to the hinted one, which we expect and punch (emule-qt#281).
+	void HandleEndpointHint(uint32 ip, uint16 port, const uint8_t *data, size_t size);
 	//! Sends the punches and sweeps that have come due. Called from every OnCoreTimer tick.
 	void SendDueLowIdHolePunches(uint64 now);
 	//! Forgets the punches the server paths owe; the sweep budget is kept, so a server cannot buy
@@ -368,6 +375,10 @@ private:
 	// a peer we have no socket for are different problems, and sharing a
 	// throttle would let a flood of one hide the other entirely.
 	CFrameLogThrottle m_utpMalformedFrameLog{ 60 * 1000 };
+
+	//! As a buddy: sends @a hint to the requester, plain as eMuleAI and eMuleQt send theirs.
+	void SendEndpointHint(uint32 ip, uint16 port, const NatRendezvous::EndpointHint &hint);
+	NatRendezvous::CSentEndpointHints m_sentEndpointHints;
 };
 
 #endif // CLIENTUDPSOCKET_H

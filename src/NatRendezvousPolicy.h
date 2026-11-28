@@ -186,6 +186,9 @@ constexpr std::size_t kRequesterSends = 3;
 constexpr std::uint64_t kRequesterSendIntervalMs = 5 * 1000;
 // eMuleAI dials the source's Kad endpoint at once; we give the target's punch this long first.
 constexpr std::uint64_t kRequesterFallbackDialMs = 3 * 1000;
+// Without a punch, each known endpoint is dialled in turn, this long apart: the hinted one first,
+// then the record's, then the ones earlier records named.
+constexpr std::uint64_t kRequesterFallbackStepMs = 5 * 1000;
 constexpr std::uint64_t kRequesterAttemptMs = 45 * 1000;
 constexpr std::uint64_t kRequesterCooldownMs = 10 * 60 * 1000;
 // A full set refuses a new attempt rather than drop one whose expiry would start its cooldown.
@@ -282,7 +285,11 @@ public:
 			})) {
 			return false;
 		}
-		m_attempts.push_back({ target, now, 0, false, false, false });
+		SAttempt attempt;
+		attempt.target = target;
+		attempt.startedAt = now;
+		attempt.nextFallbackAt = now + kRequesterFallbackDialMs;
+		m_attempts.push_back(attempt);
 		return true;
 	}
 
@@ -305,9 +312,14 @@ public:
 					it->sends = sendsDue;
 					due.push_back({ SKadRendezvousAction::Send, it->target });
 				}
-				if (!it->fallbackDialled && elapsed >= kRequesterFallbackDialMs) {
-					it->fallbackDialled = true;
-					due.push_back({ SKadRendezvousAction::FallbackDial, it->target });
+				const auto next = it->NextUndialled();
+				if (next && now >= it->nextFallbackAt) {
+					it->dialled.push_back(*next);
+					it->nextFallbackAt = now + kRequesterFallbackStepMs;
+					SKadRendezvousTarget dial = it->target;
+					dial.ip = next->ip;
+					dial.udpPort = next->port;
+					due.push_back({ SKadRendezvousAction::FallbackDial, dial });
 				}
 			}
 			++it;
@@ -317,8 +329,8 @@ public:
 
 	// The target to dial for a punch from @a ip, once per attempt. A punch from its own port is
 	// the target's; from another it may be a neighbour behind the same address, so only a lone
-	// attempt there takes it. Any punch ends the sends and the fallback dial, but the endpoint the
-	// fallback already dialled is not dialled again: only a punch from another port is.
+	// attempt there takes it. Any punch ends the sends and the fallback dials, but an endpoint a
+	// fallback already dialled is not dialled again: only a punch from another endpoint is.
 	std::optional<SKadRendezvousTarget> TakePunch(std::uint32_t ip, std::uint16_t port, std::uint64_t now)
 	{
 		const auto match = Find(ip, port);
@@ -327,11 +339,48 @@ public:
 			return std::nullopt;
 		}
 		match->punched = true;
-		if (match->fallbackDialled && ip == match->target.ip && port == match->target.udpPort) {
+		if (std::find(match->dialled.begin(), match->dialled.end(), SKadEndpoint{ ip, port }) !=
+			match->dialled.end()) {
 			return std::nullopt;
 		}
 		match->punchDialled = true;
 		return match->target;
+	}
+
+	/**
+	 * A hint (0xAA) from the buddy we sent the target's rendezvous to, naming our buddy ID, the
+	 * target and the file: its endpoint is where the target is now (ModderMule/emule-qt#281). It becomes
+	 * the one we dial, and the one before it stays punched. Nullopt when no attempt waits for a punch
+	 * from that buddy, or when the target is already there; else the target to punch at the hint.
+	 */
+	std::optional<SKadRendezvousTarget> TakeEndpointHint(std::uint32_t buddyIP,
+		std::uint16_t buddyPort,
+		const KadRendezvousHash &buddyID,
+		const KadRendezvousHash &hash,
+		const KadRendezvousHash &fileHash,
+		const SKadEndpoint &hinted,
+		std::uint64_t now)
+	{
+		const auto match =
+			std::find_if(m_attempts.begin(), m_attempts.end(), [&](const SAttempt &attempt) {
+				return attempt.target.hash == hash && attempt.target.buddyIP == buddyIP &&
+				       attempt.target.buddyPort == buddyPort &&
+				       attempt.target.buddyID == buddyID &&
+				       attempt.target.fileHash == fileHash;
+			});
+		if (match == m_attempts.end() || match->punched ||
+			now - match->startedAt >= kRequesterAttemptMs ||
+			(match->target.ip == hinted.ip && match->target.udpPort == hinted.port)) {
+			return std::nullopt;
+		}
+		SKadRendezvousTarget &target = match->target;
+		NoteKadEndpointChange(target.former, SKadEndpoint{ target.ip, target.udpPort }, hinted);
+		target.ip = hinted.ip;
+		target.udpPort = hinted.port;
+		// The hinted endpoint is the next fallback dial, at once once the first is due.
+		match->nextFallbackAt = std::max(
+			match->startedAt + kRequesterFallbackDialMs, std::min(match->nextFallbackAt, now));
+		return target;
 	}
 
 	bool Complete(std::uint32_t ip, const KadRendezvousHash &hash)
@@ -373,11 +422,30 @@ private:
 	struct SAttempt
 	{
 		SKadRendezvousTarget target;
-		std::uint64_t startedAt;
-		std::size_t sends;
-		bool fallbackDialled;
-		bool punched;
-		bool punchDialled;
+		std::uint64_t startedAt = 0;
+		std::size_t sends = 0;
+		// Without a punch, the endpoints the fallback dialled, and when it dials the next.
+		std::vector<SKadEndpoint> dialled;
+		std::uint64_t nextFallbackAt = 0;
+		bool punched = false;
+		bool punchDialled = false;
+
+		// The current endpoint first, then the former ones, newest first.
+		std::optional<SKadEndpoint> NextUndialled() const
+		{
+			const auto undialled = [this](const SKadEndpoint &endpoint) {
+				return endpoint.ip != 0 && endpoint.port != 0 &&
+				       std::find(dialled.begin(), dialled.end(), endpoint) == dialled.end();
+			};
+			const SKadEndpoint current{ target.ip, target.udpPort };
+			if (undialled(current)) {
+				return current;
+			}
+			const auto former =
+				std::find_if(target.former.begin(), target.former.end(), undialled);
+			return former != target.former.end() ? std::optional<SKadEndpoint>(*former)
+							     : std::nullopt;
+		}
 	};
 	struct SMark
 	{

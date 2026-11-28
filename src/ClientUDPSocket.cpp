@@ -60,6 +60,7 @@
 #include "UtpStreamAcceptor.h"
 #endif
 #include "NatRendezvousProtocol.h" // Needed for ParseRendezvousEnvelope, BuildForwardedRendezvous
+#include "NetworkFunctions.h"      // Needed for IsGoodIP, IsHintableServedIP
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicTls.h"
 #include "QuicNgtcp2Adapter.h"
@@ -79,7 +80,6 @@
 #include "Server.h"                 // Needed for CServer, and transitively OP_NAT_CALLBACKREQUESTED_UDP
 #include "ServerList.h"             // Needed for theApp->serverlist->GetServerByAddress
 #include "NatServerHolePunch.h"     // Needed for expected punch endpoints
-#include "NetworkFunctions.h"       // Needed for IsGoodIP
 #include "ClientRef.h"              // Needed for a safe temporary dial client
 #include "ListenSocket.h"           // Needed for TooManySockets
 #include "UdpObfuscationPolicy.h"   // Needed for ServerUdpReceiveKeys
@@ -1219,6 +1219,29 @@ uint8_t CClientUDPSocket::ServedNatTTransports()
 #endif
 }
 
+void CClientUDPSocket::SendEndpointHint(uint32 ip, uint16 port, const NatRendezvous::EndpointHint &hint)
+{
+	const auto bytes = NatRendezvous::BuildEndpointHint(hint);
+	CMemFile data(bytes.data(), bytes.size());
+	CPacket *packet = new CPacket(data, OP_EMULEPROT, OP_NATT_ENDPOINT_HINT);
+	theStats::AddUpOverheadOther(packet->GetPacketSize());
+	AddDebugLogLineN(logKadBuddy,
+		CFormat("Endpoint hint to %s: the served node is at %s") %
+			Uint32_16toStringIP_Port(ip, port) %
+			Uint32_16toStringIP_Port(hint.ipv4, hint.udpPort));
+	SendPacket(packet, ip, port, false, nullptr, false, 0);
+}
+
+void CClientUDPSocket::ResendMovedEndpointHints(const CUpDownClient &served)
+{
+	NatRendezvous::UserHash target;
+	std::copy_n(served.GetUserHash().GetHash(), target.size(), target.begin());
+	for (const auto &sent :
+		m_sentEndpointHints.TakeMoved(target, served.GetServedUdpPort(), ::GetTickCount64())) {
+		SendEndpointHint(sent.requesterIP, sent.requesterPort, sent.hint);
+	}
+}
+
 void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, const uint8_t *body, size_t size)
 {
 	Kademlia::CBuddyStats::Own::Rendezvous &counts = theApp->clientlist->GetBuddyStats().own.rendezvous;
@@ -1271,6 +1294,10 @@ void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, cons
 	AddDebugLogLineN(logKadBuddy,
 		CFormat("Rendezvous from our buddy: punching %s, NAT-T 0x%02x; the requester dials") %
 			requester % decision.sharedTransports);
+	// Our buddy may have hinted our UDP port to the requester; a refresh corrects a moved one.
+	if (CUpDownClient *buddy = theApp->clientlist->GetBuddy()) {
+		buddy->SendBuddyRefresh();
+	}
 	const std::array<std::uint8_t, 16> &requesterHash = decision.request.requesterHash;
 	NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath::KadBuddy, ip, &requesterHash);
 	// Recorded before the punch: we answer the requester's CAPS only from an expected peer. No
@@ -1421,8 +1448,8 @@ void CClientUDPSocket::TickKadRendezvous(uint64 now)
 		}
 		case NatRendezvous::SKadRendezvousAction::FallbackDial:
 			AddDebugLogLineN(logClientUDP,
-				"No punch from " + Uint32_16toStringIP_Port(target.ip, target.udpPort) +
-					": dialling its Kad endpoint");
+				"No punch from the source yet: dialling " +
+					Uint32_16toStringIP_Port(target.ip, target.udpPort));
 			DialLowIdHolePunchPeer(target.ip,
 				target.tcpPort,
 				target.udpPort,
@@ -1437,6 +1464,31 @@ void CClientUDPSocket::TickKadRendezvous(uint64 now)
 			break;
 		}
 	}
+}
+
+void CClientUDPSocket::HandleEndpointHint(uint32 ip, uint16 port, const uint8_t *data, size_t size)
+{
+	const wxString from = Uint32_16toStringIP_Port(ip, port);
+	const auto hint = NatRendezvous::ParseEndpointHint(data, size);
+	if (!hint || !IsRendezvousPeerAllowed(hint->ipv4)) {
+		AddDebugLogLineN(logClientUDP, "Dropped an endpoint hint from " + from);
+		return;
+	}
+	const uint64 now = ::GetTickCount64();
+	const auto target = m_kadRendezvousRequests.TakeEndpointHint(
+		ip, port, hint->buddyId, hint->target, hint->fileHash, { hint->ipv4, hint->udpPort }, now);
+	if (!target) {
+		AddDebugLogLineN(logClientUDP, "Ignored an endpoint hint from " + from);
+		return;
+	}
+	AddDebugLogLineN(logClientUDP,
+		CFormat("Endpoint hint from the buddy at %s: the source is at %s, punching it") % from %
+			Uint32_16toStringIP_Port(target->ip, target->udpPort));
+	ExpectNatTPeer(target->ip, target->udpPort, &target->hash);
+	NatServerHolePunch::IPv4 peerIP{};
+	PokeUInt32(peerIP.data(), target->ip);
+	StartLowIdHolePunchSchedule(
+		peerIP, target->udpPort, now, NatServerHolePunch::RendezvousPath::KadRequester, target->hash);
 }
 
 void CClientUDPSocket::ResetLowIdHolePunchSchedules()
@@ -1940,6 +1992,10 @@ void CClientUDPSocket::ProcessPacket(
 			HandleLowIdHolePunch(host, port);
 		}
 		break;
+	case OP_NATT_ENDPOINT_HINT:
+		theStats::AddDownOverheadOther(size);
+		HandleEndpointHint(host, port, packet, size);
+		break;
 #endif
 	case OP_REASKCALLBACKUDP: {
 		AddDebugLogLineN(logClientUDP, "Client UDP socket; OP_REASKCALLBACKUDP");
@@ -1960,6 +2016,7 @@ void CClientUDPSocket::ProcessPacket(
 			break;
 		}
 		CMemFile mem_packet;
+		std::optional<NatRendezvous::EndpointHint> hint;
 		if (size > NatRendezvous::kRendezvousPrefixSize &&
 			packet[NatRendezvous::kRendezvousPrefixSize] == NatRendezvous::OP_RENDEZVOUS &&
 			std::all_of(packet + NatRendezvous::kHashSize,
@@ -1981,6 +2038,21 @@ void CClientUDPSocket::ProcessPacket(
 			mem_packet.WriteUInt32(host);
 			mem_packet.WriteUInt16(port);
 			mem_packet.Write(body.data(), body.size());
+			if ((envelope->request.connectOptions & NatRendezvous::kEndpointHintBit) != 0 &&
+				envelope->request.fileHash) {
+				NatRendezvous::UserHash target;
+				std::copy_n(buddy->GetUserHash().GetHash(), target.size(), target.begin());
+				const uint32 servedIP = buddy->GetIP();
+				hint = NatRendezvous::MakeServedEndpointHint(target,
+					envelope->servingBuddyId,
+					*envelope->request.fileHash,
+					servedIP,
+					IsHintableServedIP(servedIP, thePrefs::FilterLanIPs()),
+					buddy->GetServedUdpPort(),
+					buddy->GetKadPort(),
+					buddy->GetCryptOptions(),
+					buddy->GetServedBuddyOptions());
+			}
 		} else {
 			/* The packet starts with a 16-byte key for the buddy. It is currently
 			   unused, so the transformation discards the first 10 bytes below and
@@ -2002,6 +2074,14 @@ void CClientUDPSocket::ProcessPacket(
 		theStats::AddUpOverheadFileRequest(responseSize);
 		buddy->GetSocket()->SendPacket(response);
 		theApp->clientlist->RecordBuddyRelay(buddy, false, responseSize);
+		if (hint) {
+			// One punch with it, as eMuleQt's buddy sends.
+			SendEndpointHint(host, port, *hint);
+			CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
+			theStats::AddUpOverheadOther(punch->GetPacketSize());
+			SendPacket(punch, host, port, false, nullptr, false, 0);
+			m_sentEndpointHints.Record(host, port, *hint, ::GetTickCount64());
+		}
 		break;
 	}
 	case OP_REASKFILEPING: {

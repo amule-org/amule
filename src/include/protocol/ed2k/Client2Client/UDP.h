@@ -34,11 +34,12 @@ enum ED2KExtendedClientUDP
 	OP_FILENOTFOUND = 0x92,  // (null)
 	OP_QUEUEFULL = 0x93,     // (null)
 	OP_REASKCALLBACKUDP = 0x94,
-#ifdef ENABLE_NATT_SERVER_COORDINATION
-	// Empty peer UDP punch: the recipient dials uTP to the sender's observed UDP port.
-	// Distinct from the raw UDP protocol byte NatPeerUdp::OP_NATT_HOLEPUNCH (0xB3).
+	// Empty peer UDP punch: the recipient dials uTP to the sender's observed UDP port. A buddy in
+	// any build sends one with an endpoint hint. Distinct from the raw UDP protocol byte
+	// NatPeerUdp::OP_NATT_HOLEPUNCH (0xB3).
 	OP_HOLEPUNCH = 0xA1, // (null)
-#endif
+	// eMuleAI's: a buddy names the node it serves to a requester (NatRendezvous::BuildEndpointHint).
+	OP_NATT_ENDPOINT_HINT = 0xAA, // <ver 1><hash 16><buddy ID 16><file hash 16><IP 4><PORT 2><opts 1>
 #if defined(AMULE_UTP_TRANSPORT) || defined(AMULE_QUIC_TRANSPORT)
 	// To a punched peer whose datagram no key decoded: the source we saw it from.
 	OP_NATT_SOURCE_ECHO = 0xAB, // <IP 4><PORT 2>

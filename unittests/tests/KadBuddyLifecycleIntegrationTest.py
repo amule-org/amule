@@ -19,8 +19,10 @@ from AllSearchIntegrationTest import C, retry_port_collisions, tag, wait_for
 from DownloadDisplayRatesIntegrationTest import hello
 from KadLanModeIntegrationTest import (KADEMLIA2_HELLO_REQ, LAN_MODE_TIMEOUT, kad2_hello, stat, wait_stat,
                                        write_private_contacts)
-from KadReceiverKeyLogIntegrationTest import KADEMLIA_FINDBUDDY_REQ, KADEMLIA_FIREWALLED2_REQ
-from KadSourceTagsECTest import running_kad_daemon
+from KadReceiverKeyLogIntegrationTest import (KADEMLIA_FINDBUDDY_REQ, KADEMLIA_FIREWALLED2_REQ, UDP_KEY_SECRET,
+                                              encrypted, verify_key)
+from KadSourceBuddyIdIntegrationTest import private_address
+from KadSourceTagsECTest import kad_id, running_kad_daemon
 from UploadRefillIntegrationTest import send, wait_packet
 from UploadSlotScopeIntegrationTest import OP_HELLOANSWER
 
@@ -33,6 +35,13 @@ OP_EMULEPROT = 0xC5
 OP_REASKCALLBACKUDP = 0x94
 OP_REASKCALLBACKTCP = 0x9A
 OP_RENDEZVOUS = 0xA0
+OP_HOLEPUNCH = 0xA1
+OP_NATT_ENDPOINT_HINT = 0xAA
+ENDPOINT_HINT_BIT = 0x20
+# kEndpointRehintMs: a refresh this long after a hint no longer sends the requester another.
+REHINT_SECONDS = 3
+# The daemon's flood check drains one 0x51 from an address every 30 s, and drops the third.
+FLOOD_DRAIN_SECONDS = 30
 NATT_UTP = 0x80
 NATT_QUIC = 0x40
 # KadMaxServedBuddies, below a tenth of MaxConnections.
@@ -100,6 +109,8 @@ class Requester:
         # CUInt128 reads four little-endian words, and the hash is their big-endian bytes.
         self.user_hash = struct.pack('>4I', *struct.unpack('<4I', self.user_id))
         with kad_peer(address, udp_port) as peer:
+            # The port a hint names for this node, until a refresh moves it.
+            self.kad_port = peer.getsockname()[1]
             # A NAT-T node (0x80, uTP) may take any slot, so these tests fill the whole limit; a node
             # that declares none (the 34-byte form) cannot take the third of the slots kept for NAT-T.
             options = struct.pack('<B', 0x80) if natt else b''
@@ -365,14 +376,126 @@ def check_rendezvous_is_checked_and_rebuilt(proc, ec, udp_port, peer_port):
     wait_served(proc, ec, 0)
 
 
+def check_keyed_repeat_is_a_refresh(proc, ec, udp_port, peer_port):
+    """A node we serve repeats its buddy request keyed to its IP: a refresh (emule-qt#281), neither
+    answered nor counted as a request. An unkeyed repeat is still refused as an address we serve.
+
+    Two nodes, one repeat each: Kad lets an address send two buddy requests a minute."""
+    keyed = Requester('127.0.0.84', udp_port, peer_port)
+    plain = Requester('127.0.0.85', udp_port, peer_port)
+    keyed.connect()
+    plain.connect()
+    wait_served(proc, ec, 2)
+    before = buddy_counters(ec)
+    daemon_id = kad_id(ec)
+    for node, wrap in ((keyed, lambda p: encrypted(p, daemon_id, verify_key(keyed.address))),
+                       (plain, lambda p: p)):
+        body = node.buddy_id + node.user_id + struct.pack('<HB', node.port, NATT_UTP)
+        with kad_peer(node.address, udp_port) as peer:
+            peer.send(wrap(bytes([0xE4, KADEMLIA_FINDBUDDY_REQ]) + body))
+    # Datagrams are handled in order, so the keyed one was handled when the plain one is counted.
+    wait_counter(proc, ec, 'SERVING_REFUSED_SAME_IP', before['SERVING_REFUSED_SAME_IP'] + 1)
+    counters = buddy_counters(ec)
+    assert counters['SERVING_REQUESTS'] == before['SERVING_REQUESTS'] + 1, counters
+    leave(proc, ec, [keyed, plain])
+    wait_served(proc, ec, 0)
+
+
+def wait_udp(peer, opcode):
+    """The body of the next eMule-protocol packet with opcode the daemon sends peer."""
+    while True:
+        packet = peer.recv(65535)
+        if packet[:2] == bytes([OP_EMULEPROT, opcode]):
+            return packet[2:]
+
+
+def no_udp(peer, opcode, seconds):
+    """Whether the daemon sends peer no eMule-protocol packet with opcode for seconds."""
+    end = time.monotonic() + seconds
+    try:
+        while (left := end - time.monotonic()) > 0:
+            peer.settimeout(left)
+            if peer.recv(65535)[:2] == bytes([OP_EMULEPROT, opcode]):
+                return False
+    except socket.timeout:
+        pass
+    finally:
+        peer.settimeout(10)
+    return True
+
+
+def check_buddy_hints_where_the_served_node_is(proc, ec, udp_port, peer_port):
+    """A rendezvous that asks for a hint (0x20) gets the requester a 0xAA naming the served node's
+    IPv4 and the port its 0x51 came from, and an 0xA1 (emule-qt#281). A keyed refresh from another
+    port within 3 s gets it a second 0xAA with that port. A later one sends nothing, but moves the
+    port for the next hint, which the requester's repeated rendezvous gets.
+
+    The served node is on a private address: loopback never goes in a hint, and a LAN address only
+    while LAN IPs are not filtered, as here."""
+    address = private_address()
+    if address is None:
+        print('SKIP: no private non-loopback IPv4 for a hinted served node')
+        return False
+    served = Requester(address, udp_port, peer_port)
+    served.connect()
+    wait_served(proc, ec, 1)
+    requester_hash, file_hash = os.urandom(16), os.urandom(16)
+    named = bytes([1]) + served.user_hash + served.buddy_id + file_hash + socket.inet_aton(address)
+
+    def relay(requester):
+        """The same rendezvous each time, as a requester repeats it; the hint it gets."""
+        requester.send(bytes([OP_EMULEPROT, OP_REASKCALLBACKUDP]) + served.buddy_id +
+                       rendezvous(requester_hash, NATT_UTP | ENDPOINT_HINT_BIT, file_hash))
+        assert wait_packet(served.sock, OP_REASKCALLBACKTCP, MARGIN) is not None, 'the rendezvous was not relayed'
+        hint = wait_udp(requester, OP_NATT_ENDPOINT_HINT)
+        wait_udp(requester, OP_HOLEPUNCH)
+        return hint
+
+    def refresh():
+        """A keyed refresh from a new port, as after the node's NAT moved it; that port."""
+        body = served.buddy_id + served.user_id + struct.pack('<HB', served.port, NATT_UTP)
+        with kad_peer(address, udp_port) as moved:
+            moved.send(encrypted(bytes([0xE4, KADEMLIA_FINDBUDDY_REQ]) + body, kad_id(ec), verify_key(address)))
+            return moved.getsockname()[1]
+
+    def port_of(hint):
+        assert len(hint) == 56 and hint[:53] == named, hint.hex()
+        return struct.unpack('<H', hint[53:55])[0]
+
+    with kad_peer('127.0.0.92', udp_port) as requester:
+        hint = relay(requester)
+        assert port_of(hint) == served.kad_port, hint.hex()
+        assert hint[55] & (NATT_UTP | NATT_QUIC) == NATT_UTP, hex(hint[55])
+
+        moved_port = refresh()
+        refreshed_at = time.monotonic()
+        assert port_of(wait_udp(requester, OP_NATT_ENDPOINT_HINT)) == moved_port, 'no second hint'
+
+        # A refresh after the 3 s (kEndpointRehintMs) moves the port for the next hint only. An
+        # address may send two 0x51 a minute and the daemon drains one every 30 s, so it also
+        # comes 30 s after the last refresh.
+        assert port_of(relay(requester)) == moved_port
+        hinted_at = time.monotonic()
+        time.sleep(max(0, max(hinted_at + REHINT_SECONDS + 0.5, refreshed_at + FLOOD_DRAIN_SECONDS + 1) - time.monotonic()))
+        late_port = refresh()
+        assert no_udp(requester, OP_NATT_ENDPOINT_HINT, 1), 'a refresh after the 3 s sent a hint'
+        assert port_of(relay(requester)) == late_port, 'the next hint kept the old port'
+    leave(proc, ec, [served])
+    wait_served(proc, ec, 0)
+    return True
+
+
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-kad-buddy-') as directory:
         root = Path(directory)
         # The UDP firewall check needs a peer on a public IP, and LAN mode skips it. Enough contacts
         # to outlast the test keep LAN mode on.
         write_private_contacts(root, 8)
+        # A known UDP key secret lets a fake node key its packets to the daemon.
         with running_kad_daemon(binary, root, FilterLanIPs=0, KadMaxServedBuddies=SERVED_LIMIT,
-                                MaxConnections=100) as (proc, ec, udp_port, peer_port):
+                                MaxConnections=100,
+                                sections={'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (
+                                    proc, ec, udp_port, peer_port):
             pass_firewall_check(udp_port)
             wait_stat(proc, ec, 'EC_TAG_STATS_KAD_IN_LAN_MODE', 1, LAN_MODE_TIMEOUT)
 
@@ -388,10 +511,14 @@ def run(binary):
             check_one_offer_per_address(proc, ec, udp_port, peer_port)
             check_kept_slot_is_for_natt_nodes(proc, ec, udp_port, peer_port)
             check_rendezvous_is_checked_and_rebuilt(proc, ec, udp_port, peer_port)
+            check_keyed_repeat_is_a_refresh(proc, ec, udp_port, peer_port)
+            hinted = check_buddy_hints_where_the_served_node_is(proc, ec, udp_port, peer_port)
     print(f'PASS: {SERVED_LIMIT} buddies served, one per address, the extra one dropped, callbacks limited '
           'per sender and buddy, pending offers capped, an expired request not promoted, a duplicate '
           'offer counted apart, a HighID node released, one offer per address, the kept slot only for a '
-          'NAT-T node, a rendezvous checked and rebuilt, and each counted')
+          'NAT-T node, a rendezvous checked and rebuilt, a keyed repeat taken as a refresh, '
+          + ('a hint sent, sent again after a refresh within 3 s, and moved for the next one by a later '
+             'refresh, ' if hinted else '') + 'and each counted')
 
 
 if __name__ == '__main__':

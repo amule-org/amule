@@ -252,6 +252,24 @@ TEST(NetworkFunctions, IsGoodIPSpecialPurposeBlocks)
 	}
 }
 
+// A buddy names the node it serves only at an address a requester can use: eMuleAI drops one that
+// is not public, a LAN one is for a setup that does not filter LAN IPs, and loopback never goes.
+TEST(NetworkFunctions, IsHintableServedIP)
+{
+	unsigned int ip;
+	ASSERT_TRUE(StringIPtoUint32("1.2.3.4", ip));
+	ASSERT_TRUE(IsHintableServedIP(ip, true));
+	ASSERT_TRUE(IsHintableServedIP(ip, false));
+	ASSERT_TRUE(StringIPtoUint32("10.0.0.1", ip));
+	ASSERT_FALSE(IsHintableServedIP(ip, true));
+	ASSERT_TRUE(IsHintableServedIP(ip, false));
+	ASSERT_TRUE(StringIPtoUint32("127.0.0.1", ip));
+	ASSERT_FALSE(IsHintableServedIP(ip, true));
+	ASSERT_FALSE(IsHintableServedIP(ip, false));
+	ASSERT_TRUE(StringIPtoUint32("0.0.0.0", ip));
+	ASSERT_FALSE(IsHintableServedIP(ip, false));
+}
+
 TEST(NetworkFunctions, IsGoodIPPort)
 {
 	unsigned int lan;

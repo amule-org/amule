@@ -911,6 +911,44 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   element, writes it as 18 bytes, and writes the tail before it. An element that
   runs past the end, or a lone byte at the end, voids the whole block; every
   other element is dropped. eMuleAI reads up to the tail, so it ignores the block.
+- **Endpoint hint.** A requester asks for one with `0x20`
+  (`CONNECT_OPT_NATT_ENDPOINT_HINT`) in the connect options of its `0xA0`. Once
+  the `0xA0` is forwarded, the buddy sends the requester `OP_NATT_ENDPOINT_HINT`
+  (`0xAA`, 56 bytes: `<version 1><target hash 16><buddy ID 16><file hash 16>
+  <IPv4 4><UDP port 2><connect options 1>`) and one `OP_HOLEPUNCH` (`0xA1`),
+  plain, as eMuleAI and eMuleQt do. The endpoint is the served node's IPv4 with
+  the UDP port its `0x51` or its last refresh came from: a NAT keeps that
+  outside port for every destination, and the hello's Kad port is the inside
+  one, so it is only the fallback. The options are the node's crypt bits and the
+  transports its `0x51` declared. No hint goes out without a file hash, when the
+  forward was over budget, or without a public address: eMuleAI drops any other.
+  A LAN address goes out only where LAN IPs are not filtered, as a rendezvous
+  peer is taken. aMule's buddy sends it in every build. As a requester aMule
+  sets `0x20` and takes a hint only from the buddy it sent the `0xA0` to, naming
+  the buddy ID it sent, the target and the file, with an endpoint it could
+  punch. The hinted endpoint is punched at once and becomes the first fallback
+  dial; the record's endpoint stays punched and comes next (see Dial below). A
+  hint that names another endpoint moves it again. Once the target has punched,
+  a hint changes nothing.
+- **Refresh.** A served node repeats its `0x51` unchanged, keyed with the
+  buddy's receiver key (ModderMule/emule-qt#281). When the repeat comes from a
+  node we serve, with its user hash and from its IP, the buddy takes it as a
+  refresh: it updates the port, checks no slot or firewall rule, sends no `0x5A`
+  (`KADEMLIA_FINDBUDDY_RES`), and does not count it as a request. When a refresh
+  moves the port within 3 s of a hint, the buddy sends that requester a second
+  `0xAA` with the new port. A later refresh moves the port for the next hint, so
+  the requester's repeated `0xA0` gets it. Any other repeat takes the normal
+  request path, so an unkeyed one from a node we serve is refused as an address
+  we already serve. aMule as a served node sends a refresh with every
+  `OP_BUDDYPING` (every 10 min) and when its buddy relays an `0xA0` it acts on,
+  but never within 45 s of its last `0x51`, counting the one that found the
+  buddy. A buddy drops a third `0x51` from an address within a minute and counts
+  the dropped one too, so one every 30 s, the rate its count drains at, leaves
+  no margin. eMuleQt sends one with every `OP_BUDDYPING` and on a relayed
+  `0xA0`, at most every 30 s. aMule keys its refresh with the key the buddy's
+  `0x5A` carried, and sends none without one. Stock eMule, eMuleAI and aMule
+  before this refuse a repeat from a node they serve and do not answer, so a
+  refresh to them changes nothing.
 - **Slots.** A third of the buddy slots is kept for nodes that declared a
   transport, so a node that serves buddies keeps room for NAT-T nodes.
 - **Interop.** An eMuleAI buddy forwards without this check. A drop on our side
@@ -1009,16 +1047,21 @@ says. Before this, a firewalled aMule did not try such a source at all.
   reask through a buddy is:
   `<buddy id 16><zero 16><0xA0 1><our hash 16><opts 1><file hash 16><our ip 4><udp port 2><hint 1>`.
   The options are our Kad connect options plus the NAT-T transports we serve
-  (`0x80` uTP, `0x40` QUIC), with `0x20` (endpoint hint) clear. The tail is
-  always written, with our public IPv4 or zeros while we do not know it, so the
-  extension block of ModderMule/emule-qt#265 can follow it; the hint is 2 (QUIC) when we serve
+  (`0x80` uTP, `0x40` QUIC), and `0x20` (`CONNECT_OPT_NATT_ENDPOINT_HINT`),
+  which asks the buddy for an endpoint hint. The tail is always written, with
+  our public IPv4 or zeros while we do not know it, so the extension block of
+  ModderMule/emule-qt#265 can follow it; the hint is 2 (QUIC) when we serve
   QUIC, else 1 (uTP). It is sent up to three times, 5 s apart, until the source
   punches back.
 - **Dial.** On the source's first punch it dials the endpoint the punch came
   from, through the dial the server paths use (QUIC when CAPS confirms it, else
-  uTP). Without a punch within 3 s it dials the source's Kad endpoint once, as
-  eMuleAI dials it at once. A punch that comes after that dial is not dialled
-  again unless it shows another port.
+  uTP). Without a punch within 3 s it dials the source's endpoints itself, as
+  eMuleAI dials the Kad endpoint at once: the hinted endpoint first, then the
+  record's, then the ones earlier records named, newest first, one every 5 s,
+  each once, until a punch comes or the attempt ends. A hint that arrives after
+  the first of these dials moves the hinted endpoint to the front, dialled at
+  once. A punch from an endpoint one of these dials reached is not dialled
+  again; one from another endpoint is.
 - **End.** A verified hello from the source ends the attempt. Otherwise it ends
   after 45 s, and that source is not asked this way again for 10 minutes. One
   attempt per source is in flight, and at most 32 at once.
@@ -1031,10 +1074,11 @@ says. Before this, a firewalled aMule did not try such a source at all.
   once when the server refuses the punch with a `0x62` (`OP_LOWID_HOLEPUNCH_FAIL`).
   A Lugdunum request held for the server's UDP key counts from when it is held,
   since the key can take up to 20 minutes; the held request still goes out when
-  the key arrives. The server steps go first: a `0x60` (`OP_LOWID_HOLEPUNCH_REQUEST`) the request
-  limits held back keeps the rendezvous waiting until it has gone out. So a source
-  of our own server that the hole punch and the Lugdunum callback did not reach
-  is still asked through its buddy.
+  the key arrives. The server steps go first: a `0x60`
+  (`OP_LOWID_HOLEPUNCH_REQUEST`) the request limits held back keeps the
+  rendezvous waiting until it has gone out. So a source of our own server that
+  the hole punch and the Lugdunum callback did not reach is still asked through
+  its buddy.
 - **No rendezvous.** A source that does not speak the rendezvous (stock eMule,
   and aMule before the served side) reads the `0xA0` as a reask for a zero file
   hash and answers `OP_FILENOTFOUND`. During an attempt that answer ends the
@@ -1044,7 +1088,8 @@ says. Before this, a firewalled aMule did not try such a source at all.
   that connected to us before does; any other one, behind the same shared
   address, answers its own reask and is handled as before.
 - **Statistics.** `buddy.own.requested_rendezvous` counts `started`, `sent`
-  (each `0x94`), `punched`, `fallback_dials`, and how attempts end: `connected`,
-  `timed_out` or `no_rendezvous`. Each step is logged under client UDP.
+  (each `0x94`), `punched`, `fallback_dials` (each dial without a punch, up to
+  five per attempt), and how attempts end: `connected`, `timed_out` or
+  `no_rendezvous`. Each step is logged under client UDP.
 - **Build.** As the served side: `ENABLE_NATT_SERVER_COORDINATION` and uTP, and
   a node that serves no NAT-T transport does not ask.

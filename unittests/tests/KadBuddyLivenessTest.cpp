@@ -27,6 +27,7 @@
 
 using namespace muleunit;
 using Kademlia::CBuddyLiveness;
+using Kademlia::CBuddyRefreshGate;
 
 DECLARE_SIMPLE(KadBuddyLiveness)
 
@@ -147,4 +148,17 @@ TEST(KadBuddyLiveness, BothEndsStayAliveThenReleaseTheSilentConnection)
 	client.PingSent(now + 2 * CBuddyLiveness::PingInterval);
 	ASSERT_TRUE(client.Expired(now + CBuddyLiveness::ReceiveTimeout));
 	ASSERT_TRUE(host.Expired(now + CBuddyLiveness::ReceiveTimeout));
+}
+
+// Every refresh, the ping's too, waits 45 s from the last 0x51: a buddy drains its count of them one
+// every 30 s and drops the third in a minute, so a refresh every 30 s has no margin.
+TEST(KadBuddyLiveness, ARefreshWaitsFortyFiveSecondsFromTheLast)
+{
+	ASSERT_EQUALS(static_cast<uint64_t>(45 * 1000), CBuddyRefreshGate::Interval);
+	CBuddyRefreshGate gate;
+	ASSERT_TRUE(gate.Due(5));
+	gate.Sent(1000);
+	ASSERT_FALSE(gate.Due(1000));
+	ASSERT_FALSE(gate.Due(1000 + CBuddyRefreshGate::Interval - 1));
+	ASSERT_TRUE(gate.Due(1000 + CBuddyRefreshGate::Interval));
 }

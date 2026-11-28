@@ -4404,12 +4404,12 @@ endforeach ()
 foreach (long_test IN ITEMS
 	PublishMetrics-kad2:242
 	KadBuddyCallbackRetryIntegrationTest-two:234
-	KadBuddyLifecycleIntegrationTest:181
+	KadBuddyLifecycleIntegrationTest:220
 	KadBuddyPointerResolveIntegrationTest-miss:179
+	KadRendezvousRequesterIntegrationTest:174
 	KadBuddyPointerResolveIntegrationTest-hit:157
 	KadBuddyCallbackRetryIntegrationTest-one:157
 	KadSourceBuddyIdIntegrationTest:137
-	KadRendezvousRequesterIntegrationTest:135
 	UploadRefillIntegrationTest:117
 	UPnPPortMappingIntegrationTest:99
 	KadBuddyPointerType7IntegrationTest-pointer:94
