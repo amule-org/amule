@@ -525,8 +525,9 @@ std::vector<std::uint16_t> FallbackPorts(Requests &requests, std::uint64_t from,
 {
 	std::vector<std::uint16_t> ports;
 	for (std::size_t i = 0; i < count; ++i) {
-		const Action *dial =
-			FallbackDial(requests.TakeDue(from + i * NatRendezvous::kRequesterFallbackStepMs));
+		// Kept: FallbackDial() points into it.
+		const auto due = requests.TakeDue(from + i * NatRendezvous::kRequesterFallbackStepMs);
+		const Action *dial = FallbackDial(due);
 		ports.push_back(dial != nullptr ? dial->target.udpPort : 0);
 	}
 	return ports;
