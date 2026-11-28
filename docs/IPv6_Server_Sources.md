@@ -210,10 +210,11 @@ them: it tells the source to dial the requester's IPv6. ed2k-server (from 0.9.90
   - `4` (the source is us), `5` (the source is gone), `7` (the source is unreachable), and any
     other value end only that request.
 
-  ed2k-server refuses `OP_CALLBACKREQUEST` with the same 5-byte form, with reason `5`, `7` or `8`
-  (andrey23127/ed2k-server#63). aMule ends the request for that target in every build, with or
-  without IPv6. Other servers refuse it with an empty `OP_CALLBACK_FAIL`, which aMule takes as a
-  request's own only while that request is the one out.
+  ed2k-server (andrey23127/ed2k-server#63) and eNode-go from v0.5.30 (ModderMule/eNode-go#2)
+  refuse `OP_CALLBACKREQUEST` with the same 5-byte form, with reason `5`, `7` or `8`. aMule ends
+  the request for that target in every build, with or without IPv6. Other servers refuse it with
+  an empty `OP_CALLBACK_FAIL`, which aMule takes as a request's own only while that request is the
+  one out.
 - **Sources:** while the callback can work (offered, and our IPv6 reached or still being tested),
   a LowID source of our own server is kept, not dropped as unreachable. A source that waits
   LowID-to-LowID is asked again at most once per source reask interval. So a source found before

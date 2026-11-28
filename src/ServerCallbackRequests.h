@@ -32,9 +32,10 @@
 #include <optional>
 #include <vector>
 
-//! An OP_CALLBACK_FAIL that names its request: <target LowID 4 LE><reason 1>. ed2k-server sends it
-//! for OP_IPV6_CALLBACK_REQUEST, and since andrey23127/ed2k-server#63 for OP_CALLBACKREQUEST too.
-//! Other servers refuse OP_CALLBACKREQUEST with an empty one.
+//! An OP_CALLBACK_FAIL that names its request: <target LowID 4 LE><reason 1>. ed2k-server and
+//! eNode-go send it for OP_IPV6_CALLBACK_REQUEST, and for OP_CALLBACKREQUEST too since
+//! andrey23127/ed2k-server#63 and eNode-go v0.5.30. Other servers refuse OP_CALLBACKREQUEST with an
+//! empty one.
 struct SServerCallbackRefusal
 {
 	std::uint32_t targetId = 0;

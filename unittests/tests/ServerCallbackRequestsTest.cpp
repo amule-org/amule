@@ -139,7 +139,7 @@ TEST(ServerCallbackRequests, ARefusalNamesItsTargetAndReason)
 	// Little-endian, as in OP_LOWID_HOLEPUNCH_FAIL.
 	ASSERT_EQUALS(0x7777U, refusal->targetId);
 	ASSERT_EQUALS(ServerCallbackRefusal::TargetGone, refusal->reason);
-	// A server other than ed2k-server refuses OP_CALLBACKREQUEST with an empty one.
+	// A server other than ed2k-server and eNode-go refuses OP_CALLBACKREQUEST with an empty one.
 	ASSERT_FALSE(ParseServerCallbackRefusal(data.data(), 0).has_value());
 	ASSERT_FALSE(ParseServerCallbackRefusal(data.data(), 4).has_value());
 	ASSERT_FALSE(ParseServerCallbackRefusal(nullptr, 5).has_value());
