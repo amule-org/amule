@@ -1088,7 +1088,8 @@ says. Before this, a firewalled aMule did not try such a source at all.
   that connected to us before does; any other one, behind the same shared
   address, answers its own reask and is handled as before.
 - **Statistics.** `buddy.own.requested_rendezvous` counts `started`, `sent`
-  (each `0x94`), `punched`, `fallback_dials`, and how attempts end: `connected`,
-  `timed_out` or `no_rendezvous`. Each step is logged under client UDP.
+  (each `0x94`), `punched`, `fallback_dials` (each dial without a punch, up to
+  five per attempt), and how attempts end: `connected`, `timed_out` or
+  `no_rendezvous`. Each step is logged under client UDP.
 - **Build.** As the served side: `ENABLE_NATT_SERVER_COORDINATION` and uTP, and
   a node that serves no NAT-T transport does not ask.

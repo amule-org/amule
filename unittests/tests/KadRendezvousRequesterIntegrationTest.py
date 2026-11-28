@@ -11,9 +11,10 @@ the buddy an OP_REASKCALLBACKUDP (0x94) carrying an OP_RENDEZVOUS (0xA0) and pun
 
 Five cases: a silent source gets three requests 5 s apart and one fallback dial; a source that
 punches back ends the requests and gets no fallback dial; a stale record of the source that comes
-last does not stop the punches to its current endpoint; a source that answers OP_FILENOTFOUND does
-not speak the rendezvous, and stays a source; an endpoint hint (0xAA) from the source's buddy is
-punched, and one from any other socket is not (ModderMule/emule-qt#281).
+last does not stop the punches to its current endpoint, and both endpoints get a fallback dial; a
+source that answers OP_FILENOTFOUND does not speak the rendezvous, and stays a source; an endpoint
+hint (0xAA) from the source's buddy is punched and dialled with the record's endpoint, and one from
+any other socket is not taken (ModderMule/emule-qt#281).
 """
 import socket
 import struct
@@ -279,6 +280,8 @@ def run(binary):
     assert len(reasks) == SENDS, ('sends with a stale record last', len(reasks))
     assert punches, 'the endpoint of the current record was not punched'
     assert requested(counters)['started'] == 1, counters
+    # The stale endpoint kept is dialled at 3 s, the real one 5 s later.
+    assert requested(counters)['fallback_dials'] == 2, counters
 
     reasks, _punches, counters, sources, _ = drive(binary, address, OP_FILENOTFOUND)
     assert len(reasks) == 1, ('requests after OP_FILENOTFOUND', len(reasks))
@@ -292,6 +295,8 @@ def run(binary):
     assert hints['hinted'], 'the hinted endpoint was not punched'
     assert not hints['decoy'], ('a hint from the source itself was taken', len(hints['decoy']))
     assert punches, 'the record\'s endpoint was no longer punched'
+    # The hinted endpoint is dialled at 3 s, the record's 5 s later.
+    assert requested(counters)['fallback_dials'] == 2, counters
     print('PASS: a firewalled node asks a Kad source\'s buddy for a rendezvous in the sketched layout, '
           'with the buddy ID as a stock buddy compares it; a silent source gets three requests and one fallback dial, '
           'a punch ends the requests, a stale record that comes last does not stop the punches to the current endpoint, '

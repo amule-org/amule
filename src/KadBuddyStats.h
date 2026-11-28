@@ -158,7 +158,8 @@ struct CBuddyStats
 		// The rendezvous we asked a firewalled Kad source's buddy for: started ends as connected
 		// (a verified hello), timedOut, or noRendezvous (the source answered OP_FILENOTFOUND).
 		// sent counts each 0x94 (up to three per attempt), punched the attempts the source
-		// punched back, fallbackDials the ones that dialled its Kad endpoint without a punch.
+		// punched back, fallbackDials each dial without a punch: after 3 s the hinted endpoint,
+		// then the record's, then the former ones, 5 s apart, each once (up to five per attempt).
 		struct RequestedRendezvous
 		{
 			uint64_t started = 0;

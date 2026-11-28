@@ -1448,8 +1448,8 @@ void CClientUDPSocket::TickKadRendezvous(uint64 now)
 		}
 		case NatRendezvous::SKadRendezvousAction::FallbackDial:
 			AddDebugLogLineN(logClientUDP,
-				"No punch from " + Uint32_16toStringIP_Port(target.ip, target.udpPort) +
-					": dialling its Kad endpoint");
+				"No punch from the source yet: dialling " +
+					Uint32_16toStringIP_Port(target.ip, target.udpPort));
 			DialLowIdHolePunchPeer(target.ip,
 				target.tcpPort,
 				target.udpPort,
