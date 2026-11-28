@@ -174,7 +174,7 @@ enum class EConnectionRoute : std::uint8_t
 	AnsweredDirectCallback = 11,
 	//! We dialled the peer because our server forwarded its Lugdunum callback request.
 	AnsweredLugdunumCallback = 12,
-	//! We dialled the peer after a rendezvous we asked its Kad buddy for.
+	//! A rendezvous we asked the peer's Kad buddy for, whichever side dialled.
 	KadBuddyRendezvous = 13,
 	//! The peer dialled us after our Kad buddy forwarded its rendezvous.
 	AnsweredKadBuddyRendezvous = 14,
@@ -241,6 +241,16 @@ inline bool IsServerNatStep(EContactRouteReport route)
 	       route == EContactRouteReport::LugdunumCallback;
 }
 
+//! Whether the last step of a LowID-to-LowID wait is still in its window: a server step's answer
+//! window, or the attempt of a Kad rendezvous.
+inline bool LowToLowStepInWindow(EContactRouteReport step, std::uint64_t ageMs)
+{
+	if (step == EContactRouteReport::KadBuddy) {
+		return ageMs < kKadRendezvousAttemptMs;
+	}
+	return IsServerNatStep(step) && ageMs < kNatStepAnswerWindowMs;
+}
+
 struct SKadRendezvousRetryFacts
 {
 	//! The source's last contact step. A step that ended leaves its route behind.
@@ -290,8 +300,8 @@ struct SContactInFlightFacts
 
 /**
  * The contact of ours a new connection may answer: its route, or none when nothing of ours is
- * awaited. DS_LOWTOLOWIP counts only with a NAT-T step still in its answer window: the state is
- * also set when no step could be sent, and it lasts as long as we stay LowID.
+ * awaited. DS_LOWTOLOWIP counts only with a NAT-T step still in its window: the state is also set
+ * when no step could be sent, and it lasts as long as we stay LowID.
  */
 inline std::optional<EContactRouteReport> ContactInFlight(const SContactInFlightFacts &facts)
 {
@@ -301,8 +311,7 @@ inline std::optional<EContactRouteReport> ContactInFlight(const SContactInFlight
 	case DS_WAITCALLBACKKAD:
 		return facts.attempt;
 	case DS_LOWTOLOWIP:
-		// Not a Kad rendezvous: only our own dial answers it, and its opener says so.
-		if (IsServerNatStep(facts.attempt) && facts.natStepAgeMs < kNatStepAnswerWindowMs) {
+		if (LowToLowStepInWindow(facts.attempt, facts.natStepAgeMs)) {
 			return facts.attempt;
 		}
 		break;
@@ -344,12 +353,8 @@ inline bool ContactAttemptAwaited(const SContactAttemptFacts &facts)
 	case DS_WAITCALLBACKKAD:
 		return true;
 	case DS_LOWTOLOWIP:
-		if (IsServerNatStep(facts.attempt) && facts.stepAgeMs < kNatStepAnswerWindowMs &&
+		if (LowToLowStepInWindow(facts.attempt, facts.stepAgeMs) &&
 			!(facts.attempt == EContactRouteReport::ServerHolePunch && facts.punchRefused)) {
-			return true;
-		}
-		if (facts.attempt == EContactRouteReport::KadBuddy &&
-			facts.stepAgeMs < kKadRendezvousAttemptMs) {
 			return true;
 		}
 		break;
@@ -382,6 +387,9 @@ inline std::optional<EConnectionRoute> OwnNatStep(const SConnectionRouteFacts &f
 		return EConnectionRoute::ServerHolePunch;
 	case EContactRouteReport::LugdunumCallback:
 		return EConnectionRoute::LugdunumCallback;
+	case EContactRouteReport::KadBuddy:
+		// The rendezvous: the buddy's callback needs us reachable, so no punched path answers it.
+		return EConnectionRoute::KadBuddyRendezvous;
 	default:
 		return std::nullopt;
 	}

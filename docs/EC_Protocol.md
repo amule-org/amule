@@ -798,7 +798,7 @@ one is out; otherwise it is the other side's request we answered.
 
 | Bits | Meaning |
 | ---- | ------- |
-| 0-3 | The route: `0` none, `1` we dialled, `2` the peer dialled us unasked, `3` server callback, `4` Kad buddy callback, `5` direct UDP callback, `6` foreign-server NAT callback, `7` server hole punch, `8` Lugdunum callback, `9` we answered a server callback request, `10` we answered a Kad buddy callback request, `11` we answered a direct UDP callback request, `12` we answered a Lugdunum or cross-server callback request our server forwarded, `13` we dialled the peer after a rendezvous we asked its Kad buddy for, `14` the peer dialled us after our Kad buddy forwarded its rendezvous |
+| 0-3 | The route: `0` none, `1` we dialled, `2` the peer dialled us unasked, `3` server callback, `4` Kad buddy callback, `5` direct UDP callback, `6` foreign-server NAT callback, `7` server hole punch, `8` Lugdunum callback, `9` we answered a server callback request, `10` we answered a Kad buddy callback request, `11` we answered a direct UDP callback request, `12` we answered a Lugdunum or cross-server callback request our server forwarded, `13` a rendezvous we asked the peer's Kad buddy for, whichever side dialled, `14` the peer dialled us after our Kad buddy forwarded its rendezvous |
 | 4-5 | The transport: `0` TCP, `1` uTP, `2` QUIC |
 | 6 | The connection is to the peer's IPv6 address |
 | 7 | A proxy carried the dial |

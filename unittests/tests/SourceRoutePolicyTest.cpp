@@ -530,6 +530,9 @@ TEST(SourceRoutePolicy, AConnectionRouteFollowsWhoOpenedIt)
 	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ForeignNatCallback);
 	facts.attempt = EContactRouteReport::ServerHolePunch;
 	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ServerHolePunch);
+	// The source of our Kad rendezvous dialled us on the punched path.
+	facts.attempt = EContactRouteReport::KadBuddy;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::KadBuddyRendezvous);
 	// Without a step of ours, we answered the peer's hole punch or Lugdunum callback.
 	facts.contactInFlight = false;
 	facts.attempt = EContactRouteReport::None;
@@ -609,8 +612,13 @@ TEST(SourceRoutePolicy, AContactIsInFlightOnlyWhileOursIsAwaited)
 		// The step was answered or lost long ago: the state outlives it while we stay LowID.
 		ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, step, kNatStepAnswerWindowMs).has_value());
 	}
-	// A Kad rendezvous is answered only on its own dial or accept, whose openers name it.
-	ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::KadBuddy).has_value());
+	// A Kad rendezvous for as long as its attempt: the source may dial us on the punched path.
+	ASSERT_TRUE(
+		inFlight(
+			DS_LOWTOLOWIP, US_NONE, EContactRouteReport::KadBuddy, kKadRendezvousAttemptMs - 1) ==
+		EContactRouteReport::KadBuddy);
+	ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::KadBuddy, kKadRendezvousAttemptMs)
+			     .has_value());
 	// No step was sent this round, or the route is an older attempt's.
 	ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::None).has_value());
 	ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::ServerCallback).has_value());

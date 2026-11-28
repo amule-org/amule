@@ -1188,7 +1188,8 @@ private:
 	std::vector<Entry> m_pending;
 };
 // Who opened a stream accepted from an expected peer, by its latest live rendezvous. A server
-// punch reads as AcceptedRendezvous, and so does our own Kad rendezvous, never noted as an outcome.
+// punch reads as AcceptedRendezvous, and so does our own Kad rendezvous, which is never noted as
+// an outcome: our step in flight names it.
 inline EConnectionOpener AcceptedRendezvousOpener(std::optional<RendezvousPath> path)
 {
 	if (path == RendezvousPath::LugdunumCallback) {
