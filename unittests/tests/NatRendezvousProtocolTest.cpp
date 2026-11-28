@@ -665,18 +665,25 @@ TEST(NatRendezvousProtocol, EndpointHintIsTheFiftySixBytesEMuleAIReads)
 }
 
 // The port a buddy request or refresh came from is the node's outside port; the hello's Kad port is
-// only the fallback. eMuleAI drops a hint without a public address.
-TEST(NatRendezvousProtocol, ServedHintPrefersTheObservedPortAndNeedsAPublicAddress)
+// only the fallback. No hint without an address the caller found usable.
+TEST(NatRendezvousProtocol, ServedHintPrefersTheObservedPortAndNeedsAUsableAddress)
 {
-	const auto make = [](std::uint32_t ip, std::uint16_t observed, std::uint16_t kad) {
-		return NatRendezvous::MakeServedEndpointHint(
-			Filled(0x11), BuddyId(0x44), Filled(0x22), ip, observed, kad, 0x03, 0x80);
+	const auto make = [](bool usable, std::uint16_t observed, std::uint16_t kad) {
+		return NatRendezvous::MakeServedEndpointHint(Filled(0x11),
+			BuddyId(0x44),
+			Filled(0x22),
+			kPublicIPv4,
+			usable,
+			observed,
+			kad,
+			0x03,
+			0x80);
 	};
-	ASSERT_EQUALS(std::uint16_t(5000), make(kPublicIPv4, 5000, 4672)->udpPort);
-	ASSERT_EQUALS(std::uint16_t(4672), make(kPublicIPv4, 0, 4672)->udpPort);
-	ASSERT_FALSE(make(kPublicIPv4, 0, 0).has_value());
-	ASSERT_FALSE(make(0x0100000A, 5000, 4672).has_value()); // 10.0.0.1
-	ASSERT_FALSE(make(0x0100007F, 5000, 4672).has_value()); // 127.0.0.1
+	ASSERT_EQUALS(std::uint16_t(5000), make(true, 5000, 4672)->udpPort);
+	ASSERT_EQUALS(std::uint16_t(4672), make(true, 0, 4672)->udpPort);
+	ASSERT_EQUALS(kPublicIPv4, make(true, 5000, 0)->ipv4);
+	ASSERT_FALSE(make(true, 0, 0).has_value());
+	ASSERT_FALSE(make(false, 5000, 4672).has_value());
 }
 
 // The crypt bits of the node, and the NAT-T transports its buddy request declared, as eMuleAI's
@@ -684,7 +691,7 @@ TEST(NatRendezvousProtocol, ServedHintPrefersTheObservedPortAndNeedsAPublicAddre
 TEST(NatRendezvousProtocol, ServedHintCarriesCryptBitsAndDeclaredTransports)
 {
 	const auto hint = NatRendezvous::MakeServedEndpointHint(
-		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, 5000, 0, 0x0F, 0xE1);
+		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, true, 5000, 0, 0x0F, 0xE1);
 	ASSERT_TRUE(hint.has_value());
 	ASSERT_EQUALS(std::uint8_t(0xC7), hint->connectOptions);
 }
@@ -693,7 +700,7 @@ TEST(NatRendezvousProtocol, AMovedPortIsHintedAgainWithinThreeSeconds)
 {
 	NatRendezvous::CSentEndpointHints sent;
 	const auto hint = *NatRendezvous::MakeServedEndpointHint(
-		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, 5000, 0, 0, 0);
+		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, true, 5000, 0, 0, 0);
 	sent.Record(0x0D0C0B0A, 4662, hint, 1000);
 	ASSERT_TRUE(sent.TakeMoved(Filled(0x11), 5000, 1500).empty());
 	ASSERT_TRUE(sent.TakeMoved(Filled(0x33), 6000, 1500).empty());
@@ -712,7 +719,7 @@ TEST(NatRendezvousProtocol, SentHintsKeepOnePerRequesterAndAreCapped)
 {
 	NatRendezvous::CSentEndpointHints sent;
 	const auto hint = *NatRendezvous::MakeServedEndpointHint(
-		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, 5000, 0, 0, 0);
+		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, true, 5000, 0, 0, 0);
 	sent.Record(0x0D0C0B0A, 4662, hint, 1000);
 	sent.Record(0x0D0C0B0A, 4662, hint, 1100);
 	ASSERT_EQUALS(static_cast<std::size_t>(1), sent.TakeMoved(Filled(0x11), 6000, 1200).size());

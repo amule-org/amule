@@ -917,17 +917,19 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   (`0xAA`, 56 bytes: `<version 1><target hash 16><buddy ID 16><file hash 16>
   <IPv4 4><UDP port 2><connect options 1>`) and one `OP_HOLEPUNCH` (`0xA1`),
   plain, as eMuleAI and eMuleQt do. The endpoint is the served node's IPv4 with
-  the UDP port its `0x51` or its last refresh came from: a NAT keeps that outside
-  port for every destination, and the hello's Kad port is the inside one, so it
-  is only the fallback. The options are the node's crypt bits and the
-  transports its `0x51` declared. No hint goes out without a public address or
-  a file hash, or when the forward was over budget. aMule's buddy sends it in
-  every build. As a requester aMule sets `0x20` and takes a hint only from the
-  buddy it sent the `0xA0` to, naming the buddy ID it sent, the target and the
-  file, with an endpoint it could punch. The hinted endpoint becomes the one it dials: it
-  is punched at once, the record's endpoint stays punched, and the fallback
-  dial goes to it, even when it went to the record's endpoint already. A second
-  hint moves it again. Once the target has punched, a hint changes nothing.
+  the UDP port its `0x51` or its last refresh came from: a NAT keeps that
+  outside port for every destination, and the hello's Kad port is the inside
+  one, so it is only the fallback. The options are the node's crypt bits and the
+  transports its `0x51` declared. No hint goes out without a file hash, when the
+  forward was over budget, or without a public address: eMuleAI drops any other.
+  A LAN address goes out only where LAN IPs are not filtered, as a rendezvous
+  peer is taken. aMule's buddy sends it in every build. As a requester aMule
+  sets `0x20` and takes a hint only from the buddy it sent the `0xA0` to, naming
+  the buddy ID it sent, the target and the file, with an endpoint it could
+  punch. The hinted endpoint becomes the one it dials: it is punched at once,
+  the record's endpoint stays punched, and the fallback dial goes to it, even
+  when it went to the record's endpoint already. A second hint moves it again.
+  Once the target has punched, a hint changes nothing.
 - **Refresh.** A served node repeats its `0x51` unchanged, keyed with the
   buddy's receiver key (ModderMule/emule-qt#281). When the repeat comes from a
   node we serve, with its user hash and from its IP, the buddy takes it as a

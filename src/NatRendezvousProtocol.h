@@ -284,22 +284,24 @@ inline std::optional<EndpointHint> ParseEndpointHint(const std::uint8_t *data, s
 }
 
 /**
- * The hint a buddy sends for the node it serves (ModderMule/emule-qt#281): the node's public IPv4
- * with the UDP port its buddy request or last refresh came from. A NAT keeps that outside port for
+ * The hint a buddy sends for the node it serves (ModderMule/emule-qt#281): the node's IPv4 with
+ * the UDP port its buddy request or last refresh came from. A NAT keeps that outside port for
  * every destination; the hello's Kad port is the inside one, so it is only the fallback. The
  * options are the node's crypt bits and the NAT-T transports its buddy request declared.
+ * @a addressUsable is the caller's: a public address, or a LAN one where LAN IPs are not filtered.
  */
 inline std::optional<EndpointHint> MakeServedEndpointHint(const UserHash &target,
 	const ServingBuddyId &buddyId,
 	const FileHash &fileHash,
 	std::uint32_t servedIPv4,
+	bool addressUsable,
 	std::uint16_t observedUdpPort,
 	std::uint16_t kadPort,
 	std::uint8_t cryptOptions,
 	std::uint8_t servedOptions) noexcept
 {
 	const std::uint16_t port = observedUdpPort != 0 ? observedUdpPort : kadPort;
-	if (port == 0 || !CNetworkAddress::FromIPv4NetworkOrder(servedIPv4).IsGloballyRoutableIPv4()) {
+	if (port == 0 || !addressUsable) {
 		return std::nullopt;
 	}
 	return EndpointHint{ target,

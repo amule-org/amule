@@ -60,6 +60,7 @@
 #include "UtpStreamAcceptor.h"
 #endif
 #include "NatRendezvousProtocol.h" // Needed for ParseRendezvousEnvelope, BuildForwardedRendezvous
+#include "NetworkFunctions.h"      // Needed for IsGoodIP
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicTls.h"
 #include "QuicNgtcp2Adapter.h"
@@ -79,7 +80,6 @@
 #include "Server.h"                 // Needed for CServer, and transitively OP_NAT_CALLBACKREQUESTED_UDP
 #include "ServerList.h"             // Needed for theApp->serverlist->GetServerByAddress
 #include "NatServerHolePunch.h"     // Needed for expected punch endpoints
-#include "NetworkFunctions.h"       // Needed for IsGoodIP
 #include "ClientRef.h"              // Needed for a safe temporary dial client
 #include "ListenSocket.h"           // Needed for TooManySockets
 #include "UdpObfuscationPolicy.h"   // Needed for ServerUdpReceiveKeys
@@ -2042,10 +2042,17 @@ void CClientUDPSocket::ProcessPacket(
 				envelope->request.fileHash) {
 				NatRendezvous::UserHash target;
 				std::copy_n(buddy->GetUserHash().GetHash(), target.size(), target.begin());
+				// eMuleAI drops a hint whose address is not public. A LAN one is sent only
+				// where LAN IPs are not filtered, as a rendezvous peer is taken.
+				const uint32 servedIP = buddy->GetIP();
+				const bool usable = CNetworkAddress::FromIPv4NetworkOrder(servedIP)
+							    .IsGloballyRoutableIPv4() ||
+						    (!thePrefs::FilterLanIPs() && IsGoodIP(servedIP, false));
 				hint = NatRendezvous::MakeServedEndpointHint(target,
 					envelope->servingBuddyId,
 					*envelope->request.fileHash,
-					buddy->GetIP(),
+					servedIP,
+					usable,
 					buddy->GetServedUdpPort(),
 					buddy->GetKadPort(),
 					buddy->GetCryptOptions(),
