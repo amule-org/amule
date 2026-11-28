@@ -94,6 +94,18 @@ does not need. aMule keeps what a record or an answer declares for each source,
 apart from the hello's bits, and each copy of the source adds its own. It is
 another node's word: a path may use it to pick what to try, never as proof.
 
+aMule declares its own in the same place: while firewalled, the
+`TAG_ENCRYPTION` of its type 3, 5 and 6 file records carries `0x80` and `0x40`
+for the transports it serves, the same ones its hello and its `0x51` declare.
+A HighID record (types 1 and 4) does not, since a peer reaches it over TCP, nor
+does a type 7, which names no IPv4 route, nor the Kad pointer record, which
+gives only the buddy route (eMuleQt's has no `0x40` either). aMule publishes no
+`nat` tag: it says nothing `0x40` does not, and eMuleQt reads `0x40` too since
+ModderMule/emule-qt#280. With these bits a firewalled eMuleAI dials a type 6
+aMule over uTP or QUIC directly. A firewalled eMuleQt keeps a type 6 aMule that
+declares `0x40`, but aMule does not serve its direct path yet: it answers its
+`OP_DIRECTCALLBACKREQ` (`0x95`) with a TCP dial-back.
+
 ## Datagram envelope
 
 A CAPS or CAPS_ACK datagram is:

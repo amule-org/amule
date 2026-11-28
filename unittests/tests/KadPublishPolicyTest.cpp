@@ -268,4 +268,22 @@ TEST(KadPublishPolicy, AKeywordNodeIsSentAtMostThreePackets)
 	ASSERT_EQUALS(7u, AnsweringNodes(21, 1000));
 }
 
+// A firewalled record declares the NAT-T transports we serve, so a firewalled requester can dial
+// us over uTP or QUIC (eMuleAI over either, eMuleQt over QUIC). A HighID record is reached over
+// TCP, and type 7 names no IPv4 route a transport could use.
+TEST(KadPublishPolicy, OnlyAFirewalledIPv4RecordDeclaresOurNatTTransports)
+{
+	const uint8_t crypt = 0x0B; // crypt supported, requested, and the direct callback bit
+	const uint8_t natT = 0x80 | 0x40;
+	ASSERT_EQUALS(static_cast<uint8_t>(crypt | natT),
+		KadSourceConnectOptions(EKadSourcePublish::DirectCallback, crypt, natT));
+	ASSERT_EQUALS(static_cast<uint8_t>(crypt | 0x80),
+		KadSourceConnectOptions(EKadSourcePublish::Buddy, crypt, 0x80));
+	ASSERT_EQUALS(crypt, KadSourceConnectOptions(EKadSourcePublish::HighID, crypt, natT));
+	ASSERT_EQUALS(crypt, KadSourceConnectOptions(EKadSourcePublish::IPv6Only, crypt, natT));
+	ASSERT_EQUALS(crypt, KadSourceConnectOptions(EKadSourcePublish::PointerOnly, crypt, natT));
+	// Only the two transport bits are taken from what we serve.
+	ASSERT_EQUALS(crypt, KadSourceConnectOptions(EKadSourcePublish::DirectCallback, crypt, 0x3F));
+}
+
 // File_checked_for_headers
