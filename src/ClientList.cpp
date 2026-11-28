@@ -924,12 +924,11 @@ void CClientList::Process()
 					"Connected to buddy " + cur_client->GetFullIP() + " (" +
 						cur_client->GetClientVerString() + ")");
 				Notify_ServerUpdateED2KInfo();
-				cur_client->SendBuddyRefresh(false);
 			}
 			if (m_pBuddy.GetClient() == cur_client && theApp->IsFirewalled() &&
 				cur_client->IsBuddyPingDue()) {
 				cur_client->SendBuddyPing();
-				cur_client->SendBuddyRefresh(false);
+				cur_client->SendBuddyRefresh();
 			}
 			break;
 

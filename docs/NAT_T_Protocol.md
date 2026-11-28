@@ -936,12 +936,16 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   refresh moves the port within 3 s of a hint, the buddy sends that requester a
   second `0xAA` with the new port. Any other repeat takes the normal request
   path, so an unkeyed one from a node we serve is refused as an address we
-  already serve. A served node sends a refresh at link start, with every
-  `OP_BUDDYPING` (every 10 min), and when its buddy relays an `0xA0` it acts on,
-  at most every 30 s; eMuleQt sends them the same way. aMule keys its refresh
-  with the key the buddy's `0x5A` carried, and sends none without one. Stock
-  eMule, eMuleAI and aMule before this refuse a repeat from a node they serve
-  and do not answer, so a refresh to them changes nothing.
+  already serve. aMule as a served node sends a refresh with every
+  `OP_BUDDYPING` (every 10 min) and when its buddy relays an `0xA0` it acts on,
+  but never within 45 s of its last `0x51`, counting the one that found the
+  buddy. A buddy drops a third `0x51` from an address within a minute and
+  counts the dropped one too, so one every 30 s, the rate its count drains at,
+  leaves no margin. eMuleQt sends one with every `OP_BUDDYPING` and on a
+  relayed `0xA0`, at most every 30 s. aMule keys its refresh with the key the
+  buddy's `0x5A` carried, and sends none without one. Stock eMule, eMuleAI and
+  aMule before this refuse a repeat from a node they serve and do not answer,
+  so a refresh to them changes nothing.
 - **Slots.** A third of the buddy slots is kept for nodes that declared a
   transport, so a node that serves buddies keeps room for NAT-T nodes.
 - **Interop.** An eMuleAI buddy forwards without this check. A drop on our side

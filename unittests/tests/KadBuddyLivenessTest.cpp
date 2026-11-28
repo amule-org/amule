@@ -150,14 +150,15 @@ TEST(KadBuddyLiveness, BothEndsStayAliveThenReleaseTheSilentConnection)
 	ASSERT_TRUE(host.Expired(now + CBuddyLiveness::ReceiveTimeout));
 }
 
-// A refresh goes out at link start and with each ping; one asked for by a relayed rendezvous waits
-// 30 s from the last, which keeps us within Kad's two buddy requests a minute.
-TEST(KadBuddyLiveness, AnOnDemandRefreshWaitsThirtySecondsFromTheLast)
+// Every refresh, the ping's too, waits 45 s from the last 0x51: a buddy drains its count of them one
+// every 30 s and drops the third in a minute, so a refresh every 30 s has no margin.
+TEST(KadBuddyLiveness, ARefreshWaitsFortyFiveSecondsFromTheLast)
 {
+	ASSERT_EQUALS(static_cast<uint64_t>(45 * 1000), CBuddyRefreshGate::Interval);
 	CBuddyRefreshGate gate;
-	ASSERT_TRUE(gate.OnDemandDue(5));
+	ASSERT_TRUE(gate.Due(5));
 	gate.Sent(1000);
-	ASSERT_FALSE(gate.OnDemandDue(1000));
-	ASSERT_FALSE(gate.OnDemandDue(1000 + CBuddyRefreshGate::OnDemandInterval - 1));
-	ASSERT_TRUE(gate.OnDemandDue(1000 + CBuddyRefreshGate::OnDemandInterval));
+	ASSERT_FALSE(gate.Due(1000));
+	ASSERT_FALSE(gate.Due(1000 + CBuddyRefreshGate::Interval - 1));
+	ASSERT_TRUE(gate.Due(1000 + CBuddyRefreshGate::Interval));
 }

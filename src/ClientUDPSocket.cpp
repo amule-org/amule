@@ -1296,7 +1296,7 @@ void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, cons
 			requester % decision.sharedTransports);
 	// Our buddy may have hinted our UDP port to the requester; a refresh corrects a moved one.
 	if (CUpDownClient *buddy = theApp->clientlist->GetBuddy()) {
-		buddy->SendBuddyRefresh(true);
+		buddy->SendBuddyRefresh();
 	}
 	const std::array<std::uint8_t, 16> &requesterHash = decision.request.requesterHash;
 	NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath::KadBuddy, ip, &requesterHash);
