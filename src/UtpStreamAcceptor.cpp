@@ -172,7 +172,7 @@ bool CUtpStreamAcceptor::AcceptStream(std::unique_ptr<IStreamTransport> &transpo
 		socket->SetUtpIncomingSynWinner(synDecision.candidateToken);
 	}
 	if (theApp->clientudp != nullptr && theApp->clientudp->IsExpectedUtpPeer(ip, port)) {
-		socket->MarkRendezvousStream(theApp->clientudp->IsLugdunumRendezvousPeer(ip));
+		socket->MarkRendezvousStream(theApp->clientudp->RendezvousStreamOpener(ip));
 	}
 	// AttachTransport() installs the event sink before it takes ownership, so
 	// an early callback always has somewhere to deliver.

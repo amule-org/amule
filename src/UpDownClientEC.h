@@ -135,10 +135,12 @@ public:
 		m_routeUnproven = ContactRouteIsUnproven(packed);
 		m_identityFromFallback = ContactRouteFromFallback(packed);
 		m_contactOverIPv6 = ContactRouteOverIPv6(packed);
+		m_contactAttemptEnded = ContactRouteEnded(packed);
 	}
 	bool IsIdentityFromFallback() const { return m_identityFromFallback; }
 	bool IsRouteUnproven() const { return m_routeUnproven; }
 	bool IsContactOverIPv6() const { return m_contactOverIPv6; }
+	bool IsContactAttemptEnded() const { return m_contactAttemptEnded; }
 	//! EC_TAG_CLIENT_CONNECTION_ROUTE as the core packed it.
 	int GetConnectionRoute() const { return m_connectionRoute; }
 	uint64 GetTransferredDown() const { return m_nTransferredDown; }
@@ -226,6 +228,7 @@ private:
 	bool m_identityFromFallback = false;
 	bool m_routeUnproven = false;
 	bool m_contactOverIPv6 = false;
+	bool m_contactAttemptEnded = false;
 	// Zero on a core that does not send it.
 	int m_connectionRoute = 0;
 	uint64 m_nTransferredDown;

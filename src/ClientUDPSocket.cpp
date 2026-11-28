@@ -642,13 +642,13 @@ bool CClientUDPSocket::IsExpectedUtpPeer(uint32_t ip, uint16_t port) const
 	return m_utpExpectedPeers.IsExpectedAllowingMovedPort(ip, port, ::GetTickCount64());
 }
 
-bool CClientUDPSocket::IsLugdunumRendezvousPeer([[maybe_unused]] uint32_t ip) const
+EConnectionOpener CClientUDPSocket::RendezvousStreamOpener([[maybe_unused]] uint32_t ip) const
 {
 #ifdef ENABLE_NATT_SERVER_COORDINATION
-	return m_rendezvousOutcomes.LatestPath(ip, ::GetTickCount64()) ==
-	       NatServerHolePunch::RendezvousPath::LugdunumCallback;
+	return NatServerHolePunch::AcceptedRendezvousOpener(
+		m_rendezvousOutcomes.LatestPath(ip, ::GetTickCount64()));
 #else
-	return false;
+	return EConnectionOpener::AcceptedRendezvous;
 #endif
 }
 
@@ -1453,7 +1453,8 @@ void CClientUDPSocket::TickKadRendezvous(uint64 now)
 			DialLowIdHolePunchPeer(target.ip,
 				target.tcpPort,
 				target.udpPort,
-				NatServerHolePunch::VouchedPeer{ target.hash, std::nullopt });
+				NatServerHolePunch::VouchedPeer{ target.hash, std::nullopt },
+				true);
 			++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.fallbackDials;
 			break;
 		case NatRendezvous::SKadRendezvousAction::Expired:
@@ -1519,8 +1520,11 @@ uint32 CClientUDPSocket::SendServerWayObfuscated(
 #endif
 
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-bool CClientUDPSocket::DialLowIdHolePunchPeer(
-	uint32 ip, uint16 tcpPort, uint16 udpPort, const NatServerHolePunch::VouchedPeer &peer)
+bool CClientUDPSocket::DialLowIdHolePunchPeer(uint32 ip,
+	uint16 tcpPort,
+	uint16 udpPort,
+	const NatServerHolePunch::VouchedPeer &peer,
+	bool kadRendezvous)
 {
 	if (tcpPort == 0 || udpPort == 0 || !Ok() || !m_utp.IsAvailable() || !IsRendezvousPeerAllowed(ip) ||
 		theApp->listensocket->TooManySockets()) {
@@ -1545,7 +1549,7 @@ bool CClientUDPSocket::DialLowIdHolePunchPeer(
 	theApp->clientlist->AddClient(client);
 	CClientRef ref{ client CLIENT_DEBUGSTRING("LowID hole punch dial") };
 	client->SetUDPPort(udpPort);
-	client->MarkLowIdHolePunchDial();
+	client->MarkLowIdHolePunchDial(kadRendezvous);
 	const bool started = client->TryServerVouchedLowIdUtpDial();
 	if (!started) {
 		if (CUpDownClient *checked = ref.GetClientChecked()) {
@@ -1942,7 +1946,8 @@ void CClientUDPSocket::HandleLowIdHolePunch(uint32 host, uint16 port)
 		DialLowIdHolePunchPeer(host,
 			target->tcpPort,
 			port,
-			NatServerHolePunch::VouchedPeer{ target->hash, std::nullopt });
+			NatServerHolePunch::VouchedPeer{ target->hash, std::nullopt },
+			true);
 		++theApp->clientlist->GetBuddyStats().own.requestedRendezvous.punched;
 		return;
 	}

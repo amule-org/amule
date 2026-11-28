@@ -4405,8 +4405,8 @@ foreach (long_test IN ITEMS
 	PublishMetrics-kad2:242
 	KadBuddyCallbackRetryIntegrationTest-two:234
 	KadBuddyLifecycleIntegrationTest:220
+	KadRendezvousRequesterIntegrationTest:205
 	KadBuddyPointerResolveIntegrationTest-miss:179
-	KadRendezvousRequesterIntegrationTest:174
 	KadBuddyPointerResolveIntegrationTest-hit:157
 	KadBuddyCallbackRetryIntegrationTest-one:157
 	KadSourceBuddyIdIntegrationTest:137

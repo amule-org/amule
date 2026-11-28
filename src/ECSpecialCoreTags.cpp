@@ -458,7 +458,8 @@ CEC_UpDownClient_Tag::CEC_UpDownClient_Tag(
 		(uint64)PackContactRoute(static_cast<EContactRouteReport>(client->GetContactRoute()),
 			client->IsRouteUnproven(),
 			client->IsIdentityFromFallback(),
-			client->IsContactOverIPv6()),
+			client->IsContactOverIPv6(),
+			client->IsContactAttemptEnded()),
 		valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_CONNECTION_ROUTE, (uint64)client->GetConnectionRoute(), valuemap);
 	AddDiffTag(this, EC_TAG_CLIENT_SERVER_IP, client->GetServerIP(), valuemap);

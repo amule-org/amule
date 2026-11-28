@@ -138,7 +138,7 @@ unsigned WRAPC(GetSourceOriginMask)
 uint64 WRAPC(GetNextAskTime)
 int WRAPC(GetContactRoute)
 int WRAPC(GetConnectionRoute) bool WRAPC(IsIdentityFromFallback) bool WRAPC(IsRouteUnproven) bool WRAPC(
-	IsContactOverIPv6) uint64 WRAPC(GetTransferredDown)
+	IsContactOverIPv6) bool WRAPC(IsContactAttemptEnded) uint64 WRAPC(GetTransferredDown)
 uint64 WRAPC(GetTransferredUp)
 uint32 WRAPC(GetUploadDatarate)
 uint32 WRAPC(GetDisplayUploadDatarate)

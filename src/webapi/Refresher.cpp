@@ -177,6 +177,10 @@ std::string ConnectionRouteName(std::uint8_t packed)
 		return "answered_direct_udp_callback";
 	case EConnectionRoute::AnsweredLugdunumCallback:
 		return "answered_lugdunum_callback";
+	case EConnectionRoute::KadBuddyRendezvous:
+		return "kad_buddy_rendezvous";
+	case EConnectionRoute::AnsweredKadBuddyRendezvous:
+		return "answered_kad_buddy_rendezvous";
 	case EConnectionRoute::None:
 		break;
 	}
@@ -1094,6 +1098,7 @@ void MergeClientTag(const CEC_UpDownClient_Tag *c, ClientSnapshot &cs, bool is_n
 			cs.route_unproven = ContactRouteIsUnproven(v);
 			cs.route_from_fallback = ContactRouteFromFallback(v);
 			cs.route_ipv6 = ContactRouteOverIPv6(v);
+			cs.route_attempt_ended = ContactRouteEnded(v);
 		}
 	}
 	{

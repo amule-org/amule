@@ -2723,6 +2723,8 @@ void WriteClientBaseFields(CJsonWriter &w, const webapi::ClientSnapshot &c)
 	w.ValueBool(c.route_from_fallback);
 	w.Key("route_ipv6");
 	w.ValueBool(c.route_ipv6);
+	w.Key("route_attempt_ended");
+	w.ValueBool(c.route_attempt_ended);
 	// null before the first connection, and on a daemon older than the tag.
 	WriteStringOrNull(w, "connection_route", !c.connection_route.empty(), c.connection_route);
 	WriteStringOrNull(w, "connection_transport", !c.connection_transport.empty(), c.connection_transport);

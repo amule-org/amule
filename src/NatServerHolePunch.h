@@ -26,6 +26,7 @@
 
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "ArchSpecific.h"
+#include "SourceRoutePolicy.h"    // Needed for EConnectionOpener
 #include "UploadCallbackPolicy.h" // Needed for the shared target budget
 #include "NetworkFunctions.h"     // Needed for IsLowID
 #include "include/protocol/Protocols.h"
@@ -1186,6 +1187,18 @@ private:
 	}
 	std::vector<Entry> m_pending;
 };
+// Who opened a stream accepted from an expected peer, by its latest live rendezvous. A server
+// punch reads as AcceptedRendezvous, and so does our own Kad rendezvous, never noted as an outcome.
+inline EConnectionOpener AcceptedRendezvousOpener(std::optional<RendezvousPath> path)
+{
+	if (path == RendezvousPath::LugdunumCallback) {
+		return EConnectionOpener::AcceptedLugdunumRendezvous;
+	}
+	if (path == RendezvousPath::KadBuddy) {
+		return EConnectionOpener::AcceptedKadRendezvous;
+	}
+	return EConnectionOpener::AcceptedRendezvous;
+}
 // Targets we sent a Lugdunum callback request for. A callback naming one as its requester is the
 // reverse of our own request, whose attempt is already counted.
 class RequestedCallbackTargets

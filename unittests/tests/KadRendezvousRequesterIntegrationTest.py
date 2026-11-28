@@ -9,12 +9,13 @@ check. The fake node hands out one type 3 source whose buddy and whose Kad endpo
 of this test. With no ed2k server, the three server paths have nothing to offer, so the daemon sends
 the buddy an OP_REASKCALLBACKUDP (0x94) carrying an OP_RENDEZVOUS (0xA0) and punches the source.
 
-Five cases: a silent source gets three requests 5 s apart and one fallback dial; a source that
-punches back ends the requests and gets no fallback dial; a stale record of the source that comes
-last does not stop the punches to its current endpoint, and both endpoints get a fallback dial; a
-source that answers OP_FILENOTFOUND does not speak the rendezvous, and stays a source; an endpoint
-hint (0xAA) from the source's buddy is punched and dialled with the record's endpoint, and one from
-any other socket is not taken (ModderMule/emule-qt#281).
+Five cases: a silent source gets three requests 5 s apart and one fallback dial, and its attempt
+reads as ended over EC once it is over; a source that punches back ends the requests and gets no
+fallback dial; a stale record of the source that comes last does not stop the punches to its current
+endpoint, and both endpoints get a fallback dial; a source that answers OP_FILENOTFOUND does not
+speak the rendezvous, and stays a source; an endpoint hint (0xAA) from the source's buddy is punched
+and dialled with the record's endpoint, and one from any other socket is not taken
+(ModderMule/emule-qt#281).
 """
 import socket
 import struct
@@ -23,7 +24,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from AllSearchIntegrationTest import C, retry_port_collisions, string, wait_for
+from AllSearchIntegrationTest import C, integer, retry_port_collisions, string, wait_for
 from KadBuddyLifecycleIntegrationTest import buddy_counters
 from KadSourceBuddyIdIntegrationTest import (
     FILE_HASH,
@@ -73,6 +74,10 @@ SWEEP_HALF_WIDTH = 16
 # The daemon listens on loopback. A socket bound to the private address still reaches it from that
 # address, as the fake node's answers do, so the daemon sees the source's own endpoint.
 DAEMON_ADDRESS = '127.0.0.1'
+DS_LOWTOLOWIP = 10
+# EC_TAG_CLIENT_CONTACT_ROUTE: the route in the low nibble, 0x80 once its attempt is over.
+ROUTE_KAD_BUDDY, ROUTE_MASK, ROUTE_ENDED = 4, 0x0F, 0x80
+ATTEMPT = 45
 
 
 def write_contacts(root, fake_address, fake_port):
@@ -186,11 +191,47 @@ def source_count(ec):
     raise AssertionError(('no part file', tags))
 
 
-def drive(binary, address, answer, stale_record=False, hints=None):
+def low_to_low_routes(ec, sources):
+    """Merge one incremental EC update into sources, id -> {tag: value}, and return the contact
+    routes of the sources waiting LowID-to-LowID."""
+    opcode, tags = ec.call_list(C['EC_OP_GET_UPDATE'], [
+        integer(C['EC_TAG_DETAIL_LEVEL'], C['EC_DETAIL_INC_UPDATE'])])
+    assert opcode == C['EC_OP_SHARED_FILES'], opcode
+    keys = (C['EC_TAG_CLIENT_DOWNLOAD_STATE'], C['EC_TAG_CLIENT_CONTACT_ROUTE'])
+    for name, _, children in tags:
+        if name == C['EC_TAG_CLIENT']:
+            for _, client_id, fields in children:
+                sources.setdefault(int.from_bytes(client_id, 'big'), {}).update(
+                    {key: int.from_bytes(data, 'big') for key, data, _ in fields if key in keys})
+    return [fields.get(C['EC_TAG_CLIENT_CONTACT_ROUTE']) for fields in sources.values()
+            if fields.get(C['EC_TAG_CLIENT_DOWNLOAD_STATE']) == DS_LOWTOLOWIP]
+
+
+def check_attempt_ends(proc, ec, sources, first_request):
+    """The rendezvous reads as in flight until its attempt is over, then as ended, while the source
+    stays LowID-to-LowID on the Kad buddy route."""
+    deadline = first_request + ATTEMPT + 15
+    while True:
+        routes = low_to_low_routes(ec, sources)
+        assert len(routes) == 1 and routes[0] is not None, ('no LowID-to-LowID source', sources)
+        assert routes[0] & ROUTE_MASK == ROUTE_KAD_BUDDY, ('contact route', hex(routes[0]))
+        if routes[0] & ROUTE_ENDED:
+            break
+        assert time.monotonic() < deadline, 'the rendezvous never read as ended'
+        assert proc.poll() is None, 'the daemon exited'
+        time.sleep(1)
+    ended = time.monotonic() - first_request
+    # The step went out just before its request was read.
+    assert ended >= ATTEMPT - 2, ('the rendezvous read as ended early', ended)
+    print(f'the rendezvous reads as ended {ended:.1f} s after its first request')
+
+
+def drive(binary, address, answer, stale_record=False, hints=None, attempt_end=False):
     """One daemon and one source. answer is None, OP_HOLEPUNCH or OP_FILENOTFOUND: what the source
     sends the daemon after the first request reaches its buddy. stale_record adds an older record of
     the source last, at a port well outside the sweep around the current one. hints, a dict, has the
-    buddy hint the source at a third socket and the source hint another; it gets the punches of each."""
+    buddy hint the source at a third socket and the source hint another; it gets the punches of each.
+    attempt_end follows the contact route over EC until the attempt reads as ended."""
     buddy = Endpoint(address)
     source = Endpoint(address)
     # Out of each other's sweeps: a punch that reaches the decoy, or the hinted socket without the
@@ -215,6 +256,12 @@ def drive(binary, address, answer, stale_record=False, hints=None):
                          lambda: node.source_searches > 0, 180)
                 wait_for(proc, 'a rendezvous request to the source\'s buddy',
                          lambda: buddy.received(OP_REASKCALLBACKUDP), 120)
+                first_request = buddy.received(OP_REASKCALLBACKUDP)[0][0]
+                sources = {}
+                if attempt_end:
+                    routes = low_to_low_routes(ec, sources)
+                    assert routes and routes[0] is not None and not routes[0] & ROUTE_ENDED, (
+                        'the rendezvous in flight reads as ended', routes)
                 if answer == OP_HOLEPUNCH:
                     source.sock.sendto(bytes([OP_EMULEPROT, OP_HOLEPUNCH]), (DAEMON_ADDRESS, udp_port))
                 if hints is not None:
@@ -237,6 +284,11 @@ def drive(binary, address, answer, stale_record=False, hints=None):
                     hints['hinted'] = hinted.received(OP_HOLEPUNCH)
                     hints['decoy'] = decoy.received(OP_HOLEPUNCH)
                 punches = source.received(OP_HOLEPUNCH)
+                if attempt_end:
+                    check_attempt_ends(proc, ec, sources, first_request)
+                    # The expiry is counted on the tick after the attempt's end.
+                    wait_for(proc, 'the attempt to be counted as timed out',
+                             lambda: requested(buddy_counters(ec))['timed_out'] == 1, 10)
                 counters = buddy_counters(ec)
                 sources = source_count(ec)
     finally:
@@ -257,7 +309,7 @@ def run(binary):
         print('SKIP: no private non-loopback IPv4 for the fake Kad contact')
         sys.exit(77)
 
-    reasks, punches, counters, _sources, udp_port = drive(binary, address, None)
+    reasks, punches, counters, _sources, udp_port = drive(binary, address, None, attempt_end=True)
     assert len(reasks) == SENDS, ('sends to a silent source', len(reasks))
     for _, body in reasks:
         check_envelope(body, udp_port)
@@ -265,7 +317,7 @@ def run(binary):
     assert all(SEND_INTERVAL - 1.5 <= gap <= SEND_INTERVAL + 2.5 for gap in gaps), ('send gaps', gaps)
     assert punches, 'the daemon never punched the source'
     assert requested(counters) == {'started': 1, 'sent': SENDS, 'punched': 0, 'fallback_dials': 1,
-                                   'connected': 0, 'timed_out': 0, 'no_rendezvous': 0}, counters
+                                   'connected': 0, 'timed_out': 1, 'no_rendezvous': 0}, counters
     # The served side counts nothing: this node asked, it was not asked.
     assert counters['OWN_RENDEZVOUS_RECEIVED'] == 0, counters
 
@@ -299,6 +351,7 @@ def run(binary):
     assert requested(counters)['fallback_dials'] == 2, counters
     print('PASS: a firewalled node asks a Kad source\'s buddy for a rendezvous in the sketched layout, '
           'with the buddy ID as a stock buddy compares it; a silent source gets three requests and one fallback dial, '
+          'and its attempt reads as ended once it is over, '
           'a punch ends the requests, a stale record that comes last does not stop the punches to the current endpoint, '
           'OP_FILENOTFOUND ends the attempt and keeps the source, and a hint from the source\'s buddy is punched')
 

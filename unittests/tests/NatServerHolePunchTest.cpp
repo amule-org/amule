@@ -839,6 +839,24 @@ TEST(NatServerHolePunch, AnUnansweredRendezvousExpires)
 		outcomes.NoteAttempt(RendezvousPath::ServerPunch, 1, FilledHash(1), kRendezvousOutcomeTtlMs));
 }
 
+// A stream accepted from an expected peer takes the path of its latest live rendezvous.
+TEST(NatServerHolePunch, AnAcceptedStreamIsNamedByItsLatestRendezvous)
+{
+	RendezvousOutcomes outcomes;
+	const auto opener = [&outcomes](std::uint32_t ip, std::uint64_t now) {
+		return AcceptedRendezvousOpener(outcomes.LatestPath(ip, now));
+	};
+	ASSERT_TRUE(opener(1, 0) == EConnectionOpener::AcceptedRendezvous);
+	outcomes.NoteAttempt(RendezvousPath::KadBuddy, 1, FilledHash(1), 0);
+	ASSERT_TRUE(opener(1, 10) == EConnectionOpener::AcceptedKadRendezvous);
+	outcomes.NoteAttempt(RendezvousPath::LugdunumCallback, 1, std::nullopt, 20);
+	ASSERT_TRUE(opener(1, 30) == EConnectionOpener::AcceptedLugdunumRendezvous);
+	outcomes.NoteAttempt(RendezvousPath::ServerPunch, 2, FilledHash(2), 20);
+	ASSERT_TRUE(opener(2, 30) == EConnectionOpener::AcceptedRendezvous);
+	// Once the rendezvous is over, it no longer explains a stream.
+	ASSERT_TRUE(opener(1, 20 + kRendezvousOutcomeTtlMs) == EConnectionOpener::AcceptedRendezvous);
+}
+
 TEST(NatServerHolePunch, PendingRendezvousStayBounded)
 {
 	RendezvousOutcomes outcomes;

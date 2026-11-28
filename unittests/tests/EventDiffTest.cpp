@@ -2633,6 +2633,36 @@ TEST(EventDiff, ClientUpdatedFiresOnIPv6Change)
 	ASSERT_EQUALS(1, updated);
 }
 
+// The step ends with no state change: a LowID-to-LowID source can stay so for hours.
+TEST(EventDiff, ClientUpdatedFiresWhenTheContactAttemptEnds)
+{
+	CState state;
+	CEventBus bus;
+	LastSeenState prev;
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		ClientSnapshot c;
+		c.ecid = 11;
+		c.download_state = "low_to_low_ip";
+		c.contact_route = "kad_buddy";
+		cache.emplace(c.ecid, c);
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+	const auto cursor = bus.NewestId();
+	state.MutateClients([](std::map<std::uint32_t, ClientSnapshot> &cache) {
+		cache.at(11).route_attempt_ended = true;
+	});
+	EmitDiffsAndUpdate(bus, prev, state);
+	int updated = 0;
+	for (const auto &ev : DrainSince(bus, cursor)) {
+		if (ev.name == "client_updated") {
+			++updated;
+			ASSERT_TRUE(ev.data.find("\"route_ipv6\":false,\"route_attempt_ended\":true") !=
+				    std::string::npos);
+		}
+	}
+	ASSERT_EQUALS(1, updated);
+}
+
 TEST(EventDiff, CaptchaMessageFieldsFollowRestOrder)
 {
 	ChatSessionSnapshot session;

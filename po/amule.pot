@@ -2025,6 +2025,10 @@ msgid "Search Result"
 msgstr ""
 
 #: src/DataToText.cpp
+msgid "a direct IPv6 connection"
+msgstr ""
+
+#: src/DataToText.cpp
 msgid "a direct connection"
 msgstr ""
 
@@ -2034,6 +2038,10 @@ msgstr ""
 
 #: src/DataToText.cpp
 msgid "our server"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "a Kad buddy rendezvous"
 msgstr ""
 
 #: src/DataToText.cpp
@@ -2113,6 +2121,14 @@ msgstr ""
 
 #: src/DataToText.cpp
 msgid "Answered Lugdunum callback"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Kad buddy rendezvous"
+msgstr ""
+
+#: src/DataToText.cpp
+msgid "Answered Kad buddy rendezvous"
 msgstr ""
 
 #: src/DataToText.cpp

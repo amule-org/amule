@@ -754,8 +754,7 @@ seen on no channel (mask `0`).
 A child of `EC_TAG_CLIENT`. A source is given up only once every route
 it offers has failed, so the route in use moves between attempts, and a
 source can end up on a route it kept for when the others failed. One
-byte carries the whole state, because its three parts always change
-together, at the start and the end of an attempt:
+byte carries the whole state:
 
 | Bits | Meaning |
 | ---- | ------- |
@@ -763,14 +762,22 @@ together, at the start and the end of an attempt:
 | 4 | The route comes from a record no hello has proved |
 | 5 | The IPv4 identity came from a fallback route |
 | 6 | The route is a dial to the peer's IPv6 address |
+| 7 | The attempt on the route is no longer awaited |
 
-Bit 7 is reserved. A route value this build does not know reads as none,
-so a newer daemon cannot make an older client invent a route.
+A route value this build does not know reads as none, so a newer daemon
+cannot make an older client invent a route.
 
 Routes `6` and `7` are the two NAT-T steps taken while both ends are
 firewalled. They are not routes the source's own chain picks, so they
 never enter its failed-route mask; they are reported here because
-otherwise such a source shows no route at all.
+otherwise such a source shows no route at all. While both ends are
+firewalled, route `4` is the rendezvous through the source's Kad buddy.
+
+Bit 7 is set once the attempt connected, failed, or can no longer be
+answered: a source can wait LowID-to-LowID for hours after its last
+step. It is clear before the first attempt. An older daemon never sets
+it, so a frontend that shows an attempt as in progress while the bit is
+clear keeps working against one.
 
 The tag is additive and follows the usual convention: a reply without it
 means an older daemon, which is a **third state**, distinct from a
@@ -791,7 +798,7 @@ one is out; otherwise it is the other side's request we answered.
 
 | Bits | Meaning |
 | ---- | ------- |
-| 0-3 | The route: `0` none, `1` we dialled, `2` the peer dialled us unasked, `3` server callback, `4` Kad buddy callback, `5` direct UDP callback, `6` foreign-server NAT callback, `7` server hole punch, `8` Lugdunum callback, `9` we answered a server callback request, `10` we answered a Kad buddy callback request, `11` we answered a direct UDP callback request, `12` we answered a Lugdunum or cross-server callback request our server forwarded |
+| 0-3 | The route: `0` none, `1` we dialled, `2` the peer dialled us unasked, `3` server callback, `4` Kad buddy callback, `5` direct UDP callback, `6` foreign-server NAT callback, `7` server hole punch, `8` Lugdunum callback, `9` we answered a server callback request, `10` we answered a Kad buddy callback request, `11` we answered a direct UDP callback request, `12` we answered a Lugdunum or cross-server callback request our server forwarded, `13` we dialled the peer after a rendezvous we asked its Kad buddy for, `14` the peer dialled us after our Kad buddy forwarded its rendezvous |
 | 4-5 | The transport: `0` TCP, `1` uTP, `2` QUIC |
 | 6 | The connection is to the peer's IPv6 address |
 | 7 | A proxy carried the dial |
