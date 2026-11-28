@@ -40,11 +40,11 @@
 #include "amule.h"                  // Needed for theApp
 #include "ChatSessionStore.h"       // Needed for CChatSessionStore
 #include "ClientTCPSocket.h"        // Needed for CClientTCPSocket
+#include "ClientUDPSocket.h"        // Needed for ResendMovedEndpointHints
 #include "KadFirewallCheckPolicy.h" // Needed for ProvesTcpPortReachable
 #include <algorithm>
 #include <cstring>
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-#include "ClientUDPSocket.h"      // Needed to clear callback failure after verified HELLO
 #include "LugdunumNatTraversal.h" // Needed for verified callback failure clearing
 #endif
 #include "DownloadQueue.h"  // Needed for CDownloadQueue
@@ -1382,6 +1382,30 @@ CUpDownClient *CClientList::FindServedBuddy(const uint8_t *buddyID) const
 	return nullptr;
 }
 
+bool CClientList::RefreshServedBuddy(const Kademlia::CUInt128 &userID, uint32 kadIP, uint16 udpPort)
+{
+	uint8_t hash[16];
+	userID.ToByteArray(hash);
+	const CMD4Hash userHash(hash);
+	const uint32 ip = wxUINT32_SWAP_ALWAYS(kadIP);
+	for (const auto &entry : m_servedRefs) {
+		CUpDownClient *client = entry.second.GetClient();
+		if (client->GetUserHash() != userHash || client->GetIP() != ip) {
+			continue;
+		}
+		const uint16 before = client->GetServedUdpPort();
+		client->SetServedUdpPort(udpPort);
+		AddDebugLogLineN(logKadBuddy,
+			CFormat("Buddy refresh from served node %s, UDP port %u (was %u)") %
+				Uint32_16toStringIP_Port(ip, udpPort) % udpPort % before);
+		if (before != udpPort && theApp->clientudp) {
+			theApp->clientudp->ResendMovedEndpointHints(*client);
+		}
+		return true;
+	}
+	return false;
+}
+
 void CClientList::EndServedLink(const CUpDownClient *client)
 {
 	const uint64 now = ::GetTickCount64();
@@ -1708,6 +1732,7 @@ CClientList::EIncomingBuddy CClientList::IncomingBuddy(
 	CUpDownClient *pNewClient =
 		new CUpDownClient(contact->GetTCPPort(), contact->GetIPAddress(), 0, 0, NULL, false, true);
 	pNewClient->SetKadPort(contact->GetUDPPort());
+	pNewClient->SetServedUdpPort(contact->GetUDPPort());
 	pNewClient->SetServedBuddy(true);
 	pNewClient->SetServedBuddyOptions(connectOptions);
 	pNewClient->SetKadState(KS_INCOMING_BUDDY);

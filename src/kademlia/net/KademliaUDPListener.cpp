@@ -1734,6 +1734,19 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 	// Verify packet is expected size
 	CHECK_PACKET_MIN_SIZE(34);
 
+	CMemFile bio(packetData, lenPacket);
+	CUInt128 BuddyID = bio.ReadUInt128();
+	CUInt128 userID = bio.ReadUInt128();
+	uint16_t tcpport = bio.ReadUInt16();
+	// eMuleAI and eMuleQt append their connect options; stock clients send 34 bytes.
+	const uint8_t connectOptions = lenPacket > 34 ? bio.ReadUInt8() : 0;
+
+	// A node we serve repeats its request as a refresh, keyed so the IP is proven. No slot or
+	// firewall rule applies, and it gets no answer (ModderMule/emule-qt#281).
+	if (validReceiverKey && theApp->clientlist->RefreshServedBuddy(userID, ip, port)) {
+		return;
+	}
+
 	Kademlia::CBuddyStats::Serving &stats = theApp->clientlist->GetBuddyStats().serving;
 	++stats.requestsReceived;
 	if (CKademlia::GetPrefs()->GetFirewalled() || CUDPFirewallTester::IsFirewalledUDP(true) ||
@@ -1744,13 +1757,6 @@ void CKademliaUDPListener::ProcessFindBuddyRequest(const uint8_t *packetData,
 			"Buddy request from " + KadIPPortToString(ip, port) + " refused: we are firewalled");
 		return;
 	}
-
-	CMemFile bio(packetData, lenPacket);
-	CUInt128 BuddyID = bio.ReadUInt128();
-	CUInt128 userID = bio.ReadUInt128();
-	uint16_t tcpport = bio.ReadUInt16();
-	// eMuleAI and eMuleQt append their connect options; stock clients send 34 bytes.
-	const uint8_t connectOptions = lenPacket > 34 ? bio.ReadUInt8() : 0;
 	if (Kademlia::IsNatTCapableRequest(connectOptions)) {
 		++stats.requestsNatT;
 	}

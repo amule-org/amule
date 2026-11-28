@@ -645,3 +645,84 @@ TEST(NatRendezvousProtocol, RequesterHintIsQuicWhenWeServeQuicElseUtp)
 	ASSERT_EQUALS(std::uint8_t(2), NatRendezvous::RequesterTransportHint(0x40));
 	ASSERT_EQUALS(std::uint8_t(1), NatRendezvous::RequesterTransportHint(0x80));
 }
+
+// 1.2.3.4 in aMule's byte order, first octet lowest.
+constexpr std::uint32_t kPublicIPv4 = 0x04030201;
+
+TEST(NatRendezvousProtocol, EndpointHintIsTheFiftySixBytesEMuleAIReads)
+{
+	const NatRendezvous::EndpointHint hint{
+		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, 0x1234, 0xC3
+	};
+	const auto bytes = NatRendezvous::BuildEndpointHint(hint);
+	ASSERT_EQUALS(static_cast<std::size_t>(56), bytes.size());
+	ASSERT_EQUALS(std::uint8_t(1), bytes[0]);
+	ASSERT_TRUE(std::equal(bytes.begin() + 1, bytes.begin() + 17, Filled(0x11).begin()));
+	ASSERT_TRUE(std::equal(bytes.begin() + 17, bytes.begin() + 33, BuddyId(0x44).begin()));
+	ASSERT_TRUE(std::equal(bytes.begin() + 33, bytes.begin() + 49, Filled(0x22).begin()));
+	const Bytes tail(bytes.begin() + 49, bytes.end());
+	ASSERT_TRUE((tail == Bytes{ 1, 2, 3, 4, 0x34, 0x12, 0xC3 }));
+}
+
+// The port a buddy request or refresh came from is the node's outside port; the hello's Kad port is
+// only the fallback. eMuleAI drops a hint without a public address.
+TEST(NatRendezvousProtocol, ServedHintPrefersTheObservedPortAndNeedsAPublicAddress)
+{
+	const auto make = [](std::uint32_t ip, std::uint16_t observed, std::uint16_t kad) {
+		return NatRendezvous::MakeServedEndpointHint(
+			Filled(0x11), BuddyId(0x44), Filled(0x22), ip, observed, kad, 0x03, 0x80);
+	};
+	ASSERT_EQUALS(std::uint16_t(5000), make(kPublicIPv4, 5000, 4672)->udpPort);
+	ASSERT_EQUALS(std::uint16_t(4672), make(kPublicIPv4, 0, 4672)->udpPort);
+	ASSERT_FALSE(make(kPublicIPv4, 0, 0).has_value());
+	ASSERT_FALSE(make(0x0100000A, 5000, 4672).has_value()); // 10.0.0.1
+	ASSERT_FALSE(make(0x0100007F, 5000, 4672).has_value()); // 127.0.0.1
+}
+
+// The crypt bits of the node, and the NAT-T transports its buddy request declared, as eMuleAI's
+// requester reads them from the hint.
+TEST(NatRendezvousProtocol, ServedHintCarriesCryptBitsAndDeclaredTransports)
+{
+	const auto hint = NatRendezvous::MakeServedEndpointHint(
+		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, 5000, 0, 0x0F, 0xE1);
+	ASSERT_TRUE(hint.has_value());
+	ASSERT_EQUALS(std::uint8_t(0xC7), hint->connectOptions);
+}
+
+TEST(NatRendezvousProtocol, AMovedPortIsHintedAgainWithinThreeSeconds)
+{
+	NatRendezvous::CSentEndpointHints sent;
+	const auto hint = *NatRendezvous::MakeServedEndpointHint(
+		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, 5000, 0, 0, 0);
+	sent.Record(0x0D0C0B0A, 4662, hint, 1000);
+	ASSERT_TRUE(sent.TakeMoved(Filled(0x11), 5000, 1500).empty());
+	ASSERT_TRUE(sent.TakeMoved(Filled(0x33), 6000, 1500).empty());
+	const auto moved = sent.TakeMoved(Filled(0x11), 6000, 2000);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), moved.size());
+	ASSERT_EQUALS(std::uint32_t(0x0D0C0B0A), moved[0].requesterIP);
+	ASSERT_EQUALS(std::uint16_t(4662), moved[0].requesterPort);
+	ASSERT_EQUALS(std::uint16_t(6000), moved[0].hint.udpPort);
+	// Already sent at that port.
+	ASSERT_TRUE(sent.TakeMoved(Filled(0x11), 6000, 2500).empty());
+	// The window counts from the first hint.
+	ASSERT_TRUE(sent.TakeMoved(Filled(0x11), 7000, 4001).empty());
+}
+
+TEST(NatRendezvousProtocol, SentHintsKeepOnePerRequesterAndAreCapped)
+{
+	NatRendezvous::CSentEndpointHints sent;
+	const auto hint = *NatRendezvous::MakeServedEndpointHint(
+		Filled(0x11), BuddyId(0x44), Filled(0x22), kPublicIPv4, 5000, 0, 0, 0);
+	sent.Record(0x0D0C0B0A, 4662, hint, 1000);
+	sent.Record(0x0D0C0B0A, 4662, hint, 1100);
+	ASSERT_EQUALS(static_cast<std::size_t>(1), sent.TakeMoved(Filled(0x11), 6000, 1200).size());
+
+	NatRendezvous::CSentEndpointHints full;
+	for (std::uint16_t port = 1; port <= NatRendezvous::kMaxSentEndpointHints + 1; ++port) {
+		full.Record(0x0D0C0B0A, port, hint, 1000);
+	}
+	const auto moved = full.TakeMoved(Filled(0x11), 6000, 1000);
+	ASSERT_EQUALS(NatRendezvous::kMaxSentEndpointHints, moved.size());
+	// The oldest made room.
+	ASSERT_EQUALS(std::uint16_t(2), moved.front().requesterPort);
+}

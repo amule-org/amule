@@ -1048,6 +1048,9 @@ public:
 	uint8 GetServedBuddyOptions() const { return m_servedBuddyOptions; }
 	//! The buddy request set a NAT-T bit in its connect options.
 	bool IsServedBuddyNatT() const { return Kademlia::IsNatTCapableRequest(m_servedBuddyOptions); }
+	//! The UDP port its buddy request, then its last refresh, came from. Its hello does not set it.
+	void SetServedUdpPort(uint16 port) { m_servedUdpPort = port; }
+	uint16 GetServedUdpPort() const { return m_servedUdpPort; }
 
 	// KadIPCheck
 	bool IsBuddyPingDue() const { return m_buddyLiveness.PingDue(::GetTickCount64()); }
@@ -1473,6 +1476,7 @@ private:
 	bool m_bBuddyOtherLayoutTried = false;
 	bool m_bServedBuddy = false;
 	uint8 m_servedBuddyOptions = 0;
+	uint16 m_servedUdpPort = 0;
 	uint32 m_nBuddyIP;
 	uint32 m_kadSourceIP = 0;
 	std::vector<NatRendezvous::SKadEndpoint> m_formerKadEndpoints;

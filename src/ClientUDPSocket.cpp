@@ -1219,6 +1219,29 @@ uint8_t CClientUDPSocket::ServedNatTTransports()
 #endif
 }
 
+void CClientUDPSocket::SendEndpointHint(uint32 ip, uint16 port, const NatRendezvous::EndpointHint &hint)
+{
+	const auto bytes = NatRendezvous::BuildEndpointHint(hint);
+	CMemFile data(bytes.data(), bytes.size());
+	CPacket *packet = new CPacket(data, OP_EMULEPROT, OP_NATT_ENDPOINT_HINT);
+	theStats::AddUpOverheadOther(packet->GetPacketSize());
+	AddDebugLogLineN(logKadBuddy,
+		CFormat("Endpoint hint to %s: the served node is at %s") %
+			Uint32_16toStringIP_Port(ip, port) %
+			Uint32_16toStringIP_Port(hint.ipv4, hint.udpPort));
+	SendPacket(packet, ip, port, false, nullptr, false, 0);
+}
+
+void CClientUDPSocket::ResendMovedEndpointHints(const CUpDownClient &served)
+{
+	NatRendezvous::UserHash target;
+	std::copy_n(served.GetUserHash().GetHash(), target.size(), target.begin());
+	for (const auto &sent :
+		m_sentEndpointHints.TakeMoved(target, served.GetServedUdpPort(), ::GetTickCount64())) {
+		SendEndpointHint(sent.requesterIP, sent.requesterPort, sent.hint);
+	}
+}
+
 void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, const uint8_t *body, size_t size)
 {
 	Kademlia::CBuddyStats::Own::Rendezvous &counts = theApp->clientlist->GetBuddyStats().own.rendezvous;
@@ -1960,6 +1983,7 @@ void CClientUDPSocket::ProcessPacket(
 			break;
 		}
 		CMemFile mem_packet;
+		std::optional<NatRendezvous::EndpointHint> hint;
 		if (size > NatRendezvous::kRendezvousPrefixSize &&
 			packet[NatRendezvous::kRendezvousPrefixSize] == NatRendezvous::OP_RENDEZVOUS &&
 			std::all_of(packet + NatRendezvous::kHashSize,
@@ -1981,6 +2005,19 @@ void CClientUDPSocket::ProcessPacket(
 			mem_packet.WriteUInt32(host);
 			mem_packet.WriteUInt16(port);
 			mem_packet.Write(body.data(), body.size());
+			if ((envelope->request.connectOptions & NatRendezvous::kEndpointHintBit) != 0 &&
+				envelope->request.fileHash) {
+				NatRendezvous::UserHash target;
+				std::copy_n(buddy->GetUserHash().GetHash(), target.size(), target.begin());
+				hint = NatRendezvous::MakeServedEndpointHint(target,
+					envelope->servingBuddyId,
+					*envelope->request.fileHash,
+					buddy->GetIP(),
+					buddy->GetServedUdpPort(),
+					buddy->GetKadPort(),
+					buddy->GetCryptOptions(),
+					buddy->GetServedBuddyOptions());
+			}
 		} else {
 			/* The packet starts with a 16-byte key for the buddy. It is currently
 			   unused, so the transformation discards the first 10 bytes below and
@@ -2002,6 +2039,14 @@ void CClientUDPSocket::ProcessPacket(
 		theStats::AddUpOverheadFileRequest(responseSize);
 		buddy->GetSocket()->SendPacket(response);
 		theApp->clientlist->RecordBuddyRelay(buddy, false, responseSize);
+		if (hint) {
+			// One punch with it, as eMuleQt's buddy sends.
+			SendEndpointHint(host, port, *hint);
+			CPacket *punch = new CPacket(OP_HOLEPUNCH, 0, OP_EMULEPROT);
+			theStats::AddUpOverheadOther(punch->GetPacketSize());
+			SendPacket(punch, host, port, false, nullptr, false, 0);
+			m_sentEndpointHints.Record(host, port, *hint, ::GetTickCount64());
+		}
 		break;
 	}
 	case OP_REASKFILEPING: {

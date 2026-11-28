@@ -36,6 +36,7 @@ class CUpDownClient;
 class CServer;
 
 #include "MuleUDPSocket.h"
+#include "NatRendezvousProtocol.h"  // Needed for CSentEndpointHints
 #include "ReservedProtocolFrames.h" // Needed for CFrameLogThrottle
 
 #include <array>
@@ -100,6 +101,9 @@ public:
 	//! coordination, uTP, or while the socket is closed or uTP is unavailable; QUIC also needs QUIC
 	//! NAT-T turned on.
 	uint8_t ServedNatTTransports();
+	//! A refresh moved @a served's UDP port: requesters we hinted it to in the last 3 s get the new
+	//! one (ModderMule/emule-qt#281).
+	void ResendMovedEndpointHints(const CUpDownClient &served);
 #ifdef AMULE_UTP_TRANSPORT
 	~CClientUDPSocket() override;
 	void Close() override;
@@ -368,6 +372,10 @@ private:
 	// a peer we have no socket for are different problems, and sharing a
 	// throttle would let a flood of one hide the other entirely.
 	CFrameLogThrottle m_utpMalformedFrameLog{ 60 * 1000 };
+
+	//! As a buddy: sends @a hint to the requester, plain as eMuleAI and eMuleQt send theirs.
+	void SendEndpointHint(uint32 ip, uint16 port, const NatRendezvous::EndpointHint &hint);
+	NatRendezvous::CSentEndpointHints m_sentEndpointHints;
 };
 
 #endif // CLIENTUDPSOCKET_H

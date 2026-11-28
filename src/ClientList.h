@@ -320,6 +320,12 @@ public:
 	uint64 GetOwnBuddyLinkedMs() const;
 	//! The served buddy whose BuddyID matches in either layout, or nullptr.
 	CUpDownClient *FindServedBuddy(const uint8_t *buddyID) const;
+	/**
+	 * A buddy request from a node we serve, with its user hash and from its IP, is a refresh
+	 * (ModderMule/emule-qt#281): it moves the UDP port we hint for that node and is not answered.
+	 * The caller checks the receiver key, which proves the IP. @a kadIP is in Kad's byte order.
+	 */
+	bool RefreshServedBuddy(const Kademlia::CUInt128 &userID, uint32 kadIP, uint16 udpPort);
 	void RecordBuddyRelay(const CUpDownClient *buddy, bool callback, uint32 bytes);
 	//! A callback or reask that no served buddy matched.
 	void RecordBuddyRelayDrop(bool callback, const uint8_t *buddyID);

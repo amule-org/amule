@@ -19,8 +19,9 @@ from AllSearchIntegrationTest import C, retry_port_collisions, tag, wait_for
 from DownloadDisplayRatesIntegrationTest import hello
 from KadLanModeIntegrationTest import (KADEMLIA2_HELLO_REQ, LAN_MODE_TIMEOUT, kad2_hello, stat, wait_stat,
                                        write_private_contacts)
-from KadReceiverKeyLogIntegrationTest import KADEMLIA_FINDBUDDY_REQ, KADEMLIA_FIREWALLED2_REQ
-from KadSourceTagsECTest import running_kad_daemon
+from KadReceiverKeyLogIntegrationTest import (KADEMLIA_FINDBUDDY_REQ, KADEMLIA_FIREWALLED2_REQ, UDP_KEY_SECRET,
+                                              encrypted, verify_key)
+from KadSourceTagsECTest import kad_id, running_kad_daemon
 from UploadRefillIntegrationTest import send, wait_packet
 from UploadSlotScopeIntegrationTest import OP_HELLOANSWER
 
@@ -365,14 +366,42 @@ def check_rendezvous_is_checked_and_rebuilt(proc, ec, udp_port, peer_port):
     wait_served(proc, ec, 0)
 
 
+def check_keyed_repeat_is_a_refresh(proc, ec, udp_port, peer_port):
+    """A node we serve repeats its buddy request keyed to its IP: a refresh (emule-qt#281), neither
+    answered nor counted as a request. An unkeyed repeat is still refused as an address we serve.
+
+    Two nodes, one repeat each: Kad lets an address send two buddy requests a minute."""
+    keyed = Requester('127.0.0.84', udp_port, peer_port)
+    plain = Requester('127.0.0.85', udp_port, peer_port)
+    keyed.connect()
+    plain.connect()
+    wait_served(proc, ec, 2)
+    before = buddy_counters(ec)
+    daemon_id = kad_id(ec)
+    for node, wrap in ((keyed, lambda p: encrypted(p, daemon_id, verify_key(keyed.address))),
+                       (plain, lambda p: p)):
+        body = node.buddy_id + node.user_id + struct.pack('<HB', node.port, NATT_UTP)
+        with kad_peer(node.address, udp_port) as peer:
+            peer.send(wrap(bytes([0xE4, KADEMLIA_FINDBUDDY_REQ]) + body))
+    # Datagrams are handled in order, so the keyed one was handled when the plain one is counted.
+    wait_counter(proc, ec, 'SERVING_REFUSED_SAME_IP', before['SERVING_REFUSED_SAME_IP'] + 1)
+    counters = buddy_counters(ec)
+    assert counters['SERVING_REQUESTS'] == before['SERVING_REQUESTS'] + 1, counters
+    leave(proc, ec, [keyed, plain])
+    wait_served(proc, ec, 0)
+
+
 def run(binary):
     with tempfile.TemporaryDirectory(prefix='amule-kad-buddy-') as directory:
         root = Path(directory)
         # The UDP firewall check needs a peer on a public IP, and LAN mode skips it. Enough contacts
         # to outlast the test keep LAN mode on.
         write_private_contacts(root, 8)
+        # A known UDP key secret lets a fake node key its packets to the daemon.
         with running_kad_daemon(binary, root, FilterLanIPs=0, KadMaxServedBuddies=SERVED_LIMIT,
-                                MaxConnections=100) as (proc, ec, udp_port, peer_port):
+                                MaxConnections=100,
+                                sections={'Obfuscation': {'CryptoKadUDPKey': UDP_KEY_SECRET}}) as (
+                                    proc, ec, udp_port, peer_port):
             pass_firewall_check(udp_port)
             wait_stat(proc, ec, 'EC_TAG_STATS_KAD_IN_LAN_MODE', 1, LAN_MODE_TIMEOUT)
 
@@ -388,10 +417,11 @@ def run(binary):
             check_one_offer_per_address(proc, ec, udp_port, peer_port)
             check_kept_slot_is_for_natt_nodes(proc, ec, udp_port, peer_port)
             check_rendezvous_is_checked_and_rebuilt(proc, ec, udp_port, peer_port)
+            check_keyed_repeat_is_a_refresh(proc, ec, udp_port, peer_port)
     print(f'PASS: {SERVED_LIMIT} buddies served, one per address, the extra one dropped, callbacks limited '
           'per sender and buddy, pending offers capped, an expired request not promoted, a duplicate '
           'offer counted apart, a HighID node released, one offer per address, the kept slot only for a '
-          'NAT-T node, a rendezvous checked and rebuilt, and each counted')
+          'NAT-T node, a rendezvous checked and rebuilt, a keyed repeat taken as a refresh, and each counted')
 
 
 if __name__ == '__main__':
