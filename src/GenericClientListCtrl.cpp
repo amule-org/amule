@@ -319,9 +319,11 @@ void CGenericClientListCtrl::RemoveSource(uint32 source, const CKnownFile *owner
 
 void CGenericClientListCtrl::RefreshWaitingSources()
 {
-	// A waiting source sends no update until it is asked, so nothing else repaints it.
+	// A waiting source sends no update until it is asked, and a LowID-to-LowID step ends without
+	// one, so nothing else repaints them.
 	for (const ListItemsPair &entry : m_ListItems) {
-		if (entry.second->GetSource().GetNextAskTime() != 0) {
+		const CClientRef &source = entry.second->GetSource();
+		if (source.GetNextAskTime() != 0 || source.GetDownloadState() == DS_LOWTOLOWIP) {
 			RefreshItemData(reinterpret_cast<wxUIntPtr>(entry.second));
 		}
 	}
@@ -762,11 +764,15 @@ wxString CGenericClientListCtrl::GetItemColumnText(wxUIntPtr data, unsigned colu
 			// has one word for every callback, so a direct UDP callback to the peer and a
 			// hole punch through two servers both read as "via server".
 			const uint8 state = client.GetDownloadState();
-			if (state == DS_CONNECTING || state == DS_WAITCALLBACK ||
-				state == DS_WAITCALLBACKKAD || state == DS_LOWTOLOWIP) {
-				const wxString route = ContactRouteStatus(client.GetContactRoute(),
-					client.IsRouteUnproven(),
-					client.IsIdentityFromFallback());
+			if ((state == DS_CONNECTING || state == DS_WAITCALLBACK ||
+				    state == DS_WAITCALLBACKKAD || state == DS_LOWTOLOWIP) &&
+				!client.IsContactAttemptEnded()) {
+				const wxString route =
+					ContactRouteStatus(ContactRouteToText(client.GetContactRoute(),
+								   state == DS_LOWTOLOWIP,
+								   client.IsContactOverIPv6()),
+						client.IsRouteUnproven(),
+						client.IsIdentityFromFallback());
 				if (!route.IsEmpty()) {
 					return route;
 				}

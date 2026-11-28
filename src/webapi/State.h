@@ -404,6 +404,7 @@ struct ClientSnapshot
 	bool route_unproven = false; // the route comes from a record no hello has proved
 	bool route_from_fallback = false; // the IPv4 identity came from a fallback route
 	bool route_ipv6 = false;          // the route is a dial to the peer's IPv6 address
+	bool route_attempt_ended = false; // the attempt on the route is no longer awaited
 	// How the current or last connection came about: "dial" | "inbound" | "server_callback" | ...;
 	// "" => none yet.
 	std::string connection_route;

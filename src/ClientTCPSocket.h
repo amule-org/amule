@@ -102,12 +102,8 @@ public:
 
 	bool CheckTimeOut();
 
-	//! An accepted stream from a peer a rendezvous announced: a server punch or a Lugdunum callback.
-	void MarkRendezvousStream(bool lugdunum)
-	{
-		m_opener = lugdunum ? EConnectionOpener::AcceptedLugdunumRendezvous
-				    : EConnectionOpener::AcceptedRendezvous;
-	}
+	//! An accepted stream from a peer a rendezvous announced, with RendezvousStreamOpener()'s opener.
+	void MarkRendezvousStream(EConnectionOpener opener) { m_opener = opener; }
 	//! Who opened this connection.
 	EConnectionOpener Opener() const noexcept { return m_opener; }
 	//! PackConnectionRoute() for this connection, decided at its first hello and kept after.

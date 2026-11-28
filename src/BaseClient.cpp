@@ -3256,13 +3256,34 @@ void CUpDownClient::RefreshObfuscationState()
 	m_hasbeenobfuscatinglately = m_socket && m_socket->IsConnected() && m_socket->IsObfusicating();
 }
 
+static_assert(kKadRendezvousAttemptMs == NatRendezvous::kRequesterAttemptMs,
+	"the GUIs show a Kad rendezvous for as long as its attempt lasts");
+
+bool CUpDownClient::IsContactAttemptEnded() const
+{
+	if (m_lastContactRoute == EContactRouteReport::None) {
+		return false;
+	}
+	const uint64 now = ::GetTickCount64();
+	SContactAttemptFacts facts;
+	facts.downloadState = GetDownloadState();
+	facts.uploadState = GetUploadState();
+	facts.attempt = m_lastContactRoute;
+	facts.stepAgeMs = now >= m_contactStepAt ? now - m_contactStepAt : 0;
+#ifdef ENABLE_NATT_SERVER_COORDINATION
+	facts.punchRefused = m_holePunchFallback.PunchRefused();
+#endif
+	return !ContactAttemptAwaited(facts);
+}
+
 EConnectionOpener CUpDownClient::TakeConnectionOpener()
 {
 	const EConnectionOpener answer = std::exchange(m_answerOpener, EConnectionOpener::Dial);
 #if defined(ENABLE_NATT_SERVER_COORDINATION) && defined(AMULE_UTP_TRANSPORT)
-	return ResolveConnectionOpener(answer, IsLugdunumCallbackDial(), IsLowIdHolePunchDial());
+	return ResolveConnectionOpener(
+		answer, IsLugdunumCallbackDial(), IsLowIdHolePunchDial(), IsKadRendezvousDial());
 #else
-	return ResolveConnectionOpener(answer, false, false);
+	return ResolveConnectionOpener(answer, false, false, false);
 #endif
 }
 

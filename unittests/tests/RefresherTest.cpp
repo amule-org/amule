@@ -2305,10 +2305,11 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	// Seen on our server first, then over Kad: the row reports both, the field keeps the first.
 	hi.AddTag(CECTag(EC_TAG_CLIENT_FROM_MASK,
 		static_cast<std::uint64_t>(SourceFromBit(SF_LOCAL_SERVER) | SourceFromBit(SF_KADEMLIA))));
-	// Kad buddy route (4), reached on a fallback address, not yet proved by a hello.
+	// Kad buddy route (4), reached on a fallback address, not yet proved by a hello, its attempt
+	// over.
 	hi.AddTag(CECTag(EC_TAG_CLIENT_CONTACT_ROUTE,
 		static_cast<std::uint64_t>(
-			PackContactRoute(EContactRouteReport::KadBuddy, true, true, false))));
+			PackContactRoute(EContactRouteReport::KadBuddy, true, true, false, true))));
 	// Connected by our callback through the Kad buddy, over uTP on IPv6.
 	hi.AddTag(CECTag(EC_TAG_CLIENT_CONNECTION_ROUTE,
 		static_cast<std::uint64_t>(PackConnectionRoute(
@@ -2359,6 +2360,8 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_EQUALS(std::string("kad_buddy"), cs.contact_route);
 	ASSERT_TRUE(cs.route_unproven);
 	ASSERT_TRUE(cs.route_from_fallback);
+	ASSERT_TRUE(!cs.route_ipv6);
+	ASSERT_TRUE(cs.route_attempt_ended);
 	ASSERT_EQUALS(std::string("kad_buddy_callback"), cs.connection_route);
 	ASSERT_EQUALS(std::string("utp"), cs.connection_transport);
 	ASSERT_TRUE(cs.connection_ipv6);
@@ -2379,6 +2382,9 @@ TEST(Refresher, ClientDetailFieldsDecode)
 	ASSERT_TRUE(!it2->second.has_parts_offered_count);
 	// No tag: no ask scheduled, as on a core older than the tag.
 	ASSERT_EQUALS(static_cast<std::uint64_t>(0), it2->second.next_ask_at);
+	// No attempt, as on a core older than the tag: nothing reads as ended.
+	ASSERT_TRUE(it2->second.contact_route.empty());
+	ASSERT_TRUE(!it2->second.route_attempt_ended);
 	// Never connected, as on a core older than the tag.
 	ASSERT_TRUE(it2->second.connection_route.empty());
 	ASSERT_TRUE(it2->second.connection_transport.empty());
@@ -2408,6 +2414,8 @@ TEST(Refresher, ConnectionRouteNameMapsEveryRoute)
 		{ EConnectionRoute::AnsweredKadCallback, "answered_kad_buddy_callback" },
 		{ EConnectionRoute::AnsweredDirectCallback, "answered_direct_udp_callback" },
 		{ EConnectionRoute::AnsweredLugdunumCallback, "answered_lugdunum_callback" },
+		{ EConnectionRoute::KadBuddyRendezvous, "kad_buddy_rendezvous" },
+		{ EConnectionRoute::AnsweredKadBuddyRendezvous, "answered_kad_buddy_rendezvous" },
 	};
 	for (const auto &route : routes) {
 		const std::uint8_t packed =

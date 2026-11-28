@@ -40,12 +40,14 @@ TEST(KadFirewallCheckPolicy, AConnectionTheNodeOpenedProvesNothing)
 	ASSERT_FALSE(ProvesTcpPortReachable(EConnectionOpener::Accepted, false));
 	ASSERT_FALSE(ProvesTcpPortReachable(EConnectionOpener::AcceptedRendezvous, false));
 	ASSERT_FALSE(ProvesTcpPortReachable(EConnectionOpener::AcceptedLugdunumRendezvous, false));
+	ASSERT_FALSE(ProvesTcpPortReachable(EConnectionOpener::AcceptedKadRendezvous, false));
 }
 
 TEST(KadFirewallCheckPolicy, DialsThroughAPunchedMappingProveNothing)
 {
 	ASSERT_FALSE(ProvesTcpPortReachable(EConnectionOpener::HolePunchDial, false));
 	ASSERT_FALSE(ProvesTcpPortReachable(EConnectionOpener::LugdunumCallbackDial, false));
+	ASSERT_FALSE(ProvesTcpPortReachable(EConnectionOpener::KadRendezvousDial, false));
 }
 
 TEST(KadFirewallCheckPolicy, CallbackAnswersAreRefused)

@@ -64,15 +64,18 @@ wxString OriginToText(unsigned int source_from);
  */
 wxString OriginsToText(unsigned int originMask, unsigned int primary);
 
-//! The contact route as a noun phrase (EContactRouteReport). A wxTRANSLATE marker, so the caller
-//! applies wxGetTranslation(); empty before the first attempt.
-wxString ContactRouteToText(unsigned int route);
+//! The contact route as a noun phrase (EContactRouteReport). @a lowToLow: the source waits
+//! LowID-to-LowID, where the Kad buddy route is the rendezvous. @a overIPv6: the dial goes to the
+//! peer's IPv6. A wxTRANSLATE marker, so the caller applies wxGetTranslation(); empty before the
+//! first attempt.
+wxString ContactRouteToText(unsigned int route, bool lowToLow, bool overIPv6);
 
 /**
- * The source list's status line while a contact is in flight, already translated: the route and,
- * when it is one, that the route is a fallback or is unproven. Empty before the first attempt.
+ * The source list's status line while a contact is in flight, already translated: the route, which
+ * is ContactRouteToText()'s, and when it is one, that the route is a fallback or is unproven.
+ * Empty for an empty route.
  */
-wxString ContactRouteStatus(unsigned int route, bool unproven, bool fromFallback);
+wxString ContactRouteStatus(const wxString &route, bool unproven, bool fromFallback);
 
 /**
  * How a client's connection came about, already translated: "Server callback (TCP, IPv4)". Takes

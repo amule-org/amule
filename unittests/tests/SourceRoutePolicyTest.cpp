@@ -416,7 +416,7 @@ TEST(SourceRoutePolicy, AFallbackRetriesOnlyTheRoutesItChanges)
 	ASSERT_EQUALS(failed & ~addressRoutes, FailedAfterFallback(ESourceFallback::LastResortIPv6, failed));
 }
 
-// EC_TAG_CLIENT_CONTACT_ROUTE packs the route and its two flags into one byte.
+// EC_TAG_CLIENT_CONTACT_ROUTE packs the route and its four flags into one byte.
 TEST(SourceRoutePolicy, AContactRouteSurvivesItsPacking)
 {
 	for (EContactRouteReport route : { EContactRouteReport::None,
@@ -427,15 +427,18 @@ TEST(SourceRoutePolicy, AContactRouteSurvivesItsPacking)
 		     EContactRouteReport::ForeignNatCallback,
 		     EContactRouteReport::ServerHolePunch,
 		     EContactRouteReport::LugdunumCallback }) {
-		for (int flags = 0; flags < 8; ++flags) {
+		for (int flags = 0; flags < 16; ++flags) {
 			const bool unproven = (flags & 1) != 0;
 			const bool fallback = (flags & 2) != 0;
 			const bool overIPv6 = (flags & 4) != 0;
-			const std::uint8_t packed = PackContactRoute(route, unproven, fallback, overIPv6);
+			const bool ended = (flags & 8) != 0;
+			const std::uint8_t packed =
+				PackContactRoute(route, unproven, fallback, overIPv6, ended);
 			ASSERT_TRUE(UnpackContactRoute(packed) == route);
 			ASSERT_EQUALS(unproven, ContactRouteIsUnproven(packed));
 			ASSERT_EQUALS(fallback, ContactRouteFromFallback(packed));
 			ASSERT_EQUALS(overIPv6, ContactRouteOverIPv6(packed));
+			ASSERT_EQUALS(ended, ContactRouteEnded(packed));
 		}
 	}
 	// The chain's own routes report under the same numbers.
@@ -446,16 +449,18 @@ TEST(SourceRoutePolicy, AContactRouteSurvivesItsPacking)
 // A route a newer daemon knows and this build does not reads as none, flags and all.
 TEST(SourceRoutePolicy, AnUnknownPackedRouteReadsAsNone)
 {
-	const std::uint8_t packed = 0x0F | ContactRouteUnprovenBit | ContactRouteFallbackBit;
+	const std::uint8_t packed =
+		0x0F | ContactRouteUnprovenBit | ContactRouteFallbackBit | ContactRouteEndedBit;
 	ASSERT_TRUE(UnpackContactRoute(packed) == EContactRouteReport::None);
 	ASSERT_TRUE(ContactRouteIsUnproven(packed));
 	ASSERT_TRUE(ContactRouteFromFallback(packed));
+	ASSERT_TRUE(ContactRouteEnded(packed));
 }
 
 // EC_TAG_CLIENT_CONNECTION_ROUTE packs the route, the transport and two flags into one byte.
 TEST(SourceRoutePolicy, AConnectionRouteSurvivesItsPacking)
 {
-	for (unsigned r = 0; r <= static_cast<unsigned>(EConnectionRoute::AnsweredLugdunumCallback); ++r) {
+	for (unsigned r = 0; r <= static_cast<unsigned>(EConnectionRoute::AnsweredKadBuddyRendezvous); ++r) {
 		const auto route = static_cast<EConnectionRoute>(r);
 		for (EConnectionTransport transport : { EConnectionTransport::TCP,
 			     EConnectionTransport::UTP,
@@ -493,6 +498,7 @@ TEST(SourceRoutePolicy, AConnectionRouteFollowsWhoOpenedIt)
 		{ EConnectionOpener::HolePunchDial, EConnectionRoute::ServerHolePunch },
 		{ EConnectionOpener::LugdunumCallbackDial, EConnectionRoute::LugdunumCallback },
 		{ EConnectionOpener::AnswerLugdunumCallback, EConnectionRoute::AnsweredLugdunumCallback },
+		{ EConnectionOpener::KadRendezvousDial, EConnectionRoute::KadBuddyRendezvous },
 	};
 	for (const auto &entry : opened) {
 		facts.opener = entry.first;
@@ -524,6 +530,9 @@ TEST(SourceRoutePolicy, AConnectionRouteFollowsWhoOpenedIt)
 	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ForeignNatCallback);
 	facts.attempt = EContactRouteReport::ServerHolePunch;
 	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ServerHolePunch);
+	// The source of our Kad rendezvous dialled us on the punched path.
+	facts.attempt = EContactRouteReport::KadBuddy;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::KadBuddyRendezvous);
 	// Without a step of ours, we answered the peer's hole punch or Lugdunum callback.
 	facts.contactInFlight = false;
 	facts.attempt = EContactRouteReport::None;
@@ -537,6 +546,16 @@ TEST(SourceRoutePolicy, AConnectionRouteFollowsWhoOpenedIt)
 	facts.opener = EConnectionOpener::HolePunchDial;
 	facts.attempt = EContactRouteReport::ForeignNatCallback;
 	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ForeignNatCallback);
+	// Our dial on a Kad rendezvous is ours, whatever server step is out as well.
+	facts.opener = EConnectionOpener::KadRendezvousDial;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::KadBuddyRendezvous);
+	// A requester our Kad buddy forwarded, unless a server step of ours to it is out.
+	facts.opener = EConnectionOpener::AcceptedKadRendezvous;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::ForeignNatCallback);
+	facts.contactInFlight = false;
+	facts.attempt = EContactRouteReport::None;
+	ASSERT_TRUE(DecideConnectionRoute(facts) == EConnectionRoute::AnsweredKadBuddyRendezvous);
+	facts.contactInFlight = true;
 	facts.opener = EConnectionOpener::Accepted;
 
 	// A callback we asked for long ago does not explain a peer that dials us now.
@@ -548,17 +567,24 @@ TEST(SourceRoutePolicy, AConnectionRouteFollowsWhoOpenedIt)
 // The callback request a socket answers names it; only without one do the NAT-T dial flags.
 TEST(SourceRoutePolicy, AnAnsweredCallbackNamesTheSocket)
 {
-	ASSERT_TRUE(
-		ResolveConnectionOpener(EConnectionOpener::Dial, false, false) == EConnectionOpener::Dial);
-	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::Dial, false, true) ==
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::Dial, false, false, false) ==
+		    EConnectionOpener::Dial);
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::Dial, false, true, false) ==
 		    EConnectionOpener::HolePunchDial);
 	// A Lugdunum dial is a hole-punch dial too; the Lugdunum flag is the more specific one.
-	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::Dial, true, true) ==
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::Dial, true, true, false) ==
 		    EConnectionOpener::LugdunumCallbackDial);
-	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::AnswerLugdunumCallback, true, true) ==
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::AnswerLugdunumCallback, true, true, false) ==
 		    EConnectionOpener::AnswerLugdunumCallback);
-	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::AnswerServerCallback, false, false) ==
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::AnswerServerCallback, false, false, false) ==
 		    EConnectionOpener::AnswerServerCallback);
+	// The Kad rendezvous names a hole-punch dial, and nothing else.
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::Dial, false, true, true) ==
+		    EConnectionOpener::KadRendezvousDial);
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::Dial, false, false, true) ==
+		    EConnectionOpener::Dial);
+	ASSERT_TRUE(ResolveConnectionOpener(EConnectionOpener::AnswerKadCallback, false, true, true) ==
+		    EConnectionOpener::AnswerKadCallback);
 }
 
 // A LowID-to-LowID wait is ours only while a NAT-T step is fresh; the other contact states always
@@ -586,6 +612,13 @@ TEST(SourceRoutePolicy, AContactIsInFlightOnlyWhileOursIsAwaited)
 		// The step was answered or lost long ago: the state outlives it while we stay LowID.
 		ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, step, kNatStepAnswerWindowMs).has_value());
 	}
+	// A Kad rendezvous for as long as its attempt: the source may dial us on the punched path.
+	ASSERT_TRUE(
+		inFlight(
+			DS_LOWTOLOWIP, US_NONE, EContactRouteReport::KadBuddy, kKadRendezvousAttemptMs - 1) ==
+		EContactRouteReport::KadBuddy);
+	ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::KadBuddy, kKadRendezvousAttemptMs)
+			     .has_value());
 	// No step was sent this round, or the route is an older attempt's.
 	ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::None).has_value());
 	ASSERT_FALSE(inFlight(DS_LOWTOLOWIP, US_NONE, EContactRouteReport::ServerCallback).has_value());
@@ -605,6 +638,50 @@ TEST(SourceRoutePolicy, AContactIsInFlightOnlyWhileOursIsAwaited)
 	facts.downloadState = DS_WAITCALLBACK;
 	facts.attempt = EContactRouteReport::KadBuddy;
 	ASSERT_TRUE(ContactInFlight(facts) == EContactRouteReport::KadBuddy);
+}
+
+// The GUIs say "Connecting via" only while the attempt is awaited. A LowID-to-LowID wait outlasts
+// its step: a server step ends with its answer window or its refused punch, a Kad rendezvous with
+// its attempt.
+TEST(SourceRoutePolicy, AnAttemptIsAwaitedOnlyWhileItCanBeAnswered)
+{
+	const auto awaited = [](std::uint8_t downloadState,
+				     EContactRouteReport attempt,
+				     std::uint64_t stepAgeMs = 0,
+				     bool punchRefused = false,
+				     std::uint8_t uploadState = US_NONE) {
+		SContactAttemptFacts facts;
+		facts.downloadState = downloadState;
+		facts.uploadState = uploadState;
+		facts.attempt = attempt;
+		facts.stepAgeMs = stepAgeMs;
+		facts.punchRefused = punchRefused;
+		return ContactAttemptAwaited(facts);
+	};
+	for (std::uint8_t state : { DS_CONNECTING, DS_WAITCALLBACK, DS_WAITCALLBACKKAD }) {
+		// The state lasts as long as the attempt does, whatever an older step's age.
+		ASSERT_TRUE(awaited(state, EContactRouteReport::Dial, kNatStepAnswerWindowMs));
+	}
+	for (EContactRouteReport step : { EContactRouteReport::ForeignNatCallback,
+		     EContactRouteReport::ServerHolePunch,
+		     EContactRouteReport::LugdunumCallback }) {
+		ASSERT_TRUE(awaited(DS_LOWTOLOWIP, step, kNatStepAnswerWindowMs - 1));
+		ASSERT_FALSE(awaited(DS_LOWTOLOWIP, step, kNatStepAnswerWindowMs));
+	}
+	// A refused punch ends at once; the refusal says nothing about the other steps.
+	ASSERT_FALSE(awaited(DS_LOWTOLOWIP, EContactRouteReport::ServerHolePunch, 0, true));
+	ASSERT_TRUE(awaited(DS_LOWTOLOWIP, EContactRouteReport::LugdunumCallback, 0, true));
+	ASSERT_TRUE(awaited(DS_LOWTOLOWIP, EContactRouteReport::KadBuddy, kKadRendezvousAttemptMs - 1));
+	ASSERT_FALSE(awaited(DS_LOWTOLOWIP, EContactRouteReport::KadBuddy, kKadRendezvousAttemptMs));
+	// An IPv6 callback that went unanswered sent the source back to the wait.
+	ASSERT_FALSE(awaited(DS_LOWTOLOWIP, EContactRouteReport::ServerCallback));
+	// Connected, queued or given up: the attempt is over.
+	ASSERT_FALSE(awaited(DS_ONQUEUE, EContactRouteReport::ServerCallback));
+	ASSERT_FALSE(awaited(DS_NONE, EContactRouteReport::Dial));
+	// An upload connect is an attempt as well.
+	ASSERT_TRUE(awaited(DS_NONE, EContactRouteReport::Dial, 0, false, US_CONNECTING));
+	// No attempt yet: nothing to await.
+	ASSERT_FALSE(awaited(DS_CONNECTING, EContactRouteReport::None));
 }
 
 // Channels merge into a set; only a set that already had one counts the gain.

@@ -705,7 +705,7 @@ else
 	_skip "/shared: no file carries media metadata, cannot check the codec label"
 fi
 
-# --- 11. contact_route says how a source is being reached, and the two route
+# --- 11. contact_route says how a source is being reached, and the four route
 # flags are always present booleans. Reads only, appended at the end for the
 # same reason as 8.
 ROUTE_TOKENS='["dial","direct_udp_callback","server_callback","kad_buddy","foreign_nat_callback","server_hole_punch","lugdunum_callback"]'
@@ -716,8 +716,10 @@ if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
 	# Never the empty string: no route yet is null, as for source_origin.
 	_assert_json_eq '[.clients[] | select(.contact_route == "")] | length' 0 \
 		"/clients: contact_route is null, never an empty string"
-	_assert_json_eq '[.clients[] | select((.route_unproven|type) != "boolean" or (.route_from_fallback|type) != "boolean" or (.route_ipv6|type) != "boolean")] | length' 0 \
-		"/clients: the three route flags are booleans on every row"
+	_assert_json_eq '[.clients[] | select((.route_unproven|type) != "boolean" or (.route_from_fallback|type) != "boolean" or (.route_ipv6|type) != "boolean" or (.route_attempt_ended|type) != "boolean")] | length' 0 \
+		"/clients: the four route flags are booleans on every row"
+	_assert_json_eq '[.clients[] | select(.contact_route == null and .route_attempt_ended)] | length' 0 \
+		"/clients: no attempt reads as ended before the first one"
 else
 	_skip "/clients: no rows, cannot check the contact_route tokens"
 fi
@@ -757,7 +759,7 @@ fi
 # a documented token or null, with connection_transport set exactly when it is,
 # and the two connection flags always present booleans. Reads only, appended at
 # the end for the same reason as 8.
-CONNECTION_TOKENS='["dial","inbound","server_callback","kad_buddy_callback","direct_udp_callback","foreign_nat_callback","server_hole_punch","lugdunum_callback","answered_server_callback","answered_kad_buddy_callback","answered_direct_udp_callback","answered_lugdunum_callback"]'
+CONNECTION_TOKENS='["dial","inbound","server_callback","kad_buddy_callback","direct_udp_callback","foreign_nat_callback","server_hole_punch","lugdunum_callback","answered_server_callback","answered_kad_buddy_callback","answered_direct_udp_callback","answered_lugdunum_callback","kad_buddy_rendezvous","answered_kad_buddy_rendezvous"]'
 _curl -H "Authorization: Bearer $TOKEN" "$API/clients"
 if [ "$(echo "$CURL_BODY" | jq -r '.clients | length')" != "0" ]; then
 	_assert_json_eq "[.clients[].connection_route | select(. != null)] - $CONNECTION_TOKENS | length" 0 \

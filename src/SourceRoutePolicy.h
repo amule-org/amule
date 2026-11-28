@@ -104,15 +104,18 @@ constexpr std::uint8_t ContactRouteMask = 0x0F;
 constexpr std::uint8_t ContactRouteUnprovenBit = 0x10;
 constexpr std::uint8_t ContactRouteFallbackBit = 0x20;
 constexpr std::uint8_t ContactRouteIPv6Bit = 0x40;
+//! An older daemon never sets it: a GUI then reads every attempt as live, as before.
+constexpr std::uint8_t ContactRouteEndedBit = 0x80;
 
 inline std::uint8_t PackContactRoute(
-	EContactRouteReport route, bool unproven, bool identityFromFallback, bool overIPv6)
+	EContactRouteReport route, bool unproven, bool identityFromFallback, bool overIPv6, bool ended)
 {
 	static_assert(static_cast<unsigned>(EContactRouteReport::LugdunumCallback) <= ContactRouteMask,
 		"every route must fit in the low nibble");
 	return static_cast<std::uint8_t>(
 		static_cast<std::uint8_t>(route) | (unproven ? ContactRouteUnprovenBit : 0) |
-		(identityFromFallback ? ContactRouteFallbackBit : 0) | (overIPv6 ? ContactRouteIPv6Bit : 0));
+		(identityFromFallback ? ContactRouteFallbackBit : 0) | (overIPv6 ? ContactRouteIPv6Bit : 0) |
+		(ended ? ContactRouteEndedBit : 0));
 }
 
 //! None for a route a newer daemon knows and this build does not.
@@ -140,6 +143,12 @@ inline bool ContactRouteOverIPv6(std::uint8_t packed)
 	return (packed & ContactRouteIPv6Bit) != 0;
 }
 
+//! The attempt is no longer awaited (ContactAttemptAwaited()).
+inline bool ContactRouteEnded(std::uint8_t packed)
+{
+	return (packed & ContactRouteEndedBit) != 0;
+}
+
 /**
  * How the connection a client is on, or was last on, came about. Unlike EContactRouteReport, which
  * names the attempt, this is decided once per connection, from its first hello.
@@ -165,6 +174,10 @@ enum class EConnectionRoute : std::uint8_t
 	AnsweredDirectCallback = 11,
 	//! We dialled the peer because our server forwarded its Lugdunum callback request.
 	AnsweredLugdunumCallback = 12,
+	//! A rendezvous we asked the peer's Kad buddy for, whichever side dialled.
+	KadBuddyRendezvous = 13,
+	//! The peer dialled us after our Kad buddy forwarded its rendezvous.
+	AnsweredKadBuddyRendezvous = 14,
 };
 
 enum class EConnectionTransport : std::uint8_t
@@ -189,14 +202,19 @@ enum class EConnectionOpener : std::uint8_t
 	AcceptedRendezvous,
 	//! Accepted from a peer a Lugdunum callback announced.
 	AcceptedLugdunumRendezvous,
+	//! A hole-punch dial on a rendezvous we asked a Kad source's buddy for.
+	KadRendezvousDial,
+	//! Accepted from a peer whose rendezvous our Kad buddy forwarded.
+	AcceptedKadRendezvous,
 };
 
 /**
  * Why a socket a client opens now is opened: a callback request it answers, else what the NAT-T
- * dial flags of a temporary client say, else our own dial.
+ * dial flags of a temporary client say, else our own dial. @a kadRendezvousDial counts only on a
+ * hole-punch dial.
  */
 inline EConnectionOpener ResolveConnectionOpener(
-	EConnectionOpener answer, bool lugdunumCallbackDial, bool holePunchDial)
+	EConnectionOpener answer, bool lugdunumCallbackDial, bool holePunchDial, bool kadRendezvousDial)
 {
 	if (answer != EConnectionOpener::Dial) {
 		return answer;
@@ -204,11 +222,34 @@ inline EConnectionOpener ResolveConnectionOpener(
 	if (lugdunumCallbackDial) {
 		return EConnectionOpener::LugdunumCallbackDial;
 	}
-	return holePunchDial ? EConnectionOpener::HolePunchDial : EConnectionOpener::Dial;
+	if (!holePunchDial) {
+		return EConnectionOpener::Dial;
+	}
+	return kadRendezvousDial ? EConnectionOpener::KadRendezvousDial : EConnectionOpener::HolePunchDial;
 }
 
 //! How long a NAT-T step of ours explains a new connection: the window its rendezvous has.
 constexpr std::uint64_t kNatStepAnswerWindowMs = 60'000;
+//! How long our Kad rendezvous request for a source lasts: NatRendezvous::kRequesterAttemptMs.
+constexpr std::uint64_t kKadRendezvousAttemptMs = 45'000;
+
+//! The NAT-T steps that ask a server while both ends are LowID.
+inline bool IsServerNatStep(EContactRouteReport route)
+{
+	return route == EContactRouteReport::ForeignNatCallback ||
+	       route == EContactRouteReport::ServerHolePunch ||
+	       route == EContactRouteReport::LugdunumCallback;
+}
+
+//! Whether the last step of a LowID-to-LowID wait is still in its window: a server step's answer
+//! window, or the attempt of a Kad rendezvous.
+inline bool LowToLowStepInWindow(EContactRouteReport step, std::uint64_t ageMs)
+{
+	if (step == EContactRouteReport::KadBuddy) {
+		return ageMs < kKadRendezvousAttemptMs;
+	}
+	return IsServerNatStep(step) && ageMs < kNatStepAnswerWindowMs;
+}
 
 struct SKadRendezvousRetryFacts
 {
@@ -259,8 +300,8 @@ struct SContactInFlightFacts
 
 /**
  * The contact of ours a new connection may answer: its route, or none when nothing of ours is
- * awaited. DS_LOWTOLOWIP counts only with a NAT-T step still in its answer window: the state is
- * also set when no step could be sent, and it lasts as long as we stay LowID.
+ * awaited. DS_LOWTOLOWIP counts only with a NAT-T step still in its window: the state is also set
+ * when no step could be sent, and it lasts as long as we stay LowID.
  */
 inline std::optional<EContactRouteReport> ContactInFlight(const SContactInFlightFacts &facts)
 {
@@ -270,10 +311,7 @@ inline std::optional<EContactRouteReport> ContactInFlight(const SContactInFlight
 	case DS_WAITCALLBACKKAD:
 		return facts.attempt;
 	case DS_LOWTOLOWIP:
-		if ((facts.attempt == EContactRouteReport::ForeignNatCallback ||
-			    facts.attempt == EContactRouteReport::ServerHolePunch ||
-			    facts.attempt == EContactRouteReport::LugdunumCallback) &&
-			facts.natStepAgeMs < kNatStepAnswerWindowMs) {
+		if (LowToLowStepInWindow(facts.attempt, facts.natStepAgeMs)) {
 			return facts.attempt;
 		}
 		break;
@@ -287,6 +325,43 @@ inline std::optional<EContactRouteReport> ContactInFlight(const SContactInFlight
 		return facts.uploadCallbackRoute;
 	}
 	return std::nullopt;
+}
+
+struct SContactAttemptFacts
+{
+	std::uint8_t downloadState = DS_NONE;
+	std::uint8_t uploadState = US_NONE;
+	EContactRouteReport attempt = EContactRouteReport::None;
+	//! How long ago the last NAT-T step went out, and whether the server refused its punch.
+	std::uint64_t stepAgeMs = 0;
+	bool punchRefused = false;
+};
+
+/**
+ * Whether the attempt EContactRouteReport names is still awaited, which the GUIs say as
+ * "Connecting via". DS_LOWTOLOWIP can outlast its step by hours: a server step is awaited for its
+ * answer window unless its punch was refused, and a Kad rendezvous while its attempt lasts.
+ */
+inline bool ContactAttemptAwaited(const SContactAttemptFacts &facts)
+{
+	if (facts.attempt == EContactRouteReport::None) {
+		return false;
+	}
+	switch (facts.downloadState) {
+	case DS_CONNECTING:
+	case DS_WAITCALLBACK:
+	case DS_WAITCALLBACKKAD:
+		return true;
+	case DS_LOWTOLOWIP:
+		if (LowToLowStepInWindow(facts.attempt, facts.stepAgeMs) &&
+			!(facts.attempt == EContactRouteReport::ServerHolePunch && facts.punchRefused)) {
+			return true;
+		}
+		break;
+	default:
+		break;
+	}
+	return facts.uploadState == US_CONNECTING;
 }
 
 struct SConnectionRouteFacts
@@ -312,6 +387,9 @@ inline std::optional<EConnectionRoute> OwnNatStep(const SConnectionRouteFacts &f
 		return EConnectionRoute::ServerHolePunch;
 	case EContactRouteReport::LugdunumCallback:
 		return EConnectionRoute::LugdunumCallback;
+	case EContactRouteReport::KadBuddy:
+		// The rendezvous: the buddy's callback needs us reachable, so no punched path answers it.
+		return EConnectionRoute::KadBuddyRendezvous;
 	default:
 		return std::nullopt;
 	}
@@ -338,6 +416,11 @@ inline EConnectionRoute DecideConnectionRoute(const SConnectionRouteFacts &facts
 		return OwnNatStep(facts).value_or(EConnectionRoute::LugdunumCallback);
 	case EConnectionOpener::AcceptedLugdunumRendezvous:
 		return OwnNatStep(facts).value_or(EConnectionRoute::AnsweredLugdunumCallback);
+	case EConnectionOpener::KadRendezvousDial:
+		// Only our own rendezvous request leads to this dial.
+		return EConnectionRoute::KadBuddyRendezvous;
+	case EConnectionOpener::AcceptedKadRendezvous:
+		return OwnNatStep(facts).value_or(EConnectionRoute::AnsweredKadBuddyRendezvous);
 	case EConnectionOpener::Accepted:
 		break;
 	}
@@ -376,7 +459,7 @@ inline std::uint8_t PackConnectionRoute(
 	EConnectionRoute route, EConnectionTransport transport, bool overIPv6, bool viaProxy)
 {
 	static_assert(
-		static_cast<unsigned>(EConnectionRoute::AnsweredLugdunumCallback) <= ConnectionRouteMask,
+		static_cast<unsigned>(EConnectionRoute::AnsweredKadBuddyRendezvous) <= ConnectionRouteMask,
 		"every route must fit in the low nibble");
 	return static_cast<std::uint8_t>(static_cast<std::uint8_t>(route) |
 					 (static_cast<std::uint8_t>(transport) << ConnectionTransportShift) |
@@ -388,7 +471,7 @@ inline std::uint8_t PackConnectionRoute(
 inline EConnectionRoute UnpackConnectionRoute(std::uint8_t packed)
 {
 	const std::uint8_t route = packed & ConnectionRouteMask;
-	return route <= static_cast<std::uint8_t>(EConnectionRoute::AnsweredLugdunumCallback)
+	return route <= static_cast<std::uint8_t>(EConnectionRoute::AnsweredKadBuddyRendezvous)
 		       ? static_cast<EConnectionRoute>(route)
 		       : EConnectionRoute::None;
 }

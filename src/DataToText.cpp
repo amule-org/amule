@@ -230,17 +230,18 @@ wxString OriginsToText(unsigned int originMask, unsigned int primary)
  * The way a source is being contacted, as a noun phrase for ContactRouteStatus()'s sentences.
  * Empty before the first contact attempt, and for a route this build does not know.
  */
-wxString ContactRouteToText(unsigned int route)
+wxString ContactRouteToText(unsigned int route, bool lowToLow, bool overIPv6)
 {
 	switch ((EContactRouteReport)route) {
 	case EContactRouteReport::Dial:
-		return wxTRANSLATE("a direct connection");
+		return overIPv6 ? wxTRANSLATE("a direct IPv6 connection")
+				: wxTRANSLATE("a direct connection");
 	case EContactRouteReport::DirectUdpCallback:
 		return wxTRANSLATE("a direct callback");
 	case EContactRouteReport::ServerCallback:
 		return wxTRANSLATE("our server");
 	case EContactRouteReport::KadBuddy:
-		return wxTRANSLATE("the Kad buddy");
+		return lowToLow ? wxTRANSLATE("a Kad buddy rendezvous") : wxTRANSLATE("the Kad buddy");
 	case EContactRouteReport::ForeignNatCallback:
 		return wxTRANSLATE("the source's own server");
 	case EContactRouteReport::ServerHolePunch:
@@ -258,12 +259,12 @@ wxString ContactRouteToText(unsigned int route)
  * source kept for when the others failed, or one no hello has proved. A fallback is always
  * unproven as well, so the two never have to be said together.
  */
-wxString ContactRouteStatus(unsigned int route, bool unproven, bool fromFallback)
+wxString ContactRouteStatus(const wxString &route, bool unproven, bool fromFallback)
 {
-	const wxString name = wxGetTranslation(ContactRouteToText(route));
-	if (name.IsEmpty()) {
+	if (route.IsEmpty()) {
 		return wxEmptyString;
 	}
+	const wxString name = wxGetTranslation(route);
 	if (fromFallback) {
 		return CFormat(_("Connecting via %s, on a fallback route")) % name;
 	}
@@ -313,6 +314,12 @@ wxString ConnectionRouteToText(unsigned int packed)
 		break;
 	case EConnectionRoute::AnsweredLugdunumCallback:
 		route = _("Answered Lugdunum callback");
+		break;
+	case EConnectionRoute::KadBuddyRendezvous:
+		route = _("Kad buddy rendezvous");
+		break;
+	case EConnectionRoute::AnsweredKadBuddyRendezvous:
+		route = _("Answered Kad buddy rendezvous");
 		break;
 	case EConnectionRoute::None:
 		return wxEmptyString;

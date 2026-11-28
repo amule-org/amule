@@ -38,6 +38,7 @@ class CServer;
 #include "MuleUDPSocket.h"
 #include "NatRendezvousProtocol.h"  // Needed for CSentEndpointHints
 #include "ReservedProtocolFrames.h" // Needed for CFrameLogThrottle
+#include "SourceRoutePolicy.h"      // Needed for EConnectionOpener
 
 #include <array>
 #include <memory>
@@ -111,11 +112,15 @@ public:
 	IUtpContext *GetUtpContext() { return &m_utp; }
 	//! Whether a rendezvous announced this endpoint in the last 30 s, so its SYN is one we asked for.
 	bool IsExpectedUtpPeer(uint32_t ip, uint16_t port) const;
-	//! Whether the latest rendezvous with @a ip is a Lugdunum callback rather than a server punch.
-	bool IsLugdunumRendezvousPeer(uint32_t ip) const;
+	//! Who opened a stream accepted from @a ip, an expected peer: the latest rendezvous with it.
+	EConnectionOpener RendezvousStreamOpener(uint32_t ip) const;
 #if defined(ENABLE_NATT_SERVER_COORDINATION)
-	bool DialLowIdHolePunchPeer(
-		uint32 ip, uint16 tcpPort, uint16 udpPort, const NatServerHolePunch::VouchedPeer &peer);
+	//! @a kadRendezvous: the endpoint came from a rendezvous we asked a Kad source's buddy for.
+	bool DialLowIdHolePunchPeer(uint32 ip,
+		uint16 tcpPort,
+		uint16 udpPort,
+		const NatServerHolePunch::VouchedPeer &peer,
+		bool kadRendezvous = false);
 	//! Starts the punch schedule for one peer and sends what is already due: the punch to the
 	//! endpoint a 0x61, a cross-server 0xA7 answer or a keepalive wake named, then its repeats at
 	//! 0.5, 1 and 2 s, with the port sweep at 0.5 s. @a peerHash, when the rendezvous vouched for

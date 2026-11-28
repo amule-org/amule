@@ -79,7 +79,7 @@ bool CQuicStreamAcceptor::AcceptStream(
 	auto *socket = new CClientTCPSocket();
 #ifdef AMULE_UTP_TRANSPORT
 	if (rendezvous) {
-		socket->MarkRendezvousStream(theApp->clientudp->IsLugdunumRendezvousPeer(ip));
+		socket->MarkRendezvousStream(theApp->clientudp->RendezvousStreamOpener(ip));
 	}
 #endif
 	// AttachTransport() installs the event sink before it takes ownership, so an early

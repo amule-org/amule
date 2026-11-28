@@ -293,8 +293,13 @@ export function identBadge(s) {
 // it; callers without one still get the plain state badge.
 const CONNECTING = ["connecting", "waiting_callback", "waiting_callback_kad", "low_to_low_ip"];
 function routeNote(c) {
-  if (!c || !c.contact_route || !CONNECTING.includes(c.download_state)) return null;
-  const name = t("downloads_peer_route_" + c.contact_route);
+  if (!c || !c.contact_route || c.route_attempt_ended || !CONNECTING.includes(c.download_state))
+    return null;
+  // Both ends LowID: the Kad buddy route is the rendezvous, not the buddy's callback.
+  const route = c.contact_route === "kad_buddy" && c.download_state === "low_to_low_ip"
+    ? "kad_buddy_rendezvous"
+    : c.contact_route === "dial" && c.route_ipv6 ? "dial_ipv6" : c.contact_route;
+  const name = t("downloads_peer_route_" + route);
   const key = c.route_from_fallback ? "downloads_peer_route_fallback"
     : c.route_unproven ? "downloads_peer_route_unproven" : "downloads_peer_route_plain";
   return html`<span class="route-note">${t(key, { route: name })}</span>`;

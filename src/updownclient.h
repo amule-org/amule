@@ -483,13 +483,20 @@ public:
 	//! step now.
 	void LowIdHolePunchRefused();
 	//! A temporary client dialled on a server-announced endpoint. It becomes a download
-	//! source only through the client list match of its hello answer.
-	void MarkLowIdHolePunchDial() { m_lowIdHolePunchDial = true; }
+	//! source only through the client list match of its hello answer. @a kadRendezvous: the
+	//! endpoint came from a rendezvous we asked a Kad source's buddy for.
+	void MarkLowIdHolePunchDial(bool kadRendezvous = false)
+	{
+		m_lowIdHolePunchDial = true;
+		m_kadRendezvousDial = kadRendezvous;
+	}
 	bool IsLowIdHolePunchDial() const { return m_lowIdHolePunchDial; }
+	bool IsKadRendezvousDial() const { return m_kadRendezvousDial; }
 	bool TakeLowIdHolePunchDial()
 	{
 		const bool wasDial = m_lowIdHolePunchDial;
 		m_lowIdHolePunchDial = false;
+		m_kadRendezvousDial = false;
 		return wasDial;
 	}
 	void MarkLugdunumCallbackDial(const LugdunumNatTraversal::CallbackFailureKey &failureKey)
@@ -521,6 +528,7 @@ public:
 
 private:
 	bool m_lowIdHolePunchDial = false;
+	bool m_kadRendezvousDial = false;
 	bool m_lugdunumCallbackDial = false;
 	LugdunumNatTraversal::CallbackFailureKey m_lugdunumCallbackFailureKey{};
 #endif
@@ -978,6 +986,8 @@ public:
 	int GetContactRoute() const { return static_cast<int>(m_lastContactRoute); }
 	//! That route is a dial to the peer's IPv6 address.
 	bool IsContactOverIPv6() const { return m_lastContactOverIPv6; }
+	//! The attempt on that route is no longer awaited. False before the first attempt.
+	bool IsContactAttemptEnded() const;
 	//! How the current connection came about, or the last one: PackConnectionRoute(), 0 before
 	//! the first.
 	int GetConnectionRoute() const { return m_connectionRoute; }

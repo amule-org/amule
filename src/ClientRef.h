@@ -156,6 +156,7 @@ public:
 	bool IsIdentityFromFallback() const;
 	bool IsRouteUnproven() const;
 	bool IsContactOverIPv6() const;
+	bool IsContactAttemptEnded() const;
 	wxString GetSecureIdentTextStatus() const;
 	wxString GetModCapabilitiesText() const;
 	uint64 GetTransferredDown() const;
