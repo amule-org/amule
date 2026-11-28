@@ -926,10 +926,10 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   peer is taken. aMule's buddy sends it in every build. As a requester aMule
   sets `0x20` and takes a hint only from the buddy it sent the `0xA0` to, naming
   the buddy ID it sent, the target and the file, with an endpoint it could
-  punch. The hinted endpoint becomes the one it dials: it is punched at once,
-  the record's endpoint stays punched, and the fallback dial goes to it, even
-  when it went to the record's endpoint already. A second hint moves it again.
-  Once the target has punched, a hint changes nothing.
+  punch. The hinted endpoint is punched at once and becomes the first fallback
+  dial; the record's endpoint stays punched and comes next (see Dial below). A
+  hint that names another endpoint moves it again. Once the target has punched,
+  a hint changes nothing.
 - **Refresh.** A served node repeats its `0x51` unchanged, keyed with the
   buddy's receiver key (ModderMule/emule-qt#281). When the repeat comes from a
   node we serve, with its user hash and from its IP, the buddy takes it as a
@@ -1047,16 +1047,21 @@ says. Before this, a firewalled aMule did not try such a source at all.
   reask through a buddy is:
   `<buddy id 16><zero 16><0xA0 1><our hash 16><opts 1><file hash 16><our ip 4><udp port 2><hint 1>`.
   The options are our Kad connect options plus the NAT-T transports we serve
-  (`0x80` uTP, `0x40` QUIC), with `0x20` (endpoint hint) clear. The tail is
-  always written, with our public IPv4 or zeros while we do not know it, so the
-  extension block of ModderMule/emule-qt#265 can follow it; the hint is 2 (QUIC) when we serve
+  (`0x80` uTP, `0x40` QUIC), and `0x20` (`CONNECT_OPT_NATT_ENDPOINT_HINT`),
+  which asks the buddy for an endpoint hint. The tail is always written, with
+  our public IPv4 or zeros while we do not know it, so the extension block of
+  ModderMule/emule-qt#265 can follow it; the hint is 2 (QUIC) when we serve
   QUIC, else 1 (uTP). It is sent up to three times, 5 s apart, until the source
   punches back.
 - **Dial.** On the source's first punch it dials the endpoint the punch came
   from, through the dial the server paths use (QUIC when CAPS confirms it, else
-  uTP). Without a punch within 3 s it dials the source's Kad endpoint once, as
-  eMuleAI dials it at once. A punch that comes after that dial is not dialled
-  again unless it shows another port.
+  uTP). Without a punch within 3 s it dials the source's endpoints itself, as
+  eMuleAI dials the Kad endpoint at once: the hinted endpoint first, then the
+  record's, then the ones earlier records named, newest first, one every 5 s,
+  each once, until a punch comes or the attempt ends. A hint that arrives after
+  the first of these dials moves the hinted endpoint to the front, dialled at
+  once. A punch from an endpoint one of these dials reached is not dialled
+  again; one from another endpoint is.
 - **End.** A verified hello from the source ends the attempt. Otherwise it ends
   after 45 s, and that source is not asked this way again for 10 minutes. One
   attempt per source is in flight, and at most 32 at once.

@@ -514,3 +514,64 @@ TEST(NatRendezvousPolicy, AHintAfterTheFallbackDialIsDialledToo)
 	ASSERT_EQUALS(kHinted.port, FallbackDial(second)->target.udpPort);
 	ASSERT_TRUE(FallbackDial(requests.TakeDue(5100)) == nullptr);
 }
+
+namespace
+{
+const NatRendezvous::SKadEndpoint kFormerA{ 0x0E71000C, 6001 };
+const NatRendezvous::SKadEndpoint kFormerB{ 0x0E71000C, 6002 };
+
+// The endpoint each TakeDue() from @a from on, 5 s apart, dials as a fallback; 0 when none.
+std::vector<std::uint16_t> FallbackPorts(Requests &requests, std::uint64_t from, std::size_t count)
+{
+	std::vector<std::uint16_t> ports;
+	for (std::size_t i = 0; i < count; ++i) {
+		const Action *dial =
+			FallbackDial(requests.TakeDue(from + i * NatRendezvous::kRequesterFallbackStepMs));
+		ports.push_back(dial != nullptr ? dial->target.udpPort : 0);
+	}
+	return ports;
+}
+} // namespace
+
+// The hint is tried first; then, 5 s apart, every other endpoint we know: the record's, then the
+// ones earlier records named, each once.
+TEST(NatRendezvousPolicy, WithoutAPunchTheHintComesFirstThenEveryKnownEndpoint)
+{
+	Requests requests;
+	auto target = HintedTarget();
+	target.former = { kFormerA, kFormerB };
+	ASSERT_TRUE(requests.Start(target, 1000));
+	ASSERT_TRUE(Hint(requests, 1500).has_value());
+	requests.TakeDue(1000);
+	ASSERT_TRUE(FallbackDial(requests.TakeDue(3999)) == nullptr);
+	const std::vector<std::uint16_t> expected{
+		kHinted.port, kTargetPort, kFormerA.port, kFormerB.port, 0
+	};
+	ASSERT_TRUE(FallbackPorts(requests, 4000, 5) == expected);
+}
+
+TEST(NatRendezvousPolicy, WithoutAHintTheRecordComesFirstThenTheFormerEndpoints)
+{
+	Requests requests;
+	auto target = Target(1);
+	target.former = { kFormerA };
+	ASSERT_TRUE(requests.Start(target, 1000));
+	requests.TakeDue(1000);
+	const std::vector<std::uint16_t> expected{ kTargetPort, kFormerA.port, 0 };
+	ASSERT_TRUE(FallbackPorts(requests, 4000, 3) == expected);
+}
+
+// A punch from any known endpoint is dialled and ends the fallback dials.
+TEST(NatRendezvousPolicy, APunchEndsTheFallbackDials)
+{
+	Requests requests;
+	auto target = HintedTarget();
+	target.former = { kFormerA };
+	ASSERT_TRUE(requests.Start(target, 1000));
+	ASSERT_TRUE(Hint(requests, 1500).has_value());
+	requests.TakeDue(1000);
+	ASSERT_EQUALS(kHinted.port, FallbackDial(requests.TakeDue(4000))->target.udpPort);
+	ASSERT_TRUE(requests.TakePunch(kFormerA.ip, kFormerA.port, 5000).has_value());
+	ASSERT_TRUE(FallbackDial(requests.TakeDue(9000)) == nullptr);
+	ASSERT_TRUE(FallbackDial(requests.TakeDue(14000)) == nullptr);
+}
