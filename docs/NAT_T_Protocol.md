@@ -944,11 +944,12 @@ carried in `OP_REASKCALLBACKUDP` (`0x94`), to the node it serves.
   but never within 45 s of its last `0x51`, counting the one that found the
   buddy. A buddy drops a third `0x51` from an address within a minute and counts
   the dropped one too, so one every 30 s, the rate its count drains at, leaves
-  no margin. eMuleQt sends one with every `OP_BUDDYPING` and on a relayed
-  `0xA0`, at most every 30 s. aMule keys its refresh with the key the buddy's
-  `0x5A` carried, and sends none without one. Stock eMule, eMuleAI and aMule
-  before this refuse a repeat from a node they serve and do not answer, so a
-  refresh to them changes nothing.
+  no margin. eMuleQt sends one on the same two triggers, with the same 45 s gap
+  since ModderMule/emule-qt@e9ecf3fb (after v0.7.46). aMule keys its refresh
+  with the key the buddy's `0x5A` carried, and sends none without one; eMuleQt
+  takes that key first, then the one its routing table holds for the buddy.
+  Stock eMule, eMuleAI and aMule before this refuse a repeat from a node they
+  serve and do not answer, so a refresh to them changes nothing.
 - **Slots.** A third of the buddy slots is kept for nodes that declared a
   transport, so a node that serves buddies keeps room for NAT-T nodes.
 - **Interop.** An eMuleAI buddy forwards without this check. A drop on our side
