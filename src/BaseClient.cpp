@@ -2267,9 +2267,18 @@ void CUpDownClient::RetryLowIdHolePunchRequest()
 	// A Kad rendezvous that timed out, or that the attempt cap held back, is asked again once
 	// StartKadRendezvous() lets it: its cooldown, the attempt in flight and the cap decide. As in
 	// TryToContact(), only while no server path works on this source: a second path would take
-	// its punch, dial the source twice and hold an attempt slot for nothing.
-	if (MayRetryKadRendezvous(m_lastContactRoute, m_serverCallbackPending) &&
-		TrySendKadBuddyRendezvous()) {
+	// its punch, dial the source twice and hold an attempt slot for nothing. A server step that
+	// goes out above notes its route, so a step reached here is over once nothing can answer it.
+	SKadRendezvousRetryFacts kadFacts;
+	kadFacts.lastRoute = m_lastContactRoute;
+	kadFacts.serverCallbackPending = m_serverCallbackPending;
+	kadFacts.holePunchOwed =
+		!m_lowIdHolePunchRequested &&
+		NatServerHolePunch::ShouldRequestLowIdHolePunch(BuildLowIdHolePunchRequestFacts(*this));
+	kadFacts.natStepOver = (now >= m_contactStepAt && now - m_contactStepAt >= kNatStepAnswerWindowMs) ||
+			       (m_lastContactRoute == EContactRouteReport::ServerHolePunch &&
+				       m_holePunchFallback.PunchRefused());
+	if (MayRetryKadRendezvous(kadFacts) && TrySendKadBuddyRendezvous()) {
 		NoteContactStep(EContactRouteReport::KadBuddy);
 	}
 }

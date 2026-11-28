@@ -1667,6 +1667,27 @@ TEST(NatServerHolePunch, ARefusedHolePunchFallsBackAtOnceAndOnlyOnce)
 	ASSERT_FALSE(fallback.IsDue(2 * kHolePunchFallbackMs + 1));
 }
 
+TEST(NatServerHolePunch, ARefusedPunchStaysRefusedUntilTheNextOne)
+{
+	HolePunchFallback fallback;
+	fallback.OnPunchRefused();
+	ASSERT_FALSE(fallback.PunchRefused()); // No punch went out.
+	fallback.OnPunchSent(0);
+	ASSERT_FALSE(fallback.PunchRefused());
+	fallback.OnPunchRefused();
+	ASSERT_TRUE(fallback.PunchRefused());
+	// Whatever the fallback did, the refused punch gives nothing more.
+	fallback.OnFallback(false, 10);
+	ASSERT_TRUE(fallback.PunchRefused());
+	fallback.OnFallback(true, 20);
+	ASSERT_TRUE(fallback.PunchRefused());
+	fallback.OnPunchSent(30);
+	ASSERT_FALSE(fallback.PunchRefused());
+	fallback.OnPunchRefused();
+	fallback.Reset();
+	ASSERT_FALSE(fallback.PunchRefused());
+}
+
 TEST(NatServerHolePunch, ARefusalWhoseFallbackCannotGoOutWaitsTheUsualInterval)
 {
 	HolePunchFallback fallback;

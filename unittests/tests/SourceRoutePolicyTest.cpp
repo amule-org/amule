@@ -678,17 +678,40 @@ TEST(SourceRoutePolicy, ThrottleHoldsOnlyAnUntriedDirectCallback)
 	ASSERT_FALSE(choice.directHeld);
 }
 
-// The Kad rendezvous is asked again while no server path works on the source. An IPv6 callback that
-// ended leaves ServerCallback behind, and that must not stop it.
+// The Kad rendezvous is asked again while no server path works on the source. A step that ended
+// leaves its route behind, and that must not stop it.
 TEST(SourceRoutePolicy, KadRendezvousRetryWaitsOnlyForAServerPathAtWork)
 {
-	ASSERT_TRUE(MayRetryKadRendezvous(EContactRouteReport::None, false));
-	ASSERT_TRUE(MayRetryKadRendezvous(EContactRouteReport::KadBuddy, false));
-	ASSERT_TRUE(MayRetryKadRendezvous(EContactRouteReport::ServerCallback, false));
-	ASSERT_FALSE(MayRetryKadRendezvous(EContactRouteReport::ServerCallback, true));
+	const auto may = [](EContactRouteReport route,
+				 bool callbackPending = false,
+				 bool owed = false,
+				 bool stepOver = false) {
+		SKadRendezvousRetryFacts facts;
+		facts.lastRoute = route;
+		facts.serverCallbackPending = callbackPending;
+		facts.holePunchOwed = owed;
+		facts.natStepOver = stepOver;
+		return MayRetryKadRendezvous(facts);
+	};
+	ASSERT_TRUE(may(EContactRouteReport::None));
+	ASSERT_TRUE(may(EContactRouteReport::KadBuddy));
+	ASSERT_TRUE(may(EContactRouteReport::ServerCallback));
+	ASSERT_FALSE(may(EContactRouteReport::ServerCallback, true));
 	for (const EContactRouteReport step : { EContactRouteReport::ForeignNatCallback,
 		     EContactRouteReport::ServerHolePunch,
 		     EContactRouteReport::LugdunumCallback }) {
-		ASSERT_FALSE(MayRetryKadRendezvous(step, false));
+		// Until nothing can answer it: its window passed, or the server refused the punch.
+		ASSERT_FALSE(may(step));
+		ASSERT_TRUE(may(step, false, false, true));
 	}
+	// A 0x60 the request limits held back goes first, whatever the last step was.
+	for (const EContactRouteReport route : { EContactRouteReport::None,
+		     EContactRouteReport::KadBuddy,
+		     EContactRouteReport::ServerCallback,
+		     EContactRouteReport::LugdunumCallback }) {
+		ASSERT_FALSE(may(route, false, true, true));
+	}
+	// Only the NAT-T steps of a source waiting LowID-to-LowID.
+	ASSERT_FALSE(may(EContactRouteReport::Dial, false, false, true));
+	ASSERT_FALSE(may(EContactRouteReport::DirectUdpCallback, false, false, true));
 }
