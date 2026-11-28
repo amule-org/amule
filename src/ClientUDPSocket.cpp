@@ -60,7 +60,7 @@
 #include "UtpStreamAcceptor.h"
 #endif
 #include "NatRendezvousProtocol.h" // Needed for ParseRendezvousEnvelope, BuildForwardedRendezvous
-#include "NetworkFunctions.h"      // Needed for IsGoodIP
+#include "NetworkFunctions.h"      // Needed for IsGoodIP, IsHintableServedIP
 #ifdef AMULE_QUIC_TRANSPORT
 #include "QuicTls.h"
 #include "QuicNgtcp2Adapter.h"
@@ -2042,17 +2042,12 @@ void CClientUDPSocket::ProcessPacket(
 				envelope->request.fileHash) {
 				NatRendezvous::UserHash target;
 				std::copy_n(buddy->GetUserHash().GetHash(), target.size(), target.begin());
-				// eMuleAI drops a hint whose address is not public. A LAN one is sent only
-				// where LAN IPs are not filtered, as a rendezvous peer is taken.
 				const uint32 servedIP = buddy->GetIP();
-				const bool usable = CNetworkAddress::FromIPv4NetworkOrder(servedIP)
-							    .IsGloballyRoutableIPv4() ||
-						    (!thePrefs::FilterLanIPs() && IsGoodIP(servedIP, false));
 				hint = NatRendezvous::MakeServedEndpointHint(target,
 					envelope->servingBuddyId,
 					*envelope->request.fileHash,
 					servedIP,
-					usable,
+					IsHintableServedIP(servedIP, thePrefs::FilterLanIPs()),
 					buddy->GetServedUdpPort(),
 					buddy->GetKadPort(),
 					buddy->GetCryptOptions(),

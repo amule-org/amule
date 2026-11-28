@@ -102,6 +102,13 @@ bool IsGoodIP(uint32 IP, bool filterLAN) noexcept;
  */
 bool IsGoodServerIP(uint32 ip, bool filterLAN) noexcept;
 
+/**
+ * IsGoodIP() for the node a Kad buddy names in an endpoint hint (OP_NATT_ENDPOINT_HINT): a public
+ * address, as eMuleAI drops any other, or a LAN one when LAN IPs are not filtered. Never loopback.
+ * Anti-host order.
+ */
+bool IsHintableServedIP(uint32 ip, bool filterLAN) noexcept;
+
 inline bool IsGoodIPPort(uint32 nIP, uint16 nPort, bool filterLAN) noexcept
 {
 	return IsGoodIP(nIP, filterLAN) && nPort != 0;

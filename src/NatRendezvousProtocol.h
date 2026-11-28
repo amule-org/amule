@@ -288,7 +288,7 @@ inline std::optional<EndpointHint> ParseEndpointHint(const std::uint8_t *data, s
  * the UDP port its buddy request or last refresh came from. A NAT keeps that outside port for
  * every destination; the hello's Kad port is the inside one, so it is only the fallback. The
  * options are the node's crypt bits and the NAT-T transports its buddy request declared.
- * @a addressUsable is the caller's: a public address, or a LAN one where LAN IPs are not filtered.
+ * @a addressUsable is the caller's: IsHintableServedIP().
  */
 inline std::optional<EndpointHint> MakeServedEndpointHint(const UserHash &target,
 	const ServingBuddyId &buddyId,

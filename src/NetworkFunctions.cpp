@@ -26,7 +26,8 @@
 
 #include "NetworkFunctions.h" // Interface declaration
 #include "amuleIPV4Address.h"
-#include <common/Macros.h> // Needed for itemsof()
+#include "NetworkAddress.h" // Needed for IsGloballyRoutableIPv4
+#include <common/Macros.h>  // Needed for itemsof()
 
 bool StringIPtoUint32(const wxString &strIP, uint32 &Ip)
 {
@@ -136,6 +137,12 @@ bool IsGoodIP(uint32 ip, bool filterLAN) noexcept
 bool IsGoodServerIP(uint32 ip, bool filterLAN) noexcept
 {
 	return (!filterLAN && IsLoopbackIP(ip)) || IsGoodIP(ip, filterLAN);
+}
+
+bool IsHintableServedIP(uint32 ip, bool filterLAN) noexcept
+{
+	return CNetworkAddress::FromIPv4NetworkOrder(ip).IsGloballyRoutableIPv4() ||
+	       (!filterLAN && IsGoodIP(ip, false));
 }
 
 bool IsLanIP(uint32_t ip) noexcept
