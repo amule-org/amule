@@ -27,6 +27,7 @@
 
 using namespace muleunit;
 using Kademlia::CBuddyLiveness;
+using Kademlia::CBuddyRefreshGate;
 
 DECLARE_SIMPLE(KadBuddyLiveness)
 
@@ -147,4 +148,16 @@ TEST(KadBuddyLiveness, BothEndsStayAliveThenReleaseTheSilentConnection)
 	client.PingSent(now + 2 * CBuddyLiveness::PingInterval);
 	ASSERT_TRUE(client.Expired(now + CBuddyLiveness::ReceiveTimeout));
 	ASSERT_TRUE(host.Expired(now + CBuddyLiveness::ReceiveTimeout));
+}
+
+// A refresh goes out at link start and with each ping; one asked for by a relayed rendezvous waits
+// 30 s from the last, which keeps us within Kad's two buddy requests a minute.
+TEST(KadBuddyLiveness, AnOnDemandRefreshWaitsThirtySecondsFromTheLast)
+{
+	CBuddyRefreshGate gate;
+	ASSERT_TRUE(gate.OnDemandDue(5));
+	gate.Sent(1000);
+	ASSERT_FALSE(gate.OnDemandDue(1000));
+	ASSERT_FALSE(gate.OnDemandDue(1000 + CBuddyRefreshGate::OnDemandInterval - 1));
+	ASSERT_TRUE(gate.OnDemandDue(1000 + CBuddyRefreshGate::OnDemandInterval));
 }

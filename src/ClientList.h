@@ -48,6 +48,7 @@ class CMD4Hash;
 namespace Kademlia
 {
 class CContact;
+class CKadUDPKey;
 class CUInt128;
 } // namespace Kademlia
 
@@ -286,7 +287,9 @@ public:
 	uint32 GetBuddyIP();
 	uint16 GetBuddyPort();
 	bool RequestTCP(Kademlia::CContact *contact, uint8_t connectOptions);
-	void RequestBuddy(Kademlia::CContact *contact, uint8_t connectOptions);
+	//! @a key is the one the offer (0x5A) carried, for the refreshes we send the buddy.
+	void RequestBuddy(
+		Kademlia::CContact *contact, uint8_t connectOptions, const Kademlia::CKadUDPKey &key);
 	bool CanRequestBuddy(uint32_t ip) const;
 	void RecordBuddyFailure(uint32_t ip);
 	enum class EIncomingBuddy

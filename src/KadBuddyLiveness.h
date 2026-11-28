@@ -93,6 +93,29 @@ private:
 	uint32_t m_pongsReceived = 0;
 };
 
+/**
+ * A served node repeats its 0x51 (KADEMLIA_FINDBUDDY_REQ) to its buddy as a refresh, so the buddy
+ * hints its current outside UDP port (ModderMule/emule-qt#281): at link start, with every ping, and
+ * when the buddy relays a rendezvous, at most every 30 s. Kad lets an address send two buddy
+ * requests a minute.
+ */
+class CBuddyRefreshGate
+{
+public:
+	void Sent(uint64_t now)
+	{
+		m_last = now;
+		m_sent = true;
+	}
+	bool OnDemandDue(uint64_t now) const { return !m_sent || now - m_last >= OnDemandInterval; }
+
+	static constexpr uint64_t OnDemandInterval = 30 * 1000;
+
+private:
+	uint64_t m_last = 0;
+	bool m_sent = false;
+};
+
 } // namespace Kademlia
 
 #endif // KAD_BUDDY_LIVENESS_H

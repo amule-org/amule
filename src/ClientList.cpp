@@ -924,10 +924,12 @@ void CClientList::Process()
 					"Connected to buddy " + cur_client->GetFullIP() + " (" +
 						cur_client->GetClientVerString() + ")");
 				Notify_ServerUpdateED2KInfo();
+				cur_client->SendBuddyRefresh(false);
 			}
 			if (m_pBuddy.GetClient() == cur_client && theApp->IsFirewalled() &&
 				cur_client->IsBuddyPingDue()) {
 				cur_client->SendBuddyPing();
+				cur_client->SendBuddyRefresh(false);
 			}
 			break;
 
@@ -1665,7 +1667,8 @@ void CClientList::LogBuddySummary(uint64 now)
 	m_loggedReasksReceived = own.reasksReceived;
 }
 
-void CClientList::RequestBuddy(Kademlia::CContact *contact, uint8_t connectOptions)
+void CClientList::RequestBuddy(
+	Kademlia::CContact *contact, uint8_t connectOptions, const Kademlia::CKadUDPKey &key)
 {
 	uint32_t nContactIP = wxUINT32_SWAP_ALWAYS(contact->GetIPAddress());
 	// Don't connect to ourself
@@ -1687,6 +1690,7 @@ void CClientList::RequestBuddy(Kademlia::CContact *contact, uint8_t connectOptio
 	}
 
 	pNewClient->SetKadPort(contact->GetUDPPort());
+	pNewClient->SetBuddyKadKey(contact->GetUDPPort(), key);
 	pNewClient->SetServedBuddy(false);
 	pNewClient->SetKadState(KS_QUEUED_BUDDY);
 	uint8_t ID[16];

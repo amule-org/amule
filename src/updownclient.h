@@ -60,8 +60,9 @@
 #include <vector>
 #include "UploadCallbackPolicy.h"
 #include "KadBuddyLiveness.h"
-#include "KadBuddyIdLayout.h"    // Needed for IsKadCallbackRetryDue
-#include "NatRendezvousPolicy.h" // Needed for SKadEndpoint
+#include "kademlia/utils/KadUDPKey.h" // Needed for CKadUDPKey
+#include "KadBuddyIdLayout.h"         // Needed for IsKadCallbackRetryDue
+#include "NatRendezvousPolicy.h"      // Needed for SKadEndpoint
 #ifdef ENABLE_NATT_SERVER_COORDINATION
 #include "NatServerHolePunch.h" // Needed for callback request policy
 #if defined(AMULE_UTP_TRANSPORT)
@@ -1056,6 +1057,15 @@ public:
 	bool IsBuddyPingDue() const { return m_buddyLiveness.PingDue(::GetTickCount64()); }
 	bool AllowIncomingBuddyPing() const { return m_buddyLiveness.AllowIncomingPing(::GetTickCount64()); }
 	void RecordBuddyPingSent() { m_buddyLiveness.PingSent(::GetTickCount64()); }
+	//! The Kad UDP port of our buddy, and the key its buddy offer (0x5A) carried for us.
+	void SetBuddyKadKey(uint16 udpPort, const Kademlia::CKadUDPKey &key)
+	{
+		m_buddyKadUDPPort = udpPort;
+		m_buddyKadKey = key;
+	}
+	//! As a served node: repeat our 0x51 to this buddy, keyed, so it hints our current UDP port
+	//! (ModderMule/emule-qt#281). An on-demand one waits 30 s from the last; no key, none at all.
+	void SendBuddyRefresh(bool onDemand);
 	void RecordBuddyPingReceived() { m_buddyLiveness.PingReceived(::GetTickCount64()); }
 	void RecordBuddyPongReceived() { m_buddyLiveness.PongReceived(::GetTickCount64()); }
 	void RecordBuddyPacketReceived() { m_buddyLiveness.ReceivedPacket(::GetTickCount64()); }
@@ -1477,6 +1487,9 @@ private:
 	bool m_bServedBuddy = false;
 	uint8 m_servedBuddyOptions = 0;
 	uint16 m_servedUdpPort = 0;
+	uint16 m_buddyKadUDPPort = 0;
+	Kademlia::CKadUDPKey m_buddyKadKey;
+	Kademlia::CBuddyRefreshGate m_buddyRefresh;
 	uint32 m_nBuddyIP;
 	uint32 m_kadSourceIP = 0;
 	std::vector<NatRendezvous::SKadEndpoint> m_formerKadEndpoints;

@@ -5048,6 +5048,19 @@ bool CUpDownClient::SendBuddyPing()
 	return SafeSendPacket(buddyPing);
 }
 
+void CUpDownClient::SendBuddyRefresh(bool onDemand)
+{
+	const uint64 now = ::GetTickCount64();
+	if (m_buddyKadKey.IsEmpty() || m_buddyKadUDPPort == 0 || !Kademlia::CKademlia::IsRunning() ||
+		Kademlia::CKademlia::GetUDPListener() == nullptr ||
+		(onDemand && !m_buddyRefresh.OnDemandDue(now))) {
+		return;
+	}
+	m_buddyRefresh.Sent(now);
+	Kademlia::CKademlia::GetUDPListener()->SendBuddyRefresh(
+		wxUINT32_SWAP_ALWAYS(GetIP()), m_buddyKadUDPPort, m_buddyKadKey);
+}
+
 /* Statistics */
 
 void CUpDownClient::UpdateStats()

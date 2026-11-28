@@ -1294,6 +1294,10 @@ void CClientUDPSocket::HandleForwardedRendezvous(uint32 ip, uint16 udpPort, cons
 	AddDebugLogLineN(logKadBuddy,
 		CFormat("Rendezvous from our buddy: punching %s, NAT-T 0x%02x; the requester dials") %
 			requester % decision.sharedTransports);
+	// Our buddy may have hinted our UDP port to the requester; a refresh corrects a moved one.
+	if (CUpDownClient *buddy = theApp->clientlist->GetBuddy()) {
+		buddy->SendBuddyRefresh(true);
+	}
 	const std::array<std::uint8_t, 16> &requesterHash = decision.request.requesterHash;
 	NoteRendezvousAttempt(NatServerHolePunch::RendezvousPath::KadBuddy, ip, &requesterHash);
 	// Recorded before the punch: we answer the requester's CAPS only from an expected peer. No

@@ -110,6 +110,10 @@ public:
 		uint16_t destinationPort,
 		const CKadUDPKey &targetKey,
 		const CUInt128 *cryptTargetID);
+	//! Our 0x51 (KADEMLIA_FINDBUDDY_REQ) body: BuddyID, client hash, TCP port, connect options.
+	static void WriteFindBuddyRequest(CMemFile &packetdata);
+	//! Our 0x51 again, keyed to the buddy at @a ip (Kad byte order): a refresh (emule-qt#281).
+	void SendBuddyRefresh(uint32_t ip, uint16_t port, const CKadUDPKey &key);
 
 	//	bool FindNodeIDByIP(CKadClientSearcher *requester, uint32_t ip, uint16_t tcpPort, uint16_t
 	// udpPort);
