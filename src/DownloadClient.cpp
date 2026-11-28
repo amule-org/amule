@@ -1050,6 +1050,7 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 				// Occasionally packets are duplicated, no point writing it twice
 				// This will be 0 in these cases, or the length written otherwise
 				uint32 lenWritten = 0;
+				const bool wasDownloading = GetDownloadState() == DS_DOWNLOADING;
 
 				if (!packed) {
 					// security sanitize check
@@ -1162,6 +1163,11 @@ void CUpDownClient::ProcessBlockPacket(const uint8_t *packet, uint32 size, bool 
 						cur_block->totalUnzipped = 0; // bluecow's fix
 					}
 					delete[] unzipped;
+				}
+				// WriteToBuffer can pause the file for disk space, which takes this
+				// client out of DS_DOWNLOADING and frees cur_block and the list.
+				if (wasDownloading && GetDownloadState() != DS_DOWNLOADING) {
+					return;
 				}
 				if (lenWritten > 0) {
 					m_nTransferredDown += lenWritten;
